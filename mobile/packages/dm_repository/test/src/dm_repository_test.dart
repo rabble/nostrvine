@@ -43,7 +43,9 @@ class _FakeDmSyncState implements DmSyncState {
   int? newestOverride;
   int? oldestOverride;
   bool drainCompleteOverride = false;
+  int? drainCursorOverride;
   final List<String> markedCompletePubkeys = <String>[];
+  final List<int> persistedDrainCursors = <int>[];
   final List<({String pubkey, int createdAt})> recorded =
       <({String pubkey, int createdAt})>[];
 
@@ -60,6 +62,16 @@ class _FakeDmSyncState implements DmSyncState {
   Future<void> markHistoryDrainComplete(String pubkey) async {
     markedCompletePubkeys.add(pubkey);
     drainCompleteOverride = true;
+    drainCursorOverride = null;
+  }
+
+  @override
+  int? historyDrainCursor(String pubkey) => drainCursorOverride;
+
+  @override
+  Future<void> setHistoryDrainCursor(String pubkey, int cursor) async {
+    drainCursorOverride = cursor;
+    persistedDrainCursors.add(cursor);
   }
 
   @override
@@ -78,6 +90,7 @@ class _FakeDmSyncState implements DmSyncState {
     newestOverride = null;
     oldestOverride = null;
     drainCompleteOverride = false;
+    drainCursorOverride = null;
   }
 
   @override
@@ -85,6 +98,7 @@ class _FakeDmSyncState implements DmSyncState {
     newestOverride = null;
     oldestOverride = null;
     drainCompleteOverride = false;
+    drainCursorOverride = null;
     recorded.clear();
   }
 }
@@ -2015,10 +2029,6 @@ void main() {
       );
     });
 
-    // -----------------------------------------------------------------
-    // loadOlderMessages pagination
-    // -----------------------------------------------------------------
-
     group('resolveDmInboxRelays', () {
       Event kind10050Event(List<String> relays, {int createdAt = 1700000000}) {
         return Event(
@@ -2157,52 +2167,6 @@ void main() {
       });
     });
 
-    group('loadOlderMessages', () {
-      test('queries until:oldest with limit 50', () async {
-        const oldest = 1699000000;
-        final syncState = _FakeDmSyncState()..oldestOverride = oldest;
-        when(
-          () => mockNostrClient.queryEvents(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-          ),
-        ).thenAnswer((_) async => <Event>[]);
-
-        final repository = createRepository(syncState: syncState);
-
-        await repository.loadOlderMessages();
-
-        final captured =
-            verify(
-                  () => mockNostrClient.queryEvents(
-                    captureAny(),
-                    subscriptionId: any(named: 'subscriptionId'),
-                    useCache: any(named: 'useCache'),
-                  ),
-                ).captured.single
-                as List<nostr_filter.Filter>;
-        expect(captured, hasLength(1));
-        expect(captured.single.until, oldest);
-        expect(captured.single.limit, 50);
-      });
-
-      test('is a no-op when oldest is null', () async {
-        final syncState = _FakeDmSyncState();
-        final repository = createRepository(syncState: syncState);
-
-        await repository.loadOlderMessages();
-
-        verifyNever(
-          () => mockNostrClient.queryEvents(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-          ),
-        );
-      });
-    });
-
     group('backfillHistoryIfNeeded', () {
       // Kind-5 deletions with no tags flow through _handleIncomingEvent
       // with zero decryption / DAO side effects, so they exercise the
@@ -2257,6 +2221,10 @@ void main() {
           }
           // Terminated on an empty page and recorded completion.
           expect(syncState.drainCompleteOverride, isTrue);
+          // The boundary is persisted while paging and cleared once the
+          // drain completes cleanly.
+          expect(syncState.persistedDrainCursors, isNotEmpty);
+          expect(syncState.drainCursorOverride, isNull);
         },
       );
 
@@ -2289,31 +2257,115 @@ void main() {
         );
       });
 
-      test('stops at the page cap and still marks complete', () async {
-        var calls = 0;
-        when(
-          () => mockNostrClient.queryEvents(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-            useCache: any(named: 'useCache'),
-          ),
-        ).thenAnswer((inv) async {
-          calls++;
-          final filters =
-              inv.positionalArguments.first as List<nostr_filter.Filter>;
-          final until = filters.single.until!;
-          // Infinite descending supply: only the maxPages cap can stop it.
-          return [deletion(until - 1)];
-        });
+      test(
+        'stops at the page cap, leaves the drain incomplete, and persists '
+        'a resume cursor',
+        () async {
+          var calls = 0;
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((inv) async {
+            calls++;
+            final filters =
+                inv.positionalArguments.first as List<nostr_filter.Filter>;
+            final until = filters.single.until!;
+            // Infinite descending supply: only the maxPages cap can stop it.
+            return [deletion(until - 1)];
+          });
 
-        final syncState = _FakeDmSyncState()..oldestOverride = 1000000;
-        final repository = createRepository(syncState: syncState);
+          final syncState = _FakeDmSyncState()..oldestOverride = 1000000;
+          final repository = createRepository(syncState: syncState);
 
-        await repository.backfillHistoryIfNeeded();
+          await repository.backfillHistoryIfNeeded();
 
-        expect(calls, DmHistoryDrainConfig.maxPages);
-        expect(syncState.drainCompleteOverride, isTrue);
-      });
+          expect(calls, DmHistoryDrainConfig.maxPages);
+          // Cap hit: do NOT declare the drain complete, or heavy users would
+          // permanently lose history older than the cap. Persist the
+          // boundary so the next inbox open resumes instead of restarting.
+          // See #4953.
+          expect(syncState.drainCompleteOverride, isFalse);
+          expect(syncState.markedCompletePubkeys, isEmpty);
+          expect(syncState.drainCursorOverride, isNotNull);
+          expect(syncState.drainCursorOverride, lessThan(1000000));
+          // The boundary is persisted after EVERY page (not just the last),
+          // so an interruption at any point resumes from the latest page.
+          expect(
+            syncState.persistedDrainCursors,
+            hasLength(DmHistoryDrainConfig.maxPages),
+          );
+        },
+      );
+
+      test(
+        'resumes from the persisted drain cursor instead of oldestSyncedAt',
+        () async {
+          final capturedUntil = <int?>[];
+          stubFiniteHistory([deletion(40), deletion(30)], capturedUntil);
+
+          // A prior page-capped run advanced the cursor far below the live
+          // subscription's oldestSyncedAt boundary.
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 1000
+            ..drainCursorOverride = 45;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          // Seeded from the persisted cursor (45), not oldestSyncedAt (1000).
+          expect(capturedUntil.first, 45);
+          // The resumed run reaches EOSE and finally records completion.
+          expect(syncState.drainCompleteOverride, isTrue);
+          expect(syncState.markedCompletePubkeys, isNotEmpty);
+        },
+      );
+
+      test(
+        'an exception mid-drain keeps the cursor and resumes on the next run',
+        () async {
+          var calls = 0;
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((inv) async {
+            calls++;
+            final filters =
+                inv.positionalArguments.first as List<nostr_filter.Filter>;
+            final until = filters.single.until!;
+            // Page 0 advances + persists the cursor; page 1 fails.
+            if (calls == 1) return [deletion(until - 1)];
+            throw Exception('relay boom');
+          });
+
+          final syncState = _FakeDmSyncState()..oldestOverride = 1000;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          // Failed mid-drain: not complete, but the cursor is preserved.
+          expect(syncState.drainCompleteOverride, isFalse);
+          expect(syncState.markedCompletePubkeys, isEmpty);
+          final resumeCursor = syncState.drainCursorOverride;
+          expect(resumeCursor, isNotNull);
+          expect(resumeCursor, lessThan(1000));
+
+          // The next inbox open resumes from the persisted cursor (not
+          // oldestSyncedAt) and finishes once the relay returns empty.
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(capturedUntil.first, resumeCursor);
+          expect(syncState.drainCompleteOverride, isTrue);
+        },
+      );
 
       test('shares one in-flight run across concurrent calls', () async {
         final capturedUntil = <int?>[];

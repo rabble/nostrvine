@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Superseded note (#4973):** The single-page `loadOlderMessages()` pagination primitive described below (Task 13) was never wired to a production caller and has been removed. Full DM-history recovery after a reinstall is now handled by the one-time, resumable, page-capped `DmRepository.backfillHistoryIfNeeded()` drain (gated by `DmSyncState.historyDrainComplete` / resumed via `historyDrainCursor`), triggered from `ConversationListBloc` on inbox open. See #4953 / PR #4973. Trust the current code over the `loadOlderMessages()` references in this historical plan.
+
 **Goal:** Make DM processing lazy (inbox-gated), bounded (count-based windowing), and non-blocking (isolate decryption for local signers) so cold start and scale do not degrade with lifetime DM count.
 
 **Architecture:** `DmRepository.initialize()` stops auto-starting the gift-wrap subscription. `startListening()` and `stopListening()` are called from the inbox screen's BLoC on mount/dispose. The subscription filter switches between a `limit: 50` first-open path and a `since: newestSyncedAt - 2d` steady-state path, with explicit `loadOlderMessages()` pagination. The 10-second poller is removed. Decryption for local-key signers is offloaded via `compute()` to keep the UI isolate responsive.

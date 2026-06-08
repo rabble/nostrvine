@@ -1,13 +1,15 @@
 // ABOUTME: Persists per-pubkey DM sync boundaries so subsequent inbox
 // ABOUTME: opens can fetch only new events via a `since:` filter.
 //
-// Stores two integers per user pubkey in SharedPreferences:
+// Stores per user pubkey in SharedPreferences:
 //   - newestSyncedAt: highest `created_at` successfully processed
 //   - oldestSyncedAt: lowest `created_at` successfully processed
+//   - historyDrainComplete: whether the one-time full-history drain is done
+//   - historyDrainCursor: the drain's resumable pagination boundary
 //
-// Both values are unix seconds matching Nostr event timestamps. Used
-// by DmRepository to bound subscription and pagination queries so
-// cost is proportional to recent activity, not lifetime message count.
+// Timestamps are unix seconds matching Nostr event timestamps. Used by
+// DmRepository to bound subscription and pagination queries so cost is
+// proportional to recent activity, not lifetime message count.
 // See docs/plans/2026-04-05-dm-scaling-fix-design.md.
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,6 +23,7 @@ class DmSyncState {
   static const _newestPrefix = 'dm.newestSyncedAt.';
   static const _oldestPrefix = 'dm.oldestSyncedAt.';
   static const _drainCompletePrefix = 'dm.historyDrainComplete.';
+  static const _drainCursorPrefix = 'dm.historyDrainCursor.';
 
   /// Returns the newest (highest) `created_at` unix timestamp we have
   /// successfully processed for [pubkey], or `null` if nothing has been
@@ -59,9 +62,33 @@ class DmSyncState {
       _prefs.getBool('$_drainCompletePrefix$pubkey') ?? false;
 
   /// Records that the one-time full-history drain finished cleanly for
-  /// [pubkey] so it never runs again until the state is cleared.
+  /// [pubkey] so it never runs again until the state is cleared. Also
+  /// clears the resume cursor, which is only meaningful for an
+  /// in-progress drain.
   Future<void> markHistoryDrainComplete(String pubkey) async {
     await _prefs.setBool('$_drainCompletePrefix$pubkey', true);
+    await _prefs.remove('$_drainCursorPrefix$pubkey');
+  }
+
+  /// The outer gift-wrap `created_at` (unix seconds) the history drain has
+  /// paged down to for [pubkey], or `null` if no drain has persisted a
+  /// boundary yet.
+  ///
+  /// The drain persists this after every page so an interrupted or
+  /// page-capped run resumes from the exact boundary on the next inbox
+  /// open instead of restarting from [oldestSyncedAt] (and, on a page-cap,
+  /// instead of permanently truncating older history). Tracks the
+  /// randomized **outer** gift-wrap timestamp that the relay's `until:`
+  /// filters on — not the rumor times in [oldestSyncedAt]. Cleared once
+  /// the drain completes or the state is reset. See #4953.
+  int? historyDrainCursor(String pubkey) =>
+      _prefs.getInt('$_drainCursorPrefix$pubkey');
+
+  /// Persists the history drain's pagination [cursor] (an outer gift-wrap
+  /// `created_at` in unix seconds) for [pubkey] so the next run resumes
+  /// from it.
+  Future<void> setHistoryDrainCursor(String pubkey, int cursor) async {
+    await _prefs.setInt('$_drainCursorPrefix$pubkey', cursor);
   }
 
   /// Removes all sync state for [pubkey]. Called on account switch.
@@ -69,6 +96,7 @@ class DmSyncState {
     await _prefs.remove('$_newestPrefix$pubkey');
     await _prefs.remove('$_oldestPrefix$pubkey');
     await _prefs.remove('$_drainCompletePrefix$pubkey');
+    await _prefs.remove('$_drainCursorPrefix$pubkey');
   }
 
   /// Removes all DM sync state entries for every pubkey.
@@ -82,7 +110,8 @@ class DmSyncState {
           (key) =>
               key.startsWith(_newestPrefix) ||
               key.startsWith(_oldestPrefix) ||
-              key.startsWith(_drainCompletePrefix),
+              key.startsWith(_drainCompletePrefix) ||
+              key.startsWith(_drainCursorPrefix),
         )
         .toList();
     for (final key in keysToRemove) {
