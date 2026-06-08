@@ -893,6 +893,41 @@ void main() {
         // Old format creates a single clip
         expect(drafts.first.clips, hasLength(1));
       });
+
+      // Regression for #4852: migrated drafts must be written together with
+      // their clips in a single transaction. A draft row persisted without
+      // its clip rows is treated as corrupted and permanently deleted on the
+      // next read (see the "removes corrupted drafts with 0 clips" tests),
+      // which silently wipes the user's drafts after an app update.
+      test('commits clip rows with the draft so reads do not delete it',
+          () async {
+        final draftJson = buildDraftJson(
+          id: 'draft_atomic',
+          clips: [
+            buildClipJson(id: 'clip_atomic_1', filePath: 'a1.mp4'),
+            buildClipJson(id: 'clip_atomic_2', filePath: 'a2.mp4'),
+          ],
+        );
+        SharedPreferences.setMockInitialValues({
+          'vine_drafts': json.encode([draftJson]),
+        });
+
+        await service.migrateOldDrafts();
+
+        // The migrated draft must have its clip rows persisted, otherwise the
+        // corrupted-draft sweep in getAllDrafts would delete it.
+        final clipRows = await database.clipsDao.getClipsByDraftId(
+          'draft_atomic',
+        );
+        expect(clipRows, hasLength(2));
+
+        // Running the destructive read twice must not remove the draft.
+        await service.getAllDrafts();
+        final drafts = await service.getAllDrafts();
+        expect(drafts, hasLength(1));
+        expect(drafts.first.id, equals('draft_atomic'));
+        expect(drafts.first.clips, hasLength(2));
+      });
     });
   });
 }

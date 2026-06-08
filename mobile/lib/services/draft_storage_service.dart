@@ -52,10 +52,38 @@ class DraftStorageService {
         final draftMap = rawJson as Map<String, dynamic>;
         final draft = DivineVideoDraft.fromJson(draftMap, documentsPath);
 
-        // Upsert draft row (clips stripped from JSON blob)
+        // Persist the draft and its clips atomically. A non-transactional
+        // migration could be interrupted (e.g. the app is backgrounded or
+        // killed right after an OS update) between writing the draft row
+        // and its clip rows, leaving a draft with 0 clips. Readers treat
+        // such rows as corrupted and permanently delete them, silently
+        // destroying the user's drafts. Committing both in one transaction
+        // guarantees a draft is never observed without its clips.
         final draftJson = draft.toJson();
+        // Remove clips from JSON blob – they live in their own table.
         draftJson.remove('clips');
-        await _draftsDao.upsertDraft(
+
+        final clipDataList = <DraftClipData>[];
+        for (var i = 0; i < draft.clips.length; i++) {
+          final clip = draft.clips[i];
+          clipDataList.add(
+            DraftClipData(
+              id: clip.id,
+              orderIndex: i,
+              durationMs: clip.duration.inMilliseconds,
+              recordedAt: clip.recordedAt,
+              data: json.encode(clip.toJson()),
+              filePath: clip.video.file?.path != null
+                  ? p.basename(clip.video.file!.path)
+                  : null,
+              thumbnailPath: clip.thumbnailPath != null
+                  ? p.basename(clip.thumbnailPath!)
+                  : null,
+            ),
+          );
+        }
+
+        await _draftsDao.saveDraftWithClips(
           id: draft.id,
           title: draft.title,
           description: draft.description,
@@ -71,28 +99,9 @@ class DraftStorageService {
           renderedThumbnailPath: draft.finalRenderedClip?.thumbnailPath != null
               ? p.basename(draft.finalRenderedClip!.thumbnailPath!)
               : null,
+          clipDataList: clipDataList,
+          ownerPubkey: ownerPubkey,
         );
-
-        // Insert clips with composite IDs so draft clips
-        // don't collide with library clips sharing the same
-        // clip.id primary key.
-        for (var i = 0; i < draft.clips.length; i++) {
-          final clip = draft.clips[i];
-          await _clipsDao.upsertClip(
-            id: '${draft.id}:${clip.id}',
-            draftId: draft.id,
-            orderIndex: i,
-            durationMs: clip.duration.inMilliseconds,
-            recordedAt: clip.recordedAt,
-            data: json.encode(clip.toJson()),
-            filePath: clip.video.file?.path != null
-                ? p.basename(clip.video.file!.path)
-                : null,
-            thumbnailPath: clip.thumbnailPath != null
-                ? p.basename(clip.thumbnailPath!)
-                : null,
-          );
-        }
         successCount++;
       } catch (e) {
         Log.error(
