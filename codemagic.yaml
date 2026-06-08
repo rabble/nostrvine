@@ -410,7 +410,6 @@ workflows:
       - *check_ios_extension_signing_contract
       - *setup_code_signing_xcode
       - *clean_ios_workspace_state
-      - *install_flutterfire
       - *enable_spm
       - *prepare_ios_spm_packages
       - *pod_install
@@ -463,7 +462,6 @@ workflows:
       events: []
     scripts:
       - *clean_ios_workspace_state
-      - *install_flutterfire
       - *enable_spm
       - *flutter_pub_get
       - *pod_install
@@ -596,7 +594,6 @@ workflows:
       events: []
     scripts:
       - *clean_ios_workspace_state
-      - *install_flutterfire
       - *enable_spm
       - *flutter_pub_get
       - *pod_install
