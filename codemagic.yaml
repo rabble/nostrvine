@@ -219,6 +219,8 @@ definitions:
     - &upload_dsyms_to_crashlytics
       name: Upload dSYMs to Firebase Crashlytics
       script: |
+        # Upload dSYMs after archive so Xcode signing does not depend on a
+        # DerivedData-specific FlutterFire build phase path.
         DSYM_DIR="build/ios/archive/Runner.xcarchive/dSYMs"
 
         if [ ! -d "$DSYM_DIR" ]; then

@@ -134,6 +134,12 @@ void main() {
         findsOneWidget,
       );
       // Three boxes total: why / family / come-back-at-13.
+      await tester.scrollUntilVisible(
+        find.text(l10n.minorAccountReviewUnder13ComeBackTitle),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
       expect(
         find.text(l10n.minorAccountReviewUnder13ComeBackTitle),
         findsOneWidget,
