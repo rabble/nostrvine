@@ -406,18 +406,20 @@ class DmRepository {
   /// transaction integrity, and sync-boundary tracking apply
   /// automatically. Returns the raw events so the caller can advance its
   /// own pagination cursor by their outer `created_at`.
-  Future<List<Event>> _fetchHistoryPage({
+  Future<List<Event>?> _fetchHistoryPage({
     required int until,
     required int limit,
     required String subscriptionId,
+    String? pubkey,
   }) async {
+    final ownerPubkey = pubkey ?? _userPubkey;
     final filter = nostr_filter.Filter(
       kinds: [
         EventKind.giftWrap,
         EventKind.directMessage,
         EventKind.eventDeletion,
       ],
-      p: [_userPubkey],
+      p: [ownerPubkey],
       until: until,
       limit: limit,
     );
@@ -427,8 +429,10 @@ class DmRepository {
       subscriptionId: subscriptionId,
       useCache: false,
     );
+    if (pubkey != null && (_disposed || _userPubkey != pubkey)) return null;
 
     for (final event in events) {
+      if (pubkey != null && (_disposed || _userPubkey != pubkey)) return null;
       await _handleIncomingEvent(event);
     }
     return events;
@@ -476,7 +480,11 @@ class DmRepository {
     if (existing != null) return existing;
     final drain = _runHistoryDrain();
     _historyDrain = drain;
-    unawaited(drain.whenComplete(() => _historyDrain = null));
+    unawaited(
+      drain.whenComplete(() {
+        if (identical(_historyDrain, drain)) _historyDrain = null;
+      }),
+    );
     return drain;
   }
 
@@ -522,7 +530,9 @@ class DmRepository {
           until: cursor,
           limit: DmHistoryDrainConfig.pageSize,
           subscriptionId: 'dm_drain_${pubkey}_$page',
+          pubkey: pubkey,
         );
+        if (events == null) return;
         pagesRun++;
         totalEvents += events.length;
         if (events.isEmpty) {

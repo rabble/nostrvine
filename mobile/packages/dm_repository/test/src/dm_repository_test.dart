@@ -43,6 +43,7 @@ class _FakeDmSyncState implements DmSyncState {
   int? newestOverride;
   int? oldestOverride;
   bool drainCompleteOverride = false;
+  final List<String> markedCompletePubkeys = <String>[];
   final List<({String pubkey, int createdAt})> recorded =
       <({String pubkey, int createdAt})>[];
 
@@ -57,6 +58,7 @@ class _FakeDmSyncState implements DmSyncState {
 
   @override
   Future<void> markHistoryDrainComplete(String pubkey) async {
+    markedCompletePubkeys.add(pubkey);
     drainCompleteOverride = true;
   }
 
@@ -2331,6 +2333,87 @@ void main() {
         expect(capturedUntil, [100, 50, 49]);
         expect(syncState.drainCompleteOverride, isTrue);
       });
+
+      test(
+        'stale account-switch drain does not clear or process the new drain',
+        () async {
+          final syncState = _FakeDmSyncState()..oldestOverride = 100;
+          final repository = createRepository(syncState: syncState);
+          final oldQueryStarted = Completer<void>();
+          final newQueryStarted = Completer<void>();
+          final oldQueryRelease = Completer<void>();
+          final newQueryRelease = Completer<void>();
+          final queriedPubkeys = <String>[];
+
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((inv) async {
+            final filters =
+                inv.positionalArguments.first as List<nostr_filter.Filter>;
+            final pubkey = filters.single.p!.single;
+            queriedPubkeys.add(pubkey);
+
+            if (pubkey == _validPubkeyA) {
+              oldQueryStarted.complete();
+              await oldQueryRelease.future;
+              return [
+                Event(
+                  _validPubkeyA,
+                  EventKind.eventDeletion,
+                  [
+                    ['e', _rumorEventId],
+                  ],
+                  '',
+                  createdAt: 90,
+                ),
+              ];
+            }
+
+            newQueryStarted.complete();
+            await newQueryRelease.future;
+            return <Event>[];
+          });
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          final oldDrain = repository.backfillHistoryIfNeeded();
+          await oldQueryStarted.future;
+
+          repository.setCredentials(
+            userPubkey: _validPubkeyB,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
+          final newDrain = repository.backfillHistoryIfNeeded();
+          await newQueryStarted.future;
+
+          oldQueryRelease.complete();
+          await oldDrain;
+
+          // The old drain's whenComplete must not wipe the new in-flight drain.
+          expect(repository.backfillHistoryIfNeeded(), same(newDrain));
+
+          newQueryRelease.complete();
+          await newDrain;
+
+          expect(queriedPubkeys, [_validPubkeyA, _validPubkeyB]);
+          verifyNever(
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+          expect(syncState.markedCompletePubkeys, [_validPubkeyB]);
+        },
+      );
     });
 
     // -----------------------------------------------------------------
