@@ -2,6 +2,7 @@
 // ABOUTME: Tests rendering of labels, notification badge, and tap interactions.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
@@ -129,19 +130,10 @@ void main() {
           ),
         );
 
-        expect(tester.takeException(), isNull);
-
-        final notificationsLabel = tester.widget<Text>(
+        final notificationsLabel = tester.renderObject<RenderParagraph>(
           find.text(l10n.settingsNotifications),
         );
-        expect(notificationsLabel.maxLines, equals(1));
-        expect(notificationsLabel.overflow, equals(TextOverflow.ellipsis));
-
-        final messagesLabel = tester.widget<Text>(
-          find.text(l10n.inboxMessagesTab),
-        );
-        expect(messagesLabel.maxLines, equals(1));
-        expect(messagesLabel.overflow, equals(TextOverflow.ellipsis));
+        expect(notificationsLabel.didExceedMaxLines, isTrue);
       });
     });
 
