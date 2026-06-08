@@ -1,9 +1,14 @@
 import 'dart:io';
 
 import 'package:db_client/src/database/connection/connection_native.dart';
+import 'package:drift/drift.dart' show QueryExecutor;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
+import 'package:sqlite3/common.dart' show CommonDatabase;
 import 'package:sqlite3/sqlite3.dart';
+
+class _MockCipherDb extends Mock implements CommonDatabase {}
 
 void main() {
   group('prepareDatabaseFile', () {
@@ -402,6 +407,219 @@ void main() {
       expect(File(newPath).readAsBytesSync(), equals(const [7]));
       expect(File('$newPath-wal').existsSync(), isFalse);
       expect(File('$newPath-shm').existsSync(), isFalse);
+    });
+  });
+
+  group('formatCipherKeyPragma', () {
+    const validKey =
+        '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+
+    test('wraps a 64-hex key in the SQLCipher raw-key PRAGMA form', () {
+      expect(
+        formatCipherKeyPragma(validKey),
+        equals('PRAGMA key = "x\'$validKey\'";'),
+      );
+    });
+
+    test('accepts upper-case hex', () {
+      expect(
+        formatCipherKeyPragma(validKey.toUpperCase()),
+        equals('PRAGMA key = "x\'${validKey.toUpperCase()}\'";'),
+      );
+    });
+
+    test('rejects a key that is too short', () {
+      expect(() => formatCipherKeyPragma('abcd'), throwsArgumentError);
+    });
+
+    test('rejects a key with non-hex characters', () {
+      expect(() => formatCipherKeyPragma('z' * 64), throwsArgumentError);
+    });
+
+    test('rejects an empty key (no accidental plaintext open)', () {
+      expect(() => formatCipherKeyPragma(''), throwsArgumentError);
+    });
+
+    test('thrown ArgumentError never embeds the key material', () {
+      // Regression for the #4945 review finding: ArgumentError.value embeds the
+      // invalid value in toString(), which would leak cipher key material.
+      const malformedKey = 'deadbeef$validKey'; // 72 hex chars => invalid
+      expect(
+        () => formatCipherKeyPragma(malformedKey),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.toString(),
+            'toString',
+            isNot(contains(malformedKey)),
+          ),
+        ),
+      );
+    });
+  });
+
+  group('applyCipherKey', () {
+    const validKey =
+        '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+
+    test('fails closed when SQLCipher is not the linked library', () {
+      // The host test VM links plain sqlite3, on which PRAGMA cipher_version
+      // returns no rows. The connection must refuse rather than silently
+      // storing plaintext.
+      final db = sqlite3.openInMemory();
+      addTearDown(db.dispose);
+      expect(() => applyCipherKey(db, validKey), throwsStateError);
+    });
+
+    test('rejects a malformed key before touching the database', () {
+      final db = sqlite3.openInMemory();
+      addTearDown(db.dispose);
+      expect(() => applyCipherKey(db, 'not-a-key'), throwsArgumentError);
+    });
+
+    test('never leaks the key when the keying statement throws (#4945)', () {
+      // SqliteException.toString() appends the causing statement, which is the
+      // PRAGMA key containing the raw key. applyCipherKey must convert that to
+      // a key-free error before it can escape to Crashlytics.
+      final leaky = SqliteException(
+        26,
+        'file is not a database',
+        null,
+        formatCipherKeyPragma(validKey), // causing statement embeds the key
+      );
+      expect(leaky.toString(), contains(validKey)); // the source really leaks
+
+      final db = _MockCipherDb();
+      when(() => db.execute(any())).thenThrow(leaky);
+
+      expect(
+        () => applyCipherKey(db, validKey),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.toString(),
+            'toString',
+            isNot(contains(validKey)),
+          ),
+        ),
+      );
+    });
+  });
+
+  group('openEncryptedConnection', () {
+    const validKey =
+        '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+
+    test('throws ArgumentError for a malformed key at construction time', () {
+      expect(
+        () => openEncryptedConnection(rawKeyHex: 'too-short'),
+        throwsArgumentError,
+      );
+    });
+
+    test('returns a lazily-opened QueryExecutor for a well-formed key', () {
+      expect(
+        openEncryptedConnection(rawKeyHex: validKey),
+        isA<QueryExecutor>(),
+      );
+    });
+  });
+
+  group('migratePlaintextToEncrypted', () {
+    const validKey =
+        '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+    late Directory tempRoot;
+    late String dbPath;
+
+    setUp(() {
+      tempRoot = Directory.systemTemp.createTempSync(
+        'db_client_cipher_migration_test_',
+      );
+      dbPath = p.join(tempRoot.path, 'divine_db.db');
+    });
+
+    tearDown(() {
+      if (tempRoot.existsSync()) {
+        tempRoot.deleteSync(recursive: true);
+      }
+    });
+
+    test('returns noDatabase when no file exists', () async {
+      expect(
+        await migratePlaintextToEncrypted(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        ),
+        equals(CipherMigrationOutcome.noDatabase),
+      );
+    });
+
+    test('removes an empty plaintext database so a fresh encrypted one is '
+        'created on first open', () async {
+      sqlite3.open(dbPath).dispose(); // empty database, no user tables
+      expect(File(dbPath).existsSync(), isTrue);
+
+      final outcome = await migratePlaintextToEncrypted(
+        rawKeyHex: validKey,
+        databasePath: dbPath,
+      );
+
+      expect(outcome, equals(CipherMigrationOutcome.removedEmptyPlaintext));
+      expect(File(dbPath).existsSync(), isFalse);
+    });
+
+    test('classifies a non-database file as already encrypted', () async {
+      File(dbPath).writeAsBytesSync(List<int>.generate(64, (i) => i));
+
+      expect(
+        await migratePlaintextToEncrypted(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        ),
+        equals(CipherMigrationOutcome.alreadyEncrypted),
+      );
+    });
+
+    test('fails safely and preserves a populated plaintext DB when SQLCipher '
+        'is not linked', () async {
+      _createSqliteDatabase(dbPath, draftCount: 3);
+
+      final outcome = await migratePlaintextToEncrypted(
+        rawKeyHex: validKey,
+        databasePath: dbPath,
+      );
+
+      // No cipher library on the host VM, so the rekey cannot complete — the
+      // plaintext source must stay intact for retry on the next launch.
+      expect(outcome, equals(CipherMigrationOutcome.failed));
+      expect(File(dbPath).existsSync(), isTrue);
+      expect(_draftCount(dbPath), equals(3));
+    });
+
+    test('rejects a malformed key', () async {
+      _createSqliteDatabase(dbPath, draftCount: 1);
+      await expectLater(
+        migratePlaintextToEncrypted(rawKeyHex: 'bad', databasePath: dbPath),
+        throwsArgumentError,
+      );
+    });
+
+    test('resumes an interrupted swap (verified encrypted artifact present, '
+        'db absent)', () async {
+      // Simulate a force-kill after the plaintext was renamed to its backup
+      // but before the verified encrypted copy was moved into place: the
+      // .sqlcipher_migrating artifact exists and the db path is absent.
+      final encryptedPath = '$dbPath.sqlcipher_migrating';
+      _createSqliteDatabase(encryptedPath, draftCount: 2);
+      expect(File(dbPath).existsSync(), isFalse);
+
+      final outcome = await migratePlaintextToEncrypted(
+        rawKeyHex: validKey,
+        databasePath: dbPath,
+      );
+
+      expect(outcome, equals(CipherMigrationOutcome.migrated));
+      expect(File(dbPath).existsSync(), isTrue);
+      expect(File(encryptedPath).existsSync(), isFalse);
+      expect(_draftCount(dbPath), equals(2));
     });
   });
 }
