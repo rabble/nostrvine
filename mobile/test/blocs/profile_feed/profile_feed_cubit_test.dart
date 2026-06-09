@@ -386,6 +386,84 @@ void main() {
       expect(cubit.state.videos.single.id, 'a'); // retained
     });
 
+    test(
+      'loadMore recovers after a transient failure: the banner clears and the '
+      'next page appends',
+      () async {
+        final cubit = await buildReady(
+          _result(
+            [_video('a', createdAt: 3000)],
+            nextOffset: 50,
+            hasMore: true,
+          ),
+        );
+        addTearDown(cubit.close);
+
+        // First page throws: degraded banner, videos + offset retained.
+        h.stubAuthorFeedThrows(Exception('transient'));
+        cubit.add(const ProfileFeedLoadMoreRequested());
+        await pumpEventQueue();
+
+        expect(cubit.state.hasLoadMoreError, isTrue);
+        expect(cubit.state.videos.map((v) => v.id), ['a']);
+        expect(cubit.state.nextOffset, 50);
+
+        // Retry from the same offset succeeds: banner clears, page appends.
+        h.stubAuthorFeed(
+          _result(
+            [_video('b', createdAt: 2000)],
+            nextOffset: 100,
+            hasMore: false,
+          ),
+        );
+        cubit.add(const ProfileFeedLoadMoreRequested());
+        await pumpEventQueue();
+
+        expect(cubit.state.hasLoadMoreError, isFalse);
+        expect(cubit.state.videos.map((v) => v.id), ['a', 'b']);
+        expect(cubit.state.nextOffset, 100);
+        expect(cubit.state.hasMoreContent, isFalse);
+        expect(cubit.state.isLoadingMore, isFalse);
+      },
+    );
+
+    test(
+      'cold load -> loadMore -> realtime add compose in newest-first order',
+      () async {
+        // Cold load: first page, more available.
+        final cubit = await buildReady(
+          _result(
+            [_video('a', createdAt: 3000)],
+            nextOffset: 50,
+            hasMore: true,
+          ),
+        );
+        addTearDown(cubit.close);
+        expect(cubit.state.videos.map((v) => v.id), ['a']);
+
+        // loadMore appends an older page beneath the cold-load page.
+        h.stubAuthorFeed(
+          _result(
+            [_video('b', createdAt: 2000)],
+            nextOffset: 100,
+            hasMore: false,
+          ),
+        );
+        cubit.add(const ProfileFeedLoadMoreRequested());
+        await pumpEventQueue();
+        expect(cubit.state.videos.map((v) => v.id), ['a', 'b']);
+
+        // Realtime add slots the newest video ahead of the paginated list
+        // without disturbing the pagination cursor.
+        h.onNew!(_video('c', createdAt: 5000), _author);
+        await pumpEventQueue();
+
+        expect(cubit.state.videos.map((v) => v.id), ['c', 'a', 'b']);
+        expect(cubit.state.nextOffset, 100);
+        expect(cubit.state.hasMoreContent, isFalse);
+      },
+    );
+
     test('C5: Nostr-fallback loadMore preserves totalVideoCount / isInitialLoad '
         '/ isFetchingTotalCount', () async {
       // REST unavailable -> getAuthorFeed returns seed-only (nextOffset null).
