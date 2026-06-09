@@ -75,12 +75,14 @@ void main() {
       bool withLocalStorage = true,
       IsOnlineCallback? isOnline,
       QueueOfflineActionCallback? queueOfflineAction,
+      BlockedLikerFilter? blockFilter,
     }) {
       return LikesRepository(
         nostrClient: mockNostrClient,
         localStorage: withLocalStorage ? mockLocalStorage : null,
         isOnline: isOnline,
         queueOfflineAction: queueOfflineAction,
+        blockFilter: blockFilter,
       );
     }
 
@@ -2223,6 +2225,31 @@ void main() {
 
         expect(likers, hasLength(2));
         expect(likers, [likerB, likerA]);
+      });
+
+      test('excludes likers hidden by the block filter', () async {
+        final blockedReaction = createReaction(
+          id: 'reaction_blocked',
+          authorPubkey: likerA,
+          createdAt: 1700000100,
+        );
+        final allowedReaction = createReaction(
+          id: 'reaction_allowed',
+          authorPubkey: likerB,
+          createdAt: 1699999900,
+        );
+
+        mockQueryEventsSequence([
+          [blockedReaction, allowedReaction],
+          <Event>[],
+        ]);
+
+        repository = createRepository(
+          blockFilter: (pubkey) => pubkey == likerA,
+        );
+        expect(await repository.fetchEventLikers(eventId: targetEventId), [
+          likerB,
+        ]);
       });
 
       test('excludes pubkeys whose only reactions are downvotes', () async {

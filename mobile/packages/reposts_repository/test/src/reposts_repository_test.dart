@@ -1458,6 +1458,41 @@ void main() {
         expect(result, isEmpty);
       });
 
+      test('excludes reposters hidden by the block filter', () async {
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        wireQueryEvents(
+          eFilterEvents: [
+            createReposterEvent(
+              id: 'repost_blocked',
+              pubkey: 'blocked_reposter',
+              kind: EventKind.genericRepost,
+              createdAt: now,
+              tags: [
+                ['e', testEventId],
+              ],
+            ),
+            createReposterEvent(
+              id: 'repost_allowed',
+              pubkey: 'allowed_reposter',
+              kind: EventKind.genericRepost,
+              createdAt: now - 100,
+              tags: [
+                ['e', testEventId],
+              ],
+            ),
+          ],
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          blockFilter: (pubkey) => pubkey == 'blocked_reposter',
+        );
+
+        expect(await repository.fetchEventReposters(eventId: testEventId), [
+          'allowed_reposter',
+        ]);
+      });
+
       test('returns reposter pubkeys ordered by recency', () async {
         final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         wireQueryEvents(

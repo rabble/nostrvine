@@ -9,6 +9,7 @@ import 'dart:math';
 
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:reposts_repository/src/blocked_reposter_filter.dart';
 import 'package:reposts_repository/src/exceptions.dart';
 import 'package:reposts_repository/src/models/repost_record.dart';
 import 'package:reposts_repository/src/models/reposts_sync_result.dart';
@@ -59,18 +60,25 @@ class RepostsRepository {
   /// - [localStorage]: Optional local storage for persistence
   /// - [isOnline]: Optional callback to check connectivity status
   /// - [queueOfflineAction]: Optional callback to queue actions when offline
+  /// - [blockFilter]: Optional callback to hide blocked/muted users from
+  ///   engagement lists ([fetchEventReposters])
   RepostsRepository({
     required NostrClient nostrClient,
     RepostsLocalStorage? localStorage,
     IsOnlineCallback? isOnline,
     QueueOfflineRepostCallback? queueOfflineAction,
+    BlockedReposterFilter? blockFilter,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
        _isOnline = isOnline,
-       _queueOfflineAction = queueOfflineAction;
+       _queueOfflineAction = queueOfflineAction,
+       _blockFilter = blockFilter;
 
   final NostrClient _nostrClient;
   final RepostsLocalStorage? _localStorage;
+
+  /// Callback to hide blocked/muted users from engagement lists
+  final BlockedReposterFilter? _blockFilter;
 
   /// Callback to check if the device is online
   final IsOnlineCallback? _isOnline;
@@ -750,8 +758,9 @@ class RepostsRepository {
   /// the other.
   ///
   /// Filters out reposts deleted via Kind 5 deletion events from their
-  /// author. Pubkeys are deduplicated and ordered by repost recency,
-  /// most recent first.
+  /// author, and reposters hidden by the injected block filter
+  /// (blocked/muted users). Pubkeys are deduplicated and ordered by
+  /// repost recency, most recent first.
   ///
   /// Parameters:
   /// - [eventId]: Hex event ID of the target event (required).
@@ -825,6 +834,7 @@ class RepostsRepository {
       final orderedPubkeys = <String>[];
       final seen = <String>{};
       for (final event in liveReposts) {
+        if (_blockFilter?.call(event.pubkey) ?? false) continue;
         if (seen.add(event.pubkey)) {
           orderedPubkeys.add(event.pubkey);
         }

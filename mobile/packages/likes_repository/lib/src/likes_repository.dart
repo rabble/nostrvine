@@ -7,6 +7,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:likes_repository/src/blocked_liker_filter.dart';
 import 'package:likes_repository/src/exceptions.dart';
 import 'package:likes_repository/src/likes_local_storage.dart';
 import 'package:likes_repository/src/models/like_record.dart';
@@ -66,18 +67,25 @@ class LikesRepository {
   /// - [localStorage]: Optional local storage for persistence
   /// - [isOnline]: Optional callback to check connectivity status
   /// - [queueOfflineAction]: Optional callback to queue actions when offline
+  /// - [blockFilter]: Optional callback to hide blocked/muted users from
+  ///   engagement lists ([fetchEventLikers])
   LikesRepository({
     required NostrClient nostrClient,
     LikesLocalStorage? localStorage,
     IsOnlineCallback? isOnline,
     QueueOfflineActionCallback? queueOfflineAction,
+    BlockedLikerFilter? blockFilter,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
        _isOnline = isOnline,
-       _queueOfflineAction = queueOfflineAction;
+       _queueOfflineAction = queueOfflineAction,
+       _blockFilter = blockFilter;
 
   final NostrClient _nostrClient;
   final LikesLocalStorage? _localStorage;
+
+  /// Callback to hide blocked/muted users from engagement lists
+  final BlockedLikerFilter? _blockFilter;
 
   /// Callback to check if the device is online
   final IsOnlineCallback? _isOnline;
@@ -1162,6 +1170,7 @@ class LikesRepository {
   /// Filters out:
   /// - Reactions with content `'-'` (downvotes)
   /// - Reactions deleted via Kind 5 deletion events from their author
+  /// - Likers hidden by the injected block filter (blocked/muted users)
   ///
   /// Pubkeys are deduplicated (a user who liked via both `e` and `a` tags
   /// only appears once) and ordered by reaction recency, most recent first.
@@ -1241,6 +1250,7 @@ class LikesRepository {
       final likerPubkeys = <String>[];
       final seenPubkeys = <String>{};
       for (final event in survivors) {
+        if (_blockFilter?.call(event.pubkey) ?? false) continue;
         if (seenPubkeys.add(event.pubkey)) {
           likerPubkeys.add(event.pubkey);
         }
