@@ -6,6 +6,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart';
@@ -14,6 +15,7 @@ import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -89,9 +91,7 @@ void main() {
 
     testWidgets(
       'uses localized Following copy for an empty Following no-follow feed',
-      (
-        tester,
-      ) async {
+      (tester) async {
         await tester.pumpWidget(
           _buildEmptyFeedSubject(
             const VideoFeedBlocState(
@@ -162,9 +162,7 @@ void main() {
 
       await tester.tap(find.text('Explore Videos'));
 
-      verify(
-        () => router.go(ExploreScreen.pathForTab('popular')),
-      ).called(1);
+      verify(() => router.go(ExploreScreen.pathForTab('popular'))).called(1);
     });
 
     testWidgets('uses the design-system arrow on the Following empty CTA', (
@@ -231,6 +229,89 @@ void main() {
       await tester.pump(const Duration(seconds: 3));
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
+    });
+
+    testWidgets('passes restored home index to FeedVideos', (tester) async {
+      final videos = [
+        createTestVideoEvent(id: 'video-0'),
+        createTestVideoEvent(id: 'video-1'),
+        createTestVideoEvent(id: 'video-2'),
+      ];
+      final state = VideoFeedBlocState(
+        status: VideoFeedStatus.success,
+        videos: videos,
+      );
+      when(() => videoFeedBloc.state).thenReturn(state);
+      whenListen(
+        videoFeedBloc,
+        const Stream<VideoFeedBlocState>.empty(),
+        initialState: state,
+      );
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+              BlocProvider<VideoPlaybackStatusCubit>(
+                create: (_) => VideoPlaybackStatusCubit(),
+              ),
+              BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+            ],
+            child: const VideoFeedView(initialIndex: 2),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final feedVideos = tester.widget<FeedVideos>(find.byType(FeedVideos));
+      expect(feedVideos.currentIndex, 2);
+    });
+
+    testWidgets('records active video index for home tab restoration', (
+      tester,
+    ) async {
+      final videos = [
+        createTestVideoEvent(id: 'video-0'),
+        createTestVideoEvent(id: 'video-1'),
+      ];
+      final state = VideoFeedBlocState(
+        status: VideoFeedStatus.success,
+        videos: videos,
+      );
+      when(() => videoFeedBloc.state).thenReturn(state);
+      whenListen(
+        videoFeedBloc,
+        const Stream<VideoFeedBlocState>.empty(),
+        initialState: state,
+      );
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+              BlocProvider<VideoPlaybackStatusCubit>(
+                create: (_) => VideoPlaybackStatusCubit(),
+              ),
+              BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+            ],
+            child: const VideoFeedView(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final feedVideos = tester.widget<FeedVideos>(find.byType(FeedVideos));
+      feedVideos.onActiveVideoChanged!(videos[1], 1);
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(VideoFeedView)),
+      );
+      expect(
+        container.read(lastTabPositionProvider)[RouteType.home],
+        equals(1),
+      );
     });
   });
 }

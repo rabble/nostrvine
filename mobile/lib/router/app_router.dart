@@ -431,7 +431,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      // Shell keeps tab navigators alive
+      // Shell owns the shared scaffold and bottom navigation. Individual tab
+      // route state that must survive a child swap is restored explicitly from
+      // route params or tab-position providers.
       ShellRoute(
         builder: (context, state, child) {
           final location = state.uri.toString();
@@ -443,16 +445,23 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: VideoFeedPage.pathWithIndex,
             name: VideoFeedPage.routeName,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.home,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const VideoFeedPage(),
-                  settings: const RouteSettings(name: VideoFeedPage.routeName),
+            pageBuilder: (ctx, st) {
+              final rawIndex =
+                  int.tryParse(st.pathParameters['index'] ?? '') ?? 0;
+              final initialIndex = rawIndex < 0 ? 0 : rawIndex;
+              return NoTransitionPage(
+                key: st.pageKey,
+                child: Navigator(
+                  key: NavigatorKeys.home,
+                  onGenerateRoute: (r) => MaterialPageRoute(
+                    builder: (_) => VideoFeedPage(initialIndex: initialIndex),
+                    settings: const RouteSettings(
+                      name: VideoFeedPage.routeName,
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
 
           // EXPLORE tab - grid mode (no index)

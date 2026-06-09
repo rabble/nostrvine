@@ -49,6 +49,17 @@ class LastTabPosition extends Notifier<Map<RouteType, int>> {
     // For routes that always have an index (home, notifications, profile), default to 0
     return state[type] ?? 0;
   }
+
+  /// Records a tab position without forcing a route change.
+  ///
+  /// Home uses this while the user swipes between videos. Updating the URL for
+  /// every page change would rebuild the shell route and churn the feed, but
+  /// the bottom nav still needs the latest index when returning to Home.
+  void recordPosition(RouteType type, int index) {
+    final normalized = index < 0 ? 0 : index;
+    if (state[type] == normalized) return;
+    state = {...state, type: normalized};
+  }
 }
 
 final lastTabPositionProvider =

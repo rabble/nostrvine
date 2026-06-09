@@ -93,16 +93,9 @@ void main() {
   // pulling in the full app provider graph.
   group('Path-parameter round-trip (#3413)', () {
     Future<
-      ({
-        String? capturedTag,
-        String? capturedQuery,
-        bool? requestFocusOnMount,
-      })
+      ({String? capturedTag, String? capturedQuery, bool? requestFocusOnMount})
     >
-    navigateAndCapture(
-      WidgetTester tester,
-      String location,
-    ) async {
+    navigateAndCapture(WidgetTester tester, String location) async {
       String? capturedTag;
       String? capturedQuery;
       bool? requestFocusOnMount;
@@ -110,10 +103,7 @@ void main() {
       final router = GoRouter(
         initialLocation: '/',
         routes: [
-          GoRoute(
-            path: '/',
-            builder: (_, _) => const SizedBox.shrink(),
-          ),
+          GoRoute(path: '/', builder: (_, _) => const SizedBox.shrink()),
           GoRoute(
             path: HashtagScreenRouter.path,
             builder: (ctx, st) {
@@ -126,9 +116,7 @@ void main() {
             builder: (ctx, st) {
               capturedQuery = '';
               requestFocusOnMount =
-                  SearchResultsPage.requestFocusOnMountForRoute(
-                    st.uri,
-                  );
+                  SearchResultsPage.requestFocusOnMountForRoute(st.uri);
               return const SizedBox.shrink();
             },
           ),
@@ -137,9 +125,7 @@ void main() {
             builder: (ctx, st) {
               capturedQuery = st.pathParameters['query'];
               requestFocusOnMount =
-                  SearchResultsPage.requestFocusOnMountForRoute(
-                    st.uri,
-                  );
+                  SearchResultsPage.requestFocusOnMountForRoute(st.uri);
               return const SizedBox.shrink();
             },
           ),
@@ -186,19 +172,18 @@ void main() {
       },
     );
 
-    testWidgets(
-      'pathForEmptyQuery opens search without a prefilled query',
-      (tester) async {
-        final result = await navigateAndCapture(
-          tester,
-          SearchResultsPage.pathForEmptyQuery(requestFocusOnMount: true),
-        );
+    testWidgets('pathForEmptyQuery opens search without a prefilled query', (
+      tester,
+    ) async {
+      final result = await navigateAndCapture(
+        tester,
+        SearchResultsPage.pathForEmptyQuery(requestFocusOnMount: true),
+      );
 
-        expect(tester.takeException(), isNull);
-        expect(result.capturedQuery, isEmpty);
-        expect(result.requestFocusOnMount, isTrue);
-      },
-    );
+      expect(tester.takeException(), isNull);
+      expect(result.capturedQuery, isEmpty);
+      expect(result.requestFocusOnMount, isTrue);
+    });
 
     testWidgets(
       'pathForQuery with literal % round-trips through go_router decode',
@@ -206,10 +191,7 @@ void main() {
         const original = '100%';
         final result = await navigateAndCapture(
           tester,
-          SearchResultsPage.pathForQuery(
-            original,
-            requestFocusOnMount: false,
-          ),
+          SearchResultsPage.pathForQuery(original, requestFocusOnMount: false),
         );
 
         expect(tester.takeException(), isNull);
@@ -223,10 +205,7 @@ void main() {
         const original = '50% off deals';
         final result = await navigateAndCapture(
           tester,
-          SearchResultsPage.pathForQuery(
-            original,
-            requestFocusOnMount: false,
-          ),
+          SearchResultsPage.pathForQuery(original, requestFocusOnMount: false),
         );
 
         expect(tester.takeException(), isNull);
@@ -234,23 +213,19 @@ void main() {
       },
     );
 
-    testWidgets(
-      'pathForQuery can opt a prefilled route into mount focus',
-      (tester) async {
-        const original = 'alice';
-        final result = await navigateAndCapture(
-          tester,
-          SearchResultsPage.pathForQuery(
-            original,
-            requestFocusOnMount: true,
-          ),
-        );
+    testWidgets('pathForQuery can opt a prefilled route into mount focus', (
+      tester,
+    ) async {
+      const original = 'alice';
+      final result = await navigateAndCapture(
+        tester,
+        SearchResultsPage.pathForQuery(original, requestFocusOnMount: true),
+      );
 
-        expect(tester.takeException(), isNull);
-        expect(result.capturedQuery, equals(original));
-        expect(result.requestFocusOnMount, isTrue);
-      },
-    );
+      expect(tester.takeException(), isNull);
+      expect(result.capturedQuery, equals(original));
+      expect(result.requestFocusOnMount, isTrue);
+    });
 
     testWidgets(
       'pathForQuery keeps a prefilled route unfocused when not opted in',
@@ -258,10 +233,7 @@ void main() {
         const original = 'alice';
         final result = await navigateAndCapture(
           tester,
-          SearchResultsPage.pathForQuery(
-            original,
-            requestFocusOnMount: false,
-          ),
+          SearchResultsPage.pathForQuery(original, requestFocusOnMount: false),
         );
 
         expect(tester.takeException(), isNull);
@@ -280,15 +252,40 @@ void main() {
   // builder regions reintroduce Uri.decodeComponent — the exact regression
   // that originally caused the crash.
   group('Builder regression guard (#3413)', () {
+    test('home builder threads route index into VideoFeedPage', () {
+      final source = File('lib/router/app_router.dart').readAsStringSync();
+
+      final homePathOffset = source.indexOf(
+        'path: VideoFeedPage.pathWithIndex',
+      );
+      final explorePathOffset = source.indexOf('path: ExploreScreen.path');
+      expect(
+        homePathOffset,
+        isNonNegative,
+        reason:
+            'Home GoRoute marker not found in app_router.dart. '
+            'Update this regression test to match the new marker.',
+      );
+      expect(
+        explorePathOffset,
+        greaterThan(homePathOffset),
+        reason:
+            'Explore GoRoute marker not found after Home GoRoute. '
+            'Update this regression test to match the new layout.',
+      );
+
+      final homeRegion = source.substring(homePathOffset, explorePathOffset);
+      expect(homeRegion, contains("st.pathParameters['index']"));
+      expect(homeRegion, contains('VideoFeedPage(initialIndex: initialIndex)'));
+    });
+
     test('hashtag and search builders do not call Uri.decodeComponent', () {
       final source = File('lib/router/app_router.dart').readAsStringSync();
 
       final hashtagPathOffset = source.indexOf(
         'path: HashtagScreenRouter.path',
       );
-      final searchPathOffset = source.indexOf(
-        'path: SearchResultsPage.path',
-      );
+      final searchPathOffset = source.indexOf('path: SearchResultsPage.path');
       expect(
         hashtagPathOffset,
         isNonNegative,
@@ -342,9 +339,7 @@ void main() {
             'instead of relying on widget defaults.',
       );
       expect(
-        searchRegion.contains(
-          'SearchResultsPage.requestFocusOnMountForRoute(',
-        ),
+        searchRegion.contains('SearchResultsPage.requestFocusOnMountForRoute('),
         isTrue,
         reason:
             'Search-results builder must derive focus from the routed URI so '

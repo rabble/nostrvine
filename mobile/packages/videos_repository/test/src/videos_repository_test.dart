@@ -9790,53 +9790,121 @@ void main() {
         ).called(1);
       });
 
-      test(
-        'passes viewer country hint to recommendations endpoint',
-        () async {
-          final recommended = _createVideoStats(
-            id: 'country-recommended-video',
-            pubkey: 'recommended-pubkey',
-            dTag: 'recommended-dtag',
-            videoUrl: 'https://example.com/country-recommended.mp4',
+      test('caches refreshed recommendations for feed remounts', () async {
+        var callCount = 0;
+        when(
+          () => mockFunnelcakeClient.getRecommendations(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            cursor: any(named: 'cursor'),
+            fallback: any(named: 'fallback'),
+            category: any(named: 'category'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
+          ),
+        ).thenAnswer((_) async {
+          callCount += 1;
+          return RecommendationsResponse(
+            videos: [
+              _createVideoStats(
+                id: 'recommended-video-$callCount',
+                pubkey: 'recommended-pubkey-$callCount',
+                dTag: 'recommended-dtag-$callCount',
+                videoUrl: 'https://example.com/recommended-$callCount.mp4',
+              ),
+            ],
+            source: 'personalized',
+            nextCursor: 'cursor-$callCount',
+            hasMore: true,
           );
-          when(
-            () => mockFunnelcakeClient.getRecommendations(
-              pubkey: any(named: 'pubkey'),
-              limit: any(named: 'limit'),
-              fallback: any(named: 'fallback'),
-              category: any(named: 'category'),
-              preferredLanguages: any(named: 'preferredLanguages'),
-              viewerCountry: any(named: 'viewerCountry'),
-            ),
-          ).thenAnswer(
-            (_) async => RecommendationsResponse(
-              videos: [recommended],
-              source: 'personalized',
-            ),
-          );
+        });
 
-          final repo = VideosRepository(
-            nostrClient: mockNostrClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+        final feedCache = InMemoryFeedCache();
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          inMemoryFeedCache: feedCache,
+        );
 
-          final result = await repo.getRecommendedVideos(
-            userPubkey: 'user-pubkey',
+        final refreshed = await repo.getRecommendedVideos(
+          userPubkey: 'user-pubkey',
+          skipCache: true,
+        );
+        final cachedAfterRefresh = await repo.getRecommendedVideos(
+          userPubkey: 'user-pubkey',
+        );
+        final secondRefresh = await repo.getRecommendedVideos(
+          userPubkey: 'user-pubkey',
+          skipCache: true,
+        );
+        final cachedAfterSecondRefresh = await repo.getRecommendedVideos(
+          userPubkey: 'user-pubkey',
+        );
+
+        expect(refreshed.videos.single.id, equals('recommended-video-1'));
+        expect(
+          cachedAfterRefresh.videos.single.id,
+          equals('recommended-video-1'),
+        );
+        expect(secondRefresh.videos.single.id, equals('recommended-video-2'));
+        expect(
+          cachedAfterSecondRefresh.videos.single.id,
+          equals('recommended-video-2'),
+        );
+        expect(cachedAfterSecondRefresh.paginationCursor, equals('cursor-2'));
+        expect(cachedAfterSecondRefresh.hasMore, isTrue);
+        verify(
+          () => mockFunnelcakeClient.getRecommendations(
+            pubkey: 'user-pubkey',
+            limit: any(named: 'limit'),
+          ),
+        ).called(2);
+      });
+
+      test('passes viewer country hint to recommendations endpoint', () async {
+        final recommended = _createVideoStats(
+          id: 'country-recommended-video',
+          pubkey: 'recommended-pubkey',
+          dTag: 'recommended-dtag',
+          videoUrl: 'https://example.com/country-recommended.mp4',
+        );
+        when(
+          () => mockFunnelcakeClient.getRecommendations(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            fallback: any(named: 'fallback'),
+            category: any(named: 'category'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
+          ),
+        ).thenAnswer(
+          (_) async => RecommendationsResponse(
+            videos: [recommended],
+            source: 'personalized',
+          ),
+        );
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repo.getRecommendedVideos(
+          userPubkey: 'user-pubkey',
+          limit: 10,
+          viewerCountry: 'BR',
+        );
+
+        expect(result.videos, hasLength(1));
+        expect(result.videos.single.id, equals('country-recommended-video'));
+        verify(
+          () => mockFunnelcakeClient.getRecommendations(
+            pubkey: 'user-pubkey',
             limit: 10,
             viewerCountry: 'BR',
-          );
-
-          expect(result.videos, hasLength(1));
-          expect(result.videos.single.id, equals('country-recommended-video'));
-          verify(
-            () => mockFunnelcakeClient.getRecommendations(
-              pubkey: 'user-pubkey',
-              limit: 10,
-              viewerCountry: 'BR',
-            ),
-          ).called(1);
-        },
-      );
+          ),
+        ).called(1);
+      });
 
       test(
         'falls back to popular videos when no pubkey is available',
