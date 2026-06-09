@@ -6,6 +6,62 @@ import 'package:models/models.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 
 void main() {
+  group('NotificationServiceEnhanced subscription filters', () {
+    const userPubkey = 'user_pubkey';
+    final now = DateTime.utc(2026, 6, 9, 12);
+    final expectedSince =
+        now.subtract(const Duration(minutes: 5)).millisecondsSinceEpoch ~/ 1000;
+
+    test('scopes reactions by recipient p tag and bounded replay window', () {
+      final json = NotificationServiceEnhanced.reactionNotificationFilter(
+        userPubkey,
+        now: now,
+      ).toJson();
+
+      expect(json['kinds'], equals([7]));
+      expect(json['#p'], equals([userPubkey]));
+      expect(json['since'], equals(expectedSince));
+      expect(json['limit'], equals(200));
+    });
+
+    test('scopes NIP-22 comments by uppercase root author P tag', () {
+      final json = NotificationServiceEnhanced.commentNotificationFilter(
+        userPubkey,
+        now: now,
+      ).toJson();
+
+      expect(json['kinds'], equals([1111]));
+      expect(json['#P'], equals([userPubkey]));
+      expect(json['#p'], isNull);
+      expect(json['since'], equals(expectedSince));
+      expect(json['limit'], equals(200));
+    });
+
+    test('scopes follows, mentions, and reposts by recipient p tag', () {
+      final filters = [
+        NotificationServiceEnhanced.followNotificationFilter(
+          userPubkey,
+          now: now,
+        ),
+        NotificationServiceEnhanced.mentionNotificationFilter(
+          userPubkey,
+          now: now,
+        ),
+        NotificationServiceEnhanced.repostNotificationFilter(
+          userPubkey,
+          now: now,
+        ),
+      ];
+
+      for (final filter in filters) {
+        final json = filter.toJson();
+        expect(json['#p'], equals([userPubkey]));
+        expect(json['since'], equals(expectedSince));
+        expect(json['limit'], equals(200));
+      }
+    });
+  });
+
   group('NotificationServiceEnhanced Race Condition Tests', () {
     late NotificationServiceEnhanced service;
 

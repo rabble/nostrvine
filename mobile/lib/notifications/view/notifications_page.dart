@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
+import 'package:openvine/notifications/services/notification_refresh_coordinator.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
 import 'package:openvine/providers/app_providers.dart';
 
@@ -63,7 +64,7 @@ class NotificationsPage extends ConsumerWidget {
         notificationRepository: notificationRepository,
         followRepository: followRepository,
       )..add(const NotificationFeedStarted()),
-      child: const NotificationsView(),
+      child: const NotificationFocusRefresh(child: NotificationsView()),
     );
   }
 }

@@ -31,14 +31,12 @@ void main() {
 
   group(NotificationRealtimeBridge, () {
     late _MockNotificationRepository repository;
-    late StreamController<NotificationModel> controller;
+    late StreamController<RelayNotification> controller;
 
     setUp(() {
       repository = _MockNotificationRepository();
-      controller = StreamController<NotificationModel>.broadcast();
-      when(
-        () => repository.acceptRealtime(any()),
-      ).thenAnswer((_) async {});
+      controller = StreamController<RelayNotification>.broadcast();
+      when(() => repository.acceptRealtime(any())).thenAnswer((_) async {});
     });
 
     tearDown(() async {
@@ -50,33 +48,35 @@ void main() {
       stream: controller.stream,
     );
 
-    NotificationModel makeModel({
+    RelayNotification makeRelayNotification({
       String id = 'evt_1',
       String actorPubkey = 'pubkey_alice',
-      NotificationType type = NotificationType.like,
-      String message = 'Alice liked your video',
-      Map<String, dynamic>? metadata,
+      String notificationType = 'reaction',
+      int sourceKind = 7,
+      String? content,
       String? targetEventId,
       String? targetVideoThumbnail,
     }) {
-      return NotificationModel(
+      return RelayNotification(
         id: id,
-        type: type,
-        actorPubkey: actorPubkey,
-        message: message,
-        timestamp: DateTime(2025),
-        targetEventId: targetEventId,
-        targetVideoThumbnail: targetVideoThumbnail,
-        metadata: metadata,
+        sourcePubkey: actorPubkey,
+        sourceEventId: id,
+        sourceKind: sourceKind,
+        notificationType: notificationType,
+        createdAt: DateTime(2025),
+        read: false,
+        referencedEventId: targetEventId,
+        content: content,
+        referencedVideoThumbnail: targetVideoThumbnail,
       );
     }
 
-    test('forwards a NotificationModel to acceptRealtime', () async {
+    test('forwards a RelayNotification to acceptRealtime', () async {
       final bridge = buildBridge();
       addTearDown(bridge.dispose);
 
       controller.add(
-        makeModel(
+        makeRelayNotification(
           targetEventId: 'video_evt_1',
           targetVideoThumbnail: 'https://example.com/thumb.jpg',
         ),
@@ -84,47 +84,44 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       final captured =
-          verify(
-                () => repository.acceptRealtime(captureAny()),
-              ).captured.single
+          verify(() => repository.acceptRealtime(captureAny())).captured.single
               as RelayNotification;
       expect(captured.id, equals('evt_1'));
       expect(captured.sourcePubkey, equals('pubkey_alice'));
       expect(captured.notificationType, equals('reaction'));
       expect(captured.sourceKind, equals(7));
       expect(captured.referencedEventId, equals('video_evt_1'));
-      expect(captured.isReferencedVideo, isTrue);
     });
 
     test('cancels the subscription on dispose', () async {
       final bridge = buildBridge();
 
-      controller.add(makeModel(id: 'before_dispose'));
+      controller.add(makeRelayNotification(id: 'before_dispose'));
       await Future<void>.delayed(Duration.zero);
 
       await bridge.dispose();
 
-      controller.add(makeModel(id: 'after_dispose'));
+      controller.add(makeRelayNotification(id: 'after_dispose'));
       await Future<void>.delayed(Duration.zero);
 
       verify(() => repository.acceptRealtime(any())).called(1);
     });
 
     test('swallows repository errors so the stream stays alive', () async {
-      when(() => repository.acceptRealtime(any())).thenThrow(
-        StateError('repo blew up'),
-      );
+      when(
+        () => repository.acceptRealtime(any()),
+      ).thenThrow(StateError('repo blew up'));
 
       final bridge = buildBridge();
       addTearDown(bridge.dispose);
 
-      controller.add(makeModel(id: 'first'));
+      controller.add(makeRelayNotification(id: 'first'));
       await Future<void>.delayed(Duration.zero);
 
       // Subsequent emissions still flow through — the listener wasn't
       // dropped by the prior throw.
       when(() => repository.acceptRealtime(any())).thenAnswer((_) async {});
-      controller.add(makeModel(id: 'second'));
+      controller.add(makeRelayNotification(id: 'second'));
       await Future<void>.delayed(Duration.zero);
 
       verify(() => repository.acceptRealtime(any())).called(2);
@@ -137,55 +134,49 @@ void main() {
       controller.addError(StateError('stream blew up'));
       await Future<void>.delayed(Duration.zero);
 
-      controller.add(makeModel(id: 'after_error'));
+      controller.add(makeRelayNotification(id: 'after_error'));
       await Future<void>.delayed(Duration.zero);
 
       verify(() => repository.acceptRealtime(any())).called(1);
     });
 
     group('modelToRelay', () {
-      test(
-        'preserves the raw comment body from metadata, not the synthesized '
-        'message',
-        () {
-          final relay = NotificationRealtimeBridge.modelToRelay(
-            NotificationModel(
-              id: 'evt_comment',
-              type: NotificationType.comment,
-              actorPubkey: 'pubkey_alice',
-              message: 'Alice commented on your video',
-              timestamp: DateTime(2025),
-              targetEventId: 'video_evt_1',
-              metadata: const {'comment': 'nice clip!'},
-            ),
-          );
+      test('preserves the raw comment body from metadata, not the synthesized '
+          'message', () {
+        final relay = NotificationRealtimeBridge.modelToRelay(
+          NotificationModel(
+            id: 'evt_comment',
+            type: NotificationType.comment,
+            actorPubkey: 'pubkey_alice',
+            message: 'Alice commented on your video',
+            timestamp: DateTime(2025),
+            targetEventId: 'video_evt_1',
+            metadata: const {'comment': 'nice clip!'},
+          ),
+        );
 
-          expect(relay.content, equals('nice clip!'));
-          expect(relay.notificationType, equals('comment'));
-          expect(relay.sourceKind, equals(1111));
-        },
-      );
+        expect(relay.content, equals('nice clip!'));
+        expect(relay.notificationType, equals('comment'));
+        expect(relay.sourceKind, equals(1111));
+      });
 
-      test(
-        'preserves the raw mention text from metadata, not the synthesized '
-        'message',
-        () {
-          final relay = NotificationRealtimeBridge.modelToRelay(
-            NotificationModel(
-              id: 'evt_mention',
-              type: NotificationType.mention,
-              actorPubkey: 'pubkey_alice',
-              message: 'Alice mentioned you',
-              timestamp: DateTime(2025),
-              metadata: const {'text': 'hey @you check this out'},
-            ),
-          );
+      test('preserves the raw mention text from metadata, not the synthesized '
+          'message', () {
+        final relay = NotificationRealtimeBridge.modelToRelay(
+          NotificationModel(
+            id: 'evt_mention',
+            type: NotificationType.mention,
+            actorPubkey: 'pubkey_alice',
+            message: 'Alice mentioned you',
+            timestamp: DateTime(2025),
+            metadata: const {'text': 'hey @you check this out'},
+          ),
+        );
 
-          expect(relay.content, equals('hey @you check this out'));
-          expect(relay.notificationType, equals('mention'));
-          expect(relay.sourceKind, equals(1));
-        },
-      );
+        expect(relay.content, equals('hey @you check this out'));
+        expect(relay.notificationType, equals('mention'));
+        expect(relay.sourceKind, equals(1));
+      });
 
       test(
         'falls back to metadata[content] when type-specific key is absent',

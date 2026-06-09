@@ -1054,6 +1054,9 @@ class NotificationRepository {
       if (!isVideoAnchored(kind)) continue;
       final eventId = _videoAnchorEventId(kind, n);
       if (eventId == null || eventId.isEmpty) continue;
+      if (n.requiresReferencedVideoMetadata && videosById[eventId] == null) {
+        continue;
+      }
       if (_hasKnownReferencedVideoOwnerMismatch(
         referencedVideoEventId: eventId,
         videosById: videosById,
@@ -1245,6 +1248,7 @@ class NotificationRepository {
     if (isVideoAnchored) {
       if (referenced == null || referenced.isEmpty) return null;
       final video = videosById[referenced];
+      if (raw.requiresReferencedVideoMetadata && video == null) return null;
       if (_hasKnownReferencedVideoOwnerMismatch(
         referencedVideoEventId: referenced,
         videosById: videosById,

@@ -37,6 +37,9 @@ class Filter {
   /// Format: `kind:pubkey:d-tag`
   List<String>? uppercaseA;
 
+  /// a list of pubkeys referenced in an uppercase "P" tag (NIP-22 root author)
+  List<String>? uppercaseP;
+
   /// a list of kind values that are referenced in an uppercase "K" tag (NIP-22 root kind)
   List<String>? uppercaseK;
 
@@ -65,6 +68,7 @@ class Filter {
     this.a,
     this.uppercaseE,
     this.uppercaseA,
+    this.uppercaseP,
     this.uppercaseK,
     this.since,
     this.until,
@@ -87,6 +91,7 @@ class Filter {
     a = json['#a'] == null ? null : List<String>.from(json['#a']);
     uppercaseE = json['#E'] == null ? null : List<String>.from(json['#E']);
     uppercaseA = json['#A'] == null ? null : List<String>.from(json['#A']);
+    uppercaseP = json['#P'] == null ? null : List<String>.from(json['#P']);
     uppercaseK = json['#K'] == null ? null : List<String>.from(json['#K']);
     since = json['since'];
     until = json['until'];
@@ -129,6 +134,9 @@ class Filter {
     }
     if (uppercaseA != null) {
       data['#A'] = uppercaseA;
+    }
+    if (uppercaseP != null) {
+      data['#P'] = uppercaseP;
     }
     if (uppercaseK != null) {
       data['#K'] = uppercaseK;
@@ -173,6 +181,7 @@ class Filter {
     List<String> as_ = [];
     List<String> uppercaseEs = [];
     List<String> uppercaseAs = [];
+    List<String> uppercasePs = [];
     List<String> uppercaseKs = [];
     for (var tag in event.tags) {
       if (tag.length > 1) {
@@ -195,6 +204,8 @@ class Filter {
           uppercaseEs.add(v);
         } else if (k == "A") {
           uppercaseAs.add(v);
+        } else if (k == "P") {
+          uppercasePs.add(v);
         } else if (k == "K") {
           uppercaseKs.add(v);
         }
@@ -254,6 +265,13 @@ class Filter {
           return uppercaseA!.contains(v);
         })))) {
       // filter query A but As don't contains A.
+      return false;
+    }
+    if (uppercaseP != null &&
+        (!(uppercasePs.any((v) {
+          return uppercaseP!.contains(v);
+        })))) {
+      // filter query P but Ps don't contains P.
       return false;
     }
     if (uppercaseK != null &&

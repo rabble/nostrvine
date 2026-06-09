@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/notifications/services/notification_refresh_coordinator.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -121,6 +122,11 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
         // dropped by iOS/Android when app is backgrounded. Without this,
         // subscriptions sent to stale sockets will timeout (30s) with no response.
         _reconnectRelays();
+        unawaited(
+          ref
+              .read(notificationRefreshCoordinatorProvider)
+              ?.refresh(reason: NotificationRefreshReason.appResume),
+        );
         unawaited(context.read<InviteStatusCubit?>()?.load());
 
         // Don't force resume playback - let visibility detectors naturally trigger

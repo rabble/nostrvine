@@ -12,6 +12,7 @@ import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
+import 'package:openvine/notifications/services/notification_refresh_coordinator.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
@@ -51,7 +52,9 @@ class InboxNotificationsPage extends ConsumerWidget {
         notificationRepository: notificationRepository,
         followRepository: followRepository,
       )..add(const NotificationFeedStarted()),
-      child: const _InboxNotificationsScaffold(),
+      child: const NotificationFocusRefresh(
+        child: _InboxNotificationsScaffold(),
+      ),
     );
   }
 }

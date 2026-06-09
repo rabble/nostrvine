@@ -46,24 +46,25 @@ final notificationRealtimeBridgeProvider =
 class NotificationRealtimeBridge {
   /// Creates a bridge and starts listening immediately.
   ///
-  /// [stream] defaults to `NotificationServiceEnhanced.instance.onNewNotification`
-  /// in production. Tests inject a controlled stream so the bridge can be
+  /// [stream] defaults to
+  /// `NotificationServiceEnhanced.instance.onRealtimeNotification` in
+  /// production. Tests inject a controlled stream so the bridge can be
   /// exercised without driving the WS service singleton.
   NotificationRealtimeBridge({
     required NotificationRepository repository,
-    Stream<NotificationModel>? stream,
+    Stream<RelayNotification>? stream,
   }) : _repository = repository {
     _subscription =
-        (stream ?? NotificationServiceEnhanced.instance.onNewNotification)
-            .listen(_onModel, onError: _onError);
+        (stream ?? NotificationServiceEnhanced.instance.onRealtimeNotification)
+            .listen(_onRelayNotification, onError: _onError);
   }
 
   final NotificationRepository _repository;
-  StreamSubscription<NotificationModel>? _subscription;
+  StreamSubscription<RelayNotification>? _subscription;
 
-  Future<void> _onModel(NotificationModel model) async {
+  Future<void> _onRelayNotification(RelayNotification notification) async {
     try {
-      await _repository.acceptRealtime(modelToRelay(model));
+      await _repository.acceptRealtime(notification);
     } catch (e, s) {
       Log.error(
         'NotificationRealtimeBridge: failed to accept realtime: $e',

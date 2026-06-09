@@ -20,6 +20,7 @@ class RelayNotification {
     this.referencedDTag,
     this.rootEventId,
     this.targetCommentId,
+    this.requiresReferencedVideoMetadata = false,
   });
 
   /// Parses a notification payload from the FunnelCake API.
@@ -130,6 +131,15 @@ class RelayNotification {
 
   /// Comment event ID included by Funnelcake for NIP-22 comment notifications.
   final String? targetCommentId;
+
+  /// Whether the client must verify [referencedEventId] with video metadata
+  /// before treating this as a video-anchored notification.
+  ///
+  /// REST payloads can set [isReferencedVideo] from the server's
+  /// `referenced_video` object. Realtime Nostr events only carry tags, so the
+  /// mobile client marks those events as requiring a successful metadata lookup
+  /// before rendering "liked/commented/reposted your video".
+  final bool requiresReferencedVideoMetadata;
 
   /// Stable dedup key -- falls back to sourceEventId if id is empty.
   String get dedupeKey => id.isNotEmpty ? id : sourceEventId;

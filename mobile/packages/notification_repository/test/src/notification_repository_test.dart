@@ -118,6 +118,7 @@ void main() {
     String? targetCommentId,
     String? content,
     bool isReferencedVideo = true,
+    bool requiresReferencedVideoMetadata = false,
   }) {
     return RelayNotification(
       id: id,
@@ -133,6 +134,7 @@ void main() {
       targetCommentId: targetCommentId,
       content: content,
       isReferencedVideo: isReferencedVideo,
+      requiresReferencedVideoMetadata: requiresReferencedVideoMetadata,
     );
   }
 
@@ -2480,6 +2482,7 @@ void main() {
         String? rootEventId,
         String? targetCommentId,
         bool isReferencedVideo = true,
+        bool requiresReferencedVideoMetadata = false,
       }) {
         return RelayNotification(
           id: id,
@@ -2494,6 +2497,7 @@ void main() {
           rootEventId: rootEventId,
           targetCommentId: targetCommentId,
           isReferencedVideo: isReferencedVideo,
+          requiresReferencedVideoMetadata: requiresReferencedVideoMetadata,
         );
       }
 
@@ -2581,6 +2585,32 @@ void main() {
         final video = result! as VideoNotification;
         expect(video.videoAddressableId, isNull);
         expect(video.videoEventId, equals('video_x'));
+      });
+
+      test('drops unverified realtime video notification when video metadata '
+          'cannot confirm the target', () async {
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+
+        final result = await repository.enrichOne(
+          raw(requiresReferencedVideoMetadata: true),
+        );
+
+        expect(result, isNull);
+      });
+
+      test('accepts unverified realtime video notification after metadata '
+          'confirms recipient ownership', () async {
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+        stubVideoStats('video_x', makeVideoStats(id: 'video_x'));
+
+        final result = await repository.enrichOne(
+          raw(requiresReferencedVideoMetadata: true),
+        );
+
+        expect(result, isA<VideoNotification>());
+        final video = result! as VideoNotification;
+        expect(video.videoEventId, equals('video_x'));
+        expect(video.actors.single.displayName, equals('Alice'));
       });
 
       test('builds the realtime addressable id for a rootEventId-anchored '
