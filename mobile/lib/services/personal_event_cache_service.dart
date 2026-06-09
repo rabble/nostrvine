@@ -17,6 +17,8 @@ class PersonalEventCacheService {
   Box<dynamic>? _eventsBox;
   Box<dynamic>? _metadataBox;
   bool _isInitialized = false;
+  bool _isDisposed = false;
+  int _initializationToken = 0;
   String? _currentUserPubkey;
   final List<Event> _pendingEventWrites = <Event>[];
 
@@ -25,19 +27,34 @@ class PersonalEventCacheService {
 
   /// Initialize the personal event cache
   Future<void> initialize(String userPubkey) async {
+    _isDisposed = false;
+    final initializationToken = ++_initializationToken;
+
     if (_isInitialized && _currentUserPubkey == userPubkey) {
       await _flushPendingEventWrites();
       return;
     }
 
+    Box<dynamic>? eventsBox;
+    Box<dynamic>? metadataBox;
+
     try {
       _currentUserPubkey = userPubkey;
 
       // Try to open the events box
-      _eventsBox = await Hive.openBox<dynamic>(_boxName);
+      eventsBox = await Hive.openBox<dynamic>(_boxName);
 
       // Open the metadata box for indexing
-      _metadataBox = await Hive.openBox<dynamic>(_metadataBoxName);
+      metadataBox = await Hive.openBox<dynamic>(_metadataBoxName);
+
+      if (!_isCurrentInitialization(initializationToken, userPubkey)) {
+        await _closeBox(eventsBox, _boxName);
+        await _closeBox(metadataBox, _metadataBoxName);
+        return;
+      }
+
+      _eventsBox = eventsBox;
+      _metadataBox = metadataBox;
 
       _isInitialized = true;
 
@@ -66,12 +83,28 @@ class PersonalEventCacheService {
           category: LogCategory.storage,
         );
 
+        if (eventsBox != null) {
+          await _closeBox(eventsBox, _boxName);
+        }
+        if (metadataBox != null) {
+          await _closeBox(metadataBox, _metadataBoxName);
+        }
+
         await Hive.deleteBoxFromDisk(_boxName);
         await Hive.deleteBoxFromDisk(_metadataBoxName);
 
         // Retry opening after deletion
-        _eventsBox = await Hive.openBox<dynamic>(_boxName);
-        _metadataBox = await Hive.openBox<dynamic>(_metadataBoxName);
+        eventsBox = await Hive.openBox<dynamic>(_boxName);
+        metadataBox = await Hive.openBox<dynamic>(_metadataBoxName);
+
+        if (!_isCurrentInitialization(initializationToken, userPubkey)) {
+          await _closeBox(eventsBox, _boxName);
+          await _closeBox(metadataBox, _metadataBoxName);
+          return;
+        }
+
+        _eventsBox = eventsBox;
+        _metadataBox = metadataBox;
 
         _isInitialized = true;
 
@@ -95,12 +128,22 @@ class PersonalEventCacheService {
 
   /// Cache a user's own event (any kind)
   void cacheUserEvent(Event event) {
+    if (_isDisposed) {
+      return;
+    }
+
     if (!_isInitialized || _eventsBox == null || _metadataBox == null) {
       _queuePendingEventWrite(event);
       return;
     }
 
     unawaited(_cacheInitializedUserEvent(event));
+  }
+
+  bool _isCurrentInitialization(int token, String userPubkey) {
+    return !_isDisposed &&
+        token == _initializationToken &&
+        _currentUserPubkey == userPubkey;
   }
 
   void _queuePendingEventWrite(Event event) {
@@ -460,6 +503,8 @@ class PersonalEventCacheService {
 
   /// Dispose of the cache service
   void dispose() {
+    _isDisposed = true;
+    _initializationToken++;
     final eventsBox = _eventsBox;
     final metadataBox = _metadataBox;
     _eventsBox = null;

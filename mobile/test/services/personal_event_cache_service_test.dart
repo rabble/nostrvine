@@ -150,5 +150,22 @@ void main() {
       expect(service.hasEvent(hexId(pendingWriteCap)), isTrue);
       expect(service.getEventsByKind(32222), hasLength(pendingWriteCap));
     });
+
+    test(
+      'dispose prevents in-flight initialize from resurrecting cache',
+      () async {
+        final event = createEvent(pubkey: userPubkey, id: hexId(101));
+
+        final initialize = service.initialize(userPubkey);
+        service.cacheUserEvent(event);
+        service.dispose();
+
+        await initialize;
+
+        expect(service.isInitialized, isFalse);
+        expect(service.hasEvent(event.id), isFalse);
+        expect(service.getEventById(event.id), isNull);
+      },
+    );
   });
 }

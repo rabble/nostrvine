@@ -62,6 +62,7 @@ VideoVisibilityManager videoVisibilityManager(Ref ref) {
 PersonalEventCacheService personalEventCacheService(Ref ref) {
   final authService = ref.watch(authServiceProvider);
   final service = PersonalEventCacheService();
+  ref.onDispose(service.dispose);
 
   // Initialize with current user's pubkey when authenticated
   if (authService.isAuthenticated && authService.currentPublicKeyHex != null) {
