@@ -222,10 +222,10 @@ class PendingUpload {
     DateTime? createdAt,
     String? cloudinaryPublicId,
     String? videoId,
-    String? cdnUrl,
+    Object? cdnUrl = _pendingUploadUnset,
     String? errorMessage,
     double? uploadProgress,
-    String? thumbnailPath,
+    Object? thumbnailPath = _pendingUploadUnset,
     String? title,
     String? description,
     List<String>? hashtags,
@@ -237,9 +237,9 @@ class PendingUpload {
     Duration? videoDuration,
     Duration? thumbnailTimestamp,
     String? proofManifestJson,
-    String? streamingMp4Url,
-    String? streamingHlsUrl,
-    String? fallbackUrl,
+    Object? streamingMp4Url = _pendingUploadUnset,
+    Object? streamingHlsUrl = _pendingUploadUnset,
+    Object? fallbackUrl = _pendingUploadUnset,
     Object? resumableSession = _pendingUploadUnset,
   }) => PendingUpload(
     id: id ?? this.id,
@@ -249,10 +249,14 @@ class PendingUpload {
     createdAt: createdAt ?? this.createdAt,
     cloudinaryPublicId: cloudinaryPublicId ?? this.cloudinaryPublicId,
     videoId: videoId ?? this.videoId,
-    cdnUrl: cdnUrl ?? this.cdnUrl,
+    cdnUrl: identical(cdnUrl, _pendingUploadUnset)
+        ? this.cdnUrl
+        : cdnUrl as String?,
     errorMessage: errorMessage ?? this.errorMessage,
     uploadProgress: uploadProgress ?? this.uploadProgress,
-    thumbnailPath: thumbnailPath ?? this.thumbnailPath,
+    thumbnailPath: identical(thumbnailPath, _pendingUploadUnset)
+        ? this.thumbnailPath
+        : thumbnailPath as String?,
     title: title ?? this.title,
     description: description ?? this.description,
     hashtags: hashtags ?? this.hashtags,
@@ -265,9 +269,15 @@ class PendingUpload {
     thumbnailTimestampMillis:
         (thumbnailTimestamp ?? this.thumbnailTimestamp)?.inMilliseconds,
     proofManifestJson: proofManifestJson ?? this.proofManifestJson,
-    streamingMp4Url: streamingMp4Url ?? this.streamingMp4Url,
-    streamingHlsUrl: streamingHlsUrl ?? this.streamingHlsUrl,
-    fallbackUrl: fallbackUrl ?? this.fallbackUrl,
+    streamingMp4Url: identical(streamingMp4Url, _pendingUploadUnset)
+        ? this.streamingMp4Url
+        : streamingMp4Url as String?,
+    streamingHlsUrl: identical(streamingHlsUrl, _pendingUploadUnset)
+        ? this.streamingHlsUrl
+        : streamingHlsUrl as String?,
+    fallbackUrl: identical(fallbackUrl, _pendingUploadUnset)
+        ? this.fallbackUrl
+        : fallbackUrl as String?,
     resumableSession: identical(resumableSession, _pendingUploadUnset)
         ? this.resumableSession
         : resumableSession as BlossomResumableUploadSession?,

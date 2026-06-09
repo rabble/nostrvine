@@ -16,6 +16,8 @@ import 'dart:math' as math;
 import 'package:meta/meta.dart';
 import 'package:models/src/native_proof_data.dart';
 
+const Object _pendingUploadUnset = Object();
+
 /// Status of a video upload to Cloudinary
 enum UploadStatus {
   pending, // Waiting to start upload
@@ -156,10 +158,10 @@ class PendingUpload {
     DateTime? createdAt,
     String? cloudinaryPublicId,
     String? videoId,
-    String? cdnUrl,
+    Object? cdnUrl = _pendingUploadUnset,
     String? errorMessage,
     double? uploadProgress,
-    String? thumbnailPath,
+    Object? thumbnailPath = _pendingUploadUnset,
     String? title,
     String? description,
     List<String>? hashtags,
@@ -170,9 +172,9 @@ class PendingUpload {
     int? videoHeight,
     Duration? videoDuration,
     String? proofManifestJson,
-    String? streamingMp4Url,
-    String? streamingHlsUrl,
-    String? fallbackUrl,
+    Object? streamingMp4Url = _pendingUploadUnset,
+    Object? streamingHlsUrl = _pendingUploadUnset,
+    Object? fallbackUrl = _pendingUploadUnset,
   }) => PendingUpload(
     id: id ?? this.id,
     localVideoPath: localVideoPath ?? this.localVideoPath,
@@ -181,10 +183,14 @@ class PendingUpload {
     createdAt: createdAt ?? this.createdAt,
     cloudinaryPublicId: cloudinaryPublicId ?? this.cloudinaryPublicId,
     videoId: videoId ?? this.videoId,
-    cdnUrl: cdnUrl ?? this.cdnUrl,
+    cdnUrl: identical(cdnUrl, _pendingUploadUnset)
+        ? this.cdnUrl
+        : cdnUrl as String?,
     errorMessage: errorMessage ?? this.errorMessage,
     uploadProgress: uploadProgress ?? this.uploadProgress,
-    thumbnailPath: thumbnailPath ?? this.thumbnailPath,
+    thumbnailPath: identical(thumbnailPath, _pendingUploadUnset)
+        ? this.thumbnailPath
+        : thumbnailPath as String?,
     title: title ?? this.title,
     description: description ?? this.description,
     hashtags: hashtags ?? this.hashtags,
@@ -195,9 +201,15 @@ class PendingUpload {
     videoHeight: videoHeight ?? this.videoHeight,
     videoDurationMillis: (videoDuration ?? this.videoDuration)?.inMilliseconds,
     proofManifestJson: proofManifestJson ?? this.proofManifestJson,
-    streamingMp4Url: streamingMp4Url ?? this.streamingMp4Url,
-    streamingHlsUrl: streamingHlsUrl ?? this.streamingHlsUrl,
-    fallbackUrl: fallbackUrl ?? this.fallbackUrl,
+    streamingMp4Url: identical(streamingMp4Url, _pendingUploadUnset)
+        ? this.streamingMp4Url
+        : streamingMp4Url as String?,
+    streamingHlsUrl: identical(streamingHlsUrl, _pendingUploadUnset)
+        ? this.streamingHlsUrl
+        : streamingHlsUrl as String?,
+    fallbackUrl: identical(fallbackUrl, _pendingUploadUnset)
+        ? this.fallbackUrl
+        : fallbackUrl as String?,
   );
 
   /// Check if the upload is in a terminal state
