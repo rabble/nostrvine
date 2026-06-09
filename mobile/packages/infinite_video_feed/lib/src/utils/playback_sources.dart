@@ -86,6 +86,10 @@ VideoErrorType classifyVideoError({
 }
 
 bool _mentionsHttpStatus(String lower, int status) {
-  if (!lower.contains('http') && !lower.contains('status')) return false;
+  if (!lower.contains('http') &&
+      !lower.contains('status') &&
+      !lower.contains('response code')) {
+    return false;
+  }
   return RegExp('(^|[^0-9])$status([^0-9]|\$)').hasMatch(lower);
 }
