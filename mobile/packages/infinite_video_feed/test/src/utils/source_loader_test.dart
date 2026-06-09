@@ -164,7 +164,15 @@ void main() {
           throwsA(
             isA<SourceLoadAborted>()
                 .having((e) => e.index, 'index', 3)
-                .having((e) => e.source, 'source', 'derivedMp4'),
+                .having((e) => e.source, 'source', 'derivedMp4')
+                .having(
+                  (e) => e.toString(),
+                  'message',
+                  contains(
+                    'Source load aborted for stale controller index 3 '
+                    'source=derivedMp4',
+                  ),
+                ),
           ),
         );
 
