@@ -321,6 +321,42 @@ void main() {
       );
     });
 
+    group(ListSearchBlocklistChanged, () {
+      blocTest<ListSearchBloc, ListSearchState>(
+        're-runs the current search, bypassing the same-query guard',
+        build: buildBloc,
+        seed: () => const ListSearchState(
+          status: ListSearchStatus.success,
+          query: 'videos',
+        ),
+        act: (bloc) => bloc.add(const ListSearchBlocklistChanged()),
+        expect: () => [
+          isA<ListSearchState>().having(
+            (s) => s.status,
+            'status',
+            ListSearchStatus.loading,
+          ),
+          isA<ListSearchState>().having(
+            (s) => s.status,
+            'status',
+            ListSearchStatus.success,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => curatedListRepository.searchAllLists('videos'),
+          ).called(1);
+        },
+      );
+
+      blocTest<ListSearchBloc, ListSearchState>(
+        'does nothing when no search is active',
+        build: buildBloc,
+        act: (bloc) => bloc.add(const ListSearchBlocklistChanged()),
+        expect: () => <ListSearchState>[],
+      );
+    });
+
     group(ListSearchCleared, () {
       blocTest<ListSearchBloc, ListSearchState>(
         'resets to initial state',

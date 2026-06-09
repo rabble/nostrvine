@@ -50,6 +50,10 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
     on<VideoSearchCleared>(_onCleared);
     on<VideoSearchSortChanged>(_onSortChanged, transformer: restartable());
     on<VideoSearchLoadMore>(_onLoadMore, transformer: sequential());
+    on<VideoSearchBlocklistChanged>(
+      _onBlocklistChanged,
+      transformer: restartable(),
+    );
   }
 
   final VideosRepository _videosRepository;
@@ -75,6 +79,23 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
 
     await _search(
       query: query,
+      sort: state.sort,
+      emit: emit,
+      sessionId: _beginSearchSession(),
+    );
+  }
+
+  /// Re-runs the current search after a block/unblock so results pass
+  /// through the repository's block filter again. Bypasses the same-query
+  /// guard in [_onQueryChanged] on purpose — the query is unchanged but
+  /// the result set is not.
+  Future<void> _onBlocklistChanged(
+    VideoSearchBlocklistChanged event,
+    Emitter<VideoSearchState> emit,
+  ) async {
+    if (state.query.isEmpty) return;
+    await _search(
+      query: state.query,
       sort: state.sort,
       emit: emit,
       sessionId: _beginSearchSession(),

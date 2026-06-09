@@ -1,6 +1,7 @@
 // ABOUTME: BLoC for searching curated video lists (kind 30005) and people lists (kind 30000).
 // ABOUTME: Merges both streams via a tagged union and uses emit.forEach for safe lifecycle.
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -51,6 +52,10 @@ class ListSearchBloc extends Bloc<ListSearchEvent, ListSearchState> {
       transformer: debounceRestartable(),
     );
     on<ListSearchCleared>(_onCleared);
+    on<ListSearchBlocklistChanged>(
+      _onBlocklistChanged,
+      transformer: restartable(),
+    );
   }
 
   final CuratedListRepository _curatedListRepository;
@@ -74,6 +79,22 @@ class ListSearchBloc extends Bloc<ListSearchEvent, ListSearchState> {
       return;
     }
 
+    await _runSearch(query, emit);
+  }
+
+  /// Re-runs the current search after a block/unblock so results pass
+  /// through the repository's block filter again. Bypasses the same-query
+  /// guard in [_onQueryChanged] on purpose — the query is unchanged but
+  /// the result set is not.
+  Future<void> _onBlocklistChanged(
+    ListSearchBlocklistChanged event,
+    Emitter<ListSearchState> emit,
+  ) async {
+    if (state.query.isEmpty) return;
+    await _runSearch(state.query, emit);
+  }
+
+  Future<void> _runSearch(String query, Emitter<ListSearchState> emit) async {
     emit(
       state.copyWith(
         status: ListSearchStatus.loading,

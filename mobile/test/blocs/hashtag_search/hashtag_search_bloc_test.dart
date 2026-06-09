@@ -348,6 +348,48 @@ void main() {
       );
     });
 
+    group('HashtagSearchBlocklistChanged', () {
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
+        're-runs the current search, bypassing the same-query guard',
+        setUp: () {
+          when(
+            () => mockHashtagRepository.searchHashtags(query: 'music'),
+          ).thenAnswer((_) async => ['music']);
+        },
+        build: createBloc,
+        seed: () => const HashtagSearchState(
+          status: HashtagSearchStatus.success,
+          query: 'music',
+          results: ['music', 'musicvideo'],
+        ),
+        act: (bloc) => bloc.add(const HashtagSearchBlocklistChanged()),
+        expect: () => [
+          isA<HashtagSearchState>().having(
+            (s) => s.status,
+            'status',
+            HashtagSearchStatus.loading,
+          ),
+          isA<HashtagSearchState>().having(
+            (s) => s.status,
+            'status',
+            HashtagSearchStatus.success,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockHashtagRepository.searchHashtags(query: 'music'),
+          ).called(1);
+        },
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'does nothing when no search is active',
+        build: createBloc,
+        act: (bloc) => bloc.add(const HashtagSearchBlocklistChanged()),
+        expect: () => <HashtagSearchState>[],
+      );
+    });
+
     group('HashtagSearchLoadMore', () {
       blocTest<HashtagSearchBloc, HashtagSearchState>(
         'appends results and updates offset',

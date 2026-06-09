@@ -22,6 +22,12 @@ final class ListSearchQueryChanged extends ListSearchEvent {
   List<Object?> get props => [query];
 }
 
+/// The blocklist changed — re-run the current search so blocked authors
+/// disappear from (or reappear in) still-open results.
+final class ListSearchBlocklistChanged extends ListSearchEvent {
+  const ListSearchBlocklistChanged();
+}
+
 /// Request to clear search results and reset to initial state.
 final class ListSearchCleared extends ListSearchEvent {
   const ListSearchCleared();

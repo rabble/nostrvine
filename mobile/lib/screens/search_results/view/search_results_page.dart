@@ -91,17 +91,51 @@ class SearchResultsPage extends ConsumerWidget {
           ),
         ),
       ],
-      child: Scaffold(
-        // bg/surface — matches SearchResultsView's body background so the
-        // app bar area (which doesn't paint its own background) doesn't
-        // show through to the root scaffold's darker default.
-        backgroundColor: VineTheme.surfaceBackground,
-        body: _SearchResultsBody(
-          initialQuery: initialQuery ?? '',
-          requestFocusOnMount: requestFocusOnMount,
+      child: _BlocklistRefreshListener(
+        child: Scaffold(
+          // bg/surface — matches SearchResultsView's body background so the
+          // app bar area (which doesn't paint its own background) doesn't
+          // show through to the root scaffold's darker default.
+          backgroundColor: VineTheme.surfaceBackground,
+          body: _SearchResultsBody(
+            initialQuery: initialQuery ?? '',
+            requestFocusOnMount: requestFocusOnMount,
+          ),
         ),
       ),
     );
+  }
+}
+
+/// Re-runs the active searches when the blocklist changes, so an author
+/// blocked from a result's profile disappears from still-open search
+/// results without a manual re-search (and reappears after an unblock).
+///
+/// Re-dispatching the current query is safe: every search bloc debounces
+/// and uses a restartable transformer, and results are re-fetched through
+/// repository paths that apply the block filter.
+class _BlocklistRefreshListener extends ConsumerWidget {
+  const _BlocklistRefreshListener({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<int>(blocklistVersionProvider, (previous, next) {
+      if (previous == next) return;
+      context.read<VideoSearchBloc>().add(const VideoSearchBlocklistChanged());
+      context.read<HashtagSearchBloc>().add(
+        const HashtagSearchBlocklistChanged(),
+      );
+      context.read<ListSearchBloc>().add(const ListSearchBlocklistChanged());
+      // UserSearchBloc has no same-query guard (see its _onQueryChanged),
+      // so re-dispatching the current query re-runs the search as-is.
+      final userQuery = context.read<UserSearchBloc>().state.query;
+      if (userQuery.isNotEmpty) {
+        context.read<UserSearchBloc>().add(UserSearchQueryChanged(userQuery));
+      }
+    });
+    return child;
   }
 }
 

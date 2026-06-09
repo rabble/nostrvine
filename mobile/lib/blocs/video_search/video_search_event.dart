@@ -22,6 +22,12 @@ final class VideoSearchQueryChanged extends VideoSearchEvent {
   List<Object?> get props => [query];
 }
 
+/// The blocklist changed — re-run the current search so blocked authors
+/// disappear from (or reappear in) still-open results.
+final class VideoSearchBlocklistChanged extends VideoSearchEvent {
+  const VideoSearchBlocklistChanged();
+}
+
 /// Request to clear search results and reset to initial state
 final class VideoSearchCleared extends VideoSearchEvent {
   const VideoSearchCleared();

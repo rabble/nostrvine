@@ -43,6 +43,10 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
     );
     on<HashtagSearchLoadMore>(_onLoadMore, transformer: sequential());
     on<HashtagSearchCleared>(_onCleared);
+    on<HashtagSearchBlocklistChanged>(
+      _onBlocklistChanged,
+      transformer: restartable(),
+    );
   }
 
   final HashtagRepository _hashtagRepository;
@@ -66,6 +70,25 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
       return;
     }
 
+    await _runSearch(query, emit);
+  }
+
+  /// Re-runs the current search after a block/unblock so results pass
+  /// through the repository's block filter again. Bypasses the same-query
+  /// guard in [_onQueryChanged] on purpose — the query is unchanged but
+  /// the result set is not.
+  Future<void> _onBlocklistChanged(
+    HashtagSearchBlocklistChanged event,
+    Emitter<HashtagSearchState> emit,
+  ) async {
+    if (state.query.isEmpty) return;
+    await _runSearch(state.query, emit);
+  }
+
+  Future<void> _runSearch(
+    String query,
+    Emitter<HashtagSearchState> emit,
+  ) async {
     emit(
       state.copyWith(
         status: HashtagSearchStatus.loading,

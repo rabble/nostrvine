@@ -22,6 +22,12 @@ final class HashtagSearchQueryChanged extends HashtagSearchEvent {
   List<Object?> get props => [query];
 }
 
+/// The blocklist changed — re-run the current search so blocked authors
+/// disappear from (or reappear in) still-open results.
+final class HashtagSearchBlocklistChanged extends HashtagSearchEvent {
+  const HashtagSearchBlocklistChanged();
+}
+
 /// Request to load the next page of hashtag results.
 final class HashtagSearchLoadMore extends HashtagSearchEvent {
   const HashtagSearchLoadMore();

@@ -422,6 +422,54 @@ void main() {
       );
     });
 
+    group('VideoSearchBlocklistChanged', () {
+      blocTest<VideoSearchBloc, VideoSearchState>(
+        're-runs the current search, bypassing the same-query guard',
+        build: createBloc,
+        seed: () => VideoSearchState(
+          status: VideoSearchStatus.success,
+          query: 'flutter',
+          videos: [createVideo(id: 'v1', title: 'Flutter Tutorial')],
+        ),
+        act: (bloc) => bloc.add(const VideoSearchBlocklistChanged()),
+        expect: () => [
+          isA<VideoSearchState>().having(
+            (s) => s.status,
+            'status',
+            VideoSearchStatus.searching,
+          ),
+          isA<VideoSearchState>().having(
+            (s) => s.status,
+            'status',
+            VideoSearchStatus.success,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.searchVideos(
+              query: 'flutter',
+              sort: any(named: 'sort'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoSearchBloc, VideoSearchState>(
+        'does nothing when no search is active',
+        build: createBloc,
+        act: (bloc) => bloc.add(const VideoSearchBlocklistChanged()),
+        expect: () => <VideoSearchState>[],
+        verify: (_) {
+          verifyNever(
+            () => mockVideosRepository.searchVideos(
+              query: any(named: 'query'),
+              sort: any(named: 'sort'),
+            ),
+          );
+        },
+      );
+    });
+
     group('VideoSearchCleared', () {
       blocTest<VideoSearchBloc, VideoSearchState>(
         'resets to initial state',
