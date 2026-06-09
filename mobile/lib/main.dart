@@ -283,6 +283,54 @@ VideoDeepLinkNavAction resolveVideoDeepLinkNavAction({
   return VideoDeepLinkNavAction.push;
 }
 
+/// Describes the router action to take when navigating to a profile deep link.
+///
+/// Mirrors [VideoDeepLinkNavAction] so profile links get the same nav-stack
+/// parity video links already have: `push` keeps the previous route (e.g. home)
+/// underneath so back returns there, `go` replaces an existing profile route
+/// in-place, and `skip` dedupes a navigation to the route already shown.
+@visibleForTesting
+enum ProfileDeepLinkNavAction {
+  /// Navigate to the route, keeping the current route in the back stack.
+  push,
+
+  /// Replace the current route in-place (already on a profile route).
+  go,
+
+  /// The router is already on the target route with nothing new to do.
+  skip,
+}
+
+/// Determines which router action to take for a profile deep-link navigation
+/// given the current router location and the incoming target path.
+///
+/// Mirrors [resolveVideoDeepLinkNavAction]: extracted for testability — the
+/// caller executes the action; this function only decides what it should be.
+///
+/// Before this existed, the profile case always called `router.go()`, which
+/// replaces the entire navigation stack and stranded the user wherever they
+/// were (mid-settings, camera, DMs, …) with no back button to return.
+@visibleForTesting
+ProfileDeepLinkNavAction resolveProfileDeepLinkNavAction({
+  required String currentLocation,
+  required String targetPath,
+}) {
+  if (currentLocation == targetPath) {
+    // Already on the exact target route. Duplicate navigation with nothing new
+    // to do (e.g. GoRouter's universal-link redirect already navigated here, or
+    // getInitialLink + uriLinkStream both fire for the same URL). Safe to skip.
+    return ProfileDeepLinkNavAction.skip;
+  }
+  if (currentLocation.startsWith('${ProfileScreenRouter.path}/')) {
+    // A different profile is already showing — replace it in-place, matching
+    // the video-replaces-video behaviour.
+    return ProfileDeepLinkNavAction.go;
+  }
+  // Coming from a non-profile route — push so back returns to where the user
+  // was instead of obliterating the navigation stack.
+  return ProfileDeepLinkNavAction.push;
+}
+
 /// Resolves a push/local payload to a [NotificationTapTarget] and the event id
 /// to navigate to, via the shared [resolveNotificationTapTarget] contract.
 ///
@@ -1653,11 +1701,25 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
                 try {
-                  // GoRouter's universal-link redirect may have already
-                  // navigated here; skip the duplicate go() to avoid a
-                  // second navigation frame on the same target.
-                  if (currentLocation == targetPath) break;
-                  router.go(targetPath);
+                  final action = resolveProfileDeepLinkNavAction(
+                    currentLocation: currentLocation,
+                    targetPath: targetPath,
+                  );
+                  switch (action) {
+                    case ProfileDeepLinkNavAction.skip:
+                      // GoRouter's universal-link redirect may have already
+                      // navigated here; skip the duplicate navigation to avoid
+                      // a second navigation frame on the same target.
+                      break;
+                    case ProfileDeepLinkNavAction.go:
+                      // Another profile is already showing — replace it
+                      // in-place instead of stacking it.
+                      router.go(targetPath);
+                    case ProfileDeepLinkNavAction.push:
+                      // Keep the current route underneath so back returns to
+                      // wherever the user was instead of wiping the stack.
+                      router.push(targetPath);
+                  }
                   Log.info(
                     '✅ Navigation completed to: $targetPath',
                     name: 'DeepLinkHandler',
