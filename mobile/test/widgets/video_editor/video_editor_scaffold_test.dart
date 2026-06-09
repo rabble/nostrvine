@@ -181,7 +181,9 @@ void main() {
           initialState: const ClipEditorState(),
         );
         when(() => mockEditor.stateManager).thenReturn(mockStateManager);
-        when(() => mockStateManager.activeMeta).thenReturn(const {});
+        when(() => mockStateManager.activeMeta).thenReturn({
+          VideoEditorConstants.timelineMarkersStateHistoryKey: [1250],
+        });
         when(
           () => mockEditor.addHistory(
             layers: any(named: 'layers'),
@@ -217,6 +219,10 @@ void main() {
         expect(
           captured[VideoEditorConstants.audioStateHistoryKey],
           equals([audioEvent.toJson()]),
+        );
+        expect(
+          captured[VideoEditorConstants.timelineMarkersStateHistoryKey],
+          equals([1250]),
         );
       },
     );

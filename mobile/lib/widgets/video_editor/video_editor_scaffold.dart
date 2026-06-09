@@ -7,6 +7,7 @@ import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
@@ -230,17 +231,7 @@ class _AudioExtractionResultListener extends StatelessWidget {
     // combine with the new audio track for a single atomic history entry
     // so undo/redo reverts both the mute and the added track together.
     final updatedTracks = [...editor.stateManager.audioTracks, audioEvent];
-    editor.addHistory(
-      meta: {
-        ...editor.stateManager.activeMeta,
-        VideoEditorConstants.clipsStateHistoryKey: state.clips
-            .map((c) => c.toJson())
-            .toList(),
-        VideoEditorConstants.audioStateHistoryKey: updatedTracks
-            .map((e) => e.toJson())
-            .toList(),
-      },
-    );
+    editor.setClipAndAudioState(clips: state.clips, audioTracks: updatedTracks);
   }
 }
 

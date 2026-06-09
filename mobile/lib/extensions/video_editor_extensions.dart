@@ -85,13 +85,20 @@ extension VideoEditorExtensions on ProImageEditorState {
   void setVolumeState({
     required List<DivineVideoClip> clips,
     required List<AudioEvent> audioTracks,
+  }) => setClipAndAudioState(clips: clips, audioTracks: audioTracks);
+
+  /// Persists clips and audio tracks in a single history entry.
+  ///
+  /// Use this when an edit changes both the clip list and the sound timeline
+  /// so undo/redo restores the full timeline atomically.
+  void setClipAndAudioState({
+    required List<DivineVideoClip> clips,
+    required List<AudioEvent> audioTracks,
+    List<Duration>? timelineMarkers,
   }) {
     addHistory(
       meta: {
-        ...stateManager.activeMeta,
-        VideoEditorConstants.clipsStateHistoryKey: clips
-            .map((c) => c.toJson())
-            .toList(),
+        ..._clipHistoryMeta(clips, timelineMarkers: timelineMarkers),
         VideoEditorConstants.audioStateHistoryKey: audioTracks
             .map((e) => e.toJson())
             .toList(),
@@ -116,7 +123,7 @@ extension VideoEditorExtensions on ProImageEditorState {
     // Keep anchored (extracted, not-yet-moved) audio aligned to its source
     // clip after this clip edit, so trimming a clip's left edge produces a
     // J-Cut without losing sync. Only rewrite the audio key when a track
-    // actually moved — `rebaseAnchoredAudioForClipState` returns the same
+    // actually moved - `rebaseAnchoredAudioForClipState` returns the same
     // list instance otherwise.
     final currentTracks = stateManager.audioTracks;
     final rebasedTracks = rebaseAnchoredAudioForClipState(clips, currentTracks);
@@ -125,15 +132,12 @@ extension VideoEditorExtensions on ProImageEditorState {
         ? rebasedTracks.map((e) => e.toJson()).toList()
         : null;
 
-    final meta = {
-      ...stateManager.activeMeta,
-      VideoEditorConstants.clipsStateHistoryKey: serialized,
-      VideoEditorConstants.audioStateHistoryKey: ?serializedAudio,
-      if (timelineMarkers != null)
-        VideoEditorConstants.timelineMarkersStateHistoryKey: timelineMarkers
-            .map((marker) => marker.inMilliseconds)
-            .toList(),
-    };
+    final meta = _clipHistoryMeta(
+      clips,
+      serializedClips: serialized,
+      serializedAudio: serializedAudio,
+      timelineMarkers: timelineMarkers,
+    );
 
     if (!skipUpdateHistory) {
       addHistory(meta: meta);
@@ -144,13 +148,28 @@ extension VideoEditorExtensions on ProImageEditorState {
         stateManager.activeMeta[VideoEditorConstants.audioStateHistoryKey] =
             serializedAudio;
       }
-      if (timelineMarkers != null) {
-        stateManager.activeMeta[VideoEditorConstants
-            .timelineMarkersStateHistoryKey] = timelineMarkers
-            .map((marker) => marker.inMilliseconds)
-            .toList();
-      }
+      stateManager.activeMeta[VideoEditorConstants
+              .timelineMarkersStateHistoryKey] =
+          meta[VideoEditorConstants.timelineMarkersStateHistoryKey];
     }
     setState(() {});
+  }
+
+  Map<String, dynamic> _clipHistoryMeta(
+    List<DivineVideoClip> clips, {
+    List<Map<String, dynamic>>? serializedClips,
+    List<Map<String, dynamic>>? serializedAudio,
+    List<Duration>? timelineMarkers,
+  }) {
+    final markers = timelineMarkers ?? stateManager.timelineMarkers;
+    return {
+      ...stateManager.activeMeta,
+      VideoEditorConstants.clipsStateHistoryKey:
+          serializedClips ?? clips.map((c) => c.toJson()).toList(),
+      VideoEditorConstants.audioStateHistoryKey: ?serializedAudio,
+      VideoEditorConstants.timelineMarkersStateHistoryKey: markers
+          .map((marker) => marker.inMilliseconds)
+          .toList(),
+    };
   }
 }

@@ -17,6 +17,7 @@ import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.da
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -299,14 +300,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     clipEditorBloc.add(ClipEditorInitialized(updatedClips));
 
     if (_editor != null) {
-      _editor!.addHistory(
-        meta: {
-          ..._editor!.stateManager.activeMeta,
-          VideoEditorConstants.clipsStateHistoryKey: updatedClips
-              .map((e) => e.toJson())
-              .toList(),
-        },
-      );
+      _editor!.setClipState(updatedClips);
     }
   }
 
