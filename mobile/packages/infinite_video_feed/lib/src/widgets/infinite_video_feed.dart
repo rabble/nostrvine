@@ -216,11 +216,12 @@ class InfiniteVideoFeed extends StatefulWidget {
   final Duration slowLoadThreshold;
 
   /// How long to give the current video a bandwidth head-start before
-  /// initializing neighbour controllers (previous / next).
+  /// initializing the previous neighbour controller.
   ///
-  /// Neighbour init fires as soon as the current video renders its first
-  /// frame, or after this duration — whichever is earlier. Defaults to
-  /// 3 seconds, matching the legacy pooled_video_player behaviour.
+  /// The next neighbour initializes immediately after the current video so a
+  /// forward swipe does not land on a cold player. The previous neighbour init
+  /// fires as soon as the current video renders its first frame, or after this
+  /// duration — whichever is earlier. Defaults to 3 seconds.
   final Duration preloadGracePeriod;
 
   @override
@@ -564,9 +565,16 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
     if (_playerWindowGeneration != generation || !mounted) return;
 
-    // Give the current video a bandwidth head-start before loading
-    // neighbours. Wait for the first frame or the grace period — whichever
-    // comes first — so fast connections don't delay neighbour init at all.
+    if (widget.keepNextAlive &&
+        index + 1 <= lastIndex &&
+        !_controllers.containsKey(index + 1)) {
+      unawaited(_initController(index + 1));
+    }
+
+    // Give the current video a bandwidth head-start before loading the
+    // previous neighbour. The next neighbour is already warming above because
+    // forward swipes are the primary feed path and should not hit a cold
+    // controller.
     final currentController = _controllers[index];
     if (currentController != null) {
       await _waitForFirstFrameOrGracePeriod(currentController);
@@ -578,12 +586,6 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         index - 1 >= 0 &&
         !_controllers.containsKey(index - 1)) {
       unawaited(_initController(index - 1));
-    }
-
-    if (widget.keepNextAlive &&
-        index + 1 <= lastIndex &&
-        !_controllers.containsKey(index + 1)) {
-      unawaited(_initController(index + 1));
     }
   }
 

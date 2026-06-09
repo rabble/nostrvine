@@ -24,7 +24,10 @@ class _NativePlayerHarness {
   static const _globalChannel = MethodChannel('divine_video_player');
   static const _codec = StandardMethodCodec();
 
-  Future<void> install({Iterable<int> playerIds = const <int>[0, 1, 2]}) async {
+  Future<void> install({
+    Iterable<int> playerIds = const <int>[0, 1, 2],
+    bool firstFrameRenderedOnListen = true,
+  }) async {
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
       _globalChannel,
       (call) async {
@@ -60,11 +63,11 @@ class _NativePlayerHarness {
           final call = _codec.decodeMethodCall(message);
           if (call.method == 'listen') {
             scheduleMicrotask(() async {
-              await sendEvent(playerId, const <Object?, Object?>{
+              await sendEvent(playerId, <Object?, Object?>{
                 'status': 'ready',
                 'videoWidth': 1280,
                 'videoHeight': 720,
-                'isFirstFrameRendered': true,
+                'isFirstFrameRendered': firstFrameRenderedOnListen,
               });
             });
           }
@@ -733,6 +736,46 @@ void main() {
           await harness.dispose();
         }
       });
+
+      testWidgets(
+        'initializes next controller before current first frame '
+        'or grace period',
+        (tester) async {
+          DivineVideoPlayerController.resetIdCounterForTesting();
+          final harness = _NativePlayerHarness(tester);
+          await harness.install(
+            playerIds: const <int>[0, 1],
+            firstFrameRenderedOnListen: false,
+          );
+
+          try {
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  videos: [_makeVideo('current'), _makeVideo('next')],
+                  cache: cache,
+                  prefetchCount: 0,
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump();
+
+            expect(harness.methodCalls, contains('player_1:setClips'));
+            await harness.sendEvent(0, const <Object?, Object?>{
+              'status': 'ready',
+              'videoWidth': 1280,
+              'videoHeight': 720,
+              'isFirstFrameRendered': true,
+            });
+            await tester.pump();
+          } finally {
+            await tester.pumpWidget(const SizedBox.shrink());
+            await tester.pump();
+            await harness.dispose();
+          }
+        },
+      );
 
       testWidgets('does not autoplay after becoming inactive mid-init', (
         tester,
