@@ -1,6 +1,8 @@
 // ABOUTME: Comprehensive cache for ALL of the current user's own Nostr events
 // ABOUTME: Stores every event the user creates/publishes for instant access and offline availability
 
+import 'dart:async';
+
 import 'package:hive_ce/hive.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -10,18 +12,23 @@ import 'package:unified_logger/unified_logger.dart';
 class PersonalEventCacheService {
   static const String _boxName = 'personal_events';
   static const String _metadataBoxName = 'personal_events_metadata';
+  static const int _maxPendingEventWrites = 100;
 
   Box<dynamic>? _eventsBox;
   Box<dynamic>? _metadataBox;
   bool _isInitialized = false;
   String? _currentUserPubkey;
+  final List<Event> _pendingEventWrites = <Event>[];
 
   /// Check if the cache service is initialized
   bool get isInitialized => _isInitialized;
 
   /// Initialize the personal event cache
   Future<void> initialize(String userPubkey) async {
-    if (_isInitialized && _currentUserPubkey == userPubkey) return;
+    if (_isInitialized && _currentUserPubkey == userPubkey) {
+      await _flushPendingEventWrites();
+      return;
+    }
 
     try {
       _currentUserPubkey = userPubkey;
@@ -33,6 +40,8 @@ class PersonalEventCacheService {
       _metadataBox = await Hive.openBox<dynamic>(_metadataBoxName);
 
       _isInitialized = true;
+
+      await _flushPendingEventWrites();
 
       Log.info(
         'PersonalEventCacheService initialized for $userPubkey with ${_eventsBox!.length} cached events',
@@ -66,6 +75,8 @@ class PersonalEventCacheService {
 
         _isInitialized = true;
 
+        await _flushPendingEventWrites();
+
         Log.info(
           'Successfully recovered PersonalEventCacheService after corruption',
           name: 'PersonalEventCache',
@@ -85,20 +96,67 @@ class PersonalEventCacheService {
   /// Cache a user's own event (any kind)
   void cacheUserEvent(Event event) {
     if (!_isInitialized || _eventsBox == null || _metadataBox == null) {
-      Log.warning(
-        'PersonalEventCache not initialized, cannot cache event',
+      _queuePendingEventWrite(event);
+      return;
+    }
+
+    unawaited(_cacheInitializedUserEvent(event));
+  }
+
+  void _queuePendingEventWrite(Event event) {
+    final currentUserPubkey = _currentUserPubkey;
+    if (currentUserPubkey != null && event.pubkey != currentUserPubkey) {
+      return;
+    }
+
+    _pendingEventWrites.removeWhere(
+      (pendingEvent) => pendingEvent.id == event.id,
+    );
+    if (_pendingEventWrites.length >= _maxPendingEventWrites) {
+      _pendingEventWrites.removeAt(0);
+    }
+    _pendingEventWrites.add(event);
+
+    Log.warning(
+      'PersonalEventCache not initialized, queued event for later caching',
+      name: 'PersonalEventCache',
+      category: LogCategory.storage,
+    );
+  }
+
+  Future<void> _flushPendingEventWrites() async {
+    if (_pendingEventWrites.isEmpty) {
+      return;
+    }
+
+    final pendingEventWrites = List<Event>.from(_pendingEventWrites);
+    _pendingEventWrites.clear();
+
+    var cachedCount = 0;
+    for (final event in pendingEventWrites) {
+      if (await _cacheInitializedUserEvent(event)) {
+        cachedCount++;
+      }
+    }
+
+    if (cachedCount > 0) {
+      Log.info(
+        'Cached $cachedCount pending personal event(s) after initialization',
         name: 'PersonalEventCache',
         category: LogCategory.storage,
       );
-      return;
     }
+  }
 
+  Future<bool> _cacheInitializedUserEvent(Event event) async {
     // Only cache events from the current user
     if (event.pubkey != _currentUserPubkey) {
-      return;
+      return false;
     }
 
     try {
+      final cachedAt = DateTime.now().millisecondsSinceEpoch;
+
       // Store the full event data
       final eventData = {
         'id': event.id,
@@ -108,10 +166,10 @@ class PersonalEventCacheService {
         'tags': event.tags.map((tag) => tag.toList()).toList(),
         'content': event.content,
         'sig': event.sig,
-        'cached_at': DateTime.now().millisecondsSinceEpoch,
+        'cached_at': cachedAt,
       };
 
-      _eventsBox!.put(event.id, eventData);
+      await _eventsBox!.put(event.id, eventData);
 
       // Update metadata for quick queries
       final kindKey = 'kind_${event.kind}';
@@ -121,21 +179,23 @@ class PersonalEventCacheService {
           : <String, dynamic>{};
       kindEvents[event.id] = {
         'created_at': event.createdAt,
-        'cached_at': DateTime.now().millisecondsSinceEpoch,
+        'cached_at': cachedAt,
       };
-      _metadataBox!.put(kindKey, kindEvents);
+      await _metadataBox!.put(kindKey, kindEvents);
 
       Log.debug(
         '💾 Cached personal event: ${event.id} (kind ${event.kind})',
         name: 'PersonalEventCache',
         category: LogCategory.storage,
       );
+      return true;
     } catch (e) {
       Log.error(
         'Failed to cache personal event ${event.id}: $e',
         name: 'PersonalEventCache',
         category: LogCategory.storage,
       );
+      return false;
     }
   }
 
@@ -374,6 +434,8 @@ class PersonalEventCacheService {
 
   /// Clear all cached events (for testing or cleanup)
   Future<void> clearCache() async {
+    _pendingEventWrites.clear();
+
     if (!_isInitialized || _eventsBox == null || _metadataBox == null) {
       return;
     }
@@ -398,15 +460,37 @@ class PersonalEventCacheService {
 
   /// Dispose of the cache service
   void dispose() {
-    _eventsBox?.close();
-    _metadataBox?.close();
+    final eventsBox = _eventsBox;
+    final metadataBox = _metadataBox;
+    _eventsBox = null;
+    _metadataBox = null;
     _isInitialized = false;
     _currentUserPubkey = null;
+    _pendingEventWrites.clear();
+
+    if (eventsBox != null) {
+      unawaited(_closeBox(eventsBox, _boxName));
+    }
+    if (metadataBox != null) {
+      unawaited(_closeBox(metadataBox, _metadataBoxName));
+    }
 
     Log.debug(
       '📱 PersonalEventCacheService disposed',
       name: 'PersonalEventCache',
       category: LogCategory.storage,
     );
+  }
+
+  Future<void> _closeBox(Box<dynamic> box, String boxName) async {
+    try {
+      await box.close();
+    } catch (e) {
+      Log.warning(
+        'Failed to close PersonalEventCache box $boxName: $e',
+        name: 'PersonalEventCache',
+        category: LogCategory.storage,
+      );
+    }
   }
 }
