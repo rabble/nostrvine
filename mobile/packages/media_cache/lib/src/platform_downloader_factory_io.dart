@@ -2,12 +2,31 @@ import 'dart:io';
 
 import 'package:cronet_http/cronet_http.dart';
 import 'package:cupertino_http/cupertino_http.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/io_client.dart';
 import 'package:media_cache/src/cancellable_downloader.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-bool _cupertinoUnavailable = false;
-bool _cronetUnavailable = false;
+/// Factory for a platform-native [CancellableDownloader].
+typedef NativeDownloaderFactory = CancellableDownloader Function();
+
+final _nativeFallbackState = _NativeDownloaderFallbackState();
+
+final class _NativeDownloaderFallbackState {
+  bool cupertinoUnavailable = false;
+  bool cronetUnavailable = false;
+
+  void reset() {
+    cupertinoUnavailable = false;
+    cronetUnavailable = false;
+  }
+}
+
+/// Clears the per-process native downloader fallback latches.
+@visibleForTesting
+void resetPlatformDownloaderFallbackStateForTesting() {
+  _nativeFallbackState.reset();
+}
 
 /// `dart:io` implementation that selects the best native HTTP stack.
 ///
@@ -20,6 +39,11 @@ CancellableDownloader createPlatformDownloaderImpl({
   required bool allowBadCertificatesInDebug,
   required bool isDebugMode,
   required bool isWeb,
+  @visibleForTesting bool? isIOSOverride,
+  @visibleForTesting bool? isMacOSOverride,
+  @visibleForTesting bool? isAndroidOverride,
+  @visibleForTesting NativeDownloaderFactory? cupertinoDownloaderFactory,
+  @visibleForTesting NativeDownloaderFactory? cronetDownloaderFactory,
 }) {
   if (isWeb) {
     return HttpCancellableDownloader(IOClient(HttpClient()));
@@ -39,18 +63,20 @@ CancellableDownloader createPlatformDownloaderImpl({
   // self-signed local relays keeps working; release/profile macOS
   // builds use NSURLSession.
   // Windows and Linux keep the dart:io / IOClient path.
+  final isIOS = isIOSOverride ?? Platform.isIOS;
+  final isMacOS = isMacOSOverride ?? Platform.isMacOS;
+  final isAndroid = isAndroidOverride ?? Platform.isAndroid;
   // coverage:ignore-start
-  final useCupertino = Platform.isIOS || (Platform.isMacOS && !isDebugMode);
-  if (useCupertino && !_cupertinoUnavailable) {
+  final useCupertino = isIOS || (isMacOS && !isDebugMode);
+  if (useCupertino && !_nativeFallbackState.cupertinoUnavailable) {
     try {
-      final cfg = URLSessionConfiguration.defaultSessionConfiguration()
-        ..timeoutIntervalForRequest = connectionTimeout
-        ..httpMaximumConnectionsPerHost = maxConnectionsPerHost;
-      return HttpCancellableDownloader(
-        CupertinoClient.fromSessionConfiguration(cfg),
-      );
+      return cupertinoDownloaderFactory?.call() ??
+          _createCupertinoDownloader(
+            connectionTimeout: connectionTimeout,
+            maxConnectionsPerHost: maxConnectionsPerHost,
+          );
     } on Object catch (e, st) {
-      _cupertinoUnavailable = true;
+      _nativeFallbackState.cupertinoUnavailable = true;
       Log.warning(
         'MediaCache: cupertino_http init failed, '
         'using dart:io HttpClient for the rest of this process: $e',
@@ -63,14 +89,14 @@ CancellableDownloader createPlatformDownloaderImpl({
         category: LogCategory.video,
       );
     }
-  } else if (Platform.isAndroid && !_cronetUnavailable) {
+  } else if (isAndroid && !_nativeFallbackState.cronetUnavailable) {
     try {
       // `cronet_http` does not expose per-client connect/idle timeout knobs.
       // On Android, `connectionTimeout` and `idleTimeout` therefore do not
       // apply while Cronet is active.
-      return HttpCancellableDownloader(CronetClient.defaultCronetEngine());
+      return cronetDownloaderFactory?.call() ?? _createCronetDownloader();
     } on Object catch (e, st) {
-      _cronetUnavailable = true;
+      _nativeFallbackState.cronetUnavailable = true;
       Log.warning(
         'MediaCache: cronet_http init failed, '
         'using dart:io HttpClient for the rest of this process: $e',
@@ -99,3 +125,24 @@ CancellableDownloader createPlatformDownloaderImpl({
 
   return HttpCancellableDownloader(IOClient(httpClient));
 }
+
+// coverage:ignore-start
+CancellableDownloader _createCupertinoDownloader({
+  required Duration connectionTimeout,
+  required int maxConnectionsPerHost,
+}) {
+  final cfg = URLSessionConfiguration.defaultSessionConfiguration()
+    ..timeoutIntervalForRequest = connectionTimeout
+    ..httpMaximumConnectionsPerHost = maxConnectionsPerHost;
+  return HttpCancellableDownloader(
+    CupertinoClient.fromSessionConfiguration(cfg),
+  );
+}
+// coverage:ignore-end
+
+// coverage:ignore-start
+CancellableDownloader _createCronetDownloader() {
+  return HttpCancellableDownloader(CronetClient.defaultCronetEngine());
+}
+
+// coverage:ignore-end

@@ -29,6 +29,8 @@ final class FullscreenFeedState extends Equatable {
     this.canLoadMore = false,
     this.removedVideoIds = const <String>{},
     this.pendingSkipTarget,
+    this.initialTargetResolved = false,
+    this.userChangedIndex = false,
   });
 
   /// The current status.
@@ -57,6 +59,14 @@ final class FullscreenFeedState extends Equatable {
   /// [FullscreenFeedSkipAcknowledged] once it has consumed the signal so a
   /// subsequent removal can produce a new skip.
   final int? pendingSkipTarget;
+
+  /// Whether the launch target has been reconciled against a non-empty source
+  /// list. Kept in state so stream replays and user index changes can be
+  /// coordinated without mutable BLoC fields.
+  final bool initialTargetResolved;
+
+  /// Whether the user has manually moved the feed cursor since launch.
+  final bool userChangedIndex;
 
   /// The current video, if available.
   VideoEvent? get currentVideo =>
@@ -93,6 +103,8 @@ final class FullscreenFeedState extends Equatable {
     bool? canLoadMore,
     Set<String>? removedVideoIds,
     int? pendingSkipTarget,
+    bool? initialTargetResolved,
+    bool? userChangedIndex,
     bool clearPendingSkipTarget = false,
   }) {
     return FullscreenFeedState(
@@ -105,6 +117,9 @@ final class FullscreenFeedState extends Equatable {
       pendingSkipTarget: clearPendingSkipTarget
           ? null
           : (pendingSkipTarget ?? this.pendingSkipTarget),
+      initialTargetResolved:
+          initialTargetResolved ?? this.initialTargetResolved,
+      userChangedIndex: userChangedIndex ?? this.userChangedIndex,
     );
   }
 
@@ -118,5 +133,7 @@ final class FullscreenFeedState extends Equatable {
     canLoadMore,
     removedVideoIds,
     pendingSkipTarget,
+    initialTargetResolved,
+    userChangedIndex,
   ];
 }

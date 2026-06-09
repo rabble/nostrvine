@@ -14,6 +14,7 @@ import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/media_availability_checker.dart';
+import 'package:openvine/utils/video_identity.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'fullscreen_feed_event.dart';
@@ -109,8 +110,6 @@ class FullscreenFeedBloc
   final MediaAvailabilityChecker _availabilityChecker;
   StreamSubscription<bool>? _hasMoreSubscription;
   StreamSubscription<String>? _removedIdsSubscription;
-  bool _initialTargetResolved = false;
-  bool _userChangedIndex = false;
 
   /// Queue of video IDs waiting to be cached in the background.
   final Queue<_CacheRequest> _cacheQueue = Queue<_CacheRequest>();
@@ -175,13 +174,16 @@ class FullscreenFeedBloc
           category: LogCategory.video,
         );
 
-        final nextIndex = _nextIndexForVideos(videos);
+        final indexResolution = _nextIndexForVideos(videos);
 
         return state.copyWith(
           status: FullscreenFeedStatus.ready,
           videos: videos,
-          currentIndex: nextIndex,
+          currentIndex: indexResolution.index,
           isLoadingMore: false,
+          initialTargetResolved:
+              state.initialTargetResolved ||
+              indexResolution.initialTargetResolved,
         );
       },
       onError: (error, stackTrace) {
@@ -196,24 +198,28 @@ class FullscreenFeedBloc
     );
   }
 
-  int _nextIndexForVideos(List<VideoEvent> videos) {
+  ({int index, bool initialTargetResolved}) _nextIndexForVideos(
+    List<VideoEvent> videos,
+  ) {
     if (videos.isEmpty) {
-      return state.currentIndex;
+      return (index: state.currentIndex, initialTargetResolved: false);
     }
 
     final currentVideo = state.currentVideo;
     final preservedIndex = currentVideo == null
         ? -1
-        : _indexOfVideoIdentity(videos, currentVideo);
+        : indexOfMatchingVideo(videos, currentVideo);
     if (preservedIndex >= 0) {
-      _initialTargetResolved = true;
-      return preservedIndex;
+      return (index: preservedIndex, initialTargetResolved: true);
     }
 
-    if (!_userChangedIndex && !_initialTargetResolved) {
-      final initialTargetIndex = _indexOfInitialTarget(videos);
+    if (!state.userChangedIndex && !state.initialTargetResolved) {
+      final initialTargetIndex = indexOfVideoIdentity(
+        videos,
+        videoId: _initialVideoId,
+        stableId: _initialStableId,
+      );
       if (initialTargetIndex >= 0) {
-        _initialTargetResolved = true;
         Log.debug(
           'FullscreenFeedBloc: resolved initial target '
           'videoId=$_initialVideoId stableId=$_initialStableId '
@@ -221,34 +227,20 @@ class FullscreenFeedBloc
           name: 'FullscreenFeedBloc',
           category: LogCategory.video,
         );
-        return initialTargetIndex;
+        return (index: initialTargetIndex, initialTargetResolved: true);
       }
 
       if (_initialVideoId == null && _initialStableId == null) {
-        _initialTargetResolved = true;
+        return (
+          index: state.currentIndex.clamp(0, videos.length - 1),
+          initialTargetResolved: true,
+        );
       }
     }
 
-    return state.currentIndex.clamp(0, videos.length - 1);
-  }
-
-  int _indexOfInitialTarget(List<VideoEvent> videos) {
-    final initialVideoId = _initialVideoId;
-    final initialStableId = _initialStableId;
-    if (initialVideoId == null && initialStableId == null) return -1;
-
-    return videos.indexWhere(
-      (video) =>
-          (initialVideoId != null && video.id == initialVideoId) ||
-          (initialStableId != null && video.stableId == initialStableId),
-    );
-  }
-
-  int _indexOfVideoIdentity(List<VideoEvent> videos, VideoEvent target) {
-    return videos.indexWhere(
-      (video) =>
-          video.id == target.id ||
-          (target.stableId.isNotEmpty && video.stableId == target.stableId),
+    return (
+      index: state.currentIndex.clamp(0, videos.length - 1),
+      initialTargetResolved: false,
     );
   }
 
@@ -299,15 +291,18 @@ class FullscreenFeedBloc
     FullscreenFeedIndexChanged event,
     Emitter<FullscreenFeedState> emit,
   ) {
-    if (event.index == state.currentIndex) return;
-    _userChangedIndex = true;
-    _initialTargetResolved = true;
-
     final clampedIndex = state.videos.isEmpty
         ? 0
         : event.index.clamp(0, state.videos.length - 1);
+    if (clampedIndex == state.currentIndex) return;
 
-    emit(state.copyWith(currentIndex: clampedIndex));
+    emit(
+      state.copyWith(
+        currentIndex: clampedIndex,
+        userChangedIndex: true,
+        initialTargetResolved: true,
+      ),
+    );
   }
 
   /// Handle video ready for caching - enqueue for background caching.

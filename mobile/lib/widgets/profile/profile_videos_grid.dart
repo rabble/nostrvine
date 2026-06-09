@@ -18,6 +18,7 @@ import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/utils/video_identity.dart';
 import 'package:openvine/widgets/profile/pending_collaborator_invite_banner_cubit.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
@@ -185,12 +186,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     final videos = currentFeedVideos.isNotEmpty
         ? currentFeedVideos
         : displayedVideos;
-    final index = videos.indexWhere(
-      (video) =>
-          video.id == tappedVideo.id ||
-          (video.pubkey == tappedVideo.pubkey &&
-              video.stableId == tappedVideo.stableId),
-    );
+    final index = indexOfMatchingVideo(videos, tappedVideo);
     final resolvedIndex = index >= 0 ? index : fallbackIndex;
 
     // Pre-warm adjacent videos before navigation

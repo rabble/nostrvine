@@ -166,12 +166,16 @@ void main() {
           videos: [video],
           currentIndex: 5,
           isLoadingMore: true,
+          initialTargetResolved: true,
+          userChangedIndex: true,
         );
 
         expect(updated.status, FullscreenFeedStatus.ready);
         expect(updated.videos, [video]);
         expect(updated.currentIndex, 5);
         expect(updated.isLoadingMore, isTrue);
+        expect(updated.initialTargetResolved, isTrue);
+        expect(updated.userChangedIndex, isTrue);
       });
 
       test('copyWith preserves values when not specified', () {
@@ -211,6 +215,8 @@ void main() {
           false,
           <String>{},
           null,
+          false,
+          false,
         ]);
       });
 

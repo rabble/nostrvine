@@ -14,6 +14,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/utils/video_identity.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Fullscreen video feed view for profile screens.
@@ -163,10 +164,10 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView> {
     final initialVideoId = widget.initialVideoId;
     final initialStableId = widget.initialStableId;
     if (initialVideoId != null || initialStableId != null) {
-      final resolved = videos.indexWhere(
-        (video) =>
-            (initialVideoId != null && video.id == initialVideoId) ||
-            (initialStableId != null && video.stableId == initialStableId),
+      final resolved = indexOfVideoIdentity(
+        videos,
+        videoId: initialVideoId,
+        stableId: initialStableId,
       );
       if (resolved >= 0) return resolved;
     }
