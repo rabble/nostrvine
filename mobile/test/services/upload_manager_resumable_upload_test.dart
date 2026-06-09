@@ -153,6 +153,121 @@ void main() {
     );
 
     test(
+      'resumeInterruptedUpload preserves existing thumbnail URL when result omits one',
+      () async {
+        const thumbnailUrl = 'https://media.divine.video/thumb-existing';
+        final upload =
+            PendingUpload.create(
+              localVideoPath: videoFile.path,
+              nostrPubkey: 'test-pubkey',
+              title: 'Video with generated thumbnail',
+            ).copyWith(
+              status: UploadStatus.uploading,
+              thumbnailPath: thumbnailUrl,
+              uploadProgress: 0.8,
+            );
+
+        final box = Hive.box<PendingUpload>('pending_uploads');
+        await box.put(upload.id, upload);
+
+        when(
+          () => mockBlossomService.uploadVideo(
+            videoFile: any(named: 'videoFile'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            resumableSession: any(named: 'resumableSession'),
+            onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer(
+          (_) async => const BlossomUploadResult(
+            success: true,
+            videoId: 'video-with-thumbnail',
+            url: 'https://media.divine.video/video-with-thumbnail',
+            fallbackUrl: 'https://media.divine.video/video-with-thumbnail',
+          ),
+        );
+
+        uploadManager.resumeInterruptedUpload(upload.id);
+
+        await TestHelpers.waitForCondition(() {
+          final currentUpload = uploadManager.getUpload(upload.id);
+          return currentUpload?.status == UploadStatus.readyToPublish;
+        });
+
+        final completedUpload = uploadManager.getUpload(upload.id);
+        expect(completedUpload, isNotNull);
+        expect(completedUpload!.videoId, equals('video-with-thumbnail'));
+        expect(completedUpload.thumbnailPath, equals(thumbnailUrl));
+      },
+    );
+
+    test(
+      'resumeInterruptedUpload keeps existing CDN thumbnail over a '
+      'non-HTTP result thumbnail',
+      () async {
+        const cdnThumbnailUrl = 'https://media.divine.video/thumb-existing';
+        const localThumbnailPath = '/var/cache/thumbnails/frame.jpg';
+        final upload =
+            PendingUpload.create(
+              localVideoPath: videoFile.path,
+              nostrPubkey: 'test-pubkey',
+              title: 'Video with uploaded thumbnail',
+            ).copyWith(
+              status: UploadStatus.uploading,
+              thumbnailPath: cdnThumbnailUrl,
+              uploadProgress: 0.8,
+            );
+
+        final box = Hive.box<PendingUpload>('pending_uploads');
+        await box.put(upload.id, upload);
+
+        when(
+          () => mockBlossomService.uploadVideo(
+            videoFile: any(named: 'videoFile'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            resumableSession: any(named: 'resumableSession'),
+            onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer(
+          // The upload result carries a non-HTTP thumbnail (a stale local
+          // path). It must never overwrite the already-uploaded CDN URL.
+          (_) async => const BlossomUploadResult(
+            success: true,
+            videoId: 'video-with-thumbnail',
+            url: 'https://media.divine.video/video-with-thumbnail',
+            fallbackUrl: 'https://media.divine.video/video-with-thumbnail',
+            thumbnailUrl: localThumbnailPath,
+          ),
+        );
+
+        uploadManager.resumeInterruptedUpload(upload.id);
+
+        await TestHelpers.waitForCondition(() {
+          final currentUpload = uploadManager.getUpload(upload.id);
+          return currentUpload?.status == UploadStatus.readyToPublish;
+        });
+
+        final completedUpload = uploadManager.getUpload(upload.id);
+        expect(completedUpload, isNotNull);
+        expect(completedUpload!.videoId, equals('video-with-thumbnail'));
+        expect(completedUpload.thumbnailPath, equals(cdnThumbnailUrl));
+        expect(
+          completedUpload.thumbnailPath,
+          isNot(equals(localThumbnailPath)),
+        );
+      },
+    );
+
+    test(
       'resumeInterruptedUpload falls back to failed when session expires',
       () async {
         final upload =

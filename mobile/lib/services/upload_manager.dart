@@ -2106,13 +2106,29 @@ class UploadManager {
   /// Create successful upload with metadata
   PendingUpload _createSuccessfulUpload(PendingUpload upload, dynamic result) {
     // Handle both BlossomUploadResult and DirectUploadResult structures
-    String? thumbnailUrl;
+    String? resultThumbnailUrl;
     try {
       // Get thumbnailUrl from upload result (both services should provide it)
-      thumbnailUrl = result.thumbnailUrl as String?;
+      resultThumbnailUrl = result.thumbnailUrl as String?;
     } catch (e) {
       // Fallback if thumbnailUrl is not available
-      thumbnailUrl = null;
+      resultThumbnailUrl = null;
+    }
+
+    final existingThumbnailUrl = upload.thumbnailPath;
+    String? thumbnailUrl;
+    if (_isHttpUrl(resultThumbnailUrl)) {
+      thumbnailUrl = resultThumbnailUrl;
+    } else if (_isHttpUrl(existingThumbnailUrl)) {
+      thumbnailUrl = existingThumbnailUrl;
+    }
+
+    if (resultThumbnailUrl != null && !_isHttpUrl(resultThumbnailUrl)) {
+      Log.error(
+        '⚠️ thumbnailUrl is not an HTTP URL: $resultThumbnailUrl',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
     }
 
     Log.info(
@@ -2121,7 +2137,7 @@ class UploadManager {
       category: LogCategory.system,
     );
     Log.info(
-      '📸 Upload result thumbnail URL: $thumbnailUrl',
+      '📸 Upload result thumbnail URL: $resultThumbnailUrl',
       name: 'UploadManager',
       category: LogCategory.system,
     );
