@@ -1934,7 +1934,8 @@ class VideosRepository {
   ///    v2 envelope (`totalCount`/`nextOffset`/`hasMore`); maps via
   ///    `toVideoEvents()` (drops NIP-40 expired only — **no** block/content
   ///    filtering, so the cubit can re-filter on every emit, #4782); hydrates
-  ///    engagement counts (bulk-stats then per-video views, existing-wins);
+  ///    engagement counts (bulk-stats then per-video views, filling live
+  ///    `nostr*` counts only so the display seed can't double-count, #3384);
   ///    drops backend-leaked p-tagged collaborator events
   ///    (`v.pubkey != authorPubkey`); merges with [relaySeed] under the #3384
   ///    cross-source max policy; caches the initial page.
@@ -2042,10 +2043,14 @@ class VideosRepository {
   }
 
   /// Hydrates author REST videos with engagement counts: bulk-stats first
-  /// (loops/views/reactions/comments/reposts), then a per-video views-endpoint
-  /// pass for rows still missing a view count. Uses **existing-wins** (`??`)
-  /// semantics — distinct from [_hydrateVideosWithBulkStats]'s stale-zero
-  /// heuristic — to preserve profile-feed count parity (#3384).
+  /// (loops/views), then a per-video views-endpoint pass for rows still missing
+  /// a view count.
+  ///
+  /// Bulk stats are **live** Nostr engagement counts, so reactions/comments/
+  /// reposts fill only the live `nostr*Count` fields (via `??`); the archival
+  /// import counts in `original*` are left untouched. Keeping the two sources
+  /// split is what lets the display seed (archival `original*` + live `nostr*`)
+  /// add them without double-counting (#3384).
   Future<List<VideoEvent>> _hydrateAuthorRestVideos(
     List<VideoEvent> videos,
   ) async {
@@ -2094,10 +2099,12 @@ class VideosRepository {
       return video.copyWith(
         rawTags: mergedTags,
         originalLoops: stats.loops ?? video.originalLoops,
-        originalLikes: video.originalLikes ?? stats.reactions,
-        originalComments: video.originalComments ?? stats.comments,
-        originalReposts: video.originalReposts ?? stats.reposts,
-        nostrLikeCount: video.nostrLikeCount ?? 0,
+        originalLikes: video.originalLikes,
+        originalComments: video.originalComments,
+        originalReposts: video.originalReposts,
+        nostrLikeCount: video.nostrLikeCount ?? stats.reactions,
+        nostrCommentCount: video.nostrCommentCount ?? stats.comments,
+        nostrRepostCount: video.nostrRepostCount ?? stats.reposts,
       );
     }).toList();
   }

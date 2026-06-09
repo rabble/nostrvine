@@ -21,6 +21,9 @@ VideoStats _stats({
   String pubkey = _author,
   String dTag = 'd',
   String videoUrl = 'https://example.com/v.mp4',
+  int reactions = 0,
+  int comments = 0,
+  int reposts = 0,
   Map<String, String> rawTags = const {},
 }) {
   return VideoStats(
@@ -32,9 +35,9 @@ VideoStats _stats({
     title: 'Test',
     thumbnail: 'https://example.com/t.jpg',
     videoUrl: videoUrl,
-    reactions: 0,
-    comments: 0,
-    reposts: 0,
+    reactions: reactions,
+    comments: comments,
+    reposts: reposts,
     engagementScore: 0,
     rawTags: rawTags,
   );
@@ -105,7 +108,7 @@ void main() {
       expect(result.hasMore, isTrue);
     });
 
-    test('hydrates REST videos with bulk stats (existing-wins)', () async {
+    test('hydrates REST videos with bulk stats (loops + views)', () async {
       when(() => funnelcake.getBulkVideoStats(any())).thenAnswer(
         (_) async => const BulkVideoStatsResponse(
           stats: {
@@ -132,6 +135,59 @@ void main() {
       expect(video.rawTags['views'], equals('14'));
       verifyNever(() => funnelcake.getVideoViews(any()));
     });
+
+    test(
+      'keeps live counts in nostr* fields so the display seed cannot '
+      'double-count (#3384)',
+      () async {
+        // A native diVine video carries no archival likes/comments/reposts
+        // rawTags, so toVideoEvent leaves original* null and seeds the live
+        // nostr*Count from the author endpoint. Bulk stats report the SAME
+        // live counts (one backend source). Filling original* from bulk stats
+        // here would make the display seed (original* + nostr*) double.
+        when(() => funnelcake.getBulkVideoStats(any())).thenAnswer(
+          (_) async => const BulkVideoStatsResponse(
+            stats: {
+              'a': BulkVideoStatsEntry(
+                eventId: 'a',
+                reactions: 6,
+                comments: 3,
+                reposts: 2,
+                views: 14,
+                loops: 7,
+              ),
+            },
+          ),
+        );
+        stubAuthor(
+          VideosByAuthorResponse(
+            videos: [_stats(id: 'a', reactions: 6, comments: 3, reposts: 2)],
+          ),
+        );
+
+        final video = (await repository.getAuthorFeed(
+          authorPubkey: _author,
+        )).videos.single;
+
+        // Archival baselines stay untouched; live counts land only in nostr*.
+        expect(video.originalLikes, isNull);
+        expect(video.originalComments, isNull);
+        expect(video.originalReposts, isNull);
+        expect(video.nostrLikeCount, equals(6));
+        expect(video.nostrCommentCount, equals(3));
+        expect(video.nostrRepostCount, equals(2));
+
+        // The display seed is archival + live (see liveLikeCountSeed); with the
+        // two sources split it equals the single backend count, not 2x.
+        int seed(int? archival, int? live) => (archival ?? 0) + (live ?? 0);
+        expect(seed(video.originalLikes, video.nostrLikeCount), equals(6));
+        expect(
+          seed(video.originalComments, video.nostrCommentCount),
+          equals(3),
+        );
+        expect(seed(video.originalReposts, video.nostrRepostCount), equals(2));
+      },
+    );
 
     test(
       'treats a fractional view count as present, skipping the views endpoint',
