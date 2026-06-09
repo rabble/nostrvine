@@ -584,6 +584,35 @@ void main() {
       );
     });
 
+    test('keeps earlier markers in place when a clip is appended', () {
+      // Mirrors the clip-duplication call site: the copy is added at the
+      // end, so markers on the existing clips must not move.
+      final oldClips = [
+        _clip('a', 3),
+        _clip('b', 5),
+      ];
+      final newClips = [
+        _clip('a', 3),
+        _clip('b', 5),
+        _clip('a_copy', 3),
+      ];
+
+      expect(
+        rebaseTimelineMarkersForClipState(
+          oldClips: oldClips,
+          newClips: newClips,
+          markers: [
+            const Duration(seconds: 1),
+            const Duration(seconds: 6),
+          ],
+        ),
+        equals([
+          const Duration(seconds: 1),
+          const Duration(seconds: 6),
+        ]),
+      );
+    });
+
     test('clamps a marker past the timeline end to the last clip end', () {
       final oldClips = [
         _clip('a', 3),

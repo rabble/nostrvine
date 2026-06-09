@@ -2,12 +2,14 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_clip_speed_sheet.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 
 /// Controls shown when a clip is in editing mode: Delete, Copy, Split, Done.
 class TimelineClipControls extends StatefulWidget {
@@ -55,6 +57,7 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
 
   Future<void> _setPlaybackSpeed(BuildContext context) async {
     final bloc = context.read<ClipEditorBloc>();
+    final overlayBloc = context.read<TimelineOverlayBloc>();
     final state = bloc.state;
     if (state.currentClipIndex < 0 ||
         state.currentClipIndex >= state.clips.length) {
@@ -74,11 +77,21 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
     if (result == null || !mounted) return;
 
     final updated = clip.copyWith(playbackSpeed: result);
-    bloc.add(ClipEditorClipUpdated(clipId: clip.id, clip: updated));
-
-    editor.setClipState(
-      state.clips.map((c) => c.id == clip.id ? updated : c).toList(),
+    final newClips = state.clips
+        .map((c) => c.id == clip.id ? updated : c)
+        .toList();
+    // A speed change rescales the clip's playbackDuration, shifting every
+    // later clip — rebase markers by source position so they follow.
+    final rebasedMarkers = rebaseTimelineMarkersForClipState(
+      oldClips: state.clips,
+      newClips: newClips,
+      markers: overlayBloc.state.timelineMarkers,
     );
+
+    bloc.add(ClipEditorClipUpdated(clipId: clip.id, clip: updated));
+    overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
+
+    editor.setClipState(newClips, timelineMarkers: rebasedMarkers);
   }
 
   void _requestExtractAudio(BuildContext context) {
@@ -91,9 +104,19 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
 
   void _deleteClip(BuildContext context) {
     final bloc = context.read<ClipEditorBloc>();
+    final overlayBloc = context.read<TimelineOverlayBloc>();
     final state = bloc.state;
     final clipId = state.clips[state.currentClipIndex].id;
     final editor = VideoEditorScope.of(context).requireEditor;
+
+    final newClips = state.clips.where((clip) => clip.id != clipId).toList();
+    // Markers on the removed clip are dropped; markers on later clips shift
+    // earlier — rebase by source position so both rules are honoured.
+    final rebasedMarkers = rebaseTimelineMarkersForClipState(
+      oldClips: state.clips,
+      newClips: newClips,
+      markers: overlayBloc.state.timelineMarkers,
+    );
 
     bloc.add(ClipEditorClipRemoved(clipId));
 
@@ -102,13 +125,13 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
     }
     bloc.add(const ClipEditorEditingStopped());
 
-    editor.setClipState(
-      state.clips.where((clip) => clip.id != clipId).toList(),
-    );
+    overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
+    editor.setClipState(newClips, timelineMarkers: rebasedMarkers);
   }
 
   void _duplicateClip(BuildContext context) {
     final bloc = context.read<ClipEditorBloc>();
+    final overlayBloc = context.read<TimelineOverlayBloc>();
     final state = bloc.state;
     final clip = state.clips[state.currentClipIndex];
     final editor = VideoEditorScope.of(context).requireEditor;
@@ -119,11 +142,22 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
           '${DateTime.now().millisecondsSinceEpoch}',
     );
 
+    final newClips = [...state.clips, copy];
+    // The copy is appended at the end, so existing markers keep their
+    // positions; rebase for consistency and to persist markers in the
+    // same history entry as the clip change.
+    final rebasedMarkers = rebaseTimelineMarkersForClipState(
+      oldClips: state.clips,
+      newClips: newClips,
+      markers: overlayBloc.state.timelineMarkers,
+    );
+
     bloc
       ..add(ClipEditorClipInserted(index: state.clips.length, clip: copy))
       ..add(const ClipEditorEditingStopped());
 
-    editor.setClipState([...state.clips, copy]);
+    overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
+    editor.setClipState(newClips, timelineMarkers: rebasedMarkers);
   }
 
   void _splitClip(BuildContext context) {

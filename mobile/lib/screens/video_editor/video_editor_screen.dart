@@ -111,6 +111,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         ref.read(videoEditorProvider.notifier).invalidateFinalRenderedClip();
 
         if (_editor != null) {
+          // A split subdivides one clip at the same total span, so no marker
+          // moves — a marker on the left half stays on the start clip, one on
+          // the right stays on the end clip. Persist the current markers in
+          // the same history entry as the split clips so undo/redo restores a
+          // consistent timeline.
           _editor!.addHistory(
             meta: {
               ..._editor!.stateManager.activeMeta,
@@ -119,6 +124,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
                   .clips
                   .map((e) => e.toJson())
                   .toList(),
+              VideoEditorConstants.timelineMarkersStateHistoryKey:
+                  _timelineOverlayBloc.state.timelineMarkers
+                      .map((marker) => marker.inMilliseconds)
+                      .toList(),
             },
           );
         }
