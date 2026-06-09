@@ -205,14 +205,6 @@ class FullscreenFeedBloc
       return (index: state.currentIndex, initialTargetResolved: false);
     }
 
-    final currentVideo = state.currentVideo;
-    final preservedIndex = currentVideo == null
-        ? -1
-        : indexOfMatchingVideo(videos, currentVideo);
-    if (preservedIndex >= 0) {
-      return (index: preservedIndex, initialTargetResolved: true);
-    }
-
     if (!state.userChangedIndex && !state.initialTargetResolved) {
       final initialTargetIndex = indexOfVideoIdentity(
         videos,
@@ -236,6 +228,14 @@ class FullscreenFeedBloc
           initialTargetResolved: true,
         );
       }
+    }
+
+    final currentVideo = state.currentVideo;
+    final preservedIndex = currentVideo == null
+        ? -1
+        : indexOfMatchingVideo(videos, currentVideo);
+    if (preservedIndex >= 0) {
+      return (index: preservedIndex, initialTargetResolved: true);
     }
 
     return (

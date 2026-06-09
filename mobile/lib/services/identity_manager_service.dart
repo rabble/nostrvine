@@ -5,7 +5,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:nostr_key_manager/nostr_key_manager.dart' show SecureKeyStorage;
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -115,7 +114,7 @@ class IdentityManagerService {
         (identity) => identity.npub == currentKeyContainer.npub,
       );
 
-      final displayName = NostrKeyUtils.maskKey(currentKeyContainer.npub);
+      final displayName = currentKeyContainer.npub;
 
       if (existingIndex >= 0) {
         // Update existing identity
@@ -233,7 +232,7 @@ class IdentityManagerService {
 
       await _persistIdentities();
       Log.debug(
-        '📱️ Removed identity with npub: ${NostrKeyUtils.maskKey(npub)}',
+        '📱️ Removed identity with npub: $npub',
         name: 'IdentityManagerService',
         category: LogCategory.system,
       );

@@ -416,6 +416,54 @@ void main() {
       );
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'unresolved initial identity wins over fallback current video',
+        build: () => createBloc(
+          initialVideoId: 'target-video',
+          initialStableId: 'stable-target-video',
+        ),
+        act: (bloc) async {
+          final fallback = createTestVideo('fallback-video');
+          final target = createTestVideo(
+            'target-video',
+            rawTags: const {'d': 'stable-target-video'},
+          );
+
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([fallback]);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([createTestVideo('newer-video'), target]);
+        },
+        wait: const Duration(milliseconds: 200),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having((s) => s.currentIndex, 'currentIndex', 0)
+              .having(
+                (s) => s.currentVideo?.id,
+                'currentVideo',
+                'fallback-video',
+              )
+              .having(
+                (s) => s.initialTargetResolved,
+                'initialTargetResolved',
+                false,
+              ),
+          isA<FullscreenFeedState>()
+              .having((s) => s.currentIndex, 'currentIndex', 1)
+              .having(
+                (s) => s.currentVideo?.id,
+                'currentVideo',
+                'target-video',
+              )
+              .having(
+                (s) => s.initialTargetResolved,
+                'initialTargetResolved',
+                true,
+              ),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'cancels previous subscription when started again',
         build: createBloc,
         act: (bloc) async {

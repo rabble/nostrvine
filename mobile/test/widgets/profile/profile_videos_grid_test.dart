@@ -249,6 +249,73 @@ void main() {
         },
       );
 
+      testWidgets(
+        'active upload placeholder does not offset published tap target',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+          final draft = _createTestDraft();
+          when(() => mockBloc.state).thenReturn(
+            BackgroundPublishState(
+              uploads: [
+                BackgroundUpload(draft: draft, result: null, progress: 0.5),
+              ],
+            ),
+          );
+
+          final videos = _createTestVideos(pubkey: _ownPubkey, count: 4);
+          Object? capturedExtra;
+          final profileFeedCubit = _stubbedProfileFeedCubit();
+          final router = GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => testProviderScope(
+                  mockAuthService: mockAuth,
+                  child: BlocProvider<BackgroundPublishBloc>.value(
+                    value: mockBloc,
+                    child: Scaffold(
+                      body: BlocProvider<ProfileFeedCubit>.value(
+                        value: profileFeedCubit,
+                        child: ProfileVideosGrid(
+                          videos: videos,
+                          userIdHex: _ownPubkey,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: PooledFullscreenVideoFeedScreen.path,
+                builder: (context, state) {
+                  capturedExtra = state.extra;
+                  return const SizedBox.shrink();
+                },
+              ),
+            ],
+          );
+
+          await tester.pumpWidget(
+            MaterialApp.router(
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+            ),
+          );
+
+          expect(find.byType(PartialCircleSpinner), findsOneWidget);
+          await tester.tap(find.bySemanticsLabel('Video thumbnail 3'));
+          await tester.pumpAndSettle();
+
+          final args = capturedExtra as ProfilePooledFullscreenVideoFeedArgs?;
+          expect(args, isNotNull);
+          expect(args!.initialIndex, 1);
+          expect(args.initialVideoId, videos[1].id);
+          expect(args.initialStableId, videos[1].stableId);
+          expect(args.seedVideos, videos);
+        },
+      );
+
       testWidgets('shows persistent pending invite banner on own profile', (
         tester,
       ) async {

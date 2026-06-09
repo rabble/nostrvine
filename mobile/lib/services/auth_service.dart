@@ -121,7 +121,7 @@ class UserProfile {
       UserProfile(
         npub: keyContainer.npub,
         publicKeyHex: keyContainer.publicKeyHex,
-        displayName: NostrKeyUtils.maskKey(keyContainer.npub),
+        displayName: keyContainer.npub,
       );
 
   final String npub;
@@ -1188,7 +1188,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         category: LogCategory.auth,
       );
       Log.debug(
-        '📱 Public key: ${NostrKeyUtils.maskKey(keyContainer.npub)}',
+        '📱 Public key: ${keyContainer.npub}',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -2272,7 +2272,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       _currentProfile = UserProfile(
         npub: npub,
         publicKeyHex: userPubkey,
-        displayName: NostrKeyUtils.maskKey(npub),
+        displayName: npub,
       );
 
       _setAuthState(AuthState.authenticated);
@@ -2613,7 +2613,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       _currentProfile = UserProfile(
         npub: npub,
         publicKeyHex: pubkey,
-        displayName: NostrKeyUtils.maskKey(npub),
+        displayName: npub,
       );
 
       _setAuthState(AuthState.authenticated);
@@ -2676,7 +2676,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         category: LogCategory.auth,
       );
       Log.debug(
-        '📱 Public key: ${NostrKeyUtils.maskKey(keyContainer.npub)}',
+        '📱 Public key: ${keyContainer.npub}',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -2756,7 +2756,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         category: LogCategory.auth,
       );
       Log.debug(
-        '📱 Public key: ${NostrKeyUtils.maskKey(keyContainer.npub)}',
+        '📱 Public key: ${keyContainer.npub}',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -4543,7 +4543,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _currentProfile = UserProfile(
       npub: keyContainer.npub,
       publicKeyHex: keyContainer.publicKeyHex,
-      displayName: NostrKeyUtils.maskKey(keyContainer.npub),
+      displayName: keyContainer.npub,
     );
 
     // Store current user pubkey in SharedPreferences for router redirect checks
@@ -5128,7 +5128,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   Map<String, dynamic> get userStats => {
     'is_authenticated': isAuthenticated,
     'auth_state': authState.name,
-    'npub': currentNpub != null ? NostrKeyUtils.maskKey(currentNpub!) : null,
+    'npub': currentNpub,
     'key_created_at': _currentProfile?.keyCreatedAt?.toIso8601String(),
     'last_access_at': _currentProfile?.lastAccessAt?.toIso8601String(),
     'has_error': _lastError != null,
