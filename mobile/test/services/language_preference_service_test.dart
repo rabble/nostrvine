@@ -2,8 +2,7 @@
 // ABOUTME: Verifies language preference storage, device default fallback, and
 // custom language override behavior
 
-import 'dart:ui';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -84,6 +83,42 @@ void main() {
 
         expect(notifications, equals(1));
       });
+
+      test('does not notify removed listeners', () async {
+        await service.initialize();
+        var notifications = 0;
+        void listener() {
+          notifications++;
+        }
+
+        service.addListener(listener);
+        service.removeListener(listener);
+
+        await service.setContentLanguage('pt');
+
+        expect(notifications, isZero);
+      });
+
+      test('continues notifying listeners after one throws', () async {
+        await service.initialize();
+        final reportedErrors = <FlutterErrorDetails>[];
+        final originalOnError = FlutterError.onError;
+        FlutterError.onError = reportedErrors.add;
+        addTearDown(() => FlutterError.onError = originalOnError);
+
+        var notifications = 0;
+        service
+          ..addListener(() => throw StateError('listener failed'))
+          ..addListener(() {
+            notifications++;
+          });
+
+        await service.setContentLanguage('pt');
+
+        expect(notifications, equals(1));
+        expect(reportedErrors, hasLength(1));
+        expect(reportedErrors.single.exception, isA<StateError>());
+      });
     });
 
     group('clearContentLanguage', () {
@@ -121,6 +156,19 @@ void main() {
         await service.clearContentLanguage();
 
         expect(notifications, equals(1));
+      });
+
+      test('does not notify listeners after dispose', () async {
+        await service.initialize();
+        var notifications = 0;
+        service.addListener(() {
+          notifications++;
+        });
+
+        service.dispose();
+        await service.clearContentLanguage();
+
+        expect(notifications, isZero);
       });
     });
 

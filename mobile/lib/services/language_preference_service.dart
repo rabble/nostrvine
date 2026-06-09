@@ -11,12 +11,13 @@ import 'package:unified_logger/unified_logger.dart';
 /// self-labeling (`L`/`l` tags with ISO-639-1 namespace).
 ///
 /// When no custom language is set, the device's OS language is used.
-class LanguagePreferenceService extends ChangeNotifier {
+class LanguagePreferenceService {
   /// SharedPreferences key for the content language preference
   static const String prefsKey = 'content_language';
 
   String? _customLanguage;
   Future<void>? _initializeFuture;
+  final Set<VoidCallback> _listeners = {};
 
   /// Whether the user has overridden the default device language.
   bool get isCustomLanguageSet => _customLanguage != null;
@@ -55,7 +56,7 @@ class LanguagePreferenceService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(prefsKey, languageCode);
       _customLanguage = languageCode;
-      notifyListeners();
+      _notifyListeners();
 
       Log.debug(
         'Content language set to: $languageCode',
@@ -77,7 +78,7 @@ class LanguagePreferenceService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(prefsKey);
       _customLanguage = null;
-      notifyListeners();
+      _notifyListeners();
 
       Log.debug(
         'Content language cleared, using device default',
@@ -123,5 +124,39 @@ class LanguagePreferenceService extends ChangeNotifier {
   /// if not found in the supported languages map.
   static String displayNameFor(String languageCode) {
     return supportedLanguages[languageCode] ?? languageCode.toUpperCase();
+  }
+
+  /// Register a listener for content-language preference changes.
+  void addListener(VoidCallback listener) {
+    _listeners.add(listener);
+  }
+
+  /// Remove a listener previously registered with [addListener].
+  void removeListener(VoidCallback listener) {
+    _listeners.remove(listener);
+  }
+
+  /// Release registered listeners when the provider is disposed.
+  void dispose() {
+    _listeners.clear();
+  }
+
+  void _notifyListeners() {
+    for (final listener in List<VoidCallback>.of(_listeners)) {
+      try {
+        listener();
+      } catch (error, stackTrace) {
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: error,
+            stack: stackTrace,
+            library: 'language preference service',
+            context: ErrorDescription(
+              'while dispatching content-language preference notifications',
+            ),
+          ),
+        );
+      }
+    }
   }
 }
