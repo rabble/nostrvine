@@ -567,6 +567,26 @@ void main() {
       );
     });
 
+    test('shifts later markers when a preceding clip speed changes', () {
+      final oldClips = [
+        _clip('intro', 4),
+        _clip('target', 6),
+      ];
+      final newClips = [
+        _clip('intro', 4, speed: 2.0),
+        _clip('target', 6),
+      ];
+
+      expect(
+        rebaseTimelineMarkersForClipState(
+          oldClips: oldClips,
+          newClips: newClips,
+          markers: [const Duration(seconds: 6)],
+        ),
+        equals([const Duration(seconds: 4)]),
+      );
+    });
+
     test('drops markers whose source clip no longer exists', () {
       final oldClips = [
         _clip('a', 3),
@@ -581,6 +601,27 @@ void main() {
           markers: [const Duration(seconds: 4)],
         ),
         isEmpty,
+      );
+    });
+
+    test('shifts later markers earlier when a preceding clip is removed', () {
+      final oldClips = [
+        _clip('a', 3),
+        _clip('b', 5),
+        _clip('c', 4),
+      ];
+      final newClips = [
+        _clip('a', 3),
+        _clip('c', 4),
+      ];
+
+      expect(
+        rebaseTimelineMarkersForClipState(
+          oldClips: oldClips,
+          newClips: newClips,
+          markers: [const Duration(seconds: 10)],
+        ),
+        equals([const Duration(seconds: 5)]),
       );
     });
 
