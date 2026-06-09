@@ -19,6 +19,12 @@ enum BlocklistOp {
   /// Someone unmuted us — removed from the mutual-mute set.
   unmuted,
 
+  /// We muted someone — added via our own kind 10000 mute list.
+  mutedByUs,
+
+  /// We unmuted someone — removed from our own kind 10000 mute list.
+  unmutedByUs,
+
   /// Someone blocked us — added to the blocked-by-others set.
   blockedUs,
 
@@ -48,9 +54,13 @@ class BlocklistChange {
   /// `false` when the change removes the pubkey, restoring visibility on
   /// the next pagination.
   bool get isAddition => switch (op) {
-    BlocklistOp.blocked || BlocklistOp.muted || BlocklistOp.blockedUs => true,
+    BlocklistOp.blocked ||
+    BlocklistOp.muted ||
+    BlocklistOp.mutedByUs ||
+    BlocklistOp.blockedUs => true,
     BlocklistOp.unblocked ||
     BlocklistOp.unmuted ||
+    BlocklistOp.unmutedByUs ||
     BlocklistOp.unblockedUs => false,
   };
 

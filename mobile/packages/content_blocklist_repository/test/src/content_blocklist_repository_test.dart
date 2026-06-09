@@ -363,7 +363,7 @@ void main() {
     });
 
     test(
-      'syncMuteListsInBackground subscribes to kind 10000 with our pubkey',
+      'syncMuteListsInBackground subscribes to mutual and own kind 10000',
       () async {
         const ourPubkey = 'test_our_pubkey_hex';
 
@@ -379,11 +379,15 @@ void main() {
         verify(() => mockNostrService.subscribe(any())).called(1);
 
         expect(capturedFilters, isNotNull);
-        expect(capturedFilters!.length, equals(1));
+        expect(capturedFilters!.length, equals(2));
 
-        final filter = capturedFilters![0] as Filter;
-        expect(filter.kinds, contains(10000));
-        expect(filter.p, contains(ourPubkey));
+        final mutualFilter = capturedFilters![0] as Filter;
+        expect(mutualFilter.kinds, contains(10000));
+        expect(mutualFilter.p, contains(ourPubkey));
+
+        final ownFilter = capturedFilters![1] as Filter;
+        expect(ownFilter.kinds, contains(10000));
+        expect(ownFilter.authors, contains(ourPubkey));
       },
     );
 
@@ -637,6 +641,237 @@ void main() {
         expect(service.shouldFilterFromFeeds(blockedByUsPubkey), isTrue);
       },
     );
+  });
+
+  group('ContentBlocklistRepository - Own Mute List Sync', () {
+    const ourPubkey =
+        '0000000000000000000000000000000000000000000000000000000000000001';
+    const mutedPubkey =
+        '0000000000000000000000000000000000000000000000000000000000000002';
+    const otherMutedPubkey =
+        '0000000000000000000000000000000000000000000000000000000000000003';
+
+    late ContentBlocklistRepository service;
+    late _MockNostrClient mockNostrService;
+    late StreamController<Event> controller;
+
+    Event ownMuteListEvent({
+      required List<String> mutedPubkeys,
+      required int createdAt,
+      String id = 'own-mute-event-id',
+    }) =>
+        Event(
+            ourPubkey,
+            10000,
+            [
+              for (final pubkey in mutedPubkeys) ['p', pubkey],
+            ],
+            '',
+            createdAt: createdAt,
+          )
+          ..id = id
+          ..sig = 'signature';
+
+    setUp(() {
+      service = ContentBlocklistRepository();
+      mockNostrService = _MockNostrClient();
+      controller = StreamController<Event>();
+      when(
+        () => mockNostrService.subscribe(any()),
+      ).thenAnswer((_) => controller.stream);
+    });
+
+    tearDown(() async {
+      await controller.close();
+    });
+
+    test('own kind 10000 event populates muted authors', () async {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
+      controller.add(
+        ownMuteListEvent(
+          mutedPubkeys: [mutedPubkey, otherMutedPubkey],
+          createdAt: now,
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(service.isMutedByUs(mutedPubkey), isTrue);
+      expect(service.isMutedByUs(otherMutedPubkey), isTrue);
+      expect(service.shouldFilterFromFeeds(mutedPubkey), isTrue);
+      expect(
+        service.currentState.mutedPubkeys,
+        containsAll(<String>{mutedPubkey, otherMutedPubkey}),
+      );
+      // Mutes are not blocks — the block-specific queries stay false.
+      expect(service.isBlocked(mutedPubkey), isFalse);
+      expect(service.hasMutedUs(mutedPubkey), isFalse);
+    });
+
+    test('newer own event replaces the muted set (unmute)', () async {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
+      controller.add(
+        ownMuteListEvent(
+          mutedPubkeys: [mutedPubkey, otherMutedPubkey],
+          createdAt: now,
+          id: 'own-mute-event-id-1',
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      controller.add(
+        ownMuteListEvent(
+          mutedPubkeys: [otherMutedPubkey],
+          createdAt: now + 60,
+          id: 'own-mute-event-id-2',
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(service.isMutedByUs(mutedPubkey), isFalse);
+      expect(service.shouldFilterFromFeeds(mutedPubkey), isFalse);
+      expect(service.isMutedByUs(otherMutedPubkey), isTrue);
+    });
+
+    test('ignores stale older own mute event', () async {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
+      controller.add(
+        ownMuteListEvent(
+          mutedPubkeys: [],
+          createdAt: now + 60,
+          id: 'own-mute-event-id-newer',
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      controller.add(
+        ownMuteListEvent(
+          mutedPubkeys: [mutedPubkey],
+          createdAt: now,
+          id: 'own-mute-event-id-older',
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(service.isMutedByUs(mutedPubkey), isFalse);
+      expect(service.shouldFilterFromFeeds(mutedPubkey), isFalse);
+    });
+
+    test('excludes our own pubkey from a self-referential mute list', () async {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
+      controller.add(
+        ownMuteListEvent(
+          mutedPubkeys: [ourPubkey, mutedPubkey],
+          createdAt: now,
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // A malformed self-referential list must never filter our own
+      // content (#2192).
+      expect(service.isMutedByUs(ourPubkey), isFalse);
+      expect(service.shouldFilterFromFeeds(ourPubkey), isFalse);
+      expect(service.isMutedByUs(mutedPubkey), isTrue);
+    });
+
+    test('own mute event does not touch the mutual-mute set', () async {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
+      // Our own list naming our own pubkey-of-interest must route to the
+      // own-mute handler, not register as "they muted us".
+      controller.add(
+        ownMuteListEvent(mutedPubkeys: [mutedPubkey], createdAt: now),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(service.hasMutedUs(ourPubkey), isFalse);
+      expect(service.hasMutedUs(mutedPubkey), isFalse);
+      expect(service.isMutedByUs(mutedPubkey), isTrue);
+    });
+
+    test('emits mutedByUs and unmutedByUs on the changes stream', () async {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final changes = <BlocklistChange>[];
+      final subscription = service.changes.listen(changes.add);
+
+      await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
+      controller.add(
+        ownMuteListEvent(
+          mutedPubkeys: [mutedPubkey],
+          createdAt: now,
+          id: 'own-mute-event-id-1',
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      controller.add(
+        ownMuteListEvent(
+          mutedPubkeys: [],
+          createdAt: now + 60,
+          id: 'own-mute-event-id-2',
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(
+        changes,
+        containsAllInOrder([
+          const BlocklistChange(
+            pubkey: mutedPubkey,
+            op: BlocklistOp.mutedByUs,
+          ),
+          const BlocklistChange(
+            pubkey: mutedPubkey,
+            op: BlocklistOp.unmutedByUs,
+          ),
+        ]),
+      );
+      expect(
+        changes.firstWhere((c) => c.op == BlocklistOp.mutedByUs).isAddition,
+        isTrue,
+      );
+      expect(
+        changes.firstWhere((c) => c.op == BlocklistOp.unmutedByUs).isAddition,
+        isFalse,
+      );
+
+      await subscription.cancel();
+    });
+
+    test('persists muted authors and rehydrates at construction', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final persistedService = ContentBlocklistRepository(prefs: prefs);
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      await persistedService.syncMuteListsInBackground(
+        mockNostrService,
+        ourPubkey,
+      );
+      controller.add(
+        ownMuteListEvent(mutedPubkeys: [mutedPubkey], createdAt: now),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(persistedService.isMutedByUs(mutedPubkey), isTrue);
+
+      // A fresh instance over the same prefs hydrates the muted set
+      // before any relay event arrives.
+      final rehydrated = ContentBlocklistRepository(prefs: prefs);
+      expect(rehydrated.isMutedByUs(mutedPubkey), isTrue);
+      expect(rehydrated.shouldFilterFromFeeds(mutedPubkey), isTrue);
+      expect(rehydrated.currentState.mutedPubkeys, contains(mutedPubkey));
+
+      persistedService.dispose();
+      rehydrated.dispose();
+    });
   });
 
   group('ContentBlocklistRepository - Block List Sync', () {
@@ -1083,6 +1318,17 @@ void main() {
       final service = ContentBlocklistRepository(prefs: prefs);
 
       expect(service.totalBlockedCount, equals(0));
+    });
+
+    test('ignores corrupt muted authors JSON without throwing', () async {
+      SharedPreferences.setMockInitialValues({
+        'muted_users_list': 'not valid json',
+      });
+      final prefs = await SharedPreferences.getInstance();
+
+      final service = ContentBlocklistRepository(prefs: prefs);
+
+      expect(service.currentState.mutedPubkeys, isEmpty);
     });
 
     test('loads existing severed followers from SharedPreferences', () async {

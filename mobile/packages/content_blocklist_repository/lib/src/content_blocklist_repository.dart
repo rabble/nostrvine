@@ -1,6 +1,6 @@
 // ABOUTME: Content blocklist service for filtering unwanted content from feeds
-// ABOUTME: Maintains internal blocklist while allowing explicit profile visits
-// ABOUTME: Persists blocks to SharedPreferences and publishes kind 30000
+// ABOUTME: Tracks our blocks, our kind-10000 mutes, and mutual block/mute state
+// ABOUTME: Persists to SharedPreferences and publishes kind 30000
 
 import 'dart:async';
 import 'dart:convert';
@@ -17,6 +17,9 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// SharedPreferences key for persisted block list
 const _blockedUsersPrefsKey = 'blocked_users_list';
+
+/// SharedPreferences key for our own kind-10000 muted authors
+const _mutedUsersPrefsKey = 'muted_users_list';
 
 /// SharedPreferences key for severed followers (follow broken by block)
 const _severedFollowersPrefsKey = 'severed_followers_list';
@@ -45,6 +48,7 @@ class ContentBlocklistRepository {
     // Initialize with the specific npub requested
     _addInitialBlockedContent();
     _loadBlockedUsers();
+    _loadMutedUsers();
     _loadSeveredFollowers();
     Log.info(
       'ContentBlocklistRepository initialized with '
@@ -66,6 +70,13 @@ class ContentBlocklistRepository {
 
   // Mutual mute blocklist (populated from kind 10000 events)
   final Set<String> _mutualMuteBlocklist = <String>{};
+
+  // Authors we muted via our own kind 10000 mute list. Read-only mirror of
+  // relay state: this app has no mute-authoring UI, so the newest own
+  // kind 10000 event (published from any Nostr client) replaces this set
+  // wholesale. Only public 'p' tags are read; NIP-51 encrypted (private)
+  // mute entries are not supported.
+  final Set<String> _mutedPubkeys = <String>{};
 
   // Latest replaceable kind-10000 mute-list event timestamp per author.
   // Prevent stale relay delivery order from resurrecting old mute state.
@@ -126,9 +137,7 @@ class ContentBlocklistRepository {
 
   ContentPolicyState _buildCurrentState() => ContentPolicyState(
     currentUserPubkey: _ourPubkey,
-    // TODO(rabble): populate from our own kind 10000 once personal-mute
-    // reading is wired; tracking in follow-up to the content-policy epic.
-    mutedPubkeys: const {},
+    mutedPubkeys: Set.unmodifiable(_mutedPubkeys),
     blockedPubkeys: Set.unmodifiable({
       ..._internalBlocklist,
       ..._runtimeBlocklist,
@@ -196,6 +205,53 @@ class ContentBlocklistRepository {
     } on Object catch (e) {
       Log.error(
         'Failed to persist blocked users: $e',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Load persisted muted authors from SharedPreferences.
+  ///
+  /// This is the hydration cache that covers the window between app start
+  /// and relay delivery of our own kind 10000 event.
+  void _loadMutedUsers() {
+    final prefs = _prefs;
+    if (prefs == null) return;
+
+    final stored = prefs.getString(_mutedUsersPrefsKey);
+    if (stored == null || stored.isEmpty) return;
+
+    try {
+      final list = (jsonDecode(stored) as List<dynamic>).cast<String>();
+      _mutedPubkeys.addAll(list);
+      Log.info(
+        'Loaded ${list.length} muted authors from persistence',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+    } on Object catch (e) {
+      Log.error(
+        'Failed to load persisted muted authors: $e',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Save muted authors to SharedPreferences
+  ///
+  /// Awaits the platform write so the data survives an immediate app kill.
+  Future<void> _saveMutedUsers() async {
+    final prefs = _prefs;
+    if (prefs == null) return;
+
+    try {
+      final json = jsonEncode(_mutedPubkeys.toList());
+      await prefs.setString(_mutedUsersPrefsKey, json);
+    } on Object catch (e) {
+      Log.error(
+        'Failed to persist muted authors: $e',
         name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
@@ -345,15 +401,23 @@ class ContentBlocklistRepository {
   ///
   /// Filters content from:
   /// - Users we blocked (internal + runtime blocklist)
+  /// - Users we muted via our own kind 10000 mute list
   /// - Users who mutually muted us (kind 10000)
   /// - Users who blocked us (kind 30000, d=block) — hides our content
   ///   from their feeds and their content from ours
   bool shouldFilterFromFeeds(String pubkey) {
     return _internalBlocklist.contains(pubkey) ||
         _runtimeBlocklist.contains(pubkey) ||
+        _mutedPubkeys.contains(pubkey) ||
         _mutualMuteBlocklist.contains(pubkey) ||
         _blockedByOthers.contains(pubkey);
   }
+
+  /// Check if we muted another user via our own kind 10000 mute list.
+  ///
+  /// Mutes are authored from other Nostr clients (this app has no mute
+  /// action); this reflects the latest own kind 10000 event seen on relays.
+  bool isMutedByUs(String pubkey) => _mutedPubkeys.contains(pubkey);
 
   /// Check if another user has muted us (mutual mute blocking)
   ///
@@ -502,8 +566,15 @@ class ContentBlocklistRepository {
     'total_blocks': totalBlockedCount,
   };
 
-  /// Start background sync of mutual mute lists (NIP-51 kind 10000)
-  /// Subscribes to kind 10000 events WHERE our pubkey appears in 'p' tags
+  /// Start background sync of mute lists (NIP-51 kind 10000).
+  ///
+  /// Subscribes to two filter sets in a single subscription:
+  /// 1. Kind 10000 events WHERE our pubkey appears in 'p' tags — detects
+  ///    when other users mute us (mutual mute).
+  /// 2. Our own kind 10000 event — mutes the user authored from other
+  ///    Nostr clients (this app has no mute action), and relay-based
+  ///    restoration after reinstall, mirroring the kind 30000 block
+  ///    restore in [syncBlockListsInBackground].
   Future<void> syncMuteListsInBackground(
     NostrClient nostrService,
     String ourPubkey,
@@ -535,11 +606,14 @@ class ContentBlocklistRepository {
     );
 
     try {
-      // Subscribe to kind 10000 (mute list) events WHERE our pubkey is in
-      // 'p' tags
-      final filter = Filter(kinds: const [10000])..p = [ourPubkey];
+      // Filter 1: others' mute lists that include our pubkey (mutual mute)
+      final mutualFilter = Filter(kinds: const [10000])..p = [ourPubkey];
 
-      final subscription = nostrService.subscribe([filter]);
+      // Filter 2: our own mute list (mutes authored from other clients +
+      // relay-based restoration after reinstall)
+      final ownFilter = Filter(authors: [ourPubkey], kinds: const [10000]);
+
+      final subscription = nostrService.subscribe([mutualFilter, ownFilter]);
 
       _mutualMuteSyncStarted = true;
       _mutualMuteSubscriptionId =
@@ -635,8 +709,11 @@ class ContentBlocklistRepository {
     }
   }
 
-  /// Handle incoming kind 10000 mute list events
-  /// Adds/removes muter based on whether our pubkey is in their 'p' tags
+  /// Handle incoming kind 10000 mute list events.
+  ///
+  /// Routes our own mute list to [_handleOwnMuteListEvent]; for other
+  /// authors, adds/removes the muter based on whether our pubkey is in
+  /// their 'p' tags (mutual mute).
   void _handleMuteListEvent(Event event) {
     if (event.kind != 10000) {
       Log.warning(
@@ -644,6 +721,11 @@ class ContentBlocklistRepository {
         name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
+      return;
+    }
+
+    if (event.pubkey == _ourPubkey) {
+      _handleOwnMuteListEvent(event);
       return;
     }
 
@@ -701,6 +783,65 @@ class ContentBlocklistRepository {
         );
       }
     }
+  }
+
+  /// Replace our muted-authors set from our latest kind 10000 event.
+  ///
+  /// Kind 10000 is replaceable and this app never authors mutes, so the
+  /// newest own event is the complete list and replaces [_mutedPubkeys]
+  /// wholesale — unlike [_handleOwnBlockListEvent], which merges to
+  /// protect locally-authored blocks that may not have reached relays.
+  /// Our own pubkey is excluded so a malformed self-referential mute list
+  /// can never filter the user's own content (#2192).
+  void _handleOwnMuteListEvent(Event event) {
+    final ourPubkey = event.pubkey;
+    final createdAt = event.createdAt;
+    final latestSeen = _latestMuteListEventCreatedAtByAuthor[ourPubkey];
+
+    if (latestSeen != null && createdAt < latestSeen) {
+      Log.debug(
+        'Ignoring stale own mute list event '
+        '(createdAt=$createdAt < latestSeen=$latestSeen)',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    _latestMuteListEventCreatedAtByAuthor[ourPubkey] = createdAt;
+
+    final relayMuted = <String>{};
+    for (final tag in event.tags) {
+      if (tag.isNotEmpty &&
+          tag[0] == 'p' &&
+          tag.length >= 2 &&
+          tag[1] != ourPubkey) {
+        relayMuted.add(tag[1]);
+      }
+    }
+
+    final added = relayMuted.difference(_mutedPubkeys);
+    final removed = _mutedPubkeys.difference(relayMuted);
+    if (added.isEmpty && removed.isEmpty) return;
+
+    _mutedPubkeys
+      ..removeAll(removed)
+      ..addAll(added);
+    unawaited(_saveMutedUsers());
+    for (final pubkey in added) {
+      _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.mutedByUs));
+    }
+    for (final pubkey in removed) {
+      _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.unmutedByUs));
+    }
+    _notifyChanged();
+
+    Log.info(
+      'Synced own mute list: +${added.length} -${removed.length} '
+      '(total: ${_mutedPubkeys.length})',
+      name: 'ContentBlocklistRepository',
+      category: LogCategory.system,
+    );
   }
 
   /// Handle incoming kind 30000 block list events (d=block).
