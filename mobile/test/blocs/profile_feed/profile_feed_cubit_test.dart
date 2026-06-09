@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -246,6 +247,45 @@ void main() {
       },
     );
 
+    test(
+      'cold load: backfill skips empty advancing REST pages',
+      () async {
+        h.stubAuthorFeedSequence([
+          _result(
+            [_video('a', createdAt: 5000), _video('b', createdAt: 4000)],
+            totalCount: 4,
+            nextOffset: 2,
+            hasMore: true,
+          ),
+          _result(const [], totalCount: 4, nextOffset: 3, hasMore: true),
+          _result(
+            [_video('c', createdAt: 3000), _video('d', createdAt: 2000)],
+            totalCount: 4,
+            hasMore: false,
+          ),
+        ]);
+
+        final cubit = h.build();
+        addTearDown(cubit.close);
+        await pumpEventQueue(times: 8);
+
+        expect(cubit.state.videos.map((video) => video.id), [
+          'a',
+          'b',
+          'c',
+          'd',
+        ]);
+        expect(cubit.state.hasMoreContent, isFalse);
+        expect(cubit.state.nextOffset, isNull);
+        verify(
+          () => h.repo.getAuthorFeed(authorPubkey: _author, offset: 2),
+        ).called(1);
+        verify(
+          () => h.repo.getAuthorFeed(authorPubkey: _author, offset: 3),
+        ).called(1);
+      },
+    );
+
     test('cold load: REST failure, no relay -> failure + addError', () async {
       h.stubAuthorFeedThrows(Exception('boom'));
       final cubit = h.build();
@@ -296,6 +336,35 @@ void main() {
         expect(cubit.state.videos.map((v) => v.id), ['a', 'b']);
         expect(cubit.state.nextOffset, 100);
         expect(cubit.state.hasMoreContent, isFalse);
+        expect(cubit.state.isLoadingMore, isFalse);
+      },
+    );
+
+    test(
+      'loadMore REST: empty advancing page keeps REST pagination active',
+      () async {
+        final initialVideos = [
+          for (var i = 0; i < AppConstants.paginationBatchSize; i++)
+            _video('initial-$i', createdAt: 5000 - i),
+        ];
+        final cubit = await buildReady(
+          _result(initialVideos, nextOffset: 50, hasMore: true),
+        );
+        addTearDown(cubit.close);
+        clearInteractions(h.repo);
+
+        h.stubAuthorFeed(
+          _result(const [], nextOffset: 100, hasMore: true),
+        );
+        cubit.add(const ProfileFeedLoadMoreRequested());
+        await pumpEventQueue();
+
+        expect(cubit.state.videos.map((video) => video.id), [
+          for (var i = 0; i < AppConstants.paginationBatchSize; i++)
+            'initial-$i',
+        ]);
+        expect(cubit.state.nextOffset, 100);
+        expect(cubit.state.hasMoreContent, isTrue);
         expect(cubit.state.isLoadingMore, isFalse);
       },
     );

@@ -280,6 +280,17 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
       }
 
       if (result.videos.isEmpty) {
+        if (_isAdvancingRestPage(result, offset)) {
+          _applyRestPage(
+            emit,
+            pageVideos: const [],
+            totalCount: result.totalCount,
+            nextOffset: result.nextOffset,
+            hasMore: result.hasMore,
+            mergeWithCurrent: true,
+          );
+          continue;
+        }
         emit(state.copyWith(hasMoreContent: false));
         return;
       }
@@ -314,12 +325,24 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
 
     try {
       if (state.nextOffset != null) {
+        final offset = state.nextOffset;
         final result = await _videosRepository.getAuthorFeed(
           authorPubkey: _authorPubkey,
-          offset: state.nextOffset,
+          offset: offset,
         );
         if (isClosed) return;
         if (result.videos.isEmpty) {
+          if (_isAdvancingRestPage(result, offset)) {
+            _applyRestPage(
+              emit,
+              pageVideos: const [],
+              totalCount: result.totalCount,
+              nextOffset: result.nextOffset,
+              hasMore: result.hasMore,
+              mergeWithCurrent: true,
+            );
+            return;
+          }
           emit(state.copyWith(hasMoreContent: false, isLoadingMore: false));
           return;
         }
@@ -371,6 +394,13 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
       addError(error, stackTrace);
       emit(state.copyWith(isLoadingMore: false, hasLoadMoreError: true));
     }
+  }
+
+  bool _isAdvancingRestPage(AuthorFeedResult result, int? previousOffset) {
+    final nextOffset = result.nextOffset;
+    return result.hasMore == true &&
+        nextOffset != null &&
+        nextOffset != previousOffset;
   }
 
   void _applyRestPage(
