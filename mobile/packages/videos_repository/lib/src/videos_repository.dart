@@ -1983,10 +1983,16 @@ class VideosRepository {
           authorPubkey: authorPubkey,
           videos: merged,
           totalCount: response.totalCount,
-          nextOffset: response.nextOffset ?? ((offset ?? 0) + hydrated.length),
-          hasMore:
-              response.hasMore ??
-              (hydrated.length >= _authorFeedPaginationBatchSize),
+          nextOffset: _nextAuthorFeedOffset(
+            response: response,
+            offset: offset,
+            fetchedCount: hydrated.length,
+          ),
+          hasMore: _authorFeedHasMore(
+            response: response,
+            offset: offset,
+            fetchedCount: hydrated.length,
+          ),
         );
 
         if (isInitialPage) {
@@ -2004,6 +2010,35 @@ class VideosRepository {
       videos: seedOnly,
       hasMore: seedOnly.length >= _authorFeedHasMoreThreshold,
     );
+  }
+
+  int? _nextAuthorFeedOffset({
+    required VideosByAuthorResponse response,
+    required int? offset,
+    required int fetchedCount,
+  }) {
+    final currentOffset = offset ?? 0;
+    if (response.nextOffset != null) return response.nextOffset;
+    if (!_authorFeedHasMore(
+      response: response,
+      offset: offset,
+      fetchedCount: fetchedCount,
+    )) {
+      return null;
+    }
+    return currentOffset + fetchedCount;
+  }
+
+  bool _authorFeedHasMore({
+    required VideosByAuthorResponse response,
+    required int? offset,
+    required int fetchedCount,
+  }) {
+    if (response.hasMore != null) return response.hasMore!;
+    final totalCount = response.totalCount;
+    final currentOffset = offset ?? 0;
+    if (totalCount != null) return currentOffset + fetchedCount < totalCount;
+    return fetchedCount >= _authorFeedPaginationBatchSize;
   }
 
   /// Hydrates author REST videos with engagement counts: bulk-stats first

@@ -210,6 +210,42 @@ void main() {
       },
     );
 
+    test(
+      'cold load: partial first page backfills to a complete initial page',
+      () async {
+        h.stubAuthorFeedSequence([
+          _result(
+            [_video('a', createdAt: 4000), _video('b', createdAt: 3000)],
+            totalCount: 4,
+            nextOffset: 2,
+            hasMore: true,
+          ),
+          _result(
+            [_video('c', createdAt: 2000), _video('d')],
+            totalCount: 4,
+            hasMore: false,
+          ),
+        ]);
+
+        final cubit = h.build();
+        addTearDown(cubit.close);
+        await pumpEventQueue(times: 5);
+
+        expect(cubit.state.status, ProfileFeedStatus.ready);
+        expect(cubit.state.videos.map((video) => video.id), [
+          'a',
+          'b',
+          'c',
+          'd',
+        ]);
+        expect(cubit.state.hasMoreContent, isFalse);
+        expect(cubit.state.nextOffset, isNull);
+        verify(
+          () => h.repo.getAuthorFeed(authorPubkey: _author, offset: 2),
+        ).called(1);
+      },
+    );
+
     test('cold load: REST failure, no relay -> failure + addError', () async {
       h.stubAuthorFeedThrows(Exception('boom'));
       final cubit = h.build();

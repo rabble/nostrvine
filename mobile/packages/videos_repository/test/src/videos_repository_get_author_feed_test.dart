@@ -159,10 +159,32 @@ void main() {
 
         final result = await repository.getAuthorFeed(authorPubkey: _author);
 
-        // Envelope omitted -> nextOffset = offset(0) + restCount(1); hasMore is
-        // false because 1 < the 50-row page size.
-        expect(result.nextOffset, equals(1));
+        // Envelope omitted and the page is underfilled, so the repository
+        // treats it as the final page instead of surfacing a dangling offset.
+        expect(result.nextOffset, isNull);
         expect(result.hasMore, isFalse);
+      },
+    );
+
+    test(
+      'infers next offset from total count when legacy responses omit '
+      'pagination metadata',
+      () async {
+        stubAuthor(
+          VideosByAuthorResponse(
+            videos: [
+              _stats(id: 'a', dTag: 'a'),
+              _stats(id: 'b', dTag: 'b'),
+            ],
+            totalCount: 5,
+          ),
+        );
+
+        final result = await repository.getAuthorFeed(authorPubkey: _author);
+
+        expect(result.videos.map((video) => video.id), ['a', 'b']);
+        expect(result.nextOffset, equals(2));
+        expect(result.hasMore, isTrue);
       },
     );
 
