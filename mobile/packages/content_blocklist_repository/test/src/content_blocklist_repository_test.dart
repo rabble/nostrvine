@@ -846,6 +846,31 @@ void main() {
       await subscription.cancel();
     });
 
+    test('continues when persisting muted authors throws', () async {
+      final mockPrefs = _MockSharedPreferences();
+      when(() => mockPrefs.getString(any())).thenReturn(null);
+      when(
+        () => mockPrefs.setString(any(), any()),
+      ).thenThrow(Exception('disk full'));
+
+      final failingService = ContentBlocklistRepository(prefs: mockPrefs);
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      await failingService.syncMuteListsInBackground(
+        mockNostrService,
+        ourPubkey,
+      );
+      controller.add(
+        ownMuteListEvent(mutedPubkeys: [mutedPubkey], createdAt: now),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // The in-memory set still updates even though the write failed.
+      expect(failingService.isMutedByUs(mutedPubkey), isTrue);
+
+      failingService.dispose();
+    });
+
     test('persists muted authors and rehydrates at construction', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
