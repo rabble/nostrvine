@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:funnelcake_api_client/src/exceptions.dart';
 import 'package:funnelcake_api_client/src/leaderboard_period.dart';
@@ -65,6 +66,20 @@ class FunnelcakeApiClient {
 
   /// Default moderation profile sent with video-bearing Funnelcake requests.
   static const String defaultModerationProfile = 'default';
+
+  /// Sink used to surface warning-level diagnostics from static helpers such
+  /// as [_unwrapListResponse].
+  ///
+  /// Defaults to `dart:developer`'s `log()` (level 900 == warning), matching
+  /// the logging style of sibling pure-Dart packages like `nostr_sdk`. Tests
+  /// override this to assert that envelope regressions are surfaced rather
+  /// than silently swallowed; production code should leave it untouched.
+  @visibleForTesting
+  static void Function(String message) warningLogger = _defaultWarningLogger;
+
+  static void _defaultWarningLogger(String message) {
+    developer.log(message, name: 'FunnelcakeApiClient', level: 900);
+  }
 
   final String _baseUrl;
   final http.Client _httpClient;
@@ -186,8 +201,29 @@ class FunnelcakeApiClient {
         return (items: data, hasMore: hasMore, nextCursor: nextCursor);
       }
     }
-    // Unrecognised shape — return empty so callers never throw.
+    // Unrecognised shape — log so envelope regressions are visible, then
+    // return empty so callers never throw.
+    warningLogger(
+      'Unrecognised funnelcake list response shape; returning empty list. '
+      'shape=${_describeShape(decoded)}',
+    );
     return (items: const <dynamic>[], hasMore: false, nextCursor: null);
+  }
+
+  /// Builds a short, non-sensitive description of an unrecognised decoded
+  /// response for diagnostic logging.
+  ///
+  /// Avoids dumping full response bodies (which may be large or contain user
+  /// data); reports the runtime type plus, for maps, the top-level keys.
+  static String _describeShape(Object? decoded) {
+    if (decoded == null) {
+      return 'null';
+    }
+    if (decoded is Map) {
+      final keys = decoded.keys.map((key) => '$key').toList()..sort();
+      return 'Map(keys: [${keys.join(', ')}])';
+    }
+    return decoded.runtimeType.toString();
   }
 
   static int? _parseIntPageToken(String? value) {
