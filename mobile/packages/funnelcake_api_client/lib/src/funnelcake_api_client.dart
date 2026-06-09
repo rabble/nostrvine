@@ -3,7 +3,6 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:funnelcake_api_client/src/exceptions.dart';
 import 'package:funnelcake_api_client/src/leaderboard_period.dart';
@@ -12,6 +11,7 @@ import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Source split for the v2 popular feed.
 enum PopularVideosVariant {
@@ -70,15 +70,19 @@ class FunnelcakeApiClient {
   /// Sink used to surface warning-level diagnostics from static helpers such
   /// as [_unwrapListResponse].
   ///
-  /// Defaults to `dart:developer`'s `log()` (level 900 == warning), matching
-  /// the logging style of sibling pure-Dart packages like `nostr_sdk`. Tests
-  /// override this to assert that envelope regressions are surfaced rather
-  /// than silently swallowed; production code should leave it untouched.
+  /// Defaults to routing through `unified_logger`'s [Log.warning] (the
+  /// repo-wide logging contract). Tests override this to assert that envelope
+  /// regressions are surfaced rather than silently swallowed; production code
+  /// should leave it untouched.
   @visibleForTesting
   static void Function(String message) warningLogger = _defaultWarningLogger;
 
   static void _defaultWarningLogger(String message) {
-    developer.log(message, name: 'FunnelcakeApiClient', level: 900);
+    Log.warning(
+      message,
+      name: 'FunnelcakeApiClient',
+      category: LogCategory.api,
+    );
   }
 
   final String _baseUrl;
