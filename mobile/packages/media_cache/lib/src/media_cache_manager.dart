@@ -248,7 +248,9 @@ class MediaCacheManager extends CacheManager {
                  config.cacheKey,
                  stalePeriod: config.stalePeriod,
                  maxNrOfCacheObjects: config.maxNrOfCacheObjects,
-                 repo: SafeCacheInfoRepository(databaseName: config.cacheKey),
+                 repo:
+                     repoOverride ??
+                     SafeCacheInfoRepository(databaseName: config.cacheKey),
                  // Non-null on the non-web branch (kIsWeb == false here);
                  // the public ctor only nulls fileServiceClient on web.
                  // ignore: unnecessary_null_checks

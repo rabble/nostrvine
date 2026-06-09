@@ -715,6 +715,10 @@ void main() {
     group('close', () {
       test('closes the legacy file-service HTTP client', () async {
         final tracker = _TrackingIOClient();
+        final repo = MockCacheInfoRepository();
+        when(repo.open).thenAnswer((_) async => true);
+        when(repo.getAllObjects).thenAnswer((_) async => []);
+        when(repo.close).thenAnswer((_) async => true);
 
         // Construction kicks off an async open() on the parent
         // CacheManager's repo store; that pipeline is unrelated to the
@@ -726,7 +730,7 @@ void main() {
               config: MediaCacheConfig(
                 cacheKey: 'close_test_${DateTime.now().millisecondsSinceEpoch}',
               ),
-              repoOverride: MockCacheInfoRepository(),
+              repoOverride: repo,
               fileServiceClientOverride: tracker,
             );
 
