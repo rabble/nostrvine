@@ -2736,7 +2736,7 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
-        'writes forYou raw response body to Home tab cache after fresh fetch',
+        'does not write forYou response to Home tab cache after fresh fetch',
         setUp: () {
           final videos = createTestVideos(3);
           when(() => mockCache.read(sharedPreferences)).thenReturn(null);
@@ -2759,12 +2759,10 @@ void main() {
         build: createBlocWithCache,
         act: (bloc) => bloc.add(const VideoFeedStarted()),
         verify: (_) {
-          verify(
-            () => mockCache.write(
-              sharedPreferences,
-              '{"videos":[{"id":"for-you"}]}',
-            ),
-          ).called(1);
+          // forYou is a recommendation feed and must not be persisted to the
+          // cross-restart cache, otherwise the feed looks identical on every
+          // app reopen (issue #3861).
+          verifyNever(() => mockCache.write(any(), any()));
         },
       );
 
@@ -2829,9 +2827,8 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
-        'serves cached Home tab data before fresh forYou recommendations',
+        'does not serve cached Home tab data for forYou recommendations',
         setUp: () {
-          final cachedVideos = createTestVideos(2, idPrefix: 'cached');
           final recommendedVideos = createTestVideos(
             3,
             idPrefix: 'recommended',
@@ -2839,7 +2836,7 @@ void main() {
 
           when(
             () => mockCache.read(sharedPreferences),
-          ).thenReturn(HomeFeedResult(videos: cachedVideos));
+          ).thenReturn(HomeFeedResult(videos: createTestVideos(2)));
           when(() => mockCache.write(any(), any())).thenAnswer((_) async {});
           when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
           when(
@@ -2855,10 +2852,8 @@ void main() {
         act: (bloc) => bloc.add(const VideoFeedStarted()),
         expect: () => [
           const VideoFeedBlocState(),
-          isA<VideoFeedBlocState>()
-              .having((s) => s.status, 'status', VideoFeedStatus.success)
-              .having((s) => s.videos.length, 'cached count', 2)
-              .having((s) => s.videos.first.id, 'first cached id', 'cached-0'),
+          // No cached state is emitted — the first success state is the fresh
+          // recommendations straight from the network (issue #3861).
           isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'recommended count', 3)
@@ -2869,7 +2864,10 @@ void main() {
               ),
         ],
         verify: (_) {
-          verify(() => mockCache.read(sharedPreferences)).called(1);
+          // forYou must never read the cross-restart cache, otherwise the feed
+          // is identical on every app reopen.
+          verifyNever(() => mockCache.read(any()));
+          verifyNever(() => mockCache.write(any(), any()));
         },
       );
 

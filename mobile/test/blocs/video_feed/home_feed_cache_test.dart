@@ -73,6 +73,23 @@ void main() {
         expect(result.videos[1].id, equals('video-1'));
       });
 
+      test(
+        'ignores legacy unscoped cache entries from older app versions',
+        () async {
+          final freshTime = DateTime.now().millisecondsSinceEpoch;
+
+          SharedPreferences.setMockInitialValues({
+            'home_feed_cache': validFeedJson(),
+            'home_feed_cache_time': freshTime,
+          });
+          final prefs = await SharedPreferences.getInstance();
+
+          final result = cache.read(prefs);
+
+          expect(result, isNull);
+        },
+      );
+
       test('returns null when cached JSON is invalid', () async {
         final freshTime = DateTime.now().millisecondsSinceEpoch;
 

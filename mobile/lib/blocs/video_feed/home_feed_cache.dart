@@ -8,11 +8,15 @@ import 'package:models/models.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:videos_repository/videos_repository.dart';
 
-/// SharedPreferences key for cached home feed JSON.
-const homeFeedCacheKey = 'home_feed_cache';
+/// SharedPreferences key for cached Following feed JSON.
+///
+/// Previous app versions used the unscoped `home_feed_cache` key for both
+/// Following and For You. Keep this key Following-specific so stale For You
+/// payloads from older installs are ignored after upgrade.
+const homeFeedCacheKey = 'home_feed_cache_following_v1';
 
-/// SharedPreferences key for cached home feed timestamp.
-const homeFeedCacheTimeKey = 'home_feed_cache_time';
+/// SharedPreferences key for cached Following feed timestamp.
+const homeFeedCacheTimeKey = 'home_feed_cache_following_v1_time';
 
 /// Maximum age of cached home feed before it's considered stale.
 const homeFeedCacheMaxAge = Duration(hours: 1);

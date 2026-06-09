@@ -101,8 +101,18 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   /// [_onAutoRefreshRequested] to skip refreshes when data is fresh.
   DateTime? _lastRefreshedAt;
 
+  /// Whether [source] should be served from and written to the cross-restart
+  /// [HomeFeedCache] (SharedPreferences).
+  ///
+  /// Only the chronological `following` feed is cached. Its ordering is
+  /// inherently stable, so replaying the last response on cold start is a
+  /// harmless startup optimization.
+  ///
+  /// The `forYou` feed is deliberately excluded: it is a recommendation feed
+  /// that should reflect fresh server state on every cold start. Persisting
+  /// and replaying its exact contents/order made the feed look identical on
+  /// every app reopen within the cache window (see issue #3861).
   bool _usesHomeFeedCache(VideoFeedSource source) =>
-      source.type == VideoFeedSourceType.forYou ||
       source.type == VideoFeedSourceType.following;
 
   /// Handle feed started event.
