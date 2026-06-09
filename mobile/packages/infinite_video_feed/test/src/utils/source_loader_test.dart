@@ -1,4 +1,5 @@
 import 'package:divine_video_player/divine_video_player.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_video_feed/src/utils/source_loader.dart';
 
@@ -112,6 +113,68 @@ void main() {
       expect(clips[1].httpHeaders, equals(headers));
     });
 
+    test(
+      'aborts stale fallback without logging all sources failed',
+      () async {
+        var isCurrent = true;
+        final controller = _DisposedDuringFallbackController(
+          onDisposedFallback: () => isCurrent = false,
+        );
+        addTearDown(controller.dispose);
+
+        await expectLater(
+          () => setSourceWithFallbacks(
+            index: 0,
+            controller: controller,
+            sources: ['derivedMp4', 'hls', 'raw'],
+            log: logs.add,
+            isLoadCurrent: () => isCurrent,
+          ),
+          throwsA(isA<SourceLoadAborted>()),
+        );
+
+        expect(controller.attempts, equals(2));
+        expect(logs, hasLength(1));
+        expect(logs.single, contains('failedSource=derivedMp4'));
+        expect(logs.single, contains('retrySource=hls'));
+        expect(
+          logs.any((line) => line.contains('All sources failed')),
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'aborts when the controller goes stale after a source opens',
+      () async {
+        var isCurrent = true;
+        final controller = _StaleAfterSuccessController(
+          onOpened: () => isCurrent = false,
+        );
+        addTearDown(controller.dispose);
+
+        await expectLater(
+          () => setSourceWithFallbacks(
+            index: 3,
+            controller: controller,
+            sources: ['derivedMp4', 'hls', 'raw'],
+            log: logs.add,
+            isLoadCurrent: () => isCurrent,
+          ),
+          throwsA(
+            isA<SourceLoadAborted>()
+                .having((e) => e.index, 'index', 3)
+                .having((e) => e.source, 'source', 'derivedMp4'),
+          ),
+        );
+
+        // Only the first source is attempted; the post-open staleness check
+        // aborts before returning a record or trying any fallback.
+        expect(controller.attempts, equals(1));
+        expect(logs, isEmpty);
+      },
+    );
+
     test('rethrows when all sources fail', () async {
       final controller = FakeController()
         ..setSourceError = Exception('always fails');
@@ -190,5 +253,39 @@ class _RecordingControllerWithOneFailure extends FakeController {
       _failed = true;
       throw Exception('first source error');
     }
+  }
+}
+
+class _DisposedDuringFallbackController extends FakeController {
+  _DisposedDuringFallbackController({required this.onDisposedFallback});
+
+  final VoidCallback onDisposedFallback;
+  int attempts = 0;
+
+  @override
+  Future<void> setSource(VideoClip clip) async {
+    attempts++;
+    if (attempts == 1) {
+      throw Exception('HTTP 202 Accepted');
+    }
+
+    onDisposedFallback();
+    throw StateError('Controller has been disposed.');
+  }
+}
+
+/// A [FakeController] whose first [setSource] succeeds but marks the load
+/// stale (e.g. the feed window scrolled past) before the caller can register
+/// the opened source.
+class _StaleAfterSuccessController extends FakeController {
+  _StaleAfterSuccessController({required this.onOpened});
+
+  final VoidCallback onOpened;
+  int attempts = 0;
+
+  @override
+  Future<void> setSource(VideoClip clip) async {
+    attempts++;
+    onOpened();
   }
 }

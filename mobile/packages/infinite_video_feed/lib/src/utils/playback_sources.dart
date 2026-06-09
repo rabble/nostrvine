@@ -59,6 +59,12 @@ VideoErrorType classifyVideoError({
   String? source,
 }) {
   final lower = (errorMessage ?? '').toLowerCase();
+  // Divine derivative URLs can legitimately return HTTP 202 while MP4/HLS
+  // processing catches up after upload. Treat that as transient playback
+  // failure, not as proof that the blob is missing.
+  if (_mentionsHttpStatus(lower, 202)) {
+    return VideoErrorType.generic;
+  }
   if (lower.contains('401') || lower.contains('unauthorized')) {
     return VideoErrorType.ageRestricted;
   }
@@ -77,4 +83,9 @@ VideoErrorType classifyVideoError({
   }
 
   return VideoErrorType.generic;
+}
+
+bool _mentionsHttpStatus(String lower, int status) {
+  if (!lower.contains('http') && !lower.contains('status')) return false;
+  return RegExp('(^|[^0-9])$status([^0-9]|\$)').hasMatch(lower);
 }

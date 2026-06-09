@@ -804,6 +804,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             sources: playbackSources,
             log: _log,
             httpHeadersForSource: httpHeadersForSource,
+            isLoadCurrent: ownsInit,
           );
           if (!guardInitOwnership('setSourceWithFallbacks(cache)')) return;
           _sources.register(index, playbackSources, openedSourceIdx);
@@ -823,6 +824,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           sources: playbackSources,
           log: _log,
           httpHeadersForSource: httpHeadersForSource,
+          isLoadCurrent: ownsInit,
         );
         if (!guardInitOwnership('setSourceWithFallbacks(network)')) return;
         _sources.register(index, playbackSources, openedSourceIdx);
