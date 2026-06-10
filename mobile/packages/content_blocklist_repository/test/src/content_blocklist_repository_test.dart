@@ -901,6 +901,215 @@ void main() {
     });
   });
 
+  group('ContentBlocklistRepository - identity change (#4969)', () {
+    const accountA =
+        '00000000000000000000000000000000000000000000000000000000000000aa';
+    const accountB =
+        '00000000000000000000000000000000000000000000000000000000000000bb';
+    const blockerX =
+        '0000000000000000000000000000000000000000000000000000000000000011';
+    const someoneElse =
+        '0000000000000000000000000000000000000000000000000000000000000022';
+
+    late _MockNostrClient mockNostrService;
+    late StreamController<Event> controller;
+
+    Event blockListEvent({
+      required String author,
+      required List<String> blockedPubkeys,
+      required int createdAt,
+      String id = 'block-event-id',
+    }) =>
+        Event(
+            author,
+            30000,
+            [
+              ['d', 'block'],
+              for (final pubkey in blockedPubkeys) ['p', pubkey],
+            ],
+            '',
+            createdAt: createdAt,
+          )
+          ..id = id
+          ..sig = 'signature';
+
+    setUp(() {
+      mockNostrService = _MockNostrClient();
+      controller = StreamController<Event>.broadcast();
+      when(
+        () => mockNostrService.subscribe(any()),
+      ).thenAnswer((_) => controller.stream);
+    });
+
+    tearDown(() async {
+      await controller.close();
+    });
+
+    test(
+      'switching accounts clears relay-synced blocked-by and mute state',
+      () async {
+        final service = ContentBlocklistRepository();
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          _MockBlockListSigner(),
+          accountA,
+        );
+        controller.add(
+          blockListEvent(
+            author: blockerX,
+            blockedPubkeys: [accountA],
+            createdAt: now,
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(service.hasBlockedUs(blockerX), isTrue);
+
+        // Switch to account B: X never blocked B, so the gate must clear.
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          _MockBlockListSigner(),
+          accountB,
+        );
+        expect(service.hasBlockedUs(blockerX), isFalse);
+        expect(service.shouldFilterFromFeeds(blockerX), isFalse);
+        expect(service.hasMutedUs(blockerX), isFalse);
+        expect(service.currentState.pubkeysBlockingUs, isEmpty);
+        expect(service.currentState.mutedPubkeys, isEmpty);
+
+        service.dispose();
+      },
+    );
+
+    test('switching accounts re-subscribes with the new pubkey', () async {
+      final captured = <List<dynamic>>[];
+      when(() => mockNostrService.subscribe(any())).thenAnswer((invocation) {
+        captured.add(invocation.positionalArguments[0] as List);
+        return controller.stream;
+      });
+
+      final service = ContentBlocklistRepository();
+      await service.syncMuteListsInBackground(mockNostrService, accountA);
+      await service.syncMuteListsInBackground(mockNostrService, accountB);
+
+      expect(captured, hasLength(2));
+      final secondMutual = captured[1][0] as Filter;
+      expect(secondMutual.p, contains(accountB));
+      final secondOwn = captured[1][1] as Filter;
+      expect(secondOwn.authors, contains(accountB));
+
+      service.dispose();
+    });
+
+    test('per-account blocks do not leak across a switch and survive '
+        'switching back', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistRepository(prefs: prefs);
+
+      await service.syncMuteListsInBackground(mockNostrService, accountA);
+      await service.blockUser(blockerX);
+      expect(service.isBlocked(blockerX), isTrue);
+
+      await service.syncMuteListsInBackground(mockNostrService, accountB);
+      expect(
+        service.isBlocked(blockerX),
+        isFalse,
+        reason: "account A's blocks must not apply to account B",
+      );
+      await service.blockUser(someoneElse);
+
+      await service.syncMuteListsInBackground(mockNostrService, accountA);
+      expect(service.isBlocked(blockerX), isTrue);
+      expect(service.isBlocked(someoneElse), isFalse);
+
+      service.dispose();
+    });
+
+    test('first identity adopts legacy un-namespaced persisted data', () async {
+      SharedPreferences.setMockInitialValues({
+        'blocked_users_list': jsonEncode([blockerX]),
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistRepository(prefs: prefs);
+
+      // Legacy data hydrates before any identity is known.
+      expect(service.isBlocked(blockerX), isTrue);
+
+      await service.syncMuteListsInBackground(mockNostrService, accountA);
+      expect(service.isBlocked(blockerX), isTrue);
+
+      // A fresh instance over the same prefs loads the migrated,
+      // account-scoped data.
+      final rehydrated = ContentBlocklistRepository(prefs: prefs);
+      expect(rehydrated.isBlocked(blockerX), isTrue);
+      expect(prefs.getString('blocked_users_list'), isNull);
+
+      service.dispose();
+      rehydrated.dispose();
+    });
+
+    test('continues when legacy key migration throws', () async {
+      final mockPrefs = _MockSharedPreferences();
+      when(() => mockPrefs.getString(any())).thenReturn(null);
+      when(
+        () => mockPrefs.getString('blocked_users_list'),
+      ).thenReturn(jsonEncode([blockerX]));
+      when(
+        () => mockPrefs.setString(any(), any()),
+      ).thenThrow(Exception('disk full'));
+
+      final service = ContentBlocklistRepository(prefs: mockPrefs);
+      expect(service.isBlocked(blockerX), isTrue);
+
+      // Adoption triggers migration; the failed move must not throw and
+      // the in-memory state must survive.
+      await service.syncMuteListsInBackground(mockNostrService, accountA);
+      expect(service.isBlocked(blockerX), isTrue);
+
+      service.dispose();
+    });
+
+    test('adopting a different identity than the stored account resets '
+        'hydrated state', () async {
+      SharedPreferences.setMockInitialValues({
+        'blocklist_active_pubkey': accountA,
+        'blocked_users_list.$accountA': jsonEncode([blockerX]),
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistRepository(prefs: prefs);
+
+      // Construction hydrates account A's persisted blocks.
+      expect(service.isBlocked(blockerX), isTrue);
+
+      // The session resolves to account B: A's blocks must not apply.
+      await service.syncMuteListsInBackground(mockNostrService, accountB);
+      expect(service.isBlocked(blockerX), isFalse);
+
+      service.dispose();
+    });
+
+    test('notifies listeners when a switch resets state', () async {
+      var changeCount = 0;
+      final service = ContentBlocklistRepository(
+        onChanged: () => changeCount++,
+      );
+
+      await service.syncMuteListsInBackground(mockNostrService, accountA);
+      final before = changeCount;
+
+      await service.syncMuteListsInBackground(mockNostrService, accountB);
+      expect(
+        changeCount,
+        greaterThan(before),
+        reason: 'watchers must re-filter after an account switch',
+      );
+
+      service.dispose();
+    });
+  });
+
   group('ContentBlocklistRepository - Block List Sync', () {
     late ContentBlocklistRepository service;
     late _MockNostrClient mockNostrService;
