@@ -776,7 +776,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         guard let player, let sink = eventSink else { return }
 
         let currentTime = CMTimeGetSeconds(player.currentTime())
-        let actualPositionMs = Int(max(currentTime, 0) * 1000)
+        let actualPositionMs = currentTime.millisecondsClamped
         let positionMs: Int
         if let overrideMs = reportedPositionOverrideMs {
             if player.rate > 0 && Int64(actualPositionMs) >= overrideMs {
@@ -789,7 +789,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             positionMs = actualPositionMs
         }
         let reportedTime = Double(positionMs) / 1000.0
-        let durationMs = Int(totalDuration * 1000)
+        let durationMs = totalDuration.millisecondsClamped
 
         // Determine current clip index.
         var clipIndex = 0
@@ -940,7 +940,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         let bufferedEnd = CMTimeGetSeconds(
             CMTimeAdd(range.start, range.duration)
         )
-        return Int(max(bufferedEnd, 0) * 1000)
+        return bufferedEnd.millisecondsClamped
     }
 
     // MARK: - App Lifecycle
@@ -1010,6 +1010,18 @@ private enum CompositionError: Error, LocalizedError {
         case .invalidRenderSize:
             return "Video composition has an invalid render size."
         }
+    }
+}
+
+private extension Double {
+    /// Millisecond conversion safe against NaN and ±infinity, which
+    /// `Int.init(_: Double)` traps on. AVFoundation time queries can
+    /// return non-numeric values — e.g. `loadedTimeRanges` yields an
+    /// indefinite CMTime at the readyToPlay transition on macOS 26,
+    /// and `max(NaN, 0)` returns NaN rather than 0.
+    var millisecondsClamped: Int {
+        guard isFinite else { return 0 }
+        return Int(max(self, 0) * 1000)
     }
 }
 
