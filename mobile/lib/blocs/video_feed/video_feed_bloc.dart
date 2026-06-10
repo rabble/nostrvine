@@ -426,7 +426,12 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         }
       }
 
-      updatedVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      // For You pages arrive in server-ranked recommendation order;
+      // re-sorting by createdAt would shuffle new videos around the
+      // current play index and resurface already-seen ones.
+      if (state.source.type != VideoFeedSourceType.forYou) {
+        updatedVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      }
 
       // Merge attribution metadata from pagination with existing state.
       final mergedSources = Map.of(state.videoListSources);

@@ -1233,6 +1233,154 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'preserves forYou recommendation order when next page has newer '
+        'createdAt timestamps',
+        setUp: () {
+          final newerVideos = [
+            createTestVideo('newer-c', createdAt: 5000),
+            createTestVideo('newer-d', createdAt: 4999),
+          ];
+
+          when(
+            () => mockVideosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              cursor: any(named: 'cursor'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResult(
+              videos: newerVideos,
+              paginationCursor: 'rec-page-3',
+              hasMore: true,
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          videos: [
+            createTestVideo('old-a', createdAt: 1000),
+            createTestVideo('old-b', createdAt: 999),
+          ],
+          paginationCursor: 'rec-page-2',
+        ),
+        act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
+        expect: () => [
+          isA<VideoFeedBlocState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<VideoFeedBlocState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'video ids',
+                equals(['old-a', 'old-b', 'newer-c', 'newer-d']),
+              ),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'filters duplicate IDs from the next forYou page while preserving '
+        'order',
+        setUp: () {
+          final nextPage = [
+            createTestVideo('old-b', createdAt: 5000),
+            createTestVideo('newer-c', createdAt: 4999),
+          ];
+
+          when(
+            () => mockVideosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              cursor: any(named: 'cursor'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResult(
+              videos: nextPage,
+              paginationCursor: 'rec-page-3',
+              hasMore: true,
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          videos: [
+            createTestVideo('old-a', createdAt: 1000),
+            createTestVideo('old-b', createdAt: 999),
+          ],
+          paginationCursor: 'rec-page-2',
+        ),
+        act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
+        expect: () => [
+          isA<VideoFeedBlocState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<VideoFeedBlocState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'video ids',
+                equals(['old-a', 'old-b', 'newer-c']),
+              ),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'sorts merged following feed chronologically on load more',
+        setUp: () {
+          final newerVideos = [
+            createTestVideo('newer-c', createdAt: 5000),
+            createTestVideo('newer-d', createdAt: 4999),
+          ];
+
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: newerVideos));
+        },
+        build: createBloc,
+        seed: () => VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.following,
+          videos: [
+            createTestVideo('old-a', createdAt: 1000),
+            createTestVideo('old-b', createdAt: 999),
+          ],
+        ),
+        act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
+        expect: () => [
+          isA<VideoFeedBlocState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<VideoFeedBlocState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'video ids',
+                equals(['newer-c', 'newer-d', 'old-a', 'old-b']),
+              ),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'stops forYou pagination when the current page has no cursor',
         build: createBloc,
         seed: () => VideoFeedBlocState(
