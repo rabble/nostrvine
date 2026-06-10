@@ -98,7 +98,9 @@ List<Duration> rebaseTimelineMarkersForClipState({
 /// content stays aligned with the clip's source content. This implements the
 /// J-Cut behaviour: the audio keeps its [AudioEvent.startOffset] and its span
 /// (so its full content survives — the head simply leads), while only its
-/// [AudioEvent.startTime]/[AudioEvent.endTime] move.
+/// [AudioEvent.startTime]/[AudioEvent.endTime] move. If that lead would start
+/// before timeline zero, the impossible pre-roll is clipped by advancing
+/// [AudioEvent.startOffset] and shortening the audible span.
 ///
 /// The alignment invariant preserved is, for the anchored clip:
 ///
@@ -135,15 +137,36 @@ List<AudioEvent> rebaseAnchoredAudioForClipState(
 
     final span = (track.endTime ?? track.startTime) - track.startTime;
     final newStartRaw = clipStart + track.startOffset - clip.trimStart;
-    final newStart = newStartRaw < Duration.zero ? Duration.zero : newStartRaw;
-    final newEnd = newStart + span;
+    var newStart = newStartRaw;
+    var newStartOffset = track.startOffset;
+    var newSpan = span;
 
-    if (newStart == track.startTime && newEnd == track.endTime) {
+    if (newStartRaw < Duration.zero) {
+      final clippedLead = Duration.zero - newStartRaw;
+      newStart = Duration.zero;
+      newStartOffset += clippedLead;
+      newSpan -= clippedLead;
+      if (newSpan < Duration.zero) {
+        newSpan = Duration.zero;
+      }
+    }
+
+    final newEnd = track.endTime == null ? null : newStart + newSpan;
+
+    if (newStart == track.startTime &&
+        newEnd == track.endTime &&
+        newStartOffset == track.startOffset) {
       result.add(track);
       continue;
     }
     changed = true;
-    result.add(track.copyWith(startTime: newStart, endTime: newEnd));
+    result.add(
+      track.copyWith(
+        startOffset: newStartOffset,
+        startTime: newStart,
+        endTime: newEnd,
+      ),
+    );
   }
 
   return changed ? result : audioTracks;

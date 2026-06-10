@@ -690,6 +690,28 @@ void main() {
         expect(event1, isNot(equals(event2)));
         expect(event1.hashCode, isNot(equals(event2.hashCode)));
       });
+
+      test('events with same id but different anchorClipId are not equal', () {
+        const event1 = AudioEvent(
+          id: 'same-id-123456789012345678901234567890123456789012345678901',
+          pubkey: 'pubkey',
+          createdAt: 1700000000,
+          url: 'https://example.com/audio.aac',
+          mimeType: 'audio/aac',
+          anchorClipId: 'clip-a',
+        );
+
+        const event2 = AudioEvent(
+          id: 'same-id-123456789012345678901234567890123456789012345678901',
+          pubkey: 'pubkey',
+          createdAt: 1700000000,
+          url: 'https://example.com/audio.aac',
+          mimeType: 'audio/aac',
+        );
+
+        expect(event1, isNot(equals(event2)));
+        expect(event1.hashCode, isNot(equals(event2.hashCode)));
+      });
     });
 
     group('toString', () {

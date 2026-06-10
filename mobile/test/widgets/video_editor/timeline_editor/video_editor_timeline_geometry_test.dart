@@ -988,9 +988,10 @@ void main() {
       expect(result.single.endTime, const Duration(seconds: 12));
     });
 
-    test('clamps the start to zero for an anchored first clip', () {
+    test('clips impossible pre-roll for an anchored first clip', () {
       // clip-a is first (timeline start 0). Trimming it left by 3 s cannot
-      // produce a lead, so the start clamps to zero.
+      // produce a lead, so the start clamps to zero and the lost pre-roll is
+      // consumed from the audio source offset instead.
       final clips = [
         _clip('a', 10, trimStart: const Duration(seconds: 3)),
         _clip('b', 10),
@@ -1005,7 +1006,12 @@ void main() {
       final result = rebaseAnchoredAudioForClipState(clips, [track]);
 
       expect(result.single.startTime, Duration.zero);
-      expect(result.single.endTime, const Duration(seconds: 10));
+      expect(result.single.startOffset, const Duration(seconds: 3));
+      expect(result.single.endTime, const Duration(seconds: 7));
+      expect(
+        result.single.endTime! - result.single.startTime,
+        const Duration(seconds: 7),
+      );
     });
 
     test('leaves an un-anchored track untouched', () {

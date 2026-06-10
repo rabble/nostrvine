@@ -477,11 +477,13 @@ class AudioEvent {
         other.id == id &&
         other.startOffset == startOffset &&
         other.startTime == startTime &&
-        other.endTime == endTime;
+        other.endTime == endTime &&
+        other.anchorClipId == anchorClipId;
   }
 
   @override
-  int get hashCode => Object.hash(id, startOffset, startTime, endTime);
+  int get hashCode =>
+      Object.hash(id, startOffset, startTime, endTime, anchorClipId);
 
   @override
   String toString() {

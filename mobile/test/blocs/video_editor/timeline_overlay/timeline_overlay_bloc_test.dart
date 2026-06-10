@@ -33,6 +33,7 @@ AudioEvent _audioEvent({
   required Duration start,
   required Duration end,
   String title = 'Sound',
+  String? anchorClipId,
 }) {
   return AudioEvent(
     id: id,
@@ -41,6 +42,7 @@ AudioEvent _audioEvent({
     title: title,
     startTime: start,
     endTime: end,
+    anchorClipId: anchorClipId,
   );
 }
 
@@ -228,6 +230,68 @@ void main() {
               )
               .having((s) => s.audioTracksRevision, 'audioTracksRevision', 0)
               .having((s) => s.audioTracks.first.volume, 'volume', 1.0),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'emits when only an audio anchor is cleared',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          items: const [
+            TimelineOverlayItem(
+              id: 'sound-1',
+              type: TimelineOverlayType.sound,
+              startTime: Duration(seconds: 1),
+              endTime: Duration(seconds: 4),
+              label: 'Sound',
+              maxDuration: VideoEditorConstants.maxDuration,
+              audioSource: AudioSource.custom,
+            ),
+          ],
+          audioTracks: [
+            _audioEvent(
+              id: 'sound-1',
+              start: const Duration(seconds: 1),
+              end: const Duration(seconds: 4),
+              anchorClipId: 'clip-1',
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
+            audioTracks: [
+              _audioEvent(
+                id: 'sound-1',
+                start: const Duration(seconds: 1),
+                end: const Duration(seconds: 4),
+              ),
+            ],
+            totalVideoDuration: const Duration(seconds: 12),
+          ),
+        ),
+        expect: () => [
+          TimelineOverlayState(
+            items: const [
+              TimelineOverlayItem(
+                id: 'sound-1',
+                type: TimelineOverlayType.sound,
+                startTime: Duration(seconds: 1),
+                endTime: Duration(seconds: 4),
+                label: 'Sound',
+                maxDuration: VideoEditorConstants.maxDuration,
+                audioSource: AudioSource.custom,
+              ),
+            ],
+            audioTracks: [
+              _audioEvent(
+                id: 'sound-1',
+                start: const Duration(seconds: 1),
+                end: const Duration(seconds: 4),
+              ),
+            ],
+          ),
         ],
       );
 
