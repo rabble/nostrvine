@@ -293,11 +293,13 @@ void main() {
         const additions = [
           BlocklistOp.blocked,
           BlocklistOp.muted,
+          BlocklistOp.mutedByUs,
           BlocklistOp.blockedUs,
         ];
         const removals = [
           BlocklistOp.unblocked,
           BlocklistOp.unmuted,
+          BlocklistOp.unmutedByUs,
           BlocklistOp.unblockedUs,
         ];
 
