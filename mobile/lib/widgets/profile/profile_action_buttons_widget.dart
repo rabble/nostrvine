@@ -189,7 +189,7 @@ class _OtherProfileButtons extends StatelessWidget {
         if (isFollowing) {
           // Following: [Message (expanded)] [Following] [Share]
           children = [
-            if (canTargetUser)
+            if (canTargetUser) ...[
               Expanded(
                 child: DivineButton(
                   expanded: true,
@@ -200,7 +200,9 @@ class _OtherProfileButtons extends StatelessWidget {
                   onPressed: onMessageUser,
                 ),
               ),
-            followButton,
+              followButton,
+            ] else
+              const Spacer(),
             shareButton,
           ];
         } else {
