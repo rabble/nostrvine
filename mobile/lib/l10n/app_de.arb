@@ -2860,6 +2860,8 @@
     "videoEditorReverseLabel": "Rückwärts",
     "videoEditorReverseClipSemanticLabel": "Rückwärtswiedergabe für ausgewählten Clip umschalten",
     "videoEditorReverseProgressLabel": "Einen Moment, wir drehen deinen Clip rückwärts",
+    "videoEditorReverseNoLocalFile": "Rückwärtsdrehen nicht möglich: Clip ist lokal nicht verfügbar.",
+    "videoEditorReverseFailed": "Clip konnte nicht rückwärts gedreht werden. Bitte erneut versuchen.",
     "videoEditorSpeedSheetTitle": "Clip-Geschwindigkeit",
     "videoEditorFinishTimelineEditingSemanticLabel": "Timeline-Bearbeitung abschließen",
     "videoEditorAudioPlayPreviewSemanticLabel": "Vorschau abspielen",

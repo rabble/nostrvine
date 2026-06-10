@@ -70,7 +70,7 @@ workspace:
   - packages/unified_logger
   - packages/verifier_client
   - packages/video_event_cache
-  - packages/videos_repository 
+  - packages/videos_repository
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -298,7 +298,7 @@ dependencies:
   firebase_messaging: ^16.1.1
   convert: ^3.1.2
   audio_session: ^0.2.2
-  pro_video_editor: 1.17.6
+  pro_video_editor: ^1.17.6
   pro_image_editor: ^12.4.8
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7

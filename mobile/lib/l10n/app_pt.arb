@@ -2860,6 +2860,8 @@
     "videoEditorReverseLabel": "Inverter",
     "videoEditorReverseClipSemanticLabel": "Ativar ou desativar a reprodução inversa para o clipe selecionado",
     "videoEditorReverseProgressLabel": "Um momento, estamos invertendo seu clipe",
+    "videoEditorReverseNoLocalFile": "Não é possível inverter: o clipe não está disponível localmente.",
+    "videoEditorReverseFailed": "Não foi possível inverter o clipe. Por favor, tente novamente.",
     "videoEditorSpeedSheetTitle": "Velocidade do clipe",
     "videoEditorFinishTimelineEditingSemanticLabel": "Finalizar edição da linha do tempo",
     "videoEditorAudioPlayPreviewSemanticLabel": "Reproduzir prévia",

@@ -7983,6 +7983,14 @@ class AppLocalizationsNl extends AppLocalizations {
       'Een moment, we draaien je clip om';
 
   @override
+  String get videoEditorReverseNoLocalFile =>
+      'Kan niet omdraaien: clip is niet lokaal beschikbaar.';
+
+  @override
+  String get videoEditorReverseFailed =>
+      'Kon clip niet omdraaien. Probeer het opnieuw.';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Clipsnelheid';
 
   @override

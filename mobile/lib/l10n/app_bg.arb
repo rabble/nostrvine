@@ -3112,6 +3112,8 @@
     "videoEditorReverseLabel": "Обратно",
     "videoEditorReverseClipSemanticLabel": "Включване или изключване на обратно възпроизвеждане за избрания клип",
     "videoEditorReverseProgressLabel": "Момент, обръщаме клипа ви",
+    "videoEditorReverseNoLocalFile": "Не може да се обърне: клипът не е наличен локално.",
+    "videoEditorReverseFailed": "Клипът не можа да се обърне. Моля, опитайте отново.",
     "videoEditorSpeedSheetTitle": "Скорост на клипа",
     "videoEditorFinishTimelineEditingSemanticLabel": "Завършете редактирането на времевата линия",
     "videoEditorAudioPlayPreviewSemanticLabel": "Пусни предварителен преглед",

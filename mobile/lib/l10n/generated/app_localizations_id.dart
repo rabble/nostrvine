@@ -7923,6 +7923,14 @@ class AppLocalizationsId extends AppLocalizations {
       'Tunggu sebentar, kami sedang membalik klip Anda';
 
   @override
+  String get videoEditorReverseNoLocalFile =>
+      'Tidak dapat membalik: klip tidak tersedia secara lokal.';
+
+  @override
+  String get videoEditorReverseFailed =>
+      'Tidak dapat membalik klip. Silakan coba lagi.';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Kecepatan Klip';
 
   @override

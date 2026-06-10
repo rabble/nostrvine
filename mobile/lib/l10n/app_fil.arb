@@ -1762,6 +1762,8 @@
     "videoEditorReverseLabel": "Baligtad",
     "videoEditorReverseClipSemanticLabel": "I-toggle ang pabalik na pagpapalaro para sa napiling clip",
     "videoEditorReverseProgressLabel": "Sandali lang, nirereverse namin ang clip mo",
+    "videoEditorReverseNoLocalFile": "Hindi ma-reverse: hindi available ang clip nang lokal.",
+    "videoEditorReverseFailed": "Hindi na-reverse ang clip. Pakisubukang muli.",
     "videoEditorSpeedSheetTitle": "Bilis ng Clip",
     "videoEditorFinishTimelineEditingSemanticLabel": "Tapusin ang pag-edit ng timeline",
     "videoEditorAudioPlayPreviewSemanticLabel": "I-play ang preview",

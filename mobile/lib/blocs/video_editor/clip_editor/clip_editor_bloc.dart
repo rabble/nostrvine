@@ -637,14 +637,33 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       }
 
       final currentClip = currentClips[currentIndex];
+
+      // The render input (`videoPath`) holds content in the clip's current
+      // direction (`clip.reversed`); the render output (`reversedVideo`) holds
+      // the opposite. Assign each to its matching cache slot so the branch is
+      // also correct when the input is already reversed — e.g. a duplicate or
+      // split of a reversed clip, which preserves `reversed` but clears both
+      // cache paths. Mapping by output direction instead would store forward
+      // content as the reversed path (and vice versa), making every later
+      // cached toggle play the wrong direction.
+      final renderedPath = reversedVideo.file?.path;
+      final String? forwardVideoPath;
+      final String? reversedVideoPath;
+      if (clip.reversed) {
+        forwardVideoPath = renderedPath ?? currentClip.forwardVideoPath;
+        reversedVideoPath = currentClip.reversedVideoPath ?? videoPath;
+      } else {
+        forwardVideoPath = currentClip.forwardVideoPath ?? videoPath;
+        reversedVideoPath = renderedPath ?? currentClip.reversedVideoPath;
+      }
+
       final updatedClip = currentClip.copyWith(
         video: reversedVideo,
         trimStart: currentClip.trimEnd,
         trimEnd: currentClip.trimStart,
         reversed: !clip.reversed,
-        forwardVideoPath: currentClip.forwardVideoPath ?? videoPath,
-        reversedVideoPath:
-            reversedVideo.file?.path ?? currentClip.reversedVideoPath,
+        forwardVideoPath: forwardVideoPath,
+        reversedVideoPath: reversedVideoPath,
       );
       final newClips = List<DivineVideoClip>.of(currentClips)
         ..[currentIndex] = updatedClip;

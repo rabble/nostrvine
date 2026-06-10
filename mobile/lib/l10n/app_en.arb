@@ -4468,6 +4468,14 @@
   "@videoEditorReverseProgressLabel": {
     "description": "Status text shown while the selected clip is being rendered in reverse for preview playback."
   },
+  "videoEditorReverseNoLocalFile": "Cannot reverse: clip is not locally available.",
+  "@videoEditorReverseNoLocalFile": {
+    "description": "Snackbar message shown when a reverse is requested for a clip that has no locally available file."
+  },
+  "videoEditorReverseFailed": "Could not reverse clip. Please try again.",
+  "@videoEditorReverseFailed": {
+    "description": "Snackbar message shown when reversing a clip fails during rendering."
+  },
   "videoEditorSpeedSheetTitle": "Clip Speed",
   "@videoEditorSpeedSheetTitle": {
     "description": "Title of the bottom sheet for adjusting clip playback speed."

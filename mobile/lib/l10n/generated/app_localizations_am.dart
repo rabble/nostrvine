@@ -7805,6 +7805,13 @@ class AppLocalizationsAm extends AppLocalizations {
       'አንድ ትንሽ ቆይ፣ ክሊፕዎን ወደ ኋላ እየቀየርን ነው';
 
   @override
+  String get videoEditorReverseNoLocalFile =>
+      'ወደ ኋላ መቀየር አልተቻለም፤ ቅንጥቡ በሀገር ዉስጥ አይገኝም።';
+
+  @override
+  String get videoEditorReverseFailed => 'ቅንጥቡን ወደ ኋላ መቀየር አልተቻለም። እንደገና ሞክር።';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'የክሊፕ ፍጥነት';
 
   @override

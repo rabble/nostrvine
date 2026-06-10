@@ -1414,6 +1414,94 @@ void main() {
         ],
       );
 
+      // Regression test: a duplicate/split of a reversed clip preserves
+      // `reversed: true` but clears both cache paths, so the fresh-render
+      // branch is reached with reversed input. The render output is forward
+      // content and must be cached as `forwardVideoPath`; the reversed input
+      // must be cached as `reversedVideoPath`. Mapping by output direction
+      // would invert both and make later cached toggles play the wrong way.
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'caches forward/reversed paths in the correct direction when fresh '
+        'rendering a reversed clip with no cache (duplicate of reversed)',
+        build: () => buildBloc(reverseClip: _fakeReverseClip),
+        seed: () => ClipEditorState(
+          clips: [
+            _createClipWithFile().copyWith(
+              video: EditorVideo.file('/path/clip-local-reversed.mp4'),
+              reversed: true,
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipReverseRequested(clipId: 'clip-local'),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.isReversing,
+            'isReversing',
+            isTrue,
+          ),
+          isA<ClipEditorState>()
+              .having((s) => s.isReversing, 'isReversing', isFalse)
+              .having((s) => s.clips.first.reversed, 'reversed', isFalse)
+              .having(
+                (s) => s.clips.first.forwardVideoPath,
+                'forwardVideoPath',
+                '/reversed/clip-local_clip-local.mp4',
+              )
+              .having(
+                (s) => s.clips.first.reversedVideoPath,
+                'reversedVideoPath',
+                '/path/clip-local-reversed.mp4',
+              )
+              .having(
+                (s) => s.lastReverseResult,
+                'lastReverseResult',
+                isA<ClipReverseSuccess>(),
+              ),
+        ],
+        verify: (bloc) {
+          expect(
+            bloc.state.clips.first.video.file?.path,
+            equals('/reversed/clip-local_clip-local.mp4'),
+          );
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'emits failure result and reports unexpected errors when the reverse '
+        'render throws',
+        build: () => buildBloc(
+          reverseClip: ({required sourceClip, required renderId}) async {
+            throw StateError('reverse render failed');
+          },
+        ),
+        seed: () => ClipEditorState(clips: [_createClipWithFile()]),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipReverseRequested(clipId: 'clip-local'),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.isReversing,
+            'isReversing',
+            isTrue,
+          ),
+          isA<ClipEditorState>()
+              .having((s) => s.isReversing, 'isReversing', isFalse)
+              .having((s) => s.reversingClipId, 'reversingClipId', isNull)
+              .having(
+                (s) => s.lastReverseResult,
+                'lastReverseResult',
+                isA<ClipReverseFailure>(),
+              ),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>()
+              .having((r) => r.unwrap(), 'unwrap', isA<StateError>())
+              .having((r) => r.context, 'context', '_onClipReverseRequested'),
+        ],
+      );
+
       test(
         'discards reverse result when source clip is removed in-flight',
         () async {

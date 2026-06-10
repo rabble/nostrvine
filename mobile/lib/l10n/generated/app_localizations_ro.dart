@@ -8116,6 +8116,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorReverseProgressLabel => 'O clipă, inversăm clipul tău';
 
   @override
+  String get videoEditorReverseNoLocalFile =>
+      'Nu se poate inversa: clipul nu este disponibil local.';
+
+  @override
+  String get videoEditorReverseFailed =>
+      'Nu s-a putut inversa clipul. Vă rugăm să încercați din nou.';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Viteza clipului';
 
   @override

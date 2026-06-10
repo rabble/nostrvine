@@ -7686,6 +7686,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorReverseProgressLabel => '잠시만요. 클립을 역재생으로 변환하고 있어요';
 
   @override
+  String get videoEditorReverseNoLocalFile =>
+      '역재생할 수 없습니다: 클립이 로컬에서 사용할 수 없습니다.';
+
+  @override
+  String get videoEditorReverseFailed => '클립을 역재생할 수 없었습니다. 다시 시도해 주세요.';
+
+  @override
   String get videoEditorSpeedSheetTitle => '클립 속도';
 
   @override

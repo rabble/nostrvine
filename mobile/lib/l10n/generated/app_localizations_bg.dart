@@ -8019,6 +8019,14 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorReverseProgressLabel => 'Момент, обръщаме клипа ви';
 
   @override
+  String get videoEditorReverseNoLocalFile =>
+      'Не може да се обърне: клипът не е наличен локално.';
+
+  @override
+  String get videoEditorReverseFailed =>
+      'Клипът не можа да се обърне. Моля, опитайте отново.';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Скорост на клипа';
 
   @override

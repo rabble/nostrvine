@@ -8015,6 +8015,14 @@ class AppLocalizationsIt extends AppLocalizations {
       'Un momento, stiamo invertendo la clip';
 
   @override
+  String get videoEditorReverseNoLocalFile =>
+      'Impossibile invertire: il clip non è disponibile localmente.';
+
+  @override
+  String get videoEditorReverseFailed =>
+      'Impossibile invertire il clip. Riprova.';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Velocità del clip';
 
   @override

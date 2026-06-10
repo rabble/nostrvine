@@ -3422,6 +3422,8 @@
     "videoEditorReverseLabel": "ወደ ኋላ",
     "videoEditorReverseClipSemanticLabel": "ለተመረጠው ክሊፕ የኋላ ወደ ፊት ማጫወቻ ቀይር",
     "videoEditorReverseProgressLabel": "አንድ ትንሽ ቆይ፣ ክሊፕዎን ወደ ኋላ እየቀየርን ነው",
+    "videoEditorReverseNoLocalFile": "ወደ ኋላ መቀየር አልተቻለም፤ ቅንጥቡ በሀገር ዉስጥ አይገኝም።",
+    "videoEditorReverseFailed": "ቅንጥቡን ወደ ኋላ መቀየር አልተቻለም። እንደገና ሞክር።",
     "videoEditorSpeedSheetTitle": "የክሊፕ ፍጥነት",
     "videoEditorFinishTimelineEditingSemanticLabel": "የጊዜ መስመር አርትዖትን ጨርስ",
     "videoEditorAudioPlayPreviewSemanticLabel": "ቅድመ እይታን አጫውት።",

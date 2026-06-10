@@ -2861,6 +2861,8 @@
     "videoEditorReverseLabel": "Tersine Çevir",
     "videoEditorReverseClipSemanticLabel": "Seçili klip için ters oynatmayı aç veya kapat",
     "videoEditorReverseProgressLabel": "Bir saniye, klibini tersine çeviriyoruz",
+    "videoEditorReverseNoLocalFile": "Tersine çevrilemiyor: klip yerel olarak kullanılamıyor.",
+    "videoEditorReverseFailed": "Klip tersine çevrilemedi. Lütfen tekrar deneyin.",
     "videoEditorSpeedSheetTitle": "Klip Hızı",
     "videoEditorStickersDivineOriginals": "Divine Orijinaller",
     "videoEditorStickerSearchHint": "Çıkartma ara...",

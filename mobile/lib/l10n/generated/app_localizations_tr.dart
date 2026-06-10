@@ -7921,6 +7921,14 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bir saniye, klibini tersine çeviriyoruz';
 
   @override
+  String get videoEditorReverseNoLocalFile =>
+      'Tersine çevrilemiyor: klip yerel olarak kullanılamıyor.';
+
+  @override
+  String get videoEditorReverseFailed =>
+      'Klip tersine çevrilemedi. Lütfen tekrar deneyin.';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Klip Hızı';
 
   @override

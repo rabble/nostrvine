@@ -7664,6 +7664,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorReverseProgressLabel => '少々お待ちください。クリップを逆再生用に処理しています';
 
   @override
+  String get videoEditorReverseNoLocalFile => '逆再生できません：クリップがローカルで利用できません。';
+
+  @override
+  String get videoEditorReverseFailed => 'クリップを逆再生できませんでした。もう一度お試しください。';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'クリップの速度';
 
   @override

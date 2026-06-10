@@ -8034,6 +8034,14 @@ class AppLocalizationsFil extends AppLocalizations {
       'Sandali lang, nirereverse namin ang clip mo';
 
   @override
+  String get videoEditorReverseNoLocalFile =>
+      'Hindi ma-reverse: hindi available ang clip nang lokal.';
+
+  @override
+  String get videoEditorReverseFailed =>
+      'Hindi na-reverse ang clip. Pakisubukang muli.';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Bilis ng Clip';
 
   @override

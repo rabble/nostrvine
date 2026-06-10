@@ -7952,6 +7952,14 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ett ögonblick, vi vänder ditt klipp baklänges';
 
   @override
+  String get videoEditorReverseNoLocalFile =>
+      'Kan inte vända baklänges: klippet är inte tillgängligt lokalt.';
+
+  @override
+  String get videoEditorReverseFailed =>
+      'Kunde inte vända klippet baklänges. Försök igen.';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Klipphastighet';
 
   @override

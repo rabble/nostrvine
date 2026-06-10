@@ -8099,6 +8099,14 @@ class AppLocalizationsPl extends AppLocalizations {
       'Chwileczkę, odwracamy Twój klip';
 
   @override
+  String get videoEditorReverseNoLocalFile =>
+      'Nie można odwrócić: klip nie jest dostępny lokalnie.';
+
+  @override
+  String get videoEditorReverseFailed =>
+      'Nie udało się odwrócić klipu. Spróbuj ponownie.';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Prędkość klipu';
 
   @override

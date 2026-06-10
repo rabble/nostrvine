@@ -2861,6 +2861,8 @@
     "videoEditorReverseLabel": "Balik",
     "videoEditorReverseClipSemanticLabel": "Aktifkan atau nonaktifkan pemutaran terbalik untuk klip yang dipilih",
     "videoEditorReverseProgressLabel": "Tunggu sebentar, kami sedang membalik klip Anda",
+    "videoEditorReverseNoLocalFile": "Tidak dapat membalik: klip tidak tersedia secara lokal.",
+    "videoEditorReverseFailed": "Tidak dapat membalik klip. Silakan coba lagi.",
     "videoEditorSpeedSheetTitle": "Kecepatan Klip",
     "videoEditorStickersDivineOriginals": "Divine Orisinal",
     "videoEditorStickerSearchHint": "Cari stiker...",

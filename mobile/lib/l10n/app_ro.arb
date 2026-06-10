@@ -2860,6 +2860,8 @@
     "videoEditorReverseLabel": "Invers",
     "videoEditorReverseClipSemanticLabel": "Activați sau dezactivați redarea inversă pentru clipul selectat",
     "videoEditorReverseProgressLabel": "O clipă, inversăm clipul tău",
+    "videoEditorReverseNoLocalFile": "Nu se poate inversa: clipul nu este disponibil local.",
+    "videoEditorReverseFailed": "Nu s-a putut inversa clipul. Vă rugăm să încercați din nou.",
     "videoEditorSpeedSheetTitle": "Viteza clipului",
     "videoEditorFinishTimelineEditingSemanticLabel": "Finalizează editarea cronologiei",
     "videoEditorAudioPlayPreviewSemanticLabel": "Redă previzualizarea",

@@ -7993,6 +7993,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'Um momento, estamos invertendo seu clipe';
 
   @override
+  String get videoEditorReverseNoLocalFile =>
+      'Não é possível inverter: o clipe não está disponível localmente.';
+
+  @override
+  String get videoEditorReverseFailed =>
+      'Não foi possível inverter o clipe. Por favor, tente novamente.';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Velocidade do clipe';
 
   @override

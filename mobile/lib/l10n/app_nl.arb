@@ -2860,6 +2860,8 @@
     "videoEditorReverseLabel": "Omgekeerd",
     "videoEditorReverseClipSemanticLabel": "Omgekeerde weergave voor geselecteerde clip in-/uitschakelen",
     "videoEditorReverseProgressLabel": "Een moment, we draaien je clip om",
+    "videoEditorReverseNoLocalFile": "Kan niet omdraaien: clip is niet lokaal beschikbaar.",
+    "videoEditorReverseFailed": "Kon clip niet omdraaien. Probeer het opnieuw.",
     "videoEditorSpeedSheetTitle": "Clipsnelheid",
     "videoEditorFinishTimelineEditingSemanticLabel": "Bewerken van tijdlijn voltooien",
     "videoEditorAudioPlayPreviewSemanticLabel": "Voorbeeld afspelen",

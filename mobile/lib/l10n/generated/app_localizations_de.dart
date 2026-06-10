@@ -8033,6 +8033,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Einen Moment, wir drehen deinen Clip rückwärts';
 
   @override
+  String get videoEditorReverseNoLocalFile =>
+      'Rückwärtsdrehen nicht möglich: Clip ist lokal nicht verfügbar.';
+
+  @override
+  String get videoEditorReverseFailed =>
+      'Clip konnte nicht rückwärts gedreht werden. Bitte erneut versuchen.';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Clip-Geschwindigkeit';
 
   @override
