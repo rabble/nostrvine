@@ -116,6 +116,13 @@ class NotificationRepository {
   String? _lastCursor;
   String? _lastCursorId;
 
+  /// Monotonic token bumped by [refresh] so in-flight page fetches from a
+  /// replaced pagination stream skip their post-await writes.
+  int _fetchGeneration = 0;
+
+  /// Count of page fetches applied since the last first-page emission.
+  int _pagesLoaded = 0;
+
   /// Reactive snapshot of the enriched, grouped notification feed.
   ///
   /// Single source of truth for the feed bloc (list rendering) and the
@@ -158,6 +165,14 @@ class NotificationRepository {
   /// resulting [StateError] as expected account-switch noise.
   bool get isClosed => _snapshot.isClosed;
 
+  /// Whether the snapshot currently holds more than the first page.
+  ///
+  /// Resume-driven liveness triggers consult this to avoid collapsing a
+  /// user-visible paginated feed back to page 1. An explicit [refresh]
+  /// (pull-to-refresh, page mount) still replaces the snapshot and resets
+  /// this to `false`.
+  bool get hasPaginatedBeyondFirstPage => _pagesLoaded > 1;
+
   /// Fetches the next page of notifications.
   ///
   /// Pass [cursor] to override the stored pagination cursor. On success,
@@ -173,10 +188,15 @@ class NotificationRepository {
   /// items visible alongside an inline error affordance, and the typed
   /// [FunnelcakeException] is rethrown after structured logging so
   /// callers can also drive a hard-failure UI when the cache is empty.
+  ///
+  /// A [refresh] issued while this call is in flight supersedes it: the
+  /// late completion neither updates the stored cursor nor touches the
+  /// snapshot, and returns the current snapshot unchanged.
   Future<NotificationPage> getNotifications({
     String? cursor,
     String? cursorId,
   }) async {
+    final generation = _fetchGeneration;
     final effectiveCursor = cursor ?? _lastCursor;
     final effectiveCursorId = cursor != null
         ? cursorId
@@ -193,11 +213,13 @@ class NotificationRepository {
               cursor: effectiveCursor,
               cursorId: effectiveCursorId,
             );
+      if (generation != _fetchGeneration) return _snapshot.value;
 
       _lastCursor = response.nextCursor;
       _lastCursorId = response.nextCursorId;
 
       final items = await _enrichAndGroup(response.notifications);
+      if (generation != _fetchGeneration) return _snapshot.value;
 
       final page = NotificationPage(
         items: items,
@@ -206,6 +228,7 @@ class NotificationRepository {
         nextCursorId: response.nextCursorId,
         hasMore: response.hasMore,
       );
+      _pagesLoaded = isFirstPage ? 1 : _pagesLoaded + 1;
       _emitSnapshotForPage(page, isFirstPage: isFirstPage);
 
       if (isFirstPage) {
@@ -220,7 +243,7 @@ class NotificationRepository {
         error: e,
         stackTrace: s,
       );
-      if (isFirstPage) {
+      if (isFirstPage && generation == _fetchGeneration) {
         _markRefreshError();
       }
       rethrow;
@@ -525,9 +548,25 @@ class NotificationRepository {
   static final math.Random _jitter = math.Random();
 
   /// Refreshes notifications from the beginning (no cursor).
+  ///
+  /// Starts a new pagination stream: bumps the fetch generation so any
+  /// in-flight page fetch from the previous stream completes without
+  /// touching the cursor or snapshot, then clears the stored cursor.
   Future<NotificationPage> refresh() {
+    _fetchGeneration++;
     _lastCursor = null;
     _lastCursorId = null;
+    return getNotifications();
+  }
+
+  /// Fetches the page after the last one applied to the snapshot.
+  ///
+  /// Returns `null` without issuing a request when no pagination cursor
+  /// is stored — before the first page resolves, or immediately after
+  /// [refresh] reset the stream — so a racing load-more can never turn
+  /// into a duplicate first-page fetch.
+  Future<NotificationPage?> loadNextPage() async {
+    if (_lastCursor == null) return null;
     return getNotifications();
   }
 

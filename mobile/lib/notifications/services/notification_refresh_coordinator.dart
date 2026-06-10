@@ -46,16 +46,28 @@ class NotificationRefreshCoordinator {
 
   /// Requests an authoritative first-page refresh.
   ///
-  /// Returns the in-flight refresh if one already exists. Otherwise skips
-  /// refreshes inside [_cooldown] of the last *successful* refresh unless
-  /// [force] is true — a failed refresh does not consume the cooldown, so
-  /// the next trigger retries immediately.
+  /// Returns the in-flight refresh if one already exists. Otherwise, unless
+  /// [force] is true, skips when the snapshot is paginated beyond the first
+  /// page (a first-page replace would collapse a feed the user scrolled
+  /// deep into) or when inside [_cooldown] of the last *successful* refresh
+  /// — a failed refresh does not consume the cooldown, so the next trigger
+  /// retries immediately.
   Future<void> refresh({
     required NotificationRefreshReason reason,
     bool force = false,
   }) {
     final inFlight = _inFlight;
     if (inFlight != null) return inFlight;
+
+    if (!force && _repository.hasPaginatedBeyondFirstPage) {
+      Log.debug(
+        'Skipping ${reason.name} refresh: snapshot is paginated beyond '
+        'the first page',
+        name: 'NotificationRefreshCoordinator',
+        category: LogCategory.api,
+      );
+      return Future<void>.value();
+    }
 
     final lastSuccessAt = _lastSuccessAt;
     if (!force &&

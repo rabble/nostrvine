@@ -2008,6 +2008,224 @@ void main() {
       });
     });
 
+    group('loadNextPage', () {
+      test('no-ops without a stored pagination cursor', () async {
+        final result = await repository.loadNextPage();
+
+        expect(result, isNull);
+        verifyNever(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            cursorId: any(named: 'cursorId'),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        );
+      });
+
+      test('requests the stored cursor and appends the next page', () async {
+        stubProfiles({});
+        stubNotifications(
+          [makeNotification()],
+          nextCursor: 'c1',
+          hasMore: true,
+        );
+        await repository.getNotifications();
+
+        stubNotifications([
+          makeNotification(
+            id: 'n2',
+            sourceEventId: 'evt2',
+            referencedEventId: 'video_2',
+          ),
+        ]);
+        final page = await repository.loadNextPage();
+
+        expect(page, isNotNull);
+        final snapshot = await repository.watchSnapshot().first;
+        expect(snapshot.items, hasLength(2));
+        final cursors = verify(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: captureAny(named: 'cursor'),
+            cursorId: any(named: 'cursorId'),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).captured;
+        expect(cursors, equals([null, 'c1']));
+      });
+
+      test('during an in-flight refresh it no-ops instead of issuing a '
+          'duplicate first-page request', () async {
+        stubProfiles({});
+        stubNotifications(
+          [makeNotification()],
+          nextCursor: 'c1',
+          hasMore: true,
+        );
+        await repository.getNotifications();
+
+        final gate = Completer<NotificationResponse>();
+        when(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            cursorId: any(named: 'cursorId'),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => gate.future);
+        final refreshFuture = repository.refresh();
+
+        final result = await repository.loadNextPage();
+
+        expect(result, isNull);
+        verify(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            cursorId: any(named: 'cursorId'),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).called(2);
+
+        gate.complete(
+          const NotificationResponse(
+            notifications: [],
+            unreadCount: 0,
+            hasMore: false,
+          ),
+        );
+        await refreshFuture;
+      });
+
+      test('stale completion after a refresh neither regresses the cursor '
+          'nor appends onto the replaced snapshot', () async {
+        stubProfiles({});
+        stubNotifications(
+          [makeNotification()],
+          nextCursor: 'c1',
+          hasMore: true,
+        );
+        await repository.getNotifications();
+
+        final gate = Completer<NotificationResponse>();
+        when(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            cursorId: any(named: 'cursorId'),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => gate.future);
+        final staleLoadMore = repository.loadNextPage();
+
+        stubNotifications(
+          [
+            makeNotification(
+              id: 'n9',
+              sourceEventId: 'evt9',
+              referencedEventId: 'video_9',
+            ),
+          ],
+          nextCursor: 'r1',
+          hasMore: true,
+        );
+        await repository.refresh();
+
+        gate.complete(
+          NotificationResponse(
+            notifications: [
+              makeNotification(
+                id: 'n_stale',
+                sourceEventId: 'evt_stale',
+                referencedEventId: 'video_stale',
+              ),
+            ],
+            unreadCount: 0,
+            hasMore: true,
+            nextCursor: 'c2_stale',
+          ),
+        );
+        await staleLoadMore;
+
+        final snapshot = await repository.watchSnapshot().first;
+        expect(snapshot.items, hasLength(1));
+        expect(
+          (snapshot.items.single as VideoNotification).videoEventId,
+          equals('video_9'),
+        );
+
+        stubNotifications([]);
+        await repository.loadNextPage();
+        final cursors = verify(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: captureAny(named: 'cursor'),
+            cursorId: any(named: 'cursorId'),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).captured;
+        expect(cursors, equals([null, 'c1', null, 'r1']));
+      });
+    });
+
+    group('hasPaginatedBeyondFirstPage', () {
+      test('false until a page beyond the first is applied', () async {
+        expect(repository.hasPaginatedBeyondFirstPage, isFalse);
+
+        stubProfiles({});
+        stubNotifications(
+          [makeNotification()],
+          nextCursor: 'c1',
+          hasMore: true,
+        );
+        await repository.getNotifications();
+
+        expect(repository.hasPaginatedBeyondFirstPage, isFalse);
+      });
+
+      test('true after a load-more, false again after a refresh', () async {
+        stubProfiles({});
+        stubNotifications(
+          [makeNotification()],
+          nextCursor: 'c1',
+          hasMore: true,
+        );
+        await repository.getNotifications();
+        stubNotifications(
+          [
+            makeNotification(
+              id: 'n2',
+              sourceEventId: 'evt2',
+              referencedEventId: 'video_2',
+            ),
+          ],
+          nextCursor: 'c2',
+          hasMore: true,
+        );
+        await repository.loadNextPage();
+
+        expect(repository.hasPaginatedBeyondFirstPage, isTrue);
+
+        stubNotifications([]);
+        await repository.refresh();
+
+        expect(repository.hasPaginatedBeyondFirstPage, isFalse);
+      });
+    });
+
     group('markAsRead', () {
       test('calls API and DAO for each id', () async {
         when(

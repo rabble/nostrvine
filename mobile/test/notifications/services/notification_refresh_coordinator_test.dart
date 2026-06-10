@@ -25,6 +25,9 @@ void main() {
         () => repository.refresh(),
       ).thenAnswer((_) async => NotificationPage.empty);
       when(() => repository.isClosed).thenReturn(false);
+      when(
+        () => repository.hasPaginatedBeyondFirstPage,
+      ).thenReturn(false);
     });
 
     NotificationRefreshCoordinator buildCoordinator({
@@ -127,6 +130,16 @@ void main() {
         reportedErrors.single.reason,
         equals('NotificationRefreshCoordinator.appResume'),
       );
+    });
+
+    test('skips refresh while the snapshot is paginated beyond the first '
+        'page', () async {
+      when(() => repository.hasPaginatedBeyondFirstPage).thenReturn(true);
+      final coordinator = buildCoordinator();
+
+      await coordinator.refresh(reason: NotificationRefreshReason.appResume);
+
+      verifyNever(() => repository.refresh());
     });
 
     test('closed-repository $StateError is not reported', () async {
