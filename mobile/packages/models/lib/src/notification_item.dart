@@ -51,14 +51,13 @@ sealed class NotificationItem extends Equatable {
 
   /// Underlying Nostr event ids that this item represents.
   ///
-  /// REST-loaded items carry the server's UUID in [id] and the Nostr event
-  /// id in [sourceEventIds]; realtime items carry the Nostr event id in both.
-  /// Cross-path snapshot dedupe in
+  /// Items carry the server's UUID in [id] and the Nostr event id in
+  /// [sourceEventIds]. Cross-page snapshot dedupe in
   /// `NotificationRepository._emitSnapshotForPage` keys on overlap in this
-  /// set rather than [id] equality so a logical event arriving over WS
-  /// first and then over REST resolves to a single row. For grouped video
-  /// notifications this is the union of all underlying likes/comments/
-  /// reposts contributing to the row.
+  /// set rather than [id] equality so a logical event delivered as
+  /// distinct rows across pages resolves to a single rendered row. For
+  /// grouped video notifications this is the union of all underlying
+  /// likes/comments/reposts contributing to the row.
   final List<String> sourceEventIds;
 
   /// Raw relay notification ids represented by this rendered row.

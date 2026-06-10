@@ -28,7 +28,6 @@ import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
-import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/outgoing_dm_retry_service.dart';
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/social_service.dart';
@@ -353,7 +352,6 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
         await db.directMessagesDao.clearAll();
         await db.conversationsDao.clearAll();
         await db.notificationsDao.clearAll();
-        await NotificationServiceEnhanced.instance.clearAllData();
         // Clear DM sync cursors so the next login triggers a full re-fetch
         // from relays instead of using stale `since:` boundaries.
         await DmSyncState(prefs).clearAll();

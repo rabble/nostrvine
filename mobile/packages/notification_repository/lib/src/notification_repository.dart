@@ -127,8 +127,8 @@ class NotificationRepository {
   ///
   /// Single source of truth for the feed bloc (list rendering) and the
   /// badge cubit (badge count). Every mutation — [getNotifications],
-  /// [refresh], [markAsRead], [markAllAsRead], [acceptRealtime] —
-  /// updates this subject so consumers can never diverge.
+  /// [refresh], [markAsRead], [markAllAsRead] — updates this subject so
+  /// consumers can never diverge.
   final BehaviorSubject<NotificationPage> _snapshot =
       BehaviorSubject<NotificationPage>.seeded(NotificationPage.empty);
 
@@ -648,112 +648,6 @@ class NotificationRepository {
     }
   }
 
-  /// Accepts a real-time WebSocket notification and merges it into the
-  /// snapshot.
-  ///
-  /// Enriches the raw relay event via [_enrichAndGroup], applies the
-  /// block filter, deduplicates by `id`, and then either:
-  ///
-  /// * merges into an existing matching [VideoNotification] group (same
-  ///   `videoEventId` + `type`) by prepending the new actor, incrementing
-  ///   `totalCount`, flipping `isRead` back to false, and bumping
-  ///   `timestamp` — the merged row stays at its existing position; or
-  /// * prepends the new item when no matching group exists.
-  ///
-  /// The merge step preserves the pre-snapshot bloc-layer behavior
-  /// (deleted in `ead8114f8`) so a second realtime like/comment/repost on
-  /// a video that already has a grouped row updates the existing row's
-  /// count rather than creating a duplicate.
-  Future<void> acceptRealtime(RelayNotification raw) async {
-    if (_snapshotContainsSourceEventId(raw.id)) return;
-
-    final enriched = await _enrichAndGroup([raw]);
-    if (enriched.isEmpty) return;
-
-    final current = _snapshot.value;
-    // Re-check against the post-await snapshot so concurrent refresh/page
-    // updates can neither be clobbered nor bypass the cross-path dedupe.
-    if (_snapshotContainsSourceEventId(raw.id)) return;
-
-    final newItem = enriched.first;
-    // Final by-id dedupe gate (the deliberate WS → WS guard). The
-    // `_snapshotContainsSourceEventId` checks above match on the
-    // snapshot's `sourceEventIds` set; this catches the residual
-    // same-id arrival whose `id` isn't represented in any existing
-    // row's `sourceEventIds`. Preserves the original by-id contract.
-    if (current.items.any((n) => n.id == newItem.id)) return;
-
-    if (newItem is VideoNotification) {
-      final merged = _mergeIntoExistingVideoGroup(current.items, newItem);
-      if (merged != null) {
-        _snapshot.add(current.copyWith(items: merged));
-        return;
-      }
-    }
-
-    _snapshot.add(current.copyWith(items: [newItem, ...current.items]));
-  }
-
-  bool _snapshotContainsSourceEventId(String sourceEventId) {
-    if (sourceEventId.isEmpty) return false;
-    return _snapshot.value.items.any(
-      (n) => n.sourceEventIds.contains(sourceEventId),
-    );
-  }
-
-  /// If [items] contains a [VideoNotification] matching [incoming] by
-  /// `videoEventId` and `type`, returns a new list with that row replaced
-  /// by the merged group; otherwise returns null.
-  ///
-  /// Merge semantics (mirror the pre-snapshot bloc handler): add the
-  /// incoming actor, reapply the grouped-row actor ordering, increment
-  /// `totalCount`, flip `isRead` to false, bump `timestamp` to the
-  /// incoming arrival, and union the underlying `sourceEventIds` so the
-  /// merged row carries every Nostr event it represents. The row stays
-  /// at its existing index — no re-sort, so the visible list doesn't
-  /// jump.
-  static List<NotificationItem>? _mergeIntoExistingVideoGroup(
-    List<NotificationItem> items,
-    VideoNotification incoming,
-  ) {
-    final result = <NotificationItem>[];
-    var merged = false;
-    for (final existing in items) {
-      if (!merged &&
-          existing is VideoNotification &&
-          existing.videoEventId == incoming.videoEventId &&
-          existing.type == incoming.type) {
-        final incomingActor = incoming.actors.first;
-        final mergedActors = _orderVideoGroupActors([
-          incomingActor,
-          ...existing.actors.where((a) => a.pubkey != incomingActor.pubkey),
-        ]).take(_maxGroupActors).toList();
-        final mergedSourceEventIds = <String>{
-          ...existing.sourceEventIds,
-          ...incoming.sourceEventIds,
-        }.toList();
-        final mergedNotificationIds = <String>{
-          ...existing.notificationIds,
-          ...incoming.notificationIds,
-        }.toList();
-        result.add(
-          existing.copyWith(
-            actors: mergedActors,
-            totalCount: existing.totalCount + 1,
-            isRead: false,
-            timestamp: incoming.timestamp,
-            sourceEventIds: mergedSourceEventIds,
-            notificationIds: mergedNotificationIds,
-          ),
-        );
-        merged = true;
-      } else {
-        result.add(existing);
-      }
-    }
-    return merged ? result : null;
-  }
-
   /// Updates [_snapshot] with [page]'s contents.
   ///
   /// First-page emissions replace the items list (used by [refresh] and
@@ -766,22 +660,19 @@ class NotificationRepository {
   /// 1. **`(videoEventId, type)` overlap (VideoNotification only)** —
   ///    when an incoming group matches an existing snapshot group, the
   ///    existing row is replaced in place by
-  ///    [_mergeAppendedVideoGroup] (richer REST data folded into the
-  ///    existing WS-built row, preserving its position).
+  ///    [_mergeAppendedVideoGroup] (richer page data folded into the
+  ///    existing row, preserving its position).
   /// 2. **`sourceEventIds` overlap** — when an incoming item's
   ///    underlying Nostr event ids overlap the rendered snapshot's set,
-  ///    the incoming item is skipped as a cross-path duplicate. Same
-  ///    logical-event identity that [acceptRealtime] queries against the
-  ///    current snapshot (Nostr event id).
+  ///    the incoming item is skipped as a cross-page duplicate (the
+  ///    server can deliver the same logical Nostr event as distinct
+  ///    rows across pages).
   /// 3. **`id` equality fallback** — defensive against the rare case of
   ///    items with empty `sourceEventIds` (server returned a notification
-  ///    without `source_event_id`). Preserves the original
-  ///    `_emitSnapshotForPage` contract; PR #4247's REST→WS guard relied
-  ///    only on (1)+(2) and is untouched.
+  ///    without `source_event_id`).
   ///
-  /// Closes the symmetric gap to PR #4247: WS-first arrival followed by
-  /// a REST pagination that returns the same Nostr event(s) no longer
-  /// duplicates the row (#4264).
+  /// Together these keep a logical event that reappears on a later page
+  /// from duplicating its existing row (#4264).
   void _emitSnapshotForPage(
     NotificationPage page, {
     required bool isFirstPage,
@@ -843,12 +734,8 @@ class NotificationRepository {
   }
 
   /// Merges [incoming] (from a REST pagination page) into [existing] (a
-  /// snapshot row, typically WS-built) without changing the row's
-  /// position in the snapshot.
-  ///
-  /// Mirror of [_mergeIntoExistingVideoGroup] in the opposite direction
-  /// (incoming group → existing single, instead of incoming single →
-  /// existing group). Semantics:
+  /// row already in the snapshot) without changing the row's position in
+  /// the snapshot. Semantics:
   ///
   /// - `sourceEventIds` = set union of both sides (preserves uniqueness).
   /// - `totalCount` = size of the union (so the count reflects unique
@@ -1514,18 +1401,15 @@ class NotificationRepository {
   /// Consolidates follow notifications — keeps the most recent per pubkey.
   ///
   /// Kind 3 (contact list) is a replaceable event: a single follower can
-  /// produce several follow notifications over time (re-publishes, plus
-  /// the same logical follow arriving via both the REST page and the
-  /// realtime bridge). Collapsing them to one row per `sourcePubkey` keeps
-  /// the Follows tab from showing the same person repeatedly.
+  /// produce several follow notifications over time (re-publishes).
+  /// Collapsing them to one row per `sourcePubkey` keeps the Follows tab
+  /// from showing the same person repeatedly.
   ///
   /// The surviving row must carry the *latest* `createdAt`, not the
   /// earliest. The feed sorts newest-first and paginates, so stamping a
   /// recent follow with a stale timestamp sinks it below older
   /// notifications — potentially off the first page entirely, which
   /// surfaces as an empty "Follows" tab even though the follow exists.
-  /// Keeping the most recent timestamp also matches the realtime path,
-  /// which inserts new follows at the top of the snapshot.
   List<RelayNotification> _consolidateFollows(List<RelayNotification> raw) {
     final followsByPubkey = <String, RelayNotification>{};
     final result = <RelayNotification>[];

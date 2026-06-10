@@ -25,8 +25,6 @@ void main() {
   late NotificationRepository repository;
 
   const userPubkey = 'user1234567890abcdef';
-  const blockedPubkey = 'blocked_actor_pub';
-  const allowedPubkey = 'allowed_actor_pub';
   const stableCursorId =
       '1122334411223344112233441122334411223344112233441122334411223344';
 
@@ -3133,642 +3131,44 @@ void main() {
         // Rollback restores the pre-write snapshot.
         expect(await repository.watchUnreadCount().first, equals(1));
       });
-
-      test(
-        'acceptRealtime enriches, prepends, and increments unread',
-        () async {
-          repository = buildRepository(
-            blockFilter: (pubkey) => pubkey == blockedPubkey,
-          );
-          stubProfiles({
-            allowedPubkey: makeProfile(allowedPubkey, displayName: 'Allowed'),
-          });
-
-          await repository.acceptRealtime(
-            makeNotification(sourcePubkey: allowedPubkey),
-          );
-
-          final snapshot = await repository.watchSnapshot().first;
-          expect(snapshot.items, hasLength(1));
-          expect(await repository.watchUnreadCount().first, equals(1));
-        },
-      );
-
-      test(
-        'acceptRealtime reclassifies a video-anchored notification whose '
-        'referenced video is owned by someone else as likeComment (#4813)',
-        () async {
-          stubProfiles({
-            allowedPubkey: makeProfile(allowedPubkey, displayName: 'Allowed'),
-          });
-          stubVideoStats(
-            'video_default',
-            makeVideoStats(id: 'video_default', pubkey: 'other_owner_pubkey'),
-          );
-
-          await repository.acceptRealtime(
-            makeNotification(sourcePubkey: allowedPubkey),
-          );
-
-          final snapshot = await repository.watchSnapshot().first;
-          expect(snapshot.items, hasLength(1));
-          final item = snapshot.items.single as ActorNotification;
-          expect(item.type, equals(NotificationKind.likeComment));
-          expect(await repository.watchUnreadCount().first, equals(1));
-        },
-      );
-
-      test('acceptRealtime drops a video-anchored notification from a '
-          'blocked actor', () async {
-        repository = buildRepository(
-          blockFilter: (pubkey) => pubkey == blockedPubkey,
-        );
-        stubProfiles({
-          blockedPubkey: makeProfile(blockedPubkey, displayName: 'Blocked'),
-        });
-
-        await repository.acceptRealtime(
-          makeNotification(sourcePubkey: blockedPubkey),
-        );
-
-        final snapshot = await repository.watchSnapshot().first;
-        expect(snapshot.items, isEmpty);
-        expect(await repository.watchUnreadCount().first, equals(0));
-      });
-
-      test(
-        'acceptRealtime drops a comment notification from a blocked actor',
-        () async {
-          repository = buildRepository(
-            blockFilter: (pubkey) => pubkey == blockedPubkey,
-          );
-          stubProfiles({
-            blockedPubkey: makeProfile(blockedPubkey, displayName: 'Blocked'),
-          });
-
-          await repository.acceptRealtime(
-            makeNotification(
-              sourcePubkey: blockedPubkey,
-              notificationType: 'comment',
-              sourceKind: 1,
-              content: 'spam comment',
-            ),
-          );
-
-          final snapshot = await repository.watchSnapshot().first;
-          expect(snapshot.items, isEmpty);
-        },
-      );
-
-      test('acceptRealtime drops an actor-anchored follow notification from a '
-          'blocked actor', () async {
-        repository = buildRepository(
-          blockFilter: (pubkey) => pubkey == blockedPubkey,
-        );
-        stubProfiles({
-          blockedPubkey: makeProfile(blockedPubkey, displayName: 'Blocked'),
-        });
-
-        await repository.acceptRealtime(
-          makeNotification(
-            sourcePubkey: blockedPubkey,
-            notificationType: 'follow',
-            sourceKind: 3,
-            referencedEventId: null,
-            isReferencedVideo: false,
-          ),
-        );
-
-        final snapshot = await repository.watchSnapshot().first;
-        expect(snapshot.items, isEmpty);
-      });
-
-      test('acceptRealtime keeps an actor-anchored follow notification from a '
-          'non-blocked actor', () async {
-        repository = buildRepository(
-          blockFilter: (pubkey) => pubkey == blockedPubkey,
-        );
-        stubProfiles({
-          allowedPubkey: makeProfile(allowedPubkey, displayName: 'Allowed'),
-        });
-
-        await repository.acceptRealtime(
-          makeNotification(
-            sourcePubkey: allowedPubkey,
-            notificationType: 'follow',
-            sourceKind: 3,
-            referencedEventId: null,
-            isReferencedVideo: false,
-          ),
-        );
-
-        final snapshot = await repository.watchSnapshot().first;
-        expect(snapshot.items, hasLength(1));
-        final item = snapshot.items.single as ActorNotification;
-        expect(item.type, equals(NotificationKind.follow));
-        expect(item.actor.pubkey, equals(allowedPubkey));
-        expect(await repository.watchUnreadCount().first, equals(1));
-      });
-
-      test(
-        'acceptRealtime strips blocked actors from a multi-actor video group '
-        'on merge',
-        () async {
-          repository = buildRepository(
-            blockFilter: (pubkey) => pubkey == blockedPubkey,
-          );
-          stubProfiles({
-            allowedPubkey: makeProfile(allowedPubkey, displayName: 'Allowed'),
-            blockedPubkey: makeProfile(blockedPubkey, displayName: 'Blocked'),
-          });
-
-          await repository.acceptRealtime(
-            makeNotification(sourcePubkey: allowedPubkey),
-          );
-          await repository.acceptRealtime(
-            makeNotification(id: 'n2', sourcePubkey: blockedPubkey),
-          );
-
-          final snapshot = await repository.watchSnapshot().first;
-          expect(snapshot.items, hasLength(1));
-          final group = snapshot.items.single as VideoNotification;
-          expect(group.totalCount, equals(1));
-          expect(group.actors.map((actor) => actor.pubkey), [allowedPubkey]);
-        },
-      );
-
-      test('acceptRealtime passes through blocked-pubkey arrivals when no '
-          'blockFilter is configured', () async {
-        stubProfiles({
-          blockedPubkey: makeProfile(blockedPubkey, displayName: 'Blocked'),
-        });
-
-        await repository.acceptRealtime(
-          makeNotification(sourcePubkey: blockedPubkey),
-        );
-
-        final snapshot = await repository.watchSnapshot().first;
-        expect(snapshot.items, hasLength(1));
-      });
-
-      test('acceptRealtime dedupes against existing snapshot items', () async {
-        stubProfiles({
-          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
-        });
-        stubNotifications([makeNotification()], unreadCount: 1);
-        await repository.refresh();
-        final beforeItems =
-            (await repository.watchSnapshot().first).items.length;
-
-        // Same id — should be a no-op.
-        await repository.acceptRealtime(makeNotification());
-
-        // Snapshot's item count is unchanged because the realtime event
-        // was deduped against the existing item id.
-        final afterItems =
-            (await repository.watchSnapshot().first).items.length;
-        expect(afterItems, equals(beforeItems));
-      });
-
-      test('acceptRealtime by-id guard fires when existing row has empty '
-          'sourceEventIds', () async {
-        // Pins the by-id dedupe gate that survives below the
-        // `_snapshotContainsSourceEventId` checks. The gate fires when
-        // the incoming raw's `id` is not represented in any existing
-        // row's `sourceEventIds` (so the cross-path checks can't see
-        // it), but its `id` literally matches an item already in the
-        // snapshot. If a future refactor deletes the by-id gate,
-        // empty-sourceEventIds duplicates would inflate the snapshot
-        // and this test will fail.
-        stubProfiles({
-          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
-        });
-        stubNotifications([]);
-        await repository.refresh();
-
-        // First WS arrival with empty sourceEventId — the resulting
-        // row has `sourceEventIds = []`, so the cross-path checks
-        // can't see it on the second arrival.
-        await repository.acceptRealtime(
-          makeNotification(
-            id: 'evt1',
-            sourceEventId: '',
-            notificationType: 'follow',
-            sourceKind: 3,
-            referencedEventId: null,
-            isReferencedVideo: false,
-          ),
-        );
-
-        final firstItems = (await repository.watchSnapshot().first).items;
-        expect(firstItems, hasLength(1));
-        expect(firstItems.single.id, equals('evt1'));
-        expect(firstItems.single.sourceEventIds, isEmpty);
-
-        // Same raw again — only the by-id gate can dedupe this.
-        await repository.acceptRealtime(
-          makeNotification(
-            id: 'evt1',
-            sourceEventId: '',
-            notificationType: 'follow',
-            sourceKind: 3,
-            referencedEventId: null,
-            isReferencedVideo: false,
-          ),
-        );
-
-        final afterItems = (await repository.watchSnapshot().first).items;
-        expect(
-          afterItems,
-          hasLength(1),
-          reason:
-              'Duplicate WS arrival with empty sourceEventId must '
-              'be deduped by the by-id gate; the sourceEventIds-based '
-              'cross-path check cannot see an existing row with empty '
-              'sourceEventIds.',
-        );
-      });
-
-      test(
-        'acceptRealtime dedupes WS arrivals against snapshot sourceEventIds',
-        () async {
-          stubProfiles({
-            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
-          });
-          stubNotifications([
-            makeNotification(
-              id: 'server-uuid-1',
-              sourceEventId: 'nostr-event-1',
-              notificationType: 'follow',
-              sourceKind: 3,
-              referencedEventId: null,
-              isReferencedVideo: false,
-            ),
-          ], unreadCount: 1);
-          await repository.refresh();
-
-          await repository.acceptRealtime(
-            makeNotification(
-              id: 'nostr-event-1',
-              sourceEventId: 'nostr-event-1',
-              notificationType: 'follow',
-              sourceKind: 3,
-              referencedEventId: null,
-              isReferencedVideo: false,
-            ),
-          );
-
-          final items = (await repository.watchSnapshot().first).items;
-          expect(items, hasLength(1));
-          expect(items.single.id, equals('server-uuid-1'));
-        },
-      );
-
-      test('acceptRealtime respects the refresh replacement boundary for '
-          'sourceEventId dedupe', () async {
-        stubProfiles({
-          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
-        });
-        stubNotifications([
-          makeNotification(
-            id: 'server-uuid-1',
-            sourceEventId: 'nostr-event-1',
-            notificationType: 'follow',
-            sourceKind: 3,
-            referencedEventId: null,
-            isReferencedVideo: false,
-          ),
-        ], unreadCount: 1);
-        await repository.refresh();
-
-        stubNotifications([]);
-        await repository.refresh();
-
-        await repository.acceptRealtime(
-          makeNotification(
-            id: 'nostr-event-1',
-            sourceEventId: 'nostr-event-1',
-            notificationType: 'follow',
-            sourceKind: 3,
-            referencedEventId: null,
-            isReferencedVideo: false,
-          ),
-        );
-
-        final items = (await repository.watchSnapshot().first).items;
-        expect(
-          items,
-          hasLength(1),
-          reason:
-              'First-page refresh replaces the snapshot, so a later WS '
-              'arrival for an event no longer present should be accepted.',
-        );
-        expect(items.single.sourceEventIds, equals(<String>['nostr-event-1']));
-      });
-
-      test('acceptRealtime rechecks the snapshot after enrichment before '
-          'writing', () async {
-        final profilesCompleter = Completer<Map<String, UserProfile>>();
-        when(
-          () => profileRepository.fetchBatchProfiles(
-            pubkeys: any(named: 'pubkeys'),
-          ),
-        ).thenAnswer((_) => profilesCompleter.future);
-
-        final realtimeFuture = repository.acceptRealtime(
-          makeNotification(
-            id: 'nostr-event-1',
-            sourceEventId: 'nostr-event-1',
-            notificationType: 'follow',
-            sourceKind: 3,
-            referencedEventId: null,
-            isReferencedVideo: false,
-          ),
-        );
-
-        stubProfiles({
-          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
-        });
-        stubNotifications([
-          makeNotification(
-            id: 'server-uuid-1',
-            sourceEventId: 'nostr-event-1',
-            notificationType: 'follow',
-            sourceKind: 3,
-            referencedEventId: null,
-            isReferencedVideo: false,
-          ),
-        ], unreadCount: 1);
-        await repository.refresh();
-
-        profilesCompleter.complete({
-          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
-        });
-        await realtimeFuture;
-
-        final items = (await repository.watchSnapshot().first).items;
-        expect(
-          items,
-          hasLength(1),
-          reason:
-              'The post-await snapshot check must see the refreshed REST '
-              'row and avoid prepending a stale duplicate.',
-        );
-        expect(items.single.id, equals('server-uuid-1'));
-      });
-
-      test('acceptRealtime merges a second actor into an existing '
-          '$VideoNotification group (same videoEventId + type)', () async {
-        stubProfiles({
-          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
-          'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
-        });
-        // Initial fetch: one like from Alice on video_default. Becomes a
-        // VideoNotification with totalCount: 1, actors: [Alice].
-        stubNotifications([
-          makeNotification(id: 'first', createdAt: DateTime(2025, 3)),
-        ], unreadCount: 1);
-        await repository.refresh();
-
-        // Mark as read so we can verify the merge flips isRead back.
-        await repository.markAllAsRead();
-
-        final laterTimestamp = DateTime(2025, 6);
-        // Realtime arrival: a like from Bob on the same video.
-        await repository.acceptRealtime(
-          makeNotification(
-            id: 'second',
-            sourcePubkey: 'pubkey_bob',
-            createdAt: laterTimestamp,
-          ),
-        );
-
-        final page = await repository.watchSnapshot().first;
-        expect(
-          page.items,
-          hasLength(1),
-          reason:
-              'Same (videoEventId, type) should merge into the existing '
-              'row instead of prepending a duplicate.',
-        );
-
-        final merged = page.items.single as VideoNotification;
-        expect(merged.totalCount, equals(2));
-        expect(merged.actors, hasLength(2));
-        expect(
-          merged.actors.first.pubkey,
-          equals('pubkey_bob'),
-          reason: 'New actor is prepended at the front of the stack.',
-        );
-        expect(merged.actors[1].pubkey, equals('pubkey_alice'));
-        expect(merged.isRead, isFalse);
-        expect(merged.timestamp, equals(laterTimestamp));
-
-        // watchUnreadCount reflects the un-read flip.
-        expect(await repository.watchUnreadCount().first, equals(1));
-      });
-
-      test('acceptRealtime keeps a named actor in front when a fallback actor '
-          'arrives later', () async {
-        const hashPubkey =
-            '2949ede154d1f121402761cbd73f2b8c490b5041'
-            'cdd85c9908c5322f1a2fe3f6';
-        stubProfiles({
-          'pubkey_sally': makeProfile(
-            'pubkey_sally',
-            displayName: 'Sally Strawberry',
-          ),
-          hashPubkey: makeProfile(hashPubkey, displayName: hashPubkey),
-        });
-        stubNotifications([
-          makeNotification(
-            id: 'named-first',
-            sourcePubkey: 'pubkey_sally',
-            referencedEventId: 'video_named',
-            createdAt: DateTime(2025, 3),
-          ),
-        ], unreadCount: 1);
-        await repository.refresh();
-
-        await repository.acceptRealtime(
-          makeNotification(
-            id: 'fallback-second',
-            sourcePubkey: hashPubkey,
-            referencedEventId: 'video_named',
-            createdAt: DateTime(2025, 4),
-          ),
-        );
-
-        final merged =
-            (await repository.watchSnapshot().first).items.single
-                as VideoNotification;
-        expect(merged.totalCount, equals(2));
-        expect(merged.actors.first.pubkey, equals('pubkey_sally'));
-        expect(merged.actors.first.displayName, equals('Sally Strawberry'));
-      });
-
-      test(
-        'acceptRealtime caps merged actors at the group display limit',
-        () async {
-          stubProfiles({
-            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
-            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
-            'pubkey_carol': makeProfile('pubkey_carol', displayName: 'Carol'),
-            'pubkey_dave': makeProfile('pubkey_dave', displayName: 'Dave'),
-          });
-          // Initial fetch: three likes on the same video — fills the actor
-          // stack to the display cap.
-          stubNotifications([
-            makeNotification(id: 'n_alice', createdAt: DateTime(2024, 1, 3)),
-            makeNotification(
-              id: 'n_bob',
-              sourcePubkey: 'pubkey_bob',
-              createdAt: DateTime(2024, 1, 2),
-            ),
-            makeNotification(
-              id: 'n_carol',
-              sourcePubkey: 'pubkey_carol',
-              createdAt: DateTime(2024),
-            ),
-          ], unreadCount: 3);
-          await repository.refresh();
-
-          await repository.acceptRealtime(
-            makeNotification(
-              id: 'n_dave',
-              sourcePubkey: 'pubkey_dave',
-              createdAt: DateTime(2024, 1, 4),
-            ),
-          );
-
-          final merged =
-              (await repository.watchSnapshot().first).items.single
-                  as VideoNotification;
-          expect(merged.totalCount, equals(4));
-          expect(
-            merged.actors,
-            hasLength(3),
-            reason:
-                'Displayed actor stack stays bounded even though totalCount '
-                'continues to grow.',
-          );
-          expect(merged.actors.first.pubkey, equals('pubkey_dave'));
-        },
-      );
-
-      test('acceptRealtime dedupes a WS arrival whose id matches a REST '
-          "item's sourceEventId", () async {
-        // REST raws carry the Nostr event id in `sourceEventId` (server's
-        // UUID lives in `id`). Realtime raws carry the Nostr event id in
-        // `id`. Without the cross-path check
-        // the same logical Nostr event accepted via WS after REST would
-        // inflate the snapshot and the unread count.
-        stubProfiles({
-          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
-        });
-        stubNotifications([
-          makeNotification(
-            id: 'server-uuid-1',
-            sourceEventId: 'nostr-evt-1',
-            referencedEventId: 'video_a',
-          ),
-        ], unreadCount: 1);
-        await repository.refresh();
-
-        final beforeItems =
-            (await repository.watchSnapshot().first).items.length;
-        expect(await repository.watchUnreadCount().first, equals(1));
-
-        // Same Nostr event arriving over WS — bridge sets both `id` and
-        // `sourceEventId` to the Nostr event id.
-        await repository.acceptRealtime(
-          makeNotification(
-            id: 'nostr-evt-1',
-            sourceEventId: 'nostr-evt-1',
-            referencedEventId: 'video_a',
-            createdAt: DateTime(2025, 6),
-          ),
-        );
-
-        final afterItems =
-            (await repository.watchSnapshot().first).items.length;
-        expect(afterItems, equals(beforeItems));
-        expect(
-          await repository.watchUnreadCount().first,
-          equals(1),
-          reason:
-              'Cross-path duplicate must not bump the unread count or the '
-              'visible item count.',
-        );
-      });
-
-      test('acceptRealtime prepends a $VideoNotification when no existing '
-          'group matches by videoEventId + type', () async {
-        stubProfiles({
-          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
-          'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
-        });
-        stubNotifications([
-          makeNotification(id: 'first', referencedEventId: 'video_a'),
-        ], unreadCount: 1);
-        await repository.refresh();
-
-        // Different videoEventId — must not merge.
-        await repository.acceptRealtime(
-          makeNotification(
-            id: 'second',
-            sourcePubkey: 'pubkey_bob',
-            referencedEventId: 'video_b',
-            createdAt: DateTime(2025, 6),
-          ),
-        );
-
-        final items = (await repository.watchSnapshot().first).items;
-        expect(items, hasLength(2));
-        expect(
-          (items.first as VideoNotification).videoEventId,
-          equals('video_b'),
-          reason: 'New, non-matching item is prepended.',
-        );
-      });
     });
 
-    group('WS-first dedupe in page-merge (#4264)', () {
-      // Realtime raws carry the Nostr event id in both `id` and
-      // `sourceEventId`. REST raws carry
-      // the Nostr event id in `sourceEventId` (with the server's UUID in
-      // `id`). When WS arrives first and a later REST pagination page
-      // returns the same logical event, dedupe must key on the shared
-      // Nostr event id via `NotificationItem.sourceEventIds`, not the
-      // rendered `id` which differs across the two paths.
+    group('cross-page dedupe in page-merge (#4264)', () {
+      // The server can deliver the same logical Nostr event as distinct
+      // notification rows (different server UUIDs) across pagination
+      // pages — e.g. Kind 3 republishes, cursor drift. When a later page
+      // repeats an event already in the snapshot, dedupe must key on the
+      // shared Nostr event id via `NotificationItem.sourceEventIds`, not
+      // the rendered `id`, which can differ across deliveries.
 
-      test('standalone $ActorNotification: WS-first then non-first REST page '
-          'with same sourceEventId resolves to a single row', () async {
+      test('standalone $ActorNotification: a later page repeating the '
+          'sourceEventId resolves to a single row', () async {
         stubProfiles({
           'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
         });
         // First page seeds the snapshot and advances _lastCursor so the
         // next getNotifications() emits as a non-first page.
-        stubNotifications([], nextCursor: 'cursor_after_first', hasMore: true);
-        await repository.refresh();
-
-        // WS arrives: bridge sets id == sourceEventId == nostr event id.
-        await repository.acceptRealtime(
-          makeNotification(
-            id: 'nostr-follow-evt-1',
-            sourceEventId: 'nostr-follow-evt-1',
-            notificationType: 'follow',
-            sourceKind: 3,
-            referencedEventId: null,
-            isReferencedVideo: false,
-            createdAt: DateTime(2025, 6),
-          ),
+        stubNotifications(
+          [
+            makeNotification(
+              id: 'server-uuid-follow-0',
+              sourceEventId: 'nostr-follow-evt-1',
+              notificationType: 'follow',
+              sourceKind: 3,
+              referencedEventId: null,
+              isReferencedVideo: false,
+              createdAt: DateTime(2025, 6),
+            ),
+          ],
+          nextCursor: 'cursor_after_first',
+          hasMore: true,
         );
+        await repository.refresh();
 
         expect(
           (await repository.watchSnapshot().first).items,
           hasLength(1),
-          reason: 'WS arrival adds the follow row.',
+          reason: 'First page seeds the follow row.',
         );
 
         // Non-first REST page returns the same logical follow event
@@ -3793,92 +3193,96 @@ void main() {
           items,
           hasLength(1),
           reason:
-              'REST item with sourceEventId already represented by the '
-              'WS row must not be appended as a duplicate.',
+              'REST item with sourceEventId already represented by an '
+              'existing row must not be appended as a duplicate.',
         );
         final actor = items.single as ActorNotification;
         expect(actor.sourceEventIds, contains('nostr-follow-evt-1'));
       });
 
-      test('grouped $VideoNotification: WS-first single-actor row, then '
-          'non-first REST page with multi-actor group on same '
-          '(videoEventId, type) merges richer REST data into the existing '
-          'WS row in place', () async {
-        stubProfiles({
-          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
-          'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
-          'pubkey_carol': makeProfile('pubkey_carol', displayName: 'Carol'),
-        });
-        stubNotifications([], nextCursor: 'cursor_after_first', hasMore: true);
-        await repository.refresh();
+      test(
+        'grouped $VideoNotification: single-actor first-page row, then '
+        'a later page with a multi-actor group on same '
+        '(videoEventId, type) merges into the existing row in place',
+        () async {
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+            'pubkey_carol': makeProfile('pubkey_carol', displayName: 'Carol'),
+          });
+          stubNotifications(
+            [
+              makeNotification(
+                id: 'server-uuid-like-alice-p1',
+                sourceEventId: 'nostr-like-alice',
+                referencedEventId: 'video_a',
+                createdAt: DateTime(2025, 5),
+              ),
+            ],
+            nextCursor: 'cursor_after_first',
+            hasMore: true,
+          );
+          await repository.refresh();
 
-        await repository.acceptRealtime(
-          makeNotification(
-            id: 'nostr-like-alice',
-            sourceEventId: 'nostr-like-alice',
-            referencedEventId: 'video_a',
-            createdAt: DateTime(2025, 5),
-          ),
-        );
+          stubNotifications([
+            makeNotification(
+              id: 'server-uuid-like-alice',
+              sourceEventId: 'nostr-like-alice',
+              referencedEventId: 'video_a',
+              createdAt: DateTime(2025, 5),
+            ),
+            makeNotification(
+              id: 'server-uuid-like-bob',
+              sourceEventId: 'nostr-like-bob',
+              sourcePubkey: 'pubkey_bob',
+              referencedEventId: 'video_a',
+              createdAt: DateTime(2025, 5, 2),
+            ),
+            makeNotification(
+              id: 'server-uuid-like-carol',
+              sourceEventId: 'nostr-like-carol',
+              sourcePubkey: 'pubkey_carol',
+              referencedEventId: 'video_a',
+              createdAt: DateTime(2025, 5, 3),
+            ),
+          ]);
 
-        stubNotifications([
-          makeNotification(
-            id: 'server-uuid-like-alice',
-            sourceEventId: 'nostr-like-alice',
-            referencedEventId: 'video_a',
-            createdAt: DateTime(2025, 5),
-          ),
-          makeNotification(
-            id: 'server-uuid-like-bob',
-            sourceEventId: 'nostr-like-bob',
-            sourcePubkey: 'pubkey_bob',
-            referencedEventId: 'video_a',
-            createdAt: DateTime(2025, 5, 2),
-          ),
-          makeNotification(
-            id: 'server-uuid-like-carol',
-            sourceEventId: 'nostr-like-carol',
-            sourcePubkey: 'pubkey_carol',
-            referencedEventId: 'video_a',
-            createdAt: DateTime(2025, 5, 3),
-          ),
-        ]);
+          await repository.getNotifications();
 
-        await repository.getNotifications();
-
-        final items = (await repository.watchSnapshot().first).items;
-        expect(
-          items,
-          hasLength(1),
-          reason:
-              'REST group on same (videoEventId, type) must merge into '
-              'the existing WS row instead of producing a second row.',
-        );
-        final merged = items.single as VideoNotification;
-        expect(merged.videoEventId, equals('video_a'));
-        expect(merged.type, equals(NotificationKind.like));
-        expect(
-          merged.sourceEventIds,
-          containsAll(<String>[
-            'nostr-like-alice',
-            'nostr-like-bob',
-            'nostr-like-carol',
-          ]),
-        );
-        expect(merged.totalCount, equals(3));
-        expect(
-          merged.actors,
-          hasLength(3),
-          reason: 'Actor stack fills up to _maxGroupActors after merge.',
-        );
-        expect(
-          merged.actors.first.pubkey,
-          equals('pubkey_alice'),
-          reason:
-              'Existing-side actors retain their leading position so '
-              'the row does not visibly jump.',
-        );
-      });
+          final items = (await repository.watchSnapshot().first).items;
+          expect(
+            items,
+            hasLength(1),
+            reason:
+                'REST group on same (videoEventId, type) must merge into '
+                'the existing row instead of producing a second row.',
+          );
+          final merged = items.single as VideoNotification;
+          expect(merged.videoEventId, equals('video_a'));
+          expect(merged.type, equals(NotificationKind.like));
+          expect(
+            merged.sourceEventIds,
+            containsAll(<String>[
+              'nostr-like-alice',
+              'nostr-like-bob',
+              'nostr-like-carol',
+            ]),
+          );
+          expect(merged.totalCount, equals(3));
+          expect(
+            merged.actors,
+            hasLength(3),
+            reason: 'Actor stack fills up to _maxGroupActors after merge.',
+          );
+          expect(
+            merged.actors.first.pubkey,
+            equals('pubkey_alice'),
+            reason:
+                'Existing-side actors retain their leading position so '
+                'the row does not visibly jump.',
+          );
+        },
+      );
 
       test('unrelated REST event on a different video is appended; no '
           'false-positive dedupe', () async {
@@ -3886,17 +3290,19 @@ void main() {
           'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
           'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
         });
-        stubNotifications([], nextCursor: 'cursor_after_first', hasMore: true);
-        await repository.refresh();
-
-        await repository.acceptRealtime(
-          makeNotification(
-            id: 'nostr-like-alice-video-a',
-            sourceEventId: 'nostr-like-alice-video-a',
-            referencedEventId: 'video_a',
-            createdAt: DateTime(2025, 5),
-          ),
+        stubNotifications(
+          [
+            makeNotification(
+              id: 'server-uuid-like-alice-video-a',
+              sourceEventId: 'nostr-like-alice-video-a',
+              referencedEventId: 'video_a',
+              createdAt: DateTime(2025, 5),
+            ),
+          ],
+          nextCursor: 'cursor_after_first',
+          hasMore: true,
         );
+        await repository.refresh();
 
         stubNotifications([
           makeNotification(
@@ -3929,24 +3335,21 @@ void main() {
             'pubkey_carol': makeProfile('pubkey_carol', displayName: 'Carol'),
           });
           stubNotifications(
-            [],
+            [
+              makeNotification(
+                id: 'server-uuid-follow-alice-p1',
+                sourceEventId: 'nostr-follow-alice',
+                notificationType: 'follow',
+                sourceKind: 3,
+                referencedEventId: null,
+                isReferencedVideo: false,
+                createdAt: DateTime(2025, 5),
+              ),
+            ],
             nextCursor: 'cursor_after_first',
             hasMore: true,
           );
           await repository.refresh();
-
-          // WS arrives for a follow notification.
-          await repository.acceptRealtime(
-            makeNotification(
-              id: 'nostr-follow-alice',
-              sourceEventId: 'nostr-follow-alice',
-              notificationType: 'follow',
-              sourceKind: 3,
-              referencedEventId: null,
-              isReferencedVideo: false,
-              createdAt: DateTime(2025, 5),
-            ),
-          );
 
           // Non-first REST page includes:
           //  - the same follow event (must be deduped),
@@ -4004,32 +3407,34 @@ void main() {
       );
 
       test("comment-kind merge keeps the newer side's commentText "
-          '(WS newer than REST page)', () async {
+          '(existing row newer than incoming page)', () async {
         // Production ordering: REST pagination walks backward in time,
-        // so an incoming REST page on the same (videoEventId, kind)
-        // is typically OLDER than the WS-built row in the snapshot.
-        // The merged row must therefore keep the WS commentText —
+        // so an incoming page on the same (videoEventId, kind) is
+        // typically OLDER than the row already in the snapshot. The
+        // merged row must therefore keep the existing commentText —
         // mirrors `_groupVideoAnchored`'s sort-desc + group.first
         // newest-wins and the surrounding `timestamp = max(...)`.
         stubProfiles({
           'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
           'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
         });
-        stubNotifications([], nextCursor: 'cursor_after_first', hasMore: true);
-        await repository.refresh();
-
-        // WS arrives with the NEWER comment.
-        await repository.acceptRealtime(
-          makeNotification(
-            id: 'nostr-comment-alice',
-            sourceEventId: 'nostr-comment-alice',
-            notificationType: 'comment',
-            sourceKind: 1,
-            referencedEventId: 'video_a',
-            content: 'Newer comment from Alice (WS-arrived)',
-            createdAt: DateTime(2025, 6),
-          ),
+        // First page carries the NEWER comment.
+        stubNotifications(
+          [
+            makeNotification(
+              id: 'server-uuid-comment-alice',
+              sourceEventId: 'nostr-comment-alice',
+              notificationType: 'comment',
+              sourceKind: 1,
+              referencedEventId: 'video_a',
+              content: 'Newer comment from Alice (first page)',
+              createdAt: DateTime(2025, 6),
+            ),
+          ],
+          nextCursor: 'cursor_after_first',
+          hasMore: true,
         );
+        await repository.refresh();
 
         // REST pagination returns an OLDER comment on the same video.
         stubNotifications([
@@ -4053,7 +3458,7 @@ void main() {
         expect(merged.type, equals(NotificationKind.comment));
         expect(
           merged.commentText,
-          equals('Newer comment from Alice (WS-arrived)'),
+          equals('Newer comment from Alice (first page)'),
           reason:
               'Newer side wins to mirror _groupVideoAnchored sort-desc '
               'semantics and align with timestamp=max(...). Older REST '
@@ -4113,58 +3518,63 @@ void main() {
         expect(merged.actors.first.displayName, equals('Sally Strawberry'));
       });
 
-      test("comment-kind merge keeps the newer side's commentText "
-          '(REST page newer than WS) — symmetric direction', () async {
-        // Symmetric case: rare in production (REST first page is the
-        // newer boundary), but the rule must be timestamp-driven, not
-        // path-driven. Lock both directions.
-        stubProfiles({
-          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
-          'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
-        });
-        stubNotifications([], nextCursor: 'cursor_after_first', hasMore: true);
-        await repository.refresh();
+      test(
+        "comment-kind merge keeps the newer side's commentText "
+        '(incoming page newer than existing row) — symmetric direction',
+        () async {
+          // Symmetric case: rare in production (the first page is the
+          // newer boundary), but the rule must be timestamp-driven, not
+          // delivery-order-driven. Lock both directions.
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+          });
+          stubNotifications(
+            [
+              makeNotification(
+                id: 'server-uuid-comment-alice',
+                sourceEventId: 'nostr-comment-alice',
+                notificationType: 'comment',
+                sourceKind: 1,
+                referencedEventId: 'video_a',
+                content: 'Older comment from Alice (first page)',
+                createdAt: DateTime(2025, 4),
+              ),
+            ],
+            nextCursor: 'cursor_after_first',
+            hasMore: true,
+          );
+          await repository.refresh();
 
-        await repository.acceptRealtime(
-          makeNotification(
-            id: 'nostr-comment-alice',
-            sourceEventId: 'nostr-comment-alice',
-            notificationType: 'comment',
-            sourceKind: 1,
-            referencedEventId: 'video_a',
-            content: 'Older comment from Alice (WS-arrived)',
-            createdAt: DateTime(2025, 4),
-          ),
-        );
+          stubNotifications([
+            makeNotification(
+              id: 'server-uuid-comment-bob',
+              sourceEventId: 'nostr-comment-bob',
+              sourcePubkey: 'pubkey_bob',
+              notificationType: 'comment',
+              sourceKind: 1,
+              referencedEventId: 'video_a',
+              content: 'Newer comment from Bob (REST-paged)',
+              createdAt: DateTime(2025, 6),
+            ),
+          ]);
 
-        stubNotifications([
-          makeNotification(
-            id: 'server-uuid-comment-bob',
-            sourceEventId: 'nostr-comment-bob',
-            sourcePubkey: 'pubkey_bob',
-            notificationType: 'comment',
-            sourceKind: 1,
-            referencedEventId: 'video_a',
-            content: 'Newer comment from Bob (REST-paged)',
-            createdAt: DateTime(2025, 6),
-          ),
-        ]);
+          await repository.getNotifications();
 
-        await repository.getNotifications();
-
-        final items = (await repository.watchSnapshot().first).items;
-        expect(items, hasLength(1));
-        final merged = items.single as VideoNotification;
-        expect(
-          merged.commentText,
-          equals('Newer comment from Bob (REST-paged)'),
-          reason:
-              'When the REST side carries the newer createdAt, its '
-              'commentText wins — rule is timestamp-driven, not '
-              'path-driven.',
-        );
-        expect(merged.timestamp, equals(DateTime(2025, 6)));
-      });
+          final items = (await repository.watchSnapshot().first).items;
+          expect(items, hasLength(1));
+          final merged = items.single as VideoNotification;
+          expect(
+            merged.commentText,
+            equals('Newer comment from Bob (REST-paged)'),
+            reason:
+                'When the REST side carries the newer createdAt, its '
+                'commentText wins — rule is timestamp-driven, not '
+                'path-driven.',
+          );
+          expect(merged.timestamp, equals(DateTime(2025, 6)));
+        },
+      );
     });
   });
 }

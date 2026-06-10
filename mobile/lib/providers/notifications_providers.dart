@@ -4,7 +4,6 @@
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/notification_preferences.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -12,11 +11,8 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_providers.dart';
-import 'package:openvine/providers/repository_providers.dart';
-import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/notification_preferences_service.dart';
 import 'package:openvine/services/notification_service.dart';
-import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/push_notification_service.dart';
 import 'package:openvine/services/push_notification_session_coordinator.dart';
 import 'package:openvine/utils/platform_support.dart';
@@ -288,91 +284,4 @@ void pushNotificationSync(Ref ref) {
     authStateSubscription.cancel();
     onMessageSubscription.cancel();
   });
-}
-
-/// Enhanced notification service with Nostr integration (lazy loaded)
-@riverpod
-NotificationServiceEnhanced notificationServiceEnhanced(Ref ref) {
-  final service = NotificationServiceEnhanced();
-
-  // Delay initialization until after critical path is loaded
-  if (!kIsWeb) {
-    // Initialize on mobile - wait for keys to be available
-    final nostrService = ref.watch(nostrServiceProvider);
-    final profileRepository = ref.watch(profileRepositoryProvider);
-    final videoService = ref.watch(videoEventServiceProvider);
-
-    Future.microtask(() async {
-      try {
-        // Wait for the NostrClient to finish initialize() instead of polling
-        // hasKeys every 500 ms (#3352). 15 s timeout matches the previous
-        // budget (30 retries × 500 ms).
-        try {
-          await nostrService.ready.timeout(const Duration(seconds: 15));
-        } on TimeoutException {
-          Log.warning(
-            'Notification service initialization skipped - no Nostr keys available after 15s',
-            name: 'NotificationInit',
-            category: LogCategory.system,
-          );
-          return;
-        }
-
-        if (!nostrService.hasKeys) {
-          Log.warning(
-            'Notification service initialization skipped - ready completed but hasKeys is false',
-            name: 'NotificationInit',
-            category: LogCategory.system,
-          );
-          return;
-        }
-
-        if (profileRepository == null) {
-          Log.warning(
-            'Notification service initialization skipped - ProfileRepository not ready',
-            name: 'NotificationInit',
-            category: LogCategory.system,
-          );
-          return;
-        }
-
-        await service.initialize(
-          nostrService: nostrService,
-          profileRepository: profileRepository,
-          videoService: videoService,
-        );
-      } catch (e) {
-        Log.error(
-          'Failed to initialize enhanced notification service: $e',
-          name: 'NotificationInit',
-          category: LogCategory.system,
-        );
-      }
-    });
-  } else {
-    // On web, delay initialization by 3 seconds to allow main UI to load first
-    Timer(const Duration(seconds: 3), () async {
-      try {
-        final nostrService = ref.read(nostrServiceProvider);
-        final profileRepository = ref.read(profileRepositoryProvider);
-        final videoService = ref.read(videoEventServiceProvider);
-
-        if (profileRepository == null) return;
-
-        await service.initialize(
-          nostrService: nostrService,
-          profileRepository: profileRepository,
-          videoService: videoService,
-        );
-      } catch (e) {
-        Log.error(
-          'Failed to initialize enhanced notification service: $e',
-          name: 'NotificationInit',
-          category: LogCategory.system,
-        );
-      }
-    });
-  }
-
-  return service;
 }

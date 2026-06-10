@@ -1,5 +1,5 @@
 // ABOUTME: Pure helper functions for notification event processing
-// ABOUTME: Extracted from NotificationServiceEnhanced to reduce duplication and improve testability
+// ABOUTME: shared by the notification and push notification services.
 
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';

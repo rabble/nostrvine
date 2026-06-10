@@ -67,10 +67,12 @@ final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
     },
   );
   // Close the internal BehaviorSubject when this provider rebuilds or the
-  // container disposes (e.g. auth flip, account switch). By the time this
-  // fires, dependent consumers (feed bloc, badge cubit, realtime bridge)
-  // have already swapped away from this repository or cancelled their
-  // watchSnapshot subscriptions.
+  // container disposes (e.g. auth flip, account switch). The feed bloc and
+  // badge cubit swap away before this fires, but the refresh coordinator
+  // may still hold this instance across an in-flight refresh. That is
+  // benign: getNotifications emits to the snapshot before persisting, so a
+  // close-during-refresh fails on the emit with a StateError — before any
+  // DAO write — and the coordinator treats that as account-switch noise.
   ref.onDispose(repository.close);
   return repository;
 });

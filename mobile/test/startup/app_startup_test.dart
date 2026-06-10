@@ -86,7 +86,7 @@ void main() {
           StartupPhase.essential,
         );
         expect(
-          StartupPhaseMapper.getPhaseForProvider('NotificationServiceEnhanced'),
+          StartupPhaseMapper.getPhaseForProvider('NotificationService'),
           StartupPhase.deferred,
         );
         expect(
