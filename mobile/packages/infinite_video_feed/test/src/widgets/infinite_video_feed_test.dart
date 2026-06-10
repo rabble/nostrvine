@@ -737,38 +737,106 @@ void main() {
         }
       });
 
+      testWidgets('initializes next controller before current first frame '
+          'or grace period', (tester) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(
+          playerIds: const <int>[0, 1],
+          firstFrameRenderedOnListen: false,
+        );
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('current'), _makeVideo('next')],
+                cache: cache,
+                prefetchCount: 0,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(harness.methodCalls, contains('player_1:setClips'));
+          await harness.sendEvent(0, const <Object?, Object?>{
+            'status': 'ready',
+            'videoWidth': 1280,
+            'videoHeight': 720,
+            'isFirstFrameRendered': true,
+          });
+          await tester.pump();
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
+      testWidgets('does not autoplay when canAutoPlay returns false', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0]);
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('gated_video')],
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+                canAutoPlay: (_) => false,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(harness.countCalls('play'), equals(0));
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
       testWidgets(
-        'initializes next controller before current first frame '
-        'or grace period',
+        'resumeCurrentPlayback starts playback after canAutoPlay gate opens',
         (tester) async {
           DivineVideoPlayerController.resetIdCounterForTesting();
           final harness = _NativePlayerHarness(tester);
-          await harness.install(
-            playerIds: const <int>[0, 1],
-            firstFrameRenderedOnListen: false,
-          );
+          await harness.install(playerIds: const <int>[0]);
+          final key = GlobalKey<InfiniteVideoFeedState>();
+          var allowPlay = false;
 
           try {
             await tester.pumpWidget(
               _wrapFeed(
                 InfiniteVideoFeed(
-                  videos: [_makeVideo('current'), _makeVideo('next')],
+                  key: key,
+                  videos: [_makeVideo('gate_opens')],
                   cache: cache,
                   prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                  canAutoPlay: (_) => allowPlay,
                 ),
               ),
             );
             await tester.pump();
             await tester.pump();
 
-            expect(harness.methodCalls, contains('player_1:setClips'));
-            await harness.sendEvent(0, const <Object?, Object?>{
-              'status': 'ready',
-              'videoWidth': 1280,
-              'videoHeight': 720,
-              'isFirstFrameRendered': true,
-            });
+            expect(harness.countCalls('play'), equals(0));
+
+            allowPlay = true;
+            key.currentState!.resumeCurrentPlayback();
             await tester.pump();
+            await tester.pump();
+
+            expect(harness.countCalls('play'), equals(1));
           } finally {
             await tester.pumpWidget(const SizedBox.shrink());
             await tester.pump();
@@ -776,6 +844,99 @@ void main() {
           }
         },
       );
+
+      testWidgets('pauses active playback when canAutoPlay gate closes', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0]);
+        final video = _makeVideo('gate_closes');
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [video],
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+                canAutoPlay: (_) => true,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(harness.countCalls('play'), equals(1));
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [video],
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+                canAutoPlay: (_) => false,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(harness.countCalls('pause'), equals(1));
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
+      testWidgets('resumes active playback when canAutoPlay gate reopens', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0]);
+        final video = _makeVideo('gate_reopens');
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [video],
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+                canAutoPlay: (_) => false,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(harness.countCalls('play'), equals(0));
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [video],
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+                canAutoPlay: (_) => true,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(harness.countCalls('play'), equals(1));
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
 
       testWidgets('does not autoplay after becoming inactive mid-init', (
         tester,

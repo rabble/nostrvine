@@ -112,6 +112,30 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   /// scheduler churn.
   final Map<String, VideoErrorType> _lastReportedError = {};
 
+  /// Video ids whose content warning the user dismissed via "View Anyway".
+  ///
+  /// Lives at the feed level (not in the per-item overlay state) because
+  /// [InfiniteVideoFeed.canAutoPlay] must consult it before starting
+  /// playback — a warned video must stay paused until revealed.
+  final Set<String> _revealedContentWarningVideoIds = <String>{};
+
+  /// Whether [video] may start playing: either it has no content-warning
+  /// gate, or the user already chose "View Anyway" for it.
+  bool _canAutoPlayVideo(VideoEvent video) =>
+      !shouldShowContentWarningOverlay(
+        contentWarningLabels: video.contentWarningLabels,
+        warnLabels: video.warnLabels,
+      ) ||
+      _revealedContentWarningVideoIds.contains(video.id);
+
+  /// Marks [videoId] as revealed and starts playback of the active video.
+  void _revealContentWarning(String videoId) {
+    setState(() {
+      _revealedContentWarningVideoIds.add(videoId);
+    });
+    _feedKey.currentState?.resumeCurrentPlayback();
+  }
+
   /// Animates the underlying feed to [index].
   ///
   /// Used by parent screens that hold a [GlobalKey<FeedVideosState>] to
@@ -123,10 +147,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
     int index,
     Map<String, String> httpHeaders,
   ) =>
-      _feedKey.currentState?.retryAt(
-        index,
-        httpHeaders: httpHeaders,
-      ) ??
+      _feedKey.currentState?.retryAt(index, httpHeaders: httpHeaders) ??
       Future.value(false);
 
   @override
@@ -260,6 +281,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
         onVideoLoopCompleted: _handleAutoAdvanceCompleted,
         shouldPortraitExpand: widget.shouldPortraitExpand,
         maxLoopDuration: VideoEditorConstants.maxDuration,
+        canAutoPlay: _canAutoPlayVideo,
         videoBuilder: (context, child, index, controller) {
           if (index < 0 || index >= widget.videos.length) {
             return const SizedBox.shrink();
@@ -351,6 +373,10 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
               index: index,
               isActive: isActive,
               contextTitle: widget.contextTitle,
+              contentWarningRevealed: _revealedContentWarningVideoIds.contains(
+                video.id,
+              ),
+              onContentWarningRevealed: () => _revealContentWarning(video.id),
               onToggleAutoAdvance: _toggleAutoAdvance,
               onSuppressAutoAdvance: _suppressAutoAdvance,
             ),
@@ -368,6 +394,8 @@ class _Overlay extends ConsumerStatefulWidget {
     required this.video,
     required this.index,
     required this.isActive,
+    required this.contentWarningRevealed,
+    required this.onContentWarningRevealed,
     this.onToggleAutoAdvance,
     this.onSuppressAutoAdvance,
   });
@@ -377,6 +405,14 @@ class _Overlay extends ConsumerStatefulWidget {
   final VideoEvent video;
   final int index;
   final bool isActive;
+
+  /// Whether the user already dismissed this video's content warning.
+  /// Owned by [FeedVideosState] so the autoplay gate can read it too.
+  final bool contentWarningRevealed;
+
+  /// Called when the user taps "View Anyway" on the content warning.
+  final VoidCallback onContentWarningRevealed;
+
   final VoidCallback? onToggleAutoAdvance;
   final VoidCallback? onSuppressAutoAdvance;
 
@@ -432,7 +468,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
       contentWarningLabels: widget.video.contentWarningLabels,
       warnLabels: widget.video.warnLabels,
     );
-    if (showWarning && !_contentWarningRevealed) return;
+    if (showWarning && !widget.contentWarningRevealed) return;
 
     final bloc = context.read<VideoInteractionsBloc>();
     final state = bloc.state;
@@ -459,8 +495,6 @@ class __OverlayState extends ConsumerState<_Overlay> {
     }
   }
 
-  bool _contentWarningRevealed = false;
-
   /// Advances the feed to the next page via the cached
   /// [InfiniteVideoFeedState] reference.
   void _skipToNextVideo() {
@@ -481,10 +515,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
       video: widget.video,
       index: widget.index,
       retryPlayback: (httpHeaders) =>
-          _feedState?.retryAt(
-            widget.index,
-            httpHeaders: httpHeaders,
-          ) ??
+          _feedState?.retryAt(widget.index, httpHeaders: httpHeaders) ??
           Future.value(false),
     );
   }
@@ -499,7 +530,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
       PlaybackStatus.forbidden => const _OverlayForbiddenMode(),
       PlaybackStatus.ageRestricted => const _OverlayAgeRestrictedMode(),
       _ =>
-        showContentWarningOverlay && !_contentWarningRevealed
+        showContentWarningOverlay && !widget.contentWarningRevealed
             ? _OverlayContentWarningMode(overlayLabels)
             : _OverlayInteractiveMode(isReady: isReady),
     };
@@ -573,9 +604,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
       case _OverlayContentWarningMode(:final labels):
         return ContentWarningBlurOverlay(
           labels: labels,
-          onReveal: () => setState(() {
-            _contentWarningRevealed = true;
-          }),
+          onReveal: widget.onContentWarningRevealed,
           onHideSimilar: () {
             hideContentWarningsLikeThese(
               context: context,
@@ -886,10 +915,7 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
           retryPlayback: (httpHeaders) =>
               context
                   .findAncestorStateOfType<InfiniteVideoFeedState>()
-                  ?.retryAt(
-                    index,
-                    httpHeaders: httpHeaders,
-                  ) ??
+                  ?.retryAt(index, httpHeaders: httpHeaders) ??
               Future.value(false),
         ),
         errorType: VideoErrorType.notFound,

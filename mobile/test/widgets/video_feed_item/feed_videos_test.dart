@@ -461,6 +461,65 @@ void main() {
       },
     );
 
+    testWidgets('gates autoplay for warned video until View Anyway is tapped', (
+      tester,
+    ) async {
+      final video = _makeVideo(warnLabels: ['nsfw']);
+      final cubit = _MockVideoPlaybackStatusCubit()
+        ..stub(PlaybackStatus.ready, video.id);
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        videoPlaybackStatusCubit: cubit,
+      );
+      await tester.pump();
+
+      final feed = tester.widget<InfiniteVideoFeed>(
+        find.byType(InfiniteVideoFeed),
+      );
+      expect(feed.canAutoPlay, isNotNull);
+      expect(
+        feed.canAutoPlay!(video),
+        isFalse,
+        reason: 'a warned video must not autoplay behind the overlay',
+      );
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.tap(find.text(l10n.contentWarningViewAnyway));
+      await tester.pump();
+
+      expect(find.byType(ContentWarningBlurOverlay), findsNothing);
+      final revealedFeed = tester.widget<InfiniteVideoFeed>(
+        find.byType(InfiniteVideoFeed),
+      );
+      expect(
+        revealedFeed.canAutoPlay!(video),
+        isTrue,
+        reason: 'View Anyway opens the autoplay gate for this video',
+      );
+    });
+
+    testWidgets('allows autoplay for video without content warning', (
+      tester,
+    ) async {
+      final video = _makeVideo();
+      final cubit = _MockVideoPlaybackStatusCubit()
+        ..stub(PlaybackStatus.ready, video.id);
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        videoPlaybackStatusCubit: cubit,
+      );
+      await tester.pump();
+
+      final feed = tester.widget<InfiniteVideoFeed>(
+        find.byType(InfiniteVideoFeed),
+      );
+      expect(feed.canAutoPlay!(video), isTrue);
+    });
+
     testWidgets('exposes localized semantics label and hint', (tester) async {
       final semantics = tester.ensureSemantics();
       try {
@@ -507,9 +566,7 @@ void main() {
 
     testWidgets(
       'mounts $DivineVideoMetricsTracker for active native playback',
-      (
-        tester,
-      ) async {
+      (tester) async {
         InfiniteVideoFeed.debugIsSupportedOverride = true;
         final video = _makeVideo();
 

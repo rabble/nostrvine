@@ -52,6 +52,7 @@ class InfiniteVideoFeed extends StatefulWidget {
     this.slowLoadThreshold = const Duration(seconds: 8),
     this.preloadGracePeriod = const Duration(seconds: 3),
     this.isActive = true,
+    this.canAutoPlay,
     super.key,
   });
 
@@ -136,6 +137,17 @@ class InfiniteVideoFeed extends StatefulWidget {
   /// When `false`, the feed pauses the current video and suppresses any
   /// internal resume/play side effects until it becomes active again.
   final bool isActive;
+
+  /// Per-video autoplay gate consulted before the feed starts playback.
+  ///
+  /// Return `false` to keep a video paused while it is the active page —
+  /// e.g. while a content warning overlay is shown. The controller is
+  /// still initialized so the first frame can render behind the overlay.
+  /// Once the gate opens, call [InfiniteVideoFeedState.resumeCurrentPlayback]
+  /// to start playback without a page change.
+  ///
+  /// When `null`, every video is allowed to play.
+  final bool Function(VideoEvent video)? canAutoPlay;
 
   /// Hook: Called when the playback volume changes (mute/unmute/setVolume).
   ///
@@ -314,6 +326,16 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _setPlaybackActive(true);
   }
 
+  /// Re-evaluates playback for the active video and starts it if allowed.
+  ///
+  /// Unlike [resumeActive], this works while the feed is already active —
+  /// use it after an external [InfiniteVideoFeed.canAutoPlay] gate opens
+  /// (e.g. the user dismissed a content warning) so the already
+  /// initialized controller starts playing without a page change.
+  void resumeCurrentPlayback() {
+    _resumeCurrentPlaybackIfReady();
+  }
+
   /// Sets the playback volume (0.0 silent, 1.0 full).
   ///
   /// Only the active controller is updated immediately. Neighbour controllers
@@ -392,6 +414,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     if (widget.isActive != oldWidget.isActive) {
       _setPlaybackActive(widget.isActive);
     }
+    _syncCurrentAutoPlayGate(oldWidget);
     if (widget.videos == oldWidget.videos) return;
 
     // Append-only: the new list starts with exactly the same items in the
@@ -513,6 +536,31 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     unawaited(_activateCurrentController(controller, _currentIndex));
   }
 
+  /// Whether [InfiniteVideoFeed.canAutoPlay] allows the video at [index]
+  /// to start playing. Defaults to `true` when no gate is provided.
+  bool _canAutoPlayAt(int index) {
+    return _canAutoPlayAtFor(widget, index);
+  }
+
+  bool _canAutoPlayAtFor(InfiniteVideoFeed source, int index) {
+    final gate = source.canAutoPlay;
+    if (gate == null) return true;
+    if (index < 0 || index >= source.videos.length) return true;
+    return gate(source.videos[index]);
+  }
+
+  void _syncCurrentAutoPlayGate(InfiniteVideoFeed oldWidget) {
+    if (!_isActive) return;
+    final wasAllowed = _canAutoPlayAtFor(oldWidget, _currentIndex);
+    final isAllowed = _canAutoPlayAt(_currentIndex);
+    if (wasAllowed == isAllowed) return;
+    if (isAllowed) {
+      _resumeCurrentPlaybackIfReady();
+    } else {
+      _pauseCurrentPlayback();
+    }
+  }
+
   Future<void> _activateCurrentController(
     DivineVideoPlayerController controller,
     int index,
@@ -520,6 +568,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     if (!_isActive || index != _currentIndex || !controller.isInitialized) {
       return;
     }
+    if (!_canAutoPlayAt(index)) return;
     await controller.setVolume(_volume);
     if (!_isActive || index != _currentIndex) return;
     await controller.play();
@@ -898,10 +947,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   Future<bool> retryAt(
     int index, {
     Map<String, String> httpHeaders = const {},
-  }) => _retryController(
-    index,
-    httpHeaders: httpHeaders,
-  );
+  }) => _retryController(index, httpHeaders: httpHeaders);
 
   Future<bool> _retryController(
     int index, {
@@ -970,7 +1016,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           httpHeaders: _httpHeadersByIndex[index] ?? const {},
         ),
       );
-      if (index == _currentIndex && _isActive) {
+      if (index == _currentIndex && _isActive && _canAutoPlayAt(index)) {
         await controller.setVolume(_volume);
         await controller.play();
         if (index == _currentIndex && _isActive) {
