@@ -1,4 +1,4 @@
-// ABOUTME: Tests for notification refresh coalescing on resume/focus.
+// ABOUTME: Tests for notification refresh coalescing on app resume.
 // ABOUTME: Guards against duplicate authoritative refresh requests.
 
 import 'dart:async';
@@ -43,7 +43,7 @@ void main() {
         reason: NotificationRefreshReason.appResume,
       );
       final second = coordinator.refresh(
-        reason: NotificationRefreshReason.routeFocus,
+        reason: NotificationRefreshReason.appResume,
       );
 
       verify(() => repository.refresh()).called(1);
@@ -56,7 +56,7 @@ void main() {
 
       await coordinator.refresh(reason: NotificationRefreshReason.appResume);
       now = now.add(const Duration(seconds: 10));
-      await coordinator.refresh(reason: NotificationRefreshReason.routeFocus);
+      await coordinator.refresh(reason: NotificationRefreshReason.appResume);
 
       verify(() => repository.refresh()).called(1);
     });
@@ -66,7 +66,7 @@ void main() {
 
       await coordinator.refresh(reason: NotificationRefreshReason.appResume);
       now = now.add(const Duration(seconds: 31));
-      await coordinator.refresh(reason: NotificationRefreshReason.routeFocus);
+      await coordinator.refresh(reason: NotificationRefreshReason.appResume);
 
       verify(() => repository.refresh()).called(2);
     });

@@ -118,7 +118,6 @@ void main() {
     String? targetCommentId,
     String? content,
     bool isReferencedVideo = true,
-    bool requiresReferencedVideoMetadata = false,
   }) {
     return RelayNotification(
       id: id,
@@ -134,7 +133,6 @@ void main() {
       targetCommentId: targetCommentId,
       content: content,
       isReferencedVideo: isReferencedVideo,
-      requiresReferencedVideoMetadata: requiresReferencedVideoMetadata,
     );
   }
 
@@ -2482,7 +2480,6 @@ void main() {
         String? rootEventId,
         String? targetCommentId,
         bool isReferencedVideo = true,
-        bool requiresReferencedVideoMetadata = false,
       }) {
         return RelayNotification(
           id: id,
@@ -2497,7 +2494,6 @@ void main() {
           rootEventId: rootEventId,
           targetCommentId: targetCommentId,
           isReferencedVideo: isReferencedVideo,
-          requiresReferencedVideoMetadata: requiresReferencedVideoMetadata,
         );
       }
 
@@ -2585,32 +2581,6 @@ void main() {
         final video = result! as VideoNotification;
         expect(video.videoAddressableId, isNull);
         expect(video.videoEventId, equals('video_x'));
-      });
-
-      test('drops unverified realtime video notification when video metadata '
-          'cannot confirm the target', () async {
-        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
-
-        final result = await repository.enrichOne(
-          raw(requiresReferencedVideoMetadata: true),
-        );
-
-        expect(result, isNull);
-      });
-
-      test('accepts unverified realtime video notification after metadata '
-          'confirms recipient ownership', () async {
-        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
-        stubVideoStats('video_x', makeVideoStats(id: 'video_x'));
-
-        final result = await repository.enrichOne(
-          raw(requiresReferencedVideoMetadata: true),
-        );
-
-        expect(result, isA<VideoNotification>());
-        final video = result! as VideoNotification;
-        expect(video.videoEventId, equals('video_x'));
-        expect(video.actors.single.displayName, equals('Alice'));
       });
 
       test('builds the realtime addressable id for a rootEventId-anchored '
@@ -3463,8 +3433,8 @@ void main() {
       test('acceptRealtime dedupes a WS arrival whose id matches a REST '
           "item's sourceEventId", () async {
         // REST raws carry the Nostr event id in `sourceEventId` (server's
-        // UUID lives in `id`). WS raws — built by the realtime bridge —
-        // carry the Nostr event id in `id`. Without the cross-path check
+        // UUID lives in `id`). Realtime raws carry the Nostr event id in
+        // `id`. Without the cross-path check
         // the same logical Nostr event accepted via WS after REST would
         // inflate the snapshot and the unread count.
         stubProfiles({
@@ -3538,8 +3508,8 @@ void main() {
     });
 
     group('WS-first dedupe in page-merge (#4264)', () {
-      // WS raws (built by `notification_realtime_bridge.dart`) carry the
-      // Nostr event id in both `id` and `sourceEventId`. REST raws carry
+      // Realtime raws carry the Nostr event id in both `id` and
+      // `sourceEventId`. REST raws carry
       // the Nostr event id in `sourceEventId` (with the server's UUID in
       // `id`). When WS arrives first and a later REST pagination page
       // returns the same logical event, dedupe must key on the shared

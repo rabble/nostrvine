@@ -52,8 +52,7 @@ sealed class NotificationItem extends Equatable {
   /// Underlying Nostr event ids that this item represents.
   ///
   /// REST-loaded items carry the server's UUID in [id] and the Nostr event
-  /// id in [sourceEventIds]; WS-loaded items (built via
-  /// `notification_realtime_bridge.dart`) carry the Nostr event id in both.
+  /// id in [sourceEventIds]; realtime items carry the Nostr event id in both.
   /// Cross-path snapshot dedupe in
   /// `NotificationRepository._emitSnapshotForPage` keys on overlap in this
   /// set rather than [id] equality so a logical event arriving over WS

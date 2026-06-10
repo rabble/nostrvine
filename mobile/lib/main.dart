@@ -52,7 +52,6 @@ import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/routing/notification_tap_target.dart';
-import 'package:openvine/notifications/services/notification_realtime_bridge.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -2049,14 +2048,6 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     // Eagerly create the view-event retry service so foreground sweeps
     // run for the durable pending_view_events queue without a UI consumer.
     ref.watch(viewEventRetryServiceProvider);
-
-    // Eagerly create the notification realtime bridge so WS arrivals
-    // land in the new repository snapshot the moment the repository is
-    // available. The provider returns `null` until the repo is built;
-    // the watch causes a rebuild that wires the bridge as soon as
-    // [notificationRepositoryProvider] yields a non-null value. See
-    // #4204 (badge / list realtime sync).
-    ref.watch(notificationRealtimeBridgeProvider);
 
     // Wrap with geo-blocking check first, then lifecycle handler
     Widget wrapped = MultiRepositoryProvider(

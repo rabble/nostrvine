@@ -5,7 +5,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -49,27 +48,6 @@ class NotificationServiceEnhanced {
   final Map<String, StreamSubscription> _subscriptions = {};
   final Lock _notificationLock = Lock(); // Mutex for atomic deduplication
 
-  /// Broadcast stream for new notifications (used by real-time bridge)
-  final StreamController<NotificationModel> _newNotificationController =
-      StreamController<NotificationModel>.broadcast();
-  final StreamController<RelayNotification> _realtimeNotificationController =
-      StreamController<RelayNotification>.broadcast();
-
-  /// Stream that emits each new notification after dedup check passes.
-  /// Used by the real-time bridge provider to push WebSocket notifications
-  /// into the Riverpod state.
-  Stream<NotificationModel> get onNewNotification =>
-      _newNotificationController.stream;
-
-  /// Stream of raw realtime notifications derived from Nostr events.
-  ///
-  /// This is the production bridge into [NotificationRepository]. It keeps
-  /// profile/video enrichment, owner verification, block filtering, grouping,
-  /// and dedupe in the repository instead of duplicating that business logic
-  /// in this legacy service.
-  Stream<RelayNotification> get onRealtimeNotification =>
-      _realtimeNotificationController.stream;
-
   NostrClient? _nostrService;
   ProfileRepository? _profileRepository;
   VideoEventService? _videoService;
@@ -78,9 +56,6 @@ class NotificationServiceEnhanced {
   bool _permissionsGranted = false;
   bool _disposed = false;
   int _unreadCount = 0;
-
-  static const Duration _realtimeReplayWindow = Duration(minutes: 5);
-  static const int _realtimeInitialLimit = 200;
 
   /// List of recent notifications
   List<NotificationModel> get notifications =>
@@ -183,7 +158,10 @@ class NotificationServiceEnhanced {
 
   /// Subscribe to reactions (likes) on user's videos
   void _subscribeToReactions(String userPubkey) {
-    final filter = reactionNotificationFilter(userPubkey);
+    final filter = Filter(
+      kinds: [7], // Kind 7 = Reactions (NIP-25)
+      // NO h filter - we query all relays
+    );
 
     final subscription = _nostrService!.subscribe([filter]).listen((
       event,
@@ -196,7 +174,10 @@ class NotificationServiceEnhanced {
 
   /// Subscribe to comments on user's videos
   void _subscribeToComments(String userPubkey) {
-    final filter = commentNotificationFilter(userPubkey);
+    final filter = Filter(
+      kinds: [EventKind.comment], // Kind 1111 = NIP-22 comments
+      // NO h filter - we query all relays
+    );
 
     final subscription = _nostrService!.subscribe([filter]).listen((
       event,
@@ -209,7 +190,10 @@ class NotificationServiceEnhanced {
 
   /// Subscribe to follows
   void _subscribeToFollows(String userPubkey) {
-    final filter = followNotificationFilter(userPubkey);
+    final filter = Filter(
+      kinds: [NostrEventKinds.contactList],
+      // NO h filter - we query all relays
+    );
 
     final subscription = _nostrService!.subscribe([filter]).listen((
       event,
@@ -222,7 +206,10 @@ class NotificationServiceEnhanced {
 
   /// Subscribe to mentions
   void _subscribeToMentions(String userPubkey) {
-    final filter = mentionNotificationFilter(userPubkey);
+    final filter = Filter(
+      kinds: [1, 30023], // Text notes and long-form content
+      // NO h filter - we query all relays
+    );
 
     final subscription = _nostrService!.subscribe([filter]).listen((
       event,
@@ -235,7 +222,10 @@ class NotificationServiceEnhanced {
 
   /// Subscribe to reposts
   void _subscribeToReposts(String userPubkey) {
-    final filter = repostNotificationFilter(userPubkey);
+    final filter = Filter(
+      kinds: [6, 16], // Kind 6 = Repost, Kind 16 = Generic Repost (NIP-18)
+      // NO h filter - we query all relays
+    );
 
     final subscription = _nostrService!.subscribe([filter]).listen((
       event,
@@ -246,71 +236,34 @@ class NotificationServiceEnhanced {
     _subscriptions['reposts'] = subscription;
   }
 
-  /// Builds a scoped reaction subscription. Kind 7 reactions on a user's
-  /// videos should carry the video owner's `p` tag, so subscribing by `#p`
-  /// avoids the global reaction stream.
-  @visibleForTesting
-  static Filter reactionNotificationFilter(String userPubkey, {DateTime? now}) {
-    return Filter(
-      kinds: [7],
-      p: [userPubkey],
-      since: _subscriptionSince(now),
-      limit: _realtimeInitialLimit,
-    );
-  }
+  /// Resolve a video event from a Nostr event's tags
+  /// Tries event ID lookup (E/e tags) first, then addressable ID lookup (A/a tags)
+  /// Returns the (videoEvent, targetEventId) or null if not found
+  ({VideoEvent videoEvent, String targetEventId})? _resolveVideoEvent(
+    Event event,
+  ) {
+    // First try by event ID (E/e tags)
+    final videoEventId = extractVideoEventId(event);
+    if (videoEventId != null) {
+      final videoEvent = _videoService?.getVideoEventById(videoEventId);
+      if (videoEvent != null) {
+        return (videoEvent: videoEvent, targetEventId: videoEventId);
+      }
+    }
 
-  /// Builds a scoped NIP-22 comment subscription.
-  ///
-  /// Divine comments publish uppercase `P` as the root author, so use `#P`
-  /// rather than lowercase `#p` to capture comments on the user's videos
-  /// without subscribing to all kind 1111 traffic.
-  @visibleForTesting
-  static Filter commentNotificationFilter(String userPubkey, {DateTime? now}) {
-    return Filter(
-      kinds: [EventKind.comment],
-      uppercaseP: [userPubkey],
-      since: _subscriptionSince(now),
-      limit: _realtimeInitialLimit,
-    );
-  }
+    // Fall back to addressable ID (A/a tags) for kind 30000+ events
+    final addressableId = extractAddressableId(event);
+    if (addressableId != null) {
+      final parsed = parseAddressableId(addressableId);
+      if (parsed != null) {
+        final videoEvent = _videoService?.getVideoEventByVineId(parsed.dTag);
+        if (videoEvent != null) {
+          return (videoEvent: videoEvent, targetEventId: videoEvent.id);
+        }
+      }
+    }
 
-  @visibleForTesting
-  static Filter followNotificationFilter(String userPubkey, {DateTime? now}) {
-    return Filter(
-      kinds: [NostrEventKinds.contactList],
-      p: [userPubkey],
-      since: _subscriptionSince(now),
-      limit: _realtimeInitialLimit,
-    );
-  }
-
-  @visibleForTesting
-  static Filter mentionNotificationFilter(String userPubkey, {DateTime? now}) {
-    return Filter(
-      kinds: [1, 30023],
-      p: [userPubkey],
-      since: _subscriptionSince(now),
-      limit: _realtimeInitialLimit,
-    );
-  }
-
-  @visibleForTesting
-  static Filter repostNotificationFilter(String userPubkey, {DateTime? now}) {
-    return Filter(
-      kinds: [6, 16],
-      p: [userPubkey],
-      since: _subscriptionSince(now),
-      limit: _realtimeInitialLimit,
-    );
-  }
-
-  static int _subscriptionSince(DateTime? now) {
-    final effectiveNow = now ?? DateTime.now();
-    return effectiveNow
-            .toUtc()
-            .subtract(_realtimeReplayWindow)
-            .millisecondsSinceEpoch ~/
-        1000;
+    return null;
   }
 
   /// Returns cached profile if available, otherwise fetches fresh from relay.
@@ -325,27 +278,71 @@ class NotificationServiceEnhanced {
     // Check if this is a like (+ reaction)
     if (event.content != '+') return;
 
-    _emitRealtimeNotification(
-      _videoRelayNotification(
-        event,
-        notificationType: 'reaction',
-        sourceKind: 7,
-      ),
+    // Get the video that was liked (tries E/e tags then A/a tags)
+    final resolved = _resolveVideoEvent(event);
+    if (resolved == null) return;
+
+    final videoEvent = resolved.videoEvent;
+    final videoEventId = resolved.targetEventId;
+
+    // CRITICAL: Only create notification if this is the current user's video
+    if (videoEvent.pubkey != _nostrService?.publicKey) {
+      return;
+    }
+
+    // Get actor info using helper function
+    final actorProfile = await _getActorProfile(event.pubkey);
+    final actorName = resolveActorName(actorProfile);
+
+    final notification = NotificationModel(
+      id: event.id,
+      type: NotificationType.like,
+      actorPubkey: event.pubkey,
+      actorName: actorName,
+      actorPictureUrl: actorProfile?.picture,
+      message: '$actorName liked your video',
+      timestamp: event.createdAtDateTime,
+      targetEventId: videoEventId,
+      targetVideoUrl: videoEvent.videoUrl,
+      targetVideoThumbnail: videoEvent.thumbnailUrl,
     );
+
+    await _addNotification(notification);
   }
 
   /// Handle comment events
   Future<void> _handleCommentEvent(Event event) async {
-    _emitRealtimeNotification(
-      _videoRelayNotification(
-        event,
-        notificationType: 'comment',
-        sourceKind: EventKind.comment,
-        content: event.content,
-        rootEventId: _tagValue(event, 'E'),
-        targetCommentId: _tagValue(event, 'e'),
-      ),
+    // Resolve video via E/e tags first, then A/a tags for addressable events
+    final resolved = _resolveVideoEvent(event);
+    if (resolved == null) return;
+
+    final videoEvent = resolved.videoEvent;
+    final videoEventId = resolved.targetEventId;
+
+    // CRITICAL: Only create notification if this is the current user's video
+    if (videoEvent.pubkey != _nostrService?.publicKey) {
+      return;
+    }
+
+    // Get actor info using helper function
+    final actorProfile = await _getActorProfile(event.pubkey);
+    final actorName = resolveActorName(actorProfile);
+
+    final notification = NotificationModel(
+      id: event.id,
+      type: NotificationType.comment,
+      actorPubkey: event.pubkey,
+      actorName: actorName,
+      actorPictureUrl: actorProfile?.picture,
+      message: '$actorName commented on your video',
+      timestamp: event.createdAtDateTime,
+      targetEventId: videoEventId,
+      targetVideoUrl: videoEvent.videoUrl,
+      targetVideoThumbnail: videoEvent.thumbnailUrl,
+      metadata: {'comment': event.content},
     );
+
+    await _addNotification(notification);
   }
 
   /// Handle follow events
@@ -382,13 +379,6 @@ class NotificationServiceEnhanced {
       timestamp: event.createdAtDateTime,
     );
 
-    _emitRealtimeNotification(
-      _actorRelayNotification(
-        event,
-        notificationType: 'follow',
-        sourceKind: NostrEventKinds.contactList,
-      ),
-    );
     await _addNotification(notification);
   }
 
@@ -427,110 +417,41 @@ class NotificationServiceEnhanced {
       metadata: {'text': event.content},
     );
 
-    _emitRealtimeNotification(
-      _actorRelayNotification(
-        event,
-        notificationType: 'mention',
-        sourceKind: event.kind,
-        content: event.content,
-      ),
-    );
     await _addNotification(notification);
   }
 
   /// Handle repost events
   Future<void> _handleRepostEvent(Event event) async {
-    _emitRealtimeNotification(
-      _videoRelayNotification(
-        event,
-        notificationType: 'repost',
-        sourceKind: event.kind,
-      ),
-    );
-  }
+    // Resolve video via E/e tags first, then A/a tags for addressable events
+    final resolved = _resolveVideoEvent(event);
+    if (resolved == null) return;
 
-  void _emitRealtimeNotification(RelayNotification? notification) {
-    if (notification == null || _realtimeNotificationController.isClosed) {
+    final videoEvent = resolved.videoEvent;
+    final videoEventId = resolved.targetEventId;
+
+    // CRITICAL: Only create notification if this is the current user's video
+    if (videoEvent.pubkey != _nostrService?.publicKey) {
       return;
     }
-    _realtimeNotificationController.add(notification);
-  }
 
-  RelayNotification? _videoRelayNotification(
-    Event event, {
-    required String notificationType,
-    required int sourceKind,
-    String? content,
-    String? rootEventId,
-    String? targetCommentId,
-  }) {
-    final addressableId = extractAddressableId(event);
-    final parsedAddressableId = addressableId == null
-        ? null
-        : parseAddressableId(addressableId);
-    final rootOrReferencedEventId =
-        rootEventId ??
-        extractVideoEventId(event) ??
-        _cachedEventIdForAddressable(parsedAddressableId);
-    if (rootOrReferencedEventId == null || rootOrReferencedEventId.isEmpty) {
-      return null;
-    }
-    return RelayNotification(
+    // Get actor info using helper function
+    final actorProfile = await _getActorProfile(event.pubkey);
+    final actorName = resolveActorName(actorProfile);
+
+    final notification = NotificationModel(
       id: event.id,
-      sourcePubkey: event.pubkey,
-      sourceEventId: event.id,
-      sourceKind: sourceKind,
-      notificationType: notificationType,
-      createdAt: event.createdAtDateTime,
-      read: false,
-      referencedEventId: rootOrReferencedEventId,
-      content: content,
-      isReferencedVideo: true,
-      referencedDTag: parsedAddressableId?.dTag,
-      rootEventId: rootEventId,
-      targetCommentId: targetCommentId,
-      requiresReferencedVideoMetadata: true,
+      type: NotificationType.repost,
+      actorPubkey: event.pubkey,
+      actorName: actorName,
+      actorPictureUrl: actorProfile?.picture,
+      message: '$actorName reposted your video',
+      timestamp: event.createdAtDateTime,
+      targetEventId: videoEventId,
+      targetVideoUrl: videoEvent.videoUrl,
+      targetVideoThumbnail: videoEvent.thumbnailUrl,
     );
-  }
 
-  String? _cachedEventIdForAddressable(
-    ({int kind, String pubkey, String dTag})? parsedAddressableId,
-  ) {
-    if (parsedAddressableId == null) return null;
-    final video = _videoService?.getVideoEventByVineId(
-      parsedAddressableId.dTag,
-    );
-    if (video == null || video.pubkey != parsedAddressableId.pubkey) {
-      return null;
-    }
-    return video.id;
-  }
-
-  RelayNotification _actorRelayNotification(
-    Event event, {
-    required String notificationType,
-    required int sourceKind,
-    String? content,
-  }) {
-    return RelayNotification(
-      id: event.id,
-      sourcePubkey: event.pubkey,
-      sourceEventId: event.id,
-      sourceKind: sourceKind,
-      notificationType: notificationType,
-      createdAt: event.createdAtDateTime,
-      read: false,
-      content: content,
-    );
-  }
-
-  static String? _tagValue(Event event, String name) {
-    for (final tag in event.tags) {
-      if (tag.length > 1 && tag[0] == name && tag[1].isNotEmpty) {
-        return tag[1];
-      }
-    }
-    return null;
+    await _addNotification(notification);
   }
 
   /// Add a notification
@@ -578,11 +499,6 @@ class NotificationServiceEnhanced {
       // Show platform notification if permissions granted
       if (_permissionsGranted && !notification.isRead) {
         await _showPlatformNotification(notification);
-      }
-
-      // Emit to stream for real-time bridge
-      if (!_newNotificationController.isClosed) {
-        _newNotificationController.add(notification);
       }
 
       // Keep only recent notifications
@@ -891,10 +807,6 @@ class NotificationServiceEnhanced {
     if (_disposed) return;
 
     _disposed = true;
-
-    // Close notification stream
-    _newNotificationController.close();
-    _realtimeNotificationController.close();
 
     // Cancel all subscriptions
     for (final subscription in _subscriptions.values) {
