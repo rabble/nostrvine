@@ -53,6 +53,13 @@ class ContentBlocklistRepository {
     // Initialize with the specific npub requested
     _addInitialBlockedContent();
     _activeAccountPubkey = _prefs?.getString(_activePubkeyPrefsKey);
+    final seededAccount = _activeAccountPubkey;
+    _scopedBasesPresentAtConstruction = seededAccount == null
+        ? const <String>{}
+        : <String>{
+            for (final base in _legacySetsByBase.keys)
+              if (_prefs?.getString('$base.$seededAccount') != null) base,
+          };
     _loadBlockedUsers();
     _loadMutedUsers();
     _loadSeveredFollowers();
@@ -101,6 +108,20 @@ class ContentBlocklistRepository {
   // Persists across unblocking so these users remain hidden from our
   // followers list until they explicitly re-follow.
   final Set<String> _severedFollowers = <String>{};
+
+  // Persisted sets that migrate from legacy un-namespaced keys, by key.
+  late final Map<String, Set<String>> _legacySetsByBase = {
+    _blockedUsersPrefsKey: _runtimeBlocklist,
+    _mutedUsersPrefsKey: _mutedPubkeys,
+    _severedFollowersPrefsKey: _severedFollowers,
+  };
+
+  // Scoped keys of the seeded account that already held data when this
+  // instance hydrated. _migrateLegacyKeys treats those as authoritative
+  // over the legacy snapshot; a scoped key that appears later in the
+  // session was written by a save racing the migration and must be
+  // merged with the legacy data, not preferred over it.
+  late final Set<String> _scopedBasesPresentAtConstruction;
 
   final _stateController = StreamController<ContentPolicyState>.broadcast();
 
@@ -212,14 +233,19 @@ class ContentBlocklistRepository {
       _latestMuteListEventCreatedAtByAuthor.clear();
       _latestBlockListEventCreatedAtByAuthor.clear();
       _severedFollowers.clear();
-      // Force fresh subscriptions filtered on the new pubkey.
+      // Force fresh subscriptions filtered on the new pubkey. On a
+      // same-client switch the old subscription's listener is
+      // intentionally left in place (no handle is retained to cancel
+      // it); its deliveries stay harmless because every handler
+      // re-checks the live _ourPubkey at delivery time.
       _mutualMuteSyncStarted = false;
       _blockListSyncStarted = false;
-    } else {
-      // First identity on this install: legacy un-namespaced data was
-      // written by this account before per-account keys existed.
-      _migrateLegacyKeys(pubkey);
     }
+
+    // Legacy un-namespaced data predates per-account keys and follows
+    // the first identity that signed in; the move no-ops for any other
+    // account. Must run before _activeAccountPubkey is reassigned.
+    unawaited(_migrateLegacyKeys(pubkey));
 
     _activeAccountPubkey = pubkey;
     unawaited(_saveActiveAccountPubkey(pubkey));
@@ -258,26 +284,94 @@ class ContentBlocklistRepository {
 
   /// Moves legacy un-namespaced persisted sets to [pubkey]'s scoped keys.
   ///
-  /// Runs only while no account was ever adopted on this install, so a
-  /// pre-migration user's data follows the first identity that signs in.
-  /// Failures are logged and swallowed — the in-memory sets already hold
-  /// the legacy data, so a failed move only delays the migration.
-  void _migrateLegacyKeys(String pubkey) {
+  /// Runs while no account was ever adopted on this install, or while
+  /// [pubkey] is the recorded account — so a move that failed on a
+  /// previous launch is retried instead of orphaning the legacy data.
+  /// Legacy values merge into the in-memory sets synchronously (a no-op
+  /// when construction already hydrated them) and persist via full-set
+  /// writes; a legacy key is removed only once its data is confirmed
+  /// under the scoped key, so a partial failure never destroys data.
+  Future<void> _migrateLegacyKeys(String pubkey) async {
     final prefs = _prefs;
-    if (prefs == null || _activeAccountPubkey != null) return;
-    for (final base in [
-      _blockedUsersPrefsKey,
-      _mutedUsersPrefsKey,
-      _severedFollowersPrefsKey,
-    ]) {
+    if (prefs == null) return;
+    if (_activeAccountPubkey != null && _activeAccountPubkey != pubkey) {
+      return;
+    }
+
+    // Decide and merge synchronously so no concurrent write can land
+    // between reading a legacy value and folding it into memory.
+    final pendingMoves = <String, Set<String>>{};
+    final staleBases = <String>[];
+    var recovered = false;
+    for (final entry in _legacySetsByBase.entries) {
+      final base = entry.key;
+      final legacy = prefs.getString(base);
+      if (legacy == null || legacy.isEmpty) continue;
+      final scopedExists = prefs.getString('$base.$pubkey') != null;
+      if (scopedExists &&
+          (_scopedBasesPresentAtConstruction.contains(base) ||
+              _activeAccountPubkey == null)) {
+        // A scoped value that predates this adoption is authoritative:
+        // merging the stale legacy snapshot could resurrect entries
+        // deleted since the original copy. (Before first adoption,
+        // saves write the legacy key itself, so a scoped value can
+        // only be a leftover from an earlier partially-failed
+        // migration — while for the recorded account, one that was
+        // absent at construction was written by a save racing this
+        // migration and is merged below instead.)
+        staleBases.add(base);
+        continue;
+      }
       try {
-        final legacy = prefs.getString(base);
-        if (legacy == null || legacy.isEmpty) continue;
-        unawaited(prefs.setString('$base.$pubkey', legacy));
-        unawaited(prefs.remove(base));
+        final decoded = (jsonDecode(legacy) as List<dynamic>).cast<String>();
+        final target = entry.value;
+        final sizeBefore = target.length;
+        target.addAll(decoded);
+        recovered = recovered || target.length != sizeBefore;
+        pendingMoves[base] = target;
       } on Object catch (e) {
         Log.error(
-          'Failed to migrate legacy blocklist key $base: $e',
+          'Skipping corrupt legacy blocklist key $base: $e',
+          name: 'ContentBlocklistRepository',
+          category: LogCategory.system,
+        );
+      }
+    }
+    if (recovered) {
+      // A retried move recovered data that construction could not see;
+      // notify so watchers re-filter with it this session.
+      _notifyChanged();
+    }
+
+    for (final base in staleBases) {
+      try {
+        await prefs.remove(base);
+      } on Object catch (e) {
+        Log.error(
+          'Failed to drop stale legacy blocklist key $base: $e',
+          name: 'ContentBlocklistRepository',
+          category: LogCategory.system,
+        );
+      }
+    }
+
+    for (final entry in pendingMoves.entries) {
+      // Re-checked before every write: after a mid-flight account
+      // switch the live sets belong to the new identity and must not
+      // be serialized under [pubkey]'s keys.
+      if (_activeAccountPubkey != null && _activeAccountPubkey != pubkey) {
+        return;
+      }
+      try {
+        final written = await prefs.setString(
+          '${entry.key}.$pubkey',
+          jsonEncode(entry.value.toList()),
+        );
+        if (!written) continue;
+        await prefs.remove(entry.key);
+      } on Object catch (e) {
+        Log.error(
+          'Failed to migrate legacy blocklist key ${entry.key}: $e',
           name: 'ContentBlocklistRepository',
           category: LogCategory.system,
         );

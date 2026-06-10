@@ -1071,6 +1071,290 @@ void main() {
       service.dispose();
     });
 
+    test('keeps the legacy key when the scoped copy reports failure', () async {
+      final mockPrefs = _MockSharedPreferences();
+      when(() => mockPrefs.getString(any())).thenReturn(null);
+      when(
+        () => mockPrefs.getString('blocked_users_list'),
+      ).thenReturn(jsonEncode([blockerX]));
+      when(
+        () => mockPrefs.setString(any(), any()),
+      ).thenAnswer((_) async => false);
+      when(() => mockPrefs.remove(any())).thenAnswer((_) async => true);
+
+      final service = ContentBlocklistRepository(prefs: mockPrefs);
+      await service.syncMuteListsInBackground(mockNostrService, accountA);
+      await Future<void>.delayed(Duration.zero);
+
+      // The scoped copy never landed, so the legacy data must survive
+      // for the next attempt.
+      verifyNever(() => mockPrefs.remove('blocked_users_list'));
+      expect(service.isBlocked(blockerX), isTrue);
+
+      service.dispose();
+    });
+
+    test('survives an asynchronous setString failure during '
+        'migration', () async {
+      final mockPrefs = _MockSharedPreferences();
+      when(() => mockPrefs.getString(any())).thenReturn(null);
+      when(
+        () => mockPrefs.getString('blocked_users_list'),
+      ).thenReturn(jsonEncode([blockerX]));
+      when(
+        () => mockPrefs.setString(any(), any()),
+      ).thenAnswer((_) => Future.error(Exception('platform write failed')));
+      when(() => mockPrefs.remove(any())).thenAnswer((_) async => true);
+
+      final service = ContentBlocklistRepository(prefs: mockPrefs);
+      await service.syncMuteListsInBackground(mockNostrService, accountA);
+      // Flush the unawaited migration; a rejection it failed to catch
+      // would surface as an unhandled error and fail this test.
+      await Future<void>.delayed(Duration.zero);
+
+      verifyNever(() => mockPrefs.remove('blocked_users_list'));
+      expect(service.isBlocked(blockerX), isTrue);
+
+      service.dispose();
+    });
+
+    test('retries a failed legacy migration on the next launch and '
+        'recovers the data in-session', () async {
+      // An earlier launch recorded the active account but its legacy
+      // move failed: the data still sits at the un-namespaced keys.
+      SharedPreferences.setMockInitialValues({
+        'blocklist_active_pubkey': accountA,
+        'blocked_users_list': jsonEncode([blockerX]),
+        'severed_followers_list': jsonEncode([someoneElse]),
+      });
+      final prefs = await SharedPreferences.getInstance();
+      var changeCount = 0;
+      final service = ContentBlocklistRepository(
+        prefs: prefs,
+        onChanged: () => changeCount++,
+      );
+
+      // Hydration reads the (empty) scoped keys, so the data starts
+      // invisible.
+      expect(service.isBlocked(blockerX), isFalse);
+      expect(service.isFollowSevered(someoneElse), isFalse);
+      final changesBefore = changeCount;
+
+      await service.syncMuteListsInBackground(mockNostrService, accountA);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(prefs.getString('blocked_users_list'), isNull);
+      expect(
+        prefs.getString('blocked_users_list.$accountA'),
+        equals(jsonEncode([blockerX])),
+      );
+      expect(prefs.getString('severed_followers_list'), isNull);
+      expect(
+        prefs.getString('severed_followers_list.$accountA'),
+        equals(jsonEncode([someoneElse])),
+      );
+      expect(service.isBlocked(blockerX), isTrue);
+      expect(service.isFollowSevered(someoneElse), isTrue);
+      expect(
+        changeCount,
+        greaterThan(changesBefore),
+        reason: 'watchers must re-filter with the recovered data',
+      );
+
+      service.dispose();
+    });
+
+    test('merges legacy data with a scoped value written by a save '
+        'that raced the migration', () async {
+      // The recorded account's scoped key was absent at construction,
+      // so a value appearing there mid-session comes from this
+      // session's own saves — those entries and the legacy entries
+      // must both survive.
+      SharedPreferences.setMockInitialValues({
+        'blocklist_active_pubkey': accountA,
+        'blocked_users_list': jsonEncode([blockerX]),
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistRepository(prefs: prefs);
+
+      // A user action lands before the session identity resolves.
+      await service.blockUser(someoneElse);
+      expect(prefs.getString('blocked_users_list.$accountA'), isNotNull);
+
+      await service.syncMuteListsInBackground(mockNostrService, accountA);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(prefs.getString('blocked_users_list'), isNull);
+      final scoped =
+          (jsonDecode(prefs.getString('blocked_users_list.$accountA')!)
+                  as List<dynamic>)
+              .cast<String>();
+      expect(scoped, containsAll([blockerX, someoneElse]));
+      expect(service.isBlocked(blockerX), isTrue);
+      expect(service.isBlocked(someoneElse), isTrue);
+
+      service.dispose();
+    });
+
+    test('prefers a pre-adoption scoped value over the legacy snapshot '
+        'when no account was recorded', () async {
+      // A previous launch copied the legacy data but failed to remove
+      // it and to record the account: the scoped value may hold newer
+      // writes, so it wins and the stale legacy key is dropped.
+      SharedPreferences.setMockInitialValues({
+        'blocked_users_list': jsonEncode([blockerX]),
+        'blocked_users_list.$accountA': jsonEncode([blockerX, someoneElse]),
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistRepository(prefs: prefs);
+
+      await service.syncMuteListsInBackground(mockNostrService, accountA);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(prefs.getString('blocked_users_list'), isNull);
+      expect(
+        prefs.getString('blocked_users_list.$accountA'),
+        equals(jsonEncode([blockerX, someoneElse])),
+      );
+
+      service.dispose();
+    });
+
+    test('skips a corrupt legacy value without dropping it', () async {
+      SharedPreferences.setMockInitialValues({
+        'blocked_users_list': 'not-json',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistRepository(prefs: prefs);
+
+      await service.syncMuteListsInBackground(mockNostrService, accountA);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(prefs.getString('blocked_users_list'), equals('not-json'));
+      expect(prefs.getString('blocked_users_list.$accountA'), isNull);
+
+      service.dispose();
+    });
+
+    test('tolerates a failed stale legacy cleanup', () async {
+      final mockPrefs = _MockSharedPreferences();
+      when(() => mockPrefs.getString(any())).thenReturn(null);
+      when(
+        () => mockPrefs.getString('blocklist_active_pubkey'),
+      ).thenReturn(accountA);
+      when(
+        () => mockPrefs.getString('blocked_users_list'),
+      ).thenReturn(jsonEncode([blockerX]));
+      when(
+        () => mockPrefs.getString('blocked_users_list.$accountA'),
+      ).thenReturn(jsonEncode([someoneElse]));
+      when(
+        () => mockPrefs.setString(any(), any()),
+      ).thenAnswer((_) async => true);
+      when(() => mockPrefs.remove(any())).thenThrow(Exception('disk error'));
+
+      final service = ContentBlocklistRepository(prefs: mockPrefs);
+      await service.syncMuteListsInBackground(mockNostrService, accountA);
+      await Future<void>.delayed(Duration.zero);
+
+      // The cleanup failure is swallowed and the hydrated state stays
+      // usable; the stale key is retried on the next launch.
+      verify(() => mockPrefs.remove('blocked_users_list')).called(1);
+      expect(service.isBlocked(someoneElse), isTrue);
+
+      service.dispose();
+    });
+
+    test('stops migrating remaining keys when the account switches '
+        'mid-flight', () async {
+      final mockPrefs = _MockSharedPreferences();
+      final firstWrite = Completer<bool>();
+      when(() => mockPrefs.getString(any())).thenReturn(null);
+      when(
+        () => mockPrefs.getString('blocklist_active_pubkey'),
+      ).thenReturn(accountA);
+      when(
+        () => mockPrefs.getString('blocked_users_list'),
+      ).thenReturn(jsonEncode([blockerX]));
+      when(
+        () => mockPrefs.getString('severed_followers_list'),
+      ).thenReturn(jsonEncode([someoneElse]));
+      when(
+        () => mockPrefs.setString(any(), any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockPrefs.setString('blocked_users_list.$accountA', any()),
+      ).thenAnswer((_) => firstWrite.future);
+      when(() => mockPrefs.remove(any())).thenAnswer((_) async => true);
+
+      final service = ContentBlocklistRepository(prefs: mockPrefs);
+      await service.syncMuteListsInBackground(mockNostrService, accountA);
+      // The first key's platform write is in flight when the session
+      // switches identity.
+      await service.syncMuteListsInBackground(mockNostrService, accountB);
+      firstWrite.complete(true);
+      await Future<void>.delayed(Duration.zero);
+
+      // The in-flight write already serialized account A's set, so its
+      // move completes — but the remaining legacy key must not be
+      // serialized under the new identity.
+      verify(() => mockPrefs.remove('blocked_users_list')).called(1);
+      verifyNever(
+        () => mockPrefs.setString('severed_followers_list.$accountA', any()),
+      );
+      verifyNever(() => mockPrefs.remove('severed_followers_list'));
+
+      service.dispose();
+    });
+
+    test('does not clobber newer scoped data when retrying the legacy '
+        'move', () async {
+      // An earlier copy landed but its remove failed, and the scoped
+      // set has been written since: the legacy snapshot is stale.
+      SharedPreferences.setMockInitialValues({
+        'blocklist_active_pubkey': accountA,
+        'blocked_users_list': jsonEncode([blockerX]),
+        'blocked_users_list.$accountA': jsonEncode([someoneElse]),
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistRepository(prefs: prefs);
+
+      await service.syncMuteListsInBackground(mockNostrService, accountA);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(prefs.getString('blocked_users_list'), isNull);
+      expect(
+        prefs.getString('blocked_users_list.$accountA'),
+        equals(jsonEncode([someoneElse])),
+      );
+      expect(service.isBlocked(someoneElse), isTrue);
+      expect(service.isBlocked(blockerX), isFalse);
+
+      service.dispose();
+    });
+
+    test('leaves legacy data untouched when a different account than '
+        'its owner signs in', () async {
+      SharedPreferences.setMockInitialValues({
+        'blocklist_active_pubkey': accountA,
+        'blocked_users_list': jsonEncode([blockerX]),
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistRepository(prefs: prefs);
+
+      await service.syncMuteListsInBackground(mockNostrService, accountB);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        prefs.getString('blocked_users_list'),
+        equals(jsonEncode([blockerX])),
+      );
+      expect(prefs.getString('blocked_users_list.$accountB'), isNull);
+      expect(service.isBlocked(blockerX), isFalse);
+
+      service.dispose();
+    });
+
     test('adopting a different identity than the stored account resets '
         'hydrated state', () async {
       SharedPreferences.setMockInitialValues({
