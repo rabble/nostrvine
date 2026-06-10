@@ -337,6 +337,25 @@ void main() {
         expect(list.playOrder, PlayOrder.shuffle);
       });
 
+      test(
+        'rapidly created lists get unique ids and keep their data',
+        () async {
+          for (var i = 0; i < 10; i++) {
+            await service.createList(name: 'List $i');
+          }
+
+          expect(service.lists, hasLength(10));
+          expect(service.lists.map((l) => l.id).toSet(), hasLength(10));
+          expect(
+            service.lists.map((l) => l.name).toSet(),
+            hasLength(10),
+            reason:
+                'an ID collision makes the post-publish update '
+                'overwrite a sibling list',
+          );
+        },
+      );
+
       test('adds created list to lists collection', () async {
         expect(service.lists, isEmpty);
 

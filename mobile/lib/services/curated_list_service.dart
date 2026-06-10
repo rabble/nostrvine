@@ -217,6 +217,22 @@ class CuratedListService extends ChangeNotifier {
     );
   }
 
+  /// Generates a list ID that is unique within the cached lists.
+  ///
+  /// Two lists created within the same millisecond would otherwise share an
+  /// ID, and ID-based lookups (e.g. the post-publish copyWith) would then
+  /// overwrite the wrong list.
+  String _generateListId(DateTime now) {
+    final base = 'list_${now.millisecondsSinceEpoch}';
+    var listId = base;
+    var suffix = 1;
+    while (_lists.any((list) => list.id == listId)) {
+      listId = '${base}_$suffix';
+      suffix++;
+    }
+    return listId;
+  }
+
   /// Internal method to create a list with optional explicit ID
   Future<CuratedList?> _createList({
     required String name,
@@ -232,7 +248,7 @@ class CuratedListService extends ChangeNotifier {
   }) async {
     try {
       final now = DateTime.now();
-      final listId = id ?? 'list_${now.millisecondsSinceEpoch}';
+      final listId = id ?? _generateListId(now);
       final ownerPubkey = _currentAuthenticatedPubkey();
 
       final newList = CuratedList(
