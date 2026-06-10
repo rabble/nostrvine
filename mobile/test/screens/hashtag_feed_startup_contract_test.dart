@@ -3,18 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/services/hashtag_service.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 class _MockHashtagService extends Mock implements HashtagService {}
 
-class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
+class _MockVideosRepository extends Mock implements VideosRepository {}
 
 void main() {
   setUpAll(() {
@@ -23,11 +22,11 @@ void main() {
 
   group('HashtagFeedScreen startup contract', () {
     late _MockHashtagService mockHashtagService;
-    late _MockFunnelcakeApiClient mockFunnelcakeApiClient;
+    late _MockVideosRepository mockVideosRepository;
 
     setUp(() {
       mockHashtagService = _MockHashtagService();
-      mockFunnelcakeApiClient = _MockFunnelcakeApiClient();
+      mockVideosRepository = _MockVideosRepository();
 
       when(() => mockHashtagService.getVideosByHashtags(any())).thenReturn([]);
     });
@@ -36,9 +35,7 @@ void main() {
       return ProviderScope(
         overrides: [
           hashtagServiceProvider.overrideWith((ref) => mockHashtagService),
-          funnelcakeApiClientProvider.overrideWithValue(
-            mockFunnelcakeApiClient,
-          ),
+          videosRepositoryProvider.overrideWithValue(mockVideosRepository),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -52,31 +49,21 @@ void main() {
       'keeps loading until the initial source answers, then shows empty state even if websocket subscribe hangs',
       (tester) async {
         final subscribeCompleter = Completer<void>();
-        final trendingCompleter = Completer<List<VideoStats>>();
-        final classicCompleter = Completer<List<VideoStats>>();
+        final feedCompleter = Completer<List<VideoEvent>>();
         addTearDown(() {
           if (!subscribeCompleter.isCompleted) {
             subscribeCompleter.complete();
           }
-          if (!trendingCompleter.isCompleted) {
-            trendingCompleter.complete(const []);
-          }
-          if (!classicCompleter.isCompleted) {
-            classicCompleter.complete(const []);
+          if (!feedCompleter.isCompleted) {
+            feedCompleter.complete(const []);
           }
         });
 
-        when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
         when(
-          () => mockFunnelcakeApiClient.getVideosByHashtag(
+          () => mockVideosRepository.getHashtagFeedVideos(
             hashtag: any(named: 'hashtag'),
           ),
-        ).thenAnswer((_) => trendingCompleter.future);
-        when(
-          () => mockFunnelcakeApiClient.getClassicVideosByHashtag(
-            hashtag: any(named: 'hashtag'),
-          ),
-        ).thenAnswer((_) => classicCompleter.future);
+        ).thenAnswer((_) => feedCompleter.future);
         when(
           () => mockHashtagService.subscribeToHashtagVideos(any()),
         ).thenAnswer((_) => subscribeCompleter.future);
@@ -91,8 +78,7 @@ void main() {
         expect(find.text('Loading videos about #nostr...'), findsOneWidget);
         expect(find.text('No videos found for #nostr'), findsNothing);
 
-        trendingCompleter.complete(const []);
-        classicCompleter.complete(const []);
+        feedCompleter.complete(const []);
 
         await tester.pump();
         await tester.pump();

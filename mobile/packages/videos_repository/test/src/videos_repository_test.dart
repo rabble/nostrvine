@@ -7427,6 +7427,161 @@ void main() {
       });
     });
 
+    group('getHashtagFeedVideos', () {
+      test('returns empty list when hashtag is blank', () async {
+        expect(await repository.getHashtagFeedVideos(hashtag: '  '), isEmpty);
+      });
+
+      test('returns empty list when funnelcakeApiClient is null', () async {
+        expect(await repository.getHashtagFeedVideos(hashtag: 'bts'), isEmpty);
+      });
+
+      test('returns empty list when the API is unavailable', () async {
+        final mockFunnelcake = MockFunnelcakeApiClient();
+        when(() => mockFunnelcake.isAvailable).thenReturn(false);
+
+        final repoWithApi = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcake,
+        );
+
+        expect(
+          await repoWithApi.getHashtagFeedVideos(hashtag: 'bts'),
+          isEmpty,
+        );
+      });
+
+      test(
+        'interleaves trending and classic 1:1, deduplicating classics',
+        () async {
+          final mockFunnelcake = MockFunnelcakeApiClient();
+          when(() => mockFunnelcake.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcake.getVideosByHashtag(hashtag: 'bts'),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'trend-1',
+                pubkey: 'pubkey-1',
+                dTag: 'dtag-t1',
+                videoUrl: 'https://example.com/t1.mp4',
+              ),
+              _createVideoStats(
+                id: 'trend-2',
+                pubkey: 'pubkey-2',
+                dTag: 'dtag-t2',
+                videoUrl: 'https://example.com/t2.mp4',
+              ),
+            ],
+          );
+          when(
+            () => mockFunnelcake.getClassicVideosByHashtag(hashtag: 'bts'),
+          ).thenAnswer(
+            (_) async => [
+              // Duplicate of trend-1 — must be dropped.
+              _createVideoStats(
+                id: 'trend-1',
+                pubkey: 'pubkey-1',
+                dTag: 'dtag-t1',
+                videoUrl: 'https://example.com/t1.mp4',
+              ),
+              _createVideoStats(
+                id: 'classic-1',
+                pubkey: 'pubkey-3',
+                dTag: 'dtag-c1',
+                videoUrl: 'https://example.com/c1.mp4',
+              ),
+            ],
+          );
+
+          final repoWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcake,
+          );
+
+          final result = await repoWithApi.getHashtagFeedVideos(hashtag: 'bts');
+
+          expect(result.map((v) => v.id), [
+            'trend-1',
+            'classic-1',
+            'trend-2',
+          ]);
+        },
+      );
+
+      test(
+        'applies block filter to both trending and classic results',
+        () async {
+          final mockFunnelcake = MockFunnelcakeApiClient();
+          when(() => mockFunnelcake.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcake.getVideosByHashtag(hashtag: 'bts'),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'trend-blocked',
+                pubkey: 'blocked-pubkey',
+                dTag: 'dtag-tb',
+                videoUrl: 'https://example.com/tb.mp4',
+              ),
+              _createVideoStats(
+                id: 'trend-ok',
+                pubkey: 'allowed-pubkey',
+                dTag: 'dtag-to',
+                videoUrl: 'https://example.com/to.mp4',
+              ),
+            ],
+          );
+          when(
+            () => mockFunnelcake.getClassicVideosByHashtag(hashtag: 'bts'),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'classic-blocked',
+                pubkey: 'blocked-pubkey',
+                dTag: 'dtag-cb',
+                videoUrl: 'https://example.com/cb.mp4',
+              ),
+            ],
+          );
+
+          final blockFilter = TestContentFilter(
+            blockedPubkeys: {'blocked-pubkey'},
+          );
+          final repoWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcake,
+            blockFilter: blockFilter.call,
+          );
+
+          final result = await repoWithApi.getHashtagFeedVideos(hashtag: 'bts');
+
+          expect(result.map((v) => v.id), ['trend-ok']);
+        },
+      );
+
+      test('returns empty list when the API throws', () async {
+        final mockFunnelcake = MockFunnelcakeApiClient();
+        when(() => mockFunnelcake.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcake.getVideosByHashtag(hashtag: 'bts'),
+        ).thenThrow(const FunnelcakeException('boom'));
+        when(
+          () => mockFunnelcake.getClassicVideosByHashtag(hashtag: 'bts'),
+        ).thenAnswer((_) async => []);
+
+        final repoWithApi = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcake,
+        );
+
+        expect(
+          await repoWithApi.getHashtagFeedVideos(hashtag: 'bts'),
+          isEmpty,
+        );
+      });
+    });
+
     group('searchVideos', () {
       test('emits nothing for empty query', () async {
         final stream = repository.searchVideos(query: '');

@@ -10,7 +10,6 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -90,107 +89,34 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
     setState(() => _subscriptionAttempted = true);
   }
 
-  /// Fetch videos from Funnelcake REST API and update state immediately.
-  /// Fetches trending AND classic videos in parallel, then interleaves 50/50.
+  /// Fetch the interleaved trending+classic hashtag feed from the
+  /// repository and update state immediately.
+  ///
+  /// The repository owns the REST fetch, the trending/classic interleave,
+  /// and the block/mute parse-gate, so blocked authors never reach
+  /// [_popularVideos] (#948).
   Future<void> _fetchFromFunnelcake() async {
-    try {
-      final client = ref.read(funnelcakeApiClientProvider);
+    final repository = ref.read(videosRepositoryProvider);
+    final interleaved = await repository.getHashtagFeedVideos(
+      hashtag: widget.hashtag,
+    );
 
-      // Quick check - skip if API not configured
-      if (!client.isAvailable) {
-        Log.debug(
-          '🏷️ HashtagFeedScreen: Funnelcake not configured, skipping',
-          category: LogCategory.video,
-        );
-        return;
-      }
+    if (!mounted) return;
 
-      // Fetch trending AND classic videos in parallel
-      final results = await Future.wait([
-        client.getVideosByHashtag(hashtag: widget.hashtag),
-        client.getClassicVideosByHashtag(hashtag: widget.hashtag),
-      ]).timeout(const Duration(seconds: 5));
-
-      if (!mounted) return;
-
-      final trendingStats = results[0];
-      final classicStats = results[1];
-      final trendingVideos = trendingStats.toVideoEvents();
-      final classicVideos = classicStats.toVideoEvents();
-
-      Log.info(
-        '🏷️ HashtagFeedScreen: Got ${trendingVideos.length} trending + '
-        '${classicVideos.length} classic videos from Funnelcake '
-        'for #${widget.hashtag}',
-        category: LogCategory.video,
-      );
-
-      // Interleave 50/50 for a balanced feed
-      final interleaved = _interleaveVideos(trendingVideos, classicVideos);
-
-      // Update immediately - don't wait for WebSocket
-      setState(() {
-        _popularVideos = interleaved;
-        // Mark as ready to show content if we have videos
-        if (interleaved.isNotEmpty) {
-          _subscriptionAttempted = true;
-        }
-      });
-    } catch (e) {
-      Log.debug(
-        '🏷️ HashtagFeedScreen: Funnelcake skipped (${e.runtimeType})',
-        category: LogCategory.video,
-      );
-    }
-  }
-
-  /// Interleave trending and classic videos 1:1 for a balanced feed.
-  /// Deduplicates first so a video appearing in both lists isn't shown twice.
-  /// If one list runs out, appends the remainder of the other.
-  List<VideoEvent> _interleaveVideos(
-    List<VideoEvent> trending,
-    List<VideoEvent> classics,
-  ) {
-    // Build set of trending IDs for deduplication
-    final trendingIds = <String>{};
-    for (final v in trending) {
-      if (v.id.isNotEmpty) trendingIds.add(v.id.toLowerCase());
-      if (v.vineId != null && v.vineId!.isNotEmpty) {
-        trendingIds.add(v.vineId!.toLowerCase());
-      }
-    }
-
-    // Remove classics that already appear in trending
-    final uniqueClassics = <VideoEvent>[];
-    for (final video in classics) {
-      final isDuplicate =
-          trendingIds.contains(video.id.toLowerCase()) ||
-          (video.vineId != null &&
-              trendingIds.contains(video.vineId!.toLowerCase()));
-      if (!isDuplicate) {
-        uniqueClassics.add(video);
-      }
-    }
-
-    Log.debug(
-      '🏷️ Interleaving: ${trending.length} trending + '
-      '${uniqueClassics.length} unique classics '
-      '(${classics.length - uniqueClassics.length} duplicates removed)',
+    Log.info(
+      '🏷️ HashtagFeedScreen: Got ${interleaved.length} interleaved videos '
+      'from Funnelcake for #${widget.hashtag}',
       category: LogCategory.video,
     );
 
-    // Interleave 1:1
-    final result = <VideoEvent>[];
-    final maxLen = trending.length > uniqueClassics.length
-        ? trending.length
-        : uniqueClassics.length;
-
-    for (var i = 0; i < maxLen; i++) {
-      if (i < trending.length) result.add(trending[i]);
-      if (i < uniqueClassics.length) result.add(uniqueClassics[i]);
-    }
-
-    return result;
+    // Update immediately - don't wait for WebSocket
+    setState(() {
+      _popularVideos = interleaved;
+      // Mark as ready to show content if we have videos
+      if (interleaved.isNotEmpty) {
+        _subscriptionAttempted = true;
+      }
+    });
   }
 
   /// Subscribe to hashtag via WebSocket for real-time updates.
@@ -211,12 +137,13 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
   }
 
   /// Removes videos whose author is blocked/muted (kind 30000 d=block /
-  /// kind 10000), or who has blocked/muted the current user. The Funnelcake
-  /// hashtag endpoint is called anonymously and applies no per-viewer block
-  /// or mute filtering, so the client is the only place these are enforced.
-  /// Applied at the assembly seam so it covers both the REST and WebSocket
-  /// sources, and re-runs on rebuild (see [blocklistVersionProvider] watch in
-  /// [build]) so unblocked authors reappear without a re-fetch. See #4782.
+  /// kind 10000), or who has blocked/muted the current user.
+  ///
+  /// The REST source is already parse-gated by the repository, so this
+  /// seam mainly covers the WebSocket source and hides a just-blocked
+  /// author immediately (the [blocklistVersionProvider] watch in [build]
+  /// re-runs it). Unblocked authors reappear via the version-triggered
+  /// REST refetch in [build]. See #4782, #948.
   List<VideoEvent> _filterBlockedAuthors(List<VideoEvent> videos) {
     if (videos.isEmpty) return videos;
     final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
@@ -291,6 +218,14 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // The repository parse-gates the REST results, so the cached
+    // _popularVideos never hold a blocked author — an unblock can only
+    // re-show their videos through a refetch. See #948.
+    ref.listen<int>(blocklistVersionProvider, (previous, next) {
+      if (previous == next || !mounted) return;
+      unawaited(_fetchFromFunnelcake());
+    });
+
     final body = Builder(
       builder: (context) {
         Log.debug(
@@ -300,7 +235,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
         final hashtagService = ref.watch(hashtagServiceProvider);
 
         // Rebuild when block/unblock/mute actions occur so blocked authors
-        // disappear (and unblocked authors reappear) immediately. See #4782.
+        // disappear immediately (via _filterBlockedAuthors). See #4782.
         ref.watch(blocklistVersionProvider);
 
         // Combine Funnelcake videos (fast, pre-sorted) with WebSocket videos
