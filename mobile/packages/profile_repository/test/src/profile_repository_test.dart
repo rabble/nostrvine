@@ -1823,6 +1823,34 @@ void main() {
         verify(() => mockNostrClient.queryUsers('test', limit: 10)).called(1);
       });
 
+      test('excludes pubkeys hidden by the block filter', () async {
+        final blockedPubkey = 'e' * 64;
+        final blockedEvent = MockEvent();
+        when(() => blockedEvent.kind).thenReturn(0);
+        when(() => blockedEvent.pubkey).thenReturn(blockedPubkey);
+        when(() => blockedEvent.createdAt).thenReturn(1704067200);
+        when(() => blockedEvent.id).thenReturn('f' * 64);
+        when(
+          () => blockedEvent.content,
+        ).thenReturn(jsonEncode({'name': 'Blocked User'}));
+
+        when(
+          () => mockNostrClient.queryUsers('test', limit: 200),
+        ).thenAnswer((_) async => [mockProfileEvent, blockedEvent]);
+
+        final filteringRepository = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          blockFilter: (pubkey) => pubkey == blockedPubkey,
+        );
+
+        final result = await filteringRepository.searchUsers(query: 'test');
+
+        expect(result, hasLength(1));
+        expect(result.first.pubkey, equals(testPubkey));
+      });
+
       test('returns empty list when NostrClient returns empty list', () async {
         // Arrange
         when(
@@ -2216,6 +2244,51 @@ void main() {
       setUp(() {
         mockFunnelcakeClient = MockFunnelcakeApiClient();
       });
+
+      test(
+        'searchUsersFromApi excludes pubkeys hidden by the block filter',
+        () async {
+          final blockedPubkey = 'e' * 64;
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              ProfileSearchResult(
+                pubkey: blockedPubkey,
+                displayName: 'Blocked User',
+                createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              ),
+              ProfileSearchResult(
+                pubkey: 'd' * 64,
+                displayName: 'Visible User',
+                createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              ),
+            ],
+          );
+
+          final filteringRepository = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            blockFilter: (pubkey) => pubkey == blockedPubkey,
+          );
+
+          final result = await filteringRepository.searchUsersFromApi(
+            query: 'user',
+          );
+
+          expect(result, hasLength(1));
+          expect(result.first.displayName, 'Visible User');
+        },
+      );
 
       test(
         'searchUsersFromApi uses Funnelcake only with server sorting',

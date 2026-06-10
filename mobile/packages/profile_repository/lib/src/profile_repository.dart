@@ -876,7 +876,9 @@ class ProfileRepository {
         sortBy: sortBy,
         hasVideos: hasVideos,
       );
-      final profiles = restResults.map((result) => result.toUserProfile());
+      final profiles = restResults
+          .map((result) => result.toUserProfile())
+          .where((p) => !(_blockFilter?.call(p.pubkey) ?? false));
       return _enrichFromCache(profiles.toList());
     } on Exception catch (e) {
       Log.warning(
@@ -973,14 +975,16 @@ class ProfileRepository {
       }
     }
 
-    final profiles = resultMap.values.toList();
+    // Apply the injected block filter, consistent with searchUsersLocally
+    // and searchUsersProgressive. Unblocking happens via the Safety
+    // Settings blocked-users list, not via search findability.
+    final blockFilter = _blockFilter;
+    final profiles = blockFilter == null
+        ? resultMap.values.toList()
+        : resultMap.values.where((p) => !blockFilter(p.pubkey)).toList();
 
     // Enrich profiles from local SQLite cache (fill in missing pictures, etc.)
     final enrichedProfiles = await _enrichFromCache(profiles);
-
-    // Note: blocked users are NOT filtered from search results.
-    // Users need to find blocked profiles in search to unblock them.
-    // Block filtering is applied in video feeds (VideoEventService) instead.
 
     // When server-side sorting is active, trust server order
     if (useServerSort) {
