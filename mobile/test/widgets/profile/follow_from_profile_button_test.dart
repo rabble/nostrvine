@@ -72,6 +72,40 @@ void main() {
     }
 
     group('button state', () {
+      testWidgets(
+        'renders nothing when the author does not accept interactions from us',
+        (tester) async {
+          when(
+            () => mockMyFollowingBloc.state,
+          ).thenReturn(const MyFollowingState());
+
+          await tester.pumpWidget(
+            MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: BlocProvider<MyFollowingBloc>.value(
+                  value: mockMyFollowingBloc,
+                  child: FollowFromProfileButtonView(
+                    pubkey: validPubkey('author'),
+                    displayName: 'Author',
+                    currentUserPubkey: validPubkey('viewer'),
+                    canTargetAuthor: false,
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          // Absence, not a disabled state — no button, no text, no tooltip.
+          expect(find.byType(OutlinedButton), findsNothing);
+          expect(find.byType(ElevatedButton), findsNothing);
+          expect(find.text('Follow'), findsNothing);
+          expect(find.byType(Tooltip), findsNothing);
+        },
+      );
+
       testWidgets('shows DivineButton with "Follow" when not following', (
         tester,
       ) async {

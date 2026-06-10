@@ -57,6 +57,146 @@ final class ContentPolicyEngineProvider
 String _$contentPolicyEngineHash() =>
     r'3e6e0f8415da251057c220f5873bd5359c6ce9f1';
 
+/// Whether the UI may offer interactions that target [pubkey] —
+/// follow, DM, reply, mention, share-to, tag.
+///
+/// When this returns `false` the affordance must be *absent*: no disabled
+/// state, no tooltip, no copy. Revealing why would violate the disclosure
+/// invariant (the app never tells a user someone blocked or muted them).
+///
+/// Under [FeatureFlag.contentPolicyV2] this consults
+/// [ContentPolicyEngine.canTarget] (hidden when the target's published
+/// kind 30000 d=block or kind 10000 names us). With the flag off it
+/// preserves the pre-engine behavior: only an explicit block
+/// (`hasBlockedUs`) hides the affordance.
+
+@ProviderFor(canTargetUser)
+const canTargetUserProvider = CanTargetUserFamily._();
+
+/// Whether the UI may offer interactions that target [pubkey] —
+/// follow, DM, reply, mention, share-to, tag.
+///
+/// When this returns `false` the affordance must be *absent*: no disabled
+/// state, no tooltip, no copy. Revealing why would violate the disclosure
+/// invariant (the app never tells a user someone blocked or muted them).
+///
+/// Under [FeatureFlag.contentPolicyV2] this consults
+/// [ContentPolicyEngine.canTarget] (hidden when the target's published
+/// kind 30000 d=block or kind 10000 names us). With the flag off it
+/// preserves the pre-engine behavior: only an explicit block
+/// (`hasBlockedUs`) hides the affordance.
+
+final class CanTargetUserProvider extends $FunctionalProvider<bool, bool, bool>
+    with $Provider<bool> {
+  /// Whether the UI may offer interactions that target [pubkey] —
+  /// follow, DM, reply, mention, share-to, tag.
+  ///
+  /// When this returns `false` the affordance must be *absent*: no disabled
+  /// state, no tooltip, no copy. Revealing why would violate the disclosure
+  /// invariant (the app never tells a user someone blocked or muted them).
+  ///
+  /// Under [FeatureFlag.contentPolicyV2] this consults
+  /// [ContentPolicyEngine.canTarget] (hidden when the target's published
+  /// kind 30000 d=block or kind 10000 names us). With the flag off it
+  /// preserves the pre-engine behavior: only an explicit block
+  /// (`hasBlockedUs`) hides the affordance.
+  const CanTargetUserProvider._({
+    required CanTargetUserFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'canTargetUserProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$canTargetUserHash();
+
+  @override
+  String toString() {
+    return r'canTargetUserProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  bool create(Ref ref) {
+    final argument = this.argument as String;
+    return canTargetUser(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is CanTargetUserProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$canTargetUserHash() => r'3761b5b8a0bb8b3010086a60a2009e9065b9e981';
+
+/// Whether the UI may offer interactions that target [pubkey] —
+/// follow, DM, reply, mention, share-to, tag.
+///
+/// When this returns `false` the affordance must be *absent*: no disabled
+/// state, no tooltip, no copy. Revealing why would violate the disclosure
+/// invariant (the app never tells a user someone blocked or muted them).
+///
+/// Under [FeatureFlag.contentPolicyV2] this consults
+/// [ContentPolicyEngine.canTarget] (hidden when the target's published
+/// kind 30000 d=block or kind 10000 names us). With the flag off it
+/// preserves the pre-engine behavior: only an explicit block
+/// (`hasBlockedUs`) hides the affordance.
+
+final class CanTargetUserFamily extends $Family
+    with $FunctionalFamilyOverride<bool, String> {
+  const CanTargetUserFamily._()
+    : super(
+        retry: null,
+        name: r'canTargetUserProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Whether the UI may offer interactions that target [pubkey] —
+  /// follow, DM, reply, mention, share-to, tag.
+  ///
+  /// When this returns `false` the affordance must be *absent*: no disabled
+  /// state, no tooltip, no copy. Revealing why would violate the disclosure
+  /// invariant (the app never tells a user someone blocked or muted them).
+  ///
+  /// Under [FeatureFlag.contentPolicyV2] this consults
+  /// [ContentPolicyEngine.canTarget] (hidden when the target's published
+  /// kind 30000 d=block or kind 10000 names us). With the flag off it
+  /// preserves the pre-engine behavior: only an explicit block
+  /// (`hasBlockedUs`) hides the affordance.
+
+  CanTargetUserProvider call(String pubkey) =>
+      CanTargetUserProvider._(argument: pubkey, from: this);
+
+  @override
+  String toString() => r'canTargetUserProvider';
+}
+
 /// Age verification service for content creation restrictions
 /// keepAlive ensures the service persists and maintains in-memory verification state
 /// even when widgets that watch it dispose and rebuild

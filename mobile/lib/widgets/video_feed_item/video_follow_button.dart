@@ -78,6 +78,13 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
       return const SizedBox.shrink();
     }
 
+    // If the author doesn't accept interactions from us (their published
+    // block/mute list names us), render nothing — absence, never an
+    // explanation (disclosure invariant).
+    if (!ref.watch(canTargetUserProvider(widget.pubkey))) {
+      return const SizedBox.shrink();
+    }
+
     return BlocProvider.value(
       value: _bloc!,
       child: VideoFollowButtonView(pubkey: widget.pubkey),

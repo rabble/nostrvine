@@ -2,6 +2,7 @@
 // ABOUTME: Validates follow/unfollow button state, tap behavior, and styling
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -9,10 +10,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
+
+import '../../helpers/test_provider_overrides.dart';
 
 class _MockMyFollowingBloc extends MockBloc<MyFollowingEvent, MyFollowingState>
     implements MyFollowingBloc {}
+
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 void main() {
   group('VideoFollowButtonView', () {
@@ -122,6 +129,60 @@ void main() {
           );
         },
       );
+    });
+  });
+
+  group(VideoFollowButton, () {
+    testWidgets(
+      'renders nothing when the author does not accept interactions from us',
+      (tester) async {
+        final authorPubkey = 'a' * 64;
+        final mockBlocklist = _MockContentBlocklistRepository();
+        when(() => mockBlocklist.hasBlockedUs(authorPubkey)).thenReturn(true);
+        when(() => mockBlocklist.isBlocked(any())).thenReturn(false);
+        when(() => mockBlocklist.isFollowSevered(any())).thenReturn(false);
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: Scaffold(body: VideoFollowButton(pubkey: authorPubkey)),
+            additionalOverrides: [
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                mockBlocklist,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        // Absence, not a disabled state — no view, no icon, no tooltip.
+        expect(find.byType(VideoFollowButtonView), findsNothing);
+        expect(find.byType(SvgPicture), findsNothing);
+        expect(find.byType(Tooltip), findsNothing);
+      },
+    );
+
+    testWidgets('renders the follow view for a regular author', (
+      tester,
+    ) async {
+      final authorPubkey = 'a' * 64;
+      final mockBlocklist = _MockContentBlocklistRepository();
+      when(() => mockBlocklist.hasBlockedUs(any())).thenReturn(false);
+      when(() => mockBlocklist.isBlocked(any())).thenReturn(false);
+      when(() => mockBlocklist.isFollowSevered(any())).thenReturn(false);
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: Scaffold(body: VideoFollowButton(pubkey: authorPubkey)),
+          additionalOverrides: [
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockBlocklist,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(VideoFollowButtonView), findsOneWidget);
     });
   });
 }

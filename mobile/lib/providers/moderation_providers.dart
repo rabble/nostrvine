@@ -30,6 +30,31 @@ ContentPolicyEngine contentPolicyEngine(Ref ref) {
   return ContentPolicyEngine.defaultRules();
 }
 
+/// Whether the UI may offer interactions that target [pubkey] —
+/// follow, DM, reply, mention, share-to, tag.
+///
+/// When this returns `false` the affordance must be *absent*: no disabled
+/// state, no tooltip, no copy. Revealing why would violate the disclosure
+/// invariant (the app never tells a user someone blocked or muted them).
+///
+/// Under [FeatureFlag.contentPolicyV2] this consults
+/// [ContentPolicyEngine.canTarget] (hidden when the target's published
+/// kind 30000 d=block or kind 10000 names us). With the flag off it
+/// preserves the pre-engine behavior: only an explicit block
+/// (`hasBlockedUs`) hides the affordance.
+@riverpod
+bool canTargetUser(Ref ref, String pubkey) {
+  // Re-evaluate when any block/mute state changes.
+  ref.watch(blocklistVersionProvider);
+  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+  final flagService = ref.watch(featureFlagServiceProvider);
+  if (flagService.isEnabled(FeatureFlag.contentPolicyV2)) {
+    final engine = ref.watch(contentPolicyEngineProvider);
+    return engine.canTarget(pubkey, blocklistRepository.currentState);
+  }
+  return !blocklistRepository.hasBlockedUs(pubkey);
+}
+
 /// Divine-hosted-only filter preference service.
 final divineHostFilterServiceProvider = Provider<DivineHostFilterService>((
   ref,

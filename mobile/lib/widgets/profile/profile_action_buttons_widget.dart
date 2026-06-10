@@ -62,7 +62,7 @@ class ProfileActionButtons extends ConsumerWidget {
     ref.watch(blocklistVersionProvider);
 
     final isBlocked = contentBlocklistRepository.isBlocked(userIdHex);
-    final isBlockedByThem = contentBlocklistRepository.hasBlockedUs(userIdHex);
+    final canTargetUser = ref.watch(canTargetUserProvider(userIdHex));
 
     // Create MyFollowingBloc at this level so both the follow button
     // and the row ordering share the same optimistic state.
@@ -76,7 +76,7 @@ class ProfileActionButtons extends ConsumerWidget {
         displayName: displayName,
         currentUserPubkey: nostrClient.publicKey,
         isBlocked: isBlocked,
-        isBlockedByThem: isBlockedByThem,
+        canTargetUser: canTargetUser,
         onMessageUser: onMessageUser,
         onShareProfile: onShareProfile,
         onBlockedTap: onBlockedTap,
@@ -140,7 +140,7 @@ class _OtherProfileButtons extends StatelessWidget {
     required this.displayName,
     required this.currentUserPubkey,
     required this.isBlocked,
-    required this.isBlockedByThem,
+    required this.canTargetUser,
     required this.onMessageUser,
     required this.onShareProfile,
     required this.onBlockedTap,
@@ -150,7 +150,12 @@ class _OtherProfileButtons extends StatelessWidget {
   final String? displayName;
   final String? currentUserPubkey;
   final bool isBlocked;
-  final bool isBlockedByThem;
+
+  /// Whether the UI may offer interactions targeting this user. False
+  /// hides the follow and message affordances entirely — absence, never
+  /// an explanation (disclosure invariant).
+  final bool canTargetUser;
+
   final VoidCallback? onMessageUser;
   final void Function(BuildContext context)? onShareProfile;
   final VoidCallback? onBlockedTap;
@@ -166,7 +171,7 @@ class _OtherProfileButtons extends StatelessWidget {
           displayName: displayName ?? l10n.profileUserFallback,
           currentUserPubkey: currentUserPubkey,
           isBlocked: isBlocked,
-          isBlockedByThem: isBlockedByThem,
+          canTargetAuthor: canTargetUser,
           onBlockedTap: onBlockedTap,
         );
 
@@ -184,30 +189,34 @@ class _OtherProfileButtons extends StatelessWidget {
         if (isFollowing) {
           // Following: [Message (expanded)] [Following] [Share]
           children = [
-            Expanded(
-              child: DivineButton(
-                expanded: true,
-                leadingIcon: .envelopeSimple,
-                type: .secondary,
-                size: .small,
-                label: l10n.profileMessageLabel,
-                onPressed: onMessageUser,
+            if (canTargetUser)
+              Expanded(
+                child: DivineButton(
+                  expanded: true,
+                  leadingIcon: .envelopeSimple,
+                  type: .secondary,
+                  size: .small,
+                  label: l10n.profileMessageLabel,
+                  onPressed: onMessageUser,
+                ),
               ),
-            ),
             followButton,
             shareButton,
           ];
         } else {
           // Not following: [Follow (expanded)] [Message (icon)] [Share]
           children = [
-            Expanded(child: followButton),
-            DivineButton(
-              leadingIcon: .envelopeSimple,
-              type: .secondary,
-              size: .small,
-              label: '',
-              onPressed: onMessageUser,
-            ),
+            if (canTargetUser) ...[
+              Expanded(child: followButton),
+              DivineButton(
+                leadingIcon: .envelopeSimple,
+                type: .secondary,
+                size: .small,
+                label: '',
+                onPressed: onMessageUser,
+              ),
+            ] else
+              const Spacer(),
             shareButton,
           ];
         }

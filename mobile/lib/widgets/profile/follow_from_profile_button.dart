@@ -44,7 +44,7 @@ class FollowFromProfileButton extends ConsumerWidget {
     // Watch blocklist to reactively update button state
     final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
     final isBlocked = blocklistRepository.isBlocked(pubkey);
-    final isBlockedByThem = blocklistRepository.hasBlockedUs(pubkey);
+    final canTargetAuthor = ref.watch(canTargetUserProvider(pubkey));
 
     return BlocProvider(
       create: (_) => MyFollowingBloc(
@@ -56,7 +56,7 @@ class FollowFromProfileButton extends ConsumerWidget {
         displayName: displayName,
         currentUserPubkey: currentUserPubkey,
         isBlocked: isBlocked,
-        isBlockedByThem: isBlockedByThem,
+        canTargetAuthor: canTargetAuthor,
         onBlockedTap: onBlockedTap,
       ),
     );
@@ -75,7 +75,7 @@ class FollowFromProfileButtonView extends StatelessWidget {
     required this.currentUserPubkey,
     super.key,
     this.isBlocked = false,
-    this.isBlockedByThem = false,
+    this.canTargetAuthor = true,
     this.onBlockedTap,
   });
 
@@ -91,16 +91,20 @@ class FollowFromProfileButtonView extends StatelessWidget {
   /// Whether the user is blocked by us.
   final bool isBlocked;
 
-  /// Whether the user has blocked us (prevents following).
-  final bool isBlockedByThem;
+  /// Whether the UI may offer interactions targeting this user.
+  ///
+  /// False when their published block list (or, under contentPolicyV2,
+  /// mute list) names us. The button renders nothing in that case —
+  /// absence, never an explanation (disclosure invariant).
+  final bool canTargetAuthor;
 
   /// Callback when the Blocked button is tapped.
   final VoidCallback? onBlockedTap;
 
   @override
   Widget build(BuildContext context) {
-    // If the other user has blocked us, hide the follow button entirely
-    if (isBlockedByThem) {
+    // If the target doesn't accept interactions from us, render nothing.
+    if (!canTargetAuthor) {
       return const SizedBox.shrink();
     }
 
