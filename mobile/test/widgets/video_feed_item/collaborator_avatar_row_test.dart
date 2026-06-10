@@ -17,6 +17,8 @@ const _collab1 =
     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 const _collab2 =
     'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+const _collab3 =
+    'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
 const _thirdPartyPubkey =
     'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
@@ -285,5 +287,46 @@ void main() {
         );
       },
     );
+
+    testWidgets('multi-collaborator row opens picker with every collaborator', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const CollaboratorAvatarRowBody(
+            visibility: CollaboratorVisibility.fallback(
+              taggedPubkeys: [_collab1, _collab2, _collab3],
+            ),
+          ),
+          overrides: [
+            fetchUserProfileProvider(
+              _collab1,
+            ).overrideWith((ref) async => _makeProfile(_collab1, 'Alice')),
+            fetchUserProfileProvider(
+              _collab2,
+            ).overrideWith((ref) async => _makeProfile(_collab2, 'Bob')),
+            fetchUserProfileProvider(
+              _collab3,
+            ).overrideWith((ref) async => _makeProfile(_collab3, 'Casey')),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(_l10n.videoCollaboratorWithMore('Alice', 2)),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.text(_l10n.videoCollaboratorWithMore('Alice', 2)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(_l10n.metadataCollaboratorsLabel), findsOneWidget);
+      expect(find.text('Alice'), findsOneWidget);
+      expect(find.text('Bob'), findsOneWidget);
+      expect(find.text('Casey'), findsOneWidget);
+    });
   });
 }

@@ -15,6 +15,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -120,7 +121,7 @@ class CollaboratorAvatarRowBody extends StatelessWidget {
     final pendingCount = visibility.pendingCount;
 
     return GestureDetector(
-      onTap: () => _navigateToCollaborator(context, visible.first),
+      onTap: () => _handleTap(context, visible),
       child: Semantics(
         identifier: 'collaborator_avatar_row',
         button: true,
@@ -159,6 +160,42 @@ class CollaboratorAvatarRowBody extends StatelessWidget {
     );
   }
 
+  void _handleTap(BuildContext context, List<String> pubkeys) {
+    if (pubkeys.length == 1) {
+      _navigateToCollaborator(context, pubkeys.first);
+      return;
+    }
+
+    _showCollaboratorPicker(context, pubkeys);
+  }
+
+  Future<void> _showCollaboratorPicker(
+    BuildContext context,
+    List<String> pubkeys,
+  ) {
+    return context.showVideoPausingVineBottomSheet<void>(
+      title: Text(
+        context.l10n.metadataCollaboratorsLabel,
+        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+      ),
+      buildScrollBody: (scrollController) => _CollaboratorPickerList(
+        pubkeys: pubkeys,
+        visibility: visibility,
+        scrollController: scrollController,
+      ),
+      initialChildSize: _initialPickerSize(pubkeys.length),
+      minChildSize: 0.28,
+      maxChildSize: 0.8,
+    );
+  }
+
+  double _initialPickerSize(int count) {
+    final size = 0.24 + (count * 0.08);
+    if (size < 0.36) return 0.36;
+    if (size > 0.68) return 0.68;
+    return size;
+  }
+
   void _navigateToCollaborator(BuildContext context, String pubkey) {
     Log.info(
       'Navigating to collaborator profile: $pubkey',
@@ -170,6 +207,107 @@ class CollaboratorAvatarRowBody extends StatelessWidget {
     if (npub != null) {
       context.push(OtherProfileScreen.pathForNpub(npub));
     }
+  }
+}
+
+class _CollaboratorPickerList extends StatelessWidget {
+  const _CollaboratorPickerList({
+    required this.pubkeys,
+    required this.visibility,
+    required this.scrollController,
+  });
+
+  final List<String> pubkeys;
+  final CollaboratorVisibility visibility;
+  final ScrollController scrollController;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      controller: scrollController,
+      padding: const EdgeInsets.only(bottom: 16),
+      itemCount: pubkeys.length,
+      separatorBuilder: (context, index) => const Divider(
+        height: 1,
+        thickness: 1,
+        color: VineTheme.outlineDisabled,
+      ),
+      itemBuilder: (context, index) {
+        final pubkey = pubkeys[index];
+        return _CollaboratorPickerTile(
+          pubkey: pubkey,
+          isPending: visibility.isPendingForInviter(pubkey),
+        );
+      },
+    );
+  }
+}
+
+class _CollaboratorPickerTile extends ConsumerWidget {
+  const _CollaboratorPickerTile({
+    required this.pubkey,
+    required this.isPending,
+  });
+
+  final String pubkey;
+  final bool isPending;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(fetchUserProfileProvider(pubkey));
+    final name =
+        profileAsync.value?.bestDisplayName ??
+        UserProfile.defaultDisplayNameFor(pubkey);
+
+    final tile = Material(
+      type: MaterialType.transparency,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+        leading: UserAvatar(
+          imageUrl: profileAsync.value?.picture,
+          name: name,
+          size: 40,
+        ),
+        title: Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
+        ),
+        subtitle: isPending
+            ? Text(
+                context.l10n.videoCollaboratorPendingDecoration,
+                style: VineTheme.labelSmallFont(
+                  color: VineTheme.onSurfaceMuted,
+                ),
+              )
+            : null,
+        trailing: const DivineIcon(
+          icon: DivineIconName.caretRight,
+          size: 18,
+          color: VineTheme.onSurfaceVariant,
+        ),
+        onTap: () => _navigateToProfile(context),
+      ),
+    );
+
+    return Semantics(
+      button: true,
+      label: context.l10n.profileChipTapHint(name),
+      child: isPending ? Opacity(opacity: 0.7, child: tile) : tile,
+    );
+  }
+
+  void _navigateToProfile(BuildContext context) {
+    final npub = normalizeToNpub(pubkey);
+    if (npub == null) return;
+
+    final hostContext = Navigator.of(context, rootNavigator: true).context;
+    Navigator.of(context).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!hostContext.mounted) return;
+      hostContext.pushWithVideoPause(OtherProfileScreen.pathForNpub(npub));
+    });
   }
 }
 
