@@ -157,32 +157,58 @@ class NostrClient {
   /// Handles a NIP-09 deletion event (Kind 5) by removing target events
   /// from the local database.
   ///
-  /// Extracts event IDs from 'e' tags and deletes them from both the events
-  /// table and video_metrics table.
+  /// Extracts event IDs from `e` tags and addressable coordinates from `a`
+  /// tags, then deletes matching cached events.
   ///
-  /// Fire-and-forget pattern - errors are silently ignored.
-  void _handleDeletionEvent(Event deletionEvent) {
+  Future<void> _handleDeletionEvent(Event deletionEvent) async {
     if (deletionEvent.kind != EventKind.eventDeletion) return;
 
-    // Extract target event IDs from 'e' tags
     final targetEventIds = <String>[];
+    final targetAddressableIds = <AId>[];
     for (final dynamic tag in deletionEvent.tags) {
-      if (tag is List && tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-        final eventId = tag[1];
-        if (eventId is String) {
-          targetEventIds.add(eventId);
+      if (tag is List && tag.length > 1) {
+        final tagName = tag[0];
+        final tagValue = tag[1];
+        if (tagName == 'e' && tagValue is String) {
+          targetEventIds.add(tagValue);
+        } else if (tagName == 'a' && tagValue is String) {
+          final addressableId = AId.fromString(tagValue);
+          if (addressableId != null) {
+            targetAddressableIds.add(addressableId);
+          }
         }
       }
     }
 
-    if (targetEventIds.isEmpty) return;
+    if (targetEventIds.isEmpty && targetAddressableIds.isEmpty) return;
 
-    // Delete target events from the database (fire-and-forget)
-    try {
-      unawaited(_nostrEventsDao?.deleteEventsByIds(targetEventIds));
-    } on Object {
-      // Ignore deletion errors
+    await _deleteCachedEventsForDeletion(
+      eventIds: targetEventIds,
+      addressableIds: targetAddressableIds,
+    );
+  }
+
+  Future<void> _deleteCachedEventsForDeletion({
+    required List<String> eventIds,
+    required List<AId> addressableIds,
+  }) async {
+    final dao = _nostrEventsDao;
+    if (dao == null) return;
+
+    final idsToDelete = eventIds.toSet();
+    for (final addressableId in addressableIds) {
+      final matches = await dao.getEventsByFilter(
+        Filter(
+          kinds: [addressableId.kind],
+          authors: [addressableId.pubkey],
+          d: [addressableId.dTag],
+        ),
+      );
+      idsToDelete.addAll(matches.map((event) => event.id));
     }
+
+    if (idsToDelete.isEmpty) return;
+    await dao.deleteEventsByIds(idsToDelete.toList());
   }
 
   /// Tracks whether dispose() has been called
@@ -337,7 +363,7 @@ class NostrClient {
     // Handle successful send
     if (sentEvent.kind == EventKind.eventDeletion) {
       // NIP-09: Remove target events from cache
-      _handleDeletionEvent(sentEvent);
+      await _handleDeletionEvent(sentEvent);
     } else if (!useOptimisticCache) {
       // Cache replaceable events on success (not optimistically)
       _cacheEvent(sentEvent);
@@ -431,7 +457,7 @@ class NostrClient {
 
     // Relay confirmed acceptance — apply post-publish cache effects.
     if (event.kind == EventKind.eventDeletion) {
-      _handleDeletionEvent(event);
+      await _handleDeletionEvent(event);
     } else if (!useOptimisticCache) {
       _cacheEvent(event);
     }
@@ -677,7 +703,7 @@ class NostrClient {
       (event) {
         // Handle NIP-09 deletion events by removing target events from DB
         if (event.kind == EventKind.eventDeletion) {
-          _handleDeletionEvent(event);
+          unawaited(_handleDeletionEvent(event).catchError((Object _) {}));
         } else {
           // Auto-cache non-deletion events (fire-and-forget)
           try {
@@ -1017,7 +1043,6 @@ class NostrClient {
       targetRelays: targetRelays ?? tempRelays,
     );
     if (result case PublishSuccess(:final event)) {
-      _handleDeletionEvent(event);
       return event;
     }
     return null;
@@ -1044,7 +1069,6 @@ class NostrClient {
       targetRelays: targetRelays ?? tempRelays,
     );
     if (result case PublishSuccess(:final event)) {
-      _handleDeletionEvent(event);
       return event;
     }
     return null;

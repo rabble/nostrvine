@@ -134,7 +134,7 @@ class _VideoMetadataEditBottomBarState
 
       if (result.success) {
         final videoEventService = ref.read(videoEventServiceProvider);
-        videoEventService.removeVideoCompletely(widget.video.id);
+        videoEventService.removeVideoEventCompletely(widget.video);
 
         Log.info(
           'Video deleted successfully: ${widget.video.id}',

@@ -615,6 +615,91 @@ void main() {
           ).called(1);
         },
       );
+
+      test(
+        'removes addressable target events from cache after confirmed deletion',
+        () async {
+          final mockDbClient = _MockAppDbClient();
+          final mockDatabase = _MockAppDatabase();
+          final mockNostrEventsDao = _MockNostrEventsDao();
+          when(() => mockDbClient.database).thenReturn(mockDatabase);
+          when(
+            () => mockDatabase.nostrEventsDao,
+          ).thenReturn(mockNostrEventsDao);
+
+          final cachedReplacement = Event(
+            testPublicKey,
+            34236,
+            [
+              ['d', 'shared-vine-id'],
+            ],
+            'replacement',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          )..id = 'replacement_event_id';
+          when(
+            () => mockNostrEventsDao.getEventsByFilter(any()),
+          ).thenAnswer((_) async => [cachedReplacement]);
+          when(
+            () => mockNostrEventsDao.deleteEventsByIds(any()),
+          ).thenAnswer((_) async => 2);
+
+          final clientWithCache = NostrClient.forTesting(
+            nostr: mockNostr,
+            relayManager: mockRelayManager,
+            dbClient: mockDbClient,
+          );
+
+          const addressableId = '34236:$testPublicKey:shared-vine-id';
+          final deleteEvent = Event(
+            testPublicKey,
+            EventKind.eventDeletion,
+            [
+              ['e', 'target_event_id'],
+              ['a', addressableId],
+              ['k', '34236'],
+            ],
+            'deleted',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          )..sig = 'test_sig';
+
+          when(() => mockRelayManager.connectedRelays).thenReturn([
+            'wss://relay.test',
+          ]);
+          when(
+            () => mockNostr.sendEventAwaitOk(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => accepted(deleteEvent.id));
+
+          final outcome = await clientWithCache.publishEventAwaitOk(
+            deleteEvent,
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          expect(outcome.confirmed, isTrue);
+          final capturedFilter =
+              verify(
+                    () => mockNostrEventsDao.getEventsByFilter(captureAny()),
+                  ).captured.single
+                  as Filter;
+          expect(capturedFilter.kinds, equals([34236]));
+          expect(capturedFilter.authors, equals([testPublicKey]));
+          expect(capturedFilter.d, equals(['shared-vine-id']));
+          verify(
+            () => mockNostrEventsDao.deleteEventsByIds(
+              any(
+                that: unorderedEquals([
+                  'target_event_id',
+                  'replacement_event_id',
+                ]),
+              ),
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('queryEvents', () {

@@ -438,7 +438,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       // Remove video from local feeds after successful deletion
       if (result.success) {
         final videoEventService = ref.read(videoEventServiceProvider);
-        videoEventService.removeVideoCompletely(video.id);
+        videoEventService.removeVideoEventCompletely(video);
       }
 
       if (context.mounted) {

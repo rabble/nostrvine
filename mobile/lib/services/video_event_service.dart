@@ -205,6 +205,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
   // Track locally deleted videos to prevent resurrection from pagination
   final Set<String> _locallyDeletedVideoIds = {};
+  final Set<String> _locallyDeletedVideoCoordinateKeys = {};
 
   // Broadcasts video ids the moment they are removed (deletion / future
   // block / mute). Subscribers — fullscreen feed bloc, profile feed
@@ -992,17 +993,53 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// This mirrors the `updateVideoEvent()` pattern for comprehensive state updates.
   /// Call this after successfully publishing a NIP-09 delete event.
   void removeVideoCompletely(String videoId) {
+    _removeVideoCompletely(
+      primaryEventId: videoId,
+      coordinateKey: null,
+      logIdentity: videoId,
+    );
+  }
+
+  /// Remove every cached version of an addressable video from all feeds.
+  ///
+  /// Kind 34236 videos are parameterized replaceable events: edits can create
+  /// new event ids while preserving the same `pubkey:d-tag` identity. Deleting
+  /// by event id alone lets an older/newer replacement reappear, so user
+  /// deletion paths should pass the full [VideoEvent] when available.
+  void removeVideoEventCompletely(VideoEvent video) {
+    _removeVideoCompletely(
+      primaryEventId: video.id,
+      coordinateKey: _localDeletionCoordinateKey(video),
+      logIdentity: video.addressableId ?? video.id,
+    );
+  }
+
+  void _removeVideoCompletely({
+    required String primaryEventId,
+    required String? coordinateKey,
+    required String logIdentity,
+  }) {
     var removedCount = 0;
+    final removedVideoIds = <String>{};
+
+    bool shouldRemove(VideoEvent video) =>
+        video.id == primaryEventId ||
+        (coordinateKey != null &&
+            _localDeletionCoordinateKey(video) == coordinateKey);
 
     // Remove from all subscription types (mirrors updateVideoEvent pattern)
     for (final entry in _eventLists.entries) {
       final initialLength = entry.value.length;
-      entry.value.removeWhere((video) => video.id == videoId);
+      entry.value.removeWhere((video) {
+        final remove = shouldRemove(video);
+        if (remove) removedVideoIds.add(video.id);
+        return remove;
+      });
       final removed = initialLength - entry.value.length;
       if (removed > 0) {
         removedCount += removed;
         Log.debug(
-          'Removed video $videoId from ${entry.key} (${entry.value.length} remaining)',
+          'Removed video $logIdentity from ${entry.key} (${entry.value.length} remaining)',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -1012,12 +1049,16 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     // Remove from all author buckets
     for (final entry in _authorBuckets.entries) {
       final initialLength = entry.value.length;
-      entry.value.removeWhere((video) => video.id == videoId);
+      entry.value.removeWhere((video) {
+        final remove = shouldRemove(video);
+        if (remove) removedVideoIds.add(video.id);
+        return remove;
+      });
       final removed = initialLength - entry.value.length;
       if (removed > 0) {
         removedCount += removed;
         Log.debug(
-          'Removed video $videoId from author bucket ${entry.key}',
+          'Removed video $logIdentity from author bucket ${entry.key}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -1027,12 +1068,16 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     // Remove from all hashtag buckets
     for (final entry in _hashtagBuckets.entries) {
       final initialLength = entry.value.length;
-      entry.value.removeWhere((video) => video.id == videoId);
+      entry.value.removeWhere((video) {
+        final remove = shouldRemove(video);
+        if (remove) removedVideoIds.add(video.id);
+        return remove;
+      });
       final removed = initialLength - entry.value.length;
       if (removed > 0) {
         removedCount += removed;
         Log.debug(
-          'Removed video $videoId from hashtag bucket ${entry.key}',
+          'Removed video $logIdentity from hashtag bucket ${entry.key}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -1042,26 +1087,32 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     // Mark as locally deleted to prevent pagination resurrection.
     //
     // Semantics: removal is permanent for the lifetime of this service.
-    // Even if subsequent relay queries return the same event id, it will
-    // be filtered out via [isVideoLocallyDeleted]. This is intentional —
-    // a session-only removal avoids surprising the user by re-adding a
-    // video they just swiped past when the fullscreen feed paginates.
-    // The set is cleared only when the service is recreated (app
-    // restart or test tearDown).
-    _locallyDeletedVideoIds.add(videoId);
+    // Even if subsequent relay queries return the same event id, or another
+    // event id for the same addressable video, it will be filtered out.
+    _locallyDeletedVideoIds.add(primaryEventId);
+    _locallyDeletedVideoIds.addAll(removedVideoIds);
+    if (coordinateKey != null) {
+      _locallyDeletedVideoCoordinateKeys.add(coordinateKey);
+    }
 
     // Emit on the side-channel BEFORE notifyListeners so that subscribers
     // who react via the stream (e.g. FullscreenFeedBloc) update their
     // state in the same frame as ChangeNotifier consumers. Emit
-    // unconditionally — even when the video wasn't in any active feed,
-    // a fullscreen route may still be holding it in BLoC-local state.
+    // concrete event ids so existing fullscreen/grid consumers remain
+    // compatible. If the video was not in any active feed, still emit the
+    // requested id because a fullscreen route may be holding it in BLoC state.
     if (!_removedVideoIdsController.isClosed) {
-      _removedVideoIdsController.add(videoId);
+      final idsToEmit = removedVideoIds.isEmpty
+          ? {primaryEventId}
+          : removedVideoIds;
+      for (final id in idsToEmit) {
+        _removedVideoIdsController.add(id);
+      }
     }
 
     if (removedCount > 0) {
       Log.info(
-        'Removed video $videoId from $removedCount location(s) across all feeds',
+        'Removed video $logIdentity from $removedCount location(s) across all feeds',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -1069,7 +1120,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       notifyListeners();
     } else {
       Log.info(
-        'Video $videoId marked as deleted (was not in any active feeds)',
+        'Video $logIdentity marked as deleted (was not in any active feeds)',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -1091,6 +1142,18 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   bool isVideoLocallyDeleted(String videoId) {
     return _locallyDeletedVideoIds.contains(videoId);
   }
+
+  /// Check whether this concrete video or its addressable identity has been
+  /// locally deleted.
+  bool isVideoEventLocallyDeleted(VideoEvent video) {
+    return _locallyDeletedVideoIds.contains(video.id) ||
+        _locallyDeletedVideoCoordinateKeys.contains(
+          _localDeletionCoordinateKey(video),
+        );
+  }
+
+  String _localDeletionCoordinateKey(VideoEvent video) =>
+      '${video.pubkey}:${video.stableId}'.toLowerCase();
 
   /// Emits a video id whenever the service has marked it removed —
   /// today this is user-initiated deletion via [removeVideoCompletely];
@@ -4152,7 +4215,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     bool isHistorical = false,
   }) {
     // CRITICAL: Filter out locally deleted videos to prevent pagination resurrection
-    if (isVideoLocallyDeleted(videoEvent.id)) {
+    if (isVideoEventLocallyDeleted(videoEvent)) {
       Log.debug(
         'Filtering out locally deleted video ${videoEvent.id} from $subscriptionType feed',
         name: 'VideoEventService',

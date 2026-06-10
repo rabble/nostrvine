@@ -603,7 +603,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
   List<VideoEvent> _withoutTombstones(List<VideoEvent> videos) {
     if (videos.isEmpty) return videos;
     return videos
-        .where((v) => !_videoEventService.isVideoLocallyDeleted(v.id))
+        .where((v) => !_videoEventService.isVideoEventLocallyDeleted(v))
         .toList();
   }
 

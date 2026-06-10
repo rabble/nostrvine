@@ -35,6 +35,8 @@ class _FakeSystemVolumeListener implements SystemVolumeListener {
   }
 }
 
+class _FakeVideoEvent extends Fake implements VideoEvent {}
+
 const _profilePubkey =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
@@ -62,6 +64,10 @@ void main() {
     late _MockVideoEventService videoEventService;
     late _MockContentBlocklistRepository blocklistRepository;
 
+    setUpAll(() {
+      registerFallbackValue(_FakeVideoEvent());
+    });
+
     setUp(() {
       videosRepository = _MockVideosRepository();
       videoEventService = _MockVideoEventService();
@@ -74,7 +80,7 @@ void main() {
         () => videoEventService.filterVideoList(any()),
       ).thenAnswer((i) => i.positionalArguments.first as List<VideoEvent>);
       when(
-        () => videoEventService.isVideoLocallyDeleted(any()),
+        () => videoEventService.isVideoEventLocallyDeleted(any()),
       ).thenReturn(false);
       when(
         () => videoEventService.subscribeToUserVideos(any()),

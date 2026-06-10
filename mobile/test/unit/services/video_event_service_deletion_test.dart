@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
@@ -37,6 +38,28 @@ class TestSubscriptionManager extends Mock implements SubscriptionManager {
 }
 
 class FakeFilter extends Fake implements Filter {}
+
+VideoEvent _videoEvent({
+  required String id,
+  required String pubkey,
+  required String dTag,
+  int createdAt = 1000,
+}) {
+  final event =
+      Event(
+          pubkey,
+          34236,
+          [
+            ['d', dTag],
+            ['url', 'https://example.com/$id.mp4'],
+          ],
+          'test video',
+          createdAt: createdAt,
+        )
+        ..id = id
+        ..sig = 'sig-$id';
+  return VideoEvent.fromNostrEvent(event);
+}
 
 void main() {
   setUpAll(() {
@@ -131,5 +154,38 @@ void main() {
         // ensuring they don't "resurrect" when new data loads
       },
     );
+
+    test('tombstones replacement event ids for the same addressable video', () {
+      const pubkey =
+          'c3dd74d68e414f0305db9f7dc96ec32e616502e6ccf5bbf5739de19a96b67f3e';
+      final deletedVideo = _videoEvent(
+        id: 'event-id-before-delete',
+        pubkey: pubkey,
+        dTag: 'shared-vine-id',
+      );
+      final replacementVersion = _videoEvent(
+        id: 'event-id-after-delete',
+        pubkey: pubkey,
+        dTag: 'shared-vine-id',
+        createdAt: 1001,
+      );
+      final unrelatedVideo = _videoEvent(
+        id: 'unrelated-event-id',
+        pubkey: pubkey,
+        dTag: 'different-vine-id',
+      );
+
+      videoEventService.removeVideoEventCompletely(deletedVideo);
+
+      expect(videoEventService.isVideoLocallyDeleted(deletedVideo.id), isTrue);
+      expect(
+        videoEventService.isVideoEventLocallyDeleted(replacementVersion),
+        isTrue,
+      );
+      expect(
+        videoEventService.isVideoEventLocallyDeleted(unrelatedVideo),
+        isFalse,
+      );
+    });
   });
 }

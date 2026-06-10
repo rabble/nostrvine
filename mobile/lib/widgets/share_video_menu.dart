@@ -1112,7 +1112,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         // Remove video from all local feeds after successful deletion
         if (result.success) {
           final videoEventService = ref.read(videoEventServiceProvider);
-          videoEventService.removeVideoCompletely(widget.video.id);
+          videoEventService.removeVideoEventCompletely(widget.video);
           Log.info(
             'Video removed from all local feeds after deletion: ${widget.video.id}',
             name: 'ShareVideoMenu',

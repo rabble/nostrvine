@@ -100,6 +100,7 @@ void main() {
         34236,
         [
           ['title', 'Test Video'],
+          ['d', 'test-vine-id'],
           ['url', 'https://example.com/video.mp4'],
         ],
         'Test video content',
@@ -121,6 +122,7 @@ void main() {
             kind: 5,
             tags: [
               ['e', video.id],
+              ['a', video.addressableId!],
               ['k', '34236'],
             ],
             content: 'CONTENT DELETION',
@@ -149,6 +151,13 @@ void main() {
           expect(result.success, isTrue);
           expect(result.deleteEventId, equals(deleteEvent.id));
           expect(service.hasBeenDeleted(video.id), isTrue);
+          expect(
+            service.hasBeenDeleted(
+              'replacement-event-id',
+              addressableId: video.addressableId,
+            ),
+            isTrue,
+          );
 
           verify(
             () => mockAuthService.createAndSignEvent(
@@ -170,6 +179,7 @@ void main() {
             kind: 5,
             tags: [
               ['e', video.id],
+              ['a', video.addressableId!],
               ['k', '34236'],
             ],
             content: 'CONTENT DELETION',
@@ -211,6 +221,7 @@ void main() {
           kind: 5,
           tags: [
             ['e', video.id],
+            ['a', video.addressableId!],
             ['k', '34236'],
           ],
           content: 'CONTENT DELETION',
@@ -243,7 +254,7 @@ void main() {
       });
 
       test(
-        'includes the k tag with the original video kind per NIP-09',
+        'includes e, a, and k tags for addressable videos per NIP-09',
         () async {
           final video = createTestVideoEvent(testPublicKey);
           final deleteEvent = createTestEvent(
@@ -251,6 +262,7 @@ void main() {
             kind: 5,
             tags: [
               ['e', video.id],
+              ['a', video.addressableId!],
               ['k', '34236'],
             ],
             content: 'CONTENT DELETION',
@@ -282,6 +294,8 @@ void main() {
           ).captured;
 
           final tags = captured.first as List<List<String>>;
+          expect(tags, contains(equals(['e', video.id])));
+          expect(tags, contains(equals(['a', video.addressableId])));
           final kTag = tags.firstWhere(
             (tag) => tag.isNotEmpty && tag[0] == 'k',
             orElse: () => <String>[],
@@ -350,6 +364,7 @@ void main() {
           kind: 5,
           tags: [
             ['e', video.id],
+            ['a', video.addressableId!],
             ['k', '34236'],
           ],
           content: 'CONTENT DELETION',

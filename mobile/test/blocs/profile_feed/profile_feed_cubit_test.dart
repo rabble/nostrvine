@@ -66,7 +66,7 @@ class _Harness {
     when(
       () => ves.filterVideoList(any()),
     ).thenAnswer((i) => i.positionalArguments[0] as List<VideoEvent>);
-    when(() => ves.isVideoLocallyDeleted(any())).thenReturn(false);
+    when(() => ves.isVideoEventLocallyDeleted(any())).thenReturn(false);
     when(() => ves.subscribeToUserVideos(any())).thenAnswer((_) async {});
     when(
       () => ves.queryHistoricalUserVideos(any(), until: any(named: 'until')),
@@ -147,6 +147,7 @@ class _Harness {
 
 void main() {
   setUpAll(() {
+    registerFallbackValue(_video('fallback'));
     registerFallbackValue(<VideoEvent>[]);
     registerFallbackValue(() {});
     registerFallbackValue((VideoEvent _) {});
@@ -574,7 +575,11 @@ void main() {
     });
 
     test('tombstoned videos are excluded from emitted state', () async {
-      when(() => h.ves.isVideoLocallyDeleted('a')).thenReturn(true);
+      when(
+        () => h.ves.isVideoEventLocallyDeleted(
+          any(that: isA<VideoEvent>().having((v) => v.id, 'id', 'a')),
+        ),
+      ).thenReturn(true);
       final cubit = await buildReady(_result([_video('a'), _video('b')]));
       addTearDown(cubit.close);
 
