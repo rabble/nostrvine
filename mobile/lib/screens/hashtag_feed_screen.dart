@@ -97,12 +97,22 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
   /// [_popularVideos] (#948).
   Future<void> _fetchFromFunnelcake() async {
     final repository = ref.read(videosRepositoryProvider);
-    final interleaved = await repository.getHashtagFeedVideos(
+    final result = await repository.getHashtagFeedVideos(
       hashtag: widget.hashtag,
     );
 
     if (!mounted) return;
 
+    if (!result.succeeded && _popularVideos != null) {
+      Log.debug(
+        '🏷️ HashtagFeedScreen: preserving cached Funnelcake videos after '
+        'failed refresh for #${widget.hashtag}',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    final interleaved = result.videos;
     Log.info(
       '🏷️ HashtagFeedScreen: Got ${interleaved.length} interleaved videos '
       'from Funnelcake for #${widget.hashtag}',

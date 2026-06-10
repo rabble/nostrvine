@@ -7429,11 +7429,17 @@ void main() {
 
     group('getHashtagFeedVideos', () {
       test('returns empty list when hashtag is blank', () async {
-        expect(await repository.getHashtagFeedVideos(hashtag: '  '), isEmpty);
+        final result = await repository.getHashtagFeedVideos(hashtag: '  ');
+
+        expect(result.succeeded, isFalse);
+        expect(result.videos, isEmpty);
       });
 
       test('returns empty list when funnelcakeApiClient is null', () async {
-        expect(await repository.getHashtagFeedVideos(hashtag: 'bts'), isEmpty);
+        final result = await repository.getHashtagFeedVideos(hashtag: 'bts');
+
+        expect(result.succeeded, isFalse);
+        expect(result.videos, isEmpty);
       });
 
       test('returns empty list when the API is unavailable', () async {
@@ -7445,10 +7451,10 @@ void main() {
           funnelcakeApiClient: mockFunnelcake,
         );
 
-        expect(
-          await repoWithApi.getHashtagFeedVideos(hashtag: 'bts'),
-          isEmpty,
-        );
+        final result = await repoWithApi.getHashtagFeedVideos(hashtag: 'bts');
+
+        expect(result.succeeded, isFalse);
+        expect(result.videos, isEmpty);
       });
 
       test(
@@ -7457,7 +7463,10 @@ void main() {
           final mockFunnelcake = MockFunnelcakeApiClient();
           when(() => mockFunnelcake.isAvailable).thenReturn(true);
           when(
-            () => mockFunnelcake.getVideosByHashtag(hashtag: 'bts'),
+            () => mockFunnelcake.getVideosByHashtag(
+              hashtag: 'bts',
+              limit: any(named: 'limit'),
+            ),
           ).thenAnswer(
             (_) async => [
               _createVideoStats(
@@ -7475,7 +7484,10 @@ void main() {
             ],
           );
           when(
-            () => mockFunnelcake.getClassicVideosByHashtag(hashtag: 'bts'),
+            () => mockFunnelcake.getClassicVideosByHashtag(
+              hashtag: 'bts',
+              limit: any(named: 'limit'),
+            ),
           ).thenAnswer(
             (_) async => [
               // Duplicate of trend-1 — must be dropped.
@@ -7501,11 +7513,32 @@ void main() {
 
           final result = await repoWithApi.getHashtagFeedVideos(hashtag: 'bts');
 
-          expect(result.map((v) => v.id), [
+          expect(result.succeeded, isTrue);
+          expect(result.videos.map((v) => v.id), [
             'trend-1',
             'classic-1',
             'trend-2',
           ]);
+          expect(
+            verify(
+                  () => mockFunnelcake.getVideosByHashtag(
+                    hashtag: 'bts',
+                    limit: captureAny(named: 'limit'),
+                  ),
+                ).captured.single
+                as int,
+            50,
+          );
+          expect(
+            verify(
+                  () => mockFunnelcake.getClassicVideosByHashtag(
+                    hashtag: 'bts',
+                    limit: captureAny(named: 'limit'),
+                  ),
+                ).captured.single
+                as int,
+            50,
+          );
         },
       );
 
@@ -7513,7 +7546,10 @@ void main() {
         final mockFunnelcake = MockFunnelcakeApiClient();
         when(() => mockFunnelcake.isAvailable).thenReturn(true);
         when(
-          () => mockFunnelcake.getVideosByHashtag(hashtag: 'bts'),
+          () => mockFunnelcake.getVideosByHashtag(
+            hashtag: 'bts',
+            limit: any(named: 'limit'),
+          ),
         ).thenAnswer(
           (_) async => [
             _createVideoStats(
@@ -7525,7 +7561,10 @@ void main() {
           ],
         );
         when(
-          () => mockFunnelcake.getClassicVideosByHashtag(hashtag: 'bts'),
+          () => mockFunnelcake.getClassicVideosByHashtag(
+            hashtag: 'bts',
+            limit: any(named: 'limit'),
+          ),
         ).thenAnswer(
           (_) async => [
             _createVideoStats(
@@ -7550,7 +7589,12 @@ void main() {
 
         final result = await repoWithApi.getHashtagFeedVideos(hashtag: 'bts');
 
-        expect(result.map((v) => v.id), ['trend-1', 'classic-1', 'classic-2']);
+        expect(result.succeeded, isTrue);
+        expect(result.videos.map((v) => v.id), [
+          'trend-1',
+          'classic-1',
+          'classic-2',
+        ]);
       });
 
       test(
@@ -7559,7 +7603,10 @@ void main() {
           final mockFunnelcake = MockFunnelcakeApiClient();
           when(() => mockFunnelcake.isAvailable).thenReturn(true);
           when(
-            () => mockFunnelcake.getVideosByHashtag(hashtag: 'bts'),
+            () => mockFunnelcake.getVideosByHashtag(
+              hashtag: 'bts',
+              limit: any(named: 'limit'),
+            ),
           ).thenAnswer(
             (_) async => [
               _createVideoStats(
@@ -7577,7 +7624,10 @@ void main() {
             ],
           );
           when(
-            () => mockFunnelcake.getClassicVideosByHashtag(hashtag: 'bts'),
+            () => mockFunnelcake.getClassicVideosByHashtag(
+              hashtag: 'bts',
+              limit: any(named: 'limit'),
+            ),
           ).thenAnswer(
             (_) async => [
               _createVideoStats(
@@ -7600,7 +7650,8 @@ void main() {
 
           final result = await repoWithApi.getHashtagFeedVideos(hashtag: 'bts');
 
-          expect(result.map((v) => v.id), ['trend-ok']);
+          expect(result.succeeded, isTrue);
+          expect(result.videos.map((v) => v.id), ['trend-ok']);
         },
       );
 
@@ -7608,10 +7659,16 @@ void main() {
         final mockFunnelcake = MockFunnelcakeApiClient();
         when(() => mockFunnelcake.isAvailable).thenReturn(true);
         when(
-          () => mockFunnelcake.getVideosByHashtag(hashtag: 'bts'),
+          () => mockFunnelcake.getVideosByHashtag(
+            hashtag: 'bts',
+            limit: any(named: 'limit'),
+          ),
         ).thenThrow(const FunnelcakeException('boom'));
         when(
-          () => mockFunnelcake.getClassicVideosByHashtag(hashtag: 'bts'),
+          () => mockFunnelcake.getClassicVideosByHashtag(
+            hashtag: 'bts',
+            limit: any(named: 'limit'),
+          ),
         ).thenAnswer((_) async => []);
 
         final repoWithApi = VideosRepository(
@@ -7619,10 +7676,10 @@ void main() {
           funnelcakeApiClient: mockFunnelcake,
         );
 
-        expect(
-          await repoWithApi.getHashtagFeedVideos(hashtag: 'bts'),
-          isEmpty,
-        );
+        final result = await repoWithApi.getHashtagFeedVideos(hashtag: 'bts');
+
+        expect(result.succeeded, isFalse);
+        expect(result.videos, isEmpty);
       });
     });
 

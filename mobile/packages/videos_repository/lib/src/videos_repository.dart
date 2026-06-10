@@ -66,6 +66,27 @@ const Duration _routeRelayTimeout = Duration(seconds: 3);
 const String _popularCacheKey = 'popular';
 const String _popularLegacyBeforeCursorPrefix = 'before:';
 
+/// Result of a hashtag REST feed fetch.
+class HashtagFeedVideosResult {
+  /// Creates a successful hashtag feed result.
+  const HashtagFeedVideosResult.success(this.videos) : succeeded = true;
+
+  /// Creates a failed or skipped hashtag feed result.
+  const HashtagFeedVideosResult.failure()
+    : videos = const [],
+      succeeded = false;
+
+  /// Videos returned by the REST feed in display order.
+  final List<VideoEvent> videos;
+
+  /// Whether the REST fetch completed successfully.
+  ///
+  /// A successful fetch may still contain an empty [videos] list. Callers use
+  /// this to distinguish a real empty feed from a transient failure, timeout,
+  /// or unavailable client.
+  final bool succeeded;
+}
+
 String _encodePopularLegacyBeforeCursor(int before) =>
     '$_popularLegacyBeforeCursorPrefix$before';
 
@@ -1715,34 +1736,28 @@ class VideosRepository {
   /// content preferences. The endpoint is anonymous, so the injected
   /// block filter is the only block/mute enforcement on this path (#948).
   ///
-  /// Returns an empty list when [hashtag] is blank, the API client is
+  /// Returns a failed result when [hashtag] is blank, the API client is
   /// unavailable, or the fetch fails or exceeds [timeout] — the REST feed
-  /// is a fast-path enrichment; callers keep their relay source.
-  Future<List<VideoEvent>> getHashtagFeedVideos({
+  /// is a fast-path enrichment; callers keep their relay source/cache.
+  Future<HashtagFeedVideosResult> getHashtagFeedVideos({
     required String hashtag,
     Duration timeout = const Duration(seconds: 5),
   }) async {
     final trimmed = hashtag.trim();
-    if (trimmed.isEmpty) return [];
+    if (trimmed.isEmpty) return const HashtagFeedVideosResult.failure();
     if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
-      return [];
+      return const HashtagFeedVideosResult.failure();
     }
 
     try {
       final results = await Future.wait([
-        _funnelcakeApiClient.getVideosByHashtag(hashtag: trimmed),
-        _funnelcakeApiClient.getClassicVideosByHashtag(hashtag: trimmed),
+        getVideosByHashtag(hashtag: trimmed, limit: 50),
+        getClassicVideosByHashtag(hashtag: trimmed, limit: 50),
       ]).timeout(timeout);
 
-      final trending = _transformVideoStats(
-        results[0],
-        sortByCreatedAt: false,
+      return HashtagFeedVideosResult.success(
+        _interleaveHashtagVideos(results[0], results[1]),
       );
-      final classics = _transformVideoStats(
-        results[1],
-        sortByCreatedAt: false,
-      );
-      return _interleaveHashtagVideos(trending, classics);
     } on Exception catch (e, stackTrace) {
       Log.error(
         'getHashtagFeedVideos failed for "#$trimmed"',
@@ -1751,7 +1766,7 @@ class VideosRepository {
         error: e,
         stackTrace: stackTrace,
       );
-      return [];
+      return const HashtagFeedVideosResult.failure();
     }
   }
 

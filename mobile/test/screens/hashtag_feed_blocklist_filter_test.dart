@@ -62,6 +62,7 @@ void main() {
         videosRepositoryProvider.overrideWithValue(mockVideosRepository),
         hashtagServiceProvider.overrideWith((ref) => mockHashtagService),
         contentBlocklistRepositoryProvider.overrideWithValue(mockBlocklist),
+        subscribedListVideoCacheProvider.overrideWithValue(null),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -81,7 +82,11 @@ void main() {
         () => mockVideosRepository.getHashtagFeedVideos(
           hashtag: any(named: 'hashtag'),
         ),
-      ).thenAnswer((_) async => [_video('blocked-vid', blockedPubkey)]);
+      ).thenAnswer(
+        (_) async => HashtagFeedVideosResult.success([
+          _video('blocked-vid', blockedPubkey),
+        ]),
+      );
       when(
         () => mockBlocklist.shouldFilterFromFeeds(blockedPubkey),
       ).thenReturn(true);
@@ -112,7 +117,9 @@ void main() {
         () => mockVideosRepository.getHashtagFeedVideos(
           hashtag: any(named: 'hashtag'),
         ),
-      ).thenAnswer((_) async => <VideoEvent>[]);
+      ).thenAnswer(
+        (_) async => const HashtagFeedVideosResult.success(<VideoEvent>[]),
+      );
 
       await tester.pumpWidget(buildSubject('bts'));
       await tester.pump();
@@ -133,6 +140,50 @@ void main() {
       verify(
         () => mockVideosRepository.getHashtagFeedVideos(hashtag: 'bts'),
       ).called(1);
+    },
+  );
+
+  testWidgets(
+    'preserves an existing REST cache when a blocklist-triggered refetch '
+    'fails',
+    (tester) async {
+      final cachedVideo = _video('cached-vid', 'allowed-pubkey');
+      var callCount = 0;
+      when(
+        () => mockVideosRepository.getHashtagFeedVideos(
+          hashtag: any(named: 'hashtag'),
+        ),
+      ).thenAnswer((_) async {
+        callCount += 1;
+        if (callCount == 1) {
+          return HashtagFeedVideosResult.success([cachedVideo]);
+        }
+        return const HashtagFeedVideosResult.failure();
+      });
+
+      await tester.pumpWidget(buildSubject('bts'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+
+      expect(find.byType(ComposableVideoGrid), findsOneWidget);
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(HashtagFeedScreen)),
+      );
+      container.read(blocklistVersionProvider.notifier).increment();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+
+      expect(
+        find.byType(ComposableVideoGrid),
+        findsOneWidget,
+        reason: 'A failed background refetch must not blank a populated feed',
+      );
+      verify(
+        () => mockVideosRepository.getHashtagFeedVideos(hashtag: 'bts'),
+      ).called(2);
     },
   );
 }

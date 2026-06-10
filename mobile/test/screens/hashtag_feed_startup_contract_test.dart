@@ -49,13 +49,15 @@ void main() {
       'keeps loading until the initial source answers, then shows empty state even if websocket subscribe hangs',
       (tester) async {
         final subscribeCompleter = Completer<void>();
-        final feedCompleter = Completer<List<VideoEvent>>();
+        final feedCompleter = Completer<HashtagFeedVideosResult>();
         addTearDown(() {
           if (!subscribeCompleter.isCompleted) {
             subscribeCompleter.complete();
           }
           if (!feedCompleter.isCompleted) {
-            feedCompleter.complete(const []);
+            feedCompleter.complete(
+              const HashtagFeedVideosResult.success(<VideoEvent>[]),
+            );
           }
         });
 
@@ -78,7 +80,9 @@ void main() {
         expect(find.text('Loading videos about #nostr...'), findsOneWidget);
         expect(find.text('No videos found for #nostr'), findsNothing);
 
-        feedCompleter.complete(const []);
+        feedCompleter.complete(
+          const HashtagFeedVideosResult.success(<VideoEvent>[]),
+        );
 
         await tester.pump();
         await tester.pump();
