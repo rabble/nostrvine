@@ -30,7 +30,11 @@ class SavedSoundsService {
       final sounds = <AudioEvent>[];
       for (final entry in decoded.whereType<Map>()) {
         try {
-          sounds.add(AudioEvent.fromJson(Map<String, dynamic>.from(entry)));
+          sounds.add(
+            _persistableSound(
+              AudioEvent.fromJson(Map<String, dynamic>.from(entry)),
+            ),
+          );
         } catch (_) {
           continue;
         }
@@ -65,7 +69,15 @@ class SavedSoundsService {
   Future<void> _writeSounds(List<AudioEvent> sounds) async {
     await _preferences.setString(
       storageKey,
-      jsonEncode(sounds.map((sound) => sound.toJson()).toList()),
+      jsonEncode(
+        sounds.map((sound) => _persistableSound(sound).toJson()).toList(),
+      ),
     );
+  }
+
+  AudioEvent _persistableSound(AudioEvent sound) {
+    return sound.anchorClipId == null
+        ? sound
+        : sound.copyWith(clearAnchorClipId: true);
   }
 }

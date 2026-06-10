@@ -10,6 +10,7 @@ extension VideoEditorExtensions on ProImageEditorState {
     required int index,
     Duration? startTime,
     Duration? endTime,
+    Duration? startOffset,
     Map<String, dynamic>? meta,
     bool skipUpdateHistory = false,
     bool clearAnchor = false,
@@ -22,6 +23,7 @@ extension VideoEditorExtensions on ProImageEditorState {
     audioTracks[index] = audioTracks[index].copyWith(
       startTime: startTime,
       endTime: endTime ?? Duration.zero,
+      startOffset: startOffset,
       // A manual move detaches the track from its source clip so it stops
       // following clip trims and behaves as an independent track.
       clearAnchorClipId: clearAnchor,

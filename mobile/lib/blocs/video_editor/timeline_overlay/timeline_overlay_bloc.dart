@@ -30,8 +30,8 @@ class TimelineOverlayBloc
     extends Bloc<TimelineOverlayEvent, TimelineOverlayState> {
   TimelineOverlayBloc() : super(const TimelineOverlayState()) {
     on<TimelineOverlayItemsUpdate>(_onUpdateItems);
-    on<TimelineOverlayItemMoved>(_onItemMoved, transformer: restartable());
-    on<TimelineOverlayItemTrimmed>(_onItemTrimmed, transformer: restartable());
+    on<TimelineOverlayItemMoved>(_onItemMoved);
+    on<TimelineOverlayItemTrimmed>(_onItemTrimmed);
     on<TimelineOverlayItemSelected>(_onItemSelected);
     on<TimelineOverlayDragStarted>(_onDragStarted);
     on<TimelineOverlayDragMoved>(_onDragMoved);
@@ -44,10 +44,7 @@ class TimelineOverlayBloc
     on<TimelineMarkerRemoved>(_onMarkerRemoved);
     on<TimelineMarkersRebased>(_onMarkersRebased);
     on<TimelineOverlayWaveformLoaded>(_onWaveformLoaded);
-    on<TimelineOverlayAnchoredAudioRebased>(
-      _onAnchoredAudioRebased,
-      transformer: restartable(),
-    );
+    on<TimelineOverlayAnchoredAudioRebased>(_onAnchoredAudioRebased);
     on<TimelineOverlayAudioVolumeChanged>(
       _onAudioVolumeChanged,
       transformer: sequential(),

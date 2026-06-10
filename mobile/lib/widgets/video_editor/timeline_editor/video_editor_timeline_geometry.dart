@@ -41,6 +41,28 @@ Duration? clipSourcePositionToTimelinePosition(
   return null;
 }
 
+/// Returns the source offset for an audio track after its timeline start handle
+/// moves to [newStartTime].
+///
+/// Left-trimming a sound should consume or reveal audio source content rather
+/// than sliding the same source frame to a new timeline position. Keeping this
+/// offset in step with the timeline start also preserves the anchored-audio
+/// alignment invariant used by [rebaseAnchoredAudioForClipState].
+Duration audioStartOffsetForLeftTrim(
+  AudioEvent track, {
+  required Duration newStartTime,
+}) {
+  final nextOffset = track.startOffset + (newStartTime - track.startTime);
+  if (nextOffset < Duration.zero) return Duration.zero;
+
+  final duration = track.duration;
+  if (duration == null) return nextOffset;
+
+  final maxOffset = Duration(milliseconds: (duration * 1000).round());
+  if (nextOffset > maxOffset) return maxOffset;
+  return nextOffset;
+}
+
 /// Reprojects marker positions after clip order, trim, or speed changes.
 ///
 /// Timeline markers are stored as absolute composition times because the
@@ -106,9 +128,15 @@ List<Duration> rebaseTimelineMarkersForClipState({
 ///
 ///   startTime == clipTimelineStart - clip.trimStart + audio.startOffset
 ///
-/// Tracks with no anchor, or whose anchor clip was removed, are returned
-/// unchanged. The original list instance is returned when nothing moved, so
-/// callers can cheaply detect a no-op via `identical`.
+/// [clipTimelineStart] is accumulated in playback time so earlier clip speed
+/// changes still ripple anchored audio correctly. [AudioEvent.startOffset] and
+/// [DivineVideoClip.trimStart] remain source-time values because extracted
+/// audio is not tempo-adjusted; if extracted audio becomes speed-adjusted, this
+/// conversion must be revisited.
+///
+/// Tracks with no anchor, or whose anchor clip was removed or split into new
+/// clip IDs, are returned unchanged. The original list instance is returned
+/// when nothing moved, so callers can cheaply detect a no-op via `identical`.
 List<AudioEvent> rebaseAnchoredAudioForClipState(
   List<DivineVideoClip> clips,
   List<AudioEvent> audioTracks,

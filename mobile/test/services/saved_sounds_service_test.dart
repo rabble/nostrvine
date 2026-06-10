@@ -12,6 +12,7 @@ AudioEvent _sound({
   required String id,
   String? title,
   int createdAt = 1700000000,
+  String? anchorClipId,
 }) {
   return AudioEvent(
     id: id,
@@ -25,6 +26,7 @@ AudioEvent _sound({
     source: 'Original Sound',
     sourceVideoReference:
         '34236:test_pubkey_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef:$id',
+    anchorClipId: anchorClipId,
   );
 }
 
@@ -45,6 +47,18 @@ void main() {
 
       expect(result, SavedSoundSaveResult.saved);
       expect(service.loadSounds(), [sound]);
+    });
+
+    test('clears local editor anchors before persisting sounds', () async {
+      final service = SavedSoundsService(sharedPreferences);
+      final sound = _sound(id: 'sound1', anchorClipId: 'clip-1');
+
+      final result = await service.saveSound(sound);
+
+      expect(result, SavedSoundSaveResult.saved);
+      final savedSound = service.loadSounds().single;
+      expect(savedSound.id, sound.id);
+      expect(savedSound.anchorClipId, isNull);
     });
 
     test(

@@ -13,12 +13,14 @@ AudioEvent _audio({
   required Duration startTime,
   required Duration endTime,
   Duration startOffset = Duration.zero,
+  double? duration,
   String? anchorClipId,
 }) => AudioEvent(
   id: id,
   pubkey: '',
   createdAt: 0,
   url: '/tmp/$id.wav',
+  duration: duration,
   startTime: startTime,
   endTime: endTime,
   startOffset: startOffset,
@@ -891,6 +893,41 @@ void main() {
     }
   });
 
+  group(audioStartOffsetForLeftTrim, () {
+    test('advances the source offset when the left handle moves right', () {
+      final track = _audio(
+        id: 'sound',
+        startTime: const Duration(seconds: 10),
+        endTime: const Duration(seconds: 20),
+      );
+
+      expect(
+        audioStartOffsetForLeftTrim(
+          track,
+          newStartTime: const Duration(seconds: 13),
+        ),
+        const Duration(seconds: 3),
+      );
+    });
+
+    test('clamps the source offset at zero when revealing audio head', () {
+      final track = _audio(
+        id: 'sound',
+        startTime: const Duration(seconds: 13),
+        endTime: const Duration(seconds: 20),
+        startOffset: const Duration(seconds: 2),
+      );
+
+      expect(
+        audioStartOffsetForLeftTrim(
+          track,
+          newStartTime: const Duration(seconds: 10),
+        ),
+        Duration.zero,
+      );
+    });
+  });
+
   group(rebaseAnchoredAudioForClipState, () {
     // Two clips, both 10 s, no trim. clip-b starts at timeline 10 s.
     // An anchored track covers clip-b exactly: 10–20 s, startOffset 0.
@@ -967,6 +1004,26 @@ void main() {
       expect(result.single.startTime, const Duration(seconds: 6));
       expect(result.single.endTime, const Duration(seconds: 16));
     });
+
+    test(
+      'uses playback-time starts when an earlier clip has playbackSpeed',
+      () {
+        // clip-a is 4 s source at 0.5x, so it occupies 8 s on the timeline.
+        // clip-b's anchored audio follows that playback-time start.
+        final clips = [_clip('a', 4, speed: 0.5), _clip('b', 10)];
+        final track = _audio(
+          id: 'b-audio',
+          startTime: const Duration(seconds: 10),
+          endTime: const Duration(seconds: 20),
+          anchorClipId: 'b',
+        );
+
+        final result = rebaseAnchoredAudioForClipState(clips, [track]);
+
+        expect(result.single.startTime, const Duration(seconds: 8));
+        expect(result.single.endTime, const Duration(seconds: 18));
+      },
+    );
 
     test('preserves a user-shortened span (L-Cut) while translating', () {
       // User right-trimmed the audio to 10–15 s (5 s span). A later clip
@@ -1048,6 +1105,35 @@ void main() {
       expect(result.single.startTime, const Duration(seconds: 10));
       expect(result.single.endTime, const Duration(seconds: 20));
     });
+
+    test(
+      'left-trimmed anchored audio is not repositioned by an unrelated clip edit',
+      () {
+        // The sound began aligned with clip-b at 10–20 s, then the user moved
+        // its left trim handle to 13 s. The trim consumes 3 s of source audio,
+        // so the anchor invariant still holds after any unrelated clip edit.
+        final clips = [
+          _clip('a', 10),
+          _clip('b', 10),
+          _clip('copy', 10),
+        ];
+        final track = _audio(
+          id: 'b-audio',
+          startTime: const Duration(seconds: 13),
+          endTime: const Duration(seconds: 20),
+          startOffset: const Duration(seconds: 3),
+          anchorClipId: 'b',
+        );
+        final tracks = [track];
+
+        final result = rebaseAnchoredAudioForClipState(clips, tracks);
+
+        expect(identical(result, tracks), isTrue);
+        expect(result.single.startTime, const Duration(seconds: 13));
+        expect(result.single.endTime, const Duration(seconds: 20));
+        expect(result.single.startOffset, const Duration(seconds: 3));
+      },
+    );
 
     test('returns the same list instance when nothing moves', () {
       // Anchored track already aligned with its un-edited clip.
