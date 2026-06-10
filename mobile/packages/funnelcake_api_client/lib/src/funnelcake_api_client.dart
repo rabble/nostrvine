@@ -67,6 +67,24 @@ class FunnelcakeApiClient {
   /// Default moderation profile sent with video-bearing Funnelcake requests.
   static const String defaultModerationProfile = 'default';
 
+  static const Set<String> _diagnosticStructuralKeys = {
+    'categories',
+    'data',
+    'error',
+    'followers',
+    'following',
+    'hashtags',
+    'items',
+    'message',
+    'notifications',
+    'pagination',
+    'profiles',
+    'results',
+    'status',
+    'success',
+    'videos',
+  };
+
   /// Sink used to surface warning-level diagnostics from static helpers such
   /// as [_unwrapListResponse].
   ///
@@ -218,14 +236,23 @@ class FunnelcakeApiClient {
   /// response for diagnostic logging.
   ///
   /// Avoids dumping full response bodies (which may be large or contain user
-  /// data); reports the runtime type plus, for maps, the top-level keys.
+  /// data); reports the runtime type plus, for maps, key counts and a small
+  /// allow-list of structural keys. Unknown keys are counted rather than
+  /// emitted because malformed responses may carry user data in key position.
   static String _describeShape(Object? decoded) {
     if (decoded == null) {
       return 'null';
     }
     if (decoded is Map) {
-      final keys = decoded.keys.map((key) => '$key').toList()..sort();
-      return 'Map(keys: [${keys.join(', ')}])';
+      final keys = decoded.keys.map((key) => '$key').toSet();
+      final structuralKeys =
+          keys.where(_diagnosticStructuralKeys.contains).toList()..sort();
+      final unknownKeyCount = keys.length - structuralKeys.length;
+      return 'Map('
+          'keyCount: ${keys.length}, '
+          'structuralKeys: [${structuralKeys.join(', ')}], '
+          'unknownKeyCount: $unknownKeyCount'
+          ')';
     }
     return decoded.runtimeType.toString();
   }

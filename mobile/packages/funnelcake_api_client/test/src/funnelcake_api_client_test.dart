@@ -5101,13 +5101,16 @@ void main() {
             expect(videos, isEmpty);
 
             // Observability contract: the regression is surfaced exactly once
-            // with a non-sensitive shape description (keys, not the body).
+            // with a non-sensitive shape description (counts, not body/keys).
             expect(warnings, hasLength(1));
             expect(
               warnings.single,
               allOf(
                 contains('Unrecognised funnelcake list response shape'),
-                contains('Map(keys: [unexpected])'),
+                contains(
+                  'Map(keyCount: 1, structuralKeys: [], unknownKeyCount: 1)',
+                ),
+                isNot(contains('unexpected')),
               ),
             );
           },
