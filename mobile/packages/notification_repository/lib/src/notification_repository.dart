@@ -150,6 +150,14 @@ class NotificationRepository {
   /// when a new repository instance replaces this one).
   Future<void> close() => _snapshot.close();
 
+  /// Whether [close] has been called on this repository.
+  ///
+  /// After an auth flip the provider closes the outgoing instance while a
+  /// long-lived consumer (e.g. the refresh coordinator) may still hold it
+  /// across an in-flight call. Such callers use this to classify the
+  /// resulting [StateError] as expected account-switch noise.
+  bool get isClosed => _snapshot.isClosed;
+
   /// Fetches the next page of notifications.
   ///
   /// Pass [cursor] to override the stored pagination cursor. On success,

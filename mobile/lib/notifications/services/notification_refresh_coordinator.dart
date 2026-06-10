@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Why an authoritative notification refresh was requested.
@@ -14,29 +15,41 @@ enum NotificationRefreshReason {
   appResume,
 }
 
+/// Forwards an unexpected refresh failure to the crash reporter.
+typedef NotificationRefreshErrorReporter =
+    void Function(Object error, StackTrace stackTrace, {String? reason});
+
 /// Coalesces notification refresh calls so independent liveness triggers do
 /// not stampede Funnelcake.
 class NotificationRefreshCoordinator {
   /// Creates a refresh coordinator.
+  ///
+  /// [errorReporter] defaults to [CrashReportingService.recordError]; tests
+  /// inject a recording fake.
   NotificationRefreshCoordinator({
     required NotificationRepository repository,
     Duration cooldown = const Duration(seconds: 30),
     DateTime Function()? now,
+    NotificationRefreshErrorReporter? errorReporter,
   }) : _repository = repository,
        _cooldown = cooldown,
-       _now = now ?? DateTime.now;
+       _now = now ?? DateTime.now,
+       _reportError = errorReporter ?? _reportToCrashlytics;
 
   final NotificationRepository _repository;
   final Duration _cooldown;
   final DateTime Function() _now;
+  final NotificationRefreshErrorReporter _reportError;
 
-  DateTime? _lastStartedAt;
+  DateTime? _lastSuccessAt;
   Future<void>? _inFlight;
 
   /// Requests an authoritative first-page refresh.
   ///
   /// Returns the in-flight refresh if one already exists. Otherwise skips
-  /// refreshes that start inside [_cooldown] unless [force] is true.
+  /// refreshes inside [_cooldown] of the last *successful* refresh unless
+  /// [force] is true — a failed refresh does not consume the cooldown, so
+  /// the next trigger retries immediately.
   Future<void> refresh({
     required NotificationRefreshReason reason,
     bool force = false,
@@ -44,15 +57,13 @@ class NotificationRefreshCoordinator {
     final inFlight = _inFlight;
     if (inFlight != null) return inFlight;
 
-    final now = _now();
-    final lastStartedAt = _lastStartedAt;
+    final lastSuccessAt = _lastSuccessAt;
     if (!force &&
-        lastStartedAt != null &&
-        now.difference(lastStartedAt) < _cooldown) {
+        lastSuccessAt != null &&
+        _now().difference(lastSuccessAt) < _cooldown) {
       return Future<void>.value();
     }
 
-    _lastStartedAt = now;
     final future = _runRefresh(reason).whenComplete(() {
       _inFlight = null;
     });
@@ -63,13 +74,60 @@ class NotificationRefreshCoordinator {
   Future<void> _runRefresh(NotificationRefreshReason reason) async {
     try {
       await _repository.refresh();
-    } catch (e) {
-      Log.warning(
+      _lastSuccessAt = _now();
+    } on Exception catch (e, s) {
+      // Typed FunnelcakeException (4xx/5xx/timeout) — expected domain
+      // failures, NOT Reportable per .claude/rules/error_handling.md.
+      Log.log(
         'Notification refresh failed (${reason.name}): $e',
         name: 'NotificationRefreshCoordinator',
         category: LogCategory.api,
+        level: LogLevel.warning,
+        error: e,
+        stackTrace: s,
+      );
+    } catch (e, s) {
+      if (e is StateError && _repository.isClosed) {
+        // An account switch closed the repository mid-refresh; the
+        // snapshot emit threw before any DAO write. Expected noise.
+        Log.debug(
+          'Notification refresh aborted (${reason.name}): '
+          'repository closed',
+          name: 'NotificationRefreshCoordinator',
+          category: LogCategory.api,
+        );
+        return;
+      }
+      // Errors (StateError, TypeError, RangeError) are matrix-YES
+      // invariant violations. The coordinator is app-layer, so direct
+      // crash-reporter use is allowed.
+      Log.error(
+        'Notification refresh invariant failure (${reason.name}): $e',
+        name: 'NotificationRefreshCoordinator',
+        category: LogCategory.api,
+        error: e,
+        stackTrace: s,
+      );
+      _reportError(
+        e,
+        s,
+        reason: 'NotificationRefreshCoordinator.${reason.name}',
       );
     }
+  }
+
+  static void _reportToCrashlytics(
+    Object error,
+    StackTrace stackTrace, {
+    String? reason,
+  }) {
+    unawaited(
+      CrashReportingService.instance.recordError(
+        error,
+        stackTrace,
+        reason: reason,
+      ),
+    );
   }
 }
 

@@ -2780,6 +2780,14 @@ void main() {
         );
       });
 
+      test('isClosed flips after close()', () async {
+        expect(repository.isClosed, isFalse);
+
+        await repository.close();
+
+        expect(repository.isClosed, isTrue);
+      });
+
       test('emits snapshot after refresh', () async {
         stubProfiles({
           'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
