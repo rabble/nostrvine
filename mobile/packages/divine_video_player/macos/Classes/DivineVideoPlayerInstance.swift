@@ -698,7 +698,14 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     }
 
     @objc private func playerDidFinish() {
-        guard !isLooping else { return }
+        if isLooping {
+            // A start-position override belongs to the item we sought. When
+            // AVPlayerLooper advances to the next item, the real timeline is
+            // back at zero; carrying the stale override into the next loop
+            // would make Dart think playback restarted at the old seek point.
+            reportedPositionOverrideMs = nil
+            return
+        }
         audioOverlayManager.pauseAndDeactivateAll()
         currentStatus = "completed"
         sendStateUpdate()

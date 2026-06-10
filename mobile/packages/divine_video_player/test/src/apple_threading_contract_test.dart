@@ -66,8 +66,40 @@ void main() {
           expect(source, contains('reportedPositionOverrideMs = nil'));
         },
       );
+
+      test('$platform clears requested position override at loop boundary', () {
+        final source = _appleSourceFile(platform).readAsStringSync();
+        final finishHandler = _functionBody(
+          source,
+          '@objc private func playerDidFinish()',
+          '// MARK: - State broadcasting',
+        );
+
+        expect(
+          finishHandler,
+          contains('if isLooping'),
+          reason:
+              'Looping items should take a separate path from completed '
+              'one-shot playback.',
+        );
+        expect(
+          finishHandler,
+          contains('reportedPositionOverrideMs = nil'),
+          reason:
+              'A seek override from setClips(startPosition:) must not mask '
+              'the zero-time restart emitted by AVPlayerLooper.',
+        );
+      });
     }
   });
+}
+
+String _functionBody(String source, String startMarker, String endMarker) {
+  final start = source.indexOf(startMarker);
+  final end = source.indexOf(endMarker, start);
+  expect(start, isNonNegative, reason: 'Missing $startMarker');
+  expect(end, isNonNegative, reason: 'Missing $endMarker after $startMarker');
+  return source.substring(start, end);
 }
 
 File _appleSourceFile(String platform) {
