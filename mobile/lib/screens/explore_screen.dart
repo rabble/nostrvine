@@ -33,6 +33,7 @@ import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
+import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/categories_tab.dart';
 import 'package:openvine/widgets/classic_vines_tab.dart';
@@ -750,6 +751,25 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             ),
           ),
 
+          // Create New List button - ALWAYS VISIBLE
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: DivineButton(
+              leadingIcon: .plus,
+              label: context.l10n.listCreateNewList,
+              onPressed: () {
+                Log.info(
+                  'Tapped Create New List button',
+                  category: LogCategory.ui,
+                );
+                showDialog<void>(
+                  context: context,
+                  builder: (_) => const CreateListDialog(),
+                );
+              },
+            ),
+          ),
+
           // Help text - ALWAYS VISIBLE
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -874,10 +894,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             skipLoadingOnRefresh: true,
             data: (data) {
               final userLists = data.userLists;
-              final myLists = data.curatedLists.where((list) {
-                // Lists without nostrEventId are local-only user lists
-                return list.nostrEventId == null;
-              }).toList();
+              // Owned lists stay visible after publishing — filtering on a
+              // null nostrEventId hid lists once they reached the relay.
+              final service = ref
+                  .read(curatedListsStateProvider.notifier)
+                  .service;
+              final myLists = service?.myLists ?? const <CuratedList>[];
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

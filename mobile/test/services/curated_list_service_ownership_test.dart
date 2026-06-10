@@ -147,4 +147,84 @@ void main() {
       },
     );
   });
+
+  group('CuratedListService.myLists', () {
+    const currentPubkey =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const otherPubkey =
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
+    late CuratedListService service;
+    late _MockAuthService mockAuth;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final mockNostr = _MockNostrClient();
+      mockAuth = _MockAuthService();
+
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
+      when(() => mockAuth.currentPublicKeyHex).thenReturn(currentPubkey);
+
+      service = CuratedListService(
+        nostrService: mockNostr,
+        authService: mockAuth,
+        prefs: prefs,
+      );
+    });
+
+    CuratedList remoteList({required String id, String? pubkey}) {
+      final now = DateTime(2026);
+      return CuratedList(
+        id: id,
+        name: 'List $id',
+        videoEventIds: const [],
+        pubkey: pubkey,
+        nostrEventId: 'event_$id',
+        createdAt: now,
+        updatedAt: now,
+      );
+    }
+
+    test('includes local-only list that has not published', () async {
+      final list = await service.createList(name: 'Local List');
+
+      expect(service.myLists.map((l) => l.id), contains(list!.id));
+    });
+
+    test('includes published list owned by the current user', () async {
+      await service.subscribeToList(
+        'published-own-list',
+        remoteList(id: 'published-own-list', pubkey: currentPubkey),
+      );
+
+      expect(service.myLists.map((l) => l.id), contains('published-own-list'));
+    });
+
+    test('excludes published list owned by another user', () async {
+      await service.subscribeToList(
+        'other-user-list',
+        remoteList(id: 'other-user-list', pubkey: otherPubkey),
+      );
+
+      expect(
+        service.myLists.map((l) => l.id),
+        isNot(contains('other-user-list')),
+      );
+    });
+
+    test('excludes other-user published list when not authenticated', () async {
+      when(() => mockAuth.isAuthenticated).thenReturn(false);
+
+      await service.subscribeToList(
+        'other-user-list',
+        remoteList(id: 'other-user-list', pubkey: otherPubkey),
+      );
+
+      expect(
+        service.myLists.map((l) => l.id),
+        isNot(contains('other-user-list')),
+      );
+    });
+  });
 }

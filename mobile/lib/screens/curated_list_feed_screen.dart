@@ -86,7 +86,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
               ),
               showBackButton: true,
               onBackPressed: context.pop,
-              actions: [_buildSubscribeAction()],
+              // Subscribing to your own list is meaningless — owners only
+              // get the overflow menu (delete).
+              actions: [if (!_isOwnedList()) _buildSubscribeAction()],
               customActions: _buildListCustomActions(),
             )
           : null,
@@ -324,6 +326,15 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
       videoText,
       style: const TextStyle(color: VineTheme.onSurfaceVariant, fontSize: 12),
     );
+  }
+
+  bool _isOwnedList() {
+    final serviceAsync = ref.watch(curatedListsStateProvider);
+    final service = ref.read(curatedListsStateProvider.notifier).service;
+    return serviceAsync.whenOrNull(
+          data: (_) => service?.isOwnedList(widget.listId),
+        ) ??
+        false;
   }
 
   DiVineAppBarAction _buildSubscribeAction() {

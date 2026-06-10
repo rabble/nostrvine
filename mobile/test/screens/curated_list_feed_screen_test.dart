@@ -132,6 +132,31 @@ void main() {
       expect(appBar.customActions, isEmpty);
     });
 
+    testWidgets('shows subscribe action for external list', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      final appBar = tester.widget<DiVineAppBar>(find.byType(DiVineAppBar));
+      expect(appBar.actions, hasLength(1));
+    });
+
+    testWidgets('hides subscribe action for owned list', (tester) async {
+      when(() => mockService.isSubscribedToList('owned-list')).thenReturn(true);
+      when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
+
+      await tester.pumpWidget(
+        buildSubject(
+          listId: 'owned-list',
+          listName: 'Owned List',
+          authorPubkey: 'owned-pubkey',
+        ),
+      );
+      await tester.pump();
+
+      final appBar = tester.widget<DiVineAppBar>(find.byType(DiVineAppBar));
+      expect(appBar.actions, isEmpty);
+    });
+
     testWidgets('shows delete action for owned subscribed list', (
       tester,
     ) async {

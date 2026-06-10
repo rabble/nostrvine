@@ -11,6 +11,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 
+import '../helpers/go_router.dart';
 import '../helpers/test_provider_overrides.dart';
 
 class _MockCuratedListService extends Mock implements CuratedListService {}
@@ -255,6 +256,7 @@ void main() {
   group(CreateListDialog, () {
     late VideoEvent testVideo;
     late _MockCuratedListService mockListService;
+    final l10n = lookupAppLocalizations(const Locale('en'));
 
     setUp(() {
       testVideo = VideoEvent(
@@ -271,16 +273,33 @@ void main() {
       _fakeService = mockListService;
     });
 
-    Widget buildSubject() => testProviderScope(
-      additionalOverrides: [
-        curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
-      ],
-      child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: CreateListDialog(video: testVideo)),
-      ),
+    CuratedList createdList(String name) => CuratedList(
+      id: 'list_created_456789abcdef0123456789abcdef0123456789abcdef012345',
+      pubkey:
+          'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+      name: name,
+      videoEventIds: const [],
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
+
+    Widget buildSubject({VideoEvent? video, MockGoRouter? goRouter}) {
+      final dialog = CreateListDialog(video: video);
+      return testProviderScope(
+        additionalOverrides: [
+          curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: goRouter == null
+                ? dialog
+                : MockGoRouterProvider(goRouter: goRouter, child: dialog),
+          ),
+        ),
+      );
+    }
 
     testWidgets('renders Create New List form', (tester) async {
       await tester.pumpWidget(buildSubject());
@@ -335,6 +354,89 @@ void main() {
           isPublic: any(named: 'isPublic'),
         ),
       );
+    });
+
+    testWidgets('creates list and pops without adding video when no video '
+        'is provided', (tester) async {
+      final goRouter = MockGoRouter();
+      when(goRouter.canPop).thenReturn(true);
+      when(() => goRouter.pop<Object?>()).thenReturn(null);
+      when(
+        () => mockListService.createList(
+          name: any(named: 'name'),
+          description: any(named: 'description'),
+          isPublic: any(named: 'isPublic'),
+        ),
+      ).thenAnswer((_) async => createdList('Fresh List'));
+
+      await tester.pumpWidget(buildSubject(goRouter: goRouter));
+      await tester.enterText(find.byType(TextField).first, 'Fresh List');
+      await tester.tap(find.text(l10n.listCreate));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockListService.createList(
+          name: 'Fresh List',
+          description: any(named: 'description'),
+          isPublic: any(named: 'isPublic'),
+        ),
+      ).called(1);
+      verifyNever(() => mockListService.addVideoToList(any(), any()));
+      verify(() => goRouter.pop<Object?>()).called(1);
+    });
+
+    testWidgets('creates list and adds video when a video is provided', (
+      tester,
+    ) async {
+      final goRouter = MockGoRouter();
+      when(goRouter.canPop).thenReturn(true);
+      when(() => goRouter.pop<Object?>()).thenReturn(null);
+      final newList = createdList('Video List');
+      when(
+        () => mockListService.createList(
+          name: any(named: 'name'),
+          description: any(named: 'description'),
+          isPublic: any(named: 'isPublic'),
+        ),
+      ).thenAnswer((_) async => newList);
+      when(
+        () => mockListService.addVideoToList(any(), any()),
+      ).thenAnswer((_) async => true);
+
+      await tester.pumpWidget(
+        buildSubject(video: testVideo, goRouter: goRouter),
+      );
+      await tester.enterText(find.byType(TextField).first, 'Video List');
+      await tester.tap(find.text(l10n.listCreate));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockListService.addVideoToList(newList.id, testVideo.id),
+      ).called(1);
+      verify(() => goRouter.pop<Object?>()).called(1);
+    });
+
+    testWidgets('shows failure snackbar and keeps dialog open when '
+        'createList returns null', (tester) async {
+      final goRouter = MockGoRouter();
+      when(goRouter.canPop).thenReturn(true);
+      when(
+        () => mockListService.createList(
+          name: any(named: 'name'),
+          description: any(named: 'description'),
+          isPublic: any(named: 'isPublic'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(buildSubject(goRouter: goRouter));
+      await tester.enterText(find.byType(TextField).first, 'Doomed List');
+      await tester.tap(find.text(l10n.listCreate));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.listCreateFailed), findsOneWidget);
+      expect(find.text(l10n.listCreateNewList), findsOneWidget);
+      verifyNever(() => mockListService.addVideoToList(any(), any()));
+      verifyNever(() => goRouter.pop<Object?>());
     });
   });
 }

@@ -144,10 +144,10 @@ class SelectListDialog extends StatelessWidget {
   }
 }
 
-/// Dialog for creating a new curated list and adding a video to it.
+/// Dialog for creating a new curated list, optionally adding [video] to it.
 class CreateListDialog extends ConsumerStatefulWidget {
-  const CreateListDialog({required this.video, super.key});
-  final VideoEvent video;
+  const CreateListDialog({this.video, super.key});
+  final VideoEvent? video;
 
   @override
   ConsumerState<CreateListDialog> createState() => _CreateListDialogState();
@@ -226,14 +226,22 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
         isPublic: _isPublic,
       );
 
-      if (newList != null && mounted) {
-        // Add the video to the new list
-        await listService?.addVideoToList(newList.id, widget.video.id);
+      if (!mounted) return;
 
-        if (mounted) {
-          // Close dialog and return the list name
-          context.pop();
-        }
+      // createList catches its own exceptions and returns null — without
+      // feedback here the dialog used to sit open doing nothing.
+      if (newList == null) {
+        _showCreateFailed();
+        return;
+      }
+
+      final video = widget.video;
+      if (video != null) {
+        await listService?.addVideoToList(newList.id, video.id);
+      }
+
+      if (mounted) {
+        context.pop();
       }
     } catch (e) {
       Log.error(
@@ -243,16 +251,19 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.listCreateFailed),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        // Return null to indicate failure
-        context.pop();
+        _showCreateFailed();
       }
     }
+  }
+
+  // Keeps the dialog open so the typed name and description survive a retry.
+  void _showCreateFailed() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.listCreateFailed),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
