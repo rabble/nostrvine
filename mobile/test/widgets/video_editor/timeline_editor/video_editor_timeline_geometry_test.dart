@@ -3,9 +3,27 @@
 // ABOUTME: across single-clip, multi-clip, and empty-clip compositions.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+AudioEvent _audio({
+  required String id,
+  required Duration startTime,
+  required Duration endTime,
+  Duration startOffset = Duration.zero,
+  String? anchorClipId,
+}) => AudioEvent(
+  id: id,
+  pubkey: '',
+  createdAt: 0,
+  url: '/tmp/$id.wav',
+  startTime: startTime,
+  endTime: endTime,
+  startOffset: startOffset,
+  anchorClipId: anchorClipId,
+);
 
 DivineVideoClip _clip(
   String id,
@@ -871,5 +889,182 @@ void main() {
         );
       });
     }
+  });
+
+  group(rebaseAnchoredAudioForClipState, () {
+    // Two clips, both 10 s, no trim. clip-b starts at timeline 10 s.
+    // An anchored track covers clip-b exactly: 10–20 s, startOffset 0.
+    List<DivineVideoClip> baseClips() => [_clip('a', 10), _clip('b', 10)];
+
+    test('shifts the anchored track left when its clip is trimmed left', () {
+      // Trim clip-b's left edge by 3 s. The audio keeps its full content and
+      // span, translating left so its tail stays in sync (J-Cut).
+      final clips = [
+        _clip('a', 10),
+        _clip('b', 10, trimStart: const Duration(seconds: 3)),
+      ];
+      final track = _audio(
+        id: 'b-audio',
+        startTime: const Duration(seconds: 10),
+        endTime: const Duration(seconds: 20),
+        anchorClipId: 'b',
+      );
+
+      final result = rebaseAnchoredAudioForClipState(clips, [track]);
+
+      expect(result.single.startTime, const Duration(seconds: 7));
+      expect(result.single.endTime, const Duration(seconds: 17));
+      // Content (startOffset) and span are preserved.
+      expect(result.single.startOffset, Duration.zero);
+      expect(
+        result.single.endTime! - result.single.startTime,
+        const Duration(seconds: 10),
+      );
+    });
+
+    test('keeps the anchored track in place when its clip is right-trimmed '
+        '(L-Cut overhang into the next clip)', () {
+      // [a:10][b:10][c:10]. clip-b right-trimmed by 3 s → b occupies
+      // timeline 10–17 s, c ripples to 17–27 s. The anchored audio must stay
+      // put so its tail (…20 s) trails over clip-c's video.
+      final clips = [
+        _clip('a', 10),
+        _clip('b', 10, trimEnd: const Duration(seconds: 3)),
+        _clip('c', 10),
+      ];
+      final track = _audio(
+        id: 'b-audio',
+        startTime: const Duration(seconds: 10),
+        endTime: const Duration(seconds: 20),
+        anchorClipId: 'b',
+      );
+
+      final result = rebaseAnchoredAudioForClipState(clips, [track]);
+
+      // Audio does not move on a right-trim.
+      expect(result.single.startTime, const Duration(seconds: 10));
+      expect(result.single.endTime, const Duration(seconds: 20));
+      // Its end now overhangs clip-b's trimmed end (17 s) into clip-c.
+      expect(result.single.endTime, greaterThan(const Duration(seconds: 17)));
+    });
+
+    test('ripples a later anchored track when an earlier clip is trimmed', () {
+      // clip-a trimmed left by 4 s → total shrinks, clip-b ripples to start
+      // at timeline 6 s. clip-b's anchored audio must follow.
+      final clips = [
+        _clip('a', 10, trimStart: const Duration(seconds: 4)),
+        _clip('b', 10),
+      ];
+      final track = _audio(
+        id: 'b-audio',
+        startTime: const Duration(seconds: 10),
+        endTime: const Duration(seconds: 20),
+        anchorClipId: 'b',
+      );
+
+      final result = rebaseAnchoredAudioForClipState(clips, [track]);
+
+      expect(result.single.startTime, const Duration(seconds: 6));
+      expect(result.single.endTime, const Duration(seconds: 16));
+    });
+
+    test('preserves a user-shortened span (L-Cut) while translating', () {
+      // User right-trimmed the audio to 10–15 s (5 s span). A later clip
+      // edit must keep that span, only translating it.
+      final clips = [
+        _clip('a', 10),
+        _clip('b', 10, trimStart: const Duration(seconds: 3)),
+      ];
+      final track = _audio(
+        id: 'b-audio',
+        startTime: const Duration(seconds: 10),
+        endTime: const Duration(seconds: 15),
+        anchorClipId: 'b',
+      );
+
+      final result = rebaseAnchoredAudioForClipState(clips, [track]);
+
+      expect(result.single.startTime, const Duration(seconds: 7));
+      expect(result.single.endTime, const Duration(seconds: 12));
+    });
+
+    test('clamps the start to zero for an anchored first clip', () {
+      // clip-a is first (timeline start 0). Trimming it left by 3 s cannot
+      // produce a lead, so the start clamps to zero.
+      final clips = [
+        _clip('a', 10, trimStart: const Duration(seconds: 3)),
+        _clip('b', 10),
+      ];
+      final track = _audio(
+        id: 'a-audio',
+        startTime: Duration.zero,
+        endTime: const Duration(seconds: 10),
+        anchorClipId: 'a',
+      );
+
+      final result = rebaseAnchoredAudioForClipState(clips, [track]);
+
+      expect(result.single.startTime, Duration.zero);
+      expect(result.single.endTime, const Duration(seconds: 10));
+    });
+
+    test('leaves an un-anchored track untouched', () {
+      final clips = [
+        _clip('a', 10),
+        _clip('b', 10, trimStart: const Duration(seconds: 3)),
+      ];
+      final tracks = [
+        _audio(
+          id: 'free',
+          startTime: const Duration(seconds: 10),
+          endTime: const Duration(seconds: 20),
+        ),
+      ];
+
+      final result = rebaseAnchoredAudioForClipState(clips, tracks);
+
+      // No anchored track moved → original list instance returned.
+      expect(identical(result, tracks), isTrue);
+      expect(result.single.startTime, const Duration(seconds: 10));
+      expect(result.single.endTime, const Duration(seconds: 20));
+    });
+
+    test('leaves a track whose anchor clip was removed untouched', () {
+      final track = _audio(
+        id: 'orphan',
+        startTime: const Duration(seconds: 10),
+        endTime: const Duration(seconds: 20),
+        anchorClipId: 'gone',
+      );
+
+      final result = rebaseAnchoredAudioForClipState(baseClips(), [track]);
+
+      expect(result.single.startTime, const Duration(seconds: 10));
+      expect(result.single.endTime, const Duration(seconds: 20));
+    });
+
+    test('returns the same list instance when nothing moves', () {
+      // Anchored track already aligned with its un-edited clip.
+      final tracks = [
+        _audio(
+          id: 'b-audio',
+          startTime: const Duration(seconds: 10),
+          endTime: const Duration(seconds: 20),
+          anchorClipId: 'b',
+        ),
+      ];
+
+      final result = rebaseAnchoredAudioForClipState(baseClips(), tracks);
+
+      expect(identical(result, tracks), isTrue);
+    });
+
+    test('returns the same empty list instance', () {
+      const tracks = <AudioEvent>[];
+      expect(
+        identical(rebaseAnchoredAudioForClipState(baseClips(), tracks), tracks),
+        isTrue,
+      );
+    });
   });
 }

@@ -607,6 +607,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         startOffset: currentClip.trimStart,
         startTime: clipStart,
         endTime: clipStart + currentClip.playbackDuration,
+        // Anchor the extracted audio to its source clip so it follows the
+        // clip's trims (J-Cut) until the user manually moves it.
+        anchorClipId: currentClip.id,
       );
 
       // Mute the source clip now that its audio has been extracted.

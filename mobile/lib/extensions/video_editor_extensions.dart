@@ -2,6 +2,7 @@ import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' hide AudioTrack;
 
 extension VideoEditorExtensions on ProImageEditorState {
@@ -11,6 +12,7 @@ extension VideoEditorExtensions on ProImageEditorState {
     Duration? endTime,
     Map<String, dynamic>? meta,
     bool skipUpdateHistory = false,
+    bool clearAnchor = false,
   }) {
     final audioTracks = skipUpdateHistory
         ? stateManager.audioTracks
@@ -20,6 +22,9 @@ extension VideoEditorExtensions on ProImageEditorState {
     audioTracks[index] = audioTracks[index].copyWith(
       startTime: startTime,
       endTime: endTime ?? Duration.zero,
+      // A manual move detaches the track from its source clip so it stops
+      // following clip trims and behaves as an independent track.
+      clearAnchorClipId: clearAnchor,
     );
 
     if (!skipUpdateHistory) {
@@ -105,9 +110,23 @@ extension VideoEditorExtensions on ProImageEditorState {
     List<Duration>? timelineMarkers,
   }) {
     final serialized = clips.map((c) => c.toJson()).toList();
+
+    // Keep anchored (extracted, not-yet-moved) audio aligned to its source
+    // clip after this clip edit, so trimming a clip's left edge produces a
+    // J-Cut without losing sync. Only rewrite the audio key when a track
+    // actually moved — `rebaseAnchoredAudioForClipState` returns the same
+    // list instance otherwise.
+    final currentTracks = stateManager.audioTracks;
+    final rebasedTracks = rebaseAnchoredAudioForClipState(clips, currentTracks);
+    final audioChanged = !identical(rebasedTracks, currentTracks);
+    final serializedAudio = audioChanged
+        ? rebasedTracks.map((e) => e.toJson()).toList()
+        : null;
+
     final meta = {
       ...stateManager.activeMeta,
       VideoEditorConstants.clipsStateHistoryKey: serialized,
+      VideoEditorConstants.audioStateHistoryKey: ?serializedAudio,
       if (timelineMarkers != null)
         VideoEditorConstants.timelineMarkersStateHistoryKey: timelineMarkers
             .map((marker) => marker.inMilliseconds)
@@ -119,6 +138,10 @@ extension VideoEditorExtensions on ProImageEditorState {
     } else {
       stateManager.activeMeta[VideoEditorConstants.clipsStateHistoryKey] =
           serialized;
+      if (serializedAudio != null) {
+        stateManager.activeMeta[VideoEditorConstants.audioStateHistoryKey] =
+            serializedAudio;
+      }
       if (timelineMarkers != null) {
         stateManager.activeMeta[VideoEditorConstants
             .timelineMarkersStateHistoryKey] = timelineMarkers

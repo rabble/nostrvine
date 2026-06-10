@@ -193,6 +193,24 @@ class TimelineMarkersRebased extends TimelineOverlayEvent {
   List<Object?> get props => [markers];
 }
 
+/// Live-reposition anchored sound items to follow a clip trim in progress.
+///
+/// Dispatched on every frame of a clip trim drag so the anchored audio bar
+/// tracks the clip's left edge in real time (J-Cut). Only the visual sound
+/// item positions are updated — the source [AudioEvent] tracks, the native
+/// player, and the editor history are reconciled once on release via
+/// `setClipState`.
+class TimelineOverlayAnchoredAudioRebased extends TimelineOverlayEvent {
+  const TimelineOverlayAnchoredAudioRebased(this.audioTracks);
+
+  /// The re-anchored tracks; only their [AudioEvent.startTime] /
+  /// [AudioEvent.endTime] are read to move the matching sound items.
+  final List<AudioEvent> audioTracks;
+
+  @override
+  List<Object?> get props => [audioTracks];
+}
+
 /// Attach extracted waveform samples to a sound item.
 class TimelineOverlayWaveformLoaded extends TimelineOverlayEvent {
   const TimelineOverlayWaveformLoaded({

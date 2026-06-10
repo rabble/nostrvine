@@ -1405,6 +1405,9 @@ void main() {
           final clip = _createClipWithFile();
           // endTime must use trimmedDuration, not duration
           expect(result.audioEvent.endTime, equals(clip.trimmedDuration));
+          // Extracted audio is anchored to its source clip by default.
+          expect(result.audioEvent.anchorClipId, equals(clip.id));
+          expect(result.audioEvent.isAnchored, isTrue);
         },
       );
 

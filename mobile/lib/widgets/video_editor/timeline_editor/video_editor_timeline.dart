@@ -144,6 +144,23 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
             }
           },
         ),
+        // Live J-Cut: while a clip trim is in progress, move anchored audio
+        // bars to follow the clip every frame. The final positions are
+        // committed to history + the native player on release (setClipState).
+        BlocListener<ClipEditorBloc, ClipEditorState>(
+          listenWhen: (prev, curr) =>
+              curr.isTrimDragging && prev.clips != curr.clips,
+          listener: (context, state) {
+            final overlayBloc = context.read<TimelineOverlayBloc>();
+            final rebased = rebaseAnchoredAudioForClipState(
+              state.clips,
+              overlayBloc.state.audioTracks,
+            );
+            if (!identical(rebased, overlayBloc.state.audioTracks)) {
+              overlayBloc.add(TimelineOverlayAnchoredAudioRebased(rebased));
+            }
+          },
+        ),
         BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
           listenWhen: (prev, curr) =>
               !_isUserScrolling && prev.currentPosition != curr.currentPosition,
@@ -494,6 +511,9 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
           startTime: startTime,
           endTime: startTime + duration,
           skipUpdateHistory: true,
+          // Manually moving the track detaches it from its source clip so it
+          // stops following clip trims and becomes an independent track.
+          clearAnchor: true,
         );
 
         _reorderEditorList(audioTracks, audioIdx, targetIdx);

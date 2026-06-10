@@ -39,6 +39,7 @@ class AudioEvent {
     this.volume = 1.0,
     this.startTime = Duration.zero,
     this.endTime,
+    this.anchorClipId,
   });
 
   /// Parse an AudioEvent from a Nostr Event.
@@ -213,6 +214,7 @@ class AudioEvent {
       endTime: json['endTimeMs'] != null
           ? Duration(milliseconds: json['endTimeMs'] as int)
           : null,
+      anchorClipId: json['anchorClipId'] as String?,
     );
   }
 
@@ -316,6 +318,22 @@ class AudioEvent {
   /// The time on the editor timeline where this audio event stops playing.
   /// If null, the audio plays until the end of its duration.
   final Duration? endTime;
+
+  /// ID of the `DivineVideoClip` this audio was extracted from and is
+  /// currently anchored to.
+  ///
+  /// When non-null, the audio is "anchored": editing the source clip's
+  /// trim (e.g. trimming its left edge) keeps the audio aligned with the
+  /// clip's source content so a J-Cut can be created without losing sync.
+  /// Set when audio is extracted from a clip; cleared (set to `null`) when
+  /// the user manually moves the audio on the timeline, after which it
+  /// behaves as an independent, free-floating track.
+  ///
+  /// Local-only editor state, never published to Nostr.
+  final String? anchorClipId;
+
+  /// Whether this audio is currently anchored to a source video clip.
+  bool get isAnchored => anchorClipId != null;
 
   /// Get the kind number from the source video reference.
   /// Returns null if no source video reference is set.
@@ -425,6 +443,8 @@ class AudioEvent {
     double? volume,
     Duration? startTime,
     Duration? endTime,
+    String? anchorClipId,
+    bool clearAnchorClipId = false,
   }) {
     return AudioEvent(
       id: id ?? this.id,
@@ -444,6 +464,9 @@ class AudioEvent {
       volume: volume ?? this.volume,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
+      anchorClipId: clearAnchorClipId
+          ? null
+          : (anchorClipId ?? this.anchorClipId),
     );
   }
 
@@ -490,6 +513,7 @@ class AudioEvent {
     if (startOffset != .zero) 'startOffsetMs': startOffset.inMilliseconds,
     if (startTime != Duration.zero) 'startTimeMs': startTime.inMilliseconds,
     if (endTime != null) 'endTimeMs': endTime!.inMilliseconds,
+    'anchorClipId': ?anchorClipId,
   };
 }
 

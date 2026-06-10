@@ -2,6 +2,7 @@
 // ABOUTME: Converts between playback positions and scroll offsets,
 // ABOUTME: accounting for the 1-px gap between adjacent clip strips.
 
+import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 
@@ -86,6 +87,66 @@ List<Duration> rebaseTimelineMarkersForClipState({
   }
 
   return rebased.toList()..sort();
+}
+
+/// Re-aligns anchored (extracted, not-yet-moved) audio tracks to their
+/// source clips after a clip edit (trim, reorder, or ripple from an earlier
+/// clip's trim).
+///
+/// For each [AudioEvent] whose [AudioEvent.anchorClipId] still resolves to a
+/// clip in [clips], the audio is translated on the timeline so its source
+/// content stays aligned with the clip's source content. This implements the
+/// J-Cut behaviour: the audio keeps its [AudioEvent.startOffset] and its span
+/// (so its full content survives — the head simply leads), while only its
+/// [AudioEvent.startTime]/[AudioEvent.endTime] move.
+///
+/// The alignment invariant preserved is, for the anchored clip:
+///
+///   startTime == clipTimelineStart - clip.trimStart + audio.startOffset
+///
+/// Tracks with no anchor, or whose anchor clip was removed, are returned
+/// unchanged. The original list instance is returned when nothing moved, so
+/// callers can cheaply detect a no-op via `identical`.
+List<AudioEvent> rebaseAnchoredAudioForClipState(
+  List<DivineVideoClip> clips,
+  List<AudioEvent> audioTracks,
+) {
+  if (audioTracks.isEmpty) return audioTracks;
+
+  final clipStarts = <String, Duration>{};
+  final clipsById = <String, DivineVideoClip>{};
+  var cursor = Duration.zero;
+  for (final clip in clips) {
+    clipStarts[clip.id] = cursor;
+    clipsById[clip.id] = clip;
+    cursor += clip.playbackDuration;
+  }
+
+  var changed = false;
+  final result = <AudioEvent>[];
+  for (final track in audioTracks) {
+    final anchorId = track.anchorClipId;
+    final clipStart = anchorId == null ? null : clipStarts[anchorId];
+    final clip = anchorId == null ? null : clipsById[anchorId];
+    if (clipStart == null || clip == null) {
+      result.add(track);
+      continue;
+    }
+
+    final span = (track.endTime ?? track.startTime) - track.startTime;
+    final newStartRaw = clipStart + track.startOffset - clip.trimStart;
+    final newStart = newStartRaw < Duration.zero ? Duration.zero : newStartRaw;
+    final newEnd = newStart + span;
+
+    if (newStart == track.startTime && newEnd == track.endTime) {
+      result.add(track);
+      continue;
+    }
+    changed = true;
+    result.add(track.copyWith(startTime: newStart, endTime: newEnd));
+  }
+
+  return changed ? result : audioTracks;
 }
 
 _TimelineMarkerAnchor? _timelineMarkerAnchorForPosition(

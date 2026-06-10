@@ -44,6 +44,10 @@ class TimelineOverlayBloc
     on<TimelineMarkerRemoved>(_onMarkerRemoved);
     on<TimelineMarkersRebased>(_onMarkersRebased);
     on<TimelineOverlayWaveformLoaded>(_onWaveformLoaded);
+    on<TimelineOverlayAnchoredAudioRebased>(
+      _onAnchoredAudioRebased,
+      transformer: restartable(),
+    );
     on<TimelineOverlayAudioVolumeChanged>(
       _onAudioVolumeChanged,
       transformer: sequential(),
@@ -563,6 +567,40 @@ class TimelineOverlayBloc
           item,
     ];
     emit(state.copyWith(items: updated));
+  }
+
+  void _onAnchoredAudioRebased(
+    TimelineOverlayAnchoredAudioRebased event,
+    Emitter<TimelineOverlayState> emit,
+  ) {
+    final byId = {for (final track in event.audioTracks) track.id: track};
+
+    var changed = false;
+    final updatedItems = <TimelineOverlayItem>[];
+    for (final item in state.items) {
+      final track = item.type == TimelineOverlayType.sound
+          ? byId[item.id]
+          : null;
+      if (track == null) {
+        updatedItems.add(item);
+        continue;
+      }
+      final newEnd = track.endTime ?? item.endTime;
+      if (item.startTime == track.startTime && item.endTime == newEnd) {
+        updatedItems.add(item);
+        continue;
+      }
+      changed = true;
+      updatedItems.add(
+        item.copyWith(startTime: track.startTime, endTime: newEnd),
+      );
+    }
+
+    // Visual-only live update: positions move with the trim, but rows,
+    // audioTracks, history, and the native player are left untouched and
+    // reconciled on release. Skip the emit when nothing moved.
+    if (!changed) return;
+    emit(state.copyWith(items: updatedItems));
   }
 
   void _onAudioVolumeChanged(

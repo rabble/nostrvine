@@ -547,6 +547,112 @@ void main() {
       );
     });
 
+    group(TimelineOverlayAnchoredAudioRebased, () {
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'moves matching sound items to follow the rebased tracks, leaving '
+        'other items untouched',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          items: [
+            _item(
+              id: 'b-audio',
+              type: TimelineOverlayType.sound,
+              start: const Duration(seconds: 10),
+              end: const Duration(seconds: 20),
+            ),
+            _item(
+              id: 'overlay',
+              type: TimelineOverlayType.layer,
+              start: const Duration(seconds: 1),
+              end: const Duration(seconds: 5),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          TimelineOverlayAnchoredAudioRebased([
+            _audioEvent(
+              id: 'b-audio',
+              start: const Duration(seconds: 7),
+              end: const Duration(seconds: 17),
+            ),
+          ]),
+        ),
+        verify: (bloc) {
+          final sound = bloc.state.items.firstWhere((i) => i.id == 'b-audio');
+          expect(sound.startTime, const Duration(seconds: 7));
+          expect(sound.endTime, const Duration(seconds: 17));
+          final layer = bloc.state.items.firstWhere((i) => i.id == 'overlay');
+          expect(layer.startTime, const Duration(seconds: 1));
+          expect(layer.endTime, const Duration(seconds: 5));
+        },
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'does not change source audioTracks (visual-only live update)',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          items: [
+            _item(
+              id: 'b-audio',
+              type: TimelineOverlayType.sound,
+              start: const Duration(seconds: 10),
+              end: const Duration(seconds: 20),
+            ),
+          ],
+          audioTracks: [
+            _audioEvent(
+              id: 'b-audio',
+              start: const Duration(seconds: 10),
+              end: const Duration(seconds: 20),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          TimelineOverlayAnchoredAudioRebased([
+            _audioEvent(
+              id: 'b-audio',
+              start: const Duration(seconds: 7),
+              end: const Duration(seconds: 17),
+            ),
+          ]),
+        ),
+        verify: (bloc) {
+          // The persisted source track keeps its old position — only the
+          // visual item moved. The native player / history reconcile on
+          // release, not during the live drag.
+          expect(
+            bloc.state.audioTracks.single.startTime,
+            const Duration(seconds: 10),
+          );
+        },
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'emits nothing when the rebased positions already match',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          items: [
+            _item(
+              id: 'b-audio',
+              type: TimelineOverlayType.sound,
+              start: const Duration(seconds: 10),
+              end: const Duration(seconds: 20),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          TimelineOverlayAnchoredAudioRebased([
+            _audioEvent(
+              id: 'b-audio',
+              start: const Duration(seconds: 10),
+              end: const Duration(seconds: 20),
+            ),
+          ]),
+        ),
+        expect: () => const <TimelineOverlayState>[],
+      );
+    });
+
     group('selection and gestures', () {
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
         'select and clear selected item',
@@ -779,6 +885,45 @@ void main() {
             ],
           ),
         ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'keeps a sound item that ends before the total (L-Cut overhang '
+        'survives the shrink)',
+        build: TimelineOverlayBloc.new,
+        // Anchored audio ending at 20 s stays put after a clip right-trim
+        // shrinks the total to 27 s — its tail must keep overhanging into
+        // the next clip rather than being clamped away or removed. A trailing
+        // layer that does exceed the total forces an emission so the handler
+        // definitely runs.
+        seed: () => TimelineOverlayState(
+          items: [
+            _item(
+              id: 'b-audio',
+              type: TimelineOverlayType.sound,
+              start: const Duration(seconds: 10),
+              end: const Duration(seconds: 20),
+            ),
+            _item(
+              id: 'tail-layer',
+              type: TimelineOverlayType.layer,
+              start: const Duration(seconds: 25),
+              end: const Duration(seconds: 30),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayTotalDurationChanged(Duration(seconds: 27)),
+        ),
+        verify: (bloc) {
+          final sound = bloc.state.items.firstWhere((i) => i.id == 'b-audio');
+          expect(sound.startTime, const Duration(seconds: 10));
+          expect(sound.endTime, const Duration(seconds: 20));
+          final layer = bloc.state.items.firstWhere(
+            (i) => i.id == 'tail-layer',
+          );
+          expect(layer.endTime, const Duration(seconds: 27));
+        },
       );
 
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
