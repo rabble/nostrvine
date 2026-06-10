@@ -7509,6 +7509,50 @@ void main() {
         },
       );
 
+      test('appends remaining classics when they outnumber trending', () async {
+        final mockFunnelcake = MockFunnelcakeApiClient();
+        when(() => mockFunnelcake.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcake.getVideosByHashtag(hashtag: 'bts'),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoStats(
+              id: 'trend-1',
+              pubkey: 'pubkey-1',
+              dTag: 'dtag-t1',
+              videoUrl: 'https://example.com/t1.mp4',
+            ),
+          ],
+        );
+        when(
+          () => mockFunnelcake.getClassicVideosByHashtag(hashtag: 'bts'),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoStats(
+              id: 'classic-1',
+              pubkey: 'pubkey-2',
+              dTag: 'dtag-c1',
+              videoUrl: 'https://example.com/c1.mp4',
+            ),
+            _createVideoStats(
+              id: 'classic-2',
+              pubkey: 'pubkey-3',
+              dTag: 'dtag-c2',
+              videoUrl: 'https://example.com/c2.mp4',
+            ),
+          ],
+        );
+
+        final repoWithApi = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcake,
+        );
+
+        final result = await repoWithApi.getHashtagFeedVideos(hashtag: 'bts');
+
+        expect(result.map((v) => v.id), ['trend-1', 'classic-1', 'classic-2']);
+      });
+
       test(
         'applies block filter to both trending and classic results',
         () async {
