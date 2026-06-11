@@ -6509,8 +6509,14 @@ abstract class AppLocalizations {
   /// No description provided for @shareMenuDeleteFailedRelayRejected.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t reach the relay. Check your connection and try again.'**
+  /// **'The relay wouldn\'t accept this delete request. Try again in a moment.'**
   String get shareMenuDeleteFailedRelayRejected;
+
+  /// No description provided for @shareMenuDeleteFailedRelayNoResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the relay. Check your connection and try again.'**
+  String get shareMenuDeleteFailedRelayNoResponse;
 
   /// No description provided for @shareMenuDeleteFailedGeneric.
   ///

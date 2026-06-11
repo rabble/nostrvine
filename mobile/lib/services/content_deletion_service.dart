@@ -25,10 +25,13 @@ enum DeleteFailureKind {
   /// Signing or constructing the kind 5 delete event failed.
   couldNotSign,
 
-  /// Every relay rejected the delete event or no relay responded before the
-  /// publish timeout. The delete is NOT persisted locally so the user can
-  /// retry.
+  /// Every relay that responded rejected the delete event. The delete is NOT
+  /// persisted locally so the user can retry.
   relayRejected,
+
+  /// No relay accepted or rejected the delete event before the publish
+  /// timeout. The delete is NOT persisted locally so the user can retry.
+  relayNoResponse,
 
   /// Unexpected error (including outer [deleteContent] catch).
   unknown,
@@ -157,9 +160,8 @@ class ContentDeletionService {
   ///
   /// The deletion is only considered successful when at least one relay
   /// returns an `OK true` acknowledgement (NIP-20). If every relay rejects
-  /// the event or none respond before the publish timeout, the operation
-  /// fails with [DeleteFailureKind.relayRejected] and is NOT added to local
-  /// deletion history — the caller can retry.
+  /// the event, or none respond before the publish timeout, the operation
+  /// fails and is NOT added to local deletion history — the caller can retry.
   Future<DeleteResult> deleteContent({
     required VideoEvent video,
     required String reason,
@@ -185,6 +187,7 @@ class ContentDeletionService {
       // OpenVine only uses kind 34236 (addressable short videos)
       final deleteOutcome = await _createDeleteEvent(
         originalEventId: video.id,
+        originalAddressableId: _addressableDeletionTarget(video),
         originalEventKind: NIP71VideoKinds.getPreferredKind(),
         reason: reason,
         additionalContext: additionalContext,
@@ -207,9 +210,12 @@ class ContentDeletionService {
           name: 'ContentDeletionService',
           category: LogCategory.system,
         );
+        final failureKind = publishOutcome.rejectedBy.isNotEmpty
+            ? DeleteFailureKind.relayRejected
+            : DeleteFailureKind.relayNoResponse;
         return DeleteResult.failure(
           'Relay did not confirm deletion: ${publishOutcome.summary}',
-          DeleteFailureKind.relayRejected,
+          failureKind,
         );
       }
 
@@ -261,6 +267,8 @@ class ContentDeletionService {
       case DeleteFailureKind.couldNotSign:
         return 'Failed to create delete event';
       case DeleteFailureKind.relayRejected:
+        return 'Relay rejected deletion';
+      case DeleteFailureKind.relayNoResponse:
         return 'Relay did not confirm deletion';
       case DeleteFailureKind.unknown:
         return 'Failed to delete content';
@@ -323,6 +331,7 @@ class ContentDeletionService {
   /// On success [event] is non-null and [failureKind] is null; otherwise [event] is null.
   Future<({Event? event, DeleteFailureKind? failureKind})> _createDeleteEvent({
     required String originalEventId,
+    required String? originalAddressableId,
     required int originalEventKind,
     required String reason,
     String? additionalContext,
@@ -337,10 +346,12 @@ class ContentDeletionService {
         return (event: null, failureKind: DeleteFailureKind.notAuthenticated);
       }
 
-      // Build NIP-09 compliant tags (kind 5)
-      // Per NIP-09: 'e' tag references event to delete, 'k' tag specifies event kind
+      // Build NIP-09 compliant tags (kind 5).
+      // Addressable videos need the `a` coordinate; keep `e` for relays that
+      // still match by concrete event id.
       final tags = <List<String>>[
         ['e', originalEventId], // Event being deleted
+        if (originalAddressableId != null) ['a', originalAddressableId],
         [
           'k',
           originalEventKind.toString(),
@@ -417,6 +428,14 @@ class ContentDeletionService {
     final userPubkey = _authService.currentPublicKeyHex;
 
     return video.pubkey == userPubkey;
+  }
+
+  String? _addressableDeletionTarget(VideoEvent video) {
+    final dTag = video.rawTags['d'];
+    if (dTag == null || dTag.isEmpty) {
+      return null;
+    }
+    return video.addressableId;
   }
 
   /// Get delete reason text for common cases

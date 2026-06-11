@@ -94,11 +94,12 @@ void main() {
       await service.initialize();
     });
 
-    VideoEvent createTestVideoEvent(String pubkey) {
+    VideoEvent createTestVideoEvent(String pubkey, {String? dTag = 'video-1'}) {
       final event = Event(
         pubkey,
         34236,
         [
+          if (dTag != null) ['d', dTag],
           ['title', 'Test Video'],
           ['url', 'https://example.com/video.mp4'],
         ],
@@ -150,13 +151,21 @@ void main() {
           expect(result.deleteEventId, equals(deleteEvent.id));
           expect(service.hasBeenDeleted(video.id), isTrue);
 
-          verify(
+          final captured = verify(
             () => mockAuthService.createAndSignEvent(
               kind: 5,
               content: any(named: 'content'),
-              tags: any(named: 'tags'),
+              tags: captureAny(named: 'tags'),
             ),
-          ).called(1);
+          ).captured;
+
+          final tags = captured.first as List<List<String>>;
+          expect(tags, contains(equals(<String>['e', video.id])));
+          expect(
+            tags,
+            contains(equals(<String>['a', '34236:$testPublicKey:video-1'])),
+          );
+          expect(tags, contains(equals(<String>['k', '34236'])));
         },
       );
 
@@ -203,7 +212,7 @@ void main() {
         },
       );
 
-      test('fails with relayRejected and does NOT save locally when no relay '
+      test('fails with relayNoResponse and does NOT save locally when no relay '
           'answers before timeout', () async {
         final video = createTestVideoEvent(testPublicKey);
         final deleteEvent = createTestEvent(
@@ -237,13 +246,13 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.failureKind, equals(DeleteFailureKind.relayRejected));
+        expect(result.failureKind, equals(DeleteFailureKind.relayNoResponse));
         expect(service.hasBeenDeleted(video.id), isFalse);
         expect(service.deletionHistory, isEmpty);
       });
 
       test(
-        'includes the k tag with the original video kind per NIP-09',
+        'includes e, a, and k tags for an addressable video per NIP-09',
         () async {
           final video = createTestVideoEvent(testPublicKey);
           final deleteEvent = createTestEvent(
@@ -282,13 +291,58 @@ void main() {
           ).captured;
 
           final tags = captured.first as List<List<String>>;
-          final kTag = tags.firstWhere(
-            (tag) => tag.isNotEmpty && tag[0] == 'k',
-            orElse: () => <String>[],
+          expect(tags, contains(equals(<String>['e', video.id])));
+          expect(
+            tags,
+            contains(equals(<String>['a', '34236:$testPublicKey:video-1'])),
+          );
+          expect(tags, contains(equals(<String>['k', '34236'])));
+        },
+      );
+
+      test(
+        'does not create a synthetic a tag when the video has no d tag',
+        () async {
+          final video = createTestVideoEvent(testPublicKey, dTag: null);
+          final deleteEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', video.id],
+              ['k', '34236'],
+            ],
+            content: 'CONTENT DELETION',
           );
 
-          expect(kTag, isNotEmpty);
-          expect(kTag[1], equals('34236'));
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => deleteEvent);
+
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => accepted(deleteEvent.id));
+
+          await service.deleteContent(video: video, reason: 'Personal choice');
+
+          final captured = verify(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: captureAny(named: 'tags'),
+            ),
+          ).captured;
+
+          final tags = captured.first as List<List<String>>;
+          expect(tags, contains(equals(<String>['e', video.id])));
+          expect(tags.any((tag) => tag.isNotEmpty && tag[0] == 'a'), isFalse);
+          expect(tags, contains(equals(<String>['k', '34236'])));
         },
       );
 
