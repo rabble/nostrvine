@@ -20,6 +20,13 @@ import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+const _pickerBaseChildSize = 0.24;
+const _pickerChildSizePerCollaborator = 0.08;
+const _pickerMinInitialChildSize = 0.36;
+const _pickerMaxInitialChildSize = 0.68;
+const _pickerMinChildSize = 0.28;
+const _pickerMaxChildSize = 0.8;
+
 /// Displays collaborator avatars on a video feed item.
 ///
 /// Hides the current user's own avatar when their local invite store says
@@ -125,7 +132,7 @@ class CollaboratorAvatarRowBody extends StatelessWidget {
       child: Semantics(
         identifier: 'collaborator_avatar_row',
         button: true,
-        label: context.l10n.videoCollaboratorCountLabel(visible.length),
+        label: _semanticsLabel(context, visible.length),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -184,16 +191,22 @@ class CollaboratorAvatarRowBody extends StatelessWidget {
         scrollController: scrollController,
       ),
       initialChildSize: _initialPickerSize(pubkeys.length),
-      minChildSize: 0.28,
-      maxChildSize: 0.8,
+      minChildSize: _pickerMinChildSize,
+      maxChildSize: _pickerMaxChildSize,
     );
   }
 
   double _initialPickerSize(int count) {
-    final size = 0.24 + (count * 0.08);
-    if (size < 0.36) return 0.36;
-    if (size > 0.68) return 0.68;
+    final size =
+        _pickerBaseChildSize + (count * _pickerChildSizePerCollaborator);
+    if (size < _pickerMinInitialChildSize) return _pickerMinInitialChildSize;
+    if (size > _pickerMaxInitialChildSize) return _pickerMaxInitialChildSize;
     return size;
+  }
+
+  String _semanticsLabel(BuildContext context, int count) {
+    if (count == 1) return context.l10n.videoCollaboratorCountLabel(count);
+    return '${context.l10n.metadataCollaboratorsLabel}: $count';
   }
 
   void _navigateToCollaborator(BuildContext context, String pubkey) {
@@ -302,8 +315,14 @@ class _CollaboratorPickerTile extends ConsumerWidget {
     final npub = normalizeToNpub(pubkey);
     if (npub == null) return;
 
+    // Dismiss the sheet first, then navigate from the root navigator context.
+    // GoRouter extensions can throw when called from inside a modal bottom
+    // sheet (the router is not in the modal's widget tree).
     final hostContext = Navigator.of(context, rootNavigator: true).context;
     Navigator.of(context).pop();
+    // Defer to the next frame so the modal route's pop has settled in the
+    // route stack before we push the destination route from the root
+    // navigator's context.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!hostContext.mounted) return;
       hostContext.pushWithVideoPause(OtherProfileScreen.pathForNpub(npub));

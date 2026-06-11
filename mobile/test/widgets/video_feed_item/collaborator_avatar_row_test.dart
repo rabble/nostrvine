@@ -317,6 +317,22 @@ void main() {
         find.text(_l10n.videoCollaboratorWithMore('Alice', 2)),
         findsOneWidget,
       );
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Semantics &&
+              w.properties.label == '${_l10n.metadataCollaboratorsLabel}: 3',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Semantics &&
+              w.properties.label == _l10n.videoCollaboratorCountLabel(3),
+        ),
+        findsNothing,
+      );
 
       await tester.tap(
         find.text(_l10n.videoCollaboratorWithMore('Alice', 2)),
