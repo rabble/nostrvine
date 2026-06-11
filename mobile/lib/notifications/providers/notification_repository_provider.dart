@@ -46,6 +46,7 @@ final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
     userPubkey: userPubkey,
     // Flag-switched factory: content-policy engine by default, legacy
     // shouldFilterFromFeeds under the emergency off switch.
+    // TODO(#5047): Collapse to the engine filter in content-policy Phase 4.
     blockFilter: createBlockedAuthorFilter(ref),
     authHeadersProvider: (url, method, {body}) async {
       final httpMethod = switch (method.toUpperCase()) {

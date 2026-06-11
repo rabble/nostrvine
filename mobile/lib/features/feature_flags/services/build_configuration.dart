@@ -43,7 +43,8 @@ class BuildConfiguration {
       case FeatureFlag.contentPolicyV2:
         // Phase 3 of the content-policy migration (#948): the engine is
         // the default enforcement; the env var remains as an emergency
-        // off switch until Phase 4 removes the flag entirely.
+        // off switch.
+        // TODO(#5047): Remove the flag in content-policy Phase 4.
         return const bool.fromEnvironment(
           'FF_CONTENT_POLICY_V2',
           defaultValue: true,
