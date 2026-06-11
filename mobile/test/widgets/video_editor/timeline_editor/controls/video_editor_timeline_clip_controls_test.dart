@@ -127,5 +127,20 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'Speed button is hidden while isExtractingAudio',
+      (tester) async {
+        when(
+          () => bloc.state,
+        ).thenReturn(const ClipEditorState(isExtractingAudio: true));
+        await tester.pumpWidget(build());
+
+        final controls = tester.widget<VideoEditorTimelineControls>(
+          find.byType(VideoEditorTimelineControls),
+        );
+        expect(controls.onSpeed, isNull);
+      },
+    );
   });
 }

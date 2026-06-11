@@ -42,7 +42,7 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       onDelete: isLastClip ? null : () => _deleteClip(context),
       onDuplicated: () => _duplicateClip(context),
       onSplit: isSplitting ? null : () => _splitClip(context),
-      onSpeed: () => _setPlaybackSpeed(context),
+      onSpeed: isExtractingAudio ? null : () => _setPlaybackSpeed(context),
       onExtractAudio: () => _requestExtractAudio(context),
       onReversed: () => _reverseClip(context),
       isReversed: isReversed,

@@ -34,7 +34,7 @@ class AudioExtractionResult {
   /// SHA-256 hash of the audio file (hex string).
   final String sha256Hash;
 
-  /// MIME type of the audio file (e.g., "audio/m4a").
+  /// MIME type of the audio file (e.g., "audio/wav").
   final String mimeType;
 
   @override
