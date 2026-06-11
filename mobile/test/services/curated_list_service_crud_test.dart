@@ -297,6 +297,32 @@ void main() {
         // Should have called subscribeToEvents
         verify(() => mockNostr.subscribe(any())).called(1);
       });
+
+      test('relay-synced own lists stay in myLists', () async {
+        when(() => mockNostr.subscribe(any())).thenAnswer(
+          (_) => Stream.value(
+            Event.fromJson({
+              'id': 'relay_list_event',
+              'pubkey': _ownerPubkey,
+              'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              'kind': 30005,
+              'tags': [
+                ['d', 'relay_list_1'],
+                ['title', 'Relay List'],
+              ],
+              'content': 'List from relay',
+              'sig': 'test_signature',
+            }),
+          ),
+        );
+
+        await service.fetchUserListsFromRelays();
+
+        final relayList = service.getListById('relay_list_1');
+        expect(relayList, isNotNull);
+        expect(relayList!.pubkey, _ownerPubkey);
+        expect(service.myLists.map((list) => list.id), contains(relayList.id));
+      });
     });
 
     group('createList()', () {

@@ -58,6 +58,7 @@ extension NostrEventExt on Event {
     return CuratedList(
       id: dTag,
       name: name,
+      pubkey: pubkey,
       description: description ?? content,
       imageUrl: imageUrl,
       videoEventIds: videoEventIds,
