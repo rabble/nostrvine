@@ -330,32 +330,43 @@ ProfileDeepLinkNavAction resolveProfileDeepLinkNavAction({
   return ProfileDeepLinkNavAction.push;
 }
 
-/// Resolves a push/local payload to a [NotificationTapTarget] and the event id
-/// to navigate to, via the shared [resolveNotificationTapTarget] contract.
+/// Resolves a push/local payload to a [NotificationTapTarget], the event id to
+/// navigate to, and the authoritative video coordinate, via the shared
+/// [resolveNotificationTapTarget] contract.
 ///
-/// `referencedEventId` (the event acted upon) is preferred as the video target;
-/// it is absent for follow/mention, which fall back to `eventId` (the source
-/// event). Extracted and `@visibleForTesting` so the push-side per-kind routing
-/// can be asserted without a navigator — mirrors [resolveVideoDeepLinkNavAction].
+/// `referencedAddress` (the signed NIP-33 coordinate of the referenced video)
+/// is the authoritative target: when it is a usable video coordinate
+/// ([videoAddressableTarget]) it is returned as `videoCoordinate` and the
+/// executor routes to it directly. Otherwise the video target is
+/// `referencedEventId` (the event acted upon), falling back to `eventId` (the
+/// source event) for follow/mention, which the executor walks to a root video.
+/// Extracted and `@visibleForTesting` so the push-side per-kind routing can be
+/// asserted without a navigator — mirrors [resolveVideoDeepLinkNavAction].
 @visibleForTesting
-({NotificationTapTarget target, String? targetEventId})
+({NotificationTapTarget target, String? targetEventId, String? videoCoordinate})
 pushNotificationTapTarget({
+  required String? referencedAddress,
   required String? referencedEventId,
   required String? eventId,
   required String? notificationType,
   required String? senderPubkey,
 }) {
+  final videoCoordinate = videoAddressableTarget(referencedAddress);
   final targetEventId =
       (referencedEventId != null && referencedEventId.isNotEmpty)
       ? referencedEventId
       : eventId;
+  final hasVideoTarget =
+      videoCoordinate != null ||
+      (targetEventId != null && targetEventId.isNotEmpty);
   return (
     target: resolveNotificationTapTarget(
       kind: notificationKindFromPushType(notificationType),
-      hasVideoTarget: targetEventId != null && targetEventId.isNotEmpty,
+      hasVideoTarget: hasVideoTarget,
       actorPubkey: senderPubkey,
     ),
     targetEventId: targetEventId,
+    videoCoordinate: videoCoordinate,
   );
 }
 
@@ -371,13 +382,15 @@ pushNotificationTapTarget({
 /// it opens a profile for follows and is the safe fallback when a video target
 /// cannot be resolved.
 Future<void> _routeNotificationTap({
+  required String? referencedAddress,
   required String? referencedEventId,
   required String? eventId,
   required String? notificationType,
   required String? senderPubkey,
   required ProviderContainer container,
 }) async {
-  final (:target, :targetEventId) = pushNotificationTapTarget(
+  final (:target, :targetEventId, :videoCoordinate) = pushNotificationTapTarget(
+    referencedAddress: referencedAddress,
     referencedEventId: referencedEventId,
     eventId: eventId,
     notificationType: notificationType,
@@ -390,12 +403,23 @@ Future<void> _routeNotificationTap({
     case OpenInboxTarget():
       _navigateToNotificationInbox(container);
     case OpenVideoTarget(:final autoOpenComments):
-      await _resolveAndPushVideoLink(
-        container: container,
-        targetEventId: targetEventId!,
-        autoOpenComments: autoOpenComments,
-        fallbackPubkey: senderPubkey,
-      );
+      if (videoCoordinate != null) {
+        // Authoritative path: the signed NIP-33 coordinate is stable across
+        // metadata replacements and resolves without a relay round-trip, so
+        // push it straight to the video route.
+        _pushVideoDeepLink(
+          container,
+          videoRef: videoCoordinate,
+          autoOpenComments: autoOpenComments,
+        );
+      } else {
+        await _resolveAndPushVideoLink(
+          container: container,
+          targetEventId: targetEventId!,
+          autoOpenComments: autoOpenComments,
+          fallbackPubkey: senderPubkey,
+        );
+      }
   }
 }
 
@@ -441,12 +465,26 @@ Future<void> _resolveAndPushVideoLink({
     return;
   }
 
+  _pushVideoDeepLink(
+    container,
+    videoRef: videoEventId,
+    autoOpenComments: autoOpenComments,
+  );
+}
+
+/// Pushes a video [DeepLink] for [videoRef] (an event id or a NIP-33
+/// `kind:pubkey:d-tag` coordinate) through the shared deep-link stream.
+void _pushVideoDeepLink(
+  ProviderContainer container, {
+  required String videoRef,
+  required bool autoOpenComments,
+}) {
   container
       .read(deepLinkServiceProvider)
       .pushLink(
         DeepLink(
           type: DeepLinkType.video,
-          videoRef: videoEventId,
+          videoRef: videoRef,
           autoOpenComments: autoOpenComments,
         ),
       );
@@ -690,6 +728,7 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
             );
             unawaited(
               _routeNotificationTap(
+                referencedAddress: parsed.referencedAddress,
                 referencedEventId: parsed.referencedEventId,
                 eventId: parsed.eventId,
                 notificationType: parsed.notificationType,
@@ -716,6 +755,7 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
           );
           unawaited(
             _routeNotificationTap(
+              referencedAddress: launchTap.referencedAddress,
               referencedEventId: launchTap.referencedEventId,
               eventId: launchTap.eventId,
               notificationType: launchTap.notificationType,
@@ -737,6 +777,7 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
             );
             unawaited(
               _routeNotificationTap(
+                referencedAddress: parsed.referencedAddress,
                 referencedEventId: parsed.referencedEventId,
                 eventId: parsed.eventId,
                 notificationType: parsed.notificationType,
@@ -1459,6 +1500,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           );
           unawaited(
             _routeNotificationTap(
+              referencedAddress: tapEvent.referencedAddress,
               referencedEventId: tapEvent.referencedEventId,
               eventId: tapEvent.eventId,
               notificationType: tapEvent.notificationType,

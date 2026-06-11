@@ -2,7 +2,9 @@
 // ABOUTME: One contract shared by in-app row taps, FCM push taps, and local taps.
 
 import 'package:equatable/equatable.dart';
-import 'package:models/models.dart' show NotificationKind;
+import 'package:models/models.dart' show NIP71VideoKinds, NotificationKind;
+import 'package:openvine/services/notification_helpers.dart'
+    show parseAddressableId;
 
 /// Normalized destination for a notification tap.
 ///
@@ -94,6 +96,22 @@ NotificationKind? notificationKindFromPushType(String? type) {
       // should still fall back to the best available target.
       return null;
   }
+}
+
+/// Returns [referencedAddress] when it is a usable video coordinate, else null.
+///
+/// The push service sends `referencedAddress` as the signed NIP-33 coordinate
+/// (`kind:pubkey:d-tag`) of the referenced event. It is only a video *route*
+/// when its kind is one the raw-coordinate route resolver accepts — i.e. a
+/// NIP-71 video kind ([NIP71VideoKinds.isVideoKind]). Gating on the same
+/// predicate guarantees a non-null result resolves to a video, so the executor
+/// can push it directly without a relay round-trip; non-video or malformed
+/// coordinates return null and the caller falls back to the event-id walk.
+String? videoAddressableTarget(String? referencedAddress) {
+  if (referencedAddress == null || referencedAddress.isEmpty) return null;
+  final parsed = parseAddressableId(referencedAddress);
+  if (parsed == null) return null;
+  return NIP71VideoKinds.isVideoKind(parsed.kind) ? referencedAddress : null;
 }
 
 /// Decides where a notification tap should go.
