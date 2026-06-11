@@ -2,10 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>aps-environment</key>
-	<string>development</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
+		<!-- Claim both the apex and canonical www host so externally shared
+		     Divine links can hand off to the app regardless of which host a
+		     browser or chat client surfaces. -->
 		<string>applinks:divine.video</string>
 		<string>applinks:www.divine.video</string>
 		<string>applinks:login.divine.video</string>
@@ -13,6 +14,10 @@
 		<string>webcredentials:login.divine.video</string>
 	</array>
 	<key>com.apple.security.application-groups</key>
-	<array/>
+	<array>
+		<string>group.co.openvine.app</string>
+	</array>
+	<key>aps-environment</key>
+	<string>development</string>
 </dict>
 </plist>

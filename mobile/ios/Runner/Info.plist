@@ -43,19 +43,6 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Viewer</string>
-			<key>CFBundleURLName</key>
-			<string>video.divine.app</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>divine</string>
-			</array>
-		</dict>
-	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>FirebaseCrashlyticsCollectionEnabled</key>
@@ -70,6 +57,13 @@
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
+		<!-- Apple-documented key for loopback/local-only cleartext
+		     exemption. Permits http/ws to localhost, 127.0.0.1, ::1,
+		     single-label hostnames, and the .local TLD so the local
+		     Docker stack works from iOS Simulator. Remote cleartext
+		     stays rejected. Available since iOS 10.0; project
+		     deployment target is 16.0. Mirrors the loopback domain-config
+		     in android/app/src/main/res/xml/network_security_config.xml. -->
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
@@ -93,6 +87,8 @@
 	<string>Photo library access is needed to save exported videos to your library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Photo library access is needed to pick and share your videos.</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -104,23 +100,16 @@
 				<dict>
 					<key>UISceneClassName</key>
 					<string>UIWindowScene</string>
-					<key>UISceneConfigurationName</key>
-					<string>flutter</string>
 					<key>UISceneDelegateClassName</key>
 					<string>FlutterSceneDelegate</string>
+					<key>UISceneConfigurationName</key>
+					<string>flutter</string>
 					<key>UISceneStoryboardFile</key>
 					<string>Main</string>
 				</dict>
 			</array>
 		</dict>
 	</dict>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-		<string>remote-notification</string>
-	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -137,6 +126,24 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>CFBundleURLName</key>
+			<string>video.divine.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>divine</string>
+			</array>
+		</dict>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
