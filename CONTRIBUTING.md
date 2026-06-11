@@ -171,7 +171,9 @@ Rules:
 
 - Never start new work in a dirty checkout.
 - Keep one task per worktree.
-- Rebase onto fresh `origin/main` before every push.
+- Rebase onto fresh `origin/main` before publishing or final handoff, and
+  whenever GitHub reports merge conflicts. During PR review with no
+  reported conflicts, push review fixes without a history-refresh rebase.
 - Never merge `main` into a feature branch. Always rebase.
 - Never stack PRs. Every PR targets `main`.
 
@@ -303,7 +305,9 @@ Requirements:
   description, related issue, out-of-scope notes, verification details, and
   type-of-change checklist.
 - End with a clean `git status`.
-- Rebase on `origin/main` before pushing.
+- Rebase on `origin/main` before publishing or final handoff, and whenever
+  GitHub reports merge conflicts; skip the rebase for review-only pushes
+  when GitHub reports no conflicts.
 - Each PR should address a single GitHub issue whenever possible. Assign that
   issue to yourself before starting work when you have permission to do so. If
   you do not, ask a maintainer to assign or confirm ownership before you begin

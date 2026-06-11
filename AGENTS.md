@@ -17,9 +17,10 @@
   - `git worktree add .worktrees/<task-name> -b <branch-name> origin/main`
 - Keep one task per worktree. Do not mix unrelated fixes, reviews, or experiments in the same tree.
 - If the current checkout is dirty, do not start new work there. Commit it, stash it intentionally, or discard it intentionally first.
-- **Rebase onto fresh `origin/main` before every push**, even on a branch you've already pushed:
+- **Rebase onto fresh `origin/main` before publishing or final handoff**, and whenever GitHub reports merge conflicts:
   - `git fetch origin && git rebase origin/main`
   - `git push --force-with-lease` (never `--force` without `--lease`)
+- During PR review, if GitHub reports no merge conflicts and the update is only addressing review feedback, do not rebase just to refresh history. Push the review fix normally; the PR is squash-merged anyway.
 - Never merge `main` into a feature branch — always rebase.
 
 ## PR Guardrails

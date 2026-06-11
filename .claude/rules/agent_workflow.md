@@ -37,10 +37,11 @@ elsewhere. Do not mix unrelated work into one worktree.
 
 ---
 
-## 2. Always rebase onto `origin/main` before pushing
+## 2. Rebase when publishing, finalizing, or resolving conflicts
 
-Before **every** `git push`, fetch the latest `origin/main` and rebase
-your branch onto it:
+Before publishing a branch, before final handoff, and whenever GitHub
+reports merge conflicts, fetch the latest `origin/main` and rebase your
+branch onto it:
 
 ```bash
 git fetch origin
@@ -49,21 +50,30 @@ git rebase origin/main
 git push --force-with-lease
 ```
 
-Rebasing right before push surfaces conflicts and broken assumptions
-while you still have full context — instead of after CI fails on the PR
-or after a reviewer has already started reading.
+Rebasing before those boundary moments surfaces conflicts and broken
+assumptions while you still have full context — instead of after CI fails
+on the PR or after a reviewer has already started reading.
+
+During PR review, if GitHub reports no merge conflicts and your update
+only addresses review feedback, do not rebase just to refresh history.
+Push the review fix normally. The PR is squash-merged anyway, so a
+history-refresh rebase adds force-push risk without meaningful review
+value.
 
 **Forbidden:**
 
-- `git push` without first `git fetch origin && git rebase origin/main`.
+- Publishing a new branch, making a final handoff push, or pushing a
+  branch with GitHub-reported merge conflicts without first running
+  `git fetch origin && git rebase origin/main`.
 - `git push --force` without `--lease`. `--force-with-lease` is
   mandatory on rebased feature branches so a concurrent push from a
   different machine isn't silently overwritten.
 - Merging `main` into a feature branch instead of rebasing — produces
   noisy "Merge branch 'main' into..." commits and a non-linear history.
 
-This rule still applies even on a branch you've pushed many times.
-Don't push a stale branch.
+The PR-review exception only applies when GitHub reports no merge
+conflicts and the push is narrowly for review feedback. If either stops
+being true, rebase onto fresh `origin/main`.
 
 ---
 
@@ -193,5 +203,8 @@ the local environment differs from CI. Investigate the difference.
 
 - Run the affected test suites locally.
 - Run `flutter analyze lib test integration_test`.
-- Verify the rebase onto `origin/main` did not break anything.
+- If this push requires a rebase under the workflow rules above, verify
+  the rebase onto `origin/main` did not break anything.
+- If this is a PR-review fix without a rebase, verify GitHub reports no
+  merge conflicts before relying on that exception.
 - If anything is red, do not push. Fix it.

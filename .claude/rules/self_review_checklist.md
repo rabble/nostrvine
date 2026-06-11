@@ -164,10 +164,13 @@ Then:
 
 ## Before opening or updating a PR
 
-- [ ] **Rebased onto fresh `origin/main`** before pushing
-  (`git fetch origin && git rebase origin/main`), and pushed with
-  `--force-with-lease`. See
-  [`agent_workflow.md`](agent_workflow.md#2-always-rebase-onto-originmain-before-pushing).
+- [ ] **Rebased onto fresh `origin/main`** before publishing or final
+  handoff, and whenever GitHub reports merge conflicts
+  (`git fetch origin && git rebase origin/main`), then pushed with
+  `--force-with-lease`. During PR review, if GitHub reports no merge
+  conflicts and the push only addresses review feedback, push normally
+  without a history-refresh rebase. See
+  [`agent_workflow.md`](agent_workflow.md#2-rebase-when-publishing-finalizing-or-resolving-conflicts).
 - [ ] PR targets `main`. **Never `--base <other-branch>`** — if this
   work depends on another in-flight branch, combine them into one PR.
   See [`agent_workflow.md`](agent_workflow.md#3-never-stack-prs--combine-dependent-features-into-one-bigger-pr).
