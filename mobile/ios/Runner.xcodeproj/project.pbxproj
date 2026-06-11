@@ -11,21 +11,21 @@
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		38FD4E59291C9572AF216296 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B2A13AD2D9A576685353158 /* Pods_Runner.framework */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		3EB13B9046685257BDD640FB /* NostrBridgeAttestationPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06671AD11C80317FA3B1799D /* NostrBridgeAttestationPlugin.swift */; };
 		4F86E81FB269DE72E2131EBC /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E86217C65C2A7ED5885FDC2 /* NotificationService.swift */; };
 		62ACD9D0D737E6772C26E9DF /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8CE07D4A15ABF6932C18302C /* GoogleService-Info.plist */; };
 		66F22673A01C965F74615E46 /* BuildFile in Frameworks */ = {isa = PBXBuildFile; };
 		6E3EAE672F3747792842A5A3 /* NotificationServiceExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = C696D98D09FD161565BF6483 /* NotificationServiceExtension.appex */; };
 		6FDAD046102CCA6028B8B9A3 /* BuildFile in Frameworks */ = {isa = PBXBuildFile; };
-		D1A000000000000000000001 /* CameraQuickActionWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A000000000000000000005 /* CameraQuickActionWidget.swift */; };
-		D1A000000000000000000002 /* CameraQuickActionWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = D1A000000000000000000008 /* CameraQuickActionWidget.appex */; };
-		D1A000000000000000000003 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D1A00000000000000000001B /* Localizable.strings */; };
-		3EB13B9046685257BDD640FB /* NostrBridgeAttestationPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06671AD11C80317FA3B1799D /* NostrBridgeAttestationPlugin.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		BCA7A887EC3BDE698127BCB5 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 037A7FC0D83198C29E787FD1 /* Pods_RunnerTests.framework */; };
+		D1A000000000000000000001 /* CameraQuickActionWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A000000000000000000005 /* CameraQuickActionWidget.swift */; };
+		D1A000000000000000000002 /* CameraQuickActionWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = D1A000000000000000000008 /* CameraQuickActionWidget.appex */; };
+		D1A000000000000000000003 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D1A00000000000000000001B /* Localizable.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -36,19 +36,19 @@
 			remoteGlobalIDString = 6160B2963EF9AC3D27CA3F2F;
 			remoteInfo = NotificationServiceExtension;
 		};
-		D1A000000000000000000004 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = D1A000000000000000000020;
-			remoteInfo = CameraQuickActionWidget;
-		};
 		331C8085294A63A400263BE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
+		};
+		D1A000000000000000000004 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D1A000000000000000000020;
+			remoteInfo = CameraQuickActionWidget;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -79,6 +79,7 @@
 
 /* Begin PBXFileReference section */
 		037A7FC0D83198C29E787FD1 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		06671AD11C80317FA3B1799D /* NostrBridgeAttestationPlugin.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NostrBridgeAttestationPlugin.swift; sourceTree = "<group>"; };
 		0F9089E8B21DD51EA95A008F /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
@@ -93,7 +94,6 @@
 		431E99C1821481F33B9E053C /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		5E86217C65C2A7ED5885FDC2 /* NotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
-		06671AD11C80317FA3B1799D /* NostrBridgeAttestationPlugin.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NostrBridgeAttestationPlugin.swift; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7724038FFA9E1FC6C1CB27D0 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
@@ -242,6 +242,17 @@
 			path = Runner;
 			sourceTree = "<group>";
 		};
+		D1A00000000000000000001C /* CameraQuickActionWidget */ = {
+			isa = PBXGroup;
+			children = (
+				D1A000000000000000000005 /* CameraQuickActionWidget.swift */,
+				D1A00000000000000000001B /* Localizable.strings */,
+				D1A000000000000000000006 /* Info.plist */,
+				D1A000000000000000000007 /* CameraQuickActionWidget.entitlements */,
+			);
+			path = CameraQuickActionWidget;
+			sourceTree = "<group>";
+		};
 		D80FBB93F86F62AD04D673A7 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
@@ -262,20 +273,7 @@
 				2ECE9F51A53445ABB44F885B /* Info.plist */,
 				1EF10235DDCC51D74DC45009 /* NotificationServiceExtension.entitlements */,
 			);
-			name = NotificationServiceExtension;
 			path = NotificationServiceExtension;
-			sourceTree = "<group>";
-		};
-		D1A00000000000000000001C /* CameraQuickActionWidget */ = {
-			isa = PBXGroup;
-			children = (
-				D1A000000000000000000005 /* CameraQuickActionWidget.swift */,
-				D1A00000000000000000001B /* Localizable.strings */,
-				D1A000000000000000000006 /* Info.plist */,
-				D1A000000000000000000007 /* CameraQuickActionWidget.entitlements */,
-			);
-			name = CameraQuickActionWidget;
-			path = CameraQuickActionWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -317,23 +315,6 @@
 			productReference = C696D98D09FD161565BF6483 /* NotificationServiceExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		D1A000000000000000000020 /* CameraQuickActionWidget */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = D1A000000000000000000022 /* Build configuration list for PBXNativeTarget "CameraQuickActionWidget" */;
-			buildPhases = (
-				D1A00000000000000000001F /* Sources */,
-				D1A00000000000000000001D /* Frameworks */,
-				D1A00000000000000000001E /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = CameraQuickActionWidget;
-			productName = CameraQuickActionWidget;
-			productReference = D1A000000000000000000008 /* CameraQuickActionWidget.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
@@ -363,6 +344,23 @@
 			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
 			productType = "com.apple.product-type.application";
 		};
+		D1A000000000000000000020 /* CameraQuickActionWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D1A000000000000000000022 /* Build configuration list for PBXNativeTarget "CameraQuickActionWidget" */;
+			buildPhases = (
+				D1A00000000000000000001F /* Sources */,
+				D1A00000000000000000001D /* Frameworks */,
+				D1A00000000000000000001E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CameraQuickActionWidget;
+			productName = CameraQuickActionWidget;
+			productReference = D1A000000000000000000008 /* CameraQuickActionWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -377,12 +375,12 @@
 						CreatedOnToolsVersion = 14.0;
 						TestTargetID = 97C146ED1CF9000F007C117D;
 					};
-					D1A000000000000000000020 = {
-						CreatedOnToolsVersion = 15.0;
-					};
 					97C146ED1CF9000F007C117D = {
 						CreatedOnToolsVersion = 7.3.1;
 						LastSwiftMigration = 1100;
+					};
+					D1A000000000000000000020 = {
+						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
@@ -442,14 +440,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		D1A00000000000000000001E /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				D1A000000000000000000003 /* Localizable.strings in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		97C146EC1CF9000F007C117D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -459,6 +449,14 @@
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
 				62ACD9D0D737E6772C26E9DF /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D1A00000000000000000001E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D1A000000000000000000003 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -595,19 +593,19 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F5E89B4CEF72BFBBA421856E /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				4F86E81FB269DE72E2131EBC /* NotificationService.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		D1A00000000000000000001F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				D1A000000000000000000001 /* CameraQuickActionWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5E89B4CEF72BFBBA421856E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4F86E81FB269DE72E2131EBC /* NotificationService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -742,7 +740,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 504;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
+				DEVELOPMENT_TEAM = X47RGAX638;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = divine;
@@ -752,7 +750,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.15;
-				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvinetest.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -768,10 +766,10 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
+				DEVELOPMENT_TEAM = X47RGAX638;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvinetest.app.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -787,10 +785,10 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
+				DEVELOPMENT_TEAM = X47RGAX638;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvinetest.app.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
@@ -804,10 +802,10 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
+				DEVELOPMENT_TEAM = X47RGAX638;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvinetest.app.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
@@ -822,8 +820,8 @@
 				CODE_SIGN_ENTITLEMENTS = NotificationServiceExtension/NotificationServiceExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 504;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = X47RGAX638;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = NotificationServiceExtension/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -833,7 +831,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0.15;
-				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.NotificationServiceExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvinetest.app.NotificationServiceExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -849,8 +847,8 @@
 				CODE_SIGN_ENTITLEMENTS = NotificationServiceExtension/NotificationServiceExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 504;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = X47RGAX638;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = NotificationServiceExtension/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -860,7 +858,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0.15;
-				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.NotificationServiceExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvinetest.app.NotificationServiceExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -994,7 +992,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 504;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
+				DEVELOPMENT_TEAM = X47RGAX638;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = divine;
@@ -1004,7 +1002,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.15;
-				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvinetest.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -1024,7 +1022,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 504;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
+				DEVELOPMENT_TEAM = X47RGAX638;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = divine;
@@ -1034,7 +1032,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.15;
-				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvinetest.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -1051,8 +1049,8 @@
 				CODE_SIGN_ENTITLEMENTS = NotificationServiceExtension/NotificationServiceExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 504;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = X47RGAX638;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = NotificationServiceExtension/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1062,7 +1060,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0.15;
-				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.NotificationServiceExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvinetest.app.NotificationServiceExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1079,8 +1077,8 @@
 				CODE_SIGN_ENTITLEMENTS = CameraQuickActionWidget/CameraQuickActionWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 504;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = X47RGAX638;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CameraQuickActionWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1090,7 +1088,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0.15;
-				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.CameraQuickActionWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvinetest.app.CameraQuickActionWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1108,8 +1106,8 @@
 				CODE_SIGN_ENTITLEMENTS = CameraQuickActionWidget/CameraQuickActionWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 504;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = X47RGAX638;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CameraQuickActionWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1119,7 +1117,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0.15;
-				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.CameraQuickActionWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvinetest.app.CameraQuickActionWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1137,8 +1135,8 @@
 				CODE_SIGN_ENTITLEMENTS = CameraQuickActionWidget/CameraQuickActionWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 504;
-				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = X47RGAX638;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CameraQuickActionWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1148,7 +1146,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0.15;
-				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.CameraQuickActionWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvinetest.app.CameraQuickActionWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1181,16 +1179,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		D1A000000000000000000022 /* Build configuration list for PBXNativeTarget "CameraQuickActionWidget" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				D1A000000000000000000024 /* Release */,
-				D1A000000000000000000023 /* Debug */,
-				D1A000000000000000000025 /* Profile */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		97C146E91CF9000F007C117D /* Build configuration list for PBXProject "Runner" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1207,6 +1195,16 @@
 				97C147061CF9000F007C117D /* Debug */,
 				97C147071CF9000F007C117D /* Release */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D1A000000000000000000022 /* Build configuration list for PBXNativeTarget "CameraQuickActionWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D1A000000000000000000024 /* Release */,
+				D1A000000000000000000023 /* Debug */,
+				D1A000000000000000000025 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

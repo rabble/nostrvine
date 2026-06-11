@@ -44,8 +44,10 @@ flutter:
         pluginClass: DivineVideoPlayerPlugin
       ios:
         pluginClass: DivineVideoPlayerPlugin
+        sharedDarwinSource: true
       macos:
         pluginClass: DivineVideoPlayerPlugin
+        sharedDarwinSource: true
       linux:
         dartPluginClass: DivineVideoPlayerLinuxPlugin
       web:

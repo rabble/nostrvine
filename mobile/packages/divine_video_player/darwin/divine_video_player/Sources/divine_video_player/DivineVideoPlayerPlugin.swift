@@ -1,8 +1,13 @@
 import AVFoundation
+#if os(iOS)
+import Flutter
+import UIKit
+#elseif os(macOS)
 import Cocoa
 import FlutterMacOS
+#endif
 
-/// Entry point for the divine_video_player plugin on macOS.
+/// Entry point for the divine_video_player plugin (iOS and macOS).
 ///
 /// Manages the lifecycle of ``DivineVideoPlayerInstance`` objects and
 /// registers the platform view factory for rendering.
@@ -14,10 +19,10 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
 
     /// Per-instance forwarder pushing native diagnostics over THIS engine's
     /// global channel. `DivineVideoPlayerLog.shared.sink` is a process-wide
-    /// singleton, so a second FlutterEngine that registers the plugin would
-    /// otherwise overwrite it and route video logs to the wrong isolate. We
-    /// re-assert it in `handle` — player operations only ever reach the UI
-    /// engine.
+    /// singleton, so a second FlutterEngine (e.g. the FCM background isolate
+    /// that also runs the plugin registrant) would otherwise overwrite it and
+    /// route video logs to the wrong isolate. We re-assert it in `handle` —
+    /// player operations only ever reach the UI engine.
     private lazy var logSink: (String, String, String) -> Void = {
         [weak self] level, message, name in
         DispatchQueue.main.async {
@@ -36,13 +41,19 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
         // Hot restart re-calls register(with:) without disposing the
         // previous engine's players. Clean up zombie players so timers
         // and observers are released.
-        MacPlayerRegistry.shared.disposeAll()
+        PlayerRegistry.shared.disposeAll()
 
         self.registrar = registrar
 
+        #if os(iOS)
+        let messenger = registrar.messenger()
+        #elseif os(macOS)
+        let messenger = registrar.messenger
+        #endif
+
         let globalChannel = FlutterMethodChannel(
             name: "divine_video_player",
-            binaryMessenger: registrar.messenger
+            binaryMessenger: messenger
         )
         let plugin = DivineVideoPlayerPlugin()
         plugin.globalChannel = globalChannel
@@ -50,31 +61,38 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
         registrar.addMethodCallDelegate(plugin, channel: globalChannel)
 
         registrar.register(
-            DivineVideoPlayerViewFactory(messenger: registrar.messenger),
+            DivineVideoPlayerViewFactory(messenger: messenger),
             withId: "divine_video_player_view"
         )
 
         // Observe app lifecycle to pause/resume all players.
+        #if os(iOS)
+        let willBackgroundNotification = UIApplication.willResignActiveNotification
+        let didForegroundNotification = UIApplication.didBecomeActiveNotification
+        #elseif os(macOS)
+        let willBackgroundNotification = NSApplication.willResignActiveNotification
+        let didForegroundNotification = NSApplication.didBecomeActiveNotification
+        #endif
         NotificationCenter.default.addObserver(
             plugin,
             selector: #selector(appWillResignActive),
-            name: NSApplication.willResignActiveNotification,
+            name: willBackgroundNotification,
             object: nil
         )
         NotificationCenter.default.addObserver(
             plugin,
             selector: #selector(appDidBecomeActive),
-            name: NSApplication.didBecomeActiveNotification,
+            name: didForegroundNotification,
             object: nil
         )
     }
 
     @objc private func appWillResignActive() {
-        MacPlayerRegistry.shared.forAll { $0.onAppBackgrounded() }
+        PlayerRegistry.shared.forAll { $0.onAppBackgrounded() }
     }
 
     @objc private func appDidBecomeActive() {
-        MacPlayerRegistry.shared.forAll { $0.onAppForegrounded() }
+        PlayerRegistry.shared.forAll { $0.onAppForegrounded() }
     }
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -87,7 +105,7 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
                 "disposeAll — releasing all players",
                 name: "DivineVideoPlayer.Lifecycle"
             )
-            MacPlayerRegistry.shared.disposeAll()
+            PlayerRegistry.shared.disposeAll()
             result(nil)
             return
         }
@@ -112,13 +130,18 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
             }
             // Dispose any existing player with the same ID before
             // creating the new one to avoid leaking zombie players.
-            MacPlayerRegistry.shared.remove(id)?.dispose()
+            PlayerRegistry.shared.remove(id)?.dispose()
 
+            #if os(iOS)
+            let messenger = registrar.messenger()
+            #elseif os(macOS)
+            let messenger = registrar.messenger
+            #endif
             let instance = DivineVideoPlayerInstance(
-                messenger: registrar.messenger,
+                messenger: messenger,
                 playerId: id
             )
-            MacPlayerRegistry.shared.set(instance, for: id)
+            PlayerRegistry.shared.set(instance, for: id)
 
             let useTexture = args["useTexture"] as? Bool ?? false
             DivineVideoPlayerLog.shared.info(
@@ -126,8 +149,13 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
                 name: "DivineVideoPlayer.Lifecycle"
             )
             if useTexture {
+                #if os(iOS)
+                let textures = registrar.textures()
+                #elseif os(macOS)
+                let textures = registrar.textures
+                #endif
                 let textureId = instance.enableTextureOutput(
-                    registry: registrar.textures
+                    registry: textures
                 )
                 result(["textureId": textureId])
             } else {
@@ -143,7 +171,7 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
                 "Player \(id) disposed",
                 name: "DivineVideoPlayer.Lifecycle"
             )
-            MacPlayerRegistry.shared.remove(id)?.dispose()
+            PlayerRegistry.shared.remove(id)?.dispose()
             result(nil)
 
         case "preload":
@@ -152,6 +180,7 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
 
         case "configureCache":
             let maxSizeBytes = args["maxSizeBytes"] as? Int ?? (500 * 1024 * 1024)
+            // 10% of disk budget for in-memory cache, rest on disk.
             let memoryCapacity = maxSizeBytes / 10
             URLCache.shared = URLCache(
                 memoryCapacity: memoryCapacity,
@@ -207,8 +236,8 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
 
 /// Global registry so that ``DivineVideoPlayerViewFactory`` can find
 /// instances created during the `create` method call.
-final class MacPlayerRegistry {
-    static let shared = MacPlayerRegistry()
+final class PlayerRegistry {
+    static let shared = PlayerRegistry()
     private var players: [Int: DivineVideoPlayerInstance] = [:]
     private init() {}
 
@@ -216,7 +245,8 @@ final class MacPlayerRegistry {
     func set(_ instance: DivineVideoPlayerInstance, for id: Int) { players[id] = instance }
     @discardableResult
     func remove(_ id: Int) -> DivineVideoPlayerInstance? {
-        players.removeValue(forKey: id)
+        let instance = players.removeValue(forKey: id)
+        return instance
     }
     func disposeAll() {
         players.values.forEach { $0.dispose() }

@@ -1,5 +1,9 @@
 import AVFoundation
+#if os(iOS)
 import Flutter
+#elseif os(macOS)
+import FlutterMacOS
+#endif
 
 /// Wraps a single AVQueuePlayer fed by an `AVMutableComposition` that
 /// stitches multiple clips into a seamless timeline.
@@ -1061,7 +1065,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     /// a real `CVPixelBuffer` has actually been delivered to the
     /// Flutter texture (either via `tryPullFrameNow` from
     /// `safePreroll` for prefetched items, or via the
-    /// `CADisplayLink` poll once playback begins). Flipping this flag
+    /// frame-driver poll once playback begins). Flipping this flag
     /// hides the loader overlay in Flutter, so it must only happen
     /// after the texture has a buffer — otherwise the texture renders
     /// one frame of black before the next display-link tick.
