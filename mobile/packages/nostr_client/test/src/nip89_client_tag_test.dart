@@ -36,6 +36,8 @@ void main() {
     Nip89ClientTag.resetForTest();
   });
 
+  tearDown(Nip89ClientTag.resetForTest);
+
   group('Nip89ClientTag', () {
     test('adds the canonical Divine tag', () async {
       final event = _event();

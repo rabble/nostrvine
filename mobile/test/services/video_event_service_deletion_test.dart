@@ -5,6 +5,7 @@
 @Tags(['skip_very_good_optimization'])
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
@@ -14,6 +15,27 @@ import 'package:openvine/services/video_event_service.dart';
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
+VideoEvent _videoEvent({
+  required String id,
+  required String pubkey,
+  required String dTag,
+}) {
+  final event =
+      Event(
+          pubkey,
+          34236,
+          [
+            ['d', dTag],
+            ['url', 'https://example.com/$id.mp4'],
+          ],
+          'test video',
+          createdAt: 1000,
+        )
+        ..id = id
+        ..sig = 'sig-$id';
+  return VideoEvent.fromNostrEvent(event);
+}
 
 void main() {
   setUpAll(() {
@@ -30,6 +52,11 @@ void main() {
       subscriptionManager = _MockSubscriptionManager();
       when(() => nostrClient.isInitialized).thenReturn(true);
       when(() => nostrClient.connectedRelayCount).thenReturn(1);
+      when(
+        () => nostrClient.publicKey,
+      ).thenReturn(
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      );
       when(
         () => nostrClient.subscribe(any()),
       ).thenAnswer((_) => const Stream<Event>.empty());
@@ -102,6 +129,40 @@ void main() {
       await earlySub.cancel();
       await lateSub.cancel();
     });
+
+    test(
+      'addressable removal emits requested id when only a sibling is cached',
+      () async {
+        const pubkey =
+            'c3dd74d68e414f0305db9f7dc96ec32e616502e6ccf5bbf5739de19a96b67f3e';
+        final emitted = <String>[];
+        final sub = service.removedVideoIds.listen(emitted.add);
+
+        final deletedVideo = _videoEvent(
+          id: 'held-fullscreen-id',
+          pubkey: pubkey,
+          dTag: 'shared-vine-id',
+        );
+        final cachedSibling = _videoEvent(
+          id: 'cached-replacement-id',
+          pubkey: pubkey,
+          dTag: 'shared-vine-id',
+        );
+
+        service.addVideoEventForTesting(
+          cachedSibling,
+          SubscriptionType.discovery,
+          isHistorical: false,
+        );
+
+        service.removeVideoEventCompletely(deletedVideo);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(emitted, contains('held-fullscreen-id'));
+        expect(emitted, contains('cached-replacement-id'));
+        await sub.cancel();
+      },
+    );
 
     test('isVideoLocallyDeleted reflects the tombstone after emit', () {
       service.removeVideoCompletely('vid-1');

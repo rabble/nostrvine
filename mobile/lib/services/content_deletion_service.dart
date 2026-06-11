@@ -185,11 +185,13 @@ class ContentDeletionService {
         );
       }
 
+      final addressableId = _addressableDeletionTarget(video);
+
       // Create NIP-09 delete event (kind 5)
       // OpenVine only uses kind 34236 (addressable short videos)
       final deleteOutcome = await _createDeleteEvent(
         originalEventId: video.id,
-        addressableId: video.addressableId,
+        addressableId: addressableId,
         originalEventKind: NIP71VideoKinds.getPreferredKind(),
         reason: reason,
         additionalContext: additionalContext,
@@ -228,7 +230,7 @@ class ContentDeletionService {
       final deletion = ContentDeletion(
         deleteEventId: deleteEvent.id,
         originalEventId: video.id,
-        addressableId: video.addressableId,
+        addressableId: addressableId,
         reason: reason,
         deletedAt: DateTime.now(),
         additionalContext: additionalContext,
@@ -435,6 +437,14 @@ class ContentDeletionService {
     final userPubkey = _authService.currentPublicKeyHex;
 
     return video.pubkey == userPubkey;
+  }
+
+  String? _addressableDeletionTarget(VideoEvent video) {
+    final vineId = video.vineId;
+    if (vineId == null || vineId.isEmpty || vineId == video.id) {
+      return null;
+    }
+    return video.addressableId;
   }
 
   /// Get delete reason text for common cases

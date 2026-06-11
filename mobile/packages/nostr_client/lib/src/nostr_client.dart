@@ -185,23 +185,30 @@ class NostrClient {
     await _deleteCachedEventsForDeletion(
       eventIds: targetEventIds,
       addressableIds: targetAddressableIds,
+      deletionPubkey: deletionEvent.pubkey,
+      deletionCreatedAt: deletionEvent.createdAt,
     );
   }
 
   Future<void> _deleteCachedEventsForDeletion({
     required List<String> eventIds,
     required List<AId> addressableIds,
+    required String deletionPubkey,
+    required int deletionCreatedAt,
   }) async {
     final dao = _nostrEventsDao;
     if (dao == null) return;
 
     final idsToDelete = eventIds.toSet();
     for (final addressableId in addressableIds) {
+      if (addressableId.pubkey != deletionPubkey) continue;
+
       final matches = await dao.getEventsByFilter(
         Filter(
           kinds: [addressableId.kind],
           authors: [addressableId.pubkey],
           d: [addressableId.dTag],
+          until: deletionCreatedAt,
         ),
       );
       idsToDelete.addAll(matches.map((event) => event.id));
@@ -209,6 +216,15 @@ class NostrClient {
 
     if (idsToDelete.isEmpty) return;
     await dao.deleteEventsByIds(idsToDelete.toList());
+  }
+
+  Future<void> _handleDeletionEventAfterPublish(Event deletionEvent) async {
+    try {
+      await _handleDeletionEvent(deletionEvent);
+    } on Object {
+      // Cache cleanup is best effort after a relay accepted the deletion.
+      // Local DAO failures must not change the publish outcome.
+    }
   }
 
   /// Tracks whether dispose() has been called
@@ -363,7 +379,7 @@ class NostrClient {
     // Handle successful send
     if (sentEvent.kind == EventKind.eventDeletion) {
       // NIP-09: Remove target events from cache
-      await _handleDeletionEvent(sentEvent);
+      await _handleDeletionEventAfterPublish(sentEvent);
     } else if (!useOptimisticCache) {
       // Cache replaceable events on success (not optimistically)
       _cacheEvent(sentEvent);
@@ -457,7 +473,7 @@ class NostrClient {
 
     // Relay confirmed acceptance — apply post-publish cache effects.
     if (event.kind == EventKind.eventDeletion) {
-      await _handleDeletionEvent(event);
+      await _handleDeletionEventAfterPublish(event);
     } else if (!useOptimisticCache) {
       _cacheEvent(event);
     }

@@ -73,7 +73,6 @@ void main() {
     late NostrClient client;
 
     setUpAll(() {
-      SharedPreferences.setMockInitialValues(const <String, Object>{});
       registerFallbackValue(_FakeEvent());
       registerFallbackValue(_FakeFilter());
       registerFallbackValue(_FakeContactList());
@@ -86,6 +85,8 @@ void main() {
     });
 
     setUp(() {
+      SharedPreferences.setMockInitialValues(const <String, Object>{});
+      Nip89ClientTag.resetForTest();
       mockNostr = _MockNostr();
       mockRelayManager = _MockRelayManager();
 
@@ -105,6 +106,7 @@ void main() {
     });
 
     tearDown(() {
+      Nip89ClientTag.resetForTest();
       reset(mockNostr);
       reset(mockRelayManager);
     });
@@ -139,11 +141,7 @@ void main() {
 
         expect(result, isA<PublishSuccess>());
         expect((result as PublishSuccess).event, equals(event));
-        verify(
-          () => mockNostr.sendEvent(
-            event,
-          ),
-        ).called(1);
+        verify(() => mockNostr.sendEvent(event)).called(1);
       });
 
       test('publishes event with target relays', () async {
@@ -208,11 +206,7 @@ void main() {
         expect(result, isA<PublishSuccess>());
         expect((result as PublishSuccess).event, equals(event));
         verify(mockRelayManager.retryDisconnectedRelays).called(1);
-        verify(
-          () => mockNostr.sendEvent(
-            event,
-          ),
-        ).called(1);
+        verify(() => mockNostr.sendEvent(event)).called(1);
       });
 
       test('returns PublishNoRelays when reconnection fails', () async {
@@ -255,11 +249,7 @@ void main() {
         expect(result, isA<PublishSuccess>());
         expect((result as PublishSuccess).event, equals(event));
         verifyNever(mockRelayManager.retryDisconnectedRelays);
-        verify(
-          () => mockNostr.sendEvent(
-            event,
-          ),
-        ).called(1);
+        verify(() => mockNostr.sendEvent(event)).called(1);
       });
 
       group('optimistic cache rollback on reconnection failure', () {
@@ -399,9 +389,9 @@ void main() {
 
       test('returns confirmed outcome when relay accepts the event', () async {
         final event = _createTestEvent();
-        when(() => mockRelayManager.connectedRelays).thenReturn([
-          'wss://relay.test',
-        ]);
+        when(
+          () => mockRelayManager.connectedRelays,
+        ).thenReturn(['wss://relay.test']);
         when(
           () => mockNostr.sendEventAwaitOk(
             any(),
@@ -417,117 +407,102 @@ void main() {
         expect(outcome.acceptedBy, equals(['wss://relay.test']));
       });
 
-      test(
-        'returns failed outcome and rolls back optimistic cache when relay '
-        'rejects',
-        () async {
-          final mockDbClient = _MockAppDbClient();
-          final mockDatabase = _MockAppDatabase();
-          final mockNostrEventsDao = _MockNostrEventsDao();
-          when(() => mockDbClient.database).thenReturn(mockDatabase);
-          when(
-            () => mockDatabase.nostrEventsDao,
-          ).thenReturn(mockNostrEventsDao);
-          when(
-            () => mockNostrEventsDao.upsertEvent(any()),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockNostrEventsDao.deleteEventsByIds(any()),
-          ).thenAnswer((_) async => 1);
+      test('returns failed outcome and rolls back optimistic cache when relay '
+          'rejects', () async {
+        final mockDbClient = _MockAppDbClient();
+        final mockDatabase = _MockAppDatabase();
+        final mockNostrEventsDao = _MockNostrEventsDao();
+        when(() => mockDbClient.database).thenReturn(mockDatabase);
+        when(() => mockDatabase.nostrEventsDao).thenReturn(mockNostrEventsDao);
+        when(
+          () => mockNostrEventsDao.upsertEvent(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockNostrEventsDao.deleteEventsByIds(any()),
+        ).thenAnswer((_) async => 1);
 
-          final clientWithCache = NostrClient.forTesting(
-            nostr: mockNostr,
-            relayManager: mockRelayManager,
-            dbClient: mockDbClient,
-          );
+        final clientWithCache = NostrClient.forTesting(
+          nostr: mockNostr,
+          relayManager: mockRelayManager,
+          dbClient: mockDbClient,
+        );
 
-          final event = _createTestEvent(kind: EventKind.textNote);
-          when(() => mockRelayManager.connectedRelays).thenReturn([
-            'wss://relay.test',
-          ]);
-          when(
-            () => mockNostr.sendEventAwaitOk(
-              any(),
-              tempRelays: any(named: 'tempRelays'),
-              targetRelays: any(named: 'targetRelays'),
-              timeout: any(named: 'timeout'),
-            ),
-          ).thenAnswer((_) async => rejected(event.id));
+        final event = _createTestEvent(kind: EventKind.textNote);
+        when(
+          () => mockRelayManager.connectedRelays,
+        ).thenReturn(['wss://relay.test']);
+        when(
+          () => mockNostr.sendEventAwaitOk(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => rejected(event.id));
 
-          final outcome = await clientWithCache.publishEventAwaitOk(event);
+        final outcome = await clientWithCache.publishEventAwaitOk(event);
 
-          expect(outcome.failed, isTrue);
-          verify(() => mockNostrEventsDao.upsertEvent(event)).called(1);
-          verify(
-            () => mockNostrEventsDao.deleteEventsByIds([event.id]),
-          ).called(1);
-        },
-      );
+        expect(outcome.failed, isTrue);
+        verify(() => mockNostrEventsDao.upsertEvent(event)).called(1);
+        verify(
+          () => mockNostrEventsDao.deleteEventsByIds([event.id]),
+        ).called(1);
+      });
 
-      test(
-        'returns failed outcome without attempting send when no relays are '
-        'reachable',
-        () async {
-          final event = _createTestEvent();
-          when(() => mockRelayManager.connectedRelays).thenReturn([]);
-          when(
-            mockRelayManager.retryDisconnectedRelays,
-          ).thenAnswer((_) async {});
+      test('returns failed outcome without attempting send when no relays are '
+          'reachable', () async {
+        final event = _createTestEvent();
+        when(() => mockRelayManager.connectedRelays).thenReturn([]);
+        when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {});
 
-          final outcome = await client.publishEventAwaitOk(event);
+        final outcome = await client.publishEventAwaitOk(event);
 
-          expect(outcome.failed, isTrue);
-          expect(outcome.eventId, equals(event.id));
-          verify(mockRelayManager.retryDisconnectedRelays).called(1);
-          verifyNever(
-            () => mockNostr.sendEventAwaitOk(
-              any(),
-              tempRelays: any(named: 'tempRelays'),
-              targetRelays: any(named: 'targetRelays'),
-              timeout: any(named: 'timeout'),
-            ),
-          );
-        },
-      );
+        expect(outcome.failed, isTrue);
+        expect(outcome.eventId, equals(event.id));
+        verify(mockRelayManager.retryDisconnectedRelays).called(1);
+        verifyNever(
+          () => mockNostr.sendEventAwaitOk(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        );
+      });
 
-      test(
-        'attempts explicit target relays without retrying disconnected pool '
-        'relays',
-        () async {
-          final event = _createTestEvent();
-          const targetRelays = ['wss://relay.divine.video'];
-          const timeout = Duration(seconds: 5);
-          when(() => mockRelayManager.connectedRelays).thenReturn([]);
-          when(
-            mockRelayManager.retryDisconnectedRelays,
-          ).thenAnswer((_) async {});
-          when(
-            () => mockNostr.sendEventAwaitOk(
-              any(),
-              tempRelays: any(named: 'tempRelays'),
-              targetRelays: any(named: 'targetRelays'),
-              timeout: any(named: 'timeout'),
-            ),
-          ).thenAnswer((_) async => accepted(event.id));
+      test('attempts explicit target relays without retrying disconnected pool '
+          'relays', () async {
+        final event = _createTestEvent();
+        const targetRelays = ['wss://relay.divine.video'];
+        const timeout = Duration(seconds: 5);
+        when(() => mockRelayManager.connectedRelays).thenReturn([]);
+        when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {});
+        when(
+          () => mockNostr.sendEventAwaitOk(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => accepted(event.id));
 
-          final outcome = await client.publishEventAwaitOk(
+        final outcome = await client.publishEventAwaitOk(
+          event,
+          targetRelays: targetRelays,
+          timeout: timeout,
+        );
+
+        expect(outcome.confirmed, isTrue);
+        verifyNever(mockRelayManager.retryDisconnectedRelays);
+        verify(
+          () => mockNostr.sendEventAwaitOk(
             event,
             targetRelays: targetRelays,
+            tempRelays: targetRelays,
             timeout: timeout,
-          );
-
-          expect(outcome.confirmed, isTrue);
-          verifyNever(mockRelayManager.retryDisconnectedRelays);
-          verify(
-            () => mockNostr.sendEventAwaitOk(
-              event,
-              targetRelays: targetRelays,
-              tempRelays: targetRelays,
-              timeout: timeout,
-            ),
-          ).called(1);
-        },
-      );
+          ),
+        ).called(1);
+      });
 
       test('forwards caller diagnostic tag to the SDK publish path', () async {
         final event = _createTestEvent();
@@ -593,9 +568,9 @@ void main() {
             createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           )..sig = 'test_sig';
 
-          when(() => mockRelayManager.connectedRelays).thenReturn([
-            'wss://relay.test',
-          ]);
+          when(
+            () => mockRelayManager.connectedRelays,
+          ).thenReturn(['wss://relay.test']);
           when(
             () => mockNostr.sendEventAwaitOk(
               any(),
@@ -662,9 +637,9 @@ void main() {
             createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           )..sig = 'test_sig';
 
-          when(() => mockRelayManager.connectedRelays).thenReturn([
-            'wss://relay.test',
-          ]);
+          when(
+            () => mockRelayManager.connectedRelays,
+          ).thenReturn(['wss://relay.test']);
           when(
             () => mockNostr.sendEventAwaitOk(
               any(),
@@ -677,7 +652,6 @@ void main() {
           final outcome = await clientWithCache.publishEventAwaitOk(
             deleteEvent,
           );
-          await Future<void>.delayed(Duration.zero);
 
           expect(outcome.confirmed, isTrue);
           final capturedFilter =
@@ -688,6 +662,7 @@ void main() {
           expect(capturedFilter.kinds, equals([34236]));
           expect(capturedFilter.authors, equals([testPublicKey]));
           expect(capturedFilter.d, equals(['shared-vine-id']));
+          expect(capturedFilter.until, equals(deleteEvent.createdAt));
           verify(
             () => mockNostrEventsDao.deleteEventsByIds(
               any(
@@ -698,6 +673,112 @@ void main() {
               ),
             ),
           ).called(1);
+        },
+      );
+
+      test(
+        'ignores addressable deletion tags from a different pubkey',
+        () async {
+          final mockDbClient = _MockAppDbClient();
+          final mockDatabase = _MockAppDatabase();
+          final mockNostrEventsDao = _MockNostrEventsDao();
+          when(() => mockDbClient.database).thenReturn(mockDatabase);
+          when(
+            () => mockDatabase.nostrEventsDao,
+          ).thenReturn(mockNostrEventsDao);
+
+          final clientWithCache = NostrClient.forTesting(
+            nostr: mockNostr,
+            relayManager: mockRelayManager,
+            dbClient: mockDbClient,
+          );
+
+          const victimPubkey =
+              'ffffffffffffffffffffffffffffffff'
+              'ffffffffffffffffffffffffffffffff';
+          const addressableId = '34236:$victimPubkey:shared-vine-id';
+          final deleteEvent = Event(
+            testPublicKey,
+            EventKind.eventDeletion,
+            [
+              ['a', addressableId],
+              ['k', '34236'],
+            ],
+            'deleted',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          )..sig = 'test_sig';
+
+          when(
+            () => mockRelayManager.connectedRelays,
+          ).thenReturn(['wss://relay.test']);
+          when(
+            () => mockNostr.sendEventAwaitOk(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => accepted(deleteEvent.id));
+
+          final outcome = await clientWithCache.publishEventAwaitOk(
+            deleteEvent,
+          );
+
+          expect(outcome.confirmed, isTrue);
+          verifyNever(() => mockNostrEventsDao.getEventsByFilter(any()));
+          verifyNever(() => mockNostrEventsDao.deleteEventsByIds(any()));
+        },
+      );
+
+      test(
+        'keeps confirmed deletion publishes successful when cache cleanup '
+        'fails',
+        () async {
+          final mockDbClient = _MockAppDbClient();
+          final mockDatabase = _MockAppDatabase();
+          final mockNostrEventsDao = _MockNostrEventsDao();
+          when(() => mockDbClient.database).thenReturn(mockDatabase);
+          when(
+            () => mockDatabase.nostrEventsDao,
+          ).thenReturn(mockNostrEventsDao);
+          when(
+            () => mockNostrEventsDao.deleteEventsByIds(any()),
+          ).thenThrow(StateError('database unavailable'));
+
+          final clientWithCache = NostrClient.forTesting(
+            nostr: mockNostr,
+            relayManager: mockRelayManager,
+            dbClient: mockDbClient,
+          );
+
+          final deleteEvent = Event(
+            testPublicKey,
+            EventKind.eventDeletion,
+            [
+              ['e', 'target_event_id'],
+              ['k', '34236'],
+            ],
+            'deleted',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          )..sig = 'test_sig';
+
+          when(
+            () => mockRelayManager.connectedRelays,
+          ).thenReturn(['wss://relay.test']);
+          when(
+            () => mockNostr.sendEventAwaitOk(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => accepted(deleteEvent.id));
+
+          final outcome = await clientWithCache.publishEventAwaitOk(
+            deleteEvent,
+          );
+
+          expect(outcome.confirmed, isTrue);
         },
       );
     });
@@ -1565,9 +1646,7 @@ void main() {
           ),
         ).thenAnswer((_) async => sentEvent);
 
-        final result = await client.sendProfile(
-          profileContent: profileContent,
-        );
+        final result = await client.sendProfile(profileContent: profileContent);
 
         expect(result, isA<PublishSuccess>());
         expect((result as PublishSuccess).event, equals(sentEvent));
@@ -1610,40 +1689,33 @@ void main() {
         },
       );
 
-      test(
-        'retries disconnected relays and returns PublishSuccess',
-        () async {
-          final sentEvent = _createTestEvent(kind: EventKind.metadata);
-          final connectedRelays = ['wss://relay1.example.com'];
+      test('retries disconnected relays and returns PublishSuccess', () async {
+        final sentEvent = _createTestEvent(kind: EventKind.metadata);
+        final connectedRelays = ['wss://relay1.example.com'];
 
-          when(() => mockRelayManager.connectedRelays).thenReturn([]);
-          when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {
-            when(
-              () => mockRelayManager.connectedRelays,
-            ).thenReturn(connectedRelays);
-          });
+        when(() => mockRelayManager.connectedRelays).thenReturn([]);
+        when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {
           when(
-            () => mockNostr.sendEvent(
-              any(),
-              tempRelays: any(named: 'tempRelays'),
-              targetRelays: any(named: 'targetRelays'),
-            ),
-          ).thenAnswer((_) async => sentEvent);
+            () => mockRelayManager.connectedRelays,
+          ).thenReturn(connectedRelays);
+        });
+        when(
+          () => mockNostr.sendEvent(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => sentEvent);
 
-          final result = await client.sendProfile(
-            profileContent: {'display_name': 'Alice'},
-          );
+        final result = await client.sendProfile(
+          profileContent: {'display_name': 'Alice'},
+        );
 
-          expect(result, isA<PublishSuccess>());
-          expect((result as PublishSuccess).event, equals(sentEvent));
-          verify(mockRelayManager.retryDisconnectedRelays).called(1);
-          verify(
-            () => mockNostr.sendEvent(
-              any(),
-            ),
-          ).called(1);
-        },
-      );
+        expect(result, isA<PublishSuccess>());
+        expect((result as PublishSuccess).event, equals(sentEvent));
+        verify(mockRelayManager.retryDisconnectedRelays).called(1);
+        verify(() => mockNostr.sendEvent(any())).called(1);
+      });
 
       test('returns PublishFailed when sendEvent returns null', () async {
         when(
@@ -1732,10 +1804,11 @@ void main() {
         );
         final captured = verification.captured.single as Event;
         expect(captured.content, content);
-        expect(
-          captured.tags.firstWhere((tag) => tag[0] == 'e'),
-          ['e', eventId, relayAddr],
-        );
+        expect(captured.tags.firstWhere((tag) => tag[0] == 'e'), [
+          'e',
+          eventId,
+          relayAddr,
+        ]);
       });
 
       test('returns null when sendRepost fails', () async {
@@ -2182,50 +2255,44 @@ void main() {
         },
       );
 
-      test(
-        'returns "Nostr <base64>" without payload tag when payload is not '
-        'provided',
-        () async {
-          when(() => mockNostr.signEvent(any())).thenAnswer((invocation) {
-            invocation.positionalArguments[0] as Event
-              ..id = 'id'
-              ..sig = 'sig';
-            return Future.value();
-          });
+      test('returns "Nostr <base64>" without payload tag when payload is not '
+          'provided', () async {
+        when(() => mockNostr.signEvent(any())).thenAnswer((invocation) {
+          invocation.positionalArguments[0] as Event
+            ..id = 'id'
+            ..sig = 'sig';
+          return Future.value();
+        });
 
-          const url = 'https://divine.video/api/username/claim';
-          final authHeader = await client.createNip98AuthHeader(
-            url: url,
-            method: 'POST',
-          );
-          final decoded =
-              jsonDecode(utf8.decode(base64Decode(authHeader!.split(' ')[1])))
-                  as Map<String, dynamic>;
-          final tags = (decoded['tags'] as List).cast<List<dynamic>>();
+        const url = 'https://divine.video/api/username/claim';
+        final authHeader = await client.createNip98AuthHeader(
+          url: url,
+          method: 'POST',
+        );
+        final decoded =
+            jsonDecode(utf8.decode(base64Decode(authHeader!.split(' ')[1])))
+                as Map<String, dynamic>;
+        final tags = (decoded['tags'] as List).cast<List<dynamic>>();
 
-          expect(authHeader, startsWith('Nostr '));
-          expect(decoded['kind'], equals(EventKind.httpAuth));
-          expect(tags[0][1], equals(url));
-          expect(tags[1][1], equals('POST'));
-          expect(tags.length, equals(2));
-        },
-      );
+        expect(authHeader, startsWith('Nostr '));
+        expect(decoded['kind'], equals(EventKind.httpAuth));
+        expect(tags[0][1], equals(url));
+        expect(tags[1][1], equals('POST'));
+        expect(tags.length, equals(2));
+      });
 
-      test(
-        'returns null when signing fails',
-        () async {
-          when(
-            () => mockNostr.signEvent(any()),
-          ).thenAnswer((_) => Future.value());
+      test('returns null when signing fails', () async {
+        when(
+          () => mockNostr.signEvent(any()),
+        ).thenAnswer((_) => Future.value());
 
-          const url = 'https://divine.video/api/username/claim';
-          final authHeader = await client.createNip98AuthHeader(
-            url: url,
-            method: 'POST',
-          );
-          expect(authHeader, isNull);
-        },
-      );
+        const url = 'https://divine.video/api/username/claim';
+        final authHeader = await client.createNip98AuthHeader(
+          url: url,
+          method: 'POST',
+        );
+        expect(authHeader, isNull);
+      });
     });
 
     group('dispose', () {
@@ -2436,12 +2503,8 @@ void main() {
           final filters = [
             Filter(kinds: [EventKind.textNote], limit: 10),
           ];
-          final cachedEvents = [
-            _createTestEvent(content: 'cached 1'),
-          ];
-          final wsEvents = [
-            _createTestEvent(content: 'from websocket'),
-          ];
+          final cachedEvents = [_createTestEvent(content: 'cached 1')];
+          final wsEvents = [_createTestEvent(content: 'from websocket')];
 
           when(
             () => mockNostrEventsDao.getEventsByFilter(any()),
@@ -2913,12 +2976,7 @@ void main() {
           ),
         ).thenReturn('search-sub-id');
 
-        client.searchVideos(
-          query,
-          since: since,
-          until: until,
-          limit: limit,
-        );
+        client.searchVideos(query, since: since, until: until, limit: limit);
 
         // Verify subscribe was called with filter containing search
         final captured = verify(

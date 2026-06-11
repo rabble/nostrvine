@@ -1102,9 +1102,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     // compatible. If the video was not in any active feed, still emit the
     // requested id because a fullscreen route may be holding it in BLoC state.
     if (!_removedVideoIdsController.isClosed) {
-      final idsToEmit = removedVideoIds.isEmpty
-          ? {primaryEventId}
-          : removedVideoIds;
+      final idsToEmit = {primaryEventId, ...removedVideoIds};
       for (final id in idsToEmit) {
         _removedVideoIdsController.add(id);
       }
@@ -1153,7 +1151,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   }
 
   String _localDeletionCoordinateKey(VideoEvent video) =>
-      '${video.pubkey}:${video.stableId}'.toLowerCase();
+      '${video.pubkey.toLowerCase()}:${video.stableId}';
 
   /// Emits a video id whenever the service has marked it removed —
   /// today this is user-initiated deletion via [removeVideoCompletely];
