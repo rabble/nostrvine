@@ -80,12 +80,12 @@ void main() {
         true,
       );
       when(() => blocklistRepository.currentState).thenReturn(
-        ContentPolicyState(
+        const ContentPolicyState(
           currentUserPubkey: viewerPubkey,
-          mutedPubkeys: const {},
-          blockedPubkeys: const {},
-          pubkeysBlockingUs: const {targetPubkey},
-          pubkeysMutingUs: const {},
+          mutedPubkeys: {},
+          blockedPubkeys: {},
+          pubkeysBlockingUs: {targetPubkey},
+          pubkeysMutingUs: {},
         ),
       );
 
@@ -107,12 +107,12 @@ void main() {
         true,
       );
       when(() => blocklistRepository.currentState).thenReturn(
-        ContentPolicyState(
+        const ContentPolicyState(
           currentUserPubkey: viewerPubkey,
-          mutedPubkeys: const {},
-          blockedPubkeys: const {},
-          pubkeysBlockingUs: const {targetPubkey},
-          pubkeysMutingUs: const {},
+          mutedPubkeys: {},
+          blockedPubkeys: {},
+          pubkeysBlockingUs: {targetPubkey},
+          pubkeysMutingUs: {},
         ),
       );
       when(
