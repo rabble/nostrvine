@@ -548,6 +548,65 @@ void main() {
       expect(result!.referencedEventId, equals('evt1'));
       expect(result.notificationType, equals('like'));
     });
+
+    test('parses the authoritative referencedAddress coordinate', () {
+      // The push service emits the signed a/A-tag coordinate so the client can
+      // route to the stable NIP-33 address without walking the event.
+      final result = parseFcmPayload(const {
+        'type': 'like',
+        'eventId': 'reaction_event',
+        'referencedEventId': 'video_event',
+        'referencedAddress': '34236:owner_hex:my-vine-id',
+        'senderPubkey': 'actor_hex',
+      });
+
+      expect(result, isNotNull);
+      expect(result!.referencedAddress, equals('34236:owner_hex:my-vine-id'));
+    });
+
+    test('referencedAddress is null when absent', () {
+      final result = parseFcmPayload(const {
+        'type': 'like',
+        'referencedEventId': 'video_event',
+        'senderPubkey': 'actor_hex',
+      });
+
+      expect(result, isNotNull);
+      expect(result!.referencedAddress, isNull);
+    });
+
+    test('referencedAddress empty string normalizes to null', () {
+      final result = parseFcmPayload(const {
+        'type': 'like',
+        'referencedEventId': 'video_event',
+        'referencedAddress': '',
+        'senderPubkey': 'actor_hex',
+      });
+
+      expect(result!.referencedAddress, isNull);
+    });
+
+    test('preserves a colon-containing d-tag in referencedAddress', () {
+      final result = parseFcmPayload(const {
+        'type': 'comment',
+        'referencedEventId': 'comment_event',
+        'referencedAddress': '34236:owner_hex:weird:d:tag',
+        'senderPubkey': 'actor_hex',
+      });
+
+      expect(result!.referencedAddress, equals('34236:owner_hex:weird:d:tag'));
+    });
+
+    test('a payload carrying only referencedAddress is routable', () {
+      // The coordinate alone is a valid video target, so it must not be
+      // dropped as unroutable.
+      final result = parseFcmPayload(const {
+        'referencedAddress': '34236:owner_hex:vine-id',
+      });
+
+      expect(result, isNotNull);
+      expect(result!.referencedAddress, equals('34236:owner_hex:vine-id'));
+    });
   });
 
   group('localNotificationTapPayload', () {
@@ -556,6 +615,7 @@ void main() {
         'type': 'comment',
         'eventId': 'comment_event',
         'referencedEventId': 'video_event',
+        'referencedAddress': '34236:owner_hex:my-vine-id',
         'senderPubkey': 'actor_hex',
         'title': 'New comment',
         'body': 'ignored for routing',
@@ -563,6 +623,7 @@ void main() {
 
       expect(payload, {
         'referencedEventId': 'video_event',
+        'referencedAddress': '34236:owner_hex:my-vine-id',
         'eventId': 'comment_event',
         'notificationType': 'comment',
         'senderPubkey': 'actor_hex',
@@ -597,6 +658,21 @@ void main() {
       expect(payload['eventId'], equals('like_event'));
       expect(payload['notificationType'], equals('like'));
       expect(payload['senderPubkey'], equals('actor_hex'));
+    });
+
+    test('preserves the authoritative referencedAddress coordinate', () {
+      final payload = localNotificationTapPayload(const {
+        'type': 'like',
+        'eventId': 'reaction_event',
+        'referencedEventId': 'video_event',
+        'referencedAddress': '34236:owner_hex:my-vine-id',
+        'senderPubkey': 'actor_hex',
+      });
+
+      expect(
+        payload['referencedAddress'],
+        equals('34236:owner_hex:my-vine-id'),
+      );
     });
   });
 }

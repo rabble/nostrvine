@@ -77,6 +77,13 @@ abstract class NotificationPayloadKeys {
   /// follow/mention, which carry no `e` tag).
   static const String referencedEventId = 'referencedEventId';
 
+  /// Authoritative NIP-33 addressable coordinate (`kind:pubkey:d-tag`) of the
+  /// referenced video, taken from the source event's signed `a`/`A` tag. Stable
+  /// across NIP-33 replacements, so the tap router prefers it over
+  /// [referencedEventId]. Present only when the source event carries an `a`/`A`
+  /// tag (like/comment/repost on an addressable video).
+  static const String referencedAddress = 'referencedAddress';
+
   /// The source event itself (the like/comment/follow/mention event).
   static const String eventId = 'eventId';
 
@@ -98,12 +105,18 @@ abstract class NotificationPayloadKeys {
 /// callers see one shape whether the payload came from the FCM wire or a
 /// locally-emitted notification JSON.
 ///
+/// Also surfaces `referencedAddress` (the authoritative NIP-33 coordinate from
+/// the source event's signed `a`/`A` tag) so the tap router can route to the
+/// stable address without walking the event.
+///
 /// Returns `null` only when the payload carries nothing routable — no
-/// `referencedEventId`, no `eventId`, and no `senderPubkey`. A `follow`/
-/// `mention` carries no `referencedEventId` but is still routable (via
-/// `senderPubkey` / `eventId`), so those are no longer dropped.
+/// `referencedAddress`, no `referencedEventId`, no `eventId`, and no
+/// `senderPubkey`. A `follow`/`mention` carries no `referencedEventId` but is
+/// still routable (via `senderPubkey` / `eventId`), so those are no longer
+/// dropped.
 ({
   String? referencedEventId,
+  String? referencedAddress,
   String? eventId,
   String? notificationType,
   String? senderPubkey,
@@ -115,18 +128,23 @@ parseFcmPayload(Map<String, dynamic> data) {
   }
 
   final referencedEventId = nonEmpty(NotificationPayloadKeys.referencedEventId);
+  final referencedAddress = nonEmpty(NotificationPayloadKeys.referencedAddress);
   final eventId = nonEmpty(NotificationPayloadKeys.eventId);
   final senderPubkey = nonEmpty(NotificationPayloadKeys.senderPubkey);
   final notificationType =
       nonEmpty(NotificationPayloadKeys.wireType) ??
       nonEmpty(NotificationPayloadKeys.notificationType);
 
-  if (referencedEventId == null && eventId == null && senderPubkey == null) {
+  if (referencedEventId == null &&
+      referencedAddress == null &&
+      eventId == null &&
+      senderPubkey == null) {
     return null;
   }
 
   return (
     referencedEventId: referencedEventId,
+    referencedAddress: referencedAddress,
     eventId: eventId,
     notificationType: notificationType,
     senderPubkey: senderPubkey,
@@ -151,6 +169,7 @@ Map<String, dynamic> localNotificationTapPayload(Map<String, dynamic> data) {
   final parsed = parseFcmPayload(data);
   return {
     NotificationPayloadKeys.referencedEventId: parsed?.referencedEventId,
+    NotificationPayloadKeys.referencedAddress: parsed?.referencedAddress,
     NotificationPayloadKeys.eventId: parsed?.eventId,
     NotificationPayloadKeys.notificationType: parsed?.notificationType,
     NotificationPayloadKeys.senderPubkey: parsed?.senderPubkey,
