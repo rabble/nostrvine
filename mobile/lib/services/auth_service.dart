@@ -585,6 +585,16 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       category: LogCategory.auth,
     );
 
+    // The refresh below runs unawaited across an async gap. If the user
+    // signs out or switches accounts while it is in flight, applying the
+    // result would attach the previous account's RPC signer to whichever
+    // identity is active by then.
+    final upgradeOwnerPubkey =
+        expectedOwnerPubkey ?? session?.userPubkey ?? currentPublicKeyHex;
+    bool upgradeContextStillCurrent() =>
+        _authState == AuthState.authenticated &&
+        currentPublicKeyHex == upgradeOwnerPubkey;
+
     _isRpcUpgradeInProgress = true;
     try {
       if (_oauthClient == null) {
@@ -595,6 +605,16 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       final refreshed = await _refreshOAuthSession(
         expectedOwnerPubkey: expectedOwnerPubkey ?? session?.userPubkey,
       ).timeout(rpcRefreshTimeout);
+
+      if (!upgradeContextStillCurrent()) {
+        Log.warning(
+          'initialize: discarding stale background RPC refresh — '
+          'signed out or switched accounts while it was in flight',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return;
+      }
 
       if (refreshed != null) {
         Log.info(
@@ -630,6 +650,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // Nudge the auth stream so widgets re-evaluate whether the
       // session-expired sheet should be shown now that the upgrade has resolved.
       _authStateController.add(_authState);
+    }
+
+    // A late failure must not downgrade whichever account is active now.
+    if (!upgradeContextStillCurrent()) {
+      return;
     }
 
     _setRpcCapability(AuthRpcCapability.unavailable);
