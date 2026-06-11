@@ -166,6 +166,12 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   // Track active subscriptions per type
   final Map<SubscriptionType, String> _activeSubscriptions = {};
   final Map<String, StreamSubscription> _subscriptions = {};
+
+  // Ids claimed by an in-flight subscribeToVideoFeed call — guards the
+  // async gap between the duplicate-id check and registration in
+  // [_subscriptions], so concurrent identical subscribes can't both
+  // issue a relay REQ.
+  final Set<String> _pendingSubscriptionIds = {};
   final List<String> _activeSubscriptionIds = [];
 
   // Global state
@@ -1574,6 +1580,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       }
 
       // BYPASS SubscriptionManager for main video feed - go directly to NostrService
+      // Holds the id claimed in _pendingSubscriptionIds so the catch
+      // below (where subscriptionId is out of scope) can release it.
+      String? pendingClaimId;
       try {
         // Use the filters we already created above which include authors
         Log.info(
@@ -1684,8 +1693,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           includeReposts: includeReposts,
         );
 
-        // Check if we already have this exact subscription
-        if (_subscriptions.containsKey(subscriptionId)) {
+        // Check if we already have this exact subscription — registered
+        // or still being set up by a concurrent call (the setup below
+        // crosses async gaps, so the claim must happen synchronously here).
+        if (_subscriptions.containsKey(subscriptionId) ||
+            _pendingSubscriptionIds.contains(subscriptionId)) {
           Log.info(
             '🔄 Reusing existing subscription $subscriptionId with identical parameters',
             name: 'VideoEventService',
@@ -1695,6 +1707,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           _activeSubscriptions[subscriptionType] = subscriptionId;
           return; // Reuse existing subscription
         }
+        _pendingSubscriptionIds.add(subscriptionId);
+        pendingClaimId = subscriptionId;
 
         // Create direct subscription using NostrService with proper filters
         final subscriptionStartTime = DateTime.now();
@@ -2014,10 +2028,14 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
         // Store the stream subscription for cleanup
         _subscriptions[subscriptionId] = streamSubscription;
+        _pendingSubscriptionIds.remove(subscriptionId);
         _activeSubscriptions[subscriptionType] = subscriptionId;
 
         // Subscription is tracked per type in _activeSubscriptions
       } catch (e, stackTrace) {
+        if (pendingClaimId != null) {
+          _pendingSubscriptionIds.remove(pendingClaimId);
+        }
         Log.error(
           '❌ Failed to create direct subscription: $e',
           name: 'VideoEventService',
