@@ -128,6 +128,11 @@ class UploadManager {
   final Map<String, StreamSubscription<double>> _progressSubscriptions = {};
   final Map<String, UploadMetrics> _uploadMetrics = {};
   final Map<String, Timer> _retryTimers = {};
+
+  // Processing-completion polls keyed by upload id, so dispose() can
+  // cancel them — an untracked periodic timer would keep firing against
+  // a disposed manager for up to 5 minutes.
+  final Map<String, Timer> _processingPollTimers = {};
   final Map<String, Future<void>> _sessionPersistFutures = {};
 
   bool _isInitialized = false;
@@ -1096,7 +1101,7 @@ class UploadManager {
 
       // If upload is in processing state, start polling for completion
       if (updatedUpload.status == UploadStatus.processing) {
-        _startProcessingPoll(updatedUpload);
+        startProcessingPoll(updatedUpload);
       }
     } else {
       throw BlossomUploadFailureException(
@@ -2640,6 +2645,12 @@ Upload Timeout Failure:
     }
     _retryTimers.clear();
 
+    // Cancel all processing-completion polls
+    for (final timer in _processingPollTimers.values) {
+      timer.cancel();
+    }
+    _processingPollTimers.clear();
+
     // Discard pending session persistence futures
     _sessionPersistFutures.clear();
 
@@ -2667,62 +2678,75 @@ Upload Timeout Failure:
     );
   }
 
-  /// Start polling for processing upload completion
-  void _startProcessingPoll(PendingUpload upload) {
+  /// Start polling for processing upload completion.
+  ///
+  /// Visible for testing so the timer lifecycle (cancellation on
+  /// completion, timeout, and [dispose]) can be exercised directly.
+  @visibleForTesting
+  void startProcessingPoll(PendingUpload upload) {
     Log.info(
       '🔄 Starting processing poll for upload: ${upload.id}',
       name: 'UploadManager',
       category: LogCategory.video,
     );
 
+    void stopPoll(Timer timer) {
+      timer.cancel();
+      _processingPollTimers.remove(upload.id);
+    }
+
     // Poll every 10 seconds for up to 5 minutes
-    Timer.periodic(const Duration(seconds: 10), (timer) async {
-      try {
-        // Check if upload still exists and is still processing
-        final currentUpload = getUpload(upload.id);
-        if (currentUpload == null ||
-            currentUpload.status != UploadStatus.processing) {
-          timer.cancel();
-          return;
-        }
+    _processingPollTimers[upload.id]?.cancel();
+    _processingPollTimers[upload.id] = Timer.periodic(
+      const Duration(seconds: 10),
+      (timer) async {
+        try {
+          // Check if upload still exists and is still processing
+          final currentUpload = getUpload(upload.id);
+          if (currentUpload == null ||
+              currentUpload.status != UploadStatus.processing) {
+            stopPoll(timer);
+            return;
+          }
 
-        // Check processing status using Blossom service
-        final isReady = await _checkVideoProcessingStatus(currentUpload);
-        if (isReady) {
-          // Update upload to ready state
-          final readyUpload = currentUpload.copyWith(
-            status: UploadStatus.readyToPublish,
-            uploadProgress: 1.0,
-            completedAt: DateTime.now(),
-          );
-          await _updateUpload(readyUpload);
+          // Check processing status using Blossom service
+          final isReady = await _checkVideoProcessingStatus(currentUpload);
+          if (isReady) {
+            // Update upload to ready state
+            final readyUpload = currentUpload.copyWith(
+              status: UploadStatus.readyToPublish,
+              uploadProgress: 1.0,
+              completedAt: DateTime.now(),
+            );
+            await _updateUpload(readyUpload);
 
-          Log.info(
-            '✅ Video processing complete: ${upload.id}',
+            Log.info(
+              '✅ Video processing complete: ${upload.id}',
+              name: 'UploadManager',
+              category: LogCategory.video,
+            );
+            stopPoll(timer);
+          }
+        } catch (e) {
+          Log.warning(
+            'Error checking processing status: $e',
             name: 'UploadManager',
             category: LogCategory.video,
           );
-          timer.cancel();
         }
-      } catch (e) {
-        Log.warning(
-          'Error checking processing status: $e',
-          name: 'UploadManager',
-          category: LogCategory.video,
-        );
-      }
 
-      // Cancel after 5 minutes to avoid infinite polling
-      if (timer.tick > 30) {
-        // 30 * 10 seconds = 5 minutes
-        timer.cancel();
-        Log.warning(
-          'Processing poll timeout for upload: ${upload.id}',
-          name: 'UploadManager',
-          category: LogCategory.video,
-        );
-      }
-    });
+        // Cancel after 5 minutes to avoid infinite polling
+        if (timer.tick > 30) {
+          // 30 * 10 seconds = 5 minutes
+          stopPoll(timer);
+          Log.warning(
+            'Processing poll timeout for upload: ${upload.id}',
+            name: 'UploadManager',
+            category: LogCategory.video,
+          );
+        }
+      },
+    );
   }
 
   /// Check if video processing is complete
