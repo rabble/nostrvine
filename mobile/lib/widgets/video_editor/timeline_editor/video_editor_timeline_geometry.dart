@@ -29,9 +29,7 @@ Duration? clipSourcePositionToTimelinePosition(
       final speed = clip.playbackSpeed ?? 1.0;
       final relativePlayback = speed <= 0 || speed == 1.0
           ? relative
-          : Duration(
-              microseconds: (relative.inMicroseconds / speed).round(),
-            );
+          : Duration(microseconds: (relative.inMicroseconds / speed).round());
       return precedingDuration + relativePlayback;
     }
 
@@ -41,26 +39,50 @@ Duration? clipSourcePositionToTimelinePosition(
   return null;
 }
 
-/// Returns the source offset for an audio track after its timeline start handle
-/// moves to [newStartTime].
+/// Returns the source offset and anchor state for an audio track after its
+/// timeline start handle moves to [newStartTime].
 ///
 /// Left-trimming a sound should consume or reveal audio source content rather
 /// than sliding the same source frame to a new timeline position. Keeping this
 /// offset in step with the timeline start also preserves the anchored-audio
 /// alignment invariant used by [rebaseAnchoredAudioForClipState].
-Duration audioStartOffsetForLeftTrim(
+AudioLeftTrimResult audioLeftTrimResult(
   AudioEvent track, {
   required Duration newStartTime,
 }) {
   final nextOffset = track.startOffset + (newStartTime - track.startTime);
-  if (nextOffset < Duration.zero) return Duration.zero;
+  if (nextOffset < Duration.zero) {
+    return const AudioLeftTrimResult(
+      startOffset: Duration.zero,
+      anchorStillValid: false,
+    );
+  }
 
   final duration = track.duration;
-  if (duration == null) return nextOffset;
+  if (duration == null) {
+    return AudioLeftTrimResult(startOffset: nextOffset);
+  }
 
   final maxOffset = Duration(milliseconds: (duration * 1000).round());
-  if (nextOffset > maxOffset) return maxOffset;
-  return nextOffset;
+  if (nextOffset > maxOffset) {
+    return AudioLeftTrimResult(startOffset: maxOffset, anchorStillValid: false);
+  }
+  return AudioLeftTrimResult(startOffset: nextOffset);
+}
+
+/// Result of applying a left trim to an audio track's source offset.
+class AudioLeftTrimResult {
+  const AudioLeftTrimResult({
+    required this.startOffset,
+    this.anchorStillValid = true,
+  });
+
+  /// Source offset to apply to the track.
+  final Duration startOffset;
+
+  /// Whether the requested timeline start can still be represented by the
+  /// anchored-audio alignment invariant.
+  final bool anchorStillValid;
 }
 
 /// Reprojects marker positions after clip order, trim, or speed changes.
@@ -234,9 +256,7 @@ Duration _playbackOffsetToSourcePosition(
   final speed = clip.playbackSpeed ?? 1.0;
   final sourceOffset = speed <= 0 || speed == 1.0
       ? playbackOffset
-      : Duration(
-          microseconds: (playbackOffset.inMicroseconds * speed).round(),
-        );
+      : Duration(microseconds: (playbackOffset.inMicroseconds * speed).round());
 
   return clip.trimStart + _clampDuration(sourceOffset, clip.trimmedDuration);
 }
@@ -255,9 +275,7 @@ Duration? _sourcePositionToPlaybackOffset(
   final speed = clip.playbackSpeed ?? 1.0;
   if (speed <= 0 || speed == 1.0) return sourceOffset;
 
-  return Duration(
-    microseconds: (sourceOffset.inMicroseconds / speed).round(),
-  );
+  return Duration(microseconds: (sourceOffset.inMicroseconds / speed).round());
 }
 
 Duration _clampDuration(Duration value, Duration max) {

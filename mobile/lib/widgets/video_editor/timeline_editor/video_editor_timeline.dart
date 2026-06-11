@@ -607,8 +607,8 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
       case .sound:
         final audioTracks = editor.stateManager.audioTracks;
         final audioIdx = audioTracks.indexWhere((e) => e.id == item.id);
-        final startOffset = isStart && audioIdx != -1
-            ? audioStartOffsetForLeftTrim(
+        final trimResult = isStart && audioIdx != -1
+            ? audioLeftTrimResult(
                 audioTracks[audioIdx],
                 newStartTime: startTime,
               )
@@ -618,7 +618,8 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
           index: audioIdx,
           startTime: startTime,
           endTime: endTime,
-          startOffset: startOffset,
+          startOffset: trimResult?.startOffset,
+          clearAnchor: trimResult?.anchorStillValid == false,
           skipUpdateHistory: true,
         );
     }
