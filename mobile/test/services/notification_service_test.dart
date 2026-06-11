@@ -273,6 +273,50 @@ void main() {
       expect(events.single.notificationType, equals('reply'));
     });
 
+    test(
+      'emits the authoritative referencedAddress from JSON payload',
+      () async {
+        final events = <NotificationTapEvent>[];
+        final sub = service.notificationTapStream.listen(events.add);
+        addTearDown(sub.cancel);
+
+        service.handleNotificationTapPayload(
+          jsonEncode({
+            'referencedEventId': 'video_event',
+            'referencedAddress': '34236:owner_hex:my-vine-id',
+            'notificationType': 'like',
+          }),
+        );
+
+        await Future<void>.delayed(Duration.zero);
+
+        expect(events, hasLength(1));
+        expect(
+          events.single.referencedAddress,
+          equals('34236:owner_hex:my-vine-id'),
+        );
+      },
+    );
+
+    test('routes a payload that carries only referencedAddress', () async {
+      // The coordinate alone is a valid video target — it must still emit.
+      final events = <NotificationTapEvent>[];
+      final sub = service.notificationTapStream.listen(events.add);
+      addTearDown(sub.cancel);
+
+      service.handleNotificationTapPayload(
+        jsonEncode({'referencedAddress': '34236:owner_hex:vine-id'}),
+      );
+
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events, hasLength(1));
+      expect(
+        events.single.referencedAddress,
+        equals('34236:owner_hex:vine-id'),
+      );
+    });
+
     test('emits null type when notificationType missing', () async {
       final events = <NotificationTapEvent>[];
       final sub = service.notificationTapStream.listen(events.add);
@@ -594,20 +638,28 @@ void main() {
     test('uses value equality for event comparisons', () {
       const first = NotificationTapEvent(
         referencedEventId: 'abc123',
+        referencedAddress: '34236:owner:vine',
         notificationType: 'reply',
       );
       const second = NotificationTapEvent(
         referencedEventId: 'abc123',
+        referencedAddress: '34236:owner:vine',
         notificationType: 'reply',
       );
       const third = NotificationTapEvent(
         referencedEventId: 'xyz789',
         notificationType: 'reply',
       );
+      const differsByAddress = NotificationTapEvent(
+        referencedEventId: 'abc123',
+        referencedAddress: '34236:owner:other-vine',
+        notificationType: 'reply',
+      );
 
       expect(first, equals(second));
       expect(first.hashCode, equals(second.hashCode));
       expect(first, isNot(equals(third)));
+      expect(first, isNot(equals(differsByAddress)));
     });
   });
 }

@@ -24,6 +24,7 @@ enum NotificationType {
 class NotificationTapEvent {
   const NotificationTapEvent({
     this.referencedEventId,
+    this.referencedAddress,
     this.eventId,
     this.notificationType,
     this.senderPubkey,
@@ -32,6 +33,12 @@ class NotificationTapEvent {
   /// The event acted upon (present for like/comment/repost). Null for
   /// follow/mention, which the push service sends without an `e` tag.
   final String? referencedEventId;
+
+  /// Authoritative NIP-33 coordinate (`kind:pubkey:d-tag`) of the referenced
+  /// video, taken from the source event's signed `a`/`A` tag. Preferred over
+  /// [referencedEventId] for routing because it is stable across NIP-33
+  /// replacements. Null when the source event carried no `a`/`A` tag.
+  final String? referencedAddress;
 
   /// The source event itself (the like/comment/follow/mention event).
   final String? eventId;
@@ -46,13 +53,19 @@ class NotificationTapEvent {
       identical(this, other) ||
       other is NotificationTapEvent &&
           referencedEventId == other.referencedEventId &&
+          referencedAddress == other.referencedAddress &&
           eventId == other.eventId &&
           notificationType == other.notificationType &&
           senderPubkey == other.senderPubkey;
 
   @override
-  int get hashCode =>
-      Object.hash(referencedEventId, eventId, notificationType, senderPubkey);
+  int get hashCode => Object.hash(
+    referencedEventId,
+    referencedAddress,
+    eventId,
+    notificationType,
+    senderPubkey,
+  );
 }
 
 /// Notification data structure
@@ -517,17 +530,23 @@ class NotificationService {
       final referencedEventId = field(
         NotificationPayloadKeys.referencedEventId,
       );
+      final referencedAddress = field(
+        NotificationPayloadKeys.referencedAddress,
+      );
       final eventId = field(NotificationPayloadKeys.eventId);
       final senderPubkey = field(NotificationPayloadKeys.senderPubkey);
       // A follow/mention carries no referencedEventId but is still routable
-      // via senderPubkey / eventId, so route whenever any of the three exist.
+      // via senderPubkey / eventId, and a referencedAddress alone is a valid
+      // video target, so route whenever any of these exist.
       if (referencedEventId == null &&
+          referencedAddress == null &&
           eventId == null &&
           senderPubkey == null) {
         return null;
       }
       return NotificationTapEvent(
         referencedEventId: referencedEventId,
+        referencedAddress: referencedAddress,
         eventId: eventId,
         notificationType: field(NotificationPayloadKeys.notificationType),
         senderPubkey: senderPubkey,
