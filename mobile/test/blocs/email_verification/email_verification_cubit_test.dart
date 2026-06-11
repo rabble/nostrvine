@@ -106,6 +106,59 @@ void main() {
           expect(cubit.state.pendingEmail, testEmail);
         },
       );
+
+      // BYOK verifiers embed the raw nsec (see PKCE.generateVerifier), and
+      // captured logs are uploaded with bug reports — the verifier value
+      // must never reach a log message.
+      test('never logs raw verifier when completion is missing the code', () {
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult(status: PollStatus.complete));
+
+        const nsecVerifier =
+            'prefix.nsec1qwertyuiopasdfghjklzxcvbnm0123456789abcdef';
+
+        fakeAsync((fake) {
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: nsecVerifier,
+            email: testEmail,
+          );
+
+          fake.elapse(const Duration(seconds: 4));
+
+          expect(cubit.state.status, EmailVerificationStatus.failure);
+          expect(cubit.state.errorCode, EmailVerificationError.missingAuthCode);
+
+          final messages = LogCaptureService().getRecentLogs().map(
+            (entry) => entry.message,
+          );
+          expect(
+            messages.where(
+              (message) =>
+                  message.contains(nsecVerifier) || message.contains('nsec1'),
+            ),
+            isEmpty,
+            reason:
+                'the BYOK verifier embeds the raw nsec and must never be '
+                'logged',
+          );
+          expect(
+            messages.where(
+              (message) =>
+                  message.startsWith('Verification complete but missing'),
+            ),
+            isNotEmpty,
+            reason: 'the edge-case error log itself must still fire',
+          );
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
     });
 
     group('invite activation', () {

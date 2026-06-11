@@ -291,10 +291,13 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
           if (result.code != null && _pendingVerifier != null) {
             await _exchangeCodeAndLogin(result.code!, _pendingVerifier!);
           } else {
-            // Edge case: completion detected but missing code or verifier
+            // Edge case: completion detected but missing code or verifier.
+            // Log presence only — BYOK verifiers embed the raw nsec and
+            // captured logs are uploaded with bug reports.
             Log.error(
               'Verification complete but missing code or verifier! '
-              'code=${result.code}, verifier=$_pendingVerifier',
+              'code=${result.code != null}, '
+              'verifier=${_pendingVerifier != null}',
               name: 'EmailVerificationCubit',
               category: LogCategory.auth,
             );
