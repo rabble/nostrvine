@@ -14,6 +14,8 @@ class LastTabPosition extends Notifier<Map<RouteType, int>> {
       final ctx = next.asData?.value;
       if (ctx == null) return;
 
+      if (ctx.type == RouteType.home) return;
+
       // Only track video-based routes
       if (ctx.type == RouteType.videoRecorder ||
           ctx.type == RouteType.videoEditor ||

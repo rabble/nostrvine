@@ -268,6 +268,43 @@ void main() {
       expect(feedVideos.currentIndex, 2);
     });
 
+    testWidgets('clamps restored home index to loaded videos', (tester) async {
+      final videos = [
+        createTestVideoEvent(id: 'video-0'),
+        createTestVideoEvent(id: 'video-1'),
+        createTestVideoEvent(id: 'video-2'),
+      ];
+      final state = VideoFeedBlocState(
+        status: VideoFeedStatus.success,
+        videos: videos,
+      );
+      when(() => videoFeedBloc.state).thenReturn(state);
+      whenListen(
+        videoFeedBloc,
+        const Stream<VideoFeedBlocState>.empty(),
+        initialState: state,
+      );
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+              BlocProvider<VideoPlaybackStatusCubit>(
+                create: (_) => VideoPlaybackStatusCubit(),
+              ),
+              BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+            ],
+            child: const VideoFeedView(initialIndex: 99),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final feedVideos = tester.widget<FeedVideos>(find.byType(FeedVideos));
+      expect(feedVideos.currentIndex, 2);
+    });
+
     testWidgets('records active video index for home tab restoration', (
       tester,
     ) async {
@@ -312,6 +349,83 @@ void main() {
         container.read(lastTabPositionProvider)[RouteType.home],
         equals(1),
       );
+    });
+
+    testWidgets('home route emissions do not clobber recorded home index', (
+      tester,
+    ) async {
+      const bodyKey = Key('home-position-provider-body');
+      await tester.pumpWidget(
+        testMaterialApp(
+          additionalOverrides: [
+            routerLocationStreamProvider.overrideWith(
+              (_) => Stream.value('/home/0'),
+            ),
+          ],
+          home: const SizedBox.shrink(key: bodyKey),
+        ),
+      );
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byKey(bodyKey)),
+      );
+      final positions = container.read(lastTabPositionProvider.notifier);
+      positions.recordPosition(RouteType.home, 12);
+
+      await tester.pump();
+
+      expect(
+        container.read(lastTabPositionProvider)[RouteType.home],
+        equals(12),
+      );
+    });
+
+    testWidgets('retry resets home index before refreshing failed feed', (
+      tester,
+    ) async {
+      const state = VideoFeedBlocState(
+        status: VideoFeedStatus.failure,
+        error: VideoFeedError.loadFailed,
+      );
+      when(() => videoFeedBloc.state).thenReturn(state);
+      whenListen(
+        videoFeedBloc,
+        const Stream<VideoFeedBlocState>.empty(),
+        initialState: state,
+      );
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+              BlocProvider<VideoPlaybackStatusCubit>(
+                create: (_) => VideoPlaybackStatusCubit(),
+              ),
+              BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+            ],
+            child: const VideoFeedView(initialIndex: 4),
+          ),
+        ),
+      );
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(VideoFeedView)),
+      );
+      container
+          .read(lastTabPositionProvider.notifier)
+          .recordPosition(RouteType.home, 4);
+
+      await tester.tap(find.text('Retry'));
+      await tester.pump();
+
+      expect(
+        container.read(lastTabPositionProvider)[RouteType.home],
+        equals(0),
+      );
+      verify(
+        () => videoFeedBloc.add(const VideoFeedRefreshRequested()),
+      ).called(1);
     });
   });
 }

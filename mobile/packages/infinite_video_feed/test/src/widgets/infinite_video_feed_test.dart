@@ -709,6 +709,28 @@ void main() {
         expect(key.currentState!.currentIndex, equals(0));
       });
 
+      testWidgets('clamps initialIndex to the available videos', (
+        tester,
+      ) async {
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        final videos = List.generate(3, (i) => _makeVideo('v$i'));
+
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              key: key,
+              videos: videos,
+              cache: cache,
+              initialIndex: 99,
+              preloadGracePeriod: Duration.zero,
+              prefetchCount: 0,
+            ),
+          ),
+        );
+
+        expect(key.currentState!.currentIndex, equals(2));
+      });
+
       testWidgets('does not autoplay when mounted inactive', (tester) async {
         DivineVideoPlayerController.resetIdCounterForTesting();
         final harness = _NativePlayerHarness(tester);

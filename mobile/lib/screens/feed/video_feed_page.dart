@@ -130,9 +130,14 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
+    _currentIndex = widget.initialIndex < 0 ? 0 : widget.initialIndex;
     _pagePosition = ValueNotifier<double>(_currentIndex.toDouble());
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  int _clampIndexForItemCount(int index, int itemCount) {
+    if (itemCount == 0) return 0;
+    return index.clamp(0, itemCount - 1);
   }
 
   @override
@@ -244,6 +249,28 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
           ],
           child: BlocBuilder<VideoFeedBloc, VideoFeedBlocState>(
             builder: (context, state) {
+              final itemCount = state.videos.length;
+              final clampedIndex = _clampIndexForItemCount(
+                _currentIndex,
+                itemCount,
+              );
+              if (clampedIndex != _currentIndex) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  if (_currentIndex >= 0 && _currentIndex < itemCount) return;
+                  final normalized = _clampIndexForItemCount(
+                    _currentIndex,
+                    itemCount,
+                  );
+                  if (_currentIndex == normalized) return;
+                  _currentIndex = normalized;
+                  _pagePosition.value = normalized.toDouble();
+                  ref
+                      .read(lastTabPositionProvider.notifier)
+                      .recordPosition(RouteType.home, normalized);
+                });
+              }
+
               // Loading state (including initial state before first load)
               if (state.isLoading) {
                 return const Center(child: BrandedLoadingIndicator());
@@ -251,7 +278,10 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
               // Error state
               if (state.status == VideoFeedStatus.failure) {
-                return _FeedErrorWidget(error: state.error);
+                return _FeedErrorWidget(
+                  error: state.error,
+                  onRetry: () => _refreshFeed(context),
+                );
               }
 
               // Empty state
@@ -276,7 +306,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                     FeedVideos(
                       videos: state.videos,
                       contextTitle: state.feedContextTitle,
-                      currentIndex: _currentIndex,
+                      currentIndex: clampedIndex,
                       isActive: _isNewFeedActive,
                       hasMore: state.hasMore,
                       isLoadingMore: state.isLoadingMore,
@@ -340,9 +370,10 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 }
 
 class _FeedErrorWidget extends StatelessWidget {
-  const _FeedErrorWidget({this.error});
+  const _FeedErrorWidget({required this.onRetry, this.error});
 
   final VideoFeedError? error;
+  final Future<void> Function() onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -369,9 +400,7 @@ class _FeedErrorWidget extends StatelessWidget {
           ],
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () => context.read<VideoFeedBloc>().add(
-              const VideoFeedRefreshRequested(),
-            ),
+            onPressed: () => unawaited(onRetry()),
             child: Text(context.l10n.feedRetry),
           ),
         ],

@@ -228,6 +228,12 @@ bool _isAuthEntryLocation(String location) {
       location == MinorAccountReviewUnder13Screen.path;
 }
 
+@visibleForTesting
+int homeInitialIndexFromPathParameters(Map<String, String> pathParameters) {
+  final rawIndex = int.tryParse(pathParameters['index'] ?? '') ?? 0;
+  return rawIndex < 0 ? 0 : rawIndex;
+}
+
 final goRouterProvider = Provider<GoRouter>((ref) {
   // Use ref.read to avoid recreating the router on auth state changes
   final authService = ref.read(authServiceProvider);
@@ -446,9 +452,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             path: VideoFeedPage.pathWithIndex,
             name: VideoFeedPage.routeName,
             pageBuilder: (ctx, st) {
-              final rawIndex =
-                  int.tryParse(st.pathParameters['index'] ?? '') ?? 0;
-              final initialIndex = rawIndex < 0 ? 0 : rawIndex;
+              final initialIndex = homeInitialIndexFromPathParameters(
+                st.pathParameters,
+              );
               return NoTransitionPage(
                 key: st.pageKey,
                 child: Navigator(

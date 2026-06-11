@@ -2419,7 +2419,7 @@ class VideosRepository {
     if (effectiveUserPubkey == null ||
         _funnelcakeApiClient == null ||
         !_funnelcakeApiClient.isAvailable) {
-      final result = HomeFeedResult(
+      return HomeFeedResult(
         videos: await getPopularVideos(
           limit: limit,
           until: until,
@@ -2428,10 +2428,6 @@ class VideosRepository {
           viewerCountry: viewerCountry,
         ),
       );
-      if (until == null && cursor == null) {
-        _inMemoryFeedCache?.set(cacheKey, result);
-      }
-      return result;
     }
 
     final recommendationCursor = cursor ?? until?.toString();
@@ -2451,7 +2447,7 @@ class VideosRepository {
           );
     final videos = _transformVideoStats(response.videos);
     if (videos.isEmpty) {
-      final result = HomeFeedResult(
+      return HomeFeedResult(
         videos: await getPopularVideos(
           limit: limit,
           until: until,
@@ -2460,10 +2456,6 @@ class VideosRepository {
           viewerCountry: viewerCountry,
         ),
       );
-      if (until == null && cursor == null) {
-        _inMemoryFeedCache?.set(cacheKey, result);
-      }
-      return result;
     }
 
     final result = HomeFeedResult(

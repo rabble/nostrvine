@@ -252,33 +252,6 @@ void main() {
   // builder regions reintroduce Uri.decodeComponent — the exact regression
   // that originally caused the crash.
   group('Builder regression guard (#3413)', () {
-    test('home builder threads route index into VideoFeedPage', () {
-      final source = File('lib/router/app_router.dart').readAsStringSync();
-
-      final homePathOffset = source.indexOf(
-        'path: VideoFeedPage.pathWithIndex',
-      );
-      final explorePathOffset = source.indexOf('path: ExploreScreen.path');
-      expect(
-        homePathOffset,
-        isNonNegative,
-        reason:
-            'Home GoRoute marker not found in app_router.dart. '
-            'Update this regression test to match the new marker.',
-      );
-      expect(
-        explorePathOffset,
-        greaterThan(homePathOffset),
-        reason:
-            'Explore GoRoute marker not found after Home GoRoute. '
-            'Update this regression test to match the new layout.',
-      );
-
-      final homeRegion = source.substring(homePathOffset, explorePathOffset);
-      expect(homeRegion, contains("st.pathParameters['index']"));
-      expect(homeRegion, contains('VideoFeedPage(initialIndex: initialIndex)'));
-    });
-
     test('hashtag and search builders do not call Uri.decodeComponent', () {
       final source = File('lib/router/app_router.dart').readAsStringSync();
 
@@ -345,6 +318,24 @@ void main() {
             'Search-results builder must derive focus from the routed URI so '
             'Explore, mentions, and deep links can express distinct intent.',
       );
+    });
+  });
+
+  group('Home route builder', () {
+    test('parses and normalizes the routed home index', () {
+      expect(
+        homeInitialIndexFromPathParameters(const {'index': '37'}),
+        equals(37),
+      );
+      expect(
+        homeInitialIndexFromPathParameters(const {'index': '-4'}),
+        equals(0),
+      );
+      expect(
+        homeInitialIndexFromPathParameters(const {'index': 'not-an-int'}),
+        equals(0),
+      );
+      expect(homeInitialIndexFromPathParameters(const {}), equals(0));
     });
   });
 }

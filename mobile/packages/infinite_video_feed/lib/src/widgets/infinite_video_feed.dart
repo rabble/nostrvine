@@ -298,6 +298,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   /// The feed index of the currently active (visible) video.
   int get currentIndex => _currentIndex;
 
+  int _clampIndex(int index) {
+    if (widget.videos.isEmpty) return 0;
+    return index.clamp(0, widget.videos.length - 1);
+  }
+
   /// Continuous page position for scroll-driven overlay effects.
   ///
   /// Value is 0-based and includes fractional positions while the page view
@@ -358,7 +363,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
+    _currentIndex = _clampIndex(widget.initialIndex);
     _volume = widget.initialVolume;
     _isActive = widget.isActive;
     _pagePosition = ValueNotifier<double>(_currentIndex.toDouble());
@@ -433,9 +438,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
     _teardownAllControllers();
 
-    _currentIndex = widget.videos.isEmpty
-        ? 0
-        : widget.initialIndex.clamp(0, widget.videos.length - 1);
+    _currentIndex = _clampIndex(widget.initialIndex);
     _pagePosition.value = _currentIndex.toDouble();
 
     _rebuild();
