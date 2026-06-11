@@ -115,7 +115,6 @@ The codebase has **253 files in lib/** with an overall test coverage of **45.0%*
 | 3.8% | 7/185 | `camera/enhanced_mobile_camera_interface.dart` | **HIGH** | **High** |
 | 4.1% | 6/147 | `content_reporting_service.dart` | Medium | Medium |
 | 8.0% | 9/112 | `camera_service_impl.dart` | **HIGH** | **High** |
-| 8.3% | 21/254 | `notification_service_enhanced.dart` | High | High |
 | 12.9% | 4/31 | `hashtag_cache_service.dart` | Medium | Low |
 
 ### Screens (<40% Coverage) - **HIGH PRIORITY**

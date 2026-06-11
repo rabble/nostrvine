@@ -9,9 +9,6 @@ part 'video_notification.dart';
 part 'actor_notification.dart';
 
 /// Notification kinds matching the Figma design spec.
-///
-/// Named `NotificationKind` to avoid conflict with the legacy
-/// `NotificationType` enum in `notification_model.dart`.
 enum NotificationKind {
   like,
   likeComment,

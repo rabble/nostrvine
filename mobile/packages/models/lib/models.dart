@@ -30,7 +30,6 @@ export 'src/nostr_app_audit_event.dart';
 export 'src/nostr_app_directory_entry.dart';
 export 'src/nostr_hex_utils.dart';
 export 'src/notification_item.dart';
-export 'src/notification_model.dart';
 export 'src/paginated_pubkeys.dart';
 export 'src/pending_upload.dart';
 export 'src/profile_search_result.dart';

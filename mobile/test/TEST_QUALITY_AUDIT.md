@@ -435,35 +435,34 @@ This is excellent compliance with the async programming standards!
 
 ---
 
-## Top 25 Tests to Refactor (by severity)
+## Top 24 Tests to Refactor (by severity)
 
 Priority based on: number of anti-patterns + file importance + test fragility
 
 1. **`test/startup/startup_diagnostics_test.dart`** - 24 Future.delayed, critical startup path, missing ABOUTME
 2. **`test/features/app/startup/startup_coordinator_test.dart`** - 13 Future.delayed, core coordinator logic, missing ABOUTME
-3. **`test/services/notification_service_enhanced/event_handlers_simple_test.dart`** - 16 Future.delayed, notification critical path
-4. **`test/providers/seen_videos_notifier_test.dart`** - 8 Future.delayed, affects feed experience
-5. **`test/services/social_service_test.dart`** - 17 verify() calls indicating heavy mocking
-6. **`test/providers/home_feed_provider_test.dart`** - 4 verify(), critical feed logic
-7. **`test/integration/home_feed_follows_test.dart`** - Core feed feature, missing ABOUTME
-8. **`test/services/video_event_service_pagination_test.dart`** - 3 Future.delayed, 3 verify(), pagination critical
-9. **`test/services/video_event_processor_test.dart`** - 4 Future.delayed, video processing pipeline
-10. **`test/services/video_event_processor_repost_integration_test.dart`** - 4 Future.delayed, repost feature
-11. **`test/providers/home_feed_double_watch_test.dart`** - 4 Future.delayed, potential race conditions
-12. **`test/providers/curation_provider_lifecycle_test.dart`** - 1 Future.delayed, lifecycle critical
-13. **`test/edge_cases/camera_error_recovery_test.dart`** - 4 Future.delayed, error handling critical
-14. **`test/screens/search_screen_hybrid_search_test.dart`** - 3 Future.delayed, search UX critical
-15. **`test/services/embedded_relay_service_test.dart`** - 2 Future.delayed, relay architecture core
-16. **`test/services/curation_publish_test.dart`** - 2 Future.delayed, 2 verify(), publishing critical
-17. **`test/providers/profile_videos_provider_test.dart`** - 2 Future.delayed, 3 verify(), profile display
-18. **`test/providers/curation_provider_tab_refresh_test.dart`** - 2 Future.delayed, UI refresh critical
-19. **`test/widgets/bug_report_dialog_test.dart`** - 2 Future.delayed, 2 verify(), bug reporting UX
-20. **`test/widgets/share_video_menu_comprehensive_test.dart`** - 1 Future.delayed, sharing UX
-21. **`test/services/proofmode_attestation_service_real_test.dart`** - 1 Future.delayed, security feature
-22. **`test/cross_platform/platform_compatibility_test.dart`** - 2 Future.delayed, cross-platform critical
-23. **`test/integration/video_record_publish_e2e_test.dart`** - E2E flow critical, missing ABOUTME
-24. **`test/integration/embedded_relay_subscription_test.dart`** - Relay core functionality
-25. **`test/services/video_event_service_deduplication_test.dart`** - 1 Future.delayed, 7 verify(), dedup critical
+3. **`test/providers/seen_videos_notifier_test.dart`** - 8 Future.delayed, affects feed experience
+4. **`test/services/social_service_test.dart`** - 17 verify() calls indicating heavy mocking
+5. **`test/providers/home_feed_provider_test.dart`** - 4 verify(), critical feed logic
+6. **`test/integration/home_feed_follows_test.dart`** - Core feed feature, missing ABOUTME
+7. **`test/services/video_event_service_pagination_test.dart`** - 3 Future.delayed, 3 verify(), pagination critical
+8. **`test/services/video_event_processor_test.dart`** - 4 Future.delayed, video processing pipeline
+9. **`test/services/video_event_processor_repost_integration_test.dart`** - 4 Future.delayed, repost feature
+10. **`test/providers/home_feed_double_watch_test.dart`** - 4 Future.delayed, potential race conditions
+11. **`test/providers/curation_provider_lifecycle_test.dart`** - 1 Future.delayed, lifecycle critical
+12. **`test/edge_cases/camera_error_recovery_test.dart`** - 4 Future.delayed, error handling critical
+13. **`test/screens/search_screen_hybrid_search_test.dart`** - 3 Future.delayed, search UX critical
+14. **`test/services/embedded_relay_service_test.dart`** - 2 Future.delayed, relay architecture core
+15. **`test/services/curation_publish_test.dart`** - 2 Future.delayed, 2 verify(), publishing critical
+16. **`test/providers/profile_videos_provider_test.dart`** - 2 Future.delayed, 3 verify(), profile display
+17. **`test/providers/curation_provider_tab_refresh_test.dart`** - 2 Future.delayed, UI refresh critical
+18. **`test/widgets/bug_report_dialog_test.dart`** - 2 Future.delayed, 2 verify(), bug reporting UX
+19. **`test/widgets/share_video_menu_comprehensive_test.dart`** - 1 Future.delayed, sharing UX
+20. **`test/services/proofmode_attestation_service_real_test.dart`** - 1 Future.delayed, security feature
+21. **`test/cross_platform/platform_compatibility_test.dart`** - 2 Future.delayed, cross-platform critical
+22. **`test/integration/video_record_publish_e2e_test.dart`** - E2E flow critical, missing ABOUTME
+23. **`test/integration/embedded_relay_subscription_test.dart`** - Relay core functionality
+24. **`test/services/video_event_service_deduplication_test.dart`** - 1 Future.delayed, 7 verify(), dedup critical
 
 ---
 
