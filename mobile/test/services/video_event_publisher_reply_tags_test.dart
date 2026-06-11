@@ -9,6 +9,7 @@ import 'package:models/models.dart'
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_reply_context.dart';
@@ -63,6 +64,7 @@ void main() {
     registerFallbackValue(_FakeVideoEvent());
     registerFallbackValue(<Filter>[]);
     registerFallbackValue(UploadStatus.pending);
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() {
@@ -136,8 +138,18 @@ void main() {
     });
 
     when(
-      () => nostrClient.publishEvent(any()),
-    ).thenAnswer((_) async => PublishSuccess(event: publishedEvent));
+      () => nostrClient.publishEventAwaitOk(
+        any(),
+        timeout: any(named: 'timeout'),
+      ),
+    ).thenAnswer(
+      (_) async => PublishOutcome(
+        eventId: publishedEvent.id,
+        acceptedBy: const ['wss://relay.divine.video'],
+        rejectedBy: const {},
+        noResponseFrom: const [],
+      ),
+    );
     when(
       () => nostrClient.queryEvents(
         any(),

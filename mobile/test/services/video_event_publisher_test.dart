@@ -14,6 +14,7 @@ import 'package:models/models.dart' show AudioEvent, audioEventKind;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/pending_upload.dart';
@@ -512,6 +513,7 @@ void main() {
           createdAt: 0,
         ),
       );
+      registerFallbackValue(Duration.zero);
     });
 
     setUp(() {
@@ -585,8 +587,18 @@ void main() {
       });
 
       when(
-        () => nostrClient.publishEvent(any()),
-      ).thenAnswer((_) async => PublishSuccess(event: publishedEvent));
+        () => nostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: publishedEvent.id,
+          acceptedBy: const ['wss://relay.divine.video'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
+        ),
+      );
     }
 
     test('publishVideoEvent passes generic mention p-tags through', () async {
@@ -648,10 +660,18 @@ void main() {
         });
 
         when(
-          () => nostrClient.publishEvent(any()),
+          () => nostrClient.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
         ).thenAnswer((invocation) async {
           final event = invocation.positionalArguments.first as Event;
-          return PublishSuccess(event: event);
+          return PublishOutcome(
+            eventId: event.id,
+            acceptedBy: const ['wss://relay.divine.video'],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          );
         });
       });
 

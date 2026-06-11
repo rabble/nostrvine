@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show AudioEvent, VideoEvent, audioEventKind;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
@@ -53,6 +54,7 @@ void main() {
     registerFallbackValue(_FakeVideoEvent());
     registerFallbackValue(UploadStatus.pending);
     registerFallbackValue(File(''));
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() {
@@ -137,8 +139,18 @@ void main() {
 
   void stubPublish(Event event) {
     when(
-      () => mockNostrClient.publishEvent(any()),
-    ).thenAnswer((_) async => PublishSuccess(event: event));
+      () => mockNostrClient.publishEventAwaitOk(
+        any(),
+        timeout: any(named: 'timeout'),
+      ),
+    ).thenAnswer(
+      (_) async => PublishOutcome(
+        eventId: event.id,
+        acceptedBy: const ['wss://relay.divine.video'],
+        rejectedBy: const {},
+        noResponseFrom: const [],
+      ),
+    );
   }
 
   bool containsTag(List<List<String>> tags, List<String> expected) {
@@ -170,15 +182,64 @@ void main() {
       verify(() => mockVideoEventService.addVideoEvent(any())).called(1);
     });
 
+    test('does not mark published when relays reject with OK false despite '
+        'successful send', () async {
+      final signedEvent = createSignedEvent();
+      stubSigning(signedEvent);
+      // WebSocket frame accepted by the pool...
+      when(
+        () => mockNostrClient.publishEvent(any()),
+      ).thenAnswer((_) async => PublishSuccess(event: signedEvent));
+      // ...but every relay rejects the event at the protocol level
+      // (NIP-20 `OK false`, e.g. divine relay policy rejection).
+      when(
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: signedEvent.id,
+          acceptedBy: const [],
+          rejectedBy: const {
+            'wss://relay.divine.video': 'blocked: event rejected by policy',
+          },
+          noResponseFrom: const [],
+        ),
+      );
+
+      final result = await publisher.publishDirectUpload(createUpload());
+
+      expect(result, isFalse);
+      verifyNever(
+        () => mockUploadManager.updateUploadStatus(
+          any(),
+          UploadStatus.published,
+          nostrEventId: any(named: 'nostrEventId'),
+        ),
+      );
+      verifyNever(() => mockVideoEventService.addVideoEvent(any()));
+    });
+
     test(
       'returns false when relay rejects the event on all attempts',
       () async {
         final signedEvent = createSignedEvent();
         stubSigning(signedEvent);
-        // Relay rejects the event (publishEvent returns PublishFailed).
+        // Relay rejects the event (no relay accepts the publish).
         when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => const PublishFailed());
+          () => mockNostrClient.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: signedEvent.id,
+            acceptedBy: const [],
+            rejectedBy: const {'wss://relay.divine.video': 'rejected'},
+            noResponseFrom: const [],
+          ),
+        );
 
         final result = await publisher.publishDirectUpload(createUpload());
 
@@ -213,7 +274,12 @@ void main() {
           tags: any(named: 'tags'),
         ),
       );
-      verify(() => mockNostrClient.publishEvent(signedEvent)).called(1);
+      verify(
+        () => mockNostrClient.publishEventAwaitOk(
+          signedEvent,
+          timeout: any(named: 'timeout'),
+        ),
+      ).called(1);
     });
 
     test('adds selected audio tag only for valid Nostr event ids', () async {
@@ -235,9 +301,17 @@ void main() {
           'video content',
         );
       });
-      when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-        (invocation) async => PublishSuccess(
-          event: invocation.positionalArguments.single as Event,
+      when(
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments.first as Event).id,
+          acceptedBy: const ['wss://relay.divine.video'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
         ),
       );
 
@@ -277,9 +351,17 @@ void main() {
           'video content',
         );
       });
-      when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-        (invocation) async => PublishSuccess(
-          event: invocation.positionalArguments.single as Event,
+      when(
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments.first as Event).id,
+          acceptedBy: const ['wss://relay.divine.video'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
         ),
       );
 
@@ -369,9 +451,17 @@ void main() {
         videoTags = tags;
         return Event(testPubkey, kind, tags, 'video content');
       });
-      when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-        (invocation) async => PublishSuccess(
-          event: invocation.positionalArguments.single as Event,
+      when(
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments.first as Event).id,
+          acceptedBy: const ['wss://relay.divine.video'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
         ),
       );
 

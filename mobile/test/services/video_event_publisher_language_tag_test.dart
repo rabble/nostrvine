@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -48,6 +49,7 @@ void main() {
     registerFallbackValue(_FakeFilter());
     registerFallbackValue(<Filter>[]);
     registerFallbackValue(UploadStatus.pending);
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() {
@@ -128,8 +130,18 @@ void main() {
     });
 
     when(
-      () => mockNostrClient.publishEvent(any()),
-    ).thenAnswer((_) async => PublishSuccess(event: publishedEvent));
+      () => mockNostrClient.publishEventAwaitOk(
+        any(),
+        timeout: any(named: 'timeout'),
+      ),
+    ).thenAnswer(
+      (_) async => PublishOutcome(
+        eventId: publishedEvent.id,
+        acceptedBy: const ['wss://relay.divine.video'],
+        rejectedBy: const {},
+        noResponseFrom: const [],
+      ),
+    );
     when(
       () => mockNostrClient.queryEvents(
         any(),

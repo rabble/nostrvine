@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' hide NIP71VideoKinds;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/upload_manager.dart';
@@ -43,6 +44,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
     registerFallbackValue(_FakeVideoEvent());
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() {
@@ -120,8 +122,18 @@ void main() {
         });
 
         when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
+          () => mockNostrClient.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (invocation) async => PublishOutcome(
+            eventId: (invocation.positionalArguments.first as Event).id,
+            acceptedBy: const ['wss://relay.divine.video'],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          ),
+        );
 
         when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 
@@ -180,8 +192,18 @@ void main() {
       });
 
       when(
-        () => mockNostrClient.publishEvent(any()),
-      ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments.first as Event).id,
+          acceptedBy: const ['wss://relay.divine.video'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
+        ),
+      );
 
       when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 
@@ -210,8 +232,18 @@ void main() {
       ).thenAnswer((_) async => createSignedEvent(existingTags));
 
       when(
-        () => mockNostrClient.publishEvent(any()),
-      ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments.first as Event).id,
+          acceptedBy: const ['wss://relay.divine.video'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
+        ),
+      );
 
       when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 
@@ -241,8 +273,18 @@ void main() {
       ).thenAnswer((_) async => signedEvent);
 
       when(
-        () => mockNostrClient.publishEvent(any()),
-      ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments.first as Event).id,
+          acceptedBy: const ['wss://relay.divine.video'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
+        ),
+      );
 
       when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 
@@ -251,7 +293,12 @@ void main() {
         textTrackRef: textTrackRef,
       );
 
-      verify(() => mockNostrClient.publishEvent(any())).called(1);
+      verify(
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).called(1);
     });
 
     test('returns false when signing fails', () async {
@@ -269,7 +316,12 @@ void main() {
       );
 
       expect(result, isFalse);
-      verifyNever(() => mockNostrClient.publishEvent(any()));
+      verifyNever(
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      );
     });
 
     test('does not duplicate text-track tag if one already exists', () async {
@@ -311,8 +363,18 @@ void main() {
       });
 
       when(
-        () => mockNostrClient.publishEvent(any()),
-      ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments.first as Event).id,
+          acceptedBy: const ['wss://relay.divine.video'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
+        ),
+      );
 
       when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 
@@ -350,8 +412,18 @@ void main() {
       });
 
       when(
-        () => mockNostrClient.publishEvent(any()),
-      ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments.first as Event).id,
+          acceptedBy: const ['wss://relay.divine.video'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
+        ),
+      );
 
       when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 
@@ -384,8 +456,18 @@ void main() {
       ).thenAnswer((_) async => createSignedEvent(existingTags));
 
       when(
-        () => mockNostrClient.publishEvent(any()),
-      ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments.first as Event).id,
+          acceptedBy: const ['wss://relay.divine.video'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
+        ),
+      );
 
       when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 

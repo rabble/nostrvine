@@ -15,6 +15,7 @@ import 'package:models/models.dart'
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -73,7 +74,7 @@ const Duration _outerPublishTimeoutCeiling = Duration(seconds: 60);
 const Duration _outerPublishTimeoutBuffer = RelayPool.perRelaySendTimeout;
 
 /// Computes the outer timeout that bounds the call into
-/// [NostrClient.publishEvent] inside `_publishEventToNostr`.
+/// [NostrClient.publishEventAwaitOk] inside `_publishEventToNostr`.
 ///
 /// Derivation: `RelayPool.perRelaySendTimeout * relayCount + buffer`,
 /// clamped to `[floor, ceiling]`. Encoding the relationship in code
@@ -171,7 +172,7 @@ class VideoEventPublisher {
   DateTime? _lastPublishTime;
 
   /// The outer timeout that will bound the next call into
-  /// [NostrClient.publishEvent] inside [_publishEventToNostr], computed
+  /// [NostrClient.publishEventAwaitOk] inside [_publishEventToNostr], computed
   /// live from [outerPublishTimeoutFor] and the current
   /// [NostrClient.configuredRelayCount].
   ///
@@ -232,18 +233,23 @@ class VideoEventPublisher {
   }
 
   /// Publishes a signed Nostr [event] to the configured relays and returns
-  /// `true` iff at least one relay acknowledged the event as
-  /// [PublishSuccess].
+  /// `true` iff at least one relay confirmed acceptance with a NIP-20
+  /// `OK true` response ([PublishOutcome.confirmed]).
+  ///
+  /// A successful WebSocket send is NOT sufficient — relays can accept
+  /// the frame and still reject the event at the protocol level (e.g.
+  /// the divine relay's policy rejections). Treating a bare send as
+  /// success used to mark rejected videos as published while they were
+  /// silently dropped relay-side.
   ///
   /// **Failure contract** (returns `false`):
-  /// 1. `TimeoutException` — the outer `Future.timeout` (bound by
-  ///    [currentOuterPublishTimeout]) fires before
-  ///    [NostrClient.publishEvent] completes. Derived from
-  ///    `RelayPool.perRelaySendTimeout × relayCount + buffer`; see
-  ///    [outerPublishTimeoutFor].
-  /// 2. Relay rejection — `publishResult` is not [PublishSuccess]
-  ///    (all configured relays rejected the event or the SDK reported
-  ///    no acknowledgement).
+  /// 1. `TimeoutException` — the inner OK-wait (bound by
+  ///    [currentOuterPublishTimeout], which the publish tracker starts
+  ///    before the send fan-out) or the outer backstop
+  ///    `Future.timeout` fires first. See [outerPublishTimeoutFor].
+  /// 2. Relay rejection / no response — [PublishOutcome.failed]: every
+  ///    targeted relay rejected the event with `OK false` or never
+  ///    responded.
   /// 3. Inner exception — any throw inside the outer try/catch is
   ///    logged via `Log.error` and converted to `false`.
   ///
@@ -387,52 +393,46 @@ class VideoEventPublisher {
         );
       }
 
-      // Use the existing Nostr service to publish.
+      // Publish and wait for a NIP-20 `OK` from at least one relay. The
+      // [outerPublishTimeoutFor]-derived bound (perRelaySendTimeout ×
+      // relayCount + buffer) is passed as the OK-wait timeout — the SDK's
+      // publish tracker starts that timer before the send fan-out, so it
+      // covers both the sequential sends and the OK wait.
       //
-      // Defense-in-depth: outer timeout so a misbehaving relay (e.g. stuck
-      // in connecting / reconnect backoff) cannot freeze the publish flow
-      // indefinitely. The retry loop in [publishDirectUpload] picks up
-      // after each failed attempt.
-      //
-      // The bound is derived from [RelayPool.perRelaySendTimeout] and the
-      // configured relay count (see [outerPublishTimeoutFor]) so it stays
-      // strictly above the worst-case sequential fan-out inside
-      // [_sendCollect]. Hard-coding the outer timeout would silently break
-      // the moment a user adds a relay or the SDK retunes the per-relay
-      // cap; the derivation encodes the invariant in code.
+      // Defense-in-depth: the outer `Future.timeout` (one extra
+      // [RelayPool.perRelaySendTimeout] of slack so the inner tracker
+      // normally fires first) guards the code that runs before the
+      // tracker exists — e.g. `retryDisconnectedRelays` stuck in
+      // reconnect backoff. The retry loop in [publishDirectUpload] picks
+      // up after each failed attempt.
       //
       // We use try/catch on [TimeoutException] rather than `.timeout(
-      // onTimeout: ...)`. The `onTimeout` closure has its return type
-      // runtime-checked against the source future's `T`, and mocktail-
-      // stubbed Futures (`thenAnswer((_) async => event)`) infer their
-      // runtime type as `Future<Event>` — non-nullable — even when the
-      // declared signature is `Future<Event?>`. That mismatch makes
-      // `onTimeout: () => null` throw at runtime in tests. The try/catch
-      // shape sidesteps the closure-cast entirely; behaviour against a
-      // real `NostrClient` is identical.
+      // onTimeout: ...)`: `publishEventAwaitOk` returns a non-nullable
+      // [PublishOutcome], so an `onTimeout` closure could not return
+      // null, and the try/catch shape also avoids the mocktail
+      // runtime-type mismatch on stubbed futures.
       final outerTimeout = currentOuterPublishTimeout;
-      PublishResult? publishResult;
+      PublishOutcome? publishOutcome;
       try {
-        publishResult = await _nostrService
-            .publishEvent(event)
-            .timeout(outerTimeout);
+        publishOutcome = await _nostrService
+            .publishEventAwaitOk(event, timeout: outerTimeout)
+            .timeout(outerTimeout + RelayPool.perRelaySendTimeout);
       } on TimeoutException {
         Log.error(
-          '⏱️ publishEvent timed out after ${outerTimeout.inSeconds}s for '
-          'event ${event.id} '
+          '⏱️ publishEventAwaitOk timed out after '
+          '${outerTimeout.inSeconds}s for event ${event.id} '
           '(relayCount=${_nostrService.configuredRelayCount})',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        publishResult = null;
+        publishOutcome = null;
       }
 
-      // Check if publish was successful
-      if (publishResult is PublishSuccess) {
+      if (publishOutcome != null && publishOutcome.confirmed) {
         Log.info(
-          '📡 Event sent to relays, awaiting visibility confirmation: '
-          '${event.id} '
-          '(configured=${_nostrService.configuredRelayCount}, '
+          '📡 Event confirmed by relay(s): ${event.id} '
+          '(${publishOutcome.summary}, '
+          'configured=${_nostrService.configuredRelayCount}, '
           'connected=${_nostrService.connectedRelayCount})',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
@@ -440,7 +440,7 @@ class VideoEventPublisher {
 
         return true;
       } else {
-        final failureReason = publishResult?.failureReason ?? 'timeout';
+        final failureReason = publishOutcome?.summary ?? 'timeout';
         Log.error(
           '❌ Event publish failed for ${event.id}: $failureReason '
           '(configured=${_nostrService.configuredRelayCount}, '
@@ -1197,11 +1197,10 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
 
-      // Retry up to 3 times with exponential backoff.
-      // A successful send (relay accepted the event) is treated as success.
-      // We intentionally skip read-back verification because relay indexing
-      // lag can cause timeouts even though the event was accepted and is
-      // already being delivered via subscriptions.
+      // Retry up to 3 times with exponential backoff. Success means a
+      // relay confirmed acceptance with `OK true` (NIP-20). We still skip
+      // read-back verification — indexing lag can delay queries even
+      // after a relay has accepted the event.
       const maxRetries = 3;
       var publishResult = false;
 

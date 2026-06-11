@@ -6,6 +6,7 @@ import 'package:models/models.dart' show NativeProofData, VideoEvent;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/upload_manager.dart';
@@ -35,6 +36,7 @@ void main() {
     registerFallbackValue(UploadStatus.pending);
     registerFallbackValue(_FakeFilter());
     registerFallbackValue(<Filter>[]);
+    registerFallbackValue(Duration.zero);
   });
 
   group('VideoEventPublisher - CAWG identity tag integration', () {
@@ -95,11 +97,17 @@ void main() {
         return capturedEvent!;
       });
 
-      when(() => mockNostrService.publishEvent(any())).thenAnswer((
-        invocation,
-      ) async {
-        return PublishSuccess(
-          event: invocation.positionalArguments[0] as Event,
+      when(
+        () => mockNostrService.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer((invocation) async {
+        return PublishOutcome(
+          eventId: (invocation.positionalArguments[0] as Event).id,
+          acceptedBy: const ['wss://relay.divine.video'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
         );
       });
       when(
