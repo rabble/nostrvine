@@ -11,7 +11,6 @@ import 'package:cache_sync/cache_sync.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart'
     show DivineVideoPlayerController;
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -80,6 +79,7 @@ import 'package:openvine/services/corrupted_video_repair_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/database_encryption_bootstrap.dart';
 import 'package:openvine/services/deep_link_service.dart';
+import 'package:openvine/services/firebase_initialization.dart';
 import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
@@ -134,7 +134,7 @@ bool shouldRenderLocalPushNotification(RemoteMessage message) {
 /// Top-level background message handler required by Firebase.
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  await ensureDefaultFirebaseInitialized();
 
   // The OS already presents iOS alert pushes (aps.alert); only render a local
   // notification for data-only messages so we don't double-render (#4731).

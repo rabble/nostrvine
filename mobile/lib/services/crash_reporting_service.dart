@@ -2,10 +2,9 @@
 // ABOUTME: Uses Firebase Crashlytics to capture and report crashes from TestFlight/production
 
 import 'dart:async';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
-import 'package:openvine/firebase_options.dart';
+import 'package:openvine/services/firebase_initialization.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/utils/platform_support.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -32,10 +31,7 @@ class CrashReportingService {
     }
 
     try {
-      // Initialize Firebase with platform-specific options
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+      await ensureDefaultFirebaseInitialized();
 
       // Pass all uncaught errors from the framework to Crashlytics
       FlutterError.onError = (errorDetails) {
