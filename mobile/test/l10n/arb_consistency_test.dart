@@ -752,6 +752,13 @@ const _knownUntranslatedDebt = {
   'videoClipSaveTo',
   'videoClipDelete',
   'inspiredByAttributionSemanticLabel',
+  // Added by the current l10n/UI pass. English ships; other locales fall back until the next translation pass.
+  'shareSheetClipTitleLabel',
+  'shareSheetNameClipSubtitle',
+  'shareSheetNameClipTitle',
+  'shareSheetSaveClip',
+  'shareSheetSavedClipToClips',
+  'shareSheetUntitledClip',
 };
 
 Map<String, Object?> _readArb(File file) {

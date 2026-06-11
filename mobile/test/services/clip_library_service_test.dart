@@ -330,6 +330,7 @@ void main() {
       final original = DivineVideoClip(
         id: 'test_clip',
         video: EditorVideo.file('/path/to/video.mp4'),
+        libraryTitle: 'Saved rooftop loop',
         thumbnailPath: '/path/to/thumb.jpg',
         duration: const Duration(milliseconds: 2500),
         recordedAt: DateTime.now(),
@@ -341,11 +342,13 @@ void main() {
       // toJson stores only filenames for iOS compatibility
       expect(json['filePath'], 'video.mp4');
       expect(json['thumbnailPath'], 'thumb.jpg');
+      expect(json['libraryTitle'], 'Saved rooftop loop');
 
       // Roundtrip with same base path restores paths
       final restored = DivineVideoClip.fromJson(json, '/path/to');
 
       expect(restored.id, original.id);
+      expect(restored.libraryTitle, original.libraryTitle);
       // Path uses platform separator, check it ends with filename
       expect(await restored.video.safeFilePath(), endsWith('video.mp4'));
       expect(restored.thumbnailPath, endsWith('thumb.jpg'));
@@ -370,6 +373,22 @@ void main() {
       final restored = DivineVideoClip.fromJson(json, '/path/to');
 
       expect(restored.thumbnailPath, isNull);
+    });
+
+    test('handles missing libraryTitle in legacy JSON', () {
+      final clip = DivineVideoClip(
+        id: 'legacy_title',
+        video: EditorVideo.file('/path/to/video.mp4'),
+        duration: const Duration(seconds: 3),
+        recordedAt: DateTime.now(),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
+      );
+
+      final json = clip.toJson()..remove('libraryTitle');
+      final restored = DivineVideoClip.fromJson(json, '/path/to');
+
+      expect(restored.libraryTitle, isNull);
     });
 
     test('durationInSeconds returns correct value', () {

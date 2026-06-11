@@ -14,10 +14,12 @@ void main() {
     DivineVideoClip createClip({
       String id = 'clip-1',
       Duration duration = const Duration(seconds: 5),
+      String? libraryTitle,
     }) {
       return DivineVideoClip(
         id: id,
         video: EditorVideo.file('/path/to/clip.mp4'),
+        libraryTitle: libraryTitle,
         duration: duration,
         recordedAt: DateTime(2026),
         targetAspectRatio: .vertical,
@@ -55,6 +57,14 @@ void main() {
         );
 
         expect(find.text('3.00'), findsOneWidget);
+      });
+
+      testWidgets('library title when present', (tester) async {
+        await tester.pumpWidget(
+          buildWidget(clip: createClip(libraryTitle: 'Rooftop loop')),
+        );
+
+        expect(find.text('Rooftop loop'), findsOneWidget);
       });
 
       testWidgets('selection index when selected', (tester) async {

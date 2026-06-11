@@ -42,7 +42,10 @@ class _MockVideoClipImportService extends Mock
 
 class _FakeVideoEvent extends Fake implements VideoEvent {}
 
-class _FakeDivineVideoClip extends Fake implements DivineVideoClip {}
+class _FakeDivineVideoClip extends Fake implements DivineVideoClip {
+  @override
+  String? get libraryTitle => 'My local cut';
+}
 
 /// Fake notifier that provides test data for curatedListsStateProvider.
 ///
@@ -108,7 +111,10 @@ void main() {
     _FakeCuratedListsState.fakeLists = [];
 
     when(
-      () => mockVideoClipImportService.importToLibrary(any()),
+      () => mockVideoClipImportService.importToLibrary(
+        any(),
+        libraryTitle: any(named: 'libraryTitle'),
+      ),
     ).thenAnswer(
       (_) async => VideoClipImportSuccess(_FakeDivineVideoClip()),
     );
@@ -245,7 +251,7 @@ void main() {
     );
 
     testWidgets(
-      'More actions row shows Add to clips for non-classic video owned by current user',
+      'More actions row prompts for a clip title and confirms saved title for owned videos',
       (tester) async {
         final authService = createMockAuthService();
         when(() => authService.isAuthenticated).thenReturn(true);
@@ -264,14 +270,29 @@ void main() {
         await tester.tap(find.text('Add to clips'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Added to clips'), findsOneWidget);
+        expect(find.text('Name this clip'), findsOneWidget);
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).controller?.text,
+          'Test Video Title',
+        );
+
+        await tester.enterText(find.byType(TextField), 'My local cut');
+        await tester.tap(find.text('Save clip'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Saved "My local cut" to clips'), findsOneWidget);
         verify(
-          () => mockVideoClipImportService.importToLibrary(testVideo),
+          () => mockVideoClipImportService.importToLibrary(
+            testVideo,
+            libraryTitle: 'My local cut',
+          ),
         ).called(1);
       },
     );
 
-    testWidgets('tapping Add to clips shows success snackbar', (tester) async {
+    testWidgets('tapping Add to clips shows success snackbar with clip title', (
+      tester,
+    ) async {
       final classicVideo = _testVideo(
         rawTags: const {'platform': 'vine'},
         vineId: 'classic-vine-id',
@@ -284,9 +305,17 @@ void main() {
       await tester.tap(find.text('Add to clips'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Added to clips'), findsOneWidget);
+      expect(find.text('Name this clip'), findsOneWidget);
+
+      await tester.tap(find.text('Save clip'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Saved "My local cut" to clips'), findsOneWidget);
       verify(
-        () => mockVideoClipImportService.importToLibrary(classicVideo),
+        () => mockVideoClipImportService.importToLibrary(
+          classicVideo,
+          libraryTitle: 'Test Video Title',
+        ),
       ).called(1);
     });
 

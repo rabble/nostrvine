@@ -15,6 +15,7 @@ import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockVideoSharingService extends Mock implements VideoSharingService {}
@@ -34,7 +35,17 @@ class _MockFile extends Mock implements File {}
 
 class _FakeVideoEvent extends Fake implements VideoEvent {}
 
-class _FakeDivineVideoClip extends Fake implements DivineVideoClip {}
+DivineVideoClip _clip({String? libraryTitle}) {
+  return DivineVideoClip(
+    id: 'clip-1',
+    video: EditorVideo.file('/tmp/clip.mp4'),
+    libraryTitle: libraryTitle,
+    duration: const Duration(seconds: 6),
+    recordedAt: DateTime.utc(2026),
+    targetAspectRatio: .square,
+    originalAspectRatio: 1,
+  );
+}
 
 /// A [VideoEvent] whose [toJson] always throws, used to test error paths.
 class _ThrowingJsonVideoEvent extends Fake implements VideoEvent {
@@ -857,32 +868,59 @@ void main() {
       blocTest<ShareSheetBloc, ShareSheetState>(
         'emits import success when video is added to clips',
         setUp: () {
-          when(() => mockImporter.importToLibrary(any())).thenAnswer(
-            (_) async => VideoClipImportSuccess(_FakeDivineVideoClip()),
+          when(
+            () => mockImporter.importToLibrary(
+              any(),
+              libraryTitle: any(named: 'libraryTitle'),
+            ),
+          ).thenAnswer(
+            (_) async => VideoClipImportSuccess(
+              _clip(libraryTitle: 'My local cut'),
+            ),
           );
         },
         build: () => createBloc(videoClipImportService: mockImporter),
-        act: (bloc) => bloc.add(const ShareSheetAddVideoToClipsRequested()),
+        act: (bloc) => bloc.add(
+          const ShareSheetAddVideoToClipsRequested(
+            libraryTitle: 'My local cut',
+          ),
+        ),
         expect: () => [
           isA<ShareSheetState>().having(
             (state) => state.actionResult,
             'actionResult',
-            isA<ShareSheetVideoClipImportResult>().having(
-              (result) => result.succeeded,
-              'succeeded',
-              isTrue,
-            ),
+            isA<ShareSheetVideoClipImportResult>()
+                .having(
+                  (result) => result.succeeded,
+                  'succeeded',
+                  isTrue,
+                )
+                .having(
+                  (result) => result.libraryTitle,
+                  'libraryTitle',
+                  'My local cut',
+                ),
           ),
         ],
         verify: (_) {
-          verify(() => mockImporter.importToLibrary(testVideo)).called(1);
+          verify(
+            () => mockImporter.importToLibrary(
+              testVideo,
+              libraryTitle: 'My local cut',
+            ),
+          ).called(1);
         },
       );
 
       blocTest<ShareSheetBloc, ShareSheetState>(
         'emits import failure when importer cannot add the clip',
         setUp: () {
-          when(() => mockImporter.importToLibrary(any())).thenAnswer(
+          when(
+            () => mockImporter.importToLibrary(
+              any(),
+              libraryTitle: any(named: 'libraryTitle'),
+            ),
+          ).thenAnswer(
             (_) async => const VideoClipImportFailure(
               VideoClipImportFailureReason.downloadFailed,
             ),
@@ -924,7 +962,10 @@ void main() {
         'emits import failure AND addError when importer throws (#3715)',
         setUp: () {
           when(
-            () => mockImporter.importToLibrary(any()),
+            () => mockImporter.importToLibrary(
+              any(),
+              libraryTitle: any(named: 'libraryTitle'),
+            ),
           ).thenThrow(Exception('download failed'));
         },
         build: () => createBloc(videoClipImportService: mockImporter),

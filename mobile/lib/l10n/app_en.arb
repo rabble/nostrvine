@@ -1693,6 +1693,35 @@
   "@shareSheetAddedToClips": {
     "description": "Snackbar shown after successfully importing a classic Vine into the clip library"
   },
+  "shareSheetNameClipTitle": "Name this clip",
+  "@shareSheetNameClipTitle": {
+    "description": "Title for the sheet that lets a user choose the local library title for an imported clip"
+  },
+  "shareSheetNameClipSubtitle": "Pick a name you'll recognize in your library.",
+  "@shareSheetNameClipSubtitle": {
+    "description": "Subtitle for the sheet that lets a user choose the local library title for an imported clip"
+  },
+  "shareSheetClipTitleLabel": "Clip title",
+  "@shareSheetClipTitleLabel": {
+    "description": "Label for the text field where the user names an imported clip"
+  },
+  "shareSheetSaveClip": "Save clip",
+  "@shareSheetSaveClip": {
+    "description": "Button label confirming the imported clip title and saving it to the local library"
+  },
+  "shareSheetSavedClipToClips": "Saved \"{title}\" to clips",
+  "@shareSheetSavedClipToClips": {
+    "description": "Snackbar shown after importing a clip into the local library with its chosen title",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "shareSheetUntitledClip": "Untitled clip",
+  "@shareSheetUntitledClip": {
+    "description": "Fallback title if a saved clip somehow has no local library title"
+  },
   "shareSheetAddToClipsFailed": "Couldn't add to clips",
   "@shareSheetAddToClipsFailed": {
     "description": "Snackbar shown when importing a classic Vine into the clip library fails"

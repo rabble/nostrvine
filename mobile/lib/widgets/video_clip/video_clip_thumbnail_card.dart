@@ -110,6 +110,12 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
                     if (widget.showDurationBadge)
                       _DurationBadge(clip: widget.clip),
 
+                    if (widget.clip.libraryTitle case final title?)
+                      _TitleBadge(
+                        title: title,
+                        bottomOffset: widget.showDurationBadge ? 32 : 8,
+                      ),
+
                     /// Selection check circle - top right
                     if (widget.showSelectionIndicator)
                       _SelectionOverlay(selectionIndex: widget.selectionIndex),
@@ -175,6 +181,37 @@ class _ThumbnailState extends State<_Thumbnail> {
       icon: DivineIconName.videoCamera,
       color: VineTheme.lightText,
       size: 32,
+    );
+  }
+}
+
+class _TitleBadge extends StatelessWidget {
+  const _TitleBadge({required this.title, required this.bottomOffset});
+
+  final String title;
+  final double bottomOffset;
+
+  @override
+  Widget build(BuildContext context) {
+    return PositionedDirectional(
+      start: 8,
+      end: 8,
+      bottom: bottomOffset,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: VineTheme.scrim65,
+          borderRadius: .circular(4),
+        ),
+        child: Padding(
+          padding: const .symmetric(horizontal: 6, vertical: 3),
+          child: Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: VineTheme.labelSmallFont(),
+          ),
+        ),
+      ),
     );
   }
 }

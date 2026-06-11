@@ -18,6 +18,7 @@ class DivineVideoClip {
     required this.recordedAt,
     required this.targetAspectRatio,
     required double? originalAspectRatio,
+    this.libraryTitle,
     this.thumbnailPath,
     Duration? thumbnailTimestamp,
     this.processingCompleter,
@@ -37,6 +38,7 @@ class DivineVideoClip {
 
   final String id;
   final EditorVideo video;
+  final String? libraryTitle;
   final Duration duration;
   final DateTime recordedAt;
   final String? thumbnailPath;
@@ -142,6 +144,8 @@ class DivineVideoClip {
   DivineVideoClip copyWith({
     String? id,
     EditorVideo? video,
+    String? libraryTitle,
+    bool clearLibraryTitle = false,
     Duration? duration,
     DateTime? recordedAt,
     String? thumbnailPath,
@@ -170,6 +174,9 @@ class DivineVideoClip {
     return DivineVideoClip(
       id: id ?? this.id,
       video: video ?? this.video,
+      libraryTitle: clearLibraryTitle
+          ? null
+          : (libraryTitle ?? this.libraryTitle),
       duration: duration ?? this.duration,
       recordedAt: recordedAt ?? this.recordedAt,
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
@@ -210,6 +217,7 @@ class DivineVideoClip {
     return {
       'id': id,
       'filePath': videoPath != null ? p.basename(videoPath) : null,
+      if (libraryTitle != null) 'libraryTitle': libraryTitle,
       'durationMs': duration.inMilliseconds,
       'recordedAt': recordedAt.toIso8601String(),
       'thumbnailPath': thumbnailPath != null
@@ -253,6 +261,7 @@ class DivineVideoClip {
           useOriginalPath: useOriginalPath,
         ),
       ),
+      libraryTitle: json['libraryTitle'] as String?,
       duration: Duration(milliseconds: json['durationMs'] as int),
       recordedAt: DateTime.parse(
         (json['recordedAt'] ?? json['createdAt']) as String,

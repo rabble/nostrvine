@@ -49,6 +49,7 @@ void main() {
     final testClip = DivineVideoClip(
       id: 'test-clip-1',
       video: EditorVideo.file('/path/to/video.mp4'),
+      libraryTitle: 'Rooftop loop',
       duration: const Duration(seconds: 5),
       recordedAt: DateTime(2026),
       targetAspectRatio: .vertical,
@@ -92,6 +93,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(DivineVideoPlayer), findsOneWidget);
+      expect(find.text('Rooftop loop'), findsOneWidget);
       expect(
         find.byWidgetPredicate(
           (w) => w is DivineIcon && w.icon == DivineIconName.downloadSimple,

@@ -66,9 +66,13 @@ class ShareSheetSaveResult extends ShareSheetActionResult {
 }
 
 class ShareSheetVideoClipImportResult extends ShareSheetActionResult {
-  ShareSheetVideoClipImportResult({required this.succeeded});
+  ShareSheetVideoClipImportResult({
+    required this.succeeded,
+    this.libraryTitle,
+  });
 
   final bool succeeded;
+  final String? libraryTitle;
 }
 
 /// Generic failure for utility actions (copy link, share via, etc.).

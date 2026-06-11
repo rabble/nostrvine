@@ -397,11 +397,17 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     }
 
     try {
-      final result = await importer.importToLibrary(_video);
+      final result = await importer.importToLibrary(
+        _video,
+        libraryTitle: event.libraryTitle,
+      );
       emit(
         state.copyWith(
           actionResult: ShareSheetVideoClipImportResult(
             succeeded: result is VideoClipImportSuccess,
+            libraryTitle: result is VideoClipImportSuccess
+                ? result.clip.libraryTitle
+                : null,
           ),
         ),
       );

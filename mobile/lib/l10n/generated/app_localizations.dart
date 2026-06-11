@@ -5522,6 +5522,42 @@ abstract class AppLocalizations {
   /// **'Added to clips'**
   String get shareSheetAddedToClips;
 
+  /// Title for the sheet that lets a user choose the local library title for an imported clip
+  ///
+  /// In en, this message translates to:
+  /// **'Name this clip'**
+  String get shareSheetNameClipTitle;
+
+  /// Subtitle for the sheet that lets a user choose the local library title for an imported clip
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a name you\'ll recognize in your library.'**
+  String get shareSheetNameClipSubtitle;
+
+  /// Label for the text field where the user names an imported clip
+  ///
+  /// In en, this message translates to:
+  /// **'Clip title'**
+  String get shareSheetClipTitleLabel;
+
+  /// Button label confirming the imported clip title and saving it to the local library
+  ///
+  /// In en, this message translates to:
+  /// **'Save clip'**
+  String get shareSheetSaveClip;
+
+  /// Snackbar shown after importing a clip into the local library with its chosen title
+  ///
+  /// In en, this message translates to:
+  /// **'Saved \"{title}\" to clips'**
+  String shareSheetSavedClipToClips(String title);
+
+  /// Fallback title if a saved clip somehow has no local library title
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled clip'**
+  String get shareSheetUntitledClip;
+
   /// Snackbar shown when importing a classic Vine into the clip library fails
   ///
   /// In en, this message translates to:

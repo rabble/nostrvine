@@ -7,6 +7,7 @@ import 'package:models/models.dart' as models;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
+import 'package:openvine/services/subtitle_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -96,8 +97,9 @@ class VideoClipImportService {
   final VideoMetadataReader _readVideoMetadata;
 
   Future<VideoClipImportResult> importToLibrary(
-    models.VideoEvent video,
-  ) async {
+    models.VideoEvent video, {
+    String? libraryTitle,
+  }) async {
     final playableUrl = await video.getPlayableUrl();
     if (playableUrl == null || playableUrl.isEmpty) {
       return const VideoClipImportFailure(
@@ -122,7 +124,8 @@ class VideoClipImportService {
       );
     }
 
-    final clipId = _clipIdFor(video);
+    final importedAt = _now();
+    final clipId = _clipIdFor(video, importedAt);
     final duration = _durationFor(video);
 
     try {
@@ -147,8 +150,13 @@ class VideoClipImportService {
       final clip = DivineVideoClip(
         id: clipId,
         video: EditorVideo.file(copiedVideo.path),
+        libraryTitle: defaultLibraryTitleFor(
+          video,
+          libraryTitle: libraryTitle,
+          fallbackTime: importedAt,
+        ),
         duration: duration,
-        recordedAt: _now(),
+        recordedAt: importedAt,
         thumbnailPath: thumbnail?.path,
         thumbnailTimestamp: thumbnail?.timestamp,
         originalAspectRatio: actualRatio ?? 1,
@@ -179,6 +187,68 @@ class VideoClipImportService {
     }
   }
 
+  static String defaultLibraryTitleFor(
+    models.VideoEvent video, {
+    String? libraryTitle,
+    DateTime? fallbackTime,
+  }) {
+    final explicit = _normalizedTitle(libraryTitle);
+    if (explicit != null) return explicit;
+
+    final title = _normalizedTitle(video.displayTitle);
+    if (title != null) return title;
+
+    final description = _normalizedTitle(video.displayContent);
+    if (description != null) return description;
+
+    final subtitle = _subtitleTitle(video.textTrackContent);
+    if (subtitle != null) return subtitle;
+
+    return _fallbackTitle(fallbackTime ?? DateTime.now());
+  }
+
+  static String? _subtitleTitle(String? textTrackContent) {
+    if (textTrackContent == null || textTrackContent.trim().isEmpty) {
+      return null;
+    }
+    final cues = SubtitleService.parseVtt(textTrackContent);
+    for (final cue in cues) {
+      final text = _normalizedTitle(cue.text);
+      if (text != null) return text;
+    }
+    return null;
+  }
+
+  static String? _normalizedTitle(String? value) {
+    final trimmed = value?.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    if (trimmed.length <= 80) return trimmed;
+    return '${trimmed.substring(0, 77).trimRight()}...';
+  }
+
+  static String _fallbackTitle(DateTime time) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final local = time.toLocal();
+    final month = months[local.month - 1];
+    final hour12 = local.hour % 12 == 0 ? 12 : local.hour % 12;
+    final minute = local.minute.toString().padLeft(2, '0');
+    final marker = local.hour >= 12 ? 'PM' : 'AM';
+    return 'Clip $month ${local.day}, $hour12:$minute $marker';
+  }
+
   Future<File> _copyVideoIntoDocuments(
     File source,
     String documentsPath,
@@ -190,13 +260,13 @@ class VideoClipImportService {
     return source.copy(targetPath);
   }
 
-  String _clipIdFor(models.VideoEvent video) {
+  String _clipIdFor(models.VideoEvent video, DateTime importedAt) {
     final safeStableId = video.stableId.replaceAll(
       RegExp('[^a-zA-Z0-9_-]'),
       '_',
     );
     final prefix = video.isOriginalVine ? 'classic_vine' : 'own_video';
-    return '${prefix}_${safeStableId}_${_now().microsecondsSinceEpoch}';
+    return '${prefix}_${safeStableId}_${importedAt.microsecondsSinceEpoch}';
   }
 
   Duration _durationFor(models.VideoEvent video) {

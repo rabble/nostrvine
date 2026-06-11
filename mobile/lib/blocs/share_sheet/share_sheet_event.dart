@@ -60,7 +60,12 @@ class ShareSheetSaveRequested extends ShareSheetEvent {
 
 /// Add a video (classic Vine or own video) to the local clip library.
 class ShareSheetAddVideoToClipsRequested extends ShareSheetEvent {
-  const ShareSheetAddVideoToClipsRequested();
+  const ShareSheetAddVideoToClipsRequested({this.libraryTitle});
+
+  final String? libraryTitle;
+
+  @override
+  List<Object?> get props => [libraryTitle];
 }
 
 /// Copy share link to clipboard.

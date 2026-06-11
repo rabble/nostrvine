@@ -209,6 +209,17 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
                     ),
                   ),
 
+                  if (widget.clip.libraryTitle case final title?)
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: VineTheme.titleMediumFont(
+                        color: VineTheme.onSurface,
+                      ),
+                    ),
+
                   // Action buttons row
                   _ActionButtonsRow(
                     isSaving: _isSaving,

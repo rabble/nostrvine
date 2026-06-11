@@ -18,6 +18,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_clip_import_provider.dart';
+import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
@@ -185,11 +186,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
           onAddToList: _handleAddToList,
           onSaveOriginal: isOwnContent ? _handleSaveOriginal : null,
           onSaveWithWatermark: _handleSaveWithWatermark,
-          onAddVideoToClips: canAddVideoToClips
-              ? () => _shareSheetBloc.add(
-                  const ShareSheetAddVideoToClipsRequested(),
-                )
-              : null,
+          onAddVideoToClips: canAddVideoToClips ? _handleAddVideoToClips : null,
         ),
       ),
     );
@@ -240,9 +237,14 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
             widget.inheritedLookupContext,
           );
         }
-      case ShareSheetVideoClipImportResult(:final succeeded):
+      case ShareSheetVideoClipImportResult(
+        :final succeeded,
+        :final libraryTitle,
+      ):
         final snackText = succeeded
-            ? context.l10n.shareSheetAddedToClips
+            ? context.l10n.shareSheetSavedClipToClips(
+                libraryTitle ?? context.l10n.shareSheetUntitledClip,
+              )
             : context.l10n.shareSheetAddToClipsFailed;
         _safePop(context);
         messenger.showSnackBar(
@@ -285,6 +287,21 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
           ),
         );
     }
+  }
+
+  Future<void> _handleAddVideoToClips() async {
+    final initialTitle = VideoClipImportService.defaultLibraryTitleFor(
+      widget.video,
+    );
+    final libraryTitle = await _ClipTitleSheet.show(
+      context: context,
+      initialTitle: initialTitle,
+    );
+    if (!mounted || libraryTitle == null) return;
+
+    _shareSheetBloc.add(
+      ShareSheetAddVideoToClipsRequested(libraryTitle: libraryTitle),
+    );
   }
 
   Future<void> _handleFindPeople() async {
@@ -363,6 +380,117 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     await Future<void>.delayed(Duration.zero);
     if (!mounted || !hostContext.mounted) return null;
     return presenter(hostContext);
+  }
+}
+
+class _ClipTitleSheet extends StatefulWidget {
+  const _ClipTitleSheet({required this.initialTitle});
+
+  final String initialTitle;
+
+  static Future<String?> show({
+    required BuildContext context,
+    required String initialTitle,
+  }) {
+    return VineBottomSheet.show<String>(
+      context: context,
+      showHeaderDivider: false,
+      body: _ClipTitleSheet(initialTitle: initialTitle),
+    );
+  }
+
+  @override
+  State<_ClipTitleSheet> createState() => _ClipTitleSheetState();
+}
+
+class _ClipTitleSheetState extends State<_ClipTitleSheet> {
+  late final TextEditingController _controller;
+
+  bool get _canSave => _controller.text.trim().isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialTitle)
+      ..addListener(_onTitleChanged);
+  }
+
+  @override
+  void dispose() {
+    _controller
+      ..removeListener(_onTitleChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onTitleChanged() => setState(() {});
+
+  void _save() {
+    final title = _controller.text.trim();
+    if (title.isEmpty) return;
+    Navigator.of(context).pop(title);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            20,
+            16,
+            16 + MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                context.l10n.shareSheetNameClipTitle,
+                textAlign: TextAlign.center,
+                style: VineTheme.headlineSmallFont(),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                context.l10n.shareSheetNameClipSubtitle,
+                textAlign: TextAlign.center,
+                style: VineTheme.bodyLargeFont(
+                  color: VineTheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 24),
+              DivineTextField(
+                controller: _controller,
+                labelText: context.l10n.shareSheetClipTitleLabel,
+                maxLength: 80,
+                maxLines: 1,
+                textInputAction: TextInputAction.done,
+                inputFormatters: [
+                  FilteringTextInputFormatter.singleLineFormatter,
+                ],
+                onSubmitted: (_) => _save(),
+                primaryWhenFilled: true,
+              ),
+              const SizedBox(height: 24),
+              DivineButton(
+                label: context.l10n.shareSheetSaveClip,
+                onPressed: _canSave ? _save : null,
+                expanded: true,
+              ),
+              const SizedBox(height: 12),
+              DivineButton(
+                label: context.l10n.commonCancel,
+                type: DivineButtonType.secondary,
+                onPressed: () => Navigator.of(context).pop(),
+                expanded: true,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
