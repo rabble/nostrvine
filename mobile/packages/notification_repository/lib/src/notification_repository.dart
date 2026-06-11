@@ -1147,101 +1147,6 @@ class NotificationRepository {
     return result;
   }
 
-  /// Enriches a single raw [RelayNotification] for realtime insertion.
-  ///
-  /// Fetches the actor's profile and (if applicable) the referenced
-  /// video's stats in parallel. Returns null if the notification cannot
-  /// be turned into a [NotificationItem] (e.g. a video-anchored type
-  /// missing a `referencedEventId`).
-  Future<NotificationItem?> enrichOne(RelayNotification raw) async {
-    final kind = _mapNotificationKind(raw);
-    final referenced = _videoAnchorEventId(kind, raw);
-    final isVideoAnchored =
-        kind == NotificationKind.like ||
-        kind == NotificationKind.comment ||
-        kind == NotificationKind.repost;
-
-    final profilesFuture = _profileRepository.fetchBatchProfiles(
-      pubkeys: [raw.sourcePubkey],
-    );
-    final videoFuture = (referenced != null && referenced.isNotEmpty)
-        ? _fetchVideoMetadata([referenced])
-        : Future<Map<String, VideoStats>>.value(const {});
-
-    final (profiles, videosById) = await (profilesFuture, videoFuture).wait;
-
-    final actor = _buildActor(raw.sourcePubkey, profiles);
-
-    if (isVideoAnchored) {
-      if (referenced == null || referenced.isEmpty) return null;
-      final video = videosById[referenced];
-      if (_hasKnownReferencedVideoOwnerMismatch(
-        referencedVideoEventId: referenced,
-        videosById: videosById,
-      )) {
-        _logReclassifiedOwnerMismatch(
-          notificationId: raw.id,
-          sourcePubkey: raw.sourcePubkey,
-          referencedVideoEventId: referenced,
-          referencedVideoOwnerPubkey: video?.pubkey,
-        );
-        // Reclassify as actor-anchored instead of dropping (#4813).
-        final reclassifiedKind = _reclassifiedMisattributedKind(kind);
-        if (reclassifiedKind == null) return null;
-        return _buildActorNotification(
-          raw,
-          type: reclassifiedKind,
-          profiles: profiles,
-          targetEventId: _reclassifiedMisattributedTargetEventId(
-            reclassifiedKind,
-            raw,
-          ),
-        );
-      }
-      final addressableId = _recipientOwnedVideoAddressableId(
-        dTag: raw.referencedDTag,
-        video: video,
-      );
-      return VideoNotification(
-        id: raw.dedupeKey,
-        type: kind,
-        videoEventId: referenced,
-        videoAddressableId: addressableId,
-        videoThumbnailUrl:
-            _nonEmpty(raw.referencedVideoThumbnail) ??
-            _nonEmpty(video?.thumbnail),
-        videoTitle:
-            _nonEmpty(raw.referencedVideoTitle) ?? _nonEmpty(video?.title),
-        actors: [actor],
-        totalCount: 1,
-        timestamp: raw.createdAt,
-        isRead: raw.read,
-        commentText: kind == NotificationKind.comment
-            ? _truncateComment(raw.content, kind)
-            : null,
-        sourceEventIds: raw.sourceEventId.isNotEmpty
-            ? [raw.sourceEventId]
-            : const [],
-        notificationIds: raw.dedupeKey.isNotEmpty ? [raw.dedupeKey] : const [],
-      );
-    }
-
-    final mapped =
-        (kind == NotificationKind.follow ||
-            kind == NotificationKind.mention ||
-            kind == NotificationKind.system ||
-            kind == NotificationKind.likeComment ||
-            kind == NotificationKind.reply)
-        ? kind
-        : NotificationKind.system;
-    return _buildActorNotification(
-      raw,
-      type: mapped,
-      profiles: profiles,
-      commentKind: kind,
-    );
-  }
-
   ActorNotification _buildActorNotification(
     RelayNotification notification, {
     required NotificationKind type,
@@ -1301,8 +1206,7 @@ class NotificationRepository {
   ///   the user; same resolver path).
   /// - Everything else → null.
   ///
-  /// Used by both the page-load path ([_mapActorAnchored]) and the
-  /// realtime path ([enrichOne]) to stay in lockstep.
+  /// Used by the page-load path ([_mapActorAnchored]).
   static String? _actorTargetEventId(
     NotificationKind mapped,
     RelayNotification n,
@@ -1340,7 +1244,7 @@ class NotificationRepository {
   /// Known gaps (deferred, see #4730): the stable route is lost on a metadata
   /// miss for the recipient's own *edited* video; and the page-load path
   /// fetches only `referenced_event_id` metadata, so `root_event_id`-anchored
-  /// comments confirm ownership on the realtime path only.
+  /// comments can't confirm ownership.
   String? _recipientOwnedVideoAddressableId({
     required String? dTag,
     required VideoStats? video,
@@ -1358,8 +1262,7 @@ class NotificationRepository {
   /// Only populated for `likeComment` and `reply` — the tap handler uses
   /// it to navigate directly to the video without a relay round-trip.
   ///
-  /// Used by both the page-load path ([_mapActorAnchored]) and the
-  /// realtime path ([enrichOne]) to stay in lockstep.
+  /// Used by the page-load path ([_mapActorAnchored]).
   String? _actorVideoAddressableId(
     NotificationKind mapped,
     RelayNotification notification,
