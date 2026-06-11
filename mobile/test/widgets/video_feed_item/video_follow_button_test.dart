@@ -3,6 +3,7 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:content_policy/content_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -141,6 +142,15 @@ void main() {
         when(() => mockBlocklist.hasBlockedUs(authorPubkey)).thenReturn(true);
         when(() => mockBlocklist.isBlocked(any())).thenReturn(false);
         when(() => mockBlocklist.isFollowSevered(any())).thenReturn(false);
+        when(() => mockBlocklist.currentState).thenReturn(
+          ContentPolicyState(
+            currentUserPubkey: 'b' * 64,
+            mutedPubkeys: const {},
+            blockedPubkeys: const {},
+            pubkeysBlockingUs: {authorPubkey},
+            pubkeysMutingUs: const {},
+          ),
+        );
 
         await tester.pumpWidget(
           testMaterialApp(
@@ -169,6 +179,9 @@ void main() {
       when(() => mockBlocklist.hasBlockedUs(any())).thenReturn(false);
       when(() => mockBlocklist.isBlocked(any())).thenReturn(false);
       when(() => mockBlocklist.isFollowSevered(any())).thenReturn(false);
+      when(
+        () => mockBlocklist.currentState,
+      ).thenReturn(ContentPolicyState.empty());
 
       await tester.pumpWidget(
         testMaterialApp(

@@ -39,13 +39,14 @@ final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
   final nip98AuthService = ref.watch(nip98AuthServiceProvider);
   final userPubkey = authService.currentPublicKeyHex ?? '';
 
-  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
   final repository = NotificationRepository(
     funnelcakeApiClient: funnelcakeApiClient,
     profileRepository: profileRepository,
     notificationsDao: db.notificationsDao,
     userPubkey: userPubkey,
-    blockFilter: blocklistRepository.shouldFilterFromFeeds,
+    // Flag-switched factory: content-policy engine by default, legacy
+    // shouldFilterFromFeeds under the emergency off switch.
+    blockFilter: createBlockedAuthorFilter(ref),
     authHeadersProvider: (url, method, {body}) async {
       final httpMethod = switch (method.toUpperCase()) {
         'POST' => HttpMethod.post,

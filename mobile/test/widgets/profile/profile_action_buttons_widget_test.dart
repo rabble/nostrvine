@@ -2,6 +2,7 @@
 // ABOUTME: Verifies target-directed affordances are absent without explanation
 
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:content_policy/content_policy.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +35,9 @@ void main() {
 
     when(() => blocklistRepository.isBlocked(any())).thenReturn(false);
     when(() => blocklistRepository.hasBlockedUs(any())).thenReturn(false);
+    when(
+      () => blocklistRepository.currentState,
+    ).thenReturn(ContentPolicyState.empty());
 
     when(() => followRepository.followingPubkeys).thenReturn(const []);
     when(() => followRepository.followingStream).thenAnswer(
@@ -75,6 +79,15 @@ void main() {
       when(() => blocklistRepository.hasBlockedUs(targetPubkey)).thenReturn(
         true,
       );
+      when(() => blocklistRepository.currentState).thenReturn(
+        ContentPolicyState(
+          currentUserPubkey: viewerPubkey,
+          mutedPubkeys: const {},
+          blockedPubkeys: const {},
+          pubkeysBlockingUs: const {targetPubkey},
+          pubkeysMutingUs: const {},
+        ),
+      );
 
       await tester.pumpWidget(buildWidget());
       await tester.pump();
@@ -92,6 +105,15 @@ void main() {
     (tester) async {
       when(() => blocklistRepository.hasBlockedUs(targetPubkey)).thenReturn(
         true,
+      );
+      when(() => blocklistRepository.currentState).thenReturn(
+        ContentPolicyState(
+          currentUserPubkey: viewerPubkey,
+          mutedPubkeys: const {},
+          blockedPubkeys: const {},
+          pubkeysBlockingUs: const {targetPubkey},
+          pubkeysMutingUs: const {},
+        ),
       );
       when(
         () => followRepository.followingPubkeys,

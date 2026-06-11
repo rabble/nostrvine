@@ -41,7 +41,13 @@ class BuildConfiguration {
       case FeatureFlag.profileListFeatures:
         return const bool.fromEnvironment('FF_PROFILE_LIST_FEATURES');
       case FeatureFlag.contentPolicyV2:
-        return const bool.fromEnvironment('FF_CONTENT_POLICY_V2');
+        // Phase 3 of the content-policy migration (#948): the engine is
+        // the default enforcement; the env var remains as an emergency
+        // off switch until Phase 4 removes the flag entirely.
+        return const bool.fromEnvironment(
+          'FF_CONTENT_POLICY_V2',
+          defaultValue: true,
+        );
       case FeatureFlag.videoReplies:
         const isReleaseBuild = bool.fromEnvironment('dart.vm.product');
         return const bool.fromEnvironment(
