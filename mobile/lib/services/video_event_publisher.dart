@@ -1468,7 +1468,9 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
 
-      extractionResult = await audioExtractionService.extractAudio(videoPath);
+      extractionResult = await audioExtractionService.extractAudio(
+        videoPath: videoPath,
+      );
 
       Log.info(
         'Audio extraction successful: ${extractionResult.audioFilePath}',

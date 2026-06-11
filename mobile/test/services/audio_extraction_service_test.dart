@@ -19,6 +19,7 @@ class _MockProVideoEditor extends ProVideoEditor {
   bool shouldThrowNoTrack = false;
   bool shouldThrowOnHasAudio = false;
   bool shouldThrowOnGetMetadata = false;
+  AudioExtractConfigs? lastAudioExtractConfigs;
 
   @override
   void initializeStream() {
@@ -57,6 +58,7 @@ class _MockProVideoEditor extends ProVideoEditor {
     AudioExtractConfigs value, {
     NativeLogLevel? nativeLogLevel,
   }) async {
+    lastAudioExtractConfigs = value;
     if (shouldThrowNoTrack) throw const AudioNoTrackException();
     if (shouldThrowOnExtract) throw Exception('extraction failed');
     // Create a small file to simulate extraction
@@ -160,7 +162,7 @@ void main() {
       const nonExistentPath = '/path/that/does/not/exist/video.mp4';
 
       expect(
-        () => service.extractAudio(nonExistentPath),
+        () => service.extractAudio(videoPath: nonExistentPath),
         throwsA(
           isA<AudioExtractionException>().having(
             (e) => e.message,
@@ -256,7 +258,7 @@ void main() {
     });
 
     test('extractAudio returns result when video has audio', () async {
-      final result = await service.extractAudio(fakeVideoFile.path);
+      final result = await service.extractAudio(videoPath: fakeVideoFile.path);
 
       expect(result.audioFilePath, endsWith('.wav'));
       expect(result.duration, equals(6));
@@ -272,11 +274,27 @@ void main() {
       }
     });
 
+    test('extractAudio forwards playback speed to ProVideoEditor', () async {
+      final result = await service.extractAudio(
+        videoPath: fakeVideoFile.path,
+        speed: 0.5,
+      );
+
+      expect(mockEditor.lastAudioExtractConfigs?.speed, equals(0.5));
+      expect(result.duration, equals(12.0));
+
+      // Cleanup extraction output
+      final outputFile = File(result.audioFilePath);
+      if (outputFile.existsSync()) {
+        await outputFile.delete();
+      }
+    });
+
     test('extractAudio throws when video has no audio track', () async {
       mockEditor.hasAudio = false;
 
       expect(
-        () => service.extractAudio(fakeVideoFile.path),
+        () => service.extractAudio(videoPath: fakeVideoFile.path),
         throwsA(
           isA<AudioExtractionException>().having(
             (e) => e.message,
@@ -291,7 +309,7 @@ void main() {
       mockEditor.shouldThrowOnHasAudio = true;
 
       expect(
-        () => service.extractAudio(fakeVideoFile.path),
+        () => service.extractAudio(videoPath: fakeVideoFile.path),
         throwsA(
           isA<AudioExtractionException>().having(
             (e) => e.message,
@@ -306,7 +324,7 @@ void main() {
       mockEditor.shouldThrowOnGetMetadata = true;
 
       expect(
-        () => service.extractAudio(fakeVideoFile.path),
+        () => service.extractAudio(videoPath: fakeVideoFile.path),
         throwsA(
           isA<AudioExtractionException>().having(
             (e) => e.message,
@@ -321,7 +339,7 @@ void main() {
       mockEditor.videoDuration = Duration.zero;
 
       expect(
-        () => service.extractAudio(fakeVideoFile.path),
+        () => service.extractAudio(videoPath: fakeVideoFile.path),
         throwsA(
           isA<AudioExtractionException>().having(
             (e) => e.message,
@@ -338,7 +356,7 @@ void main() {
         mockEditor.shouldThrowNoTrack = true;
 
         expect(
-          () => service.extractAudio(fakeVideoFile.path),
+          () => service.extractAudio(videoPath: fakeVideoFile.path),
           throwsA(
             isA<AudioExtractionException>().having(
               (e) => e.message,
@@ -354,7 +372,7 @@ void main() {
       mockEditor.shouldThrowOnExtract = true;
 
       expect(
-        () => service.extractAudio(fakeVideoFile.path),
+        () => service.extractAudio(videoPath: fakeVideoFile.path),
         throwsA(
           isA<AudioExtractionException>().having(
             (e) => e.message,
@@ -368,7 +386,7 @@ void main() {
     test('extractAudio uses correct duration from video metadata', () async {
       mockEditor.videoDuration = const Duration(seconds: 3, milliseconds: 500);
 
-      final result = await service.extractAudio(fakeVideoFile.path);
+      final result = await service.extractAudio(videoPath: fakeVideoFile.path);
 
       expect(result.duration, equals(3.5));
 

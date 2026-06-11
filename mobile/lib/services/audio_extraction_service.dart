@@ -70,14 +70,14 @@ class AudioExtractionException implements Exception {
 /// Service for extracting audio tracks from video files.
 ///
 /// Uses ProVideoEditor to extract the audio track from a video file and save it
-/// as a separate AAC file. This is used by the audio reuse feature when
+/// as a separate WAV file. This is used by the audio reuse feature when
 /// a user publishes a video with "Allow others to use this audio" enabled.
 ///
 /// Usage:
 /// ```dart
 /// final service = AudioExtractionService();
 /// try {
-///   final result = await service.extractAudio('/path/to/video.mp4');
+///   final result = await service.extractAudio(videoPath: '/path/to/video.mp4');
 ///   print('Audio extracted: ${result.audioFilePath}');
 ///   print('Duration: ${result.duration}s');
 ///   print('Hash: ${result.sha256Hash}');
@@ -102,6 +102,7 @@ class AudioExtractionService {
   /// cannot be copied without re-encoding (e.g. LPCM).
   ///
   /// [videoPath] - Path to the source video file.
+  /// [speed] - Optional playback speed to apply to the extracted audio.
   ///
   /// Returns an [AudioExtractionResult] containing the path to the extracted
   /// audio file and metadata (duration, file size, SHA-256 hash, MIME type).
@@ -110,7 +111,12 @@ class AudioExtractionService {
   /// - The video file does not exist
   /// - The video has no audio track
   /// - Audio extraction fails
-  Future<AudioExtractionResult> extractAudio(String videoPath) async {
+  Future<AudioExtractionResult> extractAudio({
+    required String videoPath,
+    double? speed,
+  }) async {
+    final effectiveSpeed = speed != null && speed > 0 ? speed : 1.0;
+
     Log.info(
       'Starting audio extraction from: $videoPath',
       name: _logName,
@@ -167,6 +173,7 @@ class AudioExtractionService {
         outputPath,
         AudioExtractConfigs(
           video: EditorVideo.file(videoPath),
+          speed: effectiveSpeed,
           format: AudioFormat.wav,
         ),
       );
@@ -208,8 +215,10 @@ class AudioExtractionService {
       name: _logName,
       category: _logCategory,
     );
+    final adjustedDuration = videoDuration / effectiveSpeed;
+
     Log.debug(
-      'Audio details: duration=${videoDuration.toStringAsFixed(2)}s, '
+      'Audio details: duration=${adjustedDuration.toStringAsFixed(2)}s, '
       'size=${(hashResult.size / 1024).toStringAsFixed(2)}KB, '
       'hash=${hashResult.hash}',
       name: _logName,
@@ -218,7 +227,7 @@ class AudioExtractionService {
 
     return AudioExtractionResult(
       audioFilePath: outputPath,
-      duration: videoDuration,
+      duration: adjustedDuration,
       fileSize: hashResult.size,
       sha256Hash: hashResult.hash,
       mimeType: _wavMimeType,

@@ -112,6 +112,23 @@ void main() {
         expect(clip.trimmedDurationInSeconds, equals(3.5));
       });
 
+      test('sourceDurationToPlaybackDuration applies playbackSpeed', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime(2025),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          playbackSpeed: 2.0,
+        );
+
+        expect(
+          clip.sourceDurationToPlaybackDuration(const Duration(seconds: 3)),
+          equals(const Duration(milliseconds: 1500)),
+        );
+      });
+
       test('copyWith preserves trim values', () {
         final clip = DivineVideoClip(
           id: 'clip_001',

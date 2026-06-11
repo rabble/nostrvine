@@ -104,11 +104,16 @@ class DivineVideoClip {
   /// i.e. [trimmedDuration] divided by [playbackSpeed].
   ///
   /// A 10 s clip at 2× speed occupies 5 s of playback time.
-  Duration get playbackDuration {
+  Duration get playbackDuration =>
+      sourceDurationToPlaybackDuration(trimmedDuration);
+
+  /// Converts a duration measured in this clip's source media time into the
+  /// wall-clock duration it occupies after [playbackSpeed] is applied.
+  Duration sourceDurationToPlaybackDuration(Duration sourceDuration) {
     final speed = playbackSpeed ?? 1.0;
-    if (speed <= 0 || speed == 1.0) return trimmedDuration;
+    if (speed <= 0 || speed == 1.0) return sourceDuration;
     return Duration(
-      microseconds: (trimmedDuration.inMicroseconds / speed).round(),
+      microseconds: (sourceDuration.inMicroseconds / speed).round(),
     );
   }
 

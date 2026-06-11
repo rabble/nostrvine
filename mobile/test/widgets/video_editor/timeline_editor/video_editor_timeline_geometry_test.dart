@@ -959,6 +959,33 @@ void main() {
       },
     );
 
+    test('uses audio-file time when the anchored clip has playbackSpeed', () {
+      // The track was extracted from clip-b when trimStart was 3 s at 2x:
+      // source offset 3 s maps to audio-file offset 1.5 s. Advancing the
+      // clip trim to 4 s should create a 0.5 s audio lead, not a 1 s lead.
+      final clips = [
+        _clip('a', 10),
+        _clip('b', 10, speed: 2.0, trimStart: const Duration(seconds: 4)),
+      ];
+      final track = _audio(
+        id: 'b-audio',
+        startTime: const Duration(seconds: 10),
+        endTime: const Duration(milliseconds: 13500),
+        startOffset: const Duration(milliseconds: 1500),
+        anchorClipId: 'b',
+      );
+
+      final result = rebaseAnchoredAudioForClipState(clips, [track]);
+
+      expect(result.single.startTime, const Duration(milliseconds: 9500));
+      expect(result.single.endTime, const Duration(seconds: 13));
+      expect(result.single.startOffset, const Duration(milliseconds: 1500));
+      expect(
+        result.single.endTime! - result.single.startTime,
+        const Duration(milliseconds: 3500),
+      );
+    });
+
     test('preserves a user-shortened span (L-Cut) while translating', () {
       // User right-trimmed the audio to 10–15 s (5 s span). A later clip
       // edit must keep that span, only translating it.

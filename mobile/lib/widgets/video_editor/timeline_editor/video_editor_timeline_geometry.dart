@@ -148,13 +148,14 @@ List<Duration> rebaseTimelineMarkersForClipState({
 ///
 /// The alignment invariant preserved is, for the anchored clip:
 ///
-///   startTime == clipTimelineStart - clip.trimStart + audio.startOffset
+///   startTime == clipTimelineStart
+///       - playbackDuration(clip.trimStart)
+///       + audio.startOffset
 ///
 /// [clipTimelineStart] is accumulated in playback time so earlier clip speed
-/// changes still ripple anchored audio correctly. [AudioEvent.startOffset] and
-/// [DivineVideoClip.trimStart] remain source-time values because extracted
-/// audio is not tempo-adjusted; if extracted audio becomes speed-adjusted, this
-/// conversion must be revisited.
+/// changes still ripple anchored audio correctly. [AudioEvent.startOffset] is
+/// measured in the extracted audio file's own time, so a source trim offset is
+/// converted through the anchor clip's [DivineVideoClip.playbackSpeed].
 ///
 /// Tracks with no anchor, or whose anchor clip was removed or split into new
 /// clip IDs, are returned unchanged. The original list instance is returned
@@ -186,7 +187,11 @@ List<AudioEvent> rebaseAnchoredAudioForClipState(
     }
 
     final span = (track.endTime ?? track.startTime) - track.startTime;
-    final newStartRaw = clipStart + track.startOffset - clip.trimStart;
+    final clipTrimStartInAudioTime = clip.sourceDurationToPlaybackDuration(
+      clip.trimStart,
+    );
+    final newStartRaw =
+        clipStart + track.startOffset - clipTrimStartInAudioTime;
     var newStart = newStartRaw;
     var newStartOffset = track.startOffset;
     var newSpan = span;

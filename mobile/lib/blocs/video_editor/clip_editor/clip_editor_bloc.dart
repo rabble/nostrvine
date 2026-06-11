@@ -729,7 +729,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     emit(state.copyWith(isExtractingAudio: true));
 
     try {
-      final result = await _audioExtractionService.extractAudio(videoPath);
+      final result = await _audioExtractionService.extractAudio(
+        videoPath: videoPath,
+        speed: clip.playbackSpeed,
+      );
 
       // Reconcile against current state after the async gap.
       // Other event handlers (remove, split, insert) may have mutated
@@ -772,9 +775,11 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         mimeType: result.mimeType,
         sha256: result.sha256Hash,
         fileSize: result.fileSize,
-        duration: currentClip.duration.inMilliseconds / 1000,
+        duration: result.duration,
         title: event.clipTitle,
-        startOffset: currentClip.trimStart,
+        startOffset: currentClip.sourceDurationToPlaybackDuration(
+          currentClip.trimStart,
+        ),
         startTime: clipStart,
         endTime: clipStart + currentClip.playbackDuration,
         // Anchor the extracted audio to its source clip so it follows the

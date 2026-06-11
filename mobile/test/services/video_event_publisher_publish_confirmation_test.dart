@@ -319,7 +319,7 @@ void main() {
 
       const audioPath = '/tmp/openvine_test_audio.m4a';
       when(
-        () => audioExtractionService.extractAudio('/tmp/test.mp4'),
+        () => audioExtractionService.extractAudio(videoPath: '/tmp/test.mp4'),
       ).thenAnswer(
         (_) async => const AudioExtractionResult(
           audioFilePath: audioPath,
