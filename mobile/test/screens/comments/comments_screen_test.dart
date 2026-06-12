@@ -16,6 +16,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
 import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
+import 'package:openvine/blocs/comments/comments_surface_performance_telemetry.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -209,7 +210,9 @@ void main() {
           body: BlocProvider<CommentsListBloc>.value(
             value: mockListBloc,
             child: CommentsSheetLoadTelemetry(
-              tracker: tracker,
+              telemetry: CommentsSurfacePerformanceTelemetry.withTracker(
+                tracker,
+              ),
               child: child,
             ),
           ),

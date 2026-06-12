@@ -12,6 +12,7 @@ import 'package:models/models.dart' hide NIP71VideoKinds;
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
 import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
+import 'package:openvine/blocs/comments/comments_surface_performance_telemetry.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -22,8 +23,6 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
-import 'package:openvine/services/analytics_surface.dart';
-import 'package:openvine/services/surface_performance_tracker.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/widgets/video_feed_item/live_engagement_counts.dart';
 
@@ -144,16 +143,10 @@ abstract final class CommentsScreen {
       isFeatureEnabledProvider(FeatureFlag.videoReplies),
     );
     final seedCommentCount = initialCommentCount ?? liveCommentCountSeed(video);
-    final surfacePerformanceTracker = SurfacePerformanceTracker()
-      ..startSurfaceLoad(
-        AnalyticsSurface.commentsSheet,
-        params: {
-          AnalyticsParam.entryPoint: 'feed_comment_button',
-          AnalyticsParam.initialCount: ?seedCommentCount,
-          AnalyticsParam.featureFlag: showVideoReplies
-              ? 'video_replies_enabled'
-              : 'video_replies_disabled',
-        },
+    final surfaceTelemetry = CommentsSurfacePerformanceTelemetry()
+      ..start(
+        videoRepliesEnabled: showVideoReplies,
+        initialCount: seedCommentCount,
       );
 
     // The draggable scroll controller is created inside buildScrollBody but
@@ -249,7 +242,7 @@ abstract final class CommentsScreen {
           buildScrollBody: (scrollController) {
             activeScrollController = scrollController;
             return CommentsSheetLoadTelemetry(
-              tracker: surfacePerformanceTracker,
+              telemetry: surfaceTelemetry,
               child: _CommentsScreenBody(
                 videoEvent: video,
                 sheetScrollController: scrollController,
@@ -258,10 +251,7 @@ abstract final class CommentsScreen {
           },
         )
         .whenComplete(
-          () => surfacePerformanceTracker.completeSurfaceLoad(
-            AnalyticsSurface.commentsSheet,
-            result: SurfaceLoadResult.dismissed,
-          ),
+          surfaceTelemetry.completeDismissed,
         );
   }
 }
@@ -407,12 +397,12 @@ class OutboxBridges extends StatelessWidget {
 @visibleForTesting
 class CommentsSheetLoadTelemetry extends StatefulWidget {
   const CommentsSheetLoadTelemetry({
-    required this.tracker,
+    required this.telemetry,
     required this.child,
     super.key,
   });
 
-  final SurfacePerformanceTracker tracker;
+  final CommentsSurfacePerformanceTelemetry telemetry;
   final Widget child;
 
   @override
@@ -427,7 +417,7 @@ class _CommentsSheetLoadTelemetryState
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      widget.tracker.markSurfaceVisible(AnalyticsSurface.commentsSheet);
+      widget.telemetry.markVisible();
     });
   }
 
@@ -442,25 +432,14 @@ class _CommentsSheetLoadTelemetryState
         switch (state.status) {
           case CommentsStatus.success:
             unawaited(
-              widget.tracker.completeSurfaceLoad(
-                AnalyticsSurface.commentsSheet,
-                result: state.commentsById.isEmpty
-                    ? SurfaceLoadResult.empty
-                    : SurfaceLoadResult.success,
-                metrics: {
-                  AnalyticsParam.itemCount: state.commentsById.length,
-                  AnalyticsParam.hasMore: state.hasMoreContent,
-                  'sort_mode': state.sortMode.name,
-                },
+              widget.telemetry.completeDataLoaded(
+                itemCount: state.commentsById.length,
+                hasMore: state.hasMoreContent,
+                sortMode: state.sortMode.name,
               ),
             );
           case CommentsStatus.failure:
-            unawaited(
-              widget.tracker.completeSurfaceLoad(
-                AnalyticsSurface.commentsSheet,
-                result: SurfaceLoadResult.failure,
-              ),
-            );
+            unawaited(widget.telemetry.completeFailure());
           case CommentsStatus.initial:
           case CommentsStatus.loading:
             break;
