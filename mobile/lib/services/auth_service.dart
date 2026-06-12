@@ -907,29 +907,28 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     if (pending != null) return pending;
 
     late final Future<KeycastSession?> refresh;
-    refresh =
-        _doRefreshOAuthSession(expectedOwnerPubkey: expectedOwnerPubkey)
-            .timeout(
-              _oauthRefreshTimeout,
-              onTimeout: () {
-                Log.warning(
-                  '_refreshOAuthSession: timed out after '
-                  '${_oauthRefreshTimeout.inMilliseconds}ms — '
-                  'treating as failed',
-                  name: 'AuthService',
-                  category: LogCategory.auth,
-                );
-                return null;
-              },
-            )
-            .whenComplete(() {
-              // Only release the slot if it still holds this attempt —
-              // signOut may have detached it and a fresh attempt may
-              // already be in flight.
-              if (identical(_pendingOAuthRefresh, refresh)) {
-                _pendingOAuthRefresh = null;
-              }
-            });
+    refresh = _doRefreshOAuthSession(expectedOwnerPubkey: expectedOwnerPubkey)
+        .timeout(
+          _oauthRefreshTimeout,
+          onTimeout: () {
+            Log.warning(
+              '_refreshOAuthSession: timed out after '
+              '${_oauthRefreshTimeout.inMilliseconds}ms — '
+              'treating as failed',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+            return null;
+          },
+        )
+        .whenComplete(() {
+          // Only release the slot if it still holds this attempt —
+          // signOut may have detached it and a fresh attempt may
+          // already be in flight.
+          if (identical(_pendingOAuthRefresh, refresh)) {
+            _pendingOAuthRefresh = null;
+          }
+        });
     return _pendingOAuthRefresh = refresh;
   }
 

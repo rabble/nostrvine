@@ -127,7 +127,8 @@ void main() {
         userDataCleanupService: mockCleanupService,
         keyStorage: keyStorage,
         oauthClient: mockOAuthClient,
-        oauthRefreshTimeout: oauthRefreshTimeout ?? AuthService.rpcRefreshTimeout,
+        oauthRefreshTimeout:
+            oauthRefreshTimeout ?? AuthService.rpcRefreshTimeout,
       );
     }
 
@@ -483,16 +484,16 @@ void main() {
 
             // (a) The hung attempt must fail within the bounded time
             // instead of wedging forever.
-            final first = await authService
-                .tryRefreshExpiredSession()
-                .timeout(const Duration(seconds: 5));
+            final first = await authService.tryRefreshExpiredSession().timeout(
+              const Duration(seconds: 5),
+            );
             expect(first, isFalse);
 
             // (b) The pending slot must be released so this triggers a
             // FRESH refresh attempt rather than joining the hung one.
-            final second = await authService
-                .tryRefreshExpiredSession()
-                .timeout(const Duration(seconds: 5));
+            final second = await authService.tryRefreshExpiredSession().timeout(
+              const Duration(seconds: 5),
+            );
             expect(second, isFalse);
 
             expect(
