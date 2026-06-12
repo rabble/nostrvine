@@ -2692,7 +2692,9 @@ Upload Timeout Failure:
 
     void stopPoll(Timer timer) {
       timer.cancel();
-      _processingPollTimers.remove(upload.id);
+      if (identical(_processingPollTimers[upload.id], timer)) {
+        _processingPollTimers.remove(upload.id);
+      }
     }
 
     // Poll every 10 seconds for up to 5 minutes
