@@ -3565,6 +3565,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get shareMenuDeleteFailedRelayRejected =>
+      'The relay wouldn\'t accept this delete request. Try again in a moment.';
+
+  @override
+  String get shareMenuDeleteFailedRelayNoResponse =>
       'Couldn\'t reach the relay. Check your connection and try again.';
 
   @override

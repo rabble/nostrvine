@@ -3787,6 +3787,10 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get shareMenuDeleteFailedRelayRejected =>
+      'The relay wouldn\'t accept this delete request. Try again in a moment.';
+
+  @override
+  String get shareMenuDeleteFailedRelayNoResponse =>
       'Hindi maabot ang relay. Tingnan ang iyong koneksyon at subukan ulit.';
 
   @override

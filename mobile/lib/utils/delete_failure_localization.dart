@@ -23,6 +23,8 @@ String localizedDeleteFailureMessage(
       return l10n.shareMenuDeleteFailedCouldNotSign;
     case DeleteFailureKind.relayRejected:
       return l10n.shareMenuDeleteFailedRelayRejected;
+    case DeleteFailureKind.relayNoResponse:
+      return l10n.shareMenuDeleteFailedRelayNoResponse;
     case DeleteFailureKind.unknown:
       return l10n.shareMenuDeleteFailedGeneric;
   }

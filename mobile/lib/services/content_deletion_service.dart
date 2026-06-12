@@ -25,10 +25,13 @@ enum DeleteFailureKind {
   /// Signing or constructing the kind 5 delete event failed.
   couldNotSign,
 
-  /// Every relay rejected the delete event or no relay responded before the
-  /// publish timeout. The delete is NOT persisted locally so the user can
-  /// retry.
+  /// Every relay that responded rejected the delete event. The delete is NOT
+  /// persisted locally so the user can retry.
   relayRejected,
+
+  /// No relay accepted or rejected the delete event before the publish
+  /// timeout. The delete is NOT persisted locally so the user can retry.
+  relayNoResponse,
 
   /// Unexpected error (including outer [deleteContent] catch).
   unknown,
@@ -161,9 +164,8 @@ class ContentDeletionService {
   ///
   /// The deletion is only considered successful when at least one relay
   /// returns an `OK true` acknowledgement (NIP-20). If every relay rejects
-  /// the event or none respond before the publish timeout, the operation
-  /// fails with [DeleteFailureKind.relayRejected] and is NOT added to local
-  /// deletion history — the caller can retry.
+  /// the event, or none respond before the publish timeout, the operation
+  /// fails and is NOT added to local deletion history — the caller can retry.
   Future<DeleteResult> deleteContent({
     required VideoEvent video,
     required String reason,
@@ -214,9 +216,12 @@ class ContentDeletionService {
           name: 'ContentDeletionService',
           category: LogCategory.system,
         );
+        final failureKind = publishOutcome.rejectedBy.isNotEmpty
+            ? DeleteFailureKind.relayRejected
+            : DeleteFailureKind.relayNoResponse;
         return DeleteResult.failure(
           'Relay did not confirm deletion: ${publishOutcome.summary}',
-          DeleteFailureKind.relayRejected,
+          failureKind,
         );
       }
 
@@ -269,6 +274,8 @@ class ContentDeletionService {
       case DeleteFailureKind.couldNotSign:
         return 'Failed to create delete event';
       case DeleteFailureKind.relayRejected:
+        return 'Relay rejected deletion';
+      case DeleteFailureKind.relayNoResponse:
         return 'Relay did not confirm deletion';
       case DeleteFailureKind.unknown:
         return 'Failed to delete content';

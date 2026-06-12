@@ -3656,6 +3656,10 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get shareMenuDeleteFailedRelayRejected =>
+      'The relay wouldn\'t accept this delete request. Try again in a moment.';
+
+  @override
+  String get shareMenuDeleteFailedRelayNoResponse =>
       'ቅብብሎሹን መድረስ አልተቻለም። ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።';
 
   @override

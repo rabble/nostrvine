@@ -71,6 +71,13 @@ void main() {
       noResponseFrom: const ['wss://relay.test'],
     );
 
+    PublishOutcome rejectedAndTimedOut(String eventId) => PublishOutcome(
+      eventId: eventId,
+      acceptedBy: const [],
+      rejectedBy: const {'wss://relay.test': 'blocked: policy'},
+      noResponseFrom: const ['wss://backup-relay.test'],
+    );
+
     setUp(() async {
       final testPrivateKey = generatePrivateKey();
       testPublicKey = getPublicKey(testPrivateKey);
@@ -228,7 +235,7 @@ void main() {
         },
       );
 
-      test('fails with relayRejected and does NOT save locally when no relay '
+      test('fails with relayNoResponse and does NOT save locally when no relay '
           'answers before timeout', () async {
         final video = createTestVideoEvent(testPublicKey);
         final deleteEvent = createTestEvent(
@@ -263,10 +270,53 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.failureKind, equals(DeleteFailureKind.relayRejected));
+        expect(result.failureKind, equals(DeleteFailureKind.relayNoResponse));
         expect(service.hasBeenDeleted(video.id), isFalse);
         expect(service.deletionHistory, isEmpty);
       });
+
+      test(
+        'fails with relayRejected when some relays reject and others time out',
+        () async {
+          final video = createTestVideoEvent(testPublicKey);
+          final deleteEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', video.id],
+              ['a', video.addressableId!],
+              ['k', '34236'],
+            ],
+            content: 'CONTENT DELETION',
+          );
+
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => deleteEvent);
+
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => rejectedAndTimedOut(deleteEvent.id));
+
+          final result = await service.deleteContent(
+            video: video,
+            reason: 'Personal choice',
+          );
+
+          expect(result.success, isFalse);
+          expect(result.failureKind, equals(DeleteFailureKind.relayRejected));
+          expect(result.error, contains('blocked: policy'));
+          expect(service.hasBeenDeleted(video.id), isFalse);
+          expect(service.deletionHistory, isEmpty);
+        },
+      );
 
       test(
         'includes e, a, and k tags for addressable videos per NIP-09',
