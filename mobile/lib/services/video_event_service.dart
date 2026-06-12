@@ -1267,6 +1267,31 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     );
   }
 
+  void _storeSubscriptionParams({
+    required SubscriptionType subscriptionType,
+    required List<String>? authors,
+    required List<String>? hashtags,
+    required String? group,
+    required int? since,
+    required int? until,
+    required int limit,
+    required bool includeReposts,
+    required VideoSortField? sortBy,
+    required NIP50SortMode? nip50Sort,
+  }) {
+    _subscriptionParams[subscriptionType] = {
+      'authors': authors,
+      'hashtags': hashtags,
+      'group': group,
+      'since': since,
+      'until': until,
+      'limit': limit,
+      'includeReposts': includeReposts,
+      'sortBy': sortBy,
+      'nip50Sort': nip50Sort,
+    };
+  }
+
   /// Subscribe to NIP-71 video events with proper subscription type separation
   Future<void> subscribeToVideoFeed({
     required SubscriptionType subscriptionType,
@@ -1308,21 +1333,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       return;
     }
 
-    // Store retry/duplicate parameters before connection checks so an
-    // offline first subscribe can retry the requested feed instead of
-    // falling back to a parameterless feed when connectivity returns.
-    _subscriptionParams[subscriptionType] = {
-      'authors': authors,
-      'hashtags': hashtags,
-      'group': group,
-      'since': since,
-      'until': until,
-      'limit': limit,
-      'includeReposts': includeReposts,
-      'sortBy': sortBy,
-      'nip50Sort': nip50Sort,
-    };
-
     // Check connection status
     if (!_connectionService.isOnline) {
       _isLoading = false;
@@ -1333,6 +1343,20 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         category: LogCategory.video,
       );
       if (scheduleOnlineRetry) {
+        // Store retry parameters before the offline early return so a first
+        // subscribe can retry the requested feed when connectivity returns.
+        _storeSubscriptionParams(
+          subscriptionType: subscriptionType,
+          authors: authors,
+          hashtags: hashtags,
+          group: group,
+          since: since,
+          until: until,
+          limit: limit,
+          includeReposts: includeReposts,
+          sortBy: sortBy,
+          nip50Sort: nip50Sort,
+        );
         _scheduleRetryWhenOnline(subscriptionType);
       }
       throw const VideoEventServiceException('Device is offline');
@@ -1687,6 +1711,20 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             );
           }
         }
+
+        // Store current subscription parameters for duplicate detection BEFORE any early returns
+        _storeSubscriptionParams(
+          subscriptionType: subscriptionType,
+          authors: authors,
+          hashtags: hashtags,
+          group: group,
+          since: since,
+          until: until,
+          limit: limit,
+          includeReposts: includeReposts,
+          sortBy: sortBy,
+          nip50Sort: nip50Sort,
+        );
 
         // Set per-subscription loading state to show loading UI
         final paginationState = _paginationStates[subscriptionType];
