@@ -663,6 +663,148 @@ void main() {
       },
     );
 
+    test(
+      'for you load more uses recommendation cursor and appends unseen videos',
+      () async {
+        final requestedCursors = <String?>[];
+        var recommendationsCallCount = 0;
+
+        when(
+          () => mockFunnelcakeApiClient.getRecommendations(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            fallback: any(named: 'fallback'),
+            category: any(named: 'category'),
+            cursor: any(named: 'cursor'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
+          ),
+        ).thenAnswer((invocation) {
+          requestedCursors.add(invocation.namedArguments[#cursor] as String?);
+          recommendationsCallCount += 1;
+          if (recommendationsCallCount == 1) {
+            return Future.value(
+              _recommendationsResponse([
+                'for-you-a',
+                'for-you-b',
+              ], nextCursor: 'cursor-2'),
+            );
+          }
+          return Future.value(
+            _recommendationsResponse([
+              'for-you-b',
+              'for-you-c',
+            ], nextCursor: 'cursor-3'),
+          );
+        });
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            appReadyProvider.overrideWithValue(true),
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockBlocklistRepository,
+            ),
+            funnelcakeApiClientProvider.overrideWithValue(
+              mockFunnelcakeApiClient,
+            ),
+            authServiceProvider.overrideWithValue(mockAuthService),
+            funnelcakeAvailableProvider.overrideWith(
+              _AlwaysAvailableFunnelcake.new,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(funnelcakeAvailableProvider.future);
+        final subscription = container.listen(forYouFeedProvider, (_, _) {});
+        addTearDown(subscription.close);
+
+        final initialState = await container.read(forYouFeedProvider.future);
+        expect(initialState.videos.map((video) => video.id), [
+          'for-you-a',
+          'for-you-b',
+        ]);
+        expect(initialState.hasMoreContent, isTrue);
+
+        await container.read(forYouFeedProvider.notifier).loadMore();
+
+        final loadedState = container.read(forYouFeedProvider).value;
+        expect(loadedState, isNotNull);
+        expect(loadedState!.videos.map((video) => video.id), [
+          'for-you-a',
+          'for-you-b',
+          'for-you-c',
+        ]);
+        expect(loadedState.hasMoreContent, isTrue);
+        expect(requestedCursors, [null, 'cursor-2']);
+      },
+    );
+
+    test(
+      'for you stops load more when recommendations omit pagination cursor',
+      () async {
+        var recommendationsCallCount = 0;
+
+        when(
+          () => mockFunnelcakeApiClient.getRecommendations(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            fallback: any(named: 'fallback'),
+            category: any(named: 'category'),
+            cursor: any(named: 'cursor'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
+          ),
+        ).thenAnswer((_) {
+          recommendationsCallCount += 1;
+          return Future.value(
+            _recommendationsResponse(['for-you-legacy']),
+          );
+        });
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            appReadyProvider.overrideWithValue(true),
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockBlocklistRepository,
+            ),
+            funnelcakeApiClientProvider.overrideWithValue(
+              mockFunnelcakeApiClient,
+            ),
+            authServiceProvider.overrideWithValue(mockAuthService),
+            funnelcakeAvailableProvider.overrideWith(
+              _AlwaysAvailableFunnelcake.new,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(funnelcakeAvailableProvider.future);
+        final subscription = container.listen(forYouFeedProvider, (_, _) {});
+        addTearDown(subscription.close);
+
+        final initialState = await container.read(forYouFeedProvider.future);
+        expect(initialState.videos.map((video) => video.id), [
+          'for-you-legacy',
+        ]);
+        expect(initialState.hasMoreContent, isFalse);
+
+        await container.read(forYouFeedProvider.notifier).loadMore();
+
+        final loadedState = container.read(forYouFeedProvider).value;
+        expect(loadedState, isNotNull);
+        expect(loadedState!.videos.map((video) => video.id), [
+          'for-you-legacy',
+        ]);
+        expect(loadedState.hasMoreContent, isFalse);
+        expect(recommendationsCallCount, 1);
+      },
+    );
+
     // Regression for #3849. Pre-fix, popular_now's refresh() flipped a sticky
     // _usingRestApi=false in the catch fall-through, so the *next* refresh
     // skipped REST entirely and stayed on Nostr until app restart. The fix
@@ -765,6 +907,19 @@ WatchingVideosResponse _watchingResponse(
 }) {
   return WatchingVideosResponse(
     videos: ids.map(_videoStats).toList(),
+    nextCursor: nextCursor,
+    hasMore: hasMore,
+  );
+}
+
+RecommendationsResponse _recommendationsResponse(
+  List<String> ids, {
+  String? nextCursor,
+  bool hasMore = true,
+}) {
+  return RecommendationsResponse(
+    videos: ids.map(_videoStats).toList(),
+    source: 'personalized',
     nextCursor: nextCursor,
     hasMore: hasMore,
   );
