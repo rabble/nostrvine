@@ -19,5 +19,20 @@ void main() {
       expect(AnalyticsSurface.slowBucket(5000), '5_10s');
       expect(AnalyticsSurface.slowBucket(10000), 'over_10s');
     });
+
+    test('sanitizeName normalizes route and surface names', () {
+      expect(AnalyticsSurface.sanitizeName('video-detail'), 'video_detail');
+      expect(AnalyticsSurface.sanitizeName('/settings'), 'settings');
+      expect(AnalyticsSurface.sanitizeName('  Home Feed  '), 'home_feed');
+      expect(
+        AnalyticsSurface.sanitizeName('home---feed///detail'),
+        'home_feed_detail',
+      );
+      expect(AnalyticsSurface.sanitizeName(''), AnalyticsSurface.unknownRoute);
+      expect(
+        AnalyticsSurface.sanitizeName('///'),
+        AnalyticsSurface.unknownRoute,
+      );
+    });
   });
 }

@@ -27,6 +27,7 @@ abstract final class AnalyticsSurface {
         .trim()
         .replaceAll(RegExp('[^A-Za-z0-9_]+'), '_')
         .replaceAll(RegExp('_+'), '_')
+        .replaceAll(RegExp(r'^_+|_+$'), '')
         .toLowerCase();
     return normalized.isEmpty ? unknownRoute : normalized;
   }
