@@ -156,6 +156,27 @@ void main() {
       expect(result.videoCoordinate, equals(videoCoordinate));
     });
 
+    test('a video coordinate wins over the actor-profile fallback even for '
+        'comment taps (unfetchable videos land on the detail error state — '
+        'intentional, #5079)', () {
+      // Pin of the #5079 decision: the routing decision is made purely from
+      // the payload shape, with no pre-push fetch. When a valid video
+      // coordinate is present the executor pushes it directly, so the
+      // profile/inbox fallback never applies — an unfetchable video is
+      // discovered at, and surfaced by, the video detail screen by design.
+      final result = app.pushNotificationTapTarget(
+        referencedAddress: videoCoordinate,
+        referencedEventId: null,
+        eventId: null,
+        notificationType: 'comment',
+        senderPubkey: actor,
+      );
+
+      expect(result.target, const OpenVideoTarget(autoOpenComments: true));
+      expect(result.videoCoordinate, equals(videoCoordinate));
+      expect(result.targetEventId, isNull);
+    });
+
     test('ignores a non-video addressable coordinate and falls back', () {
       // A coordinate whose kind is not a NIP-71 video kind cannot be resolved
       // as a raw video route, so it must not be treated as a video target.

@@ -351,6 +351,32 @@ void main() {
       );
 
       testWidgets(
+        'renders the error state with an exit affordance for an unfetchable '
+        'NIP-33 video coordinate route (intended destination for '
+        'coordinate-routed push taps, #5079)',
+        (tester) async {
+          // Push taps carrying an authoritative referencedAddress push the
+          // raw kind:pubkey:d-tag coordinate straight to this route with no
+          // pre-fetch. When the video is deleted or otherwise unfetchable,
+          // this error state — not a profile/inbox fallback — is the decided
+          // destination, matching the in-app rows' trust-the-coordinate
+          // contract.
+          const coordinate = '34236:owner_pubkey_hex:my-vine-id';
+          when(
+            () =>
+                mockVideosRepository.fetchVideoWithStatsForRouteId(coordinate),
+          ).thenAnswer((_) async => null);
+
+          await tester.pumpWidget(buildSubject(videoId: coordinate));
+          await tester.pump();
+
+          expect(find.text('Video not found'), findsOneWidget);
+          expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
+          expect(find.bySemanticsLabel('Close video player'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
         'retries once when relays become ready after cold-start miss',
         (tester) async {
           var connectedRelayCount = 0;
