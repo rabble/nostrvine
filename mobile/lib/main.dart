@@ -72,6 +72,7 @@ import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
@@ -923,6 +924,35 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
   return coordinator;
 }
 
+void _removeSplashWhenStartupAuthSettles(AuthService authService) {
+  unawaited(
+    _waitForStartupAuthTerminalState(authService)
+        .timeout(AuthService.startupAuthRestoreTimeout)
+        .catchError((Object error, StackTrace stackTrace) {
+          Log.warning(
+            '[INIT] Auth startup did not settle before splash timeout: $error',
+            name: 'Main',
+            category: LogCategory.system,
+          );
+        })
+        .whenComplete(FlutterNativeSplash.remove),
+  );
+}
+
+Future<void> _waitForStartupAuthTerminalState(AuthService authService) async {
+  if (_isTerminalStartupAuthState(authService.authState)) return;
+  await authService.authStateStream.firstWhere(_isTerminalStartupAuthState);
+}
+
+bool _isTerminalStartupAuthState(AuthState state) {
+  return switch (state) {
+    AuthState.unauthenticated ||
+    AuthState.awaitingTosAcceptance ||
+    AuthState.authenticated => true,
+    AuthState.checking || AuthState.authenticating => false,
+  };
+}
+
 Future<void> _startOpenVineApp() async {
   // Add timing logs for startup diagnostics
   final startTime = DateTime.now();
@@ -930,13 +960,10 @@ Future<void> _startOpenVineApp() async {
   // Ensure bindings are initialized first (required for everything)
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
 
-  // Keep the native splash visible until auth resolves. AuthService calls
-  // FlutterNativeSplash.remove() in its initialize() finally block once a
-  // terminal auth state is reached. The Future.delayed is a safety net for
-  // catastrophic hangs — 5s is chosen to cover slow bunker/relay reconnects.
-  // See #2749 and #2953 for the investigation.
+  // Keep the native splash visible until startup auth reaches a terminal
+  // state. The release watcher is installed after the ProviderContainer exists
+  // so the UI/native concern stays in app startup instead of AuthService.
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-  Future.delayed(const Duration(seconds: 5), FlutterNativeSplash.remove);
 
   // Lock app to portrait mode only (portrait up and portrait down)
   // Skip on desktop platforms where orientation lock doesn't apply
@@ -1328,6 +1355,7 @@ Future<void> _startOpenVineApp() async {
   );
 
   final startupCoordinator = _createStartupCoordinator(container);
+  _removeSplashWhenStartupAuthSettles(container.read(authServiceProvider));
   await startupCoordinator.initializeThrough(StartupPhase.critical);
 
   Log.info('Divine starting...', name: 'Main');

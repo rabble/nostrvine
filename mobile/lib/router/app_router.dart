@@ -232,6 +232,9 @@ int homeInitialIndexFromPathParameters(Map<String, String> pathParameters) {
   return rawIndex < 0 ? 0 : rawIndex;
 }
 
+bool _isPublicRecorderLocation(String location) =>
+    location == VideoRecorderScreen.path;
+
 final goRouterProvider = Provider<GoRouter>((ref) {
   // Use ref.read to avoid recreating the router on auth state changes
   final authService = ref.read(authServiceProvider);
@@ -420,6 +423,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       // Non-authenticated users on protected routes → welcome.
       // awaitingTosAcceptance has no dedicated screen, so treat it like unauthenticated.
       if (!isAuthRoute &&
+          !_isPublicRecorderLocation(location) &&
           (authState == AuthState.unauthenticated ||
               authState == AuthState.awaitingTosAcceptance)) {
         _hasNavigated = false;
@@ -435,6 +439,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: VideoRecorderScreen.path,
+        name: VideoRecorderScreen.routeName,
+        builder: (_, _) => const VideoRecorderRoute(),
+      ),
       // Shell owns the shared scaffold and bottom navigation. Individual tab
       // route state that must survive a child swap is restored explicitly from
       // route params or tab-position providers.
@@ -1294,12 +1303,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             sourceVideo: video,
           );
         },
-      ),
-      // Video editor route (requires video passed via extra)
-      GoRoute(
-        path: VideoRecorderScreen.path,
-        name: VideoRecorderScreen.routeName,
-        builder: (_, _) => const VideoRecorderRoute(),
       ),
       // Video editor route
       GoRoute(

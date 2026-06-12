@@ -37,6 +37,9 @@ void main() {
     when(() => mockKeyStorage.initialize()).thenAnswer((_) async {});
     when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
     when(() => mockKeyStorage.dispose()).thenReturn(null);
+    when(
+      () => mockFlutterSecureStorage.read(key: any(named: 'key')),
+    ).thenAnswer((_) async => null);
 
     authService = AuthService(
       userDataCleanupService: mockCleanupService,
@@ -160,6 +163,39 @@ void main() {
         expect(true, isTrue); // Documentation test
       },
     );
+
+    test('startup restore times out unreachable bunker signer', () async {
+      await authService.dispose();
+
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'bunker',
+      });
+      const bunkerUrl =
+          'bunker://deadbeef1234567890abcdef1234567890abcdef1234567890abcdef12345678'
+          '?relay=wss://relay.example.com';
+
+      when(
+        () => mockFlutterSecureStorage.read(key: any(named: 'key')),
+      ).thenAnswer((_) async => bunkerUrl);
+      when(
+        () => mockBunkerSigner.connect(sendConnectRequest: false),
+      ).thenAnswer((_) => Future<String?>.delayed(const Duration(hours: 1)));
+
+      authService = AuthService(
+        userDataCleanupService: mockCleanupService,
+        keyStorage: mockKeyStorage,
+        flutterSecureStorage: mockFlutterSecureStorage,
+        remoteSignerFactory: (_, _) => mockBunkerSigner,
+        startupNetworkOperationTimeout: const Duration(milliseconds: 1),
+      );
+
+      await authService.initialize();
+
+      expect(authService.authState, AuthState.unauthenticated);
+      verify(
+        () => mockBunkerSigner.connect(sendConnectRequest: false),
+      ).called(1);
+    });
   });
 
   group('AuthService dispose cleanup', () {

@@ -5,12 +5,15 @@
 
 import 'dart:async';
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
@@ -39,6 +42,23 @@ Future<void> openVideoEditorFromRecorder(
   BuildContext context,
   WidgetRef ref,
 ) async {
+  if (!ref.read(authServiceProvider).isAuthenticated) {
+    final saved = await ref
+        .read(videoEditorProvider.notifier)
+        .saveAsDraft(enforceCreateNewDraft: true);
+    if (!context.mounted) return;
+
+    if (saved) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.uploadFailureSheetSavedToDraftsSnackbar),
+        ),
+      );
+    }
+    context.go(WelcomeScreen.path);
+    return;
+  }
+
   final bloc = context.read<VideoRecorderBloc>();
   final recorderMode = bloc.state.recorderMode;
 
