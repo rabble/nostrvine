@@ -74,21 +74,28 @@ abstract class Relay {
       );
       return;
     }
-    for (var message in pendingMessages) {
-      // TODO To check result? and how to handle if send fail?
-      var result = await send(message);
-      if (!result) {
-        log("message send fail onConnected");
-      } else {
-        log(
-          '[Relay] onConnected[${source ?? "unknown"}]: sent pending message type=${message.isNotEmpty ? message[0] : "unknown"}',
-        );
+    final messagesToSend = List<List<dynamic>>.from(pendingMessages);
+    pendingMessages.clear();
+
+    for (var message in messagesToSend) {
+      try {
+        final result = await send(message, queueIfFailed: false);
+        if (!result) {
+          pendingMessages.add(message);
+          log("message send fail onConnected");
+        } else {
+          log(
+            '[Relay] onConnected[${source ?? "unknown"}]: sent pending message type=${message.isNotEmpty ? message[0] : "unknown"}',
+          );
+        }
+      } catch (e) {
+        pendingMessages.add(message);
+        log("message send exception onConnected");
+        log('$e');
       }
     }
-
-    pendingMessages.clear();
     log(
-      '[Relay] onConnected[${source ?? "unknown"}]: ${relayStatus.addr} - cleared pending messages',
+      '[Relay] onConnected[${source ?? "unknown"}]: ${relayStatus.addr} - replay complete, remaining pending messages=${pendingMessages.length}',
     );
   }
 
