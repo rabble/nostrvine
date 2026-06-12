@@ -632,6 +632,32 @@ void main() {
       expect(entry!.level, LogLevel.error);
     });
 
+    test('maps the debug level', () async {
+      const message = 'onNativeLog-test-debug-unique';
+      await dispatchNativeLog({
+        'level': 'debug',
+        'message': message,
+        'name': 'DivineCamera.Lifecycle',
+      });
+
+      final entry = latestEntryWithMessage(message);
+      expect(entry, isNotNull);
+      expect(entry!.level, LogLevel.debug);
+    });
+
+    test('maps the verbose level', () async {
+      const message = 'onNativeLog-test-verbose-unique';
+      await dispatchNativeLog({
+        'level': 'verbose',
+        'message': message,
+        'name': 'DivineCamera',
+      });
+
+      final entry = latestEntryWithMessage(message);
+      expect(entry, isNotNull);
+      expect(entry!.level, LogLevel.verbose);
+    });
+
     test('falls back to info for an unknown level', () async {
       const message = 'onNativeLog-test-unknown-level-unique';
       await dispatchNativeLog({
