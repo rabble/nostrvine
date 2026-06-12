@@ -399,7 +399,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       final oldestCreatedAt = state.videos
           .map((v) => v.createdAt)
           .reduce((a, b) => a < b ? a : b);
-      final until = oldestCreatedAt - 1;
+      final until = oldestCreatedAt;
 
       final result = await _fetchVideosForSource(
         state.source,

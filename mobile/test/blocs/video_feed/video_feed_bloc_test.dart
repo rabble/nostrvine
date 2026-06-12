@@ -1381,6 +1381,61 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'uses inclusive oldest timestamp when loading more following videos',
+        setUp: () {
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResult(
+              videos: [createTestVideo('same-second-c', createdAt: 1999)],
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.following,
+          videos: [
+            createTestVideo('old-a', createdAt: 2000),
+            createTestVideo('old-b', createdAt: 1999),
+          ],
+        ),
+        act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
+        expect: () => [
+          isA<VideoFeedBlocState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<VideoFeedBlocState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            false,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: 1999,
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'stops forYou pagination when the current page has no cursor',
         build: createBloc,
         seed: () => VideoFeedBlocState(
