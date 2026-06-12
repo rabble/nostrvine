@@ -1047,7 +1047,11 @@ class UploadManager {
       }
 
       if (result.success &&
-          !_hasHttpThumbnailUrl(result: result, fallback: thumbnailCdnUrl)) {
+          !_hasHttpThumbnailUrl(
+            result: result,
+            generatedThumbnailUrl: thumbnailCdnUrl,
+            existingThumbnailUrl: upload.thumbnailPath,
+          )) {
         throw StateError('Thumbnail upload failed');
       }
 
@@ -2246,9 +2250,12 @@ class UploadManager {
 
   static bool _hasHttpThumbnailUrl({
     required dynamic result,
-    required String? fallback,
+    required String? generatedThumbnailUrl,
+    required String? existingThumbnailUrl,
   }) {
-    return _isHttpUrl(_resultThumbnailUrl(result)) || _isHttpUrl(fallback);
+    return _isHttpUrl(_resultThumbnailUrl(result)) ||
+        _isHttpUrl(generatedThumbnailUrl) ||
+        _isHttpUrl(existingThumbnailUrl);
   }
 
   /// Create success metrics with calculated values

@@ -65,8 +65,13 @@ void main() {
         onProgress: any(named: 'onProgress'),
       ),
     ).thenAnswer(
-      (_) async =>
-          const BlossomUploadResult(success: true, videoId: 'test-video-id'),
+      (_) async => const BlossomUploadResult(
+        success: true,
+        videoId: 'test-video-id',
+        url: 'https://media.divine.video/test-video-id',
+        fallbackUrl: 'https://media.divine.video/test-video-id',
+        thumbnailUrl: 'https://media.divine.video/test-video-id-thumb.jpg',
+      ),
     );
     uploadManager = UploadManager(blossomService: mockUploadService);
 

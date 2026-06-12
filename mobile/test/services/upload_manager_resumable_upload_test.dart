@@ -59,7 +59,13 @@ void main() {
         () => mockBlossomService.isBlossomEnabled(),
       ).thenAnswer((_) async => false);
 
-      uploadManager = UploadManager(blossomService: mockBlossomService);
+      uploadManager = UploadManager(
+        blossomService: mockBlossomService,
+        retryConfig: const UploadRetryConfig(
+          initialDelay: Duration.zero,
+          maxDelay: Duration.zero,
+        ),
+      );
       await uploadManager.initialize();
       await TestHelpers.ensureBoxEmpty<PendingUpload>('pending_uploads');
     });
@@ -126,6 +132,7 @@ void main() {
             videoId: 'video-123',
             url: 'https://media.divine.video/video-123',
             fallbackUrl: 'https://media.divine.video/video-123',
+            thumbnailUrl: 'https://media.divine.video/video-123-thumb.jpg',
           );
         });
 
@@ -262,8 +269,8 @@ void main() {
     });
 
     test(
-      'resumeInterruptedUpload clears existing non-HTTP thumbnail when result '
-      'does not provide a valid URL',
+      'resumeInterruptedUpload fails when only a stale non-HTTP thumbnail '
+      'exists',
       () async {
         const localThumbnailPath = '/var/cache/thumbnails/frame.jpg';
         final upload =
@@ -305,13 +312,13 @@ void main() {
 
         await TestHelpers.waitForCondition(() {
           final currentUpload = uploadManager.getUpload(upload.id);
-          return currentUpload?.status == UploadStatus.readyToPublish;
+          return currentUpload?.status == UploadStatus.failed;
         });
 
         final completedUpload = uploadManager.getUpload(upload.id);
         expect(completedUpload, isNotNull);
-        expect(completedUpload!.videoId, equals('video-without-thumbnail'));
-        expect(completedUpload.thumbnailPath, isNull);
+        expect(completedUpload!.status, equals(UploadStatus.failed));
+        expect(completedUpload.errorMessage, isNotEmpty);
       },
     );
 
@@ -473,6 +480,7 @@ void main() {
             videoId: 'video-serial',
             url: 'https://media.divine.video/video-serial',
             fallbackUrl: 'https://media.divine.video/video-serial',
+            thumbnailUrl: 'https://media.divine.video/video-serial-thumb.jpg',
           ),
         );
         await uploadFuture;
