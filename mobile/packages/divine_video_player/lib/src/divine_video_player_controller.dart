@@ -9,6 +9,7 @@ import 'package:divine_video_player/src/web/web_video_player_backend_factory.dar
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Default maximum cache size on disk (500 MB).
 const int kDefaultCacheMaxSizeBytes = 500 * 1024 * 1024;
@@ -48,7 +49,58 @@ class DivineVideoPlayerController {
   DivineVideoPlayerController({
     this.useTexture = false,
     this.useLegacySurface = false,
-  });
+  }) {
+    _ensureNativeLogHandler();
+  }
+
+  /// Guards one-time installation of the global-channel handler that
+  /// receives native diagnostics (`onNativeLog`).
+  static bool _nativeLogHandlerInstalled = false;
+
+  /// Installs the handler that receives curated native diagnostics from the
+  /// platform side and forwards them into the app's [UnifiedLogger], so video
+  /// playback problems show up in bug reports. Idempotent.
+  static void _ensureNativeLogHandler() {
+    if (_nativeLogHandlerInstalled) return;
+    _nativeLogHandlerInstalled = true;
+    _globalChannel.setMethodCallHandler(_handleGlobalChannelCall);
+  }
+
+  static Future<dynamic> _handleGlobalChannelCall(MethodCall call) async {
+    if (call.method == 'onNativeLog') {
+      final args = call.arguments;
+      if (args is Map) {
+        _forwardNativeLog(args);
+      }
+    }
+    return null;
+  }
+
+  /// Forwards a curated native diagnostic into the app's [UnifiedLogger].
+  ///
+  /// The native side only sends events worth surfacing for diagnosing
+  /// playback problems (player lifecycle, clip-composition skips, asset /
+  /// playback errors, audio-track setup) — see `DivineVideoPlayerLog` on each
+  /// platform. Per-frame and verbose native logs stay on the device console.
+  static void _forwardNativeLog(Map<dynamic, dynamic> args) {
+    final message = args['message'] as String?;
+    if (message == null || message.isEmpty) return;
+    final level = args['level'] as String? ?? 'info';
+    final name = args['name'] as String? ?? 'DivineVideoPlayerNative';
+    switch (level) {
+      case 'error':
+        Log.error(message, name: name, category: LogCategory.video);
+      case 'warning':
+        Log.warning(message, name: name, category: LogCategory.video);
+      case 'debug':
+        Log.debug(message, name: name, category: LogCategory.video);
+      case 'verbose':
+        Log.verbose(message, name: name, category: LogCategory.video);
+      case 'info':
+      default:
+        Log.info(message, name: name, category: LogCategory.video);
+    }
+  }
 
   /// Whether this player renders via a Flutter texture instead of a
   /// platform view. When `true` the widget should use the [Texture]

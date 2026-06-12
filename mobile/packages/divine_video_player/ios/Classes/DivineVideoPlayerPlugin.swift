@@ -10,6 +10,28 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
 
     private static var registrar: FlutterPluginRegistrar?
 
+    private var globalChannel: FlutterMethodChannel?
+
+    /// Per-instance forwarder pushing native diagnostics over THIS engine's
+    /// global channel. `DivineVideoPlayerLog.shared.sink` is a process-wide
+    /// singleton, so a second FlutterEngine (e.g. the FCM background isolate
+    /// that also runs the plugin registrant) would otherwise overwrite it and
+    /// route video logs to the wrong isolate. We re-assert it in `handle` —
+    /// player operations only ever reach the UI engine.
+    private lazy var logSink: (String, String, String) -> Void = {
+        [weak self] level, message, name in
+        DispatchQueue.main.async {
+            self?.globalChannel?.invokeMethod(
+                "onNativeLog",
+                arguments: ["level": level, "message": message, "name": name]
+            )
+        }
+    }
+
+    private func installLogSink() {
+        DivineVideoPlayerLog.shared.sink = logSink
+    }
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         // Hot restart re-calls register(with:) without disposing the
         // previous engine's players. Clean up zombie players so timers
@@ -23,6 +45,8 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
             binaryMessenger: registrar.messenger()
         )
         let plugin = DivineVideoPlayerPlugin()
+        plugin.globalChannel = globalChannel
+        plugin.installLogSink()
         registrar.addMethodCallDelegate(plugin, channel: globalChannel)
 
         registrar.register(
@@ -54,9 +78,15 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
     }
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        // Re-claim the shared sink in case another FlutterEngine overwrote it.
+        installLogSink()
         // Methods that require no arguments are handled before the
         // args guard to avoid returning FlutterMethodNotImplemented.
         if call.method == "disposeAll" {
+            DivineVideoPlayerLog.shared.info(
+                "disposeAll — releasing all players",
+                name: "DivineVideoPlayer.Lifecycle"
+            )
             PlayerRegistry.shared.disposeAll()
             result(nil)
             return
@@ -91,6 +121,10 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
             PlayerRegistry.shared.set(instance, for: id)
 
             let useTexture = args["useTexture"] as? Bool ?? false
+            DivineVideoPlayerLog.shared.info(
+                "Player \(id) created (useTexture=\(useTexture))",
+                name: "DivineVideoPlayer.Lifecycle"
+            )
             if useTexture {
                 let textureId = instance.enableTextureOutput(
                     registry: registrar.textures()
@@ -105,6 +139,10 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
                 result(nil)
                 return
             }
+            DivineVideoPlayerLog.shared.info(
+                "Player \(id) disposed",
+                name: "DivineVideoPlayer.Lifecycle"
+            )
             PlayerRegistry.shared.remove(id)?.dispose()
             result(nil)
 

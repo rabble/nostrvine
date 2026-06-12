@@ -352,7 +352,14 @@ internal class DivineVideoPlayerInstance(
         var accumulated = 0L
 
         for (map in clipsRaw) {
-            val uri = map["uri"] as? String ?: continue
+            val uri = map["uri"] as? String
+            if (uri == null) {
+                DivineVideoPlayerLog.warning(
+                    "Player $playerId skipped a clip: missing uri",
+                    name = "DivineVideoPlayer.Load",
+                )
+                continue
+            }
             val startMs = (map["startMs"] as? Number)?.toLong() ?: 0L
             val endMs = (map["endMs"] as? Number)?.toLong()
             val clipVol = (map["volume"] as? Number)?.toFloat() ?: 1.0f
@@ -434,6 +441,10 @@ internal class DivineVideoPlayerInstance(
         exoPlayer.setMediaItems(mediaItems, startIndex, startLocalMs)
         exoPlayer.prepare()
         isResettingPlayer = false
+        DivineVideoPlayerLog.info(
+            "Player $playerId prepared $clipCount clip(s)",
+            name = "DivineVideoPlayer.Load",
+        )
         // Apply the starting clip's per-clip volume immediately so the correct
         // level is audible as soon as the decoder is ready. Use startIndex
         // (not 0) so a resume mid-playlist doesn't play clip 0's volume
@@ -607,6 +618,10 @@ internal class DivineVideoPlayerInstance(
             return
         }
         audioOverlayManager.setTracks(tracksRaw, speed.toFloat())
+        DivineVideoPlayerLog.info(
+            "Player $playerId set ${tracksRaw.size} audio overlay track(s)",
+            name = "DivineVideoPlayer.Audio",
+        )
         syncAudioOverlays()
         result.success(null)
     }
@@ -909,6 +924,11 @@ internal class DivineVideoPlayerInstance(
         }
 
         override fun onPlayerError(error: PlaybackException) {
+            DivineVideoPlayerLog.error(
+                "Player $playerId playback error [${error.errorCodeName}]: " +
+                    (error.message ?: "unknown"),
+                name = "DivineVideoPlayer.Playback",
+            )
             // Unblock a pending setClips with an error so Dart can react
             // rather than waiting for the 10 s safety timeout.
             mainHandler.removeCallbacks(setClipsTimeoutRunnable)

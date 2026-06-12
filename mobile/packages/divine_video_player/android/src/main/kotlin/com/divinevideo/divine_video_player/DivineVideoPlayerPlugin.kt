@@ -25,6 +25,7 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
 
     private lateinit var globalChannel: MethodChannel
     private lateinit var binding: FlutterPlugin.FlutterPluginBinding
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
     companion object {
         // Tracks the plugin instance attached to the main FlutterEngine.
@@ -65,6 +66,19 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
         )
         globalChannel.setMethodCallHandler(this)
 
+        // Forward curated native diagnostics to Dart's UnifiedLogger so video
+        // playback problems land in user bug reports. Only the main engine
+        // reaches here (background isolates returned early above), so the
+        // process-wide sink always points at the UI engine's channel.
+        DivineVideoPlayerLog.sink = { level, message, name ->
+            mainHandler.post {
+                globalChannel.invokeMethod(
+                    "onNativeLog",
+                    mapOf("level" to level, "message" to message, "name" to name),
+                )
+            }
+        }
+
         flutterPluginBinding.platformViewRegistry.registerViewFactory(
             "divine_video_player_view",
             DivineVideoPlayerViewFactory(flutterPluginBinding),
@@ -78,6 +92,7 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
         }
         mainPluginInstance = null
         globalChannel.setMethodCallHandler(null)
+        DivineVideoPlayerLog.sink = null
         PlayerRegistry.disposeAll()
         VideoCache.release()
     }
@@ -130,6 +145,10 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
                 PlayerRegistry.put(id, instance)
 
                 val useTexture = call.argument<Boolean>("useTexture") ?: false
+                DivineVideoPlayerLog.info(
+                    "Player $id created (useTexture=$useTexture)",
+                    name = "DivineVideoPlayer.Lifecycle",
+                )
                 if (useTexture) {
                     val useLegacySurface =
                         call.argument<Boolean>("useLegacySurface") ?: false
@@ -144,6 +163,10 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
             }
             "dispose" -> {
                 val id = call.argument<Int>("id")!!
+                DivineVideoPlayerLog.info(
+                    "Player $id disposed",
+                    name = "DivineVideoPlayer.Lifecycle",
+                )
                 PlayerRegistry.remove(id)?.dispose()
                 result.success(null)
             }
