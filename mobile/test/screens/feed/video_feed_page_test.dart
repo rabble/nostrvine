@@ -266,6 +266,12 @@ void main() {
 
       final feedVideos = tester.widget<FeedVideos>(find.byType(FeedVideos));
       expect(feedVideos.currentIndex, 2);
+
+      // Drain the player-window preload grace timer before the tree is
+      // disposed so no timer is pending at test teardown.
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
     });
 
     testWidgets('clamps restored home index to loaded videos', (tester) async {
@@ -303,6 +309,12 @@ void main() {
 
       final feedVideos = tester.widget<FeedVideos>(find.byType(FeedVideos));
       expect(feedVideos.currentIndex, 2);
+
+      // Drain the player-window preload grace timer before the tree is
+      // disposed so no timer is pending at test teardown.
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
     });
 
     testWidgets('records active video index for home tab restoration', (
@@ -349,6 +361,12 @@ void main() {
         container.read(lastTabPositionProvider)[RouteType.home],
         equals(1),
       );
+
+      // Drain the player-window preload grace timer before the tree is
+      // disposed so no timer is pending at test teardown.
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
     });
 
     testWidgets('home route emissions do not clobber recorded home index', (
