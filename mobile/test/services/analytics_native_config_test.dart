@@ -7,20 +7,43 @@ void main() {
     test('disables Firebase automatic screen reporting on iOS', () {
       final plist = File('ios/Runner/Info.plist').readAsStringSync();
 
-      expect(plist, contains('FirebaseAutomaticScreenReportingEnabled'));
-      expect(plist, contains('<false/>'));
+      expect(
+        plist,
+        matches(
+          RegExp(
+            r'<key>\s*FirebaseAutomaticScreenReportingEnabled\s*</key>\s*'
+            r'<false\s*/>',
+          ),
+        ),
+      );
     });
 
     test('disables Firebase automatic screen reporting on Android', () {
       final manifest = File(
         'android/app/src/main/AndroidManifest.xml',
       ).readAsStringSync();
+      final applicationBlock = RegExp(
+        r'<application\b[\s\S]*?</application>',
+      ).firstMatch(manifest);
 
       expect(
-        manifest,
-        contains('google_analytics_automatic_screen_reporting_enabled'),
+        applicationBlock,
+        isNotNull,
+        reason: 'AndroidManifest.xml must contain an <application> block.',
       );
-      expect(manifest, contains('android:value="false"'));
+
+      final disablesAutomaticScreenReporting = RegExp(
+        r'<meta-data\b'
+        r'(?=[^>]*\bandroid:name\s*=\s*"google_analytics_automatic_screen_reporting_enabled")'
+        r'(?=[^>]*\bandroid:value\s*=\s*"false")'
+        r'[^>]*/\s*>',
+        multiLine: true,
+      );
+
+      expect(
+        applicationBlock!.group(0),
+        matches(disablesAutomaticScreenReporting),
+      );
     });
   });
 }
