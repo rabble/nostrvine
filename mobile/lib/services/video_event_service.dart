@@ -178,6 +178,10 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   bool _isLoading = false;
   String? _error;
   Timer? _retryTimer;
+
+  // Feed types whose relay subscription failed on a connection error and
+  // should be re-established by the online-retry cycle.
+  final Set<SubscriptionType> _typesAwaitingRetry = {};
   int _retryAttempts = 0;
 
   // Track subscription parameters per type
@@ -1308,7 +1312,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         name: 'VideoEventService',
         category: LogCategory.video,
       );
-      _scheduleRetryWhenOnline();
+      _scheduleRetryWhenOnline(subscriptionType);
       throw const VideoEventServiceException('Device is offline');
     }
 
@@ -2085,7 +2089,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           name: 'VideoEventService',
           category: LogCategory.video,
         );
-        _scheduleRetryWhenOnline();
+        _scheduleRetryWhenOnline(subscriptionType);
       }
     } finally {
       _isLoading = false;
@@ -2768,7 +2772,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         name: 'VideoEventService',
         category: LogCategory.video,
       );
-      _scheduleRetryWhenOnline();
+      _scheduleRetryWhenOnline(subscriptionType);
     }
   }
 
@@ -4125,57 +4129,97 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         errorString.contains('unreachable');
   }
 
-  /// Schedule retry when device comes back online
-  void _scheduleRetryWhenOnline() {
-    _retryTimer?.cancel();
+  /// Schedule retry of [subscriptionType] when the device is back online.
+  ///
+  /// The failed type is recorded so the retry re-establishes the feed
+  /// that actually broke (with its original parameters) — previously the
+  /// retry hardcoded the discovery feed, so home/hashtag/profile feeds
+  /// never recovered through this path.
+  void _scheduleRetryWhenOnline(SubscriptionType subscriptionType) {
+    _typesAwaitingRetry.add(subscriptionType);
+
+    // An active cycle keeps its attempt budget. A fresh cycle starts
+    // over — previously an exhausted counter was never reset, leaving
+    // retries dead for the rest of the session.
+    if (_retryTimer?.isActive ?? false) return;
+    _retryAttempts = 0;
 
     _retryTimer = Timer.periodic(_retryDelay, (timer) {
-      if (_connectionService.isOnline && _retryAttempts < _maxRetryAttempts) {
-        _retryAttempts++;
-        Log.warning(
-          'Attempting to resubscribe to video feed (attempt $_retryAttempts/$_maxRetryAttempts)',
-          name: 'VideoEventService',
-          category: LogCategory.video,
-        );
-
-        subscribeToVideoFeed(subscriptionType: SubscriptionType.discovery)
-            .then((_) {
-              // Success - cancel retry timer
-              timer.cancel();
-              _retryAttempts = 0;
-              Log.info(
-                'Successfully resubscribed to video feed',
-                name: 'VideoEventService',
-                category: LogCategory.video,
-              );
-            })
-            .catchError((e) {
-              Log.error(
-                'Retry attempt $_retryAttempts failed: $e',
-                name: 'VideoEventService',
-                category: LogCategory.video,
-              );
-
-              if (_retryAttempts >= _maxRetryAttempts) {
-                timer.cancel();
-                Log.warning(
-                  'Max retry attempts reached for video feed subscription',
-                  name: 'VideoEventService',
-                  category: LogCategory.video,
-                );
-              }
-            });
-      } else if (!_connectionService.isOnline) {
+      if (!_connectionService.isOnline) {
         Log.debug(
           '⏳ Still offline, waiting for connection...',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
-      } else {
-        // Max retries reached
+        return;
+      }
+      if (_typesAwaitingRetry.isEmpty || _retryAttempts >= _maxRetryAttempts) {
         timer.cancel();
+        return;
+      }
+
+      _retryAttempts++;
+      Log.warning(
+        'Attempting to resubscribe to '
+        '${_typesAwaitingRetry.map((t) => t.name).join(", ")} '
+        '(attempt $_retryAttempts/$_maxRetryAttempts)',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+
+      for (final type in Set<SubscriptionType>.of(_typesAwaitingRetry)) {
+        _retrySubscription(type, timer);
       }
     });
+  }
+
+  /// Re-issue the relay subscription for [type] using its last-known
+  /// parameters, forcing past duplicate detection (the dead subscription
+  /// is still registered after an onError, so a non-forced call no-ops).
+  void _retrySubscription(SubscriptionType type, Timer timer) {
+    final params = _subscriptionParams[type];
+    unawaited(
+      subscribeToVideoFeed(
+            subscriptionType: type,
+            authors: params?['authors'] as List<String>?,
+            hashtags: params?['hashtags'] as List<String>?,
+            group: params?['group'] as String?,
+            since: params?['since'] as int?,
+            until: params?['until'] as int?,
+            limit: (params?['limit'] as int?) ?? 200,
+            includeReposts: (params?['includeReposts'] as bool?) ?? false,
+            sortBy: params?['sortBy'] as VideoSortField?,
+            nip50Sort: params?['nip50Sort'] as NIP50SortMode?,
+            force: true,
+          )
+          .then((_) {
+            _typesAwaitingRetry.remove(type);
+            Log.info(
+              'Successfully resubscribed to ${type.name} feed',
+              name: 'VideoEventService',
+              category: LogCategory.video,
+            );
+            if (_typesAwaitingRetry.isEmpty) {
+              timer.cancel();
+              _retryAttempts = 0;
+            }
+          })
+          .catchError((Object e) {
+            Log.error(
+              'Retry attempt $_retryAttempts for ${type.name} failed: $e',
+              name: 'VideoEventService',
+              category: LogCategory.video,
+            );
+            if (_retryAttempts >= _maxRetryAttempts) {
+              timer.cancel();
+              Log.warning(
+                'Max retry attempts reached for video feed subscription',
+                name: 'VideoEventService',
+                category: LogCategory.video,
+              );
+            }
+          }),
+    );
   }
 
   /// Get connection status for debugging
