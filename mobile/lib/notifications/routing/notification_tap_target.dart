@@ -118,6 +118,8 @@ String? videoAddressableTarget(String? referencedAddress) {
   if (referencedAddress == null || referencedAddress.isEmpty) return null;
   final parsed = parseAddressableId(referencedAddress);
   if (parsed == null) return null;
+  // Push-service also rejects these before sending; keep the app guard as
+  // defense-in-depth for stale local payloads and future non-push callers.
   if (parsed.pubkey.isEmpty || parsed.dTag.isEmpty) return null;
   return NIP71VideoKinds.isVideoKind(parsed.kind) ? referencedAddress : null;
 }
