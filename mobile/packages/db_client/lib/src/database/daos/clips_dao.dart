@@ -259,15 +259,23 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
     return (delete(clips)..where((t) => t.ownerPubkey.equals(userPubkey))).go();
   }
 
-  /// Claim legacy clips (NULL ownerPubkey) for [ownerPubkey].
+  /// Claim legacy clips (NULL ownerPubkey) or rows owned by the optional
+  /// [sourceOwnerPubkey] marker for [newOwnerPubkey].
   ///
   /// Called during session setup so that pre-multi-account clips are
-  /// attributed to the user who created them and stop being visible
-  /// to other accounts via the `_ownedOrLegacy` filter.
-  Future<int> claimLegacyRows(String ownerPubkey) {
-    return (update(clips)..where((t) => t.ownerPubkey.isNull())).write(
-      ClipsCompanion(ownerPubkey: Value(ownerPubkey)),
-    );
+  /// attributed to the user who created them and signed-out recorder clips
+  /// are claimed by the next successful sign-in.
+  Future<int> claimLegacyRows(
+    String newOwnerPubkey, {
+    String? sourceOwnerPubkey,
+  }) {
+    return (update(clips)..where(
+          (t) => sourceOwnerPubkey == null
+              ? t.ownerPubkey.isNull()
+              : t.ownerPubkey.isNull() |
+                    t.ownerPubkey.equals(sourceOwnerPubkey),
+        ))
+        .write(ClipsCompanion(ownerPubkey: Value(newOwnerPubkey)));
   }
 
   /// Check if a filename is referenced by any clip's file_path

@@ -373,7 +373,7 @@ final class DraftStorageServiceProvider
 }
 
 String _$draftStorageServiceHash() =>
-    r'1ef3ccee1fdbb86f842c2bdf448b7f72d4e8f629';
+    r'8db9365647df0f383343aa803d5bf85be33b8429';
 
 /// Clip library service for persisting individual video clips
 
@@ -426,7 +426,7 @@ final class ClipLibraryServiceProvider
 }
 
 String _$clipLibraryServiceHash() =>
-    r'f36b3e22012c58da8f70d620378448bbe500f0cc';
+    r'5ccf19e6775ad70d7ed14468c8929a363e13d9f4';
 
 /// User data cleanup service for handling identity changes
 /// Prevents data leakage between different Nostr accounts
@@ -482,7 +482,7 @@ final class UserDataCleanupServiceProvider
 }
 
 String _$userDataCleanupServiceHash() =>
-    r'64f5eb700446e794555f2814668aa37aa863a9f0';
+    r'ce46d352767c246631f008d3742cd5705f978aef';
 
 /// Hashtag service depends on Video event service and cache service
 

@@ -14,6 +14,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -337,5 +338,47 @@ void main() {
       );
       expect(homeInitialIndexFromPathParameters(const {}), equals(0));
     });
+  });
+
+  group('Offline recorder route', () {
+    test(
+      'unauthenticated users can navigate to recorder but not protected routes',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final sharedPreferences = await SharedPreferences.getInstance();
+        final authStateController = StreamController<AuthState>.broadcast(
+          sync: true,
+        );
+        addTearDown(authStateController.close);
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            authServiceProvider.overrideWith((ref) {
+              final authService = _MockAuthService();
+              when(
+                () => authService.authStateStream,
+              ).thenAnswer((_) => authStateController.stream);
+              when(
+                () => authService.authState,
+              ).thenReturn(AuthState.unauthenticated);
+              when(() => authService.hasExpiredOAuthSession).thenReturn(false);
+              return authService;
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final router = container.read(goRouterProvider);
+
+        router.go(VideoRecorderScreen.path);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          equals(VideoRecorderScreen.path),
+        );
+      },
+    );
   });
 }

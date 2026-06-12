@@ -185,6 +185,43 @@ AuthState currentAuthState(Ref ref) {
   return authService.authState;
 }
 
+/// Boundary-safe auth helper for recorder exits.
+///
+/// UI callers need to know whether auth restore has reached an authenticated
+/// state, but they should not import service-layer auth types directly.
+final recorderExitAuthGateProvider = Provider<RecorderExitAuthGate>((ref) {
+  return RecorderExitAuthGate(ref.watch(authServiceProvider));
+});
+
+class RecorderExitAuthGate {
+  RecorderExitAuthGate(this._authService);
+
+  final AuthService _authService;
+
+  Duration get restoreTimeout => AuthService.startupAuthRestoreTimeout;
+
+  bool get isRestoring => _isStartupAuthRestoreState(_authService.authState);
+
+  Future<bool> waitForAuthenticatedOrTerminal() async {
+    var authState = _authService.authState;
+    if (_isStartupAuthRestoreState(authState)) {
+      try {
+        authState = await _authService.authStateStream
+            .firstWhere((state) => !_isStartupAuthRestoreState(state))
+            .timeout(restoreTimeout);
+      } on TimeoutException {
+        authState = _authService.authState;
+      }
+    }
+
+    return authState == AuthState.authenticated;
+  }
+
+  bool _isStartupAuthRestoreState(AuthState state) {
+    return state == AuthState.checking || state == AuthState.authenticating;
+  }
+}
+
 /// Provider that returns current RPC capability and rebuilds on changes.
 ///
 /// Widgets and repositories should watch this instead of polling

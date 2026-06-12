@@ -749,9 +749,22 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       category: LogCategory.auth,
     );
     if (_oauthClient != null) {
-      final refreshed = await _refreshOAuthSession(
-        expectedOwnerPubkey: session?.userPubkey,
-      );
+      final KeycastSession? refreshed;
+      try {
+        refreshed = await _refreshOAuthSession(
+          expectedOwnerPubkey: session?.userPubkey,
+        ).timeout(_startupNetworkOperationTimeout);
+      } on TimeoutException {
+        Log.warning(
+          'initialize: synchronous refresh timed out '
+          '(${_startupNetworkOperationTimeout.inSeconds}s)',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        _hasExpiredOAuthSession = true;
+        _setAuthState(AuthState.unauthenticated);
+        return;
+      }
 
       if (refreshed != null) {
         // Apply the same cross-account guard to the refreshed session.
@@ -963,9 +976,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     if (_oauthClient == null) return null;
     try {
       final pubkey = expectedOwnerPubkey ?? _currentProfile?.publicKeyHex;
-      final refreshed = await _oauthClient
-          .refreshSession(userPubkey: pubkey)
-          .timeout(_startupNetworkOperationTimeout);
+      final refreshed = await _oauthClient.refreshSession(userPubkey: pubkey);
       if (refreshed == null || !refreshed.hasRpcAccess) return null;
 
       _hasExpiredOAuthSession = false;
@@ -1221,7 +1232,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           );
           final bunkerInfo = await _loadBunkerInfo();
           if (bunkerInfo != null) {
-            await _reconnectBunker(bunkerInfo);
+            await _reconnectBunker(bunkerInfo, boundedByStartupTimeout: true);
             return;
           }
           // Bunker info not found — fall back to unauthenticated
@@ -2431,7 +2442,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   }
 
   /// Reconnect to a bunker using saved connection info
-  Future<void> _reconnectBunker(NostrRemoteSignerInfo info) async {
+  Future<void> _reconnectBunker(
+    NostrRemoteSignerInfo info, {
+    bool boundedByStartupTimeout = false,
+  }) async {
     Log.info(
       'Reconnecting to bunker...',
       name: 'AuthService',
@@ -2446,9 +2460,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // during the initial connection. We just need to reconnect to the relay.
       _bunkerSigner = _remoteSignerFactory(RelayMode.baseMode, info);
       _setupBunkerAuthCallback();
-      await _bunkerSigner!
-          .connect(sendConnectRequest: false)
-          .timeout(_startupNetworkOperationTimeout);
+      final connect = _bunkerSigner!.connect(sendConnectRequest: false);
+      if (boundedByStartupTimeout) {
+        await connect.timeout(_startupNetworkOperationTimeout);
+      } else {
+        await connect;
+      }
 
       // Use saved public key if available, otherwise request it from bunker
       var userPubkey = info.userPubkey;
@@ -2458,9 +2475,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        userPubkey = await _bunkerSigner!.pullPubkey().timeout(
-          _startupNetworkOperationTimeout,
-        );
+        final pullPubkey = _bunkerSigner!.pullPubkey();
+        userPubkey = boundedByStartupTimeout
+            ? await pullPubkey.timeout(_startupNetworkOperationTimeout)
+            : await pullPubkey;
       } else {
         Log.info(
           'Using saved userPubkey: $userPubkey',
@@ -2504,6 +2522,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         name: 'AuthService',
         category: LogCategory.auth,
       );
+      _bunkerSigner?.close();
       _bunkerSigner = null;
       _setAuthState(AuthState.unauthenticated);
     }

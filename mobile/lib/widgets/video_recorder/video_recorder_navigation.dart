@@ -42,22 +42,8 @@ Future<void> openVideoEditorFromRecorder(
   BuildContext context,
   WidgetRef ref,
 ) async {
-  if (!ref.read(authServiceProvider).isAuthenticated) {
-    final saved = await ref
-        .read(videoEditorProvider.notifier)
-        .saveAsDraft(enforceCreateNewDraft: true);
-    if (!context.mounted) return;
-
-    if (saved) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.uploadFailureSheetSavedToDraftsSnackbar),
-        ),
-      );
-    }
-    context.go(WelcomeScreen.path);
-    return;
-  }
+  if (!await _ensureAuthenticatedForRecorderExit(context, ref)) return;
+  if (!context.mounted) return;
 
   final bloc = context.read<VideoRecorderBloc>();
   final recorderMode = bloc.state.recorderMode;
@@ -80,7 +66,10 @@ Future<void> openVideoEditorFromRecorder(
 
 /// Navigates to the clips-only library, releasing the camera during the
 /// transition and re-initializing it on return.
-Future<void> openRecorderLibrary(BuildContext context) async {
+Future<void> openRecorderLibrary(BuildContext context, WidgetRef ref) async {
+  if (!await _ensureAuthenticatedForRecorderExit(context, ref)) return;
+  if (!context.mounted) return;
+
   final bloc = context.read<VideoRecorderBloc>();
 
   final navigation = context.pushNamed(LibraryScreen.clipsOnlyRouteName);
@@ -91,6 +80,51 @@ Future<void> openRecorderLibrary(BuildContext context) async {
   await navigation;
   if (!context.mounted) return;
   bloc.add(const VideoRecorderInitializeRequested());
+}
+
+Future<bool> _ensureAuthenticatedForRecorderExit(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  final authGate = ref.read(recorderExitAuthGateProvider);
+  final showedRestoreSnackbar = authGate.isRestoring;
+  if (showedRestoreSnackbar && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.authSigningYouIn),
+        duration: authGate.restoreTimeout,
+      ),
+    );
+  }
+
+  final authenticated = await authGate.waitForAuthenticatedOrTerminal();
+  if (showedRestoreSnackbar) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    }
+  }
+
+  if (authenticated) return true;
+
+  final saved = await ref
+      .read(videoEditorProvider.notifier)
+      .saveAsDraft(enforceCreateNewDraft: true);
+  if (!context.mounted) return false;
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        saved
+            ? context.l10n.uploadFailureSheetSavedToDraftsSnackbar
+            : context.l10n.videoMetadataFailedToSaveSnackbar,
+      ),
+    ),
+  );
+
+  if (saved) {
+    context.go(WelcomeScreen.path);
+  }
+  return false;
 }
 
 /// Waits for the current route's push transition to finish before returning.

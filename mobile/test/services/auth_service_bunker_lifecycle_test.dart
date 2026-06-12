@@ -195,6 +195,7 @@ void main() {
       verify(
         () => mockBunkerSigner.connect(sendConnectRequest: false),
       ).called(1);
+      verify(() => mockBunkerSigner.close()).called(1);
     });
   });
 

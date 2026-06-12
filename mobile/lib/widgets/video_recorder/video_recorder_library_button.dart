@@ -78,7 +78,7 @@ class _VideoRecorderLibraryButtonState
         child: InkWell(
           onTap: hasClips
               ? () async {
-                  await openRecorderLibrary(context);
+                  await openRecorderLibrary(context, ref);
 
                   // Refresh library thumbnail after returning — user may have
                   // deleted clips or new thumbnails may have been recovered.

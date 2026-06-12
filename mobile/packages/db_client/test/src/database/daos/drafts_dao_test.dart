@@ -398,6 +398,7 @@ void main() {
       const pubkeyB =
           'bbbb2222bbbb2222bbbb2222bbbb2222'
           'bbbb2222bbbb2222bbbb2222bbbb2222';
+      const anonymousOwner = '__anonymous_offline_draft__';
 
       Future<void> insertDraft({
         required String id,
@@ -445,6 +446,34 @@ void main() {
         await insertDraft(id: 'draft_legacy');
 
         await dao.claimLegacyRows(pubkeyA);
+
+        final draftsB = await dao.getAllDrafts(ownerPubkey: pubkeyB);
+        expect(draftsB, isEmpty);
+      });
+
+      test(
+        'anonymous rows do not leak to signed-in owners before claim',
+        () async {
+          await insertDraft(id: 'draft_anonymous', ownerPubkey: anonymousOwner);
+
+          final draftsB = await dao.getAllDrafts(ownerPubkey: pubkeyB);
+
+          expect(draftsB, isEmpty);
+        },
+      );
+
+      test('claims anonymous rows for the next signed-in owner', () async {
+        await insertDraft(id: 'draft_anonymous', ownerPubkey: anonymousOwner);
+
+        final claimed = await dao.claimLegacyRows(
+          pubkeyA,
+          sourceOwnerPubkey: anonymousOwner,
+        );
+
+        expect(claimed, equals(1));
+        final draftsA = await dao.getAllDrafts(ownerPubkey: pubkeyA);
+        expect(draftsA.map((draft) => draft.id), contains('draft_anonymous'));
+        expect(draftsA.single.ownerPubkey, equals(pubkeyA));
 
         final draftsB = await dao.getAllDrafts(ownerPubkey: pubkeyB);
         expect(draftsB, isEmpty);

@@ -305,10 +305,13 @@ DraftStorageService draftStorageService(Ref ref) {
   // Rebuild when account changes so ownerPubkey stays current
   ref.watch(currentAuthStateProvider);
   final authService = ref.watch(authServiceProvider);
+  final ownerPubkey =
+      authService.currentPublicKeyHex ??
+      DraftStorageService.anonymousOwnerPubkey;
   return DraftStorageService(
     draftsDao: db.draftsDao,
     clipsDao: db.clipsDao,
-    ownerPubkey: authService.currentPublicKeyHex,
+    ownerPubkey: ownerPubkey,
   );
 }
 
@@ -319,10 +322,13 @@ ClipLibraryService clipLibraryService(Ref ref) {
   // Rebuild when account changes so ownerPubkey stays current
   ref.watch(currentAuthStateProvider);
   final authService = ref.watch(authServiceProvider);
+  final ownerPubkey =
+      authService.currentPublicKeyHex ??
+      DraftStorageService.anonymousOwnerPubkey;
   return ClipLibraryService(
     clipsDao: db.clipsDao,
     draftsDao: db.draftsDao,
-    ownerPubkey: authService.currentPublicKeyHex,
+    ownerPubkey: ownerPubkey,
   );
 }
 
@@ -407,8 +413,14 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
   // Wire legacy row claim callback so session setup can attribute
   // pre-multi-account drafts/clips to the current user.
   service.onClaimLegacyRows = (String userPubkey) async {
-    await db.draftsDao.claimLegacyRows(userPubkey);
-    await db.clipsDao.claimLegacyRows(userPubkey);
+    await db.draftsDao.claimLegacyRows(
+      userPubkey,
+      sourceOwnerPubkey: DraftStorageService.anonymousOwnerPubkey,
+    );
+    await db.clipsDao.claimLegacyRows(
+      userPubkey,
+      sourceOwnerPubkey: DraftStorageService.anonymousOwnerPubkey,
+    );
   };
 
   return service;

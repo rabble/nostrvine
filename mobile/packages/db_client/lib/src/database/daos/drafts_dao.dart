@@ -239,15 +239,23 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
     )..where((t) => t.ownerPubkey.equals(userPubkey))).go();
   }
 
-  /// Claim legacy drafts (NULL ownerPubkey) for [ownerPubkey].
+  /// Claim legacy drafts (NULL ownerPubkey) or rows owned by the optional
+  /// [sourceOwnerPubkey] marker for [newOwnerPubkey].
   ///
   /// Called during session setup so that pre-multi-account drafts are
-  /// attributed to the user who created them and stop being visible
-  /// to other accounts via the `_ownedOrLegacy` filter.
-  Future<int> claimLegacyRows(String ownerPubkey) {
-    return (update(drafts)..where((t) => t.ownerPubkey.isNull())).write(
-      DraftsCompanion(ownerPubkey: Value(ownerPubkey)),
-    );
+  /// attributed to the user who created them and signed-out recorder drafts
+  /// are claimed by the next successful sign-in.
+  Future<int> claimLegacyRows(
+    String newOwnerPubkey, {
+    String? sourceOwnerPubkey,
+  }) {
+    return (update(drafts)..where(
+          (t) => sourceOwnerPubkey == null
+              ? t.ownerPubkey.isNull()
+              : t.ownerPubkey.isNull() |
+                    t.ownerPubkey.equals(sourceOwnerPubkey),
+        ))
+        .write(DraftsCompanion(ownerPubkey: Value(newOwnerPubkey)));
   }
 
   /// Check if a filename is referenced by any draft's

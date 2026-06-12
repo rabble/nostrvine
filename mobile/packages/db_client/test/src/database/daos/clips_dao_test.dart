@@ -1180,6 +1180,7 @@ void main() {
       const pubkeyB =
           'bbbb2222bbbb2222bbbb2222bbbb2222'
           'bbbb2222bbbb2222bbbb2222bbbb2222';
+      const anonymousOwner = '__anonymous_offline_draft__';
 
       test('claims NULL-owner rows for the given pubkey', () async {
         await dao.upsertClip(
@@ -1250,6 +1251,52 @@ void main() {
         );
 
         await dao.claimLegacyRows(pubkeyA);
+
+        final clipsB = await dao.getAllClips(ownerPubkey: pubkeyB);
+        expect(clipsB, isEmpty);
+      });
+
+      test(
+        'anonymous rows do not leak to signed-in owners before claim',
+        () async {
+          await dao.upsertClip(
+            id: 'clip_anonymous',
+            orderIndex: 0,
+            durationMs: 1000,
+            recordedAt: DateTime(2023, 11, 14, 10),
+            filePath: 'anonymous.mp4',
+            thumbnailPath: 'anonymous.jpeg',
+            data: '{}',
+            ownerPubkey: anonymousOwner,
+          );
+
+          final clipsB = await dao.getAllClips(ownerPubkey: pubkeyB);
+
+          expect(clipsB, isEmpty);
+        },
+      );
+
+      test('claims anonymous rows for the next signed-in owner', () async {
+        await dao.upsertClip(
+          id: 'clip_anonymous',
+          orderIndex: 0,
+          durationMs: 1000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'anonymous.mp4',
+          thumbnailPath: 'anonymous.jpeg',
+          data: '{}',
+          ownerPubkey: anonymousOwner,
+        );
+
+        final claimed = await dao.claimLegacyRows(
+          pubkeyA,
+          sourceOwnerPubkey: anonymousOwner,
+        );
+
+        expect(claimed, equals(1));
+        final clipsA = await dao.getAllClips(ownerPubkey: pubkeyA);
+        expect(clipsA.map((clip) => clip.id), contains('clip_anonymous'));
+        expect(clipsA.single.ownerPubkey, equals(pubkeyA));
 
         final clipsB = await dao.getAllClips(ownerPubkey: pubkeyB);
         expect(clipsB, isEmpty);

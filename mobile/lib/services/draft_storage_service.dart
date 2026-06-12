@@ -30,6 +30,13 @@ class DraftStorageService {
   /// with this owner and queries filter by it (plus legacy NULL rows).
   final String? ownerPubkey;
 
+  /// Owner marker for drafts captured before a user is signed in.
+  ///
+  /// Do not store new signed-out drafts as NULL: NULL is the legacy migration
+  /// shape that signed-in services intentionally claim for backward
+  /// compatibility.
+  static const anonymousOwnerPubkey = '__anonymous_offline_draft__';
+
   static const String _storageKey = 'vine_drafts';
 
   /// Migrate drafts from SharedPreferences to Drift database.
