@@ -154,6 +154,12 @@ class _ProfileSetupScreenViewState
   final _nip05Controller = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
+  static const _kInputBorder = UnderlineInputBorder(
+    borderRadius: BorderRadius.zero,
+    borderSide: BorderSide(color: VineTheme.neutral10),
+  );
+  static const _kHintStyle = TextStyle(color: VineTheme.lightText);
+
   // Focus nodes for tracking field focus state
   final _nameFocusNode = FocusNode();
   final _bioFocusNode = FocusNode();
@@ -798,40 +804,12 @@ class _ProfileSetupScreenViewState
                                     color: VineTheme.onSurfaceMuted,
                                     fontSize: 12,
                                   ),
-                                  hintStyle: const TextStyle(
-                                    color: VineTheme.lightText,
-                                  ),
-                                  border: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  enabledBorder: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  focusedBorder: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  errorBorder: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  focusedErrorBorder:
-                                      const UnderlineInputBorder(
-                                        borderRadius: BorderRadius.zero,
-                                        borderSide: BorderSide(
-                                          color: VineTheme.neutral10,
-                                        ),
-                                      ),
+                                  hintStyle: _kHintStyle,
+                                  border: _kInputBorder,
+                                  enabledBorder: _kInputBorder,
+                                  focusedBorder: _kInputBorder,
+                                  errorBorder: _kInputBorder,
+                                  focusedErrorBorder: _kInputBorder,
                                   contentPadding: const EdgeInsets.all(16),
                                 ),
                                 textInputAction: TextInputAction.next,
@@ -883,40 +861,12 @@ class _ProfileSetupScreenViewState
                                 decoration: InputDecoration(
                                   isCollapsed: true,
                                   hintText: context.l10n.profileSetupBioHint,
-                                  hintStyle: const TextStyle(
-                                    color: VineTheme.lightText,
-                                  ),
-                                  border: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  enabledBorder: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  focusedBorder: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  errorBorder: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  focusedErrorBorder:
-                                      const UnderlineInputBorder(
-                                        borderRadius: BorderRadius.zero,
-                                        borderSide: BorderSide(
-                                          color: VineTheme.neutral10,
-                                        ),
-                                      ),
+                                  hintStyle: _kHintStyle,
+                                  border: _kInputBorder,
+                                  enabledBorder: _kInputBorder,
+                                  focusedBorder: _kInputBorder,
+                                  errorBorder: _kInputBorder,
+                                  focusedErrorBorder: _kInputBorder,
                                   contentPadding: const EdgeInsets.all(16),
                                   counterText: '',
                                 ),
@@ -954,40 +904,12 @@ class _ProfileSetupScreenViewState
                                   isCollapsed: true,
                                   hintText:
                                       context.l10n.profileSetupWebsiteHint,
-                                  hintStyle: const TextStyle(
-                                    color: VineTheme.lightText,
-                                  ),
-                                  border: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  enabledBorder: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  focusedBorder: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  errorBorder: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  focusedErrorBorder:
-                                      const UnderlineInputBorder(
-                                        borderRadius: BorderRadius.zero,
-                                        borderSide: BorderSide(
-                                          color: VineTheme.neutral10,
-                                        ),
-                                      ),
+                                  hintStyle: _kHintStyle,
+                                  border: _kInputBorder,
+                                  enabledBorder: _kInputBorder,
+                                  focusedBorder: _kInputBorder,
+                                  errorBorder: _kInputBorder,
+                                  focusedErrorBorder: _kInputBorder,
                                   contentPadding: const EdgeInsets.all(16),
                                 ),
                                 keyboardType: TextInputType.url,
@@ -1060,47 +982,12 @@ class _ProfileSetupScreenViewState
                                           hintStyle: const TextStyle(
                                             color: VineTheme.onSurfaceMuted,
                                           ),
-                                          border: const UnderlineInputBorder(
-                                            borderRadius: BorderRadius.zero,
-                                            borderSide: BorderSide(
-                                              color: VineTheme.neutral10,
-                                            ),
-                                          ),
-                                          enabledBorder:
-                                              const UnderlineInputBorder(
-                                                borderRadius: BorderRadius.zero,
-                                                borderSide: BorderSide(
-                                                  color: VineTheme.neutral10,
-                                                ),
-                                              ),
-                                          disabledBorder:
-                                              const UnderlineInputBorder(
-                                                borderRadius: BorderRadius.zero,
-                                                borderSide: BorderSide(
-                                                  color: VineTheme.neutral10,
-                                                ),
-                                              ),
-                                          focusedBorder:
-                                              const UnderlineInputBorder(
-                                                borderRadius: BorderRadius.zero,
-                                                borderSide: BorderSide(
-                                                  color: VineTheme.neutral10,
-                                                ),
-                                              ),
-                                          errorBorder:
-                                              const UnderlineInputBorder(
-                                                borderRadius: BorderRadius.zero,
-                                                borderSide: BorderSide(
-                                                  color: VineTheme.neutral10,
-                                                ),
-                                              ),
-                                          focusedErrorBorder:
-                                              const UnderlineInputBorder(
-                                                borderRadius: BorderRadius.zero,
-                                                borderSide: BorderSide(
-                                                  color: VineTheme.neutral10,
-                                                ),
-                                              ),
+                                          border: _kInputBorder,
+                                          enabledBorder: _kInputBorder,
+                                          disabledBorder: _kInputBorder,
+                                          focusedBorder: _kInputBorder,
+                                          errorBorder: _kInputBorder,
+                                          focusedErrorBorder: _kInputBorder,
                                           contentPadding: const EdgeInsets.all(
                                             16,
                                           ),
