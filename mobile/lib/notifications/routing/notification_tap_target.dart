@@ -25,7 +25,12 @@ sealed class NotificationTapTarget extends Equatable {
 ///
 /// The executor owns resolving the concrete route id (preferring a stable
 /// NIP-33 addressable id, otherwise walking the target event to its root
-/// video) and the fallback when that resolution fails.
+/// video) and the fallback when that resolution fails. That fallback applies
+/// only to the event-id walk: a stable addressable id is routed to directly,
+/// and an unfetchable video then intentionally surfaces its failure at the
+/// destination (the video detail error state for push taps, an in-place
+/// snackbar for in-app row taps) rather than rerouting to profile/inbox —
+/// see #5079.
 class OpenVideoTarget extends NotificationTapTarget {
   const OpenVideoTarget({required this.autoOpenComments});
 
