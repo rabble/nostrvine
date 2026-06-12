@@ -37,26 +37,28 @@ object DivineCameraLog {
 
     // android.util.Log-shaped overloads so existing `Log.x(TAG, ...)` call
     // sites forward to the bridge with a mechanical rename. The tag becomes
-    // the entry name; a throwable is appended to the message.
+    // the entry name. Logcat keeps the full throwable stack trace; Dart gets a
+    // concise throwable summary because MethodChannel payloads stay structured.
     fun d(tag: String, message: String, tr: Throwable? = null) =
-        debug(tr?.let { "$message: $it" } ?: message, name = tag)
+        emit("debug", message, tag, tr)
 
     fun i(tag: String, message: String, tr: Throwable? = null) =
-        info(tr?.let { "$message: $it" } ?: message, name = tag)
+        emit("info", message, tag, tr)
 
     fun w(tag: String, message: String, tr: Throwable? = null) =
-        warning(tr?.let { "$message: $it" } ?: message, name = tag)
+        emit("warning", message, tag, tr)
 
     fun e(tag: String, message: String, tr: Throwable? = null) =
-        error(tr?.let { "$message: $it" } ?: message, name = tag)
+        emit("error", message, tag, tr)
 
-    private fun emit(level: String, message: String, name: String) {
+    private fun emit(level: String, message: String, name: String, tr: Throwable? = null) {
         // Keep the logcat fallback so on-device debugging is unchanged.
         when (level) {
-            "error" -> Log.e(name, message)
-            "warning" -> Log.w(name, message)
-            else -> Log.d(name, message)
+            "error" -> if (tr != null) Log.e(name, message, tr) else Log.e(name, message)
+            "warning" -> if (tr != null) Log.w(name, message, tr) else Log.w(name, message)
+            "info" -> if (tr != null) Log.i(name, message, tr) else Log.i(name, message)
+            else -> if (tr != null) Log.d(name, message, tr) else Log.d(name, message)
         }
-        sink?.invoke(level, message, name)
+        sink?.invoke(level, tr?.let { "$message: $it" } ?: message, name)
     }
 }
