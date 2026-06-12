@@ -44,7 +44,7 @@ class CommentsSurfacePerformanceTelemetry {
       metrics: {
         AnalyticsParam.itemCount: itemCount,
         AnalyticsParam.hasMore: hasMore,
-        'sort_mode': sortMode,
+        AnalyticsParam.sortMode: sortMode,
       },
     );
   }

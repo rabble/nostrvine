@@ -35,7 +35,7 @@ void main() {
           timestamp: DateTime.now(),
         );
 
-        expect(record.source, equals('route'));
+        expect(record.source, equals(PageLoadSource.route));
         expect(record.result, isNull);
       });
 
@@ -122,7 +122,7 @@ void main() {
             timestamp: startedAt,
             contentVisibleMs: 80,
             result: 'dismissed',
-            source: 'surface',
+            source: PageLoadSource.surface,
           ),
         );
         history.addOrUpdate(
@@ -132,13 +132,13 @@ void main() {
             contentVisibleMs: 60,
             dataLoadedMs: 420,
             result: 'success',
-            source: 'surface',
+            source: PageLoadSource.surface,
           ),
         );
 
         final recent = history.getRecent(2);
         expect(recent, hasLength(2));
-        expect(recent.first.source, equals('surface'));
+        expect(recent.first.source, equals(PageLoadSource.surface));
         expect(recent.first.result, equals('success'));
         expect(recent.last.result, equals('dismissed'));
       });
@@ -158,7 +158,7 @@ void main() {
             timestamp: now.subtract(const Duration(seconds: 10)),
             contentVisibleMs: 80,
             result: 'dismissed',
-            source: 'surface',
+            source: PageLoadSource.surface,
           ),
         );
 
@@ -171,7 +171,7 @@ void main() {
         );
 
         final routeRecords = history.records
-            .where((record) => record.source == 'route')
+            .where((record) => record.source == PageLoadSource.route)
             .toList();
         expect(routeRecords, hasLength(1));
         expect(routeRecords.single.screenName, equals('home'));
@@ -298,13 +298,13 @@ void main() {
             timestamp: DateTime.now(),
             dataLoadedMs: 3500,
             result: 'success',
-            source: 'surface',
+            source: PageLoadSource.surface,
           ),
         );
 
         final slowest = history.getSlowest(1);
         expect(slowest.single.screenName, equals('comments_sheet'));
-        expect(slowest.single.source, equals('surface'));
+        expect(slowest.single.source, equals(PageLoadSource.surface));
         expect(slowest.single.result, equals('success'));
       });
 
@@ -315,7 +315,7 @@ void main() {
             timestamp: DateTime.now(),
             contentVisibleMs: 75,
             result: 'dismissed',
-            source: 'surface',
+            source: PageLoadSource.surface,
           ),
         );
         history.addOrUpdate(

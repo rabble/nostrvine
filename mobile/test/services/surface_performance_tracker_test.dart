@@ -72,7 +72,7 @@ void main() {
         metrics: {
           AnalyticsParam.itemCount: 10,
           AnalyticsParam.hasMore: true,
-          'sort_mode': DateTime(2026),
+          AnalyticsParam.sortMode: DateTime(2026),
         },
       );
       await tracker.completeSurfaceLoad(
@@ -121,7 +121,7 @@ void main() {
       expect(record.contentVisibleMs, 90);
       expect(record.dataLoadedMs, 3250);
       expect(record.result, SurfaceLoadResult.success);
-      expect(record.source, 'surface');
+      expect(record.source, PageLoadSource.surface);
       expect(record.dataMetrics, {
         AnalyticsParam.slowBucket: '3_5s',
         AnalyticsParam.entryPoint: 'feed_button',

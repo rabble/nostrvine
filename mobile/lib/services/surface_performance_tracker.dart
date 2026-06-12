@@ -22,7 +22,7 @@ const Set<String> _safeSurfaceParamKeys = {
   AnalyticsParam.itemCount,
   AnalyticsParam.hasMore,
   AnalyticsParam.featureFlag,
-  'sort_mode',
+  AnalyticsParam.sortMode,
 };
 
 /// Tracks perceived load performance for user-visible surfaces.
@@ -159,7 +159,7 @@ class SurfacePerformanceTracker {
         contentVisibleMs: visibleMs >= 0 ? visibleMs : null,
         dataLoadedMs: dataMs >= 0 ? dataMs : null,
         result: result,
-        source: 'surface',
+        source: PageLoadSource.surface,
         dataMetrics: {
           AnalyticsParam.slowBucket: slowBucket,
           ...session.params,

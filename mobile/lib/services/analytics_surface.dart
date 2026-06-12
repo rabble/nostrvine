@@ -69,6 +69,7 @@ abstract final class AnalyticsParam {
   static const initialCount = 'initial_count';
   static const hasMore = 'has_more';
   static const featureFlag = 'feature_flag';
+  static const sortMode = 'sort_mode';
 }
 
 abstract final class SurfaceLoadResult {

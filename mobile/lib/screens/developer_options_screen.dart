@@ -29,7 +29,7 @@ Color _getSpeedColor(PageLoadRecord record) {
 }
 
 String _recordTitle(PageLoadRecord record) {
-  if (record.source == 'route') return record.screenName;
+  if (record.source == PageLoadSource.route) return record.screenName;
   return '${record.screenName} (${record.source})';
 }
 

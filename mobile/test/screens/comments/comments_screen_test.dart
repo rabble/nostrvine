@@ -275,7 +275,7 @@ void main() {
           );
           expect(
             sink.events.single.parameters,
-            containsPair('sort_mode', 'topEngagement'),
+            containsPair(AnalyticsParam.sortMode, 'topEngagement'),
           );
         },
       );
@@ -317,7 +317,7 @@ void main() {
         );
         expect(
           sink.events.single.parameters,
-          containsPair('sort_mode', 'oldest'),
+          containsPair(AnalyticsParam.sortMode, 'oldest'),
         );
       });
 

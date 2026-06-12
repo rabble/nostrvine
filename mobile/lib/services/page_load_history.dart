@@ -3,6 +3,11 @@
 
 import 'dart:collection';
 
+abstract final class PageLoadSource {
+  static const route = 'route';
+  static const surface = 'surface';
+}
+
 /// A single page load performance record.
 class PageLoadRecord {
   PageLoadRecord({
@@ -11,7 +16,7 @@ class PageLoadRecord {
     this.contentVisibleMs,
     this.dataLoadedMs,
     this.result,
-    this.source = 'route',
+    this.source = PageLoadSource.route,
     this.dataMetrics = const {},
   });
 
@@ -72,7 +77,7 @@ class PageLoadHistory {
 
   /// Find a recent record for this screen that doesn't have dataLoadedMs yet.
   PageLoadRecord? _findRecentRecord(PageLoadRecord candidate) {
-    if (candidate.source != 'route') return null;
+    if (candidate.source != PageLoadSource.route) return null;
 
     // Search from newest to oldest (end of queue)
     for (final record in _records.toList().reversed) {
