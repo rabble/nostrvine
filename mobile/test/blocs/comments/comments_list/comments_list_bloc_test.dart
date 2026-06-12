@@ -215,6 +215,70 @@ void main() {
           expect(b.state.hasMoreContent, isTrue);
         },
       );
+
+      test('starts live watch after initial load populates comments', () async {
+        final loadCompleter = Completer<CommentThread>();
+        final comment = makeComment(validId('c1'));
+        when(
+          () => mockCommentsRepository.loadComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => loadCompleter.future);
+
+        final bloc = createBloc();
+        addTearDown(bloc.close);
+        bloc.add(const CommentsLoadRequested());
+
+        await expectLater(
+          bloc.stream,
+          emits(
+            isA<CommentsListState>().having(
+              (s) => s.status,
+              'status',
+              CommentsStatus.loading,
+            ),
+          ),
+        );
+        verifyNever(
+          () => mockCommentsRepository.watchComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            since: any(named: 'since'),
+            onEose: any(named: 'onEose'),
+          ),
+        );
+
+        loadCompleter.complete(
+          CommentThread(
+            rootEventId: validId('root'),
+            comments: [comment],
+            totalCount: 1,
+            commentCache: {comment.id: comment},
+          ),
+        );
+
+        await expectLater(
+          bloc.stream,
+          emits(
+            isA<CommentsListState>()
+                .having((s) => s.status, 'status', CommentsStatus.success)
+                .having((s) => s.commentsById.length, 'comment count', 1),
+          ),
+        );
+        verify(
+          () => mockCommentsRepository.watchComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            since: any(named: 'since'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).called(1);
+      });
     });
 
     group('CommentsLoadMoreRequested', () {

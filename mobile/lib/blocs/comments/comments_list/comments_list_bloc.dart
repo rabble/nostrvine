@@ -112,7 +112,6 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
         isBackfillComplete: false,
       ),
     );
-    _startWatchingComments();
 
     try {
       final thread = await _commentsRepository.loadComments(
@@ -142,6 +141,7 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
           replyCountsByCommentId: computeReplyCounts(commentsById),
         ),
       );
+      _startWatchingComments();
     } on CommentsRepositoryException catch (e, stackTrace) {
       // *FailedException + relay timeouts are matrix-NO (API/domain +
       // Network/IO). addError logs without flagging Reportable so they stay
