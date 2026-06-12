@@ -1762,7 +1762,11 @@ class VideoEventPublisher {
       return false;
     }
 
-    // Optimistically update local cache
+    // Publish to relays before updating local cache. A WebSocket send is not
+    // enough here; rejected subtitle republishes must not appear locally.
+    final published = await _publishEventToNostr(event);
+    if (!published) return false;
+
     try {
       _videoEventService?.addVideoEvent(VideoEvent.fromNostrEvent(event));
     } catch (e) {
@@ -1773,8 +1777,7 @@ class VideoEventPublisher {
       );
     }
 
-    // Publish to relays
-    return _publishEventToNostr(event);
+    return true;
   }
 
   /// Check if a URL is a valid HTTP/HTTPS URL (not a local file path)

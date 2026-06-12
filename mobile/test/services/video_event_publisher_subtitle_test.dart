@@ -446,7 +446,7 @@ void main() {
       );
     });
 
-    test('optimistically updates local cache', () async {
+    test('updates local cache after relay confirms acceptance', () async {
       when(
         () => mockAuthService.createAndSignEvent(
           kind: any(named: 'kind'),
@@ -477,6 +477,40 @@ void main() {
       );
 
       verify(() => mockVideoEventService.addVideoEvent(any())).called(1);
+    });
+
+    test('does not update local cache when relay rejects republish', () async {
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => createSignedEvent(existingTags));
+
+      when(
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments.first as Event).id,
+          acceptedBy: const [],
+          rejectedBy: const {
+            'wss://relay.divine.video': 'blocked: event rejected by policy',
+          },
+          noResponseFrom: const [],
+        ),
+      );
+
+      final result = await publisher.republishWithSubtitles(
+        existingEvent: existingEvent,
+        textTrackRef: textTrackRef,
+      );
+
+      expect(result, isFalse);
+      verifyNever(() => mockVideoEventService.addVideoEvent(any()));
     });
   });
 }
