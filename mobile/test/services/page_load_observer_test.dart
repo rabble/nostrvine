@@ -189,7 +189,7 @@ void main() {
           onGenerateRoute: (settings) {
             if (settings.name == '/video/123') {
               return MaterialPageRoute<void>(
-                settings: const RouteSettings(name: 'video_detail'),
+                settings: const RouteSettings(name: 'video'),
                 builder: (_) => const Scaffold(body: Text('Video Detail')),
               );
             }
@@ -209,11 +209,57 @@ void main() {
       );
       expect(
         sink.screenViews.last.parameters,
-        containsPair(AnalyticsParam.routeName, 'video_detail'),
+        containsPair(AnalyticsParam.routeName, 'video'),
       );
       expect(
         sink.screenViews.last.parameters,
         containsPair(AnalyticsParam.entryPoint, 'navigation'),
+      );
+    });
+
+    testWidgets('normalizes app route names before logging screen views', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          navigatorObservers: [observer],
+          home: const Scaffold(body: Text('Home')),
+          onGenerateRoute: (settings) {
+            final routeName = switch (settings.name) {
+              '/developer-options' => 'developer-options',
+              '/original-sound' => 'originalSound',
+              _ => null,
+            };
+            if (routeName == null) {
+              return null;
+            }
+            return MaterialPageRoute<void>(
+              settings: RouteSettings(name: routeName),
+              builder: (_) => Scaffold(body: Text(settings.name!)),
+            );
+          },
+        ),
+      );
+
+      final context = tester.element(find.text('Home'));
+      Navigator.of(context).pushNamed('/developer-options');
+      await tester.pumpAndSettle();
+      Navigator.of(context).pushNamed('/original-sound');
+      await tester.pumpAndSettle();
+
+      expect(
+        sink.screenViews.map((event) => event.screenName),
+        containsAllInOrder(['developer_options', 'original_sound']),
+      );
+      expect(
+        sink.screenViews.map((event) => event.screenName),
+        isNot(contains('developer-options')),
+      );
+      expect(
+        sink.screenViews.map((event) => event.screenName),
+        isNot(contains('originalSound')),
       );
     });
 

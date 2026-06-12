@@ -23,13 +23,35 @@ abstract final class AnalyticsSurface {
   }
 
   static String sanitizeName(String value) {
-    final normalized = value
+    final camelSeparated = value.trim().replaceAllMapped(
+      RegExp('([a-z0-9])([A-Z])'),
+      (match) => '${match.group(1)}_${match.group(2)}',
+    );
+    final normalized = camelSeparated
         .trim()
         .replaceAll(RegExp('[^A-Za-z0-9_]+'), '_')
         .replaceAll(RegExp('_+'), '_')
         .replaceAll(RegExp(r'^_+|_+$'), '')
         .toLowerCase();
     return normalized.isEmpty ? unknownRoute : normalized;
+  }
+
+  static String routeSurfaceName(String? routeName) {
+    if (routeName == null || routeName.trim().isEmpty) {
+      return unknownRoute;
+    }
+    if (routeName.trim() == '/') {
+      return homeFeed;
+    }
+
+    final sanitized = sanitizeName(routeName);
+    return switch (sanitized) {
+      'home' => homeFeed,
+      'video' => videoDetail,
+      'video_recorder' => videoRecorder,
+      'video_editor' => videoEditor,
+      _ => sanitized,
+    };
   }
 }
 

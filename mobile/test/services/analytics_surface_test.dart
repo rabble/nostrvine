@@ -23,6 +23,7 @@ void main() {
     test('sanitizeName normalizes route and surface names', () {
       expect(AnalyticsSurface.sanitizeName('video-detail'), 'video_detail');
       expect(AnalyticsSurface.sanitizeName('/settings'), 'settings');
+      expect(AnalyticsSurface.sanitizeName('originalSound'), 'original_sound');
       expect(AnalyticsSurface.sanitizeName('settings/'), 'settings');
       expect(AnalyticsSurface.sanitizeName('__settings__'), 'settings');
       expect(AnalyticsSurface.sanitizeName('  Home Feed  '), 'home_feed');
@@ -33,6 +34,38 @@ void main() {
       expect(AnalyticsSurface.sanitizeName(''), AnalyticsSurface.unknownRoute);
       expect(
         AnalyticsSurface.sanitizeName('///'),
+        AnalyticsSurface.unknownRoute,
+      );
+    });
+
+    test('routeSurfaceName maps app route names to semantic surfaces', () {
+      expect(AnalyticsSurface.routeSurfaceName('/'), AnalyticsSurface.homeFeed);
+      expect(
+        AnalyticsSurface.routeSurfaceName('home'),
+        AnalyticsSurface.homeFeed,
+      );
+      expect(
+        AnalyticsSurface.routeSurfaceName('video'),
+        AnalyticsSurface.videoDetail,
+      );
+      expect(
+        AnalyticsSurface.routeSurfaceName('video-recorder'),
+        AnalyticsSurface.videoRecorder,
+      );
+      expect(
+        AnalyticsSurface.routeSurfaceName('video-editor'),
+        AnalyticsSurface.videoEditor,
+      );
+      expect(
+        AnalyticsSurface.routeSurfaceName('developer-options'),
+        'developer_options',
+      );
+      expect(
+        AnalyticsSurface.routeSurfaceName('originalSound'),
+        'original_sound',
+      );
+      expect(
+        AnalyticsSurface.routeSurfaceName(null),
         AnalyticsSurface.unknownRoute,
       );
     });

@@ -20,12 +20,13 @@ class PageLoadObserver extends NavigatorObserver {
       return;
     }
 
-    final screenName = _screenName(route);
+    final routeName = _routeName(route);
+    final screenName = AnalyticsSurface.routeSurfaceName(route.settings.name);
     _analytics.startScreenLoad(screenName);
     _analytics.trackScreenView(
       screenName,
       params: {
-        AnalyticsParam.routeName: screenName,
+        AnalyticsParam.routeName: routeName,
         AnalyticsParam.entryPoint: 'navigation',
       },
     );
@@ -49,7 +50,7 @@ class PageLoadObserver extends NavigatorObserver {
       return;
     }
 
-    final screenName = _screenName(route);
+    final screenName = AnalyticsSurface.routeSurfaceName(route.settings.name);
     _analytics.endScreen(screenName);
 
     Log.debug(
@@ -59,11 +60,14 @@ class PageLoadObserver extends NavigatorObserver {
     );
   }
 
-  String _screenName(Route<dynamic> route) {
+  String _routeName(Route<dynamic> route) {
     final routeName = route.settings.name;
     if (routeName == null || routeName.isEmpty) {
       return AnalyticsSurface.unknownRoute;
     }
-    return routeName;
+    if (routeName.trim() == '/') {
+      return 'root';
+    }
+    return AnalyticsSurface.sanitizeName(routeName);
   }
 }
