@@ -213,7 +213,7 @@ class CameraController: NSObject {
             }
         }
         
-        print("[DivineCameraController] Camera availability: front=\(hasFrontCamera), " +
+        DivineCameraLog.shared.debug("[DivineCameraController] Camera availability: front=\(hasFrontCamera), " +
               "frontUltraWide=\(hasFrontUltraWideCamera), back=\(hasBackCamera), " +
               "ultraWide=\(hasUltraWideCamera), telephoto=\(hasTelephotoCamera), macro=\(hasMacroCamera)")
         
@@ -228,7 +228,7 @@ class CameraController: NSObject {
             let hasDual = AVCaptureDevice.default(
                 .builtInDualCamera, for: .video, position: .back
             ) != nil
-            print("[DivineCameraController] Virtual devices: " +
+            DivineCameraLog.shared.debug("[DivineCameraController] Virtual devices: " +
                   "triple=\(hasTriple), dualWide=\(hasDualWide), dual=\(hasDual)")
         }
     }
@@ -278,10 +278,16 @@ class CameraController: NSObject {
                 options: [.defaultToSpeaker, .allowBluetoothA2DP]
             )
             try audioSession.setActive(true)
-            print("[DivineCameraController] Audio session configured: A2DP for playback, built-in mic for recording")
+            DivineCameraLog.shared.info(
+                "Audio session configured: A2DP playback, built-in mic for recording",
+                name: "DivineCamera.AudioSession"
+            )
             return true
         } catch {
-            print("[DivineCameraController] Failed to configure audio session: \(error.localizedDescription)")
+            DivineCameraLog.shared.error(
+                "Failed to configure audio session: \(error.localizedDescription)",
+                name: "DivineCamera.AudioSession"
+            )
             return false
         }
     }
@@ -314,7 +320,10 @@ class CameraController: NSObject {
             // accessor so cross-queue reads from `videoOutputQueue`
             // (captureOutput) see a consistent value.
             self.audioInterrupted = true
-            print("[DivineCameraController] AVAudioSession interruption began")
+            DivineCameraLog.shared.warning(
+                "AVAudioSession interruption began — audio capture paused",
+                name: "DivineCamera.AudioSession"
+            )
         case .ended:
             let shouldResume: Bool = {
                 guard let raw = info[AVAudioSessionInterruptionOptionKey] as? UInt else {
@@ -322,7 +331,10 @@ class CameraController: NSObject {
                 }
                 return AVAudioSession.InterruptionOptions(rawValue: raw).contains(.shouldResume)
             }()
-            print("[DivineCameraController] AVAudioSession interruption ended (shouldResume=\(shouldResume))")
+            DivineCameraLog.shared.info(
+                "AVAudioSession interruption ended (shouldResume=\(shouldResume))",
+                name: "DivineCamera.AudioSession"
+            )
             // Always try to recover — even when shouldResume is false the
             // user can still press record again and we want a working session.
             // attachAudioToSessionIfNeeded() must run on sessionQueue (it
@@ -338,7 +350,10 @@ class CameraController: NSObject {
                 if self.attachAudioToSessionIfNeeded() {
                     self.audioInterrupted = false
                 } else {
-                    print("[DivineCameraController] Audio recovery failed; keeping audioInterrupted=true")
+                    DivineCameraLog.shared.error(
+                        "Audio recovery failed; next recording continues without audio",
+                        name: "DivineCamera.AudioSession"
+                    )
                 }
             }
         @unknown default:
@@ -536,11 +551,17 @@ class CameraController: NSObject {
         if getDeviceForLensType(currentLensType) == nil {
             // Try back camera first, then front
             if hasBackCamera {
-                print("[DivineCameraController] Requested lens \(lens) not available, falling back to back camera")
+                DivineCameraLog.shared.warning(
+                    "Requested lens \(lens) not available, falling back to back camera",
+                    name: "DivineCamera.Lifecycle"
+                )
                 currentLensType = "back"
                 currentLens = .back
             } else if hasFrontCamera {
-                print("[DivineCameraController] Requested lens \(lens) not available, falling back to front camera")
+                DivineCameraLog.shared.warning(
+                    "Requested lens \(lens) not available, falling back to front camera",
+                    name: "DivineCamera.Lifecycle"
+                )
                 currentLensType = "front"
                 currentLens = .front
             }
@@ -630,7 +651,10 @@ class CameraController: NSObject {
                 if session.canSetSessionPreset(preset) {
                     session.sessionPreset = preset
                     if preset != videoQualityPreset {
-                        print("[DivineCameraController] Requested preset not supported, falling back to: \(preset.rawValue)")
+                        DivineCameraLog.shared.warning(
+                            "Requested capture preset not supported, falling back to: \(preset.rawValue)",
+                            name: "DivineCamera.Lifecycle"
+                        )
                     }
                     presetSet = true
                     break
@@ -638,7 +662,10 @@ class CameraController: NSObject {
             }
             
             if !presetSet {
-                print("[DivineCameraController] Warning: Could not set any preferred preset")
+                DivineCameraLog.shared.warning(
+                    "Could not set any preferred capture preset",
+                    name: "DivineCamera.Lifecycle"
+                )
             }
         } catch {
             completion(nil, "Failed to create video input: \(error.localizedDescription)")
@@ -667,11 +694,11 @@ class CameraController: NSObject {
         if session.canAddOutput(videoOutput) {
             session.addOutput(videoOutput)
             self.videoOutput = videoOutput
-            print("DivineCamera: Video output added successfully")
+            DivineCameraLog.shared.debug("DivineCamera: Video output added successfully")
             
             // Set video orientation to portrait
             if let connection = videoOutput.connection(with: .video) {
-                print("DivineCamera: Video connection established")
+                DivineCameraLog.shared.debug("DivineCamera: Video connection established")
                 if connection.isVideoOrientationSupported {
                     connection.videoOrientation = .portrait
                 }
@@ -684,7 +711,7 @@ class CameraController: NSObject {
                 }
             }
         } else {
-            print("DivineCamera: ERROR - Cannot add video output to session!")
+            DivineCameraLog.shared.error("DivineCamera: Cannot add video output to session", name: "DivineCamera.Setup")
         }
         
         // NOTE: AVCaptureAudioDataOutput is also added lazily in startRecording().
@@ -709,7 +736,7 @@ class CameraController: NSObject {
                 videoDevice.unlockForConfiguration()
                 currentZoom = 1.0
             } catch {
-                print("DivineCamera: Failed to set initial zoom to 1.0x: \(error.localizedDescription)")
+                DivineCameraLog.shared.warning("DivineCamera: Failed to set initial zoom to 1.0x: \(error.localizedDescription)", name: "DivineCamera.Setup")
             }
         }
         
@@ -718,11 +745,11 @@ class CameraController: NSObject {
         self.captureSession = session
         
         // Debug: Check session and connection status
-        print("DivineCamera: Session running: \(session.isRunning)")
+        DivineCameraLog.shared.debug("DivineCamera: Session running: \(session.isRunning)")
         if let connection = self.videoOutput?.connection(with: .video) {
-            print("DivineCamera: Video connection active: \(connection.isActive), enabled: \(connection.isEnabled)")
+            DivineCameraLog.shared.debug("DivineCamera: Video connection active: \(connection.isActive), enabled: \(connection.isEnabled)")
         } else {
-            print("DivineCamera: ERROR - No video connection available!")
+            DivineCameraLog.shared.error("DivineCamera: No video connection available", name: "DivineCamera.Setup")
         }
         
         // Watchdog: Check if frames are flowing after 1 second
@@ -736,7 +763,7 @@ class CameraController: NSObject {
             self.pixelBufferLock.unlock()
             
             if !hasReceivedFrames {
-                print("DivineCamera: ⚠️ WATCHDOG: No frames received after 1s - restarting session")
+                DivineCameraLog.shared.warning("DivineCamera: WATCHDOG - no frames received after 1s, restarting session", name: "DivineCamera.Setup")
                 self.sessionQueue.async { [weak self] in
                     guard let self = self, let session = self.captureSession else { return }
                     
@@ -747,17 +774,17 @@ class CameraController: NSObject {
                     self.sessionQueue.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                         guard let self = self, let session = self.captureSession else { return }
                         session.startRunning()
-                        print("DivineCamera: ✅ Session restarted by watchdog")
+                        DivineCameraLog.shared.debug("DivineCamera: ✅ Session restarted by watchdog")
                     }
                 }
             } else {
-                print("DivineCamera: ✅ Watchdog: Frames are flowing normally")
+                DivineCameraLog.shared.debug("DivineCamera: ✅ Watchdog: Frames are flowing normally")
             }
         }
         
         // Register texture after session is running
         textureId = textureRegistry.register(self)
-        print("DivineCamera: Registered texture with ID: \(textureId)")
+        DivineCameraLog.shared.debug("DivineCamera: Registered texture with ID: \(textureId)")
         
         // NOTE: AVAssetWriter (VideoToolbox) and audio stack (AudioToolbox)
         // pre-warming used to live here, but doing dlopen() on a background
@@ -854,7 +881,11 @@ class CameraController: NSObject {
                 do {
                     try session.setActive(true)
                 } catch {
-                    print("[DivineCameraController] setActive(true) on existing session failed: \(error.localizedDescription)")
+                    DivineCameraLog.shared.error(
+                        "setActive(true) on existing audio session failed: "
+                            + "\(error.localizedDescription)",
+                        name: "DivineCamera.AudioSession"
+                    )
                     return false
                 }
                 if !existing.isRunning {
@@ -886,7 +917,10 @@ class CameraController: NSObject {
         if self.audioInput == nil {
             let device = self.audioDevice ?? AVCaptureDevice.default(for: .audio)
             guard let audioDevice = device else {
-                print("DivineCamera: No audio device available, recording without audio")
+                DivineCameraLog.shared.warning(
+                    "No audio device available — recording without audio",
+                    name: "DivineCamera.Audio"
+                )
                 session.commitConfiguration()
                 return false
             }
@@ -897,12 +931,18 @@ class CameraController: NSObject {
                     session.addInput(input)
                     self.audioInput = input
                 } else {
-                    print("DivineCamera: Cannot add audio input to audio session")
+                    DivineCameraLog.shared.error(
+                        "Cannot add audio input to audio session",
+                        name: "DivineCamera.Audio"
+                    )
                     session.commitConfiguration()
                     return false
                 }
             } catch {
-                print("DivineCamera: Failed to create audio input: \(error.localizedDescription)")
+                DivineCameraLog.shared.error(
+                    "Failed to create audio input: \(error.localizedDescription)",
+                    name: "DivineCamera.Audio"
+                )
                 session.commitConfiguration()
                 return false
             }
@@ -916,7 +956,10 @@ class CameraController: NSObject {
                 session.addOutput(output)
                 self.audioOutput = output
             } else {
-                print("DivineCamera: Cannot add audio output to audio session")
+                DivineCameraLog.shared.error(
+                    "Cannot add audio output to audio session",
+                    name: "DivineCamera.Audio"
+                )
                 session.commitConfiguration()
                 return false
             }
@@ -946,16 +989,16 @@ class CameraController: NSObject {
         initializationCompletion = nil
         
         if timedOut {
-            print("DivineCamera: ⚠️ Initialization completed via timeout (frames may not be flowing)")
+            DivineCameraLog.shared.debug("DivineCamera: ⚠️ Initialization completed via timeout (frames may not be flowing)")
         } else {
-            print("DivineCamera: ✅ Initialization completed - first frame received")
+            DivineCameraLog.shared.debug("DivineCamera: ✅ Initialization completed - first frame received")
         }
         
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             var state = self.getCameraState()
             state["textureId"] = self.textureId
-            print("DivineCamera: Returning state with textureId: \(self.textureId)")
+            DivineCameraLog.shared.debug("DivineCamera: Returning state with textureId: \(self.textureId)")
             completion(state, nil)
         }
         
@@ -1022,7 +1065,7 @@ class CameraController: NSObject {
         // dimensions.width is the longer side (landscape), height is shorter
         // For portrait mode, we swap to get 9:16 ratio
         aspectRatio = CGFloat(dimensions.height) / CGFloat(dimensions.width)
-        print("Camera aspect ratio (portrait): \(aspectRatio) from dimensions: \(dimensions.height)x\(dimensions.width)")
+        DivineCameraLog.shared.debug("Camera aspect ratio (portrait): \(aspectRatio) from dimensions: \(dimensions.height)x\(dimensions.width)")
     }
     
     /// Switches to a different camera lens.
@@ -1085,7 +1128,7 @@ class CameraController: NSObject {
                                 self.videoInput = newInput
                                 self.videoDevice = newDevice
                                 self.updateCameraProperties(device: newDevice)
-                                print("[DivineCameraController] Camera switch: preset fallback to \(preset.rawValue)")
+                                DivineCameraLog.shared.debug("[DivineCameraController] Camera switch: preset fallback to \(preset.rawValue)")
                                 success = true
                                 break
                             }
@@ -1136,7 +1179,7 @@ class CameraController: NSObject {
                     newDevice.unlockForConfiguration()
                     self.currentZoom = 1.0
                 } catch {
-                    print("DivineCamera: Failed to set zoom after camera switch: \(error.localizedDescription)")
+                    DivineCameraLog.shared.warning("DivineCamera: Failed to set zoom after camera switch: \(error.localizedDescription)", name: "DivineCamera.Setup")
                 }
             }
             
@@ -1158,7 +1201,7 @@ class CameraController: NSObject {
     func setFlashMode(mode: String) -> Bool {
         guard let device = videoDevice else { return false }
         
-        print("DivineCamera: Setting flash mode: \(mode) (currentLens: \(currentLens == .front ? "front" : "back"))")
+        DivineCameraLog.shared.debug("DivineCamera: Setting flash mode: \(mode) (currentLens: \(currentLens == .front ? "front" : "back"))")
         
         // Handle screen brightness for front camera "torch" mode
         if currentLens == .front {
@@ -1173,7 +1216,7 @@ class CameraController: NSObject {
                 currentTorchMode = .off
                 isAutoFlashMode = true
                 currentFlashMode = .auto
-                print("DivineCamera: Auto flash mode enabled for front camera")
+                DivineCameraLog.shared.debug("DivineCamera: Auto flash mode enabled for front camera")
                 return true
             } else {
                 disableScreenFlash()
@@ -1203,7 +1246,7 @@ class CameraController: NSObject {
                 isAutoFlashMode = true
                 autoFlashTorchEnabled = false
                 currentFlashMode = .auto
-                print("DivineCamera: Auto flash mode enabled - will check brightness when recording starts")
+                DivineCameraLog.shared.debug("DivineCamera: Auto flash mode enabled - will check brightness when recording starts")
                 
             case "on":
                 currentFlashMode = .on
@@ -1223,7 +1266,7 @@ class CameraController: NSObject {
             device.unlockForConfiguration()
             return true
         } catch {
-            print("DivineCamera: Failed to set flash mode: \(error.localizedDescription)")
+            DivineCameraLog.shared.warning("DivineCamera: Failed to set flash mode: \(error.localizedDescription)", name: "DivineCamera.Flash")
             return false
         }
     }
@@ -1250,7 +1293,7 @@ class CameraController: NSObject {
             if let brightness = self.originalBrightness {
                 UIScreen.main.brightness = brightness
                 self.originalBrightness = nil
-                print("DivineCamera: Screen flash disabled (brightness restored)")
+                DivineCameraLog.shared.debug("DivineCamera: Screen flash disabled (brightness restored)")
             }
         }
     }
@@ -1270,7 +1313,7 @@ class CameraController: NSObject {
         // If ISO is high OR exposure time is long, it's dark (same as Android)
         let isDark = currentISO >= isoThreshold || currentExposure >= exposureThreshold
         
-        print("DivineCamera: Auto flash: ISO=\(currentISO) (threshold=\(isoThreshold)), " +
+        DivineCameraLog.shared.debug("DivineCamera: Auto flash: ISO=\(currentISO) (threshold=\(isoThreshold)), " +
               "ExposureTime=\(currentExposure * 1000)ms (threshold=\(exposureThreshold * 1000)ms) -> isDark=\(isDark)")
         return isDark
     }
@@ -1281,10 +1324,10 @@ class CameraController: NSObject {
         guard isAutoFlashMode else { return }
         
         if isEnvironmentDark() {
-            print("DivineCamera: Auto flash: Dark environment detected - enabling flash")
+            DivineCameraLog.shared.debug("DivineCamera: Auto flash: Dark environment detected - enabling flash")
             enableAutoFlashTorch()
         } else {
-            print("DivineCamera: Auto flash: Bright environment - flash not needed")
+            DivineCameraLog.shared.debug("DivineCamera: Auto flash: Bright environment - flash not needed")
         }
     }
     
@@ -1293,14 +1336,14 @@ class CameraController: NSObject {
         if currentLens == .front {
             autoFlashTorchEnabled = true
             enableScreenFlash()
-            print("DivineCamera: Auto flash: Screen flash enabled for front camera")
+            DivineCameraLog.shared.debug("DivineCamera: Auto flash: Screen flash enabled for front camera")
         } else {
             guard let device = videoDevice else {
-                print("DivineCamera: Auto flash: No video device")
+                DivineCameraLog.shared.debug("DivineCamera: Auto flash: No video device")
                 return
             }
             guard device.hasTorch else {
-                print("DivineCamera: Auto flash: Device has no torch")
+                DivineCameraLog.shared.debug("DivineCamera: Auto flash: Device has no torch")
                 return
             }
             do {
@@ -1308,13 +1351,13 @@ class CameraController: NSObject {
                 if device.isTorchModeSupported(.on) {
                     device.torchMode = .on
                     autoFlashTorchEnabled = true
-                    print("DivineCamera: Auto flash: Torch enabled for back camera")
+                    DivineCameraLog.shared.debug("DivineCamera: Auto flash: Torch enabled for back camera")
                 } else {
-                    print("DivineCamera: Auto flash: Torch mode .on not supported")
+                    DivineCameraLog.shared.debug("DivineCamera: Auto flash: Torch mode .on not supported")
                 }
                 device.unlockForConfiguration()
             } catch {
-                print("DivineCamera: Auto flash: Failed to enable torch: \(error.localizedDescription)")
+                DivineCameraLog.shared.warning("DivineCamera: Auto flash failed to enable torch: \(error.localizedDescription)", name: "DivineCamera.Flash")
             }
         }
     }
@@ -1330,11 +1373,11 @@ class CameraController: NSObject {
                     try device.lockForConfiguration()
                     if device.torchMode != .off && device.isTorchModeSupported(.off) {
                         device.torchMode = .off
-                        print("DivineCamera: Auto flash: Torch disabled for back camera")
+                        DivineCameraLog.shared.debug("DivineCamera: Auto flash: Torch disabled for back camera")
                     }
                     device.unlockForConfiguration()
                 } catch {
-                    print("DivineCamera: Auto flash: Failed to disable torch: \(error.localizedDescription)")
+                    DivineCameraLog.shared.warning("DivineCamera: Auto flash failed to disable torch: \(error.localizedDescription)", name: "DivineCamera.Flash")
                 }
             }
         } else if autoFlashTorchEnabled {
@@ -1544,7 +1587,11 @@ class CameraController: NSObject {
             // that is not worth the added complexity here.
             let audioReady = self.attachAudioToSessionIfNeeded() && !self.audioInterrupted
             if !audioReady {
-                print("[DivineCameraController] Audio not ready — recording WITHOUT audio track")
+                DivineCameraLog.shared.warning(
+                    "Audio not ready (attach failed or interrupted) — recording "
+                        + "WITHOUT audio track",
+                    name: "DivineCamera.Recording"
+                )
             }
 
             self.videoOutputQueue.async { [weak self] in
@@ -1655,7 +1702,10 @@ class CameraController: NSObject {
                     writer.add(audioInput)
                     addedAudioInput = audioInput
                 } else {
-                    print("[DivineCameraController] writer.canAdd(audioInput)=false — recording without audio")
+                    DivineCameraLog.shared.warning(
+                        "writer.canAdd(audioInput)=false — recording without audio",
+                        name: "DivineCamera.Recording"
+                    )
                 }
             }
 
@@ -1674,7 +1724,10 @@ class CameraController: NSObject {
             // Check and enable auto-flash if needed
             self.checkAndEnableAutoFlash()
 
-            print("DivineCamera: Recording started to \(outputURL.path)")
+            DivineCameraLog.shared.info(
+                "Recording started (audioTrack=\(addedAudioInput != nil))",
+                name: "DivineCamera.Recording"
+            )
 
             // Schedule max duration timer if specified
             if let maxMs = self.maxDurationMs, maxMs > 0 {
@@ -1771,17 +1824,37 @@ class CameraController: NSObject {
                             width = Int(abs(size.width))
                             height = Int(abs(size.height))
                         }
-                        
+
+                        // Definitive signal for the "clip saved without sound"
+                        // reports (#4779): inspect the finished file rather than
+                        // trusting the in-flight audioReady flag.
+                        let hasAudioTrack = !asset.tracks(withMediaType: .audio).isEmpty
+                        if hasAudioTrack {
+                            DivineCameraLog.shared.info(
+                                "Recording completed with audio track (durationMs=\(duration))",
+                                name: "DivineCamera.Recording"
+                            )
+                        } else {
+                            DivineCameraLog.shared.warning(
+                                "Recording completed WITHOUT audio track (durationMs=\(duration))",
+                                name: "DivineCamera.Recording"
+                            )
+                        }
+
                         let result: [String: Any] = [
                             "filePath": outputURL.path,
                             "durationMs": duration,
                             "width": width,
                             "height": height
                         ]
-                        
-                        print("DivineCamera: Recording completed - \(outputURL.path)")
+
                         completion(result, nil)
                     } else {
+                        DivineCameraLog.shared.error(
+                            "Recording failed: "
+                                + "\(writer.error?.localizedDescription ?? "Unknown error")",
+                            name: "DivineCamera.Recording"
+                        )
                         completion(nil, "Recording failed: \(writer.error?.localizedDescription ?? "Unknown error")")
                     }
                     
@@ -1927,6 +2000,7 @@ extension CameraController: FlutterTexture {
         defer { pixelBufferLock.unlock() }
         
         guard let pixelBuffer = pixelBufferRef else {
+            // Per-frame on cold start; console only to avoid flooding the log buffer.
             print("DivineCamera: copyPixelBuffer called but pixelBufferRef is nil")
             return nil
         }
@@ -1944,6 +2018,7 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
         if output == videoOutput {
             // Get pixel buffer from sample buffer
             guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+                // Per-frame on failure; console only to avoid flooding the log buffer.
                 print("DivineCamera: Could not get pixel buffer from sample buffer")
                 return
             }
@@ -1956,7 +2031,7 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
             pixelBufferLock.unlock()
             
             if isFirstFrame {
-                print("DivineCamera: First frame received! Pixel buffer dimensions: \(CVPixelBufferGetWidth(pixelBuffer))x\(CVPixelBufferGetHeight(pixelBuffer))")
+                DivineCameraLog.shared.debug("DivineCamera: First frame received! Pixel buffer dimensions: \(CVPixelBufferGetWidth(pixelBuffer))x\(CVPixelBufferGetHeight(pixelBuffer))")
                 
                 // Complete initialization now that we know frames are flowing
                 DispatchQueue.main.async { [weak self] in
@@ -1987,7 +2062,7 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
                 if !isWriterSessionStarted && writer.status == .writing {
                     writer.startSession(atSourceTime: timestamp)
                     isWriterSessionStarted = true
-                    print("DivineCamera: Writer session started at \(timestamp.seconds)")
+                    DivineCameraLog.shared.debug("DivineCamera: Writer session started at \(timestamp.seconds)")
                 }
                 
                 if writer.status == .writing && videoInput.isReadyForMoreMediaData {

@@ -30,14 +30,53 @@ class DivineCameraPlugin :
     private var cameraController: CameraController? = null
     private var volumeKeyHandler: VolumeKeyHandler? = null
 
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
+    // Per-instance forwarder that pushes native diagnostics over THIS engine's
+    // channel. `DivineCameraLog.sink` is a process-wide singleton, so a second
+    // FlutterEngine (e.g. the FCM background isolate that also runs
+    // GeneratedPluginRegistrant) would otherwise overwrite it and route camera
+    // logs to the wrong isolate. We re-assert this in onMethodCall — camera
+    // calls only ever reach the UI engine — so the sink always points back here.
+    private val logSink: (String, String, String) -> Unit = { level, message, name ->
+        mainHandler.post {
+            channel.invokeMethod(
+                "onNativeLog",
+                mapOf("level" to level, "message" to message, "name" to name)
+            )
+        }
+    }
+
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "divine_camera")
         channel.setMethodCallHandler(this)
         context = flutterPluginBinding.applicationContext
         textureRegistry = flutterPluginBinding.textureRegistry
+        DivineCameraLog.sink = logSink
+    }
+
+    // Session-lifecycle operations worth leaving a breadcrumb for. High-
+    // frequency calls (zoom / focus / exposure / getCameraState) are excluded
+    // on purpose so they don't flood the captured log buffer.
+    private val lifecycleMethods = setOf(
+        "initializeCamera", "disposeCamera", "switchCamera",
+        "startRecording", "stopRecording", "pausePreview", "resumePreview",
+        "setFlashMode", "setRemoteRecordControlEnabled"
+    )
+
+    private fun logLifecycleCall(call: MethodCall) {
+        if (call.method !in lifecycleMethods) return
+        val args = call.arguments
+        DivineCameraLog.debug(
+            "→ ${call.method}${if (args != null) " $args" else ""}",
+            name = "DivineCamera.Lifecycle"
+        )
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
+        // Re-claim the shared sink in case another FlutterEngine overwrote it.
+        DivineCameraLog.sink = logSink
+        logLifecycleCall(call)
         val oneShotResult = OneShotMethodResult(result)
         when (call.method) {
             "getPlatformVersion" -> {
@@ -155,6 +194,14 @@ class DivineCameraPlugin :
                 if (error != null) {
                     result.error("INIT_ERROR", error, null)
                 } else {
+                    val dict = state as? Map<*, *>
+                    DivineCameraLog.info(
+                        "Camera initialized (lens=${dict?.get("lens")}, " +
+                            "aspectRatio=${dict?.get("aspectRatio")}, " +
+                            "hasFlash=${dict?.get("hasFlash")}, " +
+                            "lenses=${dict?.get("availableLenses")})",
+                        name = "DivineCamera.Lifecycle"
+                    )
                     result.success(state)
                 }
             }
@@ -261,6 +308,11 @@ class DivineCameraPlugin :
                 if (error != null) {
                     result.error("SWITCH_ERROR", error, null)
                 } else {
+                    val dict = state as? Map<*, *>
+                    DivineCameraLog.info(
+                        "Camera switched (lens=${dict?.get("lens")})",
+                        name = "DivineCamera.Lifecycle"
+                    )
                     result.success(state)
                 }
             }
@@ -393,6 +445,11 @@ class DivineCameraPlugin :
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
+        // Only relinquish the shared sink if it still points at this instance,
+        // so a background-engine teardown can't silence the UI engine's logs.
+        if (DivineCameraLog.sink === logSink) {
+            DivineCameraLog.sink = null
+        }
         volumeKeyHandler?.release()
         volumeKeyHandler = null
         cameraController?.release()
@@ -429,6 +486,13 @@ internal class OneShotMethodResult(
 
     override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
         if (markReplied()) {
+            // Choke point for every error returned to Dart — forward it to the
+            // UnifiedLogger so the failure shows up in user bug reports. Fatal
+            // native crashes are captured separately by Crashlytics.
+            DivineCameraLog.error(
+                "$errorCode: ${errorMessage ?: ""}",
+                name = "DivineCamera.Plugin"
+            )
             delegate.error(errorCode, errorMessage, errorDetails)
         }
     }

@@ -3,6 +3,7 @@ import 'package:divine_camera/divine_camera_method_channel.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -324,6 +325,13 @@ void main() {
 
       final result = await platform.startRecording();
       expect(result, isFalse);
+
+      final logged = LogCaptureService().getRecentLogs().any(
+        (entry) =>
+            entry.level == LogLevel.error &&
+            entry.message.contains('RECORD_START_ERROR'),
+      );
+      expect(logged, isTrue);
     });
 
     test('stopRecording returns VideoRecordingResult', () async {
@@ -573,6 +581,95 @@ void main() {
             ),
         completes,
       );
+    });
+  });
+
+  group('MethodChannelDivineCamera onNativeLog forwarding', () {
+    Future<void> dispatchNativeLog(Object? arguments) {
+      const codec = StandardMethodCodec();
+      final envelope = codec.encodeMethodCall(
+        MethodCall('onNativeLog', arguments),
+      );
+      return TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .handlePlatformMessage('divine_camera', envelope, (data) {});
+    }
+
+    LogEntry? latestEntryWithMessage(String message) {
+      final matches = LogCaptureService().getRecentLogs().where(
+        (entry) => entry.message == message,
+      );
+      return matches.isEmpty ? null : matches.last;
+    }
+
+    test(
+      'forwards a warning into UnifiedLogger under the video category',
+      () async {
+        const message = 'onNativeLog-test-warning-unique';
+        await dispatchNativeLog({
+          'level': 'warning',
+          'message': message,
+          'name': 'DivineCamera.Recording',
+        });
+
+        final entry = latestEntryWithMessage(message);
+        expect(entry, isNotNull);
+        expect(entry!.level, LogLevel.warning);
+        expect(entry.name, 'DivineCamera.Recording');
+        expect(entry.category, LogCategory.video);
+      },
+    );
+
+    test('maps the error level', () async {
+      const message = 'onNativeLog-test-error-unique';
+      await dispatchNativeLog({
+        'level': 'error',
+        'message': message,
+        'name': 'DivineCamera.AudioSession',
+      });
+
+      final entry = latestEntryWithMessage(message);
+      expect(entry, isNotNull);
+      expect(entry!.level, LogLevel.error);
+    });
+
+    test('falls back to info for an unknown level', () async {
+      const message = 'onNativeLog-test-unknown-level-unique';
+      await dispatchNativeLog({
+        'level': 'something-unexpected',
+        'message': message,
+        'name': 'DivineCamera',
+      });
+
+      final entry = latestEntryWithMessage(message);
+      expect(entry, isNotNull);
+      expect(entry!.level, LogLevel.info);
+    });
+
+    test('falls back to the native name when none is provided', () async {
+      const message = 'onNativeLog-test-default-name-unique';
+      await dispatchNativeLog({
+        'level': 'info',
+        'message': message,
+      });
+
+      final entry = latestEntryWithMessage(message);
+      expect(entry, isNotNull);
+      expect(entry!.name, 'DivineCameraNative');
+    });
+
+    test('ignores an entry with an empty message', () async {
+      final before = LogCaptureService().bufferSize;
+      await dispatchNativeLog({
+        'level': 'warning',
+        'message': '',
+        'name': 'DivineCamera',
+      });
+
+      expect(LogCaptureService().bufferSize, before);
+    });
+
+    test('ignores a call with null arguments without throwing', () async {
+      await expectLater(dispatchNativeLog(null), completes);
     });
   });
 }

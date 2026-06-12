@@ -116,7 +116,7 @@ class CameraController: NSObject {
             }
         }
 
-        print(
+        DivineCameraLog.shared.debug(
             "[DivineCameraController] macOS cameras: "
                 + "front=\(hasFrontCamera), back=\(hasBackCamera)"
         )
@@ -318,7 +318,7 @@ class CameraController: NSObject {
                     self.audioInput = audioInput
                 }
             } catch {
-                print(
+                DivineCameraLog.shared.debug(
                     "Failed to add audio input: "
                         + "\(error.localizedDescription)"
                 )
@@ -350,7 +350,7 @@ class CameraController: NSObject {
             session.addOutput(audioOutput)
             self.audioOutput = audioOutput
         } else {
-            print("DivineCamera macOS: Cannot add audio output")
+            DivineCameraLog.shared.warning("Cannot add audio output to session", name: "DivineCamera.Audio")
         }
 
         session.commitConfiguration()
@@ -370,7 +370,7 @@ class CameraController: NSObject {
 
         // Register texture
         textureId = textureRegistry.register(self)
-        print(
+        DivineCameraLog.shared.debug(
             "DivineCamera macOS: Registered texture with ID: \(textureId)"
         )
 
@@ -397,11 +397,11 @@ class CameraController: NSObject {
         initializationCompletion = nil
 
         if timedOut {
-            print(
+            DivineCameraLog.shared.debug(
                 "DivineCamera macOS: Initialization completed via timeout"
             )
         } else {
-            print(
+            DivineCameraLog.shared.debug(
                 "DivineCamera macOS: Initialization completed - first frame"
             )
         }
@@ -669,13 +669,13 @@ class CameraController: NSObject {
                 session.addInput(newInput)
                 self.audioInput = newInput
                 self.audioDevice = newDevice
-                print(
+                DivineCameraLog.shared.debug(
                     "DivineCamera macOS: Switched audio device to "
                         + "\(newDevice.localizedName)"
                 )
             }
         } catch {
-            print(
+            DivineCameraLog.shared.debug(
                 "Failed to switch audio device: "
                     + "\(error.localizedDescription)"
             )

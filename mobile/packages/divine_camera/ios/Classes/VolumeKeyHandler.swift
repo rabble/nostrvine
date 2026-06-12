@@ -68,9 +68,9 @@ class VolumeKeyHandler: NSObject {
         isSuppressed = true
         DispatchQueue.main.asyncAfter(deadline: .now() + activationCooldownSeconds) { [weak self] in
             self?.isSuppressed = false
-            NSLog("DivineCameraVolumeKeyHandler: Initial suppression ended")
+            DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Initial suppression ended")
         }
-        NSLog("DivineCameraVolumeKeyHandler: Enabled (suppressed for \(activationCooldownSeconds)s)")
+        DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Enabled (suppressed for \(activationCooldownSeconds)s)")
         return true
     }
     
@@ -85,7 +85,7 @@ class VolumeKeyHandler: NSObject {
         
         isEnabled = false
         volumeKeysEnabled = true
-        NSLog("DivineCameraVolumeKeyHandler: Disabled")
+        DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Disabled")
     }
     
     /// Enable or disable volume key interception.
@@ -93,7 +93,7 @@ class VolumeKeyHandler: NSObject {
     /// Bluetooth media buttons are NOT affected by this setting.
     func setVolumeKeysEnabled(_ enabled: Bool) {
         volumeKeysEnabled = enabled
-        NSLog("DivineCameraVolumeKeyHandler: Volume keys \(enabled ? "enabled" : "disabled")")
+        DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Volume keys \(enabled ? "enabled" : "disabled")")
     }
     
     /// Whether volume key handling is currently enabled.
@@ -108,10 +108,10 @@ class VolumeKeyHandler: NSObject {
     /// play/pause events from connected devices (e.g. Apple Watch).
     func suppressTemporarily(forSeconds duration: TimeInterval = 1.0) {
         isSuppressed = true
-        NSLog("DivineCameraVolumeKeyHandler: Suppressed for \(duration)s")
+        DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Suppressed for \(duration)s")
         DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
             self?.isSuppressed = false
-            NSLog("DivineCameraVolumeKeyHandler: Suppression ended")
+            DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Suppression ended")
         }
     }
     
@@ -128,21 +128,21 @@ class VolumeKeyHandler: NSObject {
         
         // Play/Pause toggle (most common on Bluetooth headphones)
         commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
-            NSLog("DivineCameraVolumeKeyHandler: Bluetooth toggle play/pause")
+            DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Bluetooth toggle play/pause")
             self?.handleBluetoothTrigger()
             return .success
         }
         
         // Play command
         commandCenter.playCommand.addTarget { [weak self] _ in
-            NSLog("DivineCameraVolumeKeyHandler: Bluetooth play")
+            DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Bluetooth play")
             self?.handleBluetoothTrigger()
             return .success
         }
         
         // Pause command
         commandCenter.pauseCommand.addTarget { [weak self] _ in
-            NSLog("DivineCameraVolumeKeyHandler: Bluetooth pause")
+            DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Bluetooth pause")
             self?.handleBluetoothTrigger()
             return .success
         }
@@ -158,7 +158,7 @@ class VolumeKeyHandler: NSObject {
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = 1.0
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
         
-        NSLog("DivineCameraVolumeKeyHandler: Remote command center configured")
+        DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Remote command center configured")
     }
     
     private func teardownRemoteCommandCenter() {
@@ -183,26 +183,26 @@ class VolumeKeyHandler: NSObject {
         
         // Check suppression (camera switch in progress)
         if isSuppressed {
-            NSLog("DivineCameraVolumeKeyHandler: Bluetooth trigger ignored - suppressed")
+            DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Bluetooth trigger ignored - suppressed")
             return
         }
         
         // Check activation cooldown
         let timeSinceEnabled = now - enabledTimestamp
         if timeSinceEnabled < activationCooldownSeconds {
-            NSLog("DivineCameraVolumeKeyHandler: Bluetooth trigger ignored - within \(String(format: "%.0f", activationCooldownSeconds * 1000))ms activation cooldown (\(String(format: "%.0f", timeSinceEnabled * 1000))ms since enabled)")
+            DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Bluetooth trigger ignored - within \(String(format: "%.0f", activationCooldownSeconds * 1000))ms activation cooldown (\(String(format: "%.0f", timeSinceEnabled * 1000))ms since enabled)")
             return
         }
         
         // Check debounce between triggers
         let timeSinceLastTrigger = now - lastBluetoothTriggerTimestamp
         if timeSinceLastTrigger < bluetoothDebounceSeconds {
-            NSLog("DivineCameraVolumeKeyHandler: Bluetooth trigger ignored - debounce (\(String(format: "%.0f", timeSinceLastTrigger * 1000))ms since last)")
+            DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Bluetooth trigger ignored - debounce (\(String(format: "%.0f", timeSinceLastTrigger * 1000))ms since last)")
             return
         }
         
         lastBluetoothTriggerTimestamp = now
-        NSLog("DivineCameraVolumeKeyHandler: Bluetooth trigger accepted")
+        DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Bluetooth trigger accepted")
         
         // Refresh now playing info so iOS keeps routing remote events to us.
         // Without this, audio session changes during recording start/stop can
@@ -258,7 +258,7 @@ class VolumeKeyHandler: NSObject {
         )
         isObservingVolume = true
         
-        NSLog("DivineCameraVolumeKeyHandler: Volume observer configured")
+        DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Volume observer configured")
     }
     
     private func teardownVolumeObserver() {
@@ -290,20 +290,20 @@ class VolumeKeyHandler: NSObject {
         // switch from being misinterpreted as volume button presses.
         if !isInternalVolumeChange && isEnabled && volumeKeysEnabled && !isSuppressed {
             if newValue > oldValue {
-                NSLog("DivineCameraVolumeKeyHandler: Volume up button pressed")
+                DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Volume up button pressed")
                 onTrigger?("volumeUp")
                 
                 // Restore volume to prevent actual volume change
                 restoreVolume(to: oldValue)
             } else if newValue < oldValue {
-                NSLog("DivineCameraVolumeKeyHandler: Volume down button pressed")
+                DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Volume down button pressed")
                 onTrigger?("volumeDown")
                 
                 // Restore volume to prevent actual volume change
                 restoreVolume(to: oldValue)
             }
         } else if isSuppressed && !isInternalVolumeChange && newValue != oldValue {
-            NSLog("DivineCameraVolumeKeyHandler: Volume change ignored - suppressed (camera switch in progress)")
+            DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Volume change ignored - suppressed (camera switch in progress)")
             // Still restore volume during suppression to prevent drift
             restoreVolume(to: oldValue)
         }

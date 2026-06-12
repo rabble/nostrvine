@@ -10,7 +10,6 @@ import android.content.Intent
 import android.os.Build
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.util.Log
 import android.view.KeyEvent
 import android.view.Window
 
@@ -54,21 +53,21 @@ class VolumeKeyHandler(
      */
     fun enable(): Boolean {
         if (isEnabled) {
-            Log.d(TAG, "Volume key handler already enabled")
+            DivineCameraLog.d(TAG, "Volume key handler already enabled")
             return true
         }
         
         try {
-            Log.d(TAG, "Enabling volume key handler...")
+            DivineCameraLog.d(TAG, "Enabling volume key handler...")
             setupWindowCallback()
             setupMediaSession()
             isEnabled = true
             volumeKeysEnabled = true
             enabledTimestamp = System.currentTimeMillis()
-            Log.i(TAG, "Volume key handler enabled successfully")
+            DivineCameraLog.i(TAG, "Volume key handler enabled successfully")
             return true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to enable volume key handler: ${e.message}", e)
+            DivineCameraLog.e(TAG, "Failed to enable volume key handler: ${e.message}", e)
             return false
         }
     }
@@ -84,7 +83,7 @@ class VolumeKeyHandler(
             activity?.window?.let { window ->
                 originalCallback?.let { original ->
                     window.callback = original
-                    Log.d(TAG, "Restored original window callback")
+                    DivineCameraLog.d(TAG, "Restored original window callback")
                 }
             }
             originalCallback = null
@@ -94,9 +93,9 @@ class VolumeKeyHandler(
             mediaSession = null
             isEnabled = false
             volumeKeysEnabled = true
-            Log.d(TAG, "Volume key handler disabled")
+            DivineCameraLog.d(TAG, "Volume key handler disabled")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to disable volume key handler: ${e.message}")
+            DivineCameraLog.e(TAG, "Failed to disable volume key handler: ${e.message}")
         }
     }
 
@@ -107,7 +106,7 @@ class VolumeKeyHandler(
      */
     fun setVolumeKeysEnabled(enabled: Boolean) {
         volumeKeysEnabled = enabled
-        Log.d(TAG, "Volume keys interception ${if (enabled) "enabled" else "disabled"}")
+        DivineCameraLog.d(TAG, "Volume keys interception ${if (enabled) "enabled" else "disabled"}")
     }
     
     /**
@@ -115,12 +114,12 @@ class VolumeKeyHandler(
      */
     private fun setupWindowCallback() {
         val currentActivity = activity ?: run {
-            Log.w(TAG, "No activity available, cannot intercept key events")
+            DivineCameraLog.w(TAG, "No activity available, cannot intercept key events")
             return
         }
         
         val window = currentActivity.window ?: run {
-            Log.w(TAG, "No window available, cannot intercept key events")
+            DivineCameraLog.w(TAG, "No window available, cannot intercept key events")
             return
         }
         
@@ -130,7 +129,7 @@ class VolumeKeyHandler(
         }
         window.callback = callbackWrapper
         
-        Log.i(TAG, "Window.Callback wrapper installed for key event interception")
+        DivineCameraLog.i(TAG, "Window.Callback wrapper installed for key event interception")
     }
 
     /**
@@ -148,28 +147,28 @@ class VolumeKeyHandler(
             KeyEvent.KEYCODE_VOLUME_UP -> {
                 // Only intercept volume keys if enabled and not suppressed
                 if (!volumeKeysEnabled) {
-                    Log.d(TAG, "Volume up pressed but volume keys disabled - passing through")
+                    DivineCameraLog.d(TAG, "Volume up pressed but volume keys disabled - passing through")
                     return false
                 }
                 if (isSuppressed) {
-                    Log.d(TAG, "Volume up pressed but suppressed (camera switch) - consuming")
+                    DivineCameraLog.d(TAG, "Volume up pressed but suppressed (camera switch) - consuming")
                     return true  // Consume to prevent volume change, but don't trigger
                 }
-                Log.d(TAG, "Volume up button pressed")
+                DivineCameraLog.d(TAG, "Volume up button pressed")
                 onTrigger("volumeUp")
                 true
             }
             KeyEvent.KEYCODE_VOLUME_DOWN -> {
                 // Only intercept volume keys if enabled and not suppressed
                 if (!volumeKeysEnabled) {
-                    Log.d(TAG, "Volume down pressed but volume keys disabled - passing through")
+                    DivineCameraLog.d(TAG, "Volume down pressed but volume keys disabled - passing through")
                     return false
                 }
                 if (isSuppressed) {
-                    Log.d(TAG, "Volume down pressed but suppressed (camera switch) - consuming")
+                    DivineCameraLog.d(TAG, "Volume down pressed but suppressed (camera switch) - consuming")
                     return true  // Consume to prevent volume change, but don't trigger
                 }
-                Log.d(TAG, "Volume down button pressed")
+                DivineCameraLog.d(TAG, "Volume down button pressed")
                 onTrigger("volumeDown")
                 true
             }
@@ -200,26 +199,26 @@ class VolumeKeyHandler(
         }
         
         if (!isMediaControlButton) {
-            Log.d(TAG, "Media button not a control button (keyCode=${event.keyCode}) - passing through")
+            DivineCameraLog.d(TAG, "Media button not a control button (keyCode=${event.keyCode}) - passing through")
             return false  // Let system handle volume and other buttons
         }
         
         // Consume repeat events but don't trigger (long-press handling)
         if (event.repeatCount != 0) {
-            Log.d(TAG, "Media button repeat ignored: ${event.keyCode}, repeatCount: ${event.repeatCount}")
+            DivineCameraLog.d(TAG, "Media button repeat ignored: ${event.keyCode}, repeatCount: ${event.repeatCount}")
             return true
         }
         
         // Check suppression (camera switch in progress)
         if (isSuppressed) {
-            Log.d(TAG, "Media button ignored - suppressed (camera switch in progress)")
+            DivineCameraLog.d(TAG, "Media button ignored - suppressed (camera switch in progress)")
             return true
         }
 
         // Check cooldown after activation
         val timeSinceEnabled = System.currentTimeMillis() - enabledTimestamp
         if (timeSinceEnabled < activationCooldownMs) {
-            Log.d(TAG, "Media button ignored - within ${activationCooldownMs}ms cooldown (${timeSinceEnabled}ms since enabled)")
+            DivineCameraLog.d(TAG, "Media button ignored - within ${activationCooldownMs}ms cooldown (${timeSinceEnabled}ms since enabled)")
             return true
         }
 
@@ -227,12 +226,12 @@ class VolumeKeyHandler(
         val now = System.currentTimeMillis()
         val timeSinceLastTrigger = now - lastBluetoothTriggerTimestamp
         if (timeSinceLastTrigger < bluetoothDebounceMs) {
-            Log.d(TAG, "Media button ignored - debounce (${timeSinceLastTrigger}ms since last)")
+            DivineCameraLog.d(TAG, "Media button ignored - debounce (${timeSinceLastTrigger}ms since last)")
             return true
         }
 
         lastBluetoothTriggerTimestamp = now
-        Log.d(TAG, "Media button triggered: ${event.keyCode}")
+        DivineCameraLog.d(TAG, "Media button triggered: ${event.keyCode}")
         onTrigger("bluetooth")
         return true
     }
@@ -246,13 +245,13 @@ class VolumeKeyHandler(
      */
     fun suppressTemporarily(durationMs: Long = 3000) {
         isSuppressed = true
-        Log.d(TAG, "Suppressed for ${durationMs}ms")
+        DivineCameraLog.d(TAG, "Suppressed for ${durationMs}ms")
 
         // Cancel any pending unsuppress
         suppressRunnable?.let { suppressHandler.removeCallbacks(it) }
         suppressRunnable = Runnable {
             isSuppressed = false
-            Log.d(TAG, "Suppression ended")
+            DivineCameraLog.d(TAG, "Suppression ended")
         }
         suppressHandler.postDelayed(suppressRunnable!!, durationMs)
     }
@@ -315,19 +314,19 @@ class VolumeKeyHandler(
 
                 override fun onPlay() {
                     super.onPlay()
-                    Log.d(TAG, "MediaSession onPlay callback")
+                    DivineCameraLog.d(TAG, "MediaSession onPlay callback")
                     triggerWithCooldownCheck()
                 }
 
                 override fun onPause() {
                     super.onPause()
-                    Log.d(TAG, "MediaSession onPause callback")
+                    DivineCameraLog.d(TAG, "MediaSession onPause callback")
                     triggerWithCooldownCheck()
                 }
                 
                 override fun onStop() {
                     super.onStop()
-                    Log.d(TAG, "MediaSession onStop callback")
+                    DivineCameraLog.d(TAG, "MediaSession onStop callback")
                     triggerWithCooldownCheck()
                 }
             })
@@ -335,7 +334,7 @@ class VolumeKeyHandler(
             isActive = true
         }
         
-        Log.i(TAG, "MediaSession created and active for Bluetooth remote control")
+        DivineCameraLog.i(TAG, "MediaSession created and active for Bluetooth remote control")
     }
     
     /**
@@ -344,18 +343,18 @@ class VolumeKeyHandler(
      */
     private fun triggerWithCooldownCheck() {
         if (isSuppressed) {
-            Log.d(TAG, "MediaSession callback ignored - suppressed")
+            DivineCameraLog.d(TAG, "MediaSession callback ignored - suppressed")
             return
         }
         val timeSinceEnabled = System.currentTimeMillis() - enabledTimestamp
         if (timeSinceEnabled < activationCooldownMs) {
-            Log.d(TAG, "MediaSession callback ignored - within cooldown")
+            DivineCameraLog.d(TAG, "MediaSession callback ignored - within cooldown")
             return
         }
         val now = System.currentTimeMillis()
         val timeSinceLastTrigger = now - lastBluetoothTriggerTimestamp
         if (timeSinceLastTrigger < bluetoothDebounceMs) {
-            Log.d(TAG, "MediaSession callback ignored - debounce")
+            DivineCameraLog.d(TAG, "MediaSession callback ignored - debounce")
             return
         }
         lastBluetoothTriggerTimestamp = now
@@ -387,7 +386,7 @@ private class KeyInterceptingCallback(
                           event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
         
         if (isVolumeKey && onKeyEvent(event)) {
-            Log.d(TAG, "Volume key event consumed: ${event.keyCode}")
+            DivineCameraLog.d(TAG, "Volume key event consumed: ${event.keyCode}")
             return true  // Event consumed, don't pass to system
         }
         // Pass unhandled events to the original callback

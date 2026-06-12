@@ -48,7 +48,7 @@ extension CameraController {
                 self.screenFlashWindows.append(window)
             }
 
-            print("DivineCamera macOS: Screen flash enabled")
+            DivineCameraLog.shared.debug("DivineCamera macOS: Screen flash enabled")
         }
     }
 
@@ -62,7 +62,7 @@ extension CameraController {
             }
             self.screenFlashWindows.removeAll()
             if hadWindows {
-                print("DivineCamera macOS: Screen flash disabled")
+                DivineCameraLog.shared.debug("DivineCamera macOS: Screen flash disabled")
             }
         }
     }
@@ -80,14 +80,14 @@ extension CameraController {
         guard isAutoFlashMode else { return }
 
         if isEnvironmentDark() {
-            print(
+            DivineCameraLog.shared.debug(
                 "DivineCamera macOS: Auto flash: "
                     + "Dark environment detected - enabling screen flash"
             )
             autoFlashEnabled = true
             enableScreenFlash()
         } else {
-            print(
+            DivineCameraLog.shared.debug(
                 "DivineCamera macOS: Auto flash: "
                     + "Bright environment - flash not needed"
             )
@@ -105,7 +105,7 @@ extension CameraController {
     /// Sets the flash mode.
     /// On macOS the only flash mechanism is the screen flash (warm overlay).
     func setFlashMode(mode: String) -> Bool {
-        print("DivineCamera macOS: Setting flash mode: \(mode)")
+        DivineCameraLog.shared.debug("DivineCamera macOS: Setting flash mode: \(mode)")
 
         switch mode {
         case "off":

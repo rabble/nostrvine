@@ -133,9 +133,10 @@ extension CameraController {
                     addedAudioInput = audioInput
                 } else {
                     addedAudioInput = nil
-                    print(
-                        "DivineCamera macOS: Cannot add audio input "
-                            + "to asset writer"
+                    DivineCameraLog.shared.warning(
+                        "Cannot add audio input to asset writer — "
+                            + "recording without audio",
+                        name: "DivineCamera.Recording"
                     )
                 }
 
@@ -149,6 +150,10 @@ extension CameraController {
                         writer.error?.localizedDescription ?? "Unknown error"
                     writer.cancelWriting()
                     self.cleanupRecordingState(deleteOutputFile: true)
+                    DivineCameraLog.shared.error(
+                        "Failed to start asset writer: \(message)",
+                        name: "DivineCamera.Recording"
+                    )
                     DispatchQueue.main.async {
                         completion(
                             "Failed to start asset writer: \(message)"
@@ -168,8 +173,9 @@ extension CameraController {
                 self.isWriterSessionStarted = false
                 self.recordingStartTime = Date()
 
-                print(
-                    "DivineCamera macOS: Recording started to \(outputURL.path)"
+                DivineCameraLog.shared.info(
+                    "Recording started (audioTrack=\(addedAudioInput != nil))",
+                    name: "DivineCamera.Recording"
                 )
 
                 // Schedule max duration timer if specified
@@ -254,6 +260,12 @@ extension CameraController {
             writer.finishWriting { [weak self] in
                 guard let self = self else { return }
 
+                // Whether an audio track was written, captured before the
+                // cleanup below nils out the input. The macOS path avoids
+                // loading the finished AVAsset, so this writer-input proxy
+                // stands in for the iOS file-level check.
+                let hadAudioTrack = self.audioWriterInput != nil
+
                 DispatchQueue.main.async {
                     if writer.status == .completed {
                         let duration: Int
@@ -291,12 +303,26 @@ extension CameraController {
                             "height": height,
                         ]
 
-                        print(
-                            "DivineCamera macOS: Recording completed - "
-                                + "\(outputURL.path)"
-                        )
+                        if hadAudioTrack {
+                            DivineCameraLog.shared.info(
+                                "Recording completed with audio track "
+                                    + "(durationMs=\(duration))",
+                                name: "DivineCamera.Recording"
+                            )
+                        } else {
+                            DivineCameraLog.shared.warning(
+                                "Recording completed WITHOUT audio track "
+                                    + "(durationMs=\(duration))",
+                                name: "DivineCamera.Recording"
+                            )
+                        }
                         completion(result, nil)
                     } else {
+                        DivineCameraLog.shared.error(
+                            "Recording failed: "
+                                + "\(writer.error?.localizedDescription ?? "Unknown error")",
+                            name: "DivineCamera.Recording"
+                        )
                         completion(
                             nil,
                             "Recording failed: "

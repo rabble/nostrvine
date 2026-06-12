@@ -69,8 +69,41 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
           _onRemoteRecordTrigger!(trigger);
         }
         return null;
+      case 'onNativeLog':
+        final args = call.arguments as Map<dynamic, dynamic>?;
+        if (args != null) {
+          _forwardNativeLog(args);
+        }
+        return null;
       default:
         return null;
+    }
+  }
+
+  /// Forwards a curated diagnostic emitted by the native recording path into
+  /// the app's [UnifiedLogger] so it is captured for bug reports.
+  ///
+  /// The native side only sends events that matter for diagnosing recording
+  /// problems (audio-session setup, interruptions, recovery, recording
+  /// start/stop, asset-writer failures) — see `DivineCameraLog` on each
+  /// platform. Per-frame and verbose native logs stay on the device console.
+  void _forwardNativeLog(Map<dynamic, dynamic> args) {
+    final message = args['message'] as String?;
+    if (message == null || message.isEmpty) return;
+    final level = args['level'] as String? ?? 'info';
+    final name = args['name'] as String? ?? 'DivineCameraNative';
+    switch (level) {
+      case 'error':
+        Log.error(message, name: name, category: LogCategory.video);
+      case 'warning':
+        Log.warning(message, name: name, category: LogCategory.video);
+      case 'debug':
+        Log.debug(message, name: name, category: LogCategory.video);
+      case 'verbose':
+        Log.verbose(message, name: name, category: LogCategory.video);
+      case 'info':
+      default:
+        Log.info(message, name: name, category: LogCategory.video);
     }
   }
 
@@ -201,7 +234,14 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
         'outputDirectory': ?outputDirectory,
       });
       return true;
-    } on PlatformException {
+    } on PlatformException catch (e, stackTrace) {
+      Log.error(
+        'startRecording failed: ${e.code} ${e.message ?? ''}',
+        name: 'DivineCameraMethodChannel',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }

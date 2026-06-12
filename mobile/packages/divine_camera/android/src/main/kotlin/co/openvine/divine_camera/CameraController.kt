@@ -17,7 +17,6 @@ import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.Surface
 import android.view.WindowManager
 import androidx.camera.camera2.interop.Camera2CameraInfo
@@ -67,7 +66,12 @@ class CameraController(
     private var isTorchEnabled: Boolean = false
     private var isRecording: Boolean = false
     private var recordingTrulyStarted: Boolean = false
-    
+
+    // Last observed CameraX audio-source state for the active recording, so we
+    // only forward a diagnostic when it transitions (the Status event fires
+    // continuously). Reset to the sentinel on each recording Start.
+    private var lastAudioState: Int = Int.MIN_VALUE
+
     // Callback for startRecording - called when recording truly starts or is aborted
     private var startRecordingCallback: ((String?) -> Unit)? = null
     private var isPaused: Boolean = false
@@ -207,7 +211,7 @@ class CameraController(
         enableAutoLensSwitch: Boolean = true,
         callback: (Map<String, Any?>?, String?) -> Unit
     ) {
-        Log.d(TAG, "Initializing camera with lens: $lens, quality: $quality, enableScreenFlash: $enableScreenFlash, mirrorFrontCameraOutput: $mirrorFrontCameraOutput, autoLensSwitch: $enableAutoLensSwitch (portrait mode 1080x1920)")
+        DivineCameraLog.d(TAG, "Initializing camera with lens: $lens, quality: $quality, enableScreenFlash: $enableScreenFlash, mirrorFrontCameraOutput: $mirrorFrontCameraOutput, autoLensSwitch: $enableAutoLensSwitch (portrait mode 1080x1920)")
 
         screenFlashFeatureEnabled = enableScreenFlash
         this.mirrorFrontCameraOutput = mirrorFrontCameraOutput
@@ -234,11 +238,11 @@ class CameraController(
         if (requestedCameraId == null) {
             // Fallback: try back camera first, then front
             if (hasBackCamera) {
-                Log.w(TAG, "Requested lens $lens not available, falling back to back camera")
+                DivineCameraLog.w(TAG, "Requested lens $lens not available, falling back to back camera")
                 currentLensType = "back"
                 currentLens = CameraSelector.LENS_FACING_BACK
             } else if (hasFrontCamera) {
-                Log.w(TAG, "Requested lens $lens not available, falling back to front camera")
+                DivineCameraLog.w(TAG, "Requested lens $lens not available, falling back to front camera")
                 currentLensType = "front"
                 currentLens = CameraSelector.LENS_FACING_FRONT
             }
@@ -248,10 +252,10 @@ class CameraController(
         cameraProviderFuture.addListener({
             try {
                 cameraProvider = cameraProviderFuture.get()
-                Log.d(TAG, "Camera provider obtained")
+                DivineCameraLog.d(TAG, "Camera provider obtained")
                 startCamera(callback)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to get camera provider", e)
+                DivineCameraLog.e(TAG, "Failed to get camera provider", e)
                 mainHandler.post {
                     callback(null, "Failed to get camera provider: ${e.message}")
                 }
@@ -286,13 +290,13 @@ class CameraController(
                     CameraCharacteristics.LENS_FACING_FRONT -> {
                         val primaryFocalLength = focalLengths?.firstOrNull() ?: 0f
                         frontCameraFocalLengths[cameraId] = primaryFocalLength
-                        Log.d(TAG, "Front camera $cameraId: focalLength=$primaryFocalLength, logical=$isLogicalCamera")
+                        DivineCameraLog.d(TAG, "Front camera $cameraId: focalLength=$primaryFocalLength, logical=$isLogicalCamera")
                     }
                     CameraCharacteristics.LENS_FACING_BACK -> {
                         // Get the primary focal length for this camera
                         val primaryFocalLength = focalLengths?.firstOrNull() ?: 0f
                         backCameraFocalLengths[cameraId] = primaryFocalLength
-                        Log.d(TAG, "Back camera $cameraId: focalLength=$primaryFocalLength, logical=$isLogicalCamera")
+                        DivineCameraLog.d(TAG, "Back camera $cameraId: focalLength=$primaryFocalLength, logical=$isLogicalCamera")
                     }
                 }
             }
@@ -311,7 +315,7 @@ class CameraController(
                     val ultraWideCandidate = sorted.last()
                     if (ultraWideCandidate.value < sorted.first().value - 0.3f) {
                         frontUltraWideCameraId = ultraWideCandidate.key
-                        Log.d(TAG, "Front ultra-wide camera detected: ${ultraWideCandidate.key}")
+                        DivineCameraLog.d(TAG, "Front ultra-wide camera detected: ${ultraWideCandidate.key}")
                     }
                 }
             }
@@ -340,7 +344,7 @@ class CameraController(
                                 .SCALER_AVAILABLE_MAX_DIGITAL_ZOOM
                         ) ?: 10.0f
                     } catch (e: Exception) {
-                        Log.w(TAG, "Could not read main camera max zoom", e)
+                        DivineCameraLog.w(TAG, "Could not read main camera max zoom", e)
                     }
                     
                     // Cameras with shorter focal length are ultra-wide
@@ -348,7 +352,7 @@ class CameraController(
                         .maxByOrNull { it.value }?.let {
                             ultraWideCameraId = it.key
                             ultraWideCameraFocalLength = it.value
-                            Log.d(TAG, "Ultra-wide camera detected: ${it.key} (focal=${it.value}mm)")
+                            DivineCameraLog.d(TAG, "Ultra-wide camera detected: ${it.key} (focal=${it.value}mm)")
                             try {
                                 val uwChars = cameraManager
                                     .getCameraCharacteristics(it.key)
@@ -357,7 +361,7 @@ class CameraController(
                                         .SCALER_AVAILABLE_MAX_DIGITAL_ZOOM
                                 ) ?: 8.0f
                             } catch (e: Exception) {
-                                Log.w(TAG, "Could not read ultra-wide max zoom", e)
+                                DivineCameraLog.w(TAG, "Could not read ultra-wide max zoom", e)
                             }
                         }
                     
@@ -366,7 +370,7 @@ class CameraController(
                         .minByOrNull { it.value }?.let {
                             telephotoCameraId = it.key
                             telephotoCameraFocalLength = it.value
-                            Log.d(TAG, "Telephoto camera detected: ${it.key} (focal=${it.value}mm)")
+                            DivineCameraLog.d(TAG, "Telephoto camera detected: ${it.key} (focal=${it.value}mm)")
                             try {
                                 val teleChars = cameraManager
                                     .getCameraCharacteristics(it.key)
@@ -375,7 +379,7 @@ class CameraController(
                                         .SCALER_AVAILABLE_MAX_DIGITAL_ZOOM
                                 ) ?: 10.0f
                             } catch (e: Exception) {
-                                Log.w(TAG, "Could not read telephoto max zoom", e)
+                                DivineCameraLog.w(TAG, "Could not read telephoto max zoom", e)
                             }
                         }
                 } else if (sorted.isNotEmpty()) {
@@ -392,18 +396,18 @@ class CameraController(
                     // Macro cameras typically have minimum focus distance > 10 diopters (< 10cm focus)
                     if (minFocusDistance != null && minFocusDistance > 10.0f && cameraId != backCameraId) {
                         macroCameraId = cameraId
-                        Log.d(TAG, "Macro camera detected: $cameraId (minFocusDist=$minFocusDistance)")
+                        DivineCameraLog.d(TAG, "Macro camera detected: $cameraId (minFocusDist=$minFocusDistance)")
                         break
                     }
                 }
             }
             
-            Log.d(TAG, "Camera availability: front=$hasFrontCamera, " +
+            DivineCameraLog.d(TAG, "Camera availability: front=$hasFrontCamera, " +
                 "frontUltraWide=${frontUltraWideCameraId != null}, back=$hasBackCamera, " +
                 "ultraWide=${ultraWideCameraId != null}, telephoto=${telephotoCameraId != null}, " +
                 "macro=${macroCameraId != null}")
         } catch (e: Exception) {
-            Log.e(TAG, "Error checking camera availability", e)
+            DivineCameraLog.e(TAG, "Error checking camera availability", e)
         }
     }
     
@@ -431,7 +435,7 @@ class CameraController(
             val chars = cameraManager.getCameraCharacteristics(cameraId)
             extractCameraMetadata(chars, currentLensType, cameraId)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get metadata for current lens $currentLensType", e)
+            DivineCameraLog.e(TAG, "Failed to get metadata for current lens $currentLensType", e)
             null
         }
     }
@@ -584,7 +588,7 @@ class CameraController(
                         val camera2Info = Camera2CameraInfo.from(cameraInfo)
                         camera2Info.cameraId == cameraId
                     } catch (e: Exception) {
-                        Log.w(TAG, "Failed to get Camera2CameraInfo: ${e.message}")
+                        DivineCameraLog.w(TAG, "Failed to get Camera2CameraInfo: ${e.message}")
                         false
                     }
                 }
@@ -612,14 +616,14 @@ class CameraController(
      */
     private fun startCamera(callback: (Map<String, Any?>?, String?) -> Unit) {
         val provider = cameraProvider ?: run {
-            Log.e(TAG, "Camera provider not available")
+            DivineCameraLog.e(TAG, "Camera provider not available")
             callback(null, "Camera provider not available")
             return
         }
 
         // Check if activity is a LifecycleOwner
         if (activity !is LifecycleOwner) {
-            Log.e(TAG, "Activity is not a LifecycleOwner: ${activity.javaClass.name}")
+            DivineCameraLog.e(TAG, "Activity is not a LifecycleOwner: ${activity.javaClass.name}")
             callback(null, "Activity must be a LifecycleOwner (use FlutterFragmentActivity)")
             return
         }
@@ -627,7 +631,7 @@ class CameraController(
         try {
             // Unbind all use cases before rebinding
             provider.unbindAll()
-            Log.d(TAG, "Unbound all previous use cases")
+            DivineCameraLog.d(TAG, "Unbound all previous use cases")
 
             // Release previous resources only if not already handled (e.g., by switchCamera)
             if (textureEntry != null) {
@@ -643,12 +647,12 @@ class CameraController(
             flutterSurfaceTexture = textureEntry?.surfaceTexture()
 
             val textureId = textureEntry?.id() ?: run {
-                Log.e(TAG, "Failed to create texture entry")
+                DivineCameraLog.e(TAG, "Failed to create texture entry")
                 callback(null, "Failed to create texture")
                 return
             }
 
-            Log.d(TAG, "Created Flutter texture with id: $textureId")
+            DivineCameraLog.d(TAG, "Created Flutter texture with id: $textureId")
 
             // Build camera selector for the current lens type
             val cameraSelector = buildCameraSelectorForLens(currentLensType, provider)
@@ -667,14 +671,14 @@ class CameraController(
                 val resolution = request.resolution
                 videoWidth = resolution.width
                 videoHeight = resolution.height
-                Log.d(
+                DivineCameraLog.d(
                     TAG,
                     "Surface provider called with resolution: ${videoWidth}x${videoHeight}"
                 )
 
                 // Update aspect ratio for portrait mode (height/width gives 9:16 ratio)
                 aspectRatio = videoHeight.toFloat() / videoWidth.toFloat()
-                Log.d(TAG, "Aspect ratio set to: $aspectRatio (portrait), video dimensions: ${videoWidth}x${videoHeight}")
+                DivineCameraLog.d(TAG, "Aspect ratio set to: $aspectRatio (portrait), video dimensions: ${videoWidth}x${videoHeight}")
 
                 // Set the buffer size to match camera resolution
                 flutterSurfaceTexture?.setDefaultBufferSize(videoWidth, videoHeight)
@@ -688,7 +692,7 @@ class CameraController(
                         previewSurface!!,
                         ContextCompat.getMainExecutor(context)
                     ) { result ->
-                        Log.d(TAG, "Surface result code: ${result.resultCode}")
+                        DivineCameraLog.d(TAG, "Surface result code: ${result.resultCode}")
                     }
 
                     // Call the callback NOW after we have the correct resolution
@@ -696,11 +700,11 @@ class CameraController(
                         callbackCalled = true
                         val state = getCameraState().toMutableMap()
                         state["textureId"] = textureId
-                        Log.d(TAG, "Camera initialized successfully: $state")
+                        DivineCameraLog.d(TAG, "Camera initialized successfully: $state")
                         callback(state, null)
                     }
                 } else {
-                    Log.e(TAG, "Preview surface is null or invalid!")
+                    DivineCameraLog.e(TAG, "Preview surface is null or invalid!")
                     if (!callbackCalled) {
                         callbackCalled = true
                         callback(null, "Failed to create preview surface")
@@ -731,7 +735,7 @@ class CameraController(
                 )
                 .build()
 
-            Log.d(TAG, "Binding use cases to lifecycle...")
+            DivineCameraLog.d(TAG, "Binding use cases to lifecycle...")
 
             // Bind use cases to camera
             camera = provider.bindToLifecycle(
@@ -741,7 +745,7 @@ class CameraController(
                 videoCapture
             )
 
-            Log.d(TAG, "Camera bound successfully")
+            DivineCameraLog.d(TAG, "Camera bound successfully")
 
             // Get camera info
             camera?.let { cam ->
@@ -755,14 +759,14 @@ class CameraController(
                     (screenFlashFeatureEnabled && currentLens == CameraSelector.LENS_FACING_FRONT)
                 isFocusPointSupported = true
                 isExposurePointSupported = true
-                Log.d(TAG, "Camera info: zoom=$minZoom-$maxZoom, flash=$hasFlash")
+                DivineCameraLog.d(TAG, "Camera info: zoom=$minZoom-$maxZoom, flash=$hasFlash")
             }
 
             // Compute virtual zoom ranges for auto lens switching
             computeVirtualZoomRanges()
 
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start camera", e)
+            DivineCameraLog.e(TAG, "Failed to start camera", e)
             mainHandler.post {
                 callback(null, "Failed to start camera: ${e.message}")
             }
@@ -777,7 +781,7 @@ class CameraController(
         lens: String,
         callback: (Map<String, Any?>?, String?) -> Unit
     ) {
-        Log.d(TAG, "Switching camera to: $lens")
+        DivineCameraLog.d(TAG, "Switching camera to: $lens")
         
         // Disable screen flash when switching cameras
         disableScreenFlash()
@@ -789,19 +793,19 @@ class CameraController(
         // Check if the requested lens is available
         val requestedCameraId = getCameraIdForLens(currentLensType)
         if (requestedCameraId == null) {
-            Log.e(TAG, "Requested lens $lens is not available")
+            DivineCameraLog.e(TAG, "Requested lens $lens is not available")
             callback(null, "Lens $lens is not available on this device")
             return
         }
 
         val provider = cameraProvider ?: run {
-            Log.e(TAG, "Camera provider not available")
+            DivineCameraLog.e(TAG, "Camera provider not available")
             callback(null, "Camera provider not available")
             return
         }
 
         if (activity !is LifecycleOwner) {
-            Log.e(TAG, "Activity is not a LifecycleOwner")
+            DivineCameraLog.e(TAG, "Activity is not a LifecycleOwner")
             callback(null, "Activity must be a LifecycleOwner")
             return
         }
@@ -825,7 +829,7 @@ class CameraController(
                 val resolution = request.resolution
                 videoWidth = resolution.width
                 videoHeight = resolution.height
-                Log.d(
+                DivineCameraLog.d(
                     TAG,
                     "Switch: Surface provider called with resolution: ${videoWidth}x${videoHeight}"
                 )
@@ -842,7 +846,7 @@ class CameraController(
                         previewSurface!!,
                         ContextCompat.getMainExecutor(context)
                     ) { result ->
-                        Log.d(TAG, "Switch: Surface result code: ${result.resultCode}")
+                        DivineCameraLog.d(TAG, "Switch: Surface result code: ${result.resultCode}")
                     }
                 } else {
                     // Surface was released, create new one
@@ -852,7 +856,7 @@ class CameraController(
                             previewSurface!!,
                             ContextCompat.getMainExecutor(context)
                         ) { result ->
-                            Log.d(TAG, "Switch: New surface result code: ${result.resultCode}")
+                            DivineCameraLog.d(TAG, "Switch: New surface result code: ${result.resultCode}")
                         }
                     }
                 }
@@ -905,14 +909,14 @@ class CameraController(
             // Compute virtual zoom ranges for auto lens switching
             computeVirtualZoomRanges()
 
-            Log.d(TAG, "Camera switched successfully")
+            DivineCameraLog.d(TAG, "Camera switched successfully")
 
             mainHandler.post {
                 callback(getCameraState(), null)
             }
 
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to switch camera", e)
+            DivineCameraLog.e(TAG, "Failed to switch camera", e)
             mainHandler.post {
                 callback(null, "Failed to switch camera: ${e.message}")
             }
@@ -927,7 +931,7 @@ class CameraController(
     fun setFlashMode(mode: String): Boolean {
         val cam = camera ?: return false
 
-        Log.d(TAG, "Setting flash mode: $mode (currentLens: ${if (currentLens == CameraSelector.LENS_FACING_FRONT) "front" else "back"})")
+        DivineCameraLog.d(TAG, "Setting flash mode: $mode (currentLens: ${if (currentLens == CameraSelector.LENS_FACING_FRONT) "front" else "back"})")
 
         return try {
             // Handle screen brightness for front camera "torch" mode
@@ -943,7 +947,7 @@ class CameraController(
                     isTorchEnabled = false
                     isAutoFlashMode = true
                     currentFlashMode = ImageCapture.FLASH_MODE_AUTO
-                    Log.d(TAG, "Auto flash mode enabled for front camera")
+                    DivineCameraLog.d(TAG, "Auto flash mode enabled for front camera")
                     return true
                 } else {
                     disableScreenFlash()
@@ -967,7 +971,7 @@ class CameraController(
                     isAutoFlashMode = true
                     autoFlashTorchEnabled = false
                     currentFlashMode = ImageCapture.FLASH_MODE_AUTO
-                    Log.d(TAG, "Auto flash mode enabled - will check brightness when recording starts")
+                    DivineCameraLog.d(TAG, "Auto flash mode enabled - will check brightness when recording starts")
                 }
 
                 "on" -> {
@@ -985,7 +989,7 @@ class CameraController(
             }
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to set flash mode", e)
+            DivineCameraLog.e(TAG, "Failed to set flash mode", e)
             false
         }
     }
@@ -1006,9 +1010,9 @@ class CameraController(
                 window.attributes = layoutParams
                 isScreenFlashEnabled = true
                 
-                Log.d(TAG, "Screen flash enabled (brightness set to 100%)")
+                DivineCameraLog.d(TAG, "Screen flash enabled (brightness set to 100%)")
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to enable screen flash", e)
+                DivineCameraLog.e(TAG, "Failed to enable screen flash", e)
             }
         }
     }
@@ -1036,9 +1040,9 @@ class CameraController(
                 
                 isScreenFlashEnabled = false
                 
-                Log.d(TAG, "Screen flash disabled (brightness restored to system control)")
+                DivineCameraLog.d(TAG, "Screen flash disabled (brightness restored to system control)")
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to disable screen flash", e)
+                DivineCameraLog.e(TAG, "Failed to disable screen flash", e)
             }
         }
     }
@@ -1056,7 +1060,7 @@ class CameraController(
         
         // If ISO is high or exposure time is long, it's dark
         val isDark = currentIso >= isoThreshold || currentExposureTime >= exposureThreshold
-        Log.d(TAG, "Auto flash: ISO=$currentIso (threshold=$isoThreshold), " +
+        DivineCameraLog.d(TAG, "Auto flash: ISO=$currentIso (threshold=$isoThreshold), " +
                    "ExposureTime=${currentExposureTime/1_000_000}ms (threshold=${exposureThreshold/1_000_000}ms) -> isDark=$isDark")
         return isDark
     }
@@ -1069,10 +1073,10 @@ class CameraController(
         if (!isAutoFlashMode) return
         
         if (isEnvironmentDark()) {
-            Log.d(TAG, "Auto flash: Dark environment detected - enabling flash")
+            DivineCameraLog.d(TAG, "Auto flash: Dark environment detected - enabling flash")
             enableAutoFlashTorch()
         } else {
-            Log.d(TAG, "Auto flash: Bright environment - flash not needed")
+            DivineCameraLog.d(TAG, "Auto flash: Bright environment - flash not needed")
         }
     }
 
@@ -1085,13 +1089,13 @@ class CameraController(
         try {
             if (currentLens == CameraSelector.LENS_FACING_FRONT) {
                 enableScreenFlash()
-                Log.d(TAG, "Auto flash: Screen flash enabled for front camera")
+                DivineCameraLog.d(TAG, "Auto flash: Screen flash enabled for front camera")
             } else {
                 camera?.cameraControl?.enableTorch(true)
-                Log.d(TAG, "Auto flash: Torch enabled for back camera")
+                DivineCameraLog.d(TAG, "Auto flash: Torch enabled for back camera")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Auto flash: Failed to enable torch", e)
+            DivineCameraLog.e(TAG, "Auto flash: Failed to enable torch", e)
         }
     }
     
@@ -1107,13 +1111,13 @@ class CameraController(
         try {
             if (currentLens == CameraSelector.LENS_FACING_FRONT) {
                 disableScreenFlash()
-                Log.d(TAG, "Auto flash: Screen flash disabled for front camera")
+                DivineCameraLog.d(TAG, "Auto flash: Screen flash disabled for front camera")
             } else {
                 camera?.cameraControl?.enableTorch(false)
-                Log.d(TAG, "Auto flash: Torch disabled for back camera")
+                DivineCameraLog.d(TAG, "Auto flash: Torch disabled for back camera")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Auto flash: Failed to disable torch", e)
+            DivineCameraLog.e(TAG, "Auto flash: Failed to disable torch", e)
         }
     }
 
@@ -1149,16 +1153,16 @@ class CameraController(
             future.addListener({
                 try {
                     val result = future.get()
-                    Log.d(TAG, "Focus+AE ${if (result.isFocusSuccessful) "successful" else "adjusting"} at: ($x, $y)")
+                    DivineCameraLog.d(TAG, "Focus+AE ${if (result.isFocusSuccessful) "successful" else "adjusting"} at: ($x, $y)")
                 } catch (e: Exception) {
-                    Log.d(TAG, "Focus check: ${e.message}")
+                    DivineCameraLog.d(TAG, "Focus check: ${e.message}")
                 }
             }, ContextCompat.getMainExecutor(context))
             
-            Log.d(TAG, "Focus point set: ($x, $y) with FLAG_AF|FLAG_AE, 10% spot metering")
+            DivineCameraLog.d(TAG, "Focus point set: ($x, $y) with FLAG_AF|FLAG_AE, 10% spot metering")
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to set focus point", e)
+            DivineCameraLog.e(TAG, "Failed to set focus point", e)
             false
         }
     }
@@ -1180,10 +1184,10 @@ class CameraController(
                 .setAutoCancelDuration(5, java.util.concurrent.TimeUnit.SECONDS)
                 .build()
             cam.cameraControl.startFocusAndMetering(action)
-            Log.d(TAG, "Exposure point set: ($x, $y)")
+            DivineCameraLog.d(TAG, "Exposure point set: ($x, $y)")
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to set exposure point", e)
+            DivineCameraLog.e(TAG, "Failed to set exposure point", e)
             false
         }
     }
@@ -1197,10 +1201,10 @@ class CameraController(
         
         return try {
             cam.cameraControl.cancelFocusAndMetering()
-            Log.d(TAG, "Focus and metering cancelled - returning to continuous auto-focus")
+            DivineCameraLog.d(TAG, "Focus and metering cancelled - returning to continuous auto-focus")
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to cancel focus and metering", e)
+            DivineCameraLog.e(TAG, "Failed to cancel focus and metering", e)
             false
         }
     }
@@ -1234,7 +1238,7 @@ class CameraController(
             virtualMinZoom = minZoom
             virtualMaxZoom = maxZoom
             virtualCurrentZoom = currentZoom
-            Log.d(
+            DivineCameraLog.d(
                 TAG,
                 "Logical multi-camera detected " +
                     "(native minZoom=$minZoom, maxZoom=$maxZoom), " +
@@ -1292,7 +1296,7 @@ class CameraController(
         autoLensSwitchEnabled = autoLensSwitchRequested &&
             (ultraWideCameraId != null || telephotoCameraId != null)
 
-        Log.d(
+        DivineCameraLog.d(
             TAG,
             "Virtual zoom: min=$virtualMinZoom, max=$virtualMaxZoom, " +
                 "current=$virtualCurrentZoom, uwRatio=$ultraWideZoomRatio, " +
@@ -1357,7 +1361,7 @@ class CameraController(
         if (activity !is LifecycleOwner) return
 
         isAutoSwitching = true
-        Log.d(
+        DivineCameraLog.d(
             TAG,
             "Auto-switching $currentLensType -> $targetLensType " +
                 "(nativeZoom=$targetNativeZoom)"
@@ -1412,7 +1416,7 @@ class CameraController(
                                 context
                             )
                         ) { result ->
-                            Log.d(
+                            DivineCameraLog.d(
                                 TAG,
                                 "AutoSwitch surface: " +
                                     "${result.resultCode}"
@@ -1420,7 +1424,7 @@ class CameraController(
                         }
                     }
                     isAutoSwitching = false
-                    Log.d(
+                    DivineCameraLog.d(
                         TAG,
                         "AutoSwitch surface provided " +
                             "(delayed)"
@@ -1479,13 +1483,13 @@ class CameraController(
 
             computeVirtualZoomRanges()
 
-            Log.d(
+            DivineCameraLog.d(
                 TAG,
                 "Auto-switch done: $targetLensType " +
                     "native=$currentZoom virtual=$virtualCurrentZoom"
             )
         } catch (e: Exception) {
-            Log.e(
+            DivineCameraLog.e(
                 TAG,
                 "Failed to auto-switch to $targetLensType",
                 e
@@ -1513,10 +1517,10 @@ class CameraController(
                     level.coerceIn(effectiveMin, maxZoom)
                 cam.cameraControl.setZoomRatio(clampedLevel)
                 currentZoom = clampedLevel
-                Log.d(TAG, "Zoom level set: $clampedLevel")
+                DivineCameraLog.d(TAG, "Zoom level set: $clampedLevel")
                 true
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to set zoom level", e)
+                DivineCameraLog.e(TAG, "Failed to set zoom level", e)
                 false
             }
         }
@@ -1544,9 +1548,42 @@ class CameraController(
             currentZoom = clampedNative
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to set zoom level", e)
+            DivineCameraLog.e(TAG, "Failed to set zoom level", e)
             false
         }
+    }
+
+    /**
+     * Forwards a diagnostic when the CameraX audio-source state changes during
+     * recording. Only transitions are reported (Status fires continuously):
+     * [AudioStats.AUDIO_STATE_ACTIVE] is info, anything else is a warning
+     * because it means the saved clip loses (or never gets) sound.
+     */
+    private fun logAudioStateTransition(audioStats: AudioStats) {
+        val state = audioStats.audioState
+        if (state == lastAudioState) return
+        lastAudioState = state
+        val stateName = audioStateName(state)
+        if (state == AudioStats.AUDIO_STATE_ACTIVE) {
+            DivineCameraLog.info(
+                "Audio source state: $stateName",
+                name = "DivineCamera.Audio"
+            )
+        } else {
+            DivineCameraLog.warning(
+                "Audio source state: $stateName — clip may have no sound",
+                name = "DivineCamera.Audio"
+            )
+        }
+    }
+
+    private fun audioStateName(state: Int): String = when (state) {
+        AudioStats.AUDIO_STATE_ACTIVE -> "ACTIVE"
+        AudioStats.AUDIO_STATE_DISABLED -> "DISABLED"
+        AudioStats.AUDIO_STATE_SOURCE_SILENCED -> "SOURCE_SILENCED"
+        AudioStats.AUDIO_STATE_ENCODER_ERROR -> "ENCODER_ERROR"
+        AudioStats.AUDIO_STATE_SOURCE_ERROR -> "SOURCE_ERROR"
+        else -> "UNKNOWN($state)"
     }
 
     /**
@@ -1577,6 +1614,10 @@ class CameraController(
                 Manifest.permission.RECORD_AUDIO
             ) != PackageManager.PERMISSION_GRANTED
         ) {
+            DivineCameraLog.warning(
+                "RECORD_AUDIO permission not granted — recording blocked",
+                name = "DivineCamera.Recording"
+            )
             callback("Audio permission not granted")
             return
         }
@@ -1613,7 +1654,7 @@ class CameraController(
             val outputFile = File(outputDir, "VID_$timestamp.mp4")
             currentRecordingFile = outputFile
 
-            Log.d(
+            DivineCameraLog.d(
                 TAG, "Starting recording to: ${outputFile.absolutePath}" +
                         " (useCache: $useCache)" +
                         if (maxDurationMs != null) " (max duration: ${maxDurationMs}ms)" else ""
@@ -1631,13 +1672,19 @@ class CameraController(
                     when (event) {
                         is VideoRecordEvent.Start -> {
                             isRecording = true
-                            Log.d(
+                            lastAudioState = Int.MIN_VALUE
+                            DivineCameraLog.d(
                                 TAG,
                                 "VideoRecordEvent.Start received - waiting for first frame..."
                             )
                         }
 
                         is VideoRecordEvent.Status -> {
+                            // Forward audio-source state transitions: a mid-
+                            // recording switch to SILENCED / SOURCE_ERROR is the
+                            // direct cause of clips saved without sound (#4779).
+                            logAudioStateTransition(event.recordingStats.audioStats)
+
                             // Status events are sent continuously during recording
                             // When recordedDurationNanos > 0, the encoder is truly recording frames
                             val durationNanos = event.recordingStats.recordedDurationNanos
@@ -1647,7 +1694,7 @@ class CameraController(
                                 // Encoder succeeded — clear retry state
                                 encoderRetryCount = 0
                                 pendingRecordingParams = null
-                                Log.d(
+                                DivineCameraLog.d(
                                     TAG,
                                     "Recording truly started - first frame recorded (duration: ${durationNanos / 1_000_000}ms)"
                                 )
@@ -1655,7 +1702,7 @@ class CameraController(
                                 // Schedule auto-stop if maxDuration is set
                                 if (maxDurationMs != null && maxDurationMs > 0) {
                                     maxDurationRunnable = Runnable {
-                                        Log.d(
+                                        DivineCameraLog.d(
                                             TAG,
                                             "Max duration reached (${maxDurationMs}ms) - auto-stopping recording"
                                         )
@@ -1681,9 +1728,18 @@ class CameraController(
                             maxDurationRunnable = null
 
                             if (event.hasError()) {
-                                Log.e(TAG, "Recording error: ${event.error}")
+                                DivineCameraLog.error(
+                                    "Recording finalized with error code ${event.error}",
+                                    name = "DivineCamera.Recording"
+                                )
                             } else {
-                                Log.d(TAG, "Recording finalized")
+                                val hadAudio =
+                                    event.recordingStats.audioStats.audioState ==
+                                        AudioStats.AUDIO_STATE_ACTIVE
+                                DivineCameraLog.info(
+                                    "Recording finalized (audioActive=$hadAudio)",
+                                    name = "DivineCamera.Recording"
+                                )
                             }
 
                             // If startRecordingCallback is still set, recording was stopped before first keyframe.
@@ -1693,7 +1749,11 @@ class CameraController(
                                 val lower = lowerQuality(videoQuality)
                                 if (lower != null && encoderRetryCount < MAX_ENCODER_RETRIES) {
                                     encoderRetryCount++
-                                    Log.w(TAG, "Encoder failed at $videoQuality, retrying with $lower (attempt $encoderRetryCount/$MAX_ENCODER_RETRIES)")
+                                    DivineCameraLog.warning(
+                                        "Encoder failed at $videoQuality, retrying with $lower " +
+                                            "(attempt $encoderRetryCount/$MAX_ENCODER_RETRIES)",
+                                        name = "DivineCamera.Recording"
+                                    )
                                     videoQuality = lower
 
                                     // Clean up failed recording file
@@ -1711,10 +1771,10 @@ class CameraController(
                                     val params = pendingRecordingParams
                                     startCamera { _, error ->
                                         if (error != null) {
-                                            Log.e(TAG, "Failed to reinitialize camera at $lower: $error")
+                                            DivineCameraLog.e(TAG, "Failed to reinitialize camera at $lower: $error")
                                             savedCallback("Recording failed: encoder not supported")
                                         } else {
-                                            Log.d(TAG, "Camera reinitialized at $lower, retrying recording")
+                                            DivineCameraLog.d(TAG, "Camera reinitialized at $lower, retrying recording")
                                             startRecordingInternal(
                                                 params?.maxDurationMs,
                                                 params?.useCache ?: true,
@@ -1728,14 +1788,14 @@ class CameraController(
 
                                 // No more fallback options — report failure
                                 startRecordingCallback?.let { startCallback ->
-                                    Log.w(TAG, "Recording stopped before first keyframe - no more quality fallbacks")
+                                    DivineCameraLog.w(TAG, "Recording stopped before first keyframe - no more quality fallbacks")
                                     startCallback("Recording stopped before first keyframe")
                                     startRecordingCallback = null
                                 }
                             } else {
                                 // Normal finalize — either successful or user-stopped
                                 startRecordingCallback?.let { startCallback ->
-                                    Log.w(TAG, "Recording stopped before first keyframe - notifying Flutter")
+                                    DivineCameraLog.w(TAG, "Recording stopped before first keyframe - notifying Flutter")
                                     startCallback("Recording stopped before first keyframe")
                                     startRecordingCallback = null
                                 }
@@ -1756,10 +1816,10 @@ class CameraController(
                             // Handle manual stop callback (from stopRecording)
                             manualStopCallback?.let { manualCallback ->
                                 if (result != null) {
-                                    Log.d(TAG, "Manual stop recording result: $result")
+                                    DivineCameraLog.d(TAG, "Manual stop recording result: $result")
                                     manualCallback(result, null)
                                 } else {
-                                    Log.w(TAG, "Manual stop: Recording file not found or empty")
+                                    DivineCameraLog.w(TAG, "Manual stop: Recording file not found or empty")
                                     manualCallback(null, "Recording file not found or empty")
                                 }
                                 manualStopCallback = null
@@ -1768,7 +1828,7 @@ class CameraController(
                             // Handle auto-stop callback (from max duration)
                             autoStopCallback?.let { autoCallback ->
                                 if (result != null) {
-                                    Log.d(TAG, "Auto-stop recording result: $result")
+                                    DivineCameraLog.d(TAG, "Auto-stop recording result: $result")
                                     autoCallback(result, null)
                                 } else {
                                     autoCallback(null, "Recording file not found")
@@ -1784,7 +1844,7 @@ class CameraController(
             // Callback is now called in Status event when recording truly starts
 
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start recording", e)
+            DivineCameraLog.e(TAG, "Failed to start recording", e)
             startRecordingCallback = null
             callback("Failed to start recording: ${e.message}")
         }
@@ -1801,7 +1861,7 @@ class CameraController(
             return
         }
 
-        Log.d(TAG, "Auto-stopping recording...")
+        DivineCameraLog.d(TAG, "Auto-stopping recording...")
         
         // Disable auto-flash torch if it was enabled
         disableAutoFlashTorch()
@@ -1809,7 +1869,7 @@ class CameraController(
         // Set the callback that will be invoked when Finalize event fires
         autoStopCallback = { result, error ->
             if (result != null) {
-                Log.d(TAG, "Auto-stop completed, notifying listener: $result")
+                DivineCameraLog.d(TAG, "Auto-stop completed, notifying listener: $result")
                 onAutoStopListener?.invoke(result)
             }
         }
@@ -1835,13 +1895,13 @@ class CameraController(
 
         // If recording hasn't truly started yet (no keyframe), we need to handle this
         if (!recordingTrulyStarted) {
-            Log.w(TAG, "Stopping recording before first keyframe - will return empty result")
+            DivineCameraLog.w(TAG, "Stopping recording before first keyframe - will return empty result")
             // The startRecordingCallback will be notified via Finalize event
             // We still need to call manualStopCallback, but it will get null result
         }
 
         try {
-            Log.d(TAG, "Stopping recording...")
+            DivineCameraLog.d(TAG, "Stopping recording...")
             
             // Disable auto-flash torch if it was enabled
             disableAutoFlashTorch()
@@ -1852,7 +1912,7 @@ class CameraController(
             // The Finalize event handler will call the callback when file is ready
 
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to stop recording", e)
+            DivineCameraLog.e(TAG, "Failed to stop recording", e)
             manualStopCallback = null
             callback(null, "Failed to stop recording: ${e.message}")
         }
@@ -1862,7 +1922,7 @@ class CameraController(
      * Pauses the camera preview.
      */
     fun pausePreview() {
-        Log.d(TAG, "Pausing preview")
+        DivineCameraLog.d(TAG, "Pausing preview")
         forceDisableScreenFlash()
         isPaused = true
     }
@@ -1871,7 +1931,7 @@ class CameraController(
      * Resumes the camera preview.
      */
     fun resumePreview(callback: (Map<String, Any?>?, String?) -> Unit) {
-        Log.d(TAG, "Resuming preview")
+        DivineCameraLog.d(TAG, "Resuming preview")
         isPaused = false
         
         // Re-enable screen flash if front camera torch mode was active
@@ -1930,7 +1990,7 @@ class CameraController(
      * Releases all camera resources.
      */
     fun release() {
-        Log.d(TAG, "Releasing camera resources")
+        DivineCameraLog.d(TAG, "Releasing camera resources")
         
         // Always restore screen brightness
         forceDisableScreenFlash()
@@ -1962,12 +2022,12 @@ class CameraController(
                             cameraExecutor.shutdown()
                         }
                     } catch (e: Exception) {
-                        Log.w(TAG, "Error shutting down executor: ${e.message}")
+                        DivineCameraLog.w(TAG, "Error shutting down executor: ${e.message}")
                     }
                 }, 500)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error releasing camera", e)
+            DivineCameraLog.e(TAG, "Error releasing camera", e)
         }
     }
 }

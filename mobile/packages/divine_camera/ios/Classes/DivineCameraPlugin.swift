@@ -19,7 +19,11 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         instance.messenger = registrar.messenger()
         instance.methodChannel = channel
         registrar.addMethodCallDelegate(instance, channel: channel)
-        
+
+        // Forward curated native diagnostics to Dart's UnifiedLogger so
+        // recording issues (e.g. missing audio) land in user bug reports.
+        instance.installLogSink()
+
         // Listen for auto-stop events from CameraController
         NotificationCenter.default.addObserver(
             instance,
@@ -67,9 +71,9 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
                 // Do NOT call setActive(true) — that would steal audio focus
                 // from anything currently playing. setCategory alone triggers
                 // the dlopen.
-                print("DivineCamera: AVAudioSession category configured")
+                DivineCameraLog.shared.debug("AVAudioSession category configured (pre-warm)", name: "DivineCamera.Prewarm")
             } catch {
-                print("DivineCamera: AVAudioSession config failed: \(error.localizedDescription)")
+                DivineCameraLog.shared.warning("AVAudioSession pre-warm config failed: \(error.localizedDescription)", name: "DivineCamera.Prewarm")
             }
             _ = AVCaptureDevice.default(for: .audio)
 
@@ -94,9 +98,9 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
                 writer.startWriting()
                 writer.cancelWriting()
                 try? FileManager.default.removeItem(at: tempURL)
-                print("DivineCamera: VideoToolbox pre-warmed via AVAssetWriter")
+                DivineCameraLog.shared.debug("VideoToolbox pre-warmed via AVAssetWriter", name: "DivineCamera.Prewarm")
             } catch {
-                print("DivineCamera: VideoToolbox pre-warm failed: \(error.localizedDescription)")
+                DivineCameraLog.shared.warning("VideoToolbox pre-warm failed: \(error.localizedDescription)", name: "DivineCamera.Prewarm")
             }
         }
     }
@@ -110,7 +114,46 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         }
     }
     
+    /// Session-lifecycle operations worth leaving a breadcrumb for. High-
+    /// frequency calls (zoom / focus / exposure / getCameraState) are excluded
+    /// on purpose so they don't flood the captured log buffer.
+    private static let lifecycleMethods: Set<String> = [
+        "initializeCamera", "disposeCamera", "switchCamera",
+        "startRecording", "stopRecording", "pausePreview", "resumePreview",
+        "setFlashMode", "setRemoteRecordControlEnabled",
+    ]
+
+    private static func logLifecycleCall(_ call: FlutterMethodCall) {
+        guard lifecycleMethods.contains(call.method) else { return }
+        let args = call.arguments as? [String: Any]
+        DivineCameraLog.shared.debug(
+            "→ \(call.method)\(args.map { " \($0)" } ?? "")",
+            name: "DivineCamera.Lifecycle"
+        )
+    }
+
+    /// Per-instance forwarder pushing native diagnostics over THIS engine's
+    /// channel. `DivineCameraLog.shared.sink` is a process-wide singleton, so a
+    /// second FlutterEngine that registers the plugin would otherwise overwrite
+    /// it and route camera logs to the wrong isolate. We re-assert it in
+    /// `handle` — camera calls only ever reach the UI engine.
+    private lazy var logSink: (String, String, String) -> Void = {
+        [weak self] level, message, name in
+        DispatchQueue.main.async {
+            self?.methodChannel?.invokeMethod(
+                "onNativeLog",
+                arguments: ["level": level, "message": message, "name": name]
+            )
+        }
+    }
+
+    private func installLogSink() {
+        DivineCameraLog.shared.sink = logSink
+    }
+
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        installLogSink()
+        DivineCameraPlugin.logLifecycleCall(call)
         switch call.method {
         case "getPlatformVersion":
             result("iOS " + UIDevice.current.systemVersion)
@@ -193,10 +236,22 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             result(FlutterMethodNotImplemented)
         }
     }
-    
+
+    /// Builds a `FlutterError` and forwards it to Dart's UnifiedLogger so the
+    /// failure shows up in user bug reports. Fatal native crashes are captured
+    /// separately by Crashlytics. Static so it can be called from `@escaping`
+    /// completion closures without capturing `self`.
+    private static func cameraError(_ code: String, _ message: String?) -> FlutterError {
+        DivineCameraLog.shared.error(
+            "\(code): \(message ?? "")",
+            name: "DivineCamera.Plugin"
+        )
+        return FlutterError(code: code, message: message, details: nil)
+    }
+
     private func initializeCamera(lens: String, videoQuality: String, enableScreenFlash: Bool, mirrorFrontCameraOutput: Bool, enableAutoLensSwitch: Bool, result: @escaping FlutterResult) {
         guard let registry = textureRegistry else {
-            result(FlutterError(code: "NO_REGISTRY", message: "Texture registry not available", details: nil))
+            result(Self.cameraError("NO_REGISTRY", "Texture registry not available"))
             return
         }
         
@@ -206,8 +261,17 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         cameraController?.initialize(lens: lens, videoQuality: videoQuality, enableScreenFlash: enableScreenFlash, mirrorFrontCameraOutput: mirrorFrontCameraOutput, enableAutoLensSwitch: enableAutoLensSwitch) { [weak self] state, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    result(FlutterError(code: "INIT_ERROR", message: error, details: nil))
+                    result(Self.cameraError("INIT_ERROR", error))
                 } else {
+                    if let dict = state as? [String: Any] {
+                        DivineCameraLog.shared.info(
+                            "Camera initialized (lens=\(dict["lens"] ?? "?"), "
+                                + "aspectRatio=\(dict["aspectRatio"] ?? "?"), "
+                                + "hasFlash=\(dict["hasFlash"] ?? "?"), "
+                                + "lenses=\(dict["availableLenses"] ?? "?"))",
+                            name: "DivineCamera.Lifecycle"
+                        )
+                    }
                     result(state)
                 }
             }
@@ -247,7 +311,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     
     private func setFlashMode(mode: String, result: @escaping FlutterResult) {
         guard let controller = cameraController else {
-            result(FlutterError(code: "NOT_INITIALIZED", message: "Camera not initialized", details: nil))
+            result(Self.cameraError("NOT_INITIALIZED", "Camera not initialized"))
             return
         }
         let success = controller.setFlashMode(mode: mode)
@@ -256,7 +320,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     
     private func setFocusPoint(x: Double, y: Double, result: @escaping FlutterResult) {
         guard let controller = cameraController else {
-            result(FlutterError(code: "NOT_INITIALIZED", message: "Camera not initialized", details: nil))
+            result(Self.cameraError("NOT_INITIALIZED", "Camera not initialized"))
             return
         }
         let success = controller.setFocusPoint(x: CGFloat(x), y: CGFloat(y))
@@ -265,7 +329,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     
     private func setExposurePoint(x: Double, y: Double, result: @escaping FlutterResult) {
         guard let controller = cameraController else {
-            result(FlutterError(code: "NOT_INITIALIZED", message: "Camera not initialized", details: nil))
+            result(Self.cameraError("NOT_INITIALIZED", "Camera not initialized"))
             return
         }
         let success = controller.setExposurePoint(x: CGFloat(x), y: CGFloat(y))
@@ -274,7 +338,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     
     private func cancelFocusAndMetering(result: @escaping FlutterResult) {
         guard let controller = cameraController else {
-            result(FlutterError(code: "NOT_INITIALIZED", message: "Camera not initialized", details: nil))
+            result(Self.cameraError("NOT_INITIALIZED", "Camera not initialized"))
             return
         }
         let success = controller.cancelFocusAndMetering()
@@ -283,7 +347,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     
     private func setZoomLevel(level: Double, result: @escaping FlutterResult) {
         guard let controller = cameraController else {
-            result(FlutterError(code: "NOT_INITIALIZED", message: "Camera not initialized", details: nil))
+            result(Self.cameraError("NOT_INITIALIZED", "Camera not initialized"))
             return
         }
         let success = controller.setZoomLevel(level: CGFloat(level))
@@ -292,7 +356,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     
     private func switchCamera(lens: String, result: @escaping FlutterResult) {
         guard let controller = cameraController else {
-            result(FlutterError(code: "NOT_INITIALIZED", message: "Camera not initialized", details: nil))
+            result(Self.cameraError("NOT_INITIALIZED", "Camera not initialized"))
             return
         }
         
@@ -305,8 +369,14 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         controller.switchCamera(lens: lens) { state, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    result(FlutterError(code: "SWITCH_ERROR", message: error, details: nil))
+                    result(Self.cameraError("SWITCH_ERROR", error))
                 } else {
+                    if let dict = state as? [String: Any] {
+                        DivineCameraLog.shared.info(
+                            "Camera switched (lens=\(dict["lens"] ?? "?"))",
+                            name: "DivineCamera.Lifecycle"
+                        )
+                    }
                     result(state)
                 }
             }
@@ -315,14 +385,14 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     
     private func startRecording(maxDurationMs: Int?, useCache: Bool, outputDirectory: String?, result: @escaping FlutterResult) {
         guard let controller = cameraController else {
-            result(FlutterError(code: "NOT_INITIALIZED", message: "Camera not initialized", details: nil))
+            result(Self.cameraError("NOT_INITIALIZED", "Camera not initialized"))
             return
         }
         
         controller.startRecording(maxDurationMs: maxDurationMs, useCache: useCache, outputDirectory: outputDirectory) { error in
             DispatchQueue.main.async {
                 if let error = error {
-                    result(FlutterError(code: "RECORD_START_ERROR", message: error, details: nil))
+                    result(Self.cameraError("RECORD_START_ERROR", error))
                 } else {
                     result(nil)
                 }
@@ -332,14 +402,14 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     
     private func stopRecording(result: @escaping FlutterResult) {
         guard let controller = cameraController else {
-            result(FlutterError(code: "NOT_INITIALIZED", message: "Camera not initialized", details: nil))
+            result(Self.cameraError("NOT_INITIALIZED", "Camera not initialized"))
             return
         }
         
         controller.stopRecording { recordingResult, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    result(FlutterError(code: "RECORD_STOP_ERROR", message: error, details: nil))
+                    result(Self.cameraError("RECORD_STOP_ERROR", error))
                 } else {
                     result(recordingResult)
                 }
@@ -356,7 +426,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         cameraController?.resumePreview { state, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    result(FlutterError(code: "RESUME_ERROR", message: error, details: nil))
+                    result(Self.cameraError("RESUME_ERROR", error))
                 } else {
                     result(state)
                 }
@@ -366,7 +436,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     
     private func getCameraState(result: @escaping FlutterResult) {
         guard let controller = cameraController else {
-            result(FlutterError(code: "NOT_INITIALIZED", message: "Camera not initialized", details: nil))
+            result(Self.cameraError("NOT_INITIALIZED", "Camera not initialized"))
             return
         }
         result(controller.getCameraState())
