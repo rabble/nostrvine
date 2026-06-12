@@ -1,8 +1,12 @@
 // ABOUTME: Screen navigation and performance analytics service
 // ABOUTME: Tracks screen load times, navigation patterns, and user engagement metrics
 
+import 'dart:async';
+
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:openvine/services/analytics_event_sink.dart';
+import 'package:openvine/services/firebase_analytics_event_sink.dart';
 import 'package:openvine/services/page_load_history.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -16,7 +20,8 @@ const _maxScreenSessionAge = Duration(seconds: 60);
 /// Service for tracking screen navigation, performance, and user engagement
 class ScreenAnalyticsService {
   factory ScreenAnalyticsService() => _instance ??= ScreenAnalyticsService._();
-  ScreenAnalyticsService._() : _bypassAnalytics = false;
+  ScreenAnalyticsService._({AnalyticsEventSink? sink})
+    : _sink = sink ?? _createAnalyticsSink();
 
   static ScreenAnalyticsService? _instance;
 
@@ -33,25 +38,22 @@ class ScreenAnalyticsService {
 
   /// Creates a testable instance that does not touch [FirebaseAnalytics].
   @visibleForTesting
-  ScreenAnalyticsService.testInstance({FirebaseAnalytics? analytics})
-    : _analyticsOverride = analytics,
-      _bypassAnalytics = true;
+  ScreenAnalyticsService.testInstance({
+    AnalyticsEventSink? sink,
+    FirebaseAnalytics? analytics,
+  }) : _sink =
+           sink ??
+           (analytics != null
+               ? FirebaseAnalyticsEventSink(analytics: analytics)
+               : const NoOpAnalyticsEventSink());
 
-  // Lazy-init to avoid crashing when Firebase isn't initialized (e.g. tests).
-  FirebaseAnalytics? _analyticsOverride;
-  FirebaseAnalytics? _analyticsInstance;
-  final bool _bypassAnalytics;
+  final AnalyticsEventSink _sink;
 
-  FirebaseAnalytics? get _analytics {
-    if (_bypassAnalytics) return _analyticsOverride;
-    return _analyticsOverride ?? (_analyticsInstance ??= _initAnalytics());
-  }
-
-  static FirebaseAnalytics? _initAnalytics() {
+  static AnalyticsEventSink _createAnalyticsSink() {
     try {
-      return FirebaseAnalytics.instance;
+      return FirebaseAnalyticsEventSink();
     } catch (_) {
-      return null;
+      return const NoOpAnalyticsEventSink();
     }
   }
 
@@ -114,14 +116,15 @@ class ScreenAnalyticsService {
       name: 'ScreenAnalytics',
     );
 
-    // Log to Firebase
-    _analytics?.logEvent(
-      name: 'screen_load',
-      parameters: {
-        'screen_name': screenName,
-        'load_time_ms': loadTime,
-        ...session.params,
-      },
+    unawaited(
+      _sink.logEvent(
+        name: 'screen_load',
+        parameters: _parameters({
+          'screen_name': screenName,
+          'load_time_ms': loadTime,
+          ...session.params,
+        }),
+      ),
     );
 
     // Record to page load history
@@ -161,15 +164,16 @@ class ScreenAnalyticsService {
       name: 'ScreenAnalytics',
     );
 
-    // Log to Firebase
-    _analytics?.logEvent(
-      name: 'screen_data_loaded',
-      parameters: {
-        'screen_name': screenName,
-        'data_load_time_ms': dataLoadTime,
-        ...?dataMetrics,
-        ...session.params,
-      },
+    unawaited(
+      _sink.logEvent(
+        name: 'screen_data_loaded',
+        parameters: _parameters({
+          'screen_name': screenName,
+          'data_load_time_ms': dataLoadTime,
+          ...?dataMetrics,
+          ...session.params,
+        }),
+      ),
     );
 
     // Record to page load history
@@ -205,12 +209,14 @@ class ScreenAnalyticsService {
           .difference(_currentScreenStartTime!)
           .inSeconds;
 
-      _analytics?.logEvent(
-        name: 'screen_time',
-        parameters: {
-          'screen_name': _currentScreen!,
-          'time_spent_seconds': timeSpent,
-        },
+      unawaited(
+        _sink.logEvent(
+          name: 'screen_time',
+          parameters: _parameters({
+            'screen_name': _currentScreen,
+            'time_spent_seconds': timeSpent,
+          }),
+        ),
       );
 
       UnifiedLogger.info(
@@ -224,9 +230,11 @@ class ScreenAnalyticsService {
     _currentScreenStartTime = DateTime.now();
 
     // Log screen view
-    _analytics?.logScreenView(
-      screenName: screenName,
-      parameters: params?.cast<String, Object>(),
+    unawaited(
+      _sink.logScreenView(
+        screenName: screenName,
+        parameters: _optionalParameters(params),
+      ),
     );
 
     UnifiedLogger.info(
@@ -241,13 +249,15 @@ class ScreenAnalyticsService {
     String interactionType, {
     Map<String, dynamic>? params,
   }) {
-    _analytics?.logEvent(
-      name: 'user_interaction',
-      parameters: {
-        'screen_name': screenName,
-        'interaction_type': interactionType,
-        ...?params,
-      },
+    unawaited(
+      _sink.logEvent(
+        name: 'user_interaction',
+        parameters: _parameters({
+          'screen_name': screenName,
+          'interaction_type': interactionType,
+          ...?params,
+        }),
+      ),
     );
 
     UnifiedLogger.debug(
@@ -262,9 +272,15 @@ class ScreenAnalyticsService {
     required String to,
     String? trigger,
   }) {
-    _analytics?.logEvent(
-      name: 'screen_navigation',
-      parameters: {'from_screen': from, 'to_screen': to, 'trigger': ?trigger},
+    unawaited(
+      _sink.logEvent(
+        name: 'screen_navigation',
+        parameters: _parameters({
+          'from_screen': from,
+          'to_screen': to,
+          'trigger': trigger,
+        }),
+      ),
     );
 
     UnifiedLogger.info(
@@ -280,14 +296,16 @@ class ScreenAnalyticsService {
     required int itemsViewed,
     int? totalItems,
   }) {
-    _analytics?.logEvent(
-      name: 'screen_scroll',
-      parameters: {
-        'screen_name': screenName,
-        'scroll_depth': scrollDepth,
-        'items_viewed': itemsViewed,
-        'total_items': ?totalItems,
-      },
+    unawaited(
+      _sink.logEvent(
+        name: 'screen_scroll',
+        parameters: _parameters({
+          'screen_name': screenName,
+          'scroll_depth': scrollDepth,
+          'items_viewed': itemsViewed,
+          'total_items': totalItems,
+        }),
+      ),
     );
   }
 
@@ -298,14 +316,16 @@ class ScreenAnalyticsService {
     required int resultsCount,
     required int loadTimeMs,
   }) {
-    _analytics?.logEvent(
-      name: 'search_performed',
-      parameters: {
-        'screen_name': screenName,
-        'query_length': query.length,
-        'results_count': resultsCount,
-        'load_time_ms': loadTimeMs,
-      },
+    unawaited(
+      _sink.logEvent(
+        name: 'search_performed',
+        parameters: _parameters({
+          'screen_name': screenName,
+          'query_length': query.length,
+          'results_count': resultsCount,
+          'load_time_ms': loadTimeMs,
+        }),
+      ),
     );
 
     UnifiedLogger.info(
@@ -316,9 +336,14 @@ class ScreenAnalyticsService {
 
   /// Track tab changes
   void trackTabChange({required String screenName, required String tabName}) {
-    _analytics?.logEvent(
-      name: 'tab_changed',
-      parameters: {'screen_name': screenName, 'tab_name': tabName},
+    unawaited(
+      _sink.logEvent(
+        name: 'tab_changed',
+        parameters: _parameters({
+          'screen_name': screenName,
+          'tab_name': tabName,
+        }),
+      ),
     );
   }
 
@@ -329,17 +354,19 @@ class ScreenAnalyticsService {
     required String errorMessage,
     Map<String, dynamic>? context,
   }) {
-    _analytics?.logEvent(
-      name: 'screen_error',
-      parameters: {
-        'screen_name': screenName,
-        'error_type': errorType,
-        'error_message': errorMessage.substring(
-          0,
-          errorMessage.length > 100 ? 100 : errorMessage.length,
-        ),
-        ...?context,
-      },
+    unawaited(
+      _sink.logEvent(
+        name: 'screen_error',
+        parameters: _parameters({
+          'screen_name': screenName,
+          'error_type': errorType,
+          'error_message': errorMessage.substring(
+            0,
+            errorMessage.length > 100 ? 100 : errorMessage.length,
+          ),
+          ...?context,
+        }),
+      ),
     );
 
     UnifiedLogger.error(
@@ -351,6 +378,24 @@ class ScreenAnalyticsService {
   /// End screen session
   void endScreen(String screenName) {
     _activeSessions.remove(screenName);
+  }
+
+  static Map<String, Object>? _optionalParameters(
+    Map<String, dynamic>? parameters,
+  ) {
+    if (parameters == null) return null;
+    return _parameters(parameters);
+  }
+
+  static Map<String, Object> _parameters(Map<String, dynamic> parameters) {
+    final filtered = <String, Object>{};
+    for (final entry in parameters.entries) {
+      final value = entry.value;
+      if (value != null) {
+        filtered[entry.key] = value as Object;
+      }
+    }
+    return filtered;
   }
 
   /// Whether a session's start time is older than [_maxScreenSessionAge].

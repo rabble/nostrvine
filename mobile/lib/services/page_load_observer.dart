@@ -2,11 +2,15 @@
 // ABOUTME: Records screen load start on push, content visible after frame render, and cleanup on pop
 
 import 'package:flutter/material.dart';
+import 'package:openvine/services/analytics_surface.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class PageLoadObserver extends NavigatorObserver {
-  final ScreenAnalyticsService _analytics = ScreenAnalyticsService();
+  PageLoadObserver({ScreenAnalyticsService? analytics})
+    : _analytics = analytics ?? ScreenAnalyticsService();
+
+  final ScreenAnalyticsService _analytics;
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
@@ -18,6 +22,13 @@ class PageLoadObserver extends NavigatorObserver {
 
     final screenName = _screenName(route);
     _analytics.startScreenLoad(screenName);
+    _analytics.trackScreenView(
+      screenName,
+      params: {
+        AnalyticsParam.routeName: screenName,
+        AnalyticsParam.entryPoint: 'navigation',
+      },
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _analytics.markContentVisible(screenName);
