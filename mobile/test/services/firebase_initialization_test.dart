@@ -1,76 +1,70 @@
 // ABOUTME: Regression tests for idempotent Firebase default app initialization.
 // ABOUTME: Covers Android native auto-init before Dart startup.
 
-import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/firebase_initialization.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
-class _FakeFirebaseCore extends Fake
-    with MockPlatformInterfaceMixin
-    implements FirebasePlatform {
-  _FakeFirebaseCore({required this.hasDefaultApp});
-
-  final bool hasDefaultApp;
-  int initializeAppCalls = 0;
-
-  @override
-  FirebaseAppPlatform app([String name = defaultFirebaseAppName]) =>
-      _FakeFirebaseApp();
-
-  @override
-  Future<FirebaseAppPlatform> initializeApp({
-    String? name,
-    FirebaseOptions? options,
-  }) async {
-    initializeAppCalls++;
-    return _FakeFirebaseApp();
-  }
-
-  @override
-  List<FirebaseAppPlatform> get apps =>
-      hasDefaultApp ? [_FakeFirebaseApp()] : const [];
-}
-
-class _FakeFirebaseApp extends Fake
-    with MockPlatformInterfaceMixin
-    implements FirebaseAppPlatform {
-  @override
-  String get name => defaultFirebaseAppName;
-
-  @override
-  FirebaseOptions get options => const FirebaseOptions(
-    apiKey: 'test-api-key',
-    appId: 'test-app-id',
-    messagingSenderId: 'test-sender-id',
-    projectId: 'test-project-id',
-  );
-}
+const _firebaseOptions = FirebaseOptions(
+  apiKey: 'test-api-key',
+  appId: 'test-app-id',
+  messagingSenderId: 'test-sender-id',
+  projectId: 'test-project-id',
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ensureDefaultFirebaseInitialized', () {
     test('initializes Firebase when no default app exists', () async {
-      final fakeFirebase = _FakeFirebaseCore(hasDefaultApp: false);
-      FirebasePlatform.instance = fakeFirebase;
+      var initializeAppCalls = 0;
 
       await ensureDefaultFirebaseInitialized(
-        options: _FakeFirebaseApp().options,
+        options: _firebaseOptions,
+        appsProvider: () => const [],
+        initializeApp: ({FirebaseOptions? options}) async {
+          initializeAppCalls++;
+          expect(options?.projectId, 'test-project-id');
+          return _FakeFirebaseApp();
+        },
       );
 
-      expect(fakeFirebase.initializeAppCalls, 1);
+      expect(initializeAppCalls, 1);
     });
 
     test('reuses an existing default Firebase app', () async {
-      final fakeFirebase = _FakeFirebaseCore(hasDefaultApp: true);
-      FirebasePlatform.instance = fakeFirebase;
+      var initializeAppCalls = 0;
 
       await ensureDefaultFirebaseInitialized(
-        options: _FakeFirebaseApp().options,
+        options: _firebaseOptions,
+        appsProvider: () => [_FakeFirebaseApp()],
+        initializeApp: ({FirebaseOptions? options}) async {
+          initializeAppCalls++;
+          return _FakeFirebaseApp();
+        },
       );
 
-      expect(fakeFirebase.initializeAppCalls, isZero);
+      expect(initializeAppCalls, isZero);
     });
   });
+}
+
+class _FakeFirebaseApp implements FirebaseApp {
+  @override
+  String get name => defaultFirebaseAppName;
+
+  @override
+  FirebaseOptions get options => _firebaseOptions;
+
+  @override
+  Future<void> delete() async {}
+
+  @override
+  bool get isAutomaticDataCollectionEnabled => false;
+
+  @override
+  Future<void> setAutomaticDataCollectionEnabled(bool enabled) async {}
+
+  @override
+  Future<void> setAutomaticResourceManagementEnabled(bool enabled) async {}
 }
