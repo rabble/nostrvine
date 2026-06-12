@@ -64,9 +64,11 @@ OAuthConfig oauthConfig(Ref ref) {
 @Riverpod(keepAlive: true)
 FlutterSecureStorage flutterSecureStorage(Ref ref) =>
     const FlutterSecureStorage(
+      // Do not enable AndroidOptions.resetOnError here. This storage holds
+      // OAuth/Keycast and pending-verification credentials; silently deleting
+      // them after a transient Android Keystore read error logs users out.
       aOptions: AndroidOptions(
         encryptedSharedPreferences: true,
-        resetOnError: true,
       ),
     );
 
