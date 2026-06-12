@@ -4,8 +4,6 @@
 import 'dart:async';
 
 import 'package:dm_repository/dm_repository.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -1458,12 +1456,6 @@ List<NavigatorObserver> _buildRouterObservers() {
     PageLoadObserver(),
     VideoStopNavigatorObserver(),
   ];
-
-  if (Firebase.apps.isNotEmpty) {
-    observers.add(
-      FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
-    );
-  }
 
   return observers;
 }
