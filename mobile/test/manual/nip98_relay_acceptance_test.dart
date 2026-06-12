@@ -23,19 +23,15 @@ import 'package:nostr_sdk/event.dart';
 const _localHost = 'localhost';
 const _localRelayPort = 47777;
 const _baseUrl = 'http://$_localHost:$_localRelayPort';
+const _localStackUnavailableMessage =
+    'Local stack is not running. Start with `mise run local_up`, then rerun '
+    '`flutter test test/manual/nip98_relay_acceptance_test.dart`.';
 
 void main() {
   late bool stackAvailable;
 
   setUpAll(() async {
     stackAvailable = await _isPortOpen(_localHost, _localRelayPort);
-    if (!stackAvailable) {
-      print(
-        '\nLocal stack not running — skipping NIP-98 relay acceptance tests.\n'
-        'Start with: mise run local_up\n'
-        'Then re-run: flutter test test/manual/nip98_relay_acceptance_test.dart\n',
-      );
-    }
   });
 
   group(
@@ -43,7 +39,7 @@ void main() {
     '(POST /api/users/{pubkey}/notifications/read)',
     () {
       test('valid token with payload hash is accepted', () async {
-        if (!stackAvailable) return;
+        if (_skipIfStackUnavailable(stackAvailable)) return;
 
         final privKey = generatePrivateKey();
         final pubkey = getPublicKey(privKey);
@@ -65,7 +61,7 @@ void main() {
 
         expect(
           status,
-          isNot(equals(HttpStatus.unauthorized)),
+          equals(HttpStatus.ok),
           reason: 'Valid NIP-98 token must be accepted by the relay.',
         );
       });
@@ -73,7 +69,7 @@ void main() {
       test(
         'request without Authorization header is rejected with 401',
         () async {
-          if (!stackAvailable) return;
+          if (_skipIfStackUnavailable(stackAvailable)) return;
 
           final privKey = generatePrivateKey();
           final pubkey = getPublicKey(privKey);
@@ -87,7 +83,7 @@ void main() {
       );
 
       test('expired created_at (>60 s) is rejected with 401', () async {
-        if (!stackAvailable) return;
+        if (_skipIfStackUnavailable(stackAvailable)) return;
 
         final privKey = generatePrivateKey();
         final pubkey = getPublicKey(privKey);
@@ -118,7 +114,7 @@ void main() {
       test(
         'wrong method tag (GET instead of POST) is rejected with 401',
         () async {
-          if (!stackAvailable) return;
+          if (_skipIfStackUnavailable(stackAvailable)) return;
 
           final privKey = generatePrivateKey();
           final pubkey = getPublicKey(privKey);
@@ -142,8 +138,36 @@ void main() {
         },
       );
 
+      test(
+        'POST body without payload hash tag is rejected with 401',
+        () async {
+          if (_skipIfStackUnavailable(stackAvailable)) return;
+
+          final privKey = generatePrivateKey();
+          final pubkey = getPublicKey(privKey);
+          final url = '$_baseUrl/api/users/$pubkey/notifications/read';
+          final body = _buildMarkReadBody();
+
+          final authHeader = _buildNip98Token(
+            privateKey: privKey,
+            url: url,
+            method: 'POST',
+            body: body,
+            includePayloadTag: false,
+          );
+
+          final status = await _postStatus(
+            url: url,
+            body: body,
+            authHeader: authHeader,
+          );
+
+          expect(status, equals(HttpStatus.unauthorized));
+        },
+      );
+
       test('URL mismatch is rejected with 401', () async {
-        if (!stackAvailable) return;
+        if (_skipIfStackUnavailable(stackAvailable)) return;
 
         final privKey = generatePrivateKey();
         final pubkey = getPublicKey(privKey);
@@ -169,7 +193,7 @@ void main() {
       });
 
       test('corrupted signature is rejected with 401', () async {
-        if (!stackAvailable) return;
+        if (_skipIfStackUnavailable(stackAvailable)) return;
 
         final privKey = generatePrivateKey();
         final pubkey = getPublicKey(privKey);
@@ -202,7 +226,7 @@ void main() {
       test(
         'u tag with full URL including query parameters is accepted',
         () async {
-          if (!stackAvailable) return;
+          if (_skipIfStackUnavailable(stackAvailable)) return;
 
           final privKey = generatePrivateKey();
           final pubkey = getPublicKey(privKey);
@@ -226,7 +250,7 @@ void main() {
 
           expect(
             status,
-            isNot(equals(HttpStatus.unauthorized)),
+            equals(HttpStatus.ok),
             reason:
                 'NIP-98 token signed with full URL (including query params) '
                 'must be accepted.',
@@ -237,7 +261,7 @@ void main() {
       test(
         'u tag without query string is rejected when URL has query params',
         () async {
-          if (!stackAvailable) return;
+          if (_skipIfStackUnavailable(stackAvailable)) return;
 
           final privKey = generatePrivateKey();
           final pubkey = getPublicKey(privKey);
@@ -272,6 +296,13 @@ void main() {
   );
 }
 
+bool _skipIfStackUnavailable(bool stackAvailable) {
+  if (stackAvailable) return false;
+
+  markTestSkipped(_localStackUnavailableMessage);
+  return true;
+}
+
 // ---------------------------------------------------------------------------
 // NIP-98 token builder
 // ---------------------------------------------------------------------------
@@ -286,6 +317,7 @@ String _buildNip98Token({
   required String method,
   String? body,
   DateTime? createdAt,
+  bool includePayloadTag = true,
 }) {
   final pubKey = getPublicKey(privateKey);
   final ts = ((createdAt ?? DateTime.now()).millisecondsSinceEpoch / 1000)
@@ -298,7 +330,8 @@ String _buildNip98Token({
   ];
 
   final uppercaseMethod = method.toUpperCase();
-  if (body != null &&
+  if (includePayloadTag &&
+      body != null &&
       (uppercaseMethod == 'POST' ||
           uppercaseMethod == 'PUT' ||
           uppercaseMethod == 'PATCH')) {
@@ -315,7 +348,7 @@ String _buildNip98Token({
 }
 
 /// Returns the JSON body for a mark-all-read request.
-String _buildMarkReadBody() => jsonEncode({'notification_ids': null});
+String _buildMarkReadBody() => jsonEncode({'notification_ids': <String>[]});
 
 /// Flip one hex character in the Schnorr signature, producing a token whose
 /// signature verification will fail while the rest of the structure remains
