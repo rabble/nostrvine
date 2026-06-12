@@ -142,6 +142,43 @@ void main() {
         expect(recent.first.result, equals('success'));
         expect(recent.last.result, equals('dismissed'));
       });
+
+      test('unrelated stale surface record does not block route update', () {
+        final now = DateTime.now();
+        history.addOrUpdate(
+          PageLoadRecord(
+            screenName: 'home',
+            timestamp: now,
+            contentVisibleMs: 120,
+          ),
+        );
+        history.addOrUpdate(
+          PageLoadRecord(
+            screenName: 'comments_sheet',
+            timestamp: now.subtract(const Duration(seconds: 10)),
+            contentVisibleMs: 80,
+            result: 'dismissed',
+            source: 'surface',
+          ),
+        );
+
+        history.addOrUpdate(
+          PageLoadRecord(
+            screenName: 'home',
+            timestamp: now,
+            dataLoadedMs: 450,
+          ),
+        );
+
+        final routeRecords = history.records
+            .where((record) => record.source == 'route')
+            .toList();
+        expect(routeRecords, hasLength(1));
+        expect(routeRecords.single.screenName, equals('home'));
+        expect(routeRecords.single.contentVisibleMs, equals(120));
+        expect(routeRecords.single.dataLoadedMs, equals(450));
+        expect(history.records, hasLength(2));
+      });
     });
 
     group('records', () {

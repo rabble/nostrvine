@@ -1,13 +1,16 @@
 # Analytics Observability
 
-Status: Current contract, implementation-in-progress baseline
+Status: Current contract with semantic route screen views and comments sheet
+surface load instrumentation live.
 Baseline validated against: `mobile/lib/services/screen_analytics_service.dart`,
 `mobile/lib/services/page_load_observer.dart`,
 `mobile/lib/screens/comments/comments_screen.dart`.
 
 Current code still contains legacy `screen_load` and `screen_data_loaded`
-analytics paths. The `surface_load` event and required semantic `screen_view`
-parameters below are the contract for the follow-up implementation tasks.
+analytics paths for compatibility. The required semantic `screen_view`
+parameters are implemented for routes, and `surface_load` is live for
+`comments_sheet`. Additional user-visible surfaces should use the same
+`surface_load` contract as they are instrumented.
 
 ## Purpose
 
@@ -72,7 +75,7 @@ Optional safe parameters:
 
 ## Comments Sheet
 
-The comments sheet must measure:
+The comments sheet measures:
 
 - tap/open intent to first rendered sheet frame
 - tap/open intent to comments success, empty state, or failure

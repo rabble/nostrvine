@@ -76,14 +76,18 @@ class PageLoadHistory {
 
     // Search from newest to oldest (end of queue)
     for (final record in _records.toList().reversed) {
-      if (record.source == candidate.source &&
-          record.screenName == candidate.screenName &&
-          record.dataLoadedMs == null) {
-        return record;
+      if (record.source != candidate.source) {
+        continue;
       }
-      // Only look back ~5 seconds to avoid stale matches
+
+      // Only look back ~5 seconds to avoid stale matches.
       if (DateTime.now().difference(record.timestamp).inSeconds > 5) {
         break;
+      }
+
+      if (record.screenName == candidate.screenName &&
+          record.dataLoadedMs == null) {
+        return record;
       }
     }
     return null;
