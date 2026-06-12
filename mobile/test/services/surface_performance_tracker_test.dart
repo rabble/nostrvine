@@ -53,6 +53,7 @@ void main() {
         params: const {
           AnalyticsParam.entryPoint: 'feed_button',
           AnalyticsParam.initialCount: 12,
+          AnalyticsParam.featureFlag: false,
         },
       );
       elapse(const Duration(milliseconds: 120));
@@ -63,9 +64,10 @@ void main() {
       await tracker.completeSurfaceLoad(
         'Comments Sheet',
         result: SurfaceLoadResult.success,
-        metrics: const {
+        metrics: {
           AnalyticsParam.itemCount: 10,
           AnalyticsParam.hasMore: true,
+          'sort_mode': DateTime(2026),
         },
       );
       await tracker.completeSurfaceLoad(
@@ -85,7 +87,8 @@ void main() {
         AnalyticsParam.entryPoint: 'feed_button',
         AnalyticsParam.initialCount: 12,
         AnalyticsParam.itemCount: 10,
-        AnalyticsParam.hasMore: true,
+        AnalyticsParam.hasMore: 1,
+        AnalyticsParam.featureFlag: 0,
       });
       expect(tracker.activeSessionCount, 0);
     });
@@ -106,6 +109,48 @@ void main() {
         expect(
           sink.events.single.parameters[AnalyticsParam.result],
           SurfaceLoadResult.dismissed,
+        );
+        expect(sink.events.single.parameters[AnalyticsParam.visibleMs], -1);
+        expect(sink.events.single.parameters[AnalyticsParam.dataMs], -1);
+        expect(sink.events.single.parameters[AnalyticsParam.totalMs], 50);
+      },
+    );
+
+    test(
+      'dismissed before data completes records dismissal timing only',
+      () async {
+        tracker.startSurfaceLoad(AnalyticsSurface.commentsSheet);
+        elapse(const Duration(milliseconds: 40));
+
+        tracker.markSurfaceVisible(AnalyticsSurface.commentsSheet);
+        elapse(const Duration(milliseconds: 90));
+
+        await tracker.completeSurfaceLoad(
+          AnalyticsSurface.commentsSheet,
+          result: SurfaceLoadResult.dismissed,
+        );
+
+        expect(sink.events, hasLength(1));
+        expect(
+          sink.events.single.parameters,
+          containsPair(
+            AnalyticsParam.visibleMs,
+            40,
+          ),
+        );
+        expect(
+          sink.events.single.parameters,
+          containsPair(
+            AnalyticsParam.dataMs,
+            -1,
+          ),
+        );
+        expect(
+          sink.events.single.parameters,
+          containsPair(
+            AnalyticsParam.totalMs,
+            130,
+          ),
         );
       },
     );
@@ -137,6 +182,22 @@ void main() {
         elapse(const Duration(seconds: 61));
 
         tracker.markSurfaceVisible(AnalyticsSurface.commentsSheet);
+        await tracker.completeSurfaceLoad(
+          AnalyticsSurface.commentsSheet,
+          result: SurfaceLoadResult.success,
+        );
+
+        expect(tracker.activeSessionCount, 0);
+        expect(sink.events, isEmpty);
+      },
+    );
+
+    test(
+      'completeSurfaceLoad discards stale sessions without visible mark',
+      () async {
+        tracker.startSurfaceLoad(AnalyticsSurface.commentsSheet);
+        elapse(const Duration(seconds: 61));
+
         await tracker.completeSurfaceLoad(
           AnalyticsSurface.commentsSheet,
           result: SurfaceLoadResult.success,

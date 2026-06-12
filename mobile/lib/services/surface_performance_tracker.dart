@@ -136,12 +136,13 @@ class SurfacePerformanceTracker {
         ? -1
         : session.visibleAt!.difference(session.startedAt).inMilliseconds;
     final totalMs = completedAt.difference(session.startedAt).inMilliseconds;
+    final dataMs = result == SurfaceLoadResult.dismissed ? -1 : totalMs;
 
     final parameters = <String, Object>{
       AnalyticsParam.surfaceName: safeName,
       AnalyticsParam.result: result,
       AnalyticsParam.visibleMs: visibleMs,
-      AnalyticsParam.dataMs: totalMs,
+      AnalyticsParam.dataMs: dataMs,
       AnalyticsParam.totalMs: totalMs,
       AnalyticsParam.slowBucket: AnalyticsSurface.slowBucket(totalMs),
       ...session.params,
@@ -153,7 +154,7 @@ class SurfacePerformanceTracker {
     final slowFlag = totalMs >= 3000 ? ' [SLOW]' : '';
     UnifiedLogger.info(
       'PERF: $safeName surface result=$result visible=${visibleMs}ms, '
-      'data=${totalMs}ms, total=${totalMs}ms$slowFlag',
+      'data=${dataMs}ms, total=${totalMs}ms$slowFlag',
       name: 'SurfacePerf',
     );
   }
@@ -200,10 +201,22 @@ class SurfacePerformanceTracker {
   static Map<String, Object> _safeParameters(Map<String, Object>? parameters) {
     if (parameters == null) return const {};
 
-    return {
-      for (final entry in parameters.entries)
-        if (_safeSurfaceParamKeys.contains(entry.key)) entry.key: entry.value,
-    };
+    final safe = <String, Object>{};
+    for (final entry in parameters.entries) {
+      if (!_safeSurfaceParamKeys.contains(entry.key)) continue;
+
+      final value = _firebaseSafeValue(entry.value);
+      if (value != null) {
+        safe[entry.key] = value;
+      }
+    }
+    return safe;
+  }
+
+  static Object? _firebaseSafeValue(Object value) {
+    if (value is bool) return value ? 1 : 0;
+    if (value is String || value is num) return value;
+    return null;
   }
 }
 
