@@ -169,8 +169,30 @@ internal class DivineVideoPlayerInstance(
 
     /** Safety timeout so Dart is never left hanging if STATE_READY is lost. */
     private val setClipsTimeoutRunnable = Runnable {
+        if (pendingSetClipsResult != null) {
+            DivineVideoPlayerLog.warning(
+                "Player $playerId load froze: never reached ready within 10s",
+                name = "DivineVideoPlayer.Freeze",
+            )
+        }
         pendingSetClipsResult?.success(null)
         pendingSetClipsResult = null
+    }
+
+    /**
+     * Fires when the player stays in `STATE_BUFFERING` past
+     * [BUFFERING_STALL_MS] — the spinner is stuck and the video appears
+     * frozen to the user. Reset whenever the player leaves the buffering
+     * state so each stall episode is reported at most once.
+     */
+    private var bufferingStallReported = false
+    private val bufferingWatchdogRunnable = Runnable {
+        bufferingStallReported = true
+        DivineVideoPlayerLog.warning(
+            "Player $playerId appears frozen: still buffering after " +
+                "${BUFFERING_STALL_MS}ms",
+            name = "DivineVideoPlayer.Freeze",
+        )
     }
 
     private val positionUpdater = object : Runnable {
@@ -825,6 +847,19 @@ internal class DivineVideoPlayerInstance(
 
     private val playerListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
+            if (playbackState == Player.STATE_BUFFERING) {
+                // Arm the freeze watchdog once per stall episode.
+                if (!bufferingStallReported) {
+                    mainHandler.removeCallbacks(bufferingWatchdogRunnable)
+                    mainHandler.postDelayed(
+                        bufferingWatchdogRunnable,
+                        BUFFERING_STALL_MS,
+                    )
+                }
+            } else {
+                mainHandler.removeCallbacks(bufferingWatchdogRunnable)
+                bufferingStallReported = false
+            }
             if (playbackState == Player.STATE_ENDED && isLooping) {
                 syncAudioOverlays()
             }
@@ -1049,6 +1084,7 @@ internal class DivineVideoPlayerInstance(
         mainHandler.removeCallbacks(positionUpdater)
         mainHandler.removeCallbacks(seekTimeoutRunnable)
         mainHandler.removeCallbacks(setClipsTimeoutRunnable)
+        mainHandler.removeCallbacks(bufferingWatchdogRunnable)
         seekCompletionResult?.success(null)
         seekCompletionResult = null
         pendingSetClipsResult?.success(null)
@@ -1077,6 +1113,14 @@ internal class DivineVideoPlayerInstance(
 
     companion object {
         private const val POSITION_UPDATE_INTERVAL_MS = 200L
+
+        /**
+         * How long the player may stay in `STATE_BUFFERING` before it is
+         * treated as frozen and a diagnostic is emitted. Long enough to not
+         * trip on routine rebuffering, short enough that a real freeze is
+         * captured while the user is still on the screen.
+         */
+        private const val BUFFERING_STALL_MS = 8_000L
 
         /**
          * Floor for clip playback speed. Prevents division by zero when
