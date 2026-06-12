@@ -11,6 +11,7 @@ import 'package:divine_video_player/divine_video_player.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart';
@@ -183,6 +184,7 @@ void main() {
       registerFallbackValue(const FullscreenFeedVideoCacheStarted(index: 0));
       registerFallbackValue(const FullscreenFeedVideoUnavailable('fallback'));
       registerFallbackValue(const FullscreenFeedVideoRemoved('fallback'));
+      registerFallbackValue(const FullscreenFeedBlocklistChanged());
       registerFallbackValue(const FullscreenFeedSkipAcknowledged());
       registerFallbackValue(Duration.zero);
       registerFallbackValue(_FakeBuildContext());
@@ -275,6 +277,32 @@ void main() {
     InfiniteVideoFeed nativeFeed(WidgetTester tester) {
       return tester.widget<InfiniteVideoFeed>(find.byType(InfiniteVideoFeed));
     }
+
+    group('blocklist version listener', () {
+      testWidgets(
+        'dispatches FullscreenFeedBlocklistChanged when the version increments',
+        (tester) async {
+          await tester.pumpWidget(buildSubject());
+
+          // The listener registers on first build with previous == null; it
+          // must NOT dispatch until the version actually changes.
+          verifyNever(
+            () => mockBloc.add(const FullscreenFeedBlocklistChanged()),
+          );
+
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(FullscreenFeedContent)),
+            listen: false,
+          );
+          container.read(blocklistVersionProvider.notifier).increment();
+          await tester.pump();
+
+          verify(
+            () => mockBloc.add(const FullscreenFeedBlocklistChanged()),
+          ).called(1);
+        },
+      );
+    });
 
     group('state rendering', () {
       testWidgets('shows loading indicator when status is initial', (

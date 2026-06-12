@@ -27,6 +27,14 @@ part 'fullscreen_feed_state.dart';
 /// services (matches the existing [FullscreenFeedBloc.onLoadMore] pattern).
 typedef OnRemoveVideo = void Function(String videoId);
 
+/// Returns `true` when [pubkey]'s content must be hidden (blocked / muted /
+/// blocked-us / muted-us). Injected so the BLoC stays free of Riverpod and
+/// repository dependencies — the launching `ConsumerWidget` resolves it from
+/// `contentBlocklistRepository.shouldFilterFromFeeds`. The bound method reads
+/// live blocklist state on every call, so a captured reference stays correct
+/// across mutations.
+typedef BlockAuthorFilter = bool Function(String pubkey);
+
 /// Maximum number of concurrent background cache downloads.
 ///
 /// Limiting to 1 prevents background caching from competing with the
@@ -68,6 +76,7 @@ class FullscreenFeedBloc
     BlossomAuthService? blossomAuthService,
     OnRemoveVideo? onRemoveVideo,
     MediaAvailabilityChecker? availabilityChecker,
+    BlockAuthorFilter? blockFilter,
   }) : _videosStream = videosStream,
        _initialVideoId = initialVideoId,
        _initialStableId = initialStableId,
@@ -79,6 +88,7 @@ class FullscreenFeedBloc
        _onRemoveVideo = onRemoveVideo,
        _availabilityChecker =
            availabilityChecker ?? const MediaAvailabilityChecker(),
+       _blockFilter = blockFilter,
        super(FullscreenFeedState(currentIndex: initialIndex)) {
     on<FullscreenFeedStarted>(_onStarted);
     on<FullscreenFeedHasMoreChanged>(_onHasMoreChanged);
@@ -96,6 +106,12 @@ class FullscreenFeedBloc
     // together; concurrent emits for different ids must not interleave.
     on<FullscreenFeedVideoRemoved>(_onVideoRemoved, transformer: sequential());
     on<FullscreenFeedSkipAcknowledged>(_onSkipAcknowledged);
+    // Sequential: a blocklist sweep mutates videos + currentIndex together and
+    // must not interleave with a concurrent removal that does the same.
+    on<FullscreenFeedBlocklistChanged>(
+      _onBlocklistChanged,
+      transformer: sequential(),
+    );
   }
 
   final Stream<List<VideoEvent>> _videosStream;
@@ -108,6 +124,7 @@ class FullscreenFeedBloc
   final BlossomAuthService? _blossomAuthService;
   final OnRemoveVideo? _onRemoveVideo;
   final MediaAvailabilityChecker _availabilityChecker;
+  final BlockAuthorFilter? _blockFilter;
   StreamSubscription<bool>? _hasMoreSubscription;
   StreamSubscription<String>? _removedIdsSubscription;
 
@@ -167,7 +184,13 @@ class FullscreenFeedBloc
 
     await emit.forEach<List<VideoEvent>>(
       _videosStream,
-      onData: (videos) {
+      onData: (incoming) {
+        // Filter blocked authors at the stream boundary so a source re-push
+        // (e.g. the liked-videos like-change subscription / load-more, which
+        // never re-filter) can't re-introduce an author who is blocked under
+        // the current blocklist. Idempotent for sources that already filter.
+        final videos = _applyBlockFilter(incoming);
+
         Log.debug(
           'FullscreenFeedBloc: Videos updated, count=${videos.length}',
           name: 'FullscreenFeedBloc',
@@ -560,6 +583,61 @@ class FullscreenFeedBloc
         removedVideoIds: updatedRemoved,
       ),
     );
+  }
+
+  /// Returns [videos] with blocked authors removed, or the same list
+  /// unchanged when no [BlockAuthorFilter] was injected.
+  List<VideoEvent> _applyBlockFilter(List<VideoEvent> videos) {
+    final blockFilter = _blockFilter;
+    if (blockFilter == null) return videos;
+    return videos.where((v) => !blockFilter(v.pubkey)).toList();
+  }
+
+  /// Handle a broad blocklist change (`blocklistVersionProvider` bumped).
+  ///
+  /// Re-filters the current [FullscreenFeedState.videos] against the injected
+  /// [BlockAuthorFilter] and drops now-blocked authors. This is the path for
+  /// account switch / identity adoption / external relay sync, which bump the
+  /// version but emit no granular `removedVideoIds` (see #5041). It is a pure
+  /// list filter — never a permanent tombstone — so an unblock re-shows the
+  /// author on the next source emit.
+  ///
+  /// The cursor shifts left by the number of removed videos that preceded it,
+  /// preserving the playing video when it survives and landing on the next
+  /// survivor otherwise — mirrors the single-id shift in [_onVideoRemoved].
+  /// When the list empties, transitions to
+  /// [FullscreenFeedStatus.emptyAfterRemoval] so the screen pops.
+  void _onBlocklistChanged(
+    FullscreenFeedBlocklistChanged event,
+    Emitter<FullscreenFeedState> emit,
+  ) {
+    final blockFilter = _blockFilter;
+    if (blockFilter == null || state.videos.isEmpty) return;
+
+    final kept = _applyBlockFilter(state.videos);
+    if (kept.length == state.videos.length) return; // nothing newly blocked
+
+    if (kept.isEmpty) {
+      emit(
+        state.copyWith(
+          status: FullscreenFeedStatus.emptyAfterRemoval,
+          videos: const [],
+          clearPendingSkipTarget: true,
+        ),
+      );
+      return;
+    }
+
+    final removedBeforeCursor = state.videos
+        .take(state.currentIndex)
+        .where((v) => blockFilter(v.pubkey))
+        .length;
+    final nextIndex = (state.currentIndex - removedBeforeCursor).clamp(
+      0,
+      kept.length - 1,
+    );
+
+    emit(state.copyWith(videos: kept, currentIndex: nextIndex));
   }
 
   /// Extracts the scheme+host origin from [url], e.g.

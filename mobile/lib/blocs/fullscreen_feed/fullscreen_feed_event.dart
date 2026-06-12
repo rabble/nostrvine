@@ -114,3 +114,21 @@ final class FullscreenFeedVideoRemoved extends FullscreenFeedEvent {
   @override
   List<Object?> get props => [videoId];
 }
+
+/// Dispatched when `blocklistVersionProvider` changes (block / mute / account
+/// switch / identity adoption / external relay sync). The BLoC re-filters its
+/// current [FullscreenFeedState.videos] against the injected
+/// [BlockAuthorFilter], dropping now-blocked authors and shifting the cursor;
+/// an empty result transitions to [FullscreenFeedStatus.emptyAfterRemoval].
+///
+/// This covers BROAD blocklist changes that emit no granular `removedVideoIds`
+/// — account switch / identity adoption bump the version via `onChanged` but
+/// never fire the per-pubkey sweep, and the sweep is cache-scoped anyway, so a
+/// static-snapshot fullscreen feed (curated list / liked videos) would
+/// otherwise keep showing a blocked author until reopened. See #5041.
+final class FullscreenFeedBlocklistChanged extends FullscreenFeedEvent {
+  const FullscreenFeedBlocklistChanged();
+
+  @override
+  List<Object?> get props => [];
+}

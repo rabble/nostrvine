@@ -198,6 +198,16 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final mediaCache = kIsWeb ? null : ref.read(mediaCacheProvider);
     final blossomAuthService = ref.read(blossomAuthServiceProvider);
+    // Viewer-aware block predicate (blocks ∪ mutes ∪ blocked-us ∪ muted-us) —
+    // the same `shouldFilterFromFeeds` every other feed surface filters with.
+    // The bound method reads live blocklist state on each call, so capturing it
+    // once in `create:` is safe: `contentBlocklistRepository` is keepAlive and
+    // doesn't flip identity on a block action. The version listener in
+    // [FullscreenFeedContent] re-runs the filter when the blocklist changes
+    // broadly (account switch / external sync). See #5041.
+    final blockFilter = ref
+        .read(contentBlocklistRepositoryProvider)
+        .shouldFilterFromFeeds;
 
     return MultiBlocProvider(
       providers: [
@@ -212,6 +222,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
             onLoadMore: onLoadMore,
             mediaCache: mediaCache,
             blossomAuthService: blossomAuthService,
+            blockFilter: blockFilter,
           )..add(const FullscreenFeedStarted()),
         ),
         BlocProvider(create: (_) => VideoPlaybackStatusCubit()),
@@ -382,6 +393,22 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
 
   @override
   Widget build(BuildContext context) {
+    // Refilter the open feed when the blocklist changes broadly (block / mute
+    // / account switch / identity adoption / external relay sync). This listen
+    // lives in the fullscreen's OWN state — which is mounted whenever the feed
+    // is visible — so it survives the launching widget unmounting on a
+    // shell-route push (the same reason the `removedIdsStream` bus exists).
+    // Broad changes bump `blocklistVersionProvider` but emit no granular
+    // removal, so the static-snapshot routes (curated list / liked videos)
+    // would otherwise keep showing a blocked author until reopened. See #5041.
+    ref.listen<int>(blocklistVersionProvider, (previous, next) {
+      if (previous != null && next > previous) {
+        context.read<FullscreenFeedBloc>().add(
+          const FullscreenFeedBlocklistChanged(),
+        );
+      }
+    });
+
     // Owned at the screen level so the inline comment composer bar at the
     // bottom of the Scaffold has a single cubit shared across page swipes —
     // re-creating it per-item would lose any in-flight publish during a

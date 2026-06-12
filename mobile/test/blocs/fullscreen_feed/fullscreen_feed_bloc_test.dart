@@ -51,12 +51,13 @@ void main() {
       String id, {
       String? sha256,
       String? videoUrl,
+      String? pubkey,
       Map<String, String> rawTags = const {},
     }) {
       final now = DateTime.now();
       return VideoEvent(
         id: id,
-        pubkey: '0' * 64,
+        pubkey: pubkey ?? '0' * 64,
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         content: '',
         timestamp: now,
@@ -78,6 +79,7 @@ void main() {
       BlossomAuthService? blossomAuthService,
       OnRemoveVideo? onRemoveVideo,
       MediaAvailabilityChecker? availabilityChecker,
+      BlockAuthorFilter? blockFilter,
     }) => FullscreenFeedBloc(
       videosStream: videosController.stream,
       initialIndex: initialIndex,
@@ -89,6 +91,7 @@ void main() {
       blossomAuthService: blossomAuthService,
       onRemoveVideo: onRemoveVideo,
       availabilityChecker: availabilityChecker,
+      blockFilter: blockFilter,
     );
 
     test('initial state has correct values', () {
@@ -481,6 +484,231 @@ void main() {
             1,
           ),
         ],
+      );
+    });
+
+    group('FullscreenFeedBlocklistChanged', () {
+      final authorA = 'a' * 64;
+      final authorB = 'b' * 64;
+      final authorC = 'c' * 64;
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'filters blocked authors from incoming stream lists at the boundary',
+        build: () => createBloc(blockFilter: (pk) => pk == authorB),
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([
+            createTestVideo('a', pubkey: authorA),
+            createTestVideo('b', pubkey: authorB),
+            createTestVideo('c', pubkey: authorC),
+          ]);
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.videos.map((v) => v.id).toList(),
+            'video ids',
+            ['a', 'c'],
+          ),
+        ],
+      );
+
+      // The boundary filter must hold across a source re-push — the
+      // liked-videos like-change subscription / load-more re-emit unfiltered
+      // lists (finding N1), so a blocked author must not slip back in.
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'keeps blocked authors out across a source re-push',
+        build: () => createBloc(blockFilter: (pk) => pk == authorB),
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([
+            createTestVideo('a', pubkey: authorA),
+            createTestVideo('b', pubkey: authorB),
+            createTestVideo('c', pubkey: authorC),
+          ]);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          // Source re-emits the same blocked author (plus a new unblocked one)
+          // — 'b' must stay filtered out on the re-push.
+          videosController.add([
+            createTestVideo('a', pubkey: authorA),
+            createTestVideo('b', pubkey: authorB),
+            createTestVideo('c', pubkey: authorC),
+            createTestVideo('d', pubkey: authorC),
+          ]);
+        },
+        wait: const Duration(milliseconds: 200),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.videos.map((v) => v.id).toList(),
+            'first ids',
+            ['a', 'c'],
+          ),
+          isA<FullscreenFeedState>().having(
+            (s) => s.videos.map((v) => v.id).toList(),
+            're-push ids',
+            ['a', 'c', 'd'],
+          ),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'preserves the playing video when an earlier author is blocked',
+        build: () => createBloc(blockFilter: (pk) => pk == authorB),
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [
+            createTestVideo('a', pubkey: authorA),
+            createTestVideo('b', pubkey: authorB),
+            createTestVideo('c', pubkey: authorC),
+            createTestVideo('d', pubkey: authorA),
+          ],
+          currentIndex: 2,
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedBlocklistChanged()),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'video ids',
+                ['a', 'c', 'd'],
+              )
+              .having((s) => s.currentIndex, 'currentIndex', 1)
+              .having((s) => s.currentVideo?.id, 'currentVideo', 'c'),
+        ],
+      );
+
+      // Seeded so the shift result (1) differs from a naive clamp of the old
+      // index (clamp(3, 0, 2) == 2). Removing the cursor shift would land on
+      // 'e', not 'd' — so this test fails loudly if the shift logic regresses.
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'shifts the cursor left by the count of blocked videos before it',
+        build: () => createBloc(blockFilter: (pk) => pk == authorA),
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [
+            createTestVideo('a', pubkey: authorA),
+            createTestVideo('b', pubkey: authorA),
+            createTestVideo('c', pubkey: authorC),
+            createTestVideo('d', pubkey: authorB),
+            createTestVideo('e', pubkey: authorC),
+          ],
+          currentIndex: 3,
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedBlocklistChanged()),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'video ids',
+                ['c', 'd', 'e'],
+              )
+              .having((s) => s.currentIndex, 'currentIndex', 1)
+              .having((s) => s.currentVideo?.id, 'currentVideo', 'd'),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'lands on the next survivor when the current video is blocked',
+        build: () => createBloc(blockFilter: (pk) => pk == authorB),
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [
+            createTestVideo('a', pubkey: authorA),
+            createTestVideo('b', pubkey: authorB),
+            createTestVideo('c', pubkey: authorC),
+          ],
+          currentIndex: 1,
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedBlocklistChanged()),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'video ids',
+                ['a', 'c'],
+              )
+              .having((s) => s.currentIndex, 'currentIndex', 1)
+              .having((s) => s.currentVideo?.id, 'currentVideo', 'c'),
+        ],
+      );
+
+      // Boundary case: cursor at 0 and the index-0 video is itself blocked.
+      // `take(0)` yields 0 removed-before-cursor, so the next survivor must
+      // surface at index 0.
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'lands on the next survivor when the index-0 video is blocked',
+        build: () => createBloc(blockFilter: (pk) => pk == authorA),
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [
+            createTestVideo('a', pubkey: authorA),
+            createTestVideo('b', pubkey: authorB),
+            createTestVideo('c', pubkey: authorC),
+          ],
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedBlocklistChanged()),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'video ids',
+                ['b', 'c'],
+              )
+              .having((s) => s.currentIndex, 'currentIndex', 0)
+              .having((s) => s.currentVideo?.id, 'currentVideo', 'b'),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'transitions to emptyAfterRemoval when every author is blocked',
+        build: () => createBloc(blockFilter: (pk) => pk == authorA),
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [
+            createTestVideo('a', pubkey: authorA),
+            createTestVideo('b', pubkey: authorA),
+          ],
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedBlocklistChanged()),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having(
+                (s) => s.status,
+                'status',
+                FullscreenFeedStatus.emptyAfterRemoval,
+              )
+              .having((s) => s.videos, 'videos', isEmpty),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'emits nothing when no author is blocked',
+        build: () => createBloc(blockFilter: (pk) => pk == authorB),
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [
+            createTestVideo('a', pubkey: authorA),
+            createTestVideo('c', pubkey: authorC),
+          ],
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedBlocklistChanged()),
+        expect: () => <FullscreenFeedState>[],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'emits nothing when no block filter is injected',
+        build: createBloc,
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [
+            createTestVideo('a', pubkey: authorA),
+            createTestVideo('b', pubkey: authorB),
+          ],
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedBlocklistChanged()),
+        expect: () => <FullscreenFeedState>[],
       );
     });
 
