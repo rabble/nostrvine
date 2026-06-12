@@ -1,0 +1,221 @@
+// ABOUTME: Tracks user-visible surface load timing with semantic analytics.
+// ABOUTME: Emits safe terminal surface_load events for sheets and panels.
+
+import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:openvine/services/analytics_event_sink.dart';
+import 'package:openvine/services/analytics_surface.dart';
+import 'package:openvine/services/firebase_analytics_event_sink.dart';
+import 'package:unified_logger/unified_logger.dart';
+
+/// Maximum age for a session before it is considered stale and discarded.
+///
+/// App background/resume cycles can leave old sessions active. Dropping
+/// sessions older than this avoids logging inflated load times.
+const _maxSurfaceSessionAge = Duration(seconds: 60);
+
+const _surfaceLoadEventName = 'surface_load';
+
+const Set<String> _safeSurfaceParamKeys = {
+  AnalyticsParam.entryPoint,
+  AnalyticsParam.initialCount,
+  AnalyticsParam.itemCount,
+  AnalyticsParam.hasMore,
+  AnalyticsParam.featureFlag,
+  'sort_mode',
+};
+
+/// Tracks perceived load performance for user-visible surfaces.
+class SurfacePerformanceTracker {
+  factory SurfacePerformanceTracker() =>
+      _instance ??= SurfacePerformanceTracker._();
+
+  SurfacePerformanceTracker._({
+    AnalyticsEventSink? sink,
+    DateTime Function()? now,
+  }) : _sink = sink ?? _createAnalyticsSink(),
+       _now = now ?? DateTime.now;
+
+  static SurfacePerformanceTracker? _instance;
+
+  /// Resets the singleton so tests do not leak active sessions across files.
+  @visibleForTesting
+  static void resetInstance() {
+    _instance?._activeSessions.clear();
+    _instance = null;
+  }
+
+  /// Creates a testable instance that does not touch Firebase.
+  @visibleForTesting
+  SurfacePerformanceTracker.testInstance({
+    AnalyticsEventSink? sink,
+    DateTime Function()? now,
+  }) : _sink = sink ?? const NoOpAnalyticsEventSink(),
+       _now = now ?? DateTime.now;
+
+  AnalyticsEventSink _sink;
+  final DateTime Function() _now;
+  final Map<String, _SurfaceLoadSession> _activeSessions = {};
+
+  /// Number of active tracking sessions.
+  int get activeSessionCount => _activeSessions.length;
+
+  static AnalyticsEventSink _createAnalyticsSink() {
+    try {
+      return FirebaseAnalyticsEventSink();
+    } catch (_) {
+      return const NoOpAnalyticsEventSink();
+    }
+  }
+
+  /// Clear all active sessions.
+  ///
+  /// Call this when the app resumes from background to prevent stale start
+  /// times from producing inaccurate surface load measurements.
+  void resetAllSessions() {
+    if (_activeSessions.isNotEmpty) {
+      UnifiedLogger.info(
+        'Resetting ${_activeSessions.length} stale surface '
+        'performance sessions on app resume',
+        name: 'SurfacePerf',
+      );
+      _activeSessions.clear();
+    }
+  }
+
+  /// Start tracking a surface load.
+  void startSurfaceLoad(String surfaceName, {Map<String, Object>? params}) {
+    final safeName = AnalyticsSurface.sanitizeName(surfaceName);
+    _activeSessions[safeName] = _SurfaceLoadSession(
+      surfaceName: safeName,
+      startedAt: _now(),
+      params: _safeParameters(params),
+    );
+
+    UnifiedLogger.info(
+      'Surface load started: $safeName',
+      name: 'SurfacePerf',
+    );
+  }
+
+  /// Mark when the surface is first visible.
+  void markSurfaceVisible(String surfaceName) {
+    final session = _sessionFor(surfaceName);
+    if (session == null) return;
+
+    session.visibleAt ??= _now();
+    final visibleMs = session.visibleAt!
+        .difference(session.startedAt)
+        .inMilliseconds;
+
+    UnifiedLogger.info(
+      'Surface visible: ${session.surfaceName} in ${visibleMs}ms',
+      name: 'SurfacePerf',
+    );
+  }
+
+  /// Complete the surface load with a terminal result.
+  ///
+  /// Missing or stale sessions are ignored. Completion always removes the
+  /// active session so dismissed/failed surfaces do not leak.
+  Future<void> completeSurfaceLoad(
+    String surfaceName, {
+    required String result,
+    Map<String, Object>? metrics,
+  }) async {
+    final safeName = AnalyticsSurface.sanitizeName(surfaceName);
+    final session = _activeSessions.remove(safeName);
+    if (session == null) return;
+
+    if (_isStale(session)) {
+      _logStaleDiscard(session);
+      return;
+    }
+
+    final completedAt = _now();
+    final visibleMs = session.visibleAt == null
+        ? -1
+        : session.visibleAt!.difference(session.startedAt).inMilliseconds;
+    final totalMs = completedAt.difference(session.startedAt).inMilliseconds;
+
+    final parameters = <String, Object>{
+      AnalyticsParam.surfaceName: safeName,
+      AnalyticsParam.result: result,
+      AnalyticsParam.visibleMs: visibleMs,
+      AnalyticsParam.dataMs: totalMs,
+      AnalyticsParam.totalMs: totalMs,
+      AnalyticsParam.slowBucket: AnalyticsSurface.slowBucket(totalMs),
+      ...session.params,
+      ..._safeParameters(metrics),
+    };
+
+    await _logSurfaceLoad(parameters);
+
+    final slowFlag = totalMs >= 3000 ? ' [SLOW]' : '';
+    UnifiedLogger.info(
+      'PERF: $safeName surface result=$result visible=${visibleMs}ms, '
+      'data=${totalMs}ms, total=${totalMs}ms$slowFlag',
+      name: 'SurfacePerf',
+    );
+  }
+
+  _SurfaceLoadSession? _sessionFor(String surfaceName) {
+    final safeName = AnalyticsSurface.sanitizeName(surfaceName);
+    final session = _activeSessions[safeName];
+    if (session == null) return null;
+
+    if (_isStale(session)) {
+      _activeSessions.remove(safeName);
+      _logStaleDiscard(session);
+      return null;
+    }
+
+    return session;
+  }
+
+  bool _isStale(_SurfaceLoadSession session) {
+    return _now().difference(session.startedAt) > _maxSurfaceSessionAge;
+  }
+
+  Future<void> _logSurfaceLoad(Map<String, Object> parameters) async {
+    try {
+      await _sink.logEvent(name: _surfaceLoadEventName, parameters: parameters);
+    } catch (error) {
+      _sink = const NoOpAnalyticsEventSink();
+      UnifiedLogger.warning(
+        'Surface performance analytics disabled after log failure: $error',
+        name: 'SurfacePerf',
+      );
+    }
+  }
+
+  void _logStaleDiscard(_SurfaceLoadSession session) {
+    final age = _now().difference(session.startedAt);
+    UnifiedLogger.warning(
+      'Discarding stale surface session "${session.surfaceName}" '
+      '(started ${age.inSeconds}s ago)',
+      name: 'SurfacePerf',
+    );
+  }
+
+  static Map<String, Object> _safeParameters(Map<String, Object>? parameters) {
+    if (parameters == null) return const {};
+
+    return {
+      for (final entry in parameters.entries)
+        if (_safeSurfaceParamKeys.contains(entry.key)) entry.key: entry.value,
+    };
+  }
+}
+
+class _SurfaceLoadSession {
+  _SurfaceLoadSession({
+    required this.surfaceName,
+    required this.startedAt,
+    required this.params,
+  });
+
+  final String surfaceName;
+  final DateTime startedAt;
+  final Map<String, Object> params;
+  DateTime? visibleAt;
+}

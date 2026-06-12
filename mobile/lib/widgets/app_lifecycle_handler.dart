@@ -16,6 +16,7 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/services/surface_performance_tracker.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -110,6 +111,7 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
         // 27+ hours) when providers re-fire on resume.
         FeedPerformanceTracker().resetAllSessions();
         ScreenAnalyticsService().resetAllSessions();
+        SurfacePerformanceTracker().resetAllSessions();
 
         // Notify foreground state provider - enables visibility detection
         ref.read(appForegroundProvider.notifier).setForeground(true);
