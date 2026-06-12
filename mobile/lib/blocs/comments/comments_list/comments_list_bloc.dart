@@ -131,6 +131,7 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
         loadedCount: commentsById.length,
         lastBatchCount: thread.comments.length,
         threadTotalCount: thread.totalCount,
+        threadHasMore: thread.hasMore,
       );
 
       emit(
@@ -222,6 +223,7 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
             loadedCount: allCommentsById.length,
             lastBatchCount: thread.comments.length,
             threadTotalCount: thread.totalCount,
+            threadHasMore: thread.hasMore,
           ),
           replyCountsByCommentId: computeReplyCounts(allCommentsById),
         ),
@@ -471,7 +473,10 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
     required int loadedCount,
     required int lastBatchCount,
     required int threadTotalCount,
+    bool? threadHasMore,
   }) {
+    if (threadHasMore != null) return threadHasMore;
+
     final effectiveTotalCount =
         _initialTotalCount ??
         (threadTotalCount > lastBatchCount

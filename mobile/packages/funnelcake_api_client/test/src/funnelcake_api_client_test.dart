@@ -3394,7 +3394,9 @@ void main() {
         final response = await client.getVideoComments(videoId: testVideoId);
 
         expect(response, isNotNull);
-        expect(response!.total, equals(3));
+        expect(response!.total, equals(2));
+        expect(response.hasMore, isTrue);
+        expect(response.hasExactTotal, isFalse);
         expect(response.comments, hasLength(2));
         expect(response.comments.first.id, equals('comment1'));
         expect(response.comments.first.authorName, equals('Tester'));
@@ -3443,7 +3445,9 @@ void main() {
 
         expect(response, isNotNull);
         expect(response!.comments, hasLength(2));
-        expect(response.total, equals(103));
+        expect(response.total, equals(102));
+        expect(response.hasMore, isTrue);
+        expect(response.hasExactTotal, isFalse);
       });
 
       test('returns null on 404', () async {

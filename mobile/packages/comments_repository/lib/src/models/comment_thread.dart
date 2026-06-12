@@ -17,6 +17,8 @@ class CommentThread extends Equatable {
     required this.rootEventId,
     this.comments = const [],
     this.totalCount = 0,
+    this.hasMore,
+    this.hasExactTotal = true,
     this.commentCache = const {},
   });
 
@@ -24,6 +26,8 @@ class CommentThread extends Equatable {
   const CommentThread.empty(this.rootEventId)
     : comments = const [],
       totalCount = 0,
+      hasMore = false,
+      hasExactTotal = true,
       commentCache = const {};
 
   /// The ID of the root event these comments belong to.
@@ -34,6 +38,14 @@ class CommentThread extends Equatable {
 
   /// Total number of comments in the thread (including replies).
   final int totalCount;
+
+  /// Whether another page is available when the source reports pagination
+  /// explicitly.
+  final bool? hasMore;
+
+  /// Whether [totalCount] is an exact server count rather than a pagination
+  /// lower bound.
+  final bool hasExactTotal;
 
   /// Cache of all comments by ID for quick lookup.
   final Map<String, Comment> commentCache;
@@ -52,11 +64,15 @@ class CommentThread extends Equatable {
     String? rootEventId,
     List<Comment>? comments,
     int? totalCount,
+    bool? hasMore,
+    bool? hasExactTotal,
     Map<String, Comment>? commentCache,
   }) => CommentThread(
     rootEventId: rootEventId ?? this.rootEventId,
     comments: comments ?? this.comments,
     totalCount: totalCount ?? this.totalCount,
+    hasMore: hasMore ?? this.hasMore,
+    hasExactTotal: hasExactTotal ?? this.hasExactTotal,
     commentCache: commentCache ?? this.commentCache,
   );
 
@@ -65,6 +81,8 @@ class CommentThread extends Equatable {
     rootEventId,
     comments,
     totalCount,
+    hasMore,
+    hasExactTotal,
     commentCache,
   ];
 }

@@ -1069,6 +1069,70 @@ void main() {
         );
 
         test(
+          'v2 paginated lower-bound total does not overwrite cached count',
+          () async {
+            repository =
+                CommentsRepository(
+                  nostrClient: mockNostrClient,
+                  funnelcakeApiClient: mockFunnelcakeApiClient,
+                )..updateCachedCommentCount(
+                  oldEventId,
+                  7,
+                  rootAddressableId: addressableId,
+                );
+
+            when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeApiClient.getVideoComments(
+                videoId: any(named: 'videoId'),
+                sort: any(named: 'sort'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer(
+              (_) async => VideoCommentsResponse(
+                comments: [
+                  VideoComment(
+                    id: 'rest_comment',
+                    pubkey: testUserPubkey,
+                    createdAt: 1000,
+                    kind: _commentKind,
+                    content: 'REST comment',
+                    sig: 'sig',
+                    tags: [
+                      ['E', newEventId],
+                      ['K', _testRootEventKind.toString()],
+                      ['P', testRootAuthorPubkey],
+                      ['e', newEventId],
+                      ['k', _testRootEventKind.toString()],
+                      ['p', testRootAuthorPubkey],
+                    ],
+                  ),
+                ],
+                total: 2,
+                hasMore: true,
+                hasExactTotal: false,
+              ),
+            );
+
+            final loaded = await repository.loadComments(
+              rootEventId: newEventId,
+              rootEventKind: _testRootEventKind,
+              rootAddressableId: addressableId,
+            );
+            expect(loaded.totalCount, equals(2));
+            expect(loaded.hasMore, isTrue);
+
+            final post = await repository.getCommentsCount(
+              newEventId,
+              rootAddressableId: addressableId,
+            );
+            expect(post, equals(7));
+            verifyNever(() => mockNostrClient.countEvents(any()));
+          },
+        );
+
+        test(
           'relay first-page empty result overwrites a positive cache under '
           'the addressable id',
           () async {

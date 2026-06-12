@@ -158,6 +158,63 @@ void main() {
         act: (b) => b.add(const CommentsLoadRequested()),
         expect: () => isEmpty,
       );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'keeps pagination enabled when v2 REST has_more races with live '
+        'backfill comments',
+        setUp: () {
+          final liveController = StreamController<Comment>();
+          addTearDown(liveController.close);
+          final loadCompleter = Completer<CommentThread>();
+          final restComments = List.generate(
+            50,
+            (index) => makeComment(
+              validId('c$index'),
+              createdAt: DateTime.fromMillisecondsSinceEpoch(5000 - index),
+            ),
+          );
+
+          when(
+            () => mockCommentsRepository.watchComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              since: any(named: 'since'),
+              onEose: any(named: 'onEose'),
+            ),
+          ).thenAnswer((_) => liveController.stream);
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) => loadCompleter.future);
+
+          Future<void>.microtask(() async {
+            liveController.add(makeComment(validId('live')));
+            loadCompleter.complete(
+              CommentThread(
+                rootEventId: validId('root'),
+                comments: restComments,
+                totalCount: 50,
+                hasMore: true,
+                hasExactTotal: false,
+                commentCache: {
+                  for (final comment in restComments) comment.id: comment,
+                },
+              ),
+            );
+          });
+        },
+        build: createBloc,
+        act: (b) => b.add(const CommentsLoadRequested()),
+        verify: (b) {
+          expect(b.state.commentsById.length, 51);
+          expect(b.state.hasMoreContent, isTrue);
+        },
+      );
     });
 
     group('CommentsLoadMoreRequested', () {

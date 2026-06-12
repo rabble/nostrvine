@@ -171,16 +171,18 @@ class CommentsRepository {
                     ),
                   )
                 : restThread;
-            // Auto-update the count cache with the authoritative REST total.
-            // Zero is written too so a previously cached positive value
-            // can't outlive the comments it counted — important with the
-            // addressable-id companion cache, which would otherwise serve
-            // that stale positive for the post-edit event id.
-            _writeCachedCommentCount(
-              rootEventId,
-              thread.totalCount,
-              rootAddressableId: rootAddressableId,
-            );
+            if (thread.hasExactTotal) {
+              // Auto-update the count cache with the authoritative REST total.
+              // Zero is written too so a previously cached positive value
+              // can't outlive the comments it counted — important with the
+              // addressable-id companion cache, which would otherwise serve
+              // that stale positive for the post-edit event id.
+              _writeCachedCommentCount(
+                rootEventId,
+                thread.totalCount,
+                rootAddressableId: rootAddressableId,
+              );
+            }
             return _filterThread(thread);
           }
         } on FunnelcakeException {
@@ -930,7 +932,11 @@ class CommentsRepository {
     }
 
     final thread = _buildThreadFromComments(commentMap, rootEventId);
-    return thread.copyWith(totalCount: response.total);
+    return thread.copyWith(
+      totalCount: response.total,
+      hasMore: response.hasMore,
+      hasExactTotal: response.hasExactTotal,
+    );
   }
 
   Future<CommentThread> _loadRelayVideoReplies({
@@ -997,6 +1003,8 @@ class CommentsRepository {
         merged.comments.length,
         restTotal + addedRelayVideoReplyCount,
       ),
+      hasMore: restThread.hasMore,
+      hasExactTotal: restThread.hasExactTotal,
     );
   }
 
