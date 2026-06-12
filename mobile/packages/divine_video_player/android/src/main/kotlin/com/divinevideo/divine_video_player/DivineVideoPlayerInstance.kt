@@ -171,7 +171,8 @@ internal class DivineVideoPlayerInstance(
     private val setClipsTimeoutRunnable = Runnable {
         if (pendingSetClipsResult != null) {
             DivineVideoPlayerLog.warning(
-                "Player $playerId load froze: never reached ready within 10s",
+                "Player $playerId load froze: never reached ready within " +
+                    "${SET_CLIPS_TIMEOUT_MS}ms",
                 name = "DivineVideoPlayer.Freeze",
             )
         }
@@ -491,7 +492,7 @@ internal class DivineVideoPlayerInstance(
         pendingSetClipsResult = result
         // 10 s safety net — if STATE_READY never fires (e.g. corrupt file),
         // Dart is unblocked rather than hanging forever.
-        mainHandler.postDelayed(setClipsTimeoutRunnable, 10_000L)
+        mainHandler.postDelayed(setClipsTimeoutRunnable, SET_CLIPS_TIMEOUT_MS)
     }
 
     private fun handleSeekTo(call: MethodCall, result: MethodChannel.Result) {
@@ -1113,6 +1114,7 @@ internal class DivineVideoPlayerInstance(
 
     companion object {
         private const val POSITION_UPDATE_INTERVAL_MS = 200L
+        private const val SET_CLIPS_TIMEOUT_MS = 10_000L
 
         /**
          * How long the player may stay in `STATE_BUFFERING` before it is

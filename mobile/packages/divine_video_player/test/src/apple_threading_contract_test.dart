@@ -66,6 +66,25 @@ void main() {
           expect(source, contains('reportedPositionOverrideMs = nil'));
         },
       );
+
+      test(
+        '$platform emits freeze diagnostics for stalled native playback',
+        () {
+          final source = _appleSourceFile(platform).readAsStringSync();
+
+          expect(source, contains('setClipsTimeoutMs'));
+          expect(source, contains('bufferingStallMs'));
+          expect(source, contains('DivineVideoPlayer.Freeze'));
+          expect(source, contains('observeBuffering(for: item)'));
+          expect(source, contains(r'\.isPlaybackBufferEmpty'));
+          expect(source, contains(r'\.isPlaybackLikelyToKeepUp'));
+          expect(source, contains('clearSetClipsTimeout()'));
+          expect(
+            source,
+            contains('clearBufferingWatchdog(resetReported: true)'),
+          );
+        },
+      );
     }
   });
 }
