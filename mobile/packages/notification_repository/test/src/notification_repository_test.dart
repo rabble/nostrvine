@@ -2004,6 +2004,84 @@ void main() {
           ),
         ).called(2);
       });
+
+      test(
+        'superseded first-page failure does not mark refresh error',
+        () async {
+          stubProfiles({});
+
+          final staleGate = Completer<NotificationResponse>();
+          when(
+            () => funnelcakeApiClient.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              cursor: any(named: 'cursor'),
+              cursorId: any(named: 'cursorId'),
+              requestUri: any(named: 'requestUri'),
+              authHeaders: any(named: 'authHeaders'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) => staleGate.future);
+          final staleFetch = repository.getNotifications();
+
+          stubNotifications([
+            makeNotification(
+              id: 'fresh',
+              sourceEventId: 'evt_fresh',
+              referencedEventId: 'video_fresh',
+            ),
+          ]);
+          await repository.refresh();
+
+          staleGate.completeError(const FunnelcakeException('stale'));
+
+          await expectLater(
+            staleFetch,
+            throwsA(isA<FunnelcakeException>()),
+          );
+          final snapshot = await repository.watchSnapshot().first;
+          expect(snapshot.lastRefreshError, isFalse);
+          expect(
+            (snapshot.items.single as VideoNotification).videoEventId,
+            equals('video_fresh'),
+          );
+        },
+      );
+
+      test('refreshApplied returns false when superseded', () async {
+        stubProfiles({});
+
+        final staleGate = Completer<NotificationResponse>();
+        when(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            cursorId: any(named: 'cursorId'),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => staleGate.future);
+        final staleRefresh = repository.refreshApplied();
+
+        stubNotifications([
+          makeNotification(
+            id: 'fresh',
+            sourceEventId: 'evt_fresh',
+            referencedEventId: 'video_fresh',
+          ),
+        ]);
+        await repository.refresh();
+
+        staleGate.complete(
+          const NotificationResponse(
+            notifications: [],
+            unreadCount: 0,
+            hasMore: false,
+          ),
+        );
+
+        await expectLater(staleRefresh, completion(isFalse));
+      });
     });
 
     group('loadNextPage', () {
@@ -2219,6 +2297,34 @@ void main() {
 
         stubNotifications([]);
         await repository.refresh();
+
+        expect(repository.hasPaginatedBeyondFirstPage, isFalse);
+      });
+
+      test('resetPaginationDepth releases the resume-refresh guard', () async {
+        stubProfiles({});
+        stubNotifications(
+          [makeNotification()],
+          nextCursor: 'c1',
+          hasMore: true,
+        );
+        await repository.getNotifications();
+        stubNotifications(
+          [
+            makeNotification(
+              id: 'n2',
+              sourceEventId: 'evt2',
+              referencedEventId: 'video_2',
+            ),
+          ],
+          nextCursor: 'c2',
+          hasMore: true,
+        );
+        await repository.loadNextPage();
+
+        expect(repository.hasPaginatedBeyondFirstPage, isTrue);
+
+        repository.resetPaginationDepth();
 
         expect(repository.hasPaginatedBeyondFirstPage, isFalse);
       });
@@ -2797,6 +2903,60 @@ void main() {
         expect(await repository.watchUnreadCount().first, equals(1));
       });
 
+      test('markAsRead rollback restores pagination depth', () async {
+        stubProfiles({});
+        stubNotifications(
+          [makeNotification()],
+          nextCursor: 'c1',
+          hasMore: true,
+        );
+        await repository.refresh();
+        stubNotifications(
+          [
+            makeNotification(
+              id: 'n2',
+              sourceEventId: 'evt2',
+              referencedEventId: 'video_2',
+            ),
+          ],
+          nextCursor: 'c2',
+          hasMore: true,
+        );
+        await repository.loadNextPage();
+        expect(repository.hasPaginatedBeyondFirstPage, isTrue);
+
+        final loadedId =
+            (await repository.watchSnapshot().first).items.first.id;
+        final markGate = Completer<MarkReadResponse>();
+        when(
+          () => funnelcakeApiClient.markNotificationsRead(
+            pubkey: any(named: 'pubkey'),
+            notificationIds: any(named: 'notificationIds'),
+            authHeaders: any(named: 'authHeaders'),
+          ),
+        ).thenAnswer((_) => markGate.future);
+
+        final markFuture = repository.markAsRead([loadedId]);
+
+        stubNotifications([
+          makeNotification(
+            id: 'fresh',
+            sourceEventId: 'evt_fresh',
+            referencedEventId: 'video_fresh',
+          ),
+        ]);
+        await repository.refresh();
+        expect(repository.hasPaginatedBeyondFirstPage, isFalse);
+
+        markGate.completeError(const FunnelcakeException('boom'));
+        await expectLater(
+          markFuture,
+          throwsA(isA<FunnelcakeException>()),
+        );
+
+        expect(repository.hasPaginatedBeyondFirstPage, isTrue);
+      });
+
       test('markAllAsRead is a no-op when nothing is unread', () async {
         await repository.markAllAsRead();
 
@@ -2850,6 +3010,57 @@ void main() {
 
         // Rollback restores the pre-write snapshot.
         expect(await repository.watchUnreadCount().first, equals(1));
+      });
+
+      test('markAllAsRead rollback restores pagination depth', () async {
+        stubProfiles({});
+        stubNotifications(
+          [makeNotification()],
+          nextCursor: 'c1',
+          hasMore: true,
+        );
+        await repository.refresh();
+        stubNotifications(
+          [
+            makeNotification(
+              id: 'n2',
+              sourceEventId: 'evt2',
+              referencedEventId: 'video_2',
+            ),
+          ],
+          nextCursor: 'c2',
+          hasMore: true,
+        );
+        await repository.loadNextPage();
+        expect(repository.hasPaginatedBeyondFirstPage, isTrue);
+
+        final markGate = Completer<MarkReadResponse>();
+        when(
+          () => funnelcakeApiClient.markNotificationsRead(
+            pubkey: any(named: 'pubkey'),
+            authHeaders: any(named: 'authHeaders'),
+          ),
+        ).thenAnswer((_) => markGate.future);
+
+        final markFuture = repository.markAllAsRead();
+
+        stubNotifications([
+          makeNotification(
+            id: 'fresh',
+            sourceEventId: 'evt_fresh',
+            referencedEventId: 'video_fresh',
+          ),
+        ]);
+        await repository.refresh();
+        expect(repository.hasPaginatedBeyondFirstPage, isFalse);
+
+        markGate.completeError(const FunnelcakeException('boom'));
+        await expectLater(
+          markFuture,
+          throwsA(isA<FunnelcakeException>()),
+        );
+
+        expect(repository.hasPaginatedBeyondFirstPage, isTrue);
       });
     });
 

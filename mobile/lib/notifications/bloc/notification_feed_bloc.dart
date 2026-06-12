@@ -302,6 +302,7 @@ class NotificationFeedBloc
   @override
   Future<void> close() async {
     await _snapshotSubscription.cancel();
+    _notificationRepository.resetPaginationDepth();
     return super.close();
   }
 }

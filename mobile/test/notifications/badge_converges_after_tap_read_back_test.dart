@@ -56,6 +56,9 @@ class _FakeNotificationRepository extends Fake
   }
 
   @override
+  void resetPaginationDepth() {}
+
+  @override
   Future<void> close() => _snapshot.close();
 }
 

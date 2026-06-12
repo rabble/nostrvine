@@ -173,6 +173,16 @@ class NotificationRepository {
   /// this to `false`.
   bool get hasPaginatedBeyondFirstPage => _pagesLoaded > 1;
 
+  /// Releases the current page-depth guard after the feed UI is gone.
+  ///
+  /// While the notifications screen is visible, app-resume refreshes skip
+  /// over a paginated snapshot so they do not collapse the list under the
+  /// user. Once the feed BLoC closes, no visible list can collapse; resetting
+  /// the depth lets out-of-screen liveness refresh the badge again.
+  void resetPaginationDepth() {
+    _pagesLoaded = _snapshot.value.items.isEmpty ? 0 : 1;
+  }
+
   /// Fetches the next page of notifications.
   ///
   /// Pass [cursor] to override the stored pagination cursor. On success,
@@ -195,6 +205,14 @@ class NotificationRepository {
   Future<NotificationPage> getNotifications({
     String? cursor,
     String? cursorId,
+  }) async => (await _getNotificationsResult(
+    cursor: cursor,
+    cursorId: cursorId,
+  )).page;
+
+  Future<({NotificationPage page, bool applied})> _getNotificationsResult({
+    String? cursor,
+    String? cursorId,
   }) async {
     final generation = _fetchGeneration;
     final effectiveCursor = cursor ?? _lastCursor;
@@ -213,13 +231,17 @@ class NotificationRepository {
               cursor: effectiveCursor,
               cursorId: effectiveCursorId,
             );
-      if (generation != _fetchGeneration) return _snapshot.value;
+      if (generation != _fetchGeneration) {
+        return (page: _snapshot.value, applied: false);
+      }
 
       _lastCursor = response.nextCursor;
       _lastCursorId = response.nextCursorId;
 
       final items = await _enrichAndGroup(response.notifications);
-      if (generation != _fetchGeneration) return _snapshot.value;
+      if (generation != _fetchGeneration) {
+        return (page: _snapshot.value, applied: false);
+      }
 
       final page = NotificationPage(
         items: items,
@@ -234,7 +256,7 @@ class NotificationRepository {
       if (isFirstPage) {
         unawaited(_persistSnapshot(items));
       }
-      return page;
+      return (page: page, applied: true);
     } on Exception catch (e, s) {
       Log.error(
         'Failed to fetch notifications: $e',
@@ -553,10 +575,23 @@ class NotificationRepository {
   /// in-flight page fetch from the previous stream completes without
   /// touching the cursor or snapshot, then clears the stored cursor.
   Future<NotificationPage> refresh() {
+    return _refreshResult().then((result) => result.page);
+  }
+
+  /// Refreshes notifications and reports whether this call applied a snapshot.
+  ///
+  /// App-resume refresh coordination uses this to avoid consuming its cooldown
+  /// when the refresh was superseded by another first-page fetch before it
+  /// could apply.
+  Future<bool> refreshApplied() {
+    return _refreshResult().then((result) => result.applied);
+  }
+
+  Future<({NotificationPage page, bool applied})> _refreshResult() {
     _fetchGeneration++;
     _lastCursor = null;
     _lastCursorId = null;
-    return getNotifications();
+    return _getNotificationsResult();
   }
 
   /// Fetches the page after the last one applied to the snapshot.
@@ -582,6 +617,7 @@ class NotificationRepository {
 
     final idSet = ids.toSet();
     final before = _snapshot.value;
+    final pagesLoadedBefore = _pagesLoaded;
     _snapshot.add(before.copyWith(items: _flipIsRead(before.items, idSet)));
     final notificationIds = _expandServerNotificationIds(before.items, idSet);
 
@@ -609,6 +645,7 @@ class NotificationRepository {
         await _notificationsDao.markAsRead(id);
       }
     } catch (_) {
+      _pagesLoaded = pagesLoadedBefore;
       _snapshot.add(before);
       rethrow;
     }
@@ -624,6 +661,7 @@ class NotificationRepository {
   Future<void> markAllAsRead() async {
     final before = _snapshot.value;
     if (before.items.every((n) => n.isRead)) return;
+    final pagesLoadedBefore = _pagesLoaded;
 
     _snapshot.add(before.copyWith(items: _flipAllRead(before.items)));
 
@@ -643,6 +681,7 @@ class NotificationRepository {
 
       await _notificationsDao.markAllAsRead();
     } catch (_) {
+      _pagesLoaded = pagesLoadedBefore;
       _snapshot.add(before);
       rethrow;
     }

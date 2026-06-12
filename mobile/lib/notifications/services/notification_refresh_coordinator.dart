@@ -85,8 +85,10 @@ class NotificationRefreshCoordinator {
 
   Future<void> _runRefresh(NotificationRefreshReason reason) async {
     try {
-      await _repository.refresh();
-      _lastSuccessAt = _now();
+      final applied = await _repository.refreshApplied();
+      if (applied) {
+        _lastSuccessAt = _now();
+      }
     } on Exception catch (e, s) {
       // Typed FunnelcakeException (4xx/5xx/timeout) — expected domain
       // failures, NOT Reportable per .claude/rules/error_handling.md.

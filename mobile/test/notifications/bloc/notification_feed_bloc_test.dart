@@ -97,6 +97,7 @@ void main() {
       when(
         () => mockNotificationRepo.markAsRead(any()),
       ).thenAnswer((_) async {});
+      when(() => mockNotificationRepo.resetPaginationDepth()).thenReturn(null);
     });
 
     tearDown(() async {
@@ -107,6 +108,14 @@ void main() {
       notificationRepository: mockNotificationRepo,
       followRepository: mockFollowRepo,
     );
+
+    test('resets pagination depth when the feed closes', () async {
+      final bloc = createBloc();
+
+      await bloc.close();
+
+      verify(() => mockNotificationRepo.resetPaginationDepth()).called(1);
+    });
 
     group('snapshot projection', () {
       blocTest<NotificationFeedBloc, NotificationFeedState>(
