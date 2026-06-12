@@ -1436,6 +1436,48 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'stops following pagination when load more returns only duplicates',
+        setUp: () {
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResult(
+              videos: [createTestVideo('old-b', createdAt: 1999)],
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.following,
+          videos: [
+            createTestVideo('old-a', createdAt: 2000),
+            createTestVideo('old-b', createdAt: 1999),
+          ],
+        ),
+        act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
+        expect: () => [
+          isA<VideoFeedBlocState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<VideoFeedBlocState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.hasMore, 'hasMore', false)
+              .having((s) => s.videos.length, 'videos count', 2),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'stops forYou pagination when the current page has no cursor',
         build: createBloc,
         seed: () => VideoFeedBlocState(

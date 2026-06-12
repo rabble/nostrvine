@@ -432,6 +432,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       if (state.source.type != VideoFeedSourceType.forYou) {
         updatedVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       }
+      final addedUniqueVideos = updatedVideos.length > state.videos.length;
 
       // Merge attribution metadata from pagination with existing state.
       final mergedSources = Map.of(state.videoListSources);
@@ -452,7 +453,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
           hasMore: _hasMoreForSource(
             state.source,
             result,
-            fallbackHasMore: result.videos.isNotEmpty,
+            fallbackHasMore: addedUniqueVideos,
           ),
           isLoadingMore: false,
           videoListSources: mergedSources,
