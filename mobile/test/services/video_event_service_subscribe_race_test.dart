@@ -102,5 +102,43 @@ void main() {
         ).called(1);
       },
     );
+
+    test(
+      'pending reuse does not block retry if first setup fails',
+      () async {
+        final firstTraceGate = Completer<void>();
+        var startTraceCalls = 0;
+        when(() => mockPerformanceMonitor.startTrace(any())).thenAnswer((_) {
+          startTraceCalls++;
+          if (startTraceCalls == 1) return firstTraceGate.future;
+          return Future<void>.value();
+        });
+
+        final first = service.subscribeToVideoFeed(
+          subscriptionType: SubscriptionType.discovery,
+          limit: 10,
+        );
+
+        await service.subscribeToVideoFeed(
+          subscriptionType: SubscriptionType.discovery,
+          limit: 10,
+        );
+
+        firstTraceGate.completeError(
+          StateError('trace failed'),
+          StackTrace.current,
+        );
+        await first;
+
+        await service.subscribeToVideoFeed(
+          subscriptionType: SubscriptionType.discovery,
+          limit: 10,
+        );
+
+        verify(
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
+        ).called(1);
+      },
+    );
   });
 }

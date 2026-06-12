@@ -1696,15 +1696,20 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         // Check if we already have this exact subscription — registered
         // or still being set up by a concurrent call (the setup below
         // crosses async gaps, so the claim must happen synchronously here).
-        if (_subscriptions.containsKey(subscriptionId) ||
+        final hasRegisteredSubscription = _subscriptions.containsKey(
+          subscriptionId,
+        );
+        if (hasRegisteredSubscription ||
             _pendingSubscriptionIds.contains(subscriptionId)) {
           Log.info(
             '🔄 Reusing existing subscription $subscriptionId with identical parameters',
             name: 'VideoEventService',
             category: LogCategory.video,
           );
-          // Update active subscription mapping
-          _activeSubscriptions[subscriptionType] = subscriptionId;
+          if (hasRegisteredSubscription) {
+            // Update active subscription mapping
+            _activeSubscriptions[subscriptionType] = subscriptionId;
+          }
           return; // Reuse existing subscription
         }
         _pendingSubscriptionIds.add(subscriptionId);
