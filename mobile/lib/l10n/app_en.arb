@@ -1689,10 +1689,6 @@
   "@shareSheetAddToClips": {
     "description": "Share sheet action label for importing a classic Vine into the clip library"
   },
-  "shareSheetAddedToClips": "Added to clips",
-  "@shareSheetAddedToClips": {
-    "description": "Snackbar shown after successfully importing a classic Vine into the clip library"
-  },
   "shareSheetNameClipTitle": "Name this clip",
   "@shareSheetNameClipTitle": {
     "description": "Title for the sheet that lets a user choose the local library title for an imported clip"

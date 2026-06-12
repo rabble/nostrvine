@@ -2998,9 +2998,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareSheetAddToClips => '클립에 추가';
 
   @override
-  String get shareSheetAddedToClips => '클립에 추가했어요';
-
-  @override
   String get shareSheetNameClipTitle => 'Name this clip';
 
   @override

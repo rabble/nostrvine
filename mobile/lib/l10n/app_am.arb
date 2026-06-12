@@ -1508,10 +1508,6 @@
     "@shareSheetAddToClips": {
         "description": "Share sheet action label for importing a classic Vine into the clip library"
     },
-    "shareSheetAddedToClips": "ወደ ቅንጥቦች ታክሏል።",
-    "@shareSheetAddedToClips": {
-        "description": "Snackbar shown after successfully importing a classic Vine into the clip library"
-    },
     "shareSheetAddToClipsFailed": "ወደ ቅንጥቦች ማከል አልተቻለም",
     "@shareSheetAddToClipsFailed": {
         "description": "Snackbar shown when importing a classic Vine into the clip library fails"

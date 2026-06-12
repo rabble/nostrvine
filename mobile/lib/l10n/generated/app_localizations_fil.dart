@@ -3187,9 +3187,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get shareSheetAddToClips => 'Idagdag sa clips';
 
   @override
-  String get shareSheetAddedToClips => 'Naidagdag sa clips';
-
-  @override
   String get shareSheetNameClipTitle => 'Name this clip';
 
   @override

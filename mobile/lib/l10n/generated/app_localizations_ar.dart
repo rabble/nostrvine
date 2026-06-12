@@ -3101,9 +3101,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareSheetAddToClips => 'إضافة إلى المقاطع';
 
   @override
-  String get shareSheetAddedToClips => 'تمت الإضافة إلى المقاطع';
-
-  @override
   String get shareSheetNameClipTitle => 'Name this clip';
 
   @override

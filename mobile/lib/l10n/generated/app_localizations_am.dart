@@ -3079,9 +3079,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareSheetAddToClips => 'ወደ ቅንጥቦች ያክሉ';
 
   @override
-  String get shareSheetAddedToClips => 'ወደ ቅንጥቦች ታክሏል።';
-
-  @override
   String get shareSheetNameClipTitle => 'Name this clip';
 
   @override

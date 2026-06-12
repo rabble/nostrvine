@@ -5516,12 +5516,6 @@ abstract class AppLocalizations {
   /// **'Add to clips'**
   String get shareSheetAddToClips;
 
-  /// Snackbar shown after successfully importing a classic Vine into the clip library
-  ///
-  /// In en, this message translates to:
-  /// **'Added to clips'**
-  String get shareSheetAddedToClips;
-
   /// Title for the sheet that lets a user choose the local library title for an imported clip
   ///
   /// In en, this message translates to:

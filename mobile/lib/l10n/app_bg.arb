@@ -1395,10 +1395,6 @@
     "@shareSheetAddToClips": {
         "description": "Share sheet action label for importing a classic Vine into the clip library"
     },
-    "shareSheetAddedToClips": "Добавен към клипове",
-    "@shareSheetAddedToClips": {
-        "description": "Snackbar shown after successfully importing a classic Vine into the clip library"
-    },
     "shareSheetAddToClipsFailed": "Не можа да се добави към клипове",
     "@shareSheetAddToClipsFailed": {
         "description": "Snackbar shown when importing a classic Vine into the clip library fails"

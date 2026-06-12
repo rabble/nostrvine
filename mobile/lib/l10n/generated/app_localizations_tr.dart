@@ -3119,9 +3119,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareSheetAddToClips => 'Kliplere ekle';
 
   @override
-  String get shareSheetAddedToClips => 'Kliplere eklendi';
-
-  @override
   String get shareSheetNameClipTitle => 'Name this clip';
 
   @override

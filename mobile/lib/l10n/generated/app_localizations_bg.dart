@@ -3182,9 +3182,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareSheetAddToClips => 'Добави към клипове';
 
   @override
-  String get shareSheetAddedToClips => 'Добавен към клипове';
-
-  @override
   String get shareSheetNameClipTitle => 'Name this clip';
 
   @override

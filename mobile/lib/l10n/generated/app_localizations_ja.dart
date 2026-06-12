@@ -2985,9 +2985,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareSheetAddToClips => 'クリップに追加';
 
   @override
-  String get shareSheetAddedToClips => 'クリップに追加しました';
-
-  @override
   String get shareSheetNameClipTitle => 'Name this clip';
 
   @override

@@ -207,6 +207,31 @@ First useful caption
     expect(success.clip.libraryTitle, 'First useful caption');
   });
 
+  test('uses a timestamp fallback when metadata has no title text', () {
+    final title = VideoClipImportService.defaultLibraryTitleFor(
+      _video(title: '', content: '', textTrackContent: ''),
+      fallbackTime: DateTime(2026, 6, 13, 15, 45),
+    );
+
+    expect(title, 'Clip Jun 13, 3:45 PM');
+  });
+
+  test('normalizes whitespace and truncates long library titles', () {
+    final title = VideoClipImportService.defaultLibraryTitleFor(
+      _video(
+        title:
+            '  This title has     extra spaces and it keeps going past the eighty character limit for local clip names  ',
+        content: 'fallback description',
+      ),
+    );
+
+    expect(title, hasLength(80));
+    expect(
+      title,
+      'This title has extra spaces and it keeps going past the eighty character limi...',
+    );
+  });
+
   test('imports an own (non-classic) video as a saved library clip', () async {
     final service = buildService();
 
