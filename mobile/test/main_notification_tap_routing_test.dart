@@ -220,6 +220,22 @@ void main() {
       expect(result.target, const OpenProfileTarget(actor));
       expect(result.videoCoordinate, isNull);
     });
+
+    test('ignores a coordinate with empty pubkey and d-tag and falls '
+        'back', () {
+      // '34236::' parses to empty pubkey/d-tag components — not a routable
+      // video, so the tap must fall back instead of pushing a dead route.
+      final result = app.pushNotificationTapTarget(
+        referencedAddress: '34236::',
+        referencedEventId: null,
+        eventId: null,
+        notificationType: 'like',
+        senderPubkey: actor,
+      );
+
+      expect(result.target, const OpenProfileTarget(actor));
+      expect(result.videoCoordinate, isNull);
+    });
   });
 
   group('videoAddressableTarget', () {
@@ -244,6 +260,11 @@ void main() {
     test('returns null for a malformed coordinate', () {
       expect(videoAddressableTarget('34236:only-two-parts'), isNull);
       expect(videoAddressableTarget('not-a-coordinate'), isNull);
+    });
+
+    test('returns null for a coordinate with empty components', () {
+      expect(videoAddressableTarget('34236::'), isNull);
+      expect(videoAddressableTarget('34236:owner_hex:'), isNull);
     });
 
     test('returns null for empty or null input', () {

@@ -112,10 +112,13 @@ NotificationKind? notificationKindFromPushType(String? type) {
 /// predicate guarantees a non-null result resolves to a video, so the executor
 /// can push it directly without a relay round-trip; non-video or malformed
 /// coordinates return null and the caller falls back to the event-id walk.
+/// Coordinates with an empty pubkey or d-tag (e.g. `34236::`) parse but cannot
+/// route to a video, so they also return null and fall back the same way.
 String? videoAddressableTarget(String? referencedAddress) {
   if (referencedAddress == null || referencedAddress.isEmpty) return null;
   final parsed = parseAddressableId(referencedAddress);
   if (parsed == null) return null;
+  if (parsed.pubkey.isEmpty || parsed.dTag.isEmpty) return null;
   return NIP71VideoKinds.isVideoKind(parsed.kind) ? referencedAddress : null;
 }
 
