@@ -10,12 +10,12 @@ environment:
 
 dependencies:
   cronet_http: ^1.8.0
-  cupertino_http: ^2.4.0
+  cupertino_http: ^3.0.2
   file: ^7.0.0
   flutter:
     sdk: flutter
   flutter_cache_manager: ^3.4.1
-  http: ^1.4.0
+  http: ^1.6.0
   path: ^1.9.1
   path_provider: ^2.1.5
   sqflite: ^2.3.3+1
