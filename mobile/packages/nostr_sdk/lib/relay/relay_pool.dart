@@ -271,8 +271,118 @@ class RelayPool {
     }
   }
 
+  String? _stringAt(Relay relay, List<dynamic> frame, int index, String field) {
+    if (frame.length <= index || frame[index] is! String) {
+      log(
+        'Malformed relay frame from ${relay.url}: expected $field '
+        'as String at index $index: $frame',
+      );
+      return null;
+    }
+    return frame[index] as String;
+  }
+
+  String? _optionalStringAt(
+    Relay relay,
+    List<dynamic> frame,
+    int index,
+    String field, {
+    required String defaultValue,
+  }) {
+    if (frame.length <= index) {
+      return defaultValue;
+    }
+    return _stringAt(relay, frame, index, field);
+  }
+
+  bool? _boolAt(Relay relay, List<dynamic> frame, int index, String field) {
+    if (frame.length <= index || frame[index] is! bool) {
+      log(
+        'Malformed relay frame from ${relay.url}: expected $field '
+        'as bool at index $index: $frame',
+      );
+      return null;
+    }
+    return frame[index] as bool;
+  }
+
+  Map<String, dynamic>? _mapAt(
+    Relay relay,
+    List<dynamic> frame,
+    int index,
+    String field,
+  ) {
+    if (frame.length <= index) {
+      log(
+        'Malformed relay frame from ${relay.url}: missing $field '
+        'at index $index: $frame',
+      );
+      return null;
+    }
+
+    final value = frame[index];
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      try {
+        return Map<String, dynamic>.from(value);
+      } catch (_) {
+        // Fall through to the malformed-frame log below.
+      }
+    }
+
+    log(
+      'Malformed relay frame from ${relay.url}: expected $field '
+      'as object at index $index: $frame',
+    );
+    return null;
+  }
+
+  int? _intPayloadField(
+    Relay relay,
+    List<dynamic> frame,
+    Map<String, dynamic> payload,
+    String field,
+  ) {
+    final value = payload[field];
+    if (value is int) {
+      return value;
+    }
+
+    log(
+      'Malformed relay frame from ${relay.url}: expected payload.$field '
+      'as int: $frame',
+    );
+    return null;
+  }
+
+  bool? _optionalBoolPayloadField(
+    Relay relay,
+    List<dynamic> frame,
+    Map<String, dynamic> payload,
+    String field, {
+    required bool defaultValue,
+  }) {
+    final value = payload[field];
+    if (value == null) {
+      return defaultValue;
+    }
+    if (value is bool) {
+      return value;
+    }
+
+    log(
+      'Malformed relay frame from ${relay.url}: expected payload.$field '
+      'as bool: $frame',
+    );
+    return null;
+  }
+
   Future<void> _onEvent(Relay relay, List<dynamic> json) async {
-    final messageType = json[0];
+    final messageType = _stringAt(relay, json, 0, 'message type');
+    if (messageType == null) return;
+
     // Log message type + sub ID (full json is too verbose for non-DM events)
     if (json.length >= 2) {
       final msgSubId = json.length >= 2 ? json[1] : '';
@@ -293,8 +403,14 @@ class RelayPool {
 
     if (messageType == 'EVENT') {
       try {
+        final subId = _stringAt(relay, json, 1, 'EVENT subscription id');
+        if (subId == null) return;
+
+        final eventJson = _mapAt(relay, json, 2, 'EVENT payload');
+        if (eventJson == null) return;
+
         if ((relay.relayStatus.relayType != RelayType.cache)) {
-          var event = Map<String, dynamic>.from(json[2]);
+          var event = Map<String, dynamic>.from(eventJson);
           var kind = event["kind"];
           if (!cacheAvoidEvents.contains(kind)) {
             event["sources"] = [relay.url];
@@ -302,10 +418,9 @@ class RelayPool {
           }
         }
 
-        final event = Event.fromJson(json[2]);
+        final event = Event.fromJson(eventJson);
 
         if (event.kind == EventKind.giftWrap) {
-          final subId = json[1] as String;
           log(
             '🎁 Kind 1059 gift wrap received! subId=$subId '
             'from ${relay.url}, eventId=${event.id}',
@@ -330,7 +445,7 @@ class RelayPool {
 
         if (relay.relayStatus.relayType == RelayType.cache) {
           // local message read source from json
-          var sources = json[2]["sources"];
+          var sources = eventJson["sources"];
           if (sources != null && sources is List) {
             for (var source in sources) {
               event.sources.add(source);
@@ -341,7 +456,6 @@ class RelayPool {
         } else {
           event.sources.add(relay.url);
         }
-        final subId = json[1] as String;
         var subscription = _subscriptions[subId];
 
         if (subscription != null) {
@@ -354,12 +468,8 @@ class RelayPool {
         log(err.toString());
       }
     } else if (messageType == 'EOSE') {
-      if (json.length < 2) {
-        log("EOSE result not right.");
-        return;
-      }
-
-      final subId = json[1] as String;
+      final subId = _stringAt(relay, json, 1, 'EOSE subscription id');
+      if (subId == null) return;
       if (subId == 'dm_inbox') {
         log('📬 EOSE received for dm_inbox from ${relay.url}');
       }
@@ -407,99 +517,103 @@ class RelayPool {
       log('📡 OK response from ${relay.url}: $json');
 
       // Check if this OK is for an AUTH event
-      if (json.length >= 3) {
-        final eventId = json[1] as String;
-        final success = json[2] as bool;
-        final message = json.length > 3 ? json[3] as String : '';
+      final eventId = _stringAt(relay, json, 1, 'OK event id');
+      if (eventId == null) return;
+      final success = _boolAt(relay, json, 2, 'OK success');
+      if (success == null) return;
+      final message = _optionalStringAt(
+        relay,
+        json,
+        3,
+        'OK message',
+        defaultValue: '',
+      );
+      if (message == null) return;
 
-        // Check if this OK is for a publish we are awaiting.
-        final publishTracker = _pendingPublishes[eventId];
-        if (publishTracker != null) {
-          if (success) {
-            publishTracker.onAccepted(relay.url);
-            final diagnosticTag = publishTracker.diagnosticTag;
-            if (diagnosticTag != null) {
-              _logPublishDiagnostic(
-                diagnosticTag,
-                'OK accepted kind=${publishTracker.eventKind} '
-                'eventId=$eventId relay=${relay.url}',
-              );
-            }
-          } else {
-            publishTracker.onRejected(relay.url, message);
-            final diagnosticTag = publishTracker.diagnosticTag;
-            if (diagnosticTag != null) {
-              _logPublishDiagnostic(
-                diagnosticTag,
-                'OK rejected kind=${publishTracker.eventKind} '
-                'eventId=$eventId relay=${relay.url} reason=$message',
-              );
-            }
+      // Check if this OK is for a publish we are awaiting.
+      final publishTracker = _pendingPublishes[eventId];
+      if (publishTracker != null) {
+        if (success) {
+          publishTracker.onAccepted(relay.url);
+          final diagnosticTag = publishTracker.diagnosticTag;
+          if (diagnosticTag != null) {
+            _logPublishDiagnostic(
+              diagnosticTag,
+              'OK accepted kind=${publishTracker.eventKind} '
+              'eventId=$eventId relay=${relay.url}',
+            );
+          }
+        } else {
+          publishTracker.onRejected(relay.url, message);
+          final diagnosticTag = publishTracker.diagnosticTag;
+          if (diagnosticTag != null) {
+            _logPublishDiagnostic(
+              diagnosticTag,
+              'OK rejected kind=${publishTracker.eventKind} '
+              'eventId=$eventId relay=${relay.url} reason=$message',
+            );
           }
         }
+      }
 
-        // Check if this is responding to our AUTH event
-        if (_pendingAuthEvents.containsKey(eventId)) {
-          _pendingAuthEvents.remove(eventId);
+      // Check if this is responding to our AUTH event
+      if (_pendingAuthEvents.containsKey(eventId)) {
+        _pendingAuthEvents.remove(eventId);
 
-          if (success) {
-            relay.relayStatus.authed = true;
-            log('🔐 AUTH succeeded for ${relay.url}');
+        if (success) {
+          relay.relayStatus.authed = true;
+          log('🔐 AUTH succeeded for ${relay.url}');
 
-            // Send pending messages
-            for (var message in relay.pendingAuthedMessages) {
-              relay.send(message);
-            }
-            relay.pendingAuthedMessages.clear();
+          // Send pending messages
+          for (var message in relay.pendingAuthedMessages) {
+            relay.send(message);
+          }
+          relay.pendingAuthedMessages.clear();
 
-            // Send subscriptions
-            if (relay.hasSubscription()) {
-              var subs = relay.getSubscriptions();
+          // Send subscriptions
+          if (relay.hasSubscription()) {
+            var subs = relay.getSubscriptions();
+            log(
+              '🔐 AUTH post-auth: re-sending ${subs.length} '
+              'subscriptions to ${relay.url}',
+            );
+            for (var subscription in subs) {
               log(
-                '🔐 AUTH post-auth: re-sending ${subs.length} '
-                'subscriptions to ${relay.url}',
-              );
-              for (var subscription in subs) {
-                log(
-                  '🔐 AUTH post-auth: sending ${subscription.id} '
-                  'to ${relay.url}',
-                );
-                relay.send(subscription.toJson());
-              }
-            } else {
-              log(
-                '🔐 AUTH post-auth: NO subscriptions saved for '
+                '🔐 AUTH post-auth: sending ${subscription.id} '
                 '${relay.url}',
               );
+              relay.send(subscription.toJson());
             }
           } else {
-            relay.relayStatus.authed = false;
-            log('🔐 AUTH failed for ${relay.url}: $message');
+            log(
+              '🔐 AUTH post-auth: NO subscriptions saved for '
+              '${relay.url}',
+            );
           }
+        } else {
+          relay.relayStatus.authed = false;
+          log('🔐 AUTH failed for ${relay.url}: $message');
         }
       }
     } else if (messageType == "NOTICE") {
       log('📡 NOTICE from ${relay.url}: $json');
-      if (json.length < 2) {
-        log("NOTICE result not right.");
-        return;
-      }
+      final message = _stringAt(relay, json, 1, 'NOTICE message');
+      if (message == null) return;
 
       // notice save, TODO maybe should change code
       if (onNotice != null) {
-        onNotice!(relay.url, json[1] as String);
+        onNotice!(relay.url, message);
       }
     } else if (messageType == "AUTH") {
       try {
         // auth needed
         log('🔐 AUTH challenge received from ${relay.url}');
-        if (json.length < 2) {
-          log("AUTH result not right.");
-          return;
-        }
-
-        final challenge = json[1] as String;
-        log('🔐 Challenge: ${challenge.substring(0, 16)}...');
+        final challenge = _stringAt(relay, json, 1, 'AUTH challenge');
+        if (challenge == null) return;
+        final challengePreview = challenge.length > 16
+            ? challenge.substring(0, 16)
+            : challenge;
+        log('🔐 Challenge: $challengePreview...');
         var tags = [
           ["relay", relay.url],
           ["challenge", challenge],
@@ -513,9 +627,7 @@ class RelayPool {
         Event? event = Event(pk, EventKind.authentication, tags, "");
         event = await localNostr.nostrSigner.signEvent(event);
         if (event != null) {
-          log(
-            '🔐 Sending AUTH response for challenge: ${challenge.substring(0, 16)}...',
-          );
+          log('🔐 Sending AUTH response for challenge: $challengePreview...');
 
           // Track this AUTH event to match with OK response
           _pendingAuthEvents[event.id] = relay.url;
@@ -534,15 +646,20 @@ class RelayPool {
       }
     } else if (messageType == 'COUNT') {
       // NIP-45 COUNT response
-      if (json.length < 3) {
-        log('COUNT result malformed');
-        return;
-      }
-
-      final subscriptionId = json[1] as String;
-      final payload = json[2] as Map<String, dynamic>;
-      final count = payload['count'] as int;
-      final approximate = payload['approximate'] as bool? ?? false;
+      final subscriptionId = _stringAt(relay, json, 1, 'COUNT subscription id');
+      if (subscriptionId == null) return;
+      final payload = _mapAt(relay, json, 2, 'COUNT payload');
+      if (payload == null) return;
+      final count = _intPayloadField(relay, json, payload, 'count');
+      if (count == null) return;
+      final approximate = _optionalBoolPayloadField(
+        relay,
+        json,
+        payload,
+        'approximate',
+        defaultValue: false,
+      );
+      if (approximate == null) return;
 
       log('📊 COUNT response: $count (approximate: $approximate)');
 
@@ -551,13 +668,21 @@ class RelayPool {
       relay.completeCountQuery(subscriptionId, response);
     } else if (messageType == 'CLOSED') {
       // Handle CLOSED messages - check if it's for a COUNT query
-      if (json.length < 2) {
-        log('CLOSED result malformed');
-        return;
-      }
-
-      final subscriptionId = json[1] as String;
-      final reason = json.length > 2 ? json[2] as String : 'Unknown reason';
+      final subscriptionId = _stringAt(
+        relay,
+        json,
+        1,
+        'CLOSED subscription id',
+      );
+      if (subscriptionId == null) return;
+      final reason = _optionalStringAt(
+        relay,
+        json,
+        2,
+        'CLOSED reason',
+        defaultValue: 'Unknown reason',
+      );
+      if (reason == null) return;
 
       log('📡 CLOSED from ${relay.url}: $subscriptionId - $reason');
       // Check if this is a COUNT query being refused
