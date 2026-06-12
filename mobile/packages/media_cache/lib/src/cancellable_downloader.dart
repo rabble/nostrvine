@@ -53,6 +53,8 @@ class HttpCancellableDownloader implements CancellableDownloader {
   HttpCancellableDownloader(this._client);
 
   final http.Client _client;
+  final Set<_HttpDownload> _activeDownloads = {};
+  bool _isClosed = false;
 
   @override
   CancellableDownload download({
@@ -60,26 +62,54 @@ class HttpCancellableDownloader implements CancellableDownloader {
     required File targetFile,
     Map<String, String>? headers,
   }) {
-    final dl = _HttpDownload(_client, url, targetFile, headers);
+    if (_isClosed) return _CompletedDownload(null);
+
+    final dl = _HttpDownload(
+      _client,
+      url,
+      targetFile,
+      headers,
+      onComplete: _activeDownloads.remove,
+    );
+    _activeDownloads.add(dl);
     unawaited(dl._start());
     return dl;
   }
 
   @override
   Future<void> close() async {
+    if (_isClosed) return;
+    _isClosed = true;
+
+    final activeDownloads = _activeDownloads.toList(growable: false);
+    for (final download in activeDownloads) {
+      download.cancel();
+    }
+    await Future.wait<File?>(
+      activeDownloads.map((download) => download.file),
+    );
     _client.close();
   }
 }
 
 class _HttpDownload implements CancellableDownload {
-  _HttpDownload(this._client, this._url, this._file, this._headers);
+  _HttpDownload(
+    this._client,
+    this._url,
+    this._file,
+    this._headers, {
+    required this.onComplete,
+  });
 
   final http.Client _client;
   final String _url;
   final File _file;
   final Map<String, String>? _headers;
+  final void Function(_HttpDownload download) onComplete;
 
   final _completer = Completer<File?>();
+  final _abortCompleter = Completer<void>();
+  // ignore: cancel_subscriptions, owned across cancel/stream lifecycle methods.
   StreamSubscription<List<int>>? _subscription;
   IOSink? _sink;
   bool _isCancelled = false;
@@ -104,7 +134,11 @@ class _HttpDownload implements CancellableDownload {
         return;
       }
 
-      final req = http.Request('GET', uri);
+      final req = http.AbortableRequest(
+        'GET',
+        uri,
+        abortTrigger: _abortCompleter.future,
+      );
       if (_headers != null) {
         req.headers.addAll(_headers);
       }
@@ -185,14 +219,41 @@ class _HttpDownload implements CancellableDownload {
   }
 
   void _safeComplete(File? f) {
-    if (!_completer.isCompleted) _completer.complete(f);
+    if (_completer.isCompleted) return;
+    _completer.complete(f);
+    onComplete(this);
   }
 
   @override
   void cancel() {
     if (_isCancelled || _isDone) return;
     _isCancelled = true;
-    unawaited(_subscription?.cancel());
-    unawaited(_cleanupPartial().whenComplete(() => _safeComplete(null)));
+    if (!_abortCompleter.isCompleted) {
+      _abortCompleter.complete();
+    }
+    final subscription = _subscription;
+    if (subscription == null) {
+      unawaited(_cleanupPartial());
+      return;
+    }
+    unawaited(
+      subscription.cancel().whenComplete(() async {
+        await _cleanupPartial();
+        _safeComplete(null);
+      }),
+    );
   }
+}
+
+class _CompletedDownload implements CancellableDownload {
+  _CompletedDownload(File? file) : file = Future<File?>.value(file);
+
+  @override
+  final Future<File?> file;
+
+  @override
+  bool get isCancelled => false;
+
+  @override
+  void cancel() {}
 }

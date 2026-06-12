@@ -890,8 +890,7 @@ void main() {
           downloader.downloads.single.completeWith(cachedFile);
           await op.file;
 
-          // Allow the queued alias-persist write to flush.
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await cacheManager.waitForPendingAliasWrites();
 
           final aliasFile = File('${cacheDir.path}/aliases.json');
           expect(aliasFile.existsSync(), isTrue);

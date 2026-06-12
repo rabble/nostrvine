@@ -7,10 +7,11 @@ import 'package:http/http.dart' as http;
 import 'package:media_cache/src/cancellable_downloader.dart';
 
 class _CallbackClient extends http.BaseClient {
-  _CallbackClient(this._onSend);
+  _CallbackClient(this._onSend, {this.onClose});
 
   final Future<http.StreamedResponse> Function(http.BaseRequest request)
   _onSend;
+  final void Function()? onClose;
   bool closed = false;
 
   @override
@@ -19,6 +20,7 @@ class _CallbackClient extends http.BaseClient {
 
   @override
   void close() {
+    onClose?.call();
     closed = true;
     super.close();
   }
@@ -83,6 +85,96 @@ void main() {
       await downloader.close();
 
       expect(client.closed, isTrue);
+    });
+
+    test(
+      'download after close completes with null without using client',
+      () async {
+        var sendCalled = false;
+        final client = _CallbackClient((_) async {
+          sendCalled = true;
+          return http.StreamedResponse(const Stream.empty(), 200);
+        });
+        final downloader = HttpCancellableDownloader(client);
+        final target = File('${tempDir.path}/closed.mp4');
+
+        await downloader.close();
+        final download = downloader.download(
+          url: 'https://example.com/closed.mp4',
+          targetFile: target,
+        )..cancel();
+
+        expect(await download.file, isNull);
+        expect(download.isCancelled, isFalse);
+        expect(sendCalled, isFalse);
+        expect(target.existsSync(), isFalse);
+      },
+    );
+
+    test('close aborts a pending request before closing the client', () async {
+      var inFlightRequests = 0;
+      var closedAfterAbort = false;
+      final client = _CallbackClient(
+        (request) async {
+          inFlightRequests += 1;
+          expect(request, isA<http.AbortableRequest>());
+          await (request as http.AbortableRequest).abortTrigger;
+          inFlightRequests -= 1;
+          throw http.RequestAbortedException(request.url);
+        },
+        onClose: () {
+          closedAfterAbort = inFlightRequests == 0;
+        },
+      );
+      final downloader = HttpCancellableDownloader(client);
+      final target = File('${tempDir.path}/pending_close.mp4');
+
+      final download = downloader.download(
+        url: 'https://example.com/pending.mp4',
+        targetFile: target,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      await downloader.close();
+
+      expect(await download.file, isNull);
+      expect(download.isCancelled, isTrue);
+      expect(client.closed, isTrue);
+      expect(closedAfterAbort, isTrue);
+      expect(target.existsSync(), isFalse);
+    });
+
+    test('close waits for active response stream cancellation', () async {
+      var streamCancelled = false;
+      var closedAfterStreamCancel = false;
+      final controller = StreamController<List<int>>(
+        onCancel: () async {
+          await Future<void>.delayed(Duration.zero);
+          streamCancelled = true;
+        },
+      );
+      final client = _CallbackClient(
+        (_) async => http.StreamedResponse(controller.stream, 200),
+        onClose: () {
+          closedAfterStreamCancel = streamCancelled;
+        },
+      );
+      final downloader = HttpCancellableDownloader(client);
+      final target = File('${tempDir.path}/stream_close.mp4');
+
+      final download = downloader.download(
+        url: 'https://example.com/stream.mp4',
+        targetFile: target,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      await downloader.close();
+
+      expect(await download.file, isNull);
+      expect(download.isCancelled, isTrue);
+      expect(client.closed, isTrue);
+      expect(closedAfterStreamCancel, isTrue);
+      expect(target.existsSync(), isFalse);
     });
 
     test('returns null for non-2xx responses', () async {
