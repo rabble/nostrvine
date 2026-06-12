@@ -154,6 +154,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         status: VideoFeedStatus.loading,
         source: source,
         subscribedLists: subscribedLists,
+        isLoadingMore: false,
+        clearPaginationCursor: true,
       ),
     );
 
@@ -164,12 +166,13 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     );
 
     await _loadVideos(source, emit);
-    if (!_canEmitForSource(source, emit)) return;
+    if (emit.isDone) return;
 
     // After the initial load, check for the "no follows" CTA. Needed for
     // BLoC re-creation (e.g. navigating back to home) when the follow repo
     // is already initialized — .skip(1) would skip the only replay.
-    if (source.type == VideoFeedSourceType.following) {
+    if (state.source == source &&
+        source.type == VideoFeedSourceType.following) {
       final currentFollowing = _followRepository.followingPubkeys;
       if (currentFollowing.isEmpty && state.videos.isEmpty) {
         emit(
@@ -358,7 +361,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         source: source,
         videos: [],
         hasMore: true,
+        isLoadingMore: false,
         clearError: true,
+        videoListSources: const {},
+        listOnlyVideoIds: const {},
+        clearPaginationCursor: true,
       ),
     );
 
@@ -493,7 +500,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         status: VideoFeedStatus.loading,
         videos: [],
         hasMore: true,
+        isLoadingMore: false,
         clearError: true,
+        videoListSources: const {},
+        listOnlyVideoIds: const {},
+        clearPaginationCursor: true,
       ),
     );
 
@@ -523,7 +534,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         status: VideoFeedStatus.loading,
         videos: [],
         hasMore: true,
+        isLoadingMore: false,
         clearError: true,
+        videoListSources: const {},
+        listOnlyVideoIds: const {},
+        clearPaginationCursor: true,
       ),
     );
 
@@ -606,8 +621,12 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         source: nextSource,
         videos: [],
         hasMore: true,
+        isLoadingMore: false,
         clearError: true,
         subscribedLists: subscribedLists,
+        videoListSources: const {},
+        listOnlyVideoIds: const {},
+        clearPaginationCursor: true,
       ),
     );
 

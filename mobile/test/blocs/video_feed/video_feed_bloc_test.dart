@@ -1031,6 +1031,56 @@ void main() {
           ).called(1);
         },
       );
+
+      test(
+        'keeps startup subscriptions when initial source load becomes stale',
+        () async {
+          final followingVideos = createTestVideos(2, idPrefix: 'following');
+          final newVideos = createTestVideos(2, idPrefix: 'new');
+          final followingResult = Completer<HomeFeedResult>();
+          final newVideosResult = Completer<List<VideoEvent>>();
+
+          when(() => mockFollowRepository.followingPubkeys).thenReturn([
+            'pubkey',
+          ]);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) => followingResult.future);
+          when(
+            () => mockVideosRepository.getNewVideos(
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) => newVideosResult.future);
+
+          final bloc = createBloc();
+          addTearDown(bloc.close);
+
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
+          await pumpEventQueue();
+
+          bloc.add(const VideoFeedSourceChanged(VideoFeedSource.newVideos()));
+          await pumpEventQueue();
+
+          newVideosResult.complete(newVideos);
+          await pumpEventQueue();
+
+          followingResult.complete(HomeFeedResult(videos: followingVideos));
+          await pumpEventQueue();
+
+          expect(bloc.state.source, const VideoFeedSource.newVideos());
+          expect(followingController.hasListener, isTrue);
+          expect(curatedListsController.hasListener, isTrue);
+        },
+      );
     });
 
     group('VideoFeedModeChanged', () {
@@ -1229,6 +1279,99 @@ void main() {
     });
 
     group('VideoFeedLoadMoreRequested', () {
+      late Completer<HomeFeedResult> loadMoreResult;
+      late Completer<List<VideoEvent>> sourceChangeResult;
+      late List<VideoEvent> moreVideos;
+      late List<VideoEvent> newVideos;
+
+      setUp(() {
+        loadMoreResult = Completer<HomeFeedResult>();
+        sourceChangeResult = Completer<List<VideoEvent>>();
+        moreVideos = createTestVideos(2, idPrefix: 'more');
+        newVideos = createTestVideos(2, idPrefix: 'new');
+
+        addTearDown(() {
+          if (!loadMoreResult.isCompleted) {
+            loadMoreResult.complete(HomeFeedResult(videos: moreVideos));
+          }
+          if (!sourceChangeResult.isCompleted) {
+            sourceChangeResult.complete(newVideos);
+          }
+        });
+      });
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'clears stale pagination loading flag when source changes',
+        setUp: () {
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) => loadMoreResult.future);
+          when(
+            () => mockVideosRepository.getNewVideos(
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) => sourceChangeResult.future);
+        },
+        build: createBloc,
+        seed: () => VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          source: const VideoFeedSource.following(),
+          videos: createTestVideos(3),
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoFeedLoadMoreRequested());
+          await pumpEventQueue();
+
+          bloc.add(const VideoFeedSourceChanged(VideoFeedSource.newVideos()));
+          await pumpEventQueue();
+
+          sourceChangeResult.complete(newVideos);
+          await pumpEventQueue();
+
+          loadMoreResult.complete(HomeFeedResult(videos: moreVideos));
+          await pumpEventQueue();
+        },
+        expect: () => [
+          isA<VideoFeedBlocState>()
+              .having(
+                (s) => s.source,
+                'source',
+                const VideoFeedSource.following(),
+              )
+              .having((s) => s.isLoadingMore, 'isLoadingMore', isTrue),
+          isA<VideoFeedBlocState>()
+              .having(
+                (s) => s.source,
+                'source',
+                const VideoFeedSource.newVideos(),
+              )
+              .having((s) => s.status, 'status', VideoFeedStatus.loading)
+              .having((s) => s.isLoadingMore, 'isLoadingMore', isFalse),
+          isA<VideoFeedBlocState>()
+              .having(
+                (s) => s.source,
+                'source',
+                const VideoFeedSource.newVideos(),
+              )
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.isLoadingMore, 'isLoadingMore', isFalse)
+              .having((s) => s.videos.map((video) => video.id), 'video ids', [
+                'new-0',
+                'new-1',
+              ]),
+        ],
+      );
+
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'uses recommendations pagination path for forYou mode',
         setUp: () {
