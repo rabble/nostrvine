@@ -2150,13 +2150,83 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
-        'does nothing when mode is forYou',
-        build: createBloc,
+        'refreshes forYou when data is stale',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(
+            () => mockVideosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+        },
+        build: () => VideoFeedBloc(
+          videosRepository: mockVideosRepository,
+          followRepository: mockFollowRepository,
+          curatedListRepository: mockCuratedListRepository,
+          autoRefreshMinInterval: Duration.zero,
+        ),
         seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
-          videos: createTestVideos(5),
+          videos: createTestVideos(3),
         ),
         act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
+        expect: () => [
+          const VideoFeedBlocState(),
+          isA<VideoFeedBlocState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'videos count', pageSize),
+        ],
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: true,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'does nothing for forYou when data is fresh '
+        '(last refresh within auto-refresh interval)',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(
+            () => mockVideosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+        },
+        build: () => VideoFeedBloc(
+          videosRepository: mockVideosRepository,
+          followRepository: mockFollowRepository,
+          curatedListRepository: mockCuratedListRepository,
+          // Large interval so data is always considered fresh
+          autoRefreshMinInterval: const Duration(hours: 1),
+        ),
+        seed: () => VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          videos: createTestVideos(pageSize),
+        ),
+        act: (bloc) async {
+          // First, trigger a load so _lastRefreshedAt gets set
+          bloc.add(const VideoFeedStarted());
+          await Future<void>.delayed(Duration.zero);
+
+          // Now the auto-refresh should be skipped (data is fresh)
+          bloc.add(const VideoFeedAutoRefreshRequested());
+        },
+        skip: 2, // Skip the loading + success from VideoFeedStarted
         expect: () => <VideoFeedBlocState>[],
       );
 

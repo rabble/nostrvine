@@ -515,14 +515,21 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   /// Handle auto-refresh request (dispatched by UI on app resume).
   ///
   /// Only refreshes when:
-  /// - The current feed mode is [FeedMode.following]
+  /// - The current feed mode is [FeedMode.following] or [FeedMode.forYou]
   /// - The data is stale (last refresh was longer ago than
   ///   [_autoRefreshMinInterval])
+  ///
+  /// For You is included so the feed picks up fresh recommendations on
+  /// resume, addressing the "feed stays the same after reopening the app"
+  /// report (issue #3861).
   Future<void> _onAutoRefreshRequested(
     VideoFeedAutoRefreshRequested event,
     Emitter<VideoFeedBlocState> emit,
   ) async {
-    if (state.source.type != VideoFeedSourceType.following) return;
+    if (state.source.type != VideoFeedSourceType.following &&
+        state.source.type != VideoFeedSourceType.forYou) {
+      return;
+    }
 
     final lastRefresh = _lastRefreshedAt;
     if (lastRefresh != null &&
