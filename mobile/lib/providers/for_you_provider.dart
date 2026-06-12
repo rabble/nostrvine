@@ -103,7 +103,9 @@ class ForYouFeed extends _$ForYouFeed {
     return _fetchRecommendations();
   }
 
-  Future<VideoFeedState> _fetchRecommendations({String? cursor}) async {
+  Future<VideoFeedState> _fetchRecommendations({
+    bool preserveExistingOnError = false,
+  }) async {
     try {
       final authService = ref.read(authServiceProvider);
       final currentUserPubkey = authService.currentPublicKeyHex;
@@ -116,7 +118,6 @@ class ForYouFeed extends _$ForYouFeed {
       final response = await client.getRecommendations(
         pubkey: currentUserPubkey,
         limit: _pageSize,
-        cursor: cursor,
         preferredLanguages: hints.preferredLanguages,
         viewerCountry: hints.viewerCountry,
       );
@@ -153,6 +154,7 @@ class ForYouFeed extends _$ForYouFeed {
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
+      if (preserveExistingOnError) rethrow;
       return VideoFeedState(
         videos: const [],
         hasMoreContent: false,
@@ -214,9 +216,11 @@ class ForYouFeed extends _$ForYouFeed {
             .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
             .toList(),
       );
-      final existingIds = currentState.videos.map((video) => video.id).toSet();
+      final existingIds = currentState.videos
+          .map((video) => video.id.toLowerCase())
+          .toSet();
       final newVideos = filteredVideos
-          .where((video) => existingIds.add(video.id))
+          .where((video) => existingIds.add(video.id.toLowerCase()))
           .toList();
       final mergedVideos = [...currentState.videos, ...newVideos];
       final newEventsLoaded = newVideos.length;
@@ -228,12 +232,12 @@ class ForYouFeed extends _$ForYouFeed {
       );
 
       _nextCursor = response.nextCursor;
+      final cursorAdvanced = _nextCursor != null && _nextCursor != cursor;
 
       state = AsyncData(
         VideoFeedState(
           videos: mergedVideos,
-          hasMoreContent:
-              response.hasMore && _nextCursor != null && newEventsLoaded > 0,
+          hasMoreContent: response.hasMore && cursorAdvanced,
           lastUpdated: DateTime.now(),
         ),
       );
@@ -265,7 +269,7 @@ class ForYouFeed extends _$ForYouFeed {
       getCurrentState: () => state,
       isMounted: () => ref.mounted,
       setState: (s) => state = s,
-      fetchFresh: _fetchRecommendations,
+      fetchFresh: () => _fetchRecommendations(preserveExistingOnError: true),
     );
   }
 }
