@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -21,6 +22,24 @@ class _MockPerformanceTraceMonitor extends Mock
     implements PerformanceTraceMonitor {}
 
 class _FakeFilter extends Fake implements Filter {}
+
+class _FakeConnectionStatusService extends ConnectionStatusService {
+  bool online = true;
+  final List<bool> onlineReads = [];
+
+  @override
+  bool get isOnline =>
+      onlineReads.isNotEmpty ? onlineReads.removeAt(0) : online;
+
+  @override
+  bool get isConnected => online;
+
+  @override
+  Map<String, dynamic> getConnectionInfo() => {
+    'isConnected': online,
+    'scriptedReads': onlineReads.length,
+  };
+}
 
 void main() {
   setUpAll(() {
@@ -35,6 +54,7 @@ void main() {
     late _MockNostrClient mockNostrService;
     late _MockSubscriptionManager mockSubscriptionManager;
     late _MockPerformanceTraceMonitor mockPerformanceMonitor;
+    late _FakeConnectionStatusService connectionService;
     late VideoEventService service;
     late List<List<Filter>> subscribeCalls;
     late List<StreamController<Event>> streamControllers;
@@ -43,6 +63,7 @@ void main() {
       mockNostrService = _MockNostrClient();
       mockSubscriptionManager = _MockSubscriptionManager();
       mockPerformanceMonitor = _MockPerformanceTraceMonitor();
+      connectionService = _FakeConnectionStatusService();
       subscribeCalls = [];
       streamControllers = [];
 
@@ -82,11 +103,13 @@ void main() {
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
         performanceMonitor: mockPerformanceMonitor,
+        connectionService: connectionService,
       );
     });
 
     tearDown(() {
       service.dispose();
+      connectionService.dispose();
     });
 
     test('connection error on home feed retries the home feed with its '
@@ -133,6 +156,117 @@ void main() {
           ..elapse(const Duration(seconds: 30))
           ..flushMicrotasks();
         expect(subscribeCalls, hasLength(2));
+      });
+    });
+
+    test('first subscribe while offline retries with the original authors', () {
+      fakeAsync((fake) {
+        connectionService.online = false;
+        Object? caughtError;
+
+        unawaited(
+          service
+              .subscribeToVideoFeed(
+                subscriptionType: SubscriptionType.homeFeed,
+                authors: [followedAuthor],
+              )
+              .catchError((Object error) {
+                caughtError = error;
+              }),
+        );
+        fake.flushMicrotasks();
+
+        expect(caughtError, isA<VideoEventServiceException>());
+        expect(subscribeCalls, isEmpty);
+
+        connectionService.online = true;
+        fake
+          ..elapse(const Duration(seconds: 10))
+          ..flushMicrotasks();
+
+        expect(subscribeCalls, hasLength(1));
+        expect(
+          subscribeCalls.single.any(
+            (filter) => filter.authors?.contains(followedAuthor) ?? false,
+          ),
+          isTrue,
+        );
+      });
+    });
+
+    test('exhausted retry entries do not leak into a later retry cycle', () {
+      fakeAsync((fake) {
+        unawaited(
+          service.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.homeFeed,
+            authors: [followedAuthor],
+          ),
+        );
+        fake.flushMicrotasks();
+        expect(subscribeCalls, hasLength(1));
+
+        streamControllers.first.addError(
+          Exception('websocket connection failed'),
+        );
+        fake.flushMicrotasks();
+
+        connectionService.onlineReads.addAll([
+          true,
+          false,
+          true,
+          false,
+          true,
+          false,
+        ]);
+
+        for (var i = 0; i < 3; i++) {
+          fake
+            ..elapse(const Duration(seconds: 10))
+            ..flushMicrotasks();
+        }
+
+        expect(
+          subscribeCalls,
+          hasLength(1),
+          reason: 'offline retry attempts throw before creating relay REQs',
+        );
+
+        unawaited(
+          service.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.hashtag,
+            hashtags: const ['Fresh'],
+          ),
+        );
+        fake.flushMicrotasks();
+        expect(subscribeCalls, hasLength(2));
+
+        streamControllers.last.addError(Exception('network disconnected'));
+        fake.flushMicrotasks();
+
+        connectionService.online = true;
+        fake
+          ..elapse(const Duration(seconds: 10))
+          ..flushMicrotasks();
+
+        final laterRetryCalls = subscribeCalls.skip(2).toList();
+        expect(
+          laterRetryCalls.any(
+            (filters) =>
+                filters.any((filter) => filter.t?.contains('fresh') ?? false),
+          ),
+          isTrue,
+        );
+        expect(
+          laterRetryCalls.any(
+            (filters) => filters.any(
+              (filter) => filter.authors?.contains(followedAuthor) ?? false,
+            ),
+          ),
+          isFalse,
+          reason:
+              'the exhausted home-feed retry must not leak into the later '
+              'hashtag retry cycle',
+        );
       });
     });
   });

@@ -130,10 +130,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     EventRouter? eventRouter,
     VideoFilterBuilder? videoFilterBuilder,
     PerformanceTraceMonitor? performanceMonitor,
+    ConnectionStatusService? connectionService,
   }) : _subscriptionManager = subscriptionManager,
        _profileRepository = profileRepository,
        _eventRouter = eventRouter,
        _videoFilterBuilder = videoFilterBuilder,
+       _connectionService = connectionService ?? ConnectionStatusService(),
+       _ownsConnectionService = connectionService == null,
        _performanceMonitor =
            performanceMonitor ?? PerformanceMonitoringService.instance {
     _initializePaginationStates();
@@ -145,7 +148,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   final EventRouter? _eventRouter;
   final VideoFilterBuilder? _videoFilterBuilder;
   final PerformanceTraceMonitor _performanceMonitor;
-  final ConnectionStatusService _connectionService = ConnectionStatusService();
+  final ConnectionStatusService _connectionService;
+  final bool _ownsConnectionService;
 
   // REFACTORED: Separate event lists per subscription type
   final Map<SubscriptionType, List<VideoEvent>> _eventLists = {
@@ -1280,6 +1284,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     NIP50SortMode?
     nip50Sort, // NIP-50 search sorting (e.g., sort:hot, sort:top)
     bool force = false, // Force refresh even if parameters match
+    bool scheduleOnlineRetry = true,
     List<String>?
     collaboratorPubkeys, // Legacy no-op until Funnelcake edge expansion exists
   }) async {
@@ -1303,6 +1308,21 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       return;
     }
 
+    // Store retry/duplicate parameters before connection checks so an
+    // offline first subscribe can retry the requested feed instead of
+    // falling back to a parameterless feed when connectivity returns.
+    _subscriptionParams[subscriptionType] = {
+      'authors': authors,
+      'hashtags': hashtags,
+      'group': group,
+      'since': since,
+      'until': until,
+      'limit': limit,
+      'includeReposts': includeReposts,
+      'sortBy': sortBy,
+      'nip50Sort': nip50Sort,
+    };
+
     // Check connection status
     if (!_connectionService.isOnline) {
       _isLoading = false;
@@ -1312,7 +1332,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         name: 'VideoEventService',
         category: LogCategory.video,
       );
-      _scheduleRetryWhenOnline(subscriptionType);
+      if (scheduleOnlineRetry) {
+        _scheduleRetryWhenOnline(subscriptionType);
+      }
       throw const VideoEventServiceException('Device is offline');
     }
 
@@ -1665,19 +1687,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             );
           }
         }
-
-        // Store current subscription parameters for duplicate detection BEFORE any early returns
-        _subscriptionParams[subscriptionType] = {
-          'authors': authors,
-          'hashtags': hashtags,
-          'group': group,
-          'since': since,
-          'until': until,
-          'limit': limit,
-          'includeReposts': includeReposts,
-          'sortBy': sortBy,
-          'nip50Sort': nip50Sort,
-        };
 
         // Set per-subscription loading state to show loading UI
         final paginationState = _paginationStates[subscriptionType];
@@ -2089,7 +2098,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           name: 'VideoEventService',
           category: LogCategory.video,
         );
-        _scheduleRetryWhenOnline(subscriptionType);
+        if (scheduleOnlineRetry) {
+          _scheduleRetryWhenOnline(subscriptionType);
+        } else {
+          rethrow;
+        }
       }
     } finally {
       _isLoading = false;
@@ -4154,6 +4167,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         return;
       }
       if (_typesAwaitingRetry.isEmpty || _retryAttempts >= _maxRetryAttempts) {
+        _typesAwaitingRetry.clear();
         timer.cancel();
         return;
       }
@@ -4191,6 +4205,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             sortBy: params?['sortBy'] as VideoSortField?,
             nip50Sort: params?['nip50Sort'] as NIP50SortMode?,
             force: true,
+            scheduleOnlineRetry: false,
           )
           .then((_) {
             _typesAwaitingRetry.remove(type);
@@ -4211,6 +4226,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
               category: LogCategory.video,
             );
             if (_retryAttempts >= _maxRetryAttempts) {
+              _typesAwaitingRetry.clear();
               timer.cancel();
               Log.warning(
                 'Max retry attempts reached for video feed subscription',
@@ -5234,7 +5250,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     _likeCountBatchTimer?.cancel();
     _authStateSubscription?.cancel();
     unawaited(_blocklistChangesSubscription?.cancel());
-    _connectionService.dispose();
+    if (_ownsConnectionService) {
+      _connectionService.dispose();
+    }
     unsubscribeFromVideoFeed();
     unawaited(_removedVideoIdsController.close());
     super.dispose();
