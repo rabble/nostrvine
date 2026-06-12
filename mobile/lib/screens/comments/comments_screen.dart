@@ -22,6 +22,8 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/services/analytics_surface.dart';
+import 'package:openvine/services/surface_performance_tracker.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/widgets/video_feed_item/live_engagement_counts.dart';
 
@@ -142,104 +144,125 @@ abstract final class CommentsScreen {
       isFeatureEnabledProvider(FeatureFlag.videoReplies),
     );
     final seedCommentCount = initialCommentCount ?? liveCommentCountSeed(video);
+    final surfacePerformanceTracker = SurfacePerformanceTracker()
+      ..startSurfaceLoad(
+        AnalyticsSurface.commentsSheet,
+        params: {
+          AnalyticsParam.entryPoint: 'feed_comment_button',
+          AnalyticsParam.initialCount: ?seedCommentCount,
+          AnalyticsParam.featureFlag: showVideoReplies
+              ? 'video_replies_enabled'
+              : 'video_replies_disabled',
+        },
+      );
 
     // The draggable scroll controller is created inside buildScrollBody but
     // is also needed by the title's "new comments" pill (which lives above
     // the scrollable region). Share it through a closure-captured holder.
     ScrollController? activeScrollController;
 
-    return context.showVideoPausingVineBottomSheet<void>(
-      snap: true,
-      snapSizes: const [0.7, 0.93],
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
-      maxChildSize: 0.93,
-      // Wrap the whole sheet subtree in a MultiBlocProvider so every slot
-      // (title, trailing, bottomInput, buildScrollBody) shares the same
-      // three blocs. BlocProvider owns lifecycle — it closes each BLoC
-      // automatically when the sheet is disposed, so we don't need a manual
-      // try/finally around the await.
-      contentWrapper: (context, child) => MultiBlocProvider(
-        providers: [
-          BlocProvider<CommentsListBloc>(
-            create: (_) => CommentsListBloc(
-              commentsRepository: commentsRepository,
-              rootEventId: video.id,
-              rootEventKind: NIP71VideoKinds.addressableShortVideo,
-              rootAuthorPubkey: video.pubkey,
-              rootAddressableId: video.addressableId,
-              initialTotalCount: seedCommentCount,
-              includeVideoReplies: showVideoReplies,
-            )..add(const CommentsLoadRequested()),
-          ),
-          BlocProvider<CommentComposerBloc>(
-            create: (innerContext) {
-              // Captured at create-time. CommentsListBloc is provided above
-              // in the same MultiBlocProvider so it's available here via
-              // inheritance; the reference is stable for the sheet's life.
-              // The callback re-reads `state.commentsById` on every search
-              // so suggestions reflect the latest loaded comments.
-              final listBloc = innerContext.read<CommentsListBloc>();
-              return CommentComposerBloc(
-                commentsRepository: commentsRepository,
-                authService: authService,
-                rootEventId: video.id,
-                rootEventKind: NIP71VideoKinds.addressableShortVideo,
-                rootAuthorPubkey: video.pubkey,
-                rootAddressableId: video.addressableId,
-                profileRepository: profileRepository,
-                mentionCandidatePubkeysProvider: () => <String>[
-                  // Thread participants first — restored after the split
-                  // (pre-split CommentsBloc seeded these from state.commentsById).
-                  ...listBloc.state.commentsById.values.map(
-                    (c) => c.authorPubkey,
-                  ),
-                  ...followRepository.followingPubkeys,
-                ],
-              );
-            },
-          ),
-          BlocProvider<CommentReactionsBloc>(
-            create: (_) => CommentReactionsBloc(
-              authService: authService,
-              likesRepository: likesRepository,
-              commentsRepository: commentsRepository,
-              contentReportingServiceFuture: contentReportingServiceFuture,
-              contentBlocklistRepository: contentBlocklistRepository,
-              followRepository: followRepository,
-              rootEventId: video.id,
-              rootAddressableId: video.addressableId,
+    return context
+        .showVideoPausingVineBottomSheet<void>(
+          snap: true,
+          snapSizes: const [0.7, 0.93],
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.93,
+          // Wrap the whole sheet subtree in a MultiBlocProvider so every slot
+          // (title, trailing, bottomInput, buildScrollBody) shares the same
+          // three blocs. BlocProvider owns lifecycle — it closes each BLoC
+          // automatically when the sheet is disposed, so we don't need a manual
+          // try/finally around the await.
+          contentWrapper: (context, child) => MultiBlocProvider(
+            providers: [
+              BlocProvider<CommentsListBloc>(
+                create: (_) => CommentsListBloc(
+                  commentsRepository: commentsRepository,
+                  rootEventId: video.id,
+                  rootEventKind: NIP71VideoKinds.addressableShortVideo,
+                  rootAuthorPubkey: video.pubkey,
+                  rootAddressableId: video.addressableId,
+                  initialTotalCount: seedCommentCount,
+                  includeVideoReplies: showVideoReplies,
+                )..add(const CommentsLoadRequested()),
+              ),
+              BlocProvider<CommentComposerBloc>(
+                create: (innerContext) {
+                  // Captured at create-time. CommentsListBloc is provided above
+                  // in the same MultiBlocProvider so it's available here via
+                  // inheritance; the reference is stable for the sheet's life.
+                  // The callback re-reads `state.commentsById` on every search
+                  // so suggestions reflect the latest loaded comments.
+                  final listBloc = innerContext.read<CommentsListBloc>();
+                  return CommentComposerBloc(
+                    commentsRepository: commentsRepository,
+                    authService: authService,
+                    rootEventId: video.id,
+                    rootEventKind: NIP71VideoKinds.addressableShortVideo,
+                    rootAuthorPubkey: video.pubkey,
+                    rootAddressableId: video.addressableId,
+                    profileRepository: profileRepository,
+                    mentionCandidatePubkeysProvider: () => <String>[
+                      // Thread participants first — restored after the split
+                      // (pre-split CommentsBloc seeded these from state.commentsById).
+                      ...listBloc.state.commentsById.values.map(
+                        (c) => c.authorPubkey,
+                      ),
+                      ...followRepository.followingPubkeys,
+                    ],
+                  );
+                },
+              ),
+              BlocProvider<CommentReactionsBloc>(
+                create: (_) => CommentReactionsBloc(
+                  authService: authService,
+                  likesRepository: likesRepository,
+                  commentsRepository: commentsRepository,
+                  contentReportingServiceFuture: contentReportingServiceFuture,
+                  contentBlocklistRepository: contentBlocklistRepository,
+                  followRepository: followRepository,
+                  rootEventId: video.id,
+                  rootAddressableId: video.addressableId,
+                ),
+              ),
+            ],
+            child: OutboxBridges(
+              onCommentCountChanged: onCommentCountChanged,
+              child: child,
             ),
           ),
-        ],
-        child: OutboxBridges(
-          onCommentCountChanged: onCommentCountChanged,
-          child: child,
-        ),
-      ),
-      title: _CommentsTitle(
-        initialCount: seedCommentCount ?? 0,
-        onNewCommentsPillTap: () {
-          final controller = activeScrollController;
-          if (controller != null && controller.hasClients) {
-            controller.animateTo(
-              0,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
+          title: _CommentsTitle(
+            initialCount: seedCommentCount ?? 0,
+            onNewCommentsPillTap: () {
+              final controller = activeScrollController;
+              if (controller != null && controller.hasClients) {
+                controller.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                );
+              }
+            },
+          ),
+          trailing: const _CommentsSortToggle(),
+          bottomInput: const _MainCommentInput(),
+          buildScrollBody: (scrollController) {
+            activeScrollController = scrollController;
+            return CommentsSheetLoadTelemetry(
+              tracker: surfacePerformanceTracker,
+              child: _CommentsScreenBody(
+                videoEvent: video,
+                sheetScrollController: scrollController,
+              ),
             );
-          }
-        },
-      ),
-      trailing: const _CommentsSortToggle(),
-      bottomInput: const _MainCommentInput(),
-      buildScrollBody: (scrollController) {
-        activeScrollController = scrollController;
-        return _CommentsScreenBody(
-          videoEvent: video,
-          sheetScrollController: scrollController,
+          },
+        )
+        .whenComplete(
+          () => surfacePerformanceTracker.completeSurfaceLoad(
+            AnalyticsSurface.commentsSheet,
+            result: SurfaceLoadResult.dismissed,
+          ),
         );
-      },
-    );
   }
 }
 
@@ -375,6 +398,76 @@ class OutboxBridges extends StatelessWidget {
         listBloc.add(CommentsRemovedByAuthorFromStore(authorPubkey));
     }
     ctx.read<CommentReactionsBloc>().add(const ReactionsOutboxConsumed());
+  }
+}
+
+/// Tracks perceived comments-sheet visibility and initial data completion.
+///
+/// Public-by-test only: production callers should use [CommentsScreen.show].
+@visibleForTesting
+class CommentsSheetLoadTelemetry extends StatefulWidget {
+  const CommentsSheetLoadTelemetry({
+    required this.tracker,
+    required this.child,
+    super.key,
+  });
+
+  final SurfacePerformanceTracker tracker;
+  final Widget child;
+
+  @override
+  State<CommentsSheetLoadTelemetry> createState() =>
+      _CommentsSheetLoadTelemetryState();
+}
+
+class _CommentsSheetLoadTelemetryState
+    extends State<CommentsSheetLoadTelemetry> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.tracker.markSurfaceVisible(AnalyticsSurface.commentsSheet);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<CommentsListBloc, CommentsListState>(
+      listenWhen: (prev, next) =>
+          prev.status == CommentsStatus.loading &&
+          (next.status == CommentsStatus.success ||
+              next.status == CommentsStatus.failure),
+      listener: (_, state) {
+        switch (state.status) {
+          case CommentsStatus.success:
+            unawaited(
+              widget.tracker.completeSurfaceLoad(
+                AnalyticsSurface.commentsSheet,
+                result: state.commentsById.isEmpty
+                    ? SurfaceLoadResult.empty
+                    : SurfaceLoadResult.success,
+                metrics: {
+                  AnalyticsParam.itemCount: state.commentsById.length,
+                  AnalyticsParam.hasMore: state.hasMoreContent,
+                  'sort_mode': state.sortMode.name,
+                },
+              ),
+            );
+          case CommentsStatus.failure:
+            unawaited(
+              widget.tracker.completeSurfaceLoad(
+                AnalyticsSurface.commentsSheet,
+                result: SurfaceLoadResult.failure,
+              ),
+            );
+          case CommentsStatus.initial:
+          case CommentsStatus.loading:
+            break;
+        }
+      },
+      child: widget.child,
+    );
   }
 }
 

@@ -20,8 +20,11 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/comments.dart';
+import 'package:openvine/services/analytics_event_sink.dart';
+import 'package:openvine/services/analytics_surface.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/social_service.dart';
+import 'package:openvine/services/surface_performance_tracker.dart';
 
 import '../../builders/comment_builder.dart';
 import '../../helpers/test_helpers.dart';
@@ -43,6 +46,25 @@ class _MockCommentComposerBloc
 class _MockCommentReactionsBloc
     extends MockBloc<CommentReactionsEvent, CommentReactionsState>
     implements CommentReactionsBloc {}
+
+class _RecordingAnalyticsEventSink implements AnalyticsEventSink {
+  final events = <({String name, Map<String, Object> parameters})>[];
+
+  @override
+  Future<void> logEvent({
+    required String name,
+    required Map<String, Object> parameters,
+  }) async {
+    events.add((name: name, parameters: parameters));
+  }
+
+  @override
+  Future<void> logScreenView({
+    required String screenName,
+    String? screenClass,
+    Map<String, Object>? parameters,
+  }) async {}
+}
 
 // Full 64-character test IDs.
 const testVideoEventId =
@@ -131,6 +153,7 @@ void main() {
 
     tearDown(() {
       scrollController.dispose();
+      SurfacePerformanceTracker.resetInstance();
     });
 
     Widget buildTestWidget({
@@ -176,6 +199,155 @@ void main() {
         ),
       );
     }
+
+    Widget buildTelemetryWidget({
+      required SurfacePerformanceTracker tracker,
+      Widget child = const SizedBox.shrink(),
+    }) {
+      return MaterialApp(
+        home: Scaffold(
+          body: BlocProvider<CommentsListBloc>.value(
+            value: mockListBloc,
+            child: CommentsSheetLoadTelemetry(
+              tracker: tracker,
+              child: child,
+            ),
+          ),
+        ),
+      );
+    }
+
+    group('surface load telemetry', () {
+      late _RecordingAnalyticsEventSink sink;
+      late SurfacePerformanceTracker tracker;
+
+      setUp(() {
+        sink = _RecordingAnalyticsEventSink();
+        tracker = SurfacePerformanceTracker.testInstance(sink: sink);
+      });
+
+      testWidgets(
+        'completes success with comment metrics after loading state',
+        (tester) async {
+          final comment = CommentBuilder()
+              .withId(TestCommentIds.comment1Id)
+              .withContent('Loaded comment')
+              .build();
+          final loaded = CommentsListState(
+            rootEventId: testVideoEventId,
+            rootAuthorPubkey: testVideoAuthorPubkey,
+            status: CommentsStatus.success,
+            commentsById: {comment.id: comment},
+            hasMoreContent: false,
+            sortMode: CommentsSortMode.topEngagement,
+          );
+          whenListen(
+            mockListBloc,
+            Stream.fromIterable([
+              const CommentsListState(status: CommentsStatus.loading),
+              loaded,
+            ]),
+            initialState: const CommentsListState(
+              status: CommentsStatus.loading,
+            ),
+          );
+          tracker.startSurfaceLoad(AnalyticsSurface.commentsSheet);
+
+          await tester.pumpWidget(buildTelemetryWidget(tracker: tracker));
+          await tester.pump();
+
+          expect(sink.events, hasLength(1));
+          expect(sink.events.single.name, 'surface_load');
+          expect(
+            sink.events.single.parameters,
+            containsPair(AnalyticsParam.result, SurfaceLoadResult.success),
+          );
+          expect(
+            sink.events.single.parameters,
+            containsPair(AnalyticsParam.itemCount, 1),
+          );
+          expect(
+            sink.events.single.parameters,
+            containsPair(AnalyticsParam.hasMore, 0),
+          );
+          expect(
+            sink.events.single.parameters,
+            containsPair('sort_mode', 'topEngagement'),
+          );
+        },
+      );
+
+      testWidgets('completes empty when loading resolves with no comments', (
+        tester,
+      ) async {
+        const loaded = CommentsListState(
+          rootEventId: testVideoEventId,
+          rootAuthorPubkey: testVideoAuthorPubkey,
+          status: CommentsStatus.success,
+          sortMode: CommentsSortMode.oldest,
+        );
+        whenListen(
+          mockListBloc,
+          Stream.fromIterable([
+            const CommentsListState(status: CommentsStatus.loading),
+            loaded,
+          ]),
+          initialState: const CommentsListState(status: CommentsStatus.loading),
+        );
+        tracker.startSurfaceLoad(AnalyticsSurface.commentsSheet);
+
+        await tester.pumpWidget(buildTelemetryWidget(tracker: tracker));
+        await tester.pump();
+
+        expect(sink.events, hasLength(1));
+        expect(
+          sink.events.single.parameters,
+          containsPair(AnalyticsParam.result, SurfaceLoadResult.empty),
+        );
+        expect(
+          sink.events.single.parameters,
+          containsPair(AnalyticsParam.itemCount, 0),
+        );
+        expect(
+          sink.events.single.parameters,
+          containsPair(AnalyticsParam.hasMore, 1),
+        );
+        expect(
+          sink.events.single.parameters,
+          containsPair('sort_mode', 'oldest'),
+        );
+      });
+
+      testWidgets('completes failure without unsafe failure type metric', (
+        tester,
+      ) async {
+        const failed = CommentsListState(
+          rootEventId: testVideoEventId,
+          rootAuthorPubkey: testVideoAuthorPubkey,
+          status: CommentsStatus.failure,
+          error: CommentsListError.loadFailed,
+        );
+        whenListen(
+          mockListBloc,
+          Stream.fromIterable([
+            const CommentsListState(status: CommentsStatus.loading),
+            failed,
+          ]),
+          initialState: const CommentsListState(status: CommentsStatus.loading),
+        );
+        tracker.startSurfaceLoad(AnalyticsSurface.commentsSheet);
+
+        await tester.pumpWidget(buildTelemetryWidget(tracker: tracker));
+        await tester.pump();
+
+        expect(sink.events, hasLength(1));
+        expect(
+          sink.events.single.parameters,
+          containsPair(AnalyticsParam.result, SurfaceLoadResult.failure),
+        );
+        expect(sink.events.single.parameters, isNot(contains('failure_type')));
+      });
+    });
 
     group('widget structure', () {
       testWidgets('renders CommentsDragHandle', (tester) async {
