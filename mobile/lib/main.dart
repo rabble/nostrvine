@@ -340,6 +340,12 @@ ProfileDeepLinkNavAction resolveProfileDeepLinkNavAction({
 /// executor routes to it directly. Otherwise the video target is
 /// `referencedEventId` (the event acted upon), falling back to `eventId` (the
 /// source event) for follow/mention, which the executor walks to a root video.
+///
+/// At most one of `videoCoordinate` / `targetEventId` is non-null: a usable
+/// coordinate suppresses the event-id walk entirely, encoding the
+/// coordinate-over-walk precedence in the returned value rather than leaving
+/// it to the executor's branch order.
+///
 /// Extracted and `@visibleForTesting` so the push-side per-kind routing can be
 /// asserted without a navigator — mirrors [resolveVideoDeepLinkNavAction].
 @visibleForTesting
@@ -352,8 +358,9 @@ pushNotificationTapTarget({
   required String? senderPubkey,
 }) {
   final videoCoordinate = videoAddressableTarget(referencedAddress);
-  final targetEventId =
-      (referencedEventId != null && referencedEventId.isNotEmpty)
+  final targetEventId = videoCoordinate != null
+      ? null
+      : (referencedEventId != null && referencedEventId.isNotEmpty)
       ? referencedEventId
       : eventId;
   final hasVideoTarget =

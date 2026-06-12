@@ -141,6 +141,7 @@ void main() {
 
       expect(result.target, const OpenVideoTarget(autoOpenComments: false));
       expect(result.videoCoordinate, equals(videoCoordinate));
+      expect(result.targetEventId, isNull);
     });
 
     test('a video coordinate alone is a video target (no event id)', () {
@@ -161,12 +162,13 @@ void main() {
         'intentional, #5079)', () {
       // Pin of the #5079 decision: the routing decision is made purely from
       // the payload shape, with no pre-push fetch. When a valid video
-      // coordinate is present the executor pushes it directly, so the
-      // profile/inbox fallback never applies — an unfetchable video is
+      // coordinate is present it suppresses the event-id walk entirely
+      // (targetEventId comes back null even though referencedEventId is set),
+      // so the profile/inbox fallback never applies — an unfetchable video is
       // discovered at, and surfaced by, the video detail screen by design.
       final result = app.pushNotificationTapTarget(
         referencedAddress: videoCoordinate,
-        referencedEventId: null,
+        referencedEventId: commentEvent,
         eventId: null,
         notificationType: 'comment',
         senderPubkey: actor,
