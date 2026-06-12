@@ -23,6 +23,8 @@ void main() {
     test('sanitizeName normalizes route and surface names', () {
       expect(AnalyticsSurface.sanitizeName('video-detail'), 'video_detail');
       expect(AnalyticsSurface.sanitizeName('/settings'), 'settings');
+      expect(AnalyticsSurface.sanitizeName('settings/'), 'settings');
+      expect(AnalyticsSurface.sanitizeName('__settings__'), 'settings');
       expect(AnalyticsSurface.sanitizeName('  Home Feed  '), 'home_feed');
       expect(
         AnalyticsSurface.sanitizeName('home---feed///detail'),
