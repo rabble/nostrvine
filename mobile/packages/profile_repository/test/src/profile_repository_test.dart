@@ -1388,6 +1388,44 @@ void main() {
         ).called(1);
       });
 
+      test('includes website when provided', () async {
+        await profileRepository.saveProfileEvent(
+          displayName: 'Test User',
+          website: 'https://example.com',
+        );
+
+        final captured =
+            verify(
+                  () => mockNostrClient.sendProfile(
+                    profileContent: captureAny(named: 'profileContent'),
+                  ),
+                ).captured.single
+                as Map<String, dynamic>;
+        expect(captured['website'], equals('https://example.com'));
+      });
+
+      test('removes website key when empty string is passed', () async {
+        final currentProfile = await createCurrentProfile({
+          'display_name': 'Old Name',
+          'website': 'https://old.com',
+        });
+
+        await profileRepository.saveProfileEvent(
+          displayName: 'New Name',
+          website: '',
+          currentProfile: currentProfile,
+        );
+
+        final captured =
+            verify(
+                  () => mockNostrClient.sendProfile(
+                    profileContent: captureAny(named: 'profileContent'),
+                  ),
+                ).captured.single
+                as Map<String, dynamic>;
+        expect(captured.containsKey('website'), isFalse);
+      });
+
       test(
         'throws ProfilePublishFailedException when sendProfile fails',
         () async {
