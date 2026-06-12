@@ -115,6 +115,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   bool _usesHomeFeedCache(VideoFeedSource source) =>
       source.type == VideoFeedSourceType.following;
 
+  bool _canEmitForSource(
+    VideoFeedSource source,
+    Emitter<VideoFeedBlocState> emit,
+  ) => !emit.isDone && state.source == source;
+
   /// Handle feed started event.
   ///
   /// Fires [_loadVideos] immediately without waiting for the follow list to
@@ -159,7 +164,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     );
 
     await _loadVideos(source, emit);
-    if (emit.isDone) return;
+    if (!_canEmitForSource(source, emit)) return;
 
     // After the initial load, check for the "no follows" CTA. Needed for
     // BLoC re-creation (e.g. navigating back to home) when the follow repo
@@ -389,6 +394,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       return;
     }
 
+    final source = state.source;
     emit(state.copyWith(isLoadingMore: true));
 
     try {
@@ -402,12 +408,13 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       final until = oldestCreatedAt - 1;
 
       final result = await _fetchVideosForSource(
-        state.source,
-        until: state.source.type == VideoFeedSourceType.forYou ? null : until,
-        paginationCursor: state.source.type == VideoFeedSourceType.forYou
+        source,
+        until: source.type == VideoFeedSourceType.forYou ? null : until,
+        paginationCursor: source.type == VideoFeedSourceType.forYou
             ? state.paginationCursor
             : null,
       );
+      if (!_canEmitForSource(source, emit)) return;
 
       // Filter out videos without valid URLs
       final validNewVideos = result.videos
@@ -429,7 +436,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       // For You pages arrive in server-ranked recommendation order;
       // re-sorting by createdAt would shuffle new videos around the
       // current play index and resurface already-seen ones.
-      if (state.source.type != VideoFeedSourceType.forYou) {
+      if (source.type != VideoFeedSourceType.forYou) {
         updatedVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       }
 
@@ -450,7 +457,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
           // Only stop pagination when the server returns nothing.
           // Fewer than _pageSize can happen due to server-side filtering.
           hasMore: _hasMoreForSource(
-            state.source,
+            source,
             result,
             fallbackHasMore: result.videos.isNotEmpty,
           ),
@@ -463,8 +470,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       );
 
       // Batch-fetch profiles for new creators only.
-      await _fetchCreatorProfiles(validNewVideos, emit);
+      await _fetchCreatorProfiles(validNewVideos, source, emit);
     } catch (e) {
+      if (!_canEmitForSource(source, emit)) return;
+
       Log.error(
         'VideoFeedBloc: Failed to load more videos - $e',
         name: 'VideoFeedBloc',
@@ -665,6 +674,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         );
         final cachedValid = filtered.where((v) => v.videoUrl != null).toList();
         if (cachedValid.isNotEmpty) {
+          if (!_canEmitForSource(source, emit)) return;
+
           _feedTracker?.markFirstVideosReceived(
             source.mode.name,
             cachedValid.length,
@@ -687,6 +698,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
 
     try {
       final result = await _fetchVideosForSource(source, skipCache: skipCache);
+      if (!_canEmitForSource(source, emit)) return;
 
       // Filter out videos without valid URLs
       final validVideos = result.videos
@@ -724,7 +736,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       _feedTracker?.markFeedDisplayed(source.mode.name, validVideos.length);
 
       // Batch-fetch creator profiles to warm the Drift cache.
-      await _fetchCreatorProfiles(validVideos, emit);
+      await _fetchCreatorProfiles(validVideos, source, emit);
 
       // Cache the raw response for next cold start (fire-and-forget).
       if (_usesHomeFeedCache(source) &&
@@ -735,6 +747,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         );
       }
     } catch (e) {
+      if (!_canEmitForSource(source, emit)) return;
+
       Log.error(
         'VideoFeedBloc: Failed to load videos - $e',
         name: 'VideoFeedBloc',
@@ -825,6 +839,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   /// after videos are already emitted.
   Future<void> _fetchCreatorProfiles(
     List<VideoEvent> videos,
+    VideoFeedSource source,
     Emitter<VideoFeedBlocState> emit,
   ) async {
     if (_profileRepository == null || videos.isEmpty) return;
@@ -841,6 +856,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       final profiles = await _profileRepository.fetchBatchProfiles(
         pubkeys: newPubkeys,
       );
+
+      if (!_canEmitForSource(source, emit)) return;
 
       if (profiles.isNotEmpty) {
         emit(

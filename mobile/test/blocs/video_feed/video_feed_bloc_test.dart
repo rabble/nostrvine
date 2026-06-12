@@ -1165,6 +1165,67 @@ void main() {
           );
         },
       );
+
+      test(
+        'ignores stale source response after a newer source is selected',
+        () async {
+          final followingVideos = createTestVideos(2, idPrefix: 'following');
+          final newVideos = createTestVideos(2, idPrefix: 'new');
+          final followingResult = Completer<HomeFeedResult>();
+          final newVideosResult = Completer<List<VideoEvent>>();
+
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(['pubkey']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) => followingResult.future);
+          when(
+            () => mockVideosRepository.getNewVideos(
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) => newVideosResult.future);
+
+          final bloc = createBloc();
+          addTearDown(bloc.close);
+
+          bloc.add(
+            const VideoFeedSourceChanged(VideoFeedSource.following()),
+          );
+          await pumpEventQueue();
+
+          bloc.add(
+            const VideoFeedSourceChanged(VideoFeedSource.newVideos()),
+          );
+          await pumpEventQueue();
+
+          newVideosResult.complete(newVideos);
+          await pumpEventQueue();
+          expect(bloc.state.source, const VideoFeedSource.newVideos());
+          expect(bloc.state.videos.map((video) => video.id), [
+            'new-0',
+            'new-1',
+          ]);
+
+          followingResult.complete(HomeFeedResult(videos: followingVideos));
+          await pumpEventQueue();
+
+          expect(bloc.state.source, const VideoFeedSource.newVideos());
+          expect(bloc.state.videos.map((video) => video.id), [
+            'new-0',
+            'new-1',
+          ]);
+        },
+      );
     });
 
     group('VideoFeedLoadMoreRequested', () {
