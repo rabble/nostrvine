@@ -9749,6 +9749,7 @@ void main() {
         );
         when(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             fallback: any(named: 'fallback'),
@@ -9784,6 +9785,7 @@ void main() {
         );
         verify(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: 'user-pubkey',
             limit: 10,
           ),
@@ -9794,6 +9796,7 @@ void main() {
         var callCount = 0;
         when(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             cursor: any(named: 'cursor'),
@@ -9855,6 +9858,7 @@ void main() {
         expect(cachedAfterSecondRefresh.hasMore, isTrue);
         verify(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: 'user-pubkey',
             limit: any(named: 'limit'),
           ),
@@ -9870,6 +9874,7 @@ void main() {
         );
         when(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             fallback: any(named: 'fallback'),
@@ -9899,6 +9904,7 @@ void main() {
         expect(result.videos.single.id, equals('country-recommended-video'));
         verify(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: 'user-pubkey',
             limit: 10,
             viewerCountry: 'BR',
@@ -9939,6 +9945,7 @@ void main() {
           ).called(1);
           verifyNever(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -9959,6 +9966,7 @@ void main() {
           );
           when(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10011,6 +10019,7 @@ void main() {
           var recommendationCallCount = 0;
           when(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10057,6 +10066,7 @@ void main() {
           expect(recovered.videos.single.id, equals('recommended-video'));
           verify(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: 'user-pubkey',
               limit: 10,
             ),
@@ -10092,6 +10102,7 @@ void main() {
           expect(result.videos.single.id, equals('popular-video'));
           verifyNever(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10128,6 +10139,7 @@ void main() {
           ).thenAnswer((_) async => [popular]);
           when(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10162,6 +10174,7 @@ void main() {
           expect(recovered.videos.single.id, equals('recommended-video'));
           verify(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: 'user-pubkey',
               limit: 10,
             ),
@@ -10224,6 +10237,7 @@ void main() {
           expect(result.videos.single.id, equals('popular-video'));
           verifyNever(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10247,6 +10261,7 @@ void main() {
           );
           when(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10281,6 +10296,7 @@ void main() {
           expect(result.hasMore, isTrue);
           verify(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: 'user-pubkey',
               limit: 10,
               cursor: 'rec-page-2',
@@ -10306,6 +10322,7 @@ void main() {
           );
           when(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10340,6 +10357,7 @@ void main() {
           expect(result.hasMore, isTrue);
           verify(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: 'user-pubkey',
               limit: 10,
               cursor: '1700000000',
@@ -10359,6 +10377,7 @@ void main() {
         () async {
           when(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10383,6 +10402,189 @@ void main() {
           );
         },
       );
+
+      group('session seed and jitter (#5027)', () {
+        /// Recommended stats with strictly decreasing createdAt so the
+        /// stats transform (which sorts by createdAt descending) keeps
+        /// the server order, making jitter assertions deterministic.
+        List<VideoStats> recommendedStats(int count) => List.generate(
+          count,
+          (index) => _createVideoStats(
+            id: 'recommended-video-$index',
+            pubkey: 'recommended-pubkey-$index',
+            dTag: 'recommended-dtag-$index',
+            videoUrl: 'https://example.com/recommended-$index.mp4',
+            createdAt: 1704067200 - index,
+          ),
+        );
+
+        void stubRecommendations(List<VideoStats> videos) {
+          when(
+            () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer(
+            (_) async => RecommendationsResponse(
+              videos: videos,
+              source: 'personalized',
+              nextCursor: 'rec-page-2',
+              hasMore: true,
+            ),
+          );
+        }
+
+        List<String> capturedSeeds() => verify(
+          () => mockFunnelcakeClient.getRecommendations(
+            seed: captureAny(named: 'seed'),
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            cursor: any(named: 'cursor'),
+            fallback: any(named: 'fallback'),
+            category: any(named: 'category'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
+          ),
+        ).captured.cast<String>();
+
+        test(
+          'forwards a session seed to the recommendations endpoint',
+          () async {
+            stubRecommendations(recommendedStats(1));
+            final repo = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            await repo.getRecommendedVideos(userPubkey: 'user-pubkey');
+
+            final seeds = capturedSeeds();
+            expect(seeds, hasLength(1));
+            expect(seeds.single, isNotEmpty);
+          },
+        );
+
+        test('keeps the same seed across cursor pagination', () async {
+          stubRecommendations(recommendedStats(1));
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          await repo.getRecommendedVideos(userPubkey: 'user-pubkey');
+          await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            cursor: 'rec-page-2',
+          );
+
+          final seeds = capturedSeeds();
+          expect(seeds, hasLength(2));
+          expect(seeds[1], equals(seeds[0]));
+        });
+
+        test('rotates the seed on skipCache refresh', () async {
+          stubRecommendations(recommendedStats(1));
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          await repo.getRecommendedVideos(userPubkey: 'user-pubkey');
+          await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            skipCache: true,
+          );
+
+          final seeds = capturedSeeds();
+          expect(seeds, hasLength(2));
+          expect(seeds[1], isNot(equals(seeds[0])));
+        });
+
+        test(
+          'does not rotate the seed on skipCache cursor pagination',
+          () async {
+            stubRecommendations(recommendedStats(1));
+            final repo = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            await repo.getRecommendedVideos(userPubkey: 'user-pubkey');
+            await repo.getRecommendedVideos(
+              userPubkey: 'user-pubkey',
+              skipCache: true,
+              cursor: 'rec-page-2',
+            );
+
+            final seeds = capturedSeeds();
+            expect(seeds, hasLength(2));
+            expect(seeds[1], equals(seeds[0]));
+          },
+        );
+
+        test(
+          'jitters the first page and replays the identical order from cache',
+          () async {
+            final stats = recommendedStats(12);
+            stubRecommendations(stats);
+            final repo = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+              inMemoryFeedCache: InMemoryFeedCache(),
+            );
+
+            final firstPage = await repo.getRecommendedVideos(
+              userPubkey: 'user-pubkey',
+            );
+            final cachedReplay = await repo.getRecommendedVideos(
+              userPubkey: 'user-pubkey',
+            );
+
+            final seeds = capturedSeeds();
+            expect(seeds, hasLength(1));
+
+            final serverOrderIds = stats.map((s) => s.id).toList();
+            final expectedIds = applyRecommendationSessionJitter(
+              serverOrderIds,
+              seeds.single,
+            );
+            final firstPageIds = firstPage.videos
+                .map((video) => video.id)
+                .toList();
+            expect(firstPageIds, equals(expectedIds));
+            expect(firstPageIds, unorderedEquals(serverOrderIds));
+            expect(
+              cachedReplay.videos.map((video) => video.id).toList(),
+              equals(firstPageIds),
+            );
+          },
+        );
+
+        test('does not jitter cursor pages', () async {
+          final stats = recommendedStats(12);
+          stubRecommendations(stats);
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final cursorPage = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            cursor: 'rec-page-2',
+          );
+
+          expect(
+            cursorPage.videos.map((video) => video.id).toList(),
+            equals(stats.map((s) => s.id).toList()),
+          );
+        });
+      });
     });
 
     group('getRecommendations', () {
@@ -10407,6 +10609,7 @@ void main() {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             fallback: any(named: 'fallback'),
@@ -10451,6 +10654,7 @@ void main() {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             fallback: any(named: 'fallback'),
@@ -10473,6 +10677,7 @@ void main() {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             fallback: any(named: 'fallback'),
@@ -10501,6 +10706,7 @@ void main() {
 
         verify(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: 'user-pubkey',
             limit: 50,
             fallback: 'recent',

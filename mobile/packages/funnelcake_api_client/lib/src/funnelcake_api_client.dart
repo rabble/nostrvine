@@ -1975,6 +1975,10 @@ class FunnelcakeApiClient {
   /// (`'popular'` or `'recent'`, defaults to `'popular'`).
   /// [category] is an optional hashtag/category filter.
   /// [cursor] is the opaque cursor returned by a previous response.
+  /// [seed] is an optional opaque per-session value forwarded so the
+  /// backend can vary ordering between sessions while keeping pages of
+  /// the same session coherent. The backend may ignore it until it
+  /// supports the parameter.
   ///
   /// Returns a [RecommendationsResponse] with videos and source.
   ///
@@ -1993,6 +1997,7 @@ class FunnelcakeApiClient {
     String fallback = 'popular',
     String? category,
     String? cursor,
+    String? seed,
     List<String> preferredLanguages = const [],
     String? viewerCountry,
   }) async {
@@ -2013,6 +2018,9 @@ class FunnelcakeApiClient {
     }
     if (cursor != null && cursor.isNotEmpty) {
       queryParams['cursor'] = cursor;
+    }
+    if (seed != null && seed.isNotEmpty) {
+      queryParams['seed'] = seed;
     }
     _addViewerPreferenceQueryParameters(
       queryParams,

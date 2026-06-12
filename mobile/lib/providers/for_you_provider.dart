@@ -14,6 +14,7 @@ import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 part 'for_you_provider.g.dart';
 
@@ -25,6 +26,14 @@ part 'for_you_provider.g.dart';
 @Riverpod(keepAlive: true)
 class ForYouFeed extends _$ForYouFeed {
   int _currentLimit = 50;
+
+  /// Per-session seed for recommendation ordering (#5027).
+  ///
+  /// Forwarded to the recommendations endpoint and used for the
+  /// deterministic windowed jitter. Regenerated only in [refresh] so
+  /// the limit-growth [loadMore] re-fetch keeps a stable ordering
+  /// within the session (jitter prefix stability).
+  String _sessionSeed = generateRecommendationSessionSeed();
 
   @override
   Future<VideoFeedState> build() async {
@@ -113,10 +122,14 @@ class ForYouFeed extends _$ForYouFeed {
       final response = await client.getRecommendations(
         pubkey: currentUserPubkey,
         limit: limit,
+        seed: _sessionSeed,
         preferredLanguages: hints.preferredLanguages,
         viewerCountry: hints.viewerCountry,
       );
-      final resultVideos = response.videos.toVideoEvents();
+      final resultVideos = applyRecommendationSessionJitter(
+        response.videos.toVideoEvents(),
+        _sessionSeed,
+      );
 
       Log.info(
         '✅ ForYouFeed: Got ${resultVideos.length} recommendations, source: ${response.source}',
@@ -185,10 +198,16 @@ class ForYouFeed extends _$ForYouFeed {
       final response = await client.getRecommendations(
         pubkey: currentUserPubkey,
         limit: newLimit,
+        seed: _sessionSeed,
         preferredLanguages: hints.preferredLanguages,
         viewerCountry: hints.viewerCountry,
       );
-      final resultVideos = response.videos.toVideoEvents();
+      // Same seed as the initial fetch: jitter prefix stability keeps the
+      // already-displayed prefix in the same order for the larger limit.
+      final resultVideos = applyRecommendationSessionJitter(
+        response.videos.toVideoEvents(),
+        _sessionSeed,
+      );
 
       if (!ref.mounted) return;
 
@@ -243,6 +262,9 @@ class ForYouFeed extends _$ForYouFeed {
     );
 
     _currentLimit = 50; // Reset limit on refresh
+    // New session: rotate the seed so the refreshed feed gets a fresh
+    // ordering instead of replaying the previous session's order.
+    _sessionSeed = generateRecommendationSessionSeed();
 
     await staleWhileRevalidate(
       getCurrentState: () => state,

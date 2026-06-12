@@ -588,6 +588,7 @@ void main() {
 
         when(
           () => mockFunnelcakeApiClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             preferredLanguages: any(named: 'preferredLanguages'),

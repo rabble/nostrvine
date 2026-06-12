@@ -15,6 +15,7 @@ import 'package:videos_repository/src/home_feed_result.dart';
 import 'package:videos_repository/src/in_memory_feed_cache.dart';
 import 'package:videos_repository/src/popular_videos_page.dart';
 import 'package:videos_repository/src/profile_video_merge.dart';
+import 'package:videos_repository/src/recommendation_session_jitter.dart';
 import 'package:videos_repository/src/video_content_filter.dart';
 import 'package:videos_repository/src/video_event_filter.dart';
 import 'package:videos_repository/src/video_local_storage.dart';
@@ -135,7 +136,7 @@ String _popularPreferenceCacheSuffix({
 /// {@endtemplate}
 class VideosRepository {
   /// {@macro videos_repository}
-  const VideosRepository({
+  VideosRepository({
     required NostrClient nostrClient,
     VideoLocalStorage? localStorage,
     BlockedVideoFilter? blockFilter,
@@ -158,6 +159,16 @@ class VideosRepository {
   final VideoWarningLabelsResolver? _warningLabelsResolver;
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final InMemoryFeedCache? _inMemoryFeedCache;
+
+  /// Per-session seed for For You recommendation ordering (#5027).
+  ///
+  /// A new repository instance (cold start) gets a fresh seed, and the
+  /// seed rotates on explicit fresh sessions (pull-to-refresh / resume
+  /// auto-refresh) in [getRecommendedVideos]. The seed is forwarded to
+  /// the recommendations endpoint and drives the deterministic windowed
+  /// jitter, so ordering stays stable within a pagination session while
+  /// varying between sessions.
+  String _recommendationSessionSeed = generateRecommendationSessionSeed();
 
   /// Clears the in-memory feed cache.
   ///
@@ -2411,9 +2422,18 @@ class VideosRepository {
     final cacheKey =
         'recommended:${effectiveUserPubkey ?? 'anonymous'}'
         '$preferenceCacheSuffix';
-    if (!skipCache && until == null && cursor == null) {
+    final isFirstPage = until == null && cursor == null;
+    if (!skipCache && isFirstPage) {
       final cached = _inMemoryFeedCache?.get(cacheKey);
       if (cached != null) return cached;
+    }
+
+    // An explicit fresh session (pull-to-refresh / resume auto-refresh)
+    // starts a new ordering session. Cursor-bearing pagination calls and
+    // cache-served calls keep the current seed so ordering stays stable
+    // within the session.
+    if (skipCache && isFirstPage) {
+      _recommendationSessionSeed = generateRecommendationSessionSeed();
     }
 
     if (effectiveUserPubkey == null ||
@@ -2435,6 +2455,7 @@ class VideosRepository {
         ? await _funnelcakeApiClient.getRecommendations(
             pubkey: effectiveUserPubkey,
             limit: limit,
+            seed: _recommendationSessionSeed,
             preferredLanguages: preferredLanguages,
             viewerCountry: viewerCountry,
           )
@@ -2442,6 +2463,7 @@ class VideosRepository {
             pubkey: effectiveUserPubkey,
             limit: limit,
             cursor: recommendationCursor,
+            seed: _recommendationSessionSeed,
             preferredLanguages: preferredLanguages,
             viewerCountry: viewerCountry,
           );
@@ -2458,13 +2480,21 @@ class VideosRepository {
       );
     }
 
+    // Jitter the first page only: cursor pages are appended after
+    // already-watched content and must preserve server order. Applying
+    // the jitter before the cache write means cache replays and feed
+    // mode switches reproduce the identical jittered order.
+    final orderedVideos = isFirstPage
+        ? applyRecommendationSessionJitter(videos, _recommendationSessionSeed)
+        : videos;
+
     final result = HomeFeedResult(
-      videos: videos,
+      videos: orderedVideos,
       paginationCursor: response.nextCursor,
       hasMore: response.hasMore,
       rawResponseBody: response.rawBody,
     );
-    if (until == null && cursor == null) {
+    if (isFirstPage) {
       _inMemoryFeedCache?.set(cacheKey, result);
     }
     return result;
