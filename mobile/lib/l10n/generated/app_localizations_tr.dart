@@ -8850,6 +8850,14 @@ class AppLocalizationsTr extends AppLocalizations {
       'Sosyal medya hesaplarını bağla ki insanlar gerçekten sen olduğunu bilsin.';
 
   @override
+  String profileWebsiteSemanticLabel(String url) {
+    return 'Visit website: $url';
+  }
+
+  @override
+  String get profileCouldNotOpenWebsite => 'Could not open website';
+
+  @override
   String get videoMetadataEditCoverTitle => 'Kapağı düzenle';
 
   @override

@@ -8715,6 +8715,14 @@ class AppLocalizationsAm extends AppLocalizations {
       'ሰዎች በእርግጥ አንተ መሆንህን እንዲያውቁ የማህበራዊ ሚዲያ መለያዎችህን አገናኝ።';
 
   @override
+  String profileWebsiteSemanticLabel(String url) {
+    return 'Visit website: $url';
+  }
+
+  @override
+  String get profileCouldNotOpenWebsite => 'Could not open website';
+
+  @override
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override

@@ -31,6 +31,7 @@ import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
+import 'package:openvine/widgets/profile/profile_website_row.dart';
 import 'package:openvine/widgets/profile/verified_accounts_row.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -465,6 +466,12 @@ class _ProfileNameAndBio extends StatelessWidget {
         if (about != null && about!.isNotEmpty) ...[
           const SizedBox(height: 16),
           Skeleton.keep(child: _AboutText(about: about!)),
+        ],
+        if (profile?.website?.isNotEmpty == true) ...[
+          const SizedBox(height: 8),
+          Skeleton.keep(
+            child: ProfileWebsiteRow(url: profile!.website!),
+          ),
         ],
         _VerifiedAccountsBlock(isOwnProfile: isOwnProfile),
       ],

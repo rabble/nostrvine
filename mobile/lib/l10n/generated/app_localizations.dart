@@ -15408,6 +15408,18 @@ abstract class AppLocalizations {
   /// **'Link your social media accounts so people know it\'s really you.'**
   String get profileEditGetVerifiedSubtitle;
 
+  /// Screen reader label for the website link row on a user's profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit website: {url}'**
+  String profileWebsiteSemanticLabel(String url);
+
+  /// Snackbar message shown when url_launcher fails to open the profile website link.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open website'**
+  String get profileCouldNotOpenWebsite;
+
   /// No description provided for @videoMetadataEditCoverTitle.
   ///
   /// In en, this message translates to:

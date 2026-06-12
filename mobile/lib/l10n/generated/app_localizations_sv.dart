@@ -8882,6 +8882,14 @@ class AppLocalizationsSv extends AppLocalizations {
       'Koppla dina sociala medier-konton så folk vet att det är du.';
 
   @override
+  String profileWebsiteSemanticLabel(String url) {
+    return 'Visit website: $url';
+  }
+
+  @override
+  String get profileCouldNotOpenWebsite => 'Could not open website';
+
+  @override
   String get videoMetadataEditCoverTitle => 'Redigera omslag';
 
   @override

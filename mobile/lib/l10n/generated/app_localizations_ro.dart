@@ -9056,6 +9056,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Conectează-ți conturile de social media ca lumea să știe că ești tu.';
 
   @override
+  String profileWebsiteSemanticLabel(String url) {
+    return 'Visit website: $url';
+  }
+
+  @override
+  String get profileCouldNotOpenWebsite => 'Could not open website';
+
+  @override
   String get videoMetadataEditCoverTitle => 'Editează coperta';
 
   @override

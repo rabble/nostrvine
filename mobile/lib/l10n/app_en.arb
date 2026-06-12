@@ -4931,6 +4931,20 @@
   "@profileEditGetVerifiedSubtitle": {
     "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
   },
+  "profileWebsiteSemanticLabel": "Visit website: {url}",
+  "@profileWebsiteSemanticLabel": {
+    "description": "Screen reader label for the website link row on a user's profile.",
+    "placeholders": {
+      "url": {
+        "type": "String",
+        "description": "The website URL."
+      }
+    }
+  },
+  "profileCouldNotOpenWebsite": "Could not open website",
+  "@profileCouldNotOpenWebsite": {
+    "description": "Snackbar message shown when url_launcher fails to open the profile website link."
+  },
   "videoMetadataEditCoverTitle": "Edit cover",
   "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
   "videoMetadataEditCoverConfirmSemanticLabel": "Confirm cover selection",

@@ -8864,6 +8864,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Link your social media accounts so people know it\'s really you.';
 
   @override
+  String profileWebsiteSemanticLabel(String url) {
+    return 'Visit website: $url';
+  }
+
+  @override
+  String get profileCouldNotOpenWebsite => 'Could not open website';
+
+  @override
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override

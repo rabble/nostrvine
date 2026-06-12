@@ -8569,6 +8569,14 @@ class AppLocalizationsJa extends AppLocalizations {
       'ソーシャルメディアのアカウントをつないで、本物のあなただと伝えよう。';
 
   @override
+  String profileWebsiteSemanticLabel(String url) {
+    return 'Visit website: $url';
+  }
+
+  @override
+  String get profileCouldNotOpenWebsite => 'Could not open website';
+
+  @override
   String get videoMetadataEditCoverTitle => 'カバーを編集';
 
   @override

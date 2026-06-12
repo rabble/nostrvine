@@ -8968,6 +8968,14 @@ class AppLocalizationsFil extends AppLocalizations {
       'I-link ang iyong mga social media account para malaman ng mga tao na ikaw talaga ito.';
 
   @override
+  String profileWebsiteSemanticLabel(String url) {
+    return 'Visit website: $url';
+  }
+
+  @override
+  String get profileCouldNotOpenWebsite => 'Could not open website';
+
+  @override
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override

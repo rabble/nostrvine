@@ -8801,6 +8801,14 @@ class AppLocalizationsAr extends AppLocalizations {
       'اربط حساباتك على وسائل التواصل ليعرف الناس أنّك أنت فعلًا.';
 
   @override
+  String profileWebsiteSemanticLabel(String url) {
+    return 'Visit website: $url';
+  }
+
+  @override
+  String get profileCouldNotOpenWebsite => 'Could not open website';
+
+  @override
   String get videoMetadataEditCoverTitle => 'تعديل الغلاف';
 
   @override

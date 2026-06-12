@@ -8960,6 +8960,14 @@ class AppLocalizationsBg extends AppLocalizations {
       'Свържи социалните си мрежи, за да знаят хората, че това си наистина ти.';
 
   @override
+  String profileWebsiteSemanticLabel(String url) {
+    return 'Visit website: $url';
+  }
+
+  @override
+  String get profileCouldNotOpenWebsite => 'Could not open website';
+
+  @override
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
