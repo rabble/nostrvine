@@ -100,20 +100,22 @@ void main() {
           });
     });
 
-    /// Helper: stores an expired Keycast session and a valid local nsec
-    /// that matches the session pubkey.
-    String arrangeExpiredSessionWithMatchingLocalKeys() {
+    /// Helper: stores a Keycast session and a valid local nsec that matches
+    /// the session pubkey.
+    String arrangeSessionWithMatchingLocalKeys({
+      required DateTime expiresAt,
+    }) {
       final privateKeyHex = generatePrivateKey();
       final container = SecureKeyContainer.fromPrivateKeyHex(privateKeyHex);
       final pubkey = container.publicKeyHex;
 
-      final expiredSession = KeycastSession(
+      final session = KeycastSession(
         bunkerUrl: 'https://login.divine.video/api/nostr',
-        accessToken: 'expired_token_abc123',
-        expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        accessToken: 'token_abc123',
+        expiresAt: expiresAt,
         userPubkey: pubkey,
       );
-      secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
+      secureStorage['keycast_session'] = jsonEncode(session.toJson());
 
       secureStorage['nostr_primary_key'] =
           'privateKeyHex:$privateKeyHex'
@@ -121,6 +123,14 @@ void main() {
           '|npub:${container.npub}';
 
       return pubkey;
+    }
+
+    /// Helper: stores an expired Keycast session and a valid local nsec
+    /// that matches the session pubkey.
+    String arrangeExpiredSessionWithMatchingLocalKeys() {
+      return arrangeSessionWithMatchingLocalKeys(
+        expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+      );
     }
 
     AuthService createAuthService() {
@@ -366,6 +376,91 @@ void main() {
         reason:
             "account A's RPC signer must not be attached to account B's "
             'identity',
+      );
+    });
+
+    test('stale app-resume OAuth refresh does not attach the previous '
+        'account signer after sign-out and account switch', () async {
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
+
+      final accountAPubkey = arrangeSessionWithMatchingLocalKeys(
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
+      );
+
+      final refreshCompleter = Completer<KeycastSession?>();
+      when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
+      when(
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
+      ).thenAnswer((_) => refreshCompleter.future);
+      when(() => mockOAuthClient.logout()).thenAnswer((_) async {});
+
+      final authService = createAuthService();
+
+      late bool authenticatedAfterInit;
+      late AuthRpcCapability capabilityAfterInit;
+      late bool authenticatedAfterSignOut;
+      late AuthResult imported;
+      String? accountBPubkey;
+
+      await runZonedGuarded(
+        () async {
+          await authService.initialize();
+          authenticatedAfterInit = authService.isAuthenticated;
+          capabilityAfterInit = authService.authRpcCapability;
+
+          authService.onAppResumed();
+          await pumpEventQueue();
+
+          await authService.signOut();
+          authenticatedAfterSignOut = authService.isAuthenticated;
+
+          imported = await authService.importFromHex(generatePrivateKey());
+          accountBPubkey = authService.currentPublicKeyHex;
+
+          refreshCompleter.complete(
+            KeycastSession(
+              bunkerUrl: 'https://login.divine.video/api/nostr',
+              accessToken: 'fresh_token_for_account_a',
+              expiresAt: DateTime.now().add(const Duration(hours: 1)),
+              userPubkey: accountAPubkey,
+            ),
+          );
+          await pumpEventQueue();
+        },
+        (error, stack) {
+          // Ignore background relay discovery errors.
+        },
+      );
+
+      expect(authenticatedAfterInit, isTrue);
+      expect(capabilityAfterInit, equals(AuthRpcCapability.rpcReady));
+      expect(authenticatedAfterSignOut, isFalse);
+      expect(imported.success, isTrue);
+      expect(accountBPubkey, isNotNull);
+      expect(accountBPubkey, isNot(equals(accountAPubkey)));
+      expect(
+        authService.currentPublicKeyHex,
+        equals(accountBPubkey),
+        reason: 'stale resume refresh must not change the active account',
+      );
+      expect(
+        authService.authRpcCapability,
+        isNot(equals(AuthRpcCapability.rpcReady)),
+        reason:
+            "account A's resume refresh must not grant RPC capability to "
+            'account B',
+      );
+      expect(
+        authService.currentIdentity,
+        isNot(isA<KeycastNostrIdentity>()),
+        reason:
+            "account A's resume RPC signer must not be attached to account "
+            "B's identity",
       );
     });
 

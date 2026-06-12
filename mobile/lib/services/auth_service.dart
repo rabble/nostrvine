@@ -3626,6 +3626,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
       // Clean up Keycast RPC signer if active
       _keycastSigner = null;
+      _setRpcCapability(AuthRpcCapability.unavailable);
 
       try {
         if (_oauthClient != null) {
@@ -3793,6 +3794,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       await _clearAmberInfo();
     } catch (_) {}
     _keycastSigner = null;
+    _setRpcCapability(AuthRpcCapability.unavailable);
     _keyStorage.clearCache();
 
     try {
@@ -4521,6 +4523,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     // This prevents a Keycast RPC signer from a previous Divine OAuth session
     // from being used when signing events for an anonymous/imported-key account.
     if (source != AuthenticationSource.divineOAuth) {
+      _setRpcCapability(AuthRpcCapability.unavailable);
       if (_keycastSigner != null) {
         Log.info(
           '_setupUserSession: clearing stale Keycast signer '
@@ -5212,7 +5215,14 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     try {
       if (_oauthClient == null || _keycastSigner == null) return;
 
+      final resumeOwnerPubkey = currentPublicKeyHex;
+      if (resumeOwnerPubkey == null) return;
+      bool resumeContextStillCurrent() =>
+          _authState == AuthState.authenticated &&
+          currentPublicKeyHex == resumeOwnerPubkey;
+
       final session = await _oauthClient.getSession();
+      if (!resumeContextStillCurrent()) return;
       if (session != null) return;
 
       Log.info(
@@ -5220,7 +5230,17 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         name: 'AuthService',
         category: LogCategory.auth,
       );
-      final refreshed = await _refreshOAuthSession();
+      final refreshed = await _refreshOAuthSession(
+        expectedOwnerPubkey: resumeOwnerPubkey,
+      );
+      if (!resumeContextStillCurrent()) {
+        Log.warning(
+          '📱 App resumed - discarding stale OAuth refresh result',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return;
+      }
       if (refreshed != null) {
         _keycastSigner = KeycastRpc.fromSession(
           _oauthConfig,
