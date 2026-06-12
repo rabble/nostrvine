@@ -3212,5 +3212,14 @@
     "notificationSettingsSound": "Sound",
     "notificationSettingsSoundSubtitle": "Play sound for notifications",
     "notificationSettingsVibration": "Vibration",
-    "notificationSettingsVibrationSubtitle": "Vibrate for notifications"
+    "notificationSettingsVibrationSubtitle": "Vibrate for notifications",
+    "@profileWebsiteSemanticLabel": {
+        "placeholders": {
+            "url": {
+                "type": "String"
+            }
+        }
+    },
+    "profileWebsiteSemanticLabel": "Visit website: {url}",
+    "profileCouldNotOpenWebsite": "Could not open website"
 }

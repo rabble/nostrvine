@@ -44,13 +44,13 @@ class ProfileWebsiteRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            spacing: 6,
             children: [
               const DivineIcon(
                 icon: DivineIconName.globe,
                 size: 14,
                 color: VineTheme.vineGreen,
               ),
-              const SizedBox(width: 6),
               Flexible(
                 child: Text(
                   displayUrl,
