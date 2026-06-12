@@ -1,9 +1,13 @@
 # Analytics Observability
 
-Status: Current
-Validated against: `mobile/lib/services/screen_analytics_service.dart`,
+Status: Current contract, implementation-in-progress baseline
+Baseline validated against: `mobile/lib/services/screen_analytics_service.dart`,
 `mobile/lib/services/page_load_observer.dart`,
 `mobile/lib/screens/comments/comments_screen.dart`.
+
+Current code still contains legacy `screen_load` and `screen_data_loaded`
+analytics paths. The `surface_load` event and required semantic `screen_view`
+parameters below are the contract for the follow-up implementation tasks.
 
 ## Purpose
 
