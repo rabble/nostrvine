@@ -419,9 +419,9 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
 
   /// Starts the real-time comment subscription.
   ///
-  /// Called from [_onLoadRequested] after the initial load so the `since`
-  /// timestamp aligns with that load. Routes incoming comments through
-  /// [NewCommentReceived].
+  /// Called from [_onLoadRequested] after the initial load so the REST-backed
+  /// first paint is not blocked by relay backfill. Routes incoming comments
+  /// through [NewCommentReceived].
   void _startWatchingComments() {
     _commentStreamSubscription?.cancel();
 
