@@ -119,7 +119,7 @@ void main() {
     }
 
     /// Helper: creates an AuthService wired to the mocks
-    AuthService createAuthService() {
+    AuthService createAuthService({Duration? oauthRefreshTimeout}) {
       final keyStorage = SecureKeyStorage(
         securityConfig: const SecurityConfig(requireHardwareBacked: false),
       );
@@ -127,6 +127,7 @@ void main() {
         userDataCleanupService: mockCleanupService,
         keyStorage: keyStorage,
         oauthClient: mockOAuthClient,
+        oauthRefreshTimeout: oauthRefreshTimeout ?? AuthService.rpcRefreshTimeout,
       );
     }
 
@@ -416,6 +417,92 @@ void main() {
                 userPubkey: any(named: 'userPubkey'),
               ),
             ).called(1);
+          },
+          (error, stack) {
+            // Ignore background errors
+          },
+        );
+      },
+    );
+
+    test(
+      'hung refresh fails within the bounded time and clears the pending '
+      'slot so a later tryRefreshExpiredSession starts a fresh attempt',
+      () async {
+        // Regression for #4942: a Keycast refresh request hanging on a dead
+        // socket must not poison the process-lifetime single-flight slot.
+        // Before the fix, the never-completing future stayed in
+        // _pendingOAuthRefresh forever and EVERY re-login surface joined it,
+        // so the user could not log back in until the app was killed.
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'tos_accepted': true,
+        });
+
+        arrangeExpiredSessionWithLocalKeys();
+
+        // Init-phase refresh fails fast so initialize() settles quickly.
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        // Short injected bound so the test does not wait the production 10s.
+        final authService = createAuthService(
+          oauthRefreshTimeout: const Duration(milliseconds: 300),
+        );
+
+        await runZonedGuarded(
+          () async {
+            await authService.initialize();
+
+            // Wait for the background upgrade to release the single-flight
+            // slot before exercising tryRefreshExpiredSession in isolation.
+            final deadline = DateTime.now().add(const Duration(seconds: 5));
+            while (authService.isRpcUpgradeInProgress &&
+                DateTime.now().isBefore(deadline)) {
+              await Future<void>.delayed(const Duration(milliseconds: 10));
+            }
+            expect(authService.hasExpiredOAuthSession, isTrue);
+            clearInteractions(mockOAuthClient);
+
+            // First call hangs forever (dead socket); later calls fail fast.
+            var refreshCalls = 0;
+            final hung = Completer<KeycastSession?>();
+            when(
+              () => mockOAuthClient.refreshSession(
+                userPubkey: any(named: 'userPubkey'),
+              ),
+            ).thenAnswer((_) {
+              refreshCalls++;
+              return refreshCalls == 1
+                  ? hung.future
+                  : Future<KeycastSession?>.value();
+            });
+
+            // (a) The hung attempt must fail within the bounded time
+            // instead of wedging forever.
+            final first = await authService
+                .tryRefreshExpiredSession()
+                .timeout(const Duration(seconds: 5));
+            expect(first, isFalse);
+
+            // (b) The pending slot must be released so this triggers a
+            // FRESH refresh attempt rather than joining the hung one.
+            final second = await authService
+                .tryRefreshExpiredSession()
+                .timeout(const Duration(seconds: 5));
+            expect(second, isFalse);
+
+            expect(
+              refreshCalls,
+              2,
+              reason:
+                  'Second tryRefreshExpiredSession must start a fresh '
+                  'refresh attempt — the hung first attempt must not '
+                  'occupy the single-flight slot after its timeout',
+            );
           },
           (error, stack) {
             // Ignore background errors

@@ -1,6 +1,7 @@
 // ABOUTME: Tests for KeycastRpc client - Nostr signing via RPC
 // ABOUTME: Verifies all RPC methods with mocked HTTP, error handling, auth headers
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -398,6 +399,28 @@ void main() {
           onTokenRefresh: () async => 'refreshed',
         );
         expect(rpc, isNotNull);
+      });
+    });
+
+    group('request timeout', () {
+      test('throws TimeoutException when the request hangs', () async {
+        // Simulates a dead socket (e.g. Android Doze killing the
+        // connection) — the request future never completes.
+        mockClient = MockClient(
+          (request) => Completer<http.Response>().future,
+        );
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+          requestTimeout: const Duration(milliseconds: 50),
+        );
+
+        await expectLater(
+          rpc.getPublicKey(),
+          throwsA(isA<TimeoutException>()),
+        );
       });
     });
 

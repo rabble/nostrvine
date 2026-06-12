@@ -1,6 +1,7 @@
 // ABOUTME: Keycast RPC client implementing NostrSigner interface
 // ABOUTME: Provides remote signing via Keycast server for Nostr events
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -17,16 +18,28 @@ import 'package:unified_logger/unified_logger.dart';
 typedef TokenRefreshCallback = Future<String?> Function();
 
 class KeycastRpc implements NostrSigner {
+  /// Default timeout applied to every RPC HTTP request.
+  ///
+  /// Without a bound, a dead socket (e.g. Android Doze killing the
+  /// connection while backgrounded) hangs the request forever and wedges
+  /// every caller awaiting it.
+  static const Duration defaultRequestTimeout = Duration(seconds: 30);
+
   final String nostrApi;
   String _accessToken;
   final http.Client _client;
   final TokenRefreshCallback? _onTokenRefresh;
+
+  /// Maximum time to wait for any single RPC request before failing
+  /// with a [TimeoutException].
+  final Duration requestTimeout;
 
   KeycastRpc({
     required this.nostrApi,
     required String accessToken,
     http.Client? httpClient,
     TokenRefreshCallback? onTokenRefresh,
+    this.requestTimeout = defaultRequestTimeout,
   }) : _accessToken = accessToken,
        _client = httpClient ?? http.Client(),
        _onTokenRefresh = onTokenRefresh;
@@ -35,6 +48,7 @@ class KeycastRpc implements NostrSigner {
     OAuthConfig config,
     KeycastSession session, {
     TokenRefreshCallback? onTokenRefresh,
+    Duration requestTimeout = defaultRequestTimeout,
   }) {
     if (!session.hasRpcAccess) {
       throw SessionExpiredException();
@@ -43,6 +57,7 @@ class KeycastRpc implements NostrSigner {
       nostrApi: config.nostrApiUrl,
       accessToken: session.accessToken!,
       onTokenRefresh: onTokenRefresh,
+      requestTimeout: requestTimeout,
     );
   }
 
@@ -101,14 +116,16 @@ class KeycastRpc implements NostrSigner {
       category: LogCategory.auth,
     );
     final stopwatch = Stopwatch()..start();
-    final response = await _client.post(
-      Uri.parse(nostrApi),
-      headers: {
-        'Authorization': 'Bearer $_accessToken',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'method': method, 'params': params}),
-    );
+    final response = await _client
+        .post(
+          Uri.parse(nostrApi),
+          headers: {
+            'Authorization': 'Bearer $_accessToken',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({'method': method, 'params': params}),
+        )
+        .timeout(requestTimeout);
     stopwatch.stop();
     Log.debug(
       '[Keycast RPC] $method completed in '

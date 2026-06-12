@@ -28,14 +28,26 @@ const _storageKeyHandle = 'keycast_auth_handle';
 const _storageKeyRefreshToken = 'keycast_refresh_token';
 
 class KeycastOAuth {
+  /// Default timeout applied to every Keycast HTTP request.
+  ///
+  /// Without a bound, a dead socket (e.g. Android Doze killing the
+  /// connection while backgrounded) hangs the request forever and wedges
+  /// every caller awaiting it.
+  static const Duration defaultRequestTimeout = Duration(seconds: 30);
+
   final OAuthConfig config;
   final http.Client _client;
   final KeycastStorage _storage;
+
+  /// Maximum time to wait for any single HTTP request before failing
+  /// with a [TimeoutException].
+  final Duration requestTimeout;
 
   KeycastOAuth({
     required this.config,
     http.Client? httpClient,
     KeycastStorage? storage,
+    this.requestTimeout = defaultRequestTimeout,
   }) : _client = httpClient ?? http.Client(),
        _storage = storage ?? MemoryKeycastStorage();
 
@@ -103,22 +115,24 @@ class KeycastOAuth {
   /// the saved session is always owner-bound.
   ///
   /// On HTTP error the consumed refresh token is cleared (server may have
-  /// rotated it). On network error the token is preserved since the server
-  /// may not have consumed it.
+  /// rotated it). On network error or timeout the token is preserved since
+  /// the server may not have consumed it.
   Future<KeycastSession?> refreshSession({String? userPubkey}) async {
     final refreshToken = await _storage.read(_storageKeyRefreshToken);
     if (refreshToken == null) return null;
 
     try {
-      final response = await _client.post(
-        Uri.parse(config.tokenUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'grant_type': 'refresh_token',
-          'refresh_token': refreshToken,
-          'client_id': config.clientId,
-        }),
-      );
+      final response = await _client
+          .post(
+            Uri.parse(config.tokenUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'grant_type': 'refresh_token',
+              'refresh_token': refreshToken,
+              'client_id': config.clientId,
+            }),
+          )
+          .timeout(requestTimeout);
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -135,7 +149,8 @@ class KeycastOAuth {
       await _storage.delete(_storageKeyRefreshToken);
       return null;
     } catch (_) {
-      // Network error — server may not have consumed the token, keep it
+      // Network error or timeout — server may not have consumed the
+      // token, keep it so the next attempt can retry the refresh
       return null;
     }
   }
@@ -230,21 +245,26 @@ class KeycastOAuth {
 
   /// Exchange authorization code for tokens
   /// Automatically saves session to storage after successful exchange
+  ///
+  /// Throws [TimeoutException] if the server does not respond within
+  /// [requestTimeout].
   Future<TokenResponse> exchangeCode({
     required String code,
     required String verifier,
   }) async {
-    final response = await _client.post(
-      Uri.parse(config.tokenUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'grant_type': 'authorization_code',
-        'code': code,
-        'client_id': config.clientId,
-        'redirect_uri': config.redirectUri,
-        'code_verifier': verifier,
-      }),
-    );
+    final response = await _client
+        .post(
+          Uri.parse(config.tokenUrl),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'grant_type': 'authorization_code',
+            'code': code,
+            'client_id': config.clientId,
+            'redirect_uri': config.redirectUri,
+            'code_verifier': verifier,
+          }),
+        )
+        .timeout(requestTimeout);
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -313,11 +333,13 @@ class KeycastOAuth {
         body['state'] = state;
       }
 
-      final response = await _client.post(
-        Uri.parse('${config.serverUrl}/api/headless/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
+      final response = await _client
+          .post(
+            Uri.parse('${config.serverUrl}/api/headless/register'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(requestTimeout);
 
       // Check for non-success status codes first
       if (response.statusCode == 404) {
@@ -365,6 +387,14 @@ class KeycastOAuth {
 
       return (
         HeadlessRegisterResult.error(description, code: errorCode),
+        verifier,
+      );
+    } on TimeoutException {
+      return (
+        HeadlessRegisterResult.error(
+          'Request timed out. Check your internet connection and try again.',
+          code: 'timeout',
+        ),
         verifier,
       );
     } catch (e) {
@@ -416,11 +446,13 @@ class KeycastOAuth {
         body['state'] = state;
       }
 
-      final response = await _client.post(
-        Uri.parse('${config.serverUrl}/api/headless/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
+      final response = await _client
+          .post(
+            Uri.parse('${config.serverUrl}/api/headless/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(requestTimeout);
 
       // Check for non-success status codes first
       if (response.statusCode == 404) {
@@ -469,6 +501,14 @@ class KeycastOAuth {
           'Login failed';
 
       return (HeadlessLoginResult.error(description, code: error), verifier);
+    } on TimeoutException {
+      return (
+        HeadlessLoginResult.error(
+          'Request timed out. Check your internet connection and try again.',
+          code: 'timeout',
+        ),
+        verifier,
+      );
     } catch (e) {
       if (e.toString().contains('SocketException') ||
           e.toString().contains('Connection refused')) {
@@ -492,11 +532,13 @@ class KeycastOAuth {
   /// Returns [PollResult.error] if something went wrong.
   Future<PollResult> pollForCode(String deviceCode) async {
     try {
-      final response = await _client.get(
-        Uri.parse(
-          '${config.serverUrl}/api/oauth/poll',
-        ).replace(queryParameters: {'device_code': deviceCode}),
-      );
+      final response = await _client
+          .get(
+            Uri.parse(
+              '${config.serverUrl}/api/oauth/poll',
+            ).replace(queryParameters: {'device_code': deviceCode}),
+          )
+          .timeout(requestTimeout);
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;

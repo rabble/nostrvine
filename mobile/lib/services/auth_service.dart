@@ -188,6 +188,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     String? primaryRelayUrl,
     RelayDiscoveryService? relayDiscoveryService,
     Nip07Service? nip07ServiceForTest,
+    Duration oauthRefreshTimeout = rpcRefreshTimeout,
+    Duration expiredSessionRefreshTimeout = defaultExpiredSessionRefreshTimeout,
   }) : _keyStorage = keyStorage ?? SecureKeyStorage(),
        _nostrKeyManager = nostrKeyManager,
        _userDataCleanupService = userDataCleanupService,
@@ -202,7 +204,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
        _oauthConfig =
            oauthConfig ??
            const OAuthConfig(serverUrl: '', clientId: '', redirectUri: ''),
-       _injectedNip07ServiceForTest = nip07ServiceForTest;
+       _injectedNip07ServiceForTest = nip07ServiceForTest,
+       _oauthRefreshTimeout = oauthRefreshTimeout,
+       _expiredSessionRefreshTimeout = expiredSessionRefreshTimeout;
   final SecureKeyStorage _keyStorage;
   final NostrKeyManager? _nostrKeyManager;
   final UserDataCleanupService _userDataCleanupService;
@@ -210,6 +214,14 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   final FlutterSecureStorage? _flutterSecureStorage;
   final PreFetchFollowingCallback? _preFetchFollowing;
   final String? _profileCheckIndexerUrl;
+
+  /// Bound applied to the single-flight OAuth token refresh stored in
+  /// [_pendingOAuthRefresh]. Injectable so tests can use a short bound.
+  final Duration _oauthRefreshTimeout;
+
+  /// Bound applied to the full expired-session refresh flow stored in
+  /// [_pendingRefresh]. Injectable so tests can use a short bound.
+  final Duration _expiredSessionRefreshTimeout;
 
   /// Test seam: when supplied, bypasses the [Nip07Service] singleton and the
   /// [kIsWeb] guard so unit tests can exercise the full NIP-07 flow on the VM
@@ -409,9 +421,18 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// UI does not prompt re-login before the silent refresh has definitively failed.
   bool get isRpcUpgradeInProgress => _isRpcUpgradeInProgress;
 
-  /// Timeout for background RPC refresh during local-first startup.
+  /// Default bound for the single-flight OAuth token refresh. Applied
+  /// inside the future stored in [_pendingOAuthRefresh] so a hung request
+  /// can never occupy the slot forever (#4942).
   @visibleForTesting
   static const rpcRefreshTimeout = Duration(seconds: 10);
+
+  /// Default bound for the full expired-session refresh flow (token refresh
+  /// plus session re-integration). The underlying network calls carry their
+  /// own shorter timeouts; this bound guarantees the single-flight slot in
+  /// [tryRefreshExpiredSession] always clears (#4942).
+  @visibleForTesting
+  static const defaultExpiredSessionRefreshTimeout = Duration(seconds: 30);
 
   /// Local-first Divine OAuth initialization.
   ///
@@ -602,9 +623,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         return;
       }
 
+      // The shared refresh future is internally bounded by
+      // [_oauthRefreshTimeout] (see _refreshOAuthSession), so this await
+      // cannot block startup indefinitely.
       final refreshed = await _refreshOAuthSession(
         expectedOwnerPubkey: expectedOwnerPubkey ?? session?.userPubkey,
-      ).timeout(rpcRefreshTimeout);
+      );
 
       if (!upgradeContextStillCurrent()) {
         Log.warning(
@@ -632,13 +656,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         _setRpcCapability(AuthRpcCapability.rpcReady);
         return;
       }
-    } on TimeoutException {
-      Log.warning(
-        'initialize: background RPC refresh timed out '
-        '(${rpcRefreshTimeout.inSeconds}s)',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
     } catch (e) {
       Log.error(
         'initialize: background RPC refresh failed: $e',
@@ -783,14 +800,40 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// the refresh fails (caller should navigate to login).
   ///
   /// Concurrent callers share a single in-flight refresh to avoid
-  /// consuming one-time-use refresh tokens in a race.
+  /// consuming one-time-use refresh tokens in a race. The shared future is
+  /// bounded by [_expiredSessionRefreshTimeout] so a hung attempt always
+  /// releases the slot and the next call starts a fresh refresh (#4942).
   Future<bool> tryRefreshExpiredSession() {
     if (!_hasExpiredOAuthSession || _oauthClient == null) {
       return Future.value(false);
     }
-    return _pendingRefresh ??= _doRefreshExpiredSession().whenComplete(() {
-      _pendingRefresh = null;
-    });
+    final pending = _pendingRefresh;
+    if (pending != null) return pending;
+
+    late final Future<bool> refresh;
+    refresh = _doRefreshExpiredSession()
+        .timeout(
+          _expiredSessionRefreshTimeout,
+          onTimeout: () {
+            Log.warning(
+              'tryRefreshExpiredSession: timed out after '
+              '${_expiredSessionRefreshTimeout.inMilliseconds}ms — '
+              'treating as failed',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+            return false;
+          },
+        )
+        .whenComplete(() {
+          // Only release the slot if it still holds this attempt — signOut
+          // may have detached it and a fresh attempt may already be in
+          // flight.
+          if (identical(_pendingRefresh, refresh)) {
+            _pendingRefresh = null;
+          }
+        });
+    return _pendingRefresh = refresh;
   }
 
   Future<bool> _doRefreshExpiredSession() async {
@@ -845,6 +888,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Guarantees:
   /// - Only one `refreshSession()` call in flight at a time (concurrent
   ///   callers share the same [Future]).
+  /// - The shared future is bounded by [_oauthRefreshTimeout] and ALWAYS
+  ///   releases the single-flight slot, even if the underlying request
+  ///   hangs on a dead socket — so the next attempt gets a fresh refresh
+  ///   instead of joining a poisoned one (#4942).
   /// - `userPubkey` is bound before the session is persisted, so
   ///   ownership checks on restore stay valid.
   /// - `_hasExpiredOAuthSession` is cleared on success.
@@ -856,12 +903,34 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   ///
   /// Returns the refreshed session on success, or `null` on failure.
   Future<KeycastSession?> _refreshOAuthSession({String? expectedOwnerPubkey}) {
-    return _pendingOAuthRefresh ??=
-        _doRefreshOAuthSession(
-          expectedOwnerPubkey: expectedOwnerPubkey,
-        ).whenComplete(() {
-          _pendingOAuthRefresh = null;
-        });
+    final pending = _pendingOAuthRefresh;
+    if (pending != null) return pending;
+
+    late final Future<KeycastSession?> refresh;
+    refresh =
+        _doRefreshOAuthSession(expectedOwnerPubkey: expectedOwnerPubkey)
+            .timeout(
+              _oauthRefreshTimeout,
+              onTimeout: () {
+                Log.warning(
+                  '_refreshOAuthSession: timed out after '
+                  '${_oauthRefreshTimeout.inMilliseconds}ms — '
+                  'treating as failed',
+                  name: 'AuthService',
+                  category: LogCategory.auth,
+                );
+                return null;
+              },
+            )
+            .whenComplete(() {
+              // Only release the slot if it still holds this attempt —
+              // signOut may have detached it and a fresh attempt may
+              // already be in flight.
+              if (identical(_pendingOAuthRefresh, refresh)) {
+                _pendingOAuthRefresh = null;
+              }
+            });
+    return _pendingOAuthRefresh = refresh;
   }
 
   Future<KeycastSession?> _doRefreshOAuthSession({
@@ -3719,6 +3788,14 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // Clean up Keycast RPC signer if active
       _keycastSigner = null;
       _setRpcCapability(AuthRpcCapability.unavailable);
+
+      // Detach any in-flight token refresh so post-signout logins start a
+      // fresh attempt instead of joining one issued for the outgoing
+      // session. The futures cannot be cancelled, but their completion
+      // handlers only release the slot they still own (identical check),
+      // so a late completion cannot clobber a newer attempt.
+      _pendingOAuthRefresh = null;
+      _pendingRefresh = null;
 
       await _clearOAuthSessionForSignOut();
 
