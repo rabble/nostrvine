@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:openvine/services/analytics_event_sink.dart';
 import 'package:openvine/services/analytics_surface.dart';
 import 'package:openvine/services/firebase_analytics_event_sink.dart';
+import 'package:openvine/services/page_load_history.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Maximum age for a session before it is considered stale and discarded.
@@ -137,6 +138,7 @@ class SurfacePerformanceTracker {
         : session.visibleAt!.difference(session.startedAt).inMilliseconds;
     final totalMs = completedAt.difference(session.startedAt).inMilliseconds;
     final dataMs = result == SurfaceLoadResult.dismissed ? -1 : totalMs;
+    final slowBucket = AnalyticsSurface.slowBucket(totalMs);
 
     final parameters = <String, Object>{
       AnalyticsParam.surfaceName: safeName,
@@ -144,12 +146,27 @@ class SurfacePerformanceTracker {
       AnalyticsParam.visibleMs: visibleMs,
       AnalyticsParam.dataMs: dataMs,
       AnalyticsParam.totalMs: totalMs,
-      AnalyticsParam.slowBucket: AnalyticsSurface.slowBucket(totalMs),
+      AnalyticsParam.slowBucket: slowBucket,
       ...session.params,
       ..._safeParameters(metrics),
     };
 
     await _logSurfaceLoad(parameters);
+    PageLoadHistory().addOrUpdate(
+      PageLoadRecord(
+        screenName: safeName,
+        timestamp: session.startedAt,
+        contentVisibleMs: visibleMs >= 0 ? visibleMs : null,
+        dataLoadedMs: dataMs >= 0 ? dataMs : null,
+        result: result,
+        source: 'surface',
+        dataMetrics: {
+          AnalyticsParam.slowBucket: slowBucket,
+          ...session.params,
+          ..._safeParameters(metrics),
+        },
+      ),
+    );
 
     final slowFlag = totalMs >= 3000 ? ' [SLOW]' : '';
     UnifiedLogger.info(

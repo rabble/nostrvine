@@ -29,6 +29,16 @@ void main() {
         expect(history.records.first.contentVisibleMs, equals(100));
       });
 
+      test('defaults to route source with no terminal result', () {
+        final record = PageLoadRecord(
+          screenName: 'home',
+          timestamp: DateTime.now(),
+        );
+
+        expect(record.source, equals('route'));
+        expect(record.result, isNull);
+      });
+
       test('updates existing record without dataLoadedMs', () {
         final now = DateTime.now();
         history.addOrUpdate(
@@ -101,6 +111,36 @@ void main() {
         final names = history.records.map((r) => r.screenName).toList();
         expect(names, isNot(contains('screen_0')));
         expect(names, contains('screen_${PageLoadHistory.maxRecords + 4}'));
+      });
+
+      test('adds terminal surface records to recent history', () {
+        final startedAt = DateTime(2026, 6, 12, 12);
+
+        history.addOrUpdate(
+          PageLoadRecord(
+            screenName: 'comments_sheet',
+            timestamp: startedAt,
+            contentVisibleMs: 80,
+            result: 'dismissed',
+            source: 'surface',
+          ),
+        );
+        history.addOrUpdate(
+          PageLoadRecord(
+            screenName: 'comments_sheet',
+            timestamp: startedAt.add(const Duration(seconds: 1)),
+            contentVisibleMs: 60,
+            dataLoadedMs: 420,
+            result: 'success',
+            source: 'surface',
+          ),
+        );
+
+        final recent = history.getRecent(2);
+        expect(recent, hasLength(2));
+        expect(recent.first.source, equals('surface'));
+        expect(recent.first.result, equals('success'));
+        expect(recent.last.result, equals('dismissed'));
       });
     });
 
@@ -205,6 +245,53 @@ void main() {
         final slowest = history.getSlowest(5);
         expect(slowest, hasLength(1));
         expect(slowest.first.screenName, equals('with_data'));
+      });
+
+      test('includes surface records with dataLoadedMs', () {
+        history.addOrUpdate(
+          PageLoadRecord(
+            screenName: 'home',
+            timestamp: DateTime.now(),
+            dataLoadedMs: 500,
+          ),
+        );
+        history.addOrUpdate(
+          PageLoadRecord(
+            screenName: 'comments_sheet',
+            timestamp: DateTime.now(),
+            dataLoadedMs: 3500,
+            result: 'success',
+            source: 'surface',
+          ),
+        );
+
+        final slowest = history.getSlowest(1);
+        expect(slowest.single.screenName, equals('comments_sheet'));
+        expect(slowest.single.source, equals('surface'));
+        expect(slowest.single.result, equals('success'));
+      });
+
+      test('excludes dismissed surface records without dataLoadedMs', () {
+        history.addOrUpdate(
+          PageLoadRecord(
+            screenName: 'comments_sheet',
+            timestamp: DateTime.now(),
+            contentVisibleMs: 75,
+            result: 'dismissed',
+            source: 'surface',
+          ),
+        );
+        history.addOrUpdate(
+          PageLoadRecord(
+            screenName: 'home',
+            timestamp: DateTime.now(),
+            dataLoadedMs: 900,
+          ),
+        );
+
+        final slowest = history.getSlowest(5);
+        expect(slowest, hasLength(1));
+        expect(slowest.single.screenName, equals('home'));
       });
     });
 

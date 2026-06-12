@@ -28,6 +28,25 @@ Color _getSpeedColor(PageLoadRecord record) {
   return VineTheme.vineGreen;
 }
 
+String _recordTitle(PageLoadRecord record) {
+  if (record.source == 'route') return record.screenName;
+  return '${record.screenName} (${record.source})';
+}
+
+String _recordTimingText(BuildContext context, PageLoadRecord record) {
+  return context.l10n.devOptionsPageLoadVisible(
+    record.contentVisibleMs?.toString() ?? '\u2014',
+    record.dataLoadedMs?.toString() ?? '\u2014',
+  );
+}
+
+String _recordDetailsText(BuildContext context, PageLoadRecord record) {
+  final timing = _recordTimingText(context, record);
+  final result = record.result;
+  if (result == null) return timing;
+  return '$timing | result: $result';
+}
+
 class _FormatOption {
   const _FormatOption({
     required this.format,
@@ -206,7 +225,7 @@ class _DeveloperOptionsScreenState
                 ...recentRecords.map((record) {
                   return ListTile(
                     title: Text(
-                      record.screenName,
+                      _recordTitle(record),
                       style: const TextStyle(
                         color: VineTheme.primaryText,
                         fontSize: 14,
@@ -214,10 +233,7 @@ class _DeveloperOptionsScreenState
                       ),
                     ),
                     subtitle: Text(
-                      context.l10n.devOptionsPageLoadVisible(
-                        record.contentVisibleMs?.toString() ?? '\u2014',
-                        record.dataLoadedMs?.toString() ?? '\u2014',
-                      ),
+                      _recordDetailsText(context, record),
                       style: const TextStyle(
                         color: VineTheme.secondaryText,
                         fontSize: 12,
@@ -253,9 +269,12 @@ class _DeveloperOptionsScreenState
                 ),
                 ...slowestRecords.map((record) {
                   final dataMs = record.dataLoadedMs ?? 0;
+                  final result = record.result == null
+                      ? ''
+                      : ' | result: ${record.result}';
                   return ListTile(
                     title: Text(
-                      record.screenName,
+                      _recordTitle(record),
                       style: const TextStyle(
                         color: VineTheme.primaryText,
                         fontSize: 14,
@@ -263,7 +282,7 @@ class _DeveloperOptionsScreenState
                       ),
                     ),
                     subtitle: Text(
-                      '${dataMs}ms',
+                      '${record.source} | data: ${dataMs}ms$result',
                       style: TextStyle(
                         color: _getSpeedColor(record),
                         fontSize: 12,

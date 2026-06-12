@@ -94,6 +94,23 @@ Use Firebase Performance to inspect:
 - network request traces for media/API domains
 - custom traces only when the span represents a real user wait
 
+## First Dashboard To Build
+
+Create a Firebase/GA4 exploration or BigQuery query for:
+
+- event name: `surface_load`
+- dimension: `surface_name`
+- dimension: `slow_bucket`
+- dimension: `result`
+- metric: event count
+- metric: p95/p99 of `total_ms`
+
+First target filter:
+
+```text
+surface_name = comments_sheet
+```
+
 ## Divine Brain Check
 
 Divine Brain is read-only from agent tooling. To make this contract discoverable

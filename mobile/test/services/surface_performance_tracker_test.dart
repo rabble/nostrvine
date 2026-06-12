@@ -4,6 +4,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/analytics_event_sink.dart';
 import 'package:openvine/services/analytics_surface.dart';
+import 'package:openvine/services/page_load_history.dart';
 import 'package:openvine/services/surface_performance_tracker.dart';
 
 class RecordingAnalyticsEventSink implements AnalyticsEventSink {
@@ -37,6 +38,7 @@ void main() {
 
     setUp(() {
       SurfacePerformanceTracker.resetInstance();
+      PageLoadHistory().clear();
       sink = RecordingAnalyticsEventSink();
       now = DateTime(2026, 6, 12, 12);
       tracker = SurfacePerformanceTracker.testInstance(
@@ -45,7 +47,10 @@ void main() {
       );
     });
 
-    tearDown(SurfacePerformanceTracker.resetInstance);
+    tearDown(() {
+      SurfacePerformanceTracker.resetInstance();
+      PageLoadHistory().clear();
+    });
 
     test('logs one surface_load event with semantic parameters', () async {
       tracker.startSurfaceLoad(
@@ -91,6 +96,37 @@ void main() {
         AnalyticsParam.featureFlag: 0,
       });
       expect(tracker.activeSessionCount, 0);
+    });
+
+    test('records completed surface loads in page load history', () async {
+      final startedAt = now;
+      tracker.startSurfaceLoad(
+        'Comments Sheet',
+        params: const {AnalyticsParam.entryPoint: 'feed_button'},
+      );
+      elapse(const Duration(milliseconds: 90));
+
+      tracker.markSurfaceVisible('Comments Sheet');
+      elapse(const Duration(milliseconds: 3160));
+
+      await tracker.completeSurfaceLoad(
+        'Comments Sheet',
+        result: SurfaceLoadResult.success,
+        metrics: const {AnalyticsParam.itemCount: 7},
+      );
+
+      final record = PageLoadHistory().records.single;
+      expect(record.screenName, AnalyticsSurface.commentsSheet);
+      expect(record.timestamp, startedAt);
+      expect(record.contentVisibleMs, 90);
+      expect(record.dataLoadedMs, 3250);
+      expect(record.result, SurfaceLoadResult.success);
+      expect(record.source, 'surface');
+      expect(record.dataMetrics, {
+        AnalyticsParam.slowBucket: '3_5s',
+        AnalyticsParam.entryPoint: 'feed_button',
+        AnalyticsParam.itemCount: 7,
+      });
     });
 
     test(
