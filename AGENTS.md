@@ -41,6 +41,15 @@
 - Do not accumulate technical debt. Fix issues in the PR that touches them; do not defer with TODOs, follow-up issues, skipped tests, or commented-out code. The only acceptable TODO is a transitional-code TODO with a tracking-issue link (see `.claude/rules/code_style.md`).
 - **`origin/main` always passes.** Any failing test on a feature branch is caused by that branch's diff. Never claim flakiness, never `@Skip` to silence a failure, never push red "to see what CI says." Run affected tests + `flutter analyze` before every push. See `.claude/rules/agent_workflow.md` for the diagnostic recipe when a test fails.
 
+## Bug-Fix Workflow
+
+- For any bug fix, regression, flaky behavior, data inconsistency, race, cache issue, crash, or unclear reproduction report, use a structured debugging workflow before changing code. If available, use `superpowers:systematic-debugging`.
+- Reproduce the issue on the current build or explain why it cannot be reproduced.
+- Identify the failing layer before implementing a fix. Compare expected state against actual state at the relevant boundaries, such as API/client, repository/cache, state management, and UI.
+- Avoid speculative fixes that are not tied to an observed root cause.
+- When addressing PR review feedback about incorrect behavior, reproduce and root-cause the behavior before patching. Use lighter process for purely mechanical feedback such as naming, formatting, copy, or direct component swaps.
+- Add or update a regression test for the confirmed failure mode when feasible.
+
 ## Architecture And State Management
 
 - Prefer the layered flow `UI -> BLoC/Cubit -> Repository -> Client` for new feature work.
