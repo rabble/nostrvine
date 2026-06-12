@@ -3221,5 +3221,7 @@
         }
     },
     "profileWebsiteSemanticLabel": "Visit website: {url}",
-    "profileCouldNotOpenWebsite": "Could not open website"
+    "profileCouldNotOpenWebsite": "Could not open website",
+    "profileSetupWebsiteLabel": "Website (Optional)",
+    "profileSetupWebsiteHint": "https://yoursite.com"
 }

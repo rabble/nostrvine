@@ -791,6 +791,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileSetupBioHint => 'Parle un peu de toi...';
 
   @override
+  String get profileSetupWebsiteLabel => 'Website (Optional)';
+
+  @override
+  String get profileSetupWebsiteHint => 'https://yoursite.com';
+
+  @override
   String get profileSetupPublicKeyLabel => 'Clé publique (npub)';
 
   @override

@@ -783,6 +783,12 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileSetupBioHint => 'Разкажи на хората за себе си...';
 
   @override
+  String get profileSetupWebsiteLabel => 'Website (Optional)';
+
+  @override
+  String get profileSetupWebsiteHint => 'https://yoursite.com';
+
+  @override
   String get profileSetupPublicKeyLabel => 'Публичен ключ (npub)';
 
   @override

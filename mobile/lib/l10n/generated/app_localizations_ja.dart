@@ -718,6 +718,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupBioHint => 'あなたのことを書いてみて...';
 
   @override
+  String get profileSetupWebsiteLabel => 'Website (Optional)';
+
+  @override
+  String get profileSetupWebsiteHint => 'https://yoursite.com';
+
+  @override
   String get profileSetupPublicKeyLabel => '公開鍵 (npub)';
 
   @override

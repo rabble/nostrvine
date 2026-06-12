@@ -932,6 +932,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
 
     final displayName = event.displayName.trim();
     final about = await _canonicalizeProfileAbout(event);
+    final website = event.website?.trim();
 
     // Bloc decides which NIP-05 value to use based on current mode
     final isExternal = state.nip05Mode == Nip05Mode.external_;
@@ -1033,6 +1034,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       final savedProfile = await _profileRepository.saveProfileEvent(
         displayName: displayName,
         about: about,
+        website: website,
         username: username,
         nip05: externalNip05,
         clearNip05: clearNip05,

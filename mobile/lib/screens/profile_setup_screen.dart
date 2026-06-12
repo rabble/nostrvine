@@ -149,6 +149,7 @@ class _ProfileSetupScreenViewState
     extends ConsumerState<ProfileSetupScreenView> {
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
+  final _websiteController = TextEditingController();
   final _pictureController = TextEditingController();
   final _nip05Controller = TextEditingController();
   final ImagePicker _picker = ImagePicker();
@@ -156,6 +157,7 @@ class _ProfileSetupScreenViewState
   // Focus nodes for tracking field focus state
   final _nameFocusNode = FocusNode();
   final _bioFocusNode = FocusNode();
+  final _websiteFocusNode = FocusNode();
   final _usernameFocusNode = FocusNode();
 
   // Local-preview state for the brief window between picking and the
@@ -175,6 +177,7 @@ class _ProfileSetupScreenViewState
     super.initState();
     // Rebuild when display name changes so save button updates.
     _nameController.addListener(_onFocusChange);
+    _websiteFocusNode.addListener(_onFocusChange);
     // Add focus listeners to update label colors
     _nameFocusNode.addListener(_onFocusChange);
     _bioFocusNode.addListener(_onFocusChange);
@@ -190,13 +193,16 @@ class _ProfileSetupScreenViewState
     _nameController.removeListener(_onFocusChange);
     _nameController.dispose();
     _bioController.dispose();
+    _websiteController.dispose();
     _pictureController.dispose();
     _nip05Controller.dispose();
     _nameFocusNode.removeListener(_onFocusChange);
     _bioFocusNode.removeListener(_onFocusChange);
+    _websiteFocusNode.removeListener(_onFocusChange);
     _usernameFocusNode.removeListener(_onFocusChange);
     _nameFocusNode.dispose();
     _bioFocusNode.dispose();
+    _websiteFocusNode.dispose();
     _usernameFocusNode.dispose();
 
     super.dispose();
@@ -220,6 +226,7 @@ class _ProfileSetupScreenViewState
             setState(() {
               _nameController.text = profile.displayName ?? profile.name ?? '';
               _bioController.text = profile.about ?? '';
+              _websiteController.text = profile.website ?? '';
               _pictureController.text = profile.picture ?? '';
 
               if (extractedUsername != null) {
@@ -923,6 +930,73 @@ class _ProfileSetupScreenViewState
                               ),
                               const SizedBox(height: 16),
 
+                              // Website
+                              Padding(
+                                padding: const EdgeInsetsDirectional.only(
+                                  start: 16,
+                                ),
+                                child: Text(
+                                  context.l10n.profileSetupWebsiteLabel,
+                                  style: VineTheme.labelMediumFont(
+                                    color: _websiteFocusNode.hasFocus
+                                        ? VineTheme.primary
+                                        : VineTheme.onSurfaceMuted,
+                                  ),
+                                ),
+                              ),
+                              TextFormField(
+                                controller: _websiteController,
+                                focusNode: _websiteFocusNode,
+                                style: VineTheme.bodyLargeFont(
+                                  color: VineTheme.onSurface,
+                                ),
+                                decoration: InputDecoration(
+                                  isCollapsed: true,
+                                  hintText:
+                                      context.l10n.profileSetupWebsiteHint,
+                                  hintStyle: const TextStyle(
+                                    color: VineTheme.lightText,
+                                  ),
+                                  border: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  enabledBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  errorBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedErrorBorder:
+                                      const UnderlineInputBorder(
+                                        borderRadius: BorderRadius.zero,
+                                        borderSide: BorderSide(
+                                          color: VineTheme.neutral10,
+                                        ),
+                                      ),
+                                  contentPadding: const EdgeInsets.all(16),
+                                ),
+                                keyboardType: TextInputType.url,
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) =>
+                                    FocusScope.of(context).nextFocus(),
+                              ),
+                              const SizedBox(height: 16),
+
                               const _VerifiedAccountsSection(),
 
                               const _PublicKeyLink(),
@@ -1166,6 +1240,7 @@ class _ProfileSetupScreenViewState
                                 pubkey: pubkey,
                                 displayName: _nameController.text,
                                 about: _bioController.text,
+                                website: _websiteController.text,
                                 username: _nip05Controller.text,
                                 // Picture and banner are owned by bloc state.
                                 // The bloc reads pendingPictureUrl /
@@ -1204,6 +1279,7 @@ class _ProfileSetupScreenViewState
         pubkey: pubkey,
         displayName: _nameController.text,
         about: _bioController.text,
+        website: _websiteController.text,
         username: _nip05Controller.text,
         // Picture and banner sourced from bloc state (see ProfileSaved
         // dispatch above) via `effectiveBanner` / `effectivePictureUrl`.

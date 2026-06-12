@@ -15,6 +15,7 @@ final class ProfileSaved extends ProfileEditorEvent {
     required this.pubkey,
     required this.displayName,
     this.about,
+    this.website,
     this.username,
     this.externalNip05,
     this.picture,
@@ -29,6 +30,9 @@ final class ProfileSaved extends ProfileEditorEvent {
 
   /// Bio/about text (optional).
   final String? about;
+
+  /// Website URL from the Kind-0 `website` field (optional).
+  final String? website;
 
   /// Username to claim as `_@username.divine.video` (optional, divine mode).
   final String? username;

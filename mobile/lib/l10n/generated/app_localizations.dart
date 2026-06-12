@@ -1402,6 +1402,18 @@ abstract class AppLocalizations {
   /// **'Tell people about yourself...'**
   String get profileSetupBioHint;
 
+  /// No description provided for @profileSetupWebsiteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Website (Optional)'**
+  String get profileSetupWebsiteLabel;
+
+  /// No description provided for @profileSetupWebsiteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'https://yoursite.com'**
+  String get profileSetupWebsiteHint;
+
   /// No description provided for @profileSetupPublicKeyLabel.
   ///
   /// In en, this message translates to:

@@ -760,6 +760,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileSetupBioHint => 'Berätta om dig själv...';
 
   @override
+  String get profileSetupWebsiteLabel => 'Website (Optional)';
+
+  @override
+  String get profileSetupWebsiteHint => 'https://yoursite.com';
+
+  @override
   String get profileSetupPublicKeyLabel => 'Publik nyckel (npub)';
 
   @override

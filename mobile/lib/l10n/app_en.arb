@@ -409,6 +409,8 @@
   "profileSetupDisplayNameRequired": "Please enter a display name",
   "profileSetupBioLabel": "Bio (Optional)",
   "profileSetupBioHint": "Tell people about yourself...",
+  "profileSetupWebsiteLabel": "Website (Optional)",
+  "profileSetupWebsiteHint": "https://yoursite.com",
   "profileSetupPublicKeyLabel": "Public key (npub)",
   "profileSetupUsernameLabel": "Username (Optional)",
   "profileSetupUsernameHint": "username",

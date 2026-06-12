@@ -516,6 +516,7 @@ class ProfileRepository {
   Future<UserProfile> saveProfileEvent({
     required String displayName,
     String? about,
+    String? website,
     String? username,
     String? nip05,
     bool clearNip05 = false,
@@ -547,6 +548,11 @@ class ProfileRepository {
       newContent['about'] = about;
     } else {
       newContent.remove('about');
+    }
+    if (website != null && website.isNotEmpty) {
+      newContent['website'] = website;
+    } else if (website != null) {
+      newContent.remove('website');
     }
     if (picture != null && picture.isNotEmpty) {
       newContent['picture'] = picture;
