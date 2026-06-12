@@ -1021,7 +1021,15 @@ class VideoEditorRenderService {
     VideoRenderData task,
   ) async {
     await cancelTask(task.id);
-    await ProVideoEditor.instance.renderVideoToFile(outputPath, task);
+    // Surface native renderer diagnostics (encoder fallbacks, bitrate clamps,
+    // OOM guards, render errors) into the unified log via
+    // ProVideoEditorLogForwarder — the signal set behind #4801. A clean render
+    // stays quiet at this level, so it does not flood the capture buffer.
+    await ProVideoEditor.instance.renderVideoToFile(
+      outputPath,
+      task,
+      nativeLogLevel: NativeLogLevel.warning,
+    );
   }
 
   static Future<void> cancelTask(String id) async {

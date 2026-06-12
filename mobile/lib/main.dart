@@ -91,6 +91,7 @@ import 'package:openvine/services/notification_service.dart'
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
+import 'package:openvine/services/pro_video_editor_log_forwarder.dart';
 import 'package:openvine/services/quick_actions_coordinator.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:openvine/services/seed_media_preload_service.dart';
@@ -949,6 +950,11 @@ Future<void> _startOpenVineApp() async {
       UnifiedLogger.enableCategories({LogCategory.system, LogCategory.auth});
     }
   }
+
+  // Forward pro_video_editor native diagnostics (renderer, thumbnail, audio)
+  // into the unified log so video-editor/render problems land in bug reports
+  // (#4801). Gated per call by the nativeLogLevel passed to each operation.
+  ProVideoEditorLogForwarder.start();
 
   // Store original debugPrint to avoid recursion
   final originalDebugPrint = debugPrint;
