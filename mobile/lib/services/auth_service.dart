@@ -978,11 +978,33 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   }
 
   /// Report a secure storage error to Crashlytics with auth context.
-  void _reportStorageError(dynamic error, StackTrace stack, String reason) {
+  void _reportStorageError(Object error, StackTrace stack, String reason) {
+    _reportAuthError(
+      error,
+      stack,
+      reason: reason,
+      logMessage: 'Storage error during auth: $reason',
+    );
+  }
+
+  void _reportAuthError(
+    Object error,
+    StackTrace stack, {
+    required String reason,
+    required String logMessage,
+  }) {
     final crashlytics = CrashReportingService.instance;
-    crashlytics.log('Storage error during auth: $reason');
+    crashlytics.log(logMessage);
     unawaited(crashlytics.setCustomKey('auth_source', _authSource.code));
     unawaited(crashlytics.recordError(error, stack, reason: reason));
+  }
+
+  void _reportNonFatalAuthCleanupError(
+    Object error,
+    StackTrace stack,
+    String reason,
+  ) {
+    _reportAuthError(error, stack, reason: reason, logMessage: reason);
   }
 
   /// Clears any persisted Divine OAuth session that was created before an
@@ -2220,9 +2242,79 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Used when a stale or ambiguous OAuth session must be discarded
   /// (e.g., during initialization tiebreaker branches).
   Future<void> _clearKeycastSessionAndTokens() async {
-    await KeycastSession.clear(_flutterSecureStorage);
-    await _flutterSecureStorage?.delete(key: _kKeycastRefreshTokenKey);
-    await _flutterSecureStorage?.delete(key: _kKeycastAuthHandleKey);
+    Object? firstError;
+    StackTrace? firstStack;
+
+    Future<void> deleteKey(Future<void> Function() delete) async {
+      try {
+        await delete();
+      } catch (e, stack) {
+        firstError ??= e;
+        firstStack ??= stack;
+      }
+    }
+
+    await deleteKey(() => KeycastSession.clear(_flutterSecureStorage));
+    await deleteKey(() async {
+      await _flutterSecureStorage?.delete(key: _kKeycastRefreshTokenKey);
+    });
+    await deleteKey(() async {
+      await _flutterSecureStorage?.delete(key: _kKeycastAuthHandleKey);
+    });
+
+    if (firstError != null) {
+      Error.throwWithStackTrace(firstError!, firstStack!);
+    }
+  }
+
+  Future<void> _runSignOutCleanupWithRetry(
+    String operation,
+    Future<void> Function() cleanup,
+  ) async {
+    try {
+      await cleanup();
+      return;
+    } catch (e, stack) {
+      Log.warning(
+        'signOut: $operation failed; retrying once: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _reportNonFatalAuthCleanupError(
+        e,
+        stack,
+        'signOut $operation failed before retry',
+      );
+    }
+
+    try {
+      await cleanup();
+    } catch (e, stack) {
+      Log.error(
+        'signOut: $operation failed after retry: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _reportNonFatalAuthCleanupError(
+        e,
+        stack,
+        'signOut $operation failed after retry',
+      );
+    }
+  }
+
+  Future<void> _clearOAuthSessionForSignOut() async {
+    if (_oauthClient != null) {
+      await _runSignOutCleanupWithRetry(
+        'OAuth logout',
+        _oauthClient.logout,
+      );
+    }
+
+    await _runSignOutCleanupWithRetry(
+      'Keycast OAuth token cleanup',
+      _clearKeycastSessionAndTokens,
+    );
   }
 
   /// Sets up the auth URL callback for bunker operations that require user
@@ -3628,13 +3720,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       _keycastSigner = null;
       _setRpcCapability(AuthRpcCapability.unavailable);
 
-      try {
-        if (_oauthClient != null) {
-          await _oauthClient.logout();
-        } else {
-          await KeycastSession.clear(_flutterSecureStorage);
-        }
-      } catch (_) {}
+      await _clearOAuthSessionForSignOut();
 
       // Reset recovery prefs AFTER all signer cleanup so removed accounts
       // cannot silently recover. Any remaining restorable accounts stay in the
@@ -3797,13 +3883,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _setRpcCapability(AuthRpcCapability.unavailable);
     _keyStorage.clearCache();
 
-    try {
-      if (_oauthClient != null) {
-        await _oauthClient.logout();
-      } else {
-        await KeycastSession.clear(_flutterSecureStorage);
-      }
-    } catch (_) {}
+    await _clearOAuthSessionForSignOut();
 
     await prefs.remove(_kSessionRecoveryAnchorKey);
     await prefs.remove('age_verified_16_plus');

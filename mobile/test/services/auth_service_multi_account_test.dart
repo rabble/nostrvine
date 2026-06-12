@@ -64,6 +64,7 @@ void main() {
   late _MockNostrKeyManager mockNostrKeyManager;
   late _MockUserDataCleanupService mockCleanupService;
   late _MockFlutterSecureStorage mockSecureStorage;
+  late _MockKeycastOAuth mockOAuthClient;
   late AuthService authService;
   late SecureKeyContainer testKeyContainer;
 
@@ -77,6 +78,7 @@ void main() {
     mockNostrKeyManager = _MockNostrKeyManager();
     mockCleanupService = _MockUserDataCleanupService();
     mockSecureStorage = _MockFlutterSecureStorage();
+    mockOAuthClient = _MockKeycastOAuth();
     testKeyContainer = SecureKeyContainer.fromNsec(_testNsec);
 
     // Default stubs
@@ -143,6 +145,7 @@ void main() {
     when(
       () => mockSecureStorage.delete(key: any(named: 'key')),
     ).thenAnswer((_) async {});
+    when(() => mockOAuthClient.logout()).thenAnswer((_) async {});
 
     authService = AuthService(
       userDataCleanupService: mockCleanupService,
@@ -1889,6 +1892,126 @@ void main() {
           ),
         ).called(1);
         verify(() => mockKeyStorage.deleteKeys()).called(1);
+      },
+    );
+
+    test(
+      'remove keys retries Keycast cleanup and clears OAuth tokens',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': testKeyContainer.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+
+        final deletedKeys = <String>[];
+        when(
+          () => mockSecureStorage.delete(key: any(named: 'key')),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          deletedKeys.add(key);
+
+          final keycastSessionAttempts = deletedKeys
+              .where((deletedKey) => deletedKey == 'keycast_session')
+              .length;
+          if (key == 'keycast_session' && keycastSessionAttempts == 1) {
+            throw StateError('transient secure storage delete failure');
+          }
+        });
+
+        await authService.signOut(deleteKeys: true);
+
+        expect(
+          deletedKeys,
+          containsAllInOrder([
+            'keycast_session',
+            'keycast_session',
+            'keycast_refresh_token',
+            'keycast_auth_handle',
+          ]),
+        );
+      },
+    );
+
+    test(
+      'remove keys still attempts all Keycast token deletes when session delete keeps failing',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': testKeyContainer.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+
+        final deletedKeys = <String>[];
+        when(
+          () => mockSecureStorage.delete(key: any(named: 'key')),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          deletedKeys.add(key);
+
+          if (key == 'keycast_session') {
+            throw StateError('persistent secure storage delete failure');
+          }
+        });
+
+        await authService.signOut(deleteKeys: true);
+
+        expect(authService.authState, equals(AuthState.unauthenticated));
+        expect(
+          deletedKeys,
+          containsAllInOrder([
+            'keycast_session',
+            'keycast_refresh_token',
+            'keycast_auth_handle',
+            'keycast_session',
+            'keycast_refresh_token',
+            'keycast_auth_handle',
+          ]),
+        );
+      },
+    );
+
+    test(
+      'remove keys logs out OAuth client and clears local Keycast tokens',
+      () async {
+        await authService.dispose();
+        authService = AuthService(
+          userDataCleanupService: mockCleanupService,
+          keyStorage: mockKeyStorage,
+          nostrKeyManager: mockNostrKeyManager,
+          oauthClient: mockOAuthClient,
+          flutterSecureStorage: mockSecureStorage,
+        );
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': testKeyContainer.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+
+        final deletedKeys = <String>[];
+        when(
+          () => mockSecureStorage.delete(key: any(named: 'key')),
+        ).thenAnswer((invocation) async {
+          deletedKeys.add(invocation.namedArguments[#key] as String);
+        });
+
+        await authService.signOut(deleteKeys: true);
+
+        verify(() => mockOAuthClient.logout()).called(1);
+        expect(
+          deletedKeys,
+          containsAllInOrder([
+            'keycast_session',
+            'keycast_refresh_token',
+            'keycast_auth_handle',
+          ]),
+        );
       },
     );
 
