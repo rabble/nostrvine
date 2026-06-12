@@ -60,6 +60,10 @@ class PageLoadObserver extends NavigatorObserver {
   }
 
   String _screenName(Route<dynamic> route) {
-    return route.settings.name ?? route.runtimeType.toString();
+    final routeName = route.settings.name;
+    if (routeName == null || routeName.isEmpty) {
+      return AnalyticsSurface.unknownRoute;
+    }
+    return routeName;
   }
 }

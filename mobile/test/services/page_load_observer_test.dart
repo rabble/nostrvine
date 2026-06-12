@@ -138,10 +138,15 @@ void main() {
         ),
       );
 
+      final baselineScreenViewCount = sink.screenViews.length;
+      final baselineEventCount = sink.events.length;
+
       await tester.tap(find.text('Open Dialog'));
       await tester.pumpAndSettle();
 
       expect(find.text('Dialog'), findsOneWidget);
+      expect(sink.screenViews, hasLength(baselineScreenViewCount));
+      expect(sink.events, hasLength(baselineEventCount));
     });
 
     testWidgets('tracks didPop for regular routes', (tester) async {
@@ -209,6 +214,44 @@ void main() {
       expect(
         sink.screenViews.last.parameters,
         containsPair(AnalyticsParam.entryPoint, 'navigation'),
+      );
+    });
+
+    testWidgets('uses unknown route for unnamed regular route screen views', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          navigatorObservers: [observer],
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const Scaffold(body: Text('Unnamed')),
+                  ),
+                );
+              },
+              child: const Text('Open Unnamed'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Unnamed'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Unnamed'), findsOneWidget);
+      expect(sink.screenViews.last.screenName, AnalyticsSurface.unknownRoute);
+      expect(
+        sink.screenViews.last.parameters,
+        containsPair(AnalyticsParam.routeName, AnalyticsSurface.unknownRoute),
+      );
+      expect(
+        sink.screenViews.map((event) => event.screenName),
+        isNot(contains('MaterialPageRoute<void>')),
       );
     });
   });

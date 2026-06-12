@@ -205,9 +205,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
     _initTabController();
 
-    // Track screen load
+    // Track Explore-specific data load completion from child tabs.
     _screenAnalytics.startScreenLoad('explore_screen');
-    _screenAnalytics.trackScreenView('explore_screen');
 
     // Load top hashtags for trending navigation
     _loadHashtags();
