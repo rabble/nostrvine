@@ -252,6 +252,13 @@ void main() {
         );
       });
 
+      test('returns true for required thumbnail upload failures', () {
+        expect(
+          uploadManager.isRetriableError(StateError('Thumbnail upload failed')),
+          isTrue,
+        );
+      });
+
       test('returns false for file not found', () {
         expect(
           uploadManager.isRetriableError(Exception('File not found')),
@@ -707,8 +714,9 @@ void main() {
     });
 
     /// Stubs [mock] so that [uploadVideo] fails [failCount] times before
-    /// succeeding. [uploadImage] (thumbnail) always returns a graceful
-    /// failure so it doesn't interfere with the upload flow.
+    /// succeeding. The success result includes a server thumbnail URL so these
+    /// retry-counter tests do not depend on thumbnail extraction from fake
+    /// video bytes.
     void stubUploadSequence(
       _MockBlossomUploadService mock, {
       required int failCount,
@@ -748,6 +756,7 @@ void main() {
           videoId: 'vid-ok',
           url: 'https://media.divine.video/vid-ok',
           fallbackUrl: 'https://media.divine.video/vid-ok',
+          thumbnailUrl: 'https://media.divine.video/vid-ok-thumb.jpg',
         );
       });
     }
@@ -791,6 +800,7 @@ void main() {
             videoId: 'vid-status',
             url: 'https://media.divine.video/vid-status',
             fallbackUrl: 'https://media.divine.video/vid-status',
+            thumbnailUrl: 'https://media.divine.video/vid-status-thumb.jpg',
           );
         });
 
@@ -866,6 +876,7 @@ void main() {
             videoId: 'vid-manual',
             url: 'https://media.divine.video/vid-manual',
             fallbackUrl: 'https://media.divine.video/vid-manual',
+            thumbnailUrl: 'https://media.divine.video/vid-manual-thumb.jpg',
           ),
         );
 

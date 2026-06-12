@@ -133,6 +133,58 @@ void main() {
       });
 
       test(
+        'returns error and does not publish when upload has no CDN thumbnail',
+        () async {
+          // Arrange
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+            readyUpload: _createPendingUpload(
+              status: UploadStatus.readyToPublish,
+              thumbnailPath: null,
+            ),
+          );
+
+          final draft = _createTestDraft();
+
+          // Act
+          final result = await service.publishVideo(draft: draft);
+
+          // Assert
+          expect(result, isA<PublishError>());
+          expect(
+            (result as PublishError).userMessage,
+            'The video uploaded, but the thumbnail could not be prepared. Please try again.',
+          );
+          verifyNever(
+            () => mockVideoEventPublisher.publishVideoEvent(
+              upload: any(named: 'upload'),
+              title: any(named: 'title'),
+              description: any(named: 'description'),
+              hashtags: any(named: 'hashtags'),
+              expirationTimestamp: any(named: 'expirationTimestamp'),
+              allowAudioReuse: any(named: 'allowAudioReuse'),
+              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+              inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
+              inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
+              inspiredByNpub: any(named: 'inspiredByNpub'),
+              selectedAudio: any(named: 'selectedAudio'),
+              selectedAudioEventId: any(named: 'selectedAudioEventId'),
+              selectedAudioRelay: any(named: 'selectedAudioRelay'),
+              language: any(named: 'language'),
+              contentWarning: any(named: 'contentWarning'),
+              thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+              replyContext: any(named: 'replyContext'),
+              addReplyToFeed: any(named: 'addReplyToFeed'),
+            ),
+          );
+        },
+      );
+
+      test(
         'resolves mentions from description and text overlays before publishing',
         () async {
           _setupSuccessfulPublish(
@@ -379,60 +431,58 @@ void main() {
             creatorPubkey: 'test_pubkey',
             videoAddress: '34236:test_pubkey:test_video_id',
             title: 'Test Video',
+            thumbnailUrl: _defaultThumbnailPath,
             relayHint: 'wss://relay.divine.video',
           ),
         ).called(1);
       });
 
-      test(
-        'collaborator invites include the uploaded thumbnail URL',
-        () async {
-          const thumbnailUrl = 'https://cdn.divine.video/thumbs/test_video.jpg';
-          final readyUpload = _createPendingUpload(
-            status: UploadStatus.readyToPublish,
-            thumbnailPath: thumbnailUrl,
-          );
-          _setupSuccessfulPublish(
-            mockAuthService: mockAuthService,
-            mockUploadManager: mockUploadManager,
-            mockDraftService: mockDraftService,
-            mockVideoEventPublisher: mockVideoEventPublisher,
-            readyUpload: readyUpload,
-          );
-          when(
-            () => mockCollaboratorInviteService.sendInvites(
-              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
-              creatorPubkey: any(named: 'creatorPubkey'),
-              videoAddress: any(named: 'videoAddress'),
-              title: any(named: 'title'),
-              thumbnailUrl: any(named: 'thumbnailUrl'),
-              relayHint: any(named: 'relayHint'),
-            ),
-          ).thenAnswer(
-            (_) async => const CollaboratorInviteBatchResult(results: {}),
-          );
+      test('collaborator invites include the uploaded thumbnail URL', () async {
+        const thumbnailUrl = 'https://cdn.divine.video/thumbs/test_video.jpg';
+        final readyUpload = _createPendingUpload(
+          status: UploadStatus.readyToPublish,
+          thumbnailPath: thumbnailUrl,
+        );
+        _setupSuccessfulPublish(
+          mockAuthService: mockAuthService,
+          mockUploadManager: mockUploadManager,
+          mockDraftService: mockDraftService,
+          mockVideoEventPublisher: mockVideoEventPublisher,
+          readyUpload: readyUpload,
+        );
+        when(
+          () => mockCollaboratorInviteService.sendInvites(
+            collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+            creatorPubkey: any(named: 'creatorPubkey'),
+            videoAddress: any(named: 'videoAddress'),
+            title: any(named: 'title'),
+            thumbnailUrl: any(named: 'thumbnailUrl'),
+            relayHint: any(named: 'relayHint'),
+          ),
+        ).thenAnswer(
+          (_) async => const CollaboratorInviteBatchResult(results: {}),
+        );
 
-          final draft = _createTestDraft(
-            collaboratorPubkeys: {
-              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-            },
-          );
+        final draft = _createTestDraft(
+          collaboratorPubkeys: {
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          },
+        );
 
-          final result = await service.publishVideo(draft: draft);
+        final result = await service.publishVideo(draft: draft);
 
-          expect(result, isA<PublishSuccess>());
-          verify(
-            () => mockCollaboratorInviteService.sendInvites(
-              collaboratorPubkeys: draft.collaboratorPubkeys,
-              creatorPubkey: 'test_pubkey',
-              videoAddress: '34236:test_pubkey:test_video_id',
-              title: 'Test Video',
-              thumbnailUrl: thumbnailUrl,
-              relayHint: 'wss://relay.divine.video',
-            ),
-          ).called(1);
-        },
-      );
+        expect(result, isA<PublishSuccess>());
+        verify(
+          () => mockCollaboratorInviteService.sendInvites(
+            collaboratorPubkeys: draft.collaboratorPubkeys,
+            creatorPubkey: 'test_pubkey',
+            videoAddress: '34236:test_pubkey:test_video_id',
+            title: 'Test Video',
+            thumbnailUrl: thumbnailUrl,
+            relayHint: 'wss://relay.divine.video',
+          ),
+        ).called(1);
+      });
 
       test(
         'publishes video event before sending collaborator invites',
@@ -474,6 +524,7 @@ void main() {
               expirationTimestamp: any(named: 'expirationTimestamp'),
               allowAudioReuse: any(named: 'allowAudioReuse'),
               collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
               inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
               inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
               inspiredByNpub: any(named: 'inspiredByNpub'),
@@ -482,12 +533,16 @@ void main() {
               selectedAudioRelay: any(named: 'selectedAudioRelay'),
               language: any(named: 'language'),
               contentWarning: any(named: 'contentWarning'),
+              thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+              replyContext: any(named: 'replyContext'),
+              addReplyToFeed: any(named: 'addReplyToFeed'),
             ),
             () => mockCollaboratorInviteService.sendInvites(
               collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
               creatorPubkey: any(named: 'creatorPubkey'),
               videoAddress: any(named: 'videoAddress'),
               title: any(named: 'title'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
               relayHint: any(named: 'relayHint'),
             ),
           ]);
@@ -515,9 +570,7 @@ void main() {
             (_) async =>
                 _createPendingUpload(status: UploadStatus.readyToPublish),
           );
-          when(
-            () => mockUploadManager.getUpload(any()),
-          ).thenReturn(
+          when(() => mockUploadManager.getUpload(any())).thenReturn(
             _createPendingUpload(status: UploadStatus.readyToPublish),
           );
           when(
@@ -1493,7 +1546,7 @@ DivineVideoDraft _createTestDraft({
 PendingUpload _createPendingUpload({
   required UploadStatus status,
   String? errorMessage,
-  String? thumbnailPath,
+  Object? thumbnailPath = _defaultThumbnailPath,
 }) {
   return PendingUpload(
     id: 'test_upload_id',
@@ -1505,9 +1558,11 @@ PendingUpload _createPendingUpload({
     uploadProgress: status == UploadStatus.readyToPublish ? 1.0 : 0.5,
     videoId: 'test_video_id',
     cdnUrl: 'https://test.cdn/video.mp4',
-    thumbnailPath: thumbnailPath,
+    thumbnailPath: thumbnailPath as String?,
   );
 }
+
+const String _defaultThumbnailPath = 'https://test.cdn/thumbnail.jpg';
 
 void _setupSuccessfulPublish({
   required MockAuthService mockAuthService,
@@ -1517,10 +1572,7 @@ void _setupSuccessfulPublish({
   PendingUpload? readyUpload,
 }) {
   final upload =
-      readyUpload ??
-      _createPendingUpload(
-        status: UploadStatus.readyToPublish,
-      );
+      readyUpload ?? _createPendingUpload(status: UploadStatus.readyToPublish);
   when(() => mockAuthService.isAuthenticated).thenReturn(true);
   when(() => mockAuthService.currentPublicKeyHex).thenReturn('test_pubkey');
   when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
@@ -1532,12 +1584,8 @@ void _setupSuccessfulPublish({
       nostrPubkey: any(named: 'nostrPubkey'),
       onProgress: any(named: 'onProgress'),
     ),
-  ).thenAnswer(
-    (_) async => upload,
-  );
-  when(
-    () => mockUploadManager.getUpload(any()),
-  ).thenReturn(upload);
+  ).thenAnswer((_) async => upload);
+  when(() => mockUploadManager.getUpload(any())).thenReturn(upload);
   when(
     () => mockVideoEventPublisher.publishVideoEvent(
       upload: any(named: 'upload'),

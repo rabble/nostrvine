@@ -1038,13 +1038,20 @@ class UploadManager {
             category: LogCategory.video,
           );
         } else {
-          Log.warning(
-            '❌ Failed to upload thumbnail to CDN',
+          Log.error(
+            '❌ Failed to upload required thumbnail to CDN',
             name: 'UploadManager',
             category: LogCategory.video,
           );
         }
+      }
 
+      if (result.success &&
+          !_hasHttpThumbnailUrl(result: result, fallback: thumbnailCdnUrl)) {
+        throw StateError('Thumbnail upload failed');
+      }
+
+      if (result.success) {
         _updateUploadProgress(upload.id, 1.0);
         onProgress?.call(1.0);
       }
@@ -1268,6 +1275,7 @@ class UploadManager {
 
     // Network and timeout errors are retriable
     if (errorStr.contains('timeout') ||
+        errorStr.contains('thumbnail upload failed') ||
         errorStr.contains('cannot connect') ||
         errorStr.contains('network error') ||
         errorStr.contains('connection') ||
@@ -2110,15 +2118,7 @@ class UploadManager {
 
   /// Create successful upload with metadata
   PendingUpload _createSuccessfulUpload(PendingUpload upload, dynamic result) {
-    // Handle both BlossomUploadResult and DirectUploadResult structures
-    String? resultThumbnailUrl;
-    try {
-      // Get thumbnailUrl from upload result (both services should provide it)
-      resultThumbnailUrl = result.thumbnailUrl as String?;
-    } catch (e) {
-      // Fallback if thumbnailUrl is not available
-      resultThumbnailUrl = null;
-    }
+    final resultThumbnailUrl = _resultThumbnailUrl(result);
 
     final existingThumbnailUrl = upload.thumbnailPath;
     String? thumbnailUrl;
@@ -2234,6 +2234,21 @@ class UploadManager {
   static bool _isHttpUrl(String? url) {
     if (url == null || url.isEmpty) return false;
     return url.startsWith('http://') || url.startsWith('https://');
+  }
+
+  static String? _resultThumbnailUrl(dynamic result) {
+    try {
+      return result.thumbnailUrl as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static bool _hasHttpThumbnailUrl({
+    required dynamic result,
+    required String? fallback,
+  }) {
+    return _isHttpUrl(_resultThumbnailUrl(result)) || _isHttpUrl(fallback);
   }
 
   /// Create success metrics with calculated values
@@ -2584,17 +2599,12 @@ Upload Timeout Failure:
 
       _updateUploadProgress(upload.id, 0.85);
 
-      // Upload thumbnail to Blossom server.
-      //
-      // `maxAttempts: 1` opts out of `BlossomUploadService.uploadImage`'s
-      // service-level retry (added for #3862). UploadManager already wraps
-      // the entire video+thumbnail pipeline in `AsyncUtils.retryWithBackoff`
-      // (see `_uploadHandler` retry config), so retrying again at the
-      // service layer would compound delays without benefit.
+      // Upload thumbnail to Blossom server. Divine relay publishing requires
+      // a CDN thumbnail, so keep the service-level image retry enabled before
+      // the upload pipeline retries the whole video+thumbnail attempt.
       final uploadResult = await _blossomService.uploadImage(
         imageFile: thumbnailFile,
         nostrPubkey: nostrPubkey,
-        maxAttempts: 1,
         onProgress: (progress) {
           // Map thumbnail progress to 85%-100% of total upload
           _updateUploadProgress(upload.id, 0.85 + (progress * 0.15));

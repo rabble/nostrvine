@@ -183,6 +183,18 @@ class VideoPublishService {
         );
       }
 
+      if (_uploadedThumbnailUrl(pendingUpload) == null) {
+        Log.error(
+          '❌ Upload is missing required CDN thumbnail URL',
+          category: .video,
+        );
+        return await _handleUploadError(
+          Exception('Thumbnail upload failed'),
+          StackTrace.current,
+          draft,
+        );
+      }
+
       // Publish Nostr event
       Log.info('📝 Publishing Nostr event...', category: .video);
 
@@ -724,6 +736,10 @@ class VideoPublishService {
         errorString.contains('disk full')) {
       return 'Not enough storage on your device. '
           'Free up some space and try again.';
+    }
+
+    if (errorString.contains('thumbnail upload failed')) {
+      return 'The video uploaded, but the thumbnail could not be prepared. Please try again.';
     }
 
     // Nostr event publish
