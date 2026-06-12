@@ -330,6 +330,113 @@ ProfileDeepLinkNavAction resolveProfileDeepLinkNavAction({
   return ProfileDeepLinkNavAction.push;
 }
 
+/// Describes the router action to take when navigating to a hashtag deep link.
+///
+/// Mirrors [VideoDeepLinkNavAction] and [ProfileDeepLinkNavAction] so hashtag
+/// links get the same nav-stack parity: `push` keeps the previous route (e.g.
+/// home) underneath so back returns there, `go` replaces an existing hashtag
+/// route in-place, and `skip` dedupes a navigation to the route already shown.
+@visibleForTesting
+enum HashtagDeepLinkNavAction {
+  /// Navigate to the route, keeping the current route in the back stack.
+  push,
+
+  /// Replace the current route in-place (already on a hashtag route).
+  go,
+
+  /// The router is already on the target route with nothing new to do.
+  skip,
+}
+
+/// Determines which router action to take for a hashtag deep-link navigation
+/// given the current router location and the incoming target path.
+///
+/// Mirrors [resolveProfileDeepLinkNavAction]: extracted for testability — the
+/// caller executes the action; this function only decides what it should be.
+///
+/// Before this existed, the hashtag case always called `router.go()`, which
+/// replaces the entire navigation stack and stranded the user wherever they
+/// were (mid-settings, camera, DMs, …) with no back button to return.
+@visibleForTesting
+HashtagDeepLinkNavAction resolveHashtagDeepLinkNavAction({
+  required String currentLocation,
+  required String targetPath,
+}) {
+  if (currentLocation == targetPath) {
+    // Already on the exact target route. Duplicate navigation with nothing new
+    // to do (e.g. GoRouter's universal-link redirect already navigated here, or
+    // getInitialLink + uriLinkStream both fire for the same URL). Safe to skip.
+    return HashtagDeepLinkNavAction.skip;
+  }
+  if (currentLocation.startsWith('${HashtagScreenRouter.basePath}/')) {
+    // A different hashtag is already showing — replace it in-place, matching
+    // the video-replaces-video behaviour.
+    return HashtagDeepLinkNavAction.go;
+  }
+  // Coming from a non-hashtag route — push so back returns to where the user
+  // was instead of obliterating the navigation stack.
+  return HashtagDeepLinkNavAction.push;
+}
+
+/// Describes the router action to take when navigating to a search deep link.
+///
+/// Mirrors [VideoDeepLinkNavAction] and [ProfileDeepLinkNavAction] so search
+/// links get the same nav-stack parity: `push` keeps the previous route (e.g.
+/// home) underneath so back returns there, `go` replaces an existing search
+/// route in-place, and `skip` dedupes a navigation to the route already shown.
+@visibleForTesting
+enum SearchDeepLinkNavAction {
+  /// Navigate to the route, keeping the current route in the back stack.
+  push,
+
+  /// Replace the current route in-place (already on a search route).
+  go,
+
+  /// The router is already on the target route with nothing new to do.
+  skip,
+}
+
+/// Determines which router action to take for a search deep-link navigation
+/// given the current router location and the incoming target path.
+///
+/// Mirrors [resolveProfileDeepLinkNavAction]: extracted for testability — the
+/// caller executes the action; this function only decides what it should be.
+///
+/// Before this existed, the search case always called `router.go()`, which
+/// replaces the entire navigation stack and stranded the user wherever they
+/// were (mid-settings, camera, DMs, …) with no back button to return.
+///
+/// The "already in the search family" check covers three location shapes:
+/// a prefilled query (`/search-results/<query>`), the empty search screen
+/// (`/search-results`, [SearchResultsPage.emptyPath]), and the empty search
+/// screen with a query string (`/search-results?focus=1`, produced by
+/// [SearchResultsPage.pathForEmptyQuery] when mount focus is requested). All
+/// three are the same search surface, so a deep link replaces them in-place
+/// rather than stacking search on top of search.
+@visibleForTesting
+SearchDeepLinkNavAction resolveSearchDeepLinkNavAction({
+  required String currentLocation,
+  required String targetPath,
+}) {
+  if (currentLocation == targetPath) {
+    // Already on the exact target route. Duplicate navigation with nothing new
+    // to do (e.g. GoRouter's universal-link redirect already navigated here, or
+    // getInitialLink + uriLinkStream both fire for the same URL). Safe to skip.
+    return SearchDeepLinkNavAction.skip;
+  }
+  if (currentLocation == SearchResultsPage.emptyPath ||
+      currentLocation.startsWith('${SearchResultsPage.pathPrefix}/') ||
+      currentLocation.startsWith('${SearchResultsPage.emptyPath}?')) {
+    // Already somewhere on the search surface (empty search, a different
+    // query, or empty search with ?focus=1) — replace it in-place, matching
+    // the video-replaces-video behaviour.
+    return SearchDeepLinkNavAction.go;
+  }
+  // Coming from a non-search route — push so back returns to where the user
+  // was instead of obliterating the navigation stack.
+  return SearchDeepLinkNavAction.push;
+}
+
 /// Resolves a push/local payload to a [NotificationTapTarget], the event id to
 /// navigate to, and the authoritative video coordinate, via the shared
 /// [resolveNotificationTapTarget] contract.
@@ -1811,11 +1918,25 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
                 try {
-                  // GoRouter's universal-link redirect may have already
-                  // navigated here; skip the duplicate go() to avoid a
-                  // second navigation frame on the same target.
-                  if (currentLocation == targetPath) break;
-                  router.go(targetPath);
+                  final action = resolveHashtagDeepLinkNavAction(
+                    currentLocation: currentLocation,
+                    targetPath: targetPath,
+                  );
+                  switch (action) {
+                    case HashtagDeepLinkNavAction.skip:
+                      // GoRouter's universal-link redirect may have already
+                      // navigated here; skip the duplicate navigation to avoid
+                      // a second navigation frame on the same target.
+                      break;
+                    case HashtagDeepLinkNavAction.go:
+                      // Another hashtag is already showing — replace it
+                      // in-place instead of stacking it.
+                      router.go(targetPath);
+                    case HashtagDeepLinkNavAction.push:
+                      // Keep the current route underneath so back returns to
+                      // wherever the user was instead of wiping the stack.
+                      router.push(targetPath);
+                  }
                   Log.info(
                     '✅ Navigation completed to: $targetPath',
                     name: 'DeepLinkHandler',
@@ -1847,11 +1968,26 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
                 try {
-                  // GoRouter's universal-link redirect may have already
-                  // navigated here; skip the duplicate go() to avoid a
-                  // second navigation frame on the same target.
-                  if (currentLocation == targetPath) break;
-                  router.go(targetPath);
+                  final action = resolveSearchDeepLinkNavAction(
+                    currentLocation: currentLocation,
+                    targetPath: targetPath,
+                  );
+                  switch (action) {
+                    case SearchDeepLinkNavAction.skip:
+                      // GoRouter's universal-link redirect may have already
+                      // navigated here; skip the duplicate navigation to avoid
+                      // a second navigation frame on the same target.
+                      break;
+                    case SearchDeepLinkNavAction.go:
+                      // Already on the search surface (empty search, another
+                      // query, or ?focus=1) — replace it in-place instead of
+                      // stacking search on top of search.
+                      router.go(targetPath);
+                    case SearchDeepLinkNavAction.push:
+                      // Keep the current route underneath so back returns to
+                      // wherever the user was instead of wiping the stack.
+                      router.push(targetPath);
+                  }
                   Log.info(
                     '✅ Navigation completed to: $targetPath',
                     name: 'DeepLinkHandler',
