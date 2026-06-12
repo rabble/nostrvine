@@ -160,6 +160,14 @@ void main() {
         expect(copy.rootEventId, equals(original.rootEventId));
       });
 
+      test('creates copy with updated pagination metadata', () {
+        final copy = original.copyWith(hasMore: true, hasExactTotal: false);
+
+        expect(copy.hasMore, isTrue);
+        expect(copy.hasExactTotal, isFalse);
+        expect(copy.rootEventId, equals(original.rootEventId));
+      });
+
       test('creates copy with updated commentCache', () {
         final newComment = Comment(
           id: 'id2',
@@ -241,6 +249,8 @@ void main() {
             'root',
             [comment],
             1,
+            null,
+            true,
             {'id': comment},
           ]),
         );
