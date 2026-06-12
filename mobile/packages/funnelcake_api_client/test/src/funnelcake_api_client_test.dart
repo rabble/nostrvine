@@ -3351,7 +3351,7 @@ void main() {
       const validResponse =
           '''
 {
-  "comments": [
+  "data": [
     {
       "id": "comment1",
       "pubkey": "$testPubkey",
@@ -3379,7 +3379,10 @@ void main() {
       "reply_to_pubkey": "$testPubkey"
     }
   ],
-  "total": 42
+  "pagination": {
+    "next_cursor": "o:102",
+    "has_more": true
+  }
 }
 ''';
 
@@ -3391,7 +3394,7 @@ void main() {
         final response = await client.getVideoComments(videoId: testVideoId);
 
         expect(response, isNotNull);
-        expect(response!.total, equals(42));
+        expect(response!.total, equals(3));
         expect(response.comments, hasLength(2));
         expect(response.comments.first.id, equals('comment1'));
         expect(response.comments.first.authorName, equals('Tester'));
@@ -3421,10 +3424,26 @@ void main() {
         ).captured;
 
         final uri = captured.first as Uri;
-        expect(uri.path, equals('/api/videos/$testVideoId/comments'));
+        expect(uri.path, equals('/api/v2/videos/$testVideoId/comments'));
         expect(uri.queryParameters['sort'], equals('oldest'));
         expect(uri.queryParameters['limit'], equals('50'));
         expect(uri.queryParameters['offset'], equals('100'));
+      });
+
+      test('derives pagination lower-bound total from v2 has_more', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(validResponse, 200));
+
+        final response = await client.getVideoComments(
+          videoId: testVideoId,
+          limit: 50,
+          offset: 100,
+        );
+
+        expect(response, isNotNull);
+        expect(response!.comments, hasLength(2));
+        expect(response.total, equals(103));
       });
 
       test('returns null on 404', () async {

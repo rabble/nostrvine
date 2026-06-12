@@ -1675,7 +1675,7 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Video ID cannot be empty');
     }
 
-    final uri = Uri.parse('$_baseUrl/api/videos/$videoId/comments').replace(
+    final uri = Uri.parse('$_baseUrl/api/v2/videos/$videoId/comments').replace(
       queryParameters: {
         'sort': sort,
         'limit': limit.toString(),
@@ -1688,7 +1688,7 @@ class FunnelcakeApiClient {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        return VideoCommentsResponse.fromJson(data);
+        return VideoCommentsResponse.fromJson(data, offset: offset);
       } else if (response.statusCode == 404) {
         return null;
       } else {
