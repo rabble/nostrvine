@@ -7,7 +7,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/content_filter_reason_localizations.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/services/content_moderation_service.dart';
+import 'package:openvine/services/content_moderation_types.dart';
 
 /// Result of a comment options modal action.
 sealed class CommentOptionResult {

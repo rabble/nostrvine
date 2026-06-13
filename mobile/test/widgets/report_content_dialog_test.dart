@@ -15,7 +15,7 @@ import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart' as nostr;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/content_moderation_service.dart';
+import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';

@@ -18,7 +18,7 @@ import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
-import 'package:openvine/services/content_moderation_service.dart';
+import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/utils/delete_failure_localization.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';

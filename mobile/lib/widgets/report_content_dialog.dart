@@ -11,7 +11,7 @@ import 'package:openvine/l10n/content_filter_reason_localizations.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
-import 'package:openvine/services/content_moderation_service.dart';
+import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
