@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -16,6 +17,15 @@ import '../helpers/test_helpers.dart';
 import '../mocks/mock_path_provider_platform.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
+
+void _mockConnectivity(String result) {
+  const channel = MethodChannel('dev.fluttercommunity.plus/connectivity');
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'check') return [result];
+        return null;
+      });
+}
 
 void main() {
   setUpAll(() async {
@@ -58,6 +68,7 @@ void main() {
       when(
         () => mockBlossomService.isBlossomEnabled(),
       ).thenAnswer((_) async => false);
+      _mockConnectivity('wifi');
 
       uploadManager = UploadManager(
         blossomService: mockBlossomService,
@@ -268,59 +279,56 @@ void main() {
       expect(completedUpload.thumbnailPath, isNot(equals(localThumbnailPath)));
     });
 
-    test(
-      'resumeInterruptedUpload fails when only a stale non-HTTP thumbnail '
-      'exists',
-      () async {
-        const localThumbnailPath = '/var/cache/thumbnails/frame.jpg';
-        final upload =
-            PendingUpload.create(
-              localVideoPath: videoFile.path,
-              nostrPubkey: 'test-pubkey',
-              title: 'Video with stale thumbnail',
-            ).copyWith(
-              status: UploadStatus.uploading,
-              thumbnailPath: localThumbnailPath,
-              uploadProgress: 0.8,
-            );
+    test('resumeInterruptedUpload fails when only a stale non-HTTP thumbnail '
+        'exists', () async {
+      const localThumbnailPath = '/var/cache/thumbnails/frame.jpg';
+      final upload =
+          PendingUpload.create(
+            localVideoPath: videoFile.path,
+            nostrPubkey: 'test-pubkey',
+            title: 'Video with stale thumbnail',
+          ).copyWith(
+            status: UploadStatus.uploading,
+            thumbnailPath: localThumbnailPath,
+            uploadProgress: 0.8,
+          );
 
-        final box = Hive.box<PendingUpload>('pending_uploads');
-        await box.put(upload.id, upload);
+      final box = Hive.box<PendingUpload>('pending_uploads');
+      await box.put(upload.id, upload);
 
-        when(
-          () => mockBlossomService.uploadVideo(
-            videoFile: any(named: 'videoFile'),
-            nostrPubkey: any(named: 'nostrPubkey'),
-            title: any(named: 'title'),
-            description: any(named: 'description'),
-            hashtags: any(named: 'hashtags'),
-            proofManifestJson: any(named: 'proofManifestJson'),
-            resumableSession: any(named: 'resumableSession'),
-            onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).thenAnswer(
-          (_) async => const BlossomUploadResult(
-            success: true,
-            videoId: 'video-without-thumbnail',
-            url: 'https://media.divine.video/video-without-thumbnail',
-            fallbackUrl: 'https://media.divine.video/video-without-thumbnail',
-          ),
-        );
+      when(
+        () => mockBlossomService.uploadVideo(
+          videoFile: any(named: 'videoFile'),
+          nostrPubkey: any(named: 'nostrPubkey'),
+          title: any(named: 'title'),
+          description: any(named: 'description'),
+          hashtags: any(named: 'hashtags'),
+          proofManifestJson: any(named: 'proofManifestJson'),
+          resumableSession: any(named: 'resumableSession'),
+          onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer(
+        (_) async => const BlossomUploadResult(
+          success: true,
+          videoId: 'video-without-thumbnail',
+          url: 'https://media.divine.video/video-without-thumbnail',
+          fallbackUrl: 'https://media.divine.video/video-without-thumbnail',
+        ),
+      );
 
-        uploadManager.resumeInterruptedUpload(upload.id);
+      uploadManager.resumeInterruptedUpload(upload.id);
 
-        await TestHelpers.waitForCondition(() {
-          final currentUpload = uploadManager.getUpload(upload.id);
-          return currentUpload?.status == UploadStatus.failed;
-        });
+      await TestHelpers.waitForCondition(() {
+        final currentUpload = uploadManager.getUpload(upload.id);
+        return currentUpload?.status == UploadStatus.failed;
+      });
 
-        final completedUpload = uploadManager.getUpload(upload.id);
-        expect(completedUpload, isNotNull);
-        expect(completedUpload!.status, equals(UploadStatus.failed));
-        expect(completedUpload.errorMessage, isNotEmpty);
-      },
-    );
+      final completedUpload = uploadManager.getUpload(upload.id);
+      expect(completedUpload, isNotNull);
+      expect(completedUpload!.status, equals(UploadStatus.failed));
+      expect(completedUpload.errorMessage, isNotEmpty);
+    });
 
     test(
       'resumeInterruptedUpload falls back to failed when session expires',
@@ -484,6 +492,63 @@ void main() {
           ),
         );
         await uploadFuture;
+      },
+    );
+
+    test(
+      'does not re-upload video when required thumbnail upload fails',
+      () async {
+        when(
+          () => mockBlossomService.uploadVideo(
+            videoFile: any(named: 'videoFile'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            resumableSession: any(named: 'resumableSession'),
+            onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer(
+          (_) async => const BlossomUploadResult(
+            success: true,
+            videoId: 'video-without-thumbnail',
+            url: 'https://media.divine.video/video-without-thumbnail',
+            fallbackUrl: 'https://media.divine.video/video-without-thumbnail',
+          ),
+        );
+
+        await expectLater(
+          uploadManager.startUpload(
+            videoFile: videoFile,
+            nostrPubkey: 'test-pubkey',
+            title: 'Video missing thumbnail',
+            thumbnailTimestamp:
+                VideoEditorConstants.defaultThumbnailExtractTime,
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        verify(
+          () => mockBlossomService.uploadVideo(
+            videoFile: any(named: 'videoFile'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            resumableSession: any(named: 'resumableSession'),
+            onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).called(1);
+
+        final failedUpload = uploadManager.pendingUploads.singleWhere(
+          (upload) => upload.title == 'Video missing thumbnail',
+        );
+        expect(failedUpload.status, equals(UploadStatus.failed));
+        expect(failedUpload.errorMessage, isNotEmpty);
       },
     );
 

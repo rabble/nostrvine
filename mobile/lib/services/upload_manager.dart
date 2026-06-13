@@ -1277,9 +1277,14 @@ class UploadManager {
     // Fall back to string matching for non-HTTP errors
     final errorStr = error.toString().toLowerCase();
 
+    // A missing required thumbnail already exhausted the image upload's own
+    // retry path; retrying here would re-upload the full video.
+    if (errorStr.contains('thumbnail upload failed')) {
+      return false;
+    }
+
     // Network and timeout errors are retriable
     if (errorStr.contains('timeout') ||
-        errorStr.contains('thumbnail upload failed') ||
         errorStr.contains('cannot connect') ||
         errorStr.contains('network error') ||
         errorStr.contains('connection') ||
@@ -2607,8 +2612,9 @@ Upload Timeout Failure:
       _updateUploadProgress(upload.id, 0.85);
 
       // Upload thumbnail to Blossom server. Divine relay publishing requires
-      // a CDN thumbnail, so keep the service-level image retry enabled before
-      // the upload pipeline retries the whole video+thumbnail attempt.
+      // a CDN thumbnail, so keep the image upload's own retry enabled here.
+      // If no HTTP thumbnail URL is available after that, the outer video
+      // pipeline treats it as terminal to avoid re-uploading the whole video.
       final uploadResult = await _blossomService.uploadImage(
         imageFile: thumbnailFile,
         nostrPubkey: nostrPubkey,

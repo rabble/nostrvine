@@ -252,10 +252,10 @@ void main() {
         );
       });
 
-      test('returns true for required thumbnail upload failures', () {
+      test('returns false for required thumbnail upload failures', () {
         expect(
           uploadManager.isRetriableError(StateError('Thumbnail upload failed')),
-          isTrue,
+          isFalse,
         );
       });
 
