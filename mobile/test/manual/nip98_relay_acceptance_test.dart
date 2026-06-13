@@ -31,6 +31,11 @@ void main() {
   late bool stackAvailable;
 
   setUpAll(() async {
+    // flutter_test's binding stubs every HttpClient request to status 400 (to
+    // catch accidental network use in unit tests). This is an intentional
+    // real-network acceptance test, so opt out and let HttpClient do real I/O.
+    HttpOverrides.global = null;
+
     stackAvailable = await _isPortOpen(_localHost, _localRelayPort);
   });
 
