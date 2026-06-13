@@ -44,9 +44,7 @@ final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
     profileRepository: profileRepository,
     notificationsDao: db.notificationsDao,
     userPubkey: userPubkey,
-    // Flag-switched factory: content-policy engine by default, legacy
-    // shouldFilterFromFeeds under the emergency off switch.
-    // TODO(#5047): Collapse to the engine filter in content-policy Phase 4.
+    // Engine-backed blocked-author filter.
     blockFilter: createBlockedAuthorFilter(ref),
     authHeadersProvider: (url, method, {body}) async {
       final httpMethod = switch (method.toUpperCase()) {
