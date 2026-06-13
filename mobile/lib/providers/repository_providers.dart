@@ -19,8 +19,6 @@ import 'package:hive_ce/hive_ce.dart';
 import 'package:http/http.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
@@ -36,7 +34,6 @@ import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
-import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/utils/search_utils.dart';
@@ -284,19 +281,13 @@ ProfileRepository? profileRepository(Ref ref) {
 
   final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
 
-  final featureFlagService = ref.watch(featureFlagServiceProvider);
-  final BlockedProfileFilter blockFilter;
-  if (featureFlagService.isEnabled(FeatureFlag.contentPolicyV2)) {
-    final engine = ref.watch(contentPolicyEngineProvider);
-    blockFilter = (pubkey) {
-      final decision = engine.evaluate(
-        PolicyInput(pubkey: pubkey),
-        blocklistRepository.currentState,
-      );
-      return decision is Block;
-    };
-  } else {
-    blockFilter = blocklistRepository.shouldFilterFromFeeds;
+  final engine = ref.watch(contentPolicyEngineProvider);
+  bool blockFilter(String pubkey) {
+    final decision = engine.evaluate(
+      PolicyInput(pubkey: pubkey),
+      blocklistRepository.currentState,
+    );
+    return decision is Block;
   }
 
   final repo = ProfileRepository(
@@ -412,20 +403,6 @@ Future<BookmarkService> bookmarkService(Ref ref) async {
   final prefs = ref.watch(sharedPreferencesProvider);
 
   return BookmarkService(
-    nostrService: nostrService,
-    authService: authService,
-    prefs: prefs,
-  );
-}
-
-/// Mute service for NIP-51 mute lists
-@riverpod
-Future<MuteService> muteService(Ref ref) async {
-  final nostrService = ref.watch(nostrServiceProvider);
-  final authService = ref.watch(authServiceProvider);
-  final prefs = ref.watch(sharedPreferencesProvider);
-
-  return MuteService(
     nostrService: nostrService,
     authService: authService,
     prefs: prefs,
@@ -572,21 +549,15 @@ DmRepository dmRepository(Ref ref) {
 CommentsRepository commentsRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
-  final flagService = ref.watch(featureFlagServiceProvider);
   final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
 
-  final BlockedCommentFilter blockFilter;
-  if (flagService.isEnabled(FeatureFlag.contentPolicyV2)) {
-    final engine = ref.watch(contentPolicyEngineProvider);
-    blockFilter = (pubkey) {
-      final decision = engine.evaluate(
-        PolicyInput(pubkey: pubkey),
-        blocklistRepository.currentState,
-      );
-      return decision is Block;
-    };
-  } else {
-    blockFilter = blocklistRepository.shouldFilterFromFeeds;
+  final engine = ref.watch(contentPolicyEngineProvider);
+  bool blockFilter(String pubkey) {
+    final decision = engine.evaluate(
+      PolicyInput(pubkey: pubkey),
+      blocklistRepository.currentState,
+    );
+    return decision is Block;
   }
 
   final repository = CommentsRepository(

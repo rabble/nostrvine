@@ -40,15 +40,6 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_ACCOUNT_SWITCHING');
       case FeatureFlag.profileListFeatures:
         return const bool.fromEnvironment('FF_PROFILE_LIST_FEATURES');
-      case FeatureFlag.contentPolicyV2:
-        // Phase 3 of the content-policy migration (#948): the engine is
-        // the default enforcement; the env var remains as an emergency
-        // off switch.
-        // TODO(#5047): Remove the flag in content-policy Phase 4.
-        return const bool.fromEnvironment(
-          'FF_CONTENT_POLICY_V2',
-          defaultValue: true,
-        );
       case FeatureFlag.videoReplies:
         const isReleaseBuild = bool.fromEnvironment('dart.vm.product');
         return const bool.fromEnvironment(
@@ -93,8 +84,6 @@ class BuildConfiguration {
         return 'FF_ACCOUNT_SWITCHING';
       case FeatureFlag.profileListFeatures:
         return 'FF_PROFILE_LIST_FEATURES';
-      case FeatureFlag.contentPolicyV2:
-        return 'FF_CONTENT_POLICY_V2';
       case FeatureFlag.videoReplies:
         return 'FF_VIDEO_REPLIES';
       case FeatureFlag.advancedRelaySettings:

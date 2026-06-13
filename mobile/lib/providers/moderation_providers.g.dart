@@ -64,11 +64,9 @@ String _$contentPolicyEngineHash() =>
 /// state, no tooltip, no copy. Revealing why would violate the disclosure
 /// invariant (the app never tells a user someone blocked or muted them).
 ///
-/// Under [FeatureFlag.contentPolicyV2] this consults
-/// [ContentPolicyEngine.canTarget] (hidden when the target's published
-/// kind 30000 d=block or kind 10000 names us). With the flag off it
-/// preserves the pre-engine behavior: only an explicit block
-/// (`hasBlockedUs`) hides the affordance.
+/// Consults [ContentPolicyEngine.canTarget]: the affordance is hidden when
+/// the target's published kind 30000 d=block or kind 10000 mute list names
+/// the current user.
 
 @ProviderFor(canTargetUser)
 const canTargetUserProvider = CanTargetUserFamily._();
@@ -80,11 +78,9 @@ const canTargetUserProvider = CanTargetUserFamily._();
 /// state, no tooltip, no copy. Revealing why would violate the disclosure
 /// invariant (the app never tells a user someone blocked or muted them).
 ///
-/// Under [FeatureFlag.contentPolicyV2] this consults
-/// [ContentPolicyEngine.canTarget] (hidden when the target's published
-/// kind 30000 d=block or kind 10000 names us). With the flag off it
-/// preserves the pre-engine behavior: only an explicit block
-/// (`hasBlockedUs`) hides the affordance.
+/// Consults [ContentPolicyEngine.canTarget]: the affordance is hidden when
+/// the target's published kind 30000 d=block or kind 10000 mute list names
+/// the current user.
 
 final class CanTargetUserProvider extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
@@ -95,11 +91,9 @@ final class CanTargetUserProvider extends $FunctionalProvider<bool, bool, bool>
   /// state, no tooltip, no copy. Revealing why would violate the disclosure
   /// invariant (the app never tells a user someone blocked or muted them).
   ///
-  /// Under [FeatureFlag.contentPolicyV2] this consults
-  /// [ContentPolicyEngine.canTarget] (hidden when the target's published
-  /// kind 30000 d=block or kind 10000 names us). With the flag off it
-  /// preserves the pre-engine behavior: only an explicit block
-  /// (`hasBlockedUs`) hides the affordance.
+  /// Consults [ContentPolicyEngine.canTarget]: the affordance is hidden when
+  /// the target's published kind 30000 d=block or kind 10000 mute list names
+  /// the current user.
   const CanTargetUserProvider._({
     required CanTargetUserFamily super.from,
     required String super.argument,
@@ -151,7 +145,7 @@ final class CanTargetUserProvider extends $FunctionalProvider<bool, bool, bool>
   }
 }
 
-String _$canTargetUserHash() => r'3761b5b8a0bb8b3010086a60a2009e9065b9e981';
+String _$canTargetUserHash() => r'96f7718c9d61620ad1b239a7a553df858165007e';
 
 /// Whether the UI may offer interactions that target [pubkey] —
 /// follow, DM, reply, mention, share-to, tag.
@@ -160,11 +154,9 @@ String _$canTargetUserHash() => r'3761b5b8a0bb8b3010086a60a2009e9065b9e981';
 /// state, no tooltip, no copy. Revealing why would violate the disclosure
 /// invariant (the app never tells a user someone blocked or muted them).
 ///
-/// Under [FeatureFlag.contentPolicyV2] this consults
-/// [ContentPolicyEngine.canTarget] (hidden when the target's published
-/// kind 30000 d=block or kind 10000 names us). With the flag off it
-/// preserves the pre-engine behavior: only an explicit block
-/// (`hasBlockedUs`) hides the affordance.
+/// Consults [ContentPolicyEngine.canTarget]: the affordance is hidden when
+/// the target's published kind 30000 d=block or kind 10000 mute list names
+/// the current user.
 
 final class CanTargetUserFamily extends $Family
     with $FunctionalFamilyOverride<bool, String> {
@@ -184,11 +176,9 @@ final class CanTargetUserFamily extends $Family
   /// state, no tooltip, no copy. Revealing why would violate the disclosure
   /// invariant (the app never tells a user someone blocked or muted them).
   ///
-  /// Under [FeatureFlag.contentPolicyV2] this consults
-  /// [ContentPolicyEngine.canTarget] (hidden when the target's published
-  /// kind 30000 d=block or kind 10000 names us). With the flag off it
-  /// preserves the pre-engine behavior: only an explicit block
-  /// (`hasBlockedUs`) hides the affordance.
+  /// Consults [ContentPolicyEngine.canTarget]: the affordance is hidden when
+  /// the target's published kind 30000 d=block or kind 10000 mute list names
+  /// the current user.
 
   CanTargetUserProvider call(String pubkey) =>
       CanTargetUserProvider._(argument: pubkey, from: this);

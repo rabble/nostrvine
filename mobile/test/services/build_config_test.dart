@@ -99,15 +99,6 @@ void main() {
       expect(config.getDefault(FeatureFlag.curatedLists), isTrue);
     });
 
-    test('contentPolicyV2 should default to true', () {
-      // Phase 3 of the content-policy migration (#948): the engine is the
-      // default enforcement. Reverting this default would silently fall
-      // back to the legacy predicate everywhere.
-      const config = BuildConfiguration();
-
-      expect(config.getDefault(FeatureFlag.contentPolicyV2), isTrue);
-    });
-
     test('integratedApps should map to FF_INTEGRATED_APPS env var', () {
       const config = BuildConfiguration();
 

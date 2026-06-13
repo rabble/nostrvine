@@ -18,7 +18,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
-import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
 
 import '../helpers/test_provider_overrides.dart';
@@ -28,8 +27,6 @@ class _MockContentReportingService extends Mock
 
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
-
-class _MockMuteService extends Mock implements MuteService {}
 
 class _MockDmRepository extends Mock implements DmRepository {}
 
@@ -46,7 +43,6 @@ void main() {
   late VideoEvent testVideo;
   late _MockContentReportingService mockReportingService;
   late _MockContentBlocklistRepository mockBlocklistRepository;
-  late _MockMuteService mockMuteService;
 
   setUp(() {
     final testNostrEvent = nostr.Event(
@@ -68,7 +64,6 @@ void main() {
     testVideo = VideoEvent.fromNostrEvent(testNostrEvent);
     mockReportingService = _MockContentReportingService();
     mockBlocklistRepository = _MockContentBlocklistRepository();
-    mockMuteService = _MockMuteService();
 
     when(
       () => mockReportingService.reportContent(
@@ -91,14 +86,6 @@ void main() {
     ).thenAnswer(
       (_) async => ReportResult.createSuccess('test_user_report_id'),
     );
-
-    when(
-      () => mockMuteService.muteUser(
-        any(),
-        reason: any(named: 'reason'),
-        duration: any(named: 'duration'),
-      ),
-    ).thenAnswer((_) async => true);
   });
 
   Future<void> setLargeSurface(WidgetTester tester) async {
@@ -316,7 +303,6 @@ void main() {
           contentBlocklistRepositoryProvider.overrideWith(
             (ref) => mockBlocklistRepository,
           ),
-          muteServiceProvider.overrideWith((ref) async => mockMuteService),
         ],
         child: MaterialApp.router(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -353,7 +339,6 @@ void main() {
           contentBlocklistRepositoryProvider.overrideWith(
             (ref) => mockBlocklistRepository,
           ),
-          muteServiceProvider.overrideWith((ref) async => mockMuteService),
         ],
         child: MaterialApp.router(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -703,7 +688,6 @@ void main() {
           contentBlocklistRepositoryProvider.overrideWith(
             (ref) => mockBlocklistRepository,
           ),
-          muteServiceProvider.overrideWith((ref) async => mockMuteService),
           dmRepositoryProvider.overrideWithValue(mockDmRepository),
         ],
         child: MaterialApp.router(
@@ -1052,7 +1036,6 @@ void main() {
           contentBlocklistRepositoryProvider.overrideWith(
             (ref) => mockBlocklistRepository,
           ),
-          muteServiceProvider.overrideWith((ref) async => mockMuteService),
           dmRepositoryProvider.overrideWithValue(mockDmRepository),
         ],
         child: MaterialApp.router(
@@ -1186,7 +1169,6 @@ void main() {
           contentBlocklistRepositoryProvider.overrideWith(
             (ref) => mockBlocklistRepository,
           ),
-          muteServiceProvider.overrideWith((ref) async => mockMuteService),
           dmRepositoryProvider.overrideWithValue(mockDmRepository),
         ],
         child: MaterialApp.router(

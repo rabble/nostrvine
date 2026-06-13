@@ -93,9 +93,9 @@ class FollowFromProfileButtonView extends StatelessWidget {
 
   /// Whether the UI may offer interactions targeting this user.
   ///
-  /// False when their published block list (or, under contentPolicyV2,
-  /// mute list) names us. The button renders nothing in that case —
-  /// absence, never an explanation (disclosure invariant).
+  /// False when their published block or mute list names us. The button
+  /// renders nothing in that case — absence, never an explanation
+  /// (disclosure invariant).
   final bool canTargetAuthor;
 
   /// Callback when the Blocked button is tapped.

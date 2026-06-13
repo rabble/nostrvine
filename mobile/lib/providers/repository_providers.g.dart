@@ -398,7 +398,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'323c17d6613c13649f8738e6d418a0318294b265';
+String _$profileRepositoryHash() => r'387526a9d5084ffca862ce5ea06c3c568b9f653c';
 
 /// Curation Service - manages NIP-51 video curation sets
 
@@ -616,50 +616,6 @@ final class BookmarkServiceProvider
 }
 
 String _$bookmarkServiceHash() => r'2430aa71f0c433b0c192fb434b3777877eb41a49';
-
-/// Mute service for NIP-51 mute lists
-
-@ProviderFor(muteService)
-const muteServiceProvider = MuteServiceProvider._();
-
-/// Mute service for NIP-51 mute lists
-
-final class MuteServiceProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<MuteService>,
-          MuteService,
-          FutureOr<MuteService>
-        >
-    with $FutureModifier<MuteService>, $FutureProvider<MuteService> {
-  /// Mute service for NIP-51 mute lists
-  const MuteServiceProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'muteServiceProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$muteServiceHash();
-
-  @$internal
-  @override
-  $FutureProviderElement<MuteService> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<MuteService> create(Ref ref) {
-    return muteService(ref);
-  }
-}
-
-String _$muteServiceHash() => r'a7faf00b4fe5d420db0bff450d444db5aa5d4934';
 
 /// Provider for NIP-17 DM repository.
 ///
@@ -893,4 +849,4 @@ final class CommentsRepositoryProvider
 }
 
 String _$commentsRepositoryHash() =>
-    r'c93d13851e0a4299c19edc87d439f767237ecc72';
+    r'21b8d5931408335180c18406e3aa033c6f15b448';

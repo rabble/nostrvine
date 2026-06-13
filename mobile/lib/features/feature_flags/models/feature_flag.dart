@@ -38,10 +38,6 @@ enum FeatureFlag {
     'Profile List Features',
     'Enable people list creation from profiles and people list results in search (NIP-51 kind 30000)',
   ),
-  contentPolicyV2(
-    'Content Policy v2',
-    'Parse-gated policy engine — filter blocked/muted authors at ingress',
-  ),
   videoReplies(
     'Video Replies',
     'Enable recording and posting short video replies from comment threads',

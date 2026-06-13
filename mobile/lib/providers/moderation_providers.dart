@@ -6,8 +6,6 @@ import 'dart:async';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/preferences_providers.dart';
@@ -37,22 +35,16 @@ ContentPolicyEngine contentPolicyEngine(Ref ref) {
 /// state, no tooltip, no copy. Revealing why would violate the disclosure
 /// invariant (the app never tells a user someone blocked or muted them).
 ///
-/// Under [FeatureFlag.contentPolicyV2] this consults
-/// [ContentPolicyEngine.canTarget] (hidden when the target's published
-/// kind 30000 d=block or kind 10000 names us). With the flag off it
-/// preserves the pre-engine behavior: only an explicit block
-/// (`hasBlockedUs`) hides the affordance.
+/// Consults [ContentPolicyEngine.canTarget]: the affordance is hidden when
+/// the target's published kind 30000 d=block or kind 10000 mute list names
+/// the current user.
 @riverpod
 bool canTargetUser(Ref ref, String pubkey) {
   // Re-evaluate when any block/mute state changes.
   ref.watch(blocklistVersionProvider);
   final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
-  final flagService = ref.watch(featureFlagServiceProvider);
-  if (flagService.isEnabled(FeatureFlag.contentPolicyV2)) {
-    final engine = ref.watch(contentPolicyEngineProvider);
-    return engine.canTarget(pubkey, blocklistRepository.currentState);
-  }
-  return !blocklistRepository.hasBlockedUs(pubkey);
+  final engine = ref.watch(contentPolicyEngineProvider);
+  return engine.canTarget(pubkey, blocklistRepository.currentState);
 }
 
 /// Divine-hosted-only filter preference service.
@@ -257,19 +249,13 @@ void blocklistSyncBridge(Ref ref) {
   });
 }
 
-/// Builds the blocked-author video filter, selecting the content-policy engine
-/// when [FeatureFlag.contentPolicyV2] is enabled and falling back to the
-/// blocklist filter otherwise.
+/// Builds the blocked-author video filter backed by the content-policy
+/// engine.
 BlockedVideoFilter createBlockedAuthorFilter(Ref ref) {
   final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
-  final flagService = ref.watch(featureFlagServiceProvider);
-  if (flagService.isEnabled(FeatureFlag.contentPolicyV2)) {
-    final engine = ref.watch(contentPolicyEngineProvider);
-    return createPolicyEngineFilter(
-      engine,
-      () => blocklistRepository.currentState,
-    );
-  }
-
-  return createBlocklistFilter(blocklistRepository);
+  final engine = ref.watch(contentPolicyEngineProvider);
+  return createPolicyEngineFilter(
+    engine,
+    () => blocklistRepository.currentState,
+  );
 }
