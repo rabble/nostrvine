@@ -161,7 +161,10 @@ void main() {
       );
     }
 
-    VideoEvent createRawDTagVideoEvent(String pubkey) {
+    VideoEvent createRawDTagVideoEvent(
+      String pubkey, {
+      String dTag = 'raw-d-tag',
+    }) {
       return VideoEvent(
         id: 'raw_d_tag_event_id',
         pubkey: pubkey,
@@ -169,7 +172,7 @@ void main() {
         content: 'Test video content',
         timestamp: DateTime.now(),
         videoUrl: 'https://example.com/video.mp4',
-        rawTags: const {'d': 'raw-d-tag'},
+        rawTags: {'d': dTag},
       );
     }
 
@@ -507,13 +510,14 @@ void main() {
       test(
         'includes a tag when the raw d tag is present but vineId is null',
         () async {
-          final video = createRawDTagVideoEvent(testPublicKey);
+          const dTag = 'raw:d:tag';
+          final video = createRawDTagVideoEvent(testPublicKey, dTag: dTag);
           final deleteEvent = createTestEvent(
             pubkey: testPublicKey,
             kind: 5,
             tags: [
               ['e', video.id],
-              ['a', '34236:$testPublicKey:raw-d-tag'],
+              ['a', '34236:$testPublicKey:$dTag'],
               ['k', '34236'],
             ],
             content: 'CONTENT DELETION',
@@ -546,14 +550,11 @@ void main() {
 
           final tags = captured.first as List<List<String>>;
           expect(tags, contains(equals(['e', video.id])));
-          expect(
-            tags,
-            contains(equals(['a', '34236:$testPublicKey:raw-d-tag'])),
-          );
+          expect(tags, contains(equals(['a', '34236:$testPublicKey:$dTag'])));
           expect(tags, contains(equals(['k', '34236'])));
           expect(
             service.deletionHistory.single.addressableId,
-            '34236:$testPublicKey:raw-d-tag',
+            '34236:$testPublicKey:$dTag',
           );
         },
       );
