@@ -516,6 +516,7 @@ void main() {
             videoId: 'video-without-thumbnail',
             url: 'https://media.divine.video/video-without-thumbnail',
             fallbackUrl: 'https://media.divine.video/video-without-thumbnail',
+            thumbnailUrl: 'https://',
           ),
         );
 

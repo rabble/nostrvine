@@ -359,9 +359,8 @@ class BlossomUploadService {
 
   /// Default total attempts for a whole-image upload to a single server.
   /// 1 initial + 2 retries; covers transient 5xx and connection blips on
-  /// `media.divine.video` without compounding when a caller (e.g. the
-  /// app-level UploadManager) already wraps the call in its own retry
-  /// loop — those callers pass `maxAttempts: 1`.
+  /// `media.divine.video`. Callers that already wrap the operation in their
+  /// own retry loop can pass `maxAttempts: 1` to avoid compounded delays.
   static const int _defaultUploadImageMaxAttempts = 3;
 
   /// Base delay between retried image upload attempts. Doubled on each retry
@@ -689,9 +688,8 @@ class BlossomUploadService {
   /// Run [attempt] up to [maxAttempts] times with exponential backoff,
   /// stopping early on success or on a non-transient failure.
   ///
-  /// `maxAttempts == 1` disables retry — useful for callers (UploadManager)
-  /// that already wrap the call in their own retry loop and want to avoid
-  /// compounded delays.
+  /// `maxAttempts == 1` disables retry for callers that already wrap the call
+  /// in their own retry loop and want to avoid compounded delays.
   Future<BlossomUploadResult> _uploadWithRetry({
     required Future<BlossomUploadResult> Function() attempt,
     required int maxAttempts,

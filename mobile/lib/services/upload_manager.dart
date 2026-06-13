@@ -2241,8 +2241,11 @@ class UploadManager {
 
   /// Check if a URL is a valid HTTP/HTTPS URL (not a local file path)
   static bool _isHttpUrl(String? url) {
-    if (url == null || url.isEmpty) return false;
-    return url.startsWith('http://') || url.startsWith('https://');
+    final value = url?.trim();
+    if (value == null || value.isEmpty) return false;
+    final uri = Uri.tryParse(value);
+    if (uri == null || uri.host.isEmpty) return false;
+    return uri.scheme == 'http' || uri.scheme == 'https';
   }
 
   static String? _resultThumbnailUrl(dynamic result) {
