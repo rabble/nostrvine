@@ -1136,6 +1136,58 @@ void main() {
         );
         expect(saved.userPubkey, 'abc123pubkey');
       });
+
+      test(
+        'does not save a refresh response that completes after logout',
+        () async {
+          final storage = MemoryKeycastStorage();
+          await storage.write('keycast_refresh_token', 'old_refresh_token');
+
+          final refreshResponse = Completer<http.Response>();
+          var refreshRequestStarted = false;
+          final mockClient = MockClient((request) async {
+            if (request.url.path == '/api/oauth/token') {
+              refreshRequestStarted = true;
+              return refreshResponse.future;
+            }
+            if (request.url.path == '/api/auth/logout') {
+              return http.Response('', 204);
+            }
+            fail('Unexpected request to ${request.url}');
+          });
+
+          final oauth = KeycastOAuth(
+            config: config,
+            httpClient: mockClient,
+            storage: storage,
+          );
+
+          final refresh = oauth.refreshSession();
+          while (!refreshRequestStarted) {
+            await Future<void>.delayed(Duration.zero);
+          }
+
+          await oauth.logout();
+          refreshResponse.complete(
+            http.Response(
+              jsonEncode({
+                'bunker_url': 'bunker://refreshed',
+                'access_token': 'new_access_token',
+                'token_type': 'Bearer',
+                'expires_in': 86400,
+                'refresh_token': 'new_refresh_token',
+                'authorization_handle': 'new_handle',
+              }),
+              200,
+            ),
+          );
+
+          expect(await refresh, isNull);
+          expect(await storage.read('keycast_session'), isNull);
+          expect(await storage.read('keycast_refresh_token'), isNull);
+          expect(await storage.read('keycast_auth_handle'), isNull);
+        },
+      );
     });
 
     group('getSessionOrRefresh', () {
@@ -1325,6 +1377,38 @@ void main() {
 
         expect(result.status, PollStatus.error);
         expect(result.error, contains('TimeoutException'));
+      });
+
+      test(
+        'sendPasswordResetEmail returns error result on hung request',
+        () async {
+          final oauth = KeycastOAuth(
+            config: config,
+            httpClient: hangingClient(),
+            requestTimeout: shortTimeout,
+          );
+
+          final result = await oauth.sendPasswordResetEmail('test@example.com');
+
+          expect(result.success, isFalse);
+          expect(result.error, contains('TimeoutException'));
+        },
+      );
+
+      test('resetPassword returns error result on hung request', () async {
+        final oauth = KeycastOAuth(
+          config: config,
+          httpClient: hangingClient(),
+          requestTimeout: shortTimeout,
+        );
+
+        final result = await oauth.resetPassword(
+          token: 'reset-token',
+          newPassword: 'new-password',
+        );
+
+        expect(result.success, isFalse);
+        expect(result.message, contains('TimeoutException'));
       });
     });
 

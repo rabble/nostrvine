@@ -43,6 +43,9 @@ class KeycastOAuth {
   /// with a [TimeoutException].
   final Duration requestTimeout;
 
+  // Invalidates in-flight refresh saves after logout clears credential storage.
+  int _storageEpoch = 0;
+
   KeycastOAuth({
     required this.config,
     http.Client? httpClient,
@@ -80,6 +83,7 @@ class KeycastOAuth {
   /// we still complete the local logout. The server will eventually expire
   /// the token anyway.
   Future<void> logout() async {
+    _storageEpoch++;
     await _storage.delete(_storageKeySession);
     await _storage.delete(_storageKeyHandle);
     await _storage.delete(_storageKeyRefreshToken);
@@ -118,6 +122,7 @@ class KeycastOAuth {
   /// rotated it). On network error or timeout the token is preserved since
   /// the server may not have consumed it.
   Future<KeycastSession?> refreshSession({String? userPubkey}) async {
+    final refreshEpoch = _storageEpoch;
     final refreshToken = await _storage.read(_storageKeyRefreshToken);
     if (refreshToken == null) return null;
 
@@ -140,6 +145,9 @@ class KeycastOAuth {
         var session = KeycastSession.fromTokenResponse(tokenResponse);
         if (userPubkey != null && userPubkey.isNotEmpty) {
           session = session.copyWith(userPubkey: userPubkey);
+        }
+        if (refreshEpoch != _storageEpoch) {
+          return null;
         }
         await _saveSession(session);
         return session;
@@ -572,11 +580,13 @@ class KeycastOAuth {
   /// Send a password reset link to the provided email address
   Future<ForgotPasswordResult> sendPasswordResetEmail(String email) async {
     try {
-      final response = await _client.post(
-        Uri.parse('${config.serverUrl}/api/auth/forgot-password'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email}),
-      );
+      final response = await _client
+          .post(
+            Uri.parse('${config.serverUrl}/api/auth/forgot-password'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'email': email}),
+          )
+          .timeout(requestTimeout);
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -602,11 +612,13 @@ class KeycastOAuth {
     required String newPassword,
   }) async {
     try {
-      final response = await _client.post(
-        Uri.parse('${config.serverUrl}/api/auth/reset-password'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'token': token, 'new_password': newPassword}),
-      );
+      final response = await _client
+          .post(
+            Uri.parse('${config.serverUrl}/api/auth/reset-password'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'token': token, 'new_password': newPassword}),
+          )
+          .timeout(requestTimeout);
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
 

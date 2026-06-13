@@ -188,7 +188,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     String? primaryRelayUrl,
     RelayDiscoveryService? relayDiscoveryService,
     Nip07Service? nip07ServiceForTest,
-    Duration oauthRefreshTimeout = rpcRefreshTimeout,
+    Duration oauthRefreshTimeout = defaultOAuthRefreshTimeout,
     Duration expiredSessionRefreshTimeout = defaultExpiredSessionRefreshTimeout,
   }) : _keyStorage = keyStorage ?? SecureKeyStorage(),
        _nostrKeyManager = nostrKeyManager,
@@ -421,18 +421,21 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// UI does not prompt re-login before the silent refresh has definitively failed.
   bool get isRpcUpgradeInProgress => _isRpcUpgradeInProgress;
 
-  /// Default bound for the single-flight OAuth token refresh. Applied
-  /// inside the future stored in [_pendingOAuthRefresh] so a hung request
-  /// can never occupy the slot forever (#4942).
+  /// Legacy test-friendly short bound for background RPC refresh.
   @visibleForTesting
   static const rpcRefreshTimeout = Duration(seconds: 10);
 
-  /// Default bound for the full expired-session refresh flow (token refresh
-  /// plus session re-integration). The underlying network calls carry their
-  /// own shorter timeouts; this bound guarantees the single-flight slot in
-  /// [tryRefreshExpiredSession] always clears (#4942).
+  /// Default bound for the single-flight OAuth token refresh. It is longer
+  /// than KeycastOAuth's own HTTP bound so production code does not abandon
+  /// a slow-but-still-live request before the client has resolved it.
   @visibleForTesting
-  static const defaultExpiredSessionRefreshTimeout = Duration(seconds: 30);
+  static const defaultOAuthRefreshTimeout = Duration(seconds: 35);
+
+  /// Default bound for the full expired-session refresh flow (token refresh
+  /// plus session re-integration). This stays longer than the OAuth refresh
+  /// bound so the outer flow does not detach from a live refresh.
+  @visibleForTesting
+  static const defaultExpiredSessionRefreshTimeout = Duration(seconds: 40);
 
   /// Local-first Divine OAuth initialization.
   ///
