@@ -28,7 +28,6 @@ immediate_completion_helper # noise: helper
 js_stub # noise: web/io shim
 js_util_stub # noise: web/io shim
 logging_config_service # defer: #4338 C2 singleton-to-DI
-mute_service
 native_proofmode_service
 nip05_verification_service
 nip07_interop # noise: web/io conditional-import
