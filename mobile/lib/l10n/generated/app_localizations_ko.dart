@@ -7393,6 +7393,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoRecorderSwitchCameraLabel => '카메라 전환';
 
   @override
+  String videoRecorderZoomLevelLabel(String zoom) {
+    return '$zoom×로 확대';
+  }
+
+  @override
   String get videoRecorderToggleGridLabel => '그리드 전환';
 
   @override

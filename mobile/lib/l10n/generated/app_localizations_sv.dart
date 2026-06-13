@@ -7645,6 +7645,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoRecorderSwitchCameraLabel => 'Byt kamera';
 
   @override
+  String videoRecorderZoomLevelLabel(String zoom) {
+    return 'Zooma till $zoom×';
+  }
+
+  @override
   String get videoRecorderToggleGridLabel => 'Växla rutnät';
 
   @override

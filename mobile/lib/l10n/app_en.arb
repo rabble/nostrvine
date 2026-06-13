@@ -4313,6 +4313,15 @@
   "videoRecorderTapToStartLabel": "Tap anywhere to start recording",
   "videoRecorderDeleteLastClipLabel": "Delete last clip",
   "videoRecorderSwitchCameraLabel": "Switch camera",
+  "videoRecorderZoomLevelLabel": "Zoom to {zoom}×",
+  "@videoRecorderZoomLevelLabel": {
+    "description": "Accessibility label for a camera zoom quick-stop button in the lens picker. {zoom} is a zoom factor like 0.5, 1, or 2.",
+    "placeholders": {
+      "zoom": {
+        "type": "String"
+      }
+    }
+  },
   "videoRecorderToggleGridLabel": "Toggle grid",
   "videoRecorderToggleGhostFrameLabel": "Toggle ghost frame",
   "videoRecorderGhostFrameEnabled": "Ghost frame enabled",

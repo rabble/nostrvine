@@ -7616,6 +7616,11 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoRecorderSwitchCameraLabel => 'Ganti kamera';
 
   @override
+  String videoRecorderZoomLevelLabel(String zoom) {
+    return 'Zoom ke $zoom×';
+  }
+
+  @override
   String get videoRecorderToggleGridLabel => 'Ganti grid';
 
   @override

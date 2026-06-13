@@ -203,6 +203,7 @@ class VideoRecorderBloc
     on<_VideoRecorderRemoteRecordTriggered>(_onRemoteRecordTriggered);
     on<_VideoRecorderAutoStopped>(_onAutoStopped);
     on<_VideoRecorderFocusPointTimerFired>(_onFocusPointTimerFired);
+    on<_VideoRecorderZoomIndicatorTimerFired>(_onZoomIndicatorTimerFired);
   }
 
   final ReadClipManager _readClipManager;
@@ -217,7 +218,12 @@ class VideoRecorderBloc
   AudioPlaybackService? _audioPlaybackService;
   CountdownSoundService? _countdownSoundService;
   Timer? _focusPointTimer;
+  Timer? _zoomIndicatorTimer;
   bool _remoteRecordControlEnabled = false;
+
+  /// How long the zoom ruler stays visible after the last pinch activity
+  /// before the auto-hide timer clears it.
+  static const _zoomIndicatorHideDelay = Duration(milliseconds: 1000);
 
   /// The current active camera lens. Delegates to the camera service.
   DivineCameraLens get currentLens => _cameraService.currentLens;
@@ -264,6 +270,7 @@ class VideoRecorderBloc
       await _cameraService.initialize(
         videoQuality: event.videoQuality,
         initialLens: initialLens,
+        enableAutoLensSwitch: true,
       );
     } catch (e) {
       Log.error(
@@ -475,7 +482,8 @@ class VideoRecorderBloc
       );
       return;
     }
-    emit(state.copyWith(zoomLevel: event.value));
+    emit(state.copyWith(zoomLevel: event.value, showZoomIndicator: true));
+    _armZoomIndicatorHideTimer();
   }
 
   Future<void> _onFocusPointSet(
@@ -923,23 +931,23 @@ class VideoRecorderBloc
         baseZoomLevel: state.zoomLevel,
         snappedTo1x: false,
         lastRawZoom: state.zoomLevel,
+        showZoomIndicator: true,
       ),
     );
+    _armZoomIndicatorHideTimer();
   }
 
   Future<void> _onScaleUpdated(
     VideoRecorderScaleUpdated event,
     Emitter<VideoRecorderBlocState> emit,
   ) async {
-    final scaleChange = event.details.scale - 1.0;
-    final normalizedChange = scaleChange.clamp(-1.0, 2.0);
-
-    final zoomRangeDown = state.baseZoomLevel - _cameraService.minZoomLevel;
-    final zoomRangeUp = _cameraService.maxZoomLevel - state.baseZoomLevel;
-
-    final newZoom = normalizedChange >= 0
-        ? state.baseZoomLevel + (normalizedChange / 2.0) * zoomRangeUp
-        : state.baseZoomLevel + normalizedChange * zoomRangeDown;
+    // Multiplicative mapping: the cumulative pinch scale multiplies the zoom
+    // captured at gesture start, so the perceived sensitivity is uniform
+    // across the whole range (1×→2× feels like 2×→4×). The previous
+    // range-proportional mapping made the gain depend on the starting zoom —
+    // fast far from a bound, sluggish near max — and differed between
+    // zoom-in and zoom-out.
+    final newZoom = state.baseZoomLevel * event.details.scale;
 
     var clampedZoom = newZoom.clamp(
       _cameraService.minZoomLevel,
@@ -972,6 +980,8 @@ class VideoRecorderBloc
         snapped = true;
         snapTime = DateTime.now();
         clampedZoom = 1.0;
+        // Confirm the 1× detent engagement with a light tick.
+        unawaited(HapticService.snapFeedback());
       }
 
       if (snapped) {
@@ -989,12 +999,33 @@ class VideoRecorderBloc
         lastRawZoom: clampedZoom,
         snappedTo1x: snapped,
         snapTime: snapTime,
+        showZoomIndicator: true,
       ),
     );
+    _armZoomIndicatorHideTimer();
 
     if ((state.zoomLevel - clampedZoom).abs() > 0.01) {
       add(VideoRecorderZoomLevelSet(clampedZoom));
     }
+  }
+
+  /// (Re)starts the zoom-ruler auto-hide countdown. Called on every pinch
+  /// activity so the ruler stays up while the user is zooming and fades a
+  /// short while after the gesture settles.
+  void _armZoomIndicatorHideTimer() {
+    _zoomIndicatorTimer?.cancel();
+    _zoomIndicatorTimer = Timer(_zoomIndicatorHideDelay, () {
+      if (isClosed) return;
+      add(const _VideoRecorderZoomIndicatorTimerFired());
+    });
+  }
+
+  void _onZoomIndicatorTimerFired(
+    _VideoRecorderZoomIndicatorTimerFired event,
+    Emitter<VideoRecorderBlocState> emit,
+  ) {
+    _zoomIndicatorTimer = null;
+    emit(state.copyWith(showZoomIndicator: false));
   }
 
   Future<void> _onCameraPausedForNavigation(
@@ -1126,6 +1157,8 @@ class VideoRecorderBloc
         cameraRebuildCount: cameraRebuildCount ?? state.cameraRebuildCount,
         aspectRatio: aspectRatio ?? state.aspectRatio,
         flashMode: DivineFlashMode.off,
+        minZoomLevel: _cameraService.minZoomLevel,
+        maxZoomLevel: _cameraService.maxZoomLevel,
         cameraSensorAspectRatio: _cameraService.cameraAspectRatio,
         canRecord: _cameraService.canRecord,
         isCameraInitialized: _cameraService.isInitialized,
@@ -1318,6 +1351,8 @@ class VideoRecorderBloc
     );
     _focusPointTimer?.cancel();
     _focusPointTimer = null;
+    _zoomIndicatorTimer?.cancel();
+    _zoomIndicatorTimer = null;
     try {
       await _audioPlaybackService?.dispose();
       _audioPlaybackService = null;

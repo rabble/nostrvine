@@ -270,3 +270,9 @@ final class _VideoRecorderAutoStopped extends VideoRecorderEvent {
 final class _VideoRecorderFocusPointTimerFired extends VideoRecorderEvent {
   const _VideoRecorderFocusPointTimerFired();
 }
+
+/// Internal event: the zoom-indicator auto-hide timer fired. Clears
+/// [VideoRecorderBlocState.showZoomIndicator] once the pinch settles.
+final class _VideoRecorderZoomIndicatorTimerFired extends VideoRecorderEvent {
+  const _VideoRecorderZoomIndicatorTimerFired();
+}

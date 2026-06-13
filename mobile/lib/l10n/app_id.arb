@@ -3034,6 +3034,7 @@
     "videoRecorderStartRecordingTooltip": "Mulai merekam",
     "videoRecorderStopRecordingTooltip": "Hentikan perekaman",
     "videoRecorderSwitchCameraLabel": "Ganti kamera",
+    "videoRecorderZoomLevelLabel": "Zoom ke {zoom}×",
     "videoRecorderTapToStartLabel": "Ketuk di mana saja untuk mulai merekam",
     "videoRecorderToggleAspectRatioLabel": "Ganti rasio aspek",
     "videoRecorderToggleFlashLabel": "Ganti flash",

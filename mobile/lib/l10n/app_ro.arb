@@ -2746,6 +2746,7 @@
     "videoRecorderTapToStartLabel": "Atinge oriunde pentru a începe înregistrarea",
     "videoRecorderDeleteLastClipLabel": "Șterge ultimul clip",
     "videoRecorderSwitchCameraLabel": "Schimbă camera",
+    "videoRecorderZoomLevelLabel": "Zoom la {zoom}×",
     "videoRecorderToggleGridLabel": "Activează/dezactivează grila",
     "videoRecorderToggleGhostFrameLabel": "Activează/dezactivează cadrul fantomă",
     "videoRecorderGhostFrameEnabled": "Cadru fantomă activat",

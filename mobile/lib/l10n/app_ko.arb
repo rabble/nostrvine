@@ -2323,6 +2323,7 @@
     "videoRecorderStartRecordingTooltip": "녹화 시작",
     "videoRecorderStopRecordingTooltip": "녹화 중지",
     "videoRecorderSwitchCameraLabel": "카메라 전환",
+    "videoRecorderZoomLevelLabel": "{zoom}×로 확대",
     "videoRecorderTapToStartLabel": "아무 곳이나 탭하여 녹화 시작",
     "videoRecorderToggleAspectRatioLabel": "화면 비율 전환",
     "videoRecorderToggleFlashLabel": "플래시 전환",

@@ -3306,6 +3306,7 @@
     "videoRecorderTapToStartLabel": "መቅዳት ለመጀመር የትኛውም ቦታ ላይ መታ ያድርጉ",
     "videoRecorderDeleteLastClipLabel": "የመጨረሻውን ቅንጥብ ሰርዝ",
     "videoRecorderSwitchCameraLabel": "ካሜራ ቀይር",
+    "videoRecorderZoomLevelLabel": "ወደ {zoom}× አጉላ",
     "videoRecorderToggleGridLabel": "ፍርግርግ ቀያይር",
     "videoRecorderToggleGhostFrameLabel": "የGhost ፍሬም ሁኔታ ቀይር",
     "videoRecorderGhostFrameEnabled": "Ghost ፍሬም በርቷል",

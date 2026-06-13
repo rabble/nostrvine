@@ -2746,6 +2746,7 @@
     "videoRecorderTapToStartLabel": "Tik ergens om de opname te starten",
     "videoRecorderDeleteLastClipLabel": "Laatste clip verwijderen",
     "videoRecorderSwitchCameraLabel": "Camera wisselen",
+    "videoRecorderZoomLevelLabel": "Zoomen naar {zoom}×",
     "videoRecorderToggleGridLabel": "Raster in-/uitschakelen",
     "videoRecorderToggleGhostFrameLabel": "Spookframe in-/uitschakelen",
     "videoRecorderGhostFrameEnabled": "Spookframe ingeschakeld",

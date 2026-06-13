@@ -2996,6 +2996,7 @@
     "videoRecorderTapToStartLabel": "Докосни произволно място, за да започнете да записвате",
     "videoRecorderDeleteLastClipLabel": "Изтрий последния клип",
     "videoRecorderSwitchCameraLabel": "Смени камерата",
+    "videoRecorderZoomLevelLabel": "Мащабиране до {zoom}×",
     "videoRecorderToggleGridLabel": "Превключване на мрежата",
     "videoRecorderToggleGhostFrameLabel": "Превключване на призрачна рамка",
     "videoRecorderGhostFrameEnabled": "Рамката призрак е активирана",

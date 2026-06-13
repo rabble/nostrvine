@@ -7706,6 +7706,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoRecorderSwitchCameraLabel => 'Cambiar cámara';
 
   @override
+  String videoRecorderZoomLevelLabel(String zoom) {
+    return 'Zoom a $zoom×';
+  }
+
+  @override
   String get videoRecorderToggleGridLabel => 'Mostrar u ocultar cuadrícula';
 
   @override

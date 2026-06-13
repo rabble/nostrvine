@@ -3034,6 +3034,7 @@
     "videoRecorderStartRecordingTooltip": "Kaydı başlat",
     "videoRecorderStopRecordingTooltip": "Kaydı durdur",
     "videoRecorderSwitchCameraLabel": "Kamerayı değiştir",
+    "videoRecorderZoomLevelLabel": "{zoom}× yakınlaştır",
     "videoRecorderTapToStartLabel": "Kaydı başlatmak için herhangi bir yere dokunun",
     "videoRecorderToggleAspectRatioLabel": "En-boy oranını değiştir",
     "videoRecorderToggleFlashLabel": "Flaşı değiştir",

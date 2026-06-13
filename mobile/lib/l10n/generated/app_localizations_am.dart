@@ -7505,6 +7505,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoRecorderSwitchCameraLabel => 'ካሜራ ቀይር';
 
   @override
+  String videoRecorderZoomLevelLabel(String zoom) {
+    return 'ወደ $zoom× አጉላ';
+  }
+
+  @override
   String get videoRecorderToggleGridLabel => 'ፍርግርግ ቀያይር';
 
   @override

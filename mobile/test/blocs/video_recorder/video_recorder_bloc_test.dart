@@ -137,6 +137,86 @@ void main() {
       expect(bloc.currentLensMetadata, isNull);
     });
 
+    group('showZoomIndicator', () {
+      test('shows the zoom ruler when a pinch starts', () async {
+        final bloc = buildBloc();
+        addTearDown(bloc.close);
+
+        bloc.add(VideoRecorderScaleStarted(ScaleStartDetails()));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(bloc.state.showZoomIndicator, isTrue);
+      });
+
+      test('shows the zoom ruler when the zoom level is set', () async {
+        when(
+          () => cameraService.setZoomLevel(any()),
+        ).thenAnswer((_) async => true);
+        final bloc = buildBloc();
+        addTearDown(bloc.close);
+
+        bloc.add(const VideoRecorderZoomLevelSet(2));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(bloc.state.showZoomIndicator, isTrue);
+      });
+
+      test('auto-hides the zoom ruler after the pinch settles', () async {
+        final bloc = buildBloc();
+        addTearDown(bloc.close);
+
+        bloc.add(VideoRecorderScaleStarted(ScaleStartDetails()));
+        // The auto-hide timer is 1000ms — give it room to fire.
+        await Future<void>.delayed(const Duration(milliseconds: 1100));
+
+        expect(bloc.state.showZoomIndicator, isFalse);
+      });
+    });
+
+    group('pinch-to-zoom snap', () {
+      test('pinching down across the 1× detent snaps zoom to 1.0', () async {
+        when(
+          () => cameraService.setZoomLevel(any()),
+        ).thenAnswer((_) async => true);
+        final bloc = buildBloc();
+        addTearDown(bloc.close);
+
+        // Start zoomed in past the detent (base = 1.5), then pinch down so
+        // the multiplicative zoom (base × scale) crosses 1.0 — the gravity
+        // well + detent should lock it to 1×.
+        bloc.emit(const VideoRecorderBlocState(zoomLevel: 1.5));
+        bloc.add(VideoRecorderScaleStarted(ScaleStartDetails()));
+        await Future<void>.delayed(Duration.zero);
+        // 1.5 × 0.9 = 1.35 (still above the detent).
+        bloc.add(VideoRecorderScaleUpdated(ScaleUpdateDetails(scale: 0.9)));
+        await Future<void>.delayed(Duration.zero);
+        // 1.5 × 0.66 = 0.99 (within the snap tolerance of 1.0).
+        bloc.add(VideoRecorderScaleUpdated(ScaleUpdateDetails(scale: 0.66)));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(bloc.state.snappedTo1x, isTrue);
+        expect(bloc.state.zoomLevel, closeTo(1.0, 0.02));
+      });
+
+      test('maps zoom multiplicatively as base × pinch scale', () async {
+        when(
+          () => cameraService.setZoomLevel(any()),
+        ).thenAnswer((_) async => true);
+        final bloc = buildBloc();
+        addTearDown(bloc.close);
+
+        // From 2×, a 1.5× spread reaches 3× (2 × 1.5) regardless of where in
+        // the range the gesture starts — uniform sensitivity.
+        bloc.emit(const VideoRecorderBlocState(zoomLevel: 2));
+        bloc.add(VideoRecorderScaleStarted(ScaleStartDetails()));
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(VideoRecorderScaleUpdated(ScaleUpdateDetails(scale: 1.5)));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(bloc.state.zoomLevel, closeTo(3.0, 0.01));
+      });
+    });
+
     group('VideoRecorderFlashToggled', () {
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'cycles off → torch → auto → off and persists each new mode',
@@ -266,7 +346,9 @@ void main() {
         },
         build: buildBloc,
         act: (bloc) => bloc.add(const VideoRecorderZoomLevelSet(2)),
-        expect: () => const [VideoRecorderBlocState(zoomLevel: 2)],
+        expect: () => const [
+          VideoRecorderBlocState(zoomLevel: 2, showZoomIndicator: true),
+        ],
       );
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
@@ -651,6 +733,7 @@ void main() {
           () => cameraService.initialize(
             videoQuality: any(named: 'videoQuality'),
             initialLens: any(named: 'initialLens'),
+            enableAutoLensSwitch: any(named: 'enableAutoLensSwitch'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -659,6 +742,21 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
       });
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'initializes the camera with auto lens switching enabled',
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
+        verify: (_) {
+          verify(
+            () => cameraService.initialize(
+              videoQuality: any(named: 'videoQuality'),
+              initialLens: any(named: 'initialLens'),
+              enableAutoLensSwitch: true,
+            ),
+          ).called(1);
+        },
+      );
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'does NOT restore persisted mode when opened from the editor '

@@ -2746,6 +2746,7 @@
     "videoRecorderTapToStartLabel": "Appuyez n'importe où pour démarrer l'enregistrement",
     "videoRecorderDeleteLastClipLabel": "Supprimer le dernier clip",
     "videoRecorderSwitchCameraLabel": "Changer de caméra",
+    "videoRecorderZoomLevelLabel": "Zoomer à {zoom}×",
     "videoRecorderToggleGridLabel": "Afficher/masquer la grille",
     "videoRecorderToggleGhostFrameLabel": "Afficher/masquer le cadre fantôme",
     "videoRecorderGhostFrameEnabled": "Cadre fantôme activé",

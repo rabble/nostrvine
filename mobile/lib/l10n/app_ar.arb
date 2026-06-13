@@ -3027,6 +3027,7 @@
     "videoRecorderStartRecordingTooltip": "بدء التسجيل",
     "videoRecorderStopRecordingTooltip": "إيقاف التسجيل",
     "videoRecorderSwitchCameraLabel": "تبديل الكاميرا",
+    "videoRecorderZoomLevelLabel": "تكبير إلى {zoom}×",
     "videoRecorderTapToStartLabel": "اضغط في أي مكان لبدء التسجيل",
     "videoRecorderToggleAspectRatioLabel": "تبديل نسبة العرض إلى الارتفاع",
     "videoRecorderToggleFlashLabel": "تبديل الفلاش",

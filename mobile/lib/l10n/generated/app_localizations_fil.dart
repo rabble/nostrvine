@@ -7725,6 +7725,11 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoRecorderSwitchCameraLabel => 'Magpalit ng camera';
 
   @override
+  String videoRecorderZoomLevelLabel(String zoom) {
+    return 'I-zoom sa $zoom×';
+  }
+
+  @override
   String get videoRecorderToggleGridLabel => 'I-toggle ang grid';
 
   @override

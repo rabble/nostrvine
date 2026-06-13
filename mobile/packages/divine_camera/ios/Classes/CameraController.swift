@@ -1045,13 +1045,15 @@ class CameraController: NSObject {
             // multi-camera devices (e.g. builtInTripleCamera).
             // Convert native zoom values to user-facing values.
             minZoom = device.minAvailableVideoZoomFactor * nativeToUserZoomScale
-            maxZoom = min(device.maxAvailableVideoZoomFactor * nativeToUserZoomScale, 10.0)
+            // Use the full hardware zoom range (mirrors the stock camera).
+            // Beyond the optical max this is digital zoom and gets soft.
+            maxZoom = device.maxAvailableVideoZoomFactor * nativeToUserZoomScale
         } else {
             // No auto lens switch - clamp to 1.0 to prevent native
             // lens switching on virtual multi-camera devices.
             nativeToUserZoomScale = 1.0
             minZoom = 1.0
-            maxZoom = min(device.activeFormat.videoMaxZoomFactor, 10.0)
+            maxZoom = device.activeFormat.videoMaxZoomFactor
         }
         currentZoom = device.videoZoomFactor * nativeToUserZoomScale
         // Front camera has "flash" via screen brightness when feature is enabled

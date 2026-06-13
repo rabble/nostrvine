@@ -13,6 +13,11 @@ import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_cap
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_countdown_overlay.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_zoom_indicator.dart';
+
+/// Bottom inset that lifts the zoom ruler clear of the record button:
+/// the 96px button plus its 24px bottom padding plus a 12px gap.
+const double _zoomIndicatorBottomInset = 24.0 + 96.0 + 12.0;
 
 /// Capture-mode stack with viewfinder, controls, and top bar.
 class VideoRecorderCaptureStack extends ConsumerWidget {
@@ -49,6 +54,16 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
           const Align(
             alignment: .centerRight,
             child: VideoRecorderCaptureActions(),
+          ),
+
+          // Zoom ruler — floats above the record button and only appears
+          // while the user is pinch-zooming.
+          const Align(
+            alignment: .bottomCenter,
+            child: Padding(
+              padding: .fromLTRB(20, 0, 20, _zoomIndicatorBottomInset),
+              child: VideoRecorderZoomIndicator(),
+            ),
           ),
 
           /// Record button
