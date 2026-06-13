@@ -25,6 +25,7 @@ final class MyFollowingState extends Equatable {
     this.followingPubkeys = const [],
     this.rawFollowingPubkeys = const [],
     this.isRefreshing = false,
+    this.hasLocalFollowEdit = false,
   });
 
   /// The current status of the following list.
@@ -42,6 +43,15 @@ final class MyFollowingState extends Equatable {
   /// True while stale cache data is shown and a fresh fetch is in progress.
   final bool isRefreshing;
 
+  /// True once the user has toggled follow/unfollow in this bloc's lifetime.
+  ///
+  /// After a local toggle the repository's in-memory list is the authority.
+  /// An in-flight `watchMyFollowingCached` revalidation can still resolve with
+  /// the relay-lagged pre-toggle snapshot; this flag tells the load handler to
+  /// defer to the repository instead of letting that stale emission revert the
+  /// button (#5144).
+  final bool hasLocalFollowEdit;
+
   /// Check if the current user is following a specific pubkey.
   bool isFollowing(String pubkey) => followingPubkeys.contains(pubkey);
 
@@ -51,12 +61,14 @@ final class MyFollowingState extends Equatable {
     List<String>? followingPubkeys,
     List<String>? rawFollowingPubkeys,
     bool? isRefreshing,
+    bool? hasLocalFollowEdit,
   }) {
     return MyFollowingState(
       status: status ?? this.status,
       followingPubkeys: followingPubkeys ?? this.followingPubkeys,
       rawFollowingPubkeys: rawFollowingPubkeys ?? this.rawFollowingPubkeys,
       isRefreshing: isRefreshing ?? this.isRefreshing,
+      hasLocalFollowEdit: hasLocalFollowEdit ?? this.hasLocalFollowEdit,
     );
   }
 
@@ -66,5 +78,6 @@ final class MyFollowingState extends Equatable {
     followingPubkeys,
     rawFollowingPubkeys,
     isRefreshing,
+    hasLocalFollowEdit,
   ];
 }

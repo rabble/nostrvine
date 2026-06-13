@@ -318,6 +318,74 @@ void main() {
         },
       );
 
+      test(
+        'does not revert when an in-flight load emits stale data after a '
+        'toggle (#5144)',
+        () async {
+          final pubkey = validPubkey('target');
+          final following = <String>[];
+          final followingController =
+              StreamController<List<String>>.broadcast();
+          final loadController =
+              StreamController<CacheResult<FollowingSnapshot>>();
+          addTearDown(followingController.close);
+          addTearDown(loadController.close);
+
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(following);
+          when(
+            () => mockFollowRepository.followingStream,
+          ).thenAnswer((_) => followingController.stream);
+          // The mount-time load is still in flight (no emission yet) when the
+          // user taps Follow.
+          when(
+            () => mockFollowRepository.watchMyFollowingCached(),
+          ).thenAnswer((_) => loadController.stream);
+          when(() => mockFollowRepository.toggleFollow(pubkey)).thenAnswer((
+            _,
+          ) async {
+            following.add(pubkey);
+            followingController.add(List.of(following));
+          });
+
+          final bloc = createBloc();
+          final isFollowingStates = <bool>[];
+          final sub = bloc.stream.listen(
+            (state) => isFollowingStates.add(state.isFollowing(pubkey)),
+          );
+
+          bloc.add(const MyFollowingListLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(MyFollowingToggleRequested(pubkey));
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+
+          // The in-flight load's network revalidation now resolves with the
+          // relay-lagged pre-follow (stale) list — the surviving #5144 race.
+          loadController.add(
+            const CacheResult.live(FollowingSnapshot(pubkeys: [], count: 0)),
+          );
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+
+          final firstFollowed = isFollowingStates.indexOf(true);
+          expect(
+            firstFollowed,
+            isNonNegative,
+            reason: 'the follow should register as Following',
+          );
+          expect(
+            isFollowingStates.sublist(firstFollowed),
+            everyElement(isTrue),
+            reason:
+                'a stale in-flight load emission must not revert the button '
+                'after a successful toggle (#5144)',
+          );
+
+          await sub.cancel();
+          await bloc.close();
+        },
+      );
+
       blocTest<MyFollowingBloc, MyFollowingState>(
         'emits toggleFailure when toggleFollow throws',
         setUp: () {

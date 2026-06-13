@@ -67,10 +67,19 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
       await emit.forEach<CacheResult<FollowingSnapshot>>(
         _followRepository.watchMyFollowingCached(),
         onData: (result) {
+          // Once the user has toggled locally, the repository's in-memory list
+          // is the authority. The mount-time load can still be in flight when
+          // the user taps Follow; its revalidation read resolves with the
+          // relay-lagged pre-toggle snapshot and would otherwise revert the
+          // button (#5144). Defer to the repository instead of the stale
+          // emission; let the emission only drive the refreshing indicator.
+          final pubkeys = state.hasLocalFollowEdit
+              ? _followRepository.followingPubkeys
+              : result.data.pubkeys;
           return state.copyWith(
             status: MyFollowingStatus.success,
-            rawFollowingPubkeys: result.data.pubkeys,
-            followingPubkeys: _filterPubkeys(result.data.pubkeys),
+            rawFollowingPubkeys: pubkeys,
+            followingPubkeys: _filterPubkeys(pubkeys),
             isRefreshing: result.isStale,
           );
         },
@@ -120,6 +129,11 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
   /// reverted the button (#5144). The repository invalidates that cache on
   /// mutation, so the next load (on the next mount) is fresh.
   ///
+  /// On success we set [MyFollowingState.hasLocalFollowEdit] so that an
+  /// already-in-flight mount-time load (its revalidation read can still
+  /// resolve with the relay-lagged pre-toggle list) defers to the repository
+  /// instead of reverting the button — see [_onLoadRequested].
+  ///
   /// Uses [droppable] transformer to prevent concurrent toggles from
   /// racing each other (e.g. rapid taps toggling follow/unfollow/follow).
   Future<void> _onToggleRequested(
@@ -133,6 +147,9 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
 
     try {
       await _followRepository.toggleFollow(event.pubkey);
+      if (!state.hasLocalFollowEdit) {
+        emit(state.copyWith(hasLocalFollowEdit: true));
+      }
     } catch (e) {
       Log.error(
         'Failed to toggle follow for user: $e',

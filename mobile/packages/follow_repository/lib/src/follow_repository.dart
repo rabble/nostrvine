@@ -346,9 +346,11 @@ class FollowRepository {
   /// has actually run, breaking the new `isRefreshing` / [CacheResult.isLive]
   /// contract.
   ///
-  /// Ongoing follow/unfollow reactivity is handled by [MyFollowingBloc],
-  /// which re-dispatches [MyFollowingListLoadRequested] after a successful
-  /// toggle so the cache + UI both observe the new state.
+  /// Ongoing follow/unfollow reactivity is handled by [followingStream]
+  /// (the in-memory single source of truth). Local toggles and cross-device
+  /// kind 3 updates invalidate the [_myFollowingCacheKey] entry via
+  /// [_invalidateMyFollowingCache], so the next [watchMyFollowingCached] read
+  /// (on a later mount) never serves a pre-mutation snapshot (#5144).
   Stream<CacheResult<FollowingSnapshot>> watchMyFollowingCached() {
     return CacheSync.watchOne<FollowingSnapshot>(
       key: _myFollowingCacheKey(_nostrClient.publicKey),
@@ -2035,6 +2037,7 @@ class FollowRepository {
         _followingPubkeys = merged.toList();
         _emitFollowingList();
         _saveToLocalStorage();
+        _invalidateMyFollowingCache();
 
         // Re-broadcast the merged list so relays have the correct state.
         _broadcastContactList().catchError((e) {
@@ -2059,6 +2062,7 @@ class FollowRepository {
       );
 
       _saveToLocalStorage();
+      _invalidateMyFollowingCache();
     }
   }
 }

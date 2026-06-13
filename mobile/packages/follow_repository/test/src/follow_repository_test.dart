@@ -82,6 +82,13 @@ class _FakeRelay extends RelayBase {
 
 class _FakeContactList extends Fake implements ContactList {}
 
+/// A [FakeCacheDao] whose [delete] always throws, to exercise the non-fatal
+/// cache-invalidation failure path in `_invalidateMyFollowingCache`.
+class _ThrowingDeleteCacheDao extends FakeCacheDao {
+  @override
+  Future<void> delete(String key) async => throw Exception('delete failed');
+}
+
 void main() {
   group('FollowRepository', () {
     late FollowRepository repository;
@@ -671,6 +678,70 @@ void main() {
           await cacheDao.read(myFollowingKey(testCurrentUserPubkey)),
           isNull,
         );
+      });
+
+      test(
+        'cross-device Kind 3 update invalidates the my_following cache entry',
+        () async {
+          final realTimeStreamController = StreamController<Event>.broadcast();
+          addTearDown(() async {
+            await repository.dispose();
+            await realTimeStreamController.close();
+          });
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+              onEose: any(named: 'onEose'),
+            ),
+          ).thenAnswer((_) => realTimeStreamController.stream);
+
+          await repository.initialize();
+          await cacheDao.write(
+            key: myFollowingKey(testCurrentUserPubkey),
+            payload: const FollowingSnapshot(
+              pubkeys: [testTargetPubkey2],
+              count: 1,
+            ).toJson(),
+          );
+          expect(
+            await cacheDao.read(myFollowingKey(testCurrentUserPubkey)),
+            isNotNull,
+          );
+
+          // A newer Kind 3 event arrives from another device.
+          realTimeStreamController.add(
+            Event(
+              testCurrentUserPubkey,
+              3,
+              [
+                ['p', testTargetPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+            ),
+          );
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(repository.followingPubkeys, contains(testTargetPubkey));
+          expect(
+            await cacheDao.read(myFollowingKey(testCurrentUserPubkey)),
+            isNull,
+          );
+        },
+      );
+
+      test('follow() succeeds even when cache invalidation throws', () async {
+        await CacheSync.init(dao: _ThrowingDeleteCacheDao());
+        stubBroadcastSuccess();
+
+        await repository.follow(testTargetPubkey);
+
+        expect(repository.followingPubkeys, contains(testTargetPubkey));
       });
     });
 
