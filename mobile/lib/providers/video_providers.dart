@@ -22,6 +22,7 @@ import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/services/auth_service.dart' show AuthState;
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
+import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/pending_action_service.dart';
@@ -104,6 +105,7 @@ VideoEventService videoEventService(Ref ref) {
   final likesRepository = ref.watch(likesRepositoryProvider);
   final moderationLabelService = ref.watch(moderationLabelServiceProvider);
   final divineHostFilterService = ref.read(divineHostFilterServiceProvider);
+  final prefs = ref.watch(sharedPreferencesProvider);
 
   final service = VideoEventService(
     nostrService,
@@ -111,6 +113,26 @@ VideoEventService videoEventService(Ref ref) {
     profileRepository: profileRepository,
     eventRouter: eventRouter,
     videoFilterBuilder: videoFilterBuilder,
+  );
+  var persistedDeletions = const <ContentDeletion>[];
+  try {
+    persistedDeletions = ContentDeletionService.parseDeletionHistory(
+      prefs.getString(ContentDeletionService.deletionsStorageKey),
+    );
+  } on Object catch (error, stackTrace) {
+    Log.error(
+      'Failed to hydrate video deletion tombstones: $error',
+      name: 'VideoEventService',
+      category: LogCategory.system,
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+  service.seedLocalDeletionTombstones(
+    eventIds: persistedDeletions.map((deletion) => deletion.originalEventId),
+    addressableIds: persistedDeletions
+        .map((deletion) => deletion.addressableId)
+        .whereType<String>(),
   );
   service.setBlocklistRepository(blocklistRepository);
   service.setLikesRepository(likesRepository);

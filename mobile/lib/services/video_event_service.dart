@@ -27,6 +27,7 @@ import 'package:flutter/widgets.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/aid.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
@@ -1155,6 +1156,34 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     return _locallyDeletedVideoIds.contains(videoId);
   }
 
+  /// Hydrate local deletion tombstones from persisted delete history.
+  ///
+  /// [addressableIds] must use the NIP-33 `kind:pubkey:d-tag` format. The
+  /// service keeps its own compact lookup key private so callers do not couple
+  /// to the in-memory implementation.
+  void seedLocalDeletionTombstones({
+    Iterable<String> eventIds = const [],
+    Iterable<String> addressableIds = const [],
+  }) {
+    _locallyDeletedVideoIds.addAll(eventIds.where((id) => id.isNotEmpty));
+
+    for (final addressableId in addressableIds) {
+      final parsed = AId.fromString(addressableId);
+      if (parsed == null ||
+          parsed.kind != NIP71VideoKinds.addressableShortVideo ||
+          parsed.pubkey.isEmpty ||
+          parsed.dTag.isEmpty) {
+        continue;
+      }
+      _locallyDeletedVideoCoordinateKeys.add(
+        _localDeletionCoordinateKeyFromParts(
+          pubkey: parsed.pubkey,
+          stableId: parsed.dTag,
+        ),
+      );
+    }
+  }
+
   /// Check whether this concrete video or its addressable identity has been
   /// locally deleted.
   bool isVideoEventLocallyDeleted(VideoEvent video) {
@@ -1165,7 +1194,15 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   }
 
   String _localDeletionCoordinateKey(VideoEvent video) =>
-      '${video.pubkey.toLowerCase()}:${video.stableId}';
+      _localDeletionCoordinateKeyFromParts(
+        pubkey: video.pubkey,
+        stableId: video.stableId,
+      );
+
+  String _localDeletionCoordinateKeyFromParts({
+    required String pubkey,
+    required String stableId,
+  }) => '${pubkey.toLowerCase()}:$stableId';
 
   /// Emits a video id whenever the service has marked it removed —
   /// today this is user-initiated deletion via [removeVideoCompletely];

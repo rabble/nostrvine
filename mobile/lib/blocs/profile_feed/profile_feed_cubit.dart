@@ -371,11 +371,13 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
         if (isClosed) return;
         final after = _videoEventService.authorVideos(_authorPubkey).length;
 
-        _unfilteredVideos = _applyMetadataCache(
-          _videoEventService
-              .authorVideos(_authorPubkey)
-              .where((v) => !v.isRepost)
-              .toList(),
+        _unfilteredVideos = _withoutTombstones(
+          _applyMetadataCache(
+            _videoEventService
+                .authorVideos(_authorPubkey)
+                .where((v) => !v.isRepost)
+                .toList(),
+          ),
         );
         // C5 fix: copyWith over the live state preserves totalVideoCount,
         // isInitialLoad, isFetchingTotalCount and nextOffset that the legacy

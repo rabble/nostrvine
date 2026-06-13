@@ -133,6 +133,15 @@ class ContentDeletionService {
       List.unmodifiable(_deletionHistory);
   bool get isInitialized => _isInitialized;
 
+  static List<ContentDeletion> parseDeletionHistory(String? historyJson) {
+    if (historyJson == null) return const [];
+
+    final List<dynamic> deletionsJson = jsonDecode(historyJson);
+    return deletionsJson
+        .map((json) => ContentDeletion.fromJson(json as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
   /// Initialize deletion service
   Future<void> initialize() async {
     try {
@@ -447,11 +456,19 @@ class ContentDeletionService {
   }
 
   String? _addressableDeletionTarget(VideoEvent video) {
-    final vineId = video.vineId;
-    if (vineId == null || vineId.isEmpty || vineId == video.id) {
+    final dTag = video.rawTags['d'];
+    final stableDTag = dTag != null && dTag.isNotEmpty
+        ? dTag
+        : video.vineId != null &&
+              video.vineId!.isNotEmpty &&
+              video.vineId != video.id
+        ? video.vineId
+        : null;
+    if (stableDTag == null || stableDTag.isEmpty) {
       return null;
     }
-    return video.addressableId;
+    return '${NIP71VideoKinds.getPreferredAddressableKind()}'
+        ':${video.pubkey}:$stableDTag';
   }
 
   /// Get delete reason text for common cases
@@ -477,13 +494,8 @@ class ContentDeletionService {
     final historyJson = _prefs.getString(deletionsStorageKey);
     if (historyJson != null) {
       try {
-        final List<dynamic> deletionsJson = jsonDecode(historyJson);
         _deletionHistory.clear();
-        _deletionHistory.addAll(
-          deletionsJson.map(
-            (json) => ContentDeletion.fromJson(json as Map<String, dynamic>),
-          ),
-        );
+        _deletionHistory.addAll(parseDeletionHistory(historyJson));
         Log.debug(
           '📱 Loaded ${_deletionHistory.length} deletions from history',
           name: 'ContentDeletionService',

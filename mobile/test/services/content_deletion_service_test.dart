@@ -2,6 +2,8 @@
 // ABOUTME: Verifies kind 5 event creation, relay OK confirmation, and
 // ABOUTME: local history bookkeeping.
 
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -78,6 +80,32 @@ void main() {
       noResponseFrom: const ['wss://backup-relay.test'],
     );
 
+    test('parseDeletionHistory reads persisted deletion records', () {
+      final deletedAt = DateTime.utc(2026);
+      final historyJson = jsonEncode([
+        {
+          'deleteEventId': 'delete-event-id',
+          'originalEventId': 'original-event-id',
+          'addressableId': '34236:$testPublicKey:shared-vine-id',
+          'reason': 'Personal choice',
+          'deletedAt': deletedAt.toIso8601String(),
+          'additionalContext': 'Quick delete: personalChoice',
+        },
+      ]);
+
+      final history = ContentDeletionService.parseDeletionHistory(historyJson);
+
+      expect(history, hasLength(1));
+      expect(history.single.deleteEventId, 'delete-event-id');
+      expect(history.single.originalEventId, 'original-event-id');
+      expect(
+        history.single.addressableId,
+        '34236:$testPublicKey:shared-vine-id',
+      );
+      expect(history.single.deletedAt, deletedAt);
+      expect(history.single.additionalContext, 'Quick delete: personalChoice');
+    });
+
     setUp(() async {
       final testPrivateKey = generatePrivateKey();
       testPublicKey = getPublicKey(testPrivateKey);
@@ -130,6 +158,18 @@ void main() {
         timestamp: DateTime.now(),
         videoUrl: 'https://example.com/video.mp4',
         vineId: 'rest-vine-id',
+      );
+    }
+
+    VideoEvent createRawDTagVideoEvent(String pubkey) {
+      return VideoEvent(
+        id: 'raw_d_tag_event_id',
+        pubkey: pubkey,
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        content: 'Test video content',
+        timestamp: DateTime.now(),
+        videoUrl: 'https://example.com/video.mp4',
+        rawTags: const {'d': 'raw-d-tag'},
       );
     }
 
@@ -461,6 +501,60 @@ void main() {
           expect(tags, contains(equals(['e', video.id])));
           expect(tags, contains(equals(['a', video.addressableId])));
           expect(tags, contains(equals(['k', '34236'])));
+        },
+      );
+
+      test(
+        'includes a tag when the raw d tag is present but vineId is null',
+        () async {
+          final video = createRawDTagVideoEvent(testPublicKey);
+          final deleteEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', video.id],
+              ['a', '34236:$testPublicKey:raw-d-tag'],
+              ['k', '34236'],
+            ],
+            content: 'CONTENT DELETION',
+          );
+
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => deleteEvent);
+
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => accepted(deleteEvent.id));
+
+          await service.deleteContent(video: video, reason: 'Personal choice');
+
+          final captured = verify(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: captureAny(named: 'tags'),
+            ),
+          ).captured;
+
+          final tags = captured.first as List<List<String>>;
+          expect(tags, contains(equals(['e', video.id])));
+          expect(
+            tags,
+            contains(equals(['a', '34236:$testPublicKey:raw-d-tag'])),
+          );
+          expect(tags, contains(equals(['k', '34236'])));
+          expect(
+            service.deletionHistory.single.addressableId,
+            '34236:$testPublicKey:raw-d-tag',
+          );
         },
       );
 

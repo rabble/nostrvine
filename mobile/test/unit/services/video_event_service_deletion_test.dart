@@ -187,5 +187,64 @@ void main() {
         isFalse,
       );
     });
+
+    test('seedLocalDeletionTombstones hydrates event id tombstones', () {
+      videoEventService.seedLocalDeletionTombstones(
+        eventIds: const ['deleted-event-id'],
+      );
+
+      expect(videoEventService.isVideoLocallyDeleted('deleted-event-id'), true);
+      expect(videoEventService.isVideoLocallyDeleted('other-event-id'), false);
+    });
+
+    test('seedLocalDeletionTombstones converts persisted addressable ids to '
+        'local coordinate keys', () {
+      const pubkey =
+          'C3DD74D68E414F0305DB9F7DC96EC32E616502E6CCF5BBF5739DE19A96B67F3E';
+      const dTag = 'shared:vine:id';
+      final replacementVersion = _videoEvent(
+        id: 'event-id-after-restart',
+        pubkey: pubkey.toLowerCase(),
+        dTag: dTag,
+        createdAt: 1001,
+      );
+      final unrelatedVideo = _videoEvent(
+        id: 'unrelated-event-id',
+        pubkey: pubkey.toLowerCase(),
+        dTag: 'different-vine-id',
+      );
+
+      videoEventService.seedLocalDeletionTombstones(
+        addressableIds: const ['34236:$pubkey:$dTag'],
+      );
+
+      expect(
+        videoEventService.isVideoEventLocallyDeleted(replacementVersion),
+        isTrue,
+      );
+      expect(
+        videoEventService.isVideoEventLocallyDeleted(unrelatedVideo),
+        isFalse,
+      );
+    });
+
+    test(
+      'seedLocalDeletionTombstones ignores unsupported addressable kinds',
+      () {
+        const pubkey =
+            'c3dd74d68e414f0305db9f7dc96ec32e616502e6ccf5bbf5739de19a96b67f3e';
+        final video = _videoEvent(
+          id: 'not-deleted',
+          pubkey: pubkey,
+          dTag: 'shared-vine-id',
+        );
+
+        videoEventService.seedLocalDeletionTombstones(
+          addressableIds: const ['30023:$pubkey:shared-vine-id'],
+        );
+
+        expect(videoEventService.isVideoEventLocallyDeleted(video), isFalse);
+      },
+    );
   });
 }

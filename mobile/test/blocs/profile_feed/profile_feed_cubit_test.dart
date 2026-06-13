@@ -29,6 +29,7 @@ VideoEvent _video(
   String pubkey = _author,
   int createdAt = 1000,
   int? originalLikes,
+  String? vineId,
 }) {
   return VideoEvent(
     id: id,
@@ -38,6 +39,7 @@ VideoEvent _video(
     timestamp: DateTime.fromMillisecondsSinceEpoch(createdAt * 1000),
     videoUrl: 'https://example.com/$id.mp4',
     originalLikes: originalLikes,
+    vineId: vineId,
   );
 }
 
@@ -248,44 +250,36 @@ void main() {
       },
     );
 
-    test(
-      'cold load: backfill skips empty advancing REST pages',
-      () async {
-        h.stubAuthorFeedSequence([
-          _result(
-            [_video('a', createdAt: 5000), _video('b', createdAt: 4000)],
-            totalCount: 4,
-            nextOffset: 2,
-            hasMore: true,
-          ),
-          _result(const [], totalCount: 4, nextOffset: 3, hasMore: true),
-          _result(
-            [_video('c', createdAt: 3000), _video('d', createdAt: 2000)],
-            totalCount: 4,
-            hasMore: false,
-          ),
-        ]);
+    test('cold load: backfill skips empty advancing REST pages', () async {
+      h.stubAuthorFeedSequence([
+        _result(
+          [_video('a', createdAt: 5000), _video('b', createdAt: 4000)],
+          totalCount: 4,
+          nextOffset: 2,
+          hasMore: true,
+        ),
+        _result(const [], totalCount: 4, nextOffset: 3, hasMore: true),
+        _result(
+          [_video('c', createdAt: 3000), _video('d', createdAt: 2000)],
+          totalCount: 4,
+          hasMore: false,
+        ),
+      ]);
 
-        final cubit = h.build();
-        addTearDown(cubit.close);
-        await pumpEventQueue(times: 8);
+      final cubit = h.build();
+      addTearDown(cubit.close);
+      await pumpEventQueue(times: 8);
 
-        expect(cubit.state.videos.map((video) => video.id), [
-          'a',
-          'b',
-          'c',
-          'd',
-        ]);
-        expect(cubit.state.hasMoreContent, isFalse);
-        expect(cubit.state.nextOffset, isNull);
-        verify(
-          () => h.repo.getAuthorFeed(authorPubkey: _author, offset: 2),
-        ).called(1);
-        verify(
-          () => h.repo.getAuthorFeed(authorPubkey: _author, offset: 3),
-        ).called(1);
-      },
-    );
+      expect(cubit.state.videos.map((video) => video.id), ['a', 'b', 'c', 'd']);
+      expect(cubit.state.hasMoreContent, isFalse);
+      expect(cubit.state.nextOffset, isNull);
+      verify(
+        () => h.repo.getAuthorFeed(authorPubkey: _author, offset: 2),
+      ).called(1);
+      verify(
+        () => h.repo.getAuthorFeed(authorPubkey: _author, offset: 3),
+      ).called(1);
+    });
 
     test('cold load: REST failure, no relay -> failure + addError', () async {
       h.stubAuthorFeedThrows(Exception('boom'));
@@ -354,9 +348,7 @@ void main() {
         addTearDown(cubit.close);
         clearInteractions(h.repo);
 
-        h.stubAuthorFeed(
-          _result(const [], nextOffset: 100, hasMore: true),
-        );
+        h.stubAuthorFeed(_result(const [], nextOffset: 100, hasMore: true));
         cubit.add(const ProfileFeedLoadMoreRequested());
         await pumpEventQueue();
 
@@ -490,6 +482,29 @@ void main() {
       expect(cubit.state.isFetchingTotalCount, isFalse);
     });
 
+    test('Nostr-fallback loadMore excludes tombstoned videos', () async {
+      final cubit = await buildReady(
+        _result([_video('a', createdAt: 3000)], hasMore: true),
+      );
+      addTearDown(cubit.close);
+      expect(cubit.state.nextOffset, isNull);
+
+      when(() => h.ves.authorVideos(_author)).thenReturn([
+        _video('a', createdAt: 3000),
+        _video('b', createdAt: 2000),
+      ]);
+      when(
+        () => h.ves.isVideoEventLocallyDeleted(
+          any(that: isA<VideoEvent>().having((v) => v.id, 'id', 'b')),
+        ),
+      ).thenReturn(true);
+
+      cubit.add(const ProfileFeedLoadMoreRequested());
+      await pumpEventQueue();
+
+      expect(cubit.state.videos.map((v) => v.id), ['a']);
+    });
+
     test(
       'loadMore is droppable: two rapid requests cause one repo call',
       () async {
@@ -585,6 +600,37 @@ void main() {
 
       expect(cubit.state.videos.map((v) => v.id), ['b']);
     });
+
+    test(
+      'cold load excludes tombstoned replacement videos from REST',
+      () async {
+        final replacement = _video(
+          'new-event-id-from-rest',
+          vineId: 'deleted-addressable-d-tag',
+          createdAt: 5000,
+        );
+        when(
+          () => h.ves.isVideoEventLocallyDeleted(
+            any(
+              that: isA<VideoEvent>()
+                  .having((v) => v.id, 'id', 'new-event-id-from-rest')
+                  .having(
+                    (v) => v.stableId,
+                    'stableId',
+                    'deleted-addressable-d-tag',
+                  ),
+            ),
+          ),
+        ).thenReturn(true);
+
+        final cubit = await buildReady(
+          _result([replacement, _video('visible-event-id')]),
+        );
+        addTearDown(cubit.close);
+
+        expect(cubit.state.videos.map((v) => v.id), ['visible-event-id']);
+      },
+    );
 
     test('blocklist is applied on the cold-load emit (#4782)', () async {
       when(() => h.blocklist.shouldFilterFromFeeds('blocked')).thenReturn(true);
