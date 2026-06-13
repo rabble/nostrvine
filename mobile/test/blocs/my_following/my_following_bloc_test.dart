@@ -234,30 +234,87 @@ void main() {
       );
 
       blocTest<MyFollowingBloc, MyFollowingState>(
-        're-dispatches load after successful toggle so cache layer '
-        're-observes new follow set',
+        'does not re-dispatch a load after a successful toggle (#5144)',
         setUp: () {
           when(
             () => mockFollowRepository.toggleFollow(any()),
           ).thenAnswer((_) async {});
-          when(() => mockFollowRepository.watchMyFollowingCached()).thenAnswer(
-            (_) => Stream.value(
-              CacheResult.live(
-                FollowingSnapshot(pubkeys: [validPubkey('user')], count: 1),
-              ),
-            ),
-          );
+          when(
+            () => mockFollowRepository.watchMyFollowingCached(),
+          ).thenAnswer((_) => const Stream.empty());
         },
         build: createBloc,
         act: (bloc) =>
             bloc.add(MyFollowingToggleRequested(validPubkey('user'))),
         verify: (_) {
-          // Toggle issues the relay write and the BLoC re-fetches via
-          // watchMyFollowingCached so the disk cache layer + UI both
-          // observe the new state (replaces the old BehaviorSubject-replay
-          // reactivity that broke the stale/live contract).
           verify(() => mockFollowRepository.toggleFollow(any())).called(1);
-          verify(() => mockFollowRepository.watchMyFollowingCached()).called(1);
+          // The post-toggle re-load that surfaced a stale cached snapshot and
+          // reverted the button (#5144) is gone — reactivity comes from
+          // followingStream/_onRepositoryUpdated, not a watchMyFollowingCached
+          // re-read.
+          verifyNever(() => mockFollowRepository.watchMyFollowingCached());
+        },
+      );
+
+      test(
+        'does not revert follow state after a successful toggle (#5144)',
+        () async {
+          final pubkey = validPubkey('target');
+          final following = <String>[];
+          final followingController =
+              StreamController<List<String>>.broadcast();
+          addTearDown(followingController.close);
+
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(following);
+          when(
+            () => mockFollowRepository.followingStream,
+          ).thenAnswer((_) => followingController.stream);
+          // If the (now-removed) re-load ran, watchMyFollowingCached would
+          // serve a STALE cached snapshot that does NOT contain pubkey —
+          // exactly what reverted the button before the fix.
+          when(() => mockFollowRepository.watchMyFollowingCached()).thenAnswer(
+            (_) => Stream.value(
+              const CacheResult.cached(
+                FollowingSnapshot(pubkeys: [], count: 0),
+              ),
+            ),
+          );
+          when(() => mockFollowRepository.toggleFollow(pubkey)).thenAnswer((
+            _,
+          ) async {
+            following.add(pubkey);
+            followingController.add(List.of(following));
+          });
+
+          final bloc = createBloc();
+          final isFollowingStates = <bool>[];
+          final sub = bloc.stream.listen(
+            (state) => isFollowingStates.add(state.isFollowing(pubkey)),
+          );
+
+          bloc.add(const MyFollowingListLoadRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(MyFollowingToggleRequested(pubkey));
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final firstFollowed = isFollowingStates.indexOf(true);
+          expect(
+            firstFollowed,
+            isNonNegative,
+            reason: 'the follow should register as Following',
+          );
+          expect(
+            isFollowingStates.sublist(firstFollowed),
+            everyElement(isTrue),
+            reason:
+                'follow state must never revert to not-following after a '
+                'successful toggle (#5144)',
+          );
+
+          await sub.cancel();
+          await bloc.close();
         },
       );
 

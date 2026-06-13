@@ -279,6 +279,27 @@ class FollowRepository {
   static String _othersFollowingCacheKey(String pubkey) =>
       '$pubkey:others_following';
 
+  /// Best-effort invalidation of the cached following-list snapshot.
+  ///
+  /// `follow`/`unfollow` and the offline-sync/merge paths mutate the in-memory
+  /// list and SharedPreferences but never the CacheSync disk entry. Without
+  /// this, the next [watchMyFollowingCached] read serves a pre-mutation
+  /// snapshot and the follow-button state reverts (#5144). Invalidation is
+  /// non-fatal: a cache failure must not fail an otherwise-successful follow.
+  Future<void> _invalidateMyFollowingCache() async {
+    final pubkey = _nostrClient.publicKey;
+    if (pubkey.isEmpty) return;
+    try {
+      await CacheSync.invalidate(_myFollowingCacheKey(pubkey));
+    } on Exception catch (e) {
+      Log.warning(
+        'Failed to invalidate my_following cache: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+    }
+  }
+
   /// Cache-backed stream of the current user's followers.
   ///
   /// Emits a [CacheResult.cached] if disk-cached data exists, then a single
@@ -1254,6 +1275,7 @@ class FollowRepository {
     // 1. Update in-memory cache immediately
     _followingPubkeys = [..._followingPubkeys, pubkey];
     _emitFollowingList();
+    await _invalidateMyFollowingCache();
 
     // Check if offline and queue if needed
     if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
@@ -1311,6 +1333,7 @@ class FollowRepository {
       _followingPubkeys = [..._followingPubkeys, pubkey];
       _emitFollowingList();
     }
+    await _invalidateMyFollowingCache();
 
     // Broadcast to network
     await _broadcastContactList();
@@ -1367,6 +1390,7 @@ class FollowRepository {
     // 1. Update in-memory cache immediately
     _followingPubkeys = _followingPubkeys.where((p) => p != pubkey).toList();
     _emitFollowingList();
+    await _invalidateMyFollowingCache();
 
     // Check if offline and queue if needed
     if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
@@ -1424,6 +1448,7 @@ class FollowRepository {
       _followingPubkeys = _followingPubkeys.where((p) => p != pubkey).toList();
       _emitFollowingList();
     }
+    await _invalidateMyFollowingCache();
 
     // Broadcast to network
     await _broadcastContactList();
@@ -1452,6 +1477,7 @@ class FollowRepository {
         !merged.every(_followingPubkeys.contains)) {
       _followingPubkeys = merged.toList();
       _emitFollowingList();
+      await _invalidateMyFollowingCache();
 
       // Broadcast the merged list
       await _broadcastContactList();

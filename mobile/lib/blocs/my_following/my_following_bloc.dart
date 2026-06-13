@@ -37,7 +37,10 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
                .toList(),
          ),
        ) {
-    on<MyFollowingListLoadRequested>(_onLoadRequested);
+    on<MyFollowingListLoadRequested>(
+      _onLoadRequested,
+      transformer: restartable(),
+    );
     on<MyFollowingToggleRequested>(
       _onToggleRequested,
       transformer: droppable(),
@@ -106,13 +109,16 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
 
   /// Handle follow toggle request.
   ///
-  /// Delegates to repository which handles the toggle logic internally,
-  /// then re-dispatches [MyFollowingListLoadRequested] so the cache layer
-  /// and UI re-observe the new follow set. The previous implementation
-  /// relied on a [BehaviorSubject] replay flowing through
-  /// `CacheSync.watchStream`, which mis-tagged stale in-memory snapshots
-  /// as live; [FollowRepository.watchMyFollowingCached] is now one-shot,
-  /// so explicit re-load here owns the post-toggle refresh.
+  /// Delegates to the repository, which updates the in-memory follow set and
+  /// emits on [FollowRepository.followingStream]. That stream drives
+  /// [_onRepositoryUpdated] — the single source of post-toggle reactivity — so
+  /// the button reflects the new state immediately and optimistically.
+  ///
+  /// We deliberately do NOT re-dispatch [MyFollowingListLoadRequested] here.
+  /// That re-load re-read [FollowRepository.watchMyFollowingCached], whose
+  /// stale-while-revalidate cache served a pre-toggle disk snapshot first and
+  /// reverted the button (#5144). The repository invalidates that cache on
+  /// mutation, so the next load (on the next mount) is fresh.
   ///
   /// Uses [droppable] transformer to prevent concurrent toggles from
   /// racing each other (e.g. rapid taps toggling follow/unfollow/follow).
@@ -127,7 +133,6 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
 
     try {
       await _followRepository.toggleFollow(event.pubkey);
-      add(const MyFollowingListLoadRequested());
     } catch (e) {
       Log.error(
         'Failed to toggle follow for user: $e',
