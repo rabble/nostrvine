@@ -232,12 +232,11 @@ class ForYouFeed extends _$ForYouFeed {
       );
 
       _nextCursor = response.nextCursor;
-      final cursorAdvanced = _nextCursor != null && _nextCursor != cursor;
 
       state = AsyncData(
         VideoFeedState(
           videos: mergedVideos,
-          hasMoreContent: response.hasMore && cursorAdvanced,
+          hasMoreContent: response.hasMore && _nextCursor != null,
           lastUpdated: DateTime.now(),
         ),
       );
@@ -248,8 +247,6 @@ class ForYouFeed extends _$ForYouFeed {
         category: LogCategory.video,
       );
 
-      if (!ref.mounted) return;
-      final currentState = await future;
       if (!ref.mounted) return;
       state = AsyncData(
         currentState.copyWith(isLoadingMore: false, error: e.toString()),
