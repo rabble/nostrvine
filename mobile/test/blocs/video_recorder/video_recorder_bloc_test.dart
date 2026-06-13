@@ -828,6 +828,65 @@ void main() {
           );
         },
       );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'does not restore when no stabilization mode is persisted',
+        // prefs.getString returns null by default (see outer setUp).
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
+        verify: (_) {
+          verifyNever(
+            () => cameraService.setVideoStabilizationMode(any()),
+          );
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'does not restore when the persisted mode is off',
+        setUp: () {
+          when(
+            () => prefs.getString('camera_last_used_stabilization'),
+          ).thenReturn(DivineVideoStabilizationMode.off.toNativeString());
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
+        verify: (_) {
+          verifyNever(
+            () => cameraService.setVideoStabilizationMode(any()),
+          );
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'leaves the mode at off when the camera refuses the restore',
+        setUp: () {
+          when(
+            () => prefs.getString('camera_last_used_stabilization'),
+          ).thenReturn(DivineVideoStabilizationMode.cinematic.toNativeString());
+          when(
+            () => cameraService.availableVideoStabilizationModes,
+          ).thenReturn(const [
+            DivineVideoStabilizationMode.off,
+            DivineVideoStabilizationMode.cinematic,
+          ]);
+          when(
+            () => cameraService.setVideoStabilizationMode(any()),
+          ).thenAnswer((_) async => false);
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
+        verify: (bloc) {
+          verify(
+            () => cameraService.setVideoStabilizationMode(
+              DivineVideoStabilizationMode.cinematic,
+            ),
+          ).called(1);
+          expect(
+            bloc.state.videoStabilizationMode,
+            DivineVideoStabilizationMode.off,
+          );
+        },
+      );
     });
 
     group('close()', () {

@@ -2047,6 +2047,7 @@ class CameraController: NSObject {
     
     /// Gets the current camera state as a dictionary.
     func getCameraState() -> [String: Any] {
+        let availableStabilizationModes = getAvailableStabilizationModes()
         return [
             "isInitialized": captureSession != nil,
             "isRecording": isRecording,
@@ -2067,10 +2068,12 @@ class CameraController: NSObject {
             "videoStabilizationMode": Self.stabilizationString(
                 from: requestedStabilizationMode
             ),
-            "availableVideoStabilizationModes": getAvailableStabilizationModes(),
-            "isVideoStabilizationSupported":
-                videoOutput?.connection(with: .video)?
-                .isVideoStabilizationSupported ?? false,
+            "availableVideoStabilizationModes": availableStabilizationModes,
+            // Mirror Android: "supported" means the active format offers at
+            // least one mode beyond "off", so the UI affordance matches the
+            // modes the menu can actually present (a connection can report
+            // support while the active format exposes no concrete mode).
+            "isVideoStabilizationSupported": availableStabilizationModes.count > 1,
         ]
     }
 

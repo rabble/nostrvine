@@ -182,7 +182,13 @@ class VideoRecorderBloc
     on<VideoRecorderAspectRatioToggled>(_onAspectRatioToggled);
     on<VideoRecorderAspectRatioSet>(_onAspectRatioSet);
     on<VideoRecorderCameraSwitched>(_onCameraSwitched);
-    on<VideoRecorderStabilizationModeSet>(_onStabilizationModeSet);
+    on<VideoRecorderStabilizationModeSet>(
+      _onStabilizationModeSet,
+      // Each change drives a native reconfigure (a CameraX rebind on Android);
+      // process them FIFO so rapid menu picks can't overlap and the last
+      // selection wins.
+      transformer: sequential(),
+    );
     on<VideoRecorderLensSet>(_onLensSet);
     on<VideoRecorderZoomLevelSet>(_onZoomLevelSet);
     on<VideoRecorderFocusPointSet>(_onFocusPointSet);

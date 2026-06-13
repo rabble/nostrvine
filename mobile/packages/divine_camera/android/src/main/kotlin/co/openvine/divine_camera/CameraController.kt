@@ -1738,10 +1738,19 @@ class CameraController(
         if (camera == null || isAutoSwitching) return true
 
         // Rebind the current lens so CameraX reconfigures the session with the
-        // new stabilization setting. Reuses the texture-preserving switch path;
-        // zoom resets to 1.0x, like a lens switch.
+        // new stabilization setting. The switch path resets zoom to 1.0x like a
+        // lens switch, but a stabilization toggle should not move the framing —
+        // capture the current (reported) zoom and restore it once rebound. This
+        // also keeps the Dart-side zoom (which is not re-fetched after this
+        // call) consistent with the native zoom.
+        val zoomToRestore =
+            if (autoLensSwitchEnabled) virtualCurrentZoom else currentZoom
         DivineCameraLog.d(TAG, "Rebinding to apply stabilization mode: $mode")
-        switchCamera(currentLensType) { _, _ -> }
+        switchCamera(currentLensType) { _, error ->
+            if (error == null && zoomToRestore != 1.0f) {
+                setZoomLevel(zoomToRestore)
+            }
+        }
         return true
     }
 

@@ -236,6 +236,70 @@ void main() {
           findsOneWidget,
         );
       });
+
+      testWidgets('dispatches the selected mode as an event', (tester) async {
+        await tester.pumpWidget(
+          buildWidget(
+            isVideoStabilizationSupported: true,
+            availableVideoStabilizationModes: const [
+              DivineVideoStabilizationMode.off,
+              DivineVideoStabilizationMode.standard,
+              DivineVideoStabilizationMode.auto,
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.byTooltip(l10n.videoRecorderStabilizationLabel),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.text(l10n.videoRecorderStabilizationModeAuto),
+        );
+        await tester.pumpAndSettle();
+
+        verify(
+          () => recorderBloc.add(
+            const VideoRecorderStabilizationModeSet(
+              DivineVideoStabilizationMode.auto,
+            ),
+          ),
+        ).called(1);
+      });
+
+      testWidgets('dispatches nothing when the menu is dismissed', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            isVideoStabilizationSupported: true,
+            availableVideoStabilizationModes: const [
+              DivineVideoStabilizationMode.off,
+              DivineVideoStabilizationMode.standard,
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.byTooltip(l10n.videoRecorderStabilizationLabel),
+        );
+        await tester.pumpAndSettle();
+
+        // Dismiss the sheet by tapping the barrier instead of an option.
+        await tester.tapAt(const Offset(10, 10));
+        await tester.pumpAndSettle();
+
+        verifyNever(
+          () => recorderBloc.add(
+            const VideoRecorderStabilizationModeSet(
+              DivineVideoStabilizationMode.standard,
+            ),
+          ),
+        );
+      });
     });
 
     group('aspect ratio button', () {
