@@ -515,7 +515,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   /// Handle auto-refresh request (dispatched by UI on app resume).
   ///
   /// Only refreshes when:
-  /// - The current feed mode is [FeedMode.following] or [FeedMode.forYou]
+  /// - The current feed source type is [VideoFeedSourceType.following] or
+  ///   [VideoFeedSourceType.forYou]
   /// - The data is stale (last refresh was longer ago than
   ///   [_autoRefreshMinInterval])
   ///

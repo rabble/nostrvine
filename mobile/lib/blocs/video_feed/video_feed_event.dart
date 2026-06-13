@@ -78,7 +78,8 @@ final class VideoFeedRefreshRequested extends VideoFeedEvent {
 ///
 /// Dispatched by the UI on app resume (background → foreground).
 /// The bloc will only perform the refresh if:
-/// - The current feed mode is [FeedMode.following] or [FeedMode.forYou]
+/// - The current feed source type is [VideoFeedSourceType.following] or
+///   [VideoFeedSourceType.forYou]
 /// - Enough time has passed since the last successful load
 ///
 /// Refreshing For You on resume addresses the "feed stays the same after
