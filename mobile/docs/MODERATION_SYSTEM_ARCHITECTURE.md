@@ -1,5 +1,17 @@
 # Divine Moderation System Architecture
 
+> **Implementation status (2026-06):** This is a forward-looking design
+> proposal. The block/mute filtering it describes shipped as the
+> **`ContentPolicyEngine`** (`mobile/packages/content_policy`) — a pure-Dart
+> ordered-rules engine (SelfReference, PubkeyMute, PubkeyBlock, MutualMute)
+> fed by an immutable `ContentPolicyState` snapshot from
+> **`ContentBlocklistRepository`** (`mobile/packages/content_blocklist_repository`).
+> The engine gates every repository ingress seam directly; there is **no**
+> `ModerationFeedService` coordinator and **no** `ContentModerationService`
+> (both were removed in #5136). The labeler-stack and coordinator sections
+> below are the original proposal, not shipped code — read them as design
+> intent, not as current guidance.
+
 ## Overview
 
 Divine implements a **stackable, user-controlled moderation system** inspired by Bluesky's labeler architecture, using Nostr's NIP-32 (labeling) and NIP-56 (reporting) specifications.
@@ -245,7 +257,7 @@ class ModerationFeedService {
   final ModerationLabelService _labelService;
   final ReportAggregationService _reportService;
   final ModeratorRegistryService _registryService;
-  final ContentModerationService _muteService; // Existing
+  final ContentBlocklistRepository _blocklistRepository; // ships as ContentPolicyState source
 
   // Check content against ALL moderation sources
   Future<ModerationDecision> checkContent(Event event);
@@ -291,7 +303,13 @@ enum ModerationAction {
 }
 ```
 
-### 5. Updated ContentModerationService
+### 5. Feed integration (as shipped: ContentPolicyEngine)
+
+> The proposal below wrapped an existing `ContentModerationService`. As
+> shipped there is no such service — `ContentPolicyEngine.evaluate(...)` is
+> called directly at each repository ingress seam against the current
+> `ContentPolicyState`, with no wrapper or coordinator. The sketch is
+> retained as design context.
 
 **Integration with feed system:**
 
@@ -547,8 +565,7 @@ Labels and reports should be stored in embedded relay for:
 
 ### Phase 2: Core Features
 - 🔨 ReportAggregationService (kind 1984)
-- 🔨 ModerationFeedService coordinator
-- 🔨 Integration with ContentModerationService
+- ✅ Filtering engine — shipped as `ContentPolicyEngine` gating every ingress seam (no coordinator service)
 - 🔨 Basic UI for subscribing to moderators
 
 ### Phase 3: User Experience

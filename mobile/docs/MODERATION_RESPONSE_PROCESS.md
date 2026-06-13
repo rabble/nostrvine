@@ -33,7 +33,7 @@ For reports of illegal content (especially CSAM), our response is **immediate**.
 **Services**:
 - `ContentReportingService` - Handles report submission (lib/services/content_reporting_service.dart)
 - `ReportAggregationService` - Tracks and aggregates reports (lib/services/report_aggregation_service.dart)
-- `ContentModerationService` - Enforces moderation decisions (lib/services/content_moderation_service.dart)
+- `ContentPolicyEngine` - Enforces filtering decisions via ordered rules (mobile/packages/content_policy), fed by `ContentPolicyState` from `ContentBlocklistRepository` (mobile/packages/content_blocklist_repository)
 
 ## Moderation Team Monitoring
 

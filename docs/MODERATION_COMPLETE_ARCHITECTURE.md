@@ -48,8 +48,8 @@ Divine uses a **three-tier moderation architecture**:
 **Consumes Labels (kind 1985):**
 - `ModerationLabelService` - Subscribes to trusted labelers
 - `ReportAggregationService` - Aggregates reports from friends
-- `ContentModerationService` - Personal mute lists (kind 10000)
-- `ModerationFeedService` - Combines all sources into filtering decisions
+- `ContentBlocklistRepository` - Tracks own blocks (kind 30000 `d=block`), own mutes (kind 10000), and mutual block/mute; exposes an immutable `ContentPolicyState` snapshot
+- `ContentPolicyEngine` (`mobile/packages/content_policy`) - Applies ordered rules (SelfReference, PubkeyMute, PubkeyBlock, MutualMute) against that snapshot to make filtering decisions
 
 **User Experience:**
 - Users see content warnings/blurs based on labels
@@ -158,18 +158,24 @@ Divine uses a **three-tier moderation architecture**:
 8. Label provides additional authoritative signal
 ```
 
-### Example 3: User Subscribes to Curator's Mute List
+### Example 3: User Subscribes to Curator's Mute List (not yet shipped)
+
+> Subscribing to an external curator's NIP-51 list is a deferred capability
+> (a future `SubscribedListRule` on the engine). It is **not** implemented
+> today — the engine only consumes the user's own block/mute state. The flow
+> below is the intended shape once that rule lands:
 
 ```
 1. User discovers "Tech Content Curator" moderator
    ↓
 2. User subscribes to curator's NIP-51 mute list
    ↓
-3. ContentModerationService queries curator's kind 10000 events
+3. ContentBlocklistRepository aggregates the curator's kind 10000 entries
+   into its ContentPolicyState snapshot
    ↓
 4. Curator has muted 50 spam accounts
    ↓
-5. All 50 accounts automatically muted in user's feed
+5. ContentPolicyEngine's mute rule hides those 50 accounts from the user's feed
 ```
 
 ## Divine Services (Current State)
@@ -178,15 +184,15 @@ Divine uses a **three-tier moderation architecture**:
 
 1. **ModerationLabelService** - Subscribes to Faro's kind 1985 labels
 2. **ReportAggregationService** - Aggregates community kind 1984 reports
-3. **ContentModerationService** - Personal + external NIP-51 mute lists
-4. **ContentReportingService** - Creates kind 1984 reports → Faro
+3. **ContentBlocklistRepository** - Own blocks (kind 30000 `d=block`), own mutes (kind 10000), and mutual block/mute; exposes `ContentPolicyState`
+4. **ContentPolicyEngine** - Pure-Dart ordered rules (SelfReference, PubkeyMute, PubkeyBlock, MutualMute) gating every feed/search/profile/comment/notification ingress seam
+5. **ContentReportingService** - Creates kind 1984 reports → Faro
 
 ### 🔨 Missing
 
-1. **ModerationFeedService** - Coordinator combining all sources
+1. **`SubscribedListRule`** - Subscribe to external curators' kind 10000 / kind 30000 lists and fold them into `ContentPolicyState`
 2. **ModeratorRegistryService** - Manage trusted moderators/Faro instances
-3. **Integration** - Wire services into ContentModerationService
-4. **UI** - Subscribe to moderators, content warnings, report flows
+3. **UI** - Subscribe to moderators, content warnings, report flows
 
 ## Faro Integration Points
 
@@ -286,8 +292,8 @@ final defaultModerators = [
 | Report Creation | ✅ | ContentReportingService creates kind 1984 |
 | Label Subscription | ✅ | ModerationLabelService subscribes to kind 1985 |
 | Report Aggregation | ✅ | ReportAggregationService aggregates kind 1984 |
-| Mute Lists | ✅ | ContentModerationService handles kind 10000 |
-| Feed Coordinator | 🔨 | ModerationFeedService - combines all sources |
+| Mute Lists | ✅ | ContentBlocklistRepository tracks kind 10000 / kind 30000; ContentPolicyEngine applies the rules |
+| Feed Coordinator | ✅ | ContentPolicyEngine gates every ingress seam directly (no separate coordinator) |
 | Moderator Registry | 🔨 | ModeratorRegistryService - manage Faro subs |
 | UI Components | 🔨 | Content warnings, moderator browse |
 

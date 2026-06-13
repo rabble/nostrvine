@@ -11,14 +11,13 @@ Divine fully complies with Apple's requirements for user-generated content apps 
 ### ✅ Method for Filtering Objectionable Content
 
 **Implementation:**
-- Client-side content filtering via `ContentModerationService`
-- User-managed blocklist via `ContentBlocklistRepository`
-- NIP-51 mute list support for decentralized filtering
-- Multiple filter categories: spam, harassment, violence, sexual content, copyright violations, misinformation, CSAM, and AI-generated content
+- Client-side content filtering via `ContentPolicyEngine` — a pure-Dart rules engine (SelfReference, PubkeyMute, PubkeyBlock, MutualMute) that gates every feed/search/profile/comment/notification ingress seam
+- User-managed block/mute state via `ContentBlocklistRepository`, which exposes an immutable `ContentPolicyState` snapshot to the engine and a `shouldFilterFromFeeds` predicate covering own blocks (kind 30000 `d=block`), own mutes (kind 10000), and mutual block/mute
+- Multiple report categories: spam, harassment, violence, sexual content, copyright violations, misinformation, CSAM, and AI-generated content
 
 **Location:**
-- `lib/services/content_moderation_service.dart`
-- `packages/content_blocklist_repository/lib/src/content_blocklist_repository.dart`
+- `packages/content_policy/` (ContentPolicyEngine and rules)
+- `packages/content_blocklist_repository/lib/src/content_blocklist_repository.dart` (ContentPolicyState + shouldFilterFromFeeds)
 
 ### ✅ Mechanism to Report Offensive Content
 
