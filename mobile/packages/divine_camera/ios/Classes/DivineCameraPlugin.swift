@@ -121,6 +121,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         "initializeCamera", "disposeCamera", "switchCamera",
         "startRecording", "stopRecording", "pausePreview", "resumePreview",
         "setFlashMode", "setRemoteRecordControlEnabled",
+        "setVideoStabilizationMode",
     ]
 
     private static func logLifecycleCall(_ call: FlutterMethodCall) {
@@ -194,7 +195,12 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             let args = call.arguments as? [String: Any] ?? [:]
             let level = args["level"] as? Double ?? 1.0
             setZoomLevel(level: level, result: result)
-            
+
+        case "setVideoStabilizationMode":
+            let args = call.arguments as? [String: Any] ?? [:]
+            let mode = args["mode"] as? String ?? "off"
+            setVideoStabilizationMode(mode: mode, result: result)
+
         case "switchCamera":
             let args = call.arguments as? [String: Any] ?? [:]
             let lens = args["lens"] as? String ?? "back"
@@ -353,7 +359,16 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         let success = controller.setZoomLevel(level: CGFloat(level))
         result(success)
     }
-    
+
+    private func setVideoStabilizationMode(mode: String, result: @escaping FlutterResult) {
+        guard let controller = cameraController else {
+            result(Self.cameraError("NOT_INITIALIZED", "Camera not initialized"))
+            return
+        }
+        let success = controller.setVideoStabilizationMode(mode)
+        result(success)
+    }
+
     private func switchCamera(lens: String, result: @escaping FlutterResult) {
         guard let controller = cameraController else {
             result(Self.cameraError("NOT_INITIALIZED", "Camera not initialized"))

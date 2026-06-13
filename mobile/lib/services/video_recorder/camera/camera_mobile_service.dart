@@ -213,6 +213,30 @@ class CameraMobileService extends CameraService {
   }
 
   @override
+  Future<bool> setVideoStabilizationMode(
+    DivineVideoStabilizationMode mode,
+  ) async {
+    if (!_isInitialized) return false;
+    try {
+      Log.info(
+        '📷 Setting video stabilization mode to ${mode.name}',
+        name: 'CameraMobileService',
+        category: .video,
+      );
+      final success = await _camera.setVideoStabilizationMode(mode);
+      if (success) onUpdateState();
+      return success;
+    } catch (e) {
+      Log.error(
+        '📷 Failed to set video stabilization mode (unexpected error): $e',
+        name: 'CameraMobileService',
+        category: .video,
+      );
+      return false;
+    }
+  }
+
+  @override
   Future<bool> setLens(DivineCameraLens lens) async {
     if (!_isInitialized) return false;
     try {
@@ -364,6 +388,18 @@ class CameraMobileService extends CameraService {
 
   @override
   List<DivineCameraLens> get availableLenses => _camera.state.availableLenses;
+
+  @override
+  DivineVideoStabilizationMode get videoStabilizationMode =>
+      _camera.state.videoStabilizationMode;
+
+  @override
+  List<DivineVideoStabilizationMode> get availableVideoStabilizationModes =>
+      _camera.state.availableVideoStabilizationModes;
+
+  @override
+  bool get isVideoStabilizationSupported =>
+      _camera.state.isVideoStabilizationSupported;
 
   @override
   CameraLensMetadata? get currentLensMetadata =>

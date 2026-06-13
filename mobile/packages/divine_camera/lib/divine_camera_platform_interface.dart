@@ -9,6 +9,7 @@ import 'package:divine_camera/src/models/flash_mode.dart';
 import 'package:divine_camera/src/models/remote_record_trigger.dart';
 import 'package:divine_camera/src/models/video_quality.dart';
 import 'package:divine_camera/src/models/video_recording_result.dart';
+import 'package:divine_camera/src/models/video_stabilization_mode.dart';
 import 'package:flutter/widgets.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
@@ -90,6 +91,14 @@ abstract class DivineCameraPlatform extends PlatformInterface {
   /// Returns the new camera state.
   Future<CameraState> switchCamera(DivineCameraLens lens) {
     throw UnimplementedError('switchCamera() has not been implemented.');
+  }
+
+  /// Sets the video stabilization mode.
+  /// Returns true if the requested mode was applied.
+  Future<bool> setVideoStabilizationMode(DivineVideoStabilizationMode mode) {
+    throw UnimplementedError(
+      'setVideoStabilizationMode() has not been implemented.',
+    );
   }
 
   /// Starts video recording.

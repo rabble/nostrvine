@@ -7663,6 +7663,24 @@ class AppLocalizationsAr extends AppLocalizations {
       'تبديل نسبة العرض إلى الارتفاع';
 
   @override
+  String get videoRecorderStabilizationLabel => 'تثبيت الفيديو';
+
+  @override
+  String get videoRecorderStabilizationModeOff => 'إيقاف';
+
+  @override
+  String get videoRecorderStabilizationModeStandard => 'قياسي';
+
+  @override
+  String get videoRecorderStabilizationModeCinematic => 'سينمائي';
+
+  @override
+  String get videoRecorderStabilizationModeCinematicExtended => 'سينمائي موسّع';
+
+  @override
+  String get videoRecorderStabilizationModeAuto => 'تلقائي';
+
+  @override
   String get videoRecorderLibraryEmptyLabel => 'مكتبة المقاطع، لا توجد مقاطع';
 
   @override

@@ -2770,6 +2770,12 @@
     "videoRecorderToggleFlashLabel": "Przełącz lampę błyskową",
     "videoRecorderCycleTimerLabel": "Zmień timer",
     "videoRecorderToggleAspectRatioLabel": "Przełącz proporcje",
+    "videoRecorderStabilizationLabel": "Stabilizacja",
+    "videoRecorderStabilizationModeOff": "Wyłączona",
+    "videoRecorderStabilizationModeStandard": "Standardowa",
+    "videoRecorderStabilizationModeCinematic": "Filmowa",
+    "videoRecorderStabilizationModeCinematicExtended": "Filmowa rozszerzona",
+    "videoRecorderStabilizationModeAuto": "Automatyczna",
     "videoRecorderLibraryEmptyLabel": "Biblioteka klipów, brak klipów",
     "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Otwórz bibliotekę klipów, 1 klip} other{Otwórz bibliotekę klipów, {clipCount} klipów}}",
     "@videoRecorderLibraryOpenLabel": {

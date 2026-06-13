@@ -1,5 +1,6 @@
 package co.openvine.divine_camera
 
+import android.hardware.camera2.CameraMetadata
 import androidx.camera.video.Quality
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -7,7 +8,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /*
  * This demonstrates a simple unit test of the Kotlin portion of this plugin's implementation.
@@ -153,6 +156,100 @@ internal class QualityFallbackTest {
         assertEquals(
             listOf(Quality.UHD, Quality.FHD, Quality.HD, Quality.SD),
             chain
+        )
+    }
+}
+
+@RunWith(RobolectricTestRunner::class)
+internal class VideoStabilizationTest {
+    private val off = CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF
+    private val on = CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_ON
+    private val preview =
+        CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION
+
+    @Test
+    fun isCanonicalStabilizationMode_recognisesKnownModes() {
+        assertTrue(CameraController.isCanonicalStabilizationMode("off"))
+        assertTrue(CameraController.isCanonicalStabilizationMode("standard"))
+        assertTrue(CameraController.isCanonicalStabilizationMode("cinematic"))
+        assertTrue(
+            CameraController.isCanonicalStabilizationMode("cinematicExtended")
+        )
+        assertTrue(CameraController.isCanonicalStabilizationMode("auto"))
+        assertFalse(CameraController.isCanonicalStabilizationMode("bogus"))
+    }
+
+    @Test
+    fun buildList_noSupport_onlyOff() {
+        assertEquals(
+            listOf("off"),
+            CameraController.buildStabilizationModeList(
+                onSupported = false,
+                previewStabilizationSupported = false,
+            ),
+        )
+    }
+
+    @Test
+    fun buildList_onlyBasicEis_addsStandard() {
+        assertEquals(
+            listOf("off", "standard"),
+            CameraController.buildStabilizationModeList(
+                onSupported = true,
+                previewStabilizationSupported = false,
+            ),
+        )
+    }
+
+    @Test
+    fun buildList_previewSupported_addsStandardAndCinematic() {
+        // cinematicExtended/auto are omitted on Android: they map to the same
+        // PREVIEW_STABILIZATION as "cinematic".
+        assertEquals(
+            listOf("off", "standard", "cinematic"),
+            CameraController.buildStabilizationModeList(
+                onSupported = true,
+                previewStabilizationSupported = true,
+            ),
+        )
+    }
+
+    @Test
+    fun buildList_previewOnly_addsCinematic() {
+        assertEquals(
+            listOf("off", "cinematic"),
+            CameraController.buildStabilizationModeList(
+                onSupported = false,
+                previewStabilizationSupported = true,
+            ),
+        )
+    }
+
+    @Test
+    fun availableModes_nullCapabilities_onlyOff() {
+        assertEquals(
+            listOf("off"),
+            CameraController.availableVideoStabilizationModes(null),
+        )
+    }
+
+    @Test
+    fun availableModes_onSupported_addsStandard() {
+        assertEquals(
+            listOf("off", "standard"),
+            CameraController.availableVideoStabilizationModes(
+                intArrayOf(off, on),
+            ),
+        )
+    }
+
+    @Test
+    fun availableModes_previewSupported_addsCinematic() {
+        assertEquals(
+            listOf("off", "standard", "cinematic"),
+            CameraController.availableVideoStabilizationModes(
+                intArrayOf(off, on, preview),
+            ),
         )
     }
 }

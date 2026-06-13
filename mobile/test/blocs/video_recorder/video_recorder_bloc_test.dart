@@ -49,6 +49,7 @@ void main() {
     wakelockPlusPlatformInstance = _FakeWakelockPlatform();
     registerFallbackValue(DivineFlashMode.off);
     registerFallbackValue(DivineCameraLens.back);
+    registerFallbackValue(DivineVideoStabilizationMode.off);
     registerFallbackValue(DivineVideoQuality.fhd);
     registerFallbackValue(AppLifecycleState.resumed);
     registerFallbackValue(Offset.zero);
@@ -75,6 +76,15 @@ void main() {
       () => cameraService.availableLenses,
     ).thenReturn(const [DivineCameraLens.back, DivineCameraLens.front]);
     when(() => cameraService.currentLensMetadata).thenReturn(null);
+    when(
+      () => cameraService.videoStabilizationMode,
+    ).thenReturn(DivineVideoStabilizationMode.off);
+    when(
+      () => cameraService.availableVideoStabilizationModes,
+    ).thenReturn(const [DivineVideoStabilizationMode.off]);
+    when(
+      () => cameraService.isVideoStabilizationSupported,
+    ).thenReturn(false);
     when(() => cameraService.initializationError).thenReturn(null);
     when(() => cameraService.dispose()).thenAnswer((_) async {});
     when(
@@ -175,6 +185,73 @@ void main() {
         build: buildBloc,
         act: (bloc) => bloc.add(const VideoRecorderFlashToggled()),
         expect: () => const <VideoRecorderBlocState>[],
+      );
+    });
+
+    group('VideoRecorderStabilizationModeSet', () {
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'persists the new mode when the camera accepts it',
+        setUp: () {
+          when(
+            () => cameraService.setVideoStabilizationMode(any()),
+          ).thenAnswer((_) async => true);
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const VideoRecorderStabilizationModeSet(
+            DivineVideoStabilizationMode.cinematic,
+          ),
+        ),
+        expect: () => const [
+          VideoRecorderBlocState(
+            videoStabilizationMode: DivineVideoStabilizationMode.cinematic,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => cameraService.setVideoStabilizationMode(
+              DivineVideoStabilizationMode.cinematic,
+            ),
+          ).called(1);
+          verify(
+            () => prefs.setString(
+              'camera_last_used_stabilization',
+              'cinematic',
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'does not emit when camera service refuses the change',
+        setUp: () {
+          when(
+            () => cameraService.setVideoStabilizationMode(any()),
+          ).thenAnswer((_) async => false);
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const VideoRecorderStabilizationModeSet(
+            DivineVideoStabilizationMode.standard,
+          ),
+        ),
+        expect: () => const <VideoRecorderBlocState>[],
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'ignores a no-op set to the already-active mode',
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const VideoRecorderStabilizationModeSet(
+            DivineVideoStabilizationMode.off,
+          ),
+        ),
+        expect: () => const <VideoRecorderBlocState>[],
+        verify: (_) {
+          verifyNever(
+            () => cameraService.setVideoStabilizationMode(any()),
+          );
+        },
       );
     });
 
@@ -705,6 +782,50 @@ void main() {
               keepAutosavedDraft: any(named: 'keepAutosavedDraft'),
             ),
           ).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'restores the persisted stabilization mode the camera supports',
+        setUp: () {
+          when(
+            () => prefs.getString('camera_last_used_stabilization'),
+          ).thenReturn(DivineVideoStabilizationMode.cinematic.toNativeString());
+          when(
+            () => cameraService.availableVideoStabilizationModes,
+          ).thenReturn(const [
+            DivineVideoStabilizationMode.off,
+            DivineVideoStabilizationMode.cinematic,
+          ]);
+          when(
+            () => cameraService.setVideoStabilizationMode(any()),
+          ).thenAnswer((_) async => true);
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
+        verify: (_) {
+          verify(
+            () => cameraService.setVideoStabilizationMode(
+              DivineVideoStabilizationMode.cinematic,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'does not restore a stabilization mode the camera does not support',
+        setUp: () {
+          when(
+            () => prefs.getString('camera_last_used_stabilization'),
+          ).thenReturn(DivineVideoStabilizationMode.cinematic.toNativeString());
+          // availableVideoStabilizationModes stays [off] from the outer setUp.
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
+        verify: (_) {
+          verifyNever(
+            () => cameraService.setVideoStabilizationMode(any()),
+          );
         },
       );
     });

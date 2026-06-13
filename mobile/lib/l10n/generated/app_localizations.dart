@@ -13430,6 +13430,42 @@ abstract class AppLocalizations {
   /// **'Toggle aspect ratio'**
   String get videoRecorderToggleAspectRatioLabel;
 
+  /// No description provided for @videoRecorderStabilizationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stabilization'**
+  String get videoRecorderStabilizationLabel;
+
+  /// No description provided for @videoRecorderStabilizationModeOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get videoRecorderStabilizationModeOff;
+
+  /// No description provided for @videoRecorderStabilizationModeStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard'**
+  String get videoRecorderStabilizationModeStandard;
+
+  /// No description provided for @videoRecorderStabilizationModeCinematic.
+  ///
+  /// In en, this message translates to:
+  /// **'Cinematic'**
+  String get videoRecorderStabilizationModeCinematic;
+
+  /// No description provided for @videoRecorderStabilizationModeCinematicExtended.
+  ///
+  /// In en, this message translates to:
+  /// **'Cinematic Extended'**
+  String get videoRecorderStabilizationModeCinematicExtended;
+
+  /// No description provided for @videoRecorderStabilizationModeAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get videoRecorderStabilizationModeAuto;
+
   /// No description provided for @videoRecorderLibraryEmptyLabel.
   ///
   /// In en, this message translates to:

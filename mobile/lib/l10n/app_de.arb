@@ -2770,6 +2770,12 @@
     "videoRecorderToggleFlashLabel": "Blitz ein-/ausschalten",
     "videoRecorderCycleTimerLabel": "Timer wechseln",
     "videoRecorderToggleAspectRatioLabel": "Seitenverhältnis wechseln",
+    "videoRecorderStabilizationLabel": "Stabilisierung",
+    "videoRecorderStabilizationModeOff": "Aus",
+    "videoRecorderStabilizationModeStandard": "Standard",
+    "videoRecorderStabilizationModeCinematic": "Cinematic",
+    "videoRecorderStabilizationModeCinematicExtended": "Cinematic erweitert",
+    "videoRecorderStabilizationModeAuto": "Auto",
     "videoRecorderLibraryEmptyLabel": "Clip-Mediathek, keine Clips",
     "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Clip-Mediathek öffnen, 1 Clip} other{Clip-Mediathek öffnen, {clipCount} Clips}}",
     "@videoRecorderLibraryOpenLabel": {

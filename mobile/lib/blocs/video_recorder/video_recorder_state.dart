@@ -21,6 +21,11 @@ class VideoRecorderBlocState extends Equatable {
     this.cameraRebuildCount = 0,
     this.aspectRatio = model.AspectRatio.vertical,
     this.flashMode = DivineFlashMode.auto,
+    this.videoStabilizationMode = DivineVideoStabilizationMode.off,
+    this.availableVideoStabilizationModes = const [
+      DivineVideoStabilizationMode.off,
+    ],
+    this.isVideoStabilizationSupported = false,
     this.timerDuration = TimerDuration.off,
     // TODO(#4787): Replace with a status enum + l10n key per
     // `state_management.md` once the UI migration (PR2/PR3) is in.
@@ -72,6 +77,16 @@ class VideoRecorderBlocState extends Equatable {
 
   /// Current flash mode.
   final DivineFlashMode flashMode;
+
+  /// Current video stabilization mode.
+  final DivineVideoStabilizationMode videoStabilizationMode;
+
+  /// Stabilization modes supported by the active camera/lens.
+  /// Always contains at least [DivineVideoStabilizationMode.off].
+  final List<DivineVideoStabilizationMode> availableVideoStabilizationModes;
+
+  /// Whether the active camera supports video stabilization beyond off.
+  final bool isVideoStabilizationSupported;
 
   /// Timer duration before recording starts.
   final TimerDuration timerDuration;
@@ -156,6 +171,9 @@ class VideoRecorderBlocState extends Equatable {
     int? cameraRebuildCount,
     model.AspectRatio? aspectRatio,
     DivineFlashMode? flashMode,
+    DivineVideoStabilizationMode? videoStabilizationMode,
+    List<DivineVideoStabilizationMode>? availableVideoStabilizationModes,
+    bool? isVideoStabilizationSupported,
     TimerDuration? timerDuration,
     String? initializationErrorMessage,
     bool? showLastClipOverlay,
@@ -183,6 +201,13 @@ class VideoRecorderBlocState extends Equatable {
       cameraRebuildCount: cameraRebuildCount ?? this.cameraRebuildCount,
       aspectRatio: aspectRatio ?? this.aspectRatio,
       flashMode: flashMode ?? this.flashMode,
+      videoStabilizationMode:
+          videoStabilizationMode ?? this.videoStabilizationMode,
+      availableVideoStabilizationModes:
+          availableVideoStabilizationModes ??
+          this.availableVideoStabilizationModes,
+      isVideoStabilizationSupported:
+          isVideoStabilizationSupported ?? this.isVideoStabilizationSupported,
       timerDuration: timerDuration ?? this.timerDuration,
       initializationErrorMessage:
           initializationErrorMessage ?? this.initializationErrorMessage,
@@ -214,6 +239,9 @@ class VideoRecorderBlocState extends Equatable {
     cameraRebuildCount,
     aspectRatio,
     flashMode,
+    videoStabilizationMode,
+    availableVideoStabilizationModes,
+    isVideoStabilizationSupported,
     timerDuration,
     initializationErrorMessage,
     showLastClipOverlay,

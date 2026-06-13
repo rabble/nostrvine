@@ -88,6 +88,11 @@ class MockDivineCameraPlatform
   Future<bool> setZoomLevel(double level) async => true;
 
   @override
+  Future<bool> setVideoStabilizationMode(
+    DivineVideoStabilizationMode mode,
+  ) async => true;
+
+  @override
   Future<CameraState> switchCamera(DivineCameraLens lens) async {
     return _state = _state.copyWith(lens: lens);
   }

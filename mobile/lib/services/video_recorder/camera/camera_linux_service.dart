@@ -2,7 +2,11 @@
 // ABOUTME: Returns no-op results so the app can run for browsing/watching.
 
 import 'package:divine_camera/divine_camera.dart'
-    show CameraLensMetadata, DivineCameraLens, DivineVideoQuality;
+    show
+        CameraLensMetadata,
+        DivineCameraLens,
+        DivineVideoQuality,
+        DivineVideoStabilizationMode;
 import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
@@ -61,6 +65,17 @@ class CameraLinuxService extends CameraService {
   List<DivineCameraLens> get availableLenses => const [];
 
   @override
+  DivineVideoStabilizationMode get videoStabilizationMode =>
+      DivineVideoStabilizationMode.off;
+
+  @override
+  List<DivineVideoStabilizationMode> get availableVideoStabilizationModes =>
+      const [DivineVideoStabilizationMode.off];
+
+  @override
+  bool get isVideoStabilizationSupported => false;
+
+  @override
   CameraLensMetadata? get currentLensMetadata => null;
 
   @override
@@ -96,6 +111,11 @@ class CameraLinuxService extends CameraService {
 
   @override
   Future<bool> switchCamera() async => false;
+
+  @override
+  Future<bool> setVideoStabilizationMode(
+    DivineVideoStabilizationMode mode,
+  ) async => false;
 
   @override
   Future<bool> setLens(DivineCameraLens lens) async => false;

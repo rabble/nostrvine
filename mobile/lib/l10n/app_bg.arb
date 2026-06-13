@@ -3020,6 +3020,12 @@
     "videoRecorderToggleFlashLabel": "Превключване на светкавицата",
     "videoRecorderCycleTimerLabel": "Цикъл таймер",
     "videoRecorderToggleAspectRatioLabel": "Превключване на пропорциите",
+    "videoRecorderStabilizationLabel": "Стабилизация",
+    "videoRecorderStabilizationModeOff": "Изкл.",
+    "videoRecorderStabilizationModeStandard": "Стандартна",
+    "videoRecorderStabilizationModeCinematic": "Кинематографична",
+    "videoRecorderStabilizationModeCinematicExtended": "Кинематографична разширена",
+    "videoRecorderStabilizationModeAuto": "Авто",
     "videoRecorderLibraryEmptyLabel": "Библиотека с клипове, няма клипове",
     "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Отвори библиотеката с клипове, 1 клип} other{Отвори библиотеката с клипове, {clipCount} клипа}}",
     "@videoRecorderLibraryOpenLabel": {

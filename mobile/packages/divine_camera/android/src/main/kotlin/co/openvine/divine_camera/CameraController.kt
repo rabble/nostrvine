@@ -12,6 +12,7 @@ import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
+import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
@@ -20,9 +21,7 @@ import android.os.Looper
 import android.view.Surface
 import android.view.WindowManager
 import androidx.camera.camera2.interop.Camera2CameraInfo
-import androidx.camera.camera2.interop.Camera2CameraControl
 import androidx.camera.camera2.interop.Camera2Interop
-import androidx.camera.camera2.interop.CaptureRequestOptions
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
@@ -82,6 +81,12 @@ class CameraController(
 
     // Whether to mirror front camera video output
     private var mirrorFrontCameraOutput: Boolean = true
+
+    // Requested video stabilization mode (cross-platform string). Applied to
+    // the shared capture session via Camera2 interop, so it affects both the
+    // preview and the recorded file. Defaults to "off" to preserve existing
+    // behaviour until the user opts in.
+    private var requestedStabilizationMode: String = STABILIZATION_OFF
 
     // Auto flash mode - checks brightness once when recording starts
     private var isAutoFlashMode: Boolean = false
@@ -187,6 +192,22 @@ class CameraController(
     companion object {
         private const val MAX_ENCODER_RETRIES = 2
 
+        // Canonical cross-platform stabilization mode strings, shared with the
+        // iOS/macOS implementations so the Dart layer speaks one vocabulary.
+        const val STABILIZATION_OFF = "off"
+        const val STABILIZATION_STANDARD = "standard"
+        const val STABILIZATION_CINEMATIC = "cinematic"
+        const val STABILIZATION_CINEMATIC_EXTENDED = "cinematicExtended"
+        const val STABILIZATION_AUTO = "auto"
+
+        private val CANONICAL_STABILIZATION_MODES = setOf(
+            STABILIZATION_OFF,
+            STABILIZATION_STANDARD,
+            STABILIZATION_CINEMATIC,
+            STABILIZATION_CINEMATIC_EXTENDED,
+            STABILIZATION_AUTO,
+        )
+
         /** Returns the next lower quality, or null if already at minimum. */
         fun lowerQuality(current: Quality): Quality? = when (current) {
             Quality.UHD -> Quality.FHD
@@ -195,6 +216,51 @@ class CameraController(
             Quality.HD -> Quality.SD
             else -> null
         }
+
+        /** True when [mode] is one of the recognised stabilization strings. */
+        fun isCanonicalStabilizationMode(mode: String): Boolean =
+            mode in CANONICAL_STABILIZATION_MODES
+
+        /**
+         * Builds the supported cross-platform stabilization mode strings from
+         * the device's `CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES`. "off" is
+         * always present.
+         *
+         * Android exposes only two real EIS levels, so the menu surfaces at most
+         * two active rungs: "standard" ([onSupported] →
+         * `CONTROL_VIDEO_STABILIZATION_MODE_ON`, basic) and "cinematic"
+         * ([previewStabilizationSupported] → `PREVIEW_STABILIZATION`, strong,
+         * preview AND recording). The finer iOS tiers (`cinematicExtended`,
+         * `auto`) would map to the identical underlying mode, so they're omitted
+         * here to avoid duplicate-looking menu entries.
+         */
+        fun buildStabilizationModeList(
+            onSupported: Boolean,
+            previewStabilizationSupported: Boolean,
+        ): List<String> {
+            val result = mutableListOf(STABILIZATION_OFF)
+            if (onSupported) result.add(STABILIZATION_STANDARD)
+            if (previewStabilizationSupported) {
+                result.add(STABILIZATION_CINEMATIC)
+            }
+            return result
+        }
+
+        /**
+         * Derives the supported cross-platform stabilization mode strings from
+         * the device's `CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES`.
+         */
+        fun availableVideoStabilizationModes(
+            availableModes: IntArray?,
+        ): List<String> = buildStabilizationModeList(
+            onSupported = availableModes?.contains(
+                CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_ON
+            ) == true,
+            previewStabilizationSupported = availableModes?.contains(
+                CameraMetadata
+                    .CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION
+            ) == true,
+        )
     }
 
     /** Listener for auto-stop events, set by the plugin. */
@@ -599,16 +665,98 @@ class CameraController(
     /**
      * Creates a Preview with Camera2Interop for exposure monitoring.
      * Uses CaptureCallback to track ISO and exposure time for auto-flash.
+     *
+     * [stabilizationMode] is the raw Camera2
+     * `CONTROL_VIDEO_STABILIZATION_MODE` value (0=off, 1=on, 2=preview). We set
+     * it directly on the session via Camera2 interop rather than CameraX's
+     * `setPreviewStabilizationEnabled`, because some HALs (notably Samsung)
+     * only honour the raw key — CameraX's abstraction produced no crop/effect
+     * there. Setting it on the Preview builder applies it to the shared
+     * capture session, so it covers the recording stream too.
      */
-    private fun buildPreviewWithExposureMonitoring(aspectRatio: Int): Preview {
+    @SuppressLint("UnsafeOptInUsageError")
+    private fun buildPreviewWithExposureMonitoring(
+        aspectRatio: Int,
+        stabilizationMode: Int,
+    ): Preview {
         val previewBuilder = Preview.Builder()
             .setTargetAspectRatio(aspectRatio)
-        
-        // Add Camera2 capture callback to monitor exposure values
+
         val camera2Extender = Camera2Interop.Extender(previewBuilder)
+        // Add Camera2 capture callback to monitor exposure values
         camera2Extender.setSessionCaptureCallback(exposureCaptureCallback)
-        
+        camera2Extender.setCaptureRequestOption(
+            CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
+            stabilizationMode,
+        )
+
         return previewBuilder.build()
+    }
+
+    /**
+     * Reads `(basicEisSupported, previewStabilizationSupported)` from the
+     * current lens's Camera2 `CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES`.
+     *
+     * Uses the static camera characteristics (not a pre-bind CameraX
+     * `CameraInfo`/`PreviewCapabilities`, which on some devices/CameraX
+     * versions throws or under-reports before the use cases are bound — that
+     * was disabling stabilization entirely).
+     */
+    private fun stabilizationSupport(): Pair<Boolean, Boolean> {
+        val cameraId = getCameraIdForLens(currentLensType) ?: return false to false
+        return try {
+            val cameraManager =
+                context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+            val modes = cameraManager.getCameraCharacteristics(cameraId).get(
+                CameraCharacteristics.CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES
+            )
+            val onSupported = modes?.contains(
+                CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_ON
+            ) == true
+            val previewSupported = modes?.contains(
+                CameraMetadata
+                    .CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION
+            ) == true
+            onSupported to previewSupported
+        } catch (e: Exception) {
+            DivineCameraLog.w(TAG, "Failed to read stabilization support", e)
+            false to false
+        }
+    }
+
+    /**
+     * Resolves the requested stabilization mode into the raw Camera2
+     * `CONTROL_VIDEO_STABILIZATION_MODE` value to apply at bind time
+     * (0=off, 1=on/basic EIS, 2=preview stabilization), gated on the lens's
+     * supported modes.
+     */
+    private fun resolvedCamera2StabilizationMode(): Int {
+        val off = CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF
+        if (requestedStabilizationMode == STABILIZATION_OFF) return off
+
+        val on = CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_ON
+        val preview =
+            CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION
+        val (onSupported, previewSupported) = stabilizationSupport()
+
+        val mode = when (requestedStabilizationMode) {
+            STABILIZATION_STANDARD -> if (onSupported) on else off
+            STABILIZATION_CINEMATIC,
+            STABILIZATION_CINEMATIC_EXTENDED,
+            STABILIZATION_AUTO -> when {
+                previewSupported -> preview
+                onSupported -> on
+                else -> off
+            }
+            else -> off
+        }
+        DivineCameraLog.info(
+            "Stabilization '$requestedStabilizationMode' -> camera2Mode=$mode " +
+                "(0=off,1=on,2=preview) " +
+                "(previewSupported=$previewSupported onSupported=$onSupported)",
+            name = "DivineCamera.Stabilization",
+        )
+        return mode
     }
 
     /**
@@ -660,8 +808,15 @@ class CameraController(
             // Fixed 16:9 aspect ratio for portrait mode (9:16)
             val targetAspectRatio = AspectRatio.RATIO_16_9
 
+            // Resolve stabilization at bind time (CameraX cannot change it on a
+            // running session).
+            val stabilizationMode = resolvedCamera2StabilizationMode()
+
             // Build preview with Camera2Interop for exposure monitoring
-            preview = buildPreviewWithExposureMonitoring(targetAspectRatio)
+            preview = buildPreviewWithExposureMonitoring(
+                targetAspectRatio,
+                stabilizationMode,
+            )
 
             // Variable to track if callback was already called
             var callbackCalled = false
@@ -821,8 +976,13 @@ class CameraController(
             // Fixed 16:9 aspect ratio for portrait mode (9:16)
             val targetAspectRatio = AspectRatio.RATIO_16_9
 
+            val stabilizationMode = resolvedCamera2StabilizationMode()
+
             // Build preview with Camera2Interop for exposure monitoring
-            preview = buildPreviewWithExposureMonitoring(targetAspectRatio)
+            preview = buildPreviewWithExposureMonitoring(
+                targetAspectRatio,
+                stabilizationMode,
+            )
 
             // Reuse the existing flutter texture - just update buffer size when we get new resolution
             preview?.setSurfaceProvider(ContextCompat.getMainExecutor(context)) { request ->
@@ -1377,7 +1537,12 @@ class CameraController(
                 buildCameraSelectorForLens(targetLensType, provider)
             val targetAspectRatio = AspectRatio.RATIO_16_9
 
-            preview = buildPreviewWithExposureMonitoring(targetAspectRatio)
+            val stabilizationMode = resolvedCamera2StabilizationMode()
+
+            preview = buildPreviewWithExposureMonitoring(
+                targetAspectRatio,
+                stabilizationMode,
+            )
             // Delay surface provision so the zoom is fully applied
             // before the first frame renders. The Flutter texture keeps
             // the last frame from the previous camera (natural freeze)
@@ -1551,6 +1716,42 @@ class CameraController(
             DivineCameraLog.e(TAG, "Failed to set zoom level", e)
             false
         }
+    }
+
+    /**
+     * Sets the requested video stabilization mode.
+     *
+     * CameraX configures stabilization at bind time only (it cannot be changed
+     * on a running session), so a mode change while the camera is live rebinds
+     * the use cases via [switchCamera] on the same lens. Returns true once the
+     * mode is recorded; the rebind reflects it in both preview and recording.
+     */
+    fun setVideoStabilizationMode(mode: String): Boolean {
+        if (!isCanonicalStabilizationMode(mode)) {
+            DivineCameraLog.w(TAG, "Unknown video stabilization mode: $mode")
+            return false
+        }
+        if (mode == requestedStabilizationMode) return true
+        requestedStabilizationMode = mode
+
+        // Not bound yet — the mode is applied on the next bind (initialize).
+        if (camera == null || isAutoSwitching) return true
+
+        // Rebind the current lens so CameraX reconfigures the session with the
+        // new stabilization setting. Reuses the texture-preserving switch path;
+        // zoom resets to 1.0x, like a lens switch.
+        DivineCameraLog.d(TAG, "Rebinding to apply stabilization mode: $mode")
+        switchCamera(currentLensType) { _, _ -> }
+        return true
+    }
+
+    /**
+     * Returns the stabilization modes the active camera supports, as
+     * cross-platform strings, read from the lens's Camera2 capabilities.
+     */
+    private fun availableVideoStabilizationModesForCurrentLens(): List<String> {
+        val (onSupported, previewSupported) = stabilizationSupport()
+        return buildStabilizationModeList(onSupported, previewSupported)
     }
 
     /**
@@ -1951,6 +2152,7 @@ class CameraController(
      */
     fun getCameraState(): MutableMap<String, Any?> {
         val textureId = textureEntry?.id() ?: -1L
+        val stabilizationModes = availableVideoStabilizationModesForCurrentLens()
         return mutableMapOf(
             "isInitialized" to (camera != null),
             "isRecording" to isRecording,
@@ -1969,7 +2171,10 @@ class CameraController(
             "isExposurePointSupported" to isExposurePointSupported,
             "textureId" to textureId,
             "availableLenses" to getAvailableLenses(),
-            "currentLensMetadata" to getCurrentLensMetadata()
+            "currentLensMetadata" to getCurrentLensMetadata(),
+            "videoStabilizationMode" to requestedStabilizationMode,
+            "availableVideoStabilizationModes" to stabilizationModes,
+            "isVideoStabilizationSupported" to (stabilizationModes.size > 1)
         )
     }
 

@@ -7768,6 +7768,25 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoRecorderToggleAspectRatioLabel => 'Alternar proporção';
 
   @override
+  String get videoRecorderStabilizationLabel => 'Estabilização';
+
+  @override
+  String get videoRecorderStabilizationModeOff => 'Desativada';
+
+  @override
+  String get videoRecorderStabilizationModeStandard => 'Padrão';
+
+  @override
+  String get videoRecorderStabilizationModeCinematic => 'Cinematográfica';
+
+  @override
+  String get videoRecorderStabilizationModeCinematicExtended =>
+      'Cinematográfica ampliada';
+
+  @override
+  String get videoRecorderStabilizationModeAuto => 'Automática';
+
+  @override
   String get videoRecorderLibraryEmptyLabel =>
       'Biblioteca de clipes, sem clipes';
 

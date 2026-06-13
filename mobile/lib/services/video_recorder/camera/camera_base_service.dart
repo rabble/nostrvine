@@ -2,7 +2,11 @@
 // ABOUTME: Provides unified API for camera control, recording, and preview
 
 import 'package:divine_camera/divine_camera.dart'
-    show CameraLensMetadata, DivineCameraLens, DivineVideoQuality;
+    show
+        CameraLensMetadata,
+        DivineCameraLens,
+        DivineVideoQuality,
+        DivineVideoStabilizationMode;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
@@ -70,6 +74,9 @@ abstract class CameraService {
   /// Switches between front and back camera. Returns true if successful.
   Future<bool> switchCamera();
 
+  /// Sets the video stabilization mode. Returns true if applied.
+  Future<bool> setVideoStabilizationMode(DivineVideoStabilizationMode mode);
+
   /// Switches to a specific camera lens. Returns true if successful.
   Future<bool> setLens(DivineCameraLens lens);
 
@@ -116,6 +123,15 @@ abstract class CameraService {
 
   /// List of available camera lenses on this device.
   List<DivineCameraLens> get availableLenses;
+
+  /// The currently requested video stabilization mode.
+  DivineVideoStabilizationMode get videoStabilizationMode;
+
+  /// The stabilization modes supported by the active camera/lens.
+  List<DivineVideoStabilizationMode> get availableVideoStabilizationModes;
+
+  /// Whether the active camera supports video stabilization beyond off.
+  bool get isVideoStabilizationSupported;
 
   /// Metadata for the currently active camera lens.
   /// Returns null if metadata is not available.

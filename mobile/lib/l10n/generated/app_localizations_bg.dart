@@ -7793,6 +7793,25 @@ class AppLocalizationsBg extends AppLocalizations {
       'Превключване на пропорциите';
 
   @override
+  String get videoRecorderStabilizationLabel => 'Стабилизация';
+
+  @override
+  String get videoRecorderStabilizationModeOff => 'Изкл.';
+
+  @override
+  String get videoRecorderStabilizationModeStandard => 'Стандартна';
+
+  @override
+  String get videoRecorderStabilizationModeCinematic => 'Кинематографична';
+
+  @override
+  String get videoRecorderStabilizationModeCinematicExtended =>
+      'Кинематографична разширена';
+
+  @override
+  String get videoRecorderStabilizationModeAuto => 'Авто';
+
+  @override
   String get videoRecorderLibraryEmptyLabel =>
       'Библиотека с клипове, няма клипове';
 

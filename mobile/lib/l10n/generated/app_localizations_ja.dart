@@ -7451,6 +7451,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoRecorderToggleAspectRatioLabel => 'アスペクト比を切り替え';
 
   @override
+  String get videoRecorderStabilizationLabel => '手ぶれ補正';
+
+  @override
+  String get videoRecorderStabilizationModeOff => 'オフ';
+
+  @override
+  String get videoRecorderStabilizationModeStandard => '標準';
+
+  @override
+  String get videoRecorderStabilizationModeCinematic => 'シネマティック';
+
+  @override
+  String get videoRecorderStabilizationModeCinematicExtended => 'シネマティック拡張';
+
+  @override
+  String get videoRecorderStabilizationModeAuto => '自動';
+
+  @override
   String get videoRecorderLibraryEmptyLabel => 'クリップライブラリ、クリップなし';
 
   @override

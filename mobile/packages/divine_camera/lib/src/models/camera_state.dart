@@ -4,6 +4,7 @@
 import 'package:divine_camera/src/models/camera_lens.dart';
 import 'package:divine_camera/src/models/camera_lens_metadata.dart';
 import 'package:divine_camera/src/models/flash_mode.dart';
+import 'package:divine_camera/src/models/video_stabilization_mode.dart';
 import 'package:equatable/equatable.dart';
 
 /// Represents the current state of the camera.
@@ -27,6 +28,11 @@ class CameraState extends Equatable {
     this.textureId,
     this.availableLenses = const [DivineCameraLens.back],
     this.currentLensMetadata,
+    this.videoStabilizationMode = DivineVideoStabilizationMode.off,
+    this.availableVideoStabilizationModes = const [
+      DivineVideoStabilizationMode.off,
+    ],
+    this.isVideoStabilizationSupported = false,
   });
 
   /// Creates a [CameraState] from a map.
@@ -60,6 +66,17 @@ class CameraState extends Equatable {
               map['currentLensMetadata'] as Map<dynamic, dynamic>,
             )
           : null,
+      videoStabilizationMode: DivineVideoStabilizationMode.fromNativeString(
+        map['videoStabilizationMode'] as String? ?? 'off',
+      ),
+      availableVideoStabilizationModes:
+          map['availableVideoStabilizationModes'] != null
+          ? DivineVideoStabilizationMode.fromNativeStringList(
+              map['availableVideoStabilizationModes'] as List<dynamic>,
+            )
+          : const [DivineVideoStabilizationMode.off],
+      isVideoStabilizationSupported:
+          map['isVideoStabilizationSupported'] as bool? ?? false,
     );
   }
 
@@ -117,6 +134,16 @@ class CameraState extends Equatable {
   /// Contains hardware info like focal length, aperture, sensor size.
   final CameraLensMetadata? currentLensMetadata;
 
+  /// The currently requested video stabilization mode.
+  final DivineVideoStabilizationMode videoStabilizationMode;
+
+  /// The stabilization modes supported by the active camera/lens.
+  /// Always contains at least [DivineVideoStabilizationMode.off].
+  final List<DivineVideoStabilizationMode> availableVideoStabilizationModes;
+
+  /// Whether the active camera supports any video stabilization beyond off.
+  final bool isVideoStabilizationSupported;
+
   /// Whether the camera can record video.
   bool get canRecord => isInitialized && !isRecording;
 
@@ -165,6 +192,9 @@ class CameraState extends Equatable {
     int? textureId,
     List<DivineCameraLens>? availableLenses,
     CameraLensMetadata? currentLensMetadata,
+    DivineVideoStabilizationMode? videoStabilizationMode,
+    List<DivineVideoStabilizationMode>? availableVideoStabilizationModes,
+    bool? isVideoStabilizationSupported,
   }) {
     return CameraState(
       isInitialized: isInitialized ?? this.isInitialized,
@@ -186,6 +216,13 @@ class CameraState extends Equatable {
       textureId: textureId ?? this.textureId,
       availableLenses: availableLenses ?? this.availableLenses,
       currentLensMetadata: currentLensMetadata ?? this.currentLensMetadata,
+      videoStabilizationMode:
+          videoStabilizationMode ?? this.videoStabilizationMode,
+      availableVideoStabilizationModes:
+          availableVideoStabilizationModes ??
+          this.availableVideoStabilizationModes,
+      isVideoStabilizationSupported:
+          isVideoStabilizationSupported ?? this.isVideoStabilizationSupported,
     );
   }
 
@@ -211,6 +248,11 @@ class CameraState extends Equatable {
           .map((l) => l.toNativeString())
           .toList(),
       'currentLensMetadata': currentLensMetadata?.toMap(),
+      'videoStabilizationMode': videoStabilizationMode.toNativeString(),
+      'availableVideoStabilizationModes': availableVideoStabilizationModes
+          .map((m) => m.toNativeString())
+          .toList(),
+      'isVideoStabilizationSupported': isVideoStabilizationSupported,
     };
   }
 
@@ -232,7 +274,11 @@ class CameraState extends Equatable {
         'isExposurePointSupported: $isExposurePointSupported, '
         'textureId: $textureId, '
         'availableLenses: $availableLenses, '
-        'currentLensMetadata: $currentLensMetadata)';
+        'currentLensMetadata: $currentLensMetadata, '
+        'videoStabilizationMode: $videoStabilizationMode, '
+        'availableVideoStabilizationModes: '
+        '$availableVideoStabilizationModes, '
+        'isVideoStabilizationSupported: $isVideoStabilizationSupported)';
   }
 
   @override
@@ -254,5 +300,8 @@ class CameraState extends Equatable {
     textureId,
     availableLenses,
     currentLensMetadata,
+    videoStabilizationMode,
+    availableVideoStabilizationModes,
+    isVideoStabilizationSupported,
   ];
 }

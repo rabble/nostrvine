@@ -2770,6 +2770,12 @@
     "videoRecorderToggleFlashLabel": "Växla blixt",
     "videoRecorderCycleTimerLabel": "Växla timer",
     "videoRecorderToggleAspectRatioLabel": "Växla bildförhållande",
+    "videoRecorderStabilizationLabel": "Stabilisering",
+    "videoRecorderStabilizationModeOff": "Av",
+    "videoRecorderStabilizationModeStandard": "Standard",
+    "videoRecorderStabilizationModeCinematic": "Filmisk",
+    "videoRecorderStabilizationModeCinematicExtended": "Filmisk utökad",
+    "videoRecorderStabilizationModeAuto": "Auto",
     "videoRecorderLibraryEmptyLabel": "Klippbibliotek, inga klipp",
     "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Öppna klippbibliotek, 1 klipp} other{Öppna klippbibliotek, {clipCount} klipp}}",
     "@videoRecorderLibraryOpenLabel": {

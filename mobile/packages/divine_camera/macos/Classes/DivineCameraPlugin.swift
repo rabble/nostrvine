@@ -136,6 +136,11 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             let level = args["level"] as? Double ?? 1.0
             setZoomLevel(level: level, result: result)
 
+        case "setVideoStabilizationMode":
+            // AVCaptureConnection.preferredVideoStabilizationMode is an
+            // iOS-only API; macOS has no video stabilization support.
+            result(false)
+
         case "switchCamera":
             let args = call.arguments as? [String: Any] ?? [:]
             let lens = args["lens"] as? String ?? "front"

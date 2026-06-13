@@ -61,7 +61,8 @@ class DivineCameraPlugin :
     private val lifecycleMethods = setOf(
         "initializeCamera", "disposeCamera", "switchCamera",
         "startRecording", "stopRecording", "pausePreview", "resumePreview",
-        "setFlashMode", "setRemoteRecordControlEnabled"
+        "setFlashMode", "setRemoteRecordControlEnabled",
+        "setVideoStabilizationMode"
     )
 
     private fun logLifecycleCall(call: MethodCall) {
@@ -120,6 +121,11 @@ class DivineCameraPlugin :
             "setZoomLevel" -> {
                 val level = call.argument<Double>("level") ?: 1.0
                 setZoomLevel(level.toFloat(), oneShotResult)
+            }
+
+            "setVideoStabilizationMode" -> {
+                val mode = call.argument<String>("mode") ?: "off"
+                setVideoStabilizationMode(mode, oneShotResult)
             }
 
             "switchCamera" -> {
@@ -289,6 +295,20 @@ class DivineCameraPlugin :
             result.success(success)
         } catch (e: Exception) {
             result.error("ZOOM_ERROR", e.message, null)
+        }
+    }
+
+    private fun setVideoStabilizationMode(mode: String, result: Result) {
+        val controller = cameraController
+        if (controller == null) {
+            result.error("NOT_INITIALIZED", "Camera not initialized", null)
+            return
+        }
+        try {
+            val success = controller.setVideoStabilizationMode(mode)
+            result.success(success)
+        } catch (e: Exception) {
+            result.error("STABILIZATION_ERROR", e.message, null)
         }
     }
 

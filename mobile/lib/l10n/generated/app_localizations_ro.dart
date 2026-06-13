@@ -7887,6 +7887,25 @@ class AppLocalizationsRo extends AppLocalizations {
       'Schimbă raportul de aspect';
 
   @override
+  String get videoRecorderStabilizationLabel => 'Stabilizare';
+
+  @override
+  String get videoRecorderStabilizationModeOff => 'Dezactivată';
+
+  @override
+  String get videoRecorderStabilizationModeStandard => 'Standard';
+
+  @override
+  String get videoRecorderStabilizationModeCinematic => 'Cinematică';
+
+  @override
+  String get videoRecorderStabilizationModeCinematicExtended =>
+      'Cinematică extinsă';
+
+  @override
+  String get videoRecorderStabilizationModeAuto => 'Automată';
+
+  @override
   String get videoRecorderLibraryEmptyLabel =>
       'Bibliotecă de clipuri, fără clipuri';
 

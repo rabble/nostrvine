@@ -4378,6 +4378,12 @@
   "videoRecorderToggleFlashLabel": "Toggle flash",
   "videoRecorderCycleTimerLabel": "Cycle timer",
   "videoRecorderToggleAspectRatioLabel": "Toggle aspect ratio",
+  "videoRecorderStabilizationLabel": "Stabilization",
+  "videoRecorderStabilizationModeOff": "Off",
+  "videoRecorderStabilizationModeStandard": "Standard",
+  "videoRecorderStabilizationModeCinematic": "Cinematic",
+  "videoRecorderStabilizationModeCinematicExtended": "Cinematic Extended",
+  "videoRecorderStabilizationModeAuto": "Auto",
   "videoRecorderLibraryEmptyLabel": "Clip library, no clips",
   "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Open clip library, 1 clip} other{Open clip library, {clipCount} clips}}",
   "@videoRecorderLibraryOpenLabel": {

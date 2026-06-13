@@ -56,6 +56,8 @@ void main() {
                 return true;
               case 'setZoomLevel':
                 return true;
+              case 'setVideoStabilizationMode':
+                return true;
               case 'switchCamera':
                 return {
                   'isInitialized': true,
@@ -178,6 +180,14 @@ void main() {
 
     test('setFocusPoint returns true', () async {
       final result = await platform.setFocusPoint(const Offset(0.5, 0.5));
+
+      expect(result, isTrue);
+    });
+
+    test('setVideoStabilizationMode returns true', () async {
+      final result = await platform.setVideoStabilizationMode(
+        DivineVideoStabilizationMode.cinematic,
+      );
 
       expect(result, isTrue);
     });

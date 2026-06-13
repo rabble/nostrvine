@@ -641,6 +641,11 @@ class CameraController: NSObject {
             "textureId": textureId,
             "availableLenses": getAvailableLenses(),
             "currentLensMetadata": getCurrentLensMetadata() as Any,
+            // Video stabilization is iOS-only; report it as unsupported so the
+            // camera state stays uniform across platforms.
+            "videoStabilizationMode": "off",
+            "availableVideoStabilizationModes": ["off"],
+            "isVideoStabilizationSupported": false,
         ]
     }
 

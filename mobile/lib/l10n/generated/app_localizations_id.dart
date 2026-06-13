@@ -7698,6 +7698,25 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoRecorderToggleAspectRatioLabel => 'Ganti rasio aspek';
 
   @override
+  String get videoRecorderStabilizationLabel => 'Stabilisasi';
+
+  @override
+  String get videoRecorderStabilizationModeOff => 'Nonaktif';
+
+  @override
+  String get videoRecorderStabilizationModeStandard => 'Standar';
+
+  @override
+  String get videoRecorderStabilizationModeCinematic => 'Sinematik';
+
+  @override
+  String get videoRecorderStabilizationModeCinematicExtended =>
+      'Sinematik Diperluas';
+
+  @override
+  String get videoRecorderStabilizationModeAuto => 'Otomatis';
+
+  @override
   String get videoRecorderLibraryEmptyLabel =>
       'Perpustakaan klip, tidak ada klip';
 

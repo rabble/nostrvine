@@ -7808,6 +7808,25 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoRecorderToggleAspectRatioLabel => 'I-toggle ang aspect ratio';
 
   @override
+  String get videoRecorderStabilizationLabel => 'Estabilisasyon';
+
+  @override
+  String get videoRecorderStabilizationModeOff => 'Naka-off';
+
+  @override
+  String get videoRecorderStabilizationModeStandard => 'Standard';
+
+  @override
+  String get videoRecorderStabilizationModeCinematic => 'Cinematic';
+
+  @override
+  String get videoRecorderStabilizationModeCinematicExtended =>
+      'Cinematic Extended';
+
+  @override
+  String get videoRecorderStabilizationModeAuto => 'Auto';
+
+  @override
   String get videoRecorderLibraryEmptyLabel => 'Clip library, walang clip';
 
   @override

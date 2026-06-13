@@ -7587,6 +7587,24 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoRecorderToggleAspectRatioLabel => 'ምጥጥን ቀያይር';
 
   @override
+  String get videoRecorderStabilizationLabel => 'ማረጋጊያ';
+
+  @override
+  String get videoRecorderStabilizationModeOff => 'ጠፍቷል';
+
+  @override
+  String get videoRecorderStabilizationModeStandard => 'መደበኛ';
+
+  @override
+  String get videoRecorderStabilizationModeCinematic => 'ሲኒማቲክ';
+
+  @override
+  String get videoRecorderStabilizationModeCinematicExtended => 'የተራዘመ ሲኒማቲክ';
+
+  @override
+  String get videoRecorderStabilizationModeAuto => 'ራስ-ሰር';
+
+  @override
   String get videoRecorderLibraryEmptyLabel => 'ክሊፕ ቤተ-መጽሐፍት፣ ምንም ቅንጥቦች የሉም';
 
   @override

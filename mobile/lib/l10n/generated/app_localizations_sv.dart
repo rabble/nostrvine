@@ -7729,6 +7729,25 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoRecorderToggleAspectRatioLabel => 'Växla bildförhållande';
 
   @override
+  String get videoRecorderStabilizationLabel => 'Stabilisering';
+
+  @override
+  String get videoRecorderStabilizationModeOff => 'Av';
+
+  @override
+  String get videoRecorderStabilizationModeStandard => 'Standard';
+
+  @override
+  String get videoRecorderStabilizationModeCinematic => 'Filmisk';
+
+  @override
+  String get videoRecorderStabilizationModeCinematicExtended =>
+      'Filmisk utökad';
+
+  @override
+  String get videoRecorderStabilizationModeAuto => 'Auto';
+
+  @override
   String get videoRecorderLibraryEmptyLabel => 'Klippbibliotek, inga klipp';
 
   @override

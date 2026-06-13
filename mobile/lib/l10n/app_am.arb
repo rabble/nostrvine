@@ -3330,6 +3330,12 @@
     "videoRecorderToggleFlashLabel": "ብልጭታ ቀያይር",
     "videoRecorderCycleTimerLabel": "የዑደት ሰዓት ቆጣሪ",
     "videoRecorderToggleAspectRatioLabel": "ምጥጥን ቀያይር",
+    "videoRecorderStabilizationLabel": "ማረጋጊያ",
+    "videoRecorderStabilizationModeOff": "ጠፍቷል",
+    "videoRecorderStabilizationModeStandard": "መደበኛ",
+    "videoRecorderStabilizationModeCinematic": "ሲኒማቲክ",
+    "videoRecorderStabilizationModeCinematicExtended": "የተራዘመ ሲኒማቲክ",
+    "videoRecorderStabilizationModeAuto": "ራስ-ሰር",
     "videoRecorderLibraryEmptyLabel": "ክሊፕ ቤተ-መጽሐፍት፣ ምንም ቅንጥቦች የሉም",
     "videoRecorderLibraryOpenLabel": "{clipCount, plural, =1{የክሊፕ ቤተ-መዝገብ ክፈት፣ 1 ክሊፕ} other{የክሊፕ ቤተ-መዝገብ ክፈት፣ {clipCount} ክሊፖች}}",
     "@videoRecorderLibraryOpenLabel": {

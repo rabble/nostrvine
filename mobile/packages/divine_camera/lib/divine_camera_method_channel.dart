@@ -9,6 +9,7 @@ import 'package:divine_camera/src/models/flash_mode.dart';
 import 'package:divine_camera/src/models/remote_record_trigger.dart';
 import 'package:divine_camera/src/models/video_quality.dart';
 import 'package:divine_camera/src/models/video_recording_result.dart';
+import 'package:divine_camera/src/models/video_stabilization_mode.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -203,6 +204,17 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
     final result = await methodChannel.invokeMethod<bool>('setZoomLevel', {
       'level': level,
     });
+    return result ?? false;
+  }
+
+  @override
+  Future<bool> setVideoStabilizationMode(
+    DivineVideoStabilizationMode mode,
+  ) async {
+    final result = await methodChannel.invokeMethod<bool>(
+      'setVideoStabilizationMode',
+      {'mode': mode.toNativeString()},
+    );
     return result ?? false;
   }
 

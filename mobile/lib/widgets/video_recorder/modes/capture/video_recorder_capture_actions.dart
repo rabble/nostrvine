@@ -1,3 +1,5 @@
+import 'package:divine_camera/divine_camera.dart'
+    show DivineVideoStabilizationMode;
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -77,12 +79,76 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
                       )
                     : null,
               ),
+              const _StabilizationButton(),
             ],
           ),
         ),
       ),
     );
   }
+}
+
+/// Opens a selection menu to change the video stabilization mode.
+///
+/// Disabled when the active camera reports no stabilization support
+/// (e.g. front camera on some devices, macOS, Linux).
+class _StabilizationButton extends StatelessWidget {
+  const _StabilizationButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final isSupported = context.select(
+      (VideoRecorderBloc b) => b.state.isVideoStabilizationSupported,
+    );
+    return _IconButton(
+      icon: .sparkle,
+      label: context.l10n.videoRecorderStabilizationLabel,
+      onTap: isSupported ? () => _showStabilizationMenu(context) : null,
+    );
+  }
+
+  Future<void> _showStabilizationMenu(BuildContext context) async {
+    final l10n = context.l10n;
+    final bloc = context.read<VideoRecorderBloc>();
+    final state = bloc.state;
+
+    final selected = await VineBottomSheetSelectionMenu.show(
+      context: context,
+      title: Text(
+        l10n.videoRecorderStabilizationLabel,
+        style: VineTheme.titleMediumFont(),
+      ),
+      selectedValue: state.videoStabilizationMode.toNativeString(),
+      options: [
+        for (final mode in state.availableVideoStabilizationModes)
+          VineBottomSheetSelectionOptionData(
+            label: _stabilizationModeLabel(l10n, mode),
+            value: mode.toNativeString(),
+          ),
+      ],
+    );
+
+    if (selected == null) return;
+    bloc.add(
+      VideoRecorderStabilizationModeSet(
+        DivineVideoStabilizationMode.fromNativeString(selected),
+      ),
+    );
+  }
+}
+
+/// Maps a [DivineVideoStabilizationMode] to its localized label.
+String _stabilizationModeLabel(
+  AppLocalizations l10n,
+  DivineVideoStabilizationMode mode,
+) {
+  return switch (mode) {
+    .off => l10n.videoRecorderStabilizationModeOff,
+    .standard => l10n.videoRecorderStabilizationModeStandard,
+    .cinematic => l10n.videoRecorderStabilizationModeCinematic,
+    .cinematicExtended => l10n.videoRecorderStabilizationModeCinematicExtended,
+    .auto => l10n.videoRecorderStabilizationModeAuto,
+  };
 }
 
 class _IconButton extends StatelessWidget {

@@ -81,6 +81,16 @@ final class VideoRecorderCameraSwitched extends VideoRecorderEvent {
   const VideoRecorderCameraSwitched();
 }
 
+/// Sets the video stabilization mode.
+final class VideoRecorderStabilizationModeSet extends VideoRecorderEvent {
+  const VideoRecorderStabilizationModeSet(this.mode);
+
+  final DivineVideoStabilizationMode mode;
+
+  @override
+  List<Object?> get props => [mode];
+}
+
 /// Switches to a specific camera lens.
 final class VideoRecorderLensSet extends VideoRecorderEvent {
   const VideoRecorderLensSet(this.lens);

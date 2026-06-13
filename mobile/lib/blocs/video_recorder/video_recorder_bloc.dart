@@ -7,7 +7,11 @@ import 'dart:io';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:divine_camera/divine_camera.dart'
-    show CameraLensMetadata, DivineCameraLens, DivineVideoQuality;
+    show
+        CameraLensMetadata,
+        DivineCameraLens,
+        DivineVideoQuality,
+        DivineVideoStabilizationMode;
 import 'package:divine_video_player/divine_video_player.dart'
     show DivineVideoPlayerController, VideoClip;
 import 'package:equatable/equatable.dart';
@@ -36,6 +40,9 @@ part 'video_recorder_state.dart';
 
 /// SharedPreferences key for the last-used camera lens.
 const _kLastUsedCameraLensKey = 'camera_last_used_lens';
+
+/// SharedPreferences key for the last-used video stabilization mode.
+const _kLastUsedStabilizationModeKey = 'camera_last_used_stabilization';
 
 /// Factory for creating a [CountdownSoundService].
 ///
@@ -175,6 +182,7 @@ class VideoRecorderBloc
     on<VideoRecorderAspectRatioToggled>(_onAspectRatioToggled);
     on<VideoRecorderAspectRatioSet>(_onAspectRatioSet);
     on<VideoRecorderCameraSwitched>(_onCameraSwitched);
+    on<VideoRecorderStabilizationModeSet>(_onStabilizationModeSet);
     on<VideoRecorderLensSet>(_onLensSet);
     on<VideoRecorderZoomLevelSet>(_onZoomLevelSet);
     on<VideoRecorderFocusPointSet>(_onFocusPointSet);
@@ -296,6 +304,8 @@ class VideoRecorderBloc
       emit,
       aspectRatio: clips.isNotEmpty ? clips.first.targetAspectRatio : null,
     );
+
+    await _restoreStabilizationModePreference(emit);
 
     await _setupRemoteRecordControl();
 
@@ -423,6 +433,29 @@ class VideoRecorderBloc
 
     emit(state.copyWith(zoomLevel: 1, baseZoomLevel: 1));
     _emitCameraSync(emit);
+  }
+
+  Future<void> _onStabilizationModeSet(
+    VideoRecorderStabilizationModeSet event,
+    Emitter<VideoRecorderBlocState> emit,
+  ) async {
+    if (event.mode == state.videoStabilizationMode) return;
+    final success = await _cameraService.setVideoStabilizationMode(event.mode);
+    if (!success) {
+      Log.warning(
+        '⚠️ Failed to set stabilization mode to ${event.mode.name}',
+        name: 'VideoRecorderBloc',
+        category: LogCategory.video,
+      );
+      return;
+    }
+    emit(state.copyWith(videoStabilizationMode: event.mode));
+    await _saveStabilizationModePreference(event.mode);
+    Log.debug(
+      '🎯 Stabilization mode changed to: ${event.mode.name}',
+      name: 'VideoRecorderBloc',
+      category: LogCategory.video,
+    );
   }
 
   Future<void> _onLensSet(
@@ -1131,6 +1164,11 @@ class VideoRecorderBloc
         isCameraInitialized: _cameraService.isInitialized,
         hasFlash: _cameraService.hasFlash,
         canSwitchCamera: _cameraService.canSwitchCamera,
+        videoStabilizationMode: _cameraService.videoStabilizationMode,
+        availableVideoStabilizationModes:
+            _cameraService.availableVideoStabilizationModes,
+        isVideoStabilizationSupported:
+            _cameraService.isVideoStabilizationSupported,
         showLastClipOverlay: state.showLastClipOverlay,
         recorderMode: state.recorderMode,
         showGridLines: state.showGridLines,
@@ -1224,6 +1262,48 @@ class VideoRecorderBloc
       name: 'VideoRecorderBloc',
       category: LogCategory.video,
     );
+  }
+
+  Future<void> _saveStabilizationModePreference(
+    DivineVideoStabilizationMode mode,
+  ) async {
+    final prefs = _readSharedPreferences();
+    await prefs.setString(
+      _kLastUsedStabilizationModeKey,
+      mode.toNativeString(),
+    );
+    Log.debug(
+      '💾 Saved stabilization preference: ${mode.name}',
+      name: 'VideoRecorderBloc',
+      category: LogCategory.video,
+    );
+  }
+
+  /// Re-applies the persisted stabilization mode after the camera initializes.
+  ///
+  /// The native controller is recreated (mode reset to off) on every init, so
+  /// the saved preference is restored here. Skipped when the saved mode is off
+  /// or unsupported by the active camera.
+  Future<void> _restoreStabilizationModePreference(
+    Emitter<VideoRecorderBlocState> emit,
+  ) async {
+    final saved = _readSharedPreferences().getString(
+      _kLastUsedStabilizationModeKey,
+    );
+    if (saved == null) return;
+    final mode = DivineVideoStabilizationMode.fromNativeString(saved);
+    if (mode == DivineVideoStabilizationMode.off) return;
+    if (!state.availableVideoStabilizationModes.contains(mode)) return;
+
+    final success = await _cameraService.setVideoStabilizationMode(mode);
+    if (success) {
+      emit(state.copyWith(videoStabilizationMode: mode));
+      Log.debug(
+        '🎯 Restored stabilization mode: ${mode.name}',
+        name: 'VideoRecorderBloc',
+        category: LogCategory.video,
+      );
+    }
   }
 
   Future<void> _prepareSoundForPlayback() async {

@@ -2770,6 +2770,12 @@
     "videoRecorderToggleFlashLabel": "Attiva/disattiva flash",
     "videoRecorderCycleTimerLabel": "Cambia timer",
     "videoRecorderToggleAspectRatioLabel": "Cambia rapporto d'aspetto",
+    "videoRecorderStabilizationLabel": "Stabilizzazione",
+    "videoRecorderStabilizationModeOff": "Disattivata",
+    "videoRecorderStabilizationModeStandard": "Standard",
+    "videoRecorderStabilizationModeCinematic": "Cinematografica",
+    "videoRecorderStabilizationModeCinematicExtended": "Cinematografica estesa",
+    "videoRecorderStabilizationModeAuto": "Automatica",
     "videoRecorderLibraryEmptyLabel": "Libreria clip, nessun clip",
     "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Apri libreria clip, 1 clip} other{Apri libreria clip, {clipCount} clip}}",
     "@videoRecorderLibraryOpenLabel": {

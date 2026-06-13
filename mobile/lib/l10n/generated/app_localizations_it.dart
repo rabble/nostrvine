@@ -7788,6 +7788,25 @@ class AppLocalizationsIt extends AppLocalizations {
       'Cambia rapporto d\'aspetto';
 
   @override
+  String get videoRecorderStabilizationLabel => 'Stabilizzazione';
+
+  @override
+  String get videoRecorderStabilizationModeOff => 'Disattivata';
+
+  @override
+  String get videoRecorderStabilizationModeStandard => 'Standard';
+
+  @override
+  String get videoRecorderStabilizationModeCinematic => 'Cinematografica';
+
+  @override
+  String get videoRecorderStabilizationModeCinematicExtended =>
+      'Cinematografica estesa';
+
+  @override
+  String get videoRecorderStabilizationModeAuto => 'Automatica';
+
+  @override
   String get videoRecorderLibraryEmptyLabel => 'Libreria clip, nessun clip';
 
   @override

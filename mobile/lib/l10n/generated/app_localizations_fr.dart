@@ -7818,6 +7818,25 @@ class AppLocalizationsFr extends AppLocalizations {
       'Changer le format d\'image';
 
   @override
+  String get videoRecorderStabilizationLabel => 'Stabilisation';
+
+  @override
+  String get videoRecorderStabilizationModeOff => 'Désactivée';
+
+  @override
+  String get videoRecorderStabilizationModeStandard => 'Standard';
+
+  @override
+  String get videoRecorderStabilizationModeCinematic => 'Cinématique';
+
+  @override
+  String get videoRecorderStabilizationModeCinematicExtended =>
+      'Cinématique étendue';
+
+  @override
+  String get videoRecorderStabilizationModeAuto => 'Auto';
+
+  @override
   String get videoRecorderLibraryEmptyLabel =>
       'Bibliothèque de clips, aucun clip';
 

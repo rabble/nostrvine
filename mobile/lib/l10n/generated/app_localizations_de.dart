@@ -7805,6 +7805,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoRecorderToggleAspectRatioLabel => 'Seitenverhältnis wechseln';
 
   @override
+  String get videoRecorderStabilizationLabel => 'Stabilisierung';
+
+  @override
+  String get videoRecorderStabilizationModeOff => 'Aus';
+
+  @override
+  String get videoRecorderStabilizationModeStandard => 'Standard';
+
+  @override
+  String get videoRecorderStabilizationModeCinematic => 'Cinematic';
+
+  @override
+  String get videoRecorderStabilizationModeCinematicExtended =>
+      'Cinematic erweitert';
+
+  @override
+  String get videoRecorderStabilizationModeAuto => 'Auto';
+
+  @override
   String get videoRecorderLibraryEmptyLabel => 'Clip-Mediathek, keine Clips';
 
   @override

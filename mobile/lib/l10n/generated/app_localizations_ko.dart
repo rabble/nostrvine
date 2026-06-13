@@ -7473,6 +7473,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoRecorderToggleAspectRatioLabel => '화면 비율 전환';
 
   @override
+  String get videoRecorderStabilizationLabel => '흔들림 보정';
+
+  @override
+  String get videoRecorderStabilizationModeOff => '끔';
+
+  @override
+  String get videoRecorderStabilizationModeStandard => '표준';
+
+  @override
+  String get videoRecorderStabilizationModeCinematic => '시네마틱';
+
+  @override
+  String get videoRecorderStabilizationModeCinematicExtended => '시네마틱 확장';
+
+  @override
+  String get videoRecorderStabilizationModeAuto => '자동';
+
+  @override
   String get videoRecorderLibraryEmptyLabel => '클립 보관함, 클립 없음';
 
   @override

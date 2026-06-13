@@ -70,7 +70,12 @@ class CameraController: NSObject {
     
     // Whether to mirror front camera video output
     private var mirrorFrontCameraOutput: Bool = true
-    
+
+    // Requested video stabilization mode. Applied to the video connection,
+    // so it affects both the live preview texture and the recorded file.
+    // Defaults to .off to preserve existing behaviour until the user opts in.
+    private var requestedStabilizationMode: AVCaptureVideoStabilizationMode = .off
+
     // Auto lens switching via zoom
     // When true, uses a virtual multi-camera device (builtInTripleCamera,
     // builtInDualWideCamera, etc.) for smooth cross-fade between lenses.
@@ -725,7 +730,11 @@ class CameraController: NSObject {
         
         // Get camera properties
         updateCameraProperties(device: videoDevice)
-        
+
+        // Re-assert the requested stabilization mode on the freshly built
+        // video connection (a no-op while the mode is still .off).
+        applyVideoStabilization()
+
         // Set initial zoom to 1.0x (wide angle) for virtual multi-camera devices.
         // Without this, the camera starts at native 1.0 which is the ultra-wide (0.5x).
         if nativeToUserZoomScale < 1.0 {
@@ -1168,7 +1177,11 @@ class CameraController: NSObject {
             }
             
             session.commitConfiguration()
-            
+
+            // The new device/format may support a different set of
+            // stabilization modes, so re-apply the requested mode.
+            self.applyVideoStabilization()
+
             // Set zoom to 1.0x (wide angle) for virtual multi-camera devices
             // after switching cameras, so it matches the Dart side expectation.
             if self.nativeToUserZoomScale < 1.0 {
@@ -1556,7 +1569,140 @@ class CameraController: NSObject {
             return false
         }
     }
-    
+
+    // MARK: - Video Stabilization
+
+    /// Maps a cross-platform stabilization mode string to its
+    /// `AVCaptureVideoStabilizationMode`. Returns nil for unknown strings.
+    static func stabilizationMode(
+        from string: String
+    ) -> AVCaptureVideoStabilizationMode? {
+        switch string {
+        case "off":
+            return .off
+        case "standard":
+            return .standard
+        case "cinematic":
+            return .cinematic
+        case "cinematicExtended":
+            if #available(iOS 13.0, *) {
+                return .cinematicExtended
+            }
+            return .cinematic
+        case "auto":
+            return .auto
+        default:
+            return nil
+        }
+    }
+
+    /// Maps an `AVCaptureVideoStabilizationMode` back to its cross-platform
+    /// string. Used for reporting the active mode in the camera state.
+    static func stabilizationString(
+        from mode: AVCaptureVideoStabilizationMode
+    ) -> String {
+        switch mode {
+        case .off:
+            return "off"
+        case .standard:
+            return "standard"
+        case .cinematic:
+            return "cinematic"
+        case .auto:
+            return "auto"
+        default:
+            if #available(iOS 13.0, *), mode == .cinematicExtended {
+                return "cinematicExtended"
+            }
+            return "off"
+        }
+    }
+
+    /// Sets the requested video stabilization mode and applies it to the
+    /// active video connection. Returns true if the mode was applied.
+    func setVideoStabilizationMode(_ mode: String) -> Bool {
+        guard let parsed = Self.stabilizationMode(from: mode) else {
+            DivineCameraLog.shared.warning(
+                "Unknown video stabilization mode: \(mode)",
+                name: "DivineCamera.Stabilization"
+            )
+            return false
+        }
+        requestedStabilizationMode = parsed
+        return applyVideoStabilization()
+    }
+
+    /// Applies `requestedStabilizationMode` to the video connection. The
+    /// stabilized frames feed both the preview texture and the asset writer,
+    /// so the recording matches what the user sees. Returns true when the
+    /// requested mode could be applied (off is always considered applied).
+    @discardableResult
+    private func applyVideoStabilization() -> Bool {
+        guard let connection = videoOutput?.connection(with: .video) else {
+            return requestedStabilizationMode == .off
+        }
+        guard connection.isVideoStabilizationSupported else {
+            if requestedStabilizationMode != .off {
+                DivineCameraLog.shared.warning(
+                    "Video stabilization not supported on this connection",
+                    name: "DivineCamera.Stabilization"
+                )
+            }
+            return requestedStabilizationMode == .off
+        }
+        // .auto lets AVFoundation pick a supported mode; for explicit modes
+        // verify the active format actually supports the request.
+        if requestedStabilizationMode != .off,
+            requestedStabilizationMode != .auto,
+            let device = videoDevice,
+            !device.activeFormat.isVideoStabilizationModeSupported(
+                requestedStabilizationMode
+            )
+        {
+            DivineCameraLog.shared.warning(
+                "Stabilization mode "
+                    + "\(Self.stabilizationString(from: requestedStabilizationMode)) "
+                    + "not supported by the active format",
+                name: "DivineCamera.Stabilization"
+            )
+            return false
+        }
+        connection.preferredVideoStabilizationMode = requestedStabilizationMode
+        DivineCameraLog.shared.debug(
+            "Applied video stabilization mode: "
+                + Self.stabilizationString(from: requestedStabilizationMode)
+        )
+        return true
+    }
+
+    /// Returns the stabilization modes the active device/format supports.
+    private func getAvailableStabilizationModes() -> [String] {
+        var modes: [String] = ["off"]
+        guard
+            let connection = videoOutput?.connection(with: .video),
+            connection.isVideoStabilizationSupported,
+            let device = videoDevice
+        else {
+            return modes
+        }
+        let format = device.activeFormat
+        var candidates: [(AVCaptureVideoStabilizationMode, String)] = [
+            (.standard, "standard"),
+            (.cinematic, "cinematic"),
+        ]
+        if #available(iOS 13.0, *) {
+            candidates.append((.cinematicExtended, "cinematicExtended"))
+        }
+        for (mode, name) in candidates
+        where format.isVideoStabilizationModeSupported(mode) {
+            modes.append(name)
+        }
+        if modes.count > 1 {
+            modes.append("auto")
+        }
+        return modes
+    }
+
     /// Starts video recording using AVAssetWriter.
     /// - Parameters:
     ///   - maxDurationMs: Optional maximum duration in milliseconds. Recording stops automatically when reached.
@@ -1917,10 +2063,17 @@ class CameraController: NSObject {
             "isExposurePointSupported": isExposurePointSupported,
             "textureId": textureId,
             "availableLenses": getAvailableLenses(),
-            "currentLensMetadata": getCurrentLensMetadata() as Any
+            "currentLensMetadata": getCurrentLensMetadata() as Any,
+            "videoStabilizationMode": Self.stabilizationString(
+                from: requestedStabilizationMode
+            ),
+            "availableVideoStabilizationModes": getAvailableStabilizationModes(),
+            "isVideoStabilizationSupported":
+                videoOutput?.connection(with: .video)?
+                .isVideoStabilizationSupported ?? false,
         ]
     }
-    
+
     /// Gets the current flash mode as a string.
     private func getFlashModeString() -> String {
         if currentTorchMode == .on {

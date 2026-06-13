@@ -122,6 +122,13 @@ class MockDivineCameraPlatform
   }
 
   @override
+  Future<bool> setVideoStabilizationMode(
+    DivineVideoStabilizationMode mode,
+  ) async {
+    return true;
+  }
+
+  @override
   Future<bool> startRecording({
     Duration? maxDuration,
     bool useCache = true,
@@ -344,6 +351,39 @@ void main() {
         expect(
           DivineCamera.instance.state.flashMode,
           DivineCameraFlashMode.torch,
+        );
+      });
+    });
+
+    group('video stabilization', () {
+      test('sets stabilization mode and updates state', () async {
+        await DivineCamera.instance.initialize();
+
+        final success = await DivineCamera.instance.setVideoStabilizationMode(
+          DivineVideoStabilizationMode.cinematic,
+        );
+
+        expect(success, isTrue);
+        expect(
+          DivineCamera.instance.videoStabilizationMode,
+          DivineVideoStabilizationMode.cinematic,
+        );
+        expect(
+          DivineCamera.instance.state.videoStabilizationMode,
+          DivineVideoStabilizationMode.cinematic,
+        );
+      });
+
+      test('exposes availability getters from state', () async {
+        await DivineCamera.instance.initialize();
+
+        expect(
+          DivineCamera.instance.availableVideoStabilizationModes,
+          DivineCamera.instance.state.availableVideoStabilizationModes,
+        );
+        expect(
+          DivineCamera.instance.isVideoStabilizationSupported,
+          DivineCamera.instance.state.isVideoStabilizationSupported,
         );
       });
     });
@@ -664,6 +704,9 @@ void main() {
         'isFocusPointSupported': true,
         'isExposurePointSupported': true,
         'textureId': 42,
+        'videoStabilizationMode': 'cinematic',
+        'availableVideoStabilizationModes': ['off', 'standard', 'cinematic'],
+        'isVideoStabilizationSupported': true,
       };
 
       final state = CameraState.fromMap(map);
@@ -682,6 +725,16 @@ void main() {
       expect(state.isFocusPointSupported, isTrue);
       expect(state.isExposurePointSupported, isTrue);
       expect(state.textureId, 42);
+      expect(
+        state.videoStabilizationMode,
+        DivineVideoStabilizationMode.cinematic,
+      );
+      expect(state.availableVideoStabilizationModes, const [
+        DivineVideoStabilizationMode.off,
+        DivineVideoStabilizationMode.standard,
+        DivineVideoStabilizationMode.cinematic,
+      ]);
+      expect(state.isVideoStabilizationSupported, isTrue);
     });
 
     test('copyWith creates new state with updated values', () {
@@ -968,11 +1021,15 @@ void main() {
 
       final props = state.props;
 
-      expect(props.length, 17);
+      expect(props.length, 20);
       expect(props[0], isTrue); // isInitialized
       expect(props[1], isFalse); // isRecording
       expect(props[4], DivineCameraLens.back); // lens
       expect(props[14], 1); // textureId
+      expect(
+        props[17],
+        DivineVideoStabilizationMode.off,
+      ); // videoStabilizationMode
     });
 
     test('equality works correctly', () {

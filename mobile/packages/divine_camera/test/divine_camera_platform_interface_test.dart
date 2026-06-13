@@ -164,6 +164,15 @@ void main() {
         );
       });
 
+      test('setVideoStabilizationMode throws', () {
+        expect(
+          () => basePlatform.setVideoStabilizationMode(
+            DivineVideoStabilizationMode.standard,
+          ),
+          throwsA(isA<UnimplementedError>()),
+        );
+      });
+
       test('startRecording throws', () {
         expect(
           () => basePlatform.startRecording(),

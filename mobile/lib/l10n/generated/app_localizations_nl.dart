@@ -7758,6 +7758,25 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoRecorderToggleAspectRatioLabel => 'Beeldverhouding wisselen';
 
   @override
+  String get videoRecorderStabilizationLabel => 'Stabilisatie';
+
+  @override
+  String get videoRecorderStabilizationModeOff => 'Uit';
+
+  @override
+  String get videoRecorderStabilizationModeStandard => 'Standaard';
+
+  @override
+  String get videoRecorderStabilizationModeCinematic => 'Cinematisch';
+
+  @override
+  String get videoRecorderStabilizationModeCinematicExtended =>
+      'Cinematisch uitgebreid';
+
+  @override
+  String get videoRecorderStabilizationModeAuto => 'Automatisch';
+
+  @override
   String get videoRecorderLibraryEmptyLabel => 'Clipbibliotheek, geen clips';
 
   @override

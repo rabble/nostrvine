@@ -1,4 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_camera/divine_camera.dart'
+    show DivineVideoStabilizationMode;
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,6 +38,11 @@ void main() {
       DivineFlashMode flashMode = DivineFlashMode.auto,
       bool canSwitchCamera = true,
       bool hasFlash = true,
+      bool isVideoStabilizationSupported = false,
+      DivineVideoStabilizationMode videoStabilizationMode =
+          DivineVideoStabilizationMode.off,
+      List<DivineVideoStabilizationMode> availableVideoStabilizationModes =
+          const [DivineVideoStabilizationMode.off],
       List<DivineVideoClip>? clips,
     }) {
       when(() => recorderBloc.state).thenReturn(
@@ -44,6 +51,9 @@ void main() {
           flashMode: flashMode,
           canSwitchCamera: canSwitchCamera,
           hasFlash: hasFlash,
+          isVideoStabilizationSupported: isVideoStabilizationSupported,
+          videoStabilizationMode: videoStabilizationMode,
+          availableVideoStabilizationModes: availableVideoStabilizationModes,
           isCameraInitialized: true,
           canRecord: true,
         ),
@@ -74,26 +84,26 @@ void main() {
         expect(find.byType(VideoRecorderCaptureActions), findsOneWidget);
       });
 
-      testWidgets('renders four action buttons', (tester) async {
+      testWidgets('renders five action buttons', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
-        // Flash, timer, aspect ratio, switch camera
-        expect(find.byType(InkWell), findsNWidgets(4));
+        // Flash, timer, aspect ratio, switch camera, stabilization
+        expect(find.byType(InkWell), findsNWidgets(5));
       });
 
       testWidgets('renders Tooltip for each button', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
-        expect(find.byType(Tooltip), findsNWidgets(4));
+        expect(find.byType(Tooltip), findsNWidgets(5));
       });
 
       testWidgets('renders DivineIcon for each button', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
-        expect(find.byType(DivineIcon), findsNWidgets(4));
+        expect(find.byType(DivineIcon), findsNWidgets(5));
       });
     });
 
@@ -163,6 +173,68 @@ void main() {
         );
         final widget = tester.widget<InkWell>(inkWell);
         expect(widget.onTap, isNull);
+      });
+    });
+
+    group('stabilization button', () {
+      testWidgets('is disabled when stabilization is unsupported', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        final tooltip = find.byTooltip(l10n.videoRecorderStabilizationLabel);
+        final inkWell = find.descendant(
+          of: tooltip,
+          matching: find.byType(InkWell),
+        );
+        final widget = tester.widget<InkWell>(inkWell);
+        expect(widget.onTap, isNull);
+      });
+
+      testWidgets('is enabled when stabilization is supported', (tester) async {
+        await tester.pumpWidget(
+          buildWidget(isVideoStabilizationSupported: true),
+        );
+        await tester.pumpAndSettle();
+
+        final tooltip = find.byTooltip(l10n.videoRecorderStabilizationLabel);
+        final inkWell = find.descendant(
+          of: tooltip,
+          matching: find.byType(InkWell),
+        );
+        final widget = tester.widget<InkWell>(inkWell);
+        expect(widget.onTap, isNotNull);
+      });
+
+      testWidgets('opens the selection menu with available modes', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            isVideoStabilizationSupported: true,
+            availableVideoStabilizationModes: const [
+              DivineVideoStabilizationMode.off,
+              DivineVideoStabilizationMode.standard,
+              DivineVideoStabilizationMode.auto,
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.byTooltip(l10n.videoRecorderStabilizationLabel),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.videoRecorderStabilizationModeStandard),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.videoRecorderStabilizationModeAuto),
+          findsOneWidget,
+        );
       });
     });
 

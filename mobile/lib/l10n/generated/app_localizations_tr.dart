@@ -7701,6 +7701,25 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoRecorderToggleAspectRatioLabel => 'En-boy oranını değiştir';
 
   @override
+  String get videoRecorderStabilizationLabel => 'Sabitleme';
+
+  @override
+  String get videoRecorderStabilizationModeOff => 'Kapalı';
+
+  @override
+  String get videoRecorderStabilizationModeStandard => 'Standart';
+
+  @override
+  String get videoRecorderStabilizationModeCinematic => 'Sinematik';
+
+  @override
+  String get videoRecorderStabilizationModeCinematicExtended =>
+      'Sinematik Genişletilmiş';
+
+  @override
+  String get videoRecorderStabilizationModeAuto => 'Otomatik';
+
+  @override
   String get videoRecorderLibraryEmptyLabel => 'Klip kütüphanesi, klip yok';
 
   @override

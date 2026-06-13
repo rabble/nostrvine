@@ -2,7 +2,11 @@
 // ABOUTME: Provides a fake camera service that doesn't require actual hardware
 
 import 'package:divine_camera/divine_camera.dart'
-    show CameraLensMetadata, DivineCameraLens, DivineVideoQuality;
+    show
+        CameraLensMetadata,
+        DivineCameraLens,
+        DivineVideoQuality,
+        DivineVideoStabilizationMode;
 import 'package:flutter/material.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
@@ -16,6 +20,8 @@ class MockCameraService extends CameraService {
   DivineFlashMode flashMode = DivineFlashMode.auto;
   Offset focusPoint = Offset.zero;
   DivineCameraLens _currentLens = DivineCameraLens.back;
+  DivineVideoStabilizationMode stabilizationMode =
+      DivineVideoStabilizationMode.off;
 
   MockCameraService.create({
     required super.onUpdateState,
@@ -69,6 +75,14 @@ class MockCameraService extends CameraService {
   @override
   Future<bool> setLens(DivineCameraLens lens) async {
     _currentLens = lens;
+    return true;
+  }
+
+  @override
+  Future<bool> setVideoStabilizationMode(
+    DivineVideoStabilizationMode mode,
+  ) async {
+    stabilizationMode = mode;
     return true;
   }
 
@@ -129,6 +143,21 @@ class MockCameraService extends CameraService {
     DivineCameraLens.back,
     DivineCameraLens.ultraWide,
   ];
+
+  @override
+  DivineVideoStabilizationMode get videoStabilizationMode => stabilizationMode;
+
+  @override
+  List<DivineVideoStabilizationMode> get availableVideoStabilizationModes =>
+      const [
+        DivineVideoStabilizationMode.off,
+        DivineVideoStabilizationMode.standard,
+        DivineVideoStabilizationMode.cinematic,
+        DivineVideoStabilizationMode.auto,
+      ];
+
+  @override
+  bool get isVideoStabilizationSupported => true;
 
   @override
   CameraLensMetadata? get currentLensMetadata => null;

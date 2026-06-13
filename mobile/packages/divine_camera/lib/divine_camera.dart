@@ -9,6 +9,7 @@ import 'package:divine_camera/src/models/flash_mode.dart';
 import 'package:divine_camera/src/models/remote_record_trigger.dart';
 import 'package:divine_camera/src/models/video_quality.dart';
 import 'package:divine_camera/src/models/video_recording_result.dart';
+import 'package:divine_camera/src/models/video_stabilization_mode.dart';
 import 'package:flutter/widgets.dart';
 
 // Export models for external use
@@ -20,6 +21,7 @@ export 'src/models/flash_mode.dart';
 export 'src/models/remote_record_trigger.dart';
 export 'src/models/video_quality.dart';
 export 'src/models/video_recording_result.dart';
+export 'src/models/video_stabilization_mode.dart';
 // Export widgets
 export 'src/widgets/camera_preview_widget.dart';
 
@@ -218,6 +220,25 @@ class DivineCamera {
     return true;
   }
 
+  /// Sets the video stabilization mode.
+  ///
+  /// The stabilized frames feed both the preview and the recording. On
+  /// platforms without stabilization support (macOS, Linux) this is a no-op
+  /// that returns false.
+  ///
+  /// [mode] the stabilization mode to apply.
+  /// Returns true if the requested mode was applied.
+  Future<bool> setVideoStabilizationMode(
+    DivineVideoStabilizationMode mode,
+  ) async {
+    final success = await _platform.setVideoStabilizationMode(mode);
+    if (success) {
+      _state = _state.copyWith(videoStabilizationMode: mode);
+      _notifyStateChanged();
+    }
+    return success;
+  }
+
   /// Switches to a specific camera lens.
   ///
   /// [lens] the lens to switch to.
@@ -373,6 +394,18 @@ class DivineCamera {
 
   /// The currently active camera lens (front or back).
   DivineCameraLens get lens => _state.lens;
+
+  /// The currently requested video stabilization mode.
+  DivineVideoStabilizationMode get videoStabilizationMode =>
+      _state.videoStabilizationMode;
+
+  /// The stabilization modes supported by the active camera/lens.
+  List<DivineVideoStabilizationMode> get availableVideoStabilizationModes =>
+      _state.availableVideoStabilizationModes;
+
+  /// Whether the active camera supports video stabilization beyond off.
+  bool get isVideoStabilizationSupported =>
+      _state.isVideoStabilizationSupported;
 
   /// Lists available audio input devices (microphones).
   ///
