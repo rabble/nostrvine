@@ -16,7 +16,6 @@ camera_base_service
 camera_mobile_service
 collaborator_invite_local_state_adapter # noise: local-state adapter
 connection_status_service
-content_moderation_service
 crash_reporting_service # defer: #4338 C2 singleton-to-DI
 curated_list_service
 error_analytics_tracker
