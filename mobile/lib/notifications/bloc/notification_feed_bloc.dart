@@ -98,6 +98,14 @@ class NotificationFeedBloc
   /// translated into state by `_onSnapshotChanged`. Status transitions
   /// (loading -> loaded / failure) are emitted here so the UI can render
   /// the initial spinner and error states.
+  ///
+  /// After a successful refresh, advances the server "seen" watermark via
+  /// [_markSeenOnOpen] so opening the notifications surface clears the unread
+  /// badge and the badge thereafter reflects "new since last seen" rather than
+  /// the accumulated untapped total (#4708). `_onStarted` fires once per open
+  /// (it is dispatched from the keyed `BlocProvider.create` on every mount of
+  /// the notifications surface) and is NOT dispatched on app resume or
+  /// pull-to-refresh, so the watermark only advances on a deliberate open.
   Future<void> _onStarted(
     NotificationFeedStarted event,
     Emitter<NotificationFeedState> emit,
@@ -107,6 +115,7 @@ class NotificationFeedBloc
     try {
       await _notificationRepository.refresh();
       emit(state.copyWith(status: NotificationFeedStatus.loaded));
+      await _markSeenOnOpen();
     } on Exception catch (e, s) {
       // `NotificationRepository.refresh` propagates typed
       // `FunnelcakeException` (4xx/5xx/timeout; transient-retry
@@ -155,6 +164,40 @@ class NotificationFeedBloc
         ),
       );
       return;
+    }
+  }
+
+  /// Advances the server "seen" watermark when the notifications surface opens.
+  ///
+  /// Reuses [NotificationRepository.markAllAsRead] — the single source of truth
+  /// that posts `read_until = now()` to FunnelCake, optimistically flips the
+  /// snapshot (so the badge clears immediately), and rolls back on failure.
+  /// Going through the repository (not a widget lifecycle hook) is what keeps
+  /// the badge convergent; the previous `MarkAllReadOnDispose` widget that
+  /// marked-on-*leave* fought the snapshot and was removed in #4758. This marks
+  /// on *open* instead.
+  ///
+  /// A seen-advance failure must never blacken the feed, so every error is
+  /// caught here and never rethrown — the repository has already restored the
+  /// snapshot on failure, so the list stays usable.
+  Future<void> _markSeenOnOpen() async {
+    try {
+      await _notificationRepository.markAllAsRead();
+    } on Exception catch (e, s) {
+      // Typed `FunnelcakeException` (4xx/5xx/timeout) + Drift DAO failures the
+      // repository rethrows after rolling the optimistic flip back. Per
+      // .claude/rules/error_handling.md these are expected domain failures,
+      // NOT Reportable.
+      addError(e, s);
+    } catch (e, s) {
+      // Errors (StateError, TypeError) — matrix-YES invariant violation.
+      addError(
+        Reportable(
+          e,
+          context: NotificationFeedBlocReportableSites.markSeenOnOpen,
+        ),
+        s,
+      );
     }
   }
 

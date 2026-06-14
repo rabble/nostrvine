@@ -1,6 +1,6 @@
 // ABOUTME: Tests for NotificationsPage — verifies route constants and that
 // ABOUTME: the page forwards bloc construction + initial refresh to the
-// ABOUTME: repository without implicitly mutating read state.
+// ABOUTME: repository and marks notifications seen on open (#4708).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -87,26 +87,30 @@ void main() {
         verify(() => mockNotificationRepo.refresh()).called(1);
       });
 
-      testWidgets('does not mark notifications read on open', (
+      testWidgets('marks notifications seen on open', (
         tester,
       ) async {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        verifyNever(() => mockNotificationRepo.markAllAsRead());
+        // Opening advances the server read watermark so the badge clears and
+        // thereafter shows "new since last seen" (#4708).
+        verify(() => mockNotificationRepo.markAllAsRead()).called(1);
       });
 
       testWidgets(
-        'does not mark notifications read when the page is unmounted',
+        'marks seen on open but not again when the page is unmounted',
         (tester) async {
           await tester.pumpWidget(buildSubject());
           await tester.pumpAndSettle();
-          verifyNever(() => mockNotificationRepo.markAllAsRead());
+          // Marked seen exactly once on open.
+          verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+          clearInteractions(mockNotificationRepo);
 
           // Leaving the notifications route (e.g. switching bottom-nav tabs;
           // the ShellRoute is not stateful, so the page unmounts) must NOT
-          // auto-zero unread state. Read transitions are deliberate only —
-          // a per-item tap or an explicit mark-all action. See #4729.
+          // mark read again on *leave* — #4758 removed mark-on-dispose;
+          // #4708 added mark-on-open only.
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pumpAndSettle();
 

@@ -1,5 +1,6 @@
 // ABOUTME: Widget tests for InboxNotificationsPage — verifies that opening
-// ABOUTME: the inbox refreshes once without implicitly mutating read state.
+// ABOUTME: the inbox refreshes once and marks notifications seen on open
+// ABOUTME: (advances the read watermark) without fanning out across tabs (#4708).
 
 // ignore_for_file: prefer_const_constructors
 
@@ -73,21 +74,27 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
+      // Opening the inbox refreshes and marks notifications seen (advances the
+      // server read watermark) so the badge reflects "new since last seen"
+      // (#4708).
       verify(() => mockNotificationRepo.refresh()).called(1);
-      verifyNever(() => mockNotificationRepo.markAllAsRead());
+      verify(() => mockNotificationRepo.markAllAsRead()).called(1);
     });
 
     testWidgets(
-      'does not mark notifications read when the inbox page is unmounted',
+      'marks seen on open but not again when the inbox page is unmounted',
       (tester) async {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
-        verifyNever(() => mockNotificationRepo.markAllAsRead());
+        // Marked seen exactly once on open.
+        verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+        clearInteractions(mockNotificationRepo);
 
         // Leaving the inbox (toggling to the Messages segment so the
         // notifications KeyedSubtree is swapped out, or leaving the inbox tab
-        // so the ShellRoute unmounts the subtree) must NOT auto-zero unread
-        // state. Read transitions are deliberate only. See #4729.
+        // so the ShellRoute unmounts the subtree) must NOT mark read again on
+        // *leave* — the seen advance is on open only. #4758 removed the old
+        // mark-on-dispose; #4708 added mark-on-open.
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();
 
@@ -96,24 +103,25 @@ void main() {
     );
 
     testWidgets(
-      'does not fan out refresh or mark-read across the five filter tabs',
+      'does not fan out refresh or mark-seen across the five filter tabs',
       (tester) async {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
         // Swipe through the four non-default tabs. Each visit mounts a
-        // fresh NotificationsView; the contract is that none of them
-        // triggers another refresh or implicit mark-all-read.
+        // fresh NotificationsView but they share one NotificationFeedBloc;
+        // the contract is that none of them triggers another refresh or an
+        // additional mark-seen.
         for (var i = 1; i < 5; i++) {
           await tester.tap(find.byType(Tab).at(i));
           await tester.pumpAndSettle();
         }
 
-        // Exactly one refresh and no implicit markAllAsRead across the
-        // whole inbox-open lifecycle, even after all five filter views
-        // have mounted.
+        // Exactly one refresh and one mark-seen across the whole inbox-open
+        // lifecycle, even after all five filter views have mounted — the
+        // shared bloc opens once, not once per tab.
         verify(() => mockNotificationRepo.refresh()).called(1);
-        verifyNever(() => mockNotificationRepo.markAllAsRead());
+        verify(() => mockNotificationRepo.markAllAsRead()).called(1);
         // Confirm all five filter views actually mounted — guards
         // against the test silently passing because TabBarView never
         // built the off-default children.

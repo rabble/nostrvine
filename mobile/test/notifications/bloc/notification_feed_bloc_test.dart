@@ -97,6 +97,9 @@ void main() {
       when(
         () => mockNotificationRepo.markAsRead(any()),
       ).thenAnswer((_) async {});
+      when(
+        () => mockNotificationRepo.markAllAsRead(),
+      ).thenAnswer((_) async {});
       when(() => mockNotificationRepo.resetPaginationDepth()).thenReturn(null);
     });
 
@@ -191,7 +194,7 @@ void main() {
 
     group('NotificationFeedStarted', () {
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'emits loading then loaded; calls refresh without marking read',
+        'emits loading then loaded; refreshes then marks seen on open (#4708)',
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedStarted()),
         expect: () => [
@@ -199,8 +202,33 @@ void main() {
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         verify: (_) {
+          // Seen-on-open advances the server watermark AFTER the refresh so
+          // the badge clears and thereafter shows "new since last seen".
+          verifyInOrder([
+            () => mockNotificationRepo.refresh(),
+            () => mockNotificationRepo.markAllAsRead(),
+          ]);
+        },
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'stays loaded when the seen-on-open mark-all fails (does not blacken '
+        'the feed)',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.markAllAsRead(),
+          ).thenThrow(Exception('mark-all boom'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedStarted()),
+        expect: () => [
+          NotificationFeedState(status: NotificationFeedStatus.loading),
+          NotificationFeedState(status: NotificationFeedStatus.loaded),
+        ],
+        errors: () => [isA<Exception>()],
+        verify: (_) {
           verify(() => mockNotificationRepo.refresh()).called(1);
-          verifyNever(() => mockNotificationRepo.markAllAsRead());
+          verify(() => mockNotificationRepo.markAllAsRead()).called(1);
         },
       );
 
@@ -413,6 +441,9 @@ void main() {
         ],
         verify: (_) {
           verify(() => mockNotificationRepo.refresh()).called(1);
+          // Pull-to-refresh shows current unread; only opening (Started)
+          // advances the seen watermark (#4708).
+          verifyNever(() => mockNotificationRepo.markAllAsRead());
         },
       );
 
