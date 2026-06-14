@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Mixin that provides consistent AsyncValue UI handling with default loading/error widgets.
 ///
@@ -60,27 +61,36 @@ mixin AsyncValueUIHelpersMixin {
     );
   }
 
-  /// Default error widget - centered error icon with message
+  /// Default error widget - centered error icon with an intentional,
+  /// localized message.
+  ///
+  /// The raw [error] is deliberately not shown to the user (see the
+  /// per-layer failure contract in `rules/error_handling.md`); it stays in
+  /// the [AsyncValue] for logging at the provider layer. Wrapped in a
+  /// [Builder] so the message can resolve `context.l10n` without changing
+  /// this mixin's public API.
   Widget _buildDefaultError(Object error, StackTrace stack) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const DivineIcon(
-            icon: DivineIconName.warningCircle,
-            color: VineTheme.error,
-            size: 48,
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              'Error: $error',
-              style: const TextStyle(color: VineTheme.whiteText),
-              textAlign: TextAlign.center,
+    return Builder(
+      builder: (context) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const DivineIcon(
+              icon: DivineIconName.warningCircle,
+              color: VineTheme.error,
+              size: 48,
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                context.l10n.commonSomethingWentWrong,
+                style: const TextStyle(color: VineTheme.whiteText),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

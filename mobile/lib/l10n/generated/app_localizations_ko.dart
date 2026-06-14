@@ -5539,6 +5539,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get commonRetry => '다시 시도';
 
   @override
+  String get commonSomethingWentWrong => 'Something went wrong';
+
+  @override
   String get commonNext => '다음';
 
   @override

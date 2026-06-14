@@ -106,8 +106,12 @@ void main() {
           ),
         );
 
+        final l10n = lookupAppLocalizations(const Locale('en'));
         expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
-        expect(find.textContaining('Test error'), findsOneWidget);
+        // Shows an intentional, localized message...
+        expect(find.text(l10n.commonSomethingWentWrong), findsOneWidget);
+        // ...and never leaks the raw exception text to the user (#3589).
+        expect(find.textContaining('Test error'), findsNothing);
       },
     );
 
@@ -192,8 +196,10 @@ void main() {
         // Should have error icon
         expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
 
-        // Should have error message
-        expect(find.textContaining('Network timeout'), findsOneWidget);
+        // Should show the intentional localized message, not the raw error
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.commonSomethingWentWrong), findsOneWidget);
+        expect(find.textContaining('Network timeout'), findsNothing);
 
         // Should be centered
         final center = tester.widget<Center>(

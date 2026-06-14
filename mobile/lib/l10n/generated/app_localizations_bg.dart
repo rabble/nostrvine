@@ -5801,6 +5801,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get commonRetry => 'Опитай пак';
 
   @override
+  String get commonSomethingWentWrong => 'Something went wrong';
+
+  @override
   String get commonNext => 'Следваща';
 
   @override

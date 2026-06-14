@@ -10100,6 +10100,12 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get commonRetry;
 
+  /// Generic error message shown when an async load fails and no more specific message applies. Must not embed raw exception text.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong'**
+  String get commonSomethingWentWrong;
+
   /// No description provided for @commonNext.
   ///
   /// In en, this message translates to:

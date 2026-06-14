@@ -5636,6 +5636,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get commonRetry => 'እንደገና ይሞክሩ';
 
   @override
+  String get commonSomethingWentWrong => 'Something went wrong';
+
+  @override
   String get commonNext => 'ቀጥሎ';
 
   @override

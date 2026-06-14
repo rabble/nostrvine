@@ -5818,6 +5818,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get commonRetry => 'Subukan ulit';
 
   @override
+  String get commonSomethingWentWrong => 'Something went wrong';
+
+  @override
   String get commonNext => 'Susunod';
 
   @override

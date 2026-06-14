@@ -5750,6 +5750,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get commonRetry => 'Försök igen';
 
   @override
+  String get commonSomethingWentWrong => 'Something went wrong';
+
+  @override
   String get commonNext => 'Nästa';
 
   @override
