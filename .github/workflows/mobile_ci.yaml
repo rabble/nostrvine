@@ -36,6 +36,8 @@ jobs:
           bash scripts/check_native_transport_security.sh
       - name: 🪵 Verify no raw logging in production code
         run: bash scripts/check_raw_logging.sh
+      - name: 🌐 Verify no untagged test mutates HttpOverrides.global
+        run: bash scripts/check_http_overrides_isolation.sh
       - name: 🚧 Verify Riverpod boundary (@riverpod / StateProvider locations)
         run: bash scripts/check_riverpod_boundary.sh
       - name: 🚧 Verify ChangeNotifier boundary (sanctioned-allowlist ratchet)
