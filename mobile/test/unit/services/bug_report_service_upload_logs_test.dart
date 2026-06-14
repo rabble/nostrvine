@@ -1,7 +1,6 @@
 // ABOUTME: Tests for BugReportService.uploadFullLogs()
 // ABOUTME: Verifies Blossom upload success, failure fallback, and null service handling
 
-@Tags(['skip_very_good_optimization'])
 import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
