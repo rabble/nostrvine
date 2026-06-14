@@ -1,32 +1,18 @@
-@Tags(['skip_very_good_optimization', 'integration'])
-// ABOUTME: Integration test verifying video upload completes before Nostr event publishing
+// ABOUTME: Unit test verifying video upload completes before Nostr event publishing
 // ABOUTME: Tests TDD failing case: publish should wait for upload to complete and populate videoId/cdnUrl
-import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/pending_upload.dart';
 
 void main() {
   group('Video Upload → Publish Flow', () {
-    late File testVideoFile;
-
-    setUp(() async {
-      // Create a test video file
-      testVideoFile = File('test_video.mp4');
-      await testVideoFile.writeAsBytes([0, 1, 2, 3, 4]); // Minimal test data
-    });
-
-    tearDown(() async {
-      if (testVideoFile.existsSync()) {
-        await testVideoFile.delete();
-      }
-    });
+    const testVideoPath = 'test_video.mp4';
 
     test(
       'publishing should fail when upload has not completed (videoId is null)',
       () async {
         // ARRANGE: Create an upload that hasn't completed yet
         final upload = PendingUpload.create(
-          localVideoPath: testVideoFile.path,
+          localVideoPath: testVideoPath,
           nostrPubkey: 'test_pubkey_123',
           title: 'Test Video',
         );
@@ -63,7 +49,7 @@ void main() {
       () async {
         // ARRANGE: Create an upload and simulate completion
         final upload = PendingUpload.create(
-          localVideoPath: testVideoFile.path,
+          localVideoPath: testVideoPath,
           nostrPubkey: 'test_pubkey_123',
           title: 'Test Video',
         );
