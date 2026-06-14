@@ -1732,6 +1732,13 @@ class CameraController(
             return false
         }
         if (mode == requestedStabilizationMode) return true
+        if (isRecording) {
+            DivineCameraLog.w(
+                TAG,
+                "Ignoring stabilization mode change while recording: $mode"
+            )
+            return false
+        }
         requestedStabilizationMode = mode
 
         // Not bound yet — the mode is applied on the next bind (initialize).

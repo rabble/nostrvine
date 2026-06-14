@@ -445,6 +445,7 @@ class VideoRecorderBloc
     VideoRecorderStabilizationModeSet event,
     Emitter<VideoRecorderBlocState> emit,
   ) async {
+    if (state.isRecording) return;
     if (event.mode == state.videoStabilizationMode) return;
     final success = await _cameraService.setVideoStabilizationMode(event.mode);
     if (!success) {

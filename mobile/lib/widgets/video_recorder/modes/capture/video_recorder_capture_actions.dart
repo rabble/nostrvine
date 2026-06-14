@@ -29,58 +29,61 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
       top: false,
       left: false,
       bottom: false,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 220),
-        opacity: state.isRecording ? 0 : 1,
-        child: Container(
-          margin: const .symmetric(horizontal: 16),
-          padding: const .symmetric(vertical: 12, horizontal: 4),
-          decoration: ShapeDecoration(
-            color: VineTheme.scrim35,
-            shape: RoundedRectangleBorder(borderRadius: .circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: .min,
-            spacing: 8,
-            children: [
-              _IconButton(
-                icon: state.flashMode.icon,
-                label: context.l10n.videoRecorderToggleFlashLabel,
-                onTap: state.hasFlash
-                    ? () => context.read<VideoRecorderBloc>().add(
-                        const VideoRecorderFlashToggled(),
-                      )
-                    : null,
-              ),
-              _IconButton(
-                icon: state.timer.icon,
-                label: context.l10n.videoRecorderCycleTimerLabel,
-                onTap: () => context.read<VideoRecorderBloc>().add(
-                  const VideoRecorderTimerCycled(),
+      child: IgnorePointer(
+        ignoring: state.isRecording,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 220),
+          opacity: state.isRecording ? 0 : 1,
+          child: Container(
+            margin: const .symmetric(horizontal: 16),
+            padding: const .symmetric(vertical: 12, horizontal: 4),
+            decoration: ShapeDecoration(
+              color: VineTheme.scrim35,
+              shape: RoundedRectangleBorder(borderRadius: .circular(20)),
+            ),
+            child: Column(
+              mainAxisSize: .min,
+              spacing: 8,
+              children: [
+                _IconButton(
+                  icon: state.flashMode.icon,
+                  label: context.l10n.videoRecorderToggleFlashLabel,
+                  onTap: state.hasFlash
+                      ? () => context.read<VideoRecorderBloc>().add(
+                          const VideoRecorderFlashToggled(),
+                        )
+                      : null,
                 ),
-              ),
-              _IconButton(
-                icon: state.aspectRatio == .square
-                    ? .cropSquare
-                    : .cropPortrait,
-                label: context.l10n.videoRecorderToggleAspectRatioLabel,
-                onTap: !hasClips
-                    ? () => context.read<VideoRecorderBloc>().add(
-                        const VideoRecorderAspectRatioToggled(),
-                      )
-                    : null,
-              ),
-              _IconButton(
-                icon: .arrowsClockwise,
-                label: context.l10n.videoRecorderSwitchCameraLabel,
-                onTap: state.canSwitchCamera
-                    ? () => context.read<VideoRecorderBloc>().add(
-                        const VideoRecorderCameraSwitched(),
-                      )
-                    : null,
-              ),
-              const _StabilizationButton(),
-            ],
+                _IconButton(
+                  icon: state.timer.icon,
+                  label: context.l10n.videoRecorderCycleTimerLabel,
+                  onTap: () => context.read<VideoRecorderBloc>().add(
+                    const VideoRecorderTimerCycled(),
+                  ),
+                ),
+                _IconButton(
+                  icon: state.aspectRatio == .square
+                      ? .cropSquare
+                      : .cropPortrait,
+                  label: context.l10n.videoRecorderToggleAspectRatioLabel,
+                  onTap: !hasClips
+                      ? () => context.read<VideoRecorderBloc>().add(
+                          const VideoRecorderAspectRatioToggled(),
+                        )
+                      : null,
+                ),
+                _IconButton(
+                  icon: .arrowsClockwise,
+                  label: context.l10n.videoRecorderSwitchCameraLabel,
+                  onTap: state.canSwitchCamera
+                      ? () => context.read<VideoRecorderBloc>().add(
+                          const VideoRecorderCameraSwitched(),
+                        )
+                      : null,
+                ),
+                const _StabilizationButton(),
+              ],
+            ),
           ),
         ),
       ),

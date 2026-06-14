@@ -129,6 +129,34 @@ void main() {
         );
         expect(opacity.opacity, equals(0));
       });
+
+      testWidgets('ignores touches while recording', (tester) async {
+        await tester.pumpWidget(
+          buildWidget(recordingState: VideoRecorderState.recording),
+        );
+        await tester.pumpAndSettle();
+
+        final ignorePointer = tester.widget<IgnorePointer>(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is IgnorePointer && widget.child is AnimatedOpacity,
+          ),
+        );
+        expect(ignorePointer.ignoring, isTrue);
+      });
+
+      testWidgets('allows touches when not recording', (tester) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        final ignorePointer = tester.widget<IgnorePointer>(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is IgnorePointer && widget.child is AnimatedOpacity,
+          ),
+        );
+        expect(ignorePointer.ignoring, isFalse);
+      });
     });
 
     group('flash button', () {

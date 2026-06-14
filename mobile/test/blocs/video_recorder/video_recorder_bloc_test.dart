@@ -253,6 +253,30 @@ void main() {
           );
         },
       );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'ignores mode changes while recording',
+        build: () => buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(
+              recordingState: VideoRecorderState.recording,
+            ),
+          ),
+        act: (bloc) => bloc.add(
+          const VideoRecorderStabilizationModeSet(
+            DivineVideoStabilizationMode.standard,
+          ),
+        ),
+        expect: () => const <VideoRecorderBlocState>[],
+        verify: (_) {
+          verifyNever(
+            () => cameraService.setVideoStabilizationMode(any()),
+          );
+          verifyNever(
+            () => prefs.setString('camera_last_used_stabilization', any()),
+          );
+        },
+      );
     });
 
     group('VideoRecorderAspectRatioToggled', () {
