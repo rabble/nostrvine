@@ -166,8 +166,7 @@ class _VideosGrid extends StatelessWidget {
 
 /// A video thumbnail tile for search results with author name overlay.
 ///
-/// Shared between [VideosSection] (all-filter overview) and
-/// [VideoSearchView] (dedicated videos-filter grid).
+/// Used by [VideosSection] to render each result in the videos grid.
 class SearchVideoTile extends StatelessWidget {
   const SearchVideoTile({required this.video, required this.onTap, super.key});
 
