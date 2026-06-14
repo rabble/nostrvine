@@ -786,6 +786,19 @@ void main() {
         act: (bloc) => bloc.add(const ProfileLikedVideosBlocklistChanged()),
         expect: () => const <ProfileLikedVideosState>[],
       );
+
+      test('cancels the blocklist subscription on close', () async {
+        final bloc = createBloc();
+        await bloc.close();
+
+        // A stateStream emission after close must not trigger a re-filter.
+        blocklistStateController.add(ContentPolicyState.empty());
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(
+          () => mockBlocklistRepository.filterContent<VideoEvent>(any(), any()),
+        );
+      });
     });
   });
 }

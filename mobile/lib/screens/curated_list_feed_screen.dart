@@ -93,6 +93,10 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
             )
           : null,
       body: videosAsync.when(
+        // Keep the current grid on screen while the provider re-runs after a
+        // blocklist version bump, instead of flashing the spinner and resetting
+        // scroll (#5104).
+        skipLoadingOnReload: true,
         data: (videos) {
           if (videos.isEmpty) {
             return Center(

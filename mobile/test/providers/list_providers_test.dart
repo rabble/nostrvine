@@ -411,4 +411,87 @@ void main() {
       expect(second, isEmpty);
     });
   });
+
+  group(curatedListVideoEventsProvider, () {
+    test(
+      'filters hidden videos found by plain event id in the local cache',
+      () async {
+        const listId = 'curated-list-1';
+        final blockedVideo = _video(
+          id: _blockedVideoId,
+          pubkey: _blockedAuthor,
+        );
+        final allowedVideo = _video(id: _allowedVideoId, pubkey: _ownerA);
+        final videoEventService = _MockVideoEventService();
+        when(() => videoEventService.discoveryVideos).thenReturn(const []);
+        when(() => videoEventService.homeFeedVideos).thenReturn(const []);
+        when(() => videoEventService.profileVideos).thenReturn(const []);
+        when(
+          () => videoEventService.getVideoById(_blockedVideoId),
+        ).thenReturn(blockedVideo);
+        when(
+          () => videoEventService.getVideoById(_allowedVideoId),
+        ).thenReturn(allowedVideo);
+        when(
+          () => videoEventService.shouldHideVideo(blockedVideo),
+        ).thenReturn(true);
+        when(
+          () => videoEventService.shouldHideVideo(allowedVideo),
+        ).thenReturn(false);
+
+        final container = ProviderContainer(
+          overrides: [
+            videoEventServiceProvider.overrideWithValue(videoEventService),
+            curatedListVideosProvider(
+              listId,
+            ).overrideWith((ref) => [_blockedVideoId, _allowedVideoId]),
+          ],
+        );
+        addTearDown(container.dispose);
+        final provider = curatedListVideoEventsProvider(listId);
+        final subscription = container.listen(provider, (_, _) {});
+        addTearDown(subscription.close);
+
+        final result = await container.read(provider.future);
+        expect(result.map((v) => v.id), [_allowedVideoId]);
+        verify(() => videoEventService.shouldHideVideo(blockedVideo)).called(1);
+      },
+    );
+
+    test('re-runs and re-filters when the blocklist version changes', () async {
+      const listId = 'curated-list-2';
+      final video = _video(id: _allowedVideoId, pubkey: _ownerA);
+      final videoEventService = _MockVideoEventService();
+      when(() => videoEventService.discoveryVideos).thenReturn(const []);
+      when(() => videoEventService.homeFeedVideos).thenReturn(const []);
+      when(() => videoEventService.profileVideos).thenReturn(const []);
+      when(
+        () => videoEventService.getVideoById(_allowedVideoId),
+      ).thenReturn(video);
+      when(() => videoEventService.shouldHideVideo(video)).thenReturn(false);
+
+      final container = ProviderContainer(
+        overrides: [
+          videoEventServiceProvider.overrideWithValue(videoEventService),
+          curatedListVideosProvider(
+            listId,
+          ).overrideWith((ref) => [_allowedVideoId]),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final provider = curatedListVideoEventsProvider(listId);
+      final subscription = container.listen(provider, (_, _) {});
+      addTearDown(subscription.close);
+
+      final first = await container.read(provider.future);
+      expect(first.map((v) => v.id), [_allowedVideoId]);
+
+      when(() => videoEventService.shouldHideVideo(video)).thenReturn(true);
+      container.read(blocklistVersionProvider.notifier).increment();
+
+      final second = await container.read(provider.future);
+      expect(second, isEmpty);
+    });
+  });
 }
