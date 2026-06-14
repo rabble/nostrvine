@@ -141,6 +141,7 @@ services:
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: clickhouse
       BIND_ADDR: 0.0.0.0:3001
+      RELAY_URL: ws://funnelcake-relay:7777
 
   # Reverse proxy that unifies relay (WebSocket) and API (REST) on one port,
   # matching production where both live behind the same domain.

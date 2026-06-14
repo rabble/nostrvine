@@ -11,6 +11,7 @@
 //   - Query parameters must be included in the u tag
 //   - Expired created_at, wrong signature, mismatched method/url → 401
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:convert';
 import 'dart:io';
 
@@ -29,14 +30,20 @@ const _localStackUnavailableMessage =
 
 void main() {
   late bool stackAvailable;
+  late final HttpOverrides? previousHttpOverrides;
 
   setUpAll(() async {
+    previousHttpOverrides = HttpOverrides.current;
     // flutter_test's binding stubs every HttpClient request to status 400 (to
     // catch accidental network use in unit tests). This is an intentional
     // real-network acceptance test, so opt out and let HttpClient do real I/O.
     HttpOverrides.global = null;
 
     stackAvailable = await _isPortOpen(_localHost, _localRelayPort);
+  });
+
+  tearDownAll(() {
+    HttpOverrides.global = previousHttpOverrides;
   });
 
   group(
