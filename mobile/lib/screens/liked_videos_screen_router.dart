@@ -70,6 +70,9 @@ class _LikedVideosScreenRouterState
     // Get services for ProfileLikedVideosBloc
     final likesRepository = ref.watch(likesRepositoryProvider);
     final videosRepository = ref.watch(videosRepositoryProvider);
+    final contentBlocklistRepository = ref.watch(
+      contentBlocklistRepositoryProvider,
+    );
     final nostrService = ref.watch(nostrServiceProvider);
     final currentUserPubkey = nostrService.publicKey;
     final videoIndex = routeCtx.videoIndex;
@@ -101,6 +104,7 @@ class _LikedVideosScreenRouterState
           create: (_) => ProfileLikedVideosBloc(
             likesRepository: likesRepository,
             videosRepository: videosRepository,
+            contentBlocklistRepository: contentBlocklistRepository,
             currentUserPubkey: currentUserPubkey,
           )..add(const ProfileLikedVideosSyncRequested()),
           child: const ProfileLikedGrid(isOwnProfile: true),
@@ -119,6 +123,7 @@ class _LikedVideosScreenRouterState
       create: (_) => ProfileLikedVideosBloc(
         likesRepository: likesRepository,
         videosRepository: videosRepository,
+        contentBlocklistRepository: contentBlocklistRepository,
         currentUserPubkey: currentUserPubkey,
       )..add(const ProfileLikedVideosSyncRequested()),
       child: _LikedVideosFeedView(videoIndex: videoIndex),

@@ -34,3 +34,14 @@ final class ProfileLikedVideosLoadMoreRequested
     extends ProfileLikedVideosEvent {
   const ProfileLikedVideosLoadMoreRequested();
 }
+
+/// Request to re-filter the loaded videos against the current blocklist.
+///
+/// Dispatched from a [ContentBlocklistRepository.stateStream] subscription so
+/// the grid drops a newly-blocked author after a *broad* blocklist change
+/// (account switch / identity adoption, relay-synced blocked-by-others,
+/// mute-list recovery) — broad changes bump the version but emit no granular
+/// removed-id signal, so the bloc must re-filter its held list itself (#5104).
+final class ProfileLikedVideosBlocklistChanged extends ProfileLikedVideosEvent {
+  const ProfileLikedVideosBlocklistChanged();
+}

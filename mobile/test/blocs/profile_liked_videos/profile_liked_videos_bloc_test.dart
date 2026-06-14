@@ -4,6 +4,8 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:content_policy/content_policy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -15,11 +17,16 @@ class _MockLikesRepository extends Mock implements LikesRepository {}
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
+
 void main() {
   group('ProfileLikedVideosBloc', () {
     late _MockLikesRepository mockLikesRepository;
     late _MockVideosRepository mockVideosRepository;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late StreamController<List<String>> likedIdsController;
+    late StreamController<ContentPolicyState> blocklistStateController;
 
     // Test pubkeys
     const currentUserPubkey =
@@ -30,7 +37,10 @@ void main() {
     setUp(() {
       mockLikesRepository = _MockLikesRepository();
       mockVideosRepository = _MockVideosRepository();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
       likedIdsController = StreamController<List<String>>.broadcast();
+      blocklistStateController =
+          StreamController<ContentPolicyState>.broadcast();
 
       // Default stub for watchLikedEventIds
       when(
@@ -42,16 +52,23 @@ void main() {
       when(
         () => mockLikesRepository.getOrderedLikedEventIds(),
       ).thenAnswer((_) async => []);
+
+      // The bloc subscribes to stateStream in its constructor.
+      when(
+        () => mockBlocklistRepository.stateStream,
+      ).thenAnswer((_) => blocklistStateController.stream);
     });
 
     tearDown(() {
       likedIdsController.close();
+      blocklistStateController.close();
     });
 
     ProfileLikedVideosBloc createBloc({String? targetUserPubkey}) =>
         ProfileLikedVideosBloc(
           likesRepository: mockLikesRepository,
           videosRepository: mockVideosRepository,
+          contentBlocklistRepository: mockBlocklistRepository,
           currentUserPubkey: currentUserPubkey,
           targetUserPubkey: targetUserPubkey,
         );
@@ -671,6 +688,103 @@ void main() {
               // nextPageOffset shifted forward by 1 (1 new like added)
               .having((s) => s.nextPageOffset, 'nextPageOffset', 3),
         ],
+      );
+    });
+
+    group('ProfileLikedVideosBlocklistChanged', () {
+      const blockedPubkey =
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+      const allowedPubkey =
+          'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+
+      VideoEvent videoBy(String id, String pubkey) {
+        final now = DateTime.now();
+        return VideoEvent(
+          id: id,
+          pubkey: pubkey,
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          content: '',
+          timestamp: now,
+          title: 'Test Video $id',
+          videoUrl: 'https://example.com/video.mp4',
+          thumbnailUrl: 'https://example.com/thumb.jpg',
+        );
+      }
+
+      void stubFilterRemovingBlocked() {
+        when(
+          () => mockBlocklistRepository.filterContent<VideoEvent>(any(), any()),
+        ).thenAnswer(
+          (invocation) =>
+              (invocation.positionalArguments[0] as List<VideoEvent>)
+                  .where((v) => v.pubkey != blockedPubkey)
+                  .toList(),
+        );
+      }
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'removes blocked authors from videos, leaving likedEventIds/offset',
+        setUp: stubFilterRemovingBlocked,
+        build: createBloc,
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          videos: [videoBy('a', blockedPubkey), videoBy('b', allowedPubkey)],
+          likedEventIds: const ['a', 'b'],
+          nextPageOffset: 2,
+        ),
+        act: (bloc) => bloc.add(const ProfileLikedVideosBlocklistChanged()),
+        expect: () => [
+          isA<ProfileLikedVideosState>()
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'videos',
+                ['b'],
+              )
+              .having((s) => s.likedEventIds, 'likedEventIds', ['a', 'b'])
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 2),
+        ],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'a stateStream emission triggers the re-filter',
+        setUp: stubFilterRemovingBlocked,
+        build: createBloc,
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          videos: [videoBy('a', blockedPubkey), videoBy('b', allowedPubkey)],
+          likedEventIds: const ['a', 'b'],
+        ),
+        act: (_) => blocklistStateController.add(ContentPolicyState.empty()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileLikedVideosState>().having(
+            (s) => s.videos.map((v) => v.id).toList(),
+            'videos',
+            ['b'],
+          ),
+        ],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'emits nothing when no loaded video is blocked',
+        setUp: () {
+          when(
+            () =>
+                mockBlocklistRepository.filterContent<VideoEvent>(any(), any()),
+          ).thenAnswer(
+            (invocation) => List<VideoEvent>.from(
+              invocation.positionalArguments[0] as List<VideoEvent>,
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          videos: [videoBy('b', allowedPubkey)],
+          likedEventIds: const ['b'],
+        ),
+        act: (bloc) => bloc.add(const ProfileLikedVideosBlocklistChanged()),
+        expect: () => const <ProfileLikedVideosState>[],
       );
     });
   });

@@ -4,6 +4,8 @@
 
 import 'dart:async';
 
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:content_policy/content_policy.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -37,21 +39,37 @@ class ProfileLikedVideosBloc
   ProfileLikedVideosBloc({
     required LikesRepository likesRepository,
     required VideosRepository videosRepository,
+    required ContentBlocklistRepository contentBlocklistRepository,
     required String currentUserPubkey,
     String? targetUserPubkey,
   }) : _likesRepository = likesRepository,
        _videosRepository = videosRepository,
+       _blocklistRepository = contentBlocklistRepository,
        _currentUserPubkey = currentUserPubkey,
        _targetUserPubkey = targetUserPubkey,
        super(const ProfileLikedVideosState()) {
     on<ProfileLikedVideosSyncRequested>(_onSyncRequested);
     on<ProfileLikedVideosSubscriptionRequested>(_onSubscriptionRequested);
     on<ProfileLikedVideosLoadMoreRequested>(_onLoadMoreRequested);
+    on<ProfileLikedVideosBlocklistChanged>(_onBlocklistChanged);
+
+    // Re-filter the loaded grid whenever the blocklist changes. Broad changes
+    // (account switch / identity adoption, relay-synced blocked-by-others,
+    // mute-list recovery) bump the version but emit no granular removed-id
+    // signal, so the held list must be re-filtered here (#5104).
+    _blocklistSubscription = _blocklistRepository.stateStream.listen((_) {
+      if (isClosed) return;
+      add(const ProfileLikedVideosBlocklistChanged());
+    });
   }
 
   final LikesRepository _likesRepository;
   final VideosRepository _videosRepository;
+  final ContentBlocklistRepository _blocklistRepository;
   final String _currentUserPubkey;
+
+  /// Subscription to broad blocklist changes; cancelled in [close].
+  late final StreamSubscription<ContentPolicyState> _blocklistSubscription;
 
   /// The pubkey of the user whose likes to display.
   /// If null or same as current user, uses LikesRepository sync.
@@ -474,6 +492,26 @@ class ProfileLikedVideosBloc
     }
   }
 
+  /// Re-filter the loaded videos against the current blocklist.
+  ///
+  /// Removes any now-blocked authors from [ProfileLikedVideosState.videos].
+  /// [likedEventIds] and [ProfileLikedVideosState.nextPageOffset] are left
+  /// untouched: the offset indexes into [likedEventIds] for pagination, and
+  /// the next page fetch re-applies the blocklist filter via
+  /// [VideosRepository], so no offset adjustment is needed here.
+  void _onBlocklistChanged(
+    ProfileLikedVideosBlocklistChanged event,
+    Emitter<ProfileLikedVideosState> emit,
+  ) {
+    final filtered = _blocklistRepository.filterContent(
+      state.videos,
+      (video) => video.pubkey,
+    );
+    if (filtered.length != state.videos.length) {
+      emit(state.copyWith(videos: filtered));
+    }
+  }
+
   /// Fetch videos for the given event IDs.
   ///
   /// Uses [VideosRepository.getVideosByIds] which implements cache-first:
@@ -509,5 +547,11 @@ class ProfileLikedVideosBloc
 
     // Filter unsupported formats
     return videos.where((v) => v.isSupportedOnCurrentPlatform).toList();
+  }
+
+  @override
+  Future<void> close() {
+    _blocklistSubscription.cancel();
+    return super.close();
   }
 }

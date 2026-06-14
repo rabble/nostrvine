@@ -284,6 +284,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       _likedVideosBloc = ProfileLikedVideosBloc(
         likesRepository: likesRepository,
         videosRepository: videosRepository,
+        contentBlocklistRepository: contentBlocklistRepository,
         currentUserPubkey: currentUserPubkey,
         targetUserPubkey: widget.userIdHex,
       )..add(const ProfileLikedVideosSubscriptionRequested());
