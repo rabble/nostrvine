@@ -2,7 +2,6 @@
 // the removedVideoIds broadcast stream so subscribers (FullscreenFeedBloc,
 // profileFeedProvider) can drop the id without waiting for a route change.
 
-@Tags(['skip_very_good_optimization'])
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
