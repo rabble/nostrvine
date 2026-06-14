@@ -13286,7 +13286,7 @@ abstract class AppLocalizations {
   /// **'Switch camera'**
   String get videoRecorderSwitchCameraLabel;
 
-  /// Accessibility label for a camera zoom quick-stop button in the lens picker. {zoom} is a zoom factor like 0.5, 1, or 2.
+  /// Accessibility label for the transient camera zoom ruler shown while pinch-zooming. {zoom} is a zoom factor like 0.5, 1, or 2.
   ///
   /// In en, this message translates to:
   /// **'Zoom to {zoom}×'**
