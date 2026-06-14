@@ -2482,5 +2482,19 @@
     "profileWebsiteSemanticLabel": "Visit website: {url}",
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileSetupWebsiteLabel": "Website (Optional)",
-    "profileSetupWebsiteHint": "https://yoursite.com"
+    "profileSetupWebsiteHint": "https://yoursite.com",
+    "videoEditorTransformLabel": "I-transform",
+    "videoEditorTransformSelectedClipSemanticLabel": "I-crop, i-rotate, o i-flip ang napiling clip",
+    "videoEditorTransformTitle": "I-transform ang clip",
+    "videoEditorTransformProgressLabel": "Sandali, tina-transform namin ang iyong clip",
+    "videoEditorTransformFailed": "Hindi ma-transform ang clip. Pakisubukang muli.",
+    "videoEditorTransformNoLocalFile": "Hindi ma-transform: hindi available nang lokal ang clip.",
+    "videoEditorTransformRotateLabel": "I-rotate",
+    "videoEditorTransformFlipLabel": "I-flip",
+    "videoEditorTransformRatioLabel": "Ratio",
+    "videoEditorTransformResetLabel": "I-reset",
+    "videoEditorTransformApplySemanticLabel": "Ilapat ang transform",
+    "videoEditorTransformCancelSemanticLabel": "Kanselahin ang transform",
+    "videoEditorTransformPlayLabel": "I-play",
+    "videoEditorTransformPauseLabel": "I-pause"
 }

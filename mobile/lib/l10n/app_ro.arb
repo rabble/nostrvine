@@ -3941,5 +3941,19 @@
     "profileWebsiteSemanticLabel": "Visit website: {url}",
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileSetupWebsiteLabel": "Website (Optional)",
-    "profileSetupWebsiteHint": "https://yoursite.com"
+    "profileSetupWebsiteHint": "https://yoursite.com",
+    "videoEditorTransformLabel": "Transformă",
+    "videoEditorTransformSelectedClipSemanticLabel": "Decupează, rotește sau întoarce clipul selectat",
+    "videoEditorTransformTitle": "Transformă clipul",
+    "videoEditorTransformProgressLabel": "O clipă, transformăm clipul tău",
+    "videoEditorTransformFailed": "Clipul nu a putut fi transformat. Încearcă din nou.",
+    "videoEditorTransformNoLocalFile": "Transformare imposibilă: clipul nu este disponibil local.",
+    "videoEditorTransformRotateLabel": "Rotește",
+    "videoEditorTransformFlipLabel": "Întoarce",
+    "videoEditorTransformRatioLabel": "Proporție",
+    "videoEditorTransformResetLabel": "Resetează",
+    "videoEditorTransformApplySemanticLabel": "Aplică transformarea",
+    "videoEditorTransformCancelSemanticLabel": "Anulează transformarea",
+    "videoEditorTransformPlayLabel": "Redă",
+    "videoEditorTransformPauseLabel": "Pauză"
 }

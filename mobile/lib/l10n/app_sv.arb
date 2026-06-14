@@ -3941,5 +3941,19 @@
     "profileWebsiteSemanticLabel": "Visit website: {url}",
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileSetupWebsiteLabel": "Website (Optional)",
-    "profileSetupWebsiteHint": "https://yoursite.com"
+    "profileSetupWebsiteHint": "https://yoursite.com",
+    "videoEditorTransformLabel": "Transformera",
+    "videoEditorTransformSelectedClipSemanticLabel": "Beskär, rotera eller vänd det valda klippet",
+    "videoEditorTransformTitle": "Transformera klipp",
+    "videoEditorTransformProgressLabel": "Ett ögonblick, vi transformerar ditt klipp",
+    "videoEditorTransformFailed": "Det gick inte att transformera klippet. Försök igen.",
+    "videoEditorTransformNoLocalFile": "Kan inte transformera: klippet är inte tillgängligt lokalt.",
+    "videoEditorTransformRotateLabel": "Rotera",
+    "videoEditorTransformFlipLabel": "Vänd",
+    "videoEditorTransformRatioLabel": "Förhållande",
+    "videoEditorTransformResetLabel": "Återställ",
+    "videoEditorTransformApplySemanticLabel": "Tillämpa transformering",
+    "videoEditorTransformCancelSemanticLabel": "Avbryt transformering",
+    "videoEditorTransformPlayLabel": "Spela",
+    "videoEditorTransformPauseLabel": "Pausa"
 }

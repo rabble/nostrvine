@@ -3941,5 +3941,19 @@
     "profileWebsiteSemanticLabel": "Visit website: {url}",
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileSetupWebsiteLabel": "Website (Optional)",
-    "profileSetupWebsiteHint": "https://yoursite.com"
+    "profileSetupWebsiteHint": "https://yoursite.com",
+    "videoEditorTransformLabel": "تحويل",
+    "videoEditorTransformSelectedClipSemanticLabel": "قص أو تدوير أو قلب المقطع المحدد",
+    "videoEditorTransformTitle": "تحويل المقطع",
+    "videoEditorTransformProgressLabel": "لحظة، نقوم بتحويل مقطعك",
+    "videoEditorTransformFailed": "تعذّر تحويل المقطع. يرجى المحاولة مرة أخرى.",
+    "videoEditorTransformNoLocalFile": "لا يمكن التحويل: المقطع غير متوفر محليًا.",
+    "videoEditorTransformRotateLabel": "تدوير",
+    "videoEditorTransformFlipLabel": "قلب",
+    "videoEditorTransformRatioLabel": "النسبة",
+    "videoEditorTransformResetLabel": "إعادة تعيين",
+    "videoEditorTransformApplySemanticLabel": "تطبيق التحويل",
+    "videoEditorTransformCancelSemanticLabel": "إلغاء التحويل",
+    "videoEditorTransformPlayLabel": "تشغيل",
+    "videoEditorTransformPauseLabel": "إيقاف مؤقت"
 }

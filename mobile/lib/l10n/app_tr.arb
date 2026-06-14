@@ -3941,5 +3941,19 @@
     "profileWebsiteSemanticLabel": "Visit website: {url}",
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileSetupWebsiteLabel": "Website (Optional)",
-    "profileSetupWebsiteHint": "https://yoursite.com"
+    "profileSetupWebsiteHint": "https://yoursite.com",
+    "videoEditorTransformLabel": "Dönüştür",
+    "videoEditorTransformSelectedClipSemanticLabel": "Seçili klibi kırp, döndür veya çevir",
+    "videoEditorTransformTitle": "Klibi dönüştür",
+    "videoEditorTransformProgressLabel": "Bir saniye, klibini dönüştürüyoruz",
+    "videoEditorTransformFailed": "Klip dönüştürülemedi. Lütfen tekrar deneyin.",
+    "videoEditorTransformNoLocalFile": "Dönüştürülemiyor: klip yerel olarak mevcut değil.",
+    "videoEditorTransformRotateLabel": "Döndür",
+    "videoEditorTransformFlipLabel": "Çevir",
+    "videoEditorTransformRatioLabel": "Oran",
+    "videoEditorTransformResetLabel": "Sıfırla",
+    "videoEditorTransformApplySemanticLabel": "Dönüşümü uygula",
+    "videoEditorTransformCancelSemanticLabel": "Dönüşümü iptal et",
+    "videoEditorTransformPlayLabel": "Oynat",
+    "videoEditorTransformPauseLabel": "Duraklat"
 }

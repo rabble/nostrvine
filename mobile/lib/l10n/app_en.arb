@@ -4511,6 +4511,62 @@
   "@videoEditorReverseProgressLabel": {
     "description": "Status text shown while the selected clip is being rendered in reverse for preview playback."
   },
+  "videoEditorTransformLabel": "Transform",
+  "@videoEditorTransformLabel": {
+    "description": "Label for the Transform button in the timeline clip controls that opens the crop/rotate editor."
+  },
+  "videoEditorTransformSelectedClipSemanticLabel": "Crop, rotate, or flip selected clip",
+  "@videoEditorTransformSelectedClipSemanticLabel": {
+    "description": "Accessibility label for the Transform button in the timeline clip controls."
+  },
+  "videoEditorTransformTitle": "Transform clip",
+  "@videoEditorTransformTitle": {
+    "description": "Title of the full-screen crop/rotate editor used to transform a single video clip."
+  },
+  "videoEditorTransformProgressLabel": "One moment, we're transforming your clip",
+  "@videoEditorTransformProgressLabel": {
+    "description": "Status text shown while the selected clip is being re-rendered with the applied crop/rotate transform."
+  },
+  "videoEditorTransformFailed": "Could not transform clip. Please try again.",
+  "@videoEditorTransformFailed": {
+    "description": "Snackbar message shown when re-rendering a clip with its crop/rotate transform fails."
+  },
+  "videoEditorTransformNoLocalFile": "Cannot transform: clip is not locally available.",
+  "@videoEditorTransformNoLocalFile": {
+    "description": "Snackbar message shown when a transform is requested for a clip that has no locally available file."
+  },
+  "videoEditorTransformRotateLabel": "Rotate",
+  "@videoEditorTransformRotateLabel": {
+    "description": "Label for the rotate action button in the clip transform editor."
+  },
+  "videoEditorTransformFlipLabel": "Flip",
+  "@videoEditorTransformFlipLabel": {
+    "description": "Label for the flip action button in the clip transform editor."
+  },
+  "videoEditorTransformRatioLabel": "Ratio",
+  "@videoEditorTransformRatioLabel": {
+    "description": "Label for the aspect-ratio action button in the clip transform editor."
+  },
+  "videoEditorTransformResetLabel": "Reset",
+  "@videoEditorTransformResetLabel": {
+    "description": "Label for the reset action button in the clip transform editor."
+  },
+  "videoEditorTransformApplySemanticLabel": "Apply transform",
+  "@videoEditorTransformApplySemanticLabel": {
+    "description": "Accessibility label for the done button that applies the clip transform."
+  },
+  "videoEditorTransformCancelSemanticLabel": "Cancel transform",
+  "@videoEditorTransformCancelSemanticLabel": {
+    "description": "Accessibility label for the back button that cancels the clip transform."
+  },
+  "videoEditorTransformPlayLabel": "Play",
+  "@videoEditorTransformPlayLabel": {
+    "description": "Label for the play button in the clip transform editor bottom bar."
+  },
+  "videoEditorTransformPauseLabel": "Pause",
+  "@videoEditorTransformPauseLabel": {
+    "description": "Label for the pause button in the clip transform editor bottom bar."
+  },
   "videoEditorReverseNoLocalFile": "Cannot reverse: clip is not locally available.",
   "@videoEditorReverseNoLocalFile": {
     "description": "Snackbar message shown when a reverse is requested for a clip that has no locally available file."

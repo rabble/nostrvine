@@ -5,11 +5,13 @@ import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/screens/video_editor/video_clip_transform_screen.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_clip_speed_sheet.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
+import 'package:pro_video_editor/pro_video_editor.dart' show ExportTransform;
 
 /// Controls shown when a clip is in editing mode: Delete, Copy, Split, Done.
 class TimelineClipControls extends StatefulWidget {
@@ -43,6 +45,7 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       onDuplicated: () => _duplicateClip(context),
       onSplit: isSplitting ? null : () => _splitClip(context),
       onSpeed: isExtractingAudio ? null : () => _setPlaybackSpeed(context),
+      onTransform: () => _transformClip(context),
       onExtractAudio: () => _requestExtractAudio(context),
       onReversed: () => _reverseClip(context),
       isReversed: isReversed,
@@ -59,6 +62,35 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
                 const ClipEditorEditingStopped(),
               );
             },
+    );
+  }
+
+  Future<void> _transformClip(BuildContext context) async {
+    final bloc = context.read<ClipEditorBloc>();
+    final state = bloc.state;
+    if (state.currentClipIndex < 0 ||
+        state.currentClipIndex >= state.clips.length) {
+      return;
+    }
+    final clip = state.clips[state.currentClipIndex];
+
+    final transform = await Navigator.of(context).push<ExportTransform>(
+      PageRouteBuilder<ExportTransform>(
+        opaque: false,
+        barrierColor: VineTheme.backgroundCamera,
+        pageBuilder: (_, _, _) => VideoClipTransformScreen(clip: clip),
+        transitionsBuilder: (_, animation, _, child) =>
+            FadeTransition(opacity: animation, child: child),
+      ),
+    );
+
+    if (transform == null || transform.isEmpty || !context.mounted) return;
+
+    // Bake the transform into a new clip file immediately; the bloc renders
+    // and swaps the clip's video, the canvas reloads the player, and
+    // onFinalClipInvalidated commits the change to the editor history.
+    bloc.add(
+      ClipEditorClipTransformRequested(clipId: clip.id, transform: transform),
     );
   }
 

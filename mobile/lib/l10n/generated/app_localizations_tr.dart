@@ -7973,6 +7973,52 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bir saniye, klibini tersine çeviriyoruz';
 
   @override
+  String get videoEditorTransformLabel => 'Dönüştür';
+
+  @override
+  String get videoEditorTransformSelectedClipSemanticLabel =>
+      'Seçili klibi kırp, döndür veya çevir';
+
+  @override
+  String get videoEditorTransformTitle => 'Klibi dönüştür';
+
+  @override
+  String get videoEditorTransformProgressLabel =>
+      'Bir saniye, klibini dönüştürüyoruz';
+
+  @override
+  String get videoEditorTransformFailed =>
+      'Klip dönüştürülemedi. Lütfen tekrar deneyin.';
+
+  @override
+  String get videoEditorTransformNoLocalFile =>
+      'Dönüştürülemiyor: klip yerel olarak mevcut değil.';
+
+  @override
+  String get videoEditorTransformRotateLabel => 'Döndür';
+
+  @override
+  String get videoEditorTransformFlipLabel => 'Çevir';
+
+  @override
+  String get videoEditorTransformRatioLabel => 'Oran';
+
+  @override
+  String get videoEditorTransformResetLabel => 'Sıfırla';
+
+  @override
+  String get videoEditorTransformApplySemanticLabel => 'Dönüşümü uygula';
+
+  @override
+  String get videoEditorTransformCancelSemanticLabel => 'Dönüşümü iptal et';
+
+  @override
+  String get videoEditorTransformPlayLabel => 'Oynat';
+
+  @override
+  String get videoEditorTransformPauseLabel => 'Duraklat';
+
+  @override
   String get videoEditorReverseNoLocalFile =>
       'Tersine çevrilemiyor: klip yerel olarak kullanılamıyor.';
 

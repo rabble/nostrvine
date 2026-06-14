@@ -8,7 +8,9 @@ import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/video_editor/video_editor_reverse_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
-import 'package:pro_video_editor/pro_video_editor.dart' show EditorVideo;
+import 'package:openvine/services/video_editor/video_editor_transform_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart'
+    show EditorVideo, ExportTransform;
 import 'package:unified_logger/unified_logger.dart';
 
 part 'clip_editor_event.dart';
@@ -40,6 +42,15 @@ typedef ReverseClipFn =
       required String renderId,
     });
 
+/// Function signature matching [VideoEditorTransformService.transformClip],
+/// used as an injectable seam so tests can swap in a pure-Dart fake.
+typedef TransformClipFn =
+    Future<EditorVideo> Function({
+      required DivineVideoClip sourceClip,
+      required ExportTransform transform,
+      required String renderId,
+    });
+
 /// BLoC for managing video clip editor state.
 ///
 /// Owns a local copy of the clip list so that all mutations (add, remove,
@@ -58,10 +69,13 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     AudioExtractionService? audioExtractionService,
     SplitClipFn? splitClip,
     ReverseClipFn? reverseClip,
+    TransformClipFn? transformClip,
   }) : _audioExtractionService =
            audioExtractionService ?? AudioExtractionService(),
        _splitClip = splitClip ?? VideoEditorSplitService.splitClip,
        _reverseClip = reverseClip ?? VideoEditorReverseService.reverseClip,
+       _transformClip =
+           transformClip ?? VideoEditorTransformService.transformClip,
        super(const ClipEditorState()) {
     // Clip data
     on<ClipEditorInitialized>(_onInitialized);
@@ -99,6 +113,12 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       transformer: droppable(),
     );
 
+    // Transform (crop / rotate / flip)
+    on<ClipEditorClipTransformRequested>(
+      _onClipTransformRequested,
+      transformer: droppable(),
+    );
+
     // Volume
     on<ClipEditorClipVolumeChanged>(
       _onClipVolumeChanged,
@@ -114,6 +134,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   final AudioExtractionService _audioExtractionService;
   final SplitClipFn _splitClip;
   final ReverseClipFn _reverseClip;
+  final TransformClipFn _transformClip;
 
   // === CLIP DATA ===
 
@@ -696,6 +717,100 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           isReversing: false,
           clearReversingClipId: true,
           lastReverseResult: ClipReverseFailure(),
+        ),
+      );
+    }
+  }
+
+  // === TRANSFORM ===
+
+  Future<void> _onClipTransformRequested(
+    ClipEditorClipTransformRequested event,
+    Emitter<ClipEditorState> emit,
+  ) async {
+    final index = state.clips.indexWhere((c) => c.id == event.clipId);
+    if (index == -1) return;
+
+    final clip = state.clips[index];
+    final videoPath = clip.video.file?.path;
+
+    if (videoPath == null) {
+      Log.warning(
+        '⚠️ Transform skipped: clip ${clip.id} has no local file',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      emit(state.copyWith(lastTransformResult: ClipTransformNoLocalFile()));
+      return;
+    }
+
+    emit(state.copyWith(isTransforming: true, transformingClipId: clip.id));
+
+    try {
+      final transformedVideo = await _transformClip(
+        sourceClip: clip,
+        transform: event.transform,
+        renderId: clip.id,
+      );
+
+      final currentClips = state.clips;
+      final currentIndex = currentClips.indexWhere((c) => c.id == clip.id);
+      if (currentIndex == -1) {
+        Log.warning(
+          '⚠️ Transform result discarded: clip ${clip.id} no longer exists',
+          name: 'ClipEditorBloc',
+          category: LogCategory.video,
+        );
+        emit(
+          state.copyWith(
+            isTransforming: false,
+            clearTransformingClipId: true,
+            lastTransformResult: ClipTransformDiscarded(),
+          ),
+        );
+        return;
+      }
+
+      // The transform bakes a new file from the clip's *current* video, so the
+      // cached forward/reversed paths now point at stale (pre-transform)
+      // files — clear them so a later reverse re-renders from the transformed
+      // source instead of restoring untransformed content.
+      final updatedClip = currentClips[currentIndex].copyWith(
+        video: transformedVideo,
+        clearForwardVideoPath: true,
+        clearReversedVideoPath: true,
+      );
+      final newClips = List<DivineVideoClip>.of(currentClips)
+        ..[currentIndex] = updatedClip;
+
+      emit(
+        state.copyWith(
+          clips: List.unmodifiable(newClips),
+          isTransforming: false,
+          clearTransformingClipId: true,
+          lastTransformResult: ClipTransformSuccess(),
+        ),
+      );
+
+      onFinalClipInvalidated.call();
+    } catch (e, stackTrace) {
+      final error = switch (e) {
+        StateError() ||
+        TypeError() ||
+        RangeError() => Reportable(e, context: '_onClipTransformRequested'),
+        _ => e,
+      };
+      addError(error, stackTrace);
+      Log.error(
+        '❌ Failed to transform clip ${clip.id}: $e',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      emit(
+        state.copyWith(
+          isTransforming: false,
+          clearTransformingClipId: true,
+          lastTransformResult: ClipTransformFailure(),
         ),
       );
     }

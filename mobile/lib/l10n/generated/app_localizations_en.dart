@@ -7993,6 +7993,52 @@ class AppLocalizationsEn extends AppLocalizations {
       'One moment, we\'re reversing your clip';
 
   @override
+  String get videoEditorTransformLabel => 'Transform';
+
+  @override
+  String get videoEditorTransformSelectedClipSemanticLabel =>
+      'Crop, rotate, or flip selected clip';
+
+  @override
+  String get videoEditorTransformTitle => 'Transform clip';
+
+  @override
+  String get videoEditorTransformProgressLabel =>
+      'One moment, we\'re transforming your clip';
+
+  @override
+  String get videoEditorTransformFailed =>
+      'Could not transform clip. Please try again.';
+
+  @override
+  String get videoEditorTransformNoLocalFile =>
+      'Cannot transform: clip is not locally available.';
+
+  @override
+  String get videoEditorTransformRotateLabel => 'Rotate';
+
+  @override
+  String get videoEditorTransformFlipLabel => 'Flip';
+
+  @override
+  String get videoEditorTransformRatioLabel => 'Ratio';
+
+  @override
+  String get videoEditorTransformResetLabel => 'Reset';
+
+  @override
+  String get videoEditorTransformApplySemanticLabel => 'Apply transform';
+
+  @override
+  String get videoEditorTransformCancelSemanticLabel => 'Cancel transform';
+
+  @override
+  String get videoEditorTransformPlayLabel => 'Play';
+
+  @override
+  String get videoEditorTransformPauseLabel => 'Pause';
+
+  @override
   String get videoEditorReverseNoLocalFile =>
       'Cannot reverse: clip is not locally available.';
 

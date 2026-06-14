@@ -8004,6 +8004,53 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ett ögonblick, vi vänder ditt klipp baklänges';
 
   @override
+  String get videoEditorTransformLabel => 'Transformera';
+
+  @override
+  String get videoEditorTransformSelectedClipSemanticLabel =>
+      'Beskär, rotera eller vänd det valda klippet';
+
+  @override
+  String get videoEditorTransformTitle => 'Transformera klipp';
+
+  @override
+  String get videoEditorTransformProgressLabel =>
+      'Ett ögonblick, vi transformerar ditt klipp';
+
+  @override
+  String get videoEditorTransformFailed =>
+      'Det gick inte att transformera klippet. Försök igen.';
+
+  @override
+  String get videoEditorTransformNoLocalFile =>
+      'Kan inte transformera: klippet är inte tillgängligt lokalt.';
+
+  @override
+  String get videoEditorTransformRotateLabel => 'Rotera';
+
+  @override
+  String get videoEditorTransformFlipLabel => 'Vänd';
+
+  @override
+  String get videoEditorTransformRatioLabel => 'Förhållande';
+
+  @override
+  String get videoEditorTransformResetLabel => 'Återställ';
+
+  @override
+  String get videoEditorTransformApplySemanticLabel =>
+      'Tillämpa transformering';
+
+  @override
+  String get videoEditorTransformCancelSemanticLabel => 'Avbryt transformering';
+
+  @override
+  String get videoEditorTransformPlayLabel => 'Spela';
+
+  @override
+  String get videoEditorTransformPauseLabel => 'Pausa';
+
+  @override
   String get videoEditorReverseNoLocalFile =>
       'Kan inte vända baklänges: klippet är inte tillgängligt lokalt.';
 

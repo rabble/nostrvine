@@ -7737,6 +7737,50 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorReverseProgressLabel => '잠시만요. 클립을 역재생으로 변환하고 있어요';
 
   @override
+  String get videoEditorTransformLabel => '변형';
+
+  @override
+  String get videoEditorTransformSelectedClipSemanticLabel =>
+      '선택한 클립 자르기, 회전 또는 뒤집기';
+
+  @override
+  String get videoEditorTransformTitle => '클립 변형';
+
+  @override
+  String get videoEditorTransformProgressLabel => '잠시만요, 클립을 변형하고 있어요';
+
+  @override
+  String get videoEditorTransformFailed => '클립을 변형할 수 없습니다. 다시 시도해 주세요.';
+
+  @override
+  String get videoEditorTransformNoLocalFile =>
+      '변형할 수 없음: 클립을 로컬에서 사용할 수 없습니다.';
+
+  @override
+  String get videoEditorTransformRotateLabel => '회전';
+
+  @override
+  String get videoEditorTransformFlipLabel => '뒤집기';
+
+  @override
+  String get videoEditorTransformRatioLabel => '비율';
+
+  @override
+  String get videoEditorTransformResetLabel => '재설정';
+
+  @override
+  String get videoEditorTransformApplySemanticLabel => '변형 적용';
+
+  @override
+  String get videoEditorTransformCancelSemanticLabel => '변형 취소';
+
+  @override
+  String get videoEditorTransformPlayLabel => '재생';
+
+  @override
+  String get videoEditorTransformPauseLabel => '일시정지';
+
+  @override
   String get videoEditorReverseNoLocalFile =>
       '역재생할 수 없습니다: 클립이 로컬에서 사용할 수 없습니다.';
 

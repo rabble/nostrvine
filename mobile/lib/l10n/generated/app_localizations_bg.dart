@@ -8071,6 +8071,54 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorReverseProgressLabel => 'Момент, обръщаме клипа ви';
 
   @override
+  String get videoEditorTransformLabel => 'Преобразуване';
+
+  @override
+  String get videoEditorTransformSelectedClipSemanticLabel =>
+      'Изрежете, завъртете или обърнете избрания клип';
+
+  @override
+  String get videoEditorTransformTitle => 'Преобразуване на клип';
+
+  @override
+  String get videoEditorTransformProgressLabel =>
+      'Един момент, преобразуваме вашия клип';
+
+  @override
+  String get videoEditorTransformFailed =>
+      'Клипът не може да бъде преобразуван. Опитайте отново.';
+
+  @override
+  String get videoEditorTransformNoLocalFile =>
+      'Преобразуването е невъзможно: клипът не е наличен локално.';
+
+  @override
+  String get videoEditorTransformRotateLabel => 'Завъртане';
+
+  @override
+  String get videoEditorTransformFlipLabel => 'Обръщане';
+
+  @override
+  String get videoEditorTransformRatioLabel => 'Съотношение';
+
+  @override
+  String get videoEditorTransformResetLabel => 'Нулиране';
+
+  @override
+  String get videoEditorTransformApplySemanticLabel =>
+      'Прилагане на преобразуването';
+
+  @override
+  String get videoEditorTransformCancelSemanticLabel =>
+      'Отказ на преобразуването';
+
+  @override
+  String get videoEditorTransformPlayLabel => 'Възпроизвеждане';
+
+  @override
+  String get videoEditorTransformPauseLabel => 'Пауза';
+
+  @override
   String get videoEditorReverseNoLocalFile =>
       'Не може да се обърне: клипът не е наличен локално.';
 

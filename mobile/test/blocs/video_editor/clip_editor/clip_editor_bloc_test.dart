@@ -175,6 +175,14 @@ Future<EditorVideo> _fakeReverseClip({
   return EditorVideo.file('/reversed/${sourceClip.id}_$renderId.mp4');
 }
 
+Future<EditorVideo> _fakeTransformClip({
+  required DivineVideoClip sourceClip,
+  required ExportTransform transform,
+  required String renderId,
+}) async {
+  return EditorVideo.file('/transformed/${sourceClip.id}_$renderId.mp4');
+}
+
 void main() {
   group(ClipEditorBloc, () {
     late List<DivineVideoClip> twoClips;
@@ -207,12 +215,14 @@ void main() {
       AudioExtractionService? audioExtractionService,
       SplitClipFn? splitClip,
       ReverseClipFn? reverseClip,
+      TransformClipFn? transformClip,
     }) {
       return ClipEditorBloc(
         onFinalClipInvalidated: () {},
         audioExtractionService: audioExtractionService,
         splitClip: splitClip,
         reverseClip: reverseClip,
+        transformClip: transformClip,
       );
     }
 
@@ -1528,6 +1538,175 @@ void main() {
           expect(bloc.state.reversingClipId, isNull);
           expect(bloc.state.clips, isEmpty);
           expect(bloc.state.lastReverseResult, isA<ClipReverseDiscarded>());
+
+          await bloc.close();
+        },
+      );
+    });
+
+    group('ClipEditorClipTransformRequested', () {
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'emits no-local-file result when clip has no local file',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: [_createClipNoFile()]),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipTransformRequested(
+            clipId: 'clip-no-file',
+            transform: ExportTransform(),
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.lastTransformResult,
+            'lastTransformResult',
+            isA<ClipTransformNoLocalFile>(),
+          ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'renders transformed clip, swaps the file, and clears reverse caches',
+        build: () => buildBloc(transformClip: _fakeTransformClip),
+        seed: () => ClipEditorState(
+          clips: [
+            _createClipWithFile().copyWith(
+              forwardVideoPath: '/path/clip-local.mp4',
+              reversedVideoPath: '/reversed/clip-local.mp4',
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipTransformRequested(
+            clipId: 'clip-local',
+            transform: ExportTransform(),
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.isTransforming, 'isTransforming', isTrue)
+              .having(
+                (s) => s.transformingClipId,
+                'transformingClipId',
+                'clip-local',
+              ),
+          isA<ClipEditorState>()
+              .having((s) => s.isTransforming, 'isTransforming', isFalse)
+              .having(
+                (s) => s.transformingClipId,
+                'transformingClipId',
+                isNull,
+              )
+              .having(
+                (s) => s.clips.first.forwardVideoPath,
+                'forwardVideoPath',
+                isNull,
+              )
+              .having(
+                (s) => s.clips.first.reversedVideoPath,
+                'reversedVideoPath',
+                isNull,
+              )
+              .having(
+                (s) => s.lastTransformResult,
+                'lastTransformResult',
+                isA<ClipTransformSuccess>(),
+              ),
+        ],
+        verify: (bloc) {
+          expect(
+            bloc.state.clips.first.video.file?.path,
+            equals('/transformed/clip-local_clip-local.mp4'),
+          );
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'emits failure and reports a Reportable on a render error',
+        build: () => buildBloc(
+          transformClip:
+              ({
+                required sourceClip,
+                required transform,
+                required renderId,
+              }) async => throw StateError('transform render failed'),
+        ),
+        seed: () => ClipEditorState(clips: [_createClipWithFile()]),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipTransformRequested(
+            clipId: 'clip-local',
+            transform: ExportTransform(),
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.isTransforming,
+            'isTransforming',
+            isTrue,
+          ),
+          isA<ClipEditorState>()
+              .having((s) => s.isTransforming, 'isTransforming', isFalse)
+              .having(
+                (s) => s.transformingClipId,
+                'transformingClipId',
+                isNull,
+              )
+              .having(
+                (s) => s.lastTransformResult,
+                'lastTransformResult',
+                isA<ClipTransformFailure>(),
+              ),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>()
+              .having((r) => r.unwrap(), 'unwrap', isA<StateError>())
+              .having(
+                (r) => r.context,
+                'context',
+                '_onClipTransformRequested',
+              ),
+        ],
+      );
+
+      test(
+        'discards transform result when source clip is removed in-flight',
+        () async {
+          final completer = Completer<EditorVideo>();
+          final clip = _createClipWithFile();
+          final bloc = buildBloc(
+            transformClip:
+                ({
+                  required sourceClip,
+                  required transform,
+                  required renderId,
+                }) => completer.future,
+          );
+
+          bloc.add(ClipEditorInitialized([clip]));
+          await Future<void>.delayed(Duration.zero);
+
+          bloc.add(
+            const ClipEditorClipTransformRequested(
+              clipId: 'clip-local',
+              transform: ExportTransform(),
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+          expect(bloc.state.isTransforming, isTrue);
+
+          bloc.add(const ClipEditorClipRemoved('clip-local'));
+          await Future<void>.delayed(Duration.zero);
+          expect(bloc.state.clips, isEmpty);
+
+          completer.complete(EditorVideo.file('/transformed/discarded.mp4'));
+          await Future<void>.delayed(Duration.zero);
+
+          expect(bloc.state.isTransforming, isFalse);
+          expect(bloc.state.transformingClipId, isNull);
+          expect(bloc.state.clips, isEmpty);
+          expect(
+            bloc.state.lastTransformResult,
+            isA<ClipTransformDiscarded>(),
+          );
 
           await bloc.close();
         },

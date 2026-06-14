@@ -3230,5 +3230,19 @@
     "profileWebsiteSemanticLabel": "Visit website: {url}",
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileSetupWebsiteLabel": "Website (Optional)",
-    "profileSetupWebsiteHint": "https://yoursite.com"
+    "profileSetupWebsiteHint": "https://yoursite.com",
+    "videoEditorTransformLabel": "변형",
+    "videoEditorTransformSelectedClipSemanticLabel": "선택한 클립 자르기, 회전 또는 뒤집기",
+    "videoEditorTransformTitle": "클립 변형",
+    "videoEditorTransformProgressLabel": "잠시만요, 클립을 변형하고 있어요",
+    "videoEditorTransformFailed": "클립을 변형할 수 없습니다. 다시 시도해 주세요.",
+    "videoEditorTransformNoLocalFile": "변형할 수 없음: 클립을 로컬에서 사용할 수 없습니다.",
+    "videoEditorTransformRotateLabel": "회전",
+    "videoEditorTransformFlipLabel": "뒤집기",
+    "videoEditorTransformRatioLabel": "비율",
+    "videoEditorTransformResetLabel": "재설정",
+    "videoEditorTransformApplySemanticLabel": "변형 적용",
+    "videoEditorTransformCancelSemanticLabel": "변형 취소",
+    "videoEditorTransformPlayLabel": "재생",
+    "videoEditorTransformPauseLabel": "일시정지"
 }

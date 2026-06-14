@@ -203,6 +203,23 @@ class ClipEditorClipReverseRequested extends ClipEditorEvent {
   List<Object?> get props => [clipId];
 }
 
+// === TRANSFORM ===
+
+/// Request that the clip with [clipId] be re-rendered with [transform]
+/// (crop / 90°-rotation / flip) baked into a new file.
+class ClipEditorClipTransformRequested extends ClipEditorEvent {
+  const ClipEditorClipTransformRequested({
+    required this.clipId,
+    required this.transform,
+  });
+
+  final String clipId;
+  final ExportTransform transform;
+
+  @override
+  List<Object?> get props => [clipId, transform];
+}
+
 // === VOLUME ===
 
 /// Update the volume of a clip by its ID.

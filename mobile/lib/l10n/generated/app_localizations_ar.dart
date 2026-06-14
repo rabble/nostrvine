@@ -7935,6 +7935,51 @@ class AppLocalizationsAr extends AppLocalizations {
       'لحظة من فضلك، نحن نعكس المقطع الخاص بك';
 
   @override
+  String get videoEditorTransformLabel => 'تحويل';
+
+  @override
+  String get videoEditorTransformSelectedClipSemanticLabel =>
+      'قص أو تدوير أو قلب المقطع المحدد';
+
+  @override
+  String get videoEditorTransformTitle => 'تحويل المقطع';
+
+  @override
+  String get videoEditorTransformProgressLabel => 'لحظة، نقوم بتحويل مقطعك';
+
+  @override
+  String get videoEditorTransformFailed =>
+      'تعذّر تحويل المقطع. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get videoEditorTransformNoLocalFile =>
+      'لا يمكن التحويل: المقطع غير متوفر محليًا.';
+
+  @override
+  String get videoEditorTransformRotateLabel => 'تدوير';
+
+  @override
+  String get videoEditorTransformFlipLabel => 'قلب';
+
+  @override
+  String get videoEditorTransformRatioLabel => 'النسبة';
+
+  @override
+  String get videoEditorTransformResetLabel => 'إعادة تعيين';
+
+  @override
+  String get videoEditorTransformApplySemanticLabel => 'تطبيق التحويل';
+
+  @override
+  String get videoEditorTransformCancelSemanticLabel => 'إلغاء التحويل';
+
+  @override
+  String get videoEditorTransformPlayLabel => 'تشغيل';
+
+  @override
+  String get videoEditorTransformPauseLabel => 'إيقاف مؤقت';
+
+  @override
   String get videoEditorReverseNoLocalFile =>
       'لا يمكن العكس: المقطع غير متاح محليًا.';
 

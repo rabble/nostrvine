@@ -8151,6 +8151,54 @@ class AppLocalizationsPl extends AppLocalizations {
       'Chwileczkę, odwracamy Twój klip';
 
   @override
+  String get videoEditorTransformLabel => 'Przekształć';
+
+  @override
+  String get videoEditorTransformSelectedClipSemanticLabel =>
+      'Przytnij, obróć lub odbij wybrany klip';
+
+  @override
+  String get videoEditorTransformTitle => 'Przekształć klip';
+
+  @override
+  String get videoEditorTransformProgressLabel =>
+      'Chwila, przekształcamy Twój klip';
+
+  @override
+  String get videoEditorTransformFailed =>
+      'Nie udało się przekształcić klipu. Spróbuj ponownie.';
+
+  @override
+  String get videoEditorTransformNoLocalFile =>
+      'Nie można przekształcić: klip nie jest dostępny lokalnie.';
+
+  @override
+  String get videoEditorTransformRotateLabel => 'Obróć';
+
+  @override
+  String get videoEditorTransformFlipLabel => 'Odbij';
+
+  @override
+  String get videoEditorTransformRatioLabel => 'Proporcje';
+
+  @override
+  String get videoEditorTransformResetLabel => 'Resetuj';
+
+  @override
+  String get videoEditorTransformApplySemanticLabel =>
+      'Zastosuj przekształcenie';
+
+  @override
+  String get videoEditorTransformCancelSemanticLabel =>
+      'Anuluj przekształcenie';
+
+  @override
+  String get videoEditorTransformPlayLabel => 'Odtwórz';
+
+  @override
+  String get videoEditorTransformPauseLabel => 'Pauza';
+
+  @override
   String get videoEditorReverseNoLocalFile =>
       'Nie można odwrócić: klip nie jest dostępny lokalnie.';
 

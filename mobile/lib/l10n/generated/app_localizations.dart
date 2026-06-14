@@ -13922,6 +13922,90 @@ abstract class AppLocalizations {
   /// **'One moment, we\'re reversing your clip'**
   String get videoEditorReverseProgressLabel;
 
+  /// Label for the Transform button in the timeline clip controls that opens the crop/rotate editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Transform'**
+  String get videoEditorTransformLabel;
+
+  /// Accessibility label for the Transform button in the timeline clip controls.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop, rotate, or flip selected clip'**
+  String get videoEditorTransformSelectedClipSemanticLabel;
+
+  /// Title of the full-screen crop/rotate editor used to transform a single video clip.
+  ///
+  /// In en, this message translates to:
+  /// **'Transform clip'**
+  String get videoEditorTransformTitle;
+
+  /// Status text shown while the selected clip is being re-rendered with the applied crop/rotate transform.
+  ///
+  /// In en, this message translates to:
+  /// **'One moment, we\'re transforming your clip'**
+  String get videoEditorTransformProgressLabel;
+
+  /// Snackbar message shown when re-rendering a clip with its crop/rotate transform fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not transform clip. Please try again.'**
+  String get videoEditorTransformFailed;
+
+  /// Snackbar message shown when a transform is requested for a clip that has no locally available file.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot transform: clip is not locally available.'**
+  String get videoEditorTransformNoLocalFile;
+
+  /// Label for the rotate action button in the clip transform editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate'**
+  String get videoEditorTransformRotateLabel;
+
+  /// Label for the flip action button in the clip transform editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Flip'**
+  String get videoEditorTransformFlipLabel;
+
+  /// Label for the aspect-ratio action button in the clip transform editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratio'**
+  String get videoEditorTransformRatioLabel;
+
+  /// Label for the reset action button in the clip transform editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get videoEditorTransformResetLabel;
+
+  /// Accessibility label for the done button that applies the clip transform.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply transform'**
+  String get videoEditorTransformApplySemanticLabel;
+
+  /// Accessibility label for the back button that cancels the clip transform.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel transform'**
+  String get videoEditorTransformCancelSemanticLabel;
+
+  /// Label for the play button in the clip transform editor bottom bar.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get videoEditorTransformPlayLabel;
+
+  /// Label for the pause button in the clip transform editor bottom bar.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get videoEditorTransformPauseLabel;
+
   /// Snackbar message shown when a reverse is requested for a clip that has no locally available file.
   ///
   /// In en, this message translates to:

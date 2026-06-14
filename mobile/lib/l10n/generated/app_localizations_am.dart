@@ -7856,6 +7856,49 @@ class AppLocalizationsAm extends AppLocalizations {
       'አንድ ትንሽ ቆይ፣ ክሊፕዎን ወደ ኋላ እየቀየርን ነው';
 
   @override
+  String get videoEditorTransformLabel => 'መለወጥ';
+
+  @override
+  String get videoEditorTransformSelectedClipSemanticLabel =>
+      'የተመረጠውን ክሊፕ ይከርክሙ፣ ያሽከርክሩ ወይም ይገልብጡ';
+
+  @override
+  String get videoEditorTransformTitle => 'ክሊፕ መለወጥ';
+
+  @override
+  String get videoEditorTransformProgressLabel => 'አንድ አፍታ፣ ክሊፕዎን እያስተካከልን ነው';
+
+  @override
+  String get videoEditorTransformFailed => 'ክሊፑን መለወጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
+  String get videoEditorTransformNoLocalFile => 'መለወጥ አይቻልም፦ ክሊፑ በአካባቢው አይገኝም።';
+
+  @override
+  String get videoEditorTransformRotateLabel => 'አሽከርክር';
+
+  @override
+  String get videoEditorTransformFlipLabel => 'ግልብጥ';
+
+  @override
+  String get videoEditorTransformRatioLabel => 'ጥምርታ';
+
+  @override
+  String get videoEditorTransformResetLabel => 'ዳግም አስጀምር';
+
+  @override
+  String get videoEditorTransformApplySemanticLabel => 'ለውጥን ተግብር';
+
+  @override
+  String get videoEditorTransformCancelSemanticLabel => 'ለውጥን ሰርዝ';
+
+  @override
+  String get videoEditorTransformPlayLabel => 'አጫውት';
+
+  @override
+  String get videoEditorTransformPauseLabel => 'ለአፍታ አቁም';
+
+  @override
   String get videoEditorReverseNoLocalFile =>
       'ወደ ኋላ መቀየር አልተቻለም፤ ቅንጥቡ በሀገር ዉስጥ አይገኝም።';
 

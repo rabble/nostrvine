@@ -60,5 +60,55 @@ void main() {
       expect(deleteCount, equals(1));
       expect(doneCount, equals(1));
     });
+
+    testWidgets('renders the transform button only when onTransform is set', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: VideoEditorTimelineControls(
+              onTransform: () {},
+              onDone: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text(l10n.videoEditorTransformLabel), findsOneWidget);
+    });
+
+    testWidgets('invokes onTransform when the transform button is tapped', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      var transformCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: VideoEditorTimelineControls(
+              onTransform: () => transformCount++,
+              onDone: () {},
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(
+        find.bySemanticsLabel(
+          l10n.videoEditorTransformSelectedClipSemanticLabel,
+        ),
+      );
+      await tester.pump();
+
+      expect(transformCount, equals(1));
+    });
   });
 }

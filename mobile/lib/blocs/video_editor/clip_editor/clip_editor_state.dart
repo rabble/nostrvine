@@ -25,6 +25,9 @@ class ClipEditorState extends Equatable {
     this.isReversing = false,
     this.reversingClipId,
     this.lastReverseResult,
+    this.isTransforming = false,
+    this.transformingClipId,
+    this.lastTransformResult,
   });
 
   /// Local copy of clips managed by this editor session.
@@ -105,6 +108,18 @@ class ClipEditorState extends Equatable {
   /// reverse render.
   final ClipReverseResult? lastReverseResult;
 
+  /// Whether a transform (crop/rotate/flip) render operation is running.
+  final bool isTransforming;
+
+  /// Clip ID used as the render-progress stream key while transforming.
+  final String? transformingClipId;
+
+  /// Last completed transform-render result.
+  ///
+  /// Consumed by the widget layer to surface failures. Success is handled by
+  /// the canvas player-sync listener that reacts to the swapped clip file.
+  final ClipTransformResult? lastTransformResult;
+
   /// Total wall-clock duration of all clips (respecting trim and playback speed).
   Duration get totalDuration =>
       clips.fold(Duration.zero, (sum, clip) => sum + clip.playbackDuration);
@@ -131,6 +146,10 @@ class ClipEditorState extends Equatable {
     String? reversingClipId,
     bool clearReversingClipId = false,
     ClipReverseResult? lastReverseResult,
+    bool? isTransforming,
+    String? transformingClipId,
+    bool clearTransformingClipId = false,
+    ClipTransformResult? lastTransformResult,
   }) {
     return ClipEditorState(
       clips: clips ?? this.clips,
@@ -155,6 +174,11 @@ class ClipEditorState extends Equatable {
           ? null
           : (reversingClipId ?? this.reversingClipId),
       lastReverseResult: lastReverseResult ?? this.lastReverseResult,
+      isTransforming: isTransforming ?? this.isTransforming,
+      transformingClipId: clearTransformingClipId
+          ? null
+          : (transformingClipId ?? this.transformingClipId),
+      lastTransformResult: lastTransformResult ?? this.lastTransformResult,
     );
   }
 
@@ -179,6 +203,9 @@ class ClipEditorState extends Equatable {
     isReversing,
     reversingClipId,
     identityHashCode(lastReverseResult),
+    isTransforming,
+    transformingClipId,
+    identityHashCode(lastTransformResult),
   ];
 }
 
@@ -262,3 +289,20 @@ final class ClipReverseDiscarded extends ClipReverseResult {}
 
 /// Reverse render failed.
 final class ClipReverseFailure extends ClipReverseResult {}
+
+// === TRANSFORM RESULT ===
+
+/// One-shot signal describing the outcome of a transform-render operation.
+sealed class ClipTransformResult {}
+
+/// Transform render succeeded; the clip file has been swapped in state.
+final class ClipTransformSuccess extends ClipTransformResult {}
+
+/// Transform render was attempted but the clip has no locally available file.
+final class ClipTransformNoLocalFile extends ClipTransformResult {}
+
+/// Transform render completed but the source clip was removed in-flight.
+final class ClipTransformDiscarded extends ClipTransformResult {}
+
+/// Transform render failed.
+final class ClipTransformFailure extends ClipTransformResult {}

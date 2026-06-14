@@ -4066,5 +4066,19 @@
     "profileWebsiteSemanticLabel": "Visit website: {url}",
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileSetupWebsiteLabel": "Website (Optional)",
-    "profileSetupWebsiteHint": "https://yoursite.com"
+    "profileSetupWebsiteHint": "https://yoursite.com",
+    "videoEditorTransformLabel": "መለወጥ",
+    "videoEditorTransformSelectedClipSemanticLabel": "የተመረጠውን ክሊፕ ይከርክሙ፣ ያሽከርክሩ ወይም ይገልብጡ",
+    "videoEditorTransformTitle": "ክሊፕ መለወጥ",
+    "videoEditorTransformProgressLabel": "አንድ አፍታ፣ ክሊፕዎን እያስተካከልን ነው",
+    "videoEditorTransformFailed": "ክሊፑን መለወጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
+    "videoEditorTransformNoLocalFile": "መለወጥ አይቻልም፦ ክሊፑ በአካባቢው አይገኝም።",
+    "videoEditorTransformRotateLabel": "አሽከርክር",
+    "videoEditorTransformFlipLabel": "ግልብጥ",
+    "videoEditorTransformRatioLabel": "ጥምርታ",
+    "videoEditorTransformResetLabel": "ዳግም አስጀምር",
+    "videoEditorTransformApplySemanticLabel": "ለውጥን ተግብር",
+    "videoEditorTransformCancelSemanticLabel": "ለውጥን ሰርዝ",
+    "videoEditorTransformPlayLabel": "አጫውት",
+    "videoEditorTransformPauseLabel": "ለአፍታ አቁም"
 }

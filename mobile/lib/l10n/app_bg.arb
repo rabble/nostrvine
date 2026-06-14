@@ -4072,5 +4072,19 @@
     "profileWebsiteSemanticLabel": "Visit website: {url}",
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileSetupWebsiteLabel": "Website (Optional)",
-    "profileSetupWebsiteHint": "https://yoursite.com"
+    "profileSetupWebsiteHint": "https://yoursite.com",
+    "videoEditorTransformLabel": "Преобразуване",
+    "videoEditorTransformSelectedClipSemanticLabel": "Изрежете, завъртете или обърнете избрания клип",
+    "videoEditorTransformTitle": "Преобразуване на клип",
+    "videoEditorTransformProgressLabel": "Един момент, преобразуваме вашия клип",
+    "videoEditorTransformFailed": "Клипът не може да бъде преобразуван. Опитайте отново.",
+    "videoEditorTransformNoLocalFile": "Преобразуването е невъзможно: клипът не е наличен локално.",
+    "videoEditorTransformRotateLabel": "Завъртане",
+    "videoEditorTransformFlipLabel": "Обръщане",
+    "videoEditorTransformRatioLabel": "Съотношение",
+    "videoEditorTransformResetLabel": "Нулиране",
+    "videoEditorTransformApplySemanticLabel": "Прилагане на преобразуването",
+    "videoEditorTransformCancelSemanticLabel": "Отказ на преобразуването",
+    "videoEditorTransformPlayLabel": "Възпроизвеждане",
+    "videoEditorTransformPauseLabel": "Пауза"
 }

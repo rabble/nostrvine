@@ -357,5 +357,81 @@ void main() {
         expect(find.byType(SnackBar), findsNothing);
       },
     );
+
+    testWidgets(
+      'shows transform progress overlay while clip transform is running',
+      (tester) async {
+        final clipBloc = _MockClipEditorBloc();
+        const transformingState = ClipEditorState(
+          isTransforming: true,
+          transformingClipId: 'clip-1',
+        );
+
+        when(() => clipBloc.state).thenReturn(transformingState);
+        whenListen(
+          clipBloc,
+          const Stream<ClipEditorState>.empty(),
+          initialState: transformingState,
+        );
+
+        await tester.pumpWidget(
+          buildWidget(isLoading: false, clipBlocOverride: clipBloc),
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.videoEditorTransformProgressLabel),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('shows a snackbar when a clip transform render fails', (
+      tester,
+    ) async {
+      final clipBloc = _MockClipEditorBloc();
+      final failureState = ClipEditorState(
+        lastTransformResult: ClipTransformFailure(),
+      );
+
+      when(() => clipBloc.state).thenReturn(const ClipEditorState());
+      whenListen(
+        clipBloc,
+        Stream<ClipEditorState>.fromIterable([failureState]),
+        initialState: const ClipEditorState(),
+      );
+
+      await tester.pumpWidget(
+        buildWidget(isLoading: true, clipBlocOverride: clipBloc),
+      );
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.videoEditorTransformFailed), findsOneWidget);
+    });
+
+    testWidgets('shows a snackbar when a clip transform has no local file', (
+      tester,
+    ) async {
+      final clipBloc = _MockClipEditorBloc();
+      final noFileState = ClipEditorState(
+        lastTransformResult: ClipTransformNoLocalFile(),
+      );
+
+      when(() => clipBloc.state).thenReturn(const ClipEditorState());
+      whenListen(
+        clipBloc,
+        Stream<ClipEditorState>.fromIterable([noFileState]),
+        initialState: const ClipEditorState(),
+      );
+
+      await tester.pumpWidget(
+        buildWidget(isLoading: true, clipBlocOverride: clipBloc),
+      );
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.videoEditorTransformNoLocalFile), findsOneWidget);
+    });
   });
 }

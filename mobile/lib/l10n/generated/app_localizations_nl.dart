@@ -8035,6 +8035,54 @@ class AppLocalizationsNl extends AppLocalizations {
       'Een moment, we draaien je clip om';
 
   @override
+  String get videoEditorTransformLabel => 'Transformeren';
+
+  @override
+  String get videoEditorTransformSelectedClipSemanticLabel =>
+      'Geselecteerde clip bijsnijden, draaien of spiegelen';
+
+  @override
+  String get videoEditorTransformTitle => 'Clip transformeren';
+
+  @override
+  String get videoEditorTransformProgressLabel =>
+      'Een moment, we transformeren je clip';
+
+  @override
+  String get videoEditorTransformFailed =>
+      'Kan clip niet transformeren. Probeer het opnieuw.';
+
+  @override
+  String get videoEditorTransformNoLocalFile =>
+      'Transformeren niet mogelijk: clip is niet lokaal beschikbaar.';
+
+  @override
+  String get videoEditorTransformRotateLabel => 'Draaien';
+
+  @override
+  String get videoEditorTransformFlipLabel => 'Spiegelen';
+
+  @override
+  String get videoEditorTransformRatioLabel => 'Verhouding';
+
+  @override
+  String get videoEditorTransformResetLabel => 'Resetten';
+
+  @override
+  String get videoEditorTransformApplySemanticLabel =>
+      'Transformatie toepassen';
+
+  @override
+  String get videoEditorTransformCancelSemanticLabel =>
+      'Transformatie annuleren';
+
+  @override
+  String get videoEditorTransformPlayLabel => 'Afspelen';
+
+  @override
+  String get videoEditorTransformPauseLabel => 'Pauze';
+
+  @override
   String get videoEditorReverseNoLocalFile =>
       'Kan niet omdraaien: clip is niet lokaal beschikbaar.';
 

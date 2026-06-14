@@ -47,8 +47,10 @@ class VideoEditorScaffold extends StatelessWidget {
         floatingActionButton: const _AddElementFab(),
         body: _SplitFailureListener(
           child: _ClipReverseResultListener(
-            child: _AudioExtractionResultListener(
-              child: _ScaffoldBody(isLoading: isLoading),
+            child: _ClipTransformResultListener(
+              child: _AudioExtractionResultListener(
+                child: _ScaffoldBody(isLoading: isLoading),
+              ),
             ),
           ),
         ),
@@ -89,6 +91,7 @@ class _ScaffoldBody extends StatelessWidget {
         ),
 
         const _ReverseProgressOverlay(),
+        const _TransformProgressOverlay(),
       ],
     );
   }
@@ -166,6 +169,59 @@ class _ClipReverseResultListener extends StatelessWidget {
         // snackbar.
         break;
       case ClipReverseSuccess():
+        // Player sync is handled by the canvas listener; nothing to do here.
+        break;
+    }
+  }
+}
+
+/// Listens to [ClipEditorBloc.state.lastTransformResult] and surfaces a
+/// snackbar when a transform-render operation fails or the clip has no local
+/// file. Success is handled by the canvas player-sync listener that reacts to
+/// the swapped clip file; this listener only covers the failure outcomes so
+/// they aren't silent to the user.
+///
+/// Kept at the scaffold level (always mounted) so the snackbar fires even
+/// if the timeline controls are hidden while the render is in flight.
+class _ClipTransformResultListener extends StatelessWidget {
+  const _ClipTransformResultListener({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<ClipEditorBloc, ClipEditorState>(
+      listenWhen: (prev, curr) =>
+          !identical(prev.lastTransformResult, curr.lastTransformResult) &&
+          curr.lastTransformResult != null,
+      listener: _onTransformResult,
+      child: child,
+    );
+  }
+
+  void _onTransformResult(BuildContext context, ClipEditorState state) {
+    final result = state.lastTransformResult;
+    if (result == null) return;
+
+    switch (result) {
+      case ClipTransformNoLocalFile():
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            context.l10n.videoEditorTransformNoLocalFile,
+          ),
+        );
+      case ClipTransformFailure():
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            context.l10n.videoEditorTransformFailed,
+          ),
+        );
+      case ClipTransformDiscarded():
+        // Source clip was removed during the async gap — nothing to attach
+        // the transformed render to and no user action that warrants a
+        // snackbar.
+        break;
+      case ClipTransformSuccess():
         // Player sync is handled by the canvas listener; nothing to do here.
         break;
     }
@@ -390,6 +446,76 @@ class _ReverseProgressOverlay extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Blocking overlay shown while a transform (crop/rotate/flip) is re-rendered
+/// into a new clip file. Fades in/out via [AnimatedSwitcher] so it doesn't pop
+/// on/off abruptly. Mirrors [_ReverseProgressOverlay].
+class _TransformProgressOverlay extends StatelessWidget {
+  const _TransformProgressOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocSelector<
+      ClipEditorBloc,
+      ClipEditorState,
+      ({bool isTransforming, String? renderId})
+    >(
+      selector: (state) => (
+        isTransforming: state.isTransforming,
+        renderId: state.transformingClipId,
+      ),
+      builder: (context, transformState) {
+        final renderId = transformState.isTransforming
+            ? transformState.renderId
+            : null;
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: renderId == null
+              ? const SizedBox.shrink()
+              : _TransformProgressContent(renderId: renderId),
+        );
+      },
+    );
+  }
+}
+
+class _TransformProgressContent extends StatelessWidget {
+  const _TransformProgressContent({required this.renderId});
+
+  final String renderId;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: VineTheme.backgroundColor.withAlpha(210),
+      child: Center(
+        child: RepaintBoundary(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 24,
+            children: [
+              StreamBuilder<ProgressModel>(
+                stream: ProVideoEditor.instance.progressStreamById(renderId),
+                builder: (context, snapshot) {
+                  final progress = snapshot.data?.progress ?? 0;
+                  return PartialCircleSpinner(progress: progress);
+                },
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 240),
+                child: Text(
+                  context.l10n.videoEditorTransformProgressLabel,
+                  textAlign: TextAlign.center,
+                  style: VineTheme.bodyMediumFont(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

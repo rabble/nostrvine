@@ -3941,5 +3941,19 @@
     "profileWebsiteSemanticLabel": "Visit website: {url}",
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileSetupWebsiteLabel": "Website (Optional)",
-    "profileSetupWebsiteHint": "https://yoursite.com"
+    "profileSetupWebsiteHint": "https://yoursite.com",
+    "videoEditorTransformLabel": "Trasforma",
+    "videoEditorTransformSelectedClipSemanticLabel": "Ritaglia, ruota o capovolgi il clip selezionato",
+    "videoEditorTransformTitle": "Trasforma clip",
+    "videoEditorTransformProgressLabel": "Un momento, stiamo trasformando il tuo clip",
+    "videoEditorTransformFailed": "Impossibile trasformare il clip. Riprova.",
+    "videoEditorTransformNoLocalFile": "Impossibile trasformare: il clip non è disponibile localmente.",
+    "videoEditorTransformRotateLabel": "Ruota",
+    "videoEditorTransformFlipLabel": "Capovolgi",
+    "videoEditorTransformRatioLabel": "Proporzioni",
+    "videoEditorTransformResetLabel": "Reimposta",
+    "videoEditorTransformApplySemanticLabel": "Applica trasformazione",
+    "videoEditorTransformCancelSemanticLabel": "Annulla trasformazione",
+    "videoEditorTransformPlayLabel": "Riproduci",
+    "videoEditorTransformPauseLabel": "Pausa"
 }

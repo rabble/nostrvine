@@ -8168,6 +8168,53 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorReverseProgressLabel => 'O clipă, inversăm clipul tău';
 
   @override
+  String get videoEditorTransformLabel => 'Transformă';
+
+  @override
+  String get videoEditorTransformSelectedClipSemanticLabel =>
+      'Decupează, rotește sau întoarce clipul selectat';
+
+  @override
+  String get videoEditorTransformTitle => 'Transformă clipul';
+
+  @override
+  String get videoEditorTransformProgressLabel =>
+      'O clipă, transformăm clipul tău';
+
+  @override
+  String get videoEditorTransformFailed =>
+      'Clipul nu a putut fi transformat. Încearcă din nou.';
+
+  @override
+  String get videoEditorTransformNoLocalFile =>
+      'Transformare imposibilă: clipul nu este disponibil local.';
+
+  @override
+  String get videoEditorTransformRotateLabel => 'Rotește';
+
+  @override
+  String get videoEditorTransformFlipLabel => 'Întoarce';
+
+  @override
+  String get videoEditorTransformRatioLabel => 'Proporție';
+
+  @override
+  String get videoEditorTransformResetLabel => 'Resetează';
+
+  @override
+  String get videoEditorTransformApplySemanticLabel => 'Aplică transformarea';
+
+  @override
+  String get videoEditorTransformCancelSemanticLabel =>
+      'Anulează transformarea';
+
+  @override
+  String get videoEditorTransformPlayLabel => 'Redă';
+
+  @override
+  String get videoEditorTransformPauseLabel => 'Pauză';
+
+  @override
   String get videoEditorReverseNoLocalFile =>
       'Nu se poate inversa: clipul nu este disponibil local.';
 

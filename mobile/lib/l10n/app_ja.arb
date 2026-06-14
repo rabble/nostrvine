@@ -3941,5 +3941,19 @@
     "profileWebsiteSemanticLabel": "Visit website: {url}",
     "profileCouldNotOpenWebsite": "Could not open website",
     "profileSetupWebsiteLabel": "Website (Optional)",
-    "profileSetupWebsiteHint": "https://yoursite.com"
+    "profileSetupWebsiteHint": "https://yoursite.com",
+    "videoEditorTransformLabel": "変形",
+    "videoEditorTransformSelectedClipSemanticLabel": "選択したクリップをトリミング、回転、または反転",
+    "videoEditorTransformTitle": "クリップを変形",
+    "videoEditorTransformProgressLabel": "クリップを変形しています。少々お待ちください",
+    "videoEditorTransformFailed": "クリップを変形できませんでした。もう一度お試しください。",
+    "videoEditorTransformNoLocalFile": "変形できません：クリップがローカルに利用できません。",
+    "videoEditorTransformRotateLabel": "回転",
+    "videoEditorTransformFlipLabel": "反転",
+    "videoEditorTransformRatioLabel": "比率",
+    "videoEditorTransformResetLabel": "リセット",
+    "videoEditorTransformApplySemanticLabel": "変形を適用",
+    "videoEditorTransformCancelSemanticLabel": "変形をキャンセル",
+    "videoEditorTransformPlayLabel": "再生",
+    "videoEditorTransformPauseLabel": "一時停止"
 }

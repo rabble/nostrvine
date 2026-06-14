@@ -8086,6 +8086,53 @@ class AppLocalizationsFil extends AppLocalizations {
       'Sandali lang, nirereverse namin ang clip mo';
 
   @override
+  String get videoEditorTransformLabel => 'I-transform';
+
+  @override
+  String get videoEditorTransformSelectedClipSemanticLabel =>
+      'I-crop, i-rotate, o i-flip ang napiling clip';
+
+  @override
+  String get videoEditorTransformTitle => 'I-transform ang clip';
+
+  @override
+  String get videoEditorTransformProgressLabel =>
+      'Sandali, tina-transform namin ang iyong clip';
+
+  @override
+  String get videoEditorTransformFailed =>
+      'Hindi ma-transform ang clip. Pakisubukang muli.';
+
+  @override
+  String get videoEditorTransformNoLocalFile =>
+      'Hindi ma-transform: hindi available nang lokal ang clip.';
+
+  @override
+  String get videoEditorTransformRotateLabel => 'I-rotate';
+
+  @override
+  String get videoEditorTransformFlipLabel => 'I-flip';
+
+  @override
+  String get videoEditorTransformRatioLabel => 'Ratio';
+
+  @override
+  String get videoEditorTransformResetLabel => 'I-reset';
+
+  @override
+  String get videoEditorTransformApplySemanticLabel => 'Ilapat ang transform';
+
+  @override
+  String get videoEditorTransformCancelSemanticLabel =>
+      'Kanselahin ang transform';
+
+  @override
+  String get videoEditorTransformPlayLabel => 'I-play';
+
+  @override
+  String get videoEditorTransformPauseLabel => 'I-pause';
+
+  @override
   String get videoEditorReverseNoLocalFile =>
       'Hindi ma-reverse: hindi available ang clip nang lokal.';
 

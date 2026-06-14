@@ -7975,6 +7975,52 @@ class AppLocalizationsId extends AppLocalizations {
       'Tunggu sebentar, kami sedang membalik klip Anda';
 
   @override
+  String get videoEditorTransformLabel => 'Transformasi';
+
+  @override
+  String get videoEditorTransformSelectedClipSemanticLabel =>
+      'Pangkas, putar, atau balik klip yang dipilih';
+
+  @override
+  String get videoEditorTransformTitle => 'Transformasi klip';
+
+  @override
+  String get videoEditorTransformProgressLabel =>
+      'Sebentar, kami sedang mentransformasi klip Anda';
+
+  @override
+  String get videoEditorTransformFailed =>
+      'Tidak dapat mentransformasi klip. Silakan coba lagi.';
+
+  @override
+  String get videoEditorTransformNoLocalFile =>
+      'Tidak dapat mentransformasi: klip tidak tersedia secara lokal.';
+
+  @override
+  String get videoEditorTransformRotateLabel => 'Putar';
+
+  @override
+  String get videoEditorTransformFlipLabel => 'Balik';
+
+  @override
+  String get videoEditorTransformRatioLabel => 'Rasio';
+
+  @override
+  String get videoEditorTransformResetLabel => 'Atur ulang';
+
+  @override
+  String get videoEditorTransformApplySemanticLabel => 'Terapkan transformasi';
+
+  @override
+  String get videoEditorTransformCancelSemanticLabel => 'Batalkan transformasi';
+
+  @override
+  String get videoEditorTransformPlayLabel => 'Putar';
+
+  @override
+  String get videoEditorTransformPauseLabel => 'Jeda';
+
+  @override
   String get videoEditorReverseNoLocalFile =>
       'Tidak dapat membalik: klip tidak tersedia secara lokal.';
 

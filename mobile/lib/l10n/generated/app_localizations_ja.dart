@@ -7715,6 +7715,49 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorReverseProgressLabel => '少々お待ちください。クリップを逆再生用に処理しています';
 
   @override
+  String get videoEditorTransformLabel => '変形';
+
+  @override
+  String get videoEditorTransformSelectedClipSemanticLabel =>
+      '選択したクリップをトリミング、回転、または反転';
+
+  @override
+  String get videoEditorTransformTitle => 'クリップを変形';
+
+  @override
+  String get videoEditorTransformProgressLabel => 'クリップを変形しています。少々お待ちください';
+
+  @override
+  String get videoEditorTransformFailed => 'クリップを変形できませんでした。もう一度お試しください。';
+
+  @override
+  String get videoEditorTransformNoLocalFile => '変形できません：クリップがローカルに利用できません。';
+
+  @override
+  String get videoEditorTransformRotateLabel => '回転';
+
+  @override
+  String get videoEditorTransformFlipLabel => '反転';
+
+  @override
+  String get videoEditorTransformRatioLabel => '比率';
+
+  @override
+  String get videoEditorTransformResetLabel => 'リセット';
+
+  @override
+  String get videoEditorTransformApplySemanticLabel => '変形を適用';
+
+  @override
+  String get videoEditorTransformCancelSemanticLabel => '変形をキャンセル';
+
+  @override
+  String get videoEditorTransformPlayLabel => '再生';
+
+  @override
+  String get videoEditorTransformPauseLabel => '一時停止';
+
+  @override
   String get videoEditorReverseNoLocalFile => '逆再生できません：クリップがローカルで利用できません。';
 
   @override
