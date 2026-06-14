@@ -7722,9 +7722,6 @@ class AppLocalizationsJa extends AppLocalizations {
       '選択したクリップをトリミング、回転、または反転';
 
   @override
-  String get videoEditorTransformTitle => 'クリップを変形';
-
-  @override
   String get videoEditorTransformProgressLabel => 'クリップを変形しています。少々お待ちください';
 
   @override

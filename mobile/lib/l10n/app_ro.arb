@@ -3944,7 +3944,6 @@
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "Transformă",
     "videoEditorTransformSelectedClipSemanticLabel": "Decupează, rotește sau întoarce clipul selectat",
-    "videoEditorTransformTitle": "Transformă clipul",
     "videoEditorTransformProgressLabel": "O clipă, transformăm clipul tău",
     "videoEditorTransformFailed": "Clipul nu a putut fi transformat. Încearcă din nou.",
     "videoEditorTransformNoLocalFile": "Transformare imposibilă: clipul nu este disponibil local.",

@@ -8175,9 +8175,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Decupează, rotește sau întoarce clipul selectat';
 
   @override
-  String get videoEditorTransformTitle => 'Transformă clipul';
-
-  @override
   String get videoEditorTransformProgressLabel =>
       'O clipă, transformăm clipul tău';
 

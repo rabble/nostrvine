@@ -111,7 +111,10 @@ class ClipEditorState extends Equatable {
   /// Whether a transform (crop/rotate/flip) render operation is running.
   final bool isTransforming;
 
-  /// Clip ID used as the render-progress stream key while transforming.
+  /// Render id used as the render-progress stream key while transforming.
+  ///
+  /// Namespaced from the clip id (`<clipId>_transform`) so it can't collide
+  /// with a concurrent reverse render keyed on the same clip id.
   final String? transformingClipId;
 
   /// Last completed transform-render result.

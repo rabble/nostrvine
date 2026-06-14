@@ -8052,9 +8052,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Cortar, girar ou inverter o clipe selecionado';
 
   @override
-  String get videoEditorTransformTitle => 'Transformar clipe';
-
-  @override
   String get videoEditorTransformProgressLabel =>
       'Um momento, estamos transformando seu clipe';
 

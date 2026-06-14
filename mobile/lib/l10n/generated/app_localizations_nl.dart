@@ -8042,9 +8042,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geselecteerde clip bijsnijden, draaien of spiegelen';
 
   @override
-  String get videoEditorTransformTitle => 'Clip transformeren';
-
-  @override
   String get videoEditorTransformProgressLabel =>
       'Een moment, we transformeren je clip';
 

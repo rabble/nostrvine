@@ -8092,9 +8092,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ausgewählten Clip zuschneiden, drehen oder spiegeln';
 
   @override
-  String get videoEditorTransformTitle => 'Clip transformieren';
-
-  @override
   String get videoEditorTransformProgressLabel =>
       'Einen Moment, wir transformieren deinen Clip';
 

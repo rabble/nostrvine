@@ -8108,9 +8108,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Rogner, pivoter ou retourner le clip sélectionné';
 
   @override
-  String get videoEditorTransformTitle => 'Transformer le clip';
-
-  @override
   String get videoEditorTransformProgressLabel =>
       'Un instant, nous transformons votre clip';
 

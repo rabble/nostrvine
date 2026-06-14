@@ -4069,7 +4069,6 @@
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "መለወጥ",
     "videoEditorTransformSelectedClipSemanticLabel": "የተመረጠውን ክሊፕ ይከርክሙ፣ ያሽከርክሩ ወይም ይገልብጡ",
-    "videoEditorTransformTitle": "ክሊፕ መለወጥ",
     "videoEditorTransformProgressLabel": "አንድ አፍታ፣ ክሊፕዎን እያስተካከልን ነው",
     "videoEditorTransformFailed": "ክሊፑን መለወጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
     "videoEditorTransformNoLocalFile": "መለወጥ አይቻልም፦ ክሊፑ በአካባቢው አይገኝም።",

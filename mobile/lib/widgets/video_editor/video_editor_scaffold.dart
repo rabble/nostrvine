@@ -450,9 +450,11 @@ class _ReverseProgressOverlay extends StatelessWidget {
   }
 }
 
-/// Blocking overlay shown while a transform (crop/rotate/flip) is re-rendered
-/// into a new clip file. Fades in/out via [AnimatedSwitcher] so it doesn't pop
-/// on/off abruptly. Mirrors [_ReverseProgressOverlay].
+/// Full-screen progress overlay shown while a transform (crop/rotate/flip) is
+/// re-rendered into a new clip file. Absorbs input for the duration so the
+/// timeline controls underneath can't start a competing edit (reverse, delete,
+/// split) mid-render, and fades in/out via [AnimatedSwitcher] so it doesn't pop
+/// on/off abruptly.
 class _TransformProgressOverlay extends StatelessWidget {
   const _TransformProgressOverlay();
 
@@ -489,30 +491,32 @@ class _TransformProgressContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: VineTheme.backgroundColor.withAlpha(210),
-      child: Center(
-        child: RepaintBoundary(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 24,
-            children: [
-              StreamBuilder<ProgressModel>(
-                stream: ProVideoEditor.instance.progressStreamById(renderId),
-                builder: (context, snapshot) {
-                  final progress = snapshot.data?.progress ?? 0;
-                  return PartialCircleSpinner(progress: progress);
-                },
-              ),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 240),
-                child: Text(
-                  context.l10n.videoEditorTransformProgressLabel,
-                  textAlign: TextAlign.center,
-                  style: VineTheme.bodyMediumFont(),
+    return AbsorbPointer(
+      child: ColoredBox(
+        color: VineTheme.backgroundColor.withAlpha(210),
+        child: Center(
+          child: RepaintBoundary(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 24,
+              children: [
+                StreamBuilder<ProgressModel>(
+                  stream: ProVideoEditor.instance.progressStreamById(renderId),
+                  builder: (context, snapshot) {
+                    final progress = snapshot.data?.progress ?? 0;
+                    return PartialCircleSpinner(progress: progress);
+                  },
                 ),
-              ),
-            ],
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 240),
+                  child: Text(
+                    context.l10n.videoEditorTransformProgressLabel,
+                    textAlign: TextAlign.center,
+                    style: VineTheme.bodyMediumFont(),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

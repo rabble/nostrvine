@@ -744,13 +744,17 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       return;
     }
 
-    emit(state.copyWith(isTransforming: true, transformingClipId: clip.id));
+    // Namespace the render id so a transform never shares an id with a
+    // concurrent reverse render on the same clip — both would otherwise key on
+    // clip.id, letting the transform's cancel() abort the in-flight reverse.
+    final renderId = '${clip.id}_transform';
+    emit(state.copyWith(isTransforming: true, transformingClipId: renderId));
 
     try {
       final transformedVideo = await _transformClip(
         sourceClip: clip,
         transform: event.transform,
-        renderId: clip.id,
+        renderId: renderId,
       );
 
       final currentClips = state.clips;

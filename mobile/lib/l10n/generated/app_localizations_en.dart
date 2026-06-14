@@ -8000,9 +8000,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Crop, rotate, or flip selected clip';
 
   @override
-  String get videoEditorTransformTitle => 'Transform clip';
-
-  @override
   String get videoEditorTransformProgressLabel =>
       'One moment, we\'re transforming your clip';
 

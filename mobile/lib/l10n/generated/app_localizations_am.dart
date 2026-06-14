@@ -7863,9 +7863,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'የተመረጠውን ክሊፕ ይከርክሙ፣ ያሽከርክሩ ወይም ይገልብጡ';
 
   @override
-  String get videoEditorTransformTitle => 'ክሊፕ መለወጥ';
-
-  @override
   String get videoEditorTransformProgressLabel => 'አንድ አፍታ፣ ክሊፕዎን እያስተካከልን ነው';
 
   @override

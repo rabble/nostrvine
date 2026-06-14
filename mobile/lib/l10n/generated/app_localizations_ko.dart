@@ -7744,9 +7744,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '선택한 클립 자르기, 회전 또는 뒤집기';
 
   @override
-  String get videoEditorTransformTitle => '클립 변형';
-
-  @override
   String get videoEditorTransformProgressLabel => '잠시만요, 클립을 변형하고 있어요';
 
   @override

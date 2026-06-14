@@ -8011,9 +8011,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Beskär, rotera eller vänd det valda klippet';
 
   @override
-  String get videoEditorTransformTitle => 'Transformera klipp';
-
-  @override
   String get videoEditorTransformProgressLabel =>
       'Ett ögonblick, vi transformerar ditt klipp';
 

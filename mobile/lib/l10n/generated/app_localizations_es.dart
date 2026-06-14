@@ -8077,9 +8077,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Recortar, girar o voltear el clip seleccionado';
 
   @override
-  String get videoEditorTransformTitle => 'Transformar clip';
-
-  @override
   String get videoEditorTransformProgressLabel =>
       'Un momento, estamos transformando tu clip';
 

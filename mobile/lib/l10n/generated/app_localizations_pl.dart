@@ -8158,9 +8158,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przytnij, obróć lub odbij wybrany klip';
 
   @override
-  String get videoEditorTransformTitle => 'Przekształć klip';
-
-  @override
   String get videoEditorTransformProgressLabel =>
       'Chwila, przekształcamy Twój klip';
 

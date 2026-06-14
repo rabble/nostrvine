@@ -3944,7 +3944,6 @@
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "Przekształć",
     "videoEditorTransformSelectedClipSemanticLabel": "Przytnij, obróć lub odbij wybrany klip",
-    "videoEditorTransformTitle": "Przekształć klip",
     "videoEditorTransformProgressLabel": "Chwila, przekształcamy Twój klip",
     "videoEditorTransformFailed": "Nie udało się przekształcić klipu. Spróbuj ponownie.",
     "videoEditorTransformNoLocalFile": "Nie można przekształcić: klip nie jest dostępny lokalnie.",

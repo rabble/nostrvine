@@ -7942,9 +7942,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'قص أو تدوير أو قلب المقطع المحدد';
 
   @override
-  String get videoEditorTransformTitle => 'تحويل المقطع';
-
-  @override
   String get videoEditorTransformProgressLabel => 'لحظة، نقوم بتحويل مقطعك';
 
   @override

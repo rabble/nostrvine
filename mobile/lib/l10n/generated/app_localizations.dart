@@ -13934,12 +13934,6 @@ abstract class AppLocalizations {
   /// **'Crop, rotate, or flip selected clip'**
   String get videoEditorTransformSelectedClipSemanticLabel;
 
-  /// Title of the full-screen crop/rotate editor used to transform a single video clip.
-  ///
-  /// In en, this message translates to:
-  /// **'Transform clip'**
-  String get videoEditorTransformTitle;
-
   /// Status text shown while the selected clip is being re-rendered with the applied crop/rotate transform.
   ///
   /// In en, this message translates to:

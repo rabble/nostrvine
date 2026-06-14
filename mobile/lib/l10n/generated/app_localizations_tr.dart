@@ -7980,9 +7980,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Seçili klibi kırp, döndür veya çevir';
 
   @override
-  String get videoEditorTransformTitle => 'Klibi dönüştür';
-
-  @override
   String get videoEditorTransformProgressLabel =>
       'Bir saniye, klibini dönüştürüyoruz';
 

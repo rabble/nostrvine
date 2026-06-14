@@ -3944,7 +3944,6 @@
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "Transformar",
     "videoEditorTransformSelectedClipSemanticLabel": "Cortar, girar ou inverter o clipe selecionado",
-    "videoEditorTransformTitle": "Transformar clipe",
     "videoEditorTransformProgressLabel": "Um momento, estamos transformando seu clipe",
     "videoEditorTransformFailed": "Não foi possível transformar o clipe. Tente novamente.",
     "videoEditorTransformNoLocalFile": "Não é possível transformar: o clipe não está disponível localmente.",

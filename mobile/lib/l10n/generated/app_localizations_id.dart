@@ -7982,9 +7982,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Pangkas, putar, atau balik klip yang dipilih';
 
   @override
-  String get videoEditorTransformTitle => 'Transformasi klip';
-
-  @override
   String get videoEditorTransformProgressLabel =>
       'Sebentar, kami sedang mentransformasi klip Anda';
 

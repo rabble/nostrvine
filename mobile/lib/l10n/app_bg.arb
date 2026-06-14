@@ -4075,7 +4075,6 @@
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "Преобразуване",
     "videoEditorTransformSelectedClipSemanticLabel": "Изрежете, завъртете или обърнете избрания клип",
-    "videoEditorTransformTitle": "Преобразуване на клип",
     "videoEditorTransformProgressLabel": "Един момент, преобразуваме вашия клип",
     "videoEditorTransformFailed": "Клипът не може да бъде преобразуван. Опитайте отново.",
     "videoEditorTransformNoLocalFile": "Преобразуването е невъзможно: клипът не е наличен локално.",

@@ -4519,10 +4519,6 @@
   "@videoEditorTransformSelectedClipSemanticLabel": {
     "description": "Accessibility label for the Transform button in the timeline clip controls."
   },
-  "videoEditorTransformTitle": "Transform clip",
-  "@videoEditorTransformTitle": {
-    "description": "Title of the full-screen crop/rotate editor used to transform a single video clip."
-  },
   "videoEditorTransformProgressLabel": "One moment, we're transforming your clip",
   "@videoEditorTransformProgressLabel": {
     "description": "Status text shown while the selected clip is being re-rendered with the applied crop/rotate transform."

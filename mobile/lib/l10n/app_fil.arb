@@ -2485,7 +2485,6 @@
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "I-transform",
     "videoEditorTransformSelectedClipSemanticLabel": "I-crop, i-rotate, o i-flip ang napiling clip",
-    "videoEditorTransformTitle": "I-transform ang clip",
     "videoEditorTransformProgressLabel": "Sandali, tina-transform namin ang iyong clip",
     "videoEditorTransformFailed": "Hindi ma-transform ang clip. Pakisubukang muli.",
     "videoEditorTransformNoLocalFile": "Hindi ma-transform: hindi available nang lokal ang clip.",

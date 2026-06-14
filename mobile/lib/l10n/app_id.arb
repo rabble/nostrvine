@@ -3944,7 +3944,6 @@
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "Transformasi",
     "videoEditorTransformSelectedClipSemanticLabel": "Pangkas, putar, atau balik klip yang dipilih",
-    "videoEditorTransformTitle": "Transformasi klip",
     "videoEditorTransformProgressLabel": "Sebentar, kami sedang mentransformasi klip Anda",
     "videoEditorTransformFailed": "Tidak dapat mentransformasi klip. Silakan coba lagi.",
     "videoEditorTransformNoLocalFile": "Tidak dapat mentransformasi: klip tidak tersedia secara lokal.",

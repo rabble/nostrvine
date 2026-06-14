@@ -3944,7 +3944,6 @@
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "変形",
     "videoEditorTransformSelectedClipSemanticLabel": "選択したクリップをトリミング、回転、または反転",
-    "videoEditorTransformTitle": "クリップを変形",
     "videoEditorTransformProgressLabel": "クリップを変形しています。少々お待ちください",
     "videoEditorTransformFailed": "クリップを変形できませんでした。もう一度お試しください。",
     "videoEditorTransformNoLocalFile": "変形できません：クリップがローカルに利用できません。",

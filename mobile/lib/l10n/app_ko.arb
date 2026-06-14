@@ -3233,7 +3233,6 @@
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "변형",
     "videoEditorTransformSelectedClipSemanticLabel": "선택한 클립 자르기, 회전 또는 뒤집기",
-    "videoEditorTransformTitle": "클립 변형",
     "videoEditorTransformProgressLabel": "잠시만요, 클립을 변형하고 있어요",
     "videoEditorTransformFailed": "클립을 변형할 수 없습니다. 다시 시도해 주세요.",
     "videoEditorTransformNoLocalFile": "변형할 수 없음: 클립을 로컬에서 사용할 수 없습니다.",

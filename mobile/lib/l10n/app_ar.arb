@@ -3944,7 +3944,6 @@
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "تحويل",
     "videoEditorTransformSelectedClipSemanticLabel": "قص أو تدوير أو قلب المقطع المحدد",
-    "videoEditorTransformTitle": "تحويل المقطع",
     "videoEditorTransformProgressLabel": "لحظة، نقوم بتحويل مقطعك",
     "videoEditorTransformFailed": "تعذّر تحويل المقطع. يرجى المحاولة مرة أخرى.",
     "videoEditorTransformNoLocalFile": "لا يمكن التحويل: المقطع غير متوفر محليًا.",

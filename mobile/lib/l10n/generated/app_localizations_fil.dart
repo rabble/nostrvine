@@ -8093,9 +8093,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'I-crop, i-rotate, o i-flip ang napiling clip';
 
   @override
-  String get videoEditorTransformTitle => 'I-transform ang clip';
-
-  @override
   String get videoEditorTransformProgressLabel =>
       'Sandali, tina-transform namin ang iyong clip';
 

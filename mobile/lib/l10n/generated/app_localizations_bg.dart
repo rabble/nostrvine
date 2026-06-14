@@ -8078,9 +8078,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Изрежете, завъртете или обърнете избрания клип';
 
   @override
-  String get videoEditorTransformTitle => 'Преобразуване на клип';
-
-  @override
   String get videoEditorTransformProgressLabel =>
       'Един момент, преобразуваме вашия клип';
 

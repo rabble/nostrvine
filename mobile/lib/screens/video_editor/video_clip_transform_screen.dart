@@ -116,7 +116,16 @@ class _VideoClipTransformScreenState extends State<VideoClipTransformScreen> {
         stackTrace: stackTrace,
         category: LogCategory.video,
       );
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        // The route closes without a result (treated as a cancel); surface a
+        // snackbar so the failed open isn't silent to the user.
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            context.l10n.videoEditorTransformFailed,
+          ),
+        );
+        Navigator.of(context).pop();
+      }
     }
   }
 
@@ -152,7 +161,8 @@ class _VideoClipTransformScreenState extends State<VideoClipTransformScreen> {
   @override
   Widget build(BuildContext context) {
     final videoController = _videoController;
-    if (videoController == null) {
+    final playerController = _playerController;
+    if (videoController == null || playerController == null) {
       return const ColoredBox(
         color: VineTheme.backgroundCamera,
         child: Center(child: BrandedLoadingIndicator(size: 48)),
@@ -182,7 +192,7 @@ class _VideoClipTransformScreenState extends State<VideoClipTransformScreen> {
                 stream: rebuildStream,
                 builder: (_) => _TransformBottomBar(
                   editorState: editorState,
-                  playerController: _playerController!,
+                  playerController: playerController,
                 ),
               ),
             ),

@@ -1587,7 +1587,7 @@ void main() {
               .having(
                 (s) => s.transformingClipId,
                 'transformingClipId',
-                'clip-local',
+                'clip-local_transform',
               ),
           isA<ClipEditorState>()
               .having((s) => s.isTransforming, 'isTransforming', isFalse)
@@ -1615,7 +1615,7 @@ void main() {
         verify: (bloc) {
           expect(
             bloc.state.clips.first.video.file?.path,
-            equals('/transformed/clip-local_clip-local.mp4'),
+            equals('/transformed/clip-local_clip-local_transform.mp4'),
           );
         },
       );

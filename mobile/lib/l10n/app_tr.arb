@@ -3944,7 +3944,6 @@
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "Dönüştür",
     "videoEditorTransformSelectedClipSemanticLabel": "Seçili klibi kırp, döndür veya çevir",
-    "videoEditorTransformTitle": "Klibi dönüştür",
     "videoEditorTransformProgressLabel": "Bir saniye, klibini dönüştürüyoruz",
     "videoEditorTransformFailed": "Klip dönüştürülemedi. Lütfen tekrar deneyin.",
     "videoEditorTransformNoLocalFile": "Dönüştürülemiyor: klip yerel olarak mevcut değil.",

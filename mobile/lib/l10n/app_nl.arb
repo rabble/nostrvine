@@ -3944,7 +3944,6 @@
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "Transformeren",
     "videoEditorTransformSelectedClipSemanticLabel": "Geselecteerde clip bijsnijden, draaien of spiegelen",
-    "videoEditorTransformTitle": "Clip transformeren",
     "videoEditorTransformProgressLabel": "Een moment, we transformeren je clip",
     "videoEditorTransformFailed": "Kan clip niet transformeren. Probeer het opnieuw.",
     "videoEditorTransformNoLocalFile": "Transformeren niet mogelijk: clip is niet lokaal beschikbaar.",
