@@ -89,6 +89,20 @@ void main() {
         expect(opacity.opacity, equals(0));
       });
 
+      testWidgets('excludes the zoom semantics label when hidden', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        try {
+          await tester.pumpWidget(buildWidget(showZoomIndicator: false));
+          await tester.pumpAndSettle();
+
+          expect(find.bySemanticsLabel('Zoom to 1×'), findsNothing);
+        } finally {
+          semantics.dispose();
+        }
+      });
+
       testWidgets('renders nothing when the camera has a single zoom stop', (
         tester,
       ) async {

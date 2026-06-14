@@ -43,17 +43,20 @@ class VideoRecorderZoomIndicator extends StatelessWidget {
     }
 
     return IgnorePointer(
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: showZoomIndicator ? 1 : 0,
-        child: Semantics(
-          label: context.l10n.videoRecorderZoomLevelLabel(
-            _accessibilityValue(zoomLevel),
-          ),
-          child: _ZoomRuler(
-            zoom: zoomLevel,
-            minZoom: minZoomLevel,
-            maxZoom: maxZoomLevel,
+      child: ExcludeSemantics(
+        excluding: !showZoomIndicator,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: showZoomIndicator ? 1 : 0,
+          child: Semantics(
+            label: context.l10n.videoRecorderZoomLevelLabel(
+              _accessibilityValue(zoomLevel),
+            ),
+            child: _ZoomRuler(
+              zoom: zoomLevel,
+              minZoom: minZoomLevel,
+              maxZoom: maxZoomLevel,
+            ),
           ),
         ),
       ),
