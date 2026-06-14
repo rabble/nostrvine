@@ -2,7 +2,6 @@
 // ContentBlocklistRepository.changes and emits removedVideoIds for every
 // cached video by the affected author when an "addition" event fires.
 
-@Tags(['skip_very_good_optimization'])
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
