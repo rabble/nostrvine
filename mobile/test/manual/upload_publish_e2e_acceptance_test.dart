@@ -11,7 +11,7 @@
 // funnelcake relay, and then read back on both the relay WebSocket and the REST
 // API. Also asserts per-stage failure surfaces a clear error.
 //
-// Deliberately OUT OF LOCAL SCOPE (see tasks/findings_3056.md):
+// Deliberately OUT OF LOCAL SCOPE for this local-stack manual test:
 //   - Real GPU transcode quality — local blossom (Viceroy) has no transcoder;
 //     the .hls path is a byte-copy stub of the production readiness state
 //     machine, exercised here only as a readiness probe.
@@ -58,6 +58,9 @@ const _stackUnavailableMessage =
     'Local stack is not running. Start with `mise run local_up`, then rerun '
     '`flutter test test/manual/upload_publish_e2e_acceptance_test.dart`.';
 
+const _videoFixturePath = 'assets/videos/default_intro.mp4';
+const _thumbnailFixturePath = 'test/fixtures/test_thumbnail.jpg';
+
 final _rng = Random();
 
 void main() {
@@ -92,7 +95,7 @@ void main() {
         final sw = Stopwatch()..start();
 
         // 1. Upload a real video blob (kind-24242 auth, legacy PUT).
-        final videoBytes = _randomBytes(96 * 1024);
+        final videoBytes = _readFixtureBytes(_videoFixturePath);
         final (videoStatus, videoBody) = await _putBlob(
           bytes: videoBytes,
           contentType: 'video/mp4',
@@ -115,7 +118,7 @@ void main() {
         );
 
         // 2. Upload a real thumbnail blob (the relay requires a thumbnail).
-        final thumbBytes = _randomBytes(16 * 1024);
+        final thumbBytes = _readFixtureBytes(_thumbnailFixturePath);
         final (thumbStatus, thumbBody) = await _putBlob(
           bytes: thumbBytes,
           contentType: 'image/jpeg',
@@ -227,7 +230,7 @@ void main() {
         // a byte-copy stub of the production readiness state machine — this
         // asserts the readiness contract (poll-until-200), not transcode quality.
         final privKey = generatePrivateKey();
-        final videoBytes = _randomBytes(96 * 1024);
+        final videoBytes = _readFixtureBytes(_videoFixturePath);
         final (status, body) = await _putBlob(
           bytes: videoBytes,
           contentType: 'video/mp4',
@@ -616,6 +619,13 @@ List<dynamic>? _decodeFrame(dynamic raw) {
 
 Uint8List _randomBytes(int length) =>
     Uint8List.fromList(List<int>.generate(length, (_) => _rng.nextInt(256)));
+
+/// Reads fixture files from either `mobile/` or the repository root.
+Uint8List _readFixtureBytes(String path) {
+  final mobileRelative = File(path);
+  if (mobileRelative.existsSync()) return mobileRelative.readAsBytesSync();
+  return File('mobile/$path').readAsBytesSync();
+}
 
 /// Returns `true` when [host]:[port] accepts a TCP connection within 2 s.
 Future<bool> _isPortOpen(String host, int port) async {
