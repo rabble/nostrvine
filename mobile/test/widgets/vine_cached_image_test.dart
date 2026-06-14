@@ -1,7 +1,10 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+
+class _FakeImageCache extends Mock implements MediaCacheManager {}
 
 void main() {
   group('openVineImageCache', () {
@@ -169,6 +172,43 @@ void main() {
       );
       expect(image.fadeInDuration, equals(Duration.zero));
       expect(image.fadeOutDuration, equals(const Duration(milliseconds: 200)));
+    });
+  });
+
+  group('debugImageCacheOverride', () {
+    tearDown(() => debugImageCacheOverride = null);
+
+    testWidgets('resolves through openVineImageCache when override is null', (
+      tester,
+    ) async {
+      debugImageCacheOverride = null;
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: VineCachedImage(imageUrl: 'https://example.com/a.jpg'),
+        ),
+      );
+
+      final provider =
+          tester.widget<Image>(find.byType(Image)).image
+              as MediaCacheImageProvider;
+      expect(provider.cacheManager, same(openVineImageCache));
+    });
+
+    testWidgets('resolves through the override when set', (tester) async {
+      final override = _FakeImageCache();
+      debugImageCacheOverride = override;
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: VineCachedImage(imageUrl: 'https://example.com/a.jpg'),
+        ),
+      );
+
+      final provider =
+          tester.widget<Image>(find.byType(Image)).image
+              as MediaCacheImageProvider;
+      expect(provider.cacheManager, same(override));
     });
   });
 }

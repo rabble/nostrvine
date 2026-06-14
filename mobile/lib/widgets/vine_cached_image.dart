@@ -14,6 +14,23 @@ final openVineImageCache = MediaCacheManager(
   config: const MediaCacheConfig.image(cacheKey: 'openvine_image_cache'),
 );
 
+/// Test-only override for the cache used by every [VineCachedImage].
+///
+/// When non-null, images resolve through this manager instead of
+/// [openVineImageCache], letting widget tests inject a stubbed
+/// `MockMediaCacheManager` so the eager image resolve avoids the real
+/// on-disk cache. The real cache performs async `path_provider` work that
+/// can settle *after* a test completes, polluting the shared VGV merge
+/// isolate; the override keeps that work out of tests. Reset to `null` in
+/// `tearDown`.
+@visibleForTesting
+MediaCacheManager? debugImageCacheOverride;
+
+/// The cache [VineCachedImage] resolves through — the test override if set,
+/// otherwise the global [openVineImageCache].
+MediaCacheManager get _activeImageCache =>
+    debugImageCacheOverride ?? openVineImageCache;
+
 /// A wrapper around [Image] that always uses [openVineImageCache].
 class VineCachedImage extends StatefulWidget {
   const VineCachedImage({
@@ -56,7 +73,7 @@ class _VineCachedImageState extends State<VineCachedImage> {
   ImageProvider<Object> get _imageProvider => ResizeImage.resizeIfNeeded(
     widget.memCacheWidth,
     widget.memCacheHeight,
-    MediaCacheImageProvider(widget.imageUrl, cacheManager: openVineImageCache),
+    MediaCacheImageProvider(widget.imageUrl, cacheManager: _activeImageCache),
   );
 
   @override
