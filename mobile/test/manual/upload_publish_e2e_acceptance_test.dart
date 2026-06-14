@@ -28,6 +28,12 @@
 // the single legacy `PUT /upload` (the resumable `/upload/init` path forwards to
 // the production data host and is not reachable locally).
 
+// Permanent: a manual, Docker-dependent real-network acceptance test that nulls
+// the global HttpOverrides in setUpAll. It must stay out of the VGV merged
+// optimizer isolate — otherwise setUpAll runs even when the stack is absent and
+// leaks the un-stubbed HttpOverrides into every later merged test (real sockets,
+// order-dependent "pending timers" flakes). Matches nip98_relay_acceptance_test.
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
