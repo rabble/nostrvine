@@ -5698,7 +5698,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get commonRetry => 'إعادة المحاولة';
 
   @override
-  String get commonSomethingWentWrong => 'Something went wrong';
+  String get commonSomethingWentWrong => 'حدث خطأ ما';
 
   @override
   String get commonNext => 'التالي';

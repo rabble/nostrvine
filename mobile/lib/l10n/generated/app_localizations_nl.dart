@@ -5773,7 +5773,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get commonRetry => 'Opnieuw proberen';
 
   @override
-  String get commonSomethingWentWrong => 'Something went wrong';
+  String get commonSomethingWentWrong => 'Er ging iets mis';
 
   @override
   String get commonNext => 'Volgende';

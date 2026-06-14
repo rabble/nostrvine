@@ -5819,7 +5819,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonRetry => 'Réessayer';
 
   @override
-  String get commonSomethingWentWrong => 'Something went wrong';
+  String get commonSomethingWentWrong => 'Un problème est survenu';
 
   @override
   String get commonNext => 'Suivant';

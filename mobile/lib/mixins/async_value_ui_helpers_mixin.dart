@@ -46,13 +46,19 @@ mixin AsyncValueUIHelpersMixin {
   }) {
     return asyncValue.when(
       data: onData,
-      loading: onLoading ?? _buildDefaultLoading,
-      error: onError ?? _buildDefaultError,
+      loading: onLoading ?? () => const _DefaultAsyncLoading(),
+      error: onError ?? (_, _) => const _DefaultAsyncError(),
     );
   }
+}
 
-  /// Default loading widget - centered spinner with vine green color on dark background
-  Widget _buildDefaultLoading() {
+/// Default loading widget — centered spinner with vine green color on a dark
+/// background.
+class _DefaultAsyncLoading extends StatelessWidget {
+  const _DefaultAsyncLoading();
+
+  @override
+  Widget build(BuildContext context) {
     return const ColoredBox(
       color: VineTheme.backgroundColor,
       child: Center(
@@ -60,37 +66,38 @@ mixin AsyncValueUIHelpersMixin {
       ),
     );
   }
+}
 
-  /// Default error widget - centered error icon with an intentional,
-  /// localized message.
-  ///
-  /// The raw [error] is deliberately not shown to the user (see the
-  /// per-layer failure contract in `rules/error_handling.md`); it stays in
-  /// the [AsyncValue] for logging at the provider layer. Wrapped in a
-  /// [Builder] so the message can resolve `context.l10n` without changing
-  /// this mixin's public API.
-  Widget _buildDefaultError(Object error, StackTrace stack) {
-    return Builder(
-      builder: (context) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const DivineIcon(
-              icon: DivineIconName.warningCircle,
-              color: VineTheme.error,
-              size: 48,
+/// Default error widget — centered error icon with an intentional, localized
+/// message.
+///
+/// The raw error is deliberately not shown to the user (see the per-layer
+/// failure contract in `rules/error_handling.md`); it stays in the
+/// [AsyncValue] for logging at the provider layer.
+class _DefaultAsyncError extends StatelessWidget {
+  const _DefaultAsyncError();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        spacing: 16,
+        children: [
+          const DivineIcon(
+            icon: DivineIconName.warningCircle,
+            color: VineTheme.error,
+            size: 48,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              context.l10n.commonSomethingWentWrong,
+              style: const TextStyle(color: VineTheme.whiteText),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                context.l10n.commonSomethingWentWrong,
-                style: const TextStyle(color: VineTheme.whiteText),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

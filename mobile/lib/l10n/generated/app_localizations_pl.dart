@@ -5882,7 +5882,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get commonRetry => 'Ponów';
 
   @override
-  String get commonSomethingWentWrong => 'Something went wrong';
+  String get commonSomethingWentWrong => 'Coś poszło nie tak';
 
   @override
   String get commonNext => 'Dalej';

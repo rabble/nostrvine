@@ -5725,7 +5725,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get commonRetry => 'Coba lagi';
 
   @override
-  String get commonSomethingWentWrong => 'Something went wrong';
+  String get commonSomethingWentWrong => 'Terjadi kesalahan';
 
   @override
   String get commonNext => 'Berikutnya';

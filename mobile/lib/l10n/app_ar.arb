@@ -1,5 +1,6 @@
 {
     "@@locale": "ar",
+    "commonSomethingWentWrong": "حدث خطأ ما",
     "profileFeedError": "Couldn't load videos.",
     "profileFeedLoadMoreError": "Couldn't load more videos. Pull to refresh.",
     "appTitle": "Divine",

@@ -5796,7 +5796,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonRetry => 'Reintentar';
 
   @override
-  String get commonSomethingWentWrong => 'Something went wrong';
+  String get commonSomethingWentWrong => 'Algo salió mal';
 
   @override
   String get commonNext => 'Siguiente';
