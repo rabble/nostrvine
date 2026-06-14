@@ -1,6 +1,9 @@
 // ABOUTME: Tests for AuthService bunker lifecycle management
 // ABOUTME: Tests clearError, pause/resume, dispose with bunker signer
 
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -196,6 +199,60 @@ void main() {
         () => mockBunkerSigner.connect(sendConnectRequest: false),
       ).called(1);
       verify(() => mockBunkerSigner.close()).called(1);
+    });
+
+    test('interactive signInForAccount reconnect is unbounded for an '
+        'unreachable bunker signer', () async {
+      await authService.dispose();
+
+      const pubkeyHex =
+          'deadbeef1234567890abcdef1234567890abcdef1234567890abcdef12345678';
+      const bunkerUrl = 'bunker://$pubkeyHex?relay=wss://relay.example.com';
+
+      when(
+        () => mockFlutterSecureStorage.read(key: any(named: 'key')),
+      ).thenAnswer((_) async => bunkerUrl);
+      when(
+        () => mockFlutterSecureStorage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      ).thenAnswer((_) async {});
+
+      // connect() never resolves: the bunker relay is unreachable.
+      final neverResolves = Completer<String?>();
+      when(
+        () => mockBunkerSigner.connect(sendConnectRequest: false),
+      ).thenAnswer((_) => neverResolves.future);
+
+      authService = AuthService(
+        userDataCleanupService: mockCleanupService,
+        keyStorage: mockKeyStorage,
+        flutterSecureStorage: mockFlutterSecureStorage,
+        remoteSignerFactory: (_, _) => mockBunkerSigner,
+      );
+
+      fakeAsync((async) {
+        var completed = false;
+        unawaited(
+          authService
+              .signInForAccount(pubkeyHex, AuthenticationSource.bunker)
+              .then((_) => completed = true)
+              .catchError((Object _) => completed = true),
+        );
+
+        // Unlike the bounded startup path, the interactive reconnect applies
+        // no startup timeout: even after twice the startup budget elapses the
+        // call is still pending.
+        async.elapse(
+          AuthService.defaultStartupNetworkOperationTimeout * 2,
+        );
+
+        expect(completed, isFalse);
+        verify(
+          () => mockBunkerSigner.connect(sendConnectRequest: false),
+        ).called(1);
+      });
     });
   });
 
