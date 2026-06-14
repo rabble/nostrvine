@@ -8,6 +8,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
@@ -222,6 +223,13 @@ Stream<List<CuratedList>> publicListsContainingVideo(
 /// Streams videos as they are fetched from cache or relays
 @riverpod
 Stream<List<VideoEvent>> curatedListVideoEvents(Ref ref, String listId) async* {
+  // Re-run (and therefore re-filter) when the blocklist changes. Broad changes
+  // (account switch / identity adoption, relay-synced blocked-by-others,
+  // mute-list recovery) bump this version but emit no granular removed-id
+  // signal, so version-reactivity is the only way the grid drops a newly
+  // blocked author without a manual refresh (#5104).
+  ref.watch(blocklistVersionProvider);
+
   Log.info(
     '📋 Fetching videos for curated list: $listId',
     name: 'CuratedListVideoEvents',
@@ -275,13 +283,15 @@ Stream<List<VideoEvent>> curatedListVideoEvents(Ref ref, String listId) async* {
   final missingIds = <String>[];
   final missingCoords = <String>[];
 
-  // Check cache for regular event IDs
+  // Check cache for regular event IDs. Skip blocked authors here too — the
+  // addressable-coord and relay branches already guard, but a plain-event-ID
+  // cache hit would otherwise pass an unfiltered blocked author through (#5104).
   for (final eventId in eventIds) {
     final cached = videoEventService.getVideoById(eventId);
-    if (cached != null) {
-      foundVideos.add(cached);
-    } else {
+    if (cached == null) {
       missingIds.add(eventId);
+    } else if (!videoEventService.shouldHideVideo(cached)) {
+      foundVideos.add(cached);
     }
   }
 
@@ -431,6 +441,10 @@ Stream<List<VideoEvent>> videoEventsByIds(
   Ref ref,
   List<String> videoIds,
 ) async* {
+  // Re-run (and therefore re-filter) when the blocklist changes — broad changes
+  // bump this version but emit no granular removed-id signal (#5104).
+  ref.watch(blocklistVersionProvider);
+
   Log.info(
     '📋 Fetching ${videoIds.length} videos by IDs',
     name: 'VideoEventsByIds',
@@ -470,13 +484,15 @@ Stream<List<VideoEvent>> videoEventsByIds(
   final missingIds = <String>[];
   final missingCoords = <String>[];
 
-  // Check cache for regular event IDs
+  // Check cache for regular event IDs. Skip blocked authors here too — a
+  // plain-event-ID cache hit would otherwise pass an unfiltered blocked author
+  // through, unlike the addressable-coord and relay branches below (#5104).
   for (final eventId in eventIds) {
     final cached = videoEventService.getVideoById(eventId);
-    if (cached != null) {
-      foundVideos.add(cached);
-    } else {
+    if (cached == null) {
       missingIds.add(eventId);
+    } else if (!videoEventService.shouldHideVideo(cached)) {
+      foundVideos.add(cached);
     }
   }
 

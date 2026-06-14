@@ -29,6 +29,11 @@ const String _ownerB =
     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 const String _blockedAuthor =
     'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+// Full-length 64-char hex event ids — the plain-event-ID branch requires them.
+const String _blockedVideoId =
+    'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+const String _allowedVideoId =
+    'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
 final DateTime _frozenNow = DateTime.utc(2026, 4, 20, 12);
 
@@ -326,5 +331,84 @@ void main() {
         verify(() => videoEventService.shouldHideVideo(blockedVideo)).called(1);
       },
     );
+
+    test(
+      'filters hidden videos found by plain event id in the local cache',
+      () async {
+        final blockedVideo = _video(
+          id: _blockedVideoId,
+          pubkey: _blockedAuthor,
+        );
+        final allowedVideo = _video(id: _allowedVideoId, pubkey: _ownerA);
+        final videoEventService = _MockVideoEventService();
+        when(() => videoEventService.discoveryVideos).thenReturn(const []);
+        when(() => videoEventService.homeFeedVideos).thenReturn(const []);
+        when(() => videoEventService.profileVideos).thenReturn(const []);
+        when(
+          () => videoEventService.getVideoById(_blockedVideoId),
+        ).thenReturn(blockedVideo);
+        when(
+          () => videoEventService.getVideoById(_allowedVideoId),
+        ).thenReturn(allowedVideo);
+        when(
+          () => videoEventService.shouldHideVideo(blockedVideo),
+        ).thenReturn(true);
+        when(
+          () => videoEventService.shouldHideVideo(allowedVideo),
+        ).thenReturn(false);
+
+        final container = ProviderContainer(
+          overrides: [
+            videoEventServiceProvider.overrideWithValue(videoEventService),
+          ],
+        );
+        addTearDown(container.dispose);
+        final provider = videoEventsByIdsProvider([
+          _blockedVideoId,
+          _allowedVideoId,
+        ]);
+        final subscription = container.listen(provider, (_, _) {});
+        addTearDown(subscription.close);
+
+        final result = await container.read(provider.future);
+        expect(result.map((v) => v.id), [_allowedVideoId]);
+        verify(() => videoEventService.shouldHideVideo(blockedVideo)).called(1);
+      },
+    );
+
+    test('re-runs and re-filters when the blocklist version changes', () async {
+      final video = _video(id: _allowedVideoId, pubkey: _ownerA);
+      final videoEventService = _MockVideoEventService();
+      when(() => videoEventService.discoveryVideos).thenReturn(const []);
+      when(() => videoEventService.homeFeedVideos).thenReturn(const []);
+      when(() => videoEventService.profileVideos).thenReturn(const []);
+      when(
+        () => videoEventService.getVideoById(_allowedVideoId),
+      ).thenReturn(video);
+      // Initially the author is visible.
+      when(() => videoEventService.shouldHideVideo(video)).thenReturn(false);
+
+      final container = ProviderContainer(
+        overrides: [
+          videoEventServiceProvider.overrideWithValue(videoEventService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final provider = videoEventsByIdsProvider([_allowedVideoId]);
+      final subscription = container.listen(provider, (_, _) {});
+      addTearDown(subscription.close);
+
+      final first = await container.read(provider.future);
+      expect(first.map((v) => v.id), [_allowedVideoId]);
+
+      // Block the author and bump the blocklist version (a broad change emits
+      // no removed-id signal — only the version bump).
+      when(() => videoEventService.shouldHideVideo(video)).thenReturn(true);
+      container.read(blocklistVersionProvider.notifier).increment();
+
+      final second = await container.read(provider.future);
+      expect(second, isEmpty);
+    });
   });
 }
