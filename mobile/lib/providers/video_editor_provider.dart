@@ -491,7 +491,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       finalRenderedClip: state.finalRenderedClip,
       proofManifestJson: state.proofManifestJson,
       // Prefer the persisted cover so the selection survives a re-render that
-      // resets finalRenderedClip's thumbnail to its default frame (see #5181).
+      // resets finalRenderedClip's thumbnail to its default frame. When no
+      // cover was picked, fall back to the rendered clip's own cover so the
+      // drafts-list / profile-grid thumbnail keeps showing after the clip is
+      // later invalidated and cleared (see #5181).
       thumbnailTimestamp:
           state.thumbnailTimestamp ??
           state.finalRenderedClip?.thumbnailTimestamp,

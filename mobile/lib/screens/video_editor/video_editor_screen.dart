@@ -215,7 +215,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       font();
     }
     await GoogleFonts.pendingFonts().timeout(
-      const Duration(seconds: 3),
+      VideoEditorConstants.textFontLoadTimeout,
       onTimeout: () => const [],
     );
   }

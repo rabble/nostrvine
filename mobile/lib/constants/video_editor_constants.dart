@@ -43,6 +43,11 @@ class VideoEditorConstants {
   /// Default time offset for extracting video thumbnails.
   static const defaultThumbnailExtractTime = Duration(milliseconds: 200);
 
+  /// Maximum time to wait for the text-overlay Google Fonts to load when
+  /// restoring a draft. Already-cached fonts resolve instantly, so this only
+  /// guards the first, uncached load before the canvas imports the overlays.
+  static const textFontLoadTimeout = Duration(seconds: 3);
+
   /// Primary accent color used in the video editor UI.
   static const primaryColor = Color(0xFFFFF140);
 

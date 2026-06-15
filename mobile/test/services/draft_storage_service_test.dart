@@ -2,6 +2,7 @@
 // ABOUTME: Tests save, load, delete, clear, and migration operations using Drift
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
@@ -10,6 +11,7 @@ import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -930,6 +932,94 @@ void main() {
           expect(drafts.first.clips, hasLength(2));
         },
       );
+    });
+
+    group('custom cover file hygiene', () {
+      late Directory docsDir;
+
+      setUp(() {
+        docsDir = Directory(documentsPath)..createSync(recursive: true);
+      });
+
+      tearDown(() {
+        if (docsDir.existsSync()) docsDir.deleteSync(recursive: true);
+      });
+
+      File writeCover(String name) {
+        final file = File(p.join(documentsPath, name));
+        file.writeAsBytesSync(const [0, 1, 2, 3]);
+        return file;
+      }
+
+      DivineVideoDraft draftWithCover(String coverPath) =>
+          DivineVideoDraft.create(
+            id: 'draft_cover',
+            clips: [
+              DivineVideoClip(
+                id: 'clip_cover',
+                video: EditorVideo.file('/path/to/video.mp4'),
+                duration: const Duration(seconds: 6),
+                recordedAt: DateTime(2025),
+                targetAspectRatio: AspectRatio.square,
+                originalAspectRatio: 9 / 16,
+              ),
+            ],
+            title: 'Cover draft',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+            customThumbnailPath: coverPath,
+          );
+
+      test('preserves the active cover file across a re-save', () async {
+        final cover = writeCover('cover.jpg');
+        await service.saveDraft(draftWithCover(cover.path));
+
+        // An autosave after an unrelated edit re-saves the same draft.
+        await service.saveDraft(
+          draftWithCover(cover.path).copyWith(title: 'Updated'),
+        );
+
+        expect(
+          cover.existsSync(),
+          isTrue,
+          reason:
+              're-saving a draft must keep its still-referenced custom cover',
+        );
+      });
+
+      test('deletes the previous cover when a new one is selected', () async {
+        final oldCover = writeCover('old_cover.jpg');
+        final newCover = writeCover('new_cover.jpg');
+
+        await service.saveDraft(draftWithCover(oldCover.path));
+        await service.saveDraft(draftWithCover(newCover.path));
+
+        expect(
+          oldCover.existsSync(),
+          isFalse,
+          reason: 'the replaced cover is orphaned and must be cleaned up',
+        );
+        expect(
+          newCover.existsSync(),
+          isTrue,
+          reason: 'the newly selected cover must be kept',
+        );
+      });
+
+      test('deletes the cover file when the draft is deleted', () async {
+        final cover = writeCover('cover.jpg');
+        final draft = draftWithCover(cover.path);
+        await service.saveDraft(draft);
+
+        await service.deleteDraft(draft.id);
+
+        expect(
+          cover.existsSync(),
+          isFalse,
+          reason: 'deleting a draft must remove its user-selected cover',
+        );
+      });
     });
   });
 }
