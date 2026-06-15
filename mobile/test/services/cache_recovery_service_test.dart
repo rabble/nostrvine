@@ -106,6 +106,22 @@ void main() {
         expect(keep.existsSync(), isTrue);
         expect(File(p.join(tmp.path, 'scratch.txt')).existsSync(), isFalse);
       });
+
+      test('does not clear contents when dir is the protected dir', () async {
+        final protectedDir = Directory(p.join(tmp.path, 'openvine', 'database'))
+          ..createSync(recursive: true);
+        final keep = File(p.join(protectedDir.path, 'divine_db.db'))
+          ..writeAsStringSync('keep');
+
+        final cleared =
+            await CacheRecoveryService.deleteDirectoryContentsExcept(
+              protectedDir,
+              protectedPath: protectedDir.path,
+            );
+
+        expect(cleared, 0);
+        expect(keep.existsSync(), isTrue);
+      });
     });
   });
 }

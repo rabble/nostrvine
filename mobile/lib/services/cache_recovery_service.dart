@@ -174,6 +174,9 @@ class CacheRecoveryService {
     // Only apply protection when the path actually exists; otherwise there is
     // nothing to preserve and ancestors should be cleared like anything else.
     final protect = Directory(protectedPath).existsSync();
+    if (protect && p.equals(dir.path, protectedPath)) {
+      return 0;
+    }
     var cleared = 0;
     for (final entity in dir.listSync()) {
       final path = entity.path;
