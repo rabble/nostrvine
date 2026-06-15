@@ -1,7 +1,6 @@
 // ABOUTME: Unit tests for VideoEventService subscription duplicate checking
 // ABOUTME: Tests that different subscription parameters are properly allowed and not wrongly rejected as duplicates
 
-@Tags(['skip_very_good_optimization'])
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -85,6 +84,10 @@ void main() {
     });
 
     tearDown(() async {
+      // Dispose so the 30s feedLoadingTimeout Timer no-ops via its _isDisposed
+      // guard instead of firing post-test against the reset mock and cascading
+      // in the merged VGV optimizer isolate (#5159).
+      videoEventService.dispose();
       await eventStreamController.close();
       reset(mockNostrService);
     });

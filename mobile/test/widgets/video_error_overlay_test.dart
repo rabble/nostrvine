@@ -12,8 +12,11 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 import '../builders/test_video_event_builder.dart';
+import '../helpers/test_provider_overrides.dart'
+    show createMockMediaCacheManager;
 
 class _MockAgeVerificationService extends Mock
     implements AgeVerificationService {}
@@ -45,6 +48,12 @@ void main() {
 
       mockAgeVerification = _MockAgeVerificationService();
     });
+
+    // Stub the image cache (#5158 seam) so any VineCachedImage does no real
+    // path_provider / cache-manager work that could settle after the test and
+    // cascade in the merged VGV optimizer isolate (#5159).
+    setUp(() => debugImageCacheOverride = createMockMediaCacheManager());
+    tearDown(() => debugImageCacheOverride = null);
 
     Widget buildWidget({
       required String errorDescription,

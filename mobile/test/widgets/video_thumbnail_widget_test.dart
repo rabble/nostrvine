@@ -8,6 +8,8 @@ import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
+import '../helpers/test_provider_overrides.dart'
+    show createMockMediaCacheManager;
 import '../test_data/video_test_data.dart';
 
 Finder _divineIcon(DivineIconName name) =>
@@ -43,6 +45,12 @@ void main() {
       // Video with neither
       videoWithNeither = createTestVideoEvent(id: 'test4');
     });
+
+    // Stub the image cache (#5158 seam) so VineCachedImage does no real
+    // path_provider / cache-manager work that could settle after the test and
+    // cascade in the merged VGV optimizer isolate (#5159).
+    setUp(() => debugImageCacheOverride = createMockMediaCacheManager());
+    tearDown(() => debugImageCacheOverride = null);
 
     testWidgets('builds widget tree correctly when thumbnail URL exists', (
       tester,

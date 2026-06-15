@@ -15,6 +15,10 @@ import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/video_explore_tile.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
+
+import '../helpers/test_provider_overrides.dart'
+    show createMockMediaCacheManager;
 
 class _MockModerationLabelService extends Mock
     implements ModerationLabelService {}
@@ -49,6 +53,12 @@ void main() {
       hashtags: const ['test'],
     );
   });
+
+  // Stub the image cache (#5158 seam) so VideoExploreTile's VineCachedImage does
+  // no real path_provider / cache-manager work that could settle after the test
+  // and cascade in the merged VGV optimizer isolate (#5159).
+  setUp(() => debugImageCacheOverride = createMockMediaCacheManager());
+  tearDown(() => debugImageCacheOverride = null);
 
   Widget buildSubject({
     required Nip05VerificationStatus verificationStatus,

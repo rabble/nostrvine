@@ -117,7 +117,21 @@ void main() {
               ..writeAsBytesSync(const [4, 5, 6]);
             return ghost.path;
           },
-      readVideoMetadata: readVideoMetadata,
+      // Default to a stub so the production ctor never evaluates its
+      // `?? ProVideoEditor.instance.getMetadata` fallback, which would construct
+      // the real MethodChannelProVideoEditor and leak EventChannel subscriptions
+      // into the merged VGV optimizer isolate (#5159). Tests that exercise the
+      // metadata path inject their own reader.
+      readVideoMetadata:
+          readVideoMetadata ??
+          (video) async => VideoMetadata(
+            duration: Duration.zero,
+            extension: 'mp4',
+            fileSize: 0,
+            resolution: Size.zero,
+            rotation: 0,
+            bitrate: 0,
+          ),
       now: () => now ?? DateTime.utc(2026, 4, 27, 12),
     );
   }

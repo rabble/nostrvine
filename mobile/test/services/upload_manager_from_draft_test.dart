@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/divine_video_clip.dart';
@@ -73,6 +74,13 @@ void main() {
     });
 
     tearDown(() async {
+      // Cancel UploadManager's save-queue/retry/poll Timers and close the Hive
+      // box before deleting tempDir, so neither leaks into the merged VGV
+      // optimizer isolate (#5159).
+      uploadManager.dispose();
+      if (Hive.isBoxOpen('pending_uploads')) {
+        await Hive.box<PendingUpload>('pending_uploads').close();
+      }
       PathProviderPlatform.instance = originalPathProviderInstance;
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
