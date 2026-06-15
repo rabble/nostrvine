@@ -21,10 +21,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
-import 'package:openvine/screens/apps/web_iframe_sandbox_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
-import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
 import 'package:openvine/widgets/profile/verified_accounts_row.dart';
@@ -477,36 +474,10 @@ class _ProfileSetupScreenViewState
               prev.verifierStatus != curr.verifierStatus &&
               curr.verifierStatus == VerifierStatus.launchRequested,
           listener: (context, state) async {
-            final editorBloc = context.read<ProfileEditorBloc>();
-            final myProfileBloc = context.read<MyProfileBloc>();
-            final verifyer = preloadedNostrApps.firstWhere(
-              (app) => app.slug == 'verifyer',
+            await launchVerifierFlow(
+              editorBloc: context.read<ProfileEditorBloc>(),
+              myProfileBloc: context.read<MyProfileBloc>(),
             );
-            if (nostrAppsSandboxSupported) {
-              // Native (iOS / Android / macOS): full webview_flutter
-              // sandbox with NIP-07 bridge injection.
-              await context.push(
-                NostrAppSandboxScreen.pathForAppId(verifyer.id),
-                extra: verifyer,
-              );
-            } else if (kIsWeb) {
-              // Flutter web: webview_flutter is unavailable, but we can
-              // host the verifyer in an <iframe> with a postMessage
-              // NIP-07 bridge to Divine's web signer.
-              await context.push(
-                WebIframeSandboxScreen.pathForAppId(verifyer.id),
-                extra: verifyer,
-              );
-            } else {
-              // Last-resort fallback for any future platform without
-              // either capability — open in the system browser.
-              await launchUrl(
-                Uri.parse(verifyer.launchUrl),
-                mode: LaunchMode.externalApplication,
-              );
-            }
-            editorBloc.add(const VerifierWebViewDismissed());
-            myProfileBloc.add(const MyProfileFetchRequested());
           },
         ),
       ],
@@ -1868,6 +1839,30 @@ class _VerifiedAccountsSection extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Opens the Divine verifyer in the system browser and refreshes the
+/// profile when the user returns.
+///
+/// The verifyer authenticates via login.divine.video and runs OAuth
+/// hand-offs to external platforms (bsky, github, x) to prove account
+/// ownership. Those flows need a real browser — new windows
+/// (`target="_blank"`), cross-site cookies, and provider redirects — which
+/// an in-app webview can't provide, so it is launched externally.
+@visibleForTesting
+Future<void> launchVerifierFlow({
+  required ProfileEditorBloc editorBloc,
+  required MyProfileBloc myProfileBloc,
+}) async {
+  final verifyer = preloadedNostrApps.firstWhere(
+    (app) => app.slug == 'verifyer',
+  );
+  await launchUrl(
+    Uri.parse(verifyer.launchUrl),
+    mode: LaunchMode.externalApplication,
+  );
+  editorBloc.add(const VerifierWebViewDismissed());
+  myProfileBloc.add(const MyProfileFetchRequested());
 }
 
 class _GetVerifiedTile extends StatelessWidget {
