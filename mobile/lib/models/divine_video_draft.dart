@@ -454,6 +454,14 @@ class DivineVideoDraft {
   bool get canRetry => publishStatus == PublishStatus.failed;
   bool get isPublishing => publishStatus == PublishStatus.publishing;
 
+  /// Whether the draft can be posted directly from the library.
+  ///
+  /// Requires [finalRenderedClip] so the published video includes all editor
+  /// layers (text, stickers, filters). Without a render, posting falls back to
+  /// the raw recording and silently drops those layers, so the post action
+  /// stays hidden until a render exists.
+  bool get canPost => finalRenderedClip != null;
+
   bool get hasEditorStateEdits {
     if (editorStateHistory.isEmpty) return false;
 

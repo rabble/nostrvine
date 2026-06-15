@@ -135,11 +135,12 @@ class DraftsTab extends ConsumerWidget {
       context: context,
       title: DraftListTile(draft: draft, enableShrink: true),
       options: [
-        VineBottomSheetActionData(
-          iconPath: DivineIconName.paperPlaneTilt.assetPath,
-          label: context.l10n.libraryDraftActionPost,
-          onTap: () => _postDraft(context, ref, draft),
-        ),
+        if (draft.canPost)
+          VineBottomSheetActionData(
+            iconPath: DivineIconName.paperPlaneTilt.assetPath,
+            label: context.l10n.libraryDraftActionPost,
+            onTap: () => _postDraft(context, ref, draft),
+          ),
         VineBottomSheetActionData(
           iconPath: DivineIconName.pencilSimple.assetPath,
           label: context.l10n.libraryDraftActionEdit,

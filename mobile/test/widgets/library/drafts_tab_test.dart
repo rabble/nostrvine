@@ -12,13 +12,24 @@ import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations_en.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/widgets/library/drafts_tab.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockDraftsLibraryBloc
     extends MockBloc<DraftsLibraryEvent, DraftsLibraryState>
     implements DraftsLibraryBloc {}
+
+DivineVideoClip _createTestClip() => DivineVideoClip(
+  id: 'clip_1',
+  video: EditorVideo.file('/tmp/test.mp4'),
+  duration: const Duration(seconds: 6),
+  recordedAt: DateTime(2025),
+  originalAspectRatio: 9 / 16,
+  targetAspectRatio: .vertical,
+);
 
 void main() {
   final en = AppLocalizationsEn();
@@ -26,7 +37,11 @@ void main() {
   group(DraftsTab, () {
     late _MockDraftsLibraryBloc mockBloc;
 
-    DivineVideoDraft createDraft({String? id, String title = 'Test Draft'}) {
+    DivineVideoDraft createDraft({
+      String? id,
+      String title = 'Test Draft',
+      DivineVideoClip? finalRenderedClip,
+    }) {
       return DivineVideoDraft(
         id: id ?? 'draft-${DateTime.now().millisecondsSinceEpoch}',
         clips: const [],
@@ -38,6 +53,7 @@ void main() {
         lastModified: DateTime(2026),
         publishStatus: PublishStatus.draft,
         publishAttempts: 0,
+        finalRenderedClip: finalRenderedClip,
       );
     }
 
@@ -180,6 +196,42 @@ void main() {
 
         expect(find.byType(EmptyLibraryState), findsOneWidget);
         expect(find.text('No Drafts Yet'), findsOneWidget);
+      });
+    });
+
+    group('post action', () {
+      testWidgets('hides post action when draft has no final render', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          DraftsLibraryLoaded(drafts: [createDraft(id: 'draft1')]),
+        );
+
+        await tester.pumpWidget(buildWidget());
+        await tester.tap(find.byType(IconButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.libraryDraftActionPost), findsNothing);
+        expect(find.text(en.libraryDraftActionEdit), findsOneWidget);
+        expect(find.text(en.libraryDraftActionDelete), findsOneWidget);
+      });
+
+      testWidgets('shows post action when draft has a final render', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          DraftsLibraryLoaded(
+            drafts: [
+              createDraft(id: 'draft1', finalRenderedClip: _createTestClip()),
+            ],
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget());
+        await tester.tap(find.byType(IconButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.libraryDraftActionPost), findsOneWidget);
       });
     });
   });
