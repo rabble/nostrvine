@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +13,6 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
@@ -20,16 +20,24 @@ import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Grid widget displaying user's reposted videos
 ///
 /// Requires [ProfileRepostedVideosBloc] to be provided in the widget tree.
 class ProfileRepostsGrid extends StatefulWidget {
-  const ProfileRepostsGrid({required this.isOwnProfile, super.key});
+  const ProfileRepostsGrid({
+    required this.isOwnProfile,
+    required this.userIdHex,
+    super.key,
+  });
 
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
+
+  /// The hex public key of the profile being viewed.
+  final String userIdHex;
 
   @override
   State<ProfileRepostsGrid> createState() => _ProfileRepostsGridState();
@@ -119,6 +127,7 @@ class _ProfileRepostsGridState extends State<ProfileRepostsGrid>
                   videoEvent: videoEvent,
                   index: index,
                   allVideos: repostedVideos,
+                  userIdHex: widget.userIdHex,
                 );
               }, childCount: repostedVideos.length),
             ),
@@ -136,11 +145,13 @@ class _RepostGridTile extends ConsumerWidget {
     required this.videoEvent,
     required this.index,
     required this.allVideos,
+    required this.userIdHex,
   });
 
   final VideoEvent videoEvent;
   final int index;
   final List<VideoEvent> allVideos;
+  final String userIdHex;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => GestureDetector(
@@ -151,12 +162,23 @@ class _RepostGridTile extends ConsumerWidget {
         category: LogCategory.video,
       );
 
+      final bloc = context.read<ProfileRepostedVideosBloc>();
       context.push(
         PooledFullscreenVideoFeedScreen.path,
         extra: PooledFullscreenVideoFeedArgs(
-          videosStream: Stream.value(allVideos),
+          source: RepostsViewSource(userIdHex),
+          feedRepository: StreamFeedRepository(
+            videos: bloc.stream
+                .map((state) => state.videos)
+                .startWith(allVideos),
+            hasMore: bloc.stream
+                .map((state) => state.hasMoreContent)
+                .startWith(bloc.state.hasMoreContent),
+            onLoadMore: () async =>
+                bloc.add(const ProfileRepostedVideosLoadMoreRequested()),
+          ),
           initialIndex: index,
-          removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
+          initialVideoId: videoEvent.id,
           trafficSource: ViewTrafficSource.profile,
         ),
       );

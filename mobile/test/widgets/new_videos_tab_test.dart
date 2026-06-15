@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/new_videos_feed_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/new_videos_tab.dart';
@@ -130,26 +129,6 @@ void main() {
         ),
       ).called(1);
     });
-
-    test(
-      'fullscreen feed bridge replays latest feed after listener attaches',
-      () async {
-        final bridge = NewVideosFullscreenFeedBridge();
-        addTearDown(bridge.dispose);
-
-        final firstPage = [_video('new-video-1')];
-        bridge.update(videos: firstPage, hasMore: true);
-
-        await expectLater(bridge.videosStream, emits(firstPage));
-        await expectLater(bridge.hasMoreStream, emits(true));
-
-        final secondPage = [...firstPage, _video('new-video-2')];
-        bridge.update(videos: secondPage, hasMore: false);
-
-        await expectLater(bridge.videosStream, emits(secondPage));
-        await expectLater(bridge.hasMoreStream, emits(false));
-      },
-    );
   });
 }
 

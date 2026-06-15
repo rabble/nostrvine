@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -46,14 +47,21 @@ Alignment fullscreenVideoMediaAlignment({required bool isPortrait}) {
 
 /// Arguments for navigating to PooledFullscreenVideoFeedScreen.
 ///
-/// Uses a stream-based approach where the source BLoC/provider remains
-/// the single source of truth. The fullscreen screen receives:
-/// - A stream of videos for reactive updates
-/// - A callback to trigger load more on the source
+/// Two mutually-exclusive sourcing modes are supported during the #3383
+/// migration:
+///
+/// * **ViewSource mode** (preferred): pass a [source] and a [feedRepository].
+///   The repository owns a lifecycle-stable, filtered stream so the fullscreen
+///   surface no longer depends on a caller-owned `StreamController`.
+/// * **Legacy stream mode**: pass a [videosStream] (+ optional [hasMoreStream]
+///   / [onLoadMore] / [removedIdsStream]). Retained until every call-site is
+///   migrated.
 class PooledFullscreenVideoFeedArgs {
   const PooledFullscreenVideoFeedArgs({
-    required this.videosStream,
     required this.initialIndex,
+    this.source,
+    this.feedRepository,
+    this.videosStream,
     this.initialVideoId,
     this.initialStableId,
     this.onLoadMore,
@@ -64,10 +72,22 @@ class PooledFullscreenVideoFeedArgs {
     this.sourceDetail,
     this.autoOpenComments = false,
     this.onPageChanged,
-  });
+  }) : assert(
+         (source != null && feedRepository != null) || videosStream != null,
+         'Provide either a (source + feedRepository) pair or a videosStream.',
+       );
 
-  /// Stream of videos from the source (BLoC or provider).
-  final Stream<List<VideoEvent>> videosStream;
+  /// The feed to display, resolved via [feedRepository]. When set, takes
+  /// precedence over [videosStream] / [hasMoreStream] / [onLoadMore].
+  final ViewSource? source;
+
+  /// Repository used to resolve [source] into a live, filtered feed.
+  final FeedRepository? feedRepository;
+
+  /// Legacy stream of videos from the source (BLoC or provider).
+  ///
+  /// Ignored when [source] is provided.
+  final Stream<List<VideoEvent>>? videosStream;
 
   /// Initial video index to start playback.
   final int initialIndex;
@@ -152,8 +172,10 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   static const path = '/pooled-video-feed';
 
   const PooledFullscreenVideoFeedScreen({
-    required this.videosStream,
     required this.initialIndex,
+    this.source,
+    this.feedRepository,
+    this.videosStream,
     this.initialVideoId,
     this.initialStableId,
     this.onLoadMore,
@@ -165,9 +187,20 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
     this.autoOpenComments = false,
     this.onPageChanged,
     super.key,
-  });
+  }) : assert(
+         (source != null && feedRepository != null) || videosStream != null,
+         'Provide either a (source + feedRepository) pair or a videosStream.',
+       );
 
-  final Stream<List<VideoEvent>> videosStream;
+  /// The feed to display, resolved via [feedRepository]. When set, takes
+  /// precedence over [videosStream] / [hasMoreStream] / [onLoadMore].
+  final ViewSource? source;
+
+  /// Repository used to resolve [source] into a live, filtered feed.
+  final FeedRepository? feedRepository;
+
+  /// Legacy stream of videos from the source. Ignored when [source] is set.
+  final Stream<List<VideoEvent>>? videosStream;
   final int initialIndex;
   final String? initialVideoId;
   final String? initialStableId;
@@ -209,17 +242,35 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
         .read(contentBlocklistRepositoryProvider)
         .shouldFilterFromFeeds;
 
+    // ViewSource mode resolves the feed through the repository (lifecycle-
+    // stable, filtered at the boundary). Legacy mode uses the caller-supplied
+    // streams. Exactly one is set (enforced by the constructor assert).
+    final source = this.source;
+    final feedRepository = this.feedRepository;
+    final Stream<List<VideoEvent>> resolvedVideosStream;
+    final Stream<bool>? resolvedHasMoreStream;
+    final VoidCallback? resolvedOnLoadMore;
+    if (source != null && feedRepository != null) {
+      resolvedVideosStream = feedRepository.watchView(source);
+      resolvedHasMoreStream = feedRepository.watchHasMore(source);
+      resolvedOnLoadMore = () => unawaited(feedRepository.loadMore(source));
+    } else {
+      resolvedVideosStream = videosStream!;
+      resolvedHasMoreStream = hasMoreStream;
+      resolvedOnLoadMore = onLoadMore;
+    }
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(
           create: (_) => FullscreenFeedBloc(
-            videosStream: videosStream,
+            videosStream: resolvedVideosStream,
             initialIndex: initialIndex,
             initialVideoId: initialVideoId,
             initialStableId: initialStableId,
-            hasMoreStream: hasMoreStream,
+            hasMoreStream: resolvedHasMoreStream,
             removedIdsStream: removedIdsStream,
-            onLoadMore: onLoadMore,
+            onLoadMore: resolvedOnLoadMore,
             mediaCache: mediaCache,
             blossomAuthService: blossomAuthService,
             blockFilter: blockFilter,

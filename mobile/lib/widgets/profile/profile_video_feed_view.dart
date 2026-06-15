@@ -1,8 +1,7 @@
 // ABOUTME: Fullscreen video feed view for profile screens
-// ABOUTME: Wraps PooledFullscreenVideoFeedScreen with profile-feed streams
+// ABOUTME: Resolves the profile feed through a FeedRepository (#3383)
 
-import 'dart:async';
-
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +9,6 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_scope.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -19,11 +17,13 @@ import 'package:rxdart/rxdart.dart';
 
 /// Fullscreen video feed view for profile screens.
 ///
-/// Streams [ProfileFeedCubit] updates into [PooledFullscreenVideoFeedScreen]
-/// so the profile fullscreen feed benefits from the pooled player, auto-advance
-/// and prefetching machinery shared with the main feed. Keeps the URL in sync
-/// via [onPageChanged].
-class ProfileVideoFeedView extends ConsumerStatefulWidget {
+/// Wraps [PooledFullscreenVideoFeedScreen] with a [ProfileFeedScope] so the
+/// fullscreen feed benefits from the pooled player, auto-advance and
+/// prefetching machinery shared with the main feed. The feed is resolved
+/// through a [StreamFeedRepository] bound to the scope's [ProfileFeedCubit],
+/// so profile-specific metadata updates (like loop counts) survive the
+/// launching grid unmounting. Keeps the URL in sync via [onPageChanged].
+class ProfileVideoFeedView extends ConsumerWidget {
   const ProfileVideoFeedView({
     required this.npub,
     required this.userIdHex,
@@ -42,14 +42,14 @@ class ProfileVideoFeedView extends ConsumerStatefulWidget {
   /// The hex public key of the profile.
   final String userIdHex;
 
-  /// Initial list of videos to seed the feed with before the provider resolves.
+  /// Initial list of videos to seed the feed with before the cubit resolves.
   final List<VideoEvent> videos;
 
   /// Current video index from the URL.
   final int videoIndex;
 
   /// Optional specific tapped video identity for resolving the initial index
-  /// against the live provider-backed feed.
+  /// against the live cubit-backed feed.
   final String? initialVideoId;
   final String? initialStableId;
 
@@ -60,101 +60,83 @@ class ProfileVideoFeedView extends ConsumerStatefulWidget {
   final void Function(int newIndex) onPageChanged;
 
   @override
-  ConsumerState<ProfileVideoFeedView> createState() =>
-      _ProfileVideoFeedViewState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final contextTitle =
+        contextTitleOverride ??
+        ref
+            .watch(fetchUserProfileProvider(userIdHex))
+            .value
+            ?.betterDisplayName(context.l10n.profileTitle);
+
+    return ProfileFeedScope(
+      userIdHex: userIdHex,
+      child: _ProfileFullscreenContent(
+        userIdHex: userIdHex,
+        seedVideos: videos,
+        videoIndex: videoIndex,
+        initialVideoId: initialVideoId,
+        initialStableId: initialStableId,
+        contextTitle: contextTitle,
+        onPageChanged: onPageChanged,
+      ),
+    );
+  }
 }
 
-class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView> {
-  late final StreamController<List<VideoEvent>> _videosController;
-  late final StreamController<bool> _hasMoreController;
-  List<VideoEvent>? _lastVideos;
-  bool? _lastHasMore;
+/// Inner content that binds a [StreamFeedRepository] to the scoped
+/// [ProfileFeedCubit] exactly once, then hands it to the fullscreen screen.
+class _ProfileFullscreenContent extends StatefulWidget {
+  const _ProfileFullscreenContent({
+    required this.userIdHex,
+    required this.seedVideos,
+    required this.videoIndex,
+    required this.onPageChanged,
+    this.initialVideoId,
+    this.initialStableId,
+    this.contextTitle,
+  });
+
+  final String userIdHex;
+  final List<VideoEvent> seedVideos;
+  final int videoIndex;
+  final String? initialVideoId;
+  final String? initialStableId;
+  final String? contextTitle;
+  final void Function(int newIndex) onPageChanged;
+
+  @override
+  State<_ProfileFullscreenContent> createState() =>
+      _ProfileFullscreenContentState();
+}
+
+class _ProfileFullscreenContentState extends State<_ProfileFullscreenContent> {
+  late final ProfileFeedCubit _cubit;
+  late final FeedRepository _feedRepository;
+  late final int _initialIndex;
 
   @override
   void initState() {
     super.initState();
-    _videosController = StreamController<List<VideoEvent>>.broadcast();
-    _hasMoreController = StreamController<bool>.broadcast();
-    // Seed with initial videos so the BLoC receives them on first subscription.
-    _pushVideos(widget.videos);
-  }
+    _cubit = context.read<ProfileFeedCubit>();
 
-  @override
-  void didUpdateWidget(ProfileVideoFeedView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!identical(widget.videos, oldWidget.videos)) {
-      _pushVideos(widget.videos);
-    }
-  }
+    // Prefer the live cubit list, falling back to the tapped seed list until
+    // the cubit resolves. `startWith` guarantees the first list reaches the
+    // FullscreenFeedBloc before it subscribes.
+    List<VideoEvent> effective(ProfileFeedState state) =>
+        state.videos.isNotEmpty ? state.videos : widget.seedVideos;
 
-  @override
-  void dispose() {
-    _videosController.close();
-    _hasMoreController.close();
-    super.dispose();
-  }
+    final initialState = _cubit.state;
+    _initialIndex = _resolveInitialIndex(effective(initialState));
 
-  void _pushVideos(List<VideoEvent> videos) {
-    if (videos.isEmpty) return;
-    if (identical(videos, _lastVideos)) return;
-    _lastVideos = videos;
-    if (!_videosController.isClosed) _videosController.add(videos);
-  }
-
-  void _pushHasMore(bool hasMore) {
-    if (_lastHasMore == hasMore) return;
-    _lastHasMore = hasMore;
-    if (!_hasMoreController.isClosed) _hasMoreController.add(hasMore);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final contextTitle =
-        widget.contextTitleOverride ??
-        ref
-            .watch(fetchUserProfileProvider(widget.userIdHex))
-            .value
-            ?.betterDisplayName(context.l10n.profileTitle);
-    final removedIdsStream = ref
-        .read(videoEventServiceProvider)
-        .removedVideoIds;
-
-    return ProfileFeedScope(
-      userIdHex: widget.userIdHex,
-      child: Builder(
-        builder: (context) {
-          final state = context.watch<ProfileFeedCubit>().state;
-          final liveVideos = state.videos;
-          final effectiveVideos = liveVideos.isNotEmpty
-              ? liveVideos
-              : widget.videos;
-          _pushVideos(effectiveVideos);
-          final hasMoreContent = state.hasMoreContent;
-          _pushHasMore(hasMoreContent);
-
-          final resolvedIndex = _resolveInitialIndex(effectiveVideos);
-
-          return PooledFullscreenVideoFeedScreen(
-            // Seed the fullscreen route with the latest effective videos at
-            // subscription time so the first list can't be lost on a broadcast
-            // stream before FullscreenFeedBloc attaches.
-            videosStream: _videosController.stream.startWith(effectiveVideos),
-            initialIndex: resolvedIndex,
-            initialVideoId: widget.initialVideoId,
-            initialStableId: widget.initialStableId,
-            trafficSource: ViewTrafficSource.profile,
-            contextTitle: contextTitle,
-            onLoadMore: hasMoreContent
-                ? () => context.read<ProfileFeedCubit>().add(
-                    const ProfileFeedLoadMoreRequested(),
-                  )
-                : null,
-            hasMoreStream: _hasMoreController.stream.startWith(hasMoreContent),
-            removedIdsStream: removedIdsStream,
-            onPageChanged: widget.onPageChanged,
-          );
-        },
-      ),
+    _feedRepository = StreamFeedRepository(
+      videos: _cubit.stream
+          .map(effective)
+          .startWith(effective(initialState)),
+      hasMore: _cubit.stream
+          .map((state) => state.hasMoreContent)
+          .startWith(initialState.hasMoreContent),
+      onLoadMore: () async =>
+          _cubit.add(const ProfileFeedLoadMoreRequested()),
     );
   }
 
@@ -173,5 +155,19 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView> {
     }
 
     return widget.videoIndex.clamp(0, videos.length - 1);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PooledFullscreenVideoFeedScreen(
+      source: ProfileViewSource(widget.userIdHex),
+      feedRepository: _feedRepository,
+      initialIndex: _initialIndex,
+      initialVideoId: widget.initialVideoId,
+      initialStableId: widget.initialStableId,
+      trafficSource: ViewTrafficSource.profile,
+      contextTitle: widget.contextTitle,
+      onPageChanged: widget.onPageChanged,
+    );
   }
 }

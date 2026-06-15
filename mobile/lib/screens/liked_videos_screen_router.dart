@@ -1,14 +1,12 @@
 // ABOUTME: Router-aware liked videos screen that shows grid or feed based on URL
 // ABOUTME: Reads route context to determine grid mode vs feed mode
 
-import 'dart:async';
-
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -20,6 +18,7 @@ import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Router-aware liked videos screen that shows grid or feed based on route
@@ -107,7 +106,10 @@ class _LikedVideosScreenRouterState
             contentBlocklistRepository: contentBlocklistRepository,
             currentUserPubkey: currentUserPubkey,
           )..add(const ProfileLikedVideosSyncRequested()),
-          child: const ProfileLikedGrid(isOwnProfile: true),
+          child: ProfileLikedGrid(
+            isOwnProfile: true,
+            userIdHex: currentUserPubkey,
+          ),
         ),
       );
     }
@@ -126,16 +128,23 @@ class _LikedVideosScreenRouterState
         contentBlocklistRepository: contentBlocklistRepository,
         currentUserPubkey: currentUserPubkey,
       )..add(const ProfileLikedVideosSyncRequested()),
-      child: _LikedVideosFeedView(videoIndex: videoIndex),
+      child: _LikedVideosFeedView(
+        videoIndex: videoIndex,
+        userIdHex: currentUserPubkey,
+      ),
     );
   }
 }
 
-/// Feed view that streams BLoC state into [PooledFullscreenVideoFeedScreen].
+/// Feed view that resolves the liked feed through a [FeedRepository].
 class _LikedVideosFeedView extends ConsumerStatefulWidget {
-  const _LikedVideosFeedView({required this.videoIndex});
+  const _LikedVideosFeedView({
+    required this.videoIndex,
+    required this.userIdHex,
+  });
 
   final int videoIndex;
+  final String userIdHex;
 
   @override
   ConsumerState<_LikedVideosFeedView> createState() =>
@@ -143,35 +152,28 @@ class _LikedVideosFeedView extends ConsumerStatefulWidget {
 }
 
 class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
-  late final StreamController<List<VideoEvent>> _streamController;
-  List<VideoEvent>? _lastVideos;
+  late final ProfileLikedVideosBloc _bloc;
+  late final FeedRepository _feedRepository;
 
   @override
   void initState() {
     super.initState();
-    _streamController = StreamController<List<VideoEvent>>.broadcast();
-  }
-
-  @override
-  void dispose() {
-    _streamController.close();
-    super.dispose();
-  }
-
-  /// Push the latest non-empty video list into the stream.
-  void _pushVideos(List<VideoEvent> videos) {
-    if (videos.isEmpty) return;
-    if (identical(videos, _lastVideos)) return;
-    _lastVideos = videos;
-    if (!_streamController.isClosed) _streamController.add(videos);
+    _bloc = context.read<ProfileLikedVideosBloc>();
+    _feedRepository = StreamFeedRepository(
+      videos: _bloc.stream
+          .map((state) => state.videos)
+          .startWith(_bloc.state.videos),
+      hasMore: _bloc.stream
+          .map((state) => state.hasMoreContent)
+          .startWith(_bloc.state.hasMoreContent),
+      onLoadMore: () async =>
+          _bloc.add(const ProfileLikedVideosLoadMoreRequested()),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<ProfileLikedVideosBloc, ProfileLikedVideosState>(
-      listener: (context, state) {
-        _pushVideos(state.videos);
-      },
+    return BlocBuilder<ProfileLikedVideosBloc, ProfileLikedVideosState>(
       builder: (context, state) {
         if (state.status == ProfileLikedVideosStatus.initial ||
             state.status == ProfileLikedVideosStatus.syncing ||
@@ -218,10 +220,9 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
         final safeIndex = widget.videoIndex.clamp(0, videos.length - 1);
 
         return PooledFullscreenVideoFeedScreen(
-          // Stream is seeded via _pushVideos in the BlocConsumer listener.
-          videosStream: _streamController.stream,
+          source: LikedViewSource(widget.userIdHex),
+          feedRepository: _feedRepository,
           initialIndex: safeIndex,
-          removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
           contextTitle: context.l10n.likedVideosTitle,
           trafficSource: ViewTrafficSource.profile,
         );

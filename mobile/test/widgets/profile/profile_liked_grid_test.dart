@@ -70,7 +70,7 @@ void main() {
           home: Scaffold(
             body: BlocProvider<ProfileLikedVideosBloc>.value(
               value: mockBloc,
-              child: ProfileLikedGrid(isOwnProfile: isOwnProfile),
+              child: ProfileLikedGrid(isOwnProfile: isOwnProfile, userIdHex: 'test-user'),
             ),
           ),
         ),
@@ -280,7 +280,7 @@ void main() {
                   ],
                   body: BlocProvider<ProfileLikedVideosBloc>.value(
                     value: mockBloc,
-                    child: const ProfileLikedGrid(isOwnProfile: true),
+                    child: const ProfileLikedGrid(isOwnProfile: true, userIdHex: 'test-user'),
                   ),
                 ),
               ),
@@ -331,7 +331,7 @@ void main() {
                   ],
                   body: BlocProvider<ProfileLikedVideosBloc>.value(
                     value: mockBloc,
-                    child: const ProfileLikedGrid(isOwnProfile: true),
+                    child: const ProfileLikedGrid(isOwnProfile: true, userIdHex: 'test-user'),
                   ),
                 ),
               ),

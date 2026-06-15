@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +13,6 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_saved_videos/profile_saved_videos_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
@@ -20,6 +20,7 @@ import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Grid widget displaying the current user's saved (bookmarked) videos.
@@ -28,7 +29,10 @@ import 'package:unified_logger/unified_logger.dart';
 /// Only used on the viewer's own profile — bookmarks are private, so there
 /// is no "other user's saved" variant.
 class ProfileSavedGrid extends StatefulWidget {
-  const ProfileSavedGrid({super.key});
+  const ProfileSavedGrid({required this.userIdHex, super.key});
+
+  /// The hex public key of the profile being viewed (always the viewer's own).
+  final String userIdHex;
 
   @override
   State<ProfileSavedGrid> createState() => _ProfileSavedGridState();
@@ -116,6 +120,7 @@ class _ProfileSavedGridState extends State<ProfileSavedGrid>
                   videoEvent: videoEvent,
                   index: index,
                   allVideos: savedVideos,
+                  userIdHex: widget.userIdHex,
                 );
               }, childCount: savedVideos.length),
             ),
@@ -133,11 +138,13 @@ class _SavedGridTile extends ConsumerWidget {
     required this.videoEvent,
     required this.index,
     required this.allVideos,
+    required this.userIdHex,
   });
 
   final VideoEvent videoEvent;
   final int index;
   final List<VideoEvent> allVideos;
+  final String userIdHex;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => Semantics(
@@ -149,14 +156,23 @@ class _SavedGridTile extends ConsumerWidget {
           'videoId=${videoEvent.id}',
           category: LogCategory.video,
         );
+        final bloc = context.read<ProfileSavedVideosBloc>();
         context.push(
           PooledFullscreenVideoFeedScreen.path,
           extra: PooledFullscreenVideoFeedArgs(
-            videosStream: Stream.value(allVideos),
+            source: SavedViewSource(userIdHex),
+            feedRepository: StreamFeedRepository(
+              videos: bloc.stream
+                  .map((state) => state.videos)
+                  .startWith(allVideos),
+              hasMore: bloc.stream
+                  .map((state) => state.hasMoreContent)
+                  .startWith(bloc.state.hasMoreContent),
+              onLoadMore: () async =>
+                  bloc.add(const ProfileSavedVideosLoadMoreRequested()),
+            ),
             initialIndex: index,
-            removedIdsStream: ref
-                .read(videoEventServiceProvider)
-                .removedVideoIds,
+            initialVideoId: videoEvent.id,
             trafficSource: ViewTrafficSource.profile,
           ),
         );

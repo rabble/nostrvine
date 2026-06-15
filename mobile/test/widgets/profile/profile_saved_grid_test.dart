@@ -67,7 +67,7 @@ void main() {
           home: Scaffold(
             body: BlocProvider<ProfileSavedVideosBloc>.value(
               value: mockBloc,
-              child: const ProfileSavedGrid(),
+              child: const ProfileSavedGrid(userIdHex: 'test-user'),
             ),
           ),
         ),
@@ -242,7 +242,7 @@ void main() {
                   ],
                   body: BlocProvider<ProfileSavedVideosBloc>.value(
                     value: mockBloc,
-                    child: const ProfileSavedGrid(),
+                    child: const ProfileSavedGrid(userIdHex: 'test-user'),
                   ),
                 ),
               ),

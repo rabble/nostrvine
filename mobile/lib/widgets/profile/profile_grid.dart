@@ -363,12 +363,21 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
               userIdHex: widget.userIdHex,
               isLoading: widget.isLoadingVideos,
             ),
-            ProfileLikedGrid(isOwnProfile: widget.isOwnProfile),
-            ProfileRepostsGrid(isOwnProfile: widget.isOwnProfile),
+            ProfileLikedGrid(
+              isOwnProfile: widget.isOwnProfile,
+              userIdHex: widget.userIdHex,
+            ),
+            ProfileRepostsGrid(
+              isOwnProfile: widget.isOwnProfile,
+              userIdHex: widget.userIdHex,
+            ),
             if (widget.isOwnProfile)
-              const ProfileSavedGrid()
+              ProfileSavedGrid(userIdHex: widget.userIdHex)
             else
-              ProfileCollabsGrid(isOwnProfile: widget.isOwnProfile),
+              ProfileCollabsGrid(
+                isOwnProfile: widget.isOwnProfile,
+                userIdHex: widget.userIdHex,
+              ),
             ProfileCommentsGrid(isOwnProfile: widget.isOwnProfile),
           ],
         ),

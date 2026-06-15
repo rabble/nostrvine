@@ -4,13 +4,14 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/feed_repository_provider.dart';
 import 'package:openvine/providers/popular_videos_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
@@ -23,7 +24,6 @@ import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
 import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/trending_hashtags_section.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Tab widget displaying popular videos by current watch volume.
@@ -214,32 +214,8 @@ class _PopularVideosTrendingContent extends ConsumerStatefulWidget {
 class _PopularVideosTrendingContentState
     extends ConsumerState<_PopularVideosTrendingContent>
     with ScrollToHideMixin {
-  late final StreamController<List<VideoEvent>> _videosStreamController;
-  late final StreamController<bool> _hasMoreStreamController;
-
-  @override
-  void initState() {
-    super.initState();
-    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
-    _hasMoreStreamController = StreamController<bool>.broadcast();
-  }
-
-  @override
-  void dispose() {
-    _videosStreamController.close();
-    _hasMoreStreamController.close();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Listen to provider changes and push to stream for fullscreen updates
-    ref.listen(popularVideosFeedProvider, (previous, next) {
-      if (next.hasValue) {
-        _videosStreamController.add(next.value!.videos);
-        _hasMoreStreamController.add(next.value!.hasMoreContent);
-      }
-    });
     final popularVideosFeedNotifier = ref.read(
       popularVideosFeedProvider.notifier,
     );
@@ -272,19 +248,10 @@ class _PopularVideosTrendingContentState
                 context.push(
                   PooledFullscreenVideoFeedScreen.path,
                   extra: PooledFullscreenVideoFeedArgs(
-                    // Use startWith to ensure initial videos are delivered
-                    // before FullscreenFeedBloc subscribes to the stream
-                    videosStream: _videosStreamController.stream.startWith(
-                      videoList,
-                    ),
+                    source: const PopularViewSource(),
+                    feedRepository: ref.read(feedRepositoryProvider),
                     initialIndex: index,
-                    onLoadMore: popularVideosFeedNotifier.loadMore,
-                    hasMoreStream: _hasMoreStreamController.stream.startWith(
-                      widget.hasMoreContent,
-                    ),
-                    removedIdsStream: ref
-                        .read(videoEventServiceProvider)
-                        .removedVideoIds,
+                    initialVideoId: videoList[index].id,
                     contextTitle: context.l10n.popularVideosContextTitle,
                     trafficSource: ViewTrafficSource.discoveryPopular,
                   ),

@@ -1,9 +1,8 @@
 // ABOUTME: Classics tab widget showing pre-2017 Vine archive videos
 // ABOUTME: Uses REST API when available, falls back to Nostr videos with embedded loop stats
 
-import 'dart:async';
-
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -11,9 +10,10 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/feed_repository_provider.dart';
+import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -23,7 +23,6 @@ import 'package:openvine/widgets/classic_viners_slider.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Tab widget displaying Classics archive videos (pre-2017).
@@ -173,8 +172,6 @@ class _ClassicVinesContent extends ConsumerStatefulWidget {
 class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
     with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
-  late final StreamController<List<VideoEvent>> _videosStreamController;
-  late final StreamController<bool> _hasMoreStreamController;
 
   @override
   ScrollController get paginationScrollController => _scrollController;
@@ -195,8 +192,6 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
   @override
   void initState() {
     super.initState();
-    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
-    _hasMoreStreamController = StreamController<bool>.broadcast();
     initPagination();
   }
 
@@ -204,20 +199,11 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
   void dispose() {
     disposePagination();
     _scrollController.dispose();
-    _videosStreamController.close();
-    _hasMoreStreamController.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Listen to provider changes and push to stream for fullscreen updates
-    ref.listen(classicVinesFeedProvider, (previous, next) {
-      if (next.hasValue && next.value != null) {
-        _videosStreamController.add(next.value!.videos);
-        _hasMoreStreamController.add(next.value!.hasMoreContent);
-      }
-    });
     final classicVinesFeedNotifier = ref.read(
       classicVinesFeedProvider.notifier,
     );
@@ -252,17 +238,10 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
               context.push(
                 PooledFullscreenVideoFeedScreen.path,
                 extra: PooledFullscreenVideoFeedArgs(
-                  videosStream: _videosStreamController.stream.startWith(
-                    videos,
-                  ),
+                  source: const ClassicVinesViewSource(),
+                  feedRepository: ref.read(feedRepositoryProvider),
                   initialIndex: index,
-                  onLoadMore: classicVinesFeedNotifier.loadMore,
-                  hasMoreStream: _hasMoreStreamController.stream.startWith(
-                    widget.hasMoreContent,
-                  ),
-                  removedIdsStream: ref
-                      .read(videoEventServiceProvider)
-                      .removedVideoIds,
+                  initialVideoId: videos[index].id,
                   contextTitle: context.l10n.exploreTabClassics,
                   trafficSource: ViewTrafficSource.discoveryClassic,
                 ),

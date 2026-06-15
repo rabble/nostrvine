@@ -2,13 +2,14 @@
 // ABOUTME: Extracted from ExploreScreen for better separation of concerns
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/feed_repository_provider.dart';
 import 'package:openvine/providers/new_videos_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
@@ -203,7 +204,6 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
   @override
   Widget build(BuildContext context) {
     final newVideosFeedNotifier = ref.read(newVideosFeedProvider.notifier);
-    final fullscreenBridge = ref.read(newVideosFullscreenFeedBridgeProvider);
 
     return ComposableVideoGrid(
       videos: widget.videos,
@@ -221,13 +221,10 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
         context.push(
           PooledFullscreenVideoFeedScreen.path,
           extra: PooledFullscreenVideoFeedArgs(
-            videosStream: fullscreenBridge.videosStream,
+            source: const NewVideosViewSource(),
+            feedRepository: ref.read(feedRepositoryProvider),
             initialIndex: index,
-            onLoadMore: newVideosFeedNotifier.loadMore,
-            hasMoreStream: fullscreenBridge.hasMoreStream,
-            removedIdsStream: ref
-                .read(videoEventServiceProvider)
-                .removedVideoIds,
+            initialVideoId: videoList[index].id,
             contextTitle: 'New Videos',
             trafficSource: ViewTrafficSource.discoveryNew,
           ),

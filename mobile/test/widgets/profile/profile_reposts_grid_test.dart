@@ -70,7 +70,7 @@ void main() {
           home: Scaffold(
             body: BlocProvider<ProfileRepostedVideosBloc>.value(
               value: mockBloc,
-              child: ProfileRepostsGrid(isOwnProfile: isOwnProfile),
+              child: ProfileRepostsGrid(isOwnProfile: isOwnProfile, userIdHex: 'test-user'),
             ),
           ),
         ),
@@ -284,7 +284,7 @@ void main() {
                   ],
                   body: BlocProvider<ProfileRepostedVideosBloc>.value(
                     value: mockBloc,
-                    child: const ProfileRepostsGrid(isOwnProfile: true),
+                    child: const ProfileRepostsGrid(isOwnProfile: true, userIdHex: 'test-user'),
                   ),
                 ),
               ),
@@ -332,7 +332,7 @@ void main() {
                   ],
                   body: BlocProvider<ProfileRepostedVideosBloc>.value(
                     value: mockBloc,
-                    child: const ProfileRepostsGrid(isOwnProfile: true),
+                    child: const ProfileRepostsGrid(isOwnProfile: true, userIdHex: 'test-user'),
                   ),
                 ),
               ),

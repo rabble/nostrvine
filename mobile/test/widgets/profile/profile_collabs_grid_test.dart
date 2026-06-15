@@ -1,6 +1,7 @@
 @Tags(['skip_very_good_optimization'])
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -68,7 +69,10 @@ void main() {
         home: Scaffold(
           body: BlocProvider<ProfileCollabVideosBloc>.value(
             value: mockBloc,
-            child: ProfileCollabsGrid(isOwnProfile: isOwnProfile),
+            child: ProfileCollabsGrid(
+              isOwnProfile: isOwnProfile,
+              userIdHex: 'aaa${'a' * 60}',
+            ),
           ),
         ),
       );
@@ -244,8 +248,8 @@ void main() {
       });
 
       testWidgets(
-        'tap wires removedIdsStream so deletion / block / mute drop the '
-        'video without an app restart',
+        'tap resolves the feed through a FeedRepository + ViewSource so '
+        'deletion / block / mute drop the video without an app restart',
         (tester) async {
           final videos = _createTestVideos(count: 3);
           when(() => mockBloc.state).thenReturn(
@@ -268,7 +272,8 @@ void main() {
           ).captured;
           expect(captured, hasLength(1));
           final args = captured.single as PooledFullscreenVideoFeedArgs;
-          expect(args.removedIdsStream, isNotNull);
+          expect(args.source, isA<CollabsViewSource>());
+          expect(args.feedRepository, isNotNull);
         },
       );
     });
@@ -306,7 +311,10 @@ void main() {
                     ],
                     body: BlocProvider<ProfileCollabVideosBloc>.value(
                       value: mockBloc,
-                      child: const ProfileCollabsGrid(isOwnProfile: true),
+                      child: const ProfileCollabsGrid(
+                      isOwnProfile: true,
+                      userIdHex: 'author-pubkey',
+                    ),
                     ),
                   ),
                 ),
@@ -362,7 +370,10 @@ void main() {
                     ],
                     body: BlocProvider<ProfileCollabVideosBloc>.value(
                       value: mockBloc,
-                      child: const ProfileCollabsGrid(isOwnProfile: true),
+                      child: const ProfileCollabsGrid(
+                      isOwnProfile: true,
+                      userIdHex: 'author-pubkey',
+                    ),
                     ),
                   ),
                 ),

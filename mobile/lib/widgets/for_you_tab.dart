@@ -1,16 +1,15 @@
 // ABOUTME: For You tab widget showing ML-powered personalized video recommendations
 // ABOUTME: Uses Gorse-based recommendations from Funnelcake REST API (staging only)
 
-import 'dart:async';
-
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/feed_repository_provider.dart';
 import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -20,7 +19,6 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
 import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Tab widget displaying For You personalized recommendations.
@@ -154,23 +152,6 @@ class _ForYouContent extends ConsumerStatefulWidget {
 
 class _ForYouContentState extends ConsumerState<_ForYouContent>
     with ScrollToHideMixin {
-  late final StreamController<List<VideoEvent>> _videosStreamController;
-  late final StreamController<bool> _hasMoreStreamController;
-
-  @override
-  void initState() {
-    super.initState();
-    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
-    _hasMoreStreamController = StreamController<bool>.broadcast();
-  }
-
-  @override
-  void dispose() {
-    _videosStreamController.close();
-    _hasMoreStreamController.close();
-    super.dispose();
-  }
-
   void _showAlgorithmExplainer(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
@@ -185,13 +166,6 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
 
   @override
   Widget build(BuildContext context) {
-    // Listen to provider changes and push to stream for fullscreen updates
-    ref.listen(forYouFeedProvider, (previous, next) {
-      if (next.hasValue && next.value != null) {
-        _videosStreamController.add(next.value!.videos);
-        _hasMoreStreamController.add(next.value!.hasMoreContent);
-      }
-    });
     final forYouFeedNotifier = ref.read(forYouFeedProvider.notifier);
 
     measureHeaderHeight();
@@ -221,17 +195,10 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                 context.push(
                   PooledFullscreenVideoFeedScreen.path,
                   extra: PooledFullscreenVideoFeedArgs(
-                    videosStream: _videosStreamController.stream.startWith(
-                      videoList,
-                    ),
+                    source: const ForYouViewSource(),
+                    feedRepository: ref.read(feedRepositoryProvider),
                     initialIndex: index,
-                    onLoadMore: forYouFeedNotifier.loadMore,
-                    hasMoreStream: _hasMoreStreamController.stream.startWith(
-                      widget.hasMoreContent,
-                    ),
-                    removedIdsStream: ref
-                        .read(videoEventServiceProvider)
-                        .removedVideoIds,
+                    initialVideoId: videoList[index].id,
                     contextTitle: context.l10n.feedModeForYou,
                     trafficSource: ViewTrafficSource.discoveryForYou,
                   ),

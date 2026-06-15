@@ -1,7 +1,6 @@
 // ABOUTME: New Videos feed provider showing videos sorted by creation time
 // ABOUTME: Uses VideosRepository.getNewVideos so Explore New is distinct from Popular
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
@@ -13,7 +12,6 @@ import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/video_nostr_enrichment.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'new_videos_feed_provider.g.dart';
@@ -252,52 +250,3 @@ class NewVideosFeed extends _$NewVideosFeed {
     );
   }
 }
-
-/// Replayable stream bridge for fullscreen New Videos playback.
-///
-/// The fullscreen route can outlive the launching tab widget. Keeping this
-/// bridge at provider scope prevents pagination updates from being tied to a
-/// widget-local StreamController that may be disposed during navigation.
-class NewVideosFullscreenFeedBridge {
-  final BehaviorSubject<List<VideoEvent>> _videosSubject =
-      BehaviorSubject<List<VideoEvent>>();
-  final BehaviorSubject<bool> _hasMoreSubject = BehaviorSubject<bool>();
-
-  Stream<List<VideoEvent>> get videosStream => _videosSubject.stream;
-
-  Stream<bool> get hasMoreStream => _hasMoreSubject.stream;
-
-  void update({required List<VideoEvent> videos, required bool hasMore}) {
-    _videosSubject.add(List<VideoEvent>.unmodifiable(videos));
-    _hasMoreSubject.add(hasMore);
-  }
-
-  void dispose() {
-    _videosSubject.close();
-    _hasMoreSubject.close();
-  }
-}
-
-final newVideosFullscreenFeedBridgeProvider =
-    Provider<NewVideosFullscreenFeedBridge>((ref) {
-      final bridge = NewVideosFullscreenFeedBridge();
-
-      ref.listen<AsyncValue<VideoFeedState>>(
-        newVideosFeedProvider,
-        (previous, next) {
-          final feedState = next.asData?.value;
-          if (feedState == null) return;
-
-          bridge.update(
-            videos: feedState.videos
-                .where((v) => v.isSupportedOnCurrentPlatform)
-                .toList(),
-            hasMore: feedState.hasMoreContent,
-          );
-        },
-        fireImmediately: true,
-      );
-
-      ref.onDispose(bridge.dispose);
-      return bridge;
-    });
