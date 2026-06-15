@@ -117,6 +117,20 @@ class AppConstants {
   static const double gridPrefetchMinBandwidthMbps = 1.5;
 
   // ============================================================================
+  // IMAGE CACHE CONFIGURATION
+  // ============================================================================
+
+  /// Byte budget for Flutter's in-memory [ImageCache] (decoded images).
+  ///
+  /// Flutter's default is 100 MB, which on the thumbnail grids only holds a few
+  /// dozen decoded thumbnails — fast scrolling evicts already-loaded thumbnails,
+  /// so they flash back through their blurhash placeholder when scrolled into
+  /// view again. A larger budget keeps a much bigger working set resident so
+  /// scroll-back is an instant (synchronous) cache hit. Per-thumbnail memory is
+  /// bounded separately by decoding at display size, so this stays bounded.
+  static const int imageCacheMaxBytes = 256 * 1024 * 1024;
+
+  // ============================================================================
   // NETWORK CONFIGURATION
   // ============================================================================
 

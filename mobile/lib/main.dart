@@ -38,6 +38,7 @@ import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -959,6 +960,12 @@ Future<void> _startOpenVineApp() async {
 
   // Ensure bindings are initialized first (required for everything)
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+  // Give the in-memory image cache a larger byte budget than Flutter's 100 MB
+  // default so thumbnails survive fast scrolling instead of being evicted and
+  // reloaded. Per-thumbnail memory is bounded by decoding at display size.
+  PaintingBinding.instance.imageCache.maximumSizeBytes =
+      AppConstants.imageCacheMaxBytes;
 
   // Keep the native splash visible until startup auth reaches a terminal
   // state. The release watcher is installed after the ProviderContainer exists

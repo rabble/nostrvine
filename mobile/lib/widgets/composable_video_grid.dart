@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
@@ -20,6 +21,15 @@ import 'package:openvine/widgets/feed_refresh_control.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
+
+/// Extra off-screen distance the grid keeps built, expressed as a multiple of
+/// the viewport height applied on each side of the visible area.
+///
+/// The grid's default cache extent is only 250px, so thumbnails just off-screen
+/// are disposed and have to reload (re-flicker through their blurhash) the
+/// moment they scroll back in during fast scrolling. Keeping a couple of
+/// screens built on either side avoids that churn while still bounding memory.
+const double _gridCacheExtentScreens = 2;
 
 /// Composable video grid that automatically filters broken videos
 /// and provides consistent styling across Explore, Hashtag, and Search screens.
@@ -134,10 +144,11 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
 
     // Responsive column count: 3 for tablets/desktop (width >= 600),
     // 2 for phones
-    final screenWidth = MediaQuery.of(context).size.width;
-    final responsiveCrossAxisCount = screenWidth >= 600
+    final screenSize = MediaQuery.sizeOf(context);
+    final responsiveCrossAxisCount = screenSize.width >= 600
         ? 3
         : widget.crossAxisCount;
+    final cacheExtent = screenSize.height * _gridCacheExtentScreens;
 
     // Whether to render the load-more footer below the grid.
     final showLoadingIndicator =
@@ -187,6 +198,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
 
     final scrollView = CustomScrollView(
       controller: _scrollController,
+      scrollCacheExtent: ScrollCacheExtent.pixels(cacheExtent),
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         SliverPadding(padding: gridPadding, sliver: gridSliver),

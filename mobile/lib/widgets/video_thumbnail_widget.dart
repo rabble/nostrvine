@@ -11,6 +11,14 @@ import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Decode width (physical px) used only to probe a thumbnail's intrinsic
+/// aspect ratio when the video metadata omits dimensions.
+///
+/// Resizing preserves the aspect ratio, so a small probe avoids a
+/// full-resolution decode (which would otherwise thrash the in-memory image
+/// cache) while still yielding an accurate ratio.
+const int _aspectRatioProbeWidth = 256;
+
 /// Smart thumbnail widget that displays thumbnails with blurhash fallback
 class VideoThumbnailWidget extends StatefulWidget {
   const VideoThumbnailWidget({
@@ -80,7 +88,10 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
     // Skip if video already has dimensions
     if (widget.video.width != null && widget.video.height != null) return;
 
-    final imageStream = NetworkImage(url).resolve(ImageConfiguration.empty);
+    final imageStream = ResizeImage(
+      NetworkImage(url),
+      width: _aspectRatioProbeWidth,
+    ).resolve(ImageConfiguration.empty);
     late ImageStreamListener listener;
     listener = ImageStreamListener(
       (ImageInfo info, bool _) {
@@ -218,66 +229,93 @@ class _SafeNetworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Debug mode: test with plain Image.network to isolate cache issues
-    if (_useSimpleImageNetwork || _shouldBypassCacheManager(url)) {
-      return Image.network(
-        url,
-        width: width,
-        height: height,
-        fit: fit,
-        alignment: Alignment.topCenter,
-        errorBuilder: (context, error, stackTrace) {
-          Log.warning(
-            '🖼️ [Image.network] Thumbnail load failed for video $videoId:\n'
-            '  URL: $url\n'
-            '  Error type: ${error.runtimeType}\n'
-            '  Error: $error\n'
-            '  Stack: ${stackTrace?.toString().split('\n').take(5).join('\n')}',
-            name: 'VideoThumbnailWidget',
-            category: LogCategory.video,
-          );
-          return Container(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Decode thumbnails at their on-screen size rather than full source
+        // resolution. Full-resolution decodes exhaust Flutter's in-memory image
+        // cache within a few screens of fast scrolling, evicting already-loaded
+        // thumbnails so they visibly reload on the way back. Capping the decode
+        // width keeps far more thumbnails resident in the cache.
+        final cacheWidth = _decodeWidth(context, constraints.maxWidth);
+
+        // Debug mode: test with plain Image.network to isolate cache issues
+        if (_useSimpleImageNetwork || _shouldBypassCacheManager(url)) {
+          return Image.network(
+            url,
             width: width,
             height: height,
-            color: VineTheme.transparent,
-          );
-        },
-      );
-    }
-
-    return VineCachedImage(
-      imageUrl: url,
-      width: width,
-      height: height,
-      fit: fit,
-      alignment: Alignment.topCenter,
-      // Show transparent container so background surfaceContainer color shows through
-      placeholder: (context, url) =>
-          Container(width: width, height: height, color: VineTheme.transparent),
-      errorWidget: (context, url, error) {
-        // 404s are expected — thumbnail may not exist yet.
-        final is404 = error is HttpExceptionWithStatus
-            ? error.statusCode == 404
-            : error.toString().contains('404');
-
-        if (!is404) {
-          Log.warning(
-            '🖼️ Thumbnail load failed for video $videoId:\n'
-            '  URL: $url\n'
-            '  Error type: ${error.runtimeType}\n'
-            '  Error: $error',
-            name: 'VideoThumbnailWidget',
-            category: LogCategory.video,
+            fit: fit,
+            cacheWidth: cacheWidth,
+            alignment: Alignment.topCenter,
+            errorBuilder: (context, error, stackTrace) {
+              Log.warning(
+                '🖼️ [Image.network] Thumbnail load failed for video $videoId:\n'
+                '  URL: $url\n'
+                '  Error type: ${error.runtimeType}\n'
+                '  Error: $error\n'
+                '  Stack: ${stackTrace?.toString().split('\n').take(5).join('\n')}',
+                name: 'VideoThumbnailWidget',
+                category: LogCategory.video,
+              );
+              return Container(
+                width: width,
+                height: height,
+                color: VineTheme.transparent,
+              );
+            },
           );
         }
 
-        // Show transparent so background surfaceContainer color shows through
-        return Container(
+        return VineCachedImage(
+          imageUrl: url,
           width: width,
           height: height,
-          color: VineTheme.transparent,
+          fit: fit,
+          memCacheWidth: cacheWidth,
+          alignment: Alignment.topCenter,
+          // Show transparent container so background surfaceContainer color shows through
+          placeholder: (context, url) => Container(
+            width: width,
+            height: height,
+            color: VineTheme.transparent,
+          ),
+          errorWidget: (context, url, error) {
+            // 404s are expected — thumbnail may not exist yet.
+            final is404 = error is HttpExceptionWithStatus
+                ? error.statusCode == 404
+                : error.toString().contains('404');
+
+            if (!is404) {
+              Log.warning(
+                '🖼️ Thumbnail load failed for video $videoId:\n'
+                '  URL: $url\n'
+                '  Error type: ${error.runtimeType}\n'
+                '  Error: $error',
+                name: 'VideoThumbnailWidget',
+                category: LogCategory.video,
+              );
+            }
+
+            // Show transparent so background surfaceContainer color shows through
+            return Container(
+              width: width,
+              height: height,
+              color: VineTheme.transparent,
+            );
+          },
         );
       },
     );
+  }
+
+  /// Physical-pixel decode width for the thumbnail, derived from its laid-out
+  /// [maxWidth] (or the explicit [width] when the layout is unbounded).
+  ///
+  /// Returns `null` when no finite width is available, leaving the framework to
+  /// decode at native resolution.
+  int? _decodeWidth(BuildContext context, double maxWidth) {
+    final logicalWidth = maxWidth.isFinite && maxWidth > 0 ? maxWidth : width;
+    if (logicalWidth == null || logicalWidth <= 0) return null;
+    return (logicalWidth * MediaQuery.devicePixelRatioOf(context)).ceil();
   }
 }
