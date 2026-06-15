@@ -9749,6 +9749,7 @@ void main() {
         );
         when(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             fallback: any(named: 'fallback'),
@@ -9784,6 +9785,7 @@ void main() {
         );
         verify(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: 'user-pubkey',
             limit: 10,
           ),
@@ -9791,9 +9793,11 @@ void main() {
       });
 
       test('caches refreshed recommendations for feed remounts', () async {
+        final requestedSeeds = <String?>[];
         var callCount = 0;
         when(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             cursor: any(named: 'cursor'),
@@ -9802,7 +9806,8 @@ void main() {
             preferredLanguages: any(named: 'preferredLanguages'),
             viewerCountry: any(named: 'viewerCountry'),
           ),
-        ).thenAnswer((_) async {
+        ).thenAnswer((invocation) async {
+          requestedSeeds.add(invocation.namedArguments[#seed] as String?);
           callCount += 1;
           return RecommendationsResponse(
             videos: [
@@ -9853,12 +9858,69 @@ void main() {
         );
         expect(cachedAfterSecondRefresh.paginationCursor, equals('cursor-2'));
         expect(cachedAfterSecondRefresh.hasMore, isTrue);
+        expect(requestedSeeds, hasLength(2));
+        expect(requestedSeeds.first, isNotNull);
+        expect(requestedSeeds.first, isNotEmpty);
+        expect(requestedSeeds.last, isNot(requestedSeeds.first));
         verify(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: 'user-pubkey',
             limit: any(named: 'limit'),
           ),
         ).called(2);
+      });
+
+      test('keeps the same session seed across cursor pagination', () async {
+        final requestedSeeds = <String?>[];
+        var callCount = 0;
+        when(
+          () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            cursor: any(named: 'cursor'),
+            fallback: any(named: 'fallback'),
+            category: any(named: 'category'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
+          ),
+        ).thenAnswer((invocation) async {
+          requestedSeeds.add(invocation.namedArguments[#seed] as String?);
+          callCount += 1;
+          return RecommendationsResponse(
+            videos: [
+              _createVideoStats(
+                id: 'recommended-video-$callCount',
+                pubkey: 'recommended-pubkey-$callCount',
+                dTag: 'recommended-dtag-$callCount',
+                videoUrl: 'https://example.com/recommended-$callCount.mp4',
+              ),
+            ],
+            source: 'personalized',
+            nextCursor: 'cursor-${callCount + 1}',
+            hasMore: true,
+          );
+        });
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final firstPage = await repo.getRecommendedVideos(
+          userPubkey: 'user-pubkey',
+        );
+        final cursorPage = await repo.getRecommendedVideos(
+          userPubkey: 'user-pubkey',
+          cursor: firstPage.paginationCursor,
+        );
+
+        expect(cursorPage.videos.single.id, equals('recommended-video-2'));
+        expect(requestedSeeds, hasLength(2));
+        expect(requestedSeeds.first, isNotNull);
+        expect(requestedSeeds.first, isNotEmpty);
+        expect(requestedSeeds.last, requestedSeeds.first);
       });
 
       test('passes viewer country hint to recommendations endpoint', () async {
@@ -9870,6 +9932,7 @@ void main() {
         );
         when(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             fallback: any(named: 'fallback'),
@@ -9899,6 +9962,7 @@ void main() {
         expect(result.videos.single.id, equals('country-recommended-video'));
         verify(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: 'user-pubkey',
             limit: 10,
             viewerCountry: 'BR',
@@ -9939,6 +10003,7 @@ void main() {
           ).called(1);
           verifyNever(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -9959,6 +10024,7 @@ void main() {
           );
           when(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10011,6 +10077,7 @@ void main() {
           var recommendationCallCount = 0;
           when(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10057,6 +10124,7 @@ void main() {
           expect(recovered.videos.single.id, equals('recommended-video'));
           verify(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: 'user-pubkey',
               limit: 10,
             ),
@@ -10092,6 +10160,7 @@ void main() {
           expect(result.videos.single.id, equals('popular-video'));
           verifyNever(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10128,6 +10197,7 @@ void main() {
           ).thenAnswer((_) async => [popular]);
           when(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10162,6 +10232,7 @@ void main() {
           expect(recovered.videos.single.id, equals('recommended-video'));
           verify(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: 'user-pubkey',
               limit: 10,
             ),
@@ -10224,6 +10295,7 @@ void main() {
           expect(result.videos.single.id, equals('popular-video'));
           verifyNever(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10247,6 +10319,7 @@ void main() {
           );
           when(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10281,6 +10354,7 @@ void main() {
           expect(result.hasMore, isTrue);
           verify(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: 'user-pubkey',
               limit: 10,
               cursor: 'rec-page-2',
@@ -10306,6 +10380,7 @@ void main() {
           );
           when(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10340,6 +10415,7 @@ void main() {
           expect(result.hasMore, isTrue);
           verify(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: 'user-pubkey',
               limit: 10,
               cursor: '1700000000',
@@ -10359,6 +10435,7 @@ void main() {
         () async {
           when(
             () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
               fallback: any(named: 'fallback'),
@@ -10407,6 +10484,7 @@ void main() {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             fallback: any(named: 'fallback'),
@@ -10451,6 +10529,7 @@ void main() {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             fallback: any(named: 'fallback'),
@@ -10473,6 +10552,7 @@ void main() {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             fallback: any(named: 'fallback'),
@@ -10501,6 +10581,7 @@ void main() {
 
         verify(
           () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
             pubkey: 'user-pubkey',
             limit: 50,
             fallback: 'recent',

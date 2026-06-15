@@ -584,6 +584,7 @@ void main() {
       'for you keeps existing videos visible while refresh is in flight',
       () async {
         final refreshCompleter = Completer<RecommendationsResponse>();
+        final requestedSeeds = <String?>[];
         var requestCount = 0;
 
         when(
@@ -593,10 +594,12 @@ void main() {
             fallback: any(named: 'fallback'),
             category: any(named: 'category'),
             cursor: any(named: 'cursor'),
+            seed: any(named: 'seed'),
             preferredLanguages: any(named: 'preferredLanguages'),
             viewerCountry: any(named: 'viewerCountry'),
           ),
-        ).thenAnswer((_) {
+        ).thenAnswer((invocation) {
+          requestedSeeds.add(invocation.namedArguments[#seed] as String?);
           requestCount += 1;
           if (requestCount == 1) {
             return Future.value(
@@ -663,86 +666,83 @@ void main() {
           'for-you-refreshed',
         ]);
         expect(finalState.isRefreshing, isFalse);
+        expect(requestedSeeds, hasLength(2));
+        expect(requestedSeeds.first, isNotNull);
+        expect(requestedSeeds.first, isNotEmpty);
+        expect(requestedSeeds.last, isNot(requestedSeeds.first));
       },
     );
 
-    test(
-      'for you preserves existing videos when refresh fails',
-      () async {
-        var requestCount = 0;
+    test('for you preserves existing videos when refresh fails', () async {
+      var requestCount = 0;
 
-        when(
-          () => mockFunnelcakeApiClient.getRecommendations(
-            pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
-            fallback: any(named: 'fallback'),
-            category: any(named: 'category'),
-            cursor: any(named: 'cursor'),
-            preferredLanguages: any(named: 'preferredLanguages'),
-            viewerCountry: any(named: 'viewerCountry'),
+      when(
+        () => mockFunnelcakeApiClient.getRecommendations(
+          pubkey: any(named: 'pubkey'),
+          limit: any(named: 'limit'),
+          fallback: any(named: 'fallback'),
+          category: any(named: 'category'),
+          cursor: any(named: 'cursor'),
+          seed: any(named: 'seed'),
+          preferredLanguages: any(named: 'preferredLanguages'),
+          viewerCountry: any(named: 'viewerCountry'),
+        ),
+      ).thenAnswer((_) {
+        requestCount += 1;
+        if (requestCount == 1) {
+          return Future.value(
+            _recommendationsResponse([
+              'for-you-initial',
+            ], nextCursor: 'cursor-2'),
+          );
+        }
+        throw StateError('recommendations refresh failed');
+      });
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          appReadyProvider.overrideWithValue(true),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          contentBlocklistRepositoryProvider.overrideWithValue(
+            mockBlocklistRepository,
           ),
-        ).thenAnswer((_) {
-          requestCount += 1;
-          if (requestCount == 1) {
-            return Future.value(
-              _recommendationsResponse(
-                ['for-you-initial'],
-                nextCursor: 'cursor-2',
-              ),
-            );
-          }
-          throw StateError('recommendations refresh failed');
-        });
+          funnelcakeApiClientProvider.overrideWithValue(
+            mockFunnelcakeApiClient,
+          ),
+          authServiceProvider.overrideWithValue(mockAuthService),
+          funnelcakeAvailableProvider.overrideWith(
+            _AlwaysAvailableFunnelcake.new,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
 
-        final container = ProviderContainer(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-            appReadyProvider.overrideWithValue(true),
-            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-            contentBlocklistRepositoryProvider.overrideWithValue(
-              mockBlocklistRepository,
-            ),
-            funnelcakeApiClientProvider.overrideWithValue(
-              mockFunnelcakeApiClient,
-            ),
-            authServiceProvider.overrideWithValue(mockAuthService),
-            funnelcakeAvailableProvider.overrideWith(
-              _AlwaysAvailableFunnelcake.new,
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
+      await container.read(funnelcakeAvailableProvider.future);
+      final subscription = container.listen(forYouFeedProvider, (_, _) {});
+      addTearDown(subscription.close);
 
-        await container.read(funnelcakeAvailableProvider.future);
-        final subscription = container.listen(forYouFeedProvider, (_, _) {});
-        addTearDown(subscription.close);
+      final initialState = await container.read(forYouFeedProvider.future);
+      expect(initialState.videos.map((video) => video.id), ['for-you-initial']);
+      expect(initialState.hasMoreContent, isTrue);
 
-        final initialState = await container.read(forYouFeedProvider.future);
-        expect(initialState.videos.map((video) => video.id), [
-          'for-you-initial',
-        ]);
-        expect(initialState.hasMoreContent, isTrue);
+      await container.read(forYouFeedProvider.notifier).refresh();
 
-        await container.read(forYouFeedProvider.notifier).refresh();
-
-        final refreshedState = container.read(forYouFeedProvider).value;
-        expect(refreshedState, isNotNull);
-        expect(refreshedState!.videos.map((video) => video.id), [
-          'for-you-initial',
-        ]);
-        expect(refreshedState.hasMoreContent, isTrue);
-        expect(refreshedState.isRefreshing, isFalse);
-        expect(
-          refreshedState.error,
-          contains('recommendations refresh failed'),
-        );
-      },
-    );
+      final refreshedState = container.read(forYouFeedProvider).value;
+      expect(refreshedState, isNotNull);
+      expect(refreshedState!.videos.map((video) => video.id), [
+        'for-you-initial',
+      ]);
+      expect(refreshedState.hasMoreContent, isTrue);
+      expect(refreshedState.isRefreshing, isFalse);
+      expect(refreshedState.error, contains('recommendations refresh failed'));
+    });
 
     test(
       'for you load more uses recommendation cursor and appends unseen videos',
       () async {
         final requestedCursors = <String?>[];
+        final requestedSeeds = <String?>[];
         var recommendationsCallCount = 0;
 
         when(
@@ -752,11 +752,13 @@ void main() {
             fallback: any(named: 'fallback'),
             category: any(named: 'category'),
             cursor: any(named: 'cursor'),
+            seed: any(named: 'seed'),
             preferredLanguages: any(named: 'preferredLanguages'),
             viewerCountry: any(named: 'viewerCountry'),
           ),
         ).thenAnswer((invocation) {
           requestedCursors.add(invocation.namedArguments[#cursor] as String?);
+          requestedSeeds.add(invocation.namedArguments[#seed] as String?);
           recommendationsCallCount += 1;
           if (recommendationsCallCount == 1) {
             return Future.value(
@@ -815,6 +817,10 @@ void main() {
         ]);
         expect(loadedState.hasMoreContent, isTrue);
         expect(requestedCursors, [null, 'cursor-2']);
+        expect(requestedSeeds, hasLength(2));
+        expect(requestedSeeds.first, isNotNull);
+        expect(requestedSeeds.first, isNotEmpty);
+        expect(requestedSeeds.last, requestedSeeds.first);
       },
     );
 
@@ -822,6 +828,7 @@ void main() {
       'for you keeps loading when a cursor page adds no visible videos',
       () async {
         final requestedCursors = <String?>[];
+        final requestedSeeds = <String?>[];
         var recommendationsCallCount = 0;
 
         when(
@@ -831,11 +838,13 @@ void main() {
             fallback: any(named: 'fallback'),
             category: any(named: 'category'),
             cursor: any(named: 'cursor'),
+            seed: any(named: 'seed'),
             preferredLanguages: any(named: 'preferredLanguages'),
             viewerCountry: any(named: 'viewerCountry'),
           ),
         ).thenAnswer((invocation) {
           requestedCursors.add(invocation.namedArguments[#cursor] as String?);
+          requestedSeeds.add(invocation.namedArguments[#seed] as String?);
           recommendationsCallCount += 1;
           if (recommendationsCallCount == 1) {
             return Future.value(
@@ -913,6 +922,9 @@ void main() {
         ]);
         expect(nextPageState.hasMoreContent, isFalse);
         expect(requestedCursors, [null, 'cursor-2', 'cursor-3']);
+        expect(requestedSeeds, hasLength(3));
+        expect(requestedSeeds.toSet(), hasLength(1));
+        expect(requestedSeeds.first, isNotEmpty);
       },
     );
 
@@ -928,14 +940,13 @@ void main() {
             fallback: any(named: 'fallback'),
             category: any(named: 'category'),
             cursor: any(named: 'cursor'),
+            seed: any(named: 'seed'),
             preferredLanguages: any(named: 'preferredLanguages'),
             viewerCountry: any(named: 'viewerCountry'),
           ),
         ).thenAnswer((_) {
           recommendationsCallCount += 1;
-          return Future.value(
-            _recommendationsResponse(['for-you-legacy']),
-          );
+          return Future.value(_recommendationsResponse(['for-you-legacy']));
         });
 
         final container = ProviderContainer(

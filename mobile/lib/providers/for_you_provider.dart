@@ -14,6 +14,7 @@ import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 part 'for_you_provider.g.dart';
 
@@ -27,6 +28,7 @@ class ForYouFeed extends _$ForYouFeed {
   static const int _pageSize = 50;
 
   String? _nextCursor;
+  String _sessionSeed = generateRecommendationSessionSeed();
 
   @override
   Future<VideoFeedState> build() async {
@@ -100,6 +102,7 @@ class ForYouFeed extends _$ForYouFeed {
     }
 
     _nextCursor = null;
+    _sessionSeed = generateRecommendationSessionSeed();
     return _fetchRecommendations();
   }
 
@@ -118,6 +121,7 @@ class ForYouFeed extends _$ForYouFeed {
       final response = await client.getRecommendations(
         pubkey: currentUserPubkey,
         limit: _pageSize,
+        seed: _sessionSeed,
         preferredLanguages: hints.preferredLanguages,
         viewerCountry: hints.viewerCountry,
       );
@@ -201,6 +205,7 @@ class ForYouFeed extends _$ForYouFeed {
         pubkey: currentUserPubkey,
         limit: _pageSize,
         cursor: cursor,
+        seed: _sessionSeed,
         preferredLanguages: hints.preferredLanguages,
         viewerCountry: hints.viewerCountry,
       );
@@ -261,6 +266,9 @@ class ForYouFeed extends _$ForYouFeed {
       name: 'ForYouFeedProvider',
       category: LogCategory.video,
     );
+
+    _nextCursor = null;
+    _sessionSeed = generateRecommendationSessionSeed();
 
     await staleWhileRevalidate(
       getCurrentState: () => state,

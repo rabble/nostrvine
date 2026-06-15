@@ -4198,6 +4198,54 @@ void main() {
         expect(uri.queryParameters['cursor'], equals('rec-page-2'));
       });
 
+      test('sends session seed when provided', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async =>
+              http.Response('{"videos": [], "source": "popular"}', 200),
+        );
+
+        await client.getRecommendations(
+          pubkey: testPubkey,
+          cursor: 'rec-page-2',
+          seed: 'session-seed-1',
+        );
+
+        final uri =
+            verify(
+                  () => mockHttpClient.get(
+                    captureAny(),
+                    headers: any(named: 'headers'),
+                  ),
+                ).captured.single
+                as Uri;
+        expect(uri.path, equals('/api/users/$testPubkey/recommendations'));
+        expect(uri.queryParameters['cursor'], equals('rec-page-2'));
+        expect(uri.queryParameters['seed'], equals('session-seed-1'));
+      });
+
+      test('omits session seed when not provided', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async =>
+              http.Response('{"videos": [], "source": "popular"}', 200),
+        );
+
+        await client.getRecommendations(pubkey: testPubkey);
+
+        final uri =
+            verify(
+                  () => mockHttpClient.get(
+                    captureAny(),
+                    headers: any(named: 'headers'),
+                  ),
+                ).captured.single
+                as Uri;
+        expect(uri.queryParameters.containsKey('seed'), isFalse);
+      });
+
       test('sends viewer language and country hints', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
