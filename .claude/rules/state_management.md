@@ -297,9 +297,10 @@ readiness signal — `profileRepositoryProvider` and
 reads the nullable value and renders a loading / disabled
 affordance until it's non-null; the bloc never gets a chance to
 capture a stale instance, and there's nothing for this rule to
-guard. #3523 tracks the in-flight migration of `likes` / `comments`
-/ `reposts` to the same shape — once it ships, the four canonical
-sites this rule cites won't need this rule at all.
+guard. Migrating `likes` / `comments` / `reposts` to that same
+nullable-gated shape was evaluated in #3523 and closed as not
+planned — they stay under the rule below, where the `ValueKey`
+guard is the shipped defense.
 
 The rule below is the answer when Pattern A isn't available — when
 the provider has no clean "not ready" signal, or when restructuring
