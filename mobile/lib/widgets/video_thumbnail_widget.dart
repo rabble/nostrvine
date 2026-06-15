@@ -228,7 +228,7 @@ class _SafeNetworkImage extends StatelessWidget {
             null,
             NetworkImage(url),
           );
-          return _ImageWithDimensionsListener(
+          return ImageWithDimensionsListener(
             imageProvider: imageProvider,
             onImageDimensionsResolved: onImageDimensionsResolved == null
                 ? null
@@ -318,10 +318,18 @@ class _SafeNetworkImage extends StatelessWidget {
   }
 }
 
-class _ImageWithDimensionsListener extends StatefulWidget {
-  const _ImageWithDimensionsListener({
+/// Resolves [imageProvider] alongside the rendered [child] purely to report the
+/// decoded image's intrinsic dimensions via [onImageDimensionsResolved].
+///
+/// Used by the Image.network thumbnail path (which has no built-in dimension
+/// callback like [VineCachedImage]) so the aspect ratio can be recovered from
+/// the displayed image instead of a separate probe decode.
+@visibleForTesting
+class ImageWithDimensionsListener extends StatefulWidget {
+  const ImageWithDimensionsListener({
     required this.imageProvider,
     required this.child,
+    super.key,
     this.onImageDimensionsResolved,
   });
 
@@ -330,12 +338,12 @@ class _ImageWithDimensionsListener extends StatefulWidget {
   final Widget child;
 
   @override
-  State<_ImageWithDimensionsListener> createState() =>
+  State<ImageWithDimensionsListener> createState() =>
       _ImageWithDimensionsListenerState();
 }
 
 class _ImageWithDimensionsListenerState
-    extends State<_ImageWithDimensionsListener> {
+    extends State<ImageWithDimensionsListener> {
   ImageStream? _imageStream;
   ImageStreamListener? _listener;
 
@@ -346,7 +354,7 @@ class _ImageWithDimensionsListenerState
   }
 
   @override
-  void didUpdateWidget(covariant _ImageWithDimensionsListener oldWidget) {
+  void didUpdateWidget(covariant ImageWithDimensionsListener oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.imageProvider != widget.imageProvider) {
       _resolveImageStream();

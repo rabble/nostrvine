@@ -1,5 +1,8 @@
+import 'dart:ui' as ui;
+
 import 'package:blurhash_service/blurhash_service.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart' show SynchronousFuture;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' hide AspectRatio;
@@ -17,6 +20,33 @@ Finder _divineIcon(DivineIconName name) =>
 
 double _thumbnailAspectRatio(WidgetTester tester) =>
     tester.widget<AspectRatio>(find.byType(AspectRatio)).aspectRatio;
+
+/// An [ImageProvider] that synchronously yields a pre-built [ui.Image] so a
+/// widget test can drive the image stream without an async decode.
+class _SyncImageProvider extends ImageProvider<_SyncImageProvider> {
+  _SyncImageProvider(this.image);
+
+  final ui.Image image;
+
+  @override
+  Future<_SyncImageProvider> obtainKey(ImageConfiguration configuration) =>
+      SynchronousFuture<_SyncImageProvider>(this);
+
+  @override
+  ImageStreamCompleter loadImage(
+    _SyncImageProvider key,
+    ImageDecoderCallback decode,
+  ) => OneFrameImageStreamCompleter(
+    SynchronousFuture<ImageInfo>(ImageInfo(image: image)),
+  );
+}
+
+/// Creates a [ui.Image] of exactly [width] x [height] without an async decode.
+ui.Image _syncImage(int width, int height) {
+  final recorder = ui.PictureRecorder();
+  ui.Canvas(recorder);
+  return recorder.endRecording().toImageSync(width, height);
+}
 
 void main() {
   group('VideoThumbnailWidget', () {
@@ -179,6 +209,72 @@ void main() {
 
         expect(find.byType(Image), findsOneWidget);
         expect(find.byType(VineCachedImage), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'resolves aspect ratio via the Image.network path for Divine thumbnails',
+      (tester) async {
+        final divineHostedVideo = createTestVideoEvent(
+          id: 'test-divine-dims',
+          thumbnailUrl:
+              'https://media.divine.video/72d7eda61074b17e077fb9f4a8b48166cdeb65cb07e053aafa6e69d5fa165995.jpg',
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: VideoThumbnailWidget(
+                video: divineHostedVideo,
+                width: 200,
+                height: 200,
+              ),
+            ),
+          ),
+        );
+
+        expect(_thumbnailAspectRatio(tester), equals(2 / 3));
+
+        // The Image.network path has no built-in dimension callback, so it
+        // wraps the image in an ImageWithDimensionsListener to recover the
+        // aspect ratio from the displayed image.
+        final listener = tester.widget<ImageWithDimensionsListener>(
+          find.byType(ImageWithDimensionsListener),
+        );
+        listener.onImageDimensionsResolved!(640, 360);
+        await tester.pump();
+
+        expect(_thumbnailAspectRatio(tester), equals(640 / 360));
+      },
+    );
+
+    testWidgets(
+      'ImageWithDimensionsListener reports decoded image dimensions',
+      (
+        tester,
+      ) async {
+        final image = _syncImage(640, 360);
+        addTearDown(image.dispose);
+
+        int? width;
+        int? height;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ImageWithDimensionsListener(
+              imageProvider: _SyncImageProvider(image),
+              onImageDimensionsResolved: (w, h) {
+                width = w;
+                height = h;
+              },
+              child: const SizedBox.shrink(),
+            ),
+          ),
+        );
+
+        expect(width, equals(640));
+        expect(height, equals(360));
       },
     );
 
