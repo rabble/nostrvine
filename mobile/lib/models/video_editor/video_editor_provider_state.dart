@@ -37,6 +37,8 @@ class VideoEditorProviderState {
     this.selectedSound,
     this.contentWarnings = const {},
     this.proofManifestJson,
+    this.thumbnailTimestamp,
+    this.customThumbnailPath,
     GlobalKey? deleteButtonKey,
   }) : deleteButtonKey = deleteButtonKey ?? GlobalKey();
 
@@ -108,6 +110,20 @@ class VideoEditorProviderState {
   /// ProofMode attestation manifest JSON for the final rendered clip.
   final String? proofManifestJson;
 
+  /// User-selected cover position in the rendered video timeline.
+  ///
+  /// Persisted independently of [finalRenderedClip] so the chosen cover
+  /// survives a re-render — when the clip is invalidated and rebuilt (e.g.
+  /// reopening a draft and pressing Done), the rendered clip is recreated at
+  /// its default frame, but this timestamp re-applies the selected cover.
+  final Duration? thumbnailTimestamp;
+
+  /// Absolute path to the user-selected cover image.
+  ///
+  /// Kept separate from [finalRenderedClip] so cover displays (drafts list,
+  /// profile grid) survive the rendered clip being cleared on invalidation.
+  final String? customThumbnailPath;
+
   /// Whether the video is valid and ready to be posted.
   ///
   /// Returns true if:
@@ -156,6 +172,10 @@ class VideoEditorProviderState {
     AudioEvent? selectedSound,
     bool clearSelectedSound = false,
     Set<ContentLabel>? contentWarnings,
+    Duration? thumbnailTimestamp,
+    bool clearThumbnailTimestamp = false,
+    String? customThumbnailPath,
+    bool clearCustomThumbnailPath = false,
   }) {
     return VideoEditorProviderState(
       isProcessing: isProcessing ?? this.isProcessing,
@@ -191,6 +211,12 @@ class VideoEditorProviderState {
       proofManifestJson: clearProofManifestJson || clearFinalRenderedClip
           ? null
           : proofManifestJson ?? this.proofManifestJson,
+      thumbnailTimestamp: clearThumbnailTimestamp
+          ? null
+          : (thumbnailTimestamp ?? this.thumbnailTimestamp),
+      customThumbnailPath: clearCustomThumbnailPath
+          ? null
+          : (customThumbnailPath ?? this.customThumbnailPath),
     );
   }
 }

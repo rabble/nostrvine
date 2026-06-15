@@ -8,6 +8,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
@@ -166,6 +167,15 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         category: LogCategory.video,
       );
 
+      // A restored draft's text layers carry only the serialized Google Font
+      // family name. Re-register the editor fonts before the canvas imports
+      // the state history, otherwise the imported overlays fall back to the
+      // default font (see #5181).
+      if (mounted &&
+          ref.read(videoEditorProvider).editorStateHistory.isNotEmpty) {
+        await _preloadEditorTextFonts();
+      }
+
       if (mounted) {
         // Clips are now loaded — initialize the clip editor BLoC.
         final clips = ref.read(clipManagerProvider).clips;
@@ -190,6 +200,24 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     _bodySizeNotifier.dispose();
     _zoomMatrixNotifier.dispose();
     super.dispose();
+  }
+
+  /// Registers every text-overlay Google Font so a restored draft resolves
+  /// the font family stored on its text layers.
+  ///
+  /// Calling a `GoogleFonts.*` getter registers its [FontLoader] as a side
+  /// effect; the serialized [TextLayer] only keeps the family string, so the
+  /// loader must be re-registered each session before the overlays render.
+  /// Already-loaded fonts resolve instantly, so the timeout only guards the
+  /// first, uncached load.
+  Future<void> _preloadEditorTextFonts() async {
+    for (final font in VideoEditorConstants.textFonts) {
+      font();
+    }
+    await GoogleFonts.pendingFonts().timeout(
+      const Duration(seconds: 3),
+      onTimeout: () => const [],
+    );
   }
 
   /// Precaches stickers for faster display.

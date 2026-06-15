@@ -114,5 +114,79 @@ void main() {
 
       expect(cleared.selectedSound, isNull);
     });
+
+    test('thumbnailTimestamp defaults to null', () {
+      final state = VideoEditorProviderState();
+
+      expect(state.thumbnailTimestamp, isNull);
+    });
+
+    test('copyWith updates thumbnailTimestamp', () {
+      final state = VideoEditorProviderState();
+
+      final updated = state.copyWith(
+        thumbnailTimestamp: const Duration(seconds: 2),
+      );
+
+      expect(updated.thumbnailTimestamp, const Duration(seconds: 2));
+    });
+
+    test('thumbnailTimestamp survives clearFinalRenderedClip', () {
+      final state = VideoEditorProviderState(
+        thumbnailTimestamp: const Duration(seconds: 2),
+      );
+
+      final cleared = state.copyWith(clearFinalRenderedClip: true);
+
+      expect(
+        cleared.thumbnailTimestamp,
+        const Duration(seconds: 2),
+        reason:
+            'invalidating the rendered clip must not discard the selected '
+            'cover position',
+      );
+    });
+
+    test('copyWith with clearThumbnailTimestamp sets it to null', () {
+      final state = VideoEditorProviderState(
+        thumbnailTimestamp: const Duration(seconds: 2),
+      );
+
+      final cleared = state.copyWith(clearThumbnailTimestamp: true);
+
+      expect(cleared.thumbnailTimestamp, isNull);
+    });
+
+    test('customThumbnailPath defaults to null', () {
+      final state = VideoEditorProviderState();
+
+      expect(state.customThumbnailPath, isNull);
+    });
+
+    test('customThumbnailPath survives clearFinalRenderedClip', () {
+      final state = VideoEditorProviderState(
+        customThumbnailPath: '/docs/cover.jpg',
+      );
+
+      final cleared = state.copyWith(clearFinalRenderedClip: true);
+
+      expect(
+        cleared.customThumbnailPath,
+        '/docs/cover.jpg',
+        reason:
+            'invalidating the rendered clip must not discard the selected '
+            'cover image path',
+      );
+    });
+
+    test('copyWith with clearCustomThumbnailPath sets it to null', () {
+      final state = VideoEditorProviderState(
+        customThumbnailPath: '/docs/cover.jpg',
+      );
+
+      final cleared = state.copyWith(clearCustomThumbnailPath: true);
+
+      expect(cleared.customThumbnailPath, isNull);
+    });
   });
 }

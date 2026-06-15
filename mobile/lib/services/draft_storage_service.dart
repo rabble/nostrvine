@@ -159,6 +159,7 @@ class DraftStorageService {
         ],
         draft.finalRenderedClip?.video.file?.path,
         draft.finalRenderedClip?.thumbnailPath,
+        draft.customThumbnailPath,
       };
 
       final orphanedFiles = <String?>[
@@ -177,6 +178,8 @@ class DraftStorageService {
           ))
             existingDraft.finalRenderedClip?.thumbnailPath,
         ],
+        if (!newFilePaths.contains(existingDraft.customThumbnailPath))
+          existingDraft.customThumbnailPath,
       ];
 
       // Delete orphaned files (only if not referenced by clip library)
@@ -452,6 +455,13 @@ class DraftStorageService {
         clipsDao: _clipsDao,
       );
     }
+
+    // Delete the user-selected cover, which lives outside the clips.
+    await FileCleanupService.deleteFileIfUnreferenced(
+      draft.customThumbnailPath,
+      draftsDao: _draftsDao,
+      clipsDao: _clipsDao,
+    );
   }
 
   /// Clear all drafts from storage and delete associated files

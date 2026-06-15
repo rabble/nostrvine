@@ -490,7 +490,13 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       contentWarning: ContentLabel.toCsv(state.contentWarnings),
       finalRenderedClip: state.finalRenderedClip,
       proofManifestJson: state.proofManifestJson,
-      thumbnailTimestamp: state.finalRenderedClip?.thumbnailTimestamp,
+      // Prefer the persisted cover so the selection survives a re-render that
+      // resets finalRenderedClip's thumbnail to its default frame (see #5181).
+      thumbnailTimestamp:
+          state.thumbnailTimestamp ??
+          state.finalRenderedClip?.thumbnailTimestamp,
+      customThumbnailPath:
+          state.customThumbnailPath ?? state.finalRenderedClip?.thumbnailPath,
       videoReplyContext: ref.read(videoReplyContextProvider),
       shareReplyToFeed: state.shareReplyToFeed,
     );
@@ -808,6 +814,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       contentWarnings: draft.contentWarnings,
       finalRenderedClip: validFinalRenderedClip,
       clearFinalRenderedClip: validFinalRenderedClip == null,
+      thumbnailTimestamp: draft.thumbnailTimestamp,
+      clearThumbnailTimestamp: draft.thumbnailTimestamp == null,
+      customThumbnailPath: draft.customThumbnailPath,
+      clearCustomThumbnailPath: draft.customThumbnailPath == null,
     );
 
     _clipManager.replaceClips(clipsWithThumbnails);
@@ -855,7 +865,11 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   // === RENDERING & PUBLISHING ===
 
-  /// Update thumbnail path for a clip.
+  /// Update the selected cover for the rendered clip.
+  ///
+  /// Records [thumbnailTimestamp] on the state as well as the clip so the
+  /// chosen cover survives a later re-render (which rebuilds the clip with its
+  /// default thumbnail) and reaches publishing via [getActiveDraft].
   void updateCover({
     required String thumbnailPath,
     required Duration thumbnailTimestamp,
@@ -870,6 +884,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       return;
     }
     state = state.copyWith(
+      thumbnailTimestamp: thumbnailTimestamp,
+      customThumbnailPath: thumbnailPath,
       finalRenderedClip: finalRenderedClip.copyWith(
         thumbnailPath: thumbnailPath,
         thumbnailTimestamp: thumbnailTimestamp,

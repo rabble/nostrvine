@@ -299,7 +299,7 @@ class DraftListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final thumbnailPath = draft.clips.firstOrNull?.thumbnailPath;
+    final thumbnailPath = draft.coverThumbnailPath;
     final thumbnailExists =
         thumbnailPath != null && File(thumbnailPath).existsSync();
 

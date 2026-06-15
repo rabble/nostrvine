@@ -11,6 +11,7 @@ import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/utils/path_resolver.dart';
+import 'package:path/path.dart' as p;
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -44,6 +45,7 @@ class DivineVideoDraft {
     this.videoReplyContext,
     this.shareReplyToFeed = false,
     this.thumbnailTimestamp,
+    this.customThumbnailPath,
   });
 
   factory DivineVideoDraft.create({
@@ -67,6 +69,7 @@ class DivineVideoDraft {
     VideoReplyContext? videoReplyContext,
     bool shareReplyToFeed = false,
     Duration? thumbnailTimestamp,
+    String? customThumbnailPath,
   }) {
     final now = DateTime.now();
     return DivineVideoDraft(
@@ -94,6 +97,7 @@ class DivineVideoDraft {
       videoReplyContext: videoReplyContext,
       shareReplyToFeed: shareReplyToFeed,
       thumbnailTimestamp: thumbnailTimestamp,
+      customThumbnailPath: customThumbnailPath,
     );
   }
 
@@ -197,6 +201,11 @@ class DivineVideoDraft {
       thumbnailTimestamp: json['thumbnailTimestamp'] != null
           ? Duration(milliseconds: json['thumbnailTimestamp'] as int)
           : null,
+      customThumbnailPath: resolvePath(
+        json['customThumbnailPath'] as String?,
+        documentsPath,
+        useOriginalPath: useOriginalPath,
+      ),
     );
   }
 
@@ -264,6 +273,14 @@ class DivineVideoDraft {
   /// Position in the video used to generate the thumbnail.
   final Duration? thumbnailTimestamp;
 
+  /// Absolute path to the user-selected cover image.
+  ///
+  /// Persisted independently of [finalRenderedClip] so the chosen cover
+  /// survives the rendered clip being invalidated or cleared (e.g. reopening
+  /// a draft and editing it). Stored as a basename in JSON and resolved back
+  /// to an absolute path on load, matching the clip path handling (#5181).
+  final String? customThumbnailPath;
+
   /// Check if this draft has ProofMode data
   bool get hasProofMode => proofManifestJson != null;
 
@@ -316,6 +333,8 @@ class DivineVideoDraft {
     bool? shareReplyToFeed,
     Duration? thumbnailTimestamp,
     bool clearThumbnailTimestamp = false,
+    String? customThumbnailPath,
+    bool clearCustomThumbnailPath = false,
     bool skipUpdateLastModified = false,
   }) => DivineVideoDraft(
     id: id ?? this.id,
@@ -358,6 +377,9 @@ class DivineVideoDraft {
     thumbnailTimestamp: clearThumbnailTimestamp
         ? null
         : (thumbnailTimestamp ?? this.thumbnailTimestamp),
+    customThumbnailPath: clearCustomThumbnailPath
+        ? null
+        : (customThumbnailPath ?? this.customThumbnailPath),
   );
 
   static const _sentinel = Object();
@@ -393,6 +415,8 @@ class DivineVideoDraft {
     if (shareReplyToFeed) 'shareReplyToFeed': shareReplyToFeed,
     if (thumbnailTimestamp != null)
       'thumbnailTimestamp': thumbnailTimestamp!.inMilliseconds,
+    if (customThumbnailPath != null)
+      'customThumbnailPath': p.basename(customThumbnailPath!),
   };
 
   Set<ContentLabel> get contentWarnings => ContentLabel.fromCsv(contentWarning);
@@ -414,6 +438,15 @@ class DivineVideoDraft {
       return 'Just now';
     }
   }
+
+  /// Path to the thumbnail to display as this draft's cover.
+  ///
+  /// Prefers the durable user-selected cover, then the rendered clip's cover,
+  /// and finally the first source clip's thumbnail.
+  String? get coverThumbnailPath =>
+      customThumbnailPath ??
+      finalRenderedClip?.thumbnailPath ??
+      (clips.isNotEmpty ? clips.first.thumbnailPath : null);
 
   bool get hasTitle => title.trim().isNotEmpty;
   bool get hasDescription => description.trim().isNotEmpty;

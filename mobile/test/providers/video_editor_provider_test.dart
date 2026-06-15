@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -689,6 +690,43 @@ void main() {
           const Duration(seconds: 2),
         );
       });
+
+      test('persists the cover position on state so it survives a '
+          're-render', () {
+        final notifier = container.read(videoEditorProvider.notifier);
+
+        notifier.state = notifier.state.copyWith(
+          finalRenderedClip: DivineVideoClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 5),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+        );
+
+        notifier.updateCover(
+          thumbnailPath: '/docs/cover.jpg',
+          thumbnailTimestamp: const Duration(seconds: 2),
+        );
+
+        final state = container.read(videoEditorProvider);
+        expect(
+          state.thumbnailTimestamp,
+          const Duration(seconds: 2),
+          reason:
+              'updateCover must record the cover position on state, not '
+              'only on finalRenderedClip, so it survives invalidation',
+        );
+        expect(
+          state.customThumbnailPath,
+          '/docs/cover.jpg',
+          reason:
+              'updateCover must record the cover image path durably so cover '
+              'displays survive finalRenderedClip being cleared',
+        );
+      });
     });
 
     group('cancelRenderVideo', () {
@@ -1097,6 +1135,133 @@ void main() {
           () => mockDraftStorage.getDraftById(VideoEditorConstants.autoSaveId),
         ).called(1);
       });
+
+      test('restores the saved cover position onto state', () async {
+        final draft = DivineVideoDraft.create(
+          id: 'draft-1',
+          clips: [
+            DivineVideoClip(
+              id: 'c1',
+              video: EditorVideo.file('/docs/clip.mp4'),
+              duration: const Duration(seconds: 3),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: .vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Title',
+          description: '',
+          hashtags: const {},
+          selectedApproach: 'video',
+          thumbnailTimestamp: const Duration(milliseconds: 900),
+        );
+        when(
+          () => mockDraftStorage.getDraftById('draft-1'),
+        ).thenAnswer((_) async => draft);
+
+        final result = await container
+            .read(videoEditorProvider.notifier)
+            .restoreDraft('draft-1');
+
+        expect(result, isTrue);
+        expect(
+          container.read(videoEditorProvider).thumbnailTimestamp,
+          const Duration(milliseconds: 900),
+          reason: 'reopening a draft must restore the selected cover position',
+        );
+      });
+
+      test('restores the durable custom cover path onto state', () async {
+        final draft = DivineVideoDraft.create(
+          id: 'draft-1',
+          clips: [
+            DivineVideoClip(
+              id: 'c1',
+              video: EditorVideo.file('/docs/clip.mp4'),
+              duration: const Duration(seconds: 3),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: .vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Title',
+          description: '',
+          hashtags: const {},
+          selectedApproach: 'video',
+          thumbnailTimestamp: const Duration(milliseconds: 900),
+          customThumbnailPath: '/docs/cover.jpg',
+        );
+        when(
+          () => mockDraftStorage.getDraftById('draft-1'),
+        ).thenAnswer((_) async => draft);
+
+        await container
+            .read(videoEditorProvider.notifier)
+            .restoreDraft('draft-1');
+
+        expect(
+          container.read(videoEditorProvider).customThumbnailPath,
+          '/docs/cover.jpg',
+          reason:
+              'the selected cover image path must survive reopening a draft, '
+              'independently of finalRenderedClip (#5181)',
+        );
+      });
+    });
+  });
+
+  group('cover thumbnail persistence', () {
+    late ProviderContainer container;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
+    test('getActiveDraft sources thumbnailTimestamp from the persisted '
+        'cover position when finalRenderedClip is absent', () {
+      final notifier = container.read(videoEditorProvider.notifier);
+
+      container
+          .read(clipManagerProvider.notifier)
+          .addClip(
+            limitClipDuration: false,
+            video: EditorVideo.file('/docs/original.mp4'),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+            duration: const Duration(seconds: 2),
+          );
+
+      // The cover lives only on state, mirroring the window after invalidation
+      // clears finalRenderedClip but before a re-render.
+      notifier.state = notifier.state.copyWith(
+        thumbnailTimestamp: const Duration(milliseconds: 1200),
+        customThumbnailPath: '/docs/cover.jpg',
+      );
+
+      final draft = notifier.getActiveDraft();
+
+      expect(
+        draft.thumbnailTimestamp,
+        const Duration(milliseconds: 1200),
+        reason:
+            'the published cover is derived from draft.thumbnailTimestamp, so '
+            'it must reflect the selected position even without a rendered clip',
+      );
+      expect(
+        draft.customThumbnailPath,
+        '/docs/cover.jpg',
+        reason:
+            'the durable cover path must persist so the drafts list keeps '
+            'showing the selected cover after finalRenderedClip is cleared',
+      );
     });
   });
 }

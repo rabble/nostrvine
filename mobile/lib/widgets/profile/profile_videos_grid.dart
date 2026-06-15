@@ -81,7 +81,7 @@ class ActiveUploadsView extends Equatable {
           (
             draftId: upload.draft.id,
             title: upload.draft.title,
-            thumbnailPath: upload.draft.clips.firstOrNull?.thumbnailPath,
+            thumbnailPath: upload.draft.coverThumbnailPath,
           ),
     ]);
   }
