@@ -35,18 +35,36 @@ void main() {
 
   group('InviteApiClient', () {
     test('normalizes invite codes', () {
+      // Legacy single-use codes reshape to canonical XXXX-YYYY.
       expect(InviteApiClient.normalizeCode('ab12ef34'), 'AB12-EF34');
       expect(InviteApiClient.normalizeCode('ab12-ef34'), 'AB12-EF34');
-      expect(InviteApiClient.normalizeCode('ab-cd-12-34'), 'ABCD-1234');
+      expect(InviteApiClient.normalizeCode('AB12CD34'), 'AB12-CD34');
       expect(InviteApiClient.normalizeCode('abc'), 'ABC');
-      expect(InviteApiClient.normalizeCode('ABCDEFGHIJ'), 'ABCD-EFGH');
+
+      // Creator-format codes are preserved verbatim: the server resolves them
+      // via a creator-format lookup before its lenient single-use path, so
+      // re-dashing or truncating them would break redemption.
+      expect(InviteApiClient.normalizeCode('lele-pons'), 'LELE-PONS');
+      expect(InviteApiClient.normalizeCode('kingbach-7qpm'), 'KINGBACH-7QPM');
+      expect(InviteApiClient.normalizeCode('friends-of-joe'), 'FRIENDS-OF-JOE');
+      expect(InviteApiClient.normalizeCode('FRIENDS'), 'FRIENDS');
+      expect(InviteApiClient.normalizeCode('lele'), 'LELE');
+      // Behavior change: long pure-alpha input is no longer truncated to 8.
+      expect(InviteApiClient.normalizeCode('ABCDEFGHIJ'), 'ABCDEFGHIJ');
+      // Behavior change: multi-segment input is preserved as a creator code
+      // (server leniency still redeems it as the single-use ABCD-1234).
+      expect(InviteApiClient.normalizeCode('ab-cd-12-34'), 'AB-CD-12-34');
     });
 
     test('recognizes full invite code format', () {
       expect(InviteApiClient.looksLikeInviteCode('AB12-EF34'), isTrue);
       expect(InviteApiClient.looksLikeInviteCode('abcd1234'), isTrue);
       expect(InviteApiClient.looksLikeInviteCode('LELE-PONS'), isTrue);
-      expect(InviteApiClient.looksLikeInviteCode('AB12'), isFalse);
+      expect(InviteApiClient.looksLikeInviteCode('KINGBACH-7QPM'), isTrue);
+      expect(InviteApiClient.looksLikeInviteCode('FRIENDS'), isTrue);
+      // Behavior change: 4-char codes are valid creator format (length >= 3).
+      expect(InviteApiClient.looksLikeInviteCode('AB12'), isTrue);
+      expect(InviteApiClient.looksLikeInviteCode('AB'), isFalse);
       expect(InviteApiClient.looksLikeInviteCode(''), isFalse);
     });
 

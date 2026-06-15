@@ -46,23 +46,106 @@ class InviteApiClient {
   final InviteWarningLogger? _warningLogger;
   final bool _forceOpenOnboarding;
 
-  static String normalizeCode(String raw) {
-    final alphanumericOnly = raw.replaceAll(RegExp('[^A-Za-z0-9]'), '');
-    final uppercased = alphanumericOnly.toUpperCase();
-
-    if (uppercased.length <= 4) {
-      return uppercased;
+  /// Mirrors the invite-darshan server validator `is_valid_creator_format`
+  /// (divine-invite-darshan `src/codes.rs`): length 3-32, leading `A-Z`,
+  /// segments of `A-Z`/`0-9` joined by single `-`, each segment at most 16
+  /// chars, at most 4 segments, plus the 9-char disambiguation rule (a 9-char
+  /// code must contain a pure-alpha segment of length >= 2, otherwise it is a
+  /// single-use `XXXX-YYYY` code rather than a creator code). Keep in sync with
+  /// the server: it does a creator-format lookup on this exact (trimmed,
+  /// uppercased) string before falling back to the lenient single-use path.
+  static bool isValidCreatorFormat(String code) {
+    if (code.length < 3 || code.length > 32) {
+      return false;
+    }
+    final units = code.codeUnits;
+    bool isUpper(int c) => c >= 0x41 && c <= 0x5A;
+    bool isDigit(int c) => c >= 0x30 && c <= 0x39;
+    if (!isUpper(units.first)) {
+      return false;
     }
 
-    final prefix = uppercased.substring(0, 4);
-    final suffixEnd = uppercased.length > 8 ? 8 : uppercased.length;
-    final suffix = uppercased.substring(4, suffixEnd);
+    var segments = 0;
+    var segmentLength = 0;
+    var segmentHasDigit = false;
+    var hasPureAlphaSegmentGe2 = false;
+    for (final unit in units) {
+      if (isUpper(unit)) {
+        segmentLength++;
+      } else if (isDigit(unit)) {
+        segmentLength++;
+        segmentHasDigit = true;
+      } else if (unit == 0x2D) {
+        if (segmentLength == 0) {
+          return false;
+        }
+        if (!segmentHasDigit && segmentLength >= 2) {
+          hasPureAlphaSegmentGe2 = true;
+        }
+        segments++;
+        segmentLength = 0;
+        segmentHasDigit = false;
+      } else {
+        return false;
+      }
+      if (segmentLength > 16) {
+        return false;
+      }
+    }
+    if (segmentLength == 0) {
+      return false;
+    }
+    if (!segmentHasDigit && segmentLength >= 2) {
+      hasPureAlphaSegmentGe2 = true;
+    }
+    segments++;
+    if (segments > 4) {
+      return false;
+    }
+    if (code.length == 9 && !hasPureAlphaSegmentGe2) {
+      return false;
+    }
+    return true;
+  }
+
+  /// Legacy single-use codes are exactly eight alphanumerics shaped `XXXX-YYYY`.
+  static final RegExp _legacySingleUsePattern = RegExp(
+    r'^[A-Z0-9]{4}-[A-Z0-9]{4}$',
+  );
+
+  /// Normalizes a user-entered invite code.
+  ///
+  /// Creator-format codes are preserved verbatim — the server resolves these
+  /// with a creator-format lookup before its lenient single-use path, so
+  /// reshaping them (e.g. truncating or re-dashing) would break redemption. A
+  /// code is treated as creator-format when it is dashed (`LELE-PONS`,
+  /// `KINGBACH-7QPM`) or pure-alpha (`FRIENDS`, `LELE`); single-use codes are
+  /// always 9-char `XXXX-YYYY` with digits, so a digit-bearing undashed input
+  /// is treated as single-use and reshaped to the canonical `XXXX-YYYY` form.
+  /// The server's lenient resolver backstops redemption either way.
+  static String normalizeCode(String raw) {
+    final cleaned = raw.trim().toUpperCase();
+
+    final hasDigit = RegExp(r'[0-9]').hasMatch(cleaned);
+    if (isValidCreatorFormat(cleaned) && (cleaned.contains('-') || !hasDigit)) {
+      return cleaned;
+    }
+
+    final alphanumericOnly = cleaned.replaceAll(RegExp('[^A-Z0-9]'), '');
+    if (alphanumericOnly.length <= 4) {
+      return alphanumericOnly;
+    }
+
+    final prefix = alphanumericOnly.substring(0, 4);
+    final suffixEnd = alphanumericOnly.length > 8 ? 8 : alphanumericOnly.length;
+    final suffix = alphanumericOnly.substring(4, suffixEnd);
     return '$prefix-$suffix';
   }
 
   static bool looksLikeInviteCode(String raw) {
     final normalized = normalizeCode(raw);
-    return RegExp(r'^[A-Z0-9]{4}-[A-Z0-9]{4}$').hasMatch(normalized);
+    return _legacySingleUsePattern.hasMatch(normalized) ||
+        isValidCreatorFormat(normalized);
   }
 
   Future<InviteClientConfig> getClientConfig() async {
