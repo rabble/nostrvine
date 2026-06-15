@@ -1377,13 +1377,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             return PooledFullscreenVideoFeedScreen(
               source: extra.source,
               feedRepository: extra.feedRepository,
-              videosStream: extra.videosStream,
               initialIndex: extra.initialIndex,
               initialVideoId: extra.initialVideoId,
               initialStableId: extra.initialStableId,
-              onLoadMore: extra.onLoadMore,
-              hasMoreStream: extra.hasMoreStream,
-              removedIdsStream: extra.removedIdsStream,
               contextTitle: extra.contextTitle,
               trafficSource: extra.trafficSource,
               sourceDetail: extra.sourceDetail,

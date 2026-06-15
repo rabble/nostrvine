@@ -222,7 +222,6 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
           videos: _videosStreamController.stream.startWith(videoList),
         ),
         initialIndex: index,
-        removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         contextTitle: '#${widget.hashtag}',
         trafficSource: ViewTrafficSource.search,
         sourceDetail: widget.hashtag,

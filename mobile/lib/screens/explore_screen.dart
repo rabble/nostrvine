@@ -1278,7 +1278,6 @@ class _ExploreFeedContentState extends ConsumerState<_ExploreFeedContent> {
         videos: _streamController.stream.startWith(videos),
       ),
       initialIndex: safeIndex,
-      removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
       contextTitle: '',
       onPageChanged: (index) => context.go(ExploreScreen.pathForIndex(index)),
     );

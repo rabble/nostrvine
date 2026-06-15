@@ -47,47 +47,29 @@ Alignment fullscreenVideoMediaAlignment({required bool isPortrait}) {
 
 /// Arguments for navigating to PooledFullscreenVideoFeedScreen.
 ///
-/// Two mutually-exclusive sourcing modes are supported during the #3383
-/// migration:
-///
-/// * **ViewSource mode** (preferred): pass a [source] and a [feedRepository].
-///   The repository owns a lifecycle-stable, filtered stream so the fullscreen
-///   surface no longer depends on a caller-owned `StreamController`.
-/// * **Legacy stream mode**: pass a [videosStream] (+ optional [hasMoreStream]
-///   / [onLoadMore] / [removedIdsStream]). Retained until every call-site is
-///   migrated.
+/// The feed is described by a [source] and resolved through a
+/// [feedRepository]. The repository owns a lifecycle-stable, filtered stream
+/// so the fullscreen surface no longer depends on a caller-owned
+/// `StreamController` (see issue #3383).
 class PooledFullscreenVideoFeedArgs {
   const PooledFullscreenVideoFeedArgs({
+    required this.source,
+    required this.feedRepository,
     required this.initialIndex,
-    this.source,
-    this.feedRepository,
-    this.videosStream,
     this.initialVideoId,
     this.initialStableId,
-    this.onLoadMore,
-    this.hasMoreStream,
-    this.removedIdsStream,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
     this.autoOpenComments = false,
     this.onPageChanged,
-  }) : assert(
-         (source != null && feedRepository != null) || videosStream != null,
-         'Provide either a (source + feedRepository) pair or a videosStream.',
-       );
+  });
 
-  /// The feed to display, resolved via [feedRepository]. When set, takes
-  /// precedence over [videosStream] / [hasMoreStream] / [onLoadMore].
-  final ViewSource? source;
+  /// The feed to display, resolved via [feedRepository].
+  final ViewSource source;
 
   /// Repository used to resolve [source] into a live, filtered feed.
-  final FeedRepository? feedRepository;
-
-  /// Legacy stream of videos from the source (BLoC or provider).
-  ///
-  /// Ignored when [source] is provided.
-  final Stream<List<VideoEvent>>? videosStream;
+  final FeedRepository feedRepository;
 
   /// Initial video index to start playback.
   final int initialIndex;
@@ -99,17 +81,6 @@ class PooledFullscreenVideoFeedArgs {
   /// Optional stable id fallback for addressable videos whose event id may
   /// change after metadata updates.
   final String? initialStableId;
-
-  /// Callback to trigger pagination on the source.
-  final VoidCallback? onLoadMore;
-
-  /// Stream of whether the source can paginate further.
-  final Stream<bool>? hasMoreStream;
-
-  /// Side-channel for "this video must be dropped now" — fed from
-  /// [VideoEventService.removedVideoIds]. Optional so that callers
-  /// pre-dating the deletion-bus migration keep working.
-  final Stream<String>? removedIdsStream;
 
   /// Optional title for context display.
   final String? contextTitle;
@@ -172,46 +143,27 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   static const path = '/pooled-video-feed';
 
   const PooledFullscreenVideoFeedScreen({
+    required this.source,
+    required this.feedRepository,
     required this.initialIndex,
-    this.source,
-    this.feedRepository,
-    this.videosStream,
     this.initialVideoId,
     this.initialStableId,
-    this.onLoadMore,
-    this.hasMoreStream,
-    this.removedIdsStream,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
     this.autoOpenComments = false,
     this.onPageChanged,
     super.key,
-  }) : assert(
-         (source != null && feedRepository != null) || videosStream != null,
-         'Provide either a (source + feedRepository) pair or a videosStream.',
-       );
+  });
 
-  /// The feed to display, resolved via [feedRepository]. When set, takes
-  /// precedence over [videosStream] / [hasMoreStream] / [onLoadMore].
-  final ViewSource? source;
+  /// The feed to display, resolved via [feedRepository].
+  final ViewSource source;
 
   /// Repository used to resolve [source] into a live, filtered feed.
-  final FeedRepository? feedRepository;
-
-  /// Legacy stream of videos from the source. Ignored when [source] is set.
-  final Stream<List<VideoEvent>>? videosStream;
+  final FeedRepository feedRepository;
   final int initialIndex;
   final String? initialVideoId;
   final String? initialStableId;
-  final VoidCallback? onLoadMore;
-  final Stream<bool>? hasMoreStream;
-
-  /// Side-channel that emits a video id whenever the underlying service
-  /// has marked it removed (deletion / future block / mute). Optional so
-  /// not-yet-migrated callers keep working — without the wire-up the
-  /// fullscreen falls back to today's stale behaviour.
-  final Stream<String>? removedIdsStream;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -242,35 +194,24 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
         .read(contentBlocklistRepositoryProvider)
         .shouldFilterFromFeeds;
 
-    // ViewSource mode resolves the feed through the repository (lifecycle-
-    // stable, filtered at the boundary). Legacy mode uses the caller-supplied
-    // streams. Exactly one is set (enforced by the constructor assert).
-    final source = this.source;
-    final feedRepository = this.feedRepository;
-    final Stream<List<VideoEvent>> resolvedVideosStream;
-    final Stream<bool>? resolvedHasMoreStream;
-    final VoidCallback? resolvedOnLoadMore;
-    if (source != null && feedRepository != null) {
-      resolvedVideosStream = feedRepository.watchView(source);
-      resolvedHasMoreStream = feedRepository.watchHasMore(source);
-      resolvedOnLoadMore = () => unawaited(feedRepository.loadMore(source));
-    } else {
-      resolvedVideosStream = videosStream!;
-      resolvedHasMoreStream = hasMoreStream;
-      resolvedOnLoadMore = onLoadMore;
-    }
+    // The removal bus is wired internally (no longer a per-caller parameter):
+    // deletion / block / mute emit a removed id here and the bloc drops it,
+    // independent of whichever widget opened the route. See #3383.
+    final removedIdsStream = ref
+        .read(videoEventServiceProvider)
+        .removedVideoIds;
 
     return MultiBlocProvider(
       providers: [
         BlocProvider(
           create: (_) => FullscreenFeedBloc(
-            videosStream: resolvedVideosStream,
+            videosStream: feedRepository.watchView(source),
             initialIndex: initialIndex,
             initialVideoId: initialVideoId,
             initialStableId: initialStableId,
-            hasMoreStream: resolvedHasMoreStream,
+            hasMoreStream: feedRepository.watchHasMore(source),
             removedIdsStream: removedIdsStream,
-            onLoadMore: resolvedOnLoadMore,
+            onLoadMore: () => unawaited(feedRepository.loadMore(source)),
             mediaCache: mediaCache,
             blossomAuthService: blossomAuthService,
             blockFilter: blockFilter,

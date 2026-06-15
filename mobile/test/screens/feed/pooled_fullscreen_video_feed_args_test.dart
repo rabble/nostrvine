@@ -1,10 +1,11 @@
-// ABOUTME: Tests PooledFullscreenVideoFeedArgs sourcing-mode invariants (#3383).
-// ABOUTME: Either a ViewSource+FeedRepository pair or a legacy videosStream.
+// ABOUTME: Tests PooledFullscreenVideoFeedArgs requires a ViewSource +
+// ABOUTME: FeedRepository pair (#3383).
 
 import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 
 VideoEvent _video(String id) => VideoEvent(
   id: id,
@@ -16,44 +17,32 @@ VideoEvent _video(String id) => VideoEvent(
 
 void main() {
   group('PooledFullscreenVideoFeedArgs', () {
-    test('accepts a ViewSource + FeedRepository pair', () {
+    test('exposes the ViewSource + FeedRepository pair', () {
+      final repository = StaticFeedRepository();
       final args = PooledFullscreenVideoFeedArgs(
         source: SingleVideoViewSource(_video('1')),
-        feedRepository: StaticFeedRepository(),
+        feedRepository: repository,
         initialIndex: 0,
       );
 
       expect(args.source, isA<SingleVideoViewSource>());
-      expect(args.feedRepository, isNotNull);
-      expect(args.videosStream, isNull);
+      expect(args.feedRepository, same(repository));
+      expect(args.initialIndex, 0);
     });
 
-    test('accepts a legacy videosStream', () {
+    test('carries optional presentation fields', () {
       final args = PooledFullscreenVideoFeedArgs(
-        videosStream: Stream<List<VideoEvent>>.value([_video('1')]),
-        initialIndex: 0,
+        source: const ForYouViewSource(),
+        feedRepository: StaticFeedRepository(),
+        initialIndex: 2,
+        contextTitle: 'For You',
+        trafficSource: ViewTrafficSource.discoveryForYou,
+        autoOpenComments: true,
       );
 
-      expect(args.videosStream, isNotNull);
-      expect(args.source, isNull);
-      expect(args.feedRepository, isNull);
-    });
-
-    test('rejects a source without a repository', () {
-      expect(
-        () => PooledFullscreenVideoFeedArgs(
-          source: const ForYouViewSource(),
-          initialIndex: 0,
-        ),
-        throwsA(isA<AssertionError>()),
-      );
-    });
-
-    test('rejects neither sourcing mode', () {
-      expect(
-        () => PooledFullscreenVideoFeedArgs(initialIndex: 0),
-        throwsA(isA<AssertionError>()),
-      );
+      expect(args.contextTitle, 'For You');
+      expect(args.trafficSource, ViewTrafficSource.discoveryForYou);
+      expect(args.autoOpenComments, isTrue);
     });
   });
 }

@@ -1036,7 +1036,6 @@ class _SoundVideoFeedOverlay extends ConsumerWidget {
           source: VideoListViewSource(videos),
           feedRepository: StaticFeedRepository(),
           initialIndex: startIndex,
-          removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
           contextTitle: soundTitle,
         ),
 

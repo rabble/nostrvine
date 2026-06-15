@@ -10,7 +10,6 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
@@ -120,7 +119,6 @@ class _VideosContentState extends ConsumerState<_VideosContent> {
           onLoadMore: () async => bloc.add(const VideoSearchLoadMore()),
         ),
         initialIndex: index,
-        removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         contextTitle: 'Search Results',
         trafficSource: ViewTrafficSource.search,
         sourceDetail: bloc.state.query,

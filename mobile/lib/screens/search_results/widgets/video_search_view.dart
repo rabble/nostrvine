@@ -11,7 +11,6 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/search_results/widgets/videos_section.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -114,7 +113,6 @@ class _VideoSearchGridState extends ConsumerState<_VideoSearchGrid>
           onLoadMore: () async => bloc.add(const VideoSearchLoadMore()),
         ),
         initialIndex: index,
-        removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         contextTitle: context.l10n.soundsSearchResults,
         trafficSource: ViewTrafficSource.search,
         sourceDetail: bloc.state.query,

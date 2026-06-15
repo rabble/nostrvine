@@ -247,7 +247,6 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           source: VideoListViewSource(videos),
           feedRepository: StaticFeedRepository(),
           initialIndex: _activeVideoIndex!,
-          removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
           contextTitle: widget.listName,
           trafficSource: ViewTrafficSource.search,
         ),

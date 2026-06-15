@@ -11,7 +11,6 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/features/people_lists/people_lists.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -484,9 +483,6 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
               source: VideoListViewSource(videos),
               feedRepository: StaticFeedRepository(),
               initialIndex: _activeVideoIndex!,
-              removedIdsStream: ref
-                  .read(videoEventServiceProvider)
-                  .removedVideoIds,
               contextTitle: userList.name,
             ),
             // Header bar showing list name and back button

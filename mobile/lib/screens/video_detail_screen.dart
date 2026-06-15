@@ -302,7 +302,6 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
           source: SingleVideoViewSource(_video!),
           feedRepository: StaticFeedRepository(),
           initialIndex: 0,
-          removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
           contextTitle: 'Shared Video',
           trafficSource: ViewTrafficSource.share,
           autoOpenComments: widget.autoOpenComments,

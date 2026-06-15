@@ -122,9 +122,6 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
                       ),
                     ),
                     initialIndex: index,
-                    removedIdsStream: ref
-                        .read(videoEventServiceProvider)
-                        .removedVideoIds,
                     contextTitle: localizedCategoryName(
                       context.l10n,
                       widget.category.name,
