@@ -1419,7 +1419,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           onCompleteWithParameters: _handleEditorComplete,
           mainEditorCallbacks: MainEditorCallbacks(
             onEditorZoomMatrix4Change: (matrix) =>
-                scope.zoomMatrixNotifier?.value = matrix,
+                scope.zoomMatrixNotifier.value = matrix,
             onAfterViewInit: () {
               _isInitialized = true;
 
@@ -1758,7 +1758,6 @@ class _OverlayCutArea extends ConsumerWidget {
     final overlayColor = VineTheme.backgroundCamera.withAlpha(166);
     final safeArea = MediaQuery.paddingOf(context);
     final scope = VideoEditorScope.of(context);
-    final zoomMatrixNotifier = scope.zoomMatrixNotifier;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1790,25 +1789,19 @@ class _OverlayCutArea extends ConsumerWidget {
           children: [
             child,
 
-            // When the scope exposes a zoom notifier, the scrim tracks the
-            // editor's pinch-zoom; otherwise (e.g. widget tests) it renders
-            // untransformed.
-            if (zoomMatrixNotifier == null)
-              scrimBars
-            else
-              ValueListenableBuilder<Matrix4>(
-                valueListenable: zoomMatrixNotifier,
-                builder: (context, matrix, child) => Transform(
-                  transform: scrimZoomTransform(
-                    editorMatrix: matrix,
-                    boxSize: boxSize,
-                    targetSize: Size(childWidth, childHeight),
-                    originalAspectRatio: scope.originalClipAspectRatio,
-                  ),
-                  child: child,
+            ValueListenableBuilder<Matrix4>(
+              valueListenable: scope.zoomMatrixNotifier,
+              builder: (context, matrix, child) => Transform(
+                transform: scrimZoomTransform(
+                  editorMatrix: matrix,
+                  boxSize: boxSize,
+                  targetSize: Size(childWidth, childHeight),
+                  originalAspectRatio: scope.originalClipAspectRatio,
                 ),
-                child: scrimBars,
+                child: child,
               ),
+              child: scrimBars,
+            ),
           ],
         );
       },

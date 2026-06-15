@@ -83,6 +83,7 @@ void main() {
                 removeAreaKey: GlobalKey(),
                 originalClipAspectRatio: 9 / 16,
                 bodySizeNotifier: ValueNotifier(const Size(400, 600)),
+                zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
                 fromLibrary: false,
                 onOpenCamera: () {},
                 onOpenClipsEditor: () {},

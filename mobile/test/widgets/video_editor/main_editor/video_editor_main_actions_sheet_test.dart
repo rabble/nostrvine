@@ -146,6 +146,7 @@ Widget _buildWidget({
     onOpenMusicLibrary: onOpenMusicLibrary ?? () {},
     originalClipAspectRatio: 9 / 16,
     bodySizeNotifier: ValueNotifier(const Size(400, 800)),
+    zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
     fromLibrary: false,
   );
 
@@ -173,6 +174,7 @@ Widget _buildWidget({
               onOpenMusicLibrary: scope.onOpenMusicLibrary,
               originalClipAspectRatio: scope.originalClipAspectRatio,
               bodySizeNotifier: scope.bodySizeNotifier,
+              zoomMatrixNotifier: scope.zoomMatrixNotifier,
               fromLibrary: scope.fromLibrary,
               child: VideoEditorMainActionsSheet(scope: scope),
             ),

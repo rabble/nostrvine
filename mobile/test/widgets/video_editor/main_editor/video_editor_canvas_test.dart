@@ -40,6 +40,7 @@ void main() {
               onAddEditTextLayer: ([_]) async => null,
               originalClipAspectRatio: 9 / 16,
               bodySizeNotifier: bodySizeNotifier,
+              zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
               fromLibrary: false,
               child: const Scaffold(body: VideoEditorCanvas()),
             ),
