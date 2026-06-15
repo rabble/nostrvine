@@ -1,11 +1,13 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/blocs/list_search/list_search_bloc.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_filter_pill.dart';
 
 /// App bar for the search results screen.
@@ -111,6 +113,18 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
     context.read<ListSearchBloc>().add(ListSearchQueryChanged(query));
   }
 
+  // Pop when there's a back stack; otherwise fall back to Explore. The search
+  // screen can be entered via `context.go(...)` (e.g. a username-mention tap)
+  // or a cold-start deep link, both of which leave nothing to pop — a bare
+  // `Navigator.maybePop()` would then silently do nothing and strand the user.
+  void _handleBack() {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go(ExploreScreen.path);
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -124,7 +138,7 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
               icon: DivineIconName.caretLeft,
               type: DivineIconButtonType.secondary,
               size: DivineIconButtonSize.small,
-              onPressed: () => Navigator.of(context).maybePop(),
+              onPressed: _handleBack,
               semanticLabel: context.l10n.commonBack,
             ),
             Expanded(

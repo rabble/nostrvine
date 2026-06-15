@@ -110,7 +110,7 @@ class _SelectableLinkifiedTextState
   }
 
   void _navigateToSearch(BuildContext context, String username) {
-    context.go(
+    context.push(
       SearchResultsPage.pathForQuery(username, requestFocusOnMount: false),
     );
   }

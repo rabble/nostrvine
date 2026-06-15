@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,9 +9,11 @@ import 'package:openvine/blocs/list_search/list_search_bloc.dart';
 import 'package:openvine/blocs/search_results_filter/search_results_filter.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_filter_pill.dart';
 import 'package:openvine/screens/search_results/widgets/search_results_app_bar.dart';
 
+import '../../../helpers/go_router.dart';
 import '../../../helpers/test_provider_overrides.dart';
 
 class _MockSearchResultsFilterCubit extends MockCubit<SearchResultsFilter>
@@ -314,6 +317,72 @@ void main() {
         verify(
           () => mockListSearchBloc.add(const ListSearchQueryChanged('')),
         ).called(1);
+      },
+    );
+
+    Widget createBackButtonSubject(MockGoRouter goRouter) {
+      final controller = TextEditingController(text: 'test');
+      addTearDown(controller.dispose);
+      return testMaterialApp(
+        home: MockGoRouterProvider(
+          goRouter: goRouter,
+          child: MultiBlocProvider(
+            providers: [
+              BlocProvider<SearchResultsFilterCubit>.value(
+                value: mockFilterCubit,
+              ),
+              BlocProvider<UserSearchBloc>.value(value: mockUserSearchBloc),
+              BlocProvider<VideoSearchBloc>.value(value: mockVideoSearchBloc),
+              BlocProvider<HashtagSearchBloc>.value(
+                value: mockHashtagSearchBloc,
+              ),
+              BlocProvider<ListSearchBloc>.value(value: mockListSearchBloc),
+            ],
+            child: Scaffold(
+              body: SearchResultsAppBar(
+                controller: controller,
+                initialQuery: 'test',
+              ),
+            ),
+          ),
+        ),
+        mockAuthService: createMockAuthService(),
+      );
+    }
+
+    testWidgets('back button pops when there is a route to pop', (
+      tester,
+    ) async {
+      final goRouter = MockGoRouter();
+      when(goRouter.canPop).thenReturn(true);
+      when(() => goRouter.pop<Object?>()).thenReturn(null);
+
+      await tester.pumpWidget(createBackButtonSubject(goRouter));
+      await tester.pump();
+
+      await tester.tap(find.byType(DivineIconButton));
+      await tester.pump();
+
+      verify(() => goRouter.pop<Object?>()).called(1);
+      verifyNever(() => goRouter.go(any()));
+    });
+
+    testWidgets(
+      'back button falls back to Explore when the back stack is empty '
+      '(reached via context.go or a cold-start deep link)',
+      (tester) async {
+        final goRouter = MockGoRouter();
+        when(goRouter.canPop).thenReturn(false);
+        when(() => goRouter.go(any())).thenReturn(null);
+
+        await tester.pumpWidget(createBackButtonSubject(goRouter));
+        await tester.pump();
+
+        await tester.tap(find.byType(DivineIconButton));
+        await tester.pump();
+
+        verify(() => goRouter.go(ExploreScreen.path)).called(1);
+        verifyNever(() => goRouter.pop<Object?>());
       },
     );
   });
