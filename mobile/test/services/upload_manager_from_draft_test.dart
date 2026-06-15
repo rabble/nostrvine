@@ -41,6 +41,7 @@ void main() {
         ..setApplicationDocumentsPath('${tempDir.path}/documents')
         ..setApplicationSupportPath('${tempDir.path}/support');
       PathProviderPlatform.instance = mockPathProvider;
+      await TestHelpers.cleanupHiveBox('pending_uploads');
       sourceVideoFile = File('${tempDir.path}/source_video.mp4')
         ..writeAsBytesSync([0, 1, 2, 3]);
 
@@ -81,6 +82,7 @@ void main() {
       if (Hive.isBoxOpen('pending_uploads')) {
         await Hive.box<PendingUpload>('pending_uploads').close();
       }
+      await Hive.deleteBoxFromDisk('pending_uploads');
       PathProviderPlatform.instance = originalPathProviderInstance;
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
