@@ -39,10 +39,6 @@ class CategoryGalleryScreen extends ConsumerStatefulWidget {
 }
 
 class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
-  final StreamController<List<VideoEvent>> _videosStreamController =
-      StreamController<List<VideoEvent>>.broadcast();
-  final StreamController<bool> _hasMoreStreamController =
-      StreamController<bool>.broadcast();
   late final CategoriesBloc _bloc;
 
   @override
@@ -58,8 +54,6 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
   @override
   void dispose() {
     _bloc.close();
-    _videosStreamController.close();
-    _hasMoreStreamController.close();
     super.dispose();
   }
 
@@ -73,65 +67,57 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
 
     return BlocProvider.value(
       value: _bloc,
-      child: BlocListener<CategoriesBloc, CategoriesState>(
-        listenWhen: (previous, current) =>
-            previous.videos != current.videos ||
-            previous.hasMoreVideos != current.hasMoreVideos,
-        listener: (_, state) {
-          _videosStreamController.add(state.videos);
-          _hasMoreStreamController.add(state.hasMoreVideos);
-        },
-        child: BlocBuilder<CategoriesBloc, CategoriesState>(
-          builder: (context, state) {
-            return CategoryGalleryView(
-              category: widget.category,
-              state: state,
-              onBack: context.pop,
-              onRetry: () {
-                context.read<CategoriesBloc>().add(
-                  CategorySelected(widget.category),
-                );
-              },
-              onSortChanged: (sort) {
-                context.read<CategoriesBloc>().add(
-                  CategoryVideosSortChanged(sort),
-                );
-              },
-              onRefresh: () async {
-                context.read<CategoriesBloc>().add(
-                  CategorySelected(widget.category),
-                );
-              },
-              onLoadMore: () async {
-                context.read<CategoriesBloc>().add(
-                  const CategoryVideosLoadMore(),
-                );
-              },
-              onVideoTap: (videos, index) {
-                context.push(
-                  PooledFullscreenVideoFeedScreen.path,
-                  extra: PooledFullscreenVideoFeedArgs(
-                    source: CategoryViewSource(widget.category.name),
-                    feedRepository: StreamFeedRepository(
-                      videos: _videosStreamController.stream.startWith(videos),
-                      hasMore: _hasMoreStreamController.stream.startWith(
-                        state.hasMoreVideos,
-                      ),
-                      onLoadMore: () async => _bloc.add(
-                        const CategoryVideosLoadMore(),
-                      ),
-                    ),
-                    initialIndex: index,
-                    contextTitle: localizedCategoryName(
-                      context.l10n,
-                      widget.category.name,
-                    ),
+      child: BlocBuilder<CategoriesBloc, CategoriesState>(
+        builder: (context, state) {
+          return CategoryGalleryView(
+            category: widget.category,
+            state: state,
+            onBack: context.pop,
+            onRetry: () {
+              context.read<CategoriesBloc>().add(
+                CategorySelected(widget.category),
+              );
+            },
+            onSortChanged: (sort) {
+              context.read<CategoriesBloc>().add(
+                CategoryVideosSortChanged(sort),
+              );
+            },
+            onRefresh: () async {
+              context.read<CategoriesBloc>().add(
+                CategorySelected(widget.category),
+              );
+            },
+            onLoadMore: () async {
+              context.read<CategoriesBloc>().add(
+                const CategoryVideosLoadMore(),
+              );
+            },
+            onVideoTap: (videos, index) {
+              context.push(
+                PooledFullscreenVideoFeedScreen.path,
+                extra: PooledFullscreenVideoFeedArgs(
+                  source: CategoryViewSource(widget.category.name),
+                  feedRepository: StreamFeedRepository(
+                    videos: _bloc.stream
+                        .map((state) => state.videos)
+                        .startWith(videos),
+                    hasMore: _bloc.stream
+                        .map((state) => state.hasMoreVideos)
+                        .startWith(state.hasMoreVideos),
+                    onLoadMore: () async =>
+                        _bloc.add(const CategoryVideosLoadMore()),
                   ),
-                );
-              },
-            );
-          },
-        ),
+                  initialIndex: index,
+                  contextTitle: localizedCategoryName(
+                    context.l10n,
+                    widget.category.name,
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

@@ -59,7 +59,11 @@ void main() {
         throwsUnsupportedError,
       );
       expect(
-        () => repository.watchView(const HashtagViewSource('vine')),
+        () => repository.watchView(const SearchViewSource('cats')),
+        throwsUnsupportedError,
+      );
+      expect(
+        () => repository.watchView(const CategoryViewSource('animals')),
         throwsUnsupportedError,
       );
     });

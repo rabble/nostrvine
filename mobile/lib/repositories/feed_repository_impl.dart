@@ -9,8 +9,12 @@ import 'package:models/models.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/for_you_provider.dart';
+import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/new_videos_feed_provider.dart';
 import 'package:openvine/providers/popular_videos_feed_provider.dart';
+import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -27,11 +31,15 @@ enum _GlobalFeed { forYou, popular, classicVines, newVideos }
 ///   [ClassicVinesViewSource], [NewVideosViewSource]) — delegated to their
 ///   keepAlive feed providers, which already apply the block / platform
 ///   boundary filter in `build()`;
+/// * the aggregated Explore feed ([ExploreViewSource]) — backed reactively by
+///   `exploreTabVideosProvider`;
+/// * hashtag feeds ([HashtagViewSource]) — a boundary-filtered snapshot built
+///   from `HashtagService` + the Funnelcake REST interleave;
 /// * static sources ([SingleVideoViewSource], [VideoListViewSource]) —
 ///   delegated to a [StaticFeedRepository].
 ///
 /// Scoped, per-widget sources (profile feed and the liked / reposts / saved /
-/// collabs sub-feeds, hashtag, search, ...) are owned by their existing blocs.
+/// collabs sub-feeds, search, category, ...) are owned by their existing blocs.
 /// Those surfaces wrap their bloc's stream in a [StreamFeedRepository] at the
 /// call site rather than routing through this global repository, because the
 /// underlying blocs are constructed per-widget with per-call dependencies and
@@ -64,6 +72,94 @@ class RiverpodFeedRepository implements FeedRepository {
 
   bool _isStatic(ViewSource source) =>
       source is SingleVideoViewSource || source is VideoListViewSource;
+
+  /// Applies the standard feed boundary filter (platform support + blocklist)
+  /// used by every feed surface.
+  List<VideoEvent> _applyBoundaryFilter(List<VideoEvent> videos) {
+    final videoEventService = _ref.read(videoEventServiceProvider);
+    final blocklist = _ref.read(contentBlocklistRepositoryProvider);
+    return videoEventService.filterVideoList(
+      videos
+          .where((v) => v.isSupportedOnCurrentPlatform)
+          .where((v) => !blocklist.shouldFilterFromFeeds(v.pubkey))
+          .toList(),
+    );
+  }
+
+  /// Live stream of the aggregated Explore tab feed.
+  ///
+  /// Backed by [exploreTabVideosProvider] (a `StateProvider`) so the open
+  /// fullscreen route reflects later Explore updates without a widget-owned
+  /// `StreamController`.
+  Stream<List<VideoEvent>> _watchExplore() {
+    final controller = StreamController<List<VideoEvent>>();
+    final subscription = _ref.listen<List<VideoEvent>?>(
+      exploreTabVideosProvider,
+      (_, next) {
+        if (controller.isClosed) return;
+        controller.add(_applyBoundaryFilter(next ?? const []));
+      },
+      fireImmediately: true,
+    );
+    controller.onCancel = () {
+      subscription.close();
+      return controller.close();
+    };
+    return controller.stream;
+  }
+
+  /// One-shot snapshot of a hashtag feed.
+  ///
+  /// Combines the cached WebSocket hashtag bucket with the Funnelcake REST
+  /// interleave, filtered at the boundary. A snapshot (not a live stream) is
+  /// the right shape here because [HashtagService] is pulled imperatively and
+  /// exposes no reactive stream; the removal bus still drops deleted / blocked
+  /// videos from the open fullscreen route.
+  Stream<List<VideoEvent>> _watchHashtag(String hashtag) {
+    return Stream<List<VideoEvent>>.fromFuture(_loadHashtag(hashtag));
+  }
+
+  Future<List<VideoEvent>> _loadHashtag(String hashtag) async {
+    final hashtagService = _ref.read(hashtagServiceProvider);
+    final videosRepository = _ref.read(videosRepositoryProvider);
+
+    final webSocketVideos = List<VideoEvent>.from(
+      hashtagService.getVideosByHashtags([hashtag]),
+    );
+
+    List<VideoEvent> popular = const [];
+    try {
+      final result = await videosRepository.getHashtagFeedVideos(
+        hashtag: hashtag,
+      );
+      if (result.succeeded) popular = result.videos;
+    } on Exception {
+      // Fall back to the WebSocket bucket only — matches the screen's
+      // preserve-cached-on-failure behaviour.
+    }
+
+    final List<VideoEvent> combined;
+    if (popular.isEmpty) {
+      combined = webSocketVideos..sort(VideoEvent.compareByLoopsThenTime);
+    } else {
+      final knownIds = <String>{};
+      for (final v in popular) {
+        if (v.id.isNotEmpty) knownIds.add(v.id.toLowerCase());
+        final vineId = v.vineId;
+        if (vineId != null && vineId.isNotEmpty) {
+          knownIds.add(vineId.toLowerCase());
+        }
+      }
+      final extra = webSocketVideos.where((v) {
+        final vineId = v.vineId;
+        return !knownIds.contains(v.id.toLowerCase()) &&
+            (vineId == null || !knownIds.contains(vineId.toLowerCase()));
+      }).toList()..sort(VideoEvent.compareByLoopsThenTime);
+      combined = [...popular, ...extra];
+    }
+
+    return _applyBoundaryFilter(combined);
+  }
 
   _GlobalFeedBridge _bridge(_GlobalFeed feed) {
     return _bridges.putIfAbsent(feed, () {
@@ -122,6 +218,8 @@ class RiverpodFeedRepository implements FeedRepository {
   @override
   Stream<List<VideoEvent>> watchView(ViewSource source) {
     if (_isStatic(source)) return _static.watchView(source);
+    if (source is ExploreViewSource) return _watchExplore();
+    if (source is HashtagViewSource) return _watchHashtag(source.hashtag);
     final feed = _globalFeedFor(source);
     if (feed != null) return _bridge(feed).videosStream;
     throw UnsupportedError(
@@ -133,6 +231,10 @@ class RiverpodFeedRepository implements FeedRepository {
   @override
   Future<void> loadMore(ViewSource source) {
     if (_isStatic(source)) return _static.loadMore(source);
+    // Explore + hashtag are non-paginating in the fullscreen surface.
+    if (source is ExploreViewSource || source is HashtagViewSource) {
+      return Future<void>.value();
+    }
     final feed = _globalFeedFor(source);
     if (feed != null) return _loadMoreFor(feed);
     throw UnsupportedError(
@@ -144,6 +246,9 @@ class RiverpodFeedRepository implements FeedRepository {
   @override
   Stream<bool> watchHasMore(ViewSource source) {
     if (_isStatic(source)) return _static.watchHasMore(source);
+    if (source is ExploreViewSource || source is HashtagViewSource) {
+      return Stream<bool>.value(false);
+    }
     final feed = _globalFeedFor(source);
     if (feed != null) return _bridge(feed).hasMoreStream;
     throw UnsupportedError(

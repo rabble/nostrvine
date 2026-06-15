@@ -11,11 +11,11 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/feed_repository_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class HashtagFeedScreen extends ConsumerStatefulWidget {
@@ -44,13 +44,9 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
   /// When available, these provide engagement-based sorting.
   List<VideoEvent>? _popularVideos;
 
-  /// Stream controller for pushing video list updates to the fullscreen feed.
-  late final StreamController<List<VideoEvent>> _videosStreamController;
-
   @override
   void initState() {
     super.initState();
-    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
     // Subscribe to videos with this hashtag
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return; // Safety check: don't use ref if widget is disposed
@@ -61,7 +57,6 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
   @override
   void dispose() {
-    _videosStreamController.close();
     super.dispose();
   }
 
@@ -218,9 +213,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
       PooledFullscreenVideoFeedScreen.path,
       extra: PooledFullscreenVideoFeedArgs(
         source: HashtagViewSource(widget.hashtag),
-        feedRepository: StreamFeedRepository(
-          videos: _videosStreamController.stream.startWith(videoList),
-        ),
+        feedRepository: ref.read(feedRepositoryProvider),
         initialIndex: index,
         contextTitle: '#${widget.hashtag}',
         trafficSource: ViewTrafficSource.search,
@@ -256,12 +249,6 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
           hashtagService.getVideosByHashtags([widget.hashtag]),
         );
         final videos = _combineAndSortVideos(webSocketVideos);
-
-        // Push updated video list to stream so any open fullscreen feed
-        // receives the latest ordering (keeps grid and feed in sync).
-        if (videos.isNotEmpty) {
-          _videosStreamController.add(videos);
-        }
 
         Log.debug(
           '🏷️ Found ${videos.length} videos for #${widget.hashtag} '

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
@@ -88,23 +86,6 @@ class _VideosContent extends ConsumerStatefulWidget {
 }
 
 class _VideosContentState extends ConsumerState<_VideosContent> {
-  late final StreamController<List<VideoEvent>> _videosStreamController;
-  late final StreamController<bool> _hasMoreStreamController;
-
-  @override
-  void initState() {
-    super.initState();
-    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
-    _hasMoreStreamController = StreamController<bool>.broadcast();
-  }
-
-  @override
-  void dispose() {
-    _videosStreamController.close();
-    _hasMoreStreamController.close();
-    super.dispose();
-  }
-
   void _onVideoTap(List<VideoEvent> videos, int index) {
     final bloc = context.read<VideoSearchBloc>();
     context.push(
@@ -112,10 +93,10 @@ class _VideosContentState extends ConsumerState<_VideosContent> {
       extra: PooledFullscreenVideoFeedArgs(
         source: SearchViewSource(bloc.state.query),
         feedRepository: StreamFeedRepository(
-          videos: _videosStreamController.stream.startWith(videos),
-          hasMore: _hasMoreStreamController.stream.startWith(
-            bloc.state.hasMore,
-          ),
+          videos: bloc.stream.map((state) => state.videos).startWith(videos),
+          hasMore: bloc.stream
+              .map((state) => state.hasMore)
+              .startWith(bloc.state.hasMore),
           onLoadMore: () async => bloc.add(const VideoSearchLoadMore()),
         ),
         initialIndex: index,
@@ -128,15 +109,7 @@ class _VideosContentState extends ConsumerState<_VideosContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<VideoSearchBloc, VideoSearchState>(
-      listenWhen: (prev, curr) =>
-          prev.videos != curr.videos || prev.hasMore != curr.hasMore,
-      listener: (context, state) {
-        _videosStreamController.add(state.videos);
-        _hasMoreStreamController.add(state.hasMore);
-      },
-      child: _VideosGrid(showAll: widget.showAll, onVideoTap: _onVideoTap),
-    );
+    return _VideosGrid(showAll: widget.showAll, onVideoTap: _onVideoTap);
   }
 }
 
