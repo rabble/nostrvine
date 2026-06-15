@@ -380,12 +380,11 @@ class _FeedItem extends ConsumerWidget {
 }
 ```
 
-The canonical implementation lives at four sites — see
-`video_feed_page.dart` (`_PooledVideoFeedItem.build`,
-`_WebVideoFeedItem.build`) and
-`pooled_fullscreen_video_feed_screen.dart`
-(`_PooledFullscreenItem.build`, `_WebFullscreenItem.build`). The
-failure they cure (#3503): a cold-launch race where the warm-up
+The canonical implementation lives in `feed_videos.dart` at the
+`BlocProvider<VideoInteractionsBloc>` created in
+`__OverlayState.build`, using `videoInteractionsBlocKey(...)` from
+`video_interactions_bloc_key.dart`. The failure it cures (#3503): a
+cold-launch race where the warm-up
 chain materialised `likesRepository` before
 `AuthService.initialize()` resolved, the underlying `Nostr` wrapped
 a `LocalKeySigner(null)` placeholder, and every `sendLike` from the
@@ -487,12 +486,11 @@ wraps a `StatefulWidget` child via `BlocProvider`, and have the
 stateful child consume the bloc through `context.read<Bloc>()`.
 The parent then uses the existing rule (record-typed `ValueKey`
 over the captured provider tuple) — no new shape introduced. This
-matches the four canonical existing examples in this codebase:
-`_PooledVideoFeedItem` / `_PooledVideoFeedItemContent` in
-`video_feed_page.dart`, and `_PooledFullscreenItem` /
-`_PooledFullscreenItemContent` in
-`pooled_fullscreen_video_feed_screen.dart`. It also follows the
-Page/View pattern in [`ui_theming.md`](ui_theming.md) and the
+matches the existing feed item host in `feed_videos.dart`, where
+`__OverlayState` watches the repositories and keys the
+`BlocProvider<VideoInteractionsBloc>` with
+`videoInteractionsBlocKey(...)`. It also follows the Page/View
+pattern in [`ui_theming.md`](ui_theming.md) and the
 constructor-injection guidance in
 [`architecture.md`](architecture.md) — the stateful child stops
 reaching into Riverpod for its dependencies.
