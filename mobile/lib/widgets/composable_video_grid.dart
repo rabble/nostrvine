@@ -15,6 +15,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/utils/delete_failure_localization.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -138,18 +139,12 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
         ? 3
         : widget.crossAxisCount;
 
-    // Calculate total item count (videos + optional loading indicator)
+    // Whether to render the load-more footer below the grid.
     final showLoadingIndicator =
         widget.isLoadingMore ||
         (widget.hasMoreContent && widget.onLoadMore != null);
-    final totalItemCount = videosToShow.length + (showLoadingIndicator ? 1 : 0);
 
     Widget buildItem(BuildContext context, int index) {
-      // If this is the last item and we're loading more, show loading indicator
-      if (index == videosToShow.length) {
-        return _LoadingMoreIndicator(isLoading: widget.isLoadingMore);
-      }
-
       final video = videosToShow[index];
       final listIds = subscribedListCache?.getListsForVideo(video.id);
       final isInSubscribedList = listIds != null && listIds.isNotEmpty;
@@ -165,30 +160,44 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       );
     }
 
-    final gridView = widget.useMasonryLayout
-        ? MasonryGridView.count(
-            controller: _scrollController,
-            padding: widget.padding ?? const EdgeInsets.all(4),
+    final gridPadding =
+        widget.padding ??
+        (widget.useMasonryLayout
+            ? const EdgeInsets.all(4)
+            : const EdgeInsets.all(12));
+
+    final gridSliver = widget.useMasonryLayout
+        ? SliverMasonryGrid.count(
             crossAxisCount: responsiveCrossAxisCount,
             mainAxisSpacing: 4,
             crossAxisSpacing: 4,
-            itemCount: totalItemCount,
+            childCount: videosToShow.length,
             itemBuilder: buildItem,
           )
-        : GridView.builder(
-            controller: _scrollController,
-            padding: widget.padding ?? const EdgeInsets.all(12),
+        : SliverGrid.builder(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: responsiveCrossAxisCount,
               childAspectRatio: widget.thumbnailAspectRatio,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
             ),
-            itemCount: totalItemCount,
+            itemCount: videosToShow.length,
             itemBuilder: buildItem,
           );
 
-    return _wrapWithRefreshIndicator(context, gridView);
+    final scrollView = CustomScrollView(
+      controller: _scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        SliverPadding(padding: gridPadding, sliver: gridSliver),
+        if (showLoadingIndicator)
+          SliverToBoxAdapter(
+            child: _LoadingMoreIndicator(isLoading: widget.isLoadingMore),
+          ),
+      ],
+    );
+
+    return _wrapWithRefreshIndicator(context, scrollView);
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -639,7 +648,7 @@ class _VideoThumbnail extends StatelessWidget {
   }
 }
 
-/// Loading indicator shown at the bottom of the grid during pagination
+/// Loading indicator shown centered below the grid during pagination.
 class _LoadingMoreIndicator extends StatelessWidget {
   const _LoadingMoreIndicator({required this.isLoading});
 
@@ -647,19 +656,13 @@ class _LoadingMoreIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 60,
-      alignment: Alignment.center,
-      child: isLoading
-          ? const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: VineTheme.vineGreen,
-              ),
-            )
-          : const SizedBox.shrink(),
+    if (!isLoading) {
+      return const SizedBox.shrink();
+    }
+
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 16),
+      child: Center(child: BrandedLoadingIndicator(size: 48)),
     );
   }
 }

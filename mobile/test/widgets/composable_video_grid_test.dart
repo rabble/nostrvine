@@ -28,6 +28,7 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/broken_video_tracker.dart' as broken_tracker;
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 
 void main() {
@@ -346,5 +347,90 @@ void main() {
       expect(find.text('5s'), findsOneWidget); // duration badge
       // TODO(any): Fix and re-enable these tests
     }, skip: true);
+
+    group('load-more footer', () {
+      // Renders the grid path with no tiles (empty list + no emptyBuilder) so
+      // the footer can be exercised without the video-tile Nostr/network chain.
+      Widget buildGrid({
+        required bool isLoadingMore,
+        required bool hasMoreContent,
+        Future<void> Function()? onLoadMore,
+      }) {
+        return ProviderScope(
+          overrides: [
+            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
+            subscribedListVideoCacheProvider.overrideWithValue(null),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ComposableVideoGrid(
+                videos: const [],
+                onVideoTap: (videos, index) {},
+                isLoadingMore: isLoadingMore,
+                hasMoreContent: hasMoreContent,
+                onLoadMore: onLoadMore,
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets(
+        'shows a centered $BrandedLoadingIndicator below the scrolling grid '
+        'while loading more',
+        (tester) async {
+          await tester.pumpWidget(
+            buildGrid(
+              isLoadingMore: true,
+              hasMoreContent: true,
+              onLoadMore: () async {},
+            ),
+          );
+          await tester.pump(); // resolve broken-tracker future
+
+          expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+          // The footer is no longer a grid cell: the grid is a sliver scroll
+          // view and the legacy box-scrolling GridView is gone.
+          expect(find.byType(CustomScrollView), findsOneWidget);
+          expect(find.byType(GridView), findsNothing);
+
+          // Horizontally centered across the full grid width (800px surface).
+          final indicatorCenter = tester.getCenter(
+            find.byType(BrandedLoadingIndicator),
+          );
+          expect(indicatorCenter.dx, moreOrLessEquals(400, epsilon: 1));
+        },
+      );
+
+      testWidgets('does not show the loading indicator when not loading more', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildGrid(
+            isLoadingMore: false,
+            hasMoreContent: true,
+            onLoadMore: () async {},
+          ),
+        );
+        await tester.pump();
+
+        // Footer slot exists (more content available) but stays empty until
+        // a load actually starts.
+        expect(find.byType(BrandedLoadingIndicator), findsNothing);
+      });
+
+      testWidgets('omits the loading indicator when there is no more content', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildGrid(isLoadingMore: false, hasMoreContent: false),
+        );
+        await tester.pump();
+
+        expect(find.byType(BrandedLoadingIndicator), findsNothing);
+      });
+    });
   });
 }
