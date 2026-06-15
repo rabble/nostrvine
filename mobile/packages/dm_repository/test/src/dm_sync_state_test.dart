@@ -202,5 +202,62 @@ void main() {
         expect(state.historyDrainCursor(pkB), isNull);
       });
     });
+
+    group('drainVersion', () {
+      test('defaults to 0 when never recorded', () {
+        expect(state.drainVersion(pkA), equals(0));
+      });
+
+      test('setDrainVersion persists per pubkey', () async {
+        await state.setDrainVersion(pkA, 2);
+
+        expect(state.drainVersion(pkA), equals(2));
+        expect(state.drainVersion(pkB), equals(0));
+      });
+
+      test(
+        'upgradeDrainVersionIfNeeded clears a stale completion flag + cursor '
+        'and stamps the current version when below it',
+        () async {
+          // Simulate an install stranded by an older, buggy drain.
+          await state.markHistoryDrainComplete(pkA);
+          await state.setHistoryDrainCursor(pkA, 1234);
+          expect(state.historyDrainComplete(pkA), isTrue);
+
+          await state.upgradeDrainVersionIfNeeded(pkA);
+
+          expect(state.historyDrainComplete(pkA), isFalse);
+          expect(state.historyDrainCursor(pkA), isNull);
+          expect(state.drainVersion(pkA), DmSyncState.currentDrainVersion);
+        },
+      );
+
+      test(
+        'upgradeDrainVersionIfNeeded is idempotent at the current version',
+        () async {
+          await state.upgradeDrainVersionIfNeeded(pkA);
+          // A genuine completion at the current version must survive a second
+          // upgrade pass (no re-drain loop on every inbox open).
+          await state.markHistoryDrainComplete(pkA);
+
+          await state.upgradeDrainVersionIfNeeded(pkA);
+
+          expect(state.historyDrainComplete(pkA), isTrue);
+          expect(state.drainVersion(pkA), DmSyncState.currentDrainVersion);
+        },
+      );
+
+      test('clear and clearAll reset the drain version', () async {
+        await state.setDrainVersion(pkA, DmSyncState.currentDrainVersion);
+        await state.setDrainVersion(pkB, DmSyncState.currentDrainVersion);
+
+        await state.clear(pkA);
+        expect(state.drainVersion(pkA), equals(0));
+        expect(state.drainVersion(pkB), DmSyncState.currentDrainVersion);
+
+        await state.clearAll();
+        expect(state.drainVersion(pkB), equals(0));
+      });
+    });
   });
 }

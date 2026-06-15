@@ -1219,3 +1219,48 @@ class PendingViewEvents extends Table {
     ),
   ];
 }
+
+/// Durable queue of gift-wrap (kind 1059) events that failed NIP-44
+/// decryption — e.g. a transient Keycast RPC failure while the one-time
+/// history drain processes a burst of gift wraps for a remote-signer
+/// account. Persisting the raw, still-encrypted event lets a later
+/// `DmRepository.retryPendingDecryptions` pass recover the conversation
+/// without re-fetching from the relay, so flaky remote-signer decryption
+/// never permanently loses a chat. See #5202.
+@DataClassName('PendingGiftWrapRow')
+class PendingGiftWraps extends Table {
+  @override
+  String get tableName => 'pending_gift_wraps';
+
+  /// The kind 1059 gift-wrap event id (outer). Dedup key with [ownerPubkey].
+  TextColumn get giftWrapId => text().named('gift_wrap_id')();
+
+  /// Recipient pubkey this wrap was addressed to (multi-account scope).
+  TextColumn get ownerPubkey => text().named('owner_pubkey')();
+
+  /// The raw gift-wrap event JSON, replayed through the decrypt pipeline.
+  TextColumn get rawJson => text().named('raw_json')();
+
+  /// Outer gift-wrap `created_at` (unix seconds). Ordering only — NIP-17
+  /// randomizes it, so it is not the true message time.
+  IntColumn get createdAt => integer().named('created_at')();
+
+  /// Number of decryption attempts so far. Retries stop at a cap so a
+  /// permanently-undecryptable wrap cannot loop forever.
+  IntColumn get attempts => integer().withDefault(const Constant(0))();
+
+  /// Last attempt time (unix seconds), informational.
+  IntColumn get lastAttemptAt =>
+      integer().nullable().named('last_attempt_at')();
+
+  @override
+  Set<Column> get primaryKey => {giftWrapId, ownerPubkey};
+
+  List<Index> get indexes => [
+    Index(
+      'idx_pending_gift_wraps_owner_attempts',
+      'CREATE INDEX IF NOT EXISTS idx_pending_gift_wraps_owner_attempts '
+          'ON pending_gift_wraps (owner_pubkey, attempts)',
+    ),
+  ];
+}

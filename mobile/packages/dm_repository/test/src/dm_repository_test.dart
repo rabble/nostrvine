@@ -20,6 +20,8 @@ import 'package:nostr_sdk/signer/nostr_signer.dart';
 
 class _MockOutgoingDmsDao extends Mock implements OutgoingDmsDao {}
 
+class _MockPendingGiftWrapsDao extends Mock implements PendingGiftWrapsDao {}
+
 class _FakeOutgoingDm extends Fake implements OutgoingDm {}
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -44,8 +46,10 @@ class _FakeDmSyncState implements DmSyncState {
   int? oldestOverride;
   bool drainCompleteOverride = false;
   int? drainCursorOverride;
+  int drainVersionOverride = 0;
   final List<String> markedCompletePubkeys = <String>[];
   final List<int> persistedDrainCursors = <int>[];
+  final List<String> upgradedPubkeys = <String>[];
   final List<({String pubkey, int createdAt})> recorded =
       <({String pubkey, int createdAt})>[];
 
@@ -63,6 +67,23 @@ class _FakeDmSyncState implements DmSyncState {
     markedCompletePubkeys.add(pubkey);
     drainCompleteOverride = true;
     drainCursorOverride = null;
+  }
+
+  @override
+  int drainVersion(String pubkey) => drainVersionOverride;
+
+  @override
+  Future<void> setDrainVersion(String pubkey, int version) async {
+    drainVersionOverride = version;
+  }
+
+  @override
+  Future<void> upgradeDrainVersionIfNeeded(String pubkey) async {
+    if (drainVersionOverride >= DmSyncState.currentDrainVersion) return;
+    upgradedPubkeys.add(pubkey);
+    drainCompleteOverride = false;
+    drainCursorOverride = null;
+    drainVersionOverride = DmSyncState.currentDrainVersion;
   }
 
   @override
@@ -91,6 +112,7 @@ class _FakeDmSyncState implements DmSyncState {
     oldestOverride = null;
     drainCompleteOverride = false;
     drainCursorOverride = null;
+    drainVersionOverride = 0;
   }
 
   @override
@@ -99,6 +121,7 @@ class _FakeDmSyncState implements DmSyncState {
     oldestOverride = null;
     drainCompleteOverride = false;
     drainCursorOverride = null;
+    drainVersionOverride = 0;
     recorded.clear();
   }
 }
@@ -248,6 +271,7 @@ void main() {
       Nip04Decryptor? nip04Decryptor,
       DmSyncState? syncState,
       OutgoingDmsDao? outgoingDmsDao,
+      PendingGiftWrapsDao? pendingGiftWrapsDao,
       DmReactionsRepository? reactionsRepository,
     }) {
       return DmRepository(
@@ -256,6 +280,7 @@ void main() {
         directMessagesDao: mockDirectMessagesDao,
         conversationsDao: mockConversationsDao,
         outgoingDmsDao: outgoingDmsDao,
+        pendingGiftWrapsDao: pendingGiftWrapsDao,
         userPubkey: userPubkey ?? _validPubkeyA,
         signer: LocalNostrSigner(_validPrivateKey),
         rumorDecryptor: rumorDecryptor,
@@ -1387,6 +1412,136 @@ void main() {
         await repository.stopListening();
       });
 
+      test(
+        'queues a failed-decrypt gift wrap for retry instead of dropping it '
+        '(#5202)',
+        () async {
+          final giftWrap = createGiftWrapEvent();
+          final pendingDao = _MockPendingGiftWrapsDao();
+          when(
+            () => pendingDao.recordFailedDecrypt(
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              rawJson: any(named: 'rawJson'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => false);
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => null,
+            pendingGiftWrapsDao: pendingDao,
+          );
+
+          await repository.startListening();
+          controller.add(giftWrap);
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => pendingDao.recordFailedDecrypt(
+              giftWrapId: _giftWrapEventId,
+              ownerPubkey: _validPubkeyA,
+              rawJson: any(named: 'rawJson'),
+              createdAt: 1700000000,
+            ),
+          ).called(1);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'retryPendingDecryptions recovers a previously undecryptable wrap '
+        'and clears its pending row (#5202)',
+        () async {
+          final giftWrap = createGiftWrapEvent();
+          final rumor = createRumorEvent();
+          final pendingDao = _MockPendingGiftWrapsDao();
+
+          when(
+            () => pendingDao.getRetryable(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              PendingGiftWrap(
+                giftWrapId: _giftWrapEventId,
+                ownerPubkey: _validPubkeyA,
+                rawJson: jsonEncode(giftWrap.toJson()),
+                createdAt: 1700000000,
+                attempts: 1,
+              ),
+            ],
+          );
+          when(
+            () => pendingDao.deletePending(
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => false);
+          stubDaoInserts();
+
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => rumor,
+            pendingGiftWrapsDao: pendingDao,
+          );
+
+          await repository.retryPendingDecryptions();
+          await Future<void>.delayed(Duration.zero);
+
+          // The wrap decrypted and persisted…
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: _rumorEventId,
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: _validPubkeyB,
+              content: 'Hello from B!',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          ).called(1);
+          // …and the pending row was cleared so it stops being retried.
+          verify(
+            () => pendingDao.deletePending(
+              giftWrapId: _giftWrapEventId,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).called(1);
+        },
+      );
+
       test('skips events with wrong kind', () async {
         final giftWrap = createGiftWrapEvent();
         // kind 1 instead of kind 14
@@ -2199,6 +2354,78 @@ void main() {
       }
 
       test(
+        'does NOT mark complete on an empty page when no relays are '
+        'connected — defers to the next inbox open (#5202)',
+        () async {
+          // queryEvents short-circuits to [] when the relay pool has not
+          // connected yet; treating that as exhaustion would permanently
+          // strand unrecovered history (the reported regression).
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(0);
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          // Queried once, got empty, but deferred instead of completing.
+          expect(capturedUntil, [100]);
+          expect(syncState.drainCompleteOverride, isFalse);
+          expect(syncState.markedCompletePubkeys, isEmpty);
+        },
+      );
+
+      test(
+        'marks complete on an empty page when at least one relay is '
+        'connected (genuine exhaustion)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(syncState.drainCompleteOverride, isTrue);
+        },
+      );
+
+      test(
+        're-runs once for an install stranded complete by an older drain '
+        '(drainVersion below current) — #5202',
+        () async {
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
+
+          // Pre-#5202 install: flagged complete at an older drain version
+          // while history still exists on the relay.
+          final syncState = _FakeDmSyncState()
+            ..drainCompleteOverride = true
+            ..drainVersionOverride = 0;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          // The version bump cleared the stale flag and the drain re-ran,
+          // then re-completed cleanly (default 3 relays connected).
+          expect(syncState.upgradedPubkeys, isNotEmpty);
+          expect(capturedUntil, isNotEmpty);
+          expect(syncState.drainCompleteOverride, isTrue);
+          expect(
+            syncState.drainVersionOverride,
+            DmSyncState.currentDrainVersion,
+          );
+        },
+      );
+
+      test(
         'pages newest→oldest from oldestSyncedAt until the relay is empty, '
         'then marks the drain complete',
         () async {
@@ -2229,7 +2456,9 @@ void main() {
       );
 
       test('is a no-op when the drain already completed', () async {
-        final syncState = _FakeDmSyncState()..drainCompleteOverride = true;
+        final syncState = _FakeDmSyncState()
+          ..drainCompleteOverride = true
+          ..drainVersionOverride = DmSyncState.currentDrainVersion;
         final repository = createRepository(syncState: syncState);
 
         await repository.backfillHistoryIfNeeded();
@@ -2310,7 +2539,8 @@ void main() {
           // subscription's oldestSyncedAt boundary.
           final syncState = _FakeDmSyncState()
             ..oldestOverride = 1000
-            ..drainCursorOverride = 45;
+            ..drainCursorOverride = 45
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
           final repository = createRepository(syncState: syncState);
 
           await repository.backfillHistoryIfNeeded();

@@ -59,6 +59,11 @@ class ConversationListBloc
     // pool, not the divine-only pool present at cold start. See #4953.
     unawaited(_dmRepository.backfillHistoryIfNeeded());
 
+    // Replay any gift wraps that failed decryption on a previous pass (e.g.
+    // a transient Keycast RPC failure during the drain burst) so a flaky
+    // remote signer never permanently loses a conversation. See #5202.
+    unawaited(_dmRepository.retryPendingDecryptions());
+
     // Only show the loading spinner and reset limit on first load.
     if (state.status == ConversationListStatus.initial) {
       emit(

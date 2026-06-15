@@ -90,6 +90,10 @@ void main() {
       when(
         () => mockDmRepository.backfillHistoryIfNeeded(),
       ).thenAnswer((_) async {});
+      // Failed-decrypt retry pass, also fired on every inbox open (#5202).
+      when(
+        () => mockDmRepository.retryPendingDecryptions(),
+      ).thenAnswer((_) async {});
     });
 
     ConversationListBloc createBloc() => ConversationListBloc(
@@ -1071,6 +1075,9 @@ void main() {
       when(() => mockDmRepository.stopListening()).thenAnswer((_) async {});
       when(
         () => mockDmRepository.backfillHistoryIfNeeded(),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDmRepository.retryPendingDecryptions(),
       ).thenAnswer((_) async {});
     });
 

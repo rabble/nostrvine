@@ -508,7 +508,15 @@ class NostrClient {
       cacheResults.addAll(await dao.getEventsByFilter(filters.first));
     }
 
-    // 2. Query via WebSocket
+    // 2. Query via WebSocket.
+    // A cold query — e.g. the DM history drain firing before the relay
+    // pool has finished connecting — would otherwise short-circuit to an
+    // empty result (RelayPool completes immediately when no relay accepts
+    // the REQ). Reconnect first, mirroring publish()/subscribe(). See #5202.
+    if (_relayManager.connectedRelays.isEmpty &&
+        (tempRelays == null || tempRelays.isEmpty)) {
+      await retryDisconnectedRelays();
+    }
     final filtersJson = filters.map((f) => f.toJson()).toList();
     final websocketEvents = await _nostr.queryEvents(
       filtersJson,

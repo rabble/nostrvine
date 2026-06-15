@@ -126,6 +126,92 @@ void main() {
       });
     });
 
+    group('queryEvents', () {
+      test(
+        'reconnects before querying when no relays are connected (#5202)',
+        () async {
+          // A cold query (e.g. the DM history drain firing before the pool
+          // connects) must reconnect first, mirroring publishEvent().
+          when(() => mockRelayManager.connectedRelays).thenReturn([]);
+          when(
+            mockRelayManager.retryDisconnectedRelays,
+          ).thenAnswer((_) async {});
+          when(
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => <Event>[]);
+
+          await client.queryEvents(
+            [
+              Filter(kinds: const [1059]),
+            ],
+            useCache: false,
+          );
+
+          verify(mockRelayManager.retryDisconnectedRelays).called(1);
+        },
+      );
+
+      test('does not reconnect when relays are already connected', () async {
+        // Default mock has a connected relay.
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => <Event>[]);
+
+        await client.queryEvents(
+          [
+            Filter(kinds: const [1059]),
+          ],
+          useCache: false,
+        );
+
+        verifyNever(mockRelayManager.retryDisconnectedRelays);
+      });
+
+      test(
+        'does not reconnect when explicit tempRelays are provided',
+        () async {
+          when(() => mockRelayManager.connectedRelays).thenReturn([]);
+          when(
+            mockRelayManager.retryDisconnectedRelays,
+          ).thenAnswer((_) async {});
+          when(
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => <Event>[]);
+
+          await client.queryEvents(
+            [
+              Filter(kinds: const [1059]),
+            ],
+            tempRelays: const ['wss://temp.example.com'],
+            useCache: false,
+          );
+
+          verifyNever(mockRelayManager.retryDisconnectedRelays);
+        },
+      );
+    });
+
     group('publishEvent', () {
       test('publishes event successfully', () async {
         final event = _createTestEvent();

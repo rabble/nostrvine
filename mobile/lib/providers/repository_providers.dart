@@ -489,6 +489,7 @@ DmRepository dmRepository(Ref ref) {
     directMessagesDao: db.directMessagesDao,
     conversationsDao: db.conversationsDao,
     outgoingDmsDao: db.outgoingDmsDao,
+    pendingGiftWrapsDao: db.pendingGiftWrapsDao,
     syncState: DmSyncState(prefs),
     reactionsRepository: reactionsRepository,
     errorReporter: (error, stackTrace, {required site}) {

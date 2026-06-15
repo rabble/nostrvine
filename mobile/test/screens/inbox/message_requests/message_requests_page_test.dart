@@ -51,6 +51,9 @@ void main() {
       when(
         () => mockDmRepository.backfillHistoryIfNeeded(),
       ).thenAnswer((_) async {});
+      when(
+        () => mockDmRepository.retryPendingDecryptions(),
+      ).thenAnswer((_) async {});
 
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
       when(() => mockAuthService.isAuthenticated).thenReturn(true);

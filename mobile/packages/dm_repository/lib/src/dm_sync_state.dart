@@ -24,6 +24,17 @@ class DmSyncState {
   static const _oldestPrefix = 'dm.oldestSyncedAt.';
   static const _drainCompletePrefix = 'dm.historyDrainComplete.';
   static const _drainCursorPrefix = 'dm.historyDrainCursor.';
+  static const _drainVersionPrefix = 'dm.historyDrainVersion.';
+
+  /// Current history-drain logic version. Installs whose persisted
+  /// [drainVersion] is below this re-run the drain once, even if
+  /// [historyDrainComplete] is already `true` — this unsticks installs that
+  /// completed under an older, buggy drain that could mark complete without
+  /// fully recovering history (a cold-start empty page, or dropped
+  /// decryptions). Pre-#5202 installs have no version key (reads as 0). Bump
+  /// this whenever a drain-correctness fix must force one more recovery pass.
+  /// See #5202.
+  static const int currentDrainVersion = 2;
 
   /// Returns the newest (highest) `created_at` unix timestamp we have
   /// successfully processed for [pubkey], or `null` if nothing has been
@@ -70,6 +81,32 @@ class DmSyncState {
     await _prefs.remove('$_drainCursorPrefix$pubkey');
   }
 
+  /// The history-drain logic version last completed for [pubkey], or `0`
+  /// if none has been recorded (pre-#5202 installs, fresh installs).
+  int drainVersion(String pubkey) =>
+      _prefs.getInt('$_drainVersionPrefix$pubkey') ?? 0;
+
+  /// Records that [pubkey] has been brought up to drain logic [version].
+  Future<void> setDrainVersion(String pubkey, int version) async {
+    await _prefs.setInt('$_drainVersionPrefix$pubkey', version);
+  }
+
+  /// Forces a one-time re-drain for [pubkey] when its persisted
+  /// [drainVersion] is below [currentDrainVersion], by clearing the
+  /// completion flag and resume cursor, then stamping the current version.
+  ///
+  /// This is the recovery path for installs stranded by an older drain that
+  /// marked [historyDrainComplete] without fully recovering history (#5202).
+  /// A no-op for fresh installs (nothing to clear) and for installs already
+  /// at the current version. Idempotent: after the bump the version matches,
+  /// so it does not loop on every inbox open.
+  Future<void> upgradeDrainVersionIfNeeded(String pubkey) async {
+    if (drainVersion(pubkey) >= currentDrainVersion) return;
+    await _prefs.remove('$_drainCompletePrefix$pubkey');
+    await _prefs.remove('$_drainCursorPrefix$pubkey');
+    await setDrainVersion(pubkey, currentDrainVersion);
+  }
+
   /// The outer gift-wrap `created_at` (unix seconds) the history drain has
   /// paged down to for [pubkey], or `null` if no drain has persisted a
   /// boundary yet.
@@ -97,6 +134,7 @@ class DmSyncState {
     await _prefs.remove('$_oldestPrefix$pubkey');
     await _prefs.remove('$_drainCompletePrefix$pubkey');
     await _prefs.remove('$_drainCursorPrefix$pubkey');
+    await _prefs.remove('$_drainVersionPrefix$pubkey');
   }
 
   /// Removes all DM sync state entries for every pubkey.
@@ -111,7 +149,8 @@ class DmSyncState {
               key.startsWith(_newestPrefix) ||
               key.startsWith(_oldestPrefix) ||
               key.startsWith(_drainCompletePrefix) ||
-              key.startsWith(_drainCursorPrefix),
+              key.startsWith(_drainCursorPrefix) ||
+              key.startsWith(_drainVersionPrefix),
         )
         .toList();
     for (final key in keysToRemove) {

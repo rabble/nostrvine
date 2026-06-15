@@ -35,6 +35,7 @@ const _notificationRetentionDays = 7;
     Conversations,
     OutgoingDms,
     PendingViewEvents,
+    PendingGiftWraps,
   ],
   daos: [
     UserProfilesDao,
@@ -55,6 +56,7 @@ const _notificationRetentionDays = 7;
     ConversationsDao,
     OutgoingDmsDao,
     PendingViewEventsDao,
+    PendingGiftWrapsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -567,6 +569,35 @@ class AppDatabase extends _$AppDatabase {
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_pending_view_events_created_at
       ON pending_view_events (created_at)
+    ''');
+
+    // Check if pending_gift_wraps table exists, create if missing.
+    // Added for #5202 (durable failed-decrypt gift-wrap retry queue).
+    // Schema version stays at 1 — same runtime CREATE-IF-NOT-EXISTS pattern
+    // as outgoing_dms / pending_view_events above.
+    final pendingGiftWrapsResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='pending_gift_wraps'",
+    ).get();
+
+    if (pendingGiftWrapsResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE pending_gift_wraps (
+          gift_wrap_id TEXT NOT NULL,
+          owner_pubkey TEXT NOT NULL,
+          raw_json TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          attempts INTEGER NOT NULL DEFAULT 0,
+          last_attempt_at INTEGER,
+          PRIMARY KEY (gift_wrap_id, owner_pubkey)
+        )
+      ''');
+    }
+    // Create the index unconditionally so the runtime path matches Drift's
+    // m.createAll() output (the schema-parity test pins this).
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_pending_gift_wraps_owner_attempts
+      ON pending_gift_wraps (owner_pubkey, attempts)
     ''');
 
     // Populate new columns from existing JSON data blobs
