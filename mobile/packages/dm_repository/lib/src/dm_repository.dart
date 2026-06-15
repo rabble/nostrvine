@@ -213,6 +213,13 @@ class DmRepository {
   /// launch overlapping drains. Cleared when the drain settles.
   Future<void>? _historyDrain;
 
+  /// The in-flight failed-decrypt retry pass, shared by concurrent callers so
+  /// repeated [retryPendingDecryptions] calls (every inbox open, plus
+  /// load-more / blocklist re-dispatches) never run overlapping passes that
+  /// would double the Keycast RPC decrypts or race the per-wrap attempt
+  /// counter. Cleared when the pass settles. See #5202.
+  Future<void>? _pendingDecryptRetry;
+
   /// User-scoped subscription ID to prevent collision when the provider
   /// rebuilds during auth transitions (old unsubscribe won't kill new sub).
   String _subscriptionId = 'dm_inbox';
@@ -283,9 +290,10 @@ class DmRepository {
   void _resetState() {
     _disposed = true;
     _eventLock = null;
-    // Drop the in-flight history drain so the next user can start a fresh
-    // one; the running loop bails on the _userPubkey change.
+    // Drop the in-flight history drain and decrypt-retry pass so the next
+    // user can start fresh; the running loops bail on the _userPubkey change.
     _historyDrain = null;
+    _pendingDecryptRetry = null;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
     unawaited(_giftWrapSubscription?.cancel());
@@ -495,46 +503,86 @@ class DmRepository {
   /// persisted raw (see [_handleGiftWrapEvent]); this replays each back
   /// through the decrypt + persist pipeline, newest first, capped at
   /// [DmHistoryDrainConfig.maxDecryptRetries] attempts per wrap so a
-  /// permanently-undecryptable wrap cannot loop forever. A no-op when no
+  /// permanently-undecryptable wrap cannot loop forever (rows that exhaust
+  /// the cap are dropped). Each replay routes through [_handleIncomingEvent]
+  /// so it serializes on the same `_eventLock` as the live subscription and
+  /// the drain. Concurrent callers share one in-flight pass. A no-op when no
   /// failed-decrypt DAO is wired. Safe to fire-and-forget from the inbox
   /// BLoC on every open. See #5202.
-  Future<void> retryPendingDecryptions() async {
+  Future<void> retryPendingDecryptions() {
+    final existing = _pendingDecryptRetry;
+    if (existing != null) return existing;
+    final run = _runPendingDecryptRetry();
+    _pendingDecryptRetry = run;
+    unawaited(
+      run.whenComplete(() {
+        if (identical(_pendingDecryptRetry, run)) _pendingDecryptRetry = null;
+      }),
+    );
+    return run;
+  }
+
+  Future<void> _runPendingDecryptRetry() async {
     if (!isInitialized) return;
     final dao = _pendingGiftWrapsDao;
     if (dao == null) return;
     final pubkey = _userPubkey;
-    final pending = await dao.getRetryable(
-      ownerPubkey: pubkey,
-      maxAttempts: DmHistoryDrainConfig.maxDecryptRetries,
-    );
-    for (final row in pending) {
-      if (_disposed || _userPubkey != pubkey) return;
-      // Already recovered by the live sub / drain — clear the stale row so
-      // it does not linger and re-query on every inbox open.
-      if (await _directMessagesDao.hasGiftWrap(row.giftWrapId)) {
-        await dao.deletePending(
-          giftWrapId: row.giftWrapId,
-          ownerPubkey: pubkey,
-        );
-        continue;
+    try {
+      // Drop wraps that exhausted the retry cap so the queue cannot grow
+      // without bound — a permanently-undecryptable wrap or spammed kind-1059
+      // events addressed to the user would otherwise linger forever. See #5202.
+      await dao.deleteExhausted(
+        ownerPubkey: pubkey,
+        maxAttempts: DmHistoryDrainConfig.maxDecryptRetries,
+      );
+      final pending = await dao.getRetryable(
+        ownerPubkey: pubkey,
+        maxAttempts: DmHistoryDrainConfig.maxDecryptRetries,
+      );
+      for (final row in pending) {
+        if (_disposed || _userPubkey != pubkey) return;
+        // Already recovered by the live sub / drain — clear the stale row so
+        // it does not linger and re-query on every inbox open.
+        if (await _directMessagesDao.hasGiftWrap(row.giftWrapId)) {
+          await dao.deletePending(
+            giftWrapId: row.giftWrapId,
+            ownerPubkey: pubkey,
+          );
+          continue;
+        }
+        final Event giftWrapEvent;
+        try {
+          giftWrapEvent = Event.fromJson(
+            jsonDecode(row.rawJson) as Map<String, dynamic>,
+          );
+        } on Object {
+          // Corrupt stored JSON — drop it so it cannot loop. We wrote this
+          // JSON ourselves, so a parse failure is a programming invariant.
+          await dao.deletePending(
+            giftWrapId: row.giftWrapId,
+            ownerPubkey: pubkey,
+          );
+          continue;
+        }
+        // Re-check after the awaits above so an account switch mid-pass never
+        // replays the old user's wrap under the new session.
+        if (_disposed || _userPubkey != pubkey) return;
+        // Route through _handleIncomingEvent so the replay serializes on the
+        // same _eventLock as the live subscription and the drain. A
+        // successful decrypt deletes the pending row inside
+        // _handleGiftWrapEvent; a failure increments its attempts.
+        await _handleIncomingEvent(giftWrapEvent);
       }
-      final Event giftWrapEvent;
-      try {
-        giftWrapEvent = Event.fromJson(
-          jsonDecode(row.rawJson) as Map<String, dynamic>,
-        );
-      } on Object {
-        // Corrupt stored JSON — drop it so it cannot loop. We wrote this
-        // JSON ourselves, so a parse failure is a programming invariant.
-        await dao.deletePending(
-          giftWrapId: row.giftWrapId,
-          ownerPubkey: pubkey,
-        );
-        continue;
-      }
-      // Replays decrypt + persist. A successful decrypt deletes the pending
-      // row inside [_handleGiftWrapEvent]; a failure increments its attempts.
-      await _handleGiftWrapEvent(giftWrapEvent);
+    } on Object catch (e, stackTrace) {
+      // Relay/DB/IO failures here are expected (e.g. a transient read-only
+      // DB) and NOT reportable; the pass resumes on the next inbox open since
+      // rows are removed only on success, cap, or corruption.
+      Log.error(
+        'DM decrypt-retry pass failed (will resume on next inbox open): $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 

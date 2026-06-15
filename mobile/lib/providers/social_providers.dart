@@ -357,6 +357,10 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
         }
         await db.directMessagesDao.clearAll();
         await db.conversationsDao.clearAll();
+        // Raw failed-decrypt gift wraps are encrypted DM data of the same
+        // class as direct_messages — wipe them on the same path so they never
+        // outlive the account's decrypted DMs. See #5202.
+        await db.pendingGiftWrapsDao.clearAll();
         await db.notificationsDao.clearAll();
         // Clear DM sync cursors so the next login triggers a full re-fetch
         // from relays instead of using stale `since:` boundaries.

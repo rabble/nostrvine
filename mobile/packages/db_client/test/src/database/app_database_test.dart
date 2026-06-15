@@ -475,6 +475,108 @@ void main() {
         },
       );
 
+      test('upgrade path recreates pending_gift_wraps when missing', () async {
+        await database.customStatement('DROP TABLE pending_gift_wraps');
+
+        final droppedCheck = await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='pending_gift_wraps'",
+            )
+            .get();
+        expect(
+          droppedCheck,
+          isEmpty,
+          reason: 'precondition: pending_gift_wraps must be missing',
+        );
+
+        await database.close();
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+        final tableCheck = await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='pending_gift_wraps'",
+            )
+            .get();
+        expect(
+          tableCheck,
+          hasLength(1),
+          reason: 'pending_gift_wraps must be re-created on reopen',
+        );
+
+        final indexNames = await _collectIndexNames(
+          database,
+          'pending_gift_wraps',
+        );
+        expect(
+          indexNames,
+          containsAll(<String>{'idx_pending_gift_wraps_owner_attempts'}),
+        );
+
+        final dao = database.pendingGiftWrapsDao;
+        await dao.recordFailedDecrypt(
+          giftWrapId: 'upgrade-wrap-id',
+          ownerPubkey: testPubkey,
+          rawJson: '{"id":"upgrade-wrap-id"}',
+          createdAt: 1700000000,
+        );
+        final rows = await dao.getRetryable(
+          ownerPubkey: testPubkey,
+          maxAttempts: 10,
+        );
+        expect(rows, hasLength(1));
+        expect(rows.single.attempts, 1);
+      });
+
+      test(
+        'schema parity — pending_gift_wraps fresh-install matches runtime '
+        'CREATE-IF-NOT-EXISTS path',
+        () async {
+          final freshColumns = await _collectTableInfo(
+            database,
+            'pending_gift_wraps',
+          );
+          final freshIndexes = await _collectIndexNames(
+            database,
+            'pending_gift_wraps',
+          );
+
+          expect(
+            freshColumns,
+            isNotEmpty,
+            reason:
+                'precondition: fresh install should have pending_gift_wraps',
+          );
+
+          await database.customStatement('DROP TABLE pending_gift_wraps');
+          for (final indexName in freshIndexes) {
+            await database.customStatement('DROP INDEX IF EXISTS $indexName');
+          }
+          await database.close();
+
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+          await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='pending_gift_wraps'",
+              )
+              .get();
+
+          final recreatedColumns = await _collectTableInfo(
+            database,
+            'pending_gift_wraps',
+          );
+          final recreatedIndexes = await _collectIndexNames(
+            database,
+            'pending_gift_wraps',
+          );
+
+          expect(recreatedColumns, equals(freshColumns));
+          expect(recreatedIndexes, equals(freshIndexes));
+        },
+      );
+
       test('does not delete non-expired data', () async {
         final eventsDao = database.nostrEventsDao;
         final profileStatsDao = database.profileStatsDao;

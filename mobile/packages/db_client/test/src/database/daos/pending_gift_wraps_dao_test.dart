@@ -163,5 +163,78 @@ void main() {
         expect(await dao.countForOwner(ownerB), 1);
       },
     );
+
+    test('deleteExhausted removes only rows at or above the cap', () async {
+      // wrap1: 3 attempts; wrap2: 1 attempt.
+      for (var i = 0; i < 3; i++) {
+        await dao.recordFailedDecrypt(
+          giftWrapId: wrap1,
+          ownerPubkey: ownerA,
+          rawJson: 'r',
+          createdAt: 100,
+        );
+      }
+      await dao.recordFailedDecrypt(
+        giftWrapId: wrap2,
+        ownerPubkey: ownerA,
+        rawJson: 'r',
+        createdAt: 200,
+      );
+
+      final deleted = await dao.deleteExhausted(
+        ownerPubkey: ownerA,
+        maxAttempts: 3,
+      );
+
+      expect(deleted, 1);
+      final remaining = await dao.getRetryable(
+        ownerPubkey: ownerA,
+        maxAttempts: 999,
+      );
+      expect(remaining.map((r) => r.giftWrapId).toList(), [wrap2]);
+    });
+
+    test('deleteExhausted is owner-scoped', () async {
+      for (var i = 0; i < 3; i++) {
+        await dao.recordFailedDecrypt(
+          giftWrapId: wrap1,
+          ownerPubkey: ownerA,
+          rawJson: 'r',
+          createdAt: 100,
+        );
+        await dao.recordFailedDecrypt(
+          giftWrapId: wrap1,
+          ownerPubkey: ownerB,
+          rawJson: 'r',
+          createdAt: 100,
+        );
+      }
+
+      await dao.deleteExhausted(ownerPubkey: ownerA, maxAttempts: 3);
+
+      expect(await dao.countForOwner(ownerA), 0);
+      expect(await dao.countForOwner(ownerB), 1);
+    });
+
+    test('clearAll removes every row across all owners', () async {
+      await dao.recordFailedDecrypt(
+        giftWrapId: wrap1,
+        ownerPubkey: ownerA,
+        rawJson: 'r',
+        createdAt: 100,
+      );
+      await dao.recordFailedDecrypt(
+        giftWrapId: wrap2,
+        ownerPubkey: ownerB,
+        rawJson: 'r',
+        createdAt: 100,
+      );
+
+      final deleted = await dao.clearAll();
+
+      expect(deleted, 2);
+      expect(await dao.countForOwner(ownerA), 0);
+      expect(await dao.countForOwner(ownerB), 0);
+    });
   });
 }

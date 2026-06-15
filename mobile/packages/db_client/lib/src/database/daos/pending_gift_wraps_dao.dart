@@ -91,6 +91,26 @@ class PendingGiftWrapsDao extends DatabaseAccessor<AppDatabase>
         .go();
   }
 
+  /// Deletes rows for [ownerPubkey] that have reached [maxAttempts] — wraps
+  /// declared permanently undecryptable. Bounds queue growth so a
+  /// never-decryptable or spammed gift wrap cannot accumulate forever.
+  Future<int> deleteExhausted({
+    required String ownerPubkey,
+    required int maxAttempts,
+  }) {
+    return (delete(pendingGiftWraps)..where(
+          (t) =>
+              t.ownerPubkey.equals(ownerPubkey) &
+              t.attempts.isBiggerOrEqualValue(maxAttempts),
+        ))
+        .go();
+  }
+
+  /// Removes every pending row. Called during account cleanup (switch /
+  /// destructive sign-out) alongside the other DM-table wipes so an account's
+  /// raw (still-encrypted) gift wraps never outlive its decrypted DM data.
+  Future<int> clearAll() => delete(pendingGiftWraps).go();
+
   /// Returns rows for [ownerPubkey] still below [maxAttempts], newest first
   /// (so recent conversations are recovered before older ones).
   Future<List<PendingGiftWrap>> getRetryable({

@@ -30,10 +30,12 @@ class DmSyncState {
   /// [drainVersion] is below this re-run the drain once, even if
   /// [historyDrainComplete] is already `true` — this unsticks installs that
   /// completed under an older, buggy drain that could mark complete without
-  /// fully recovering history (a cold-start empty page, or dropped
-  /// decryptions). Pre-#5202 installs have no version key (reads as 0). Bump
-  /// this whenever a drain-correctness fix must force one more recovery pass.
-  /// See #5202.
+  /// fully recovering history (a cold-start empty page, or a wrap a prior run
+  /// failed to decrypt). The re-drain re-fetches and re-decrypts whatever the
+  /// relays still serve; gift wraps a relay has since pruned cannot be
+  /// recovered (inherent reinstall-recovery limit). Pre-#5202 installs have no
+  /// version key (reads as 0). Bump this whenever a drain-correctness fix must
+  /// force one more recovery pass. See #5202.
   static const int currentDrainVersion = 2;
 
   /// Returns the newest (highest) `created_at` unix timestamp we have

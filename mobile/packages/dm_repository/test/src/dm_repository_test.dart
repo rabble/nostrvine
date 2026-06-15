@@ -1471,6 +1471,12 @@ void main() {
           final pendingDao = _MockPendingGiftWrapsDao();
 
           when(
+            () => pendingDao.deleteExhausted(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => 0);
+          when(
             () => pendingDao.getRetryable(
               ownerPubkey: any(named: 'ownerPubkey'),
               maxAttempts: any(named: 'maxAttempts'),
