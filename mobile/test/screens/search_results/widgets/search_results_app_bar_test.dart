@@ -350,6 +350,13 @@ void main() {
       );
     }
 
+    // Scope to the back button by its icon so the finder stays unambiguous if
+    // a DivineIconButton is later added to DivineSearchBar/SearchFilterPill.
+    final backButtonFinder = find.byWidgetPredicate(
+      (widget) =>
+          widget is DivineIconButton && widget.icon == DivineIconName.caretLeft,
+    );
+
     testWidgets('back button pops when there is a route to pop', (
       tester,
     ) async {
@@ -360,7 +367,7 @@ void main() {
       await tester.pumpWidget(createBackButtonSubject(goRouter));
       await tester.pump();
 
-      await tester.tap(find.byType(DivineIconButton));
+      await tester.tap(backButtonFinder);
       await tester.pump();
 
       verify(() => goRouter.pop<Object?>()).called(1);
@@ -378,7 +385,7 @@ void main() {
         await tester.pumpWidget(createBackButtonSubject(goRouter));
         await tester.pump();
 
-        await tester.tap(find.byType(DivineIconButton));
+        await tester.tap(backButtonFinder);
         await tester.pump();
 
         verify(() => goRouter.go(ExploreScreen.path)).called(1);
