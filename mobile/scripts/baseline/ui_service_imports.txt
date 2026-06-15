@@ -37,7 +37,6 @@ lib/screens/profile_screen_router.dart
 lib/screens/relay_diagnostic_screen.dart
 lib/screens/relay_settings_screen.dart
 lib/screens/search_results/widgets/search_user_tile.dart
-lib/screens/search_results/widgets/video_search_view.dart
 lib/screens/search_results/widgets/videos_section.dart
 lib/screens/settings/app_language_screen.dart
 lib/screens/settings/content_preferences_screen.dart
