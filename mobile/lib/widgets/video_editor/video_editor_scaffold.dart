@@ -51,8 +51,10 @@ class VideoEditorScaffold extends StatelessWidget {
           child: _ClipReverseResultListener(
             child: _ClipTransformResultListener(
               child: _ClipMergeResultListener(
-                child: _AudioExtractionResultListener(
-                  child: _ScaffoldBody(isLoading: isLoading),
+                child: _ClipsRemovedResultListener(
+                  child: _AudioExtractionResultListener(
+                    child: _ScaffoldBody(isLoading: isLoading),
+                  ),
                 ),
               ),
             ),
@@ -286,6 +288,50 @@ class _ClipMergeResultListener extends StatelessWidget {
 
     final rebasedMarkers = rebaseTimelineMarkersForClipState(
       oldClips: previousClips,
+      newClips: state.clips,
+      markers: overlayBloc.state.timelineMarkers,
+    );
+
+    overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
+    editor.setClipState(state.clips, timelineMarkers: rebasedMarkers);
+  }
+}
+
+/// Listens to [ClipEditorBloc.state.lastClipsRemovedResult] and commits a
+/// multi-select removal to editor history (the new clip list with timeline
+/// markers rebased).
+///
+/// The bloc owns the clip-list mutation; this listener only persists it. Kept
+/// at the scaffold level (always mounted) so it survives the multi-select
+/// controls unmounting when the bloc exits multi-select mode on removal.
+class _ClipsRemovedResultListener extends StatelessWidget {
+  const _ClipsRemovedResultListener({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<ClipEditorBloc, ClipEditorState>(
+      listenWhen: (prev, curr) =>
+          !identical(
+            prev.lastClipsRemovedResult,
+            curr.lastClipsRemovedResult,
+          ) &&
+          curr.lastClipsRemovedResult != null,
+      listener: _onClipsRemoved,
+      child: child,
+    );
+  }
+
+  void _onClipsRemoved(BuildContext context, ClipEditorState state) {
+    final result = state.lastClipsRemovedResult;
+    if (result == null) return;
+
+    final editor = VideoEditorScope.of(context).requireEditor;
+    final overlayBloc = context.read<TimelineOverlayBloc>();
+
+    final rebasedMarkers = rebaseTimelineMarkersForClipState(
+      oldClips: result.previousClips,
       newClips: state.clips,
       markers: overlayBloc.state.timelineMarkers,
     );

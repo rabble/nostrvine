@@ -204,6 +204,14 @@ Future<DivineVideoClip?> _fakeMergeClipsFail({
   return null;
 }
 
+/// Fake merge that throws — exercises the BLoC's catch / [Reportable] path.
+Future<DivineVideoClip?> _fakeMergeClipsThrow({
+  required List<DivineVideoClip> clips,
+  required String renderId,
+}) async {
+  throw StateError('merge boom');
+}
+
 void main() {
   group(ClipEditorBloc, () {
     late List<DivineVideoClip> twoClips;
@@ -2219,6 +2227,10 @@ void main() {
     // =========================================================
 
     group('multi-select', () {
+      // Backs the deferred merge fake in the mid-render discard test; assigned
+      // in that test's act before the merge handler reads its future.
+      late Completer<DivineVideoClip?> mergeCompleter;
+
       blocTest<ClipEditorBloc, ClipEditorState>(
         'starts multi-select with the initial clip pre-selected and exits '
         'editing',
@@ -2287,6 +2299,14 @@ void main() {
           expect(bloc.state.clips.map((c) => c.id), equals(['b']));
           expect(bloc.state.isMultiSelectMode, isFalse);
           expect(bloc.state.selectedClipIds, isEmpty);
+          // The widget layer commits the removal via this one-shot signal,
+          // which carries the pre-removal clips for marker rebasing.
+          final result = bloc.state.lastClipsRemovedResult;
+          expect(result, isNotNull);
+          expect(
+            result!.previousClips.map((c) => c.id),
+            equals(['a', 'b', 'c']),
+          );
         },
       );
 
@@ -2362,6 +2382,67 @@ void main() {
           expect(bloc.state.isMerging, isFalse);
           expect(bloc.state.isMultiSelectMode, isTrue);
           expect(bloc.state.lastMergeResult, isA<ClipMergeFailure>());
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'reports the error and emits failure when the merge render throws',
+        build: () => buildBloc(mergeClips: _fakeMergeClipsThrow),
+        seed: () => ClipEditorState(
+          clips: threeClips,
+          isMultiSelectMode: true,
+          selectedClipIds: const {'a', 'b'},
+        ),
+        act: (bloc) => bloc.add(const ClipEditorSelectedClipsMergeRequested()),
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.clips, hasLength(3));
+          expect(bloc.state.isMerging, isFalse);
+          expect(bloc.state.lastMergeResult, isA<ClipMergeFailure>());
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'discards the merge result when a selected clip is removed mid-render',
+        build: () => buildBloc(
+          mergeClips: ({required clips, required renderId}) =>
+              mergeCompleter.future,
+        ),
+        seed: () => ClipEditorState(
+          clips: threeClips,
+          isMultiSelectMode: true,
+          selectedClipIds: const {'a', 'c'},
+        ),
+        act: (bloc) async {
+          mergeCompleter = Completer<DivineVideoClip?>();
+          bloc.add(const ClipEditorSelectedClipsMergeRequested());
+          // Let the merge start (emits isMerging) and suspend on the completer.
+          await Future<void>.delayed(Duration.zero);
+          // A selected clip disappears while the render is in flight.
+          bloc.add(const ClipEditorClipRemoved('a'));
+          await Future<void>.delayed(Duration.zero);
+          mergeCompleter.complete(
+            _createClip(
+              id: 'merged-clip',
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
+        verify: (bloc) {
+          expect(bloc.state.lastMergeResult, isA<ClipMergeDiscarded>());
+          // The merged clip must not be inserted.
+          expect(
+            bloc.state.clips.map((c) => c.id),
+            isNot(contains('merged-clip')),
+          );
+          expect(bloc.state.isMerging, isFalse);
+          expect(bloc.state.isMultiSelectMode, isFalse);
         },
       );
     });

@@ -192,5 +192,28 @@ void main() {
         () => bloc.add(const ClipEditorMultiSelectCancelled()),
       ).called(1);
     });
+
+    testWidgets('Delete dispatches a remove event when enabled', (
+      tester,
+    ) async {
+      when(() => bloc.state).thenReturn(
+        ClipEditorState(
+          clips: [_clip('a'), _clip('b'), _clip('c')],
+          isMultiSelectMode: true,
+          selectedClipIds: const {'a', 'b'},
+        ),
+      );
+
+      await tester.pumpWidget(build());
+
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoEditorDeleteSelectedClipsSemanticLabel),
+      );
+      await tester.pump();
+
+      verify(
+        () => bloc.add(const ClipEditorSelectedClipsRemoved()),
+      ).called(1);
+    });
   });
 }

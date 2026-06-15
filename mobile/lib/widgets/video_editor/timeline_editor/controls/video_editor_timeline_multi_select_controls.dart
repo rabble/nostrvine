@@ -2,11 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
-import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
-import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
-import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 
 /// Action bar shown while the timeline is in multi-select mode.
 ///
@@ -108,30 +104,11 @@ class TimelineMultiSelectControls extends StatelessWidget {
   }
 
   void _delete(BuildContext context) {
-    final bloc = context.read<ClipEditorBloc>();
-    final overlayBloc = context.read<TimelineOverlayBloc>();
-    final editor = VideoEditorScope.of(context).requireEditor;
-    final state = bloc.state;
-    final selected = state.selectedClipIds;
-
-    final newClips = state.clips
-        .where((clip) => !selected.contains(clip.id))
-        .toList();
-    // The bloc applies the same guard, but mirror it here so we never commit an
-    // empty timeline to editor history.
-    if (newClips.isEmpty) return;
-
-    // Markers on removed clips are dropped; markers on later clips shift
-    // earlier — rebase by source position so both rules are honoured.
-    final rebasedMarkers = rebaseTimelineMarkersForClipState(
-      oldClips: state.clips,
-      newClips: newClips,
-      markers: overlayBloc.state.timelineMarkers,
+    // The bloc owns the clip-list mutation; the scaffold's removed-result
+    // listener rebases markers and commits the new list to editor history.
+    context.read<ClipEditorBloc>().add(
+      const ClipEditorSelectedClipsRemoved(),
     );
-
-    bloc.add(const ClipEditorSelectedClipsRemoved());
-    overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
-    editor.setClipState(newClips, timelineMarkers: rebasedMarkers);
   }
 }
 

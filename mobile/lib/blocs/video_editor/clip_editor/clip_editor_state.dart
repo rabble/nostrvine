@@ -33,6 +33,7 @@ class ClipEditorState extends Equatable {
     this.isMerging = false,
     this.mergingRenderId,
     this.lastMergeResult,
+    this.lastClipsRemovedResult,
   });
 
   /// Local copy of clips managed by this editor session.
@@ -148,6 +149,12 @@ class ClipEditorState extends Equatable {
   /// history (on success) or surface a failure snackbar.
   final ClipMergeResult? lastMergeResult;
 
+  /// One-shot signal emitted after a multi-select removal.
+  ///
+  /// The BLoC owns the clip-list mutation; the widget layer consumes this to
+  /// rebase timeline markers and commit the new clip list to editor history.
+  final ClipsRemovedResult? lastClipsRemovedResult;
+
   /// Total wall-clock duration of all clips (respecting trim and playback speed).
   Duration get totalDuration =>
       clips.fold(Duration.zero, (sum, clip) => sum + clip.playbackDuration);
@@ -184,6 +191,7 @@ class ClipEditorState extends Equatable {
     String? mergingRenderId,
     bool clearMergingRenderId = false,
     ClipMergeResult? lastMergeResult,
+    ClipsRemovedResult? lastClipsRemovedResult,
   }) {
     return ClipEditorState(
       clips: clips ?? this.clips,
@@ -220,6 +228,8 @@ class ClipEditorState extends Equatable {
           ? null
           : (mergingRenderId ?? this.mergingRenderId),
       lastMergeResult: lastMergeResult ?? this.lastMergeResult,
+      lastClipsRemovedResult:
+          lastClipsRemovedResult ?? this.lastClipsRemovedResult,
     );
   }
 
@@ -253,6 +263,8 @@ class ClipEditorState extends Equatable {
     mergingRenderId,
     // Identity-only: each ClipMergeResult is a fresh instance per merge.
     identityHashCode(lastMergeResult),
+    // Identity-only: each ClipsRemovedResult is a fresh instance per removal.
+    identityHashCode(lastClipsRemovedResult),
   ];
 }
 
@@ -379,3 +391,18 @@ final class ClipMergeFailure extends ClipMergeResult {}
 /// Merge completed but one or more selected clips were removed from the
 /// timeline while the async render was in flight, so the result was discarded.
 final class ClipMergeDiscarded extends ClipMergeResult {}
+
+// === CLIPS-REMOVED RESULT ===
+
+/// One-shot signal emitted after a multi-select removal succeeds.
+///
+/// The BLoC has already dropped the selected clips from [ClipEditorState.clips]
+/// by the time this fires; [previousClips] is the clip list as it was before the
+/// removal, so the widget layer can rebase timeline markers from the old
+/// composition to the new one. Identity-compared so the scaffold [BlocListener]
+/// fires exactly once per removal.
+final class ClipsRemovedResult {
+  ClipsRemovedResult({required this.previousClips});
+
+  final List<DivineVideoClip> previousClips;
+}

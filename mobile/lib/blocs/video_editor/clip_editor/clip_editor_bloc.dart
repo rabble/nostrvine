@@ -292,14 +292,15 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     final selected = state.selectedClipIds;
     if (selected.isEmpty) return;
 
-    final remaining = state.clips
+    final previousClips = state.clips;
+    final remaining = previousClips
         .where((c) => !selected.contains(c.id))
         .toList();
     // At least one clip must always remain in the timeline.
     if (remaining.isEmpty) return;
 
     Log.info(
-      '🗑️ Removed ${state.clips.length - remaining.length} selected clip(s)',
+      '🗑️ Removed ${previousClips.length - remaining.length} selected clip(s)',
       name: 'ClipEditorBloc',
       category: LogCategory.video,
     );
@@ -310,6 +311,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         currentClipIndex: state.currentClipIndex.clamp(0, remaining.length - 1),
         isMultiSelectMode: false,
         selectedClipIds: const {},
+        lastClipsRemovedResult: ClipsRemovedResult(
+          previousClips: previousClips,
+        ),
       ),
     );
   }
