@@ -24,7 +24,11 @@ void main() {
       ).writeAsStringSync('${List.filled(n, '// line').join('\n')}\n');
     }
 
-    ProcessResult run({bool update = false}) {
+    ProcessResult run({
+      bool update = false,
+      bool allowNoBase = true,
+      String baseRef = 'refs/heads/file-size-ceiling-test-no-base-ref',
+    }) {
       return Process.runSync(
         'bash',
         [scriptPath],
@@ -32,8 +36,9 @@ void main() {
           'FILE_SIZE_SCAN_DIR': '${tmp.path}/lib',
           'FILE_SIZE_PATH_PREFIX': tmp.path,
           'FILE_SIZE_BASELINE_FILE': baselinePath,
+          'FILE_SIZE_BASELINE_BASE_REF': baseRef,
           'FILE_SIZE_THRESHOLD': '800',
-          'FILE_SIZE_CEILING_ALLOW_NO_BASE': '1',
+          'FILE_SIZE_CEILING_ALLOW_NO_BASE': allowNoBase ? '1' : '0',
           if (update) 'UPDATE_BASELINE': '1',
         },
       );
@@ -117,6 +122,16 @@ void main() {
       final res = run();
       expect(res.exitCode, 0, reason: res.stdout.toString());
       expect(res.stdout, contains('OK [file_size_ceiling]'));
+    });
+
+    test('fails when the branch baseline adds a file vs base ref', () {
+      writeLines('big.dart', 900);
+      run(update: true);
+
+      final res = run(allowNoBase: false, baseRef: 'HEAD');
+      expect(res.exitCode, 1);
+      expect(res.stdout, contains('ADDED a file or RAISED a ceiling'));
+      expect(res.stdout, contains('+added lib/big.dart'));
     });
   });
 }
