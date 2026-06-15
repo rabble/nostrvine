@@ -4,6 +4,8 @@
 import 'dart:io';
 
 import 'package:hive_ce/hive.dart';
+import 'package:meta/meta.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -116,35 +118,86 @@ class CacheRecoveryService {
     return cleared;
   }
 
-  /// Clear app support directory (NOT Documents - that's sandboxed on macOS)
-  static Future<int> _clearAppSupportDirectory() async {
-    int cleared = 0;
+  /// Durable database directory under Application Support that must NEVER be
+  /// deleted by cache clearing. It holds the live SQLite database
+  /// ({appSupport}/openvine/database/divine_db.db) — local-only user data
+  /// (drafts, DMs, pending uploads/actions, reactions, reposts) that cannot be
+  /// re-fetched. Segments mirror db_client's `buildSharedDatabasePath`.
+  ///
+  /// Deleting this directory while the Drift connection is open unlinks the
+  /// file's inode, so every later write returns SqliteException(1032 DBMOVED)
+  /// and is silently swallowed until the app restarts (#4968), on top of
+  /// destroying the durable data.
+  static const List<String> _durableDatabaseDirSegments = [
+    'openvine',
+    'database',
+  ];
 
+  /// Clear app support directory (NOT Documents - that's sandboxed on macOS),
+  /// preserving the durable database directory (see [_durableDatabaseDirSegments]).
+  static Future<int> _clearAppSupportDirectory() async {
     try {
       final appSupportDir = await getApplicationSupportDirectory();
-      if (appSupportDir.existsSync()) {
-        final files = appSupportDir.listSync();
-        for (final file in files) {
-          try {
-            await file.delete(recursive: true);
-            cleared++;
-          } catch (e) {
-            Log.debug(
-              'Could not delete ${file.path}: $e',
-              name: _logName,
-              category: LogCategory.system,
-            );
-          }
-        }
-      }
+      if (!appSupportDir.existsSync()) return 0;
+      final protectedPath = p.joinAll([
+        appSupportDir.path,
+        ..._durableDatabaseDirSegments,
+      ]);
+      return await deleteDirectoryContentsExcept(
+        appSupportDir,
+        protectedPath: protectedPath,
+      );
     } catch (e) {
       Log.warning(
         'Error clearing app support directory: $e',
         name: _logName,
         category: LogCategory.system,
       );
+      return 0;
     }
+  }
 
+  /// Recursively deletes the contents of [dir], preserving [protectedPath] and
+  /// its subtree wherever it sits beneath [dir]. Directories that are ancestors
+  /// of [protectedPath] are recursed into (so their other children are still
+  /// cleared) rather than deleted wholesale; everything else is removed.
+  ///
+  /// This is how cache clearing avoids unlinking the open database file (#4968):
+  /// the live `openvine/database` directory is skipped while the rest of
+  /// Application Support — including the disposable cache_sync database under
+  /// `openvine/cache` — is cleared.
+  @visibleForTesting
+  static Future<int> deleteDirectoryContentsExcept(
+    Directory dir, {
+    required String protectedPath,
+  }) async {
+    // Only apply protection when the path actually exists; otherwise there is
+    // nothing to preserve and ancestors should be cleared like anything else.
+    final protect = Directory(protectedPath).existsSync();
+    var cleared = 0;
+    for (final entity in dir.listSync()) {
+      final path = entity.path;
+      if (protect && p.equals(path, protectedPath)) {
+        continue;
+      }
+      if (protect && entity is Directory && p.isWithin(path, protectedPath)) {
+        cleared += await deleteDirectoryContentsExcept(
+          entity,
+          protectedPath: protectedPath,
+        );
+        continue;
+      }
+      try {
+        await entity.delete(recursive: true);
+        cleared++;
+      } catch (e) {
+        Log.debug(
+          'Could not delete $path: $e',
+          name: _logName,
+          category: LogCategory.system,
+        );
+      }
+    }
     return cleared;
   }
 
