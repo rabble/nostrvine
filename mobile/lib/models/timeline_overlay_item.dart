@@ -44,6 +44,8 @@ class TimelineOverlayItem extends Equatable {
     this.label = '',
     this.layer,
     this.maxDuration,
+    this.sourceDuration,
+    this.startOffset = Duration.zero,
     this.waveformLeftChannel,
     this.waveformRightChannel,
     this.audioSource,
@@ -77,6 +79,21 @@ class TimelineOverlayItem extends Equatable {
   /// the item beyond this duration — the item moves instead.
   final Duration? maxDuration;
 
+  /// Full duration of the underlying audio source for sound items.
+  ///
+  /// `null` for non-sound items or when the source duration is unknown.
+  /// Distinct from [maxDuration] (which is the remaining audio *after*
+  /// [startOffset]); the waveform painter needs the full-source basis to map
+  /// samples to time when [startOffset] is non-zero.
+  final Duration? sourceDuration;
+
+  /// Offset into the audio source where the visible segment begins.
+  ///
+  /// Advancing this — e.g. by left-trimming a sound item — scrolls the
+  /// waveform so the trimmed-away head leaves the view, rather than the tail
+  /// being clipped. [Duration.zero] for non-sound items.
+  final Duration startOffset;
+
   /// Left audio waveform amplitude samples for sound items.
   final Float32List? waveformLeftChannel;
 
@@ -103,6 +120,8 @@ class TimelineOverlayItem extends Equatable {
     String? label,
     Layer? layer,
     Duration? maxDuration,
+    Duration? sourceDuration,
+    Duration? startOffset,
     Float32List? waveformLeftChannel,
     Float32List? waveformRightChannel,
     AudioSource? audioSource,
@@ -116,6 +135,8 @@ class TimelineOverlayItem extends Equatable {
       label: label ?? this.label,
       layer: layer ?? this.layer,
       maxDuration: maxDuration ?? this.maxDuration,
+      sourceDuration: sourceDuration ?? this.sourceDuration,
+      startOffset: startOffset ?? this.startOffset,
       waveformLeftChannel: waveformLeftChannel ?? this.waveformLeftChannel,
       waveformRightChannel: waveformRightChannel ?? this.waveformRightChannel,
       audioSource: audioSource ?? this.audioSource,
@@ -132,6 +153,8 @@ class TimelineOverlayItem extends Equatable {
     label,
     layer,
     maxDuration,
+    sourceDuration,
+    startOffset,
     waveformLeftChannel,
     waveformRightChannel,
     audioSource,

@@ -91,6 +91,10 @@ class TimelineOverlayBloc
                       track.startOffset.inMilliseconds,
                 )
               : VideoEditorConstants.maxDuration,
+          sourceDuration: track.duration != null
+              ? Duration(milliseconds: (track.duration! * 1000).round())
+              : null,
+          startOffset: track.startOffset,
           waveformLeftChannel: leftCache[track.id],
           waveformRightChannel: rightCache[track.id],
           audioSource: track.isOriginalSound
@@ -352,8 +356,23 @@ class TimelineOverlayBloc
 
     final newStart = event.startTime ?? item.startTime;
     final newEnd = event.endTime ?? item.endTime;
+    final newStartOffset = event.startOffset ?? item.startOffset;
 
-    items[idx] = item.copyWith(startTime: newStart, endTime: newEnd);
+    // A left-trim advances the source offset. The full item refresh from
+    // editor history (which recomputes maxDuration) does not run mid-drag, so
+    // keep maxDuration in step here too — otherwise the live waveform window
+    // (and the trim move-conversion) would read a stale remaining-audio value.
+    final newMaxDuration =
+        event.startOffset != null && item.sourceDuration != null
+        ? item.sourceDuration! - newStartOffset
+        : item.maxDuration;
+
+    items[idx] = item.copyWith(
+      startTime: newStart,
+      endTime: newEnd,
+      startOffset: newStartOffset,
+      maxDuration: newMaxDuration,
+    );
 
     // Only re-assign rows for the changed type; other types are unaffected.
     final changedType = item.type;

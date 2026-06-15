@@ -163,6 +163,73 @@ void main() {
       );
 
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'carries full source duration and start offset onto sound items',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
+            audioTracks: [
+              _audioEvent(
+                id: 'sound-1',
+                start: const Duration(seconds: 1),
+                end: const Duration(seconds: 4),
+              ).copyWith(
+                duration: 8.0,
+                startOffset: const Duration(seconds: 2),
+              ),
+            ],
+            totalVideoDuration: const Duration(seconds: 12),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>()
+              .having(
+                (s) => s.items.first.sourceDuration,
+                'sourceDuration',
+                const Duration(seconds: 8),
+              )
+              .having(
+                (s) => s.items.first.startOffset,
+                'startOffset',
+                const Duration(seconds: 2),
+              ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'leaves source duration null when the track has no duration',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
+            audioTracks: [
+              _audioEvent(
+                id: 'sound-1',
+                start: const Duration(seconds: 1),
+                end: const Duration(seconds: 4),
+              ),
+            ],
+            totalVideoDuration: const Duration(seconds: 12),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>()
+              .having(
+                (s) => s.items.first.sourceDuration,
+                'sourceDuration',
+                isNull,
+              )
+              .having(
+                (s) => s.items.first.startOffset,
+                'startOffset',
+                Duration.zero,
+              ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
         'clears selection when not trimming',
         build: TimelineOverlayBloc.new,
         seed: () => const TimelineOverlayState(selectedItemId: 'sound-1'),
@@ -606,6 +673,100 @@ void main() {
               ),
             ],
             trimPosition: const Duration(seconds: 4),
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'applies the source offset and remaining-audio max on a left-trim',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          items: [
+            TimelineOverlayItem(
+              id: 'sound-1',
+              type: TimelineOverlayType.sound,
+              startTime: Duration.zero,
+              endTime: Duration(seconds: 8),
+              sourceDuration: Duration(seconds: 20),
+              maxDuration: Duration(seconds: 20),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayItemTrimmed(
+            itemId: 'sound-1',
+            isStart: true,
+            startTime: Duration(seconds: 3),
+            endTime: Duration(seconds: 8),
+            startOffset: Duration(seconds: 3),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>().having(
+            (s) => s.items.single,
+            'item',
+            isA<TimelineOverlayItem>()
+                .having(
+                  (i) => i.startTime,
+                  'startTime',
+                  const Duration(seconds: 3),
+                )
+                .having((i) => i.endTime, 'endTime', const Duration(seconds: 8))
+                .having(
+                  (i) => i.startOffset,
+                  'startOffset',
+                  const Duration(seconds: 3),
+                )
+                // maxDuration tracks the offset: 20s source - 3s consumed head.
+                .having(
+                  (i) => i.maxDuration,
+                  'maxDuration',
+                  const Duration(seconds: 17),
+                ),
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'leaves the source offset untouched on a right-trim',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          items: [
+            TimelineOverlayItem(
+              id: 'sound-1',
+              type: TimelineOverlayType.sound,
+              startTime: Duration(seconds: 2),
+              endTime: Duration(seconds: 8),
+              startOffset: Duration(seconds: 2),
+              sourceDuration: Duration(seconds: 20),
+              maxDuration: Duration(seconds: 18),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayItemTrimmed(
+            itemId: 'sound-1',
+            isStart: false,
+            startTime: Duration(seconds: 2),
+            endTime: Duration(seconds: 6),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>().having(
+            (s) => s.items.single,
+            'item',
+            isA<TimelineOverlayItem>()
+                .having((i) => i.endTime, 'endTime', const Duration(seconds: 6))
+                .having(
+                  (i) => i.startOffset,
+                  'startOffset',
+                  const Duration(seconds: 2),
+                )
+                .having(
+                  (i) => i.maxDuration,
+                  'maxDuration',
+                  const Duration(seconds: 18),
+                ),
           ),
         ],
       );

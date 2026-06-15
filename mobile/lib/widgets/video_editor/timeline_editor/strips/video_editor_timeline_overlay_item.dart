@@ -97,7 +97,8 @@ class TimelineOverlayItemTile extends StatelessWidget {
                     label: item.label,
                     color: foregroundColor,
                     currentDuration: item.duration,
-                    maxDuration: item.maxDuration,
+                    sourceDuration: item.sourceDuration,
+                    startOffset: item.startOffset,
                     leftChannel: item.waveformLeftChannel,
                     rightChannel: item.waveformRightChannel,
                   )
@@ -182,28 +183,46 @@ class _StickerPreview extends StatelessWidget {
 
 /// Sound-item content: label text at top, waveform bars at bottom.
 ///
-/// The waveform is always rendered at [maxDuration] width and clipped
-/// by the parent so trimming doesn't re-scale the bars.
+/// The waveform shows the source samples windowed to
+/// `[startOffset, startOffset + currentDuration]`. Left-trimming advances
+/// [startOffset], scrolling the trimmed-away head out of view instead of
+/// clipping the tail — so the visible waveform matches what actually plays.
 class _SoundContent extends StatelessWidget {
   const _SoundContent({
     required this.label,
     required this.color,
     required this.currentDuration,
-    this.maxDuration,
+    this.sourceDuration,
+    this.startOffset = Duration.zero,
     this.leftChannel,
     this.rightChannel,
   });
 
   final String label;
   final Color color;
+
+  /// Visible span of the item on the timeline (`endTime - startTime`).
   final Duration currentDuration;
-  final Duration? maxDuration;
+
+  /// Full duration of the underlying audio source, or `null` if unknown.
+  final Duration? sourceDuration;
+
+  /// Offset into the audio source where the visible segment begins.
+  final Duration startOffset;
+
   final Float32List? leftChannel;
   final Float32List? rightChannel;
 
   @override
   Widget build(BuildContext context) {
-    final effectiveMax = maxDuration ?? currentDuration;
+    // The painter maps samples against the full-source duration, then windows
+    // them to [startOffset, startOffset + currentDuration]. When the source
+    // duration is unknown there's no basis to resolve the offset against, so
+    // fall back to treating the visible span as the whole source.
+    final hasSourceDuration =
+        sourceDuration != null && sourceDuration! > Duration.zero;
+    final audioDuration = hasSourceDuration ? sourceDuration! : currentDuration;
+    final effectiveOffset = hasSourceDuration ? startOffset : Duration.zero;
 
     return Padding(
       padding: const .fromLTRB(0, 8, 0, 4),
@@ -222,39 +241,21 @@ class _SoundContent extends StatelessWidget {
           ),
 
           Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final currentUs = currentDuration.inMicroseconds;
-                final maxUs = effectiveMax.inMicroseconds;
-                final waveformWidth = currentUs > 0 && maxUs > 0
-                    ? constraints.maxWidth * maxUs / currentUs
-                    : constraints.maxWidth;
-
-                return ClipRect(
-                  child: OverflowBox(
-                    minWidth: 0,
-                    maxWidth: waveformWidth,
-                    alignment: .centerLeft,
-                    child: RepaintBoundary(
-                      child: SizedBox(
-                        width: waveformWidth,
-                        child: CustomPaint(
-                          painter: StereoWaveformPainter(
-                            leftChannel: leftChannel ?? Float32List(0),
-                            rightChannel: rightChannel,
-                            progress: 1,
-                            activeColor: VineTheme.accentPurple,
-                            inactiveColor: VineTheme.accentPurple,
-                            audioDuration: effectiveMax,
-                            maxDuration: effectiveMax,
-                            barWidth: TimelineConstants.soundWaveformBarWidth,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
+            child: RepaintBoundary(
+              child: CustomPaint(
+                size: Size.infinite,
+                painter: StereoWaveformPainter(
+                  leftChannel: leftChannel ?? Float32List(0),
+                  rightChannel: rightChannel,
+                  progress: 1,
+                  activeColor: VineTheme.accentPurple,
+                  inactiveColor: VineTheme.accentPurple,
+                  audioDuration: audioDuration,
+                  maxDuration: currentDuration,
+                  startOffset: effectiveOffset,
+                  barWidth: TimelineConstants.soundWaveformBarWidth,
+                ),
+              ),
             ),
           ),
         ],

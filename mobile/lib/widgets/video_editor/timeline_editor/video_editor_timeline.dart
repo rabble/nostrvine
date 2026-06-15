@@ -583,6 +583,12 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   }) {
     final editor = VideoEditorScope.of(context).requireEditor;
 
+    // For sound items, the new source offset computed alongside the timeline
+    // move is forwarded to the BLoC so the live waveform scrolls the
+    // trimmed-away head out of view during the drag — the full item refresh
+    // that would otherwise carry it does not run mid-trim.
+    Duration? newStartOffset;
+
     switch (item.type) {
       case .layer:
         final layers = editor.activeLayers;
@@ -613,6 +619,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
                 newStartTime: startTime,
               )
             : null;
+        newStartOffset = trimResult?.startOffset;
 
         editor.setSoundTimeline(
           index: audioIdx,
@@ -630,6 +637,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         isStart: isStart,
         startTime: startTime,
         endTime: endTime,
+        startOffset: newStartOffset,
       ),
     );
   }

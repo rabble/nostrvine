@@ -68,6 +68,7 @@ class TimelineOverlayItemTrimmed extends TimelineOverlayEvent {
     required this.isStart,
     this.startTime,
     this.endTime,
+    this.startOffset,
   });
 
   final String itemId;
@@ -75,8 +76,16 @@ class TimelineOverlayItemTrimmed extends TimelineOverlayEvent {
   final Duration? startTime;
   final Duration? endTime;
 
+  /// New source offset for sound items after a left-trim.
+  ///
+  /// Carries the authoritative offset computed alongside the timeline
+  /// move so the live waveform scrolls the trimmed-away head out of view
+  /// during the drag. `null` for non-sound items and right-trims (offset
+  /// unchanged).
+  final Duration? startOffset;
+
   @override
-  List<Object?> get props => [itemId, isStart, startTime, endTime];
+  List<Object?> get props => [itemId, isStart, startTime, endTime, startOffset];
 }
 
 /// Select an overlay item (shows trim handles).

@@ -1,11 +1,14 @@
 // ABOUTME: Widget tests for TimelineOverlayItemTile.
 // ABOUTME: Verifies label rendering and drag visual state.
 
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show StickerData, StickerPackData;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
+import 'package:openvine/widgets/stereo_waveform_painter.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_item.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' show WidgetLayer;
 
@@ -59,6 +62,90 @@ void main() {
         find.byType(AnimatedContainer),
       );
       expect(animated.foregroundDecoration, isNotNull);
+    });
+
+    group('sound waveform', () {
+      StereoWaveformPainter findWaveformPainter(WidgetTester tester) {
+        final painter = tester
+            .widgetList<CustomPaint>(find.byType(CustomPaint))
+            .map((c) => c.painter)
+            .whereType<StereoWaveformPainter>()
+            .single;
+        return painter;
+      }
+
+      Widget buildSound(TimelineOverlayItem item) {
+        return MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Center(
+              child: TimelineOverlayItemTile(
+                item: item,
+                width: 120,
+                height: 56,
+                color: Colors.blue,
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets(
+        'windows the waveform to the start offset when left-trimmed',
+        (tester) async {
+          final soundItem = TimelineOverlayItem(
+            id: 'sound-1',
+            type: TimelineOverlayType.sound,
+            // A left-trim that consumed 2s of the head: the visible span is
+            // 4s, starting 2s into an 8s source.
+            startTime: const Duration(seconds: 2),
+            endTime: const Duration(seconds: 6),
+            label: 'Beat',
+            sourceDuration: const Duration(seconds: 8),
+            startOffset: const Duration(seconds: 2),
+            waveformLeftChannel: Float32List.fromList(
+              List<double>.generate(64, (i) => (i % 8) / 8),
+            ),
+          );
+
+          await tester.pumpWidget(buildSound(soundItem));
+
+          final painter = findWaveformPainter(tester);
+          // The full source is the mapping basis, the visible span is what's
+          // shown, and the head offset scrolls the bars instead of clipping
+          // the tail.
+          expect(painter.audioDuration, const Duration(seconds: 8));
+          expect(painter.maxDuration, const Duration(seconds: 4));
+          expect(painter.startOffset, const Duration(seconds: 2));
+        },
+      );
+
+      testWidgets(
+        'falls back to zero offset when the source duration is unknown',
+        (tester) async {
+          final soundItem = TimelineOverlayItem(
+            id: 'sound-2',
+            type: TimelineOverlayType.sound,
+            startTime: const Duration(seconds: 2),
+            endTime: const Duration(seconds: 6),
+            label: 'Beat',
+            // No sourceDuration: there's no basis to resolve the offset, so
+            // the painter must not scroll the head out of view.
+            startOffset: const Duration(seconds: 2),
+            waveformLeftChannel: Float32List.fromList(
+              List<double>.generate(64, (i) => (i % 8) / 8),
+            ),
+          );
+
+          await tester.pumpWidget(buildSound(soundItem));
+
+          final painter = findWaveformPainter(tester);
+          expect(painter.startOffset, Duration.zero);
+          expect(painter.audioDuration, const Duration(seconds: 4));
+          expect(painter.maxDuration, const Duration(seconds: 4));
+        },
+      );
     });
 
     group('_StickerPreview', () {
