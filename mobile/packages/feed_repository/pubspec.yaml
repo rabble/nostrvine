@@ -1,0 +1,21 @@
+name: feed_repository
+description: >-
+  Lifecycle-stable abstraction over the app's video feeds. Resolves a
+  `ViewSource` value object into a live, filtered `Stream<List<VideoEvent>>`
+  so fullscreen surfaces no longer depend on a caller-owned StreamController.
+version: 0.1.0+1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  equatable: ^2.0.5
+  models:
+    path: ../models
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^10.0.0

@@ -42,6 +42,7 @@ workspace:
   - packages/divine_quick_actions
   - packages/dm_repository
   - packages/divine_video_player
+  - packages/feed_repository
   - packages/infinite_video_feed
   - packages/follow_repository
   - packages/funnelcake_api_client
@@ -184,6 +185,9 @@ dependencies:
 
   # Content Blocklist Repository - Blocked users, mutual mutes, kind 30000 sync
   content_blocklist_repository:
+
+  # Feed Repository - ViewSource-resolved, lifecycle-stable video feeds (#3383)
+  feed_repository:
 
   # Curated List Repository - NIP-51 kind 30005 curated video lists
   curated_list_repository:
