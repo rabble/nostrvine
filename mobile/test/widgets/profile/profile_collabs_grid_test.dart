@@ -312,9 +312,9 @@ void main() {
                     body: BlocProvider<ProfileCollabVideosBloc>.value(
                       value: mockBloc,
                       child: const ProfileCollabsGrid(
-                      isOwnProfile: true,
-                      userIdHex: 'author-pubkey',
-                    ),
+                        isOwnProfile: true,
+                        userIdHex: 'author-pubkey',
+                      ),
                     ),
                   ),
                 ),
@@ -371,9 +371,9 @@ void main() {
                     body: BlocProvider<ProfileCollabVideosBloc>.value(
                       value: mockBloc,
                       child: const ProfileCollabsGrid(
-                      isOwnProfile: true,
-                      userIdHex: 'author-pubkey',
-                    ),
+                        isOwnProfile: true,
+                        userIdHex: 'author-pubkey',
+                      ),
                     ),
                   ),
                 ),

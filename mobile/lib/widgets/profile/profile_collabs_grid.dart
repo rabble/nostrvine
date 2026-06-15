@@ -105,9 +105,7 @@ class _ProfileCollabsGridState extends ConsumerState<ProfileCollabsGrid>
       extra: PooledFullscreenVideoFeedArgs(
         source: CollabsViewSource(widget.userIdHex),
         feedRepository: StreamFeedRepository(
-          videos: bloc.stream
-              .map((state) => state.videos)
-              .startWith(allVideos),
+          videos: bloc.stream.map((state) => state.videos).startWith(allVideos),
           hasMore: bloc.stream
               .map((state) => state.hasMoreContent)
               .startWith(bloc.state.hasMoreContent),

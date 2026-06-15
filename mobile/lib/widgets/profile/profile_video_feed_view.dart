@@ -129,14 +129,11 @@ class _ProfileFullscreenContentState extends State<_ProfileFullscreenContent> {
     _initialIndex = _resolveInitialIndex(effective(initialState));
 
     _feedRepository = StreamFeedRepository(
-      videos: _cubit.stream
-          .map(effective)
-          .startWith(effective(initialState)),
+      videos: _cubit.stream.map(effective).startWith(effective(initialState)),
       hasMore: _cubit.stream
           .map((state) => state.hasMoreContent)
           .startWith(initialState.hasMoreContent),
-      onLoadMore: () async =>
-          _cubit.add(const ProfileFeedLoadMoreRequested()),
+      onLoadMore: () async => _cubit.add(const ProfileFeedLoadMoreRequested()),
     );
   }
 

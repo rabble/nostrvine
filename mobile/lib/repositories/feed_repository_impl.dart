@@ -25,8 +25,8 @@ enum _GlobalFeed { forYou, popular, classicVines, newVideos }
 ///
 /// * the four home tabs ([ForYouViewSource], [PopularViewSource],
 ///   [ClassicVinesViewSource], [NewVideosViewSource]) — delegated to their
-///   `@Riverpod(keepAlive: true)` feed providers, which already apply the
-///   block / platform boundary filter in `build()`;
+///   keepAlive feed providers, which already apply the block / platform
+///   boundary filter in `build()`;
 /// * static sources ([SingleVideoViewSource], [VideoListViewSource]) —
 ///   delegated to a [StaticFeedRepository].
 ///
@@ -111,15 +111,12 @@ class RiverpodFeedRepository implements FeedRepository {
 
   Future<void> _loadMoreFor(_GlobalFeed feed) => switch (feed) {
     _GlobalFeed.forYou => _ref.read(forYouFeedProvider.notifier).loadMore(),
-    _GlobalFeed.popular => _ref
-        .read(popularVideosFeedProvider.notifier)
-        .loadMore(),
-    _GlobalFeed.classicVines => _ref
-        .read(classicVinesFeedProvider.notifier)
-        .loadMore(),
-    _GlobalFeed.newVideos => _ref
-        .read(newVideosFeedProvider.notifier)
-        .loadMore(),
+    _GlobalFeed.popular =>
+      _ref.read(popularVideosFeedProvider.notifier).loadMore(),
+    _GlobalFeed.classicVines =>
+      _ref.read(classicVinesFeedProvider.notifier).loadMore(),
+    _GlobalFeed.newVideos =>
+      _ref.read(newVideosFeedProvider.notifier).loadMore(),
   };
 
   @override
