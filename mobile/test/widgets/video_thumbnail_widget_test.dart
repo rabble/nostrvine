@@ -2,7 +2,7 @@ import 'package:blurhash_service/blurhash_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart';
+import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
@@ -14,6 +14,9 @@ import '../test_data/video_test_data.dart';
 
 Finder _divineIcon(DivineIconName name) =>
     find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
+double _thumbnailAspectRatio(WidgetTester tester) =>
+    tester.widget<AspectRatio>(find.byType(AspectRatio)).aspectRatio;
 
 void main() {
   group('VideoThumbnailWidget', () {
@@ -74,6 +77,81 @@ void main() {
 
       // Should create a VineCachedImage widget when thumbnail URL exists.
       expect(find.byType(VineCachedImage), findsOneWidget);
+    });
+
+    testWidgets(
+      'updates missing metadata aspect ratio from the displayed cached image',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: VideoThumbnailWidget(
+                video: videoWithThumbnail,
+                width: 200,
+                height: 200,
+              ),
+            ),
+          ),
+        );
+
+        expect(_thumbnailAspectRatio(tester), equals(2 / 3));
+
+        final cachedImage = tester.widget<VineCachedImage>(
+          find.byType(VineCachedImage),
+        );
+        cachedImage.onImageDimensionsResolved!(640, 360);
+        await tester.pump();
+
+        expect(_thumbnailAspectRatio(tester), equals(640 / 360));
+      },
+    );
+
+    testWidgets('ignores stale image dimensions after thumbnail URL changes', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: VideoThumbnailWidget(
+              video: videoWithThumbnail,
+              width: 200,
+              height: 200,
+            ),
+          ),
+        ),
+      );
+
+      final staleCallback = tester
+          .widget<VineCachedImage>(find.byType(VineCachedImage))
+          .onImageDimensionsResolved!;
+
+      final nextVideo = createTestVideoEvent(
+        id: 'test-next',
+        thumbnailUrl: 'https://example.com/thumb-next.jpg',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: VideoThumbnailWidget(
+              video: nextVideo,
+              width: 200,
+              height: 200,
+            ),
+          ),
+        ),
+      );
+
+      staleCallback(640, 360);
+      await tester.pump();
+
+      expect(_thumbnailAspectRatio(tester), equals(2 / 3));
     });
 
     testWidgets(

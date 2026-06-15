@@ -9,6 +9,8 @@ typedef PlaceholderWidgetBuilder =
 typedef LoadingErrorWidgetBuilder =
     Widget Function(BuildContext context, String imageUrl, Object error);
 
+typedef ImageDimensionsResolved = void Function(int width, int height);
+
 /// Global image cache singleton backed by [MediaCacheManager].
 final openVineImageCache = MediaCacheManager(
   config: const MediaCacheConfig.image(cacheKey: 'openvine_image_cache'),
@@ -46,6 +48,7 @@ class VineCachedImage extends StatefulWidget {
     this.memCacheHeight,
     this.fadeInDuration = const Duration(milliseconds: 500),
     this.fadeOutDuration = const Duration(milliseconds: 1000),
+    this.onImageDimensionsResolved,
   });
 
   final String imageUrl;
@@ -59,6 +62,7 @@ class VineCachedImage extends StatefulWidget {
   final int? memCacheHeight;
   final Duration fadeInDuration;
   final Duration fadeOutDuration;
+  final ImageDimensionsResolved? onImageDimensionsResolved;
 
   @override
   State<VineCachedImage> createState() => _VineCachedImageState();
@@ -113,8 +117,12 @@ class _VineCachedImageState extends State<VineCachedImage> {
 
     _listener = ImageStreamListener(
       (image, synchronousCall) {
+        final imageWidth = image.image.width;
+        final imageHeight = image.image.height;
         image.dispose();
-        if (!mounted || _hasImage) return;
+        if (!mounted) return;
+        widget.onImageDimensionsResolved?.call(imageWidth, imageHeight);
+        if (_hasImage) return;
         setState(() {
           _hasImage = true;
           _error = null;

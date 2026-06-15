@@ -11,14 +11,6 @@ import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// Decode width (physical px) used only to probe a thumbnail's intrinsic
-/// aspect ratio when the video metadata omits dimensions.
-///
-/// Resizing preserves the aspect ratio, so a small probe avoids a
-/// full-resolution decode (which would otherwise thrash the in-memory image
-/// cache) while still yielding an accurate ratio.
-const int _aspectRatioProbeWidth = 256;
-
 /// Smart thumbnail widget that displays thumbnails with blurhash fallback
 class VideoThumbnailWidget extends StatefulWidget {
   const VideoThumbnailWidget({
@@ -75,40 +67,27 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
     final url = widget.video.thumbnailUrl;
     if (url != null && url.isNotEmpty) {
       _thumbnailUrl = url;
-      _resolveImageDimensions(url);
     } else {
       _thumbnailUrl = null;
     }
     if (mounted) setState(() {});
   }
 
-  /// Resolves image dimensions from the network image when video dimensions
-  /// are not available from metadata.
-  void _resolveImageDimensions(String url) {
-    // Skip if video already has dimensions
-    if (widget.video.width != null && widget.video.height != null) return;
+  void _handleImageDimensionsResolved(String url, int width, int height) {
+    if (url != _thumbnailUrl ||
+        !mounted ||
+        widget.video.width != null ||
+        widget.video.height != null ||
+        width <= 0 ||
+        height <= 0) {
+      return;
+    }
 
-    final imageStream = ResizeImage(
-      NetworkImage(url),
-      width: _aspectRatioProbeWidth,
-    ).resolve(ImageConfiguration.empty);
-    late ImageStreamListener listener;
-    listener = ImageStreamListener(
-      (ImageInfo info, bool _) {
-        final imageWidth = info.image.width;
-        final imageHeight = info.image.height;
-        if (mounted && imageHeight > 0) {
-          setState(() {
-            _resolvedAspectRatio = imageWidth / imageHeight;
-          });
-        }
-        imageStream.removeListener(listener);
-      },
-      onError: (Object error, StackTrace? stackTrace) {
-        imageStream.removeListener(listener);
-      },
-    );
-    imageStream.addListener(listener);
+    final aspectRatio = width / height;
+    if (_resolvedAspectRatio == aspectRatio) return;
+    setState(() {
+      _resolvedAspectRatio = aspectRatio;
+    });
   }
 
   Widget _buildContent(BoxFit fit) {
@@ -135,6 +114,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
             videoId: widget.video.id,
             showPlayIcon: widget.showPlayIcon,
             borderRadius: widget.borderRadius,
+            onImageDimensionsResolved: _handleImageDimensionsResolved,
           ),
         if (widget.showPlayIcon)
           Center(
@@ -202,6 +182,7 @@ class _SafeNetworkImage extends StatelessWidget {
     this.fit = BoxFit.cover,
     this.showPlayIcon = false,
     this.borderRadius,
+    this.onImageDimensionsResolved,
   });
 
   final String url;
@@ -211,6 +192,8 @@ class _SafeNetworkImage extends StatelessWidget {
   final BoxFit fit;
   final bool showPlayIcon;
   final BorderRadius? borderRadius;
+  final void Function(String url, int width, int height)?
+  onImageDimensionsResolved;
 
   // Toggle to test with plain Image.network instead of VineCachedImage.
   // Set to true to debug cache-manager behavior.
@@ -240,29 +223,40 @@ class _SafeNetworkImage extends StatelessWidget {
 
         // Debug mode: test with plain Image.network to isolate cache issues
         if (_useSimpleImageNetwork || _shouldBypassCacheManager(url)) {
-          return Image.network(
-            url,
-            width: width,
-            height: height,
-            fit: fit,
-            cacheWidth: cacheWidth,
-            alignment: Alignment.topCenter,
-            errorBuilder: (context, error, stackTrace) {
-              Log.warning(
-                '🖼️ [Image.network] Thumbnail load failed for video $videoId:\n'
-                '  URL: $url\n'
-                '  Error type: ${error.runtimeType}\n'
-                '  Error: $error\n'
-                '  Stack: ${stackTrace?.toString().split('\n').take(5).join('\n')}',
-                name: 'VideoThumbnailWidget',
-                category: LogCategory.video,
-              );
-              return Container(
-                width: width,
-                height: height,
-                color: VineTheme.transparent,
-              );
-            },
+          final imageProvider = ResizeImage.resizeIfNeeded(
+            cacheWidth,
+            null,
+            NetworkImage(url),
+          );
+          return _ImageWithDimensionsListener(
+            imageProvider: imageProvider,
+            onImageDimensionsResolved: onImageDimensionsResolved == null
+                ? null
+                : (width, height) =>
+                      onImageDimensionsResolved!(url, width, height),
+            child: Image(
+              image: imageProvider,
+              width: width,
+              height: height,
+              fit: fit,
+              alignment: Alignment.topCenter,
+              errorBuilder: (context, error, stackTrace) {
+                Log.warning(
+                  '🖼️ [Image.network] Thumbnail load failed for video $videoId:\n'
+                  '  URL: $url\n'
+                  '  Error type: ${error.runtimeType}\n'
+                  '  Error: $error\n'
+                  '  Stack: ${stackTrace?.toString().split('\n').take(5).join('\n')}',
+                  name: 'VideoThumbnailWidget',
+                  category: LogCategory.video,
+                );
+                return Container(
+                  width: width,
+                  height: height,
+                  color: VineTheme.transparent,
+                );
+              },
+            ),
           );
         }
 
@@ -273,6 +267,10 @@ class _SafeNetworkImage extends StatelessWidget {
           fit: fit,
           memCacheWidth: cacheWidth,
           alignment: Alignment.topCenter,
+          onImageDimensionsResolved: onImageDimensionsResolved == null
+              ? null
+              : (width, height) =>
+                    onImageDimensionsResolved!(url, width, height),
           // Show transparent container so background surfaceContainer color shows through
           placeholder: (context, url) => Container(
             width: width,
@@ -318,4 +316,81 @@ class _SafeNetworkImage extends StatelessWidget {
     if (logicalWidth == null || logicalWidth <= 0) return null;
     return (logicalWidth * MediaQuery.devicePixelRatioOf(context)).ceil();
   }
+}
+
+class _ImageWithDimensionsListener extends StatefulWidget {
+  const _ImageWithDimensionsListener({
+    required this.imageProvider,
+    required this.child,
+    this.onImageDimensionsResolved,
+  });
+
+  final ImageProvider<Object> imageProvider;
+  final ImageDimensionsResolved? onImageDimensionsResolved;
+  final Widget child;
+
+  @override
+  State<_ImageWithDimensionsListener> createState() =>
+      _ImageWithDimensionsListenerState();
+}
+
+class _ImageWithDimensionsListenerState
+    extends State<_ImageWithDimensionsListener> {
+  ImageStream? _imageStream;
+  ImageStreamListener? _listener;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _resolveImageStream();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ImageWithDimensionsListener oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageProvider != widget.imageProvider) {
+      _resolveImageStream();
+    }
+  }
+
+  @override
+  void dispose() {
+    _removeImageListener();
+    super.dispose();
+  }
+
+  void _resolveImageStream() {
+    final newStream = widget.imageProvider.resolve(
+      createLocalImageConfiguration(context),
+    );
+    if (_imageStream?.key == newStream.key) {
+      return;
+    }
+
+    _removeImageListener();
+    _imageStream = newStream;
+
+    _listener = ImageStreamListener(
+      (image, synchronousCall) {
+        final imageWidth = image.image.width;
+        final imageHeight = image.image.height;
+        image.dispose();
+        if (!mounted) return;
+        widget.onImageDimensionsResolved?.call(imageWidth, imageHeight);
+      },
+      onError: (Object error, StackTrace? stackTrace) {},
+    );
+    _imageStream!.addListener(_listener!);
+  }
+
+  void _removeImageListener() {
+    if (_imageStream != null && _listener != null) {
+      _imageStream!.removeListener(_listener!);
+    }
+    _imageStream = null;
+    _listener = null;
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
