@@ -3679,7 +3679,6 @@
   "@searchNoResultsFound": {"placeholders": {"query": {"type": "String"}}},
   "searchTagChipViewVideosTaggedLabel": "View videos tagged {tag}",
   "@searchTagChipViewVideosTaggedLabel": {"placeholders": {"tag": {"type": "String"}}},
-  "searchVideosEmpty": "No videos found",
   "audioAttributionRowSemanticLabel": "Sound: {soundName} by {creatorName}. Tap to view sound details.",
   "@audioAttributionRowSemanticLabel": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
   "metadataSoundsOriginalSoundSemantics": "Original sound by {creatorName}. Tap to use this sound.",

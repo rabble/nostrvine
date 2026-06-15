@@ -6814,9 +6814,6 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get searchVideosEmpty => 'No videos found';
-
-  @override
   String audioAttributionRowSemanticLabel(
     String soundName,
     String creatorName,

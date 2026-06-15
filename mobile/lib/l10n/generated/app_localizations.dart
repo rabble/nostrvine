@@ -11783,12 +11783,6 @@ abstract class AppLocalizations {
   /// **'View videos tagged {tag}'**
   String searchTagChipViewVideosTaggedLabel(String tag);
 
-  /// No description provided for @searchVideosEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No videos found'**
-  String get searchVideosEmpty;
-
   /// No description provided for @audioAttributionRowSemanticLabel.
   ///
   /// In en, this message translates to:

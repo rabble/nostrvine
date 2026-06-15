@@ -730,7 +730,6 @@ const _knownUntranslatedDebt = {
   'searchFilterPillSemanticLabel',
   'searchNoResultsFound',
   'searchTagChipViewVideosTaggedLabel',
-  'searchVideosEmpty',
   // Sounds/Video-feed
   'audioAttributionRowSemanticLabel',
   'metadataSoundsOriginalSoundSemantics',
