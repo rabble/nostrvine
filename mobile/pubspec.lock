@@ -1824,10 +1824,10 @@ packages:
     dependency: "direct main"
     description:
       name: pro_image_editor
-      sha256: db0cd1ceda90fe94646a9d8b6bc25135fe00dce9971a2779ddcf802c5f1b5be5
+      sha256: f5fb9940af7e6922dbe154726951a279fbea22549d91b338a15aaa9fe4923caf
       url: "https://pub.dev"
     source: hosted
-    version: "12.5.0"
+    version: "12.5.1"
   pro_video_editor:
     dependency: "direct main"
     description:

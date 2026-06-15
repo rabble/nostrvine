@@ -1301,6 +1301,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             ),
           ),
           mainEditor: MainEditorConfigs(
+            enableZoom: true,
+            interactiveViewerClipBehavior: .none,
             safeArea: const EditorSafeArea.none(),
             style: const MainEditorStyle(
               uiOverlayStyle: VideoEditorConstants.uiOverlayStyle,
@@ -1416,6 +1418,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         callbacks: ProImageEditorCallbacks(
           onCompleteWithParameters: _handleEditorComplete,
           mainEditorCallbacks: MainEditorCallbacks(
+            onEditorZoomMatrix4Change: (matrix) =>
+                scope.zoomMatrixNotifier?.value = matrix,
             onAfterViewInit: () {
               _isInitialized = true;
 
@@ -1694,6 +1698,50 @@ class _CanvasFitter extends ConsumerWidget {
   }
 }
 
+/// Fallback zoom-transform signal used when the scope provides no
+/// [VideoEditorScope.zoomMatrixNotifier] (e.g. in widget tests). Stays at
+/// identity so the letterbox scrim renders untransformed.
+final _neutralZoomMatrix = ValueNotifier<Matrix4>(Matrix4.identity());
+
+/// Maps the editor's zoom [editorMatrix] (expressed in the editor's
+/// render-space, where pinch translation is in render pixels) into the
+/// body-space transform for the letterbox scrim, so the bars track the
+/// magnified video instead of lagging behind it.
+///
+/// The editor content is cover-fitted from its render size into
+/// [targetSize] and centered in [boxSize]. With that fit+centre affine
+/// `A`, the on-screen effect of `editorMatrix` (`M`) in body coordinates is
+/// `A · M · A⁻¹`. For a zoom-only `M` (uniform scale `k`, translation `t`),
+/// that reduces to: same scale `k`, translation `coverScale·t + (1-k)·d`,
+/// where `d` is the body-space offset of the render origin. Without the
+/// `coverScale` factor the bars move too little.
+Matrix4 _scrimZoomTransform({
+  required Matrix4 editorMatrix,
+  required Size boxSize,
+  required Size targetSize,
+  required double originalAspectRatio,
+}) {
+  final renderHeight = boxSize.shortestSide;
+  final renderWidth = renderHeight * originalAspectRatio;
+  if (renderWidth <= 0 || renderHeight <= 0) return editorMatrix;
+
+  final coverScale = max(
+    targetSize.width / renderWidth,
+    targetSize.height / renderHeight,
+  );
+  final dx = (boxSize.width - coverScale * renderWidth) / 2;
+  final dy = (boxSize.height - coverScale * renderHeight) / 2;
+
+  final k = editorMatrix.getMaxScaleOnAxis();
+  final t = editorMatrix.getTranslation();
+
+  return Matrix4.identity()
+    ..setEntry(0, 0, k)
+    ..setEntry(1, 1, k)
+    ..setEntry(0, 3, coverScale * t.x + (1 - k) * dx)
+    ..setEntry(1, 3, coverScale * t.y + (1 - k) * dy);
+}
+
 class _OverlayCutArea extends ConsumerWidget {
   const _OverlayCutArea({required this.child});
 
@@ -1708,6 +1756,8 @@ class _OverlayCutArea extends ConsumerWidget {
 
     final overlayColor = VineTheme.backgroundCamera.withAlpha(166);
     final safeArea = MediaQuery.paddingOf(context);
+    final scope = VideoEditorScope.of(context);
+    final zoomMatrixNotifier = scope.zoomMatrixNotifier ?? _neutralZoomMatrix;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1732,50 +1782,62 @@ class _OverlayCutArea extends ConsumerWidget {
           children: [
             child,
 
-            IgnorePointer(
-              child: Stack(
-                fit: StackFit.expand,
-                clipBehavior: .none,
-                children: [
-                  // Top bar — extends up into the safe area so there
-                  // is no uncovered strip above the scrim when the
-                  // canvas is padded below the status bar.
-                  if (verticalGap > 0 || safeArea.top > 0)
-                    Positioned(
-                      top: -safeArea.top,
-                      left: 0,
-                      right: 0,
-                      height: verticalGap + safeArea.top,
-                      child: ColoredBox(color: overlayColor),
-                    ),
-                  // Bottom bar
-                  if (verticalGap > 0)
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: verticalGap,
-                      child: ColoredBox(color: overlayColor),
-                    ),
-                  // Left bar
-                  if (horizontalGap > 0)
-                    Positioned(
-                      top: 0,
-                      bottom: 0,
-                      left: 0,
-                      width: horizontalGap,
-                      child: ColoredBox(color: overlayColor),
-                    ),
-                  // Right bar
-                  if (horizontalGap > 0)
-                    Positioned(
-                      top: 0,
-                      bottom: 0,
-                      right: 0,
-                      width: horizontalGap,
-                      child: ColoredBox(color: overlayColor),
-                    ),
-                ],
+            ValueListenableBuilder<Matrix4>(
+              valueListenable: zoomMatrixNotifier,
+              builder: (context, matrix, child) => Transform(
+                transform: _scrimZoomTransform(
+                  editorMatrix: matrix,
+                  boxSize: boxSize,
+                  targetSize: Size(childWidth, childHeight),
+                  originalAspectRatio: scope.originalClipAspectRatio,
+                ),
+                child: child,
+              ),
+              child: IgnorePointer(
+                child: Stack(
+                  fit: StackFit.expand,
+                  clipBehavior: .none,
+                  children: [
+                    // Top bar — extends up into the safe area so there
+                    // is no uncovered strip above the scrim when the
+                    // canvas is padded below the status bar.
+                    if (verticalGap > 0 || safeArea.top > 0)
+                      Positioned(
+                        top: -safeArea.top,
+                        left: 0,
+                        right: 0,
+                        height: verticalGap + safeArea.top,
+                        child: ColoredBox(color: overlayColor),
+                      ),
+                    // Bottom bar
+                    if (verticalGap > 0)
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: verticalGap,
+                        child: ColoredBox(color: overlayColor),
+                      ),
+                    // Left bar
+                    if (horizontalGap > 0)
+                      Positioned(
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        width: horizontalGap,
+                        child: ColoredBox(color: overlayColor),
+                      ),
+                    // Right bar
+                    if (horizontalGap > 0)
+                      Positioned(
+                        top: 0,
+                        bottom: 0,
+                        right: 0,
+                        width: horizontalGap,
+                        child: ColoredBox(color: overlayColor),
+                      ),
+                  ],
+                ),
               ),
             ),
           ],

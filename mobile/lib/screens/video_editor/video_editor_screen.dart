@@ -84,6 +84,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   /// Body size notifier, updated by [_CanvasFitter].
   final _bodySizeNotifier = ValueNotifier<Size>(Size.zero);
 
+  /// Editor zoom transform notifier (identity = not zoomed), driven by the
+  /// editor's zoom matrix. The letterbox scrim applies the same transform so
+  /// the bars move with the magnified frame.
+  final _zoomMatrixNotifier = ValueNotifier<Matrix4>(Matrix4.identity());
+
   /// Tracks the previous audio tracks to detect offset changes.
   List<AudioEvent> _previousAudioTracks = const [];
 
@@ -183,6 +188,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     _timelineOverlayBloc.close();
     _isLoadingDraft.dispose();
     _bodySizeNotifier.dispose();
+    _zoomMatrixNotifier.dispose();
     super.dispose();
   }
 
@@ -518,6 +524,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
               removeAreaKey: _removeAreaKey,
               originalClipAspectRatio: clip?.originalAspectRatio ?? 9 / 16,
               bodySizeNotifier: _bodySizeNotifier,
+              zoomMatrixNotifier: _zoomMatrixNotifier,
               fromLibrary: widget.fromLibrary,
               onOpenCamera: () =>
                   _openCamera(clipEditorBloc: context.read<ClipEditorBloc>()),
