@@ -165,6 +165,36 @@ final class UserListViewSource extends ViewSource {
   List<Object?> get props => [listId];
 }
 
+/// The aggregated Explore tab feed.
+final class ExploreViewSource extends ViewSource {
+  /// Creates an Explore view source.
+  const ExploreViewSource();
+
+  @override
+  List<Object?> get props => const [];
+}
+
+/// All videos in a category.
+final class CategoryViewSource extends ViewSource {
+  /// Creates a category view source for [categoryName].
+  const CategoryViewSource(this.categoryName);
+
+  /// The category name.
+  final String categoryName;
+
+  @override
+  List<Object?> get props => [categoryName];
+}
+
+/// Videos opened from a notification (comment / reply / mention deep link).
+final class NotificationViewSource extends ViewSource {
+  /// Creates a notification view source.
+  const NotificationViewSource();
+
+  @override
+  List<Object?> get props => const [];
+}
+
 /// Search results for a query.
 final class SearchViewSource extends ViewSource {
   /// Creates a search view source for [query].

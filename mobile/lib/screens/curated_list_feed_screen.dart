@@ -2,6 +2,7 @@
 // ABOUTME: Shows videos in a grid with tap-to-play navigation
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -243,7 +244,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     return Stack(
       children: [
         PooledFullscreenVideoFeedScreen(
-          videosStream: Stream.value(videos),
+          source: VideoListViewSource(videos),
+          feedRepository: StaticFeedRepository(),
           initialIndex: _activeVideoIndex!,
           removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
           contextTitle: widget.listName,

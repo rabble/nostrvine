@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -298,7 +299,8 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     // Display video in full-screen pooled player
     return widget.videoFeedBuilder?.call(_video!) ??
         PooledFullscreenVideoFeedScreen(
-          videosStream: Stream.value([_video!]),
+          source: SingleVideoViewSource(_video!),
+          feedRepository: StaticFeedRepository(),
           initialIndex: 0,
           removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
           contextTitle: 'Shared Video',

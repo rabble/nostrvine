@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1272,7 +1273,10 @@ class _ExploreFeedContentState extends ConsumerState<_ExploreFeedContent> {
     final safeIndex = widget.startIndex.clamp(0, videos.length - 1);
 
     return PooledFullscreenVideoFeedScreen(
-      videosStream: _streamController.stream.startWith(videos),
+      source: const ExploreViewSource(),
+      feedRepository: StreamFeedRepository(
+        videos: _streamController.stream.startWith(videos),
+      ),
       initialIndex: safeIndex,
       removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
       contextTitle: '',

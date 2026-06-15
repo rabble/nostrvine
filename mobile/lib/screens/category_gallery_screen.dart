@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -110,18 +111,17 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
                 context.push(
                   PooledFullscreenVideoFeedScreen.path,
                   extra: PooledFullscreenVideoFeedArgs(
-                    videosStream: _videosStreamController.stream.startWith(
-                      videos,
+                    source: CategoryViewSource(widget.category.name),
+                    feedRepository: StreamFeedRepository(
+                      videos: _videosStreamController.stream.startWith(videos),
+                      hasMore: _hasMoreStreamController.stream.startWith(
+                        state.hasMoreVideos,
+                      ),
+                      onLoadMore: () async => _bloc.add(
+                        const CategoryVideosLoadMore(),
+                      ),
                     ),
                     initialIndex: index,
-                    onLoadMore: () {
-                      context.read<CategoriesBloc>().add(
-                        const CategoryVideosLoadMore(),
-                      );
-                    },
-                    hasMoreStream: _hasMoreStreamController.stream.startWith(
-                      state.hasMoreVideos,
-                    ),
                     removedIdsStream: ref
                         .read(videoEventServiceProvider)
                         .removedVideoIds,

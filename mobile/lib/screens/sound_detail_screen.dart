@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -1032,7 +1033,8 @@ class _SoundVideoFeedOverlay extends ConsumerWidget {
     return Stack(
       children: [
         PooledFullscreenVideoFeedScreen(
-          videosStream: Stream.value(videos),
+          source: VideoListViewSource(videos),
+          feedRepository: StaticFeedRepository(),
           initialIndex: startIndex,
           removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
           contextTitle: soundTitle,

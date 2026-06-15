@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -216,7 +217,10 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
     context.push(
       PooledFullscreenVideoFeedScreen.path,
       extra: PooledFullscreenVideoFeedArgs(
-        videosStream: _videosStreamController.stream.startWith(videoList),
+        source: HashtagViewSource(widget.hashtag),
+        feedRepository: StreamFeedRepository(
+          videos: _videosStreamController.stream.startWith(videoList),
+        ),
         initialIndex: index,
         removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         contextTitle: '#${widget.hashtag}',

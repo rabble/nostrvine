@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -102,20 +103,21 @@ class _VideoSearchGridState extends ConsumerState<_VideoSearchGrid>
   }
 
   void _onVideoTap(int index) {
+    final bloc = context.read<VideoSearchBloc>();
     context.push(
       PooledFullscreenVideoFeedScreen.path,
       extra: PooledFullscreenVideoFeedArgs(
-        videosStream: _videosStreamController.stream.startWith(widget.videos),
-        initialIndex: index,
-        onLoadMore: () =>
-            context.read<VideoSearchBloc>().add(const VideoSearchLoadMore()),
-        hasMoreStream: _hasMoreStreamController.stream.startWith(
-          widget.hasMore,
+        source: SearchViewSource(bloc.state.query),
+        feedRepository: StreamFeedRepository(
+          videos: _videosStreamController.stream.startWith(widget.videos),
+          hasMore: _hasMoreStreamController.stream.startWith(widget.hasMore),
+          onLoadMore: () async => bloc.add(const VideoSearchLoadMore()),
         ),
+        initialIndex: index,
         removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         contextTitle: context.l10n.soundsSearchResults,
         trafficSource: ViewTrafficSource.search,
-        sourceDetail: context.read<VideoSearchBloc>().state.query,
+        sourceDetail: bloc.state.query,
       ),
     );
   }

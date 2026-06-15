@@ -2,6 +2,7 @@
 // ABOUTME: Selects the UserList by id from PeopleListsBloc so it reacts to repository updates.
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -480,7 +481,8 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
         return Stack(
           children: [
             PooledFullscreenVideoFeedScreen(
-              videosStream: Stream.value(videos),
+              source: VideoListViewSource(videos),
+              feedRepository: StaticFeedRepository(),
               initialIndex: _activeVideoIndex!,
               removedIdsStream: ref
                   .read(videoEventServiceProvider)
