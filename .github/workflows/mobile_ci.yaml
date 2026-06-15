@@ -87,6 +87,13 @@ jobs:
         run: |
           git fetch --quiet --depth=1 origin main
           bash scripts/check_arb_error_ceiling.sh
+      - name: 📏 Verify file sizes do not grow (file-size ceiling ratchet)
+        run: |
+          # origin/main provides the base ref so the per-file ceiling ratchet can
+          # detect a raised ceiling / added file. Fails closed if it cannot load
+          # the base baseline. Oversized-file epic: #4339 (PR-1).
+          git fetch --quiet --depth=1 origin main
+          bash scripts/check_file_size_ceiling.sh
       - name: 🔨 Verify generated files are up-to-date
         run: |
           dart run build_runner build --delete-conflicting-outputs
