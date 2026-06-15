@@ -14,6 +14,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
+import 'package:openvine/notifications/bloc/reportable_sites.dart';
 import 'package:openvine/observability/reportable_error.dart';
 
 class _MockNotificationRepository extends Mock
@@ -226,6 +227,39 @@ void main() {
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         errors: () => [isA<Exception>()],
+        verify: (_) {
+          verify(() => mockNotificationRepo.refresh()).called(1);
+          verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+        },
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'wraps unexpected Error from seen-on-open mark-all as Reportable '
+        'without blackening the feed',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.markAllAsRead(),
+          ).thenThrow(StateError('invariant'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedStarted()),
+        expect: () => [
+          NotificationFeedState(status: NotificationFeedStatus.loading),
+          NotificationFeedState(status: NotificationFeedStatus.loaded),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>()
+              .having(
+                (r) => r.context,
+                'context',
+                NotificationFeedBlocReportableSites.markSeenOnOpen,
+              )
+              .having(
+                (r) => r.unwrap(),
+                'unwrap',
+                isA<StateError>(),
+              ),
+        ],
         verify: (_) {
           verify(() => mockNotificationRepo.refresh()).called(1);
           verify(() => mockNotificationRepo.markAllAsRead()).called(1);

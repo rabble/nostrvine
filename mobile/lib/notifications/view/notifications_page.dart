@@ -16,8 +16,8 @@ import 'package:openvine/providers/app_providers.dart';
 /// provides it to [NotificationsView]. The bloc dispatches
 /// `NotificationFeedStarted` on mount, which triggers `repository.refresh()`.
 /// The resulting snapshot flows through the repository's snapshot stream and
-/// propagates to the badge cubit automatically. Read state changes only on
-/// explicit per-item taps here; bulk mark-all lives in notification settings.
+/// propagates to the badge cubit automatically. Opening the page advances the
+/// seen watermark; per-item taps still mark individual rows read when needed.
 class NotificationsPage extends ConsumerWidget {
   /// Creates a [NotificationsPage].
   const NotificationsPage({super.key});
