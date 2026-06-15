@@ -3954,5 +3954,33 @@
     "videoEditorTransformApplySemanticLabel": "Aplicar transformação",
     "videoEditorTransformCancelSemanticLabel": "Cancelar transformação",
     "videoEditorTransformPlayLabel": "Reproduzir",
-    "videoEditorTransformPauseLabel": "Pausar"
+    "videoEditorTransformPauseLabel": "Pausar",
+    "videoEditorTimelineClipSelectedSemanticLabel": "Clipe {index} de {total}, selecionado",
+    "@videoEditorTimelineClipSelectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorTimelineClipUnselectedSemanticLabel": "Clipe {index} de {total}, não selecionado",
+    "@videoEditorTimelineClipUnselectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorMultiSelectLabel": "Selecionar",
+    "videoEditorMultiSelectSemanticLabel": "Selecionar vários clipes",
+    "videoEditorMultiSelectDoneSemanticLabel": "Concluir seleção",
+    "videoEditorMultiSelectCountLabel": "{count, plural, =0{Nenhum clipe selecionado} =1{1 clipe selecionado} other{{count} clipes selecionados}}",
+    "@videoEditorMultiSelectCountLabel": {
+        "placeholders": {
+            "count": {"type": "int"}
+        }
+    },
+    "videoEditorMergeLabel": "Mesclar",
+    "videoEditorMergeSelectedClipsSemanticLabel": "Mesclar clipes selecionados",
+    "videoEditorDeleteSelectedClipsSemanticLabel": "Excluir clipes selecionados",
+    "videoEditorMergeProgressLabel": "Um momento, estamos mesclando seus clipes",
+    "videoEditorMergeFailed": "Não foi possível mesclar os clipes. Tente novamente."
 }

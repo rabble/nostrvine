@@ -7922,6 +7922,52 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorTimelineClipMoveRight => '오른쪽으로 이동';
 
   @override
+  String videoEditorTimelineClipSelectedSemanticLabel(int index, int total) {
+    return '클립 $index/$total, 선택됨';
+  }
+
+  @override
+  String videoEditorTimelineClipUnselectedSemanticLabel(int index, int total) {
+    return '클립 $index/$total, 선택 안 됨';
+  }
+
+  @override
+  String get videoEditorMultiSelectLabel => '선택';
+
+  @override
+  String get videoEditorMultiSelectSemanticLabel => '여러 클립 선택';
+
+  @override
+  String get videoEditorMultiSelectDoneSemanticLabel => '선택 완료';
+
+  @override
+  String videoEditorMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '클립 $count개 선택됨',
+      one: '클립 1개 선택됨',
+      zero: '선택된 클립 없음',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorMergeLabel => '병합';
+
+  @override
+  String get videoEditorMergeSelectedClipsSemanticLabel => '선택한 클립 병합';
+
+  @override
+  String get videoEditorDeleteSelectedClipsSemanticLabel => '선택한 클립 삭제';
+
+  @override
+  String get videoEditorMergeProgressLabel => '잠시만요, 클립을 병합하고 있어요';
+
+  @override
+  String get videoEditorMergeFailed => '클립을 병합할 수 없습니다. 다시 시도해 주세요.';
+
+  @override
   String get videoEditorTimelineLongPressToDragHint => '길게 눌러 드래그';
 
   @override

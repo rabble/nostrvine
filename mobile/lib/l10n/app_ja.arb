@@ -3954,5 +3954,33 @@
     "videoEditorTransformApplySemanticLabel": "変形を適用",
     "videoEditorTransformCancelSemanticLabel": "変形をキャンセル",
     "videoEditorTransformPlayLabel": "再生",
-    "videoEditorTransformPauseLabel": "一時停止"
+    "videoEditorTransformPauseLabel": "一時停止",
+    "videoEditorTimelineClipSelectedSemanticLabel": "クリップ {index}/{total}、選択中",
+    "@videoEditorTimelineClipSelectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorTimelineClipUnselectedSemanticLabel": "クリップ {index}/{total}、未選択",
+    "@videoEditorTimelineClipUnselectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorMultiSelectLabel": "選択",
+    "videoEditorMultiSelectSemanticLabel": "複数のクリップを選択",
+    "videoEditorMultiSelectDoneSemanticLabel": "選択を完了",
+    "videoEditorMultiSelectCountLabel": "{count, plural, =0{クリップが選択されていません} =1{1 件のクリップを選択中} other{{count} 件のクリップを選択中}}",
+    "@videoEditorMultiSelectCountLabel": {
+        "placeholders": {
+            "count": {"type": "int"}
+        }
+    },
+    "videoEditorMergeLabel": "結合",
+    "videoEditorMergeSelectedClipsSemanticLabel": "選択したクリップを結合",
+    "videoEditorDeleteSelectedClipsSemanticLabel": "選択したクリップを削除",
+    "videoEditorMergeProgressLabel": "少々お待ちください。クリップを結合しています",
+    "videoEditorMergeFailed": "クリップを結合できませんでした。もう一度お試しください。"
 }

@@ -8366,6 +8366,57 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorTimelineClipMoveRight => 'Mută la dreapta';
 
   @override
+  String videoEditorTimelineClipSelectedSemanticLabel(int index, int total) {
+    return 'Clip $index din $total, selectat';
+  }
+
+  @override
+  String videoEditorTimelineClipUnselectedSemanticLabel(int index, int total) {
+    return 'Clip $index din $total, neselectat';
+  }
+
+  @override
+  String get videoEditorMultiSelectLabel => 'Selectează';
+
+  @override
+  String get videoEditorMultiSelectSemanticLabel =>
+      'Selectează mai multe clipuri';
+
+  @override
+  String get videoEditorMultiSelectDoneSemanticLabel => 'Finalizează selecția';
+
+  @override
+  String videoEditorMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clipuri selectate',
+      one: '1 clip selectat',
+      zero: 'Niciun clip selectat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorMergeLabel => 'Îmbină';
+
+  @override
+  String get videoEditorMergeSelectedClipsSemanticLabel =>
+      'Îmbină clipurile selectate';
+
+  @override
+  String get videoEditorDeleteSelectedClipsSemanticLabel =>
+      'Șterge clipurile selectate';
+
+  @override
+  String get videoEditorMergeProgressLabel =>
+      'Un moment, îți îmbinăm clipurile';
+
+  @override
+  String get videoEditorMergeFailed =>
+      'Clipurile nu au putut fi îmbinate. Încearcă din nou.';
+
+  @override
   String get videoEditorTimelineLongPressToDragHint =>
       'Apasă lung pentru a trage';
 

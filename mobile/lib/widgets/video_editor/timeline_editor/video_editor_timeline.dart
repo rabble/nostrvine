@@ -98,15 +98,23 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final (:clips, :totalDuration, :isEditing, :currentClipIndex) = context
-        .select(
-          (ClipEditorBloc b) => (
-            clips: b.state.clips,
-            totalDuration: b.state.totalDuration,
-            isEditing: b.state.isEditing,
-            currentClipIndex: b.state.currentClipIndex,
-          ),
-        );
+    final (
+      :clips,
+      :totalDuration,
+      :isEditing,
+      :currentClipIndex,
+      :isMultiSelectMode,
+      :selectedClipIds,
+    ) = context.select(
+      (ClipEditorBloc b) => (
+        clips: b.state.clips,
+        totalDuration: b.state.totalDuration,
+        isEditing: b.state.isEditing,
+        currentClipIndex: b.state.currentClipIndex,
+        isMultiSelectMode: b.state.isMultiSelectMode,
+        selectedClipIds: b.state.selectedClipIds,
+      ),
+    );
     if (clips.isEmpty) return const SizedBox.shrink();
 
     final trimmingClipId =
@@ -267,6 +275,8 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
                       onTrimChanged: _onClipTrimChange,
                       onTrimDragChanged: _onTrimDragChanged,
                       onClipTapped: _onClipTapped,
+                      isMultiSelectMode: isMultiSelectMode,
+                      selectedClipIds: selectedClipIds,
                       onOverlayItemMoved: _onOverlayItemMoved,
                       onOverlayItemMoving: _onOverlayItemMoving,
                       onOverlayItemTrimmed: _onOverlayItemTrimmed,
@@ -417,13 +427,22 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   // -- Clip tap callback ----------------------------------------------------
 
   void _onClipTapped(int index) {
+    final bloc = context.read<ClipEditorBloc>();
+    final state = bloc.state;
+
+    // In multi-select mode a tap toggles the clip's membership instead of
+    // entering single-clip editing.
+    if (state.isMultiSelectMode) {
+      if (index < 0 || index >= state.clips.length) return;
+      bloc.add(ClipEditorMultiSelectClipToggled(state.clips[index].id));
+      return;
+    }
+
     // Deselect any overlay item when a clip is tapped.
     context.read<TimelineOverlayBloc>().add(
       const TimelineOverlayItemSelected(null),
     );
 
-    final bloc = context.read<ClipEditorBloc>();
-    final state = bloc.state;
     if (index == state.currentClipIndex) {
       // Same clip: toggle editing on/off.
       bloc.add(const ClipEditorEditingToggled());
@@ -896,6 +915,8 @@ class _TimelineInteractiveBody extends StatelessWidget {
     required this.onTrimChanged,
     required this.onTrimDragChanged,
     required this.onClipTapped,
+    required this.isMultiSelectMode,
+    required this.selectedClipIds,
     required this.onOverlayItemMoved,
     required this.onOverlayItemMoving,
     required this.onOverlayItemTrimmed,
@@ -930,6 +951,8 @@ class _TimelineInteractiveBody extends StatelessWidget {
   final ClipTrimCallback onTrimChanged;
   final ValueChanged<bool> onTrimDragChanged;
   final ValueChanged<int> onClipTapped;
+  final bool isMultiSelectMode;
+  final Set<String> selectedClipIds;
   final OverlayMoveCallback onOverlayItemMoved;
   final OverlayMovingCallback onOverlayItemMoving;
   final OverlayTrimCallback onOverlayItemTrimmed;
@@ -1047,6 +1070,8 @@ class _TimelineInteractiveBody extends StatelessWidget {
                             onClipTapped: isVolumeEditMode
                                 ? null
                                 : onClipTapped,
+                            isMultiSelectMode: isMultiSelectMode,
+                            selectedClipIds: selectedClipIds,
                             onOverlayItemMoved: onOverlayItemMoved,
                             onOverlayItemMoving: onOverlayItemMoving,
                             onOverlayItemTrimmed: onOverlayItemTrimmed,

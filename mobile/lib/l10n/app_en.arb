@@ -4642,6 +4642,71 @@
   "videoEditorClipGalleryInstruction": "Tap to edit. Hold and drag to reorder.",
   "videoEditorTimelineClipMoveLeft": "Move left",
   "videoEditorTimelineClipMoveRight": "Move right",
+  "videoEditorTimelineClipSelectedSemanticLabel": "Clip {index} of {total}, selected",
+  "@videoEditorTimelineClipSelectedSemanticLabel": {
+    "description": "Accessibility label for a timeline clip that is selected in multi-select mode.",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorTimelineClipUnselectedSemanticLabel": "Clip {index} of {total}, not selected",
+  "@videoEditorTimelineClipUnselectedSemanticLabel": {
+    "description": "Accessibility label for a timeline clip that is not selected in multi-select mode.",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorMultiSelectLabel": "Select",
+  "@videoEditorMultiSelectLabel": {
+    "description": "Label for the button that starts multi-select mode on the timeline."
+  },
+  "videoEditorMultiSelectSemanticLabel": "Select multiple clips",
+  "@videoEditorMultiSelectSemanticLabel": {
+    "description": "Accessibility label for the button that starts multi-select mode on the timeline."
+  },
+  "videoEditorMultiSelectDoneSemanticLabel": "Done selecting clips",
+  "@videoEditorMultiSelectDoneSemanticLabel": {
+    "description": "Accessibility label for the button that exits multi-select mode."
+  },
+  "videoEditorMultiSelectCountLabel": "{count, plural, =0{No clips selected} =1{1 clip selected} other{{count} clips selected}}",
+  "@videoEditorMultiSelectCountLabel": {
+    "description": "Header shown in the multi-select action bar reporting how many clips are selected.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorMergeLabel": "Merge",
+  "@videoEditorMergeLabel": {
+    "description": "Label for the button that merges the selected clips into one."
+  },
+  "videoEditorMergeSelectedClipsSemanticLabel": "Merge selected clips",
+  "@videoEditorMergeSelectedClipsSemanticLabel": {
+    "description": "Accessibility label for the button that merges the selected clips into one."
+  },
+  "videoEditorDeleteSelectedClipsSemanticLabel": "Delete selected clips",
+  "@videoEditorDeleteSelectedClipsSemanticLabel": {
+    "description": "Accessibility label for the button that deletes the selected clips."
+  },
+  "videoEditorMergeProgressLabel": "One moment, we're merging your clips",
+  "@videoEditorMergeProgressLabel": {
+    "description": "Status text shown while the selected clips are being concatenated into a single clip."
+  },
+  "videoEditorMergeFailed": "Could not merge clips. Please try again.",
+  "@videoEditorMergeFailed": {
+    "description": "Snackbar message shown when merging the selected clips fails during rendering."
+  },
   "videoEditorTimelineLongPressToDragHint": "Long press to drag",
   "videoEditorVideoTimelineSemanticLabel": "Video timeline",
   "videoEditorTimelinePositionFormat": "{minutes}m {seconds}s",

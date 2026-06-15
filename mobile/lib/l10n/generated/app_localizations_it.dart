@@ -8266,6 +8266,55 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoEditorTimelineClipMoveRight => 'Sposta a destra';
 
   @override
+  String videoEditorTimelineClipSelectedSemanticLabel(int index, int total) {
+    return 'Clip $index di $total, selezionata';
+  }
+
+  @override
+  String videoEditorTimelineClipUnselectedSemanticLabel(int index, int total) {
+    return 'Clip $index di $total, non selezionata';
+  }
+
+  @override
+  String get videoEditorMultiSelectLabel => 'Seleziona';
+
+  @override
+  String get videoEditorMultiSelectSemanticLabel => 'Seleziona più clip';
+
+  @override
+  String get videoEditorMultiSelectDoneSemanticLabel => 'Termina selezione';
+
+  @override
+  String videoEditorMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip selezionate',
+      one: '1 clip selezionata',
+      zero: 'Nessuna clip selezionata',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorMergeLabel => 'Unisci';
+
+  @override
+  String get videoEditorMergeSelectedClipsSemanticLabel =>
+      'Unisci le clip selezionate';
+
+  @override
+  String get videoEditorDeleteSelectedClipsSemanticLabel =>
+      'Elimina le clip selezionate';
+
+  @override
+  String get videoEditorMergeProgressLabel =>
+      'Un momento, stiamo unendo le tue clip';
+
+  @override
+  String get videoEditorMergeFailed => 'Impossibile unire le clip. Riprova.';
+
+  @override
   String get videoEditorTimelineLongPressToDragHint =>
       'Tieni premuto per trascinare';
 

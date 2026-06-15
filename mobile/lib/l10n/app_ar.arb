@@ -3954,5 +3954,33 @@
     "videoEditorTransformApplySemanticLabel": "تطبيق التحويل",
     "videoEditorTransformCancelSemanticLabel": "إلغاء التحويل",
     "videoEditorTransformPlayLabel": "تشغيل",
-    "videoEditorTransformPauseLabel": "إيقاف مؤقت"
+    "videoEditorTransformPauseLabel": "إيقاف مؤقت",
+    "videoEditorTimelineClipSelectedSemanticLabel": "المقطع {index} من {total}، محدد",
+    "@videoEditorTimelineClipSelectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorTimelineClipUnselectedSemanticLabel": "المقطع {index} من {total}، غير محدد",
+    "@videoEditorTimelineClipUnselectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorMultiSelectLabel": "تحديد",
+    "videoEditorMultiSelectSemanticLabel": "تحديد عدة مقاطع",
+    "videoEditorMultiSelectDoneSemanticLabel": "إنهاء التحديد",
+    "videoEditorMultiSelectCountLabel": "{count, plural, =0{لم يتم تحديد مقاطع} =1{تم تحديد مقطع واحد} other{تم تحديد {count} مقاطع}}",
+    "@videoEditorMultiSelectCountLabel": {
+        "placeholders": {
+            "count": {"type": "int"}
+        }
+    },
+    "videoEditorMergeLabel": "دمج",
+    "videoEditorMergeSelectedClipsSemanticLabel": "دمج المقاطع المحددة",
+    "videoEditorDeleteSelectedClipsSemanticLabel": "حذف المقاطع المحددة",
+    "videoEditorMergeProgressLabel": "لحظة من فضلك، نقوم بدمج مقاطعك",
+    "videoEditorMergeFailed": "تعذّر دمج المقاطع. يُرجى المحاولة مرة أخرى."
 }

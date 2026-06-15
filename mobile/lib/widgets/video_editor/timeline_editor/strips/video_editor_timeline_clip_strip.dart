@@ -43,6 +43,8 @@ class VideoEditorTimelineClipStrip extends StatefulWidget {
     this.trimmingClipId,
     this.onTrimChanged,
     this.onTrimDragChanged,
+    this.isMultiSelectMode = false,
+    this.selectedClipIds = const {},
     super.key,
   });
 
@@ -52,6 +54,13 @@ class VideoEditorTimelineClipStrip extends StatefulWidget {
   final ScrollController? scrollController;
   final ValueChanged<List<DivineVideoClip>>? onReorder;
   final ValueChanged<bool>? onReorderChanged;
+
+  /// Whether the timeline is in multi-select mode. Disables reorder and shows
+  /// per-clip selection affordances.
+  final bool isMultiSelectMode;
+
+  /// IDs of the clips currently selected in multi-select mode.
+  final Set<String> selectedClipIds;
 
   /// When `true` the user is scrolling or pinch-zooming — long press
   /// must not start a reorder drag.
@@ -548,7 +557,9 @@ class _VideoEditorTimelineClipStripState
         label: context.l10n.videoEditorTimelineLongPressToDragHint,
         button: true,
         child: GestureDetector(
-          onLongPressStart: isVolumeEditMode ? null : _onLongPressStart,
+          onLongPressStart: isVolumeEditMode || widget.isMultiSelectMode
+              ? null
+              : _onLongPressStart,
           onLongPressMoveUpdate: _isReordering ? _onLongPressMoveUpdate : null,
           onLongPressEnd: _isReordering ? _onLongPressEnd : null,
           onLongPressCancel: _isReordering ? _onLongPressCancel : null,
@@ -584,6 +595,8 @@ class _VideoEditorTimelineClipStripState
                   rowOffsetSize: _reorderSize,
                   isVolumeEditMode: isVolumeEditMode,
                   volumeRowStep: volumeRowStep,
+                  isMultiSelectMode: widget.isMultiSelectMode,
+                  selectedClipIds: widget.selectedClipIds,
                 ),
 
                 /// Trimming clip — rendered last so handles stay on top.
@@ -735,6 +748,8 @@ class _NonTrimmingClipPositions extends StatelessWidget {
     required this.rowOffsetSize,
     required this.isVolumeEditMode,
     required this.volumeRowStep,
+    required this.isMultiSelectMode,
+    required this.selectedClipIds,
   });
 
   final List<DivineVideoClip> orderedClips;
@@ -754,6 +769,8 @@ class _NonTrimmingClipPositions extends StatelessWidget {
   final double rowOffsetSize;
   final bool isVolumeEditMode;
   final double volumeRowStep;
+  final bool isMultiSelectMode;
+  final Set<String> selectedClipIds;
 
   @override
   Widget build(BuildContext context) {
@@ -781,6 +798,8 @@ class _NonTrimmingClipPositions extends StatelessWidget {
                 thumbnailNotifier: thumbnails[orderedClips[i].id],
                 onReorder: onReorder,
                 onTap: onClipTapped,
+                isMultiSelectMode: isMultiSelectMode,
+                isSelected: selectedClipIds.contains(orderedClips[i].id),
               ),
             ),
       ],

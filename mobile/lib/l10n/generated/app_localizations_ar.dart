@@ -8125,6 +8125,55 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorTimelineClipMoveRight => 'تحريك لليمين';
 
   @override
+  String videoEditorTimelineClipSelectedSemanticLabel(int index, int total) {
+    return 'المقطع $index من $total، محدد';
+  }
+
+  @override
+  String videoEditorTimelineClipUnselectedSemanticLabel(int index, int total) {
+    return 'المقطع $index من $total، غير محدد';
+  }
+
+  @override
+  String get videoEditorMultiSelectLabel => 'تحديد';
+
+  @override
+  String get videoEditorMultiSelectSemanticLabel => 'تحديد عدة مقاطع';
+
+  @override
+  String get videoEditorMultiSelectDoneSemanticLabel => 'إنهاء التحديد';
+
+  @override
+  String videoEditorMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تم تحديد $count مقاطع',
+      one: 'تم تحديد مقطع واحد',
+      zero: 'لم يتم تحديد مقاطع',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorMergeLabel => 'دمج';
+
+  @override
+  String get videoEditorMergeSelectedClipsSemanticLabel =>
+      'دمج المقاطع المحددة';
+
+  @override
+  String get videoEditorDeleteSelectedClipsSemanticLabel =>
+      'حذف المقاطع المحددة';
+
+  @override
+  String get videoEditorMergeProgressLabel => 'لحظة من فضلك، نقوم بدمج مقاطعك';
+
+  @override
+  String get videoEditorMergeFailed =>
+      'تعذّر دمج المقاطع. يُرجى المحاولة مرة أخرى.';
+
+  @override
   String get videoEditorTimelineLongPressToDragHint => 'اضغط مطولاً للسحب';
 
   @override

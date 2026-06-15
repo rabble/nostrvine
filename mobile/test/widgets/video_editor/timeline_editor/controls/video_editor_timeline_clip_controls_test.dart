@@ -142,5 +142,56 @@ void main() {
         expect(controls.onSpeed, isNull);
       },
     );
+
+    testWidgets('Select button is hidden for a single clip', (tester) async {
+      when(() => bloc.state).thenReturn(
+        ClipEditorState(
+          clips: [
+            DivineVideoClip(
+              id: 'clip-1',
+              video: EditorVideo.file('/tmp/clip-1.mp4'),
+              duration: const Duration(seconds: 3),
+              recordedAt: DateTime(2025),
+              targetAspectRatio: model.AspectRatio.vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpWidget(build());
+
+      final controls = tester.widget<VideoEditorTimelineControls>(
+        find.byType(VideoEditorTimelineControls),
+      );
+      expect(controls.onMultiSelect, isNull);
+    });
+
+    testWidgets('Select button starts multi-select with multiple clips', (
+      tester,
+    ) async {
+      DivineVideoClip clip(String id) => DivineVideoClip(
+        id: id,
+        video: EditorVideo.file('/tmp/$id.mp4'),
+        duration: const Duration(seconds: 3),
+        recordedAt: DateTime(2025),
+        targetAspectRatio: model.AspectRatio.vertical,
+        originalAspectRatio: 9 / 16,
+      );
+      when(() => bloc.state).thenReturn(
+        ClipEditorState(clips: [clip('clip-1'), clip('clip-2')]),
+      );
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await tester.pumpWidget(build());
+
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoEditorMultiSelectSemanticLabel),
+      );
+      await tester.pump();
+
+      verify(
+        () => bloc.add(const ClipEditorMultiSelectStarted('clip-1')),
+      ).called(1);
+    });
   });
 }

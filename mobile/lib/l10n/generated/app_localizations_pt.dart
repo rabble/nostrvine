@@ -8239,6 +8239,56 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorTimelineClipMoveRight => 'Mover para a direita';
 
   @override
+  String videoEditorTimelineClipSelectedSemanticLabel(int index, int total) {
+    return 'Clipe $index de $total, selecionado';
+  }
+
+  @override
+  String videoEditorTimelineClipUnselectedSemanticLabel(int index, int total) {
+    return 'Clipe $index de $total, não selecionado';
+  }
+
+  @override
+  String get videoEditorMultiSelectLabel => 'Selecionar';
+
+  @override
+  String get videoEditorMultiSelectSemanticLabel => 'Selecionar vários clipes';
+
+  @override
+  String get videoEditorMultiSelectDoneSemanticLabel => 'Concluir seleção';
+
+  @override
+  String videoEditorMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clipes selecionados',
+      one: '1 clipe selecionado',
+      zero: 'Nenhum clipe selecionado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorMergeLabel => 'Mesclar';
+
+  @override
+  String get videoEditorMergeSelectedClipsSemanticLabel =>
+      'Mesclar clipes selecionados';
+
+  @override
+  String get videoEditorDeleteSelectedClipsSemanticLabel =>
+      'Excluir clipes selecionados';
+
+  @override
+  String get videoEditorMergeProgressLabel =>
+      'Um momento, estamos mesclando seus clipes';
+
+  @override
+  String get videoEditorMergeFailed =>
+      'Não foi possível mesclar os clipes. Tente novamente.';
+
+  @override
   String get videoEditorTimelineLongPressToDragHint =>
       'Pressione e segure para arrastar';
 

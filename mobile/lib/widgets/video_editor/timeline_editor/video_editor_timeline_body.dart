@@ -34,6 +34,8 @@ class VideoEditorTimelineBody extends StatelessWidget {
     this.onTrimChanged,
     this.onTrimDragChanged,
     this.onClipTapped,
+    this.isMultiSelectMode = false,
+    this.selectedClipIds = const {},
     this.onOverlayItemMoved,
     this.onOverlayItemMoving,
     this.onOverlayItemTrimmed,
@@ -59,6 +61,8 @@ class VideoEditorTimelineBody extends StatelessWidget {
   final ClipTrimCallback? onTrimChanged;
   final ValueChanged<bool>? onTrimDragChanged;
   final ValueChanged<int>? onClipTapped;
+  final bool isMultiSelectMode;
+  final Set<String> selectedClipIds;
   final OverlayMoveCallback? onOverlayItemMoved;
   final OverlayMovingCallback? onOverlayItemMoving;
   final OverlayTrimCallback? onOverlayItemTrimmed;
@@ -143,6 +147,8 @@ class VideoEditorTimelineBody extends StatelessWidget {
                   onTrimChanged: onTrimChanged,
                   onTrimDragChanged: onTrimDragChanged,
                   onClipTapped: onClipTapped,
+                  isMultiSelectMode: isMultiSelectMode,
+                  selectedClipIds: selectedClipIds,
                 ),
               ),
 

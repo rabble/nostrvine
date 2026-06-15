@@ -8166,6 +8166,56 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorTimelineClipMoveRight => 'Sağa taşı';
 
   @override
+  String videoEditorTimelineClipSelectedSemanticLabel(int index, int total) {
+    return 'Klip $index/$total, seçili';
+  }
+
+  @override
+  String videoEditorTimelineClipUnselectedSemanticLabel(int index, int total) {
+    return 'Klip $index/$total, seçili değil';
+  }
+
+  @override
+  String get videoEditorMultiSelectLabel => 'Seç';
+
+  @override
+  String get videoEditorMultiSelectSemanticLabel => 'Birden çok klip seç';
+
+  @override
+  String get videoEditorMultiSelectDoneSemanticLabel => 'Seçimi tamamla';
+
+  @override
+  String videoEditorMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klip seçildi',
+      one: '1 klip seçildi',
+      zero: 'Hiç klip seçilmedi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorMergeLabel => 'Birleştir';
+
+  @override
+  String get videoEditorMergeSelectedClipsSemanticLabel =>
+      'Seçili klipleri birleştir';
+
+  @override
+  String get videoEditorDeleteSelectedClipsSemanticLabel =>
+      'Seçili klipleri sil';
+
+  @override
+  String get videoEditorMergeProgressLabel =>
+      'Bir saniye, kliplerini birleştiriyoruz';
+
+  @override
+  String get videoEditorMergeFailed =>
+      'Klipler birleştirilemedi. Lütfen tekrar dene.';
+
+  @override
   String get videoEditorTimelineLongPressToDragHint =>
       'Sürüklemek için uzun basın';
 

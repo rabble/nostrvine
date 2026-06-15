@@ -8273,6 +8273,56 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorTimelineClipMoveRight => 'Преместете се надясно';
 
   @override
+  String videoEditorTimelineClipSelectedSemanticLabel(int index, int total) {
+    return 'Клип $index от $total, избран';
+  }
+
+  @override
+  String videoEditorTimelineClipUnselectedSemanticLabel(int index, int total) {
+    return 'Клип $index от $total, неизбран';
+  }
+
+  @override
+  String get videoEditorMultiSelectLabel => 'Избор';
+
+  @override
+  String get videoEditorMultiSelectSemanticLabel => 'Избор на няколко клипа';
+
+  @override
+  String get videoEditorMultiSelectDoneSemanticLabel => 'Завърши избора';
+
+  @override
+  String videoEditorMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count избрани клипа',
+      one: '1 избран клип',
+      zero: 'Няма избрани клипове',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorMergeLabel => 'Обедини';
+
+  @override
+  String get videoEditorMergeSelectedClipsSemanticLabel =>
+      'Обединяване на избраните клипове';
+
+  @override
+  String get videoEditorDeleteSelectedClipsSemanticLabel =>
+      'Изтриване на избраните клипове';
+
+  @override
+  String get videoEditorMergeProgressLabel =>
+      'Един момент, обединяваме клиповете ти';
+
+  @override
+  String get videoEditorMergeFailed =>
+      'Клиповете не могат да бъдат обединени. Опитай отново.';
+
+  @override
   String get videoEditorTimelineLongPressToDragHint =>
       'Натисни дълго, за да плъзнеш';
 

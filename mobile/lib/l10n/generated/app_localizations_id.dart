@@ -8170,6 +8170,56 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorTimelineClipMoveRight => 'Geser ke kanan';
 
   @override
+  String videoEditorTimelineClipSelectedSemanticLabel(int index, int total) {
+    return 'Klip $index dari $total, dipilih';
+  }
+
+  @override
+  String videoEditorTimelineClipUnselectedSemanticLabel(int index, int total) {
+    return 'Klip $index dari $total, tidak dipilih';
+  }
+
+  @override
+  String get videoEditorMultiSelectLabel => 'Pilih';
+
+  @override
+  String get videoEditorMultiSelectSemanticLabel => 'Pilih beberapa klip';
+
+  @override
+  String get videoEditorMultiSelectDoneSemanticLabel => 'Selesai memilih';
+
+  @override
+  String videoEditorMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klip dipilih',
+      one: '1 klip dipilih',
+      zero: 'Tidak ada klip dipilih',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorMergeLabel => 'Gabungkan';
+
+  @override
+  String get videoEditorMergeSelectedClipsSemanticLabel =>
+      'Gabungkan klip yang dipilih';
+
+  @override
+  String get videoEditorDeleteSelectedClipsSemanticLabel =>
+      'Hapus klip yang dipilih';
+
+  @override
+  String get videoEditorMergeProgressLabel =>
+      'Sebentar, kami sedang menggabungkan klipmu';
+
+  @override
+  String get videoEditorMergeFailed =>
+      'Tidak dapat menggabungkan klip. Silakan coba lagi.';
+
+  @override
   String get videoEditorTimelineLongPressToDragHint =>
       'Tekan lama untuk menyeret';
 

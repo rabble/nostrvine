@@ -16,6 +16,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
     this.isReversed = false,
     this.onExtractAudio,
     this.isExtractingAudio = false,
+    this.onMultiSelect,
     super.key,
   });
 
@@ -29,6 +30,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
   final bool isReversed;
   final VoidCallback? onExtractAudio;
   final bool isExtractingAudio;
+  final VoidCallback? onMultiSelect;
   final VoidCallback? onDone;
 
   @override
@@ -128,6 +130,14 @@ class VideoEditorTimelineControls extends StatelessWidget {
                           .videoEditorExtractAudioFromClipSemanticLabel,
                       onPressed: isExtractingAudio ? null : onExtractAudio,
                       isLoading: isExtractingAudio,
+                    ),
+                  if (onMultiSelect != null)
+                    _ControlButton(
+                      icon: .checks,
+                      label: context.l10n.videoEditorMultiSelectLabel,
+                      semanticLabel:
+                          context.l10n.videoEditorMultiSelectSemanticLabel,
+                      onPressed: onMultiSelect,
                     ),
                   _ControlButton(
                     icon: .check,

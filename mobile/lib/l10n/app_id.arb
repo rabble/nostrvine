@@ -3954,5 +3954,33 @@
     "videoEditorTransformApplySemanticLabel": "Terapkan transformasi",
     "videoEditorTransformCancelSemanticLabel": "Batalkan transformasi",
     "videoEditorTransformPlayLabel": "Putar",
-    "videoEditorTransformPauseLabel": "Jeda"
+    "videoEditorTransformPauseLabel": "Jeda",
+    "videoEditorTimelineClipSelectedSemanticLabel": "Klip {index} dari {total}, dipilih",
+    "@videoEditorTimelineClipSelectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorTimelineClipUnselectedSemanticLabel": "Klip {index} dari {total}, tidak dipilih",
+    "@videoEditorTimelineClipUnselectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorMultiSelectLabel": "Pilih",
+    "videoEditorMultiSelectSemanticLabel": "Pilih beberapa klip",
+    "videoEditorMultiSelectDoneSemanticLabel": "Selesai memilih",
+    "videoEditorMultiSelectCountLabel": "{count, plural, =0{Tidak ada klip dipilih} =1{1 klip dipilih} other{{count} klip dipilih}}",
+    "@videoEditorMultiSelectCountLabel": {
+        "placeholders": {
+            "count": {"type": "int"}
+        }
+    },
+    "videoEditorMergeLabel": "Gabungkan",
+    "videoEditorMergeSelectedClipsSemanticLabel": "Gabungkan klip yang dipilih",
+    "videoEditorDeleteSelectedClipsSemanticLabel": "Hapus klip yang dipilih",
+    "videoEditorMergeProgressLabel": "Sebentar, kami sedang menggabungkan klipmu",
+    "videoEditorMergeFailed": "Tidak dapat menggabungkan klip. Silakan coba lagi."
 }

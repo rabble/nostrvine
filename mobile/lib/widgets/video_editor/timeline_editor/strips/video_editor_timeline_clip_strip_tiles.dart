@@ -212,6 +212,8 @@ class _AccessibleClipTile extends StatelessWidget {
     required this.thumbnailNotifier,
     required this.onReorder,
     this.onTap,
+    this.isMultiSelectMode = false,
+    this.isSelected = false,
   });
 
   final DivineVideoClip clip;
@@ -222,6 +224,8 @@ class _AccessibleClipTile extends StatelessWidget {
   final ValueNotifier<List<StripThumbnail>> thumbnailNotifier;
   final void Function(int from, int to) onReorder;
   final ValueChanged<int>? onTap;
+  final bool isMultiSelectMode;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -230,26 +234,39 @@ class _AccessibleClipTile extends StatelessWidget {
       onTap: onTap != null ? () => onTap!(index) : null,
       behavior: HitTestBehavior.opaque,
       child: Semantics(
-        label: context.l10n.videoEditorTimelineClipSemanticLabel(
-          index + 1,
-          total,
-          durationSec.toStringAsFixed(1),
-        ),
-        hint: total > 1
+        label: isMultiSelectMode
+            ? (isSelected
+                  ? context.l10n.videoEditorTimelineClipSelectedSemanticLabel(
+                      index + 1,
+                      total,
+                    )
+                  : context.l10n.videoEditorTimelineClipUnselectedSemanticLabel(
+                      index + 1,
+                      total,
+                    ))
+            : context.l10n.videoEditorTimelineClipSemanticLabel(
+                index + 1,
+                total,
+                durationSec.toStringAsFixed(1),
+              ),
+        selected: isMultiSelectMode ? isSelected : null,
+        hint: !isMultiSelectMode && total > 1
             ? context.l10n.videoEditorTimelineClipReorderHint
             : null,
-        customSemanticsActions: {
-          if (index > 0)
-            CustomSemanticsAction(
-              label: context.l10n.videoEditorTimelineClipMoveLeft,
-            ): () =>
-                onReorder(index, index - 1),
-          if (index < total - 1)
-            CustomSemanticsAction(
-              label: context.l10n.videoEditorTimelineClipMoveRight,
-            ): () =>
-                onReorder(index, index + 1),
-        },
+        customSemanticsActions: isMultiSelectMode
+            ? null
+            : {
+                if (index > 0)
+                  CustomSemanticsAction(
+                    label: context.l10n.videoEditorTimelineClipMoveLeft,
+                  ): () =>
+                      onReorder(index, index - 1),
+                if (index < total - 1)
+                  CustomSemanticsAction(
+                    label: context.l10n.videoEditorTimelineClipMoveRight,
+                  ): () =>
+                      onReorder(index, index + 1),
+              },
         child: _ClipTile(
           clip: clip,
           fullWidth:
@@ -260,11 +277,19 @@ class _AccessibleClipTile extends StatelessWidget {
               pixelsPerSecond *
               clip._playbackScale,
           thumbnailNotifier: thumbnailNotifier,
+          selectionState: isMultiSelectMode
+              ? (isSelected
+                    ? _ClipSelectionState.selected
+                    : _ClipSelectionState.unselected)
+              : _ClipSelectionState.none,
         ),
       ),
     );
   }
 }
+
+/// Multi-select visual state for a clip tile.
+enum _ClipSelectionState { none, unselected, selected }
 
 class _ClipTile extends StatelessWidget {
   const _ClipTile({
@@ -272,6 +297,7 @@ class _ClipTile extends StatelessWidget {
     required this.fullWidth,
     required this.thumbnailNotifier,
     this.trimStartOffset = 0,
+    this.selectionState = _ClipSelectionState.none,
   });
 
   final DivineVideoClip clip;
@@ -281,9 +307,12 @@ class _ClipTile extends StatelessWidget {
   /// Pixel offset from the left to shift thumbnails for trim-start.
   final double trimStartOffset;
 
+  /// Multi-select visual state — drives the selection border / dim scrim.
+  final _ClipSelectionState selectionState;
+
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
+    final tile = ClipRRect(
       borderRadius: .circular(TimelineConstants.thumbnailRadius),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -318,6 +347,75 @@ class _ClipTile extends StatelessWidget {
           );
         },
       ),
+    );
+
+    if (selectionState == _ClipSelectionState.none) return tile;
+
+    return Stack(
+      fit: StackFit.passthrough,
+      children: [
+        tile,
+        Positioned.fill(
+          child: _ClipSelectionOverlay(
+            isSelected: selectionState == _ClipSelectionState.selected,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Foreground overlay drawn on a clip tile while multi-selecting: a primary
+/// border + check badge for selected clips, a translucent dim scrim for
+/// unselected ones.
+class _ClipSelectionOverlay extends StatelessWidget {
+  const _ClipSelectionOverlay({required this.isSelected});
+
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isSelected) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: VineTheme.scrim65,
+          borderRadius: BorderRadius.circular(
+            TimelineConstants.thumbnailRadius,
+          ),
+        ),
+      );
+    }
+
+    return Stack(
+      fit: StackFit.passthrough,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border.all(color: VineTheme.primary, width: 2),
+            borderRadius: BorderRadius.circular(
+              TimelineConstants.thumbnailRadius,
+            ),
+          ),
+        ),
+        const Positioned(
+          top: 4,
+          right: 4,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: VineTheme.primary,
+              shape: BoxShape.circle,
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(2),
+              child: DivineIcon(
+                icon: .check,
+                size: 12,
+                color: VineTheme.onPrimary,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

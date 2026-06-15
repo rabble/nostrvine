@@ -10,6 +10,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_bottom_bar.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_overlay_controls.dart';
@@ -20,6 +21,7 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_acti
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_overlay_actions.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// A scaffold widget that provides the standard layout for the video editor.
@@ -48,8 +50,10 @@ class VideoEditorScaffold extends StatelessWidget {
         body: _SplitFailureListener(
           child: _ClipReverseResultListener(
             child: _ClipTransformResultListener(
-              child: _AudioExtractionResultListener(
-                child: _ScaffoldBody(isLoading: isLoading),
+              child: _ClipMergeResultListener(
+                child: _AudioExtractionResultListener(
+                  child: _ScaffoldBody(isLoading: isLoading),
+                ),
               ),
             ),
           ),
@@ -92,6 +96,7 @@ class _ScaffoldBody extends StatelessWidget {
 
         const _ReverseProgressOverlay(),
         const _TransformProgressOverlay(),
+        const _MergeProgressOverlay(),
       ],
     );
   }
@@ -225,6 +230,68 @@ class _ClipTransformResultListener extends StatelessWidget {
         // Player sync is handled by the canvas listener; nothing to do here.
         break;
     }
+  }
+}
+
+/// Listens to [ClipEditorBloc.state.lastMergeResult] and commits a successful
+/// merge to editor history (replacing the selected clips with the merged clip,
+/// with timeline markers rebased) or surfaces a snackbar on failure.
+///
+/// The bloc has already swapped the clip list by the time this fires; this
+/// listener persists that change plus the rebased markers as one history entry
+/// so undo/redo restores a consistent timeline. Kept at the scaffold level
+/// (always mounted) so it survives the multi-select controls unmounting when
+/// the bloc exits multi-select mode on success.
+class _ClipMergeResultListener extends StatelessWidget {
+  const _ClipMergeResultListener({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<ClipEditorBloc, ClipEditorState>(
+      listenWhen: (prev, curr) =>
+          !identical(prev.lastMergeResult, curr.lastMergeResult) &&
+          curr.lastMergeResult != null,
+      listener: _onMergeResult,
+      child: child,
+    );
+  }
+
+  void _onMergeResult(BuildContext context, ClipEditorState state) {
+    final result = state.lastMergeResult;
+    if (result == null) return;
+
+    switch (result) {
+      case ClipMergeSuccess(:final previousClips):
+        _commitMerge(context, state, previousClips);
+      case ClipMergeFailure():
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(context.l10n.videoEditorMergeFailed),
+        );
+      case ClipMergeDiscarded():
+        // A selected clip was removed during the async render — nothing to
+        // commit and no user action that warrants a snackbar.
+        break;
+    }
+  }
+
+  void _commitMerge(
+    BuildContext context,
+    ClipEditorState state,
+    List<DivineVideoClip> previousClips,
+  ) {
+    final editor = VideoEditorScope.of(context).requireEditor;
+    final overlayBloc = context.read<TimelineOverlayBloc>();
+
+    final rebasedMarkers = rebaseTimelineMarkersForClipState(
+      oldClips: previousClips,
+      newClips: state.clips,
+      markers: overlayBloc.state.timelineMarkers,
+    );
+
+    overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
+    editor.setClipState(state.clips, timelineMarkers: rebasedMarkers);
   }
 }
 
@@ -524,6 +591,77 @@ class _TransformProgressContent extends StatelessWidget {
   }
 }
 
+/// Full-screen progress overlay shown while the selected clips are concatenated
+/// into a single new clip file. Absorbs input for the duration so the timeline
+/// controls underneath can't start a competing edit mid-render, and fades
+/// in/out via [AnimatedSwitcher].
+class _MergeProgressOverlay extends StatelessWidget {
+  const _MergeProgressOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocSelector<
+      ClipEditorBloc,
+      ClipEditorState,
+      ({bool isMerging, String? renderId})
+    >(
+      selector: (state) => (
+        isMerging: state.isMerging,
+        renderId: state.mergingRenderId,
+      ),
+      builder: (context, mergeState) {
+        final renderId = mergeState.isMerging ? mergeState.renderId : null;
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: renderId == null
+              ? const SizedBox.shrink()
+              : _MergeProgressContent(renderId: renderId),
+        );
+      },
+    );
+  }
+}
+
+class _MergeProgressContent extends StatelessWidget {
+  const _MergeProgressContent({required this.renderId});
+
+  final String renderId;
+
+  @override
+  Widget build(BuildContext context) {
+    return AbsorbPointer(
+      child: ColoredBox(
+        color: VineTheme.backgroundColor.withAlpha(210),
+        child: Center(
+          child: RepaintBoundary(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 24,
+              children: [
+                StreamBuilder<ProgressModel>(
+                  stream: ProVideoEditor.instance.progressStreamById(renderId),
+                  builder: (context, snapshot) {
+                    final progress = snapshot.data?.progress ?? 0;
+                    return PartialCircleSpinner(progress: progress);
+                  },
+                ),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 240),
+                  child: Text(
+                    context.l10n.videoEditorMergeProgressLabel,
+                    textAlign: TextAlign.center,
+                    style: VineTheme.bodyMediumFont(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Bottom section that switches between different toolbars based on context.
 ///
 /// Only visible when a sub-editor is open. When no sub-editor is open the
@@ -575,11 +713,11 @@ class _AddElementFab extends StatelessWidget {
     final hasSelectedOverlay = context.select(
       (TimelineOverlayBloc b) => b.state.selectedItemId != null,
     );
-    final isClipEditing = context.select(
-      (ClipEditorBloc b) => b.state.isEditing,
+    final isClipInteracting = context.select(
+      (ClipEditorBloc b) => b.state.isEditing || b.state.isMultiSelectMode,
     );
 
-    if (shouldHide || hasSelectedOverlay || isClipEditing) {
+    if (shouldHide || hasSelectedOverlay || isClipInteracting) {
       return const SizedBox.shrink();
     }
 

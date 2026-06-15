@@ -8042,6 +8042,52 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorTimelineClipMoveRight => 'ወደ ቀኝ አንቀሳቅስ';
 
   @override
+  String videoEditorTimelineClipSelectedSemanticLabel(int index, int total) {
+    return 'ቅንጥብ $index ከ $total፣ ተመርጧል';
+  }
+
+  @override
+  String videoEditorTimelineClipUnselectedSemanticLabel(int index, int total) {
+    return 'ቅንጥብ $index ከ $total፣ አልተመረጠም';
+  }
+
+  @override
+  String get videoEditorMultiSelectLabel => 'ምረጥ';
+
+  @override
+  String get videoEditorMultiSelectSemanticLabel => 'ብዙ ቅንጥቦችን ምረጥ';
+
+  @override
+  String get videoEditorMultiSelectDoneSemanticLabel => 'ምርጫን ጨርስ';
+
+  @override
+  String videoEditorMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ቅንጥቦች ተመርጠዋል',
+      one: '1 ቅንጥብ ተመርጧል',
+      zero: 'ምንም ቅንጥብ አልተመረጠም',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorMergeLabel => 'አዋህድ';
+
+  @override
+  String get videoEditorMergeSelectedClipsSemanticLabel => 'የተመረጡ ቅንጥቦችን አዋህድ';
+
+  @override
+  String get videoEditorDeleteSelectedClipsSemanticLabel => 'የተመረጡ ቅንጥቦችን ሰርዝ';
+
+  @override
+  String get videoEditorMergeProgressLabel => 'ትንሽ ይቆዩ፣ ቅንጥቦችዎን እያዋሃድን ነው';
+
+  @override
+  String get videoEditorMergeFailed => 'ቅንጥቦችን ማዋሃድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
   String get videoEditorTimelineLongPressToDragHint => 'ለመጎተት በረጅሙ ተጫን';
 
   @override

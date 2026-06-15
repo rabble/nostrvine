@@ -14262,6 +14262,72 @@ abstract class AppLocalizations {
   /// **'Move right'**
   String get videoEditorTimelineClipMoveRight;
 
+  /// Accessibility label for a timeline clip that is selected in multi-select mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip {index} of {total}, selected'**
+  String videoEditorTimelineClipSelectedSemanticLabel(int index, int total);
+
+  /// Accessibility label for a timeline clip that is not selected in multi-select mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip {index} of {total}, not selected'**
+  String videoEditorTimelineClipUnselectedSemanticLabel(int index, int total);
+
+  /// Label for the button that starts multi-select mode on the timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get videoEditorMultiSelectLabel;
+
+  /// Accessibility label for the button that starts multi-select mode on the timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Select multiple clips'**
+  String get videoEditorMultiSelectSemanticLabel;
+
+  /// Accessibility label for the button that exits multi-select mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Done selecting clips'**
+  String get videoEditorMultiSelectDoneSemanticLabel;
+
+  /// Header shown in the multi-select action bar reporting how many clips are selected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No clips selected} =1{1 clip selected} other{{count} clips selected}}'**
+  String videoEditorMultiSelectCountLabel(int count);
+
+  /// Label for the button that merges the selected clips into one.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get videoEditorMergeLabel;
+
+  /// Accessibility label for the button that merges the selected clips into one.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge selected clips'**
+  String get videoEditorMergeSelectedClipsSemanticLabel;
+
+  /// Accessibility label for the button that deletes the selected clips.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected clips'**
+  String get videoEditorDeleteSelectedClipsSemanticLabel;
+
+  /// Status text shown while the selected clips are being concatenated into a single clip.
+  ///
+  /// In en, this message translates to:
+  /// **'One moment, we\'re merging your clips'**
+  String get videoEditorMergeProgressLabel;
+
+  /// Snackbar message shown when merging the selected clips fails during rendering.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not merge clips. Please try again.'**
+  String get videoEditorMergeFailed;
+
   /// No description provided for @videoEditorTimelineLongPressToDragHint.
   ///
   /// In en, this message translates to:

@@ -70,6 +70,50 @@ class ClipEditorClipSelected extends ClipEditorEvent {
   List<Object?> get props => [index];
 }
 
+// === MULTI-SELECT ===
+
+/// Enter multi-select mode, optionally pre-selecting [initialClipId].
+///
+/// Exits single-clip editing mode. While multi-select is active, tapping a
+/// clip toggles its membership in the selection.
+class ClipEditorMultiSelectStarted extends ClipEditorEvent {
+  const ClipEditorMultiSelectStarted([this.initialClipId]);
+
+  final String? initialClipId;
+
+  @override
+  List<Object?> get props => [initialClipId];
+}
+
+/// Toggle a clip's membership in the multi-select selection.
+class ClipEditorMultiSelectClipToggled extends ClipEditorEvent {
+  const ClipEditorMultiSelectClipToggled(this.clipId);
+
+  final String clipId;
+
+  @override
+  List<Object?> get props => [clipId];
+}
+
+/// Exit multi-select mode and clear the selection.
+class ClipEditorMultiSelectCancelled extends ClipEditorEvent {
+  const ClipEditorMultiSelectCancelled();
+}
+
+/// Remove every clip currently in the multi-select selection.
+///
+/// No-op when the selection would empty the timeline — at least one clip must
+/// always remain.
+class ClipEditorSelectedClipsRemoved extends ClipEditorEvent {
+  const ClipEditorSelectedClipsRemoved();
+}
+
+/// Merge every clip currently in the multi-select selection into a single
+/// rendered clip placed at the earliest selected position.
+class ClipEditorSelectedClipsMergeRequested extends ClipEditorEvent {
+  const ClipEditorSelectedClipsMergeRequested();
+}
+
 // === EDITING MODE ===
 
 /// Enter editing mode for the currently selected clip.

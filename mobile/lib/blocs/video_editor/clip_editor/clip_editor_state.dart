@@ -28,6 +28,11 @@ class ClipEditorState extends Equatable {
     this.isTransforming = false,
     this.transformingClipId,
     this.lastTransformResult,
+    this.isMultiSelectMode = false,
+    this.selectedClipIds = const {},
+    this.isMerging = false,
+    this.mergingRenderId,
+    this.lastMergeResult,
   });
 
   /// Local copy of clips managed by this editor session.
@@ -123,6 +128,26 @@ class ClipEditorState extends Equatable {
   /// the canvas player-sync listener that reacts to the swapped clip file.
   final ClipTransformResult? lastTransformResult;
 
+  /// Whether the timeline is in multi-select mode — tapping a clip toggles its
+  /// membership in [selectedClipIds] instead of entering single-clip editing.
+  final bool isMultiSelectMode;
+
+  /// IDs of the clips currently selected in multi-select mode. Keyed by id so
+  /// the selection survives reorder and re-render.
+  final Set<String> selectedClipIds;
+
+  /// Whether a merge (concat) render operation is currently running.
+  final bool isMerging;
+
+  /// Render id used as the render-progress stream key while merging.
+  final String? mergingRenderId;
+
+  /// Last completed merge-render result.
+  ///
+  /// Consumed by the widget layer to commit the merged clip list to editor
+  /// history (on success) or surface a failure snackbar.
+  final ClipMergeResult? lastMergeResult;
+
   /// Total wall-clock duration of all clips (respecting trim and playback speed).
   Duration get totalDuration =>
       clips.fold(Duration.zero, (sum, clip) => sum + clip.playbackDuration);
@@ -153,6 +178,12 @@ class ClipEditorState extends Equatable {
     String? transformingClipId,
     bool clearTransformingClipId = false,
     ClipTransformResult? lastTransformResult,
+    bool? isMultiSelectMode,
+    Set<String>? selectedClipIds,
+    bool? isMerging,
+    String? mergingRenderId,
+    bool clearMergingRenderId = false,
+    ClipMergeResult? lastMergeResult,
   }) {
     return ClipEditorState(
       clips: clips ?? this.clips,
@@ -182,6 +213,13 @@ class ClipEditorState extends Equatable {
           ? null
           : (transformingClipId ?? this.transformingClipId),
       lastTransformResult: lastTransformResult ?? this.lastTransformResult,
+      isMultiSelectMode: isMultiSelectMode ?? this.isMultiSelectMode,
+      selectedClipIds: selectedClipIds ?? this.selectedClipIds,
+      isMerging: isMerging ?? this.isMerging,
+      mergingRenderId: clearMergingRenderId
+          ? null
+          : (mergingRenderId ?? this.mergingRenderId),
+      lastMergeResult: lastMergeResult ?? this.lastMergeResult,
     );
   }
 
@@ -209,6 +247,12 @@ class ClipEditorState extends Equatable {
     isTransforming,
     transformingClipId,
     identityHashCode(lastTransformResult),
+    isMultiSelectMode,
+    selectedClipIds,
+    isMerging,
+    mergingRenderId,
+    // Identity-only: each ClipMergeResult is a fresh instance per merge.
+    identityHashCode(lastMergeResult),
   ];
 }
 
@@ -309,3 +353,29 @@ final class ClipTransformDiscarded extends ClipTransformResult {}
 
 /// Transform render failed.
 final class ClipTransformFailure extends ClipTransformResult {}
+
+// === MERGE RESULT ===
+
+/// One-shot signal describing the outcome of a merge-render operation.
+///
+/// Emitted into [ClipEditorState.lastMergeResult] after each merge attempt.
+/// Identity-compared so the scaffold [BlocListener] fires exactly once per
+/// attempt even when the same outcome repeats.
+sealed class ClipMergeResult {}
+
+/// Merge render succeeded; [ClipEditorState.clips] already holds the merged
+/// clip in place of the selected ones. [previousClips] is the clip list as it
+/// was immediately before the merge, so the widget layer can rebase timeline
+/// markers from the old composition to the new one.
+final class ClipMergeSuccess extends ClipMergeResult {
+  ClipMergeSuccess({required this.previousClips});
+
+  final List<DivineVideoClip> previousClips;
+}
+
+/// Merge render was attempted but cancelled or failed.
+final class ClipMergeFailure extends ClipMergeResult {}
+
+/// Merge completed but one or more selected clips were removed from the
+/// timeline while the async render was in flight, so the result was discarded.
+final class ClipMergeDiscarded extends ClipMergeResult {}

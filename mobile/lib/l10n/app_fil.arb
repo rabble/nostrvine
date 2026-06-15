@@ -2495,5 +2495,33 @@
     "videoEditorTransformApplySemanticLabel": "Ilapat ang transform",
     "videoEditorTransformCancelSemanticLabel": "Kanselahin ang transform",
     "videoEditorTransformPlayLabel": "I-play",
-    "videoEditorTransformPauseLabel": "I-pause"
+    "videoEditorTransformPauseLabel": "I-pause",
+    "videoEditorTimelineClipSelectedSemanticLabel": "Clip {index} ng {total}, napili",
+    "@videoEditorTimelineClipSelectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorTimelineClipUnselectedSemanticLabel": "Clip {index} ng {total}, hindi napili",
+    "@videoEditorTimelineClipUnselectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorMultiSelectLabel": "Pumili",
+    "videoEditorMultiSelectSemanticLabel": "Pumili ng maraming clip",
+    "videoEditorMultiSelectDoneSemanticLabel": "Tapusin ang pagpili",
+    "videoEditorMultiSelectCountLabel": "{count, plural, =0{Walang napiling clip} =1{1 clip ang napili} other{{count} clip ang napili}}",
+    "@videoEditorMultiSelectCountLabel": {
+        "placeholders": {
+            "count": {"type": "int"}
+        }
+    },
+    "videoEditorMergeLabel": "Pagsamahin",
+    "videoEditorMergeSelectedClipsSemanticLabel": "Pagsamahin ang mga napiling clip",
+    "videoEditorDeleteSelectedClipsSemanticLabel": "Tanggalin ang mga napiling clip",
+    "videoEditorMergeProgressLabel": "Sandali lang, pinagsasama namin ang iyong mga clip",
+    "videoEditorMergeFailed": "Hindi mapagsama ang mga clip. Pakisubukang muli."
 }

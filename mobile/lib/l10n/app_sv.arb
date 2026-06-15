@@ -3954,5 +3954,33 @@
     "videoEditorTransformApplySemanticLabel": "Tillämpa transformering",
     "videoEditorTransformCancelSemanticLabel": "Avbryt transformering",
     "videoEditorTransformPlayLabel": "Spela",
-    "videoEditorTransformPauseLabel": "Pausa"
+    "videoEditorTransformPauseLabel": "Pausa",
+    "videoEditorTimelineClipSelectedSemanticLabel": "Klipp {index} av {total}, markerat",
+    "@videoEditorTimelineClipSelectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorTimelineClipUnselectedSemanticLabel": "Klipp {index} av {total}, inte markerat",
+    "@videoEditorTimelineClipUnselectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorMultiSelectLabel": "Markera",
+    "videoEditorMultiSelectSemanticLabel": "Markera flera klipp",
+    "videoEditorMultiSelectDoneSemanticLabel": "Slutför markering",
+    "videoEditorMultiSelectCountLabel": "{count, plural, =0{Inga klipp markerade} =1{1 klipp markerat} other{{count} klipp markerade}}",
+    "@videoEditorMultiSelectCountLabel": {
+        "placeholders": {
+            "count": {"type": "int"}
+        }
+    },
+    "videoEditorMergeLabel": "Slå samman",
+    "videoEditorMergeSelectedClipsSemanticLabel": "Slå samman markerade klipp",
+    "videoEditorDeleteSelectedClipsSemanticLabel": "Ta bort markerade klipp",
+    "videoEditorMergeProgressLabel": "Ett ögonblick, vi slår samman dina klipp",
+    "videoEditorMergeFailed": "Det gick inte att slå samman klippen. Försök igen."
 }

@@ -48,6 +48,7 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       onTransform: () => _transformClip(context),
       onExtractAudio: () => _requestExtractAudio(context),
       onReversed: () => _reverseClip(context),
+      onMultiSelect: isLastClip ? null : () => _startMultiSelect(context),
       isReversed: isReversed,
       isExtractingAudio: isExtractingAudio,
       // Done is gated while extraction is in flight purely as a UX cue —
@@ -149,6 +150,18 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       ClipEditorAudioExtractionRequested(
         clipTitle: context.l10n.videoEditorClipAudioTitle,
       ),
+    );
+  }
+
+  void _startMultiSelect(BuildContext context) {
+    final bloc = context.read<ClipEditorBloc>();
+    final state = bloc.state;
+    if (state.currentClipIndex < 0 ||
+        state.currentClipIndex >= state.clips.length) {
+      return;
+    }
+    bloc.add(
+      ClipEditorMultiSelectStarted(state.clips[state.currentClipIndex].id),
     );
   }
 

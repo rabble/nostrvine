@@ -3954,5 +3954,33 @@
     "videoEditorTransformApplySemanticLabel": "Zastosuj przekształcenie",
     "videoEditorTransformCancelSemanticLabel": "Anuluj przekształcenie",
     "videoEditorTransformPlayLabel": "Odtwórz",
-    "videoEditorTransformPauseLabel": "Pauza"
+    "videoEditorTransformPauseLabel": "Pauza",
+    "videoEditorTimelineClipSelectedSemanticLabel": "Klip {index} z {total}, zaznaczony",
+    "@videoEditorTimelineClipSelectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorTimelineClipUnselectedSemanticLabel": "Klip {index} z {total}, niezaznaczony",
+    "@videoEditorTimelineClipUnselectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorMultiSelectLabel": "Zaznacz",
+    "videoEditorMultiSelectSemanticLabel": "Zaznacz wiele klipów",
+    "videoEditorMultiSelectDoneSemanticLabel": "Zakończ zaznaczanie",
+    "videoEditorMultiSelectCountLabel": "{count, plural, =0{Nie zaznaczono klipów} =1{Zaznaczono 1 klip} other{Zaznaczono {count} klipów}}",
+    "@videoEditorMultiSelectCountLabel": {
+        "placeholders": {
+            "count": {"type": "int"}
+        }
+    },
+    "videoEditorMergeLabel": "Scal",
+    "videoEditorMergeSelectedClipsSemanticLabel": "Scal zaznaczone klipy",
+    "videoEditorDeleteSelectedClipsSemanticLabel": "Usuń zaznaczone klipy",
+    "videoEditorMergeProgressLabel": "Chwila, scalamy Twoje klipy",
+    "videoEditorMergeFailed": "Nie udało się scalić klipów. Spróbuj ponownie."
 }

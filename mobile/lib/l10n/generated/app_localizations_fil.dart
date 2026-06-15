@@ -8282,6 +8282,56 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorTimelineClipMoveRight => 'Ilipat sa kanan';
 
   @override
+  String videoEditorTimelineClipSelectedSemanticLabel(int index, int total) {
+    return 'Clip $index ng $total, napili';
+  }
+
+  @override
+  String videoEditorTimelineClipUnselectedSemanticLabel(int index, int total) {
+    return 'Clip $index ng $total, hindi napili';
+  }
+
+  @override
+  String get videoEditorMultiSelectLabel => 'Pumili';
+
+  @override
+  String get videoEditorMultiSelectSemanticLabel => 'Pumili ng maraming clip';
+
+  @override
+  String get videoEditorMultiSelectDoneSemanticLabel => 'Tapusin ang pagpili';
+
+  @override
+  String videoEditorMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip ang napili',
+      one: '1 clip ang napili',
+      zero: 'Walang napiling clip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorMergeLabel => 'Pagsamahin';
+
+  @override
+  String get videoEditorMergeSelectedClipsSemanticLabel =>
+      'Pagsamahin ang mga napiling clip';
+
+  @override
+  String get videoEditorDeleteSelectedClipsSemanticLabel =>
+      'Tanggalin ang mga napiling clip';
+
+  @override
+  String get videoEditorMergeProgressLabel =>
+      'Sandali lang, pinagsasama namin ang iyong mga clip';
+
+  @override
+  String get videoEditorMergeFailed =>
+      'Hindi mapagsama ang mga clip. Pakisubukang muli.';
+
+  @override
   String get videoEditorTimelineLongPressToDragHint =>
       'Pindutin nang matagal para i-drag';
 

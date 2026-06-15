@@ -3954,5 +3954,33 @@
     "videoEditorTransformApplySemanticLabel": "Dönüşümü uygula",
     "videoEditorTransformCancelSemanticLabel": "Dönüşümü iptal et",
     "videoEditorTransformPlayLabel": "Oynat",
-    "videoEditorTransformPauseLabel": "Duraklat"
+    "videoEditorTransformPauseLabel": "Duraklat",
+    "videoEditorTimelineClipSelectedSemanticLabel": "Klip {index}/{total}, seçili",
+    "@videoEditorTimelineClipSelectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorTimelineClipUnselectedSemanticLabel": "Klip {index}/{total}, seçili değil",
+    "@videoEditorTimelineClipUnselectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorMultiSelectLabel": "Seç",
+    "videoEditorMultiSelectSemanticLabel": "Birden çok klip seç",
+    "videoEditorMultiSelectDoneSemanticLabel": "Seçimi tamamla",
+    "videoEditorMultiSelectCountLabel": "{count, plural, =0{Hiç klip seçilmedi} =1{1 klip seçildi} other{{count} klip seçildi}}",
+    "@videoEditorMultiSelectCountLabel": {
+        "placeholders": {
+            "count": {"type": "int"}
+        }
+    },
+    "videoEditorMergeLabel": "Birleştir",
+    "videoEditorMergeSelectedClipsSemanticLabel": "Seçili klipleri birleştir",
+    "videoEditorDeleteSelectedClipsSemanticLabel": "Seçili klipleri sil",
+    "videoEditorMergeProgressLabel": "Bir saniye, kliplerini birleştiriyoruz",
+    "videoEditorMergeFailed": "Klipler birleştirilemedi. Lütfen tekrar dene."
 }

@@ -8200,6 +8200,56 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorTimelineClipMoveRight => 'Flytta höger';
 
   @override
+  String videoEditorTimelineClipSelectedSemanticLabel(int index, int total) {
+    return 'Klipp $index av $total, markerat';
+  }
+
+  @override
+  String videoEditorTimelineClipUnselectedSemanticLabel(int index, int total) {
+    return 'Klipp $index av $total, inte markerat';
+  }
+
+  @override
+  String get videoEditorMultiSelectLabel => 'Markera';
+
+  @override
+  String get videoEditorMultiSelectSemanticLabel => 'Markera flera klipp';
+
+  @override
+  String get videoEditorMultiSelectDoneSemanticLabel => 'Slutför markering';
+
+  @override
+  String videoEditorMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klipp markerade',
+      one: '1 klipp markerat',
+      zero: 'Inga klipp markerade',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorMergeLabel => 'Slå samman';
+
+  @override
+  String get videoEditorMergeSelectedClipsSemanticLabel =>
+      'Slå samman markerade klipp';
+
+  @override
+  String get videoEditorDeleteSelectedClipsSemanticLabel =>
+      'Ta bort markerade klipp';
+
+  @override
+  String get videoEditorMergeProgressLabel =>
+      'Ett ögonblick, vi slår samman dina klipp';
+
+  @override
+  String get videoEditorMergeFailed =>
+      'Det gick inte att slå samman klippen. Försök igen.';
+
+  @override
   String get videoEditorTimelineLongPressToDragHint => 'Håll ned för att dra';
 
   @override

@@ -183,6 +183,27 @@ Future<EditorVideo> _fakeTransformClip({
   return EditorVideo.file('/transformed/${sourceClip.id}_$renderId.mp4');
 }
 
+/// Pure-Dart fake of [VideoEditorMergeService.mergeClips] for tests. Returns a
+/// single clip whose duration is the sum of the inputs' playback durations.
+Future<DivineVideoClip?> _fakeMergeClips({
+  required List<DivineVideoClip> clips,
+  required String renderId,
+}) async {
+  final duration = clips.fold(
+    Duration.zero,
+    (sum, clip) => sum + clip.playbackDuration,
+  );
+  return _createClip(id: 'merged-clip', duration: duration);
+}
+
+/// Fake merge that fails (renders to a null output / cancelled).
+Future<DivineVideoClip?> _fakeMergeClipsFail({
+  required List<DivineVideoClip> clips,
+  required String renderId,
+}) async {
+  return null;
+}
+
 void main() {
   group(ClipEditorBloc, () {
     late List<DivineVideoClip> twoClips;
@@ -216,6 +237,7 @@ void main() {
       SplitClipFn? splitClip,
       ReverseClipFn? reverseClip,
       TransformClipFn? transformClip,
+      MergeClipsFn? mergeClips,
     }) {
       return ClipEditorBloc(
         onFinalClipInvalidated: () {},
@@ -223,6 +245,7 @@ void main() {
         splitClip: splitClip,
         reverseClip: reverseClip,
         transformClip: transformClip,
+        mergeClips: mergeClips,
       );
     }
 
@@ -2189,6 +2212,158 @@ void main() {
 
         await bloc.close();
       });
+    });
+
+    // =========================================================
+    // MULTI-SELECT
+    // =========================================================
+
+    group('multi-select', () {
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'starts multi-select with the initial clip pre-selected and exits '
+        'editing',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: threeClips, isEditing: true),
+        act: (bloc) => bloc.add(const ClipEditorMultiSelectStarted('b')),
+        verify: (bloc) {
+          expect(bloc.state.isMultiSelectMode, isTrue);
+          expect(bloc.state.isEditing, isFalse);
+          expect(bloc.state.selectedClipIds, equals({'b'}));
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'ignores an unknown initial clip id',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: threeClips),
+        act: (bloc) => bloc.add(const ClipEditorMultiSelectStarted('missing')),
+        verify: (bloc) {
+          expect(bloc.state.isMultiSelectMode, isTrue);
+          expect(bloc.state.selectedClipIds, isEmpty);
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'toggles clip membership in the selection',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: threeClips,
+          isMultiSelectMode: true,
+          selectedClipIds: const {'a'},
+        ),
+        act: (bloc) => bloc
+          ..add(const ClipEditorMultiSelectClipToggled('b'))
+          ..add(const ClipEditorMultiSelectClipToggled('a')),
+        verify: (bloc) {
+          expect(bloc.state.selectedClipIds, equals({'b'}));
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'cancel exits multi-select and clears the selection',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: threeClips,
+          isMultiSelectMode: true,
+          selectedClipIds: const {'a', 'b'},
+        ),
+        act: (bloc) => bloc.add(const ClipEditorMultiSelectCancelled()),
+        verify: (bloc) {
+          expect(bloc.state.isMultiSelectMode, isFalse);
+          expect(bloc.state.selectedClipIds, isEmpty);
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'removes the selected clips and exits multi-select',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: threeClips,
+          isMultiSelectMode: true,
+          selectedClipIds: const {'a', 'c'},
+        ),
+        act: (bloc) => bloc.add(const ClipEditorSelectedClipsRemoved()),
+        verify: (bloc) {
+          expect(bloc.state.clips.map((c) => c.id), equals(['b']));
+          expect(bloc.state.isMultiSelectMode, isFalse);
+          expect(bloc.state.selectedClipIds, isEmpty);
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'does not remove clips when the selection covers the whole timeline',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: threeClips,
+          isMultiSelectMode: true,
+          selectedClipIds: const {'a', 'b', 'c'},
+        ),
+        act: (bloc) => bloc.add(const ClipEditorSelectedClipsRemoved()),
+        verify: (bloc) {
+          expect(bloc.state.clips, hasLength(3));
+          expect(bloc.state.isMultiSelectMode, isTrue);
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'merges the selected clips into one at the earliest position',
+        build: () => buildBloc(mergeClips: _fakeMergeClips),
+        seed: () => ClipEditorState(
+          clips: threeClips,
+          isMultiSelectMode: true,
+          selectedClipIds: const {'a', 'c'},
+        ),
+        act: (bloc) => bloc.add(const ClipEditorSelectedClipsMergeRequested()),
+        verify: (bloc) {
+          expect(
+            bloc.state.clips.map((c) => c.id),
+            equals(['merged-clip', 'b']),
+          );
+          expect(bloc.state.isMerging, isFalse);
+          expect(bloc.state.isMultiSelectMode, isFalse);
+          expect(bloc.state.selectedClipIds, isEmpty);
+          expect(bloc.state.currentClipIndex, equals(0));
+          final result = bloc.state.lastMergeResult;
+          expect(result, isA<ClipMergeSuccess>());
+          expect(
+            (result! as ClipMergeSuccess).previousClips.map((c) => c.id),
+            equals(['a', 'b', 'c']),
+          );
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'does nothing when fewer than two clips are selected',
+        build: () => buildBloc(mergeClips: _fakeMergeClips),
+        seed: () => ClipEditorState(
+          clips: threeClips,
+          isMultiSelectMode: true,
+          selectedClipIds: const {'a'},
+        ),
+        act: (bloc) => bloc.add(const ClipEditorSelectedClipsMergeRequested()),
+        verify: (bloc) {
+          expect(bloc.state.clips, hasLength(3));
+          expect(bloc.state.isMerging, isFalse);
+          expect(bloc.state.lastMergeResult, isNull);
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'emits a failure result and stays in multi-select when merge fails',
+        build: () => buildBloc(mergeClips: _fakeMergeClipsFail),
+        seed: () => ClipEditorState(
+          clips: threeClips,
+          isMultiSelectMode: true,
+          selectedClipIds: const {'a', 'b'},
+        ),
+        act: (bloc) => bloc.add(const ClipEditorSelectedClipsMergeRequested()),
+        verify: (bloc) {
+          expect(bloc.state.clips, hasLength(3));
+          expect(bloc.state.isMerging, isFalse);
+          expect(bloc.state.isMultiSelectMode, isTrue);
+          expect(bloc.state.lastMergeResult, isA<ClipMergeFailure>());
+        },
+      );
     });
   });
 }

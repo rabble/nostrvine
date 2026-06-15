@@ -8349,6 +8349,55 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorTimelineClipMoveRight => 'Przesuń w prawo';
 
   @override
+  String videoEditorTimelineClipSelectedSemanticLabel(int index, int total) {
+    return 'Klip $index z $total, zaznaczony';
+  }
+
+  @override
+  String videoEditorTimelineClipUnselectedSemanticLabel(int index, int total) {
+    return 'Klip $index z $total, niezaznaczony';
+  }
+
+  @override
+  String get videoEditorMultiSelectLabel => 'Zaznacz';
+
+  @override
+  String get videoEditorMultiSelectSemanticLabel => 'Zaznacz wiele klipów';
+
+  @override
+  String get videoEditorMultiSelectDoneSemanticLabel => 'Zakończ zaznaczanie';
+
+  @override
+  String videoEditorMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zaznaczono $count klipów',
+      one: 'Zaznaczono 1 klip',
+      zero: 'Nie zaznaczono klipów',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorMergeLabel => 'Scal';
+
+  @override
+  String get videoEditorMergeSelectedClipsSemanticLabel =>
+      'Scal zaznaczone klipy';
+
+  @override
+  String get videoEditorDeleteSelectedClipsSemanticLabel =>
+      'Usuń zaznaczone klipy';
+
+  @override
+  String get videoEditorMergeProgressLabel => 'Chwila, scalamy Twoje klipy';
+
+  @override
+  String get videoEditorMergeFailed =>
+      'Nie udało się scalić klipów. Spróbuj ponownie.';
+
+  @override
   String get videoEditorTimelineLongPressToDragHint =>
       'Przytrzymaj, aby przeciągnąć';
 

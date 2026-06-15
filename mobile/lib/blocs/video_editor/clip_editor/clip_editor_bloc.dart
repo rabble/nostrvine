@@ -6,6 +6,7 @@ import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
+import 'package:openvine/services/video_editor/video_editor_merge_service.dart';
 import 'package:openvine/services/video_editor/video_editor_reverse_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/services/video_editor/video_editor_transform_service.dart';
@@ -51,6 +52,15 @@ typedef TransformClipFn =
       required String renderId,
     });
 
+/// Function signature matching [VideoEditorMergeService.mergeClips], used as an
+/// injectable seam so tests can swap in a pure-Dart fake that does not touch
+/// the render pipeline.
+typedef MergeClipsFn =
+    Future<DivineVideoClip?> Function({
+      required List<DivineVideoClip> clips,
+      required String renderId,
+    });
+
 /// BLoC for managing video clip editor state.
 ///
 /// Owns a local copy of the clip list so that all mutations (add, remove,
@@ -70,12 +80,14 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     SplitClipFn? splitClip,
     ReverseClipFn? reverseClip,
     TransformClipFn? transformClip,
+    MergeClipsFn? mergeClips,
   }) : _audioExtractionService =
            audioExtractionService ?? AudioExtractionService(),
        _splitClip = splitClip ?? VideoEditorSplitService.splitClip,
        _reverseClip = reverseClip ?? VideoEditorReverseService.reverseClip,
        _transformClip =
            transformClip ?? VideoEditorTransformService.transformClip,
+       _mergeClips = mergeClips ?? VideoEditorMergeService.mergeClips,
        super(const ClipEditorState()) {
     // Clip data
     on<ClipEditorInitialized>(_onInitialized);
@@ -85,6 +97,16 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
 
     // Clip selection
     on<ClipEditorClipSelected>(_onClipSelected);
+
+    // Multi-select
+    on<ClipEditorMultiSelectStarted>(_onMultiSelectStarted);
+    on<ClipEditorMultiSelectClipToggled>(_onMultiSelectClipToggled);
+    on<ClipEditorMultiSelectCancelled>(_onMultiSelectCancelled);
+    on<ClipEditorSelectedClipsRemoved>(_onSelectedClipsRemoved);
+    on<ClipEditorSelectedClipsMergeRequested>(
+      _onSelectedClipsMergeRequested,
+      transformer: droppable(),
+    );
 
     // Editing mode
     on<ClipEditorEditingStarted>(_onEditingStarted);
@@ -135,6 +157,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   final SplitClipFn _splitClip;
   final ReverseClipFn _reverseClip;
   final TransformClipFn _transformClip;
+  final MergeClipsFn _mergeClips;
 
   // === CLIP DATA ===
 
@@ -217,6 +240,190 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         splitPosition: Duration.zero,
       ),
     );
+  }
+
+  // === MULTI-SELECT ===
+
+  void _onMultiSelectStarted(
+    ClipEditorMultiSelectStarted event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    final initialId = event.initialClipId;
+    final selected = <String>{
+      if (initialId != null && state.clips.any((c) => c.id == initialId))
+        initialId,
+    };
+    emit(
+      state.copyWith(
+        isMultiSelectMode: true,
+        isEditing: false,
+        selectedClipIds: selected,
+      ),
+    );
+  }
+
+  void _onMultiSelectClipToggled(
+    ClipEditorMultiSelectClipToggled event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    if (!state.isMultiSelectMode) return;
+    if (!state.clips.any((c) => c.id == event.clipId)) return;
+
+    final selected = Set<String>.of(state.selectedClipIds);
+    if (!selected.remove(event.clipId)) {
+      selected.add(event.clipId);
+    }
+    emit(state.copyWith(selectedClipIds: selected));
+  }
+
+  void _onMultiSelectCancelled(
+    ClipEditorMultiSelectCancelled event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    emit(
+      state.copyWith(isMultiSelectMode: false, selectedClipIds: const {}),
+    );
+  }
+
+  void _onSelectedClipsRemoved(
+    ClipEditorSelectedClipsRemoved event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    final selected = state.selectedClipIds;
+    if (selected.isEmpty) return;
+
+    final remaining = state.clips
+        .where((c) => !selected.contains(c.id))
+        .toList();
+    // At least one clip must always remain in the timeline.
+    if (remaining.isEmpty) return;
+
+    Log.info(
+      '🗑️ Removed ${state.clips.length - remaining.length} selected clip(s)',
+      name: 'ClipEditorBloc',
+      category: LogCategory.video,
+    );
+
+    emit(
+      state.copyWith(
+        clips: List.unmodifiable(remaining),
+        currentClipIndex: state.currentClipIndex.clamp(0, remaining.length - 1),
+        isMultiSelectMode: false,
+        selectedClipIds: const {},
+      ),
+    );
+  }
+
+  Future<void> _onSelectedClipsMergeRequested(
+    ClipEditorSelectedClipsMergeRequested event,
+    Emitter<ClipEditorState> emit,
+  ) async {
+    final selectedIds = state.selectedClipIds;
+    final selectedClips = state.clips
+        .where((c) => selectedIds.contains(c.id))
+        .toList();
+    if (selectedClips.length < 2) return;
+
+    final renderId = 'merge_${DateTime.now().microsecondsSinceEpoch}';
+
+    Log.info(
+      '🧬 Merging ${selectedClips.length} selected clip(s)',
+      name: 'ClipEditorBloc',
+      category: LogCategory.video,
+    );
+
+    emit(state.copyWith(isMerging: true, mergingRenderId: renderId));
+
+    try {
+      final merged = await _mergeClips(
+        clips: selectedClips,
+        renderId: renderId,
+      );
+
+      if (merged == null) {
+        // Matrix-NO: render cancel/failure is surfaced as a null output by
+        // VideoEditorRenderService.renderVideo (Network/IO).
+        emit(
+          state.copyWith(
+            isMerging: false,
+            clearMergingRenderId: true,
+            lastMergeResult: ClipMergeFailure(),
+          ),
+        );
+        return;
+      }
+
+      // Reconcile against current state after the async gap. The full-screen
+      // progress overlay blocks competing edits, but guard anyway so a stale
+      // result never resurrects removed clips.
+      final currentClips = state.clips;
+      final stillPresent = selectedIds.every(
+        (id) => currentClips.any((c) => c.id == id),
+      );
+      if (!stillPresent) {
+        Log.warning(
+          '⚠️ Merge result discarded: a selected clip no longer exists',
+          name: 'ClipEditorBloc',
+          category: LogCategory.video,
+        );
+        emit(
+          state.copyWith(
+            isMerging: false,
+            clearMergingRenderId: true,
+            isMultiSelectMode: false,
+            selectedClipIds: const {},
+            lastMergeResult: ClipMergeDiscarded(),
+          ),
+        );
+        return;
+      }
+
+      final earliestIndex = currentClips.indexWhere(
+        (c) => selectedIds.contains(c.id),
+      );
+      final newClips =
+          currentClips.where((c) => !selectedIds.contains(c.id)).toList()
+            ..insert(earliestIndex, merged);
+
+      emit(
+        state.copyWith(
+          clips: List.unmodifiable(newClips),
+          currentClipIndex: earliestIndex,
+          isMerging: false,
+          clearMergingRenderId: true,
+          isMultiSelectMode: false,
+          selectedClipIds: const {},
+          lastMergeResult: ClipMergeSuccess(previousClips: currentClips),
+        ),
+      );
+
+      Log.info(
+        '✅ Merged into clip ${merged.id}',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+    } catch (e, stackTrace) {
+      final error = switch (e) {
+        StateError() || TypeError() || RangeError() => Reportable(
+          e,
+          context: '_onSelectedClipsMergeRequested',
+        ),
+        _ => e,
+      };
+      addError(error, stackTrace);
+      Log.error(
+        '❌ Failed to merge clips: $e',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      emit(
+        state.copyWith(
+          isMerging: false,
+          clearMergingRenderId: true,
+          lastMergeResult: ClipMergeFailure(),
+        ),
+      );
+    }
   }
 
   // === EDITING MODE ===

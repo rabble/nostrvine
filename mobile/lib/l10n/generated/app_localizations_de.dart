@@ -8282,6 +8282,56 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoEditorTimelineClipMoveRight => 'Nach rechts verschieben';
 
   @override
+  String videoEditorTimelineClipSelectedSemanticLabel(int index, int total) {
+    return 'Clip $index von $total, ausgewählt';
+  }
+
+  @override
+  String videoEditorTimelineClipUnselectedSemanticLabel(int index, int total) {
+    return 'Clip $index von $total, nicht ausgewählt';
+  }
+
+  @override
+  String get videoEditorMultiSelectLabel => 'Auswählen';
+
+  @override
+  String get videoEditorMultiSelectSemanticLabel => 'Mehrere Clips auswählen';
+
+  @override
+  String get videoEditorMultiSelectDoneSemanticLabel => 'Auswahl abschließen';
+
+  @override
+  String videoEditorMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Clips ausgewählt',
+      one: '1 Clip ausgewählt',
+      zero: 'Keine Clips ausgewählt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorMergeLabel => 'Zusammenführen';
+
+  @override
+  String get videoEditorMergeSelectedClipsSemanticLabel =>
+      'Ausgewählte Clips zusammenführen';
+
+  @override
+  String get videoEditorDeleteSelectedClipsSemanticLabel =>
+      'Ausgewählte Clips löschen';
+
+  @override
+  String get videoEditorMergeProgressLabel =>
+      'Einen Moment, wir führen deine Clips zusammen';
+
+  @override
+  String get videoEditorMergeFailed =>
+      'Clips konnten nicht zusammengeführt werden. Bitte versuche es erneut.';
+
+  @override
   String get videoEditorTimelineLongPressToDragHint =>
       'Lange drücken zum Ziehen';
 

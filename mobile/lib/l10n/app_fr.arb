@@ -3954,5 +3954,33 @@
     "videoEditorTransformApplySemanticLabel": "Appliquer la transformation",
     "videoEditorTransformCancelSemanticLabel": "Annuler la transformation",
     "videoEditorTransformPlayLabel": "Lire",
-    "videoEditorTransformPauseLabel": "Pause"
+    "videoEditorTransformPauseLabel": "Pause",
+    "videoEditorTimelineClipSelectedSemanticLabel": "Clip {index} sur {total}, sélectionné",
+    "@videoEditorTimelineClipSelectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorTimelineClipUnselectedSemanticLabel": "Clip {index} sur {total}, non sélectionné",
+    "@videoEditorTimelineClipUnselectedSemanticLabel": {
+        "placeholders": {
+            "index": {"type": "int"},
+            "total": {"type": "int"}
+        }
+    },
+    "videoEditorMultiSelectLabel": "Sélectionner",
+    "videoEditorMultiSelectSemanticLabel": "Sélectionner plusieurs clips",
+    "videoEditorMultiSelectDoneSemanticLabel": "Terminer la sélection",
+    "videoEditorMultiSelectCountLabel": "{count, plural, =0{Aucun clip sélectionné} =1{1 clip sélectionné} other{{count} clips sélectionnés}}",
+    "@videoEditorMultiSelectCountLabel": {
+        "placeholders": {
+            "count": {"type": "int"}
+        }
+    },
+    "videoEditorMergeLabel": "Fusionner",
+    "videoEditorMergeSelectedClipsSemanticLabel": "Fusionner les clips sélectionnés",
+    "videoEditorDeleteSelectedClipsSemanticLabel": "Supprimer les clips sélectionnés",
+    "videoEditorMergeProgressLabel": "Un instant, nous fusionnons vos clips",
+    "videoEditorMergeFailed": "Impossible de fusionner les clips. Veuillez réessayer."
 }

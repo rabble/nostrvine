@@ -483,12 +483,18 @@ class VideoEditorRenderService {
   /// If [usePersistentStorage] is true, the output file will be saved to the
   /// documents directory instead of the temporary directory. Use this when
   /// the rendered video should persist across app restarts.
+  ///
+  /// [maxOutputDuration] caps the rendered output length. It defaults to
+  /// [VideoEditorConstants.maxDuration] for the final-export path; pass `null`
+  /// to render the full concatenation uncapped (e.g. when merging clips into an
+  /// intermediate editor clip that the user can still trim).
   static Future<String?> renderVideo({
     required List<DivineVideoClip> clips,
     bool usePersistentStorage = false,
     model.AspectRatio? aspectRatio,
     CompleteParameters? parameters,
     String? taskId,
+    Duration? maxOutputDuration = VideoEditorConstants.maxDuration,
   }) async {
     final override = renderVideoOverride;
     if (override != null) {
@@ -535,6 +541,7 @@ class VideoEditorRenderService {
         globalTransform: result.globalTransform,
         aspectRatio: aspectRatio ?? clips.first.targetAspectRatio,
         parameters: parameters,
+        maxOutputDuration: maxOutputDuration,
       );
 
       // Fire-and-forget: temp cleanup is non-critical and handles
@@ -866,6 +873,7 @@ class VideoEditorRenderService {
     required Directory outputDir,
     required CompleteParameters? parameters,
     required model.AspectRatio aspectRatio,
+    required Duration? maxOutputDuration,
     _CropParameters? globalTransform,
   }) async {
     final outputPath = path.join(
@@ -907,7 +915,7 @@ class VideoEditorRenderService {
     final task = VideoRenderData(
       id: taskId,
       videoSegments: volumeSegments,
-      endTime: VideoEditorConstants.maxDuration,
+      endTime: maxOutputDuration,
       shouldOptimizeForNetworkUse: true,
       audioTracks: audioTracks,
       imageLayers: parameters?.capturedLayers.isNotEmpty == true

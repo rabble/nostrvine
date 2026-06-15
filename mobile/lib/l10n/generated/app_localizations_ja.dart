@@ -7897,6 +7897,52 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorTimelineClipMoveRight => '右に移動';
 
   @override
+  String videoEditorTimelineClipSelectedSemanticLabel(int index, int total) {
+    return 'クリップ $index/$total、選択中';
+  }
+
+  @override
+  String videoEditorTimelineClipUnselectedSemanticLabel(int index, int total) {
+    return 'クリップ $index/$total、未選択';
+  }
+
+  @override
+  String get videoEditorMultiSelectLabel => '選択';
+
+  @override
+  String get videoEditorMultiSelectSemanticLabel => '複数のクリップを選択';
+
+  @override
+  String get videoEditorMultiSelectDoneSemanticLabel => '選択を完了';
+
+  @override
+  String videoEditorMultiSelectCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 件のクリップを選択中',
+      one: '1 件のクリップを選択中',
+      zero: 'クリップが選択されていません',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorMergeLabel => '結合';
+
+  @override
+  String get videoEditorMergeSelectedClipsSemanticLabel => '選択したクリップを結合';
+
+  @override
+  String get videoEditorDeleteSelectedClipsSemanticLabel => '選択したクリップを削除';
+
+  @override
+  String get videoEditorMergeProgressLabel => '少々お待ちください。クリップを結合しています';
+
+  @override
+  String get videoEditorMergeFailed => 'クリップを結合できませんでした。もう一度お試しください。';
+
+  @override
   String get videoEditorTimelineLongPressToDragHint => '長押しでドラッグ';
 
   @override
