@@ -151,8 +151,10 @@ void main() {
   group(VideoAudioEditorTimingScreen, () {
     late _MockProVideoEditor mockEditor;
     late _MockAudioClipPlayer mockClipPlayer;
+    late ProVideoEditor originalProVideoEditor;
 
     setUp(() {
+      originalProVideoEditor = ProVideoEditor.instance;
       mockEditor = _MockProVideoEditor();
       ProVideoEditor.instance = mockEditor;
       mockClipPlayer = _MockAudioClipPlayer();
@@ -164,6 +166,10 @@ void main() {
       when(() => mockClipPlayer.pause()).thenAnswer((_) async {});
       when(() => mockClipPlayer.stop()).thenAnswer((_) async {});
       when(() => mockClipPlayer.dispose()).thenAnswer((_) async {});
+    });
+
+    tearDown(() {
+      ProVideoEditor.instance = originalProVideoEditor;
     });
 
     Widget buildWidget({AudioEvent? sound, Locale? locale}) {

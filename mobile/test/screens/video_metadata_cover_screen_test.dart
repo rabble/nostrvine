@@ -68,8 +68,11 @@ void _clearHandler(MethodChannel channel) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late ProVideoEditor originalProVideoEditor;
+
   setUp(() {
     DivineVideoPlayerController.resetIdCounterForTesting();
+    originalProVideoEditor = ProVideoEditor.instance;
     ProVideoEditor.instance = _NoopInitProVideoEditor();
 
     _setHandler(const MethodChannel('plugins.flutter.io/path_provider'), (
@@ -107,6 +110,7 @@ void main() {
   });
 
   tearDown(() {
+    ProVideoEditor.instance = originalProVideoEditor;
     _clearHandler(const MethodChannel('divine_video_player'));
     _clearHandler(const MethodChannel('pro_video_editor'));
     _clearHandler(const MethodChannel('plugins.flutter.io/path_provider'));

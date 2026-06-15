@@ -18,8 +18,20 @@ class _MockNostrAppDirectoryService extends Mock
     implements NostrAppDirectoryService {}
 
 void main() {
+  WebViewPlatform? originalWebViewPlatform;
+
   setUpAll(() {
+    originalWebViewPlatform = WebViewPlatform.instance;
     WebViewPlatform.instance = _FakeWebViewPlatform();
+  });
+
+  tearDownAll(() {
+    // WebViewPlatform's setter rejects null, so only restore a non-null
+    // original (the local promotes inside the guard, no `!` needed).
+    final original = originalWebViewPlatform;
+    if (original != null) {
+      WebViewPlatform.instance = original;
+    }
   });
 
   testWidgets('${NostrAppSandboxScreen.path} route works', (tester) async {

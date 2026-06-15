@@ -16,6 +16,21 @@ import 'package:webview_flutter_platform_interface/webview_flutter_platform_inte
 
 void main() {
   group('NostrAppSandboxScreen', () {
+    WebViewPlatform? originalWebViewPlatform;
+
+    setUp(() {
+      originalWebViewPlatform = WebViewPlatform.instance;
+    });
+
+    tearDown(() {
+      // WebViewPlatform's setter rejects null, so only restore a non-null
+      // original (the local promotes inside the guard, no `!` needed).
+      final original = originalWebViewPlatform;
+      if (original != null) {
+        WebViewPlatform.instance = original;
+      }
+    });
+
     testWidgets(
       'does not call setBackgroundColor on macOS WebView initialization',
       (tester) async {

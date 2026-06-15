@@ -76,8 +76,10 @@ void main() {
     late _MockClipEditorBloc mockClipBloc;
     late _MockTimelineOverlayBloc mockOverlayBloc;
     late _MockVideoEditorFilterBloc mockFilterBloc;
+    late ProVideoEditor originalProVideoEditor;
 
     setUp(() {
+      originalProVideoEditor = ProVideoEditor.instance;
       ProVideoEditor.instance = _MockProVideoEditor();
 
       mockMainBloc = _MockVideoEditorMainBloc();
@@ -105,6 +107,10 @@ void main() {
       when(
         () => mockFilterBloc.stream,
       ).thenAnswer((_) => const Stream<VideoEditorFilterState>.empty());
+    });
+
+    tearDown(() {
+      ProVideoEditor.instance = originalProVideoEditor;
     });
 
     Widget buildWidget({

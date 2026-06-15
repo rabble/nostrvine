@@ -47,10 +47,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late _MockProVideoEditor mockProVideoEditor;
+  late ProVideoEditor originalProVideoEditor;
 
   setUp(() {
+    originalProVideoEditor = ProVideoEditor.instance;
     mockProVideoEditor = _MockProVideoEditor();
     ProVideoEditor.instance = mockProVideoEditor;
+  });
+
+  tearDown(() {
+    ProVideoEditor.instance = originalProVideoEditor;
   });
 
   group(SoundWaveformBloc, () {

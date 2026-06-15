@@ -78,7 +78,17 @@ class _FakeFirebaseApp extends Fake
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  FirebasePlatform.instance = _FakeFirebaseCore();
+
+  late FirebasePlatform originalFirebasePlatform;
+
+  setUpAll(() {
+    originalFirebasePlatform = FirebasePlatform.instance;
+    FirebasePlatform.instance = _FakeFirebaseCore();
+  });
+
+  tearDownAll(() {
+    FirebasePlatform.instance = originalFirebasePlatform;
+  });
 
   group(PageLoadObserver, () {
     late _RecordingAnalyticsEventSink sink;

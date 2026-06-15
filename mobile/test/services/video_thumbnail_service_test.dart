@@ -32,6 +32,7 @@ void main() {
   group('VideoThumbnailService', () {
     late String testVideoPath;
     late Directory tempDir;
+    late ProVideoEditor originalProVideoEditor;
 
     const channel = MethodChannel('pro_video_editor');
 
@@ -52,6 +53,7 @@ void main() {
       // `ProVideoEditor.instance` pointing at a foreign mock that overrides
       // only its own methods, causing our method calls to throw
       // `UnimplementedError` instead of routing through the MethodChannel.
+      originalProVideoEditor = ProVideoEditor.instance;
       ProVideoEditor.instance = _NoopInitProVideoEditor();
 
       testVideoPath = '${tempDir.path}/test_video.mp4';
@@ -68,6 +70,7 @@ void main() {
     });
 
     tearDown(() {
+      ProVideoEditor.instance = originalProVideoEditor;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, null);
     });
@@ -300,6 +303,7 @@ void main() {
     /// can toggle behaviour mid-test.
     late bool getThumbnailsReturnsBytes;
     late bool getMetadataSucceeds;
+    late ProVideoEditor originalProVideoEditor;
 
     /// Dummy JPEG-like bytes produced by the mock.
     final fakeJpegBytes = Uint8List.fromList(List<int>.generate(128, (i) => i));
@@ -321,6 +325,7 @@ void main() {
       // `ProVideoEditor.instance` pointing at a foreign mock that overrides
       // only its own methods, causing our method calls to throw
       // `UnimplementedError` instead of routing through the MethodChannel.
+      originalProVideoEditor = ProVideoEditor.instance;
       ProVideoEditor.instance = _NoopInitProVideoEditor();
 
       getThumbnailsReturnsBytes = false;
@@ -355,6 +360,7 @@ void main() {
     });
 
     tearDown(() {
+      ProVideoEditor.instance = originalProVideoEditor;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, null);
     });
