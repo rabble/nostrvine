@@ -1698,11 +1698,6 @@ class _CanvasFitter extends ConsumerWidget {
   }
 }
 
-/// Fallback zoom-transform signal used when the scope provides no
-/// [VideoEditorScope.zoomMatrixNotifier] (e.g. in widget tests). Stays at
-/// identity so the letterbox scrim renders untransformed.
-final _neutralZoomMatrix = ValueNotifier<Matrix4>(Matrix4.identity());
-
 /// Maps the editor's zoom [editorMatrix] (expressed in the editor's
 /// render-space, where pinch translation is in render pixels) into the
 /// body-space transform for the letterbox scrim, so the bars track the
@@ -1715,7 +1710,13 @@ final _neutralZoomMatrix = ValueNotifier<Matrix4>(Matrix4.identity());
 /// that reduces to: same scale `k`, translation `coverScale·t + (1-k)·d`,
 /// where `d` is the body-space offset of the render origin. Without the
 /// `coverScale` factor the bars move too little.
-Matrix4 _scrimZoomTransform({
+///
+/// Assumes a scale+translate matrix (pinch zoom on the canvas); any
+/// rotation/skew is collapsed to a uniform scale by
+/// [Matrix4.getMaxScaleOnAxis]. Returns the identity transform for a
+/// degenerate (zero-area) box so the scrim renders untransformed.
+@visibleForTesting
+Matrix4 scrimZoomTransform({
   required Matrix4 editorMatrix,
   required Size boxSize,
   required Size targetSize,
@@ -1723,7 +1724,7 @@ Matrix4 _scrimZoomTransform({
 }) {
   final renderHeight = boxSize.shortestSide;
   final renderWidth = renderHeight * originalAspectRatio;
-  if (renderWidth <= 0 || renderHeight <= 0) return editorMatrix;
+  if (renderWidth <= 0 || renderHeight <= 0) return Matrix4.identity();
 
   final coverScale = max(
     targetSize.width / renderWidth,
@@ -1757,7 +1758,7 @@ class _OverlayCutArea extends ConsumerWidget {
     final overlayColor = VineTheme.backgroundCamera.withAlpha(166);
     final safeArea = MediaQuery.paddingOf(context);
     final scope = VideoEditorScope.of(context);
-    final zoomMatrixNotifier = scope.zoomMatrixNotifier ?? _neutralZoomMatrix;
+    final zoomMatrixNotifier = scope.zoomMatrixNotifier;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1776,73 +1777,108 @@ class _OverlayCutArea extends ConsumerWidget {
         final verticalGap = (boxSize.height - childHeight) / 2;
         final horizontalGap = (boxSize.width - childWidth) / 2;
 
+        final scrimBars = _ScrimBars(
+          overlayColor: overlayColor,
+          verticalGap: verticalGap,
+          horizontalGap: horizontalGap,
+          safeAreaTop: safeArea.top,
+        );
+
         return Stack(
           fit: StackFit.expand,
           clipBehavior: .none,
           children: [
             child,
 
-            ValueListenableBuilder<Matrix4>(
-              valueListenable: zoomMatrixNotifier,
-              builder: (context, matrix, child) => Transform(
-                transform: _scrimZoomTransform(
-                  editorMatrix: matrix,
-                  boxSize: boxSize,
-                  targetSize: Size(childWidth, childHeight),
-                  originalAspectRatio: scope.originalClipAspectRatio,
+            // When the scope exposes a zoom notifier, the scrim tracks the
+            // editor's pinch-zoom; otherwise (e.g. widget tests) it renders
+            // untransformed.
+            if (zoomMatrixNotifier == null)
+              scrimBars
+            else
+              ValueListenableBuilder<Matrix4>(
+                valueListenable: zoomMatrixNotifier,
+                builder: (context, matrix, child) => Transform(
+                  transform: scrimZoomTransform(
+                    editorMatrix: matrix,
+                    boxSize: boxSize,
+                    targetSize: Size(childWidth, childHeight),
+                    originalAspectRatio: scope.originalClipAspectRatio,
+                  ),
+                  child: child,
                 ),
-                child: child,
+                child: scrimBars,
               ),
-              child: IgnorePointer(
-                child: Stack(
-                  fit: StackFit.expand,
-                  clipBehavior: .none,
-                  children: [
-                    // Top bar — extends up into the safe area so there
-                    // is no uncovered strip above the scrim when the
-                    // canvas is padded below the status bar.
-                    if (verticalGap > 0 || safeArea.top > 0)
-                      Positioned(
-                        top: -safeArea.top,
-                        left: 0,
-                        right: 0,
-                        height: verticalGap + safeArea.top,
-                        child: ColoredBox(color: overlayColor),
-                      ),
-                    // Bottom bar
-                    if (verticalGap > 0)
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        height: verticalGap,
-                        child: ColoredBox(color: overlayColor),
-                      ),
-                    // Left bar
-                    if (horizontalGap > 0)
-                      Positioned(
-                        top: 0,
-                        bottom: 0,
-                        left: 0,
-                        width: horizontalGap,
-                        child: ColoredBox(color: overlayColor),
-                      ),
-                    // Right bar
-                    if (horizontalGap > 0)
-                      Positioned(
-                        top: 0,
-                        bottom: 0,
-                        right: 0,
-                        width: horizontalGap,
-                        child: ColoredBox(color: overlayColor),
-                      ),
-                  ],
-                ),
-              ),
-            ),
           ],
         );
       },
+    );
+  }
+}
+
+/// The dark letterbox bars that frame the visible target rect. The bars sit
+/// outside the [verticalGap] / [horizontalGap] cut area and are non-
+/// interactive; [_OverlayCutArea] applies the zoom transform around them.
+class _ScrimBars extends StatelessWidget {
+  const _ScrimBars({
+    required this.overlayColor,
+    required this.verticalGap,
+    required this.horizontalGap,
+    required this.safeAreaTop,
+  });
+
+  final Color overlayColor;
+  final double verticalGap;
+  final double horizontalGap;
+  final double safeAreaTop;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Stack(
+        fit: StackFit.expand,
+        clipBehavior: .none,
+        children: [
+          // Top bar — extends up into the safe area so there is no
+          // uncovered strip above the scrim when the canvas is padded
+          // below the status bar.
+          if (verticalGap > 0 || safeAreaTop > 0)
+            Positioned(
+              top: -safeAreaTop,
+              left: 0,
+              right: 0,
+              height: verticalGap + safeAreaTop,
+              child: ColoredBox(color: overlayColor),
+            ),
+          // Bottom bar
+          if (verticalGap > 0)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: verticalGap,
+              child: ColoredBox(color: overlayColor),
+            ),
+          // Left bar
+          if (horizontalGap > 0)
+            Positioned(
+              top: 0,
+              bottom: 0,
+              left: 0,
+              width: horizontalGap,
+              child: ColoredBox(color: overlayColor),
+            ),
+          // Right bar
+          if (horizontalGap > 0)
+            Positioned(
+              top: 0,
+              bottom: 0,
+              right: 0,
+              width: horizontalGap,
+              child: ColoredBox(color: overlayColor),
+            ),
+        ],
+      ),
     );
   }
 }
