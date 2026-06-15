@@ -5437,6 +5437,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inboxRemovedConversation => 'Gesprek verwijderd';
 
   @override
+  String get inboxRestoringMessages => 'Je berichten worden hersteld…';
+
+  @override
   String get inboxEmptyTitle => 'Nog geen berichten';
 
   @override

@@ -2343,6 +2343,7 @@
     "inboxRemoveConfirmConfirm": "削除",
     "inboxRemoveConfirmTitle": "会話を削除する？",
     "inboxRemovedConversation": "会話を削除したよ",
+    "inboxRestoringMessages": "メッセージを復元中…",
     "inboxReportedUser": "{displayName}を報告したよ",
     "@inboxReportedUser": {
         "placeholders": {

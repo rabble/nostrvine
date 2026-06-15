@@ -5306,6 +5306,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get inboxRemovedConversation => 'ውይይት ተወግዷል';
 
   @override
+  String get inboxRestoringMessages => 'መልዕክቶችዎን ወደነበሩበት በመመለስ ላይ…';
+
+  @override
   String get inboxEmptyTitle => 'እስካሁን ምንም መልዕክቶች የሉም';
 
   @override

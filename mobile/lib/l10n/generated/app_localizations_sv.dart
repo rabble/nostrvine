@@ -5415,6 +5415,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inboxRemovedConversation => 'Konversation borttagen';
 
   @override
+  String get inboxRestoringMessages => 'Återställer dina meddelanden…';
+
+  @override
   String get inboxEmptyTitle => 'Inga meddelanden än';
 
   @override

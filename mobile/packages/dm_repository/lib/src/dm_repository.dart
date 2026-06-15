@@ -220,6 +220,15 @@ class DmRepository {
   /// counter. Cleared when the pass settles. See #5202.
   Future<void>? _pendingDecryptRetry;
 
+  /// Count of in-flight recovery operations doing real work — history-drain
+  /// paging and failed-decrypt replay passes. Drives [isRecoveringHistory] /
+  /// [historyRecoveryStream] so the inbox can show a restore progress
+  /// indicator while a reinstall backfill runs (it can take a while on
+  /// remote-signer accounts that decrypt each wrap over RPC). See #5202.
+  int _activeRecoveryOps = 0;
+  final StreamController<bool> _recoveryStateController =
+      StreamController<bool>.broadcast();
+
   /// User-scoped subscription ID to prevent collision when the provider
   /// rebuilds during auth transitions (old unsubscribe won't kill new sub).
   String _subscriptionId = 'dm_inbox';
@@ -294,6 +303,14 @@ class DmRepository {
     // user can start fresh; the running loops bail on the _userPubkey change.
     _historyDrain = null;
     _pendingDecryptRetry = null;
+    // Abandon the recovery signal for the outgoing user. The bailing loops'
+    // _endRecovery() then no-ops (guarded on the zeroed counter).
+    if (_activeRecoveryOps > 0) {
+      _activeRecoveryOps = 0;
+      if (!_recoveryStateController.isClosed) {
+        _recoveryStateController.add(false);
+      }
+    }
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
     unawaited(_giftWrapSubscription?.cancel());
@@ -464,6 +481,32 @@ class DmRepository {
     return events;
   }
 
+  /// Whether a DM history recovery (the backfill drain or a failed-decrypt
+  /// replay) is actively doing work right now. The inbox surfaces this as a
+  /// restore progress indicator so the user knows chats are still being
+  /// recovered after a reinstall. See #5202.
+  bool get isRecoveringHistory => _activeRecoveryOps > 0;
+
+  /// Broadcasts changes to [isRecoveringHistory]. Does not replay the current
+  /// value, so callers should seed with [isRecoveringHistory] (e.g.
+  /// `historyRecoveryStream.startWith(repo.isRecoveringHistory)`). See #5202.
+  Stream<bool> get historyRecoveryStream => _recoveryStateController.stream;
+
+  void _beginRecovery() {
+    _activeRecoveryOps++;
+    if (_activeRecoveryOps == 1 && !_recoveryStateController.isClosed) {
+      _recoveryStateController.add(true);
+    }
+  }
+
+  void _endRecovery() {
+    if (_activeRecoveryOps == 0) return;
+    _activeRecoveryOps--;
+    if (_activeRecoveryOps == 0 && !_recoveryStateController.isClosed) {
+      _recoveryStateController.add(false);
+    }
+  }
+
   /// Recovers the user's full DM history from relays once per install.
   ///
   /// On reinstall the local DB and [DmSyncState] are wiped, so the live
@@ -527,6 +570,7 @@ class DmRepository {
     final dao = _pendingGiftWrapsDao;
     if (dao == null) return;
     final pubkey = _userPubkey;
+    var began = false;
     try {
       // Drop wraps that exhausted the retry cap so the queue cannot grow
       // without bound — a permanently-undecryptable wrap or spammed kind-1059
@@ -539,6 +583,11 @@ class DmRepository {
         ownerPubkey: pubkey,
         maxAttempts: DmHistoryDrainConfig.maxDecryptRetries,
       );
+      if (pending.isEmpty) return;
+      // Only signal "recovering" once there is genuine work, so a normal
+      // inbox open (empty queue) never flickers the progress indicator.
+      _beginRecovery();
+      began = true;
       for (final row in pending) {
         if (_disposed || _userPubkey != pubkey) return;
         // Already recovered by the live sub / drain — clear the stale row so
@@ -583,6 +632,8 @@ class DmRepository {
         error: e,
         stackTrace: stackTrace,
       );
+    } finally {
+      if (began) _endRecovery();
     }
   }
 
@@ -614,6 +665,7 @@ class DmRepository {
       category: LogCategory.system,
     );
 
+    _beginRecovery();
     try {
       // The relay filters `until:` on the OUTER gift-wrap created_at, which
       // NIP-59 randomizes up to 2 days into the past — so the cursor tracks
@@ -716,6 +768,8 @@ class DmRepository {
           site: DmRepositoryReportableSites.historyDrainUnexpectedFailure,
         );
       }
+    } finally {
+      _endRecovery();
     }
   }
 

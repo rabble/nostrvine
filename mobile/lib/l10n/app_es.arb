@@ -2355,6 +2355,7 @@
     "inboxRemoveConfirmConfirm": "Eliminar",
     "inboxRemoveConfirmTitle": "¿Eliminar conversación?",
     "inboxRemovedConversation": "Conversación eliminada",
+    "inboxRestoringMessages": "Restaurando tus mensajes…",
     "inboxReportedUser": "Reportaste a {displayName}",
     "@inboxReportedUser": {
         "placeholders": {

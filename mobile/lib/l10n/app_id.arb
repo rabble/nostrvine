@@ -2350,6 +2350,7 @@
     "inboxRemoveConfirmConfirm": "Hapus",
     "inboxRemoveConfirmTitle": "Hapus percakapan?",
     "inboxRemovedConversation": "Percakapan dihapus",
+    "inboxRestoringMessages": "Memulihkan pesan Anda…",
     "inboxReportedUser": "{displayName} dilaporkan",
     "@inboxReportedUser": {
         "placeholders": {

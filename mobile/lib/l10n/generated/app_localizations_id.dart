@@ -5392,6 +5392,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get inboxRemovedConversation => 'Percakapan dihapus';
 
   @override
+  String get inboxRestoringMessages => 'Memulihkan pesan Anda…';
+
+  @override
   String get inboxEmptyTitle => 'Belum ada pesan';
 
   @override

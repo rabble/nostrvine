@@ -45,6 +45,10 @@ void main() {
       when(
         () => mockDmRepository.watchPotentialRequests(),
       ).thenAnswer((_) => Stream.value(const []));
+      when(() => mockDmRepository.isRecoveringHistory).thenReturn(false);
+      when(
+        () => mockDmRepository.historyRecoveryStream,
+      ).thenAnswer((_) => const Stream<bool>.empty());
       when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
       when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
       when(() => mockDmRepository.stopListening()).thenAnswer((_) async {});

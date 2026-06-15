@@ -5209,6 +5209,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get inboxRemovedConversation => '대화를 삭제했어요';
 
   @override
+  String get inboxRestoringMessages => '메시지를 복구하는 중…';
+
+  @override
   String get inboxEmptyTitle => '아직 메시지가 없어요';
 
   @override

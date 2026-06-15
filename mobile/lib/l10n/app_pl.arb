@@ -2351,6 +2351,7 @@
     "inboxRemoveConfirmConfirm": "Usuń",
     "inboxRemoveConfirmTitle": "Usunąć rozmowę?",
     "inboxRemovedConversation": "Usunięto rozmowę",
+    "inboxRestoringMessages": "Odzyskiwanie wiadomości…",
     "inboxReportedUser": "Zgłoszono {displayName}",
     "@inboxReportedUser": {
         "placeholders": {

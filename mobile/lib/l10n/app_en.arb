@@ -2930,6 +2930,10 @@
     }
   },
   "inboxRemovedConversation": "Removed conversation",
+  "inboxRestoringMessages": "Restoring your messages…",
+  "@inboxRestoringMessages": {
+    "description": "Accessibility label on the progress bar shown at the top of the Messages list while a one-time DM history recovery (after reinstall) is still running, so the user knows older chats are still being restored."
+  },
   "inboxEmptyTitle": "No messages yet",
   "inboxEmptySubtitle": "That + button won't bite.",
   "inboxActionMute": "Mute conversation",

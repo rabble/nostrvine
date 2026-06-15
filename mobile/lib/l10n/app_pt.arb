@@ -2351,6 +2351,7 @@
     "inboxRemoveConfirmConfirm": "Remover",
     "inboxRemoveConfirmTitle": "Remover conversa?",
     "inboxRemovedConversation": "Conversa removida",
+    "inboxRestoringMessages": "Restaurando suas mensagens…",
     "inboxReportedUser": "{displayName} denunciado(a)",
     "@inboxReportedUser": {
         "placeholders": {

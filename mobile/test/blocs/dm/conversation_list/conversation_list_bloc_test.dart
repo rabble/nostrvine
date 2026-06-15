@@ -58,6 +58,8 @@ void _stubStreams(
   _MockDmRepository repo, {
   List<DmConversation> accepted = const [],
   List<DmConversation> potentialRequests = const [],
+  Stream<bool>? recoveryStream,
+  bool isRecovering = false,
 }) {
   when(
     () => repo.watchAcceptedConversations(limit: any(named: 'limit')),
@@ -65,6 +67,10 @@ void _stubStreams(
   when(
     () => repo.watchPotentialRequests(),
   ).thenAnswer((_) => Stream.value(potentialRequests));
+  when(() => repo.isRecoveringHistory).thenReturn(isRecovering);
+  when(
+    () => repo.historyRecoveryStream,
+  ).thenAnswer((_) => recoveryStream ?? const Stream<bool>.empty());
 }
 
 void main() {
@@ -121,6 +127,34 @@ void main() {
         act: (bloc) => bloc.add(const ConversationListStarted()),
         verify: (_) {
           verify(() => mockDmRepository.backfillHistoryIfNeeded()).called(1);
+        },
+      );
+
+      blocTest<ConversationListBloc, ConversationListState>(
+        'surfaces history-recovery progress as isRestoringHistory (#5202)',
+        setUp: () {
+          _stubStreams(
+            mockDmRepository,
+            recoveryStream: Stream.value(true),
+            isRecovering: true,
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ConversationListStarted()),
+        verify: (bloc) {
+          expect(bloc.state.isRestoringHistory, isTrue);
+        },
+      );
+
+      blocTest<ConversationListBloc, ConversationListState>(
+        'isRestoringHistory is false when no recovery is running',
+        setUp: () {
+          _stubStreams(mockDmRepository);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ConversationListStarted()),
+        verify: (bloc) {
+          expect(bloc.state.isRestoringHistory, isFalse);
         },
       );
 
@@ -182,6 +216,10 @@ void main() {
           when(
             () => mockDmRepository.watchPotentialRequests(),
           ).thenAnswer((_) => Stream.value(const []));
+          when(() => mockDmRepository.isRecoveringHistory).thenReturn(false);
+          when(
+            () => mockDmRepository.historyRecoveryStream,
+          ).thenAnswer((_) => const Stream<bool>.empty());
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ConversationListStarted()),
@@ -231,6 +269,10 @@ void main() {
           when(
             () => mockDmRepository.watchPotentialRequests(),
           ).thenAnswer((_) => requestsController.stream);
+          when(() => mockDmRepository.isRecoveringHistory).thenReturn(false);
+          when(
+            () => mockDmRepository.historyRecoveryStream,
+          ).thenAnswer((_) => const Stream<bool>.empty());
 
           // Emit initial empty requests, then accepted values.
           Future<void>.delayed(const Duration(milliseconds: 10)).then((_) {
@@ -496,6 +538,11 @@ void main() {
               if (requestsCallCount == 1) return requestsCtrl1.stream;
               return requestsCtrl2.stream;
             });
+
+            when(() => mockDmRepository.isRecoveringHistory).thenReturn(false);
+            when(
+              () => mockDmRepository.historyRecoveryStream,
+            ).thenAnswer((_) => const Stream<bool>.empty());
 
             // First streams emit quickly
             Future<void>.delayed(const Duration(milliseconds: 10)).then((_) {
@@ -949,7 +996,8 @@ void main() {
         const <DmConversation>[],
         const <DmConversation>[],
         true,
-        false,
+        false, // isLoadingMore
+        false, // isRestoringHistory
         ConversationListState.pageSize,
         null,
       ]);

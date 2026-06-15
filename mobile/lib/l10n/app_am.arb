@@ -2588,6 +2588,7 @@
         }
     },
     "inboxRemovedConversation": "ውይይት ተወግዷል",
+    "inboxRestoringMessages": "መልዕክቶችዎን ወደነበሩበት በመመለስ ላይ…",
     "inboxEmptyTitle": "እስካሁን ምንም መልዕክቶች የሉም",
     "inboxEmptySubtitle": "ያ + ቁልፍ አይነክሰውም።",
     "inboxActionMute": "ውይይት ድምጸ-ከል አድርግ",

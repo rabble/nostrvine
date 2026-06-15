@@ -2351,6 +2351,7 @@
     "inboxRemoveConfirmConfirm": "Elimină",
     "inboxRemoveConfirmTitle": "Elimini conversația?",
     "inboxRemovedConversation": "Conversație eliminată",
+    "inboxRestoringMessages": "Se restaurează mesajele tale…",
     "inboxReportedUser": "{displayName} a fost raportat(ă)",
     "@inboxReportedUser": {
         "placeholders": {

@@ -5478,6 +5478,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inboxRemovedConversation => 'Unterhaltung entfernt';
 
   @override
+  String get inboxRestoringMessages =>
+      'Deine Nachrichten werden wiederhergestellt…';
+
+  @override
   String get inboxEmptyTitle => 'Noch keine Nachrichten';
 
   @override

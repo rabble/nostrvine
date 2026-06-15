@@ -1438,6 +1438,7 @@
     "inboxBlockedUser": "Na-block si {displayName}",
     "inboxUnblockedUser": "Na-unblock si {displayName}",
     "inboxRemovedConversation": "Inalis ang conversation",
+    "inboxRestoringMessages": "Ibinabalik ang mga message mo…",
     "inboxEmptyTitle": "Wala pang messages",
     "inboxEmptySubtitle": "Hindi ka kakagatin ng + button na 'yan.",
     "inboxActionMute": "I-mute ang conversation",

@@ -9536,6 +9536,12 @@ abstract class AppLocalizations {
   /// **'Removed conversation'**
   String get inboxRemovedConversation;
 
+  /// Accessibility label on the progress bar shown at the top of the Messages list while a one-time DM history recovery (after reinstall) is still running, so the user knows older chats are still being restored.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring your messages…'**
+  String get inboxRestoringMessages;
+
   /// No description provided for @inboxEmptyTitle.
   ///
   /// In en, this message translates to:

@@ -5547,6 +5547,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get inboxRemovedConversation => 'Usunięto rozmowę';
 
   @override
+  String get inboxRestoringMessages => 'Odzyskiwanie wiadomości…';
+
+  @override
   String get inboxEmptyTitle => 'Brak wiadomości';
 
   @override

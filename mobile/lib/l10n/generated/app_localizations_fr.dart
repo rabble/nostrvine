@@ -5485,6 +5485,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inboxRemovedConversation => 'Conversation supprimée';
 
   @override
+  String get inboxRestoringMessages => 'Restauration de vos messages…';
+
+  @override
   String get inboxEmptyTitle => 'Aucun message pour le moment';
 
   @override

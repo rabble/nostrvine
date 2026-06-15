@@ -2350,6 +2350,7 @@
     "inboxRemoveConfirmConfirm": "Kaldır",
     "inboxRemoveConfirmTitle": "Sohbet kaldırılsın mı?",
     "inboxRemovedConversation": "Sohbet kaldırıldı",
+    "inboxRestoringMessages": "Mesajların geri yükleniyor…",
     "inboxReportedUser": "{displayName} bildirildi",
     "@inboxReportedUser": {
         "placeholders": {

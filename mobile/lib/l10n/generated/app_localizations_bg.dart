@@ -5468,6 +5468,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get inboxRemovedConversation => 'Премахнат разговор';
 
   @override
+  String get inboxRestoringMessages => 'Възстановяваме съобщенията ти…';
+
+  @override
   String get inboxEmptyTitle => 'Все още няма съобщения';
 
   @override

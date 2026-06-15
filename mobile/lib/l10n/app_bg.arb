@@ -2448,6 +2448,7 @@
         }
     },
     "inboxRemovedConversation": "Премахнат разговор",
+    "inboxRestoringMessages": "Възстановяваме съобщенията ти…",
     "inboxEmptyTitle": "Все още няма съобщения",
     "inboxEmptySubtitle": "Този бутон + няма да ухапе.",
     "inboxActionMute": "Заглушаване на разговора",

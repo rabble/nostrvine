@@ -5483,6 +5483,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get inboxRemovedConversation => 'Inalis ang conversation';
 
   @override
+  String get inboxRestoringMessages => 'Ibinabalik ang mga message mo…';
+
+  @override
   String get inboxEmptyTitle => 'Wala pang messages';
 
   @override

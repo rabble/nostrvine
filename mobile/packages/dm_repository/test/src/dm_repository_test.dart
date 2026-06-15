@@ -2432,6 +2432,50 @@ void main() {
       );
 
       test(
+        'emits recovery true→false on historyRecoveryStream around an '
+        'actual drain (#5202)',
+        () async {
+          final capturedUntil = <int?>[];
+          stubFiniteHistory([deletion(50)], capturedUntil);
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          final recovery = <bool>[];
+          final sub = repository.historyRecoveryStream.listen(recovery.add);
+
+          expect(repository.isRecoveringHistory, isFalse);
+          await repository.backfillHistoryIfNeeded();
+          await Future<void>.delayed(Duration.zero);
+          await sub.cancel();
+
+          expect(recovery, [true, false]);
+          expect(repository.isRecoveringHistory, isFalse);
+        },
+      );
+
+      test(
+        'does not emit recovery for an already-complete drain (#5202)',
+        () async {
+          final syncState = _FakeDmSyncState()
+            ..drainCompleteOverride = true
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          final recovery = <bool>[];
+          final sub = repository.historyRecoveryStream.listen(recovery.add);
+
+          await repository.backfillHistoryIfNeeded();
+          await Future<void>.delayed(Duration.zero);
+          await sub.cancel();
+
+          expect(recovery, isEmpty);
+          expect(repository.isRecoveringHistory, isFalse);
+        },
+      );
+
+      test(
         'pages newest→oldest from oldestSyncedAt until the relay is empty, '
         'then marks the drain complete',
         () async {

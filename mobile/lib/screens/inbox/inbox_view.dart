@@ -178,6 +178,9 @@ class _MessagesContent extends ConsumerWidget {
                   );
                 },
               ),
+              // Thin restore progress bar while the one-time reinstall
+              // history recovery is still running (#5202).
+              const _RestoringHistoryIndicator(),
               // Conversation list or empty state
               Expanded(
                 child: _ConversationListContent(
@@ -225,6 +228,27 @@ class _MessagesContent extends ConsumerWidget {
       selectedUser.pubkey,
     ]);
     _pushConversation(context, conversationId, [selectedUser.pubkey]);
+  }
+}
+
+/// Thin progress bar shown at the top of the Messages list while the one-time
+/// DM history recovery (reinstall backfill / failed-decrypt replay) is still
+/// running, so the user knows older chats are still being restored. See #5202.
+class _RestoringHistoryIndicator extends StatelessWidget {
+  const _RestoringHistoryIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    final isRestoring = context.select<ConversationListBloc, bool>(
+      (bloc) => bloc.state.isRestoringHistory,
+    );
+    if (!isRestoring) return const SizedBox.shrink();
+    return LinearProgressIndicator(
+      minHeight: 2,
+      backgroundColor: VineTheme.surfaceContainerHigh,
+      color: VineTheme.primary,
+      semanticsLabel: context.l10n.inboxRestoringMessages,
+    );
   }
 }
 

@@ -5563,6 +5563,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inboxRemovedConversation => 'Conversație eliminată';
 
   @override
+  String get inboxRestoringMessages => 'Se restaurează mesajele tale…';
+
+  @override
   String get inboxEmptyTitle => 'Încă niciun mesaj';
 
   @override

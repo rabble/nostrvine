@@ -28,6 +28,7 @@ class ConversationListState extends Equatable {
     this.potentialRequests = const [],
     this.hasMore = true,
     this.isLoadingMore = false,
+    this.isRestoringHistory = false,
     this.currentLimit = ConversationListState.pageSize,
     this.navigationTarget,
   });
@@ -54,6 +55,11 @@ class ConversationListState extends Equatable {
   /// Whether a load-more operation is currently in progress.
   final bool isLoadingMore;
 
+  /// Whether a one-time DM history recovery (reinstall backfill / failed-
+  /// decrypt replay) is actively running. Drives the restore progress
+  /// indicator at the top of the Messages list. See #5202.
+  final bool isRestoringHistory;
+
   /// Current watch limit — grows as the user loads more pages.
   final int currentLimit;
 
@@ -72,6 +78,7 @@ class ConversationListState extends Equatable {
     List<DmConversation>? potentialRequests,
     bool? hasMore,
     bool? isLoadingMore,
+    bool? isRestoringHistory,
     int? currentLimit,
     ConversationNavigationTarget? navigationTarget,
     bool clearNavigationTarget = false,
@@ -83,6 +90,7 @@ class ConversationListState extends Equatable {
       potentialRequests: potentialRequests ?? this.potentialRequests,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      isRestoringHistory: isRestoringHistory ?? this.isRestoringHistory,
       currentLimit: currentLimit ?? this.currentLimit,
       navigationTarget: clearNavigationTarget
           ? null
@@ -98,6 +106,7 @@ class ConversationListState extends Equatable {
     potentialRequests,
     hasMore,
     isLoadingMore,
+    isRestoringHistory,
     currentLimit,
     navigationTarget,
   ];

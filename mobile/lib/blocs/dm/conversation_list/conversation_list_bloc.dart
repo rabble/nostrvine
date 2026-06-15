@@ -77,15 +77,22 @@ class ConversationListBloc
     // Stream 1: accepted conversations (paginated, user has sent).
     // Stream 2: potential requests (unpaginated, user has NOT sent).
     // Stream 3: following list changes (triggers re-classification).
+    // Stream 4: history-recovery progress (drives the restore indicator).
     // Combining ensures requests are never truncated by pagination
     // and follow-list changes are handled automatically.
     await emit.forEach(
-      Rx.combineLatest3(
+      Rx.combineLatest4(
         _dmRepository.watchAcceptedConversations(limit: state.currentLimit),
         _dmRepository.watchPotentialRequests(),
         _followRepository.followingStream.startWith(const []),
-        (accepted, potentialRequests, _) =>
-            (accepted: accepted, potentialRequests: potentialRequests),
+        _dmRepository.historyRecoveryStream.startWith(
+          _dmRepository.isRecoveringHistory,
+        ),
+        (accepted, potentialRequests, _, isRestoring) => (
+          accepted: accepted,
+          potentialRequests: potentialRequests,
+          isRestoring: isRestoring,
+        ),
       ),
       onData: (data) {
         final split = DmRepository.classifyPotentialRequests(
@@ -112,6 +119,7 @@ class ConversationListBloc
           potentialRequests: data.potentialRequests,
           hasMore: data.accepted.length == state.currentLimit,
           isLoadingMore: false,
+          isRestoringHistory: data.isRestoring,
         );
       },
       onError: (error, stackTrace) {
