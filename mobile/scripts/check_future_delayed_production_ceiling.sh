@@ -18,8 +18,9 @@
 #
 # Regenerate after MIGRATING a file off Future.delayed (never to add one):
 #   UPDATE_BASELINE=1 bash mobile/scripts/check_future_delayed_production_ceiling.sh
-# Usage (from repo root or mobile/):
+# Usage:
 #   bash mobile/scripts/check_future_delayed_production_ceiling.sh
+#   (cd mobile && bash scripts/check_future_delayed_production_ceiling.sh)
 
 set -euo pipefail
 
@@ -36,7 +37,7 @@ NEW_HINT="Don't add Future.delayed to app code — use explicit async coordinati
 STALE_HINT="A production file was migrated off Future.delayed."
 FOOTER="Future.delayed in mobile/lib is frozen and may only decrease. Replace it
 with explicit async coordination rather than a longer wall-clock wait. See
-tasks/plan_epics_4335-4339_4744_4203_570.md (PR-4) and epic #4339."
+.claude/CLAUDE.md and epic #4339."
 
 emit_current() {
   find "$MOBILE_DIR/lib" \
