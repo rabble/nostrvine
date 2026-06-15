@@ -78,28 +78,11 @@ class TimelineOverlayBloc
 
     final sounds = <TimelineOverlayItem>[
       for (final track in event.audioTracks)
-        TimelineOverlayItem(
-          id: track.id,
-          type: .sound,
-          startTime: track.startTime,
-          endTime: _clampEnd(track.endTime ?? .zero, total),
-          label: track.title ?? track.pubkey,
-          maxDuration: track.duration != null
-              ? Duration(
-                  milliseconds:
-                      (track.duration! * 1000).round() -
-                      track.startOffset.inMilliseconds,
-                )
-              : VideoEditorConstants.maxDuration,
-          sourceDuration: track.duration != null
-              ? Duration(milliseconds: (track.duration! * 1000).round())
-              : null,
-          startOffset: track.startOffset,
-          waveformLeftChannel: leftCache[track.id],
-          waveformRightChannel: rightCache[track.id],
-          audioSource: track.isOriginalSound
-              ? AudioSource.original
-              : AudioSource.custom,
+        _soundItem(
+          track,
+          total: total,
+          leftChannel: leftCache[track.id],
+          rightChannel: rightCache[track.id],
         ),
     ];
 
@@ -167,6 +150,42 @@ class TimelineOverlayBloc
             : state.audioTracksPlayerRevision,
         timelineMarkers: _clampMarkers(event.timelineMarkers, total),
       ),
+    );
+  }
+
+  /// Builds the timeline item for one audio [track].
+  ///
+  /// [maxDuration] (remaining audio after [TimelineOverlayItem.startOffset])
+  /// is derived from the same full-source basis as
+  /// [TimelineOverlayItem.sourceDuration] so the two never drift — the same
+  /// `sourceDuration - startOffset` relationship [_onItemTrimmed] applies
+  /// live during a trim drag.
+  static TimelineOverlayItem _soundItem(
+    AudioEvent track, {
+    required Duration total,
+    Float32List? leftChannel,
+    Float32List? rightChannel,
+  }) {
+    final sourceDuration = track.duration != null
+        ? Duration(milliseconds: (track.duration! * 1000).round())
+        : null;
+
+    return TimelineOverlayItem(
+      id: track.id,
+      type: .sound,
+      startTime: track.startTime,
+      endTime: _clampEnd(track.endTime ?? .zero, total),
+      label: track.title ?? track.pubkey,
+      maxDuration: sourceDuration != null
+          ? sourceDuration - track.startOffset
+          : VideoEditorConstants.maxDuration,
+      sourceDuration: sourceDuration,
+      startOffset: track.startOffset,
+      waveformLeftChannel: leftChannel,
+      waveformRightChannel: rightChannel,
+      audioSource: track.isOriginalSound
+          ? AudioSource.original
+          : AudioSource.custom,
     );
   }
 
