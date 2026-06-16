@@ -40,7 +40,7 @@ class VideoEditorTimelineVolume extends StatelessWidget {
         .tracks;
 
     final customTracks = audioTracks
-        .where((t) => !t.isOriginalSound)
+        .where((t) => !t.isClipAnchoredOriginalSound)
         .toList(growable: false);
 
     if (clips.isEmpty && customTracks.isEmpty) {

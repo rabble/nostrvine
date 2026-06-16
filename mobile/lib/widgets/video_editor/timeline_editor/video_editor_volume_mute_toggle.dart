@@ -4,8 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 
-/// Toggles mute on every video clip and every non-original-sound audio track
-/// at once.
+/// Toggles mute on every video clip and every independently-controllable
+/// audio track at once.
 ///
 /// If anything is currently audible (any clip or custom track with
 /// `volume > 0`), this mutes everything to `0.0`. Otherwise it restores all
@@ -21,7 +21,7 @@ void toggleAllTimelineVolumeMuted(BuildContext context) {
 
   final clips = clipBloc.state.clips;
   final customAudioTracks = overlayBloc.state.audioTracks
-      .where((t) => !t.isOriginalSound)
+      .where((t) => !t.isClipAnchoredOriginalSound)
       .toList(growable: false);
 
   final allMuted =

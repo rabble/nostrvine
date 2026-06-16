@@ -478,8 +478,8 @@ void main() {
       );
 
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
-        'preserves original-sound tracks (id starts with `video_`) and '
-        'only mutes custom tracks',
+        'preserves clip-anchored original-sound tracks and '
+        'only mutes independent tracks',
         build: TimelineOverlayBloc.new,
         seed: () => TimelineOverlayState(
           audioTracks: [
@@ -487,6 +487,7 @@ void main() {
               id: 'video_clip-a',
               start: Duration.zero,
               end: const Duration(seconds: 3),
+              anchorClipId: 'clip-a',
             ),
             _audioEvent(
               id: 'sound-1',
@@ -504,7 +505,7 @@ void main() {
                 (s) => s.audioTracks
                     .firstWhere((t) => t.id == 'video_clip-a')
                     .volume,
-                'original-sound volume',
+                'clip-anchored original-sound volume',
                 1.0,
               )
               .having(
@@ -513,6 +514,32 @@ void main() {
                 'custom track volume',
                 0.0,
               ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'mutes an unanchored original-sound track added from another video',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          audioTracks: [
+            // video_-prefixed but not anchored to a clip: a network "Original
+            // Sound" the user added, which has its own volume arc.
+            _audioEvent(
+              id: 'video_other-clip_copy_1',
+              start: Duration.zero,
+              end: const Duration(seconds: 3),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayAllAudioVolumeChanged(volume: 0.0),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>().having(
+            (s) => s.audioTracks.single.volume,
+            'added original-sound volume',
+            0.0,
+          ),
         ],
       );
 
@@ -527,7 +554,7 @@ void main() {
       );
 
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
-        'is no-op when only original-sound tracks are present',
+        'is no-op when only clip-anchored original-sound tracks are present',
         build: TimelineOverlayBloc.new,
         seed: () => TimelineOverlayState(
           audioTracks: [
@@ -535,11 +562,13 @@ void main() {
               id: 'video_clip-a',
               start: Duration.zero,
               end: const Duration(seconds: 3),
+              anchorClipId: 'clip-a',
             ),
             _audioEvent(
               id: 'video_clip-b',
               start: const Duration(seconds: 3),
               end: const Duration(seconds: 6),
+              anchorClipId: 'clip-b',
             ),
           ],
         ),

@@ -50,35 +50,47 @@ void main() {
       );
     }
 
-    testWidgets('renders clip arcs and custom audio arcs only', (
-      tester,
-    ) async {
-      clipBloc.add(
-        ClipEditorInitialized([
-          _createTestClip(id: 'clip-a'),
-          _createTestClip(id: 'clip-b'),
-        ]),
-      );
-      overlayBloc.add(
-        TimelineOverlayItemsUpdate(
-          layers: const <Layer>[],
-          filters: const <FilterState>[],
-          audioTracks: [
-            _audioTrack(id: 'custom-1', title: 'Beat'),
-            _audioTrack(id: 'video_original', title: 'Original sound'),
-          ],
-          totalVideoDuration: const Duration(seconds: 10),
-        ),
-      );
+    testWidgets(
+      'renders clip arcs and independent audio arcs, hiding only '
+      'clip-anchored original sound',
+      (tester) async {
+        clipBloc.add(
+          ClipEditorInitialized([
+            _createTestClip(id: 'clip-a'),
+            _createTestClip(id: 'clip-b'),
+          ]),
+        );
+        overlayBloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
+            audioTracks: [
+              _audioTrack(id: 'custom-1', title: 'Beat'),
+              // Original sound added from another video (not anchored to a
+              // clip) — keeps its own volume arc.
+              _audioTrack(id: 'video_added', title: 'Added sound'),
+              // Original sound anchored to a clip — controlled via the clip
+              // arc, so no separate arc.
+              _audioTrack(
+                id: 'video_original',
+                title: 'Original sound',
+                anchorClipId: 'clip-a',
+              ),
+            ],
+            totalVideoDuration: const Duration(seconds: 10),
+          ),
+        );
 
-      await tester.pumpWidget(buildWidget());
-      await tester.pump();
+        await tester.pumpWidget(buildWidget());
+        await tester.pump();
 
-      expect(find.bySemanticsLabel('Clip 1'), findsOneWidget);
-      expect(find.bySemanticsLabel('Clip 2'), findsOneWidget);
-      expect(find.bySemanticsLabel('Beat'), findsOneWidget);
-      expect(find.bySemanticsLabel('Original sound'), findsNothing);
-    });
+        expect(find.bySemanticsLabel('Clip 1'), findsOneWidget);
+        expect(find.bySemanticsLabel('Clip 2'), findsOneWidget);
+        expect(find.bySemanticsLabel('Beat'), findsOneWidget);
+        expect(find.bySemanticsLabel('Added sound'), findsOneWidget);
+        expect(find.bySemanticsLabel('Original sound'), findsNothing);
+      },
+    );
 
     testWidgets('tap toggles a clip to mute', (tester) async {
       clipBloc.add(ClipEditorInitialized([_createTestClip(id: 'clip-a')]));
@@ -148,7 +160,11 @@ DivineVideoClip _createTestClip({required String id}) {
   );
 }
 
-AudioEvent _audioTrack({required String id, required String title}) {
+AudioEvent _audioTrack({
+  required String id,
+  required String title,
+  String? anchorClipId,
+}) {
   return AudioEvent(
     id: id,
     pubkey: 'pubkey-$id',
@@ -156,5 +172,6 @@ AudioEvent _audioTrack({required String id, required String title}) {
     title: title,
     startTime: const Duration(seconds: 1),
     endTime: const Duration(seconds: 4),
+    anchorClipId: anchorClipId,
   );
 }

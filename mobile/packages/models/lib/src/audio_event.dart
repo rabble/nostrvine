@@ -231,6 +231,17 @@ class AudioEvent {
   /// Whether this audio is derived from a video's original sound.
   bool get isOriginalSound => id.startsWith('video_');
 
+  /// Whether this track is a video's original sound that is still anchored to
+  /// one of the editor's clips.
+  ///
+  /// Clip-anchored original sound is controlled through its source clip's
+  /// volume arc, so the timeline volume panel hides its individual arc. A
+  /// standalone original sound the user *added* from another video
+  /// (`anchorClipId == null`) is not clip-anchored and therefore keeps its
+  /// own volume arc — unlike [isOriginalSound] alone, which would also hide
+  /// those added tracks.
+  bool get isClipAnchoredOriginalSound => isOriginalSound && isAnchored;
+
   /// Whether this audio is a bundled sound (from app assets).
   bool get isBundled => id.startsWith('${bundledMarker}_');
 

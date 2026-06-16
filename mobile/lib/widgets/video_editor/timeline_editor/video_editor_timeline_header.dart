@@ -127,7 +127,7 @@ class _VolumeButton extends StatelessWidget {
     );
     final hasModifiedAudioVolume = context.select(
       (TimelineOverlayBloc b) => b.state.audioTracks
-          .where((t) => !t.isOriginalSound)
+          .where((t) => !t.isClipAnchoredOriginalSound)
           .any((t) => t.volume != 1.0),
     );
     final hasModifiedVolume = hasModifiedClipVolume || hasModifiedAudioVolume;

@@ -663,11 +663,17 @@ class TimelineOverlayBloc
     Emitter<TimelineOverlayState> emit,
   ) {
     final nextVolume = event.volume.clamp(0.0, 1.0);
-    final affected = state.audioTracks.where((t) => !t.isOriginalSound);
+    final affected = state.audioTracks.where(
+      (t) => !t.isClipAnchoredOriginalSound,
+    );
     if (affected.isEmpty) return;
     if (affected.every((t) => t.volume == nextVolume)) return;
     final updated = state.audioTracks
-        .map((t) => t.isOriginalSound ? t : t.copyWith(volume: nextVolume))
+        .map(
+          (t) => t.isClipAnchoredOriginalSound
+              ? t
+              : t.copyWith(volume: nextVolume),
+        )
         .toList(growable: false);
     emit(
       state.copyWith(

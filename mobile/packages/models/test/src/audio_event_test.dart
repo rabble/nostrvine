@@ -1180,6 +1180,49 @@ void main() {
         expect(AudioEvent.fromJson(original.toJson()).anchorClipId, isNull);
       });
     });
+
+    group('isClipAnchoredOriginalSound', () {
+      test('is true for an original sound anchored to a clip', () {
+        const event = AudioEvent(
+          id: 'video_source-abc_copy_1',
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          anchorClipId: 'clip-7',
+        );
+        expect(event.isOriginalSound, isTrue);
+        expect(event.isAnchored, isTrue);
+        expect(event.isClipAnchoredOriginalSound, isTrue);
+      });
+
+      test(
+        'is false for an original sound added from another video '
+        '(not anchored)',
+        () {
+          // A network "Original Sound" the user added from the sound browser:
+          // its id is video_-prefixed but it is free-standing, so it keeps its
+          // own volume arc.
+          const event = AudioEvent(
+            id: 'video_source-abc_copy_1',
+            pubkey: testPubkey,
+            createdAt: 1700000000,
+          );
+          expect(event.isOriginalSound, isTrue);
+          expect(event.isAnchored, isFalse);
+          expect(event.isClipAnchoredOriginalSound, isFalse);
+        },
+      );
+
+      test('is false for a non-original (custom/imported) track', () {
+        const event = AudioEvent(
+          id: 'local_import_1234567890',
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          anchorClipId: 'clip-7',
+        );
+        expect(event.isOriginalSound, isFalse);
+        expect(event.isClipAnchoredOriginalSound, isFalse);
+      });
+    });
   });
 }
 
