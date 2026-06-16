@@ -1,80 +1,101 @@
-// ABOUTME: Cache for home feed data using SharedPreferences.
-// ABOUTME: Enables instant feed display on cold start by serving
-// ABOUTME: cached videos while fresh data loads from the network.
+// ABOUTME: Disk-backed cache for the home feed, enabling instant cold start.
+// ABOUTME: Stores a forward window of videos starting just past the user's
+// last-viewed position, account-scoped, via CacheSync.
 
 import 'dart:convert';
 
+import 'package:cache_sync/cache_sync.dart';
 import 'package:models/models.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:videos_repository/videos_repository.dart';
 
-/// SharedPreferences key for cached Following feed JSON.
+/// Maximum age of a cached home feed before it is considered stale.
 ///
-/// Previous app versions used the unscoped `home_feed_cache` key for both
-/// Following and For You. Keep this key Following-specific so stale For You
-/// payloads from older installs are ignored after upgrade.
-const homeFeedCacheKey = 'home_feed_cache_following_v1';
+/// Tuned to cover same-day reopens (the common "closed it this morning,
+/// reopen at lunch" case) while still forcing a clean fresh load after a
+/// long absence.
+const homeFeedCacheMaxAge = Duration(hours: 6);
 
-/// SharedPreferences key for cached Following feed timestamp.
-const homeFeedCacheTimeKey = 'home_feed_cache_following_v1_time';
-
-/// Maximum age of cached home feed before it's considered stale.
-const homeFeedCacheMaxAge = Duration(hours: 1);
-
-/// Reads and writes cached Home tab feed data from SharedPreferences.
+/// Upper bound on how many videos are persisted per mode.
 ///
-/// The cache stores the latest raw JSON response for a cacheable Home tab
-/// mode so it can be parsed into [HomeFeedResult] on next cold start
-/// without any network request.
+/// The cached window only has to bridge the gap until the parallel fresh
+/// load lands (a few seconds), so it is deliberately small. It also bounds
+/// the per-swipe write cost.
+const _forwardWindowSize = 30;
+
+/// Reads and writes the cached home-feed videos for instant cold start.
 ///
-/// Cache entries older than [homeFeedCacheMaxAge] are ignored.
+/// The cache stores a **forward window**: the videos starting just past the
+/// user's last-viewed position (already-watched videos are intentionally
+/// dropped — the user resumes at the top of the window and cannot scroll back
+/// to content they have seen). On cold start the window is served at index 0
+/// while fresh data loads in parallel.
+///
+/// Entries are keyed by account pubkey and feed mode and persisted through
+/// [CacheSync], so signing out clears them via the account-scoped
+/// `CacheSync.invalidatePrefix(pubkey)` call in `AuthService`.
+///
+/// Every method degrades to a no-op (read → `null`, write → nothing) when
+/// [CacheSync] has not been initialised, so widget tests that don't boot the
+/// cache are unaffected.
 class HomeFeedCache {
   /// Creates a [HomeFeedCache].
   const HomeFeedCache();
 
-  /// Loads the cached home feed, or `null` if no valid cache exists.
-  ///
-  /// Returns `null` when:
-  /// - No cache entry exists
-  /// - The cache is older than [homeFeedCacheMaxAge]
-  /// - The cached JSON cannot be parsed
-  HomeFeedResult? read(SharedPreferences prefs) {
+  String _accountPrefix(String? pubkey) =>
+      (pubkey == null || pubkey.isEmpty) ? 'anon' : pubkey;
+
+  String _videosKey(String? pubkey, String mode) =>
+      '${_accountPrefix(pubkey)}:home_feed:$mode';
+
+  /// Returns the cached forward window for [mode], or `null` when absent or
+  /// expired.
+  Future<List<VideoEvent>?> readVideos({
+    required String? pubkey,
+    required String mode,
+  }) async {
     try {
-      final cachedJson = prefs.getString(homeFeedCacheKey);
-      if (cachedJson == null) return null;
-
-      final cachedTimeMs = prefs.getInt(homeFeedCacheTimeKey) ?? 0;
-      final cachedTime = DateTime.fromMillisecondsSinceEpoch(cachedTimeMs);
-      if (DateTime.now().difference(cachedTime) > homeFeedCacheMaxAge) {
-        return null;
-      }
-
-      return _parse(cachedJson);
-    } catch (_) {
+      return await CacheSync.read<List<VideoEvent>>(
+        key: _videosKey(pubkey, mode),
+        fromJson: _decodeVideos,
+      );
+    } on Object {
       return null;
     }
   }
 
-  /// Writes home feed JSON to cache with the current timestamp.
+  /// Persists [videos] (capped to [_forwardWindowSize]) as the cached home
+  /// feed for [mode].
   ///
-  /// Only caches when [json] is non-null and non-empty.
-  Future<void> write(SharedPreferences prefs, String json) async {
-    await prefs.setString(homeFeedCacheKey, json);
-    await prefs.setInt(
-      homeFeedCacheTimeKey,
-      DateTime.now().millisecondsSinceEpoch,
-    );
+  /// The caller passes the forward slice (videos from the resume position
+  /// onward); this stores the first [_forwardWindowSize] of them.
+  Future<void> writeVideos({
+    required String? pubkey,
+    required String mode,
+    required List<VideoEvent> videos,
+  }) async {
+    if (videos.isEmpty) return;
+    final capped = videos.length > _forwardWindowSize
+        ? videos.sublist(0, _forwardWindowSize)
+        : videos;
+    try {
+      await CacheSync.write<List<VideoEvent>>(
+        key: _videosKey(pubkey, mode),
+        value: capped,
+        toJson: _encodeVideos,
+        ttl: homeFeedCacheMaxAge,
+      );
+    } on Object {
+      // Caching is best-effort; ignore persistence failures.
+    }
   }
 
-  /// Parses raw JSON into a [HomeFeedResult].
-  static HomeFeedResult _parse(String jsonStr) {
-    final data = jsonDecode(jsonStr) as Map<String, dynamic>;
-    final videosData = data['videos'] as List<dynamic>? ?? [];
-    final videos = videosData
-        .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
-        .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
-        .toVideoEvents();
+  static String _encodeVideos(List<VideoEvent> videos) =>
+      jsonEncode({'videos': videos.map((v) => v.toJson()).toList()});
 
-    return HomeFeedResult(videos: videos);
+  static List<VideoEvent> _decodeVideos(String json) {
+    final data = jsonDecode(json) as Map<String, dynamic>;
+    final raw = data['videos'] as List<dynamic>? ?? const [];
+    return raw
+        .map((v) => VideoEvent.fromJson(v as Map<String, dynamic>))
+        .toList();
   }
 }

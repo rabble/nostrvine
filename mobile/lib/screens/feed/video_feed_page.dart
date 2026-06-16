@@ -76,7 +76,10 @@ class VideoFeedPage extends ConsumerWidget {
             contentBlocklistRepository: blocklistRepository,
             userPubkey: authService.currentPublicKeyHex,
             sharedPreferences: sharedPreferences,
-            serveCachedHomeFeed: !showDivineHostedOnly,
+            // Cached-feed serving stays on (constructor default) regardless of
+            // the Divine-hosted-only filter: applyContentPreferences re-filters
+            // on read and the splice-on-refresh keeps the post-active tail
+            // fresh, so the cached serve is never stale to the viewer.
             feedTracker: FeedPerformanceTracker(),
           )..add(VideoFeedStarted(mode: initialMode)),
         ),
@@ -114,6 +117,14 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// Guards so startup milestones fire only once.
   bool _hasMarkedUIReady = false;
   bool _hasMarkedVideoReady = false;
+
+  /// Whether the app has actually been backgrounded since the last resume.
+  ///
+  /// The launch `resumed` lifecycle event would otherwise trigger an
+  /// auto-refresh that wipes the just-served cached feed and resets the
+  /// resume index back to the first video. Only a genuine background →
+  /// foreground transition should auto-refresh.
+  bool _wasBackgrounded = false;
 
   /// Tracks the current fractional page position for scroll-driven overlay opacity.
   late final ValueNotifier<double> _pagePosition;
@@ -155,7 +166,16 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      _wasBackgrounded = true;
+      return;
+    }
+    // Only auto-refresh on a genuine background → foreground transition. The
+    // spurious `resumed` event during cold start must not fire, or it would
+    // wipe the just-served cached feed and reset the resume index.
+    if (state == AppLifecycleState.resumed && _wasBackgrounded) {
+      _wasBackgrounded = false;
       context.read<VideoFeedBloc>().add(const VideoFeedAutoRefreshRequested());
     }
   }
@@ -231,6 +251,19 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                 ref
                     .read(lastTabPositionProvider.notifier)
                     .recordPosition(RouteType.home, 0);
+              },
+            ),
+            // Seed the page position from the BLoC's restored index (cold-start
+            // resume / mode switch). Runs before the builder, so [FeedVideos]
+            // mounts at the right page. Echoes of the user's own swipe are
+            // ignored because [_currentIndex] already matches.
+            BlocListener<VideoFeedBloc, VideoFeedBlocState>(
+              listenWhen: (previous, current) =>
+                  previous.currentIndex != current.currentIndex,
+              listener: (_, state) {
+                if (state.currentIndex == _currentIndex) return;
+                _currentIndex = state.currentIndex;
+                _pagePosition.value = state.currentIndex.toDouble();
               },
             ),
             // Mark UI ready when videos first become available.
@@ -313,6 +346,9 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       trafficSource: ViewTrafficSource.home,
                       onActiveVideoChanged: (video, index) {
                         _currentIndex = index;
+                        context.read<VideoFeedBloc>().add(
+                          VideoFeedActiveIndexChanged(index),
+                        );
                         ref
                             .read(lastTabPositionProvider.notifier)
                             .recordPosition(RouteType.home, index);

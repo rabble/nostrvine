@@ -123,6 +123,42 @@ abstract final class CacheSync {
     return controller.stream;
   }
 
+  /// Reads the cached value for [key], or `null` when absent, expired, or
+  /// corrupt.
+  ///
+  /// This is the direct disk-read counterpart to [watchOne] — it never
+  /// performs a network fetch. A cache entry that fails [fromJson] is
+  /// deleted and `null` is returned.
+  static Future<T?> read<T>({
+    required String key,
+    required T Function(String json) fromJson,
+  }) async {
+    final cached = await _dao.read(key);
+    if (cached == null || cached.isEmpty) return null;
+    try {
+      return fromJson(cached);
+    } on Object {
+      await _dao.delete(key);
+      return null;
+    }
+  }
+
+  /// Writes [value] to the cache under [key].
+  ///
+  /// When [toJson] returns an empty string the value is **not** persisted —
+  /// the same "do not cache" signal [watchOne] honours. [ttl] sets the
+  /// entry's expiry; `null` means it never expires.
+  static Future<void> write<T>({
+    required String key,
+    required T value,
+    required String Function(T value) toJson,
+    Duration? ttl,
+  }) async {
+    final payload = toJson(value);
+    if (payload.isEmpty) return;
+    await _dao.write(key: key, payload: payload, ttl: ttl);
+  }
+
   /// Removes the cached entry for [key].
   static Future<void> invalidate(String key) => _dao.delete(key);
 

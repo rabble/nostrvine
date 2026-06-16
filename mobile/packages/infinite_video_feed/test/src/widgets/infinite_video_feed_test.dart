@@ -1501,6 +1501,62 @@ void main() {
           expect(pageView.controller!.page?.round(), equals(2));
         },
       );
+
+      testWidgets(
+        'tail replacement past the active index keeps the active index',
+        (tester) async {
+          final key = GlobalKey<InfiniteVideoFeedState>();
+          final videos1 = List.generate(5, (i) => _makeVideo('v$i'));
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos1,
+                cache: cache,
+                preloadGracePeriod: Duration.zero,
+                prefetchCount: 0,
+              ),
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 50));
+
+          // Move to index 1 (distinct from initialIndex 0).
+          unawaited(key.currentState!.animateToPage(1));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          expect(key.currentState!.currentIndex, equals(1));
+
+          // Splice: keep the prefix past the active index ([v0, v1, v2]) and
+          // replace the tail with fresh videos.
+          final videos2 = [
+            videos1[0],
+            videos1[1],
+            videos1[2],
+            _makeVideo('fresh0'),
+            _makeVideo('fresh1'),
+          ];
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos2,
+                cache: cache,
+                preloadGracePeriod: Duration.zero,
+                prefetchCount: 0,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(Duration.zero);
+
+          // The active index is preserved (not reset to initialIndex 0) and the
+          // PageController does not jump — the active video is not restarted.
+          expect(key.currentState!.currentIndex, equals(1));
+          final pageView = tester.widget<PageView>(find.byType(PageView));
+          expect(pageView.controller!.page?.round(), equals(1));
+        },
+      );
     });
 
     group('overlayBuilder', () {

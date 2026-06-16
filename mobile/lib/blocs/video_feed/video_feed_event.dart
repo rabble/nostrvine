@@ -121,6 +121,21 @@ final class VideoFeedCuratedListsChanged extends VideoFeedEvent {
   List<Object?> get props => [subscribedLists];
 }
 
+/// The active (visible) video changed as the user swipes the feed.
+///
+/// Dispatched by the UI on each page change. The bloc records the index in
+/// state so it can splice fresh results in *after* the active video, and
+/// persists it so the position can be restored on the next cold start.
+final class VideoFeedActiveIndexChanged extends VideoFeedEvent {
+  const VideoFeedActiveIndexChanged(this.index);
+
+  /// The index of the now-active video in the feed.
+  final int index;
+
+  @override
+  List<Object?> get props => [index];
+}
+
 /// A user was blocked or the blocklist changed.
 ///
 /// When [blockedPubkey] is provided, the handler removes that user's videos

@@ -732,9 +732,14 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
     },
   );
 
+  // Critical (awaited before runApp): the home feed reads the persisted feed
+  // on its first build to serve videos instantly. If CacheSync initialised
+  // later (standard phase) the cold-start read would lose the race, fall back
+  // to null, and the loading spinner would always show. Drift opens lazily, so
+  // initialising here adds negligible startup cost.
   coordinator.registerService(
     name: 'CacheSync',
-    phase: StartupPhase.standard,
+    phase: StartupPhase.critical,
     initialize: CacheSync.init,
     optional: true,
   );

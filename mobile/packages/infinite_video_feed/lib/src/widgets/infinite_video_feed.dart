@@ -422,38 +422,34 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _syncCurrentAutoPlayGate(oldWidget);
     if (widget.videos == oldWidget.videos) return;
 
-    // Append-only: the new list starts with exactly the same items in the
-    // same order — same id AND same effective playback source — only new
-    // items were appended (e.g. pagination). Existing controllers are
-    // still valid; just let _onIndexChanged extend the window. If the
-    // resolved URL for an existing index changed (e.g. the caller updated
-    // the playback source for the same id) the cached controller is stale
-    // and we must fall through to the non-append teardown path.
-    final oldLen = oldWidget.videos.length;
-    var isAppendOnly = widget.videos.length >= oldLen;
-    if (isAppendOnly) {
-      for (var i = 0; i < oldLen; i++) {
-        final oldVideo = oldWidget.videos[i];
-        final newVideo = widget.videos[i];
-        if (oldVideo.id != newVideo.id ||
-            _resolvedSourceFor(oldVideo, oldWidget.urlResolver) !=
-                _resolvedSourceFor(newVideo, widget.urlResolver)) {
-          isAppendOnly = false;
-          break;
-        }
-      }
-    }
+    // How many leading items are unchanged — same id AND same resolved
+    // playback source. A changed resolved URL for an existing index (e.g. the
+    // caller swapped the playback source for the same id) ends the common
+    // prefix there, so its stale controller is rebuilt below.
+    final commonPrefix = _commonPrefixLength(oldWidget, widget);
 
-    if (isAppendOnly) {
+    // The active video and everything before it are unchanged when the common
+    // prefix extends past the current index. Keep those controllers and only
+    // rebuild the changed tail (indices >= commonPrefix), so the active video
+    // does not restart. This covers append-only pagination and a tail
+    // replacement (fresh feed spliced in after the current video). Disposing
+    // the changed tail first lets _onIndexChanged re-init any stale controller
+    // that falls inside the live window; out-of-window ones it disposes itself.
+    if (commonPrefix > _currentIndex) {
+      _prefetcher.cancelActive();
+      _controllers.keys
+          .where((index) => index >= commonPrefix)
+          .toList()
+          .forEach(_disposeAt);
       unawaited(_onIndexChanged(_currentIndex));
       return;
     }
 
-    // Non-append-only change (e.g. tab switch forYou → following, or full
-    // feed replacement). Tear down all live controllers, reset to the
-    // caller's intended starting index, and jump the PageController so
-    // the next frame opens on the right item instead of whatever stale
-    // page the previous feed was on.
+    // The change reaches the current video (or before it) — e.g. a tab switch
+    // forYou → following or a full feed replacement. Tear down all live
+    // controllers, reset to the caller's intended starting index, and jump the
+    // PageController so the next frame opens on the right item instead of
+    // whatever stale page the previous feed was on.
     _log(
       'Non-append-only video list change — tearing down all controllers '
       '(old=${oldWidget.videos.length} new=${widget.videos.length})',
@@ -487,6 +483,29 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     VideoEvent video,
     String? Function(VideoEvent video)? resolver,
   ) => resolver?.call(video) ?? video.videoUrl;
+
+  /// Number of leading items shared by [oldWidget] and [widget] — equal id and
+  /// equal resolved playback source at each index.
+  int _commonPrefixLength(
+    InfiniteVideoFeed oldWidget,
+    InfiniteVideoFeed newWidget,
+  ) {
+    final maxLength = oldWidget.videos.length < newWidget.videos.length
+        ? oldWidget.videos.length
+        : newWidget.videos.length;
+    var i = 0;
+    while (i < maxLength) {
+      final oldVideo = oldWidget.videos[i];
+      final newVideo = newWidget.videos[i];
+      if (oldVideo.id != newVideo.id ||
+          _resolvedSourceFor(oldVideo, oldWidget.urlResolver) !=
+              _resolvedSourceFor(newVideo, newWidget.urlResolver)) {
+        break;
+      }
+      i++;
+    }
+    return i;
+  }
 
   @override
   void dispose() {

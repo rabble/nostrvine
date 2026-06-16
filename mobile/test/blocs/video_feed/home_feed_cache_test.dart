@@ -1,189 +1,175 @@
-// ABOUTME: Tests for HomeFeedCache - cache read/write for home feed data
-// ABOUTME: Verifies SharedPreferences caching with expiry logic
+// ABOUTME: Tests for HomeFeedCache - CacheSync-backed home feed persistence.
+// ABOUTME: Verifies per-mode, account-scoped video + index read/write.
 
-import 'dart:convert';
-
+import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/video_feed/home_feed_cache.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+class _FakeCacheDao implements CacheDao {
+  final Map<String, ({String payload, DateTime? expiresAt})> store = {};
+
+  @override
+  Future<String?> read(String key) async {
+    final entry = store[key];
+    if (entry == null) return null;
+    final expiresAt = entry.expiresAt;
+    if (expiresAt != null && DateTime.now().toUtc().isAfter(expiresAt)) {
+      store.remove(key);
+      return null;
+    }
+    return entry.payload;
+  }
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {
+    store[key] = (
+      payload: payload,
+      expiresAt: ttl == null ? null : DateTime.now().toUtc().add(ttl),
+    );
+  }
+
+  @override
+  Future<void> delete(String key) async => store.remove(key);
+
+  @override
+  Future<void> deletePrefix(String prefix) async =>
+      store.removeWhere((key, _) => key.startsWith(prefix));
+
+  @override
+  Future<int> totalPayloadBytes() async =>
+      store.values.fold<int>(0, (sum, e) => sum + e.payload.length);
+
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
+}
+
+VideoEvent _video(String id) => VideoEvent(
+  id: id,
+  pubkey: 'a' * 64,
+  createdAt: 1700000000,
+  content: '',
+  timestamp: DateTime.fromMillisecondsSinceEpoch(
+    1700000000 * 1000,
+    isUtc: true,
+  ),
+  videoUrl: 'https://cdn.divine.video/$id.mp4',
+);
 
 void main() {
   group(HomeFeedCache, () {
-    late HomeFeedCache cache;
+    late _FakeCacheDao dao;
+    const cache = HomeFeedCache();
+    final pubkey = 'b' * 64;
 
-    setUp(() {
-      cache = const HomeFeedCache();
+    setUp(() async {
+      dao = _FakeCacheDao();
+      await CacheSync.init(dao: dao);
     });
 
-    String validFeedJson({int videoCount = 2}) {
-      final videos = List.generate(
-        videoCount,
-        (i) => {
-          'id': 'video-$i',
-          'pubkey': '0' * 64,
-          'video_url': 'https://example.com/video-$i.mp4',
-          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000 - i,
-        },
-      );
-      return jsonEncode({'videos': videos});
-    }
-
-    group('read', () {
-      test('returns null when no cache exists', () async {
-        SharedPreferences.setMockInitialValues({});
-        final prefs = await SharedPreferences.getInstance();
-
-        final result = cache.read(prefs);
-
+    group('videos', () {
+      test('returns null when nothing is cached', () async {
+        final result = await cache.readVideos(pubkey: pubkey, mode: 'forYou');
         expect(result, isNull);
       });
 
-      test('returns null when cache is expired', () async {
-        final expiredTime = DateTime.now()
-            .subtract(const Duration(hours: 2))
-            .millisecondsSinceEpoch;
+      test('round-trips written videos by mode', () async {
+        await cache.writeVideos(
+          pubkey: pubkey,
+          mode: 'forYou',
+          videos: [_video('a'), _video('b')],
+        );
 
-        SharedPreferences.setMockInitialValues({
-          homeFeedCacheKey: validFeedJson(),
-          homeFeedCacheTimeKey: expiredTime,
-        });
-        final prefs = await SharedPreferences.getInstance();
-
-        final result = cache.read(prefs);
-
-        expect(result, isNull);
-      });
-
-      test('returns cached result when cache is fresh', () async {
-        final freshTime = DateTime.now()
-            .subtract(const Duration(minutes: 30))
-            .millisecondsSinceEpoch;
-
-        SharedPreferences.setMockInitialValues({
-          homeFeedCacheKey: validFeedJson(),
-          homeFeedCacheTimeKey: freshTime,
-        });
-        final prefs = await SharedPreferences.getInstance();
-
-        final result = cache.read(prefs);
-
+        final result = await cache.readVideos(pubkey: pubkey, mode: 'forYou');
         expect(result, isNotNull);
-        expect(result!.videos, hasLength(2));
-        expect(result.videos[0].id, equals('video-0'));
-        expect(result.videos[1].id, equals('video-1'));
+        expect(result!.map((v) => v.id), equals(['a', 'b']));
+      });
+
+      test('does not persist an empty list', () async {
+        await cache.writeVideos(pubkey: pubkey, mode: 'forYou', videos: []);
+        expect(dao.store, isEmpty);
+      });
+
+      test('caps the persisted forward window', () async {
+        final videos = List.generate(80, (i) => _video('v$i'));
+        await cache.writeVideos(
+          pubkey: pubkey,
+          mode: 'following',
+          videos: videos,
+        );
+
+        final result = await cache.readVideos(
+          pubkey: pubkey,
+          mode: 'following',
+        );
+        expect(result, hasLength(30));
+        expect(result!.first.id, equals('v0'));
+        expect(result.last.id, equals('v29'));
+      });
+
+      test('separates videos per feed mode', () async {
+        await cache.writeVideos(
+          pubkey: pubkey,
+          mode: 'forYou',
+          videos: [_video('foryou')],
+        );
+        await cache.writeVideos(
+          pubkey: pubkey,
+          mode: 'following',
+          videos: [_video('following')],
+        );
+
+        final forYou = await cache.readVideos(pubkey: pubkey, mode: 'forYou');
+        final following = await cache.readVideos(
+          pubkey: pubkey,
+          mode: 'following',
+        );
+        expect(forYou!.single.id, equals('foryou'));
+        expect(following!.single.id, equals('following'));
       });
 
       test(
-        'ignores legacy unscoped cache entries from older app versions',
+        'scopes entries by account so other accounts do not read them',
         () async {
-          final freshTime = DateTime.now().millisecondsSinceEpoch;
+          await cache.writeVideos(
+            pubkey: pubkey,
+            mode: 'forYou',
+            videos: [_video('mine')],
+          );
 
-          SharedPreferences.setMockInitialValues({
-            'home_feed_cache': validFeedJson(),
-            'home_feed_cache_time': freshTime,
-          });
-          final prefs = await SharedPreferences.getInstance();
-
-          final result = cache.read(prefs);
-
-          expect(result, isNull);
+          final otherAccount = await cache.readVideos(
+            pubkey: 'c' * 64,
+            mode: 'forYou',
+          );
+          final anon = await cache.readVideos(pubkey: null, mode: 'forYou');
+          expect(otherAccount, isNull);
+          expect(anon, isNull);
         },
       );
 
-      test('returns null when cached JSON is invalid', () async {
-        final freshTime = DateTime.now().millisecondsSinceEpoch;
+      test(
+        'keys are prefixed by pubkey so sign-out invalidation clears them',
+        () async {
+          await cache.writeVideos(
+            pubkey: pubkey,
+            mode: 'forYou',
+            videos: [_video('mine')],
+          );
 
-        SharedPreferences.setMockInitialValues({
-          homeFeedCacheKey: 'not valid json',
-          homeFeedCacheTimeKey: freshTime,
-        });
-        final prefs = await SharedPreferences.getInstance();
+          expect(dao.store.keys.single, startsWith('$pubkey:'));
 
-        final result = cache.read(prefs);
-
-        expect(result, isNull);
-      });
-
-      test('filters out videos without valid URLs', () async {
-        final freshTime = DateTime.now().millisecondsSinceEpoch;
-        final json = jsonEncode({
-          'videos': [
-            {
-              'id': 'valid',
-              'pubkey': '0' * 64,
-              'video_url': 'https://example.com/valid.mp4',
-              'created_at': 1000,
-            },
-            {
-              'id': 'no-url',
-              'pubkey': '0' * 64,
-              'video_url': '',
-              'created_at': 999,
-            },
-            {
-              'id': '',
-              'pubkey': '0' * 64,
-              'video_url': 'https://example.com/no-id.mp4',
-              'created_at': 998,
-            },
-          ],
-        });
-
-        SharedPreferences.setMockInitialValues({
-          homeFeedCacheKey: json,
-          homeFeedCacheTimeKey: freshTime,
-        });
-        final prefs = await SharedPreferences.getInstance();
-
-        final result = cache.read(prefs);
-
-        expect(result, isNotNull);
-        expect(result!.videos, hasLength(1));
-        expect(result.videos[0].id, equals('valid'));
-      });
-
-      test('returns null when cache time key is missing', () async {
-        SharedPreferences.setMockInitialValues({
-          homeFeedCacheKey: validFeedJson(),
-          // No time key — defaults to epoch 0, which is > 1 hour ago
-        });
-        final prefs = await SharedPreferences.getInstance();
-
-        final result = cache.read(prefs);
-
-        expect(result, isNull);
-      });
-    });
-
-    group('write', () {
-      test('stores JSON and timestamp in SharedPreferences', () async {
-        SharedPreferences.setMockInitialValues({});
-        final prefs = await SharedPreferences.getInstance();
-        final json = validFeedJson();
-
-        await cache.write(prefs, json);
-
-        expect(prefs.getString(homeFeedCacheKey), equals(json));
-        expect(prefs.getInt(homeFeedCacheTimeKey), isNotNull);
-        // Timestamp should be within last second
-        final storedTime = prefs.getInt(homeFeedCacheTimeKey)!;
-        final diff = DateTime.now().millisecondsSinceEpoch - storedTime;
-        expect(diff, lessThan(1000));
-      });
-    });
-
-    group('round-trip', () {
-      test('write then read returns valid result', () async {
-        SharedPreferences.setMockInitialValues({});
-        final prefs = await SharedPreferences.getInstance();
-        final json = validFeedJson(videoCount: 3);
-
-        await cache.write(prefs, json);
-        final result = cache.read(prefs);
-
-        expect(result, isNotNull);
-        expect(result!.videos, hasLength(3));
-      });
+          await CacheSync.invalidatePrefix(pubkey);
+          final afterSignOut = await cache.readVideos(
+            pubkey: pubkey,
+            mode: 'forYou',
+          );
+          expect(afterSignOut, isNull);
+        },
+      );
     });
   });
 }

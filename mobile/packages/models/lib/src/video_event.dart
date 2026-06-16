@@ -201,6 +201,90 @@ class VideoEvent {
     this.proofSummary,
   });
 
+  /// Reconstructs a [VideoEvent] from a map produced by [toJson].
+  ///
+  /// Inverse of [toJson], used to rehydrate cached feed snapshots. The
+  /// internal fields that [toJson] deliberately omits (`nostrEventTags`,
+  /// `moderationLabels`, `warnLabels`) are not restored and fall back to
+  /// their defaults — they are republishing / UI-only state, irrelevant to
+  /// a cached feed row.
+  factory VideoEvent.fromJson(Map<String, dynamic> json) {
+    List<String> stringList(Object? value) =>
+        (value as List<dynamic>?)?.map((e) => e.toString()).toList() ??
+        const [];
+    int? optInt(Object? value) => (value as num?)?.toInt();
+    DateTime? optDate(Object? value) =>
+        value == null ? null : DateTime.parse(value as String);
+
+    final createdAt = optInt(json['createdAt']) ?? 0;
+    final timestamp = json['timestamp'];
+    return VideoEvent(
+      id: json['id'] as String? ?? '',
+      pubkey: json['pubkey'] as String? ?? '',
+      createdAt: createdAt,
+      content: json['content'] as String? ?? '',
+      timestamp: timestamp is String
+          ? DateTime.parse(timestamp)
+          : DateTime.fromMillisecondsSinceEpoch(createdAt * 1000, isUtc: true),
+      title: json['title'] as String?,
+      videoUrl: json['videoUrl'] as String?,
+      thumbnailUrl: json['thumbnailUrl'] as String?,
+      duration: optInt(json['duration']),
+      dimensions: json['dimensions'] as String?,
+      mimeType: json['mimeType'] as String?,
+      sha256: json['sha256'] as String?,
+      fileSize: optInt(json['fileSize']),
+      hashtags: stringList(json['hashtags']),
+      categories: stringList(json['categories']),
+      publishedAt: json['publishedAt'] as String?,
+      rawTags:
+          (json['rawTags'] as Map<String, dynamic>?)?.map(
+            (key, value) => MapEntry(key, value.toString()),
+          ) ??
+          const {},
+      vineId: json['vineId'] as String?,
+      group: json['group'] as String?,
+      altText: json['altText'] as String?,
+      blurhash: json['blurhash'] as String?,
+      isRepost: json['isRepost'] as bool? ?? false,
+      reposterId: json['reposterId'] as String?,
+      reposterPubkey: json['reposterPubkey'] as String?,
+      reposterPubkeys: json['reposterPubkeys'] == null
+          ? null
+          : stringList(json['reposterPubkeys']),
+      repostedAt: optDate(json['repostedAt']),
+      isFlaggedContent: json['isFlaggedContent'] as bool? ?? false,
+      moderationStatus: json['moderationStatus'] as String?,
+      originalLoops: optInt(json['originalLoops']),
+      originalLikes: optInt(json['originalLikes']),
+      originalComments: optInt(json['originalComments']),
+      originalReposts: optInt(json['originalReposts']),
+      expirationTimestamp: optInt(json['expirationTimestamp']),
+      audioEventId: json['audioEventId'] as String?,
+      audioEventRelay: json['audioEventRelay'] as String?,
+      nostrLikeCount: optInt(json['nostrLikeCount']),
+      nostrCommentCount: optInt(json['nostrCommentCount']),
+      nostrRepostCount: optInt(json['nostrRepostCount']),
+      authorName: json['authorName'] as String?,
+      authorAvatar: json['authorAvatar'] as String?,
+      collaboratorPubkeys: stringList(json['collaboratorPubkeys']),
+      inspiredByVideo: json['inspiredByVideo'] == null
+          ? null
+          : InspiredByInfo.fromJson(
+              json['inspiredByVideo'] as Map<String, dynamic>,
+            ),
+      inspiredByNpub: json['inspiredByNpub'] as String?,
+      textTrackRef: json['textTrackRef'] as String?,
+      textTrackContent: json['textTrackContent'] as String?,
+      contentWarningLabels: stringList(json['contentWarningLabels']),
+      proofSummary: json['proofSummary'] == null
+          ? null
+          : ProofVerificationSummary.fromJson(
+              json['proofSummary'] as Map<String, dynamic>,
+            ),
+    );
+  }
+
   /// Create VideoEvent from Nostr event
   ///
   /// [permissive] - When true, accepts all NIP-71 video kinds (21, 22, 34235,

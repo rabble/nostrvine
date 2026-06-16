@@ -24,6 +24,15 @@ part 'video_feed_state.dart';
 /// Default interval between auto-refreshes of the home feed.
 const _defaultAutoRefreshMinInterval = Duration(minutes: 10);
 
+/// How far past the last-viewed video the cross-restart cache resumes.
+///
+/// On cold start the cached feed is served starting at the user's last
+/// position plus this offset, so the already-watched video and its one
+/// lookahead are skipped (the user resumes on the next, unseen video and
+/// cannot scroll back to content they have already seen). Matches the
+/// `currentIndex + 2` head kept by [VideoFeedBloc._spliceFreshVideos].
+const _homeFeedResumeOffset = 2;
+
 /// Legacy SharedPreferences key for persisting the selected feed mode.
 ///
 /// New authenticated sessions use a pubkey-scoped key so switching accounts
@@ -75,6 +84,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     on<VideoFeedFollowingListChanged>(_onFollowingListChanged);
     on<VideoFeedCuratedListsChanged>(_onCuratedListsChanged);
     on<VideoFeedBlocklistChanged>(_onBlocklistChanged);
+    on<VideoFeedActiveIndexChanged>(_onActiveIndexChanged);
   }
 
   final VideosRepository _videosRepository;
@@ -91,29 +101,24 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   StreamSubscription<List<String>>? _followingSubscription;
   StreamSubscription<List<CuratedList>>? _curatedListsSubscription;
 
-  /// Whether the cache has already been served for this BLoC instance.
-  ///
-  /// Prevents serving stale cached data on subsequent loads (e.g.,
-  /// follow list changes or mode switches).
-  bool _cacheServed = false;
-
   /// Tracks when the last successful load completed, used by
   /// [_onAutoRefreshRequested] to skip refreshes when data is fresh.
   DateTime? _lastRefreshedAt;
 
-  /// Whether [source] should be served from and written to the cross-restart
-  /// [HomeFeedCache] (SharedPreferences).
+  /// Whether [source] participates in the cross-restart [HomeFeedCache].
   ///
-  /// Only the chronological `following` feed is cached. Its ordering is
-  /// inherently stable, so replaying the last response on cold start is a
-  /// harmless startup optimization.
-  ///
-  /// The `forYou` feed is deliberately excluded: it is a recommendation feed
-  /// that should reflect fresh server state on every cold start. Persisting
-  /// and replaying its exact contents/order made the feed look identical on
-  /// every app reopen within the cache window (see issue #3861).
+  /// All three home modes (For You, Following, New) are served from and
+  /// written to the cache so cold start shows the last feed instantly. The
+  /// `forYou` staleness concern from #3861 is handled differently now: the
+  /// cached feed is positioned at the user's last index and everything past
+  /// the active video is replaced with fresh server data on every load
+  /// ([_spliceFreshVideos]), so the feed is never stale beyond the current
+  /// video. Subscribed curated lists are excluded — they are derived from
+  /// locally held list IDs, not a server feed.
   bool _usesHomeFeedCache(VideoFeedSource source) =>
-      source.type == VideoFeedSourceType.following;
+      source.type == VideoFeedSourceType.forYou ||
+      source.type == VideoFeedSourceType.following ||
+      source.type == VideoFeedSourceType.newVideos;
 
   bool _canEmitForSource(
     VideoFeedSource source,
@@ -366,6 +371,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         videoListSources: const {},
         listOnlyVideoIds: const {},
         clearPaginationCursor: true,
+        currentIndex: 0,
       ),
     );
 
@@ -479,6 +485,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
 
       // Batch-fetch profiles for new creators only.
       await _fetchCreatorProfiles(validNewVideos, source, emit);
+
+      // The cross-restart cache is written only on a genuine swipe
+      // (_onActiveIndexChanged); pagination alone does not move the resume
+      // position, so nothing is persisted here.
     } catch (e) {
       if (!_canEmitForSource(source, emit)) return;
 
@@ -506,6 +516,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         videoListSources: const {},
         listOnlyVideoIds: const {},
         clearPaginationCursor: true,
+        currentIndex: 0,
       ),
     );
 
@@ -548,6 +559,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         videoListSources: const {},
         listOnlyVideoIds: const {},
         clearPaginationCursor: true,
+        currentIndex: 0,
       ),
     );
 
@@ -636,6 +648,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         videoListSources: const {},
         listOnlyVideoIds: const {},
         clearPaginationCursor: true,
+        currentIndex: 0,
       ),
     );
 
@@ -675,9 +688,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
 
   /// Load videos for the specified mode.
   ///
-  /// For the home feed on cold start, serves cached data instantly while
-  /// fresh data loads in the background. The cache is only served once
-  /// per BLoC instance to avoid showing stale data on subsequent loads.
+  /// On a cache-eligible load ([skipCache] false), serves the persisted home
+  /// feed for the mode instantly — positioned at the user's last-viewed index
+  /// — while fresh data loads in the background. When the fresh result
+  /// arrives it is spliced in *after* the active video so the playing video
+  /// and its next never jump ([_spliceFreshVideos]).
   ///
   /// For the home feed, does NOT wait for the follow list to initialize.
   /// Instead, the follow-list stream subscription (set up in [_onStarted])
@@ -689,40 +704,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     Emitter<VideoFeedBlocState> emit, {
     bool skipCache = false,
   }) async {
-    // Serve cached home feed on first load for instant startup.
-    if (_serveCachedHomeFeed &&
-        !_cacheServed &&
-        _usesHomeFeedCache(source) &&
-        _sharedPreferences != null) {
-      _cacheServed = true;
-      final cached = _homeFeedCache.read(_sharedPreferences);
-      if (cached != null) {
-        final filtered = _videosRepository.applyContentPreferences(
-          cached.videos,
-        );
-        final cachedValid = filtered.where((v) => v.videoUrl != null).toList();
-        if (cachedValid.isNotEmpty) {
-          if (!_canEmitForSource(source, emit)) return;
-
-          _feedTracker?.markFirstVideosReceived(
-            source.mode.name,
-            cachedValid.length,
-          );
-          emit(
-            state.copyWith(
-              status: VideoFeedStatus.success,
-              videos: cachedValid,
-              hasMore: true,
-              clearPaginationCursor: true,
-              clearError: true,
-            ),
-          );
-          _feedTracker?.markFeedDisplayed(source.mode.name, cachedValid.length);
-          // Continue to fetch fresh data below — the emit will update
-          // the UI when the network result arrives.
-        }
-      }
-    }
+    final servedCache = await _maybeServeCachedFeed(source, emit, skipCache);
+    if (!_canEmitForSource(source, emit)) return;
 
     try {
       final result = await _fetchVideosForSource(source, skipCache: skipCache);
@@ -735,15 +718,27 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
 
       _lastRefreshedAt = DateTime.now();
 
+      // Keep the active video + one lookahead from the served cache and
+      // replace the rest with fresh results, so fresh content appears right
+      // after the current video. The active controller is preserved by
+      // InfiniteVideoFeed's common-prefix handling, so it does not restart.
+      final displayedVideos = servedCache
+          ? _spliceFreshVideos(
+              existing: state.videos,
+              fresh: validVideos,
+              currentIndex: state.currentIndex,
+            )
+          : validVideos;
+
       _feedTracker?.markFirstVideosReceived(
         source.mode.name,
-        validVideos.length,
+        displayedVideos.length,
       );
 
       emit(
         state.copyWith(
           status: VideoFeedStatus.success,
-          videos: validVideos,
+          videos: displayedVideos,
           // Only stop pagination when no results at all.
           // Fewer than _pageSize can happen due to server-side filtering.
           hasMore: _hasMoreForSource(
@@ -761,17 +756,20 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         ),
       );
 
-      _feedTracker?.markFeedDisplayed(source.mode.name, validVideos.length);
+      _feedTracker?.markFeedDisplayed(source.mode.name, displayedVideos.length);
 
       // Batch-fetch creator profiles to warm the Drift cache.
       await _fetchCreatorProfiles(validVideos, source, emit);
 
-      // Cache the raw response for next cold start (fire-and-forget).
-      if (_usesHomeFeedCache(source) &&
-          _sharedPreferences != null &&
-          result.rawResponseBody != null) {
-        unawaited(
-          _homeFeedCache.write(_sharedPreferences, result.rawResponseBody!),
+      // Advance the resume window past the active position so the next cold
+      // start opens on the next unseen video — even when the user just
+      // reopens without scrolling. Uses the spliced list so freshly loaded
+      // videos replenish the window.
+      if (_usesHomeFeedCache(source)) {
+        _persistResumeWindow(
+          source.mode.name,
+          displayedVideos,
+          state.currentIndex,
         );
       }
     } catch (e) {
@@ -799,6 +797,120 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         );
       }
     }
+  }
+
+  /// Serves the persisted feed for [source] at the last-viewed index when a
+  /// cache-eligible (non-[skipCache]) load is requested.
+  ///
+  /// Returns whether a cached feed was emitted, so the caller knows to splice
+  /// the fresh result in rather than replace wholesale.
+  Future<bool> _maybeServeCachedFeed(
+    VideoFeedSource source,
+    Emitter<VideoFeedBlocState> emit,
+    bool skipCache,
+  ) async {
+    if (skipCache || !_serveCachedHomeFeed || !_usesHomeFeedCache(source)) {
+      return false;
+    }
+
+    final mode = source.mode.name;
+    final cached = await _homeFeedCache.readVideos(
+      pubkey: _userPubkey,
+      mode: mode,
+    );
+    if (cached == null || cached.isEmpty) return false;
+    if (!_canEmitForSource(source, emit)) return false;
+
+    final filtered = _videosRepository.applyContentPreferences(cached);
+    final cachedValid = filtered.where((v) => v.videoUrl != null).toList();
+    if (cachedValid.isEmpty) return false;
+
+    // The cached window already starts at the resume position (already-watched
+    // videos were dropped on write), so it is served at index 0.
+    _feedTracker?.markFirstVideosReceived(mode, cachedValid.length);
+    emit(
+      state.copyWith(
+        status: VideoFeedStatus.success,
+        videos: cachedValid,
+        currentIndex: 0,
+        hasMore: true,
+        clearPaginationCursor: true,
+        clearError: true,
+      ),
+    );
+    _feedTracker?.markFeedDisplayed(mode, cachedValid.length);
+
+    // Advance the resume point immediately so a quick reopen (before the fresh
+    // fetch lands and the load-time write runs) still opens on the next video
+    // rather than this one again.
+    _persistResumeWindow(mode, cachedValid, 0);
+    return true;
+  }
+
+  /// Keeps the active video plus one lookahead from [existing] and appends the
+  /// [fresh] results (deduped) after them, so fresh content appears right after
+  /// the current video instead of behind the whole cached window.
+  ///
+  /// The kept prefix ([0 .. currentIndex + 1]) leaves the active video and its
+  /// controller untouched, so [InfiniteVideoFeed]'s common-prefix handling
+  /// preserves it — the active video does not restart when fresh lands.
+  List<VideoEvent> _spliceFreshVideos({
+    required List<VideoEvent> existing,
+    required List<VideoEvent> fresh,
+    required int currentIndex,
+  }) {
+    if (existing.isEmpty) return fresh;
+    if (fresh.isEmpty) return existing;
+
+    final keepCount = (currentIndex + 2).clamp(0, existing.length);
+    final head = existing.sublist(0, keepCount);
+    final headIds = head.map((v) => v.id.toLowerCase()).toSet();
+    final tail = fresh.where((v) => !headIds.contains(v.id.toLowerCase()));
+    return [...head, ...tail];
+  }
+
+  /// Records the active video index and advances the resume window.
+  ///
+  /// Only persists on a genuine index change, so the index-0 echo emitted when
+  /// the feed first mounts (or after a cold-start serve) doesn't double-write
+  /// (the load already persisted the window).
+  void _onActiveIndexChanged(
+    VideoFeedActiveIndexChanged event,
+    Emitter<VideoFeedBlocState> emit,
+  ) {
+    final index = event.index < 0 ? 0 : event.index;
+    if (state.currentIndex == index) return;
+    emit(state.copyWith(currentIndex: index));
+
+    if (_usesHomeFeedCache(state.source)) {
+      _persistResumeWindow(state.source.mode.name, state.videos, index);
+    }
+  }
+
+  /// Persists the forward window — the videos from [activeIndex] +
+  /// [_homeFeedResumeOffset] onward — as the cross-restart resume point.
+  ///
+  /// Called on every load and swipe, so the resume point advances as the user
+  /// moves through (or simply reopens) the feed: the next cold start opens on
+  /// the next unseen video rather than the one just shown. Already-watched
+  /// videos before the offset are dropped, so the user cannot scroll back to
+  /// them on resume.
+  void _persistResumeWindow(
+    String mode,
+    List<VideoEvent> videos,
+    int activeIndex,
+  ) {
+    final start = (activeIndex + _homeFeedResumeOffset).clamp(0, videos.length);
+    final forward = start >= videos.length
+        ? const <VideoEvent>[]
+        : videos.sublist(start);
+    unawaited(
+      _homeFeedCache.writeVideos(
+        pubkey: _userPubkey,
+        mode: mode,
+        videos: forward,
+      ),
+    );
   }
 
   bool _hasMoreForSource(

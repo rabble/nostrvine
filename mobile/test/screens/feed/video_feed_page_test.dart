@@ -231,7 +231,9 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('requests auto-refresh when app resumes', (tester) async {
+    testWidgets('requests auto-refresh when app returns from background', (
+      tester,
+    ) async {
       final video = createTestVideoEvent();
       final state = VideoFeedBlocState(
         status: VideoFeedStatus.success,
@@ -260,6 +262,10 @@ void main() {
       );
       await tester.pump();
 
+      // A genuine background → foreground transition: background first, then
+      // resume. Only then should an auto-refresh be requested.
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump();
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump();
 
@@ -271,6 +277,54 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
+
+    testWidgets(
+      'does not auto-refresh on cold-start resume (no prior background)',
+      (tester) async {
+        final video = createTestVideoEvent();
+        final state = VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          videos: [video],
+        );
+        when(() => videoFeedBloc.state).thenReturn(state);
+        whenListen(
+          videoFeedBloc,
+          const Stream<VideoFeedBlocState>.empty(),
+          initialState: state,
+        );
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+                BlocProvider<VideoPlaybackStatusCubit>(
+                  create: (_) => VideoPlaybackStatusCubit(),
+                ),
+                BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+              ],
+              child: const VideoFeedView(),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The launch `resumed` event with no preceding background must not
+        // trigger an auto-refresh — it would wipe the just-served cached feed.
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump();
+
+        verifyNever(
+          () => videoFeedBloc.add(const VideoFeedAutoRefreshRequested()),
+        );
+
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
 
     testWidgets('passes restored home index to FeedVideos', (tester) async {
       final videos = [

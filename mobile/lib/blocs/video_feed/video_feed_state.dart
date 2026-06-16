@@ -144,6 +144,7 @@ final class VideoFeedBlocState extends Equatable {
     this.listOnlyVideoIds = const {},
     this.creatorProfiles = const {},
     this.paginationCursor,
+    this.currentIndex = 0,
   }) : source =
            source ??
            (mode == FeedMode.following
@@ -172,6 +173,13 @@ final class VideoFeedBlocState extends Equatable {
 
   /// Whether a load-more operation is in progress.
   final bool isLoadingMore;
+
+  /// Index of the currently active video in [videos].
+  ///
+  /// Tracked here (not just in the widget) so the BLoC can splice fresh
+  /// results in *after* the active video and persist the resume position
+  /// across app restarts.
+  final int currentIndex;
 
   /// Error that occurred during loading, if any.
   final VideoFeedError? error;
@@ -230,6 +238,7 @@ final class VideoFeedBlocState extends Equatable {
     Map<String, UserProfile>? creatorProfiles,
     String? paginationCursor,
     bool clearPaginationCursor = false,
+    int? currentIndex,
   }) {
     return VideoFeedBlocState(
       status: status ?? this.status,
@@ -247,6 +256,7 @@ final class VideoFeedBlocState extends Equatable {
       paginationCursor: clearPaginationCursor
           ? null
           : (paginationCursor ?? this.paginationCursor),
+      currentIndex: currentIndex ?? this.currentIndex,
     );
   }
 
@@ -263,5 +273,6 @@ final class VideoFeedBlocState extends Equatable {
     listOnlyVideoIds,
     creatorProfiles,
     paginationCursor,
+    currentIndex,
   ];
 }
