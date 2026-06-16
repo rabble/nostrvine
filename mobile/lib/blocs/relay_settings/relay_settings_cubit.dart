@@ -5,7 +5,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/relay_settings/relay_settings_state.dart';
-import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
@@ -42,6 +41,10 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
   final NostrClient _nostrClient;
   final RelayCapabilityService _relayCapabilityService;
   final VideoEventService _videoEventService;
+
+  /// The environment default relay URL (e.g. the staging relay on staging),
+  /// used by the View to name the relay in the restore-default confirmation.
+  String get defaultRelayUrl => _nostrClient.defaultRelayUrl;
 
   void load() {
     emit(state.copyWith(relays: _nostrClient.configuredRelays));
@@ -121,7 +124,7 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
 
   Future<RestoreDefaultRelayOutcome> restoreDefaultRelay() async {
     try {
-      final success = await _nostrClient.addRelay(AppConstants.defaultRelayUrl);
+      final success = await _nostrClient.addRelay(defaultRelayUrl);
       if (!success) return RestoreDefaultRelayOutcome.failed;
       refreshRelays();
       return RestoreDefaultRelayOutcome.restored;

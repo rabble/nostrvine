@@ -239,8 +239,11 @@ void main() {
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(
-      'restoreDefaultRelay delegates to addRelay(defaultUrl)',
+      "restoreDefaultRelay restores the client's environment default relay",
       setUp: () {
+        when(
+          () => nostr.defaultRelayUrl,
+        ).thenReturn('wss://relay.staging.divine.video');
         when(() => nostr.configuredRelays).thenReturn(['wss://default']);
       },
       build: buildCubit,
@@ -251,7 +254,9 @@ void main() {
         );
       },
       verify: (_) {
-        verify(() => nostr.addRelay(any())).called(1);
+        verify(
+          () => nostr.addRelay('wss://relay.staging.divine.video'),
+        ).called(1);
       },
     );
 

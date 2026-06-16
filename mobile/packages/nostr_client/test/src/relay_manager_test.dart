@@ -35,11 +35,13 @@ RelayManagerConfig _createTestConfig({
   String? defaultRelayUrl,
   RelayStorage? storage,
   bool autoReconnect = true,
+  String? allowedRelayHost,
 }) {
   return RelayManagerConfig(
     defaultRelayUrl: defaultRelayUrl ?? testDefaultRelayUrl,
     storage: storage,
     autoReconnect: autoReconnect,
+    allowedRelayHost: allowedRelayHost,
   );
 }
 
@@ -84,17 +86,12 @@ void main() {
     when(() => mockRelayPool.activeRelays()).thenReturn([]);
     when(() => mockRelayPool.getRelay(any())).thenReturn(null);
     when(
-      () => mockRelayPool.add(
-        any(),
-        autoSubscribe: any(named: 'autoSubscribe'),
-      ),
+      () =>
+          mockRelayPool.add(any(), autoSubscribe: any(named: 'autoSubscribe')),
     ).thenAnswer((_) async => true);
     when(() => mockRelayPool.remove(any())).thenReturn(null);
 
-    manager = RelayManager(
-      config: config,
-      relayPool: mockRelayPool,
-    );
+    manager = RelayManager(config: config, relayPool: mockRelayPool);
   });
 
   tearDown(() {
@@ -147,9 +144,9 @@ void main() {
       });
 
       test('loads relays from storage during initialization', () async {
-        when(() => mockStorage.loadRelays()).thenAnswer(
-          (_) async => [testCustomRelayUrl],
-        );
+        when(
+          () => mockStorage.loadRelays(),
+        ).thenAnswer((_) async => [testCustomRelayUrl]);
         when(() => mockStorage.saveRelays(any())).thenAnswer((_) async {});
 
         final configWithStorage = _createTestConfig(storage: mockStorage);
@@ -172,9 +169,9 @@ void main() {
       });
 
       test('ensures default relay is always included', () async {
-        when(() => mockStorage.loadRelays()).thenAnswer(
-          (_) async => [testCustomRelayUrl],
-        );
+        when(
+          () => mockStorage.loadRelays(),
+        ).thenAnswer((_) async => [testCustomRelayUrl]);
         when(() => mockStorage.saveRelays(any())).thenAnswer((_) async {});
 
         final configWithStorage = _createTestConfig(storage: mockStorage);
@@ -205,9 +202,9 @@ void main() {
       });
 
       test('connects to all configured relays', () async {
-        when(() => mockStorage.loadRelays()).thenAnswer(
-          (_) async => [testCustomRelayUrl, testCustomRelayUrl2],
-        );
+        when(
+          () => mockStorage.loadRelays(),
+        ).thenAnswer((_) async => [testCustomRelayUrl, testCustomRelayUrl2]);
         when(() => mockStorage.saveRelays(any())).thenAnswer((_) async {});
 
         final configWithStorage = _createTestConfig(storage: mockStorage);
@@ -231,10 +228,7 @@ void main() {
         'persists filtered list when storage contains insecure URLs (#3362)',
         () async {
           when(() => mockStorage.loadRelays()).thenAnswer(
-            (_) async => [
-              testCustomRelayUrl,
-              'ws://attacker.example.com',
-            ],
+            (_) async => [testCustomRelayUrl, 'ws://attacker.example.com'],
           );
           when(() => mockStorage.saveRelays(any())).thenAnswer((_) async {});
 
@@ -257,9 +251,7 @@ void main() {
           );
 
           final captured =
-              verify(
-                    () => mockStorage.saveRelays(captureAny()),
-                  ).captured.last
+              verify(() => mockStorage.saveRelays(captureAny())).captured.last
                   as List<String>;
           expect(captured, contains(testCustomRelayUrl));
           expect(captured, isNot(contains('ws://attacker.example.com')));
@@ -612,10 +604,7 @@ void main() {
 
         // Last emission should show error state
         final lastUpdate = statusUpdates.last;
-        expect(
-          lastUpdate[testCustomRelayUrl]?.state,
-          equals(RelayState.error),
-        );
+        expect(lastUpdate[testCustomRelayUrl]?.state, equals(RelayState.error));
       });
     });
 
@@ -643,10 +632,7 @@ void main() {
         final result = await manager.removeRelay(testDefaultRelayUrl);
 
         expect(result, isTrue);
-        expect(
-          manager.configuredRelays,
-          isNot(contains(testDefaultRelayUrl)),
-        );
+        expect(manager.configuredRelays, isNot(contains(testDefaultRelayUrl)));
       });
 
       test('returns false for non-configured relay', () async {
@@ -1158,10 +1144,7 @@ void main() {
         await manager.initialize();
 
         var streamClosed = false;
-        manager.statusStream.listen(
-          (_) {},
-          onDone: () => streamClosed = true,
-        );
+        manager.statusStream.listen((_) {}, onDone: () => streamClosed = true);
 
         await manager.dispose();
 
@@ -1220,10 +1203,7 @@ void main() {
         final statuses = manager.currentStatuses;
 
         // Map.unmodifiable throws UnsupportedError on modification
-        expect(
-          () => statuses['new_key'],
-          returnsNormally,
-        );
+        expect(() => statuses['new_key'], returnsNormally);
         // Verify it's actually unmodifiable by checking the runtime type
         expect(statuses.runtimeType.toString(), contains('Unmodifiable'));
       });
@@ -1341,9 +1321,7 @@ void main() {
 
   group('RelayManagerConfig', () {
     test('creates config with required fields', () {
-      final config = RelayManagerConfig(
-        defaultRelayUrl: testDefaultRelayUrl,
-      );
+      final config = RelayManagerConfig(defaultRelayUrl: testDefaultRelayUrl);
 
       expect(config.defaultRelayUrl, equals(testDefaultRelayUrl));
       expect(config.storage, isNull);
@@ -1367,9 +1345,7 @@ void main() {
     });
 
     test('copyWith creates new instance with updated fields', () {
-      final original = RelayManagerConfig(
-        defaultRelayUrl: testDefaultRelayUrl,
-      );
+      final original = RelayManagerConfig(defaultRelayUrl: testDefaultRelayUrl);
       final copied = original.copyWith(autoReconnect: false);
 
       expect(copied.autoReconnect, isFalse);
@@ -1496,6 +1472,78 @@ void main() {
       expect(savedRelays, isNot(contains('wss://index.coracle.social')));
       expect(savedRelays, contains(testDefaultRelayUrl));
       expect(savedRelays, contains(testCustomRelayUrl));
+    });
+
+    group('environment host lock (allowedRelayHost)', () {
+      const envRelayUrl = 'wss://relay.staging.divine.video';
+      const envHost = 'relay.staging.divine.video';
+      const productionRelayUrl = 'wss://relay.divine.video';
+
+      test('isRelayAllowed allows any valid relay when host is null', () {
+        expect(manager.isRelayAllowed(productionRelayUrl), isTrue);
+        expect(manager.isRelayAllowed(envRelayUrl), isTrue);
+      });
+
+      test('isRelayAllowed rejects non-relay URLs', () {
+        expect(manager.isRelayAllowed('http://example.com'), isFalse);
+      });
+
+      test('isRelayAllowed allows only the locked host', () {
+        final locked = RelayManager(
+          config: _createTestConfig(
+            defaultRelayUrl: envRelayUrl,
+            allowedRelayHost: envHost,
+          ),
+          relayPool: mockRelayPool,
+        );
+
+        expect(locked.isRelayAllowed(envRelayUrl), isTrue);
+        expect(locked.isRelayAllowed(productionRelayUrl), isFalse);
+      });
+
+      test('addRelay rejects a host other than the locked host', () async {
+        final locked = RelayManager(
+          config: _createTestConfig(
+            defaultRelayUrl: envRelayUrl,
+            allowedRelayHost: envHost,
+          ),
+          relayPool: mockRelayPool,
+        );
+        await locked.initialize();
+
+        final added = await locked.addRelay(productionRelayUrl);
+
+        expect(added, isFalse);
+        expect(locked.configuredRelays, isNot(contains(productionRelayUrl)));
+        expect(locked.configuredRelays, contains(envRelayUrl));
+      });
+
+      test(
+        'initialize filters a persisted disallowed relay and re-saves',
+        () async {
+          when(
+            () => mockStorage.loadRelays(),
+          ).thenAnswer((_) async => [productionRelayUrl, envRelayUrl]);
+          when(() => mockStorage.saveRelays(any())).thenAnswer((_) async {});
+
+          final locked = RelayManager(
+            config: _createTestConfig(
+              defaultRelayUrl: envRelayUrl,
+              storage: mockStorage,
+              allowedRelayHost: envHost,
+            ),
+            relayPool: mockRelayPool,
+          );
+          await locked.initialize();
+
+          expect(locked.configuredRelays, contains(envRelayUrl));
+          expect(locked.configuredRelays, isNot(contains(productionRelayUrl)));
+          final saved =
+              verify(() => mockStorage.saveRelays(captureAny())).captured.last
+                  as List<String>;
+          expect(saved, isNot(contains(productionRelayUrl)));
+        },
+      );
     });
   });
 }

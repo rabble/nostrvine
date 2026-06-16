@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/relay_settings/relay_settings_cubit.dart';
 import 'package:openvine/blocs/relay_settings/relay_settings_state.dart';
-import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -868,7 +867,7 @@ Future<void> _restoreDefaultRelay(BuildContext context) async {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            l10n.relaySettingsRestoredDefault(AppConstants.defaultRelayUrl),
+            l10n.relaySettingsRestoredDefault(cubit.defaultRelayUrl),
           ),
           backgroundColor: VineTheme.success,
         ),

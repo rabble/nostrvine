@@ -65,6 +65,21 @@ class RelayManager {
     }
   }
 
+  /// Whether [url] is admissible under the configured environment lock.
+  ///
+  /// Returns false for malformed URLs. When `config.allowedRelayHost` is set,
+  /// only relays whose host equals it are admitted (non-production lock);
+  /// when null, any valid relay is admitted (production). This is the single
+  /// source of truth for the rule — callers that bypass [addRelay] (e.g.
+  /// one-off `tempRelays` in `NostrClient`) consult it directly.
+  bool isRelayAllowed(String url) {
+    final normalized = _normalizeUrl(url);
+    if (normalized == null) return false;
+    final allowedHost = _config.allowedRelayHost;
+    if (allowedHost == null) return true;
+    return Uri.parse(normalized).host == allowedHost;
+  }
+
   final RelayManagerConfig _config;
   final RelayPool _relayPool;
   final Relay Function(String url)? _relayFactory;
@@ -163,6 +178,12 @@ class RelayManager {
           blockedCount++;
           continue;
         }
+        if (!isRelayAllowed(normalized)) {
+          // Persisted from another environment (e.g. a production relay
+          // saved before switching to staging). Drop and re-save below.
+          droppedCount++;
+          continue;
+        }
         if (!_configuredRelays.contains(normalized)) {
           _configuredRelays.add(normalized);
         }
@@ -186,6 +207,7 @@ class RelayManager {
     // (uses normalized URL for comparison)
     final normalizedDefault = _normalizeUrl(_config.defaultRelayUrl);
     if (normalizedDefault != null &&
+        isRelayAllowed(normalizedDefault) &&
         !_configuredRelays.contains(normalizedDefault)) {
       _configuredRelays.insert(0, normalizedDefault);
       _log('Added default relay: $normalizedDefault');
@@ -229,6 +251,12 @@ class RelayManager {
     // Block known-dead relays
     if (_isBlockedRelay(normalizedUrl)) {
       _log('Blocked dead relay: $normalizedUrl');
+      return false;
+    }
+
+    // Reject relays outside the configured environment host.
+    if (!isRelayAllowed(normalizedUrl)) {
+      _log('Relay not allowed in this environment: $normalizedUrl');
       return false;
     }
 

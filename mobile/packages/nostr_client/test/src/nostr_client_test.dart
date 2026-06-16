@@ -98,6 +98,9 @@ void main() {
       when(
         () => mockRelayManager.connectedRelays,
       ).thenReturn(['wss://relay.example.com']);
+      // Default: no environment lock (production behavior). Tests that
+      // exercise the lock override specific URLs to false.
+      when(() => mockRelayManager.isRelayAllowed(any())).thenReturn(true);
 
       client = NostrClient.forTesting(
         nostr: mockNostr,
@@ -266,6 +269,42 @@ void main() {
 
         expect(result, isA<PublishFailed>());
       });
+
+      test(
+        'drops targetRelays rejected by the environment host lock',
+        () async {
+          const envRelay = 'wss://relay.staging.divine.video';
+          const crossEnvRelay = 'wss://relay.divine.video';
+          final event = _createTestEvent();
+          when(
+            () => mockRelayManager.isRelayAllowed(envRelay),
+          ).thenReturn(true);
+          when(
+            () => mockRelayManager.isRelayAllowed(crossEnvRelay),
+          ).thenReturn(false);
+          when(
+            () => mockNostr.sendEvent(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) async => event);
+
+          await client.publishEvent(
+            event,
+            targetRelays: const [envRelay, crossEnvRelay],
+          );
+
+          final captured = verify(
+            () => mockNostr.sendEvent(
+              any(),
+              targetRelays: captureAny(named: 'targetRelays'),
+              tempRelays: any(named: 'tempRelays'),
+            ),
+          ).captured;
+          expect(captured.single, equals(const [envRelay]));
+        },
+      );
 
       test('attempts reconnection when no relays connected', () async {
         final event = _createTestEvent();

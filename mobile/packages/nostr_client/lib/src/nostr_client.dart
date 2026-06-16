@@ -337,6 +337,7 @@ class NostrClient {
     Event event, {
     List<String>? targetRelays,
   }) async {
+    final effectiveTargets = _allowedRelays(targetRelays);
     await _prepareEventForPublish(event);
     final useOptimisticCache = _canOptimisticallyCache(event.kind);
 
@@ -360,12 +361,12 @@ class NostrClient {
 
     final sentEvent = await _nostr.sendEvent(
       event,
-      targetRelays: targetRelays,
+      targetRelays: effectiveTargets,
       // Also pass as tempRelays so the SDK creates temporary connections
       // to target relays not already in the connected pool. Without this,
       // targetRelays only filters the existing pool and the event could
       // be sent to zero relays.
-      tempRelays: targetRelays,
+      tempRelays: effectiveTargets,
     );
 
     if (sentEvent == null) {
@@ -415,6 +416,7 @@ class NostrClient {
     Duration timeout = const Duration(seconds: 15),
     String? diagnosticTag,
   }) async {
+    final effectiveTargets = _allowedRelays(targetRelays);
     await _prepareEventForPublish(event);
     final useOptimisticCache = _canOptimisticallyCache(event.kind);
 
@@ -429,7 +431,8 @@ class NostrClient {
       return outcome;
     }
 
-    final hasExplicitTargets = targetRelays != null && targetRelays.isNotEmpty;
+    final hasExplicitTargets =
+        effectiveTargets != null && effectiveTargets.isNotEmpty;
 
     if (_relayManager.connectedRelays.isEmpty && !hasExplicitTargets) {
       await retryDisconnectedRelays();
@@ -449,14 +452,14 @@ class NostrClient {
         await (diagnosticTag == null
             ? _nostr.sendEventAwaitOk(
                 event,
-                targetRelays: targetRelays,
-                tempRelays: targetRelays,
+                targetRelays: effectiveTargets,
+                tempRelays: effectiveTargets,
                 timeout: timeout,
               )
             : _nostr.sendEventAwaitOk(
                 event,
-                targetRelays: targetRelays,
-                tempRelays: targetRelays,
+                targetRelays: effectiveTargets,
+                tempRelays: effectiveTargets,
                 timeout: timeout,
                 diagnosticTag: diagnosticTag,
               )) ??
@@ -500,6 +503,7 @@ class NostrClient {
     bool useCache = true,
     Duration timeout = const Duration(seconds: 5),
   }) async {
+    final effectiveTempRelays = _allowedRelays(tempRelays);
     final cacheResults = <Event>[];
 
     // 1. Get cache results (don't return early - we'll merge with network)
@@ -514,14 +518,14 @@ class NostrClient {
     // empty result (RelayPool completes immediately when no relay accepts
     // the REQ). Reconnect first, mirroring publish()/subscribe(). See #5202.
     if (_relayManager.connectedRelays.isEmpty &&
-        (tempRelays == null || tempRelays.isEmpty)) {
+        (effectiveTempRelays == null || effectiveTempRelays.isEmpty)) {
       await retryDisconnectedRelays();
     }
     final filtersJson = filters.map((f) => f.toJson()).toList();
     final websocketEvents = await _nostr.queryEvents(
       filtersJson,
       id: subscriptionId,
-      tempRelays: tempRelays,
+      tempRelays: effectiveTempRelays,
       relayTypes: relayTypes,
       sendAfterAuth: sendAfterAuth,
       timeout: timeout,
@@ -574,6 +578,7 @@ class NostrClient {
     List<int> relayTypes = RelayType.all,
     Duration timeout = const Duration(seconds: 5),
   }) async {
+    final effectiveTempRelays = _allowedRelays(tempRelays);
     final filtersJson = filters.map((f) => f.toJson()).toList();
 
     try {
@@ -581,7 +586,7 @@ class NostrClient {
       final response = await _nostr.countEvents(
         filtersJson,
         id: subscriptionId,
-        tempRelays: tempRelays,
+        tempRelays: effectiveTempRelays,
         relayTypes: relayTypes,
         timeout: timeout,
       );
@@ -594,7 +599,7 @@ class NostrClient {
       // Fall back to fetching events and counting client-side
       final events = await queryEvents(
         filters,
-        tempRelays: tempRelays,
+        tempRelays: effectiveTempRelays,
         relayTypes: relayTypes,
       );
 
@@ -698,6 +703,8 @@ class NostrClient {
     bool sendAfterAuth = false,
     void Function()? onEose,
   }) {
+    final effectiveTempRelays = _allowedRelays(tempRelays);
+    final effectiveTargetRelays = _allowedRelays(targetRelays);
     // Generate deterministic subscription ID based on filter content
     final filterHash = _generateFilterHash(filters);
     final id = subscriptionId ?? 'sub_$filterHash';
@@ -744,8 +751,8 @@ class NostrClient {
         statisticsObserver?.onEventReceived();
       },
       id: id,
-      tempRelays: tempRelays,
-      targetRelays: targetRelays,
+      tempRelays: effectiveTempRelays,
+      targetRelays: effectiveTargetRelays,
       relayTypes: relayTypes,
       sendAfterAuth: sendAfterAuth,
       onEose: onEose,
@@ -810,12 +817,35 @@ class NostrClient {
     return addedCount;
   }
 
+  /// Filters one-off [relays] (e.g. `targetRelays` / `tempRelays`) to those
+  /// admissible in the current environment, using the same rule as
+  /// [RelayManager.isRelayAllowed].
+  ///
+  /// Returns null when [relays] is null or nothing survives the filter, so the
+  /// caller falls back to the already-env-locked connected pool rather than an
+  /// ambiguous empty target list.
+  List<String>? _allowedRelays(List<String>? relays) {
+    if (relays == null) return null;
+    final allowed = relays.where(_relayManager.isRelayAllowed).toList();
+    return allowed.isEmpty ? null : allowed;
+  }
+
   /// Removes a relay connection
   ///
   /// Delegates to RelayManager.
   Future<bool> removeRelay(String relayUrl) async {
     return _relayManager.removeRelay(relayUrl);
   }
+
+  /// Whether [url] is admissible under the configured environment lock.
+  ///
+  /// Delegates to [RelayManager.isRelayAllowed] — the single source of truth
+  /// for the rule. Non-production builds lock to their own relay host.
+  bool isRelayAllowed(String url) => _relayManager.isRelayAllowed(url);
+
+  /// The environment default relay URL that is always included and cannot be
+  /// removed. Resolves per environment (e.g. the staging relay on staging).
+  String get defaultRelayUrl => _relayManager.defaultRelayUrl;
 
   /// Gets list of configured relay URLs
   List<String> get configuredRelays => _relayManager.configuredRelays;

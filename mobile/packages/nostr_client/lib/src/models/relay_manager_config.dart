@@ -49,10 +49,18 @@ class RelayManagerConfig {
     this.maxReconnectAttempts = 5,
     this.reconnectDelayMs = 2000,
     this.webSocketChannelFactory,
+    this.allowedRelayHost,
   });
 
   /// The default relay URL that is always included and cannot be removed
   final String defaultRelayUrl;
+
+  /// When set, only relays whose host equals this value are admitted.
+  ///
+  /// Null means no restriction (production behavior). Used to lock a
+  /// non-production environment to its own relay host so a user's NIP-65
+  /// relay list cannot pull in a different environment's relays.
+  final String? allowedRelayHost;
 
   /// Storage implementation for persisting relay configuration
   /// If null, relays are only kept in memory
@@ -80,6 +88,7 @@ class RelayManagerConfig {
     int? maxReconnectAttempts,
     int? reconnectDelayMs,
     WebSocketChannelFactory? webSocketChannelFactory,
+    String? allowedRelayHost,
   }) {
     return RelayManagerConfig(
       defaultRelayUrl: defaultRelayUrl ?? this.defaultRelayUrl,
@@ -89,6 +98,7 @@ class RelayManagerConfig {
       reconnectDelayMs: reconnectDelayMs ?? this.reconnectDelayMs,
       webSocketChannelFactory:
           webSocketChannelFactory ?? this.webSocketChannelFactory,
+      allowedRelayHost: allowedRelayHost ?? this.allowedRelayHost,
     );
   }
 }

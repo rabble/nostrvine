@@ -45,11 +45,22 @@ class NostrServiceFactory {
 
     final config = NostrClientConfig(signer: effectiveSigner);
 
+    // In non-production environments, lock relays to the environment host so a
+    // user's NIP-65 list (which may carry production relays) cannot pull the
+    // client onto a different environment's relays. Production is unrestricted.
+    final isProduction = environmentConfig?.isProduction ?? true;
+    final relayHost = Uri.tryParse(divineRelayUrl)?.host;
+    final allowedRelayHost =
+        (isProduction || relayHost == null || relayHost.isEmpty)
+        ? null
+        : relayHost;
+
     // Create relay manager config with persistent storage
     // The Divine relay is always the default relay (cannot be removed)
     final relayManagerConfig = RelayManagerConfig(
       defaultRelayUrl: divineRelayUrl,
       storage: SharedPreferencesRelayStorage(),
+      allowedRelayHost: allowedRelayHost,
     );
 
     // Create the NostrClient
