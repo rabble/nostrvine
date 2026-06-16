@@ -220,26 +220,26 @@ class _ActionList extends StatelessWidget {
     final l10n = context.l10n;
     final tiles = <Widget>[
       _ActionTile(
-        icon: Icons.copy,
+        icon: DivineIconName.copy,
         label: l10n.dmMessageActionCopyText,
         onTap: () => onSelected(MessageAction.copy),
       ),
       if (isVideoShare)
         _ActionTile(
-          icon: Icons.link,
+          icon: DivineIconName.linkSimple,
           label: l10n.dmMessageActionCopyVideoUrl,
           onTap: () => onSelected(MessageAction.copyVideoUrl),
         ),
       if (isSent)
         _ActionTile(
-          icon: Icons.delete_outline,
+          icon: DivineIconName.trash,
           label: l10n.dmMessageActionDeleteForEveryone,
           onTap: () => onSelected(MessageAction.delete),
           color: VineTheme.error,
         ),
       if (!isSent)
         _ActionTile(
-          icon: Icons.flag_outlined,
+          icon: DivineIconName.flag,
           label: l10n.dmMessageActionReport,
           onTap: () => onSelected(MessageAction.report),
         ),
@@ -259,7 +259,7 @@ class _ActionTile extends StatelessWidget {
     this.color,
   });
 
-  final IconData icon;
+  final DivineIconName icon;
   final String label;
   final VoidCallback onTap;
   final Color? color;
@@ -267,7 +267,7 @@ class _ActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: color ?? VineTheme.onSurface),
+      leading: DivineIcon(icon: icon, color: color ?? VineTheme.onSurface),
       title: Text(
         label,
         style: VineTheme.bodyLargeFont(

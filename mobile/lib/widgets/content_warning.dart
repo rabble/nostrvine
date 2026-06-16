@@ -84,10 +84,9 @@ class _ContentWarningState extends State<ContentWarning>
         children: [
           Row(
             children: [
-              Icon(
-                _getWarningIcon(widget.moderationResult.severity),
+              DivineIcon(
+                icon: _getWarningIcon(widget.moderationResult.severity),
                 color: VineTheme.whiteText,
-                size: 24,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -155,15 +154,19 @@ class _ContentWarningState extends State<ContentWarning>
                 if (widget.onReport != null)
                   IconButton(
                     onPressed: widget.onReport,
-                    icon: const Icon(Icons.flag_outlined),
-                    color: VineTheme.whiteText,
+                    icon: const DivineIcon(
+                      icon: DivineIconName.flag,
+                      color: VineTheme.whiteText,
+                    ),
                     tooltip: context.l10n.contentWarningReportContentTooltip,
                   ),
                 if (widget.onBlock != null)
                   IconButton(
                     onPressed: widget.onBlock,
-                    icon: const Icon(Icons.block_outlined),
-                    color: VineTheme.whiteText,
+                    icon: const DivineIcon(
+                      icon: DivineIconName.prohibit,
+                      color: VineTheme.whiteText,
+                    ),
                     tooltip: context.l10n.contentWarningBlockUserTooltip,
                   ),
               ],
@@ -259,16 +262,16 @@ class _ContentWarningState extends State<ContentWarning>
     }
   }
 
-  IconData _getWarningIcon(ContentSeverity severity) {
+  DivineIconName _getWarningIcon(ContentSeverity severity) {
     switch (severity) {
       case ContentSeverity.info:
-        return Icons.info_outline;
+        return DivineIconName.info;
       case ContentSeverity.warning:
-        return Icons.warning_amber_outlined;
+        return DivineIconName.warning;
       case ContentSeverity.hide:
-        return Icons.visibility_off_outlined;
+        return DivineIconName.eyeSlash;
       case ContentSeverity.block:
-        return Icons.block;
+        return DivineIconName.prohibit;
     }
   }
 
@@ -292,13 +295,13 @@ class QuickContentWarning extends StatelessWidget {
     required this.child,
     required this.warningText,
     super.key,
-    this.icon = Icons.warning_amber_outlined,
+    this.icon = DivineIconName.warning,
     this.color = VineTheme.warning,
     this.onTap,
   });
   final Widget child;
   final String warningText;
-  final IconData icon;
+  final DivineIconName icon;
   final Color color;
   final VoidCallback? onTap;
 
@@ -320,7 +323,7 @@ class QuickContentWarning extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: VineTheme.whiteText, size: 16),
+                DivineIcon(icon: icon, color: VineTheme.whiteText, size: 16),
                 const SizedBox(width: 4),
                 Text(
                   warningText,

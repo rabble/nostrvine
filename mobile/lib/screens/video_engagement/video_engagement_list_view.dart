@@ -104,15 +104,15 @@ class _EngagementEmptyState extends StatelessWidget {
         context.l10n.videoEngagementRepostersEmpty,
     };
     final icon = switch (type) {
-      VideoEngagementType.likers => Icons.favorite_border,
-      VideoEngagementType.reposters => Icons.repeat,
+      VideoEngagementType.likers => DivineIconName.heart,
+      VideoEngagementType.reposters => DivineIconName.repeat,
     };
 
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 64, color: VineTheme.lightText),
+          DivineIcon(icon: icon, size: 64, color: VineTheme.lightText),
           const SizedBox(height: 16),
           Text(
             message,
