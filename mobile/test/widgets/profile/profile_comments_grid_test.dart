@@ -12,6 +12,7 @@ import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/profile/profile_comments_grid.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -100,7 +101,7 @@ void main() {
 
         await tester.pumpWidget(buildSubject());
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
       });
 
       testWidgets('loading indicator when status is loading', (tester) async {
@@ -110,7 +111,7 @@ void main() {
 
         await tester.pumpWidget(buildSubject());
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
       });
 
       testWidgets('error message when status is failure', (tester) async {
@@ -259,7 +260,7 @@ void main() {
         await tester.pumpWidget(buildSubject());
 
         // One for the bottom loading indicator
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
       });
     });
 
