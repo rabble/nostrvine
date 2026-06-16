@@ -9978,8 +9978,8 @@ void main() {
           final firstPage = await repo.getRecommendedVideos(
             userPubkey: 'user-pubkey',
           );
-          expect(
-            () => repo.getRecommendedVideos(
+          await expectLater(
+            repo.getRecommendedVideos(
               userPubkey: 'user-pubkey',
               skipCache: true,
             ),

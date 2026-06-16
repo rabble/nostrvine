@@ -216,6 +216,9 @@ class ForYouFeed extends _$ForYouFeed {
       final resultVideos = response.videos.toVideoEvents();
 
       if (!ref.mounted) return;
+      if (_sessionSeed != seed) {
+        return;
+      }
 
       final videoEventService = ref.read(videoEventServiceProvider);
       final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);

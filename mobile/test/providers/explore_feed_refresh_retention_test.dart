@@ -940,10 +940,32 @@ void main() {
         await loadMoreFuture;
         await pumpEventQueue();
 
-        final cursorPageRequest = requests.singleWhere(
+        final rebuiltFirstPageSeed = requests
+            .lastWhere(
+              (request) => request.cursor == null,
+            )
+            .seed;
+        expect(rebuiltFirstPageSeed, isNot(firstPageSeed));
+
+        final staleCursorPageRequest = requests.singleWhere(
           (request) => request.cursor == 'cursor-2',
         );
-        expect(cursorPageRequest.seed, firstPageSeed);
+        expect(staleCursorPageRequest.seed, firstPageSeed);
+
+        await container.read(forYouFeedProvider.notifier).loadMore();
+
+        final cursorPageRequests = requests
+            .where((request) => request.cursor == 'cursor-2')
+            .toList();
+        expect(cursorPageRequests, hasLength(2));
+        expect(cursorPageRequests.last.seed, rebuiltFirstPageSeed);
+
+        final loadedState = container.read(forYouFeedProvider).value;
+        expect(loadedState, isNotNull);
+        expect(loadedState!.videos.map((video) => video.id), [
+          'for-you-rebuilt',
+          'for-you-page-2',
+        ]);
       },
     );
 
