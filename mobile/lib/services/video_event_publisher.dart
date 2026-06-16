@@ -148,6 +148,8 @@ enum _EventPublishOutcome {
   transientFailure,
 }
 
+enum _RelayPresence { found, notFound, unknown }
+
 /// Service for publishing processed videos to Nostr relays
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class VideoEventPublisher {
@@ -511,33 +513,46 @@ class VideoEventPublisher {
     required Event event,
     bool isRetry = false,
   }) async {
+    final outcome = await _publishSignedVideoEventOutcome(
+      upload: upload,
+      event: event,
+      isRetry: isRetry,
+    );
+    return outcome == _EventPublishOutcome.published;
+  }
+
+  Future<_EventPublishOutcome> _publishSignedVideoEventOutcome({
+    required PendingUpload upload,
+    required Event event,
+    bool isRetry = false,
+  }) async {
     final apiClient = _eventApiClient;
     if (apiClient == null) {
       return _publishWithWebSocketRetries(event);
     }
 
-    if (isRetry && await _existsOnConfiguredRelays(event)) {
+    if (isRetry && await _relayPresence(event) == _RelayPresence.found) {
       Log.info(
         '♻️ Recovered already-published video event ${event.id} from relays; '
         'skipping re-publish',
         name: 'VideoEventPublisher',
         category: LogCategory.video,
       );
-      return true;
+      return _EventPublishOutcome.published;
     }
 
     const maxRetries = 3;
     for (var attempt = 1; attempt <= maxRetries; attempt++) {
       // A lost OK on a prior attempt can leave the event already stored on
       // a relay; re-check before re-broadcasting to avoid duplicates.
-      if (attempt > 1 && await _existsOnConfiguredRelays(event)) {
+      if (attempt > 1 && await _relayPresence(event) == _RelayPresence.found) {
         Log.info(
           '♻️ Event ${event.id} found on relay before retry $attempt; '
           'marking published',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        return true;
+        return _EventPublishOutcome.published;
       }
 
       final outcome = await _publishViaRestThenWebSocket(apiClient, event);
@@ -550,14 +565,14 @@ class VideoEventPublisher {
               category: LogCategory.video,
             );
           }
-          return true;
+          return _EventPublishOutcome.published;
         case _EventPublishOutcome.permanentlyRejected:
           Log.error(
             '❌ Publish permanently rejected for ${event.id}; not retrying',
             name: 'VideoEventPublisher',
             category: LogCategory.video,
           );
-          return false;
+          return _EventPublishOutcome.permanentlyRejected;
         case _EventPublishOutcome.transientFailure:
           if (attempt < maxRetries) {
             final delaySeconds = attempt * 2; // 2s, 4s backoff
@@ -577,7 +592,7 @@ class VideoEventPublisher {
           }
       }
     }
-    return false;
+    return _EventPublishOutcome.transientFailure;
   }
 
   /// One publish attempt: REST first, WebSocket fire-and-forget on transient
@@ -604,10 +619,7 @@ class VideoEventPublisher {
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        final sent = await _publishViaWebSocketFireAndForget(event);
-        return sent
-            ? _EventPublishOutcome.published
-            : _EventPublishOutcome.transientFailure;
+        return _publishViaWebSocketFireAndForget(event);
     }
   }
 
@@ -617,7 +629,9 @@ class VideoEventPublisher {
   /// Video publishes intentionally avoid `publishEventAwaitOk` here: relays
   /// that accept and serve the event but drop the `OK` would otherwise make a
   /// successful upload look failed.
-  Future<bool> _publishViaWebSocketFireAndForget(Event event) async {
+  Future<_EventPublishOutcome> _publishViaWebSocketFireAndForget(
+    Event event,
+  ) async {
     try {
       if (!_nostrService.isInitialized) {
         await _nostrService.initialize();
@@ -633,7 +647,7 @@ class VideoEventPublisher {
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        return false;
+        return _EventPublishOutcome.transientFailure;
       }
       if (result is PublishSuccess) {
         Log.info(
@@ -641,7 +655,7 @@ class VideoEventPublisher {
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        return true;
+        return _EventPublishOutcome.published;
       }
       Log.error(
         '❌ WebSocket publishEvent failed for ${event.id}: '
@@ -649,20 +663,20 @@ class VideoEventPublisher {
         name: 'VideoEventPublisher',
         category: LogCategory.video,
       );
-      return false;
+      return _EventPublishOutcome.transientFailure;
     } catch (e) {
       Log.error(
         'WebSocket fire-and-forget publish failed for ${event.id}: $e',
         name: 'VideoEventPublisher',
         category: LogCategory.video,
       );
-      return false;
+      return _EventPublishOutcome.transientFailure;
     }
   }
 
   /// Legacy WebSocket-only publish with the original 3-attempt, 2s/4s backoff
   /// retry loop. Used only when no [EventApiClient] is configured.
-  Future<bool> _publishWithWebSocketRetries(Event event) async {
+  Future<_EventPublishOutcome> _publishWithWebSocketRetries(Event event) async {
     const maxRetries = 3;
     for (var attempt = 1; attempt <= maxRetries; attempt++) {
       if (await _publishEventToNostr(event)) {
@@ -673,7 +687,7 @@ class VideoEventPublisher {
             category: LogCategory.video,
           );
         }
-        return true;
+        return _EventPublishOutcome.published;
       }
 
       if (attempt < maxRetries) {
@@ -692,17 +706,17 @@ class VideoEventPublisher {
         );
       }
     }
-    return false;
+    return _EventPublishOutcome.transientFailure;
   }
 
-  /// Returns true if [event] is already retrievable from the configured
-  /// relays, queried both by event id and by `author+kind+d-tag`.
-  Future<bool> _existsOnConfiguredRelays(Event event) async {
+  /// Checks whether [event] is already retrievable from the configured relays,
+  /// queried both by event id and by `author+kind+d-tag`.
+  Future<_RelayPresence> _relayPresence(Event event) async {
     try {
       final dTag = _dTagOf(event);
       final filters = <Filter>[
         Filter(ids: [event.id], limit: 1),
-        if (dTag != null && dTag.isNotEmpty)
+        if (dTag.isNotEmpty)
           Filter(
             authors: [event.pubkey],
             kinds: [event.kind],
@@ -712,29 +726,33 @@ class VideoEventPublisher {
       ];
       final found = await _nostrService.queryEvents(filters, useCache: false);
       for (final candidate in found) {
-        if (candidate.id == event.id) return true;
+        if (candidate.id == event.id) return _RelayPresence.found;
         if (candidate.pubkey == event.pubkey &&
             candidate.kind == event.kind &&
             _dTagOf(candidate) == dTag) {
-          return true;
+          return _RelayPresence.found;
         }
       }
-      return false;
+      return _RelayPresence.notFound;
     } catch (e) {
       Log.warning(
         'Recovery query failed for ${event.id}: $e',
         name: 'VideoEventPublisher',
         category: LogCategory.video,
       );
-      return false;
+      return _RelayPresence.unknown;
     }
   }
 
-  String? _dTagOf(Event event) {
+  String _dTagOf(Event event) {
+    var dTag = '';
     for (final tag in event.tags) {
-      if (tag.length >= 2 && tag[0] == 'd') return tag[1];
+      if (tag.length >= 2 && tag[0] == 'd') {
+        dTag = tag[1];
+        break;
+      }
     }
-    return null;
+    return dTag;
   }
 
   Event? _loadRetryableSignedEvent(PendingUpload upload) {

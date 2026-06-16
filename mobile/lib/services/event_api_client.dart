@@ -159,7 +159,7 @@ class EventApiClient {
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;
         final accepted = decoded['accepted'] == true;
         final eventId = decoded['event_id'] as String?;
-        if (accepted && eventId != null && eventId.isNotEmpty) {
+        if (accepted && eventId != null && eventId == event.id) {
           Log.info(
             'REST publish accepted event $eventId',
             name: _logName,
@@ -168,7 +168,8 @@ class EventApiClient {
           return EventApiAccepted(eventId);
         }
         Log.warning(
-          'REST publish 200 without accepted:true for ${event.id}: '
+          'REST publish 200 without accepted:true and matching event_id '
+          'for ${event.id}: '
           '${response.body}',
           name: _logName,
           category: LogCategory.video,

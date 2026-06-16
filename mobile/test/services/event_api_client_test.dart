@@ -143,7 +143,7 @@ void main() {
       final client = buildClient(
         MockClient(
           (_) async => http.Response(
-            jsonEncode({'accepted': true, 'event_id': 'server-event-id'}),
+            jsonEncode({'accepted': true, 'event_id': event.id}),
             200,
           ),
         ),
@@ -152,7 +152,24 @@ void main() {
       final result = await client.publishEvent(event);
 
       expect(result, isA<EventApiAccepted>());
-      expect((result as EventApiAccepted).eventId, equals('server-event-id'));
+      expect((result as EventApiAccepted).eventId, equals(event.id));
+    });
+
+    test('returns transient failure when accepted event_id differs', () async {
+      stubToken(buildToken());
+      final event = buildVideoEvent();
+      final client = buildClient(
+        MockClient(
+          (_) async => http.Response(
+            jsonEncode({'accepted': true, 'event_id': 'server-event-id'}),
+            200,
+          ),
+        ),
+      );
+
+      final result = await client.publishEvent(event);
+
+      expect(result, isA<EventApiTransientFailure>());
     });
 
     test('returns transient failure on 200 without accepted:true', () async {
