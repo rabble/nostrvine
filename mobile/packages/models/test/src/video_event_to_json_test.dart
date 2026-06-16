@@ -138,6 +138,7 @@ const _expectedKeys = <String>{
   'textTrackRef',
   'textTrackContent',
   'contentWarningLabels',
+  'moderationLabels',
   'proofSummary',
 };
 
@@ -193,7 +194,6 @@ const _excludedDerivedGetters = <String>{
 
 const _excludedInternalFields = <String>{
   'nostrEventTags',
-  'moderationLabels',
   'warnLabels',
 };
 

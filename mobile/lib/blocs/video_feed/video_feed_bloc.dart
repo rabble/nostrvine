@@ -12,6 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/video_feed/home_feed_cache.dart';
+import 'package:openvine/blocs/video_feed/home_feed_resume_manager.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,36 +21,10 @@ import 'package:videos_repository/videos_repository.dart';
 
 part 'video_feed_event.dart';
 part 'video_feed_state.dart';
+part 'feed_mode_preference_store.dart';
 
 /// Default interval between auto-refreshes of the home feed.
 const _defaultAutoRefreshMinInterval = Duration(minutes: 10);
-
-/// How far past the active video the cross-restart cache resumes.
-///
-/// The forward window persisted on serve / load / swipe starts at the active
-/// index plus this offset, so on the next cold start the user resumes on the
-/// first video they have **not** seen. An offset of `1` drops only the active
-/// (seen) video — the user cannot scroll back to it, but no unseen video is
-/// skipped. Keeping it at `1` (rather than also dropping the active+1
-/// lookahead) matters for the no-interaction reopen: serving the cache, or a
-/// quick open/close before the fresh fetch lands, advances by a single video
-/// the user actually saw instead of burning through the window two at a time.
-const _homeFeedResumeOffset = 1;
-
-/// Debounce window for persisting the resume position on rapid swipes.
-///
-/// The resume point does not need to be frame-accurate, so per-swipe disk
-/// writes are coalesced: this avoids a JSON-encode + Drift write on every page
-/// change while the user scrolls quickly. Serve- and load-time persists stay
-/// immediate — they run once per load, not on the swipe hot path.
-const _resumePersistDebounce = Duration(milliseconds: 600);
-
-/// Legacy SharedPreferences key for persisting the selected feed mode.
-///
-/// New authenticated sessions use a pubkey-scoped key so switching accounts
-/// cannot carry a previous account's Following/list selection into a newly
-/// imported key with a different social graph.
-const _legacyFeedModeKey = 'selected_feed_mode';
 
 /// BLoC for managing the unified video feed.
 ///
@@ -81,7 +56,16 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
        _serveCachedHomeFeed = serveCachedHomeFeed,
        _autoRefreshMinInterval = autoRefreshMinInterval,
        _feedTracker = feedTracker,
-       _homeFeedCache = homeFeedCache ?? const HomeFeedCache(),
+       _resumeManager = HomeFeedResumeManager(
+         cache: homeFeedCache ?? const HomeFeedCache(),
+         videosRepository: videosRepository,
+       ),
+       _modePreferences = FeedModePreferenceStore(
+         sharedPreferences: sharedPreferences,
+         userPubkey: userPubkey,
+         followRepository: followRepository,
+         curatedListRepository: curatedListRepository,
+       ),
        super(const VideoFeedBlocState()) {
     on<VideoFeedStarted>(_onStarted);
     on<VideoFeedModeChanged>(_onModeChanged);
@@ -108,20 +92,18 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   final bool _serveCachedHomeFeed;
   final Duration _autoRefreshMinInterval;
   final FeedPerformanceTracker? _feedTracker;
-  final HomeFeedCache _homeFeedCache;
+
+  /// Owns the cross-restart cache serve / splice / resume-persist logic.
+  final HomeFeedResumeManager _resumeManager;
+
+  /// Owns reading/writing the persisted feed-mode/source selection.
+  final FeedModePreferenceStore _modePreferences;
   StreamSubscription<List<String>>? _followingSubscription;
   StreamSubscription<List<CuratedList>>? _curatedListsSubscription;
 
   /// Tracks when the last successful load completed, used by
   /// [_onAutoRefreshRequested] to skip refreshes when data is fresh.
   DateTime? _lastRefreshedAt;
-
-  /// Trailing-debounce handle for the swipe-driven resume-window persist.
-  Timer? _resumePersistTimer;
-
-  /// The most recent swipe persist waiting on [_resumePersistTimer].
-  ({String mode, List<VideoEvent> videos, int activeIndex})?
-  _pendingResumePersist;
 
   /// Whether [source] participates in the cross-restart [HomeFeedCache].
   ///
@@ -130,9 +112,9 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   /// `forYou` staleness concern from #3861 is handled differently now: the
   /// cached feed is positioned at the user's last index and everything past
   /// the active video is replaced with fresh server data on every load
-  /// ([_spliceFreshVideos]), so the feed is never stale beyond the current
-  /// video. Subscribed curated lists are excluded — they are derived from
-  /// locally held list IDs, not a server feed.
+  /// (via [HomeFeedResumeManager]), so the feed is never stale beyond the
+  /// current video. Subscribed curated lists are excluded — they are derived
+  /// from locally held list IDs, not a server feed.
   bool _usesHomeFeedCache(VideoFeedSource source) =>
       source.type == VideoFeedSourceType.forYou ||
       source.type == VideoFeedSourceType.following ||
@@ -164,10 +146,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     VideoFeedStarted event,
     Emitter<VideoFeedBlocState> emit,
   ) async {
-    final source = _restoreSource(event.mode);
-    if (_sharedPreferences?.getString(_feedModePreferenceKey) !=
+    final source = _modePreferences.restoreSource(event.mode);
+    if (_sharedPreferences?.getString(_modePreferences.key) !=
         source.persistenceValue) {
-      await _persistSourcePreference(source);
+      await _modePreferences.persist(source);
     }
 
     final subscribedLists = _curatedListRepository.getSubscribedLists();
@@ -255,103 +237,14 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
 
   @override
   Future<void> close() async {
-    // Persist any swipe still inside the debounce window before tearing down,
-    // so the last move isn't lost on dispose.
-    _flushResumePersist();
+    // Flush any swipe still inside the debounce window before tearing down, so
+    // the last move isn't lost on dispose.
+    _resumeManager.dispose();
     await _followingSubscription?.cancel();
     await _curatedListsSubscription?.cancel();
     _followingSubscription = null;
     _curatedListsSubscription = null;
     return super.close();
-  }
-
-  VideoFeedSource _restoreSource(FeedMode fallbackMode) {
-    final saved = _savedSourcePreference();
-    if (saved == null) {
-      return VideoFeedSource.fromMode(fallbackMode);
-    }
-
-    return _sourceFromPersistedValue(saved) ?? const VideoFeedSource.forYou();
-  }
-
-  String get _feedModePreferenceKey => _userPubkey == null
-      ? _legacyFeedModeKey
-      : '${_legacyFeedModeKey}_$_userPubkey';
-
-  String? _savedSourcePreference() {
-    final prefs = _sharedPreferences;
-    if (prefs == null) return null;
-
-    final scoped = prefs.getString(_feedModePreferenceKey);
-    if (scoped != null) return scoped;
-
-    // Only unauthenticated/test callers should keep reading the legacy global
-    // key directly. Authenticated sessions migrate it conservatively below.
-    if (_userPubkey == null) {
-      return prefs.getString(_legacyFeedModeKey);
-    }
-
-    final legacy = prefs.getString(_legacyFeedModeKey);
-    if (legacy == null) return null;
-
-    final migratedSource = _sourceFromPersistedValue(legacy);
-    if (migratedSource == null) return null;
-
-    // The bug fixed here: a newly imported key could inherit another account's
-    // Following mode and land on an empty feed. Only migrate Following when
-    // the current account already has a non-empty following list.
-    if (migratedSource.type == VideoFeedSourceType.following &&
-        _followRepository.followingPubkeys.isEmpty) {
-      return null;
-    }
-
-    // A legacy list preference cannot be proven to belong to the authenticated
-    // account because the curated-list bridge can briefly hold stale data
-    // across account switches. Only restore list selections from scoped keys.
-    if (migratedSource.type == VideoFeedSourceType.subscribedList) {
-      return null;
-    }
-
-    unawaited(_persistSourcePreference(migratedSource));
-    return migratedSource.persistenceValue;
-  }
-
-  VideoFeedSource? _sourceFromPersistedValue(String saved) {
-    if (saved.startsWith('list:')) {
-      final listId = saved.substring('list:'.length);
-      final list = _curatedListRepository.getListById(listId);
-      if (list != null) {
-        return VideoFeedSource.subscribedList(
-          listId: list.id,
-          listName: list.name,
-        );
-      }
-      return null;
-    }
-
-    if (saved == FeedMode.following.name) {
-      return const VideoFeedSource.following();
-    }
-
-    if (saved == FeedMode.latest.name) {
-      return const VideoFeedSource.newVideos();
-    }
-
-    if (saved == FeedMode.forYou.name) {
-      return const VideoFeedSource.forYou();
-    }
-
-    return null;
-  }
-
-  Future<void> _persistSourcePreference(VideoFeedSource source) async {
-    final prefs = _sharedPreferences;
-    if (prefs == null) return;
-
-    await prefs.setString(_feedModePreferenceKey, source.persistenceValue);
-    if (_userPubkey != null) {
-      await prefs.remove(_legacyFeedModeKey);
-    }
   }
 
   /// Handle mode changed event.
@@ -379,7 +272,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       return;
     }
 
-    await _persistSourcePreference(source);
+    await _modePreferences.persist(source);
 
     emit(
       state.copyWith(
@@ -644,7 +537,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       return;
     }
 
-    // Mirror _restoreSource: if the currently selected subscribed list is no
+    // Mirror restoreSource: if the currently selected subscribed list is no
     // longer in the subscription set (user unsubscribed, list was deleted),
     // fall back to forYou instead of reloading an empty list source.
     final selectedId = state.source.listId;
@@ -654,7 +547,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         : const VideoFeedSource.forYou();
 
     if (!stillSubscribed) {
-      await _persistSourcePreference(nextSource);
+      await _modePreferences.persist(nextSource);
     }
 
     emit(
@@ -713,7 +606,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   /// feed for the mode instantly — positioned at the user's last-viewed index
   /// — while fresh data loads in the background. When the fresh result
   /// arrives it is spliced in *after* the active video so the playing video
-  /// and its next never jump ([_spliceFreshVideos]).
+  /// and its next never jump (via [HomeFeedResumeManager]).
   ///
   /// For the home feed, does NOT wait for the follow list to initialize.
   /// Instead, the follow-list stream subscription (set up in [_onStarted])
@@ -744,7 +637,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       // after the current video. The active controller is preserved by
       // InfiniteVideoFeed's common-prefix handling, so it does not restart.
       final displayedVideos = servedCache
-          ? _spliceFreshVideos(
+          ? _resumeManager.splice(
               existing: state.videos,
               fresh: validVideos,
               currentIndex: state.currentIndex,
@@ -787,10 +680,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       // reopens without scrolling. Uses the spliced list so freshly loaded
       // videos replenish the window.
       if (_usesHomeFeedCache(source)) {
-        _persistResumeWindow(
-          source.mode.name,
-          displayedVideos,
-          state.currentIndex,
+        _resumeManager.persistNow(
+          pubkey: _userPubkey,
+          mode: source.mode.name,
+          videos: displayedVideos,
+          activeIndex: state.currentIndex,
         );
       }
     } catch (e) {
@@ -835,16 +729,12 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     }
 
     final mode = source.mode.name;
-    final cached = await _homeFeedCache.readVideos(
+    final cachedValid = await _resumeManager.readServeableWindow(
       pubkey: _userPubkey,
       mode: mode,
     );
-    if (cached == null || cached.isEmpty) return false;
-    if (!_canEmitForSource(source, emit)) return false;
-
-    final filtered = _videosRepository.applyContentPreferences(cached);
-    final cachedValid = filtered.where((v) => v.videoUrl != null).toList();
     if (cachedValid.isEmpty) return false;
+    if (!_canEmitForSource(source, emit)) return false;
 
     // The cached window already starts at the resume position (already-watched
     // videos were dropped on write), so it is served at index 0.
@@ -864,30 +754,13 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     // Advance the resume point immediately so a quick reopen (before the fresh
     // fetch lands and the load-time write runs) still opens on the next video
     // rather than this one again.
-    _persistResumeWindow(mode, cachedValid, 0);
+    _resumeManager.persistNow(
+      pubkey: _userPubkey,
+      mode: mode,
+      videos: cachedValid,
+      activeIndex: 0,
+    );
     return true;
-  }
-
-  /// Keeps the active video plus one lookahead from [existing] and appends the
-  /// [fresh] results (deduped) after them, so fresh content appears right after
-  /// the current video instead of behind the whole cached window.
-  ///
-  /// The kept prefix ([0 .. currentIndex + 1]) leaves the active video and its
-  /// controller untouched, so [InfiniteVideoFeed]'s common-prefix handling
-  /// preserves it — the active video does not restart when fresh lands.
-  List<VideoEvent> _spliceFreshVideos({
-    required List<VideoEvent> existing,
-    required List<VideoEvent> fresh,
-    required int currentIndex,
-  }) {
-    if (existing.isEmpty) return fresh;
-    if (fresh.isEmpty) return existing;
-
-    final keepCount = (currentIndex + 2).clamp(0, existing.length);
-    final head = existing.sublist(0, keepCount);
-    final headIds = head.map((v) => v.id.toLowerCase()).toSet();
-    final tail = fresh.where((v) => !headIds.contains(v.id.toLowerCase()));
-    return [...head, ...tail];
   }
 
   /// Records the active video index and advances the resume window.
@@ -904,63 +777,15 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     emit(state.copyWith(currentIndex: index));
 
     if (_usesHomeFeedCache(state.source)) {
-      // Debounced: rapid swipes coalesce into one disk write (see
-      // [_resumePersistDebounce]). The index emit above stays immediate so the
-      // splice and resume-restore listener react without delay.
-      _schedulePersistResumeWindow(state.source.mode.name, state.videos, index);
-    }
-  }
-
-  /// Schedules a trailing-debounced resume-window persist for the swipe path.
-  void _schedulePersistResumeWindow(
-    String mode,
-    List<VideoEvent> videos,
-    int activeIndex,
-  ) {
-    _pendingResumePersist = (
-      mode: mode,
-      videos: videos,
-      activeIndex: activeIndex,
-    );
-    _resumePersistTimer?.cancel();
-    _resumePersistTimer = Timer(_resumePersistDebounce, _flushResumePersist);
-  }
-
-  /// Writes the latest pending swipe resume window, if any.
-  void _flushResumePersist() {
-    final pending = _pendingResumePersist;
-    if (pending == null) return;
-    _pendingResumePersist = null;
-    _resumePersistTimer?.cancel();
-    _resumePersistTimer = null;
-    _persistResumeWindow(pending.mode, pending.videos, pending.activeIndex);
-  }
-
-  /// Persists the forward window — the videos from [activeIndex] +
-  /// [_homeFeedResumeOffset] onward — as the cross-restart resume point.
-  ///
-  /// Called immediately on serve/load and, via
-  /// [_schedulePersistResumeWindow], debounced on swipe, so the resume point
-  /// advances as the user moves through (or simply reopens) the feed: the next
-  /// cold start opens on the next unseen video rather than the one just shown.
-  /// Already-watched videos before the offset are dropped, so the user cannot
-  /// scroll back to them on resume.
-  void _persistResumeWindow(
-    String mode,
-    List<VideoEvent> videos,
-    int activeIndex,
-  ) {
-    final start = (activeIndex + _homeFeedResumeOffset).clamp(0, videos.length);
-    final forward = start >= videos.length
-        ? const <VideoEvent>[]
-        : videos.sublist(start);
-    unawaited(
-      _homeFeedCache.writeVideos(
+      // The index emit above stays immediate so the splice and resume-restore
+      // listener react without delay; the disk write is debounced.
+      _resumeManager.schedulePersist(
         pubkey: _userPubkey,
-        mode: mode,
-        videos: forward,
-      ),
-    );
+        mode: state.source.mode.name,
+        videos: state.videos,
+        activeIndex: index,
+      );
+    }
   }
 
   bool _hasMoreForSource(
