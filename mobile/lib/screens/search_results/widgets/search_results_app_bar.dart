@@ -113,9 +113,8 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
     context.read<ListSearchBloc>().add(ListSearchQueryChanged(query));
   }
 
-  // Pop when there's a back stack; otherwise fall back to Explore. The search
-  // screen can be entered via `context.go(...)` (e.g. a username-mention tap)
-  // or a cold-start deep link, both of which leave nothing to pop — a bare
+  // Pop when there's a back stack; otherwise fall back to Explore. A cold-start
+  // deep link can enter search with nothing to pop — a bare
   // `Navigator.maybePop()` would then silently do nothing and strand the user.
   void _handleBack() {
     if (context.canPop()) {
