@@ -25,6 +25,7 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
+import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -47,68 +48,6 @@ final StreamProvider<ProgressModel> videoEditorCompositeProgressProvider =
       final draftId = ref.read(videoEditorProvider.notifier).draftId;
       return VideoEditorRenderService.compositeProgressStreamById(draftId);
     });
-
-@visibleForTesting
-AudioTrack audioTrackFromSoundForRender(AudioEvent sound) {
-  return AudioTrack(
-    id: sound.id,
-    title: sound.title ?? '',
-    subtitle: sound.source ?? '',
-    duration: Duration(seconds: sound.duration?.toInt() ?? 0),
-    audio: sound.isBundled
-        ? EditorAudio.asset(sound.assetPath!)
-        : sound.isLocalImport && sound.localFilePath != null
-        ? EditorAudio.file(File(sound.localFilePath!))
-        : EditorAudio.network(sound.url!),
-    startTime: sound.startOffset,
-  );
-}
-
-/// Builds the render [AudioTrack] for a timeline audio [track] taken from the
-/// editor meta.
-///
-/// Returns `null` (and logs a warning) when the track has no resolvable audio
-/// source, so a single unusable track is skipped instead of aborting the whole
-/// render with a thrown null-check. Routes bundled → asset, local-import or
-/// absolute path → file, and everything else (http(s)) → network.
-@visibleForTesting
-AudioTrack? audioTrackFromMetaForRender(AudioEvent track) {
-  final EditorAudio audio;
-  if (track.isBundled && track.assetPath != null) {
-    audio = EditorAudio.asset(track.assetPath!);
-  } else if (track.isLocalImport && track.localFilePath != null) {
-    audio = EditorAudio.file(File(track.localFilePath!));
-  } else if (track.url != null && track.url!.isNotEmpty) {
-    audio = track.url!.startsWith('/')
-        ? EditorAudio.file(File(track.url!))
-        : EditorAudio.network(track.url!);
-  } else {
-    Log.warning(
-      'Skipping audio track ${track.id} for render: no resolvable source',
-      name: 'VideoEditorNotifier',
-      category: LogCategory.video,
-    );
-    return null;
-  }
-
-  final sourceDuration = Duration(
-    milliseconds: ((track.duration ?? 0) * 1000).toInt(),
-  );
-  return AudioTrack(
-    id: track.id,
-    title: track.title ?? '',
-    subtitle: track.source ?? '',
-    duration: sourceDuration,
-    audio: audio,
-    startTime: track.startTime,
-    endTime: track.endTime,
-    audioStartTime: track.startOffset,
-    // End of the *source* audio — not startOffset + full length, which runs
-    // the requested range past the file end whenever startOffset > 0.
-    audioEndTime: sourceDuration,
-    volume: track.volume,
-  );
-}
 
 /// Manages video editor state and operations.
 ///
