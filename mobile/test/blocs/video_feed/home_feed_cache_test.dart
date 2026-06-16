@@ -94,6 +94,28 @@ void main() {
         expect(dao.store, isEmpty);
       });
 
+      test(
+        'clearVideos drops an existing entry so a later read is null',
+        () async {
+          await cache.writeVideos(
+            pubkey: pubkey,
+            mode: 'forYou',
+            videos: [_video('a'), _video('b')],
+          );
+          expect(
+            await cache.readVideos(pubkey: pubkey, mode: 'forYou'),
+            isNotNull,
+          );
+
+          await cache.clearVideos(pubkey: pubkey, mode: 'forYou');
+
+          expect(
+            await cache.readVideos(pubkey: pubkey, mode: 'forYou'),
+            isNull,
+          );
+        },
+      );
+
       test('caps the persisted forward window', () async {
         final videos = List.generate(80, (i) => _video('v$i'));
         await cache.writeVideos(

@@ -138,6 +138,10 @@ class HomeFeedResumeManager {
   /// Writes the videos from [activeIndex] + [_resumeOffset] onward, so the next
   /// cold start opens on the next unseen video. Already-watched videos before
   /// the offset are dropped, so the user cannot scroll back to them on resume.
+  ///
+  /// When nothing remains past the offset (the user reached the end of the
+  /// window) the key is **cleared** rather than left untouched — otherwise the
+  /// previous entry would re-serve already-seen videos on the next cold start.
   void _write({
     required String? pubkey,
     required String mode,
@@ -145,10 +149,17 @@ class HomeFeedResumeManager {
     required int activeIndex,
   }) {
     final start = (activeIndex + _resumeOffset).clamp(0, videos.length);
-    final forward = start >= videos.length
-        ? const <VideoEvent>[]
-        : videos.sublist(start);
-    unawaited(_cache.writeVideos(pubkey: pubkey, mode: mode, videos: forward));
+    if (start >= videos.length) {
+      unawaited(_cache.clearVideos(pubkey: pubkey, mode: mode));
+      return;
+    }
+    unawaited(
+      _cache.writeVideos(
+        pubkey: pubkey,
+        mode: mode,
+        videos: videos.sublist(start),
+      ),
+    );
   }
 
   /// Flushes any pending swipe persist and cancels the debounce timer.

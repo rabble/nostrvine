@@ -3102,6 +3102,12 @@ void main() {
             videos: any(named: 'videos'),
           ),
         ).thenAnswer((_) async {});
+        when(
+          () => mockCache.clearVideos(
+            pubkey: any(named: 'pubkey'),
+            mode: any(named: 'mode'),
+          ),
+        ).thenAnswer((_) async {});
       });
 
       tearDown(() {
@@ -3415,6 +3421,41 @@ void main() {
           ).captured;
           final window = captured.last as List<VideoEvent>;
           expect(window.map((v) => v.id), equals(['fresh-3', 'fresh-4']));
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'clears the resume cache when swiped to the end of the window',
+        setUp: () => stubFollowingFetch(createTestVideos(3, idPrefix: 'fresh')),
+        build: createBlocWithCache,
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
+          await Future<void>.delayed(Duration.zero);
+          // Index 2 + offset 1 = 3 == length → nothing left to resume to.
+          bloc.add(const VideoFeedActiveIndexChanged(2));
+        },
+        wait: const Duration(milliseconds: 700),
+        verify: (_) {
+          // An empty forward window must invalidate the key, not no-op — else
+          // the next cold start re-serves already-seen videos.
+          verify(
+            () => mockCache.clearVideos(
+              pubkey: any(named: 'pubkey'),
+              mode: 'following',
+            ),
+          ).called(1);
+          // No write should ever carry an empty list (those route to clear).
+          final writes = verify(
+            () => mockCache.writeVideos(
+              pubkey: any(named: 'pubkey'),
+              mode: any(named: 'mode'),
+              videos: captureAny(named: 'videos'),
+            ),
+          ).captured;
+          expect(
+            writes.every((w) => (w as List<VideoEvent>).isNotEmpty),
+            isTrue,
+          );
         },
       );
     });

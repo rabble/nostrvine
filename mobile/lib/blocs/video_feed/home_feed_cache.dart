@@ -88,6 +88,22 @@ class HomeFeedCache {
     }
   }
 
+  /// Drops the cached forward window for [mode].
+  ///
+  /// Used when the resume window is empty (the user reached the end of the
+  /// stored window): leaving the previous entry in place would re-serve
+  /// already-seen videos on the next cold start, so the key is invalidated.
+  Future<void> clearVideos({
+    required String? pubkey,
+    required String mode,
+  }) async {
+    try {
+      await CacheSync.invalidate(_videosKey(pubkey, mode));
+    } on Object {
+      // Best-effort; ignore failures.
+    }
+  }
+
   static String _encodeVideos(List<VideoEvent> videos) =>
       jsonEncode({'videos': videos.map((v) => v.toJson()).toList()});
 
