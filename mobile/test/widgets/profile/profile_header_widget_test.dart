@@ -474,6 +474,52 @@ void main() {
       ).called(1);
     });
 
+    testWidgets('caps accepted badge recipients in detail sheet', (
+      tester,
+    ) async {
+      final testProfile = createTestProfile(displayName: 'Badged User');
+      final recipients = List<String>.generate(
+        14,
+        (index) => (index + 1).toRadixString(16).padLeft(64, '0'),
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: testProfile,
+          acceptedProfileBadges: [
+            ProfileBadgeViewData(
+              badge: const Nip58ProfileBadgeRef(
+                definitionCoordinate: '30009:$issuerUserHex:daily-diviner',
+                awardEventId:
+                    '00000000000000000000000000000000000000000000000000000000000000aa',
+              ),
+              award: Nip58BadgeAward(
+                event: _badgeAwardEvent(),
+                definitionCoordinate: '30009:$issuerUserHex:daily-diviner',
+                recipientPubkeys: recipients,
+              ),
+              definition: Nip58BadgeDefinition(
+                event: _badgeDefinitionEvent(),
+                coordinate: '30009:$issuerUserHex:daily-diviner',
+                dTag: 'daily-diviner',
+                name: 'Diviner of the Day',
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.text('Diviner of the Day'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(UserProfileTile), findsNWidgets(13));
+      expect(find.text('+2 more'), findsOneWidget);
+    });
+
     testWidgets('displays user avatar when profile is loaded', (tester) async {
       final testProfile = createTestProfile(
         displayName: 'Test User',

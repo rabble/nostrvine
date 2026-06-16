@@ -43,6 +43,13 @@ class ProfileBadgeViewData {
           : null);
   String? get issuerPubkey => award?.event.pubkey;
   List<String> get recipientPubkeys => award?.recipientPubkeys ?? const [];
+  List<String> get uniqueRecipientPubkeys {
+    final seen = <String>{};
+    return [
+      for (final pubkey in recipientPubkeys)
+        if (pubkey.isNotEmpty && seen.add(pubkey)) pubkey,
+    ];
+  }
 }
 
 class BadgeAwardViewData {
@@ -145,18 +152,18 @@ class BadgeRepository {
     final refs = profileBadges?.badges ?? const <Nip58ProfileBadgeRef>[];
     if (refs.isEmpty) return const [];
 
-    final viewData = <ProfileBadgeViewData>[];
-    for (final ref in refs) {
-      final definition = await _loadDefinition(ref.definitionCoordinate);
-      final award = await _loadAward(ref.awardEventId);
-      viewData.add(
-        ProfileBadgeViewData(
+    final viewData = await Future.wait(
+      refs.map((ref) async {
+        final definitionFuture = _loadDefinition(ref.definitionCoordinate);
+        final awardFuture = _loadAward(ref.awardEventId);
+
+        return ProfileBadgeViewData(
           badge: ref,
-          definition: definition,
-          award: award,
-        ),
-      );
-    }
+          definition: await definitionFuture,
+          award: await awardFuture,
+        );
+      }),
+    );
 
     return List<ProfileBadgeViewData>.unmodifiable(viewData);
   }

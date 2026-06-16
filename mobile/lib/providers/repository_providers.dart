@@ -56,8 +56,11 @@ final badgeRepositoryProvider = Provider<BadgeRepository>((ref) {
 });
 
 final FutureProviderFamily<List<ProfileBadgeViewData>, String>
-profileAcceptedBadgesProvider =
-    FutureProvider.family<List<ProfileBadgeViewData>, String>((ref, pubkey) {
+profileAcceptedBadgesProvider = FutureProvider.autoDispose
+    .family<List<ProfileBadgeViewData>, String>((
+      ref,
+      pubkey,
+    ) {
       if (pubkey.isEmpty) return const [];
       return ref
           .watch(badgeRepositoryProvider)

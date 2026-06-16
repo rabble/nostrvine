@@ -14886,6 +14886,36 @@ abstract class AppLocalizations {
   /// **'Waiting for recipient'**
   String get badgesRecipientWaitingStatus;
 
+  /// No description provided for @profileBadgeAwardedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Awarded by'**
+  String get profileBadgeAwardedBy;
+
+  /// No description provided for @profileBadgeRecipients.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipients'**
+  String get profileBadgeRecipients;
+
+  /// Shown in the profile badge detail sheet when an award has more recipients than are displayed.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String profileBadgeMoreRecipients(int count);
+
+  /// Accessibility label for a tappable profile badge chip.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} badge'**
+  String profileBadgeSemanticLabel(String name);
+
+  /// No description provided for @profileBadgeFallbackSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Badge'**
+  String get profileBadgeFallbackSemanticLabel;
+
   /// No description provided for @minorAccountReviewWelcomePageTitle.
   ///
   /// In en, this message translates to:

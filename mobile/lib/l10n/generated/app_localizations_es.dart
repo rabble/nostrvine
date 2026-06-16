@@ -8640,6 +8640,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Esperando al destinatario';
 
   @override
+  String get profileBadgeAwardedBy => 'Awarded by';
+
+  @override
+  String get profileBadgeRecipients => 'Recipients';
+
+  @override
+  String profileBadgeMoreRecipients(int count) {
+    return '+$count more';
+  }
+
+  @override
+  String profileBadgeSemanticLabel(String name) {
+    return '$name badge';
+  }
+
+  @override
+  String get profileBadgeFallbackSemanticLabel => 'Badge';
+
+  @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
 
   @override

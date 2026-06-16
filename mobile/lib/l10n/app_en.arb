@@ -4870,6 +4870,27 @@
   "badgesIssuedNoRecipients": "No recipients found for this award.",
   "badgesRecipientAcceptedStatus": "Accepted by recipient",
   "badgesRecipientWaitingStatus": "Waiting for recipient",
+  "profileBadgeAwardedBy": "Awarded by",
+  "profileBadgeRecipients": "Recipients",
+  "profileBadgeMoreRecipients": "+{count} more",
+  "@profileBadgeMoreRecipients": {
+    "description": "Shown in the profile badge detail sheet when an award has more recipients than are displayed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileBadgeSemanticLabel": "{name} badge",
+  "@profileBadgeSemanticLabel": {
+    "description": "Accessibility label for a tappable profile badge chip.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "profileBadgeFallbackSemanticLabel": "Badge",
   "minorAccountReviewWelcomePageTitle": "Family guide",
   "minorAccountReviewWelcomeCta": "Not 16 yet? That's OK. Here's what you can do.",
   "minorAccountReviewWelcomeTitle": "Not 16 yet? That's OK.",

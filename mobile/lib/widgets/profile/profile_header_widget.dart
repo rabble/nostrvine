@@ -518,33 +518,44 @@ class _ProfileBadgeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = badge.imageUrl;
+    final l10n = context.l10n;
     const radius = 16.0;
-    return Material(
-      color: VineTheme.surfaceBackground,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(radius),
-        side: const BorderSide(color: VineTheme.neutral10),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(radius),
-        onTap: () => _showProfileBadgeSheet(context, badge),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _ProfileBadgeImage(imageUrl: imageUrl),
-              const SizedBox(width: 6),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 180),
-                child: Text(
-                  badge.displayName,
-                  style: VineTheme.labelMediumFont(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+    return Semantics(
+      button: true,
+      label: l10n.profileBadgeSemanticLabel(badge.displayName),
+      child: Material(
+        color: VineTheme.surfaceBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius),
+          side: const BorderSide(color: VineTheme.neutral10),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(radius),
+          onTap: () => _showProfileBadgeSheet(context, badge),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _ProfileBadgeImage(
+                    imageUrl: imageUrl,
+                    semanticLabel: badge.displayName,
+                  ),
+                  const SizedBox(width: 6),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 180),
+                    child: Text(
+                      badge.displayName,
+                      style: VineTheme.labelMediumFont(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -553,39 +564,54 @@ class _ProfileBadgeChip extends StatelessWidget {
 }
 
 class _ProfileBadgeImage extends StatelessWidget {
-  const _ProfileBadgeImage({required this.imageUrl, this.size = 20});
+  const _ProfileBadgeImage({
+    required this.imageUrl,
+    this.size = 20,
+    this.semanticLabel,
+  });
 
   final String? imageUrl;
   final double size;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
+    final label =
+        semanticLabel ?? context.l10n.profileBadgeFallbackSemanticLabel;
     final fallback = DecoratedBox(
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         color: VineTheme.vineGreen,
       ),
       child: Center(
-        child: Text(
-          'B',
-          style: VineTheme.labelSmallFont(color: VineTheme.primaryDarkGreen),
+        child: ExcludeSemantics(
+          child: Text(
+            'B',
+            style: VineTheme.labelSmallFont(color: VineTheme.primaryDarkGreen),
+          ),
         ),
       ),
     );
 
-    return SizedBox(
-      width: size,
-      height: size,
-      child: imageUrl == null || imageUrl!.isEmpty
-          ? fallback
-          : ClipOval(
-              child: VineCachedImage(
-                imageUrl: imageUrl!,
-                width: size,
-                height: size,
-                errorWidget: (_, _, _) => fallback,
-              ),
-            ),
+    return Semantics(
+      image: true,
+      label: label,
+      child: ExcludeSemantics(
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: imageUrl == null || imageUrl!.isEmpty
+              ? fallback
+              : ClipOval(
+                  child: VineCachedImage(
+                    imageUrl: imageUrl!,
+                    width: size,
+                    height: size,
+                    errorWidget: (_, _, _) => fallback,
+                  ),
+                ),
+        ),
+      ),
     );
   }
 }
@@ -601,13 +627,18 @@ void _showProfileBadgeSheet(BuildContext context, ProfileBadgeViewData badge) {
 class _ProfileBadgeDetailsSheet extends StatelessWidget {
   const _ProfileBadgeDetailsSheet({required this.badge});
 
+  static const _maxVisibleRecipients = 12;
+
   final ProfileBadgeViewData badge;
 
   @override
   Widget build(BuildContext context) {
     final issuerPubkey = badge.issuerPubkey;
-    final recipients = _uniquePubkeys(badge.recipientPubkeys);
+    final recipients = badge.uniqueRecipientPubkeys;
+    final visibleRecipients = recipients.take(_maxVisibleRecipients).toList();
+    final hiddenRecipientCount = recipients.length - visibleRecipients.length;
     final description = badge.description?.trim();
+    final l10n = context.l10n;
 
     return SafeArea(
       top: false,
@@ -621,7 +652,11 @@ class _ProfileBadgeDetailsSheet extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _ProfileBadgeImage(imageUrl: badge.imageUrl, size: 56),
+                  _ProfileBadgeImage(
+                    imageUrl: badge.imageUrl,
+                    size: 56,
+                    semanticLabel: badge.displayName,
+                  ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -649,7 +684,7 @@ class _ProfileBadgeDetailsSheet extends StatelessWidget {
               ),
               if (issuerPubkey != null && issuerPubkey.isNotEmpty) ...[
                 const SizedBox(height: 24),
-                const _ProfileBadgeSheetSectionTitle('Awarded by'),
+                _ProfileBadgeSheetSectionTitle(l10n.profileBadgeAwardedBy),
                 UserProfileTile(
                   pubkey: issuerPubkey,
                   showFollowButton: false,
@@ -659,13 +694,23 @@ class _ProfileBadgeDetailsSheet extends StatelessWidget {
               ],
               if (recipients.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                const _ProfileBadgeSheetSectionTitle('Recipients'),
-                for (final recipientPubkey in recipients)
+                _ProfileBadgeSheetSectionTitle(l10n.profileBadgeRecipients),
+                for (final recipientPubkey in visibleRecipients)
                   UserProfileTile(
                     pubkey: recipientPubkey,
                     showFollowButton: false,
                     onTap: () =>
                         _openProfileFromBadgeSheet(context, recipientPubkey),
+                  ),
+                if (hiddenRecipientCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16, top: 4),
+                    child: Text(
+                      l10n.profileBadgeMoreRecipients(hiddenRecipientCount),
+                      style: VineTheme.bodySmallFont(
+                        color: VineTheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
               ],
             ],
@@ -673,14 +718,6 @@ class _ProfileBadgeDetailsSheet extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static List<String> _uniquePubkeys(List<String> pubkeys) {
-    final seen = <String>{};
-    return [
-      for (final pubkey in pubkeys)
-        if (pubkey.isNotEmpty && seen.add(pubkey)) pubkey,
-    ];
   }
 }
 
