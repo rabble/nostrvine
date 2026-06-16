@@ -32,28 +32,32 @@ EditorAudio? _resolveRenderAudioSource(AudioEvent event) {
   return null;
 }
 
-/// Builds the render [AudioTrack] for the currently selected sound.
+/// Builds the render [AudioTrack] for the legacy single selected sound.
 ///
-/// Returns `null` (and logs a warning) when the sound has no resolvable audio
-/// source, so an unusable selection is skipped instead of aborting the render
-/// with a thrown null-check.
+/// The selected sound carries no timeline placement, so it is normalized to
+/// start at the beginning of the video and span its source length before
+/// mapping. Setting `startTime`/`endTime` is essential: a bare sound's
+/// `startTime` defaults to its source `startOffset` and its `endTime` is
+/// `null`, which the native renderer reads as a zero-length `[offset, 0]`
+/// composition window and drops with "no time remaining in composition".
+///
+/// Returns `null` (and logs a warning) when the sound has no resolvable source
+/// or no known duration.
 AudioTrack? audioTrackFromSoundForRender(AudioEvent sound) {
-  final audio = _resolveRenderAudioSource(sound);
-  if (audio == null) {
+  final durationMs = ((sound.duration ?? 0) * 1000).toInt();
+  if (durationMs <= 0) {
     Log.warning(
-      'Skipping selected sound ${sound.id} for render: no resolvable source',
+      'Skipping selected sound ${sound.id} for render: unknown duration',
       name: _logName,
       category: LogCategory.video,
     );
     return null;
   }
-  return AudioTrack(
-    id: sound.id,
-    title: sound.title ?? '',
-    subtitle: sound.source ?? '',
-    duration: Duration(seconds: sound.duration?.toInt() ?? 0),
-    audio: audio,
-    startTime: sound.startOffset,
+  return audioTrackFromMetaForRender(
+    sound.copyWith(
+      startTime: Duration.zero,
+      endTime: Duration(milliseconds: durationMs),
+    ),
   );
 }
 

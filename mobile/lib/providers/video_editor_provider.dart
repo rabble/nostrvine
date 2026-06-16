@@ -1008,7 +1008,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     final audioEvents = baseParams.audioTracksFromMeta;
     final audioTracks = <AudioTrack>[
       for (final track in audioEvents) ?audioTrackFromMetaForRender(track),
-      if (soundTrack != null) ?audioTrackFromSoundForRender(soundTrack),
+      // selectedSound is legacy single-sound state from the recorder flow.
+      // When the timeline already carries audio (meta tracks) it is the same
+      // sound, so adding it again duplicates the audio. Only fall back to it
+      // when the timeline has no audio of its own.
+      if (audioEvents.isEmpty && soundTrack != null)
+        ?audioTrackFromSoundForRender(soundTrack),
     ];
 
     // Surface the resolution result so a silent export (no audio) is

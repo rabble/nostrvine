@@ -277,10 +277,53 @@ void main() {
           id: 'video_source_no_url',
           pubkey: 'pk',
           createdAt: 1700000000,
+          duration: 3,
         );
 
         expect(audioTrackFromSoundForRender(sound), isNull);
       });
+
+      test('selected sound without a known duration is skipped', () {
+        const sound = AudioEvent(
+          id: 'video_source_no_duration',
+          pubkey: 'pk',
+          createdAt: 1700000000,
+          url: 'https://media.divine.video/abc',
+        );
+
+        expect(audioTrackFromSoundForRender(sound), isNull);
+      });
+
+      test(
+        'selected sound with a start offset gets a valid composition window',
+        () {
+          const sound = AudioEvent(
+            id: 'video_selected_offset',
+            pubkey: 'pk',
+            createdAt: 1700000000,
+            url: 'https://media.divine.video/abc',
+            duration: 6.533,
+            startOffset: Duration(milliseconds: 292),
+          );
+
+          final track = audioTrackFromSoundForRender(sound);
+
+          // Regression: previously startTime=startOffset and endTime=null
+          // produced an invalid [0.292s, 0.0s] window the native renderer
+          // dropped with "no time remaining in composition".
+          expect(track, isNotNull);
+          expect(track!.startTime, equals(Duration.zero));
+          expect(track.endTime, equals(const Duration(milliseconds: 6533)));
+          expect(
+            track.audioStartTime,
+            equals(const Duration(milliseconds: 292)),
+          );
+          expect(
+            track.audioEndTime,
+            equals(const Duration(milliseconds: 6533)),
+          );
+        },
+      );
 
       test(
         'meta network original sound renders as network audio bounded by '
