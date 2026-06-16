@@ -94,6 +94,13 @@ jobs:
           # the base baseline. Oversized-file epic: #4339 (PR-1).
           git fetch --quiet --depth=1 origin main
           bash scripts/check_file_size_ceiling.sh
+      - name: 🎨 Verify raw Icons.* count does not increase (DivineIcon ratchet)
+        run: |
+          # Freezes the deferred raw Material Icons.* residue (#4803) per-file so
+          # the migration can only shrink. origin/main provides the base ref for
+          # the anti-bypass check; fails closed if it cannot load the baseline.
+          git fetch --quiet --depth=1 origin main
+          bash scripts/check_raw_icons_ceiling.sh
       - name: 🔨 Verify generated files are up-to-date
         run: |
           dart run build_runner build --delete-conflicting-outputs
