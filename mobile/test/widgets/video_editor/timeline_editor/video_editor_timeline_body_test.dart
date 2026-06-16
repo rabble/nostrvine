@@ -70,8 +70,10 @@ void main() {
       ).thenReturn(VideoEditorMainState(isReordering: isReordering));
 
       final scrollController = ScrollController();
+      final overlayStripsScrollController = ScrollController();
       final playhead = ValueNotifier(Duration.zero);
       addTearDown(scrollController.dispose);
+      addTearDown(overlayStripsScrollController.dispose);
       addTearDown(playhead.dispose);
 
       await tester.pumpWidget(
@@ -89,6 +91,7 @@ void main() {
                 totalDuration: totalDuration,
                 pixelsPerSecond: 80,
                 scrollController: scrollController,
+                overlayStripsScrollController: overlayStripsScrollController,
                 scrollPadding: 16,
                 clips: clips,
                 totalWidth: 960,
@@ -105,6 +108,7 @@ void main() {
 
     test('stores constructor parameters', () {
       final scrollController = ScrollController();
+      final overlayStripsScrollController = ScrollController();
       final playhead = ValueNotifier(Duration.zero);
       final clips = <DivineVideoClip>[];
 
@@ -112,6 +116,7 @@ void main() {
         totalDuration: const Duration(seconds: 12),
         pixelsPerSecond: 80,
         scrollController: scrollController,
+        overlayStripsScrollController: overlayStripsScrollController,
         scrollPadding: 16,
         clips: clips,
         totalWidth: 960,
@@ -124,12 +129,17 @@ void main() {
       expect(widget.totalDuration, equals(const Duration(seconds: 12)));
       expect(widget.pixelsPerSecond, equals(80));
       expect(widget.scrollController, same(scrollController));
+      expect(
+        widget.overlayStripsScrollController,
+        same(overlayStripsScrollController),
+      );
       expect(widget.scrollPadding, equals(16));
       expect(widget.clips, same(clips));
       expect(widget.totalWidth, equals(960));
       expect(widget.playheadPosition, same(playhead));
 
       scrollController.dispose();
+      overlayStripsScrollController.dispose();
       playhead.dispose();
     });
 

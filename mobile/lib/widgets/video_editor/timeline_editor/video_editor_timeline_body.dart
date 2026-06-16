@@ -22,6 +22,7 @@ class VideoEditorTimelineBody extends StatelessWidget {
     required this.totalDuration,
     required this.pixelsPerSecond,
     required this.scrollController,
+    required this.overlayStripsScrollController,
     required this.scrollPadding,
     required this.clips,
     required this.totalWidth,
@@ -48,6 +49,11 @@ class VideoEditorTimelineBody extends StatelessWidget {
   final Duration totalDuration;
   final double pixelsPerSecond;
   final ScrollController scrollController;
+
+  /// Vertical scroll controller for the overlay-strips area. Owned by the
+  /// timeline state so it can be reset to the top when volume-edit mode is
+  /// entered (the strips are frozen there and must align with the arcs).
+  final ScrollController overlayStripsScrollController;
   final double scrollPadding;
   final List<DivineVideoClip> clips;
   final double totalWidth;
@@ -160,6 +166,7 @@ class VideoEditorTimelineBody extends StatelessWidget {
                   child: ClipRect(
                     clipper: const VerticalOnlyClipper(),
                     child: SingleChildScrollView(
+                      controller: overlayStripsScrollController,
                       clipBehavior: Clip.none,
                       physics: isVolumeEditMode
                           ? const NeverScrollableScrollPhysics()

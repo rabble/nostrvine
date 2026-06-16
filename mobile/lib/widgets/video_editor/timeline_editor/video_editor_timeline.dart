@@ -41,6 +41,12 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
 
   late final ScrollController _scrollController;
   late final ScrollController _verticalScrollController;
+
+  /// Vertical scroll for the overlay-strips area inside the timeline body.
+  /// Reset to 0 on entering volume-edit mode so the strips realign with the
+  /// volume arcs (which are pinned to the top) instead of staying frozen at a
+  /// previously-scrolled offset.
+  late final ScrollController _overlayStripsScrollController;
   bool _isUserScrolling = false;
 
   double _pixelsPerSecond = TimelineConstants.pixelsPerSecond;
@@ -80,6 +86,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     super.initState();
     _scrollController = ScrollController()..addListener(_updatePlayheadTime);
     _verticalScrollController = ScrollController();
+    _overlayStripsScrollController = ScrollController();
   }
 
   @override
@@ -88,6 +95,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
       ..removeListener(_updatePlayheadTime)
       ..dispose();
     _verticalScrollController.dispose();
+    _overlayStripsScrollController.dispose();
     _playheadPosition.dispose();
     _volumePreviewNotifier.dispose();
     super.dispose();
@@ -179,6 +187,12 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
           listenWhen: (prev, curr) =>
               !prev.isVolumeEditMode && curr.isVolumeEditMode,
           listener: (context, state) {
+            // The overlay-strips scroll is frozen while in volume mode, so
+            // reset it to the top first — otherwise it stays stuck at the
+            // previously-scrolled offset and hides the upper strips/arcs.
+            if (_overlayStripsScrollController.hasClients) {
+              _overlayStripsScrollController.jumpTo(0);
+            }
             final clipBloc = context.read<ClipEditorBloc>();
             if (clipBloc.state.isEditing) {
               clipBloc.add(const ClipEditorEditingToggled());
@@ -285,6 +299,8 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
                       onOverlayDragStarted: _onOverlayDragStarted,
                       onOverlayDragEnded: _onOverlayDragEnded,
                       verticalScrollController: _verticalScrollController,
+                      overlayStripsScrollController:
+                          _overlayStripsScrollController,
                       volumePreviewNotifier: _volumePreviewNotifier,
                     ),
                   ),
@@ -933,6 +949,7 @@ class _TimelineInteractiveBody extends StatelessWidget {
     required this.onOverlayDragStarted,
     required this.onOverlayDragEnded,
     required this.verticalScrollController,
+    required this.overlayStripsScrollController,
     required this.volumePreviewNotifier,
   });
 
@@ -969,7 +986,10 @@ class _TimelineInteractiveBody extends StatelessWidget {
   final ValueChanged<TimelineOverlayItem> onOverlayDragStarted;
   final VoidCallback onOverlayDragEnded;
   final ScrollController verticalScrollController;
+  final ScrollController overlayStripsScrollController;
   final ValueNotifier<double?> volumePreviewNotifier;
+
+  static const _scrollBottomPadding = 100;
 
   @override
   Widget build(BuildContext context) {
@@ -1004,6 +1024,9 @@ class _TimelineInteractiveBody extends StatelessWidget {
           physics: isVolumeEditMode
               ? const ClampingScrollPhysics()
               : const NeverScrollableScrollPhysics(),
+          padding: .only(
+            bottom: _scrollBottomPadding + MediaQuery.paddingOf(context).bottom,
+          ),
           child: ClipRect(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
@@ -1066,6 +1089,8 @@ class _TimelineInteractiveBody extends StatelessWidget {
                             totalDuration: totalDuration,
                             pixelsPerSecond: pixelsPerSecond,
                             scrollController: scrollController,
+                            overlayStripsScrollController:
+                                overlayStripsScrollController,
                             scrollPadding: halfScreen,
                             clips: clips,
                             totalWidth: totalWidth,
