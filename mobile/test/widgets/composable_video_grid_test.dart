@@ -1,9 +1,10 @@
 // ABOUTME: Tests for ComposableVideoGrid widget
 // ABOUTME: Verifies grid rendering, broken video filtering, and user interactions
 //
-// NOTE: These tests fail because ComposableVideoGrid uses UserName widget which
-// triggers the Nostr provider chain (userProfileReactive -> userProfileService ->
-// nostrService) that attempts real WebSocket connections to relays.
+// NOTE: Tests that render video tiles are skipped because ComposableVideoGrid
+// uses UserName widget, which triggers the Nostr provider chain
+// (userProfileReactive -> userProfileService -> nostrService) that attempts
+// real WebSocket connections to relays.
 //
 // Flutter's TestWidgetsFlutterBinding automatically intercepts and mocks all
 // HTTP/WebSocket connections, returning "Mocked response" errors. This is built
@@ -15,9 +16,9 @@
 // That version uses IntegrationTestWidgetsFlutterBinding which allows real
 // network connections and tests the widget in the context of the running app.
 //
-// These widget tests are kept for reference and potential future refactoring
-// where ComposableVideoGrid could accept profile data as props instead of
-// fetching via providers, which would allow isolated widget testing.
+// The skipped tile tests are kept for reference and potential future
+// refactoring where ComposableVideoGrid could accept profile data as props
+// instead of fetching via providers, which would allow isolated widget testing.
 
 import 'dart:ui' show PointerDeviceKind;
 
