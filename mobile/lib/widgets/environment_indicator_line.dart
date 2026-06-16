@@ -8,20 +8,27 @@ import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_providers.dart';
+import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
 
 /// Resolves the indicator line color for the given [environment] and
 /// [configuredRelays], or `null` when the line should be hidden.
 ///
-/// - Any non-Divine relay in the configured set → purple (wins over the
-///   environment color).
+/// - A user-chosen relay beyond Divine + the app's [defaultRelayUrls] →
+///   purple (wins over the environment color).
 /// - Otherwise, a non-production environment → its environment color.
-/// - Otherwise (production on Divine-only relays) → `null` (hidden).
+/// - Otherwise (production on Divine / default relays) → `null` (hidden).
 Color? environmentIndicatorColor({
   required EnvironmentConfig environment,
   required List<String> configuredRelays,
+  required Iterable<String> defaultRelayUrls,
 }) {
-  if (hasNonDivineRelay(configuredRelays)) return VineTheme.accentPurple;
+  if (usesUserChosenRelay(
+    configuredRelays,
+    defaultRelayUrls: defaultRelayUrls,
+  )) {
+    return VineTheme.accentPurple;
+  }
   if (!environment.isProduction) {
     return Color(environment.indicatorColorValue);
   }
@@ -49,6 +56,12 @@ final environmentIndicatorColorProvider = Provider<Color?>((ref) {
   return environmentIndicatorColor(
     environment: environment,
     configuredRelays: configuredRelays,
+    // Relays every account is auto-seeded with (NIP-65 indexers + DM
+    // fallbacks). Excluded so only genuinely user-added relays show purple.
+    defaultRelayUrls: <String>{
+      ...environment.indexerRelays,
+      ...IndexerRelayConfig.safeFallbackRelays,
+    },
   );
 });
 

@@ -226,29 +226,61 @@ void main() {
     });
   });
 
-  group('hasNonDivineRelay', () {
+  group('usesUserChosenRelay', () {
+    const defaultRelayUrls = [
+      'wss://purplepag.es',
+      'wss://relay.nos.social',
+      'wss://relay.damus.io',
+      'wss://nos.lol',
+    ];
+
     test('false when every relay is Divine-hosted', () {
       expect(
-        hasNonDivineRelay(const [
-          'wss://relay.divine.video',
-          'wss://relay.staging.divine.video',
-        ]),
+        usesUserChosenRelay(
+          const [
+            'wss://relay.divine.video',
+            'wss://relay.staging.divine.video',
+          ],
+          defaultRelayUrls: defaultRelayUrls,
+        ),
         isFalse,
       );
     });
 
-    test('true when any relay is not Divine-hosted', () {
+    test('false for a fresh account seeded with app default relays', () {
+      // Divine relay + auto-seeded indexer/fallback relays — none user-chosen.
       expect(
-        hasNonDivineRelay(const [
-          'wss://relay.divine.video',
-          'wss://purplepag.es',
-        ]),
+        usesUserChosenRelay(
+          const [
+            'wss://relay.divine.video',
+            'wss://purplepag.es',
+            'wss://relay.nos.social',
+            'wss://nos.lol',
+          ],
+          defaultRelayUrls: defaultRelayUrls,
+        ),
+        isFalse,
+      );
+    });
+
+    test('true when a relay outside Divine and the defaults is configured', () {
+      expect(
+        usesUserChosenRelay(
+          const [
+            'wss://relay.divine.video',
+            'wss://my-personal-relay.example',
+          ],
+          defaultRelayUrls: defaultRelayUrls,
+        ),
         isTrue,
       );
     });
 
     test('false for an empty relay set', () {
-      expect(hasNonDivineRelay(const []), isFalse);
+      expect(
+        usesUserChosenRelay(const [], defaultRelayUrls: defaultRelayUrls),
+        isFalse,
+      );
     });
   });
 }

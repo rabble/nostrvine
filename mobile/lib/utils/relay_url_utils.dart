@@ -39,9 +39,32 @@ bool isDivineHostedRelayUrl(String url) {
   return _divineHostedRelayHosts.contains(host) || isLoopbackHost(host);
 }
 
-/// True if any relay in [configuredRelays] is not Divine-hosted.
-bool hasNonDivineRelay(Iterable<String> configuredRelays) =>
-    configuredRelays.any((url) => !isDivineHostedRelayUrl(url));
+/// True if [configuredRelays] includes a relay the user added beyond the
+/// Divine-operated relays, loopback, and the app's own [defaultRelayUrls].
+///
+/// Every account — including a brand-new one — is auto-seeded with NIP-65
+/// indexer relays and DM-reachability fallback relays. Those are app plumbing,
+/// not relays the user chose, so they must be passed in via [defaultRelayUrls]
+/// and excluded; otherwise a fresh Divine-only account would falsely register
+/// as "using non-Divine relays".
+bool usesUserChosenRelay(
+  Iterable<String> configuredRelays, {
+  required Iterable<String> defaultRelayUrls,
+}) {
+  final allowedHosts = <String>{
+    ..._divineHostedRelayHosts,
+    for (final url in defaultRelayUrls)
+      if (Uri.tryParse(url)?.host.toLowerCase() case final String host
+          when host.isNotEmpty)
+        host,
+  };
+  return configuredRelays.any((url) {
+    final host = Uri.tryParse(url)?.host.toLowerCase();
+    if (host == null || host.isEmpty) return false;
+    if (allowedHosts.contains(host) || isLoopbackHost(host)) return false;
+    return true;
+  });
+}
 
 /// True if [url] is a relay URL the app is allowed to connect to.
 ///
