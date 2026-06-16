@@ -21,6 +21,18 @@ part 'profile_liked_videos_state.dart';
 /// Number of videos to load per page for pagination.
 const _pageSize = 18;
 
+final class _LikedVideosPage {
+  const _LikedVideosPage({
+    required this.videos,
+    required this.nextOffset,
+    required this.hasMoreContent,
+  });
+
+  final List<VideoEvent> videos;
+  final int nextOffset;
+  final bool hasMoreContent;
+}
+
 /// BLoC for managing profile liked videos.
 ///
 /// Coordinates between:
@@ -150,11 +162,14 @@ class ProfileLikedVideosBloc
         ),
       );
 
-      final firstPageIds = likedEventIds.take(_pageSize).toList();
-      final videos = await _fetchVideos(firstPageIds, cacheResults: true);
+      final page = await _fetchVideoPage(
+        likedEventIds,
+        startOffset: 0,
+        cacheFirstBatch: true,
+      );
 
       Log.info(
-        'ProfileLikedVideosBloc: Loaded ${videos.length} videos '
+        'ProfileLikedVideosBloc: Loaded ${page.videos.length} videos '
         '(first page of ${likedEventIds.length} total)',
         name: 'ProfileLikedVideosBloc',
         category: LogCategory.video,
@@ -163,9 +178,9 @@ class ProfileLikedVideosBloc
       emit(
         state.copyWith(
           status: ProfileLikedVideosStatus.success,
-          videos: videos,
-          hasMoreContent: likedEventIds.length > firstPageIds.length,
-          nextPageOffset: firstPageIds.length,
+          videos: page.videos,
+          hasMoreContent: page.hasMoreContent,
+          nextPageOffset: page.nextOffset,
           clearError: true,
         ),
       );
@@ -219,12 +234,14 @@ class ProfileLikedVideosBloc
           ),
         );
 
-        // Fetch videos for cached IDs
-        final firstPageIds = cachedIds.take(_pageSize).toList();
-        final videos = await _fetchVideos(firstPageIds, cacheResults: true);
+        final page = await _fetchVideoPage(
+          cachedIds,
+          startOffset: 0,
+          cacheFirstBatch: true,
+        );
 
         Log.info(
-          'ProfileLikedVideosBloc: Loaded ${videos.length} videos from cache '
+          'ProfileLikedVideosBloc: Loaded ${page.videos.length} videos from cache '
           '(first page of ${cachedIds.length} total)',
           name: 'ProfileLikedVideosBloc',
           category: LogCategory.video,
@@ -233,9 +250,9 @@ class ProfileLikedVideosBloc
         emit(
           state.copyWith(
             status: ProfileLikedVideosStatus.success,
-            videos: videos,
-            hasMoreContent: cachedIds.length > firstPageIds.length,
-            nextPageOffset: firstPageIds.length,
+            videos: page.videos,
+            hasMoreContent: page.hasMoreContent,
+            nextPageOffset: page.nextOffset,
             clearError: true,
           ),
         );
@@ -294,11 +311,14 @@ class ProfileLikedVideosBloc
           ),
         );
 
-        final firstPageIds = likedEventIds.take(_pageSize).toList();
-        final videos = await _fetchVideos(firstPageIds, cacheResults: true);
+        final page = await _fetchVideoPage(
+          likedEventIds,
+          startOffset: 0,
+          cacheFirstBatch: true,
+        );
 
         Log.info(
-          'ProfileLikedVideosBloc: Loaded ${videos.length} videos '
+          'ProfileLikedVideosBloc: Loaded ${page.videos.length} videos '
           '(first page of ${likedEventIds.length} total)',
           name: 'ProfileLikedVideosBloc',
           category: LogCategory.video,
@@ -307,9 +327,9 @@ class ProfileLikedVideosBloc
         emit(
           state.copyWith(
             status: ProfileLikedVideosStatus.success,
-            videos: videos,
-            hasMoreContent: likedEventIds.length > firstPageIds.length,
-            nextPageOffset: firstPageIds.length,
+            videos: page.videos,
+            hasMoreContent: page.hasMoreContent,
+            nextPageOffset: page.nextOffset,
             clearError: true,
           ),
         );
@@ -413,9 +433,9 @@ class ProfileLikedVideosBloc
   /// Handle load more request - fetches the next page of videos.
   ///
   /// Uses [state.nextPageOffset] to track the position in [state.likedEventIds]
-  /// and fetches the next [_pageSize] IDs. The offset advances by the number
-  /// of IDs consumed, not the number of videos loaded (some IDs may not
-  /// resolve to videos due to relay unavailability or format filtering).
+  /// and consumes ID batches until it has a page of renderable videos or runs
+  /// out of IDs. The offset advances by the number of IDs consumed, not the
+  /// number of videos loaded.
   Future<void> _onLoadMoreRequested(
     ProfileLikedVideosLoadMoreRequested event,
     Emitter<ProfileLikedVideosState> emit,
@@ -446,40 +466,26 @@ class ProfileLikedVideosBloc
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      // Get the next page of IDs
-      final nextPageIds = state.likedEventIds
-          .skip(offset)
-          .take(_pageSize)
-          .toList();
-
-      // Fetch videos for the next page
-      final newVideos = await _fetchVideos(nextPageIds);
+      final page = await _fetchVideoPage(
+        state.likedEventIds,
+        startOffset: offset,
+        excludeVideoIds: state.videos.map((v) => v.id).toSet(),
+      );
 
       Log.info(
-        'ProfileLikedVideosBloc: Loaded ${newVideos.length} more videos',
+        'ProfileLikedVideosBloc: Loaded ${page.videos.length} more videos',
         name: 'ProfileLikedVideosBloc',
         category: LogCategory.video,
       );
 
-      // Deduplicate: filter out any videos already loaded
-      final existingIds = state.videos.map((v) => v.id).toSet();
-      final uniqueNewVideos = newVideos
-          .where((v) => !existingIds.contains(v.id))
-          .toList();
-
-      // Advance offset by IDs consumed (not videos loaded)
-      final newOffset = offset + nextPageIds.length;
-
-      // Append only unique videos
-      final allVideos = [...state.videos, ...uniqueNewVideos];
-      final hasMore = newOffset < totalCount;
+      final allVideos = [...state.videos, ...page.videos];
 
       emit(
         state.copyWith(
           videos: allVideos,
           isLoadingMore: false,
-          hasMoreContent: hasMore,
-          nextPageOffset: newOffset,
+          hasMoreContent: page.hasMoreContent,
+          nextPageOffset: page.nextOffset,
         ),
       );
     } catch (e) {
@@ -497,8 +503,8 @@ class ProfileLikedVideosBloc
   /// Removes any now-blocked authors from [ProfileLikedVideosState.videos].
   /// [likedEventIds] and [ProfileLikedVideosState.nextPageOffset] are left
   /// untouched: the offset indexes into [likedEventIds] for pagination, and
-  /// the next page fetch re-applies the blocklist filter via
-  /// [VideosRepository], so no offset adjustment is needed here.
+  /// the next page fetch applies the current blocklist filter through
+  /// [_fetchVideos], so no offset adjustment is needed here.
   void _onBlocklistChanged(
     ProfileLikedVideosBlocklistChanged event,
     Emitter<ProfileLikedVideosState> emit,
@@ -510,6 +516,45 @@ class ProfileLikedVideosBloc
     if (filtered.length != state.videos.length) {
       emit(state.copyWith(videos: filtered));
     }
+  }
+
+  Future<_LikedVideosPage> _fetchVideoPage(
+    List<String> likedEventIds, {
+    required int startOffset,
+    Set<String> excludeVideoIds = const {},
+    bool cacheFirstBatch = false,
+  }) async {
+    final totalCount = likedEventIds.length;
+    var offset = startOffset;
+    var isFirstBatch = true;
+    final pageVideos = <VideoEvent>[];
+    final seenIds = {...excludeVideoIds};
+
+    while (offset < totalCount && pageVideos.length < _pageSize) {
+      final batchIds = likedEventIds.skip(offset).take(_pageSize).toList();
+      if (batchIds.isEmpty) break;
+
+      final videos = await _fetchVideos(
+        batchIds,
+        cacheResults: cacheFirstBatch && isFirstBatch,
+      );
+
+      for (final video in videos) {
+        if (pageVideos.length >= _pageSize) break;
+        if (seenIds.add(video.id)) {
+          pageVideos.add(video);
+        }
+      }
+
+      offset += batchIds.length;
+      isFirstBatch = false;
+    }
+
+    return _LikedVideosPage(
+      videos: pageVideos,
+      nextOffset: offset,
+      hasMoreContent: offset < totalCount,
+    );
   }
 
   /// Fetch videos for the given event IDs.
@@ -545,8 +590,13 @@ class ProfileLikedVideosBloc
       category: LogCategory.video,
     );
 
-    // Filter unsupported formats
-    return videos.where((v) => v.isSupportedOnCurrentPlatform).toList();
+    final supported = videos
+        .where((v) => v.isSupportedOnCurrentPlatform)
+        .toList();
+    return _blocklistRepository.filterContent<VideoEvent>(
+      supported,
+      (video) => video.pubkey,
+    );
   }
 
   @override

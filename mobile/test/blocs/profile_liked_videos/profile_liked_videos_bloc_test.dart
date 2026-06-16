@@ -57,6 +57,11 @@ void main() {
       when(
         () => mockBlocklistRepository.stateStream,
       ).thenAnswer((_) => blocklistStateController.stream);
+      when(
+        () => mockBlocklistRepository.filterContent<VideoEvent>(any(), any()),
+      ).thenAnswer(
+        (invocation) => invocation.positionalArguments[0] as List<VideoEvent>,
+      );
     });
 
     tearDown(() {
@@ -309,6 +314,76 @@ void main() {
               ),
         ],
       );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'continues initial load through sparse liked IDs until videos render',
+        setUp: () {
+          final likedIds = List.generate(40, (index) => 'event${index + 1}');
+          final secondBatchVideos = List.generate(
+            18,
+            (index) => createTestVideo('event${index + 19}'),
+          );
+
+          when(() => mockLikesRepository.syncUserReactions()).thenAnswer(
+            (_) async => LikesSyncResult(
+              orderedEventIds: likedIds,
+              eventIdToReactionId: const {},
+            ),
+          );
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer((invocation) async {
+            final ids = invocation.positionalArguments[0] as List<String>;
+            if (ids.first == 'event19') {
+              return secondBatchVideos;
+            }
+            return <VideoEvent>[];
+          });
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ProfileLikedVideosSyncRequested()),
+        expect: () => [
+          const ProfileLikedVideosState(
+            status: ProfileLikedVideosStatus.syncing,
+          ),
+          isA<ProfileLikedVideosState>().having(
+            (s) => s.status,
+            'status',
+            ProfileLikedVideosStatus.loading,
+          ),
+          isA<ProfileLikedVideosState>()
+              .having(
+                (s) => s.status,
+                'status',
+                ProfileLikedVideosStatus.success,
+              )
+              .having((s) => s.videos.length, 'videos count', 18)
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 36)
+              .having((s) => s.hasMoreContent, 'hasMoreContent', true),
+        ],
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.getVideosByIds(
+              any(
+                that: equals(List.generate(18, (index) => 'event${index + 1}')),
+              ),
+              cacheResults: true,
+            ),
+          ).called(1);
+          verify(
+            () => mockVideosRepository.getVideosByIds(
+              any(
+                that: equals(
+                  List.generate(18, (index) => 'event${index + 19}'),
+                ),
+              ),
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('ProfileLikedVideosSubscriptionRequested', () {
@@ -538,6 +613,48 @@ void main() {
       );
 
       blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'continues load more through sparse liked IDs until a full page renders',
+        setUp: () {
+          final nextVisibleVideos = List.generate(
+            18,
+            (index) => createTestVideo('event${index + 21}'),
+          );
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer((invocation) async {
+            final ids = invocation.positionalArguments[0] as List<String>;
+            if (ids.first == 'event21') {
+              return nextVisibleVideos;
+            }
+            return <VideoEvent>[];
+          });
+        },
+        build: createBloc,
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          likedEventIds: List.generate(42, (index) => 'event${index + 1}'),
+          videos: [createTestVideo('event1'), createTestVideo('event2')],
+          nextPageOffset: 2,
+        ),
+        act: (bloc) => bloc.add(const ProfileLikedVideosLoadMoreRequested()),
+        expect: () => [
+          isA<ProfileLikedVideosState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.videos.length, 'videos count', 20)
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 38)
+              .having((s) => s.hasMoreContent, 'hasMoreContent', true),
+        ],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
         'emits hasMoreContent false when '
         'nextPageOffset >= likedEventIds.length',
         build: createBloc,
@@ -603,6 +720,48 @@ void main() {
               ])
               .having((s) => s.nextPageOffset, 'nextPageOffset', 3)
               .having((s) => s.hasMoreContent, 'hasMoreContent', false),
+        ],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'filters blocked authors from newly fetched videos',
+        setUp: () {
+          final blockedVideo = createTestVideo('event2');
+          final allowedVideo = createTestVideo('event3');
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer((_) async => [blockedVideo, allowedVideo]);
+          when(
+            () =>
+                mockBlocklistRepository.filterContent<VideoEvent>(any(), any()),
+          ).thenAnswer((invocation) {
+            final videos =
+                invocation.positionalArguments[0] as List<VideoEvent>;
+            return videos.where((video) => video.id != 'event2').toList();
+          });
+        },
+        build: createBloc,
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          likedEventIds: const ['event1', 'event2', 'event3'],
+          videos: [createTestVideo('event1')],
+          nextPageOffset: 1,
+        ),
+        act: (bloc) => bloc.add(const ProfileLikedVideosLoadMoreRequested()),
+        expect: () => [
+          isA<ProfileLikedVideosState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<ProfileLikedVideosState>().having(
+            (s) => s.videos.map((v) => v.id).toList(),
+            'video IDs',
+            ['event1', 'event3'],
+          ),
         ],
       );
 
@@ -735,11 +894,9 @@ void main() {
         act: (bloc) => bloc.add(const ProfileLikedVideosBlocklistChanged()),
         expect: () => [
           isA<ProfileLikedVideosState>()
-              .having(
-                (s) => s.videos.map((v) => v.id).toList(),
-                'videos',
-                ['b'],
-              )
+              .having((s) => s.videos.map((v) => v.id).toList(), 'videos', [
+                'b',
+              ])
               .having((s) => s.likedEventIds, 'likedEventIds', ['a', 'b'])
               .having((s) => s.nextPageOffset, 'nextPageOffset', 2),
         ],
