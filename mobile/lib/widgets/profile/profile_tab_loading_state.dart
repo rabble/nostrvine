@@ -4,6 +4,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 /// Reusable loading indicator displayed inside a profile tab while content
 /// is being fetched.
@@ -28,7 +29,7 @@ class ProfileTabLoadingState extends StatelessWidget {
             mainAxisSize: .min,
             spacing: 16,
             children: [
-              const CircularProgressIndicator(color: VineTheme.primary),
+              const BrandedLoadingIndicator(size: 64),
               if (message != null)
                 Text(
                   message!,
