@@ -252,6 +252,81 @@ void main() {
         expect(track.audio.file?.path, equals('/tmp/imported/snare.mp3'));
         expect(track.audio.hasNetworkUrl, isFalse);
       });
+
+      test(
+        'meta network original sound renders as network audio bounded by '
+        'source duration',
+        () {
+          const event = AudioEvent(
+            id: 'video_source_copy_1',
+            pubkey: 'pk',
+            createdAt: 1700000000,
+            url: 'https://media.divine.video/abc123',
+            duration: 6.533,
+            startOffset: Duration(milliseconds: 292),
+            endTime: Duration(milliseconds: 3966),
+          );
+
+          final track = audioTrackFromMetaForRender(event);
+
+          expect(track, isNotNull);
+          expect(track!.audio.hasNetworkUrl, isTrue);
+          expect(
+            track.audioStartTime,
+            equals(const Duration(milliseconds: 292)),
+          );
+          // End of the source (6533ms), NOT startOffset + full length (6825ms).
+          expect(
+            track.audioEndTime,
+            equals(const Duration(milliseconds: 6533)),
+          );
+          expect(track.startTime, equals(Duration.zero));
+          expect(track.endTime, equals(const Duration(milliseconds: 3966)));
+        },
+      );
+
+      test('meta absolute-path url renders as file audio', () {
+        const event = AudioEvent(
+          id: 'video_source_copy_2',
+          pubkey: 'pk',
+          createdAt: 1700000000,
+          url: '/tmp/extracted/original.m4a',
+          duration: 3,
+        );
+
+        final track = audioTrackFromMetaForRender(event);
+
+        expect(track, isNotNull);
+        expect(track!.audio.hasFile, isTrue);
+        expect(track.audio.file?.path, equals('/tmp/extracted/original.m4a'));
+      });
+
+      test('meta local import renders as file audio', () {
+        final event = AudioEvent.fromLocalImport(
+          id: 'local_import_1700000000000',
+          filePath: '/tmp/imported/beat.mp3',
+          createdAt: 1700000000,
+          title: 'beat',
+          mimeType: 'audio/mpeg',
+          duration: 4,
+        );
+
+        final track = audioTrackFromMetaForRender(event);
+
+        expect(track, isNotNull);
+        expect(track!.audio.hasFile, isTrue);
+        expect(track.audio.file?.path, equals('/tmp/imported/beat.mp3'));
+      });
+
+      test('meta track without a resolvable source is skipped', () {
+        const event = AudioEvent(
+          id: 'video_source_no_url',
+          pubkey: 'pk',
+          createdAt: 1700000000,
+        );
+
+        expect(audioTrackFromMetaForRender(event), isNull);
+      });
     });
 
     group('setProcessing', () {

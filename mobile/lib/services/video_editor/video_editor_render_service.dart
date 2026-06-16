@@ -885,17 +885,38 @@ class VideoEditorRenderService {
 
     final audioTracks = <VideoAudioTrack>[];
     for (final track in customTracks) {
-      final audioPath = await track.audio.safeFilePath();
-      audioTracks.add(
-        VideoAudioTrack(
-          path: audioPath,
-          startTime: track.startTime,
-          endTime: track.endTime,
-          audioStartTime: track.audioStartTime,
-          audioEndTime: track.audioEndTime,
-          loop: track.loop,
-          volume: track.volume,
-        ),
+      try {
+        final audioPath = await track.audio.safeFilePath();
+        audioTracks.add(
+          VideoAudioTrack(
+            path: audioPath,
+            startTime: track.startTime,
+            endTime: track.endTime,
+            audioStartTime: track.audioStartTime,
+            audioEndTime: track.audioEndTime,
+            loop: track.loop,
+            volume: track.volume,
+          ),
+        );
+      } catch (e, stackTrace) {
+        // Skip an unresolvable track (e.g. failed network download) instead of
+        // aborting the whole render — but log it so the gap is visible.
+        Log.error(
+          'Failed to resolve audio track ${track.id} for render — skipping it',
+          name: _logName,
+          category: .video,
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+
+    if (customTracks.isNotEmpty && audioTracks.isEmpty) {
+      Log.warning(
+        'Render produced no usable audio from ${customTracks.length} '
+        'requested track(s); custom audio will be missing from the output',
+        name: _logName,
+        category: .video,
       );
     }
 

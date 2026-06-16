@@ -64,6 +64,52 @@ AudioTrack audioTrackFromSoundForRender(AudioEvent sound) {
   );
 }
 
+/// Builds the render [AudioTrack] for a timeline audio [track] taken from the
+/// editor meta.
+///
+/// Returns `null` (and logs a warning) when the track has no resolvable audio
+/// source, so a single unusable track is skipped instead of aborting the whole
+/// render with a thrown null-check. Routes bundled → asset, local-import or
+/// absolute path → file, and everything else (http(s)) → network.
+@visibleForTesting
+AudioTrack? audioTrackFromMetaForRender(AudioEvent track) {
+  final EditorAudio audio;
+  if (track.isBundled && track.assetPath != null) {
+    audio = EditorAudio.asset(track.assetPath!);
+  } else if (track.isLocalImport && track.localFilePath != null) {
+    audio = EditorAudio.file(File(track.localFilePath!));
+  } else if (track.url != null && track.url!.isNotEmpty) {
+    audio = track.url!.startsWith('/')
+        ? EditorAudio.file(File(track.url!))
+        : EditorAudio.network(track.url!);
+  } else {
+    Log.warning(
+      'Skipping audio track ${track.id} for render: no resolvable source',
+      name: 'VideoEditorNotifier',
+      category: LogCategory.video,
+    );
+    return null;
+  }
+
+  final sourceDuration = Duration(
+    milliseconds: ((track.duration ?? 0) * 1000).toInt(),
+  );
+  return AudioTrack(
+    id: track.id,
+    title: track.title ?? '',
+    subtitle: track.source ?? '',
+    duration: sourceDuration,
+    audio: audio,
+    startTime: track.startTime,
+    endTime: track.endTime,
+    audioStartTime: track.startOffset,
+    // End of the *source* audio — not startOffset + full length, which runs
+    // the requested range past the file end whenever startOffset > 0.
+    audioEndTime: sourceDuration,
+    volume: track.volume,
+  );
+}
+
 /// Manages video editor state and operations.
 ///
 /// Handles:
@@ -1020,32 +1066,22 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     final baseParams =
         state.editorEditingParameters ?? CompleteParameters.fromMap({});
 
-    final audioTracks = baseParams.audioTracksFromMeta;
+    final audioEvents = baseParams.audioTracksFromMeta;
+    final audioTracks = <AudioTrack>[
+      for (final track in audioEvents) ?audioTrackFromMetaForRender(track),
+      if (soundTrack != null) audioTrackFromSoundForRender(soundTrack),
+    ];
 
-    return baseParams.copyWith(
-      audioTracks: [
-        for (final track in audioTracks)
-          AudioTrack(
-            id: track.id,
-            title: track.title ?? '',
-            subtitle: track.source ?? '',
-            duration: Duration(seconds: track.duration?.toInt() ?? 0),
-            audio: track.isBundled
-                ? EditorAudio.asset(track.assetPath!)
-                : track.url!.startsWith('/')
-                ? EditorAudio.file(File(track.url!))
-                : EditorAudio.network(track.url!),
-            startTime: track.startTime,
-            endTime: track.endTime,
-            audioStartTime: track.startOffset,
-            audioEndTime:
-                track.startOffset +
-                Duration(milliseconds: ((track.duration ?? 0) * 1000).toInt()),
-            volume: track.volume,
-          ),
-
-        if (soundTrack != null) audioTrackFromSoundForRender(soundTrack),
-      ],
+    // Surface the resolution result so a silent export (no audio) is
+    // diagnosable from logs instead of failing quietly — the common cause is
+    // an empty/unparsable `audio` meta key.
+    Log.info(
+      'Render audio: ${audioEvents.length} track(s) in meta, '
+      '${audioTracks.length} resolved for muxing',
+      name: 'VideoEditorNotifier',
+      category: LogCategory.video,
     );
+
+    return baseParams.copyWith(audioTracks: audioTracks);
   }
 }
