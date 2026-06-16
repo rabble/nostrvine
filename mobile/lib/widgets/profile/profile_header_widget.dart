@@ -21,6 +21,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/widgets/followers_screen_router.dart';
 import 'package:openvine/router/widgets/following_screen_router.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
+import 'package:openvine/services/badges/badge_repository.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/deferred_login_options_navigator.dart';
@@ -463,18 +464,120 @@ class _ProfileNameAndBio extends StatelessWidget {
             accentColor: accentColor,
           ),
         ),
+        Skeleton.keep(child: _ProfileBadgesBlock(userIdHex: userIdHex)),
         if (about != null && about!.isNotEmpty) ...[
           const SizedBox(height: 16),
           Skeleton.keep(child: _AboutText(about: about!)),
         ],
         if (profile?.website?.isNotEmpty == true) ...[
           const SizedBox(height: 8),
-          Skeleton.keep(
-            child: ProfileWebsiteRow(url: profile!.website!),
-          ),
+          Skeleton.keep(child: ProfileWebsiteRow(url: profile!.website!)),
         ],
         _VerifiedAccountsBlock(isOwnProfile: isOwnProfile),
       ],
+    );
+  }
+}
+
+class _ProfileBadgesBlock extends ConsumerWidget {
+  const _ProfileBadgesBlock({required this.userIdHex});
+
+  final String userIdHex;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final badges = ref.watch(profileAcceptedBadgesProvider(userIdHex));
+    return badges.when(
+      data: (items) {
+        if (items.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final item in items) _ProfileBadgeChip(badge: item),
+            ],
+          ),
+        );
+      },
+      error: (_, _) => const SizedBox.shrink(),
+      loading: () => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _ProfileBadgeChip extends StatelessWidget {
+  const _ProfileBadgeChip({required this.badge});
+
+  final ProfileBadgeViewData badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = badge.imageUrl;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: VineTheme.surfaceBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: VineTheme.neutral10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ProfileBadgeImage(imageUrl: imageUrl),
+            const SizedBox(width: 6),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 180),
+              child: Text(
+                badge.displayName,
+                style: VineTheme.labelMediumFont(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileBadgeImage extends StatelessWidget {
+  const _ProfileBadgeImage({required this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = DecoratedBox(
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: VineTheme.vineGreen,
+      ),
+      child: Center(
+        child: Text(
+          'B',
+          style: VineTheme.labelSmallFont(color: VineTheme.primaryDarkGreen),
+        ),
+      ),
+    );
+
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: imageUrl == null || imageUrl!.isEmpty
+          ? fallback
+          : ClipOval(
+              child: VineCachedImage(
+                imageUrl: imageUrl!,
+                width: 20,
+                height: 20,
+                errorWidget: (_, _, _) => fallback,
+              ),
+            ),
     );
   }
 }

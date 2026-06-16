@@ -122,6 +122,41 @@ void main() {
       },
     );
 
+    test(
+      'loadAcceptedBadgesForProfile returns badge definitions for profile',
+      () async {
+        final profileBadges = _profileBadgesEvent(
+          id: _eventId(14),
+          pubkey: _pubkey(2),
+          tags: [
+            ['a', '30009:${_pubkey(3)}:daily-diviner'],
+            ['e', _eventId(15)],
+          ],
+        );
+        final definition = _definitionEvent(
+          pubkey: _pubkey(3),
+          dTag: 'daily-diviner',
+          name: 'Diviner of the Day',
+        );
+        _stubQueries(nostrClient, {
+          'profileCurrent:${_pubkey(2)}': [profileBadges],
+          'definition:30009:${_pubkey(3)}:daily-diviner': [definition],
+        });
+
+        final badges = await repository.loadAcceptedBadgesForProfile(
+          _pubkey(2),
+        );
+
+        expect(badges, hasLength(1));
+        expect(
+          badges.single.definitionCoordinate,
+          '30009:${_pubkey(3)}:daily-diviner',
+        );
+        expect(badges.single.awardEventId, _eventId(15));
+        expect(badges.single.displayName, 'Diviner of the Day');
+      },
+    );
+
     test('acceptAward publishes a kind 10008 profile badges event', () async {
       final award = _awardEvent(
         id: _eventId(5),

@@ -13,6 +13,7 @@ import 'package:curation_repository/curation_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:hive_ce/hive_ce.dart';
@@ -53,6 +54,15 @@ final badgeRepositoryProvider = Provider<BadgeRepository>((ref) {
     signEvent: authService.createAndSignEvent,
   );
 });
+
+final FutureProviderFamily<List<ProfileBadgeViewData>, String>
+profileAcceptedBadgesProvider =
+    FutureProvider.family<List<ProfileBadgeViewData>, String>((ref, pubkey) {
+      if (pubkey.isEmpty) return const [];
+      return ref
+          .watch(badgeRepositoryProvider)
+          .loadAcceptedBadgesForProfile(pubkey);
+    });
 
 /// Cached following list loaded directly from SharedPreferences.
 ///

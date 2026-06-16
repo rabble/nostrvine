@@ -13,6 +13,7 @@ import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
@@ -25,6 +26,8 @@ import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/services/badges/badge_repository.dart';
+import 'package:openvine/services/badges/nip58_badge_models.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
@@ -48,6 +51,8 @@ class _MockPeopleListsBloc extends MockBloc<PeopleListsEvent, PeopleListsState>
 class _MockBackgroundPublishBloc
     extends MockBloc<BackgroundPublishEvent, BackgroundPublishState>
     implements BackgroundPublishBloc {}
+
+class _MockBadgeRepository extends Mock implements BadgeRepository {}
 
 // Mock classes
 class MockFollowRepository extends Mock implements FollowRepository {
@@ -181,6 +186,21 @@ class _FakeDraft extends Fake implements DivineVideoDraft {
   String get id => 'fake-draft-id';
 }
 
+Event _badgeDefinitionEvent() {
+  return Event.fromJson({
+    'id': '00000000000000000000000000000000000000000000000000000000000000bb',
+    'pubkey': testUserHex,
+    'created_at': 1000,
+    'kind': EventKind.badgeDefinition,
+    'tags': [
+      ['d', 'daily-diviner'],
+      ['name', 'Diviner of the Day'],
+    ],
+    'content': '',
+    'sig': '',
+  });
+}
+
 void main() {
   group('ProfileHeaderWidget', () {
     late MockFollowRepository mockFollowRepository;
@@ -242,6 +262,7 @@ void main() {
       PeopleListsState? peopleListsState,
       BackgroundPublishState? backgroundPublishState,
       Stream<BackgroundPublishState>? backgroundPublishStream,
+      List<ProfileBadgeViewData> acceptedProfileBadges = const [],
     }) {
       final authService = MockAuthService(
         isAnonymousValue: isAnonymous,
@@ -259,6 +280,10 @@ void main() {
         backgroundPublishStream ?? const Stream<BackgroundPublishState>.empty(),
         initialState: publishState,
       );
+      final badgeRepository = _MockBadgeRepository();
+      when(
+        () => badgeRepository.loadAcceptedBadgesForProfile(any()),
+      ).thenAnswer((_) async => acceptedProfileBadges);
 
       Widget header = ProfileHeaderWidget(
         userIdHex: userIdHex,
@@ -330,6 +355,7 @@ void main() {
                 : const Stream<ProfileStats?>.empty(),
           ),
           authServiceProvider.overrideWithValue(authService),
+          badgeRepositoryProvider.overrideWithValue(badgeRepository),
           currentAuthStateProvider.overrideWith(
             (ref) => AuthState.authenticated,
           ),
@@ -344,6 +370,38 @@ void main() {
         ),
       );
     }
+
+    testWidgets('renders accepted NIP-58 badges on the profile header', (
+      tester,
+    ) async {
+      final testProfile = createTestProfile(displayName: 'Badged User');
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: testProfile,
+          acceptedProfileBadges: [
+            ProfileBadgeViewData(
+              badge: const Nip58ProfileBadgeRef(
+                definitionCoordinate: '30009:$testUserHex:daily-diviner',
+                awardEventId:
+                    '00000000000000000000000000000000000000000000000000000000000000aa',
+              ),
+              definition: Nip58BadgeDefinition(
+                event: _badgeDefinitionEvent(),
+                coordinate: '30009:$testUserHex:daily-diviner',
+                dTag: 'daily-diviner',
+                name: 'Diviner of the Day',
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Diviner of the Day'), findsOneWidget);
+    });
 
     testWidgets('displays user avatar when profile is loaded', (tester) async {
       final testProfile = createTestProfile(
@@ -1093,60 +1151,57 @@ void main() {
         },
       );
 
-      testWidgets(
-        'sheet does not appear after successful RPC upgrade clears the '
-        'expired-session flag',
-        (tester) async {
-          // Regression for #4626: when the background upgrade succeeds the
-          // session-expired flag is cleared. The widget must not show the sheet
-          // at any point — neither while the upgrade is running (suppressed by
-          // isRpcUpgradeInProgress) nor after it succeeds (hasExpiredOAuthSession
-          // is false).
-          final testProfile = createTestProfile(displayName: 'Test User');
-          SharedPreferences.setMockInitialValues({});
-          final prefs = await SharedPreferences.getInstance();
+      testWidgets('sheet does not appear after successful RPC upgrade clears the '
+          'expired-session flag', (tester) async {
+        // Regression for #4626: when the background upgrade succeeds the
+        // session-expired flag is cleared. The widget must not show the sheet
+        // at any point — neither while the upgrade is running (suppressed by
+        // isRpcUpgradeInProgress) nor after it succeeds (hasExpiredOAuthSession
+        // is false).
+        final testProfile = createTestProfile(displayName: 'Test User');
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
 
-          // Phase 1: session expired, upgrade in progress → sheet suppressed.
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: true,
-              profile: testProfile,
-              hasExpiredSession: true,
-              isRpcUpgradeInProgress: true,
-              sharedPreferences: prefs,
-            ),
-          );
-          await tester.pumpAndSettle();
-          expect(
-            find.text(
-              lookupAppLocalizations(const Locale('en')).profileSessionExpired,
-            ),
-            findsNothing,
-          );
+        // Phase 1: session expired, upgrade in progress → sheet suppressed.
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            hasExpiredSession: true,
+            isRpcUpgradeInProgress: true,
+            sharedPreferences: prefs,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.text(
+            lookupAppLocalizations(const Locale('en')).profileSessionExpired,
+          ),
+          findsNothing,
+        );
 
-          // Phase 2: upgrade succeeds — session flag cleared.
-          // Rebuild with hasExpiredSession: false to simulate what happens
-          // after a successful upgrade nudges the widget to re-evaluate.
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: true,
-              profile: testProfile,
-              sharedPreferences: prefs,
-            ),
-          );
-          await tester.pumpAndSettle();
+        // Phase 2: upgrade succeeds — session flag cleared.
+        // Rebuild with hasExpiredSession: false to simulate what happens
+        // after a successful upgrade nudges the widget to re-evaluate.
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            sharedPreferences: prefs,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          // Sheet must not appear — session is no longer expired.
-          expect(
-            find.text(
-              lookupAppLocalizations(const Locale('en')).profileSessionExpired,
-            ),
-            findsNothing,
-          );
-        },
-      );
+        // Sheet must not appear — session is no longer expired.
+        expect(
+          find.text(
+            lookupAppLocalizations(const Locale('en')).profileSessionExpired,
+          ),
+          findsNothing,
+        );
+      });
 
       testWidgets(
         'defers nav to login-options until background upload finishes '
@@ -1190,6 +1245,10 @@ void main() {
           // Use a mock GoRouter so go() calls are verifiable, not errors.
           final mockGoRouter = MockGoRouter();
           when(() => mockGoRouter.go(any())).thenReturn(null);
+          final badgeRepository = _MockBadgeRepository();
+          when(
+            () => badgeRepository.loadAcceptedBadgesForProfile(any()),
+          ).thenAnswer((_) async => const []);
 
           await tester.pumpWidget(
             MockGoRouterProvider(
@@ -1203,13 +1262,14 @@ void main() {
                         createMockNip05VerificationService(),
                     mockFollowRepository: mockFollowRepository,
                   ),
-                  fetchUserProfileProvider(testUserHex).overrideWith(
-                    (ref) async => testProfile,
-                  ),
-                  userProfileStatsReactiveProvider(testUserHex).overrideWith(
-                    (ref) => const Stream.empty(),
-                  ),
+                  fetchUserProfileProvider(
+                    testUserHex,
+                  ).overrideWith((ref) async => testProfile),
+                  userProfileStatsReactiveProvider(
+                    testUserHex,
+                  ).overrideWith((ref) => const Stream.empty()),
                   authServiceProvider.overrideWithValue(authService),
+                  badgeRepositoryProvider.overrideWithValue(badgeRepository),
                   currentAuthStateProvider.overrideWith(
                     (ref) => AuthState.authenticated,
                   ),
@@ -1226,9 +1286,9 @@ void main() {
                     child: BlocProvider<MyProfileBloc>(
                       create: (_) {
                         final bloc = _MockMyProfileBloc();
-                        when(() => bloc.state).thenReturn(
-                          MyProfileUpdated(profile: testProfile),
-                        );
+                        when(
+                          () => bloc.state,
+                        ).thenReturn(MyProfileUpdated(profile: testProfile));
                         return bloc;
                       },
                       child: const Scaffold(
@@ -1266,9 +1326,7 @@ void main() {
 
           // Navigation must now have fired exactly once to login-options.
           verify(
-            () => mockGoRouter.go(
-              any(that: contains('login-options')),
-            ),
+            () => mockGoRouter.go(any(that: contains('login-options'))),
           ).called(1);
         },
       );
@@ -1288,9 +1346,9 @@ void main() {
           // Bloc already has no upload in progress — simulates upload having
           // finished just before _navigateToLoginOptionsAfterUpload attaches.
           final mockPublishBloc = _MockBackgroundPublishBloc();
-          when(() => mockPublishBloc.state).thenReturn(
-            const BackgroundPublishState(),
-          );
+          when(
+            () => mockPublishBloc.state,
+          ).thenReturn(const BackgroundPublishState());
           // Stream produces no further emissions — the critical race condition.
           whenListen(
             mockPublishBloc,
@@ -1305,6 +1363,10 @@ void main() {
 
           final mockGoRouter = MockGoRouter();
           when(() => mockGoRouter.go(any())).thenReturn(null);
+          final badgeRepository = _MockBadgeRepository();
+          when(
+            () => badgeRepository.loadAcceptedBadgesForProfile(any()),
+          ).thenAnswer((_) async => const []);
 
           await tester.pumpWidget(
             MockGoRouterProvider(
@@ -1318,13 +1380,14 @@ void main() {
                         createMockNip05VerificationService(),
                     mockFollowRepository: mockFollowRepository,
                   ),
-                  fetchUserProfileProvider(testUserHex).overrideWith(
-                    (ref) async => testProfile,
-                  ),
-                  userProfileStatsReactiveProvider(testUserHex).overrideWith(
-                    (ref) => const Stream.empty(),
-                  ),
+                  fetchUserProfileProvider(
+                    testUserHex,
+                  ).overrideWith((ref) async => testProfile),
+                  userProfileStatsReactiveProvider(
+                    testUserHex,
+                  ).overrideWith((ref) => const Stream.empty()),
                   authServiceProvider.overrideWithValue(authService),
+                  badgeRepositoryProvider.overrideWithValue(badgeRepository),
                   currentAuthStateProvider.overrideWith(
                     (ref) => AuthState.authenticated,
                   ),
@@ -1341,9 +1404,9 @@ void main() {
                     child: BlocProvider<MyProfileBloc>(
                       create: (_) {
                         final bloc = _MockMyProfileBloc();
-                        when(() => bloc.state).thenReturn(
-                          MyProfileUpdated(profile: testProfile),
-                        );
+                        when(
+                          () => bloc.state,
+                        ).thenReturn(MyProfileUpdated(profile: testProfile));
                         return bloc;
                       },
                       child: const Scaffold(

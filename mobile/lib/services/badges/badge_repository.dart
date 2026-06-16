@@ -20,6 +20,19 @@ class BadgeDashboardData {
   final List<IssuedBadgeViewData> issued;
 }
 
+class ProfileBadgeViewData {
+  const ProfileBadgeViewData({required this.badge, this.definition});
+
+  final Nip58ProfileBadgeRef badge;
+  final Nip58BadgeDefinition? definition;
+
+  String get awardEventId => badge.awardEventId;
+  String get definitionCoordinate => badge.definitionCoordinate;
+  String get displayName =>
+      definition?.name ?? _definitionNameFromCoordinate(definitionCoordinate);
+  String? get imageUrl => definition?.imageUrl;
+}
+
 class BadgeAwardViewData {
   const BadgeAwardViewData({
     required this.award,
@@ -105,11 +118,28 @@ class BadgeRepository {
     }
 
     viewData.sort(
-      (left, right) => right.award.event.createdAt.compareTo(
-        left.award.event.createdAt,
-      ),
+      (left, right) =>
+          right.award.event.createdAt.compareTo(left.award.event.createdAt),
     );
     return List<BadgeAwardViewData>.unmodifiable(viewData);
+  }
+
+  Future<List<ProfileBadgeViewData>> loadAcceptedBadgesForProfile(
+    String pubkey,
+  ) async {
+    if (pubkey.isEmpty) return const [];
+
+    final profileBadges = await _latestProfileBadges(pubkey);
+    final refs = profileBadges?.badges ?? const <Nip58ProfileBadgeRef>[];
+    if (refs.isEmpty) return const [];
+
+    final viewData = <ProfileBadgeViewData>[];
+    for (final ref in refs) {
+      final definition = await _loadDefinition(ref.definitionCoordinate);
+      viewData.add(ProfileBadgeViewData(badge: ref, definition: definition));
+    }
+
+    return List<ProfileBadgeViewData>.unmodifiable(viewData);
   }
 
   Future<List<IssuedBadgeViewData>> loadIssuedBadges({
@@ -151,9 +181,8 @@ class BadgeRepository {
     }
 
     issued.sort(
-      (left, right) => right.award.event.createdAt.compareTo(
-        left.award.event.createdAt,
-      ),
+      (left, right) =>
+          right.award.event.createdAt.compareTo(left.award.event.createdAt),
     );
     return List<IssuedBadgeViewData>.unmodifiable(issued);
   }
