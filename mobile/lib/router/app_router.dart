@@ -232,6 +232,18 @@ int homeInitialIndexFromPathParameters(Map<String, String> pathParameters) {
   return rawIndex < 0 ? 0 : rawIndex;
 }
 
+@visibleForTesting
+List<String> stringListRouteExtra(Object? extra) {
+  if (extra is! Iterable) return const [];
+
+  final values = <String>[];
+  for (final item in extra) {
+    if (item is! String) return const [];
+    values.add(item);
+  }
+  return List<String>.unmodifiable(values);
+}
+
 bool _isPublicRecorderLocation(String location) =>
     location == VideoRecorderScreen.path;
 
@@ -712,7 +724,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               message: ctx.l10n.routeInvalidConversationId,
             );
           }
-          final participantPubkeys = st.extra as List<String>? ?? [];
+          final participantPubkeys = stringListRouteExtra(st.extra);
           return ConversationPage(
             conversationId: id,
             participantPubkeys: participantPubkeys,
@@ -740,7 +752,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           }
           // Pubkeys are optional — the page loads them from the DB
           // when not provided (e.g. deep link).
-          final participantPubkeys = st.extra as List<String>? ?? [];
+          final participantPubkeys = stringListRouteExtra(st.extra);
           return RequestPreviewPage(
             conversationId: id,
             participantPubkeys: participantPubkeys,

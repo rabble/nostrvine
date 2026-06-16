@@ -4,21 +4,35 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:db_client/db_client.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
+import 'package:openvine/screens/inbox/message_requests/request_preview_page.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../helpers/test_provider_overrides.dart';
+
 class _MockAuthService extends Mock implements AuthService {}
+
+class _MockDmRepository extends Mock implements DmRepository {}
+
+class _MockDmReactionsRepository extends Mock
+    implements DmReactionsRepository {}
 
 class _AuthStateBus {
   AuthState state = AuthState.unauthenticated;
@@ -380,5 +394,144 @@ void main() {
         );
       },
     );
+  });
+
+  group('DM route extras', () {
+    const currentPubkey =
+        'aabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd';
+    const otherPubkey =
+        '1122334455667788112233445566778811223344556677881122334455667788';
+    const conversationId =
+        'ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00';
+
+    late MockAuthService mockAuthService;
+    late _MockDmRepository mockDmRepository;
+    late _MockDmReactionsRepository mockDmReactionsRepository;
+
+    setUp(() {
+      resetNavigationState();
+      mockAuthService = createMockAuthService();
+      mockDmRepository = _MockDmRepository();
+      mockDmReactionsRepository = _MockDmReactionsRepository();
+
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
+      when(
+        () => mockAuthService.currentPublicKeyHex,
+      ).thenReturn(currentPubkey);
+      when(
+        () => mockAuthService.authStateStream,
+      ).thenAnswer((_) => const Stream<AuthState>.empty());
+
+      when(
+        () => mockDmRepository.markConversationAsRead(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDmRepository.watchMessages(any()),
+      ).thenAnswer((_) => Stream.value(const <DmMessage>[]));
+      when(
+        () => mockDmRepository.watchOutgoing(any()),
+      ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
+      when(
+        () => mockDmRepository.countMessagesInConversation(any()),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mockDmRepository.getConversation(any()),
+      ).thenAnswer((_) async => null);
+
+      when(
+        () => mockDmReactionsRepository.watchForConversation(any()),
+      ).thenAnswer((_) => Stream.value(const <DmReaction>[]));
+    });
+
+    testWidgets('conversation accepts list-like dynamic extras on web', (
+      tester,
+    ) async {
+      final container = ProviderContainer(
+        overrides: [
+          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => MinorAccountReviewStatus.active(),
+          ),
+          dmRepositoryProvider.overrideWithValue(mockDmRepository),
+          dmReactionsRepositoryProvider.overrideWithValue(
+            mockDmReactionsRepository,
+          ),
+        ],
+      );
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
+      });
+
+      final router = container.read(goRouterProvider);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+
+      router.go(
+        ConversationPage.pathForId(conversationId),
+        extra: <dynamic>[otherPubkey],
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        ConversationPage.pathForId(conversationId),
+      );
+    });
+
+    testWidgets('request preview accepts list-like dynamic extras on web', (
+      tester,
+    ) async {
+      final container = ProviderContainer(
+        overrides: [
+          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => MinorAccountReviewStatus.active(),
+          ),
+          dmRepositoryProvider.overrideWithValue(mockDmRepository),
+          dmReactionsRepositoryProvider.overrideWithValue(
+            mockDmReactionsRepository,
+          ),
+        ],
+      );
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
+      });
+
+      final router = container.read(goRouterProvider);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+
+      router.go(
+        RequestPreviewPage.pathPattern.replaceFirst(':id', conversationId),
+        extra: <dynamic>[otherPubkey],
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        RequestPreviewPage.pathPattern.replaceFirst(':id', conversationId),
+      );
+    });
   });
 }
