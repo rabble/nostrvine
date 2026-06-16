@@ -257,6 +257,40 @@ void main() {
         );
         expect(rowAfter, isNull);
       });
+
+      test('clears missing final rendered clip references', () async {
+        final draft = DivineVideoDraft.create(
+          clips: [
+            DivineVideoClip(
+              id: 'clip_1',
+              video: EditorVideo.file('/path/to/video.mp4'),
+              duration: const Duration(seconds: 6),
+              recordedAt: DateTime(2025),
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Rendered Draft',
+          description: '',
+          hashtags: {},
+          selectedApproach: 'video',
+          finalRenderedClip: DivineVideoClip(
+            id: 'rendered_clip',
+            video: EditorVideo.file('/path/to/missing-render.mp4'),
+            duration: const Duration(seconds: 6),
+            recordedAt: DateTime(2025),
+            targetAspectRatio: AspectRatio.square,
+            originalAspectRatio: 9 / 16,
+          ),
+        );
+
+        await service.saveDraft(draft);
+
+        final drafts = await service.getAllDrafts();
+        expect(drafts, hasLength(1));
+        expect(drafts.single.finalRenderedClip, isNull);
+        expect(drafts.single.canPost, isFalse);
+      });
     });
 
     group('deleteDraft', () {

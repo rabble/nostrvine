@@ -456,11 +456,12 @@ class DivineVideoDraft {
 
   /// Whether the draft can be posted directly from the library.
   ///
-  /// Requires [finalRenderedClip] so the published video includes all editor
-  /// layers (text, stickers, filters). Without a render, posting falls back to
-  /// the raw recording and silently drops those layers, so the post action
-  /// stays hidden until a render exists.
-  bool get canPost => finalRenderedClip != null;
+  /// Single-clip drafts require [finalRenderedClip] so the published video
+  /// includes all editor layers (text, stickers, filters). Without a render,
+  /// the single-clip publish path falls back to the raw recording and silently
+  /// drops those layers. Multi-clip drafts can still be posted because the
+  /// publish path renders them before upload.
+  bool get canPost => finalRenderedClip != null || clips.length > 1;
 
   bool get hasEditorStateEdits {
     if (editorStateHistory.isEmpty) return false;

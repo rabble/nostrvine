@@ -356,7 +356,7 @@ class DraftStorageService {
       );
     }
 
-    return draft.copyWith(clips: validClips);
+    return _clearMissingFinalRenderedClip(draft.copyWith(clips: validClips));
   }
 
   /// Get the autosaved draft with validation.
@@ -381,6 +381,21 @@ class DraftStorageService {
     }).toList();
   }
 
+  DivineVideoDraft _clearMissingFinalRenderedClip(DivineVideoDraft draft) {
+    final finalClip = draft.finalRenderedClip;
+    if (finalClip == null) return draft;
+
+    final videoPath = finalClip.video.file?.path;
+    if (videoPath != null && File(videoPath).existsSync()) return draft;
+
+    Log.info(
+      '📝 Draft ${draft.id}: final rendered clip missing, clearing reference',
+      name: 'DraftStorageService',
+      category: LogCategory.video,
+    );
+    return draft.copyWith(clearFinalRenderedClip: true);
+  }
+
   /// Get all drafts from storage
   Future<List<DivineVideoDraft>> getAllDrafts() async {
     try {
@@ -402,7 +417,7 @@ class DraftStorageService {
           clipRows: clipRows,
           documentsPath: documentsPath,
         );
-        drafts.add(draft);
+        drafts.add(_clearMissingFinalRenderedClip(draft));
       }
 
       // Clean up corrupted drafts (0 clips) in the background

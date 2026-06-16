@@ -22,8 +22,8 @@ class _MockDraftsLibraryBloc
     extends MockBloc<DraftsLibraryEvent, DraftsLibraryState>
     implements DraftsLibraryBloc {}
 
-DivineVideoClip _createTestClip() => DivineVideoClip(
-  id: 'clip_1',
+DivineVideoClip _createTestClip([String id = 'clip_1']) => DivineVideoClip(
+  id: id,
   video: EditorVideo.file('/tmp/test.mp4'),
   duration: const Duration(seconds: 6),
   recordedAt: DateTime(2025),
@@ -40,11 +40,12 @@ void main() {
     DivineVideoDraft createDraft({
       String? id,
       String title = 'Test Draft',
+      List<DivineVideoClip> clips = const [],
       DivineVideoClip? finalRenderedClip,
     }) {
       return DivineVideoDraft(
         id: id ?? 'draft-${DateTime.now().millisecondsSinceEpoch}',
-        clips: const [],
+        clips: clips,
         title: title,
         description: 'Test Description',
         hashtags: const {},
@@ -203,9 +204,9 @@ void main() {
       testWidgets('hides post action when draft has no final render', (
         tester,
       ) async {
-        when(() => mockBloc.state).thenReturn(
-          DraftsLibraryLoaded(drafts: [createDraft(id: 'draft1')]),
-        );
+        when(
+          () => mockBloc.state,
+        ).thenReturn(DraftsLibraryLoaded(drafts: [createDraft(id: 'draft1')]));
 
         await tester.pumpWidget(buildWidget());
         await tester.tap(find.byType(IconButton));
@@ -233,6 +234,28 @@ void main() {
 
         expect(find.text(en.libraryDraftActionPost), findsOneWidget);
       });
+
+      testWidgets(
+        'shows post action for multi-clip draft without final render',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            DraftsLibraryLoaded(
+              drafts: [
+                createDraft(
+                  id: 'draft1',
+                  clips: [_createTestClip(), _createTestClip('clip_2')],
+                ),
+              ],
+            ),
+          );
+
+          await tester.pumpWidget(buildWidget());
+          await tester.tap(find.byType(IconButton));
+          await tester.pumpAndSettle();
+
+          expect(find.text(en.libraryDraftActionPost), findsOneWidget);
+        },
+      );
     });
   });
 
