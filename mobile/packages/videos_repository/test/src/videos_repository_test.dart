@@ -81,6 +81,15 @@ void main() {
       repository = VideosRepository(nostrClient: mockNostrClient);
     });
 
+    test('generates non-empty unique recommendation session seeds', () {
+      final first = generateRecommendationSessionSeed();
+      final second = generateRecommendationSessionSeed();
+
+      expect(first, isNotEmpty);
+      expect(second, isNotEmpty);
+      expect(second, isNot(first));
+    });
+
     setUpAll(() {
       registerFallbackValue(<Filter>[]);
       registerFallbackValue(LeaderboardPeriod.week);
@@ -9923,6 +9932,72 @@ void main() {
         expect(requestedSeeds.last, requestedSeeds.first);
       });
 
+      test(
+        'does not commit refreshed session seed when first page fails',
+        () async {
+          final requestedSeeds = <String?>[];
+          var callCount = 0;
+          when(
+            () => mockFunnelcakeClient.getRecommendations(
+              seed: any(named: 'seed'),
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer((invocation) async {
+            requestedSeeds.add(invocation.namedArguments[#seed] as String?);
+            callCount += 1;
+            if (callCount == 2) {
+              throw const FunnelcakeException('refresh failed');
+            }
+            return RecommendationsResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'recommended-video-$callCount',
+                  pubkey: 'recommended-pubkey-$callCount',
+                  dTag: 'recommended-dtag-$callCount',
+                  videoUrl: 'https://example.com/recommended-$callCount.mp4',
+                ),
+              ],
+              source: 'personalized',
+              nextCursor: 'cursor-${callCount + 1}',
+              hasMore: true,
+            );
+          });
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            inMemoryFeedCache: InMemoryFeedCache(),
+          );
+
+          final firstPage = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+          );
+          expect(
+            () => repo.getRecommendedVideos(
+              userPubkey: 'user-pubkey',
+              skipCache: true,
+            ),
+            throwsA(isA<FunnelcakeException>()),
+          );
+          await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            cursor: firstPage.paginationCursor,
+          );
+
+          expect(requestedSeeds, hasLength(3));
+          expect(requestedSeeds[0], isNotNull);
+          expect(requestedSeeds[0], isNotEmpty);
+          expect(requestedSeeds[1], isNot(requestedSeeds[0]));
+          expect(requestedSeeds[2], requestedSeeds[0]);
+        },
+      );
+
       test('passes viewer country hint to recommendations endpoint', () async {
         final recommended = _createVideoStats(
           id: 'country-recommended-video',
@@ -10484,7 +10559,6 @@ void main() {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getRecommendations(
-            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             fallback: any(named: 'fallback'),
@@ -10529,7 +10603,6 @@ void main() {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getRecommendations(
-            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             fallback: any(named: 'fallback'),
@@ -10552,7 +10625,6 @@ void main() {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getRecommendations(
-            seed: any(named: 'seed'),
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
             fallback: any(named: 'fallback'),
@@ -10581,7 +10653,6 @@ void main() {
 
         verify(
           () => mockFunnelcakeClient.getRecommendations(
-            seed: any(named: 'seed'),
             pubkey: 'user-pubkey',
             limit: 50,
             fallback: 'recent',

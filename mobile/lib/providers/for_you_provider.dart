@@ -101,15 +101,17 @@ class ForYouFeed extends _$ForYouFeed {
       return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
-    _nextCursor = null;
-    _sessionSeed = generateRecommendationSessionSeed();
-    return _fetchRecommendations();
+    return _fetchRecommendations(
+      sessionSeed: generateRecommendationSessionSeed(),
+    );
   }
 
   Future<VideoFeedState> _fetchRecommendations({
     bool preserveExistingOnError = false,
+    String? sessionSeed,
   }) async {
     try {
+      final requestSeed = sessionSeed ?? _sessionSeed;
       final authService = ref.read(authServiceProvider);
       final currentUserPubkey = authService.currentPublicKeyHex;
       if (currentUserPubkey == null) {
@@ -121,7 +123,7 @@ class ForYouFeed extends _$ForYouFeed {
       final response = await client.getRecommendations(
         pubkey: currentUserPubkey,
         limit: _pageSize,
-        seed: _sessionSeed,
+        seed: requestSeed,
         preferredLanguages: hints.preferredLanguages,
         viewerCountry: hints.viewerCountry,
       );
@@ -144,6 +146,7 @@ class ForYouFeed extends _$ForYouFeed {
             .toList(),
       );
 
+      _sessionSeed = requestSeed;
       _nextCursor = response.nextCursor;
       final hasMore = response.hasMore && _nextCursor != null;
 
@@ -194,6 +197,7 @@ class ForYouFeed extends _$ForYouFeed {
 
       final client = ref.read(funnelcakeApiClientProvider);
       final cursor = _nextCursor;
+      final seed = _sessionSeed;
       if (cursor == null) {
         state = AsyncData(
           currentState.copyWith(isLoadingMore: false, hasMoreContent: false),
@@ -205,7 +209,7 @@ class ForYouFeed extends _$ForYouFeed {
         pubkey: currentUserPubkey,
         limit: _pageSize,
         cursor: cursor,
-        seed: _sessionSeed,
+        seed: seed,
         preferredLanguages: hints.preferredLanguages,
         viewerCountry: hints.viewerCountry,
       );
@@ -267,14 +271,14 @@ class ForYouFeed extends _$ForYouFeed {
       category: LogCategory.video,
     );
 
-    _nextCursor = null;
-    _sessionSeed = generateRecommendationSessionSeed();
-
     await staleWhileRevalidate(
       getCurrentState: () => state,
       isMounted: () => ref.mounted,
       setState: (s) => state = s,
-      fetchFresh: () => _fetchRecommendations(preserveExistingOnError: true),
+      fetchFresh: () => _fetchRecommendations(
+        preserveExistingOnError: true,
+        sessionSeed: generateRecommendationSessionSeed(),
+      ),
     );
   }
 }

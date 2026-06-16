@@ -2419,9 +2419,9 @@ class VideosRepository {
     }
 
     final isFirstPage = until == null && cursor == null;
-    if (skipCache && isFirstPage) {
-      _recommendationSessionSeed = generateRecommendationSessionSeed();
-    }
+    final requestSeed = skipCache && isFirstPage
+        ? generateRecommendationSessionSeed()
+        : _recommendationSessionSeed;
 
     if (effectiveUserPubkey == null ||
         _funnelcakeApiClient == null ||
@@ -2442,7 +2442,7 @@ class VideosRepository {
         ? await _funnelcakeApiClient.getRecommendations(
             pubkey: effectiveUserPubkey,
             limit: limit,
-            seed: _recommendationSessionSeed,
+            seed: requestSeed,
             preferredLanguages: preferredLanguages,
             viewerCountry: viewerCountry,
           )
@@ -2450,7 +2450,7 @@ class VideosRepository {
             pubkey: effectiveUserPubkey,
             limit: limit,
             cursor: recommendationCursor,
-            seed: _recommendationSessionSeed,
+            seed: requestSeed,
             preferredLanguages: preferredLanguages,
             viewerCountry: viewerCountry,
           );
@@ -2473,6 +2473,9 @@ class VideosRepository {
       hasMore: response.hasMore,
       rawResponseBody: response.rawBody,
     );
+    if (isFirstPage) {
+      _recommendationSessionSeed = requestSeed;
+    }
     if (until == null && cursor == null) {
       _inMemoryFeedCache?.set(cacheKey, result);
     }
@@ -2489,7 +2492,6 @@ class VideosRepository {
     int limit = 20,
     String fallback = 'popular',
     String? category,
-    String? seed,
     List<String> preferredLanguages = const [],
     String? viewerCountry,
   }) async {
@@ -2501,7 +2503,6 @@ class VideosRepository {
       limit: limit,
       fallback: fallback,
       category: category,
-      seed: seed,
       preferredLanguages: preferredLanguages,
       viewerCountry: viewerCountry,
     );
