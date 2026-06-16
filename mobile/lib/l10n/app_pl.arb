@@ -531,6 +531,7 @@
     "videoErrorVerifyAgeBody": "Zweryfikuj swój wiek, żeby zobaczyć ten film.",
     "videoErrorSkip": "Pomiń",
     "videoErrorVerifyAgeButton": "Zweryfikuj wiek",
+    "videoErrorVerifyAgeFailed": "Nie udało się zweryfikować Twojego wieku. Spróbuj ponownie.",
     "videoFollowButtonFollowing": "Obserwujesz",
     "videoFollowButtonFollow": "Obserwuj",
     "audioAttributionOriginalSound": "Oryginalny dźwięk",

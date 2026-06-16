@@ -560,6 +560,7 @@
     "videoErrorVerifyAgeBody": "Потвърди възрастта си, за да гледаш това видео.",
     "videoErrorSkip": "Пропусни",
     "videoErrorVerifyAgeButton": "Потвърди възрастта",
+    "videoErrorVerifyAgeFailed": "Възрастта ти не можа да бъде потвърдена. Опитай пак.",
     "videoFollowButtonFollowing": "Следване",
     "videoFollowButtonFollow": "Следвай",
     "audioAttributionOriginalSound": "Оригинален звук",

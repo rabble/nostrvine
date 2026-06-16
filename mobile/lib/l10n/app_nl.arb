@@ -531,6 +531,7 @@
     "videoErrorVerifyAgeBody": "Verifieer je leeftijd om deze video te bekijken.",
     "videoErrorSkip": "Overslaan",
     "videoErrorVerifyAgeButton": "Leeftijd verifiëren",
+    "videoErrorVerifyAgeFailed": "We konden je leeftijd niet verifiëren. Probeer het opnieuw.",
     "videoFollowButtonFollowing": "Volgend",
     "videoFollowButtonFollow": "Volgen",
     "audioAttributionOriginalSound": "Origineel geluid",

@@ -1377,6 +1377,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoErrorVerifyAgeButton => 'Yaşı doğrula';
 
   @override
+  String get videoErrorVerifyAgeFailed =>
+      'Yaşın doğrulanamadı. Lütfen tekrar dene.';
+
+  @override
   String get videoFollowButtonFollowing => 'Takip ediliyor';
 
   @override

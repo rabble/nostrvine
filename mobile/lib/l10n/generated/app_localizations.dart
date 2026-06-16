@@ -2500,6 +2500,12 @@ abstract class AppLocalizations {
   /// **'Verify age'**
   String get videoErrorVerifyAgeButton;
 
+  /// No description provided for @videoErrorVerifyAgeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t verify your age. Please try again.'**
+  String get videoErrorVerifyAgeFailed;
+
   /// No description provided for @videoFollowButtonFollowing.
   ///
   /// In en, this message translates to:

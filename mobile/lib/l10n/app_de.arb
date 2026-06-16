@@ -531,6 +531,7 @@
     "videoErrorVerifyAgeBody": "Verifiziere dein Alter, um dieses Video zu sehen.",
     "videoErrorSkip": "Überspringen",
     "videoErrorVerifyAgeButton": "Alter verifizieren",
+    "videoErrorVerifyAgeFailed": "Wir konnten dein Alter nicht bestätigen. Bitte versuch es nochmal.",
     "videoFollowButtonFollowing": "Gefolgt",
     "videoFollowButtonFollow": "Folgen",
     "audioAttributionOriginalSound": "Originalton",

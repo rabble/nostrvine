@@ -613,6 +613,7 @@
     "videoErrorVerifyAgeBody": "ይህን ቪዲዮ ለማየት እድሜዎን ያረጋግጡ።",
     "videoErrorSkip": "ዝለል",
     "videoErrorVerifyAgeButton": "ዕድሜን ያረጋግጡ",
+    "videoErrorVerifyAgeFailed": "ዕድሜህን ማረጋገጥ አልተቻለም። እባክህ እንደገና ሞክር",
     "videoFollowButtonFollowing": "በመከተል ላይ",
     "videoFollowButtonFollow": "ተከተል",
     "audioAttributionOriginalSound": "ኦሪጅናል ድምጽ",

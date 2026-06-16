@@ -1422,6 +1422,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoErrorVerifyAgeButton => 'Vérifier l\'âge';
 
   @override
+  String get videoErrorVerifyAgeFailed =>
+      'Impossible de vérifier ton âge. Réessaie.';
+
+  @override
   String get videoFollowButtonFollowing => 'Abonné';
 
   @override

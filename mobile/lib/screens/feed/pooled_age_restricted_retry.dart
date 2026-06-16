@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -20,6 +22,15 @@ Future<void> retryAgeRestrictedPooledVideo({
   required int index,
   required FutureOr<bool> Function(Map<String, String>) retryPlayback,
 }) async {
+  // The pooled overlays (ModeratedContentOverlay / PooledVideoErrorOverlay)
+  // emit no tap-time log of their own, so this is the only record that the
+  // user actually pressed "Verify age" on the native feed path.
+  Log.info(
+    '🔐 [AGE-GATE] User tapped Verify age (pooled) for video ${video.id}',
+    name: _logName,
+    category: LogCategory.video,
+  );
+
   final videoUrl = video.videoUrl;
   if (videoUrl == null || videoUrl.isEmpty) {
     Log.warning(
@@ -28,6 +39,7 @@ Future<void> retryAgeRestrictedPooledVideo({
       name: _logName,
       category: LogCategory.video,
     );
+    _showVerifyAgeFailed(context);
     return;
   }
 
@@ -44,6 +56,7 @@ Future<void> retryAgeRestrictedPooledVideo({
       name: _logName,
       category: LogCategory.video,
     );
+    _showVerifyAgeFailed(context);
     return;
   }
 
@@ -56,7 +69,19 @@ Future<void> retryAgeRestrictedPooledVideo({
         serverUrl: _extractServerUrl(videoUrl),
         category: 'video',
       );
-  if (headers == null || !context.mounted) {
+  if (!context.mounted) return;
+  if (headers == null) {
+    // handleUnauthorizedMedia returns null both when the viewer declines the
+    // age dialog (a deliberate choice — stay silent) and when they accept but
+    // the signed viewer-auth header could not be created (e.g. a remote signer
+    // that failed or timed out). Distinguish the two by the persisted
+    // verification flag so an auth failure isn't a silent no-op.
+    final accepted = ref
+        .read(ageVerificationServiceProvider)
+        .isAdultContentVerified;
+    if (accepted) {
+      _showVerifyAgeFailed(context);
+    }
     return;
   }
 
@@ -65,9 +90,22 @@ Future<void> retryAgeRestrictedPooledVideo({
   // applies these headers to every resolved playback source (optimized/HLS/raw)
   // for the retried item.
   final playbackSucceeded = await retryPlayback(headers);
-  if (!context.mounted || !playbackSucceeded) return;
+  if (!context.mounted) return;
+  if (!playbackSucceeded) {
+    _showVerifyAgeFailed(context);
+    return;
+  }
 
   playbackStatusCubit.report(video.id, PlaybackStatus.ready);
+}
+
+/// Surfaces a localized failure so a tapped "Verify age" button is never a
+/// silent no-op when verification can't complete.
+void _showVerifyAgeFailed(BuildContext context) {
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    DivineSnackbarContainer.snackBar(context.l10n.videoErrorVerifyAgeFailed),
+  );
 }
 
 String? _resolveSha256(VideoEvent video) {

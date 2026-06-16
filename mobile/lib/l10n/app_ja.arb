@@ -531,6 +531,7 @@
     "videoErrorVerifyAgeBody": "この動画を見るには年齢確認が必要だよ。",
     "videoErrorSkip": "スキップ",
     "videoErrorVerifyAgeButton": "年齢を確認",
+    "videoErrorVerifyAgeFailed": "年齢を確認できませんでした。もう一回試してみて",
     "videoFollowButtonFollowing": "フォロー中",
     "videoFollowButtonFollow": "フォロー",
     "audioAttributionOriginalSound": "オリジナルサウンド",

@@ -1417,6 +1417,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoErrorVerifyAgeButton => 'Потвърди възрастта';
 
   @override
+  String get videoErrorVerifyAgeFailed =>
+      'Възрастта ти не можа да бъде потвърдена. Опитай пак.';
+
+  @override
   String get videoFollowButtonFollowing => 'Следване';
 
   @override

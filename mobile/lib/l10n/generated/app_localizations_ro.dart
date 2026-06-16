@@ -1430,6 +1430,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoErrorVerifyAgeButton => 'Verifică vârsta';
 
   @override
+  String get videoErrorVerifyAgeFailed =>
+      'Nu am putut verifica vârsta. Încearcă din nou.';
+
+  @override
   String get videoFollowButtonFollowing => 'Urmărit';
 
   @override

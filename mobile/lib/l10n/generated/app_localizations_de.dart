@@ -1413,6 +1413,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoErrorVerifyAgeButton => 'Alter verifizieren';
 
   @override
+  String get videoErrorVerifyAgeFailed =>
+      'Wir konnten dein Alter nicht bestätigen. Bitte versuch es nochmal.';
+
+  @override
   String get videoFollowButtonFollowing => 'Gefolgt';
 
   @override

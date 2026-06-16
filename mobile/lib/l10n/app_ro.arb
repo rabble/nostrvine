@@ -531,6 +531,7 @@
     "videoErrorVerifyAgeBody": "Verifică-ți vârsta ca să vezi acest videoclip.",
     "videoErrorSkip": "Sari peste",
     "videoErrorVerifyAgeButton": "Verifică vârsta",
+    "videoErrorVerifyAgeFailed": "Nu am putut verifica vârsta. Încearcă din nou.",
     "videoFollowButtonFollowing": "Urmărit",
     "videoFollowButtonFollow": "Urmărește",
     "audioAttributionOriginalSound": "Sunet original",

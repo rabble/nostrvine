@@ -1314,6 +1314,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoErrorVerifyAgeButton => '나이 인증';
 
   @override
+  String get videoErrorVerifyAgeFailed => '나이를 확인할 수 없습니다. 다시 시도해보세요';
+
+  @override
   String get videoFollowButtonFollowing => '팔로잉';
 
   @override

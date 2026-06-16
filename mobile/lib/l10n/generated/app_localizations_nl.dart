@@ -1403,6 +1403,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoErrorVerifyAgeButton => 'Leeftijd verifiëren';
 
   @override
+  String get videoErrorVerifyAgeFailed =>
+      'We konden je leeftijd niet verifiëren. Probeer het opnieuw.';
+
+  @override
   String get videoFollowButtonFollowing => 'Volgend';
 
   @override

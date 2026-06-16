@@ -1306,6 +1306,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoErrorVerifyAgeButton => '年齢を確認';
 
   @override
+  String get videoErrorVerifyAgeFailed => '年齢を確認できませんでした。もう一回試してみて';
+
+  @override
   String get videoFollowButtonFollowing => 'フォロー中';
 
   @override

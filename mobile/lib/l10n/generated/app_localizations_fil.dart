@@ -1422,6 +1422,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoErrorVerifyAgeButton => 'I-verify ang edad';
 
   @override
+  String get videoErrorVerifyAgeFailed =>
+      'Hindi na-verify ang edad mo. Subukan ulit.';
+
+  @override
   String get videoFollowButtonFollowing => 'Sinusundan';
 
   @override

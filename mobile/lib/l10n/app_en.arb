@@ -665,6 +665,7 @@
   "videoErrorVerifyAgeBody": "Verify your age to view this video.",
   "videoErrorSkip": "Skip",
   "videoErrorVerifyAgeButton": "Verify age",
+  "videoErrorVerifyAgeFailed": "Couldn't verify your age. Please try again.",
   "videoFollowButtonFollowing": "Following",
   "videoFollowButtonFollow": "Follow",
   "audioAttributionOriginalSound": "Original sound",

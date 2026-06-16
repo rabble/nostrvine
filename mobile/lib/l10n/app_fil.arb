@@ -359,6 +359,7 @@
     "videoErrorVerifyAgeBody": "I-verify ang edad mo para mapanood ang video na ito.",
     "videoErrorSkip": "Laktawan",
     "videoErrorVerifyAgeButton": "I-verify ang edad",
+    "videoErrorVerifyAgeFailed": "Hindi na-verify ang edad mo. Subukan ulit.",
     "videoFollowButtonFollowing": "Sinusundan",
     "videoFollowButtonFollow": "Sundan",
     "audioAttributionOriginalSound": "Original sound",

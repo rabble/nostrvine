@@ -531,6 +531,7 @@
     "videoErrorVerifyAgeBody": "تحقّق من عمرك لعرض هذا الفيديو.",
     "videoErrorSkip": "تخطّي",
     "videoErrorVerifyAgeButton": "تحقّق من العمر",
+    "videoErrorVerifyAgeFailed": "تعذّر التحقق من عمرك. يرجى المحاولة مرّة أخرى.",
     "videoFollowButtonFollowing": "متابع",
     "videoFollowButtonFollow": "متابعة",
     "audioAttributionOriginalSound": "صوت أصلي",

@@ -531,6 +531,7 @@
     "videoErrorVerifyAgeBody": "Verifiera din ålder för att se den här videon.",
     "videoErrorSkip": "Hoppa över",
     "videoErrorVerifyAgeButton": "Verifiera ålder",
+    "videoErrorVerifyAgeFailed": "Det gick inte att verifiera din ålder. Försök igen.",
     "videoFollowButtonFollowing": "Följer",
     "videoFollowButtonFollow": "Följ",
     "audioAttributionOriginalSound": "Originalljud",
