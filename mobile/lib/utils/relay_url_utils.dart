@@ -14,16 +14,34 @@ const _divineApiBaseUrl = 'https://api.divine.video';
 ///  * `mobile/android/app/src/main/res/xml/network_security_config.xml`
 ///  * `mobile/packages/nostr_sdk/lib/nip46/nostr_remote_signer_info.dart`
 ///  * `mobile/packages/nostr_client/lib/src/relay_manager.dart`
-const _loopbackHosts = <String>{
-  'localhost',
-  '127.0.0.1',
-  '10.0.2.2',
-  '::1',
-};
+const _loopbackHosts = <String>{'localhost', '127.0.0.1', '10.0.2.2', '::1'};
 
 /// True if [host] is a recognized loopback address that may be reached over
 /// cleartext (`ws://` / `http://`).
 bool isLoopbackHost(String host) => _loopbackHosts.contains(host.toLowerCase());
+
+/// Relay hosts operated by Divine across all environments.
+///
+/// Matches the `EnvironmentConfig.relayUrl` hosts. Loopback (the `local`
+/// environment relay) is covered separately via [isLoopbackHost].
+const _divineHostedRelayHosts = <String>{
+  'relay.divine.video',
+  'relay.staging.divine.video',
+  'relay.poc.dvines.org',
+  'relay.test.dvines.org',
+};
+
+/// True when [url]'s host is a Divine-operated relay host or a loopback host
+/// (the `local` environment relay). Malformed URLs return false.
+bool isDivineHostedRelayUrl(String url) {
+  final host = Uri.tryParse(url)?.host.toLowerCase();
+  if (host == null || host.isEmpty) return false;
+  return _divineHostedRelayHosts.contains(host) || isLoopbackHost(host);
+}
+
+/// True if any relay in [configuredRelays] is not Divine-hosted.
+bool hasNonDivineRelay(Iterable<String> configuredRelays) =>
+    configuredRelays.any((url) => !isDivineHostedRelayUrl(url));
 
 /// True if [url] is a relay URL the app is allowed to connect to.
 ///

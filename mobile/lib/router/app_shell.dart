@@ -24,6 +24,7 @@ import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
+import 'package:openvine/widgets/environment_indicator_line.dart';
 import 'package:openvine/widgets/vine_bottom_nav.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -381,9 +382,15 @@ class _AppShellState extends ConsumerState<AppShell> {
       //
       // The nav itself lives in [VineBottomNav] so home / explore /
       // inbox / profile-router all render the same shared widget.
-      bottomNavigationBar: PointerInterceptor(
-        intercepting: kIsWeb,
-        child: VineBottomNav(currentIndex: currentIndex),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const EnvironmentIndicatorLine(),
+          PointerInterceptor(
+            intercepting: kIsWeb,
+            child: VineBottomNav(currentIndex: currentIndex),
+          ),
+        ],
       ),
     );
   }

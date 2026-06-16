@@ -190,4 +190,65 @@ void main() {
       );
     });
   });
+
+  group('isDivineHostedRelayUrl', () {
+    test('accepts every Divine-operated relay host', () {
+      expect(isDivineHostedRelayUrl('wss://relay.divine.video'), isTrue);
+      expect(
+        isDivineHostedRelayUrl('wss://relay.staging.divine.video'),
+        isTrue,
+      );
+      expect(isDivineHostedRelayUrl('wss://relay.poc.dvines.org'), isTrue);
+      expect(isDivineHostedRelayUrl('wss://relay.test.dvines.org'), isTrue);
+    });
+
+    test('accepts loopback relays (local environment)', () {
+      expect(isDivineHostedRelayUrl('ws://10.0.2.2:47777'), isTrue);
+      expect(isDivineHostedRelayUrl('ws://localhost:47777'), isTrue);
+    });
+
+    test('rejects non-Divine relays', () {
+      expect(isDivineHostedRelayUrl('wss://purplepag.es'), isFalse);
+      expect(isDivineHostedRelayUrl('wss://relay.nos.social'), isFalse);
+      expect(isDivineHostedRelayUrl('wss://relay.example.com'), isFalse);
+    });
+
+    test('rejects suffix-match attacks on a Divine host', () {
+      expect(
+        isDivineHostedRelayUrl('wss://relay.divine.video.attacker.example'),
+        isFalse,
+      );
+    });
+
+    test('rejects malformed URLs', () {
+      expect(isDivineHostedRelayUrl(''), isFalse);
+      expect(isDivineHostedRelayUrl('http://example.com'), isFalse);
+    });
+  });
+
+  group('hasNonDivineRelay', () {
+    test('false when every relay is Divine-hosted', () {
+      expect(
+        hasNonDivineRelay(const [
+          'wss://relay.divine.video',
+          'wss://relay.staging.divine.video',
+        ]),
+        isFalse,
+      );
+    });
+
+    test('true when any relay is not Divine-hosted', () {
+      expect(
+        hasNonDivineRelay(const [
+          'wss://relay.divine.video',
+          'wss://purplepag.es',
+        ]),
+        isTrue,
+      );
+    });
+
+    test('false for an empty relay set', () {
+      expect(hasNonDivineRelay(const []), isFalse);
+    });
+  });
 }
