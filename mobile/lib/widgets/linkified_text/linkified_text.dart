@@ -1,17 +1,10 @@
-import 'dart:async';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/search_results/view/search_results_page.dart';
-import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_navigation.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_span_builder.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_support.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class LinkifiedText extends ConsumerStatefulWidget {
   const LinkifiedText({
@@ -102,54 +95,43 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
   }
 
   void _navigateToHashtagFeed(BuildContext context, String hashtag) {
-    widget.onVideoStateChange?.call();
-    context.push(HashtagScreenRouter.pathForTag(hashtag));
+    LinkifiedTextNavigation.navigateToHashtagFeed(
+      context,
+      hashtag,
+      beforeNavigate: widget.onVideoStateChange,
+    );
   }
 
   void _navigateToProfile(BuildContext context, String hexPubkey) {
-    widget.onVideoStateChange?.call();
-    context.pushOtherProfile(hexPubkey);
+    LinkifiedTextNavigation.navigateToProfile(
+      context,
+      hexPubkey,
+      beforeNavigate: widget.onVideoStateChange,
+    );
   }
 
   void _navigateToVideo(BuildContext context, String routeReference) {
-    widget.onVideoStateChange?.call();
-    context.push(VideoDetailScreen.pathForId(routeReference));
+    LinkifiedTextNavigation.navigateToVideo(
+      context,
+      routeReference,
+      beforeNavigate: widget.onVideoStateChange,
+    );
   }
 
   void _navigateToSearch(BuildContext context, String username) {
-    widget.onVideoStateChange?.call();
-    context.push(
-      SearchResultsPage.pathForQuery(username, requestFocusOnMount: false),
+    LinkifiedTextNavigation.navigateToSearch(
+      context,
+      username,
+      beforeNavigate: widget.onVideoStateChange,
     );
   }
 
   Future<void> _handleUrlTap(String rawUrl) async {
-    widget.onVideoStateChange?.call();
-    final customHandler = widget.onUrlTap;
-    if (customHandler != null) {
-      await customHandler(rawUrl);
-      return;
-    }
-    await _launchUrl(rawUrl);
-  }
-
-  Future<void> _launchUrl(String rawUrl) async {
-    final uri = _uriForRawUrl(rawUrl);
-    if (uri == null) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
-  Uri? _uriForRawUrl(String rawUrl) {
-    if (_emailRegex.hasMatch(rawUrl)) {
-      return Uri(scheme: 'mailto', path: rawUrl);
-    }
-    final normalizedUrl =
-        rawUrl.startsWith(
-          RegExp('https?://', caseSensitive: false),
-        )
-        ? rawUrl
-        : 'https://$rawUrl';
-    return Uri.tryParse(normalizedUrl);
+    await LinkifiedTextNavigation.handleUrlTap(
+      rawUrl,
+      beforeNavigate: widget.onVideoStateChange,
+      customHandler: widget.onUrlTap,
+    );
   }
 
   bool _hasClickableOrStylableToken(List<TextSpan> spans, TextStyle style) =>
@@ -167,7 +149,3 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
     super.dispose();
   }
 }
-
-final _emailRegex = RegExp(
-  r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-);

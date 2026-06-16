@@ -4,6 +4,11 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_navigation.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_span_builder.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_support.dart';
 
 /// Renders a notification's quoted comment beneath the message text.
 ///
@@ -18,7 +23,7 @@ import 'package:flutter/material.dart';
 ///
 /// Capped at two lines so a long quote doesn't push the row's intrinsic
 /// height past the rest of the list.
-class NotificationCommentQuote extends StatelessWidget {
+class NotificationCommentQuote extends ConsumerStatefulWidget {
   /// Creates a [NotificationCommentQuote].
   const NotificationCommentQuote({
     required this.text,
@@ -36,13 +41,46 @@ class NotificationCommentQuote extends StatelessWidget {
   final String? timestamp;
 
   @override
+  ConsumerState<NotificationCommentQuote> createState() =>
+      _NotificationCommentQuoteState();
+}
+
+class _NotificationCommentQuoteState
+    extends ConsumerState<NotificationCommentQuote> {
+  List<TextSpan> _currentBodySpans = const [];
+
+  @override
   Widget build(BuildContext context) {
-    final ts = timestamp;
+    final bodyStyle = VineTheme.bodyMediumFont();
+    final linkStyle = VineTheme.bodyMediumFont(
+      color: VineTheme.info,
+    ).copyWith(fontWeight: FontWeight.w600);
+    final bodySpans = LinkifiedTextSpanBuilder(
+      text: widget.text,
+      defaultStyle: bodyStyle,
+      linkStyle: linkStyle,
+      mentionStyle: linkStyle,
+      videoLabel: Localizations.of<AppLocalizations>(
+        context,
+        AppLocalizations,
+      )?.clickableTextViewVideoLink,
+      profileLabelForHex: _profileDisplayText,
+      onHashtagTap: (hashtag) => _navigateToHashtagFeed(context, hashtag),
+      onProfileTap: (hexPubkey) => _navigateToProfile(context, hexPubkey),
+      onVideoTap: (routeReference) => _navigateToVideo(context, routeReference),
+      onMentionTap: (username) => _navigateToSearch(context, username),
+      onUrlTap: LinkifiedTextNavigation.launchRawUrl,
+    ).build();
+    _replaceCurrentBodySpans(bodySpans);
+
+    final ts = widget.timestamp;
     final showTimestamp = ts != null && ts.isNotEmpty;
     return Text.rich(
       TextSpan(
         children: [
-          TextSpan(text: '“$text”', style: VineTheme.bodyMediumFont()),
+          TextSpan(text: '“', style: bodyStyle),
+          ..._currentBodySpans,
+          TextSpan(text: '”', style: bodyStyle),
           if (showTimestamp)
             TextSpan(
               text: ' $ts',
@@ -55,5 +93,37 @@ class NotificationCommentQuote extends StatelessWidget {
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
     );
+  }
+
+  String _profileDisplayText(String hexPubkey) {
+    return LinkifiedTextSupport.profileDisplayText(ref, hexPubkey);
+  }
+
+  void _navigateToHashtagFeed(BuildContext context, String hashtag) {
+    LinkifiedTextNavigation.navigateToHashtagFeed(context, hashtag);
+  }
+
+  void _navigateToProfile(BuildContext context, String hexPubkey) {
+    LinkifiedTextNavigation.navigateToProfile(context, hexPubkey);
+  }
+
+  void _navigateToVideo(BuildContext context, String routeReference) {
+    LinkifiedTextNavigation.navigateToVideo(context, routeReference);
+  }
+
+  void _navigateToSearch(BuildContext context, String username) {
+    LinkifiedTextNavigation.navigateToSearch(context, username);
+  }
+
+  void _replaceCurrentBodySpans(List<TextSpan> spans) {
+    final previousSpans = _currentBodySpans;
+    _currentBodySpans = spans;
+    LinkifiedTextSupport.disposeSpans(previousSpans);
+  }
+
+  @override
+  void dispose() {
+    LinkifiedTextSupport.disposeSpans(_currentBodySpans);
+    super.dispose();
   }
 }

@@ -2,19 +2,34 @@
 // ABOUTME: optional inline timestamp suffix.
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart';
 import 'package:openvine/notifications/widgets/notification_comment_quote.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 
 Future<void> _pump(
   WidgetTester tester, {
   required String text,
   String? timestamp,
+  String? profileHex,
+  UserProfile? profile,
 }) async {
   await tester.pumpWidget(
-    MaterialApp(
-      home: Scaffold(
-        body: NotificationCommentQuote(text: text, timestamp: timestamp),
+    ProviderScope(
+      overrides: [
+        if (profileHex != null && profile != null)
+          userProfileReactiveProvider(
+            profileHex,
+          ).overrideWith((ref) => Stream.value(profile)),
+      ],
+      child: MaterialApp(
+        home: Scaffold(
+          body: NotificationCommentQuote(text: text, timestamp: timestamp),
+        ),
       ),
     ),
   );
@@ -36,6 +51,9 @@ TextSpan? _findSpan(
 
 void main() {
   group(NotificationCommentQuote, () {
+    const profileHex =
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
     testWidgets('wraps text in curly quotes', (tester) async {
       await _pump(tester, text: 'Hello world');
 
@@ -92,6 +110,70 @@ void main() {
       );
       expect(timestampSpan, isNotNull);
       expect(timestampSpan!.style?.color, equals(VineTheme.onSurfaceMuted55));
+    });
+
+    testWidgets('renders nostr profile references as tappable profile spans', (
+      tester,
+    ) async {
+      final npub = NostrKeyUtils.encodePubKey(profileHex);
+      final fallbackName = UserProfile.defaultDisplayNameFor(profileHex);
+
+      await _pump(
+        tester,
+        text: 'hey nostr:$npub thanks',
+        timestamp: '5h',
+      );
+
+      final richText = tester.widget<RichText>(find.byType(RichText));
+      final rootSpan = richText.text as TextSpan;
+      expect(rootSpan.toPlainText(), equals('“hey @$fallbackName thanks” 5h'));
+      expect(rootSpan.toPlainText(), isNot(contains(npub)));
+
+      final profileSpan = _findSpan(
+        rootSpan,
+        matching: (span) => span.text == '@$fallbackName',
+      );
+      expect(profileSpan, isNotNull);
+      expect(profileSpan!.recognizer, isA<TapGestureRecognizer>());
+    });
+
+    testWidgets('uses cached profile names for nostr profile references', (
+      tester,
+    ) async {
+      final npub = NostrKeyUtils.encodePubKey(profileHex);
+      const displayName = 'Alice Divine';
+      final profile = UserProfile(
+        pubkey: profileHex,
+        displayName: displayName,
+        rawData: const {},
+        createdAt: DateTime.utc(2026, 6, 16),
+        eventId:
+            'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
+      );
+
+      await _pump(
+        tester,
+        text: 'hey nostr:$npub thanks',
+        timestamp: '5h',
+        profileHex: profileHex,
+        profile: profile,
+      );
+      await tester.pump();
+
+      final richText = tester.widget<RichText>(find.byType(RichText));
+      final rootSpan = richText.text as TextSpan;
+      expect(rootSpan.toPlainText(), equals('“hey @$displayName thanks” 5h'));
+      expect(
+        rootSpan.toPlainText(),
+        isNot(contains(UserProfile.defaultDisplayNameFor(profileHex))),
+      );
+
+      final profileSpan = _findSpan(
+        rootSpan,
+        matching: (span) => span.text == '@$displayName',
+      );
+      expect(profileSpan, isNotNull);
+      expect(profileSpan!.recognizer, isA<TapGestureRecognizer>());
     });
   });
 }
