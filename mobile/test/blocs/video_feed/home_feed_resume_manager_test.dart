@@ -153,5 +153,32 @@ void main() {
         ['b1'],
       ]);
     });
+
+    test('serialises a clear behind an earlier in-flight write', () async {
+      manager.persistNow(
+        pubkey: 'p',
+        mode: 'forYou',
+        videos: [_video('a0'), _video('a1')],
+        activeIndex: 0,
+      );
+      manager.persistNow(
+        pubkey: 'p',
+        mode: 'forYou',
+        videos: [_video('b0')],
+        activeIndex: 0,
+      );
+
+      await _pump();
+      expect(cache.writeCallCount, 1);
+      expect(
+        cache.clearCallCount,
+        0,
+        reason: 'clear must wait for the older write to complete',
+      );
+
+      cache.releaseNextWrite();
+      await _pump();
+      expect(cache.clearCallCount, 1);
+    });
   });
 }
