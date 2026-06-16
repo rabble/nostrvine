@@ -21,16 +21,28 @@ class BadgeDashboardData {
 }
 
 class ProfileBadgeViewData {
-  const ProfileBadgeViewData({required this.badge, this.definition});
+  const ProfileBadgeViewData({
+    required this.badge,
+    this.definition,
+    this.award,
+  });
 
   final Nip58ProfileBadgeRef badge;
   final Nip58BadgeDefinition? definition;
+  final Nip58BadgeAward? award;
 
   String get awardEventId => badge.awardEventId;
   String get definitionCoordinate => badge.definitionCoordinate;
   String get displayName =>
       definition?.name ?? _definitionNameFromCoordinate(definitionCoordinate);
-  String? get imageUrl => definition?.imageUrl;
+  String? get description => definition?.description;
+  String? get imageUrl =>
+      definition?.imageUrl ??
+      (definition?.thumbnails.isNotEmpty == true
+          ? definition!.thumbnails.first
+          : null);
+  String? get issuerPubkey => award?.event.pubkey;
+  List<String> get recipientPubkeys => award?.recipientPubkeys ?? const [];
 }
 
 class BadgeAwardViewData {
@@ -136,7 +148,14 @@ class BadgeRepository {
     final viewData = <ProfileBadgeViewData>[];
     for (final ref in refs) {
       final definition = await _loadDefinition(ref.definitionCoordinate);
-      viewData.add(ProfileBadgeViewData(badge: ref, definition: definition));
+      final award = await _loadAward(ref.awardEventId);
+      viewData.add(
+        ProfileBadgeViewData(
+          badge: ref,
+          definition: definition,
+          award: award,
+        ),
+      );
     }
 
     return List<ProfileBadgeViewData>.unmodifiable(viewData);
@@ -287,6 +306,19 @@ class BadgeRepository {
     final sorted = events.toList()
       ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
     return Nip58BadgeParser.parseDefinition(sorted.first);
+  }
+
+  Future<Nip58BadgeAward?> _loadAward(String eventId) async {
+    if (eventId.isEmpty) return null;
+
+    final events = await _nostrClient.queryEvents([
+      Filter(ids: [eventId], kinds: [EventKind.badgeAward], limit: 1),
+    ]);
+    if (events.isEmpty) return null;
+
+    final sorted = events.toList()
+      ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
+    return Nip58BadgeParser.parseAward(sorted.first);
   }
 
   Future<void> _publishProfileBadges(List<Nip58ProfileBadgeRef> refs) async {

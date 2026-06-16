@@ -125,6 +125,12 @@ void main() {
     test(
       'loadAcceptedBadgesForProfile returns badge definitions for profile',
       () async {
+        final award = _awardEvent(
+          id: _eventId(15),
+          issuerPubkey: _pubkey(3),
+          definitionCoordinate: '30009:${_pubkey(3)}:daily-diviner',
+          recipients: [_pubkey(2), _pubkey(4)],
+        );
         final profileBadges = _profileBadgesEvent(
           id: _eventId(14),
           pubkey: _pubkey(2),
@@ -137,10 +143,13 @@ void main() {
           pubkey: _pubkey(3),
           dTag: 'daily-diviner',
           name: 'Diviner of the Day',
+          description: 'A daily badge for people who keep the network weird.',
+          thumbnails: ['https://example.com/daily-diviner-thumb.png'],
         );
         _stubQueries(nostrClient, {
           'profileCurrent:${_pubkey(2)}': [profileBadges],
           'definition:30009:${_pubkey(3)}:daily-diviner': [definition],
+          'ids:${_eventId(15)}': [award],
         });
 
         final badges = await repository.loadAcceptedBadgesForProfile(
@@ -154,6 +163,17 @@ void main() {
         );
         expect(badges.single.awardEventId, _eventId(15));
         expect(badges.single.displayName, 'Diviner of the Day');
+        expect(
+          badges.single.description,
+          'A daily badge for people who keep the network weird.',
+        );
+        expect(
+          badges.single.imageUrl,
+          'https://example.com/daily-diviner-thumb.png',
+        );
+        expect(badges.single.award?.event.id, _eventId(15));
+        expect(badges.single.issuerPubkey, _pubkey(3));
+        expect(badges.single.recipientPubkeys, [_pubkey(2), _pubkey(4)]);
       },
     );
 
@@ -294,6 +314,9 @@ void _stubQueries(
 }
 
 String _queryKey(Filter filter) {
+  if (filter.ids?.isNotEmpty == true) {
+    return 'ids:${filter.ids!.join(',')}';
+  }
   if (filter.kinds?.contains(EventKind.badgeAward) == true &&
       filter.p?.contains(_pubkey(1)) == true) {
     return 'awarded';
@@ -353,6 +376,9 @@ Event _definitionEvent({
   required String pubkey,
   required String dTag,
   required String name,
+  String? description,
+  String? imageUrl,
+  List<String> thumbnails = const [],
 }) {
   return _event(
     id: _eventId(100),
@@ -361,6 +387,9 @@ Event _definitionEvent({
     tags: [
       ['d', dTag],
       ['name', name],
+      if (description != null) ['description', description],
+      if (imageUrl != null) ['image', imageUrl],
+      for (final thumbnail in thumbnails) ['thumb', thumbnail],
     ],
   );
 }

@@ -25,13 +25,17 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/badges/badge_repository.dart';
 import 'package:openvine/services/badges/nip58_badge_models.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:openvine/widgets/user_profile_tile.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -178,6 +182,10 @@ class MockAuthService extends Mock implements AuthService {
 
 const testUserHex =
     '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+const issuerUserHex =
+    '4f071cf08328c9d9dbb21f5d9d1e51fe2ecf4e7de5a4e59ecdf356f6a6f49f22';
+const recipientUserHex =
+    '4ac3abe4d7c0bdfb3e5f2f904f4c7e7f60cd4b4ebe1f8b6eea9e969fbac0b7aa';
 const _dismissedDivineLoginBannerPrefix = 'dismissed_divine_login_banner_';
 
 /// Minimal fake [DivineVideoDraft] for use in [BackgroundUpload] test fixtures.
@@ -189,12 +197,28 @@ class _FakeDraft extends Fake implements DivineVideoDraft {
 Event _badgeDefinitionEvent() {
   return Event.fromJson({
     'id': '00000000000000000000000000000000000000000000000000000000000000bb',
-    'pubkey': testUserHex,
+    'pubkey': issuerUserHex,
     'created_at': 1000,
     'kind': EventKind.badgeDefinition,
     'tags': [
       ['d', 'daily-diviner'],
       ['name', 'Diviner of the Day'],
+    ],
+    'content': '',
+    'sig': '',
+  });
+}
+
+Event _badgeAwardEvent() {
+  return Event.fromJson({
+    'id': '00000000000000000000000000000000000000000000000000000000000000aa',
+    'pubkey': issuerUserHex,
+    'created_at': 1001,
+    'kind': EventKind.badgeAward,
+    'tags': [
+      ['a', '30009:$issuerUserHex:daily-diviner'],
+      ['p', testUserHex],
+      ['p', recipientUserHex],
     ],
     'content': '',
     'sig': '',
@@ -263,6 +287,7 @@ void main() {
       BackgroundPublishState? backgroundPublishState,
       Stream<BackgroundPublishState>? backgroundPublishStream,
       List<ProfileBadgeViewData> acceptedProfileBadges = const [],
+      MockGoRouter? goRouter,
     }) {
       final authService = MockAuthService(
         isAnonymousValue: isAnonymous,
@@ -336,7 +361,7 @@ void main() {
         child: header,
       );
 
-      return ProviderScope(
+      final scoped = ProviderScope(
         overrides: [
           ...getStandardTestOverrides(
             mockNostrService: mockNostrClient,
@@ -369,38 +394,84 @@ void main() {
           home: Scaffold(body: SingleChildScrollView(child: header)),
         ),
       );
+
+      return goRouter == null
+          ? scoped
+          : MockGoRouterProvider(goRouter: goRouter, child: scoped);
     }
 
-    testWidgets('renders accepted NIP-58 badges on the profile header', (
+    testWidgets('opens accepted NIP-58 badge details from profile header', (
       tester,
     ) async {
       final testProfile = createTestProfile(displayName: 'Badged User');
+      final mockGoRouter = MockGoRouter();
+      when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: false,
           suppliedProfile: testProfile,
+          goRouter: mockGoRouter,
           acceptedProfileBadges: [
             ProfileBadgeViewData(
               badge: const Nip58ProfileBadgeRef(
-                definitionCoordinate: '30009:$testUserHex:daily-diviner',
+                definitionCoordinate: '30009:$issuerUserHex:daily-diviner',
                 awardEventId:
                     '00000000000000000000000000000000000000000000000000000000000000aa',
               ),
+              award: Nip58BadgeAward(
+                event: _badgeAwardEvent(),
+                definitionCoordinate: '30009:$issuerUserHex:daily-diviner',
+                recipientPubkeys: const [testUserHex, recipientUserHex],
+              ),
               definition: Nip58BadgeDefinition(
                 event: _badgeDefinitionEvent(),
-                coordinate: '30009:$testUserHex:daily-diviner',
+                coordinate: '30009:$issuerUserHex:daily-diviner',
                 dTag: 'daily-diviner',
                 name: 'Diviner of the Day',
+                description:
+                    'A daily badge for people who keep the network weird.',
+                thumbnails: const [
+                  'https://example.com/daily-diviner-thumb.png',
+                ],
               ),
             ),
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       expect(find.text('Diviner of the Day'), findsOneWidget);
+      expect(
+        tester
+            .widget<VineCachedImage>(find.byType(VineCachedImage).first)
+            .imageUrl,
+        'https://example.com/daily-diviner-thumb.png',
+      );
+
+      await tester.tap(find.text('Diviner of the Day'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('A daily badge for people who keep the network weird.'),
+        findsOneWidget,
+      );
+      expect(find.text('Awarded by'), findsOneWidget);
+      expect(find.text('Recipients'), findsOneWidget);
+      expect(find.byType(UserProfileTile), findsNWidgets(3));
+
+      await tester.tap(find.byType(UserProfileTile).first);
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockGoRouter.push(
+          OtherProfileScreen.pathForNpub(
+            NostrKeyUtils.encodePubKey(issuerUserHex),
+          ),
+        ),
+      ).called(1);
     });
 
     testWidgets('displays user avatar when profile is loaded', (tester) async {
