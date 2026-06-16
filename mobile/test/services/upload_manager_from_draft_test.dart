@@ -5,12 +5,11 @@ import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
-import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/models/pending_upload.dart' show UploadStatus;
 import 'package:openvine/services/upload_manager.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -34,6 +33,7 @@ void main() {
     late PathProviderPlatform originalPathProviderInstance;
 
     setUp(() async {
+      await TestHelpers.cleanupHiveBox('pending_uploads');
       tempDir = await Directory.systemTemp.createTemp('upload_draft_test_');
       originalPathProviderInstance = PathProviderPlatform.instance;
       final mockPathProvider = MockPathProviderPlatform()
@@ -79,10 +79,7 @@ void main() {
       // box before deleting tempDir, so neither leaks into the merged VGV
       // optimizer isolate (#5159).
       uploadManager.dispose();
-      if (Hive.isBoxOpen('pending_uploads')) {
-        await Hive.box<PendingUpload>('pending_uploads').close();
-      }
-      await Hive.deleteBoxFromDisk('pending_uploads');
+      await TestHelpers.cleanupHiveBox('pending_uploads');
       PathProviderPlatform.instance = originalPathProviderInstance;
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
