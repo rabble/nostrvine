@@ -397,11 +397,17 @@ void main() {
           expect(find.byType(CustomScrollView), findsOneWidget);
           expect(find.byType(GridView), findsNothing);
 
-          // Horizontally centered across the full grid width (800px surface).
+          // Horizontally centered across the full scrollable width.
           final indicatorCenter = tester.getCenter(
             find.byType(BrandedLoadingIndicator),
           );
-          expect(indicatorCenter.dx, moreOrLessEquals(400, epsilon: 1));
+          final scrollViewCenter = tester.getCenter(
+            find.byType(CustomScrollView),
+          );
+          expect(
+            indicatorCenter.dx,
+            moreOrLessEquals(scrollViewCenter.dx, epsilon: 1),
+          );
         },
       );
 
