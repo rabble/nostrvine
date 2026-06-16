@@ -13,6 +13,9 @@ import 'package:unified_logger/unified_logger.dart';
 enum NotificationRefreshReason {
   /// App returned to foreground after background/inactive state.
   appResume,
+
+  /// App is foreground and idle enough to opportunistically warm notifications.
+  foregroundIdleWarmup,
 }
 
 /// Forwards an unexpected refresh failure to the crash reporter.
