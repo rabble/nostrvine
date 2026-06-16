@@ -6,6 +6,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:cache_sync/cache_sync.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -33,6 +34,38 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _MockHomeFeedCache extends Mock implements HomeFeedCache {}
 
+/// No-op cache DAO so the bloc tests never touch the shared on-disk
+/// [CacheSync] database. Under CI's parallel test isolates the
+/// path_provider-mocked `/tmp/documents` DB is shared, so the cold-start serve
+/// path cross-contaminates between tests and fails non-deterministically.
+/// Wiring [CacheSync] to a no-op DAO in `setUp` keeps every bloc — whatever
+/// factory built it — on the deterministic fresh-load path. Cache-serve
+/// behaviour is covered separately by the 'cache-first home feed' group, which
+/// injects its own [HomeFeedCache] mock.
+class _FakeCacheDao implements CacheDao {
+  @override
+  Future<String?> read(String key) async => null;
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {}
+
+  @override
+  Future<void> delete(String key) async {}
+
+  @override
+  Future<void> deletePrefix(String prefix) async {}
+
+  @override
+  Future<int> totalPayloadBytes() async => 0;
+
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
+}
+
 class _FakeSharedPreferences extends Fake implements SharedPreferences {}
 
 void main() {
@@ -45,7 +78,11 @@ void main() {
     late StreamController<List<CuratedList>> curatedListsController;
     late VideoFeedBloc savedModeBloc;
 
-    setUp(() {
+    setUp(() async {
+      // Route the disk cache to a no-op DAO so no bloc — whatever factory
+      // creates it — reads or writes the shared on-disk CacheSync DB.
+      await CacheSync.init(dao: _FakeCacheDao());
+
       mockVideosRepository = _MockVideosRepository();
       mockFollowRepository = _MockFollowRepository();
       mockCuratedListRepository = _MockCuratedListRepository();
