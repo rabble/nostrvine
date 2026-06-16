@@ -336,22 +336,16 @@ class _CommentHeader extends ConsumerWidget {
                   child: profile == null
                       ? Text(
                           UserProfile.generatedNameFor(authorPubkey),
-                          style: const TextStyle(
+                          style: VineTheme.titleSmallFont(
                             color: VineTheme.onSurface,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.1,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         )
                       : UserName.fromUserProfile(
                           profile,
-                          style: const TextStyle(
+                          style: VineTheme.titleSmallFont(
                             color: VineTheme.onSurface,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.1,
                           ),
                         ),
                 ),
@@ -418,6 +412,8 @@ class _CommentContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEmoji = _isEmojiOnly(content);
     final baseStyle = isEmoji
+        // Raw style: no VineTheme helper exists at the 40px emoji-only display
+        // size (_emojiOnlyFontSize).
         ? const TextStyle(
             color: VineTheme.onSurface,
             fontSize: _emojiOnlyFontSize,

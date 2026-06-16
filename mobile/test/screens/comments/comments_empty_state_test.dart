@@ -18,8 +18,9 @@ void main() {
           ),
         );
 
-        expect(find.text('No comments yet'), findsOneWidget);
-        expect(find.text('Get the party started!'), findsOneWidget);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.commentsEmptyTitle), findsOneWidget);
+        expect(find.text(l10n.commentsEmptySubtitle), findsOneWidget);
       });
 
       testWidgets(
@@ -99,9 +100,10 @@ void main() {
         );
 
         // Should show both the Classic Vine notice AND the empty state message
+        final l10n = lookupAppLocalizations(const Locale('en'));
         expect(find.text('Classic Vine'), findsOneWidget);
-        expect(find.text('No comments yet'), findsOneWidget);
-        expect(find.text('Get the party started!'), findsOneWidget);
+        expect(find.text(l10n.commentsEmptyTitle), findsOneWidget);
+        expect(find.text(l10n.commentsEmptySubtitle), findsOneWidget);
       });
 
       testWidgets('has styled container for Classic Vine notice', (
