@@ -56,14 +56,25 @@ void main() {
       expect(response.nextCursorId, isNull);
       expect(response.hasMore, isFalse);
     });
+
+    test('parses integer has_more flags from notifications API', () {
+      final withoutMore = NotificationResponse.fromJson({
+        'notifications': <Map<String, dynamic>>[],
+        'has_more': 0,
+      });
+      final withMore = NotificationResponse.fromJson({
+        'notifications': <Map<String, dynamic>>[],
+        'has_more': 1,
+      });
+
+      expect(withoutMore.hasMore, isFalse);
+      expect(withMore.hasMore, isTrue);
+    });
   });
 
   group('MarkReadResponse', () {
     test('honors explicit `success: true` when the server sends it', () {
-      final json = {
-        'success': true,
-        'marked_count': 10,
-      };
+      final json = {'success': true, 'marked_count': 10};
 
       final response = MarkReadResponse.fromJson(json);
 
@@ -86,25 +97,39 @@ void main() {
       expect(response.error, equals('unauthorized'));
     });
 
-    test(
-      'treats the real funnelcake response shape (no `success` field) as '
-      'success',
-      () {
-        // Per https://relay.divine.video/docs/llm-guide the server
-        // returns {"marked_count": N, "marked_all": bool} on success.
-        // There is no `success` field — PR #4271 assumed one and
-        // defaulted to `false`, which made every successful mark-read
-        // parse as a soft-failure and bounce the notifications badge
-        // back up via the repository's rollback path.
-        final json = {'marked_count': 5, 'marked_all': true};
+    test('parses integer success flags when the server sends them', () {
+      final rejected = MarkReadResponse.fromJson({
+        'success': 0,
+        'marked_count': 0,
+        'error': 'unauthorized',
+      });
+      final accepted = MarkReadResponse.fromJson({
+        'success': 1,
+        'marked_count': 3,
+      });
 
-        final response = MarkReadResponse.fromJson(json);
+      expect(rejected.success, isFalse);
+      expect(rejected.error, equals('unauthorized'));
+      expect(accepted.success, isTrue);
+      expect(accepted.markedCount, equals(3));
+    });
 
-        expect(response.success, isTrue);
-        expect(response.markedCount, equals(5));
-        expect(response.error, isNull);
-      },
-    );
+    test('treats the real funnelcake response shape (no `success` field) as '
+        'success', () {
+      // Per https://relay.divine.video/docs/llm-guide the server
+      // returns {"marked_count": N, "marked_all": bool} on success.
+      // There is no `success` field — PR #4271 assumed one and
+      // defaulted to `false`, which made every successful mark-read
+      // parse as a soft-failure and bounce the notifications badge
+      // back up via the repository's rollback path.
+      final json = {'marked_count': 5, 'marked_all': true};
+
+      final response = MarkReadResponse.fromJson(json);
+
+      expect(response.success, isTrue);
+      expect(response.markedCount, equals(5));
+      expect(response.error, isNull);
+    });
 
     test('treats a body with an `error` field as failure', () {
       // No `success` field but an `error` string → still a failure.

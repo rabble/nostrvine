@@ -140,7 +140,7 @@ class RelayNotification {
   static String? _nonEmpty(String? value) =>
       value == null || value.isEmpty ? null : value;
 
-  static int? _intValue(Object? value) => value is int ? value : null;
+  static int? _intValue(Object? value) => value is num ? value.toInt() : null;
 
   static bool _boolValue(Object? value) {
     if (value is bool) {

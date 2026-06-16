@@ -23,7 +23,7 @@ class NotificationResponse {
       unreadCount: json['unread_count'] as int? ?? 0,
       nextCursor: json['next_cursor'] as String?,
       nextCursorId: json['next_cursor_id'] as String?,
-      hasMore: json['has_more'] as bool? ?? false,
+      hasMore: _boolValue(json['has_more']),
     );
   }
 
@@ -65,7 +65,9 @@ class MarkReadResponse {
   factory MarkReadResponse.fromJson(Map<String, dynamic> json) {
     final error = json['error'] as String?;
     return MarkReadResponse(
-      success: (json['success'] as bool?) ?? (error == null),
+      success: json.containsKey('success')
+          ? _boolValue(json['success'])
+          : error == null,
       markedCount: json['marked_count'] as int? ?? 0,
       error: error,
     );
@@ -79,4 +81,14 @@ class MarkReadResponse {
 
   /// An optional error message when the operation fails.
   final String? error;
+}
+
+bool _boolValue(Object? value) {
+  if (value is bool) {
+    return value;
+  }
+  if (value is int) {
+    return value != 0;
+  }
+  return false;
 }
