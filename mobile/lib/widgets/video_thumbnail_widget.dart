@@ -76,8 +76,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   void _handleImageDimensionsResolved(String url, int width, int height) {
     if (url != _thumbnailUrl ||
         !mounted ||
-        widget.video.width != null ||
-        widget.video.height != null ||
+        _hasUsableVideoDimensions ||
         width <= 0 ||
         height <= 0) {
       return;
@@ -88,6 +87,12 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
     setState(() {
       _resolvedAspectRatio = aspectRatio;
     });
+  }
+
+  bool get _hasUsableVideoDimensions {
+    final width = widget.video.width;
+    final height = widget.video.height;
+    return width != null && width > 0 && height != null && height > 0;
   }
 
   Widget _buildContent(BoxFit fit) {
@@ -140,9 +145,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   Widget build(BuildContext context) {
     // Use video metadata dimensions, resolved image dimensions, or fallback
     final double aspectRatio;
-    if (widget.video.width != null &&
-        widget.video.height != null &&
-        widget.video.height! > 0) {
+    if (_hasUsableVideoDimensions) {
       aspectRatio = widget.video.width! / widget.video.height!;
     } else if (_resolvedAspectRatio != null) {
       aspectRatio = _resolvedAspectRatio!;
@@ -382,10 +385,22 @@ class _ImageWithDimensionsListenerState
       (image, synchronousCall) {
         final imageWidth = image.image.width;
         final imageHeight = image.image.height;
+        final onImageDimensionsResolved = widget.onImageDimensionsResolved;
         image.dispose();
         if (!mounted) return;
-        widget.onImageDimensionsResolved?.call(imageWidth, imageHeight);
+        if (onImageDimensionsResolved == null) return;
+        if (synchronousCall) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              onImageDimensionsResolved(imageWidth, imageHeight);
+            }
+          });
+        } else {
+          onImageDimensionsResolved(imageWidth, imageHeight);
+        }
       },
+      // The rendered Image handles visible failures; this listener only needs
+      // dimensions when decoding succeeds.
       onError: (Object error, StackTrace? stackTrace) {},
     );
     _imageStream!.addListener(_listener!);

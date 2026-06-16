@@ -119,9 +119,20 @@ class _VineCachedImageState extends State<VineCachedImage> {
       (image, synchronousCall) {
         final imageWidth = image.image.width;
         final imageHeight = image.image.height;
+        final onImageDimensionsResolved = widget.onImageDimensionsResolved;
         image.dispose();
         if (!mounted) return;
-        widget.onImageDimensionsResolved?.call(imageWidth, imageHeight);
+        if (onImageDimensionsResolved != null) {
+          if (synchronousCall) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                onImageDimensionsResolved(imageWidth, imageHeight);
+              }
+            });
+          } else {
+            onImageDimensionsResolved(imageWidth, imageHeight);
+          }
+        }
         if (_hasImage) return;
         setState(() {
           _hasImage = true;

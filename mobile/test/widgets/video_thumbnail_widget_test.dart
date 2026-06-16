@@ -138,6 +138,41 @@ void main() {
       },
     );
 
+    testWidgets(
+      'updates partial metadata aspect ratio from the displayed cached image',
+      (tester) async {
+        final videoWithPartialDimensions = createTestVideoEvent(
+          id: 'test-partial-dimensions',
+          thumbnailUrl: 'https://example.com/thumb-partial.jpg',
+          dimensions: '640x',
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: VideoThumbnailWidget(
+                video: videoWithPartialDimensions,
+                width: 200,
+                height: 200,
+              ),
+            ),
+          ),
+        );
+
+        expect(_thumbnailAspectRatio(tester), equals(2 / 3));
+
+        final cachedImage = tester.widget<VineCachedImage>(
+          find.byType(VineCachedImage),
+        );
+        cachedImage.onImageDimensionsResolved!(640, 360);
+        await tester.pump();
+
+        expect(_thumbnailAspectRatio(tester), equals(640 / 360));
+      },
+    );
+
     testWidgets('ignores stale image dimensions after thumbnail URL changes', (
       tester,
     ) async {
@@ -275,6 +310,26 @@ void main() {
 
         expect(width, equals(640));
         expect(height, equals(360));
+      },
+    );
+
+    testWidgets(
+      'ImageWithDimensionsListener defers synchronous parent state updates',
+      (tester) async {
+        final image = _syncImage(640, 360);
+        addTearDown(image.dispose);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: _DimensionCallbackParent(
+              imageProvider: _SyncImageProvider(image),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('640x360'), findsOneWidget);
       },
     );
 
@@ -615,4 +670,33 @@ void main() {
       expect(find.byType(VineCachedImage), findsNothing);
     });
   });
+}
+
+class _DimensionCallbackParent extends StatefulWidget {
+  const _DimensionCallbackParent({required this.imageProvider});
+
+  final ImageProvider<Object> imageProvider;
+
+  @override
+  State<_DimensionCallbackParent> createState() =>
+      _DimensionCallbackParentState();
+}
+
+class _DimensionCallbackParentState extends State<_DimensionCallbackParent> {
+  int? _width;
+  int? _height;
+
+  @override
+  Widget build(BuildContext context) {
+    return ImageWithDimensionsListener(
+      imageProvider: widget.imageProvider,
+      onImageDimensionsResolved: (width, height) {
+        setState(() {
+          _width = width;
+          _height = height;
+        });
+      },
+      child: Text('${_width ?? 0}x${_height ?? 0}'),
+    );
+  }
 }
