@@ -518,6 +518,10 @@ class Drafts extends Table {
   TextColumn get renderedThumbnailPath =>
       text().nullable().named('rendered_thumbnail_path')();
 
+  /// Basename of the selected custom cover thumbnail (for indexed lookups)
+  TextColumn get customThumbnailPath =>
+      text().nullable().named('custom_thumbnail_path')();
+
   /// Hex public key of the account that owns this draft.
   /// NULL for legacy drafts created before multi-account support.
   TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
@@ -555,6 +559,11 @@ class Drafts extends Table {
       'idx_draft_rendered_thumbnail_path',
       'CREATE INDEX IF NOT EXISTS idx_draft_rendered_thumbnail_path '
           'ON drafts (rendered_thumbnail_path)',
+    ),
+    Index(
+      'idx_draft_custom_thumbnail_path',
+      'CREATE INDEX IF NOT EXISTS idx_draft_custom_thumbnail_path '
+          'ON drafts (custom_thumbnail_path)',
     ),
   ];
 }

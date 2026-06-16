@@ -256,9 +256,10 @@ class AppDatabase extends _$AppDatabase {
       ON clips (thumbnail_path)
     ''');
 
-    // Add rendered_file_path / rendered_thumbnail_path to drafts (if missing)
+    // Add indexed draft-owned file reference columns (if missing)
     await _addColumnIfMissing('drafts', 'rendered_file_path', 'TEXT');
     await _addColumnIfMissing('drafts', 'rendered_thumbnail_path', 'TEXT');
+    await _addColumnIfMissing('drafts', 'custom_thumbnail_path', 'TEXT');
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_draft_rendered_file_path
       ON drafts (rendered_file_path)
@@ -266,6 +267,10 @@ class AppDatabase extends _$AppDatabase {
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_draft_rendered_thumbnail_path
       ON drafts (rendered_thumbnail_path)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_draft_custom_thumbnail_path
+      ON drafts (custom_thumbnail_path)
     ''');
 
     // Add owner_pubkey columns for multi-account isolation
@@ -650,6 +655,13 @@ class AppDatabase extends _$AppDatabase {
             data, '$.finalRenderedClip.thumbnailPath'
           )
       WHERE rendered_thumbnail_path IS NULL
+    ''');
+
+    // Drafts: backfill custom_thumbnail_path where missing
+    await customStatement(r'''
+      UPDATE drafts
+      SET custom_thumbnail_path = json_extract(data, '$.customThumbnailPath')
+      WHERE custom_thumbnail_path IS NULL
     ''');
   }
 

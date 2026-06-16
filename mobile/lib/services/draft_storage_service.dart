@@ -106,6 +106,9 @@ class DraftStorageService {
           renderedThumbnailPath: draft.finalRenderedClip?.thumbnailPath != null
               ? p.basename(draft.finalRenderedClip!.thumbnailPath!)
               : null,
+          customThumbnailPath: draft.customThumbnailPath != null
+              ? p.basename(draft.customThumbnailPath!)
+              : null,
           clipDataList: clipDataList,
           ownerPubkey: ownerPubkey,
         );
@@ -149,8 +152,11 @@ class DraftStorageService {
       category: LogCategory.video,
     );
 
-    // Check for orphaned files before overwriting
+    // Check for orphaned files before overwriting. Delete them only after the
+    // new row is committed, so this draft's old indexed file references no
+    // longer protect files it just stopped using.
     final existingDraft = await getDraftById(draft.id);
+    var orphanedFiles = const <String?>[];
     if (existingDraft != null) {
       final newFilePaths = <String?>{
         for (final clip in draft.clips) ...[
@@ -162,7 +168,7 @@ class DraftStorageService {
         draft.customThumbnailPath,
       };
 
-      final orphanedFiles = <String?>[
+      orphanedFiles = <String?>[
         for (final clip in existingDraft.clips) ...[
           if (!newFilePaths.contains(clip.video.file?.path))
             clip.video.file?.path,
@@ -181,13 +187,6 @@ class DraftStorageService {
         if (!newFilePaths.contains(existingDraft.customThumbnailPath))
           existingDraft.customThumbnailPath,
       ];
-
-      // Delete orphaned files (only if not referenced by clip library)
-      await FileCleanupService.deleteFilesIfUnreferenced(
-        orphanedFiles,
-        draftsDao: _draftsDao,
-        clipsDao: _clipsDao,
-      );
     }
 
     // Upsert draft and clips atomically in a single transaction
@@ -231,8 +230,18 @@ class DraftStorageService {
       renderedThumbnailPath: draft.finalRenderedClip?.thumbnailPath != null
           ? p.basename(draft.finalRenderedClip!.thumbnailPath!)
           : null,
+      customThumbnailPath: draft.customThumbnailPath != null
+          ? p.basename(draft.customThumbnailPath!)
+          : null,
       clipDataList: clipDataList,
       ownerPubkey: ownerPubkey,
+    );
+
+    // Delete orphaned files only after the new draft/clip rows are committed.
+    await FileCleanupService.deleteFilesIfUnreferenced(
+      orphanedFiles,
+      draftsDao: _draftsDao,
+      clipsDao: _clipsDao,
     );
   }
 
@@ -477,6 +486,9 @@ class DraftStorageService {
         .map((draft) => draft.finalRenderedClip)
         .whereType<DivineVideoClip>()
         .toList();
+    final allCustomThumbnailPaths = drafts
+        .map((draft) => draft.customThumbnailPath)
+        .toList();
 
     // Clear DB first (clips cascade via FK), then delete files
     await _draftsDao.clearAll();
@@ -489,6 +501,11 @@ class DraftStorageService {
     );
     await FileCleanupService.deleteRecordingClipsFiles(
       allFinalRenderedClips,
+      draftsDao: _draftsDao,
+      clipsDao: _clipsDao,
+    );
+    await FileCleanupService.deleteFilesIfUnreferenced(
+      allCustomThumbnailPaths,
       draftsDao: _draftsDao,
       clipsDao: _clipsDao,
     );

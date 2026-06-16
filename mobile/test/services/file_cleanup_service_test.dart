@@ -29,7 +29,7 @@ void main() {
       );
 
       verifyNever(() => clipsDao.isFileReferenced(any()));
-      verifyNever(() => draftsDao.isRenderedFileReferenced(any()));
+      verifyNever(() => draftsDao.isDraftFileReferenced(any()));
     });
   });
 }

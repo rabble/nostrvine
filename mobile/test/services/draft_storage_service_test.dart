@@ -1020,6 +1020,43 @@ void main() {
           reason: 'deleting a draft must remove its user-selected cover',
         );
       });
+
+      test('keeps a cover referenced by a saved draft when autosave is '
+          'deleted', () async {
+        final cover = writeCover('shared_cover.jpg');
+        final autosave = draftWithCover(cover.path).copyWith(
+          id: 'draft_autosave',
+        );
+        final savedDraft = draftWithCover(cover.path).copyWith(
+          id: 'draft_named',
+        );
+
+        await service.saveDraft(autosave);
+        await service.saveDraft(savedDraft);
+
+        await service.deleteDraft(autosave.id);
+
+        expect(
+          cover.existsSync(),
+          isTrue,
+          reason:
+              'custom cover paths are draft references even when they are not '
+              'mirrored on finalRenderedClip',
+        );
+      });
+
+      test('deletes custom cover files when all drafts are cleared', () async {
+        final cover = writeCover('clear_all_cover.jpg');
+        await service.saveDraft(draftWithCover(cover.path));
+
+        await service.clearAllDrafts();
+
+        expect(
+          cover.existsSync(),
+          isFalse,
+          reason: 'clearing all drafts should not leak custom cover files',
+        );
+      });
     });
   });
 }

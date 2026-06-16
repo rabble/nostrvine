@@ -53,6 +53,7 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
     required String data,
     required String? renderedFilePath,
     required String? renderedThumbnailPath,
+    String? customThumbnailPath,
     int publishAttempts = 0,
     String? publishError,
     String? ownerPubkey,
@@ -70,6 +71,7 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
         data: data,
         renderedFilePath: Value(renderedFilePath),
         renderedThumbnailPath: Value(renderedThumbnailPath),
+        customThumbnailPath: Value(customThumbnailPath),
         ownerPubkey: Value(ownerPubkey),
       ),
     );
@@ -258,14 +260,14 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
         .write(DraftsCompanion(ownerPubkey: Value(newOwnerPubkey)));
   }
 
-  /// Check if a filename is referenced by any draft's
-  /// rendered_file_path or rendered_thumbnail_path.
-  Future<bool> isRenderedFileReferenced(String filename) async {
+  /// Check if a filename is referenced by any draft-owned file column.
+  Future<bool> isDraftFileReferenced(String filename) async {
     final query = selectOnly(drafts)
       ..addColumns([drafts.id.count()])
       ..where(
         drafts.renderedFilePath.equals(filename) |
-            drafts.renderedThumbnailPath.equals(filename),
+            drafts.renderedThumbnailPath.equals(filename) |
+            drafts.customThumbnailPath.equals(filename),
       );
     final result = await query.getSingle();
     return (result.read(drafts.id.count()) ?? 0) > 0;
@@ -284,6 +286,7 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
     required String data,
     required String? renderedFilePath,
     required String? renderedThumbnailPath,
+    required String? customThumbnailPath,
     required List<DraftClipData> clipDataList,
     int publishAttempts = 0,
     String? publishError,
@@ -304,6 +307,7 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
           data: data,
           renderedFilePath: Value(renderedFilePath),
           renderedThumbnailPath: Value(renderedThumbnailPath),
+          customThumbnailPath: Value(customThumbnailPath),
           ownerPubkey: Value(ownerPubkey),
         ),
       );

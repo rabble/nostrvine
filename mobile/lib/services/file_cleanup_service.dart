@@ -15,8 +15,8 @@ import 'package:unified_logger/unified_logger.dart';
 /// checks both storage locations before deleting to prevent data loss.
 ///
 /// Uses indexed `file_path` / `thumbnail_path` columns on the clips table
-/// and `rendered_file_path` / `rendered_thumbnail_path` on the drafts table
-/// for efficient lookups without loading all rows.
+/// and draft-owned file reference columns on the drafts table for efficient
+/// lookups without loading all rows.
 class FileCleanupService {
   /// Checks if a file is referenced by any clip or draft.
   ///
@@ -29,7 +29,7 @@ class FileCleanupService {
   }) async {
     final filename = p.basename(filePath);
     if (await clipsDao.isFileReferenced(filename)) return true;
-    if (await draftsDao.isRenderedFileReferenced(filename)) return true;
+    if (await draftsDao.isDraftFileReferenced(filename)) return true;
     return false;
   }
 

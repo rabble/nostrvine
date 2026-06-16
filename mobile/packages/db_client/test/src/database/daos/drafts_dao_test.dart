@@ -1,4 +1,4 @@
-// ABOUTME: Unit tests for DraftsDao - focused on isRenderedFileReferenced
+// ABOUTME: Unit tests for DraftsDao - focused on isDraftFileReferenced
 // ABOUTME: and basic CRUD operations.
 
 import 'dart:io';
@@ -33,7 +33,7 @@ void main() {
   });
 
   group(DraftsDao, () {
-    group('isRenderedFileReferenced', () {
+    group('isDraftFileReferenced', () {
       test('returns true when filename matches renderedFilePath', () async {
         await dao.upsertDraft(
           id: 'draft_1',
@@ -47,7 +47,7 @@ void main() {
           data: '{}',
         );
 
-        final result = await dao.isRenderedFileReferenced('rendered_video.mp4');
+        final result = await dao.isDraftFileReferenced('rendered_video.mp4');
         expect(result, isTrue);
       });
 
@@ -66,12 +66,32 @@ void main() {
             data: '{}',
           );
 
-          final result = await dao.isRenderedFileReferenced(
+          final result = await dao.isDraftFileReferenced(
             'rendered_thumb.jpeg',
           );
           expect(result, isTrue);
         },
       );
+
+      test('returns true when filename matches customThumbnailPath', () async {
+        await dao.upsertDraft(
+          id: 'draft_1',
+          title: 'Test',
+          description: '',
+          publishStatus: 'draft',
+          createdAt: DateTime(2023, 11, 14),
+          lastModified: DateTime(2023, 11, 14),
+          renderedFilePath: null,
+          renderedThumbnailPath: null,
+          customThumbnailPath: 'selected_cover.jpeg',
+          data: '{}',
+        );
+
+        final result = await dao.isDraftFileReferenced(
+          'selected_cover.jpeg',
+        );
+        expect(result, isTrue);
+      });
 
       test('returns false when filename is not referenced', () async {
         await dao.upsertDraft(
@@ -86,12 +106,12 @@ void main() {
           data: '{}',
         );
 
-        final result = await dao.isRenderedFileReferenced('nonexistent.mp4');
+        final result = await dao.isDraftFileReferenced('nonexistent.mp4');
         expect(result, isFalse);
       });
 
       test('returns false when no drafts exist', () async {
-        final result = await dao.isRenderedFileReferenced('anything.mp4');
+        final result = await dao.isDraftFileReferenced('anything.mp4');
         expect(result, isFalse);
       });
 
@@ -109,7 +129,7 @@ void main() {
           data: '{}',
         );
 
-        final result = await dao.isRenderedFileReferenced('something.mp4');
+        final result = await dao.isDraftFileReferenced('something.mp4');
         expect(result, isFalse);
       });
 
@@ -138,8 +158,8 @@ void main() {
           data: '{}',
         );
 
-        expect(await dao.isRenderedFileReferenced('video_b.mp4'), isTrue);
-        expect(await dao.isRenderedFileReferenced('video_c.mp4'), isFalse);
+        expect(await dao.isDraftFileReferenced('video_b.mp4'), isTrue);
+        expect(await dao.isDraftFileReferenced('video_c.mp4'), isFalse);
       });
     });
 
@@ -314,6 +334,7 @@ void main() {
           lastModified: DateTime(2023, 11, 14),
           renderedFilePath: null,
           renderedThumbnailPath: null,
+          customThumbnailPath: null,
           data: '{}',
           clipDataList: const [],
           ownerPubkey: pubkeyA,

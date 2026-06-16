@@ -6847,6 +6847,17 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _customThumbnailPathMeta =
+      const VerificationMeta('customThumbnailPath');
+  @override
+  late final GeneratedColumn<String> customThumbnailPath =
+      GeneratedColumn<String>(
+        'custom_thumbnail_path',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _ownerPubkeyMeta = const VerificationMeta(
     'ownerPubkey',
   );
@@ -6871,6 +6882,7 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     data,
     renderedFilePath,
     renderedThumbnailPath,
+    customThumbnailPath,
     ownerPubkey,
   ];
   @override
@@ -6977,6 +6989,15 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
         ),
       );
     }
+    if (data.containsKey('custom_thumbnail_path')) {
+      context.handle(
+        _customThumbnailPathMeta,
+        customThumbnailPath.isAcceptableOrUnknown(
+          data['custom_thumbnail_path']!,
+          _customThumbnailPathMeta,
+        ),
+      );
+    }
     if (data.containsKey('owner_pubkey')) {
       context.handle(
         _ownerPubkeyMeta,
@@ -7039,6 +7060,10 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
         DriftSqlType.string,
         data['${effectivePrefix}rendered_thumbnail_path'],
       ),
+      customThumbnailPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}custom_thumbnail_path'],
+      ),
       ownerPubkey: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}owner_pubkey'],
@@ -7086,6 +7111,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
   /// Basename of the final rendered thumbnail (for indexed lookups)
   final String? renderedThumbnailPath;
 
+  /// Basename of the selected custom cover thumbnail (for indexed lookups)
+  final String? customThumbnailPath;
+
   /// Hex public key of the account that owns this draft.
   /// NULL for legacy drafts created before multi-account support.
   final String? ownerPubkey;
@@ -7101,6 +7129,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     required this.data,
     this.renderedFilePath,
     this.renderedThumbnailPath,
+    this.customThumbnailPath,
     this.ownerPubkey,
   });
   @override
@@ -7122,6 +7151,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     }
     if (!nullToAbsent || renderedThumbnailPath != null) {
       map['rendered_thumbnail_path'] = Variable<String>(renderedThumbnailPath);
+    }
+    if (!nullToAbsent || customThumbnailPath != null) {
+      map['custom_thumbnail_path'] = Variable<String>(customThumbnailPath);
     }
     if (!nullToAbsent || ownerPubkey != null) {
       map['owner_pubkey'] = Variable<String>(ownerPubkey);
@@ -7148,6 +7180,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       renderedThumbnailPath: renderedThumbnailPath == null && nullToAbsent
           ? const Value.absent()
           : Value(renderedThumbnailPath),
+      customThumbnailPath: customThumbnailPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customThumbnailPath),
       ownerPubkey: ownerPubkey == null && nullToAbsent
           ? const Value.absent()
           : Value(ownerPubkey),
@@ -7173,6 +7208,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       renderedThumbnailPath: serializer.fromJson<String?>(
         json['renderedThumbnailPath'],
       ),
+      customThumbnailPath: serializer.fromJson<String?>(
+        json['customThumbnailPath'],
+      ),
       ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
     );
   }
@@ -7193,6 +7231,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       'renderedThumbnailPath': serializer.toJson<String?>(
         renderedThumbnailPath,
       ),
+      'customThumbnailPath': serializer.toJson<String?>(customThumbnailPath),
       'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
     };
   }
@@ -7209,6 +7248,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     String? data,
     Value<String?> renderedFilePath = const Value.absent(),
     Value<String?> renderedThumbnailPath = const Value.absent(),
+    Value<String?> customThumbnailPath = const Value.absent(),
     Value<String?> ownerPubkey = const Value.absent(),
   }) => DraftRow(
     id: id ?? this.id,
@@ -7226,6 +7266,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     renderedThumbnailPath: renderedThumbnailPath.present
         ? renderedThumbnailPath.value
         : this.renderedThumbnailPath,
+    customThumbnailPath: customThumbnailPath.present
+        ? customThumbnailPath.value
+        : this.customThumbnailPath,
     ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
   );
   DraftRow copyWithCompanion(DraftsCompanion data) {
@@ -7255,6 +7298,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       renderedThumbnailPath: data.renderedThumbnailPath.present
           ? data.renderedThumbnailPath.value
           : this.renderedThumbnailPath,
+      customThumbnailPath: data.customThumbnailPath.present
+          ? data.customThumbnailPath.value
+          : this.customThumbnailPath,
       ownerPubkey: data.ownerPubkey.present
           ? data.ownerPubkey.value
           : this.ownerPubkey,
@@ -7275,6 +7321,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
           ..write('data: $data, ')
           ..write('renderedFilePath: $renderedFilePath, ')
           ..write('renderedThumbnailPath: $renderedThumbnailPath, ')
+          ..write('customThumbnailPath: $customThumbnailPath, ')
           ..write('ownerPubkey: $ownerPubkey')
           ..write(')'))
         .toString();
@@ -7293,6 +7340,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     data,
     renderedFilePath,
     renderedThumbnailPath,
+    customThumbnailPath,
     ownerPubkey,
   );
   @override
@@ -7310,6 +7358,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
           other.data == this.data &&
           other.renderedFilePath == this.renderedFilePath &&
           other.renderedThumbnailPath == this.renderedThumbnailPath &&
+          other.customThumbnailPath == this.customThumbnailPath &&
           other.ownerPubkey == this.ownerPubkey);
 }
 
@@ -7325,6 +7374,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
   final Value<String> data;
   final Value<String?> renderedFilePath;
   final Value<String?> renderedThumbnailPath;
+  final Value<String?> customThumbnailPath;
   final Value<String?> ownerPubkey;
   final Value<int> rowid;
   const DraftsCompanion({
@@ -7339,6 +7389,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     this.data = const Value.absent(),
     this.renderedFilePath = const Value.absent(),
     this.renderedThumbnailPath = const Value.absent(),
+    this.customThumbnailPath = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -7354,6 +7405,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     required String data,
     this.renderedFilePath = const Value.absent(),
     this.renderedThumbnailPath = const Value.absent(),
+    this.customThumbnailPath = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -7372,6 +7424,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     Expression<String>? data,
     Expression<String>? renderedFilePath,
     Expression<String>? renderedThumbnailPath,
+    Expression<String>? customThumbnailPath,
     Expression<String>? ownerPubkey,
     Expression<int>? rowid,
   }) {
@@ -7388,6 +7441,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
       if (renderedFilePath != null) 'rendered_file_path': renderedFilePath,
       if (renderedThumbnailPath != null)
         'rendered_thumbnail_path': renderedThumbnailPath,
+      if (customThumbnailPath != null)
+        'custom_thumbnail_path': customThumbnailPath,
       if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
       if (rowid != null) 'rowid': rowid,
     });
@@ -7405,6 +7460,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     Value<String>? data,
     Value<String?>? renderedFilePath,
     Value<String?>? renderedThumbnailPath,
+    Value<String?>? customThumbnailPath,
     Value<String?>? ownerPubkey,
     Value<int>? rowid,
   }) {
@@ -7421,6 +7477,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
       renderedFilePath: renderedFilePath ?? this.renderedFilePath,
       renderedThumbnailPath:
           renderedThumbnailPath ?? this.renderedThumbnailPath,
+      customThumbnailPath: customThumbnailPath ?? this.customThumbnailPath,
       ownerPubkey: ownerPubkey ?? this.ownerPubkey,
       rowid: rowid ?? this.rowid,
     );
@@ -7464,6 +7521,11 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
         renderedThumbnailPath.value,
       );
     }
+    if (customThumbnailPath.present) {
+      map['custom_thumbnail_path'] = Variable<String>(
+        customThumbnailPath.value,
+      );
+    }
     if (ownerPubkey.present) {
       map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
     }
@@ -7487,6 +7549,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
           ..write('data: $data, ')
           ..write('renderedFilePath: $renderedFilePath, ')
           ..write('renderedThumbnailPath: $renderedThumbnailPath, ')
+          ..write('customThumbnailPath: $customThumbnailPath, ')
           ..write('ownerPubkey: $ownerPubkey, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -16939,6 +17002,7 @@ typedef $$DraftsTableCreateCompanionBuilder =
       required String data,
       Value<String?> renderedFilePath,
       Value<String?> renderedThumbnailPath,
+      Value<String?> customThumbnailPath,
       Value<String?> ownerPubkey,
       Value<int> rowid,
     });
@@ -16955,6 +17019,7 @@ typedef $$DraftsTableUpdateCompanionBuilder =
       Value<String> data,
       Value<String?> renderedFilePath,
       Value<String?> renderedThumbnailPath,
+      Value<String?> customThumbnailPath,
       Value<String?> ownerPubkey,
       Value<int> rowid,
     });
@@ -17020,6 +17085,11 @@ class $$DraftsTableFilterComposer
 
   ColumnFilters<String> get renderedThumbnailPath => $composableBuilder(
     column: $table.renderedThumbnailPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customThumbnailPath => $composableBuilder(
+    column: $table.customThumbnailPath,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -17093,6 +17163,11 @@ class $$DraftsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get customThumbnailPath => $composableBuilder(
+    column: $table.customThumbnailPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get ownerPubkey => $composableBuilder(
     column: $table.ownerPubkey,
     builder: (column) => ColumnOrderings(column),
@@ -17155,6 +17230,11 @@ class $$DraftsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get customThumbnailPath => $composableBuilder(
+    column: $table.customThumbnailPath,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get ownerPubkey => $composableBuilder(
     column: $table.ownerPubkey,
     builder: (column) => column,
@@ -17200,6 +17280,7 @@ class $$DraftsTableTableManager
                 Value<String> data = const Value.absent(),
                 Value<String?> renderedFilePath = const Value.absent(),
                 Value<String?> renderedThumbnailPath = const Value.absent(),
+                Value<String?> customThumbnailPath = const Value.absent(),
                 Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DraftsCompanion(
@@ -17214,6 +17295,7 @@ class $$DraftsTableTableManager
                 data: data,
                 renderedFilePath: renderedFilePath,
                 renderedThumbnailPath: renderedThumbnailPath,
+                customThumbnailPath: customThumbnailPath,
                 ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
@@ -17230,6 +17312,7 @@ class $$DraftsTableTableManager
                 required String data,
                 Value<String?> renderedFilePath = const Value.absent(),
                 Value<String?> renderedThumbnailPath = const Value.absent(),
+                Value<String?> customThumbnailPath = const Value.absent(),
                 Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DraftsCompanion.insert(
@@ -17244,6 +17327,7 @@ class $$DraftsTableTableManager
                 data: data,
                 renderedFilePath: renderedFilePath,
                 renderedThumbnailPath: renderedThumbnailPath,
+                customThumbnailPath: customThumbnailPath,
                 ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
