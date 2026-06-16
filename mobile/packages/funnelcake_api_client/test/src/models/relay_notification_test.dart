@@ -334,6 +334,48 @@ void main() {
         );
       });
 
+      test('prefers source_created_at over notification row created_at', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 1111,
+          'notification_type': 'comment',
+          'source_created_at': 1712000000,
+          'created_at': 1712345678,
+          'read': false,
+        };
+
+        final notification = RelayNotification.fromJson(json);
+
+        expect(
+          notification.createdAt,
+          equals(
+            DateTime.fromMillisecondsSinceEpoch(1712000000 * 1000),
+          ),
+        );
+      });
+
+      test('parses integer read flags from notifications API', () {
+        final unreadJson = {
+          'id': 'notif_unread',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 1111,
+          'notification_type': 'comment',
+          'created_at': 1712345678,
+          'read': 0,
+        };
+        final readJson = {
+          ...unreadJson,
+          'id': 'notif_read',
+          'read': 1,
+        };
+
+        expect(RelayNotification.fromJson(unreadJson).read, isFalse);
+        expect(RelayNotification.fromJson(readJson).read, isTrue);
+      });
+
       test(
         'parses staging NIP-22 comment anchor fields',
         () {

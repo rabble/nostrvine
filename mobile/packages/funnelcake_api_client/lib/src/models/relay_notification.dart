@@ -51,9 +51,12 @@ class RelayNotification {
       referencedEventId: json['referenced_event_id'] as String?,
       notificationType: json['notification_type'] as String? ?? '',
       createdAt: DateTime.fromMillisecondsSinceEpoch(
-        ((json['created_at'] as int?) ?? 0) * 1000,
+        (_intValue(json['source_created_at']) ??
+                _intValue(json['created_at']) ??
+                0) *
+            1000,
       ),
-      read: json['read'] as bool? ?? false,
+      read: _boolValue(json['read']),
       content: json['content'] as String?,
       isReferencedVideo: referencedVideoMap != null,
       referencedVideoTitle: (videoTitle != null && videoTitle.isNotEmpty)
@@ -136,4 +139,16 @@ class RelayNotification {
 
   static String? _nonEmpty(String? value) =>
       value == null || value.isEmpty ? null : value;
+
+  static int? _intValue(Object? value) => value is int ? value : null;
+
+  static bool _boolValue(Object? value) {
+    if (value is bool) {
+      return value;
+    }
+    if (value is int) {
+      return value != 0;
+    }
+    return false;
+  }
 }
