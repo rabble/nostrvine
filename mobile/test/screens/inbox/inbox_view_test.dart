@@ -352,6 +352,48 @@ void main() {
           expect(find.byType(ConversationTile), findsOneWidget);
         },
       );
+
+      testWidgets(
+        'shows restoring progress bar when isRestoringHistory is true',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: const ConversationListState(
+                status: ConversationListStatus.loaded,
+                isRestoringHistory: true,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          // Switch to Messages tab (default is Notifications).
+          await tester.tap(find.text('Messages'));
+          // pump (not pumpAndSettle): LinearProgressIndicator animates forever.
+          await tester.pump();
+
+          expect(find.byType(LinearProgressIndicator), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'hides restoring progress bar when isRestoringHistory is false',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: const ConversationListState(
+                status: ConversationListStatus.loaded,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          // Switch to Messages tab (default is Notifications).
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+
+          expect(find.byType(LinearProgressIndicator), findsNothing);
+        },
+      );
     });
 
     group('navigation', () {

@@ -242,12 +242,19 @@ class _RestoringHistoryIndicator extends StatelessWidget {
     final isRestoring = context.select<ConversationListBloc, bool>(
       (bloc) => bloc.state.isRestoringHistory,
     );
-    if (!isRestoring) return const SizedBox.shrink();
-    return LinearProgressIndicator(
-      minHeight: 2,
-      backgroundColor: VineTheme.surfaceContainerHigh,
-      color: VineTheme.primary,
-      semanticsLabel: context.l10n.inboxRestoringMessages,
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    return AnimatedSwitcher(
+      duration: reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 200),
+      child: isRestoring
+          ? LinearProgressIndicator(
+              minHeight: 2,
+              backgroundColor: VineTheme.surfaceContainerHigh,
+              color: VineTheme.primary,
+              semanticsLabel: context.l10n.inboxRestoringMessages,
+            )
+          : const SizedBox.shrink(),
     );
   }
 }
