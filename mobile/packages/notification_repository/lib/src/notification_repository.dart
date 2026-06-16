@@ -1058,7 +1058,7 @@ class NotificationRepository {
       final dTag = group
           .map((n) => n.referencedDTag)
           .firstWhere((d) => d != null, orElse: () => null);
-      final addressableId = _recipientOwnedVideoAddressableId(
+      final addressableId = _recipientScopedVideoAddressableId(
         dTag: dTag,
         video: video,
       );
@@ -1284,12 +1284,14 @@ class NotificationRepository {
   /// miss), not *whose* video the route can address. Tradeoff: a misattributed
   /// notification whose ownership the metadata fetch happened to miss now
   /// resolves to the recipient's d-tag match (or not-found) instead of the
-  /// other creator's event id. See #5124.
+  /// other creator's event id. The route resolver preserves this bound by
+  /// validating addressable candidates before cache or REST hits can satisfy
+  /// the coordinate.
   ///
   /// Prefers the authoritative `VideoStats` d-tag over the payload [dTag] so a
   /// `referenced_video` block disagreeing with `referenced_event_id` cannot
   /// build a mismatched route.
-  String? _recipientOwnedVideoAddressableId({
+  String? _recipientScopedVideoAddressableId({
     required String? dTag,
     required VideoStats? video,
   }) {

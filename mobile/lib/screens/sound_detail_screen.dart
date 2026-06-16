@@ -1096,7 +1096,6 @@ class _SoundVideoFeedOverlay extends ConsumerWidget {
                     ),
                   ),
 
-                  // Spacer to balance the close button on the left
                   const SizedBox(width: 48),
                 ],
               ),

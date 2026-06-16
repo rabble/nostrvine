@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,10 +23,12 @@ import 'package:unified_logger/unified_logger.dart';
 class VideoDetailRouteExtra {
   const VideoDetailRouteExtra({
     this.autoOpenComments = false,
+    this.fallbackVideoIds = const [],
     this.initialVideo,
   });
 
   final bool autoOpenComments;
+  final List<String> fallbackVideoIds;
   final VideoEvent? initialVideo;
 }
 
@@ -48,6 +51,7 @@ class VideoDetailScreen extends ConsumerStatefulWidget {
   const VideoDetailScreen({
     required this.videoId,
     this.autoOpenComments = false,
+    this.fallbackVideoIds = const [],
     this.initialVideo,
     this.videoFeedBuilder,
     super.key,
@@ -55,6 +59,7 @@ class VideoDetailScreen extends ConsumerStatefulWidget {
 
   final String videoId;
   final bool autoOpenComments;
+  final List<String> fallbackVideoIds;
   final VideoEvent? initialVideo;
   final Widget Function(VideoEvent video)? videoFeedBuilder;
 
@@ -86,6 +91,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
   void didUpdateWidget(covariant VideoDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.videoId == widget.videoId &&
+        listEquals(oldWidget.fallbackVideoIds, widget.fallbackVideoIds) &&
         oldWidget.initialVideo == widget.initialVideo) {
       return;
     }
@@ -132,9 +138,12 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       // fetchVideoWithStats handles cache→relay lookup and bulk-stats
       // hydration in one call, matching what feed providers do.
       final videosRepository = ref.read(videosRepositoryProvider);
-      final video = await videosRepository.fetchVideoWithStatsForRouteId(
-        widget.videoId,
-      );
+      final video = widget.fallbackVideoIds.isEmpty
+          ? await videosRepository.fetchVideoWithStatsForRouteId(widget.videoId)
+          : await videosRepository.fetchVideoWithStatsForRouteId(
+              widget.videoId,
+              fallbackRouteIds: widget.fallbackVideoIds,
+            );
 
       if (video != null) {
         Log.info(

@@ -90,7 +90,10 @@ void main() {
       await relayStatusController.close();
     });
 
-    Widget buildSubject({String videoId = 'test_video_id'}) {
+    Widget buildSubject({
+      String videoId = 'test_video_id',
+      List<String> fallbackVideoIds = const [],
+    }) {
       return testMaterialApp(
         mockNostrService: mockNostrClient,
         mockFollowRepository: mockFollowRepository,
@@ -103,6 +106,7 @@ void main() {
         ],
         home: VideoDetailScreen(
           videoId: videoId,
+          fallbackVideoIds: fallbackVideoIds,
           videoFeedBuilder: (_) =>
               const SizedBox(key: Key('video-feed-placeholder')),
         ),
@@ -193,6 +197,43 @@ void main() {
             find.byKey(const Key('video-feed-placeholder')),
             findsOneWidget,
           );
+        },
+      );
+
+      testWidgets(
+        'passes fallback route ids to fetchVideoWithStatsForRouteId',
+        (tester) async {
+          final video = createTestVideoEvent(
+            id: 'raw_video_id',
+            pubkey: 'test_pubkey',
+            title: 'Fallback Video',
+          );
+
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              '34236:test_pubkey:stable_id',
+              fallbackRouteIds: const ['raw_video_id'],
+            ),
+          ).thenAnswer((_) async => video);
+
+          await tester.pumpWidget(
+            buildSubject(
+              videoId: '34236:test_pubkey:stable_id',
+              fallbackVideoIds: const ['raw_video_id'],
+            ),
+          );
+          await tester.pump();
+
+          expect(
+            find.byKey(const Key('video-feed-placeholder')),
+            findsOneWidget,
+          );
+          verify(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              '34236:test_pubkey:stable_id',
+              fallbackRouteIds: const ['raw_video_id'],
+            ),
+          ).called(1);
         },
       );
 

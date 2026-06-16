@@ -1,8 +1,6 @@
 // ABOUTME: GoRouter configuration with ShellRoute for per-tab state preservation
 // ABOUTME: URL is source of truth, bottom nav bound to routes
 
-import 'dart:async';
-
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +17,7 @@ import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/router/router_refresh_listenable.dart';
 import 'package:openvine/router/universal_link_resolver.dart';
 import 'package:openvine/screens/apps/app_detail_screen.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
@@ -253,7 +252,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
   // Keep one router instance alive; drive redirect reevaluation through a
   // dedicated listenable instead of rebuilding GoRouter when app state changes.
-  final refreshListenable = _RouterRefreshListenable(
+  final refreshListenable = RouterRefreshListenable(
     authService.authStateStream,
   );
   ref.listen(currentMinorAccountReviewStatusProvider, (previous, next) {
@@ -1269,6 +1268,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return VideoDetailScreen(
             videoId: videoId,
             autoOpenComments: routeExtra?.autoOpenComments ?? false,
+            fallbackVideoIds: routeExtra?.fallbackVideoIds ?? const [],
             initialVideo: routeExtra?.initialVideo,
           );
         },
@@ -1558,23 +1558,5 @@ int tabIndexFromLocation(String loc) {
       return -1; // Non-tab routes - no bottom nav (outside shell)
     default:
       return 0; // fallback to home
-  }
-}
-
-/// Adapts a [Stream] to a [ChangeNotifier] for use with GoRouter's
-/// `refreshListenable`.
-class _RouterRefreshListenable extends ChangeNotifier {
-  _RouterRefreshListenable(Stream<dynamic> stream) {
-    _subscription = stream.listen((_) => notifyListeners());
-  }
-
-  late final StreamSubscription<dynamic> _subscription;
-
-  void refresh() => notifyListeners();
-
-  @override
-  void dispose() {
-    _subscription.cancel();
-    super.dispose();
   }
 }

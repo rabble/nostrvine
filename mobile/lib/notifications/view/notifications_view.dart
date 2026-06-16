@@ -276,9 +276,13 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     // coordinate may be Kind 1111 comments, so resolve them to the root video
     // before pushing the durable video route.
     String? routeId;
+    var fallbackVideoIds = const <String>[];
     if (videoAddressableId != null && videoAddressableId.isNotEmpty) {
       // Stable path: addressable ID works even after a metadata update.
       routeId = videoAddressableId;
+      if (videoEventId.isNotEmpty && videoEventId != videoAddressableId) {
+        fallbackVideoIds = [videoEventId];
+      }
     } else if (shouldAutoOpenComments) {
       // Comment/mention path: walk E/e tags to find the root video event ID.
       routeId = await NotificationTargetResolver(
@@ -300,8 +304,11 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
     context.push(
       VideoDetailScreen.pathForId(routeId),
-      extra: shouldAutoOpenComments
-          ? const VideoDetailRouteExtra(autoOpenComments: true)
+      extra: shouldAutoOpenComments || fallbackVideoIds.isNotEmpty
+          ? VideoDetailRouteExtra(
+              autoOpenComments: shouldAutoOpenComments,
+              fallbackVideoIds: fallbackVideoIds,
+            )
           : null,
     );
     return true;

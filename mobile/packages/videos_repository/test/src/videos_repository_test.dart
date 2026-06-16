@@ -9233,6 +9233,46 @@ void main() {
         expect(result!.id, equals(eventId));
       });
 
+      test('tries fallback route IDs when the primary route misses', () async {
+        const fallbackEventId =
+            'e46ff7d0d71d6c8114b58728afa43f08'
+            'd6286fd9a704683af799fd8f855586c2';
+        const author =
+            '076c979382b90f5d3a2b21f95e1ee86b'
+            '6033f14c92e79b7fad3fe1f1073f4886';
+        const missingAddressableId = '34236:$author:missing-stable-id';
+        final fallbackEvent = _createVideoEvent(
+          id: fallbackEventId,
+          pubkey: author,
+          videoUrl: 'https://example.com/fallback.mp4',
+          createdAt: 1777868006,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments.single as List<Filter>;
+          final filter = filters.single;
+          if (filter.ids?.contains(fallbackEventId) ?? false) {
+            return [fallbackEvent];
+          }
+          return <Event>[];
+        });
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repo.fetchVideoWithStatsForRouteId(
+          missingAddressableId,
+          fallbackRouteIds: const [fallbackEventId],
+        );
+
+        expect(result, isNotNull);
+        expect(result!.id, equals(fallbackEventId));
+      });
+
       test('returns null without blocking when relay queries hang past the '
           'route timeout', () async {
         const stableId =
@@ -9515,6 +9555,71 @@ void main() {
       );
 
       test(
+        'raw addressable routes ignore same-d-tag REST hits from a different '
+        'author before falling back to relay',
+        () async {
+          const eventId =
+              'd695f6b60119d9521934a691347d9f78'
+              'e8770b56da16bb255ee77ac112b4c1f6';
+          const wrongEventId =
+              'e695f6b60119d9521934a691347d9f78'
+              'e8770b56da16bb255ee77ac112b4c1f6';
+          const author =
+              '4bf0c63fcb93463407af97a5e5ee64fa'
+              '883d107ef9e558472c4eb9aaaefa459d';
+          const wrongAuthor =
+              '5bf0c63fcb93463407af97a5e5ee64fa'
+              '883d107ef9e558472c4eb9aaaefa459d';
+          const dTag = 'shared-dtag';
+          const rawAddressableId = '34236:$author:$dTag';
+          final wrongRestEvent = _createVideoEventWithDTag(
+            id: wrongEventId,
+            pubkey: wrongAuthor,
+            dTag: dTag,
+            videoUrl: 'https://example.com/wrong.mp4',
+            createdAt: 1739350000,
+          );
+          final relayEvent = _createVideoEventWithDTag(
+            id: eventId,
+            pubkey: author,
+            dTag: dTag,
+            videoUrl: 'https://example.com/correct.mp4',
+            createdAt: 1739350100,
+          );
+
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getVideoEvent(dTag),
+          ).thenAnswer((_) async => wrongRestEvent);
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [relayEvent]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.fetchVideoWithStatsForRouteId(
+            rawAddressableId,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.id, equals(eventId));
+          expect(result.pubkey, equals(author));
+          verify(() => mockFunnelcakeClient.getVideoEvent(dTag)).called(1);
+
+          final captured =
+              verify(
+                    () => mockNostrClient.queryEvents(captureAny()),
+                  ).captured.single
+                  as List<Filter>;
+          expect(captured.single.authors, equals([author]));
+          expect(captured.single.d, equals([dTag]));
+        },
+      );
+
+      test(
         'addressable relay lookup accepts legacy NIP-71 kinds — '
         'naddr1 pointing at kind 22 must resolve like a raw 64-hex route',
         () async {
@@ -9607,6 +9712,72 @@ void main() {
           expect(result!.id, equals(eventId));
           verify(() => mockLocalStorage.getEventsByDTag(stableId)).called(1);
           verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
+
+      test(
+        'raw addressable routes ignore same-d-tag local cache hits from a '
+        'different author before falling back to relay',
+        () async {
+          const eventId =
+              'd695f6b60119d9521934a691347d9f78'
+              'e8770b56da16bb255ee77ac112b4c1f6';
+          const wrongEventId =
+              'e695f6b60119d9521934a691347d9f78'
+              'e8770b56da16bb255ee77ac112b4c1f6';
+          const author =
+              '4bf0c63fcb93463407af97a5e5ee64fa'
+              '883d107ef9e558472c4eb9aaaefa459d';
+          const wrongAuthor =
+              '5bf0c63fcb93463407af97a5e5ee64fa'
+              '883d107ef9e558472c4eb9aaaefa459d';
+          const dTag = 'cached-shared-dtag';
+          const rawAddressableId = '34236:$author:$dTag';
+          final wrongCachedEvent = _createVideoEventWithDTag(
+            id: wrongEventId,
+            pubkey: wrongAuthor,
+            dTag: dTag,
+            videoUrl: 'https://example.com/wrong.mp4',
+            createdAt: 1739350000,
+          );
+          final relayEvent = _createVideoEventWithDTag(
+            id: eventId,
+            pubkey: author,
+            dTag: dTag,
+            videoUrl: 'https://example.com/correct.mp4',
+            createdAt: 1739350100,
+          );
+          final mockLocalStorage = MockVideoLocalStorage();
+
+          when(
+            () => mockLocalStorage.getEventsByDTag(dTag),
+          ).thenAnswer((_) async => [wrongCachedEvent]);
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [relayEvent]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.fetchVideoWithStatsForRouteId(
+            rawAddressableId,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.id, equals(eventId));
+          expect(result.pubkey, equals(author));
+          verify(() => mockLocalStorage.getEventsByDTag(dTag)).called(1);
+
+          final captured =
+              verify(
+                    () => mockNostrClient.queryEvents(captureAny()),
+                  ).captured.single
+                  as List<Filter>;
+          expect(captured.single.authors, equals([author]));
+          expect(captured.single.d, equals([dTag]));
         },
       );
 

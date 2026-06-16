@@ -2303,7 +2303,27 @@ class VideosRepository {
   /// rather than restalling the spinner). The orchestrator deliberately does
   /// not wrap the helpers themselves — a successful relay result followed by
   /// slow stats enrichment must not be killed as if the relay had hung.
-  Future<VideoEvent?> fetchVideoWithStatsForRouteId(String routeId) async {
+  Future<VideoEvent?> fetchVideoWithStatsForRouteId(
+    String routeId, {
+    List<String> fallbackRouteIds = const [],
+  }) async {
+    final primary = await _fetchVideoWithStatsForSingleRouteId(routeId);
+    if (primary != null) return primary;
+
+    for (final fallbackRouteId in fallbackRouteIds) {
+      if (fallbackRouteId == routeId) continue;
+      final fallback = await _fetchVideoWithStatsForSingleRouteId(
+        fallbackRouteId,
+      );
+      if (fallback != null) return fallback;
+    }
+
+    return null;
+  }
+
+  Future<VideoEvent?> _fetchVideoWithStatsForSingleRouteId(
+    String routeId,
+  ) async {
     final candidate = _VideoRouteCandidate.parse(routeId);
     if (candidate == null) return null;
 
@@ -2315,6 +2335,7 @@ class VideosRepository {
       try {
         final byFunnelcake = await _fetchVideoFromRouteApi(
           funnelcakeRouteId,
+          expectedPubkey: candidate.addressablePubkey,
           permissive: true,
         );
         if (byFunnelcake != null) return byFunnelcake;
@@ -2501,6 +2522,9 @@ class VideosRepository {
   ///
   /// Shared links should be able to reopen a video on a cold start before the
   /// relay layer has finished connecting and before the REST fallback returns.
+  /// Addressable coordinates remain author-scoped even through this fast path:
+  /// a same-d-tag cache hit from another creator must fall through to the
+  /// author-filtered relay lookup instead of satisfying the route.
   Future<VideoEvent?> _fetchRouteVideoFromLocalCache(
     _VideoRouteCandidate candidate,
   ) async {
@@ -2519,6 +2543,12 @@ class VideosRepository {
         candidate.stableId!.isNotEmpty) {
       candidates.addAll(
         await _localStorage.getEventsByDTag(candidate.stableId!),
+      );
+    }
+
+    if (candidate.addressablePubkey != null) {
+      candidates.removeWhere(
+        (event) => event.pubkey != candidate.addressablePubkey,
       );
     }
 
@@ -2598,6 +2628,7 @@ class VideosRepository {
 
   Future<VideoEvent?> _fetchVideoFromRouteApi(
     String routeId, {
+    String? expectedPubkey,
     bool permissive = false,
   }) async {
     if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
@@ -2613,6 +2644,7 @@ class VideosRepository {
       ignoreBlockFilter: true,
     );
     if (video == null) return null;
+    if (expectedPubkey != null && video.pubkey != expectedPubkey) return null;
 
     return _hydrateFirstRouteVideo([video]);
   }
@@ -2649,10 +2681,16 @@ class VideosRepository {
 }
 
 class _VideoRouteCandidate {
-  const _VideoRouteCandidate({this.eventId, this.addressableId, this.stableId});
+  const _VideoRouteCandidate({
+    this.eventId,
+    this.addressableId,
+    this.addressablePubkey,
+    this.stableId,
+  });
 
   final String? eventId;
   final String? addressableId;
+  final String? addressablePubkey;
   final String? stableId;
 
   static _VideoRouteCandidate? parse(String routeId) {
@@ -2686,6 +2724,7 @@ class _VideoRouteCandidate {
           pubkey: decoded.author,
           dTag: decoded.id,
         ).toAString(),
+        addressablePubkey: decoded.author,
         stableId: decoded.id,
       );
     }
@@ -2695,7 +2734,11 @@ class _VideoRouteCandidate {
     // navigation. AId.fromString validates the format and extracts the d-tag.
     final aid = AId.fromString(trimmed);
     if (aid != null && NIP71VideoKinds.isVideoKind(aid.kind)) {
-      return _VideoRouteCandidate(addressableId: trimmed, stableId: aid.dTag);
+      return _VideoRouteCandidate(
+        addressableId: trimmed,
+        addressablePubkey: aid.pubkey,
+        stableId: aid.dTag,
+      );
     }
 
     return _VideoRouteCandidate(stableId: trimmed);

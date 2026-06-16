@@ -520,6 +520,10 @@ void main() {
             result.videoDetailRoutes.single.extra?.autoOpenComments,
             isTrue,
           );
+          expect(
+            result.videoDetailRoutes.single.extra?.fallbackVideoIds,
+            isEmpty,
+          );
         },
       );
 
@@ -593,6 +597,10 @@ void main() {
             result.videoDetailRoutes.single.extra?.autoOpenComments,
             isTrue,
           );
+          expect(
+            result.videoDetailRoutes.single.extra?.fallbackVideoIds,
+            isEmpty,
+          );
           verifyNever(
             () => videosRepository.fetchVideoWithStatsForRouteId(any()),
           );
@@ -659,6 +667,10 @@ void main() {
             result.videoDetailRoutes.single.extra?.autoOpenComments,
             isTrue,
           );
+          expect(
+            result.videoDetailRoutes.single.extra?.fallbackVideoIds,
+            equals([staleVideoEventId]),
+          );
         },
       );
 
@@ -716,6 +728,10 @@ void main() {
           expect(
             result.videoDetailRoutes.single.extra?.autoOpenComments,
             isTrue,
+          );
+          expect(
+            result.videoDetailRoutes.single.extra?.fallbackVideoIds,
+            equals(['some_comment_event_id']),
           );
         },
       );
@@ -777,7 +793,14 @@ void main() {
             result.videoDetailRoutes.single.videoId,
             equals(addressableId),
           );
-          expect(result.videoDetailRoutes.single.extra, isNull);
+          expect(
+            result.videoDetailRoutes.single.extra?.autoOpenComments,
+            isFalse,
+          );
+          expect(
+            result.videoDetailRoutes.single.extra?.fallbackVideoIds,
+            equals(['liked_video_event']),
+          );
         },
       );
 
@@ -885,7 +908,14 @@ void main() {
           expect(result.videoArgs, isEmpty);
           expect(result.videoDetailRoutes, hasLength(1));
           expect(result.videoDetailRoutes.single.videoId, addressableId);
-          expect(result.videoDetailRoutes.single.extra, isNull);
+          expect(
+            result.videoDetailRoutes.single.extra?.autoOpenComments,
+            isFalse,
+          );
+          expect(
+            result.videoDetailRoutes.single.extra?.fallbackVideoIds,
+            equals(['reposted_video_event']),
+          );
         },
       );
     });
