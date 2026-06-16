@@ -3,12 +3,14 @@
 
 import 'dart:async';
 
+import 'package:http/http.dart' as http;
 import 'package:likes_repository/likes_repository.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/og_viner_cache_provider.dart';
@@ -23,6 +25,7 @@ import 'package:openvine/services/auth_service.dart' show AuthState;
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
+import 'package:openvine/services/event_api_client.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/pending_action_service.dart';
@@ -166,6 +169,20 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
   final profileStatsDao = ref.watch(databaseProvider).profileStatsDao;
   final savedSoundsService = ref.watch(savedSoundsServiceProvider);
 
+  // REST-first publish: POST the signed event to {apiBaseUrl}/api/events with
+  // NIP-98 auth, falling back to the WebSocket relay pool on transient
+  // failures. apiBaseUrl resolves to https://api.divine.video (production) and
+  // https://relay.staging.divine.video (staging).
+  final environmentConfig = ref.watch(currentEnvironmentProvider);
+  final nip98AuthService = ref.watch(nip98AuthServiceProvider);
+  final eventApiHttpClient = http.Client();
+  ref.onDispose(eventApiHttpClient.close);
+  final eventApiClient = EventApiClient(
+    httpClient: eventApiHttpClient,
+    nip98AuthService: nip98AuthService,
+    apiBaseUrl: () => environmentConfig.apiBaseUrl,
+  );
+
   return VideoEventPublisher(
     uploadManager: uploadManager,
     nostrService: nostrService,
@@ -176,6 +193,7 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
     profileRepository: profileRepository,
     profileStatsDao: profileStatsDao,
     savedSoundsService: savedSoundsService,
+    eventApiClient: eventApiClient,
   );
 }
 

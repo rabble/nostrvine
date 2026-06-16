@@ -995,7 +995,40 @@ The REST API runs alongside a Nostr WebSocket relay on the same domain:
 - **REST:** `https://relay.dvines.org/api/*` - For queries and analytics
 
 ### Publishing Content
-To publish videos or other events, use the WebSocket relay with standard Nostr protocol:
+
+Divine publishes first-party video events **REST-first**, falling back to the
+WebSocket relay only on transient failures. This avoids the false-negative
+where a relay accepts and serves an event but its NIP-20 `OK` is lost, making a
+successful upload look failed.
+
+#### REST publish (preferred)
+
+`POST {apiBaseUrl}/api/events` with the already-signed event JSON as the body:
+
+- Production: `https://api.divine.video/api/events`
+- Staging: `https://relay.staging.divine.video/api/events`
+
+Authorization is **NIP-98** (kind `27235`): `method` tag `POST`, `u` tag equal
+to the publish URL, and a `payload` tag holding the SHA-256 hex of the request
+body bytes. The auth signer pubkey must match `event.pubkey`.
+
+Success is HTTP `200 {"accepted": true, "event_id": "..."}`. `401/403/422` are
+real, non-retryable failures. Timeouts, `5xx`, and network errors are transient.
+
+```http
+POST /api/events HTTP/1.1
+Host: api.divine.video
+Content-Type: application/json
+Authorization: Nostr <base64-encoded kind-27235 event>
+
+{"id":"...","pubkey":"...","created_at":1704067200,"kind":34236,"tags":[...],"content":"...","sig":"..."}
+```
+
+#### WebSocket fallback / interactive use
+
+On transient REST failures the client falls back to publishing the **same
+signed event** (no re-signing) over the WebSocket relay, fire-and-forget:
+
 ```json
 ["EVENT", {
   "id": "...",
@@ -1007,5 +1040,8 @@ To publish videos or other events, use the WebSocket relay with standard Nostr p
   "sig": "..."
 }]
 ```
+
+Because the same event id is reused across REST and WebSocket attempts, relays
+deduplicate and no duplicate event is created.
 
 The REST API will reflect new content after ClickHouse ingestion (typically < 1 second).

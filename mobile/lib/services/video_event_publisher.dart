@@ -9,12 +9,14 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:blurhash_service/blurhash_service.dart';
 import 'package:crypto/crypto.dart';
 //adding c2pa support for publishing c2pa manifest data into nostr
-import 'package:db_client/db_client.dart';
+import 'package:db_client/db_client.dart' hide Filter;
+import 'package:meta/meta.dart';
 import 'package:models/models.dart'
     hide LogCategory, NIP71VideoKinds, PendingUpload, UploadStatus;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
@@ -24,6 +26,7 @@ import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
+import 'package:openvine/services/event_api_client.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/upload_manager.dart';
@@ -131,6 +134,20 @@ List<List<String>> _buildMentionPTags(
   return tags;
 }
 
+/// Result of a single REST-then-WebSocket publish attempt.
+enum _EventPublishOutcome {
+  /// The event was accepted (REST 200, or a WebSocket send succeeded).
+  published,
+
+  /// The REST API rejected the event (401/403/422 or signer mismatch).
+  /// Non-retryable — do not fall back or retry.
+  permanentlyRejected,
+
+  /// A transient failure (REST 5xx/timeout/network and the WebSocket
+  /// fallback also failed). The caller may retry.
+  transientFailure,
+}
+
 /// Service for publishing processed videos to Nostr relays
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class VideoEventPublisher {
@@ -145,6 +162,7 @@ class VideoEventPublisher {
     AudioExtractionService? audioExtractionService,
     ProfileStatsDao? profileStatsDao,
     SavedSoundsService? savedSoundsService,
+    EventApiClient? eventApiClient,
   }) : _uploadManager = uploadManager,
        _nostrService = nostrService,
        _authService = authService,
@@ -154,7 +172,8 @@ class VideoEventPublisher {
        _profileRepository = profileRepository,
        _audioExtractionService = audioExtractionService,
        _profileStatsDao = profileStatsDao,
-       _savedSoundsService = savedSoundsService;
+       _savedSoundsService = savedSoundsService,
+       _eventApiClient = eventApiClient;
   final UploadManager _uploadManager;
   final NostrClient _nostrService;
   final AuthService? _authService;
@@ -165,6 +184,12 @@ class VideoEventPublisher {
   final AudioExtractionService? _audioExtractionService;
   final ProfileStatsDao? _profileStatsDao;
   final SavedSoundsService? _savedSoundsService;
+
+  /// REST-first publish client. When non-null, video events are published
+  /// via `POST /api/events` first and only fall back to the WebSocket relay
+  /// pool on transient REST failures. When null (legacy / test wiring), the
+  /// publisher uses the WebSocket-only retry path.
+  final EventApiClient? _eventApiClient;
 
   // Statistics
   int _totalEventsPublished = 0;
@@ -458,6 +483,258 @@ class VideoEventPublisher {
       );
       return false;
     }
+  }
+
+  /// Publishes an already-signed video [event] for [upload] using the
+  /// REST-first strategy with a WebSocket fire-and-forget fallback.
+  ///
+  /// Behaviour when an [EventApiClient] is configured:
+  /// 1. If [isRetry], first query configured relays by event id and by
+  ///    `author+kind+d-tag`; if the event is already on a relay, mark it
+  ///    published and stop (avoids re-publishing a previously accepted
+  ///    event whose `OK` was lost).
+  /// 2. Up to 3 attempts of `POST /api/events`. A 200 acceptance is
+  ///    published; a 401/403/422 is a non-retryable failure; a transient
+  ///    REST failure falls back to a WebSocket `publishEvent`
+  ///    (fire-and-forget, not `publishEventAwaitOk`).
+  /// 3. Before each retry, re-check relay presence so a false-negative
+  ///    WebSocket `OK` does not produce a duplicate publish.
+  ///
+  /// When no [EventApiClient] is configured, the legacy WebSocket-only
+  /// retry path is used unchanged.
+  ///
+  /// The same signed [event] is reused across all attempts — no event is
+  /// re-signed per retry, so relays deduplicate by id.
+  @visibleForTesting
+  Future<bool> publishSignedVideoEvent({
+    required PendingUpload upload,
+    required Event event,
+    bool isRetry = false,
+  }) async {
+    final apiClient = _eventApiClient;
+    if (apiClient == null) {
+      return _publishWithWebSocketRetries(event);
+    }
+
+    if (isRetry && await _existsOnConfiguredRelays(event)) {
+      Log.info(
+        '♻️ Recovered already-published video event ${event.id} from relays; '
+        'skipping re-publish',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return true;
+    }
+
+    const maxRetries = 3;
+    for (var attempt = 1; attempt <= maxRetries; attempt++) {
+      // A lost OK on a prior attempt can leave the event already stored on
+      // a relay; re-check before re-broadcasting to avoid duplicates.
+      if (attempt > 1 && await _existsOnConfiguredRelays(event)) {
+        Log.info(
+          '♻️ Event ${event.id} found on relay before retry $attempt; '
+          'marking published',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        return true;
+      }
+
+      final outcome = await _publishViaRestThenWebSocket(apiClient, event);
+      switch (outcome) {
+        case _EventPublishOutcome.published:
+          if (attempt > 1) {
+            Log.info(
+              '✅ Publish succeeded on attempt $attempt',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+          }
+          return true;
+        case _EventPublishOutcome.permanentlyRejected:
+          Log.error(
+            '❌ Publish permanently rejected for ${event.id}; not retrying',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+          return false;
+        case _EventPublishOutcome.transientFailure:
+          if (attempt < maxRetries) {
+            final delaySeconds = attempt * 2; // 2s, 4s backoff
+            Log.warning(
+              '⚠️ Publish attempt $attempt failed, retrying in '
+              '${delaySeconds}s...',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+            await Future<void>.delayed(Duration(seconds: delaySeconds));
+          } else {
+            Log.error(
+              '❌ All $maxRetries publish attempts failed',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+          }
+      }
+    }
+    return false;
+  }
+
+  /// One publish attempt: REST first, WebSocket fire-and-forget on transient
+  /// REST failure.
+  Future<_EventPublishOutcome> _publishViaRestThenWebSocket(
+    EventApiClient apiClient,
+    Event event,
+  ) async {
+    final restResult = await apiClient.publishEvent(event);
+    switch (restResult) {
+      case EventApiAccepted():
+        return _EventPublishOutcome.published;
+      case EventApiRejected(:final statusCode, :final reason):
+        Log.error(
+          '❌ REST publish rejected ($statusCode) for ${event.id}: $reason',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        return _EventPublishOutcome.permanentlyRejected;
+      case EventApiTransientFailure(:final reason):
+        Log.warning(
+          '⚠️ REST publish transient failure for ${event.id} ($reason); '
+          'falling back to WebSocket fire-and-forget',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        final sent = await _publishViaWebSocketFireAndForget(event);
+        return sent
+            ? _EventPublishOutcome.published
+            : _EventPublishOutcome.transientFailure;
+    }
+  }
+
+  /// Sends [event] over the WebSocket relay pool without waiting for a NIP-20
+  /// `OK` (fire-and-forget). A [PublishSuccess] frame counts as sent.
+  ///
+  /// Video publishes intentionally avoid `publishEventAwaitOk` here: relays
+  /// that accept and serve the event but drop the `OK` would otherwise make a
+  /// successful upload look failed.
+  Future<bool> _publishViaWebSocketFireAndForget(Event event) async {
+    try {
+      if (!_nostrService.isInitialized) {
+        await _nostrService.initialize();
+      }
+      final outerTimeout = currentOuterPublishTimeout;
+      PublishResult? result;
+      try {
+        result = await _nostrService.publishEvent(event).timeout(outerTimeout);
+      } on TimeoutException {
+        Log.error(
+          '⏱️ WebSocket publishEvent timed out after '
+          '${outerTimeout.inSeconds}s for ${event.id}',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        return false;
+      }
+      if (result is PublishSuccess) {
+        Log.info(
+          '📡 Event sent to relays (fire-and-forget): ${event.id}',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        return true;
+      }
+      Log.error(
+        '❌ WebSocket publishEvent failed for ${event.id}: '
+        '${result.failureReason ?? 'unknown'}',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return false;
+    } catch (e) {
+      Log.error(
+        'WebSocket fire-and-forget publish failed for ${event.id}: $e',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return false;
+    }
+  }
+
+  /// Legacy WebSocket-only publish with the original 3-attempt, 2s/4s backoff
+  /// retry loop. Used only when no [EventApiClient] is configured.
+  Future<bool> _publishWithWebSocketRetries(Event event) async {
+    const maxRetries = 3;
+    for (var attempt = 1; attempt <= maxRetries; attempt++) {
+      if (await _publishEventToNostr(event)) {
+        if (attempt > 1) {
+          Log.info(
+            '✅ Publish succeeded on attempt $attempt',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+        }
+        return true;
+      }
+
+      if (attempt < maxRetries) {
+        final delaySeconds = attempt * 2; // 2s, 4s backoff
+        Log.warning(
+          '⚠️ Publish attempt $attempt failed, retrying in ${delaySeconds}s...',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        await Future<void>.delayed(Duration(seconds: delaySeconds));
+      } else {
+        Log.error(
+          '❌ All $maxRetries publish attempts failed',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+      }
+    }
+    return false;
+  }
+
+  /// Returns true if [event] is already retrievable from the configured
+  /// relays, queried both by event id and by `author+kind+d-tag`.
+  Future<bool> _existsOnConfiguredRelays(Event event) async {
+    try {
+      final dTag = _dTagOf(event);
+      final filters = <Filter>[
+        Filter(ids: [event.id], limit: 1),
+        if (dTag != null && dTag.isNotEmpty)
+          Filter(
+            authors: [event.pubkey],
+            kinds: [event.kind],
+            d: [dTag],
+            limit: 1,
+          ),
+      ];
+      final found = await _nostrService.queryEvents(filters, useCache: false);
+      for (final candidate in found) {
+        if (candidate.id == event.id) return true;
+        if (candidate.pubkey == event.pubkey &&
+            candidate.kind == event.kind &&
+            _dTagOf(candidate) == dTag) {
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      Log.warning(
+        'Recovery query failed for ${event.id}: $e',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return false;
+    }
+  }
+
+  String? _dTagOf(Event event) {
+    for (final tag in event.tags) {
+      if (tag.length >= 2 && tag[0] == 'd') return tag[1];
+    }
+    return null;
   }
 
   Event? _loadRetryableSignedEvent(PendingUpload upload) {
@@ -1162,8 +1439,9 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
 
+      final reusedEvent = _loadRetryableSignedEvent(upload);
       final event =
-          _loadRetryableSignedEvent(upload) ??
+          reusedEvent ??
           await _authService.createAndSignEvent(
             kind:
                 NIP71VideoKinds.getPreferredAddressableKind(), // NIP-71 addressable short video
@@ -1197,42 +1475,11 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
 
-      // Retry up to 3 times with exponential backoff. Success means a
-      // relay confirmed acceptance with `OK true` (NIP-20). We still skip
-      // read-back verification — indexing lag can delay queries even
-      // after a relay has accepted the event.
-      const maxRetries = 3;
-      var publishResult = false;
-
-      for (var attempt = 1; attempt <= maxRetries; attempt++) {
-        if (await _publishEventToNostr(event)) {
-          publishResult = true;
-          if (attempt > 1) {
-            Log.info(
-              '✅ Publish succeeded on attempt $attempt',
-              name: 'VideoEventPublisher',
-              category: LogCategory.video,
-            );
-          }
-          break;
-        }
-
-        if (attempt < maxRetries) {
-          final delaySeconds = attempt * 2; // 2s, 4s backoff
-          Log.warning(
-            '⚠️ Publish attempt $attempt failed, retrying in ${delaySeconds}s...',
-            name: 'VideoEventPublisher',
-            category: LogCategory.video,
-          );
-          await Future<void>.delayed(Duration(seconds: delaySeconds));
-        } else {
-          Log.error(
-            '❌ All $maxRetries publish attempts failed',
-            name: 'VideoEventPublisher',
-            category: LogCategory.video,
-          );
-        }
-      }
+      final publishResult = await publishSignedVideoEvent(
+        upload: upload,
+        event: event,
+        isRetry: reusedEvent != null,
+      );
 
       if (publishResult) {
         final shouldAddToDiscoveryCache =
