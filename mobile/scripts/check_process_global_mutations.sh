@@ -64,8 +64,7 @@ for core in "${GLOBALS[@]}"; do
     # A real ASSIGNMENT (install or restore): (<prefix>.)?CORE = , where `=` is
     # not `==` / `=>`. `=` may sit at end-of-line (dart format keeps the LHS
     # token on its own line for a multi-line RHS).
-    if ! printf '%s\n' "$body" \
-      | grep -qE "(^|[^A-Za-z0-9_.])([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=([^=>]|$)"; then
+    if ! grep -qE "(^|[^A-Za-z0-9_.])([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=([^=>]|$)" <<<"$body"; then
       continue
     fi
 
@@ -79,8 +78,7 @@ for core in "${GLOBALS[@]}"; do
     # SNAPSHOT (capture-read): the global appears on the RHS of an assignment
     # (`<id> = <Global>`), i.e. the original was captured into a local.
     has_capture=0
-    if printf '%s\n' "$body" \
-      | grep -qE "=[[:space:]]*([A-Za-z_][A-Za-z0-9_]*\.)?${core}([^A-Za-z0-9_]|$)"; then
+    if grep -qE "=[[:space:]]*([A-Za-z_][A-Za-z0-9_]*\.)?${core}([^A-Za-z0-9_]|$)" <<<"$body"; then
       has_capture=1
     fi
 
@@ -88,8 +86,7 @@ for core in "${GLOBALS[@]}"; do
     # (`<Global> = original;` block form, or `=> <Global> = original)` arrow
     # form), which distinguishes a restore from a `<Global> = SomeFake()` install.
     has_restore=0
-    if printf '%s\n' "$body" \
-      | grep -qE "([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*[;)]"; then
+    if grep -qE "([A-Za-z_][A-Za-z0-9_]*\.)?${core}[[:space:]]*=[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*[;)]" <<<"$body"; then
       has_restore=1
     fi
 
