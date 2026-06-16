@@ -215,6 +215,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
         source: HashtagViewSource(widget.hashtag),
         feedRepository: ref.read(feedRepositoryProvider),
         initialIndex: index,
+        initialVideoId: videoList[index].id,
         contextTitle: '#${widget.hashtag}',
         trafficSource: ViewTrafficSource.search,
         sourceDetail: widget.hashtag,

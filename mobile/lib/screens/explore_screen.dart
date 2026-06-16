@@ -1250,6 +1250,7 @@ class _ExploreFeedContentState extends ConsumerState<_ExploreFeedContent> {
       source: const ExploreViewSource(),
       feedRepository: ref.read(feedRepositoryProvider),
       initialIndex: safeIndex,
+      initialVideoId: videos[safeIndex].id,
       contextTitle: '',
       onPageChanged: (index) => context.go(ExploreScreen.pathForIndex(index)),
     );

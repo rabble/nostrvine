@@ -419,6 +419,40 @@ void main() {
       );
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'opens tapped grid video when repository list filters an earlier item',
+        build: () => createBloc(
+          initialIndex: 2,
+          initialVideoId: 'tapped-video',
+        ),
+        act: (bloc) async {
+          final tapped = createTestVideo('tapped-video');
+
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([
+            createTestVideo('grid-video-after-filtered-item'),
+            tapped,
+            createTestVideo('later-video'),
+          ]);
+        },
+        wait: const Duration(milliseconds: 150),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having((s) => s.currentIndex, 'currentIndex', 1)
+              .having(
+                (s) => s.currentVideo?.id,
+                'currentVideo',
+                'tapped-video',
+              )
+              .having(
+                (s) => s.initialTargetResolved,
+                'initialTargetResolved',
+                true,
+              ),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'unresolved initial identity wins over fallback current video',
         build: () => createBloc(
           initialVideoId: 'target-video',

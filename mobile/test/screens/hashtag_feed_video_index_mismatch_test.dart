@@ -1,6 +1,6 @@
 // ABOUTME: Regression test for issue #1751 - wrong video displayed after
-// ABOUTME: tapping thumbnail in hashtag feed. Verifies the grid's video list
-// ABOUTME: is passed directly to the fullscreen feed (no independent re-sort).
+// ABOUTME: tapping thumbnail in hashtag feed. Verifies the tapped video is
+// ABOUTME: anchored by id even when fullscreen resolves a different list.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
@@ -64,11 +64,9 @@ VideoEvent _video({
 
 void main() {
   group('Issue #1751: hashtag feed video index mismatch (regression)', () {
-    // The fix for #1751 passes the grid's video list directly to the
-    // fullscreen feed via PooledFullscreenVideoFeedScreen. The feed no
-    // longer independently re-sorts. This test verifies that the grid
-    // produces a deterministic interleaved order and that passing that
-    // list to the feed preserves it identically.
+    // The fullscreen feed may now resolve a ViewSource independently from the
+    // grid. The regression guard is that navigation passes the tapped video id,
+    // so the bloc can re-anchor playback after repository filtering/reordering.
 
     late List<VideoEvent> trending;
     late List<VideoEvent> classics;
@@ -98,24 +96,35 @@ void main() {
       );
     });
 
-    test('feed receives the exact same list the grid shows', () {
-      // The grid builds the video list
-      final gridOrder = gridInterleave(trending, classics);
+    test(
+      'identity anchor preserves tapped video when repository list differs',
+      () {
+        final gridOrder = gridInterleave(trending, classics);
+        const tappedGridIndex = 2;
+        final tappedVideoId = gridOrder[tappedGridIndex].id;
 
-      // The fix: feed receives gridOrder directly (no re-sort)
-      final feedOrder = List<VideoEvent>.from(gridOrder);
-
-      // Every index must map to the same video
-      for (var i = 0; i < gridOrder.length; i++) {
-        expect(
-          feedOrder[i].id,
-          equals(gridOrder[i].id),
-          reason:
-              'Issue #1751: Tapping index $i must show ${gridOrder[i].id} '
-              'in both the grid and feed.',
+        // Simulate the fullscreen repository filtering out an earlier grid item.
+        final repositoryOrder = [
+          gridOrder[1],
+          gridOrder[tappedGridIndex],
+          gridOrder[3],
+        ];
+        final resolvedIndex = repositoryOrder.indexWhere(
+          (video) => video.id == tappedVideoId,
         );
-      }
-    });
+
+        expect(
+          repositoryOrder[tappedGridIndex].id,
+          isNot(tappedVideoId),
+          reason: 'The raw grid index points at the wrong repository item.',
+        );
+        expect(
+          repositoryOrder[resolvedIndex].id,
+          tappedVideoId,
+          reason: 'The tapped video id re-anchors fullscreen playback.',
+        );
+      },
+    );
 
     test('deduplication removes classics that appear in trending', () {
       // Add a classic that has the same ID as a trending video
