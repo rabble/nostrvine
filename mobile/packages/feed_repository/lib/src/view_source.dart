@@ -186,15 +186,6 @@ final class CategoryViewSource extends ViewSource {
   List<Object?> get props => [categoryName];
 }
 
-/// Videos opened from a notification (comment / reply / mention deep link).
-final class NotificationViewSource extends ViewSource {
-  /// Creates a notification view source.
-  const NotificationViewSource();
-
-  @override
-  List<Object?> get props => const [];
-}
-
 /// Search results for a query.
 final class SearchViewSource extends ViewSource {
   /// Creates a search view source for [query].

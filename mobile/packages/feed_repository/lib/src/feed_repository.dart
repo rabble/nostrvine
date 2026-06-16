@@ -11,9 +11,8 @@ import 'package:models/models.dart';
 /// used to receive from whichever widget opened them. A [FeedRepository]
 /// resolves a [ViewSource] into:
 ///
-/// * a live, filtered list stream ([watchView]) — deletion / block / mute are
-///   already applied at the boundary, so a source re-push can never
-///   re-introduce a removed video;
+/// * a video list stream ([watchView]) whose replay and filtering semantics are
+///   defined by the implementation;
 /// * a pagination trigger ([loadMore]);
 /// * a "can paginate further" stream ([watchHasMore]).
 ///
@@ -21,10 +20,13 @@ import 'package:models/models.dart';
 /// consuming bloc — independent of whichever widget created the [ViewSource]
 /// (see issue #3383).
 abstract class FeedRepository {
-  /// A live, filtered stream of the videos for [source].
+  /// A stream of the videos for [source].
   ///
-  /// Emits the current list immediately on subscription and again whenever the
-  /// underlying feed changes (new page, removal, blocklist sweep).
+  /// Global repository implementations should replay the current list on
+  /// subscription and re-emit when the underlying feed changes. Adapter
+  /// implementations may forward their source stream verbatim, so callers that
+  /// wrap scoped blocs are responsible for providing any required seed/replay
+  /// behavior and boundary filtering.
   Stream<List<VideoEvent>> watchView(ViewSource source);
 
   /// Requests the next page for [source], if the source paginates.

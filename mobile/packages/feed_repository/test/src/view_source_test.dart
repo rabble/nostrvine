@@ -115,7 +115,6 @@ void main() {
         UserListViewSource() => 'user-list',
         ExploreViewSource() => 'explore',
         CategoryViewSource() => 'category',
-        NotificationViewSource() => 'notification',
         SearchViewSource() => 'search',
         SingleVideoViewSource() => 'single',
         VideoListViewSource() => 'list',

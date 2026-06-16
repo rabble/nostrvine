@@ -197,8 +197,9 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
     return _filterBlockedAuthors([..._popularVideos!, ...additionalVideos]);
   }
 
-  /// Navigate to fullscreen video feed, passing the grid's video list directly.
-  /// This ensures the feed shows the same order as the grid (fixes #1751).
+  /// Navigate to fullscreen video feed through the hashtag [ViewSource].
+  /// The tapped video id anchors playback when the repository-resolved list
+  /// differs from the grid order (fixes #1751).
   void _navigateToFullscreenFeed(
     BuildContext context,
     List<VideoEvent> videoList,

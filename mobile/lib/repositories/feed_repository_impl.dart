@@ -261,8 +261,7 @@ class RiverpodFeedRepository implements FeedRepository {
 /// Replayable bridge mirroring a single feed provider's latest state.
 ///
 /// Uses [BehaviorSubject] so a fullscreen route that subscribes after the feed
-/// has already loaded still receives the current list immediately — matching
-/// the pre-existing `NewVideosFullscreenFeedBridge` behaviour.
+/// has already loaded still receives the current list immediately.
 class _GlobalFeedBridge {
   final BehaviorSubject<List<VideoEvent>> _videos =
       BehaviorSubject<List<VideoEvent>>();
