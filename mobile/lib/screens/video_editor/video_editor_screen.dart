@@ -93,6 +93,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   /// Tracks the previous audio tracks to detect offset changes.
   List<AudioEvent> _previousAudioTracks = const [];
 
+  /// Track ids whose missing duration we already tried to backfill, so a
+  /// failed probe isn't retried on every audio-track change.
+  final Set<String> _durationHealAttempted = {};
+
   ProImageEditorState? get _editor => _editorKey.currentState;
 
   DivineVideoClip? get _clip => ref.read(clipManagerProvider).firstClipOrNull;
@@ -498,6 +502,57 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     }
   }
 
+  /// Backfills a real duration onto persisted audio tracks that carry none.
+  ///
+  /// Sounds added before [_resolveSoundDurationSecs] existed (or from Nostr
+  /// events without a duration tag) persist `duration == 0`, which becomes a
+  /// zero-length timeline window (`endTime == 0`) — an invisible bar. Probe the
+  /// source once, recompute `endTime`, and rewrite the editor history so the
+  /// repair persists. Each track is attempted at most once per session.
+  Future<void> _healMissingAudioDurations(List<AudioEvent> tracks) async {
+    final pending = tracks
+        .where(
+          (t) =>
+              (t.duration ?? 0) <= 0 && !_durationHealAttempted.contains(t.id),
+        )
+        .toList(growable: false);
+    if (pending.isEmpty) return;
+    _durationHealAttempted.addAll(pending.map((t) => t.id));
+
+    final resolved = <String, double>{};
+    for (final track in pending) {
+      final secs = await _resolveSoundDurationSecs(track);
+      if (secs > 0) resolved[track.id] = secs;
+    }
+    if (!mounted || resolved.isEmpty) return;
+
+    final editor = _editorKey.currentState;
+    if (editor == null) return;
+
+    final clipDuration = _clipEditorBloc.state.totalDuration;
+    const maxDuration = VideoEditorConstants.maxDuration;
+    final healed = editor.stateManager.audioTracks.map((track) {
+      final secs = resolved[track.id];
+      if (secs == null) return track;
+      final audioDuration = Duration(milliseconds: (secs * 1000).toInt());
+      final endTime = [
+        audioDuration,
+        clipDuration,
+        maxDuration,
+      ].reduce((a, b) => a < b ? a : b);
+      return track.copyWith(duration: secs, endTime: endTime);
+    }).toList();
+
+    editor.addHistory(
+      meta: {
+        ...editor.stateManager.activeMeta,
+        VideoEditorConstants.audioStateHistoryKey: healed
+            .map((e) => e.toJson())
+            .toList(),
+      },
+    );
+  }
+
   /// Extracts waveform data for an audio track and updates the timeline
   /// overlay with the samples.
   Future<void> _extractWaveform(AudioEvent audio) async {
@@ -578,6 +633,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
               unawaited(_extractWaveform(audio));
             }
           }
+
+          unawaited(_healMissingAudioDurations(state.audioTracks));
         },
         child: Builder(
           builder: (context) {
