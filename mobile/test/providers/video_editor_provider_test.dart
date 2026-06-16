@@ -318,16 +318,14 @@ void main() {
             track.audioStartTime,
             equals(const Duration(milliseconds: 292)),
           );
-          expect(
-            track.audioEndTime,
-            equals(const Duration(milliseconds: 6533)),
-          );
+          // Null = play to file end, clipped by the composition window.
+          expect(track.audioEndTime, isNull);
         },
       );
 
       test(
-        'meta network original sound renders as network audio bounded by '
-        'source duration',
+        'meta network original sound renders with its composition window and '
+        'plays to file end',
         () {
           const event = AudioEvent(
             id: 'video_source_copy_1',
@@ -347,13 +345,38 @@ void main() {
             track.audioStartTime,
             equals(const Duration(milliseconds: 292)),
           );
-          // End of the source (6533ms), NOT startOffset + full length (6825ms).
-          expect(
-            track.audioEndTime,
-            equals(const Duration(milliseconds: 6533)),
-          );
+          // Null = play to the end of the file; the composition window clips
+          // it. (Previously startOffset + full length overran the file end.)
+          expect(track.audioEndTime, isNull);
           expect(track.startTime, equals(Duration.zero));
           expect(track.endTime, equals(const Duration(milliseconds: 3966)));
+        },
+      );
+
+      test(
+        'meta track with an invalid window plays across the whole video',
+        () {
+          // A sound added before its duration was known persists endTime=0.
+          const event = AudioEvent(
+            id: 'video_source_no_window',
+            pubkey: 'pk',
+            createdAt: 1700000000,
+            url: 'https://media.divine.video/abc123',
+            startOffset: Duration(milliseconds: 100),
+          );
+
+          final track = audioTrackFromMetaForRender(event);
+
+          expect(track, isNotNull);
+          // Both null = play for the entire video, instead of an invalid
+          // zero-length [start, 0] window the native renderer would drop.
+          expect(track!.startTime, isNull);
+          expect(track.endTime, isNull);
+          expect(
+            track.audioStartTime,
+            equals(const Duration(milliseconds: 100)),
+          );
+          expect(track.audioEndTime, isNull);
         },
       );
 
