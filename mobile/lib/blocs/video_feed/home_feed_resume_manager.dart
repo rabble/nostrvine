@@ -48,6 +48,15 @@ class HomeFeedResumeManager {
   ({String? pubkey, String mode, List<VideoEvent> videos, int activeIndex})?
   _pending;
 
+  /// Serialises same-key cache writes so they complete in submission order.
+  ///
+  /// Persists fire from multiple paths against the same key (serve, then the
+  /// fresh-spliced load, plus debounced swipes). Without ordering, an earlier
+  /// disk write that finishes late could overwrite the newer window. Chaining
+  /// each write after the previous one guarantees the freshest window — always
+  /// the latest submitted — is written last and wins.
+  Future<void> _writeChain = Future<void>.value();
+
   /// Reads the cached window for [mode] and content-filters it, returning the
   /// videos that can be served immediately (empty when nothing is usable).
   ///
@@ -149,17 +158,18 @@ class HomeFeedResumeManager {
     required int activeIndex,
   }) {
     final start = (activeIndex + _resumeOffset).clamp(0, videos.length);
-    if (start >= videos.length) {
-      unawaited(_cache.clearVideos(pubkey: pubkey, mode: mode));
-      return;
-    }
-    unawaited(
-      _cache.writeVideos(
-        pubkey: pubkey,
-        mode: mode,
-        videos: videos.sublist(start),
-      ),
-    );
+    final shouldClear = start >= videos.length;
+    final window = shouldClear ? const <VideoEvent>[] : videos.sublist(start);
+
+    // Append to the serialised chain so this write runs only after the
+    // previous one completes — the latest submitted window always wins.
+    _writeChain = _writeChain
+        .then(
+          (_) => shouldClear
+              ? _cache.clearVideos(pubkey: pubkey, mode: mode)
+              : _cache.writeVideos(pubkey: pubkey, mode: mode, videos: window),
+        )
+        .catchError((Object _) {});
   }
 
   /// Flushes any pending swipe persist and cancels the debounce timer.
