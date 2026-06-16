@@ -53,11 +53,11 @@ void main() {
     });
 
     tearDown(() async {
+      await TestHelpers.cleanupHiveBox('pending_uploads');
       PathProviderPlatform.instance = originalPathProviderInstance;
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
       }
-      await TestHelpers.cleanupHiveBox('pending_uploads');
     });
 
     Future<UploadManager> createManager({
