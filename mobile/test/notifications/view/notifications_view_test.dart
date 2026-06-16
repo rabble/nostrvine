@@ -25,6 +25,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -65,27 +66,11 @@ Future<void> _pumpView(
 /// video feed and profile screens so tests can assert on either.
 typedef _RoutedViewResult = ({
   List<PooledFullscreenVideoFeedArgs> videoArgs,
+  List<({String videoId, VideoDetailRouteExtra? extra})> videoDetailRoutes,
   List<String> profileNpubs,
 });
 
-Future<List<PooledFullscreenVideoFeedArgs>> _pumpRoutedView(
-  WidgetTester tester,
-  NotificationFeedBloc bloc, {
-  required VideoEventService videoEventService,
-  required NostrClient nostrClient,
-  required VideosRepository videosRepository,
-}) async {
-  final result = await _pumpRoutedViewFull(
-    tester,
-    bloc,
-    videoEventService: videoEventService,
-    nostrClient: nostrClient,
-    videosRepository: videosRepository,
-  );
-  return result.videoArgs;
-}
-
-/// Like [_pumpRoutedView] but also captures profile navigations.
+/// Pumps [NotificationsView] with routes that capture video/profile navigation.
 Future<_RoutedViewResult> _pumpRoutedViewFull(
   WidgetTester tester,
   NotificationFeedBloc bloc, {
@@ -94,6 +79,8 @@ Future<_RoutedViewResult> _pumpRoutedViewFull(
   required VideosRepository videosRepository,
 }) async {
   final capturedVideoArgs = <PooledFullscreenVideoFeedArgs>[];
+  final capturedVideoDetailRoutes =
+      <({String videoId, VideoDetailRouteExtra? extra})>[];
   final capturedProfileNpubs = <String>[];
   final router = GoRouter(
     initialLocation: '/',
@@ -106,6 +93,16 @@ Future<_RoutedViewResult> _pumpRoutedViewFull(
         path: PooledFullscreenVideoFeedScreen.path,
         builder: (context, state) {
           capturedVideoArgs.add(state.extra! as PooledFullscreenVideoFeedArgs);
+          return const Scaffold(body: SizedBox.shrink());
+        },
+      ),
+      GoRoute(
+        path: VideoDetailScreen.path,
+        builder: (context, state) {
+          capturedVideoDetailRoutes.add((
+            videoId: state.pathParameters['id']!,
+            extra: state.extra as VideoDetailRouteExtra?,
+          ));
           return const Scaffold(body: SizedBox.shrink());
         },
       ),
@@ -140,19 +137,12 @@ Future<_RoutedViewResult> _pumpRoutedViewFull(
     ),
   );
 
-  return (videoArgs: capturedVideoArgs, profileNpubs: capturedProfileNpubs);
+  return (
+    videoArgs: capturedVideoArgs,
+    videoDetailRoutes: capturedVideoDetailRoutes,
+    profileNpubs: capturedProfileNpubs,
+  );
 }
-
-VideoEvent _video(String id) => VideoEvent(
-  id: id,
-  pubkey: 'pubkey_$id',
-  createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
-  timestamp: DateTime(2026),
-  content: 'content',
-  title: 'title',
-  videoUrl: 'https://example.com/$id.mp4',
-  thumbnailUrl: 'https://example.com/$id.jpg',
-);
 
 void main() {
   group(NotificationsView, () {
@@ -408,7 +398,6 @@ void main() {
         final videosRepository = _MockVideosRepository();
         const commentEventId = 'comment_1111_event';
         const rootVideoEventId = 'root_video_event';
-        final resolvedVideo = _video(rootVideoEventId);
 
         // The comment is not a video — resolver fetches it from relay
         // and follows its uppercase E tag to the root video.
@@ -428,13 +417,6 @@ void main() {
           event.id = commentEventId;
           return event;
         });
-        when(
-          () =>
-              videosRepository.fetchVideoWithStatsForRouteId(rootVideoEventId),
-        ).thenAnswer((_) async => resolvedVideo);
-        when(
-          () => videoService.shouldHideVideo(resolvedVideo),
-        ).thenReturn(false);
 
         when(() => mockBloc.state).thenReturn(
           NotificationFeedState(
@@ -451,7 +433,7 @@ void main() {
           ),
         );
 
-        final capturedArgs = await _pumpRoutedView(
+        final result = await _pumpRoutedViewFull(
           tester,
           mockBloc,
           videoEventService: videoService,
@@ -463,15 +445,13 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(() => nostrClient.fetchEventById(commentEventId)).called(1);
-        verify(
-          () =>
-              videosRepository.fetchVideoWithStatsForRouteId(rootVideoEventId),
-        ).called(1);
-        expect(capturedArgs, hasLength(1));
-        final args = capturedArgs.single;
-        expect(args.autoOpenComments, isTrue);
-        final videos = await args.videosStream.first;
-        expect(videos.single.id, resolvedVideo.id);
+        verifyNever(
+          () => videosRepository.fetchVideoWithStatsForRouteId(any()),
+        );
+        expect(result.videoArgs, isEmpty);
+        expect(result.videoDetailRoutes, hasLength(1));
+        expect(result.videoDetailRoutes.single.videoId, rootVideoEventId);
+        expect(result.videoDetailRoutes.single.extra?.autoOpenComments, isTrue);
       });
 
       testWidgets(
@@ -483,7 +463,6 @@ void main() {
           final videosRepository = _MockVideosRepository();
           const parentCommentId = 'parent_comment_id';
           const rootVideoEventId = 'reply_root_video';
-          final resolvedVideo = _video(rootVideoEventId);
 
           when(
             () => videoService.getVideoById(parentCommentId),
@@ -503,14 +482,6 @@ void main() {
             event.id = parentCommentId;
             return event;
           });
-          when(
-            () => videosRepository.fetchVideoWithStatsForRouteId(
-              rootVideoEventId,
-            ),
-          ).thenAnswer((_) async => resolvedVideo);
-          when(
-            () => videoService.shouldHideVideo(resolvedVideo),
-          ).thenReturn(false);
 
           when(() => mockBloc.state).thenReturn(
             NotificationFeedState(
@@ -527,7 +498,7 @@ void main() {
             ),
           );
 
-          final capturedArgs = await _pumpRoutedView(
+          final result = await _pumpRoutedViewFull(
             tester,
             mockBloc,
             videoEventService: videoService,
@@ -539,25 +510,27 @@ void main() {
           await tester.pumpAndSettle();
 
           verify(() => nostrClient.fetchEventById(parentCommentId)).called(1);
-          verify(
-            () => videosRepository.fetchVideoWithStatsForRouteId(
-              rootVideoEventId,
-            ),
-          ).called(1);
-          expect(capturedArgs, hasLength(1));
-          expect(capturedArgs.single.autoOpenComments, isTrue);
+          verifyNever(
+            () => videosRepository.fetchVideoWithStatsForRouteId(any()),
+          );
+          expect(result.videoArgs, isEmpty);
+          expect(result.videoDetailRoutes, hasLength(1));
+          expect(result.videoDetailRoutes.single.videoId, rootVideoEventId);
+          expect(
+            result.videoDetailRoutes.single.extra?.autoOpenComments,
+            isTrue,
+          );
         },
       );
 
       testWidgets(
-        'reply tap pushes video route before resolver completes',
+        'reply tap waits for root video resolution before pushing video route',
         (tester) async {
           final videoService = _MockVideoEventService();
           final nostrClient = _MockNostrClient();
           final videosRepository = _MockVideosRepository();
           const parentCommentId = 'slow_parent_comment_id';
           const rootVideoEventId = 'slow_reply_root_video';
-          final resolvedVideo = _video(rootVideoEventId);
           final resolverCompleter = Completer<Event?>();
 
           when(
@@ -566,14 +539,6 @@ void main() {
           when(
             () => nostrClient.fetchEventById(parentCommentId),
           ).thenAnswer((_) => resolverCompleter.future);
-          when(
-            () => videosRepository.fetchVideoWithStatsForRouteId(
-              rootVideoEventId,
-            ),
-          ).thenAnswer((_) async => resolvedVideo);
-          when(
-            () => videoService.shouldHideVideo(resolvedVideo),
-          ).thenReturn(false);
 
           when(() => mockBloc.state).thenReturn(
             NotificationFeedState(
@@ -590,7 +555,7 @@ void main() {
             ),
           );
 
-          final capturedArgs = await _pumpRoutedView(
+          final result = await _pumpRoutedViewFull(
             tester,
             mockBloc,
             videoEventService: videoService,
@@ -601,8 +566,8 @@ void main() {
           await tester.tap(find.byType(NotificationListItem).first);
           await tester.pump();
 
-          expect(capturedArgs, hasLength(1));
-          expect(capturedArgs.single.autoOpenComments, isTrue);
+          expect(result.videoArgs, isEmpty);
+          expect(result.videoDetailRoutes, isEmpty);
           verifyNever(
             () => videosRepository.fetchVideoWithStatsForRouteId(any()),
           );
@@ -619,13 +584,18 @@ void main() {
           event.id = parentCommentId;
           resolverCompleter.complete(event);
 
-          final videos = await capturedArgs.single.videosStream.first;
-          expect(videos.single.id, resolvedVideo.id);
-          verify(
-            () => videosRepository.fetchVideoWithStatsForRouteId(
-              rootVideoEventId,
-            ),
-          ).called(1);
+          await tester.pumpAndSettle();
+
+          expect(result.videoArgs, isEmpty);
+          expect(result.videoDetailRoutes, hasLength(1));
+          expect(result.videoDetailRoutes.single.videoId, rootVideoEventId);
+          expect(
+            result.videoDetailRoutes.single.extra?.autoOpenComments,
+            isTrue,
+          );
+          verifyNever(
+            () => videosRepository.fetchVideoWithStatsForRouteId(any()),
+          );
         },
       );
 
@@ -640,7 +610,6 @@ void main() {
               '34236:'
               'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
               ':vine-id';
-          final resolvedVideo = _video('replacement_video_event');
 
           when(
             () => videoService.getVideoById(staleVideoEventId),
@@ -648,12 +617,6 @@ void main() {
           when(
             () => nostrClient.fetchEventById(staleVideoEventId),
           ).thenAnswer((_) async => null);
-          when(
-            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
-          ).thenAnswer((_) async => resolvedVideo);
-          when(
-            () => videoService.shouldHideVideo(resolvedVideo),
-          ).thenReturn(false);
 
           when(() => mockBloc.state).thenReturn(
             NotificationFeedState(
@@ -674,7 +637,7 @@ void main() {
             ),
           );
 
-          final capturedArgs = await _pumpRoutedView(
+          final result = await _pumpRoutedViewFull(
             tester,
             mockBloc,
             videoEventService: videoService,
@@ -685,14 +648,17 @@ void main() {
           await tester.tap(find.byType(NotificationListItem).first);
           await tester.pumpAndSettle();
 
-          verify(
-            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
-          ).called(1);
-          expect(capturedArgs, hasLength(1));
-          final args = capturedArgs.single;
-          expect(args.autoOpenComments, isTrue);
-          final videos = await args.videosStream.first;
-          expect(videos.single.id, resolvedVideo.id);
+          verifyNever(() => nostrClient.fetchEventById(any()));
+          verifyNever(
+            () => videosRepository.fetchVideoWithStatsForRouteId(any()),
+          );
+          expect(result.videoArgs, isEmpty);
+          expect(result.videoDetailRoutes, hasLength(1));
+          expect(result.videoDetailRoutes.single.videoId, addressableId);
+          expect(
+            result.videoDetailRoutes.single.extra?.autoOpenComments,
+            isTrue,
+          );
         },
       );
 
@@ -710,12 +676,6 @@ void main() {
               '34236:'
               'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
               ':vine-liked-comment';
-          final video = _video('liked_comment_video');
-
-          when(
-            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
-          ).thenAnswer((_) async => video);
-          when(() => videoService.shouldHideVideo(video)).thenReturn(false);
 
           when(() => mockBloc.state).thenReturn(
             NotificationFeedState(
@@ -734,7 +694,7 @@ void main() {
             ),
           );
 
-          final capturedArgs = await _pumpRoutedView(
+          final result = await _pumpRoutedViewFull(
             tester,
             mockBloc,
             videoEventService: videoService,
@@ -747,13 +707,16 @@ void main() {
 
           // Resolver must NOT be called — stable path is taken directly.
           verifyNever(() => nostrClient.fetchEventById(any()));
-          verify(
-            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
-          ).called(1);
-          expect(capturedArgs, hasLength(1));
-          expect(capturedArgs.single.autoOpenComments, isTrue);
-          final videos = await capturedArgs.single.videosStream.first;
-          expect(videos.single.id, video.id);
+          verifyNever(
+            () => videosRepository.fetchVideoWithStatsForRouteId(any()),
+          );
+          expect(result.videoArgs, isEmpty);
+          expect(result.videoDetailRoutes, hasLength(1));
+          expect(result.videoDetailRoutes.single.videoId, addressableId);
+          expect(
+            result.videoDetailRoutes.single.extra?.autoOpenComments,
+            isTrue,
+          );
         },
       );
     });
@@ -765,7 +728,7 @@ void main() {
     group('tap routing — like', () {
       testWidgets(
         'like tap opens the target video with autoOpenComments:false '
-        'using the stable addressable id',
+        'using the stable addressable id through the durable video route',
         (tester) async {
           final videoService = _MockVideoEventService();
           final nostrClient = _MockNostrClient();
@@ -774,14 +737,6 @@ void main() {
               '34236:'
               'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
               ':vine-like';
-          final likedVideo = _video('liked_video_event');
-
-          when(
-            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
-          ).thenAnswer((_) async => likedVideo);
-          when(
-            () => videoService.shouldHideVideo(likedVideo),
-          ).thenReturn(false);
 
           when(() => mockBloc.state).thenReturn(
             NotificationFeedState(
@@ -813,13 +768,16 @@ void main() {
           await tester.tap(find.byType(NotificationListItem).first);
           await tester.pumpAndSettle();
 
-          verify(
-            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
-          ).called(1);
-          expect(result.videoArgs, hasLength(1));
-          expect(result.videoArgs.single.autoOpenComments, isFalse);
-          final videos = await result.videoArgs.single.videosStream.first;
-          expect(videos.single.id, likedVideo.id);
+          verifyNever(
+            () => videosRepository.fetchVideoWithStatsForRouteId(any()),
+          );
+          expect(result.videoArgs, isEmpty);
+          expect(result.videoDetailRoutes, hasLength(1));
+          expect(
+            result.videoDetailRoutes.single.videoId,
+            equals(addressableId),
+          );
+          expect(result.videoDetailRoutes.single.extra, isNull);
         },
       );
 
@@ -830,14 +788,6 @@ void main() {
           final nostrClient = _MockNostrClient();
           final videosRepository = _MockVideosRepository();
           const rawEventId = 'raw_like_event_id';
-          final likedVideo = _video(rawEventId);
-
-          when(
-            () => videosRepository.fetchVideoWithStatsForRouteId(rawEventId),
-          ).thenAnswer((_) async => likedVideo);
-          when(
-            () => videoService.shouldHideVideo(likedVideo),
-          ).thenReturn(false);
 
           when(() => mockBloc.state).thenReturn(
             NotificationFeedState(
@@ -868,11 +818,13 @@ void main() {
           await tester.tap(find.byType(NotificationListItem).first);
           await tester.pumpAndSettle();
 
-          verify(
-            () => videosRepository.fetchVideoWithStatsForRouteId(rawEventId),
-          ).called(1);
-          expect(result.videoArgs, hasLength(1));
-          expect(result.videoArgs.single.autoOpenComments, isFalse);
+          verifyNever(
+            () => videosRepository.fetchVideoWithStatsForRouteId(any()),
+          );
+          expect(result.videoArgs, isEmpty);
+          expect(result.videoDetailRoutes, hasLength(1));
+          expect(result.videoDetailRoutes.single.videoId, rawEventId);
+          expect(result.videoDetailRoutes.single.extra, isNull);
         },
       );
     });
@@ -889,14 +841,6 @@ void main() {
               '34236:'
               'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
               ':vine-repost';
-          final repostedVideo = _video('reposted_video_event');
-
-          when(
-            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
-          ).thenAnswer((_) async => repostedVideo);
-          when(
-            () => videoService.shouldHideVideo(repostedVideo),
-          ).thenReturn(false);
 
           when(() => mockBloc.state).thenReturn(
             NotificationFeedState(
@@ -935,13 +879,13 @@ void main() {
           await tester.tap(find.byType(NotificationListItem).first);
           await tester.pumpAndSettle();
 
-          verify(
-            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
-          ).called(1);
-          expect(result.videoArgs, hasLength(1));
-          expect(result.videoArgs.single.autoOpenComments, isFalse);
-          final videos = await result.videoArgs.single.videosStream.first;
-          expect(videos.single.id, repostedVideo.id);
+          verifyNever(
+            () => videosRepository.fetchVideoWithStatsForRouteId(any()),
+          );
+          expect(result.videoArgs, isEmpty);
+          expect(result.videoDetailRoutes, hasLength(1));
+          expect(result.videoDetailRoutes.single.videoId, addressableId);
+          expect(result.videoDetailRoutes.single.extra, isNull);
         },
       );
     });
@@ -1002,7 +946,6 @@ void main() {
           final videosRepository = _MockVideosRepository();
           const mentionEventId = 'mention_kind1_event';
           const rootVideoEventId = 'mention_root_video';
-          final mentionedInVideo = _video(rootVideoEventId);
 
           // The mention event is a kind-1 with an uppercase E tag pointing
           // to the root video — the same resolver path used for replies.
@@ -1024,14 +967,6 @@ void main() {
             event.id = mentionEventId;
             return event;
           });
-          when(
-            () => videosRepository.fetchVideoWithStatsForRouteId(
-              rootVideoEventId,
-            ),
-          ).thenAnswer((_) async => mentionedInVideo);
-          when(
-            () => videoService.shouldHideVideo(mentionedInVideo),
-          ).thenReturn(false);
 
           when(() => mockBloc.state).thenReturn(
             NotificationFeedState(
@@ -1065,15 +1000,16 @@ void main() {
           verify(
             () => nostrClient.fetchEventById(mentionEventId),
           ).called(1);
-          verify(
-            () => videosRepository.fetchVideoWithStatsForRouteId(
-              rootVideoEventId,
-            ),
-          ).called(1);
-          expect(result.videoArgs, hasLength(1));
-          expect(result.videoArgs.single.autoOpenComments, isTrue);
-          final videos = await result.videoArgs.single.videosStream.first;
-          expect(videos.single.id, mentionedInVideo.id);
+          verifyNever(
+            () => videosRepository.fetchVideoWithStatsForRouteId(any()),
+          );
+          expect(result.videoArgs, isEmpty);
+          expect(result.videoDetailRoutes, hasLength(1));
+          expect(result.videoDetailRoutes.single.videoId, rootVideoEventId);
+          expect(
+            result.videoDetailRoutes.single.extra?.autoOpenComments,
+            isTrue,
+          );
         },
       );
 

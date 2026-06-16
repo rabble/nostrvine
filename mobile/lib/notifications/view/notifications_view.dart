@@ -14,8 +14,8 @@ import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/widgets/widgets.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -242,15 +242,15 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     }
   }
 
-  /// Resolves the video route and pushes [PooledFullscreenVideoFeedScreen].
+  /// Resolves the video route and pushes [VideoDetailScreen].
   ///
   /// Returns `true` if a navigation was pushed, `false` if resolution failed
   /// (resolver returned null) and no navigation occurred. The caller decides
   /// what to do on `false` — e.g. the mention branch falls back to profile.
   ///
-  /// The video fetch runs concurrently after the push so the screen opens
-  /// immediately; if the fetch fails or the video is unavailable a snackbar
-  /// is shown on the notifications scaffold without touching the router.
+  /// This uses the durable `/video/<id>` route rather than the ephemeral
+  /// fullscreen feed route, so web builds do not depend on in-memory
+  /// GoRouter `extra` state to show the target video.
   Future<bool> _navigateToVideo(
     BuildContext context,
     String videoEventId, {
@@ -265,118 +265,44 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     );
 
     final videoEventService = ref.read(videoEventServiceProvider);
-    final videosRepository = ref.read(videosRepositoryProvider);
-
     final shouldAutoOpenComments = notificationKindOpensComments(
       notificationKind,
     );
 
     // Resolve the navigation target.
     //
-    // The stable-ID path (videoAddressableId set) and the raw-event-id
-    // fallback are synchronous. The comment/reply fallback path may require
-    // one relay round-trip to walk E/e tags, but that work belongs inside the
-    // opened screen's loading stream rather than blocking the route push.
-    Future<String?> routeIdFuture;
+    // The stable-ID path (videoAddressableId set) and raw-event-id fallback
+    // are synchronous. Comment/reply/mention targets without an addressable
+    // coordinate may be Kind 1111 comments, so resolve them to the root video
+    // before pushing the durable video route.
+    String? routeId;
     if (videoAddressableId != null && videoAddressableId.isNotEmpty) {
       // Stable path: addressable ID works even after a metadata update.
-      routeIdFuture = Future.value(videoAddressableId);
+      routeId = videoAddressableId;
     } else if (shouldAutoOpenComments) {
       // Comment/mention path: walk E/e tags to find the root video event ID.
-      routeIdFuture = NotificationTargetResolver(
+      routeId = await NotificationTargetResolver(
         videoEventService: videoEventService,
         nostrService: ref.read(nostrServiceProvider),
       ).resolveVideoEventIdFromNotificationTarget(videoEventId);
 
-      if (notificationKind == NotificationKind.mention) {
-        // Mentions can legitimately have no video context. Preserve the
-        // profile fallback by resolving before pushing only for that kind.
-        final resolved = await routeIdFuture;
-        if (!context.mounted) return false;
-        if (resolved == null) {
-          // Resolution failed — caller decides the fallback (e.g. profile).
-          return false;
-        }
-        routeIdFuture = Future.value(resolved);
+      if (!context.mounted) return false;
+      if (routeId == null) {
+        // Resolution failed — caller decides the fallback (e.g. profile).
+        return false;
       }
     } else {
       // Fallback: no addressable ID available, use raw event ID.
-      routeIdFuture = Future.value(videoEventId);
+      routeId = videoEventId;
     }
-
-    // Capture l10n and scaffold messenger before the async gap; they remain
-    // valid even after the push transitions away from this view.
-    final l10n = context.l10n;
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    Future<List<VideoEvent>> loadVideo() async {
-      try {
-        final routeId = await routeIdFuture;
-        if (routeId == null || routeId.isEmpty) {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text(l10n.notificationsVideoNotFound),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-          return <VideoEvent>[];
-        }
-
-        final video = await videosRepository.fetchVideoWithStatsForRouteId(
-          routeId,
-        );
-        if (video == null) {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text(l10n.notificationsVideoNotFound),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-          return <VideoEvent>[];
-        }
-        if (videoEventService.shouldHideVideo(video)) {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text(l10n.notificationsVideoUnavailable),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-          return <VideoEvent>[];
-        }
-        return [video];
-      } catch (e, stackTrace) {
-        Log.error(
-          'Failed to fetch video for notification',
-          name: 'NotificationsView',
-          category: LogCategory.ui,
-          error: e,
-          stackTrace: stackTrace,
-        );
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(l10n.notificationsVideoNotFound),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        return <VideoEvent>[];
-      }
-    }
-
-    // Fetch the video concurrently. The stream is consumed by the opened
-    // screen's BLoC — we never pop here to avoid touching the wrong route
-    // if the user navigated away before the fetch resolved.
-    final videoFuture = loadVideo();
 
     if (!context.mounted) return false;
 
     context.push(
-      PooledFullscreenVideoFeedScreen.path,
-      extra: PooledFullscreenVideoFeedArgs(
-        videosStream: Stream.fromFuture(videoFuture),
-        initialIndex: 0,
-        contextTitle: l10n.notificationsFromNotification,
-        autoOpenComments: shouldAutoOpenComments,
-      ),
+      VideoDetailScreen.pathForId(routeId),
+      extra: shouldAutoOpenComments
+          ? const VideoDetailRouteExtra(autoOpenComments: true)
+          : null,
     );
     return true;
   }
