@@ -249,9 +249,37 @@ void main() {
 
         final track = audioTrackFromSoundForRender(sound);
 
-        expect(track.audio.hasFile, isTrue);
+        expect(track, isNotNull);
+        expect(track!.audio.hasFile, isTrue);
         expect(track.audio.file?.path, equals('/tmp/imported/snare.mp3'));
         expect(track.audio.hasNetworkUrl, isFalse);
+      });
+
+      test('selected absolute-path url is rendered as file audio', () {
+        const sound = AudioEvent(
+          id: 'video_source_copy_3',
+          pubkey: 'pk',
+          createdAt: 1700000000,
+          url: '/tmp/extracted/selected.m4a',
+          duration: 3,
+        );
+
+        final track = audioTrackFromSoundForRender(sound);
+
+        expect(track, isNotNull);
+        expect(track!.audio.hasFile, isTrue);
+        expect(track.audio.file?.path, equals('/tmp/extracted/selected.m4a'));
+        expect(track.audio.hasNetworkUrl, isFalse);
+      });
+
+      test('selected sound without a resolvable source is skipped', () {
+        const sound = AudioEvent(
+          id: 'video_source_no_url',
+          pubkey: 'pk',
+          createdAt: 1700000000,
+        );
+
+        expect(audioTrackFromSoundForRender(sound), isNull);
       });
 
       test(

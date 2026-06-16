@@ -1008,7 +1008,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     final audioEvents = baseParams.audioTracksFromMeta;
     final audioTracks = <AudioTrack>[
       for (final track in audioEvents) ?audioTrackFromMetaForRender(track),
-      if (soundTrack != null) audioTrackFromSoundForRender(soundTrack),
+      if (soundTrack != null) ?audioTrackFromSoundForRender(soundTrack),
     ];
 
     // Surface the resolution result so a silent export (no audio) is

@@ -8,18 +8,51 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+const _logName = 'VideoEditorAudioRender';
+
+/// Resolves the [EditorAudio] source for a render [event], or `null` when it
+/// has no usable source.
+///
+/// Routes bundled → asset, local-import or absolute path → file, and http(s)
+/// → network. Guards every nullable field so a malformed event is skipped by
+/// the caller instead of throwing a null-check during render.
+EditorAudio? _resolveRenderAudioSource(AudioEvent event) {
+  if (event.isBundled && event.assetPath != null) {
+    return EditorAudio.asset(event.assetPath!);
+  }
+  if (event.isLocalImport && event.localFilePath != null) {
+    return EditorAudio.file(File(event.localFilePath!));
+  }
+  final url = event.url;
+  if (url != null && url.isNotEmpty) {
+    return url.startsWith('/')
+        ? EditorAudio.file(File(url))
+        : EditorAudio.network(url);
+  }
+  return null;
+}
+
 /// Builds the render [AudioTrack] for the currently selected sound.
-AudioTrack audioTrackFromSoundForRender(AudioEvent sound) {
+///
+/// Returns `null` (and logs a warning) when the sound has no resolvable audio
+/// source, so an unusable selection is skipped instead of aborting the render
+/// with a thrown null-check.
+AudioTrack? audioTrackFromSoundForRender(AudioEvent sound) {
+  final audio = _resolveRenderAudioSource(sound);
+  if (audio == null) {
+    Log.warning(
+      'Skipping selected sound ${sound.id} for render: no resolvable source',
+      name: _logName,
+      category: LogCategory.video,
+    );
+    return null;
+  }
   return AudioTrack(
     id: sound.id,
     title: sound.title ?? '',
     subtitle: sound.source ?? '',
     duration: Duration(seconds: sound.duration?.toInt() ?? 0),
-    audio: sound.isBundled
-        ? EditorAudio.asset(sound.assetPath!)
-        : sound.isLocalImport && sound.localFilePath != null
-        ? EditorAudio.file(File(sound.localFilePath!))
-        : EditorAudio.network(sound.url!),
+    audio: audio,
     startTime: sound.startOffset,
   );
 }
@@ -32,19 +65,11 @@ AudioTrack audioTrackFromSoundForRender(AudioEvent sound) {
 /// render with a thrown null-check. Routes bundled → asset, local-import or
 /// absolute path → file, and everything else (http(s)) → network.
 AudioTrack? audioTrackFromMetaForRender(AudioEvent track) {
-  final EditorAudio audio;
-  if (track.isBundled && track.assetPath != null) {
-    audio = EditorAudio.asset(track.assetPath!);
-  } else if (track.isLocalImport && track.localFilePath != null) {
-    audio = EditorAudio.file(File(track.localFilePath!));
-  } else if (track.url != null && track.url!.isNotEmpty) {
-    audio = track.url!.startsWith('/')
-        ? EditorAudio.file(File(track.url!))
-        : EditorAudio.network(track.url!);
-  } else {
+  final audio = _resolveRenderAudioSource(track);
+  if (audio == null) {
     Log.warning(
       'Skipping audio track ${track.id} for render: no resolvable source',
-      name: 'VideoEditorAudioRender',
+      name: _logName,
       category: LogCategory.video,
     );
     return null;
