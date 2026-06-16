@@ -157,6 +157,27 @@ void main() {
 
         expect(filter(video), isFalse);
       });
+
+      test(
+        'still hides a video whose moderationLabels survived a cache '
+        'round-trip',
+        () {
+          final filter = createNsfwFilter(
+            contentFilterService,
+            moderationLabelService: moderationLabelService,
+          );
+          // The home-feed cache stores videos via toJson and rehydrates them
+          // via fromJson on cold start. The ML "hide" signal must survive that
+          // trip, otherwise a moderated video slips past the filter while the
+          // cached window is served.
+          final original = _createVideo(moderationLabels: ['nudity']);
+          final cached = VideoEvent.fromJson(original.toJson());
+
+          expect(filter(original), isTrue);
+          expect(cached.moderationLabels, equals(['nudity']));
+          expect(filter(cached), isTrue);
+        },
+      );
     });
 
     group('NSFW hashtag detection', () {

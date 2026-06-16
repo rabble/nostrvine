@@ -151,39 +151,7 @@ void main() {
       expect(result1, isNot(equals(result2)));
     });
 
-    test('rawResponseBody defaults to null', () {
-      const result = HomeFeedResult(videos: []);
-
-      expect(result.rawResponseBody, isNull);
-    });
-
-    test('stores rawResponseBody when provided', () {
-      const result = HomeFeedResult(
-        videos: [],
-        rawResponseBody: '{"videos":[]}',
-      );
-
-      expect(result.rawResponseBody, equals('{"videos":[]}'));
-    });
-
-    test('rawResponseBody is excluded from equality', () {
-      final video = createVideo(id: 'v1');
-
-      final result1 = HomeFeedResult(
-        videos: [video],
-        rawResponseBody: '{"videos":[{"id":"v1"}]}',
-      );
-
-      final result2 = HomeFeedResult(
-        videos: [video],
-        rawResponseBody: '{"videos":[{"id":"different"}]}',
-      );
-
-      // Same videos, different rawResponseBody — should be equal
-      expect(result1, equals(result2));
-    });
-
-    test('props includes all fields except rawResponseBody', () {
+    test('props includes all fields', () {
       final video = createVideo(id: 'v1');
       const sources = {
         'v1': {'list-a'},
@@ -198,7 +166,6 @@ void main() {
         nextCursor: 1234,
         paginationCursor: 'o:2',
         hasMore: true,
-        rawResponseBody: '{"videos":[]}',
       );
 
       expect(result.props, hasLength(7));

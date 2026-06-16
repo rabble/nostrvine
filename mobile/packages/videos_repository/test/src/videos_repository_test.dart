@@ -9959,10 +9959,6 @@ void main() {
         expect(result.videos.single.id, equals('recommended-video'));
         expect(result.videoListSources, isEmpty);
         expect(result.listOnlyVideoIds, isEmpty);
-        expect(
-          result.rawResponseBody,
-          equals('{"videos":[{"id":"recommended-video"}]}'),
-        );
         verify(
           () => mockFunnelcakeClient.getRecommendations(
             seed: any(named: 'seed'),

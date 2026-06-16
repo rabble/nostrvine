@@ -24,14 +24,25 @@ part 'video_feed_state.dart';
 /// Default interval between auto-refreshes of the home feed.
 const _defaultAutoRefreshMinInterval = Duration(minutes: 10);
 
-/// How far past the last-viewed video the cross-restart cache resumes.
+/// How far past the active video the cross-restart cache resumes.
 ///
-/// On cold start the cached feed is served starting at the user's last
-/// position plus this offset, so the already-watched video and its one
-/// lookahead are skipped (the user resumes on the next, unseen video and
-/// cannot scroll back to content they have already seen). Matches the
-/// `currentIndex + 2` head kept by [VideoFeedBloc._spliceFreshVideos].
-const _homeFeedResumeOffset = 2;
+/// The forward window persisted on serve / load / swipe starts at the active
+/// index plus this offset, so on the next cold start the user resumes on the
+/// first video they have **not** seen. An offset of `1` drops only the active
+/// (seen) video — the user cannot scroll back to it, but no unseen video is
+/// skipped. Keeping it at `1` (rather than also dropping the active+1
+/// lookahead) matters for the no-interaction reopen: serving the cache, or a
+/// quick open/close before the fresh fetch lands, advances by a single video
+/// the user actually saw instead of burning through the window two at a time.
+const _homeFeedResumeOffset = 1;
+
+/// Debounce window for persisting the resume position on rapid swipes.
+///
+/// The resume point does not need to be frame-accurate, so per-swipe disk
+/// writes are coalesced: this avoids a JSON-encode + Drift write on every page
+/// change while the user scrolls quickly. Serve- and load-time persists stay
+/// immediate — they run once per load, not on the swipe hot path.
+const _resumePersistDebounce = Duration(milliseconds: 600);
 
 /// Legacy SharedPreferences key for persisting the selected feed mode.
 ///
@@ -104,6 +115,13 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   /// Tracks when the last successful load completed, used by
   /// [_onAutoRefreshRequested] to skip refreshes when data is fresh.
   DateTime? _lastRefreshedAt;
+
+  /// Trailing-debounce handle for the swipe-driven resume-window persist.
+  Timer? _resumePersistTimer;
+
+  /// The most recent swipe persist waiting on [_resumePersistTimer].
+  ({String mode, List<VideoEvent> videos, int activeIndex})?
+  _pendingResumePersist;
 
   /// Whether [source] participates in the cross-restart [HomeFeedCache].
   ///
@@ -237,6 +255,9 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
 
   @override
   Future<void> close() async {
+    // Persist any swipe still inside the debounce window before tearing down,
+    // so the last move isn't lost on dispose.
+    _flushResumePersist();
     await _followingSubscription?.cancel();
     await _curatedListsSubscription?.cancel();
     _followingSubscription = null;
@@ -883,18 +904,47 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     emit(state.copyWith(currentIndex: index));
 
     if (_usesHomeFeedCache(state.source)) {
-      _persistResumeWindow(state.source.mode.name, state.videos, index);
+      // Debounced: rapid swipes coalesce into one disk write (see
+      // [_resumePersistDebounce]). The index emit above stays immediate so the
+      // splice and resume-restore listener react without delay.
+      _schedulePersistResumeWindow(state.source.mode.name, state.videos, index);
     }
+  }
+
+  /// Schedules a trailing-debounced resume-window persist for the swipe path.
+  void _schedulePersistResumeWindow(
+    String mode,
+    List<VideoEvent> videos,
+    int activeIndex,
+  ) {
+    _pendingResumePersist = (
+      mode: mode,
+      videos: videos,
+      activeIndex: activeIndex,
+    );
+    _resumePersistTimer?.cancel();
+    _resumePersistTimer = Timer(_resumePersistDebounce, _flushResumePersist);
+  }
+
+  /// Writes the latest pending swipe resume window, if any.
+  void _flushResumePersist() {
+    final pending = _pendingResumePersist;
+    if (pending == null) return;
+    _pendingResumePersist = null;
+    _resumePersistTimer?.cancel();
+    _resumePersistTimer = null;
+    _persistResumeWindow(pending.mode, pending.videos, pending.activeIndex);
   }
 
   /// Persists the forward window — the videos from [activeIndex] +
   /// [_homeFeedResumeOffset] onward — as the cross-restart resume point.
   ///
-  /// Called on every load and swipe, so the resume point advances as the user
-  /// moves through (or simply reopens) the feed: the next cold start opens on
-  /// the next unseen video rather than the one just shown. Already-watched
-  /// videos before the offset are dropped, so the user cannot scroll back to
-  /// them on resume.
+  /// Called immediately on serve/load and, via
+  /// [_schedulePersistResumeWindow], debounced on swipe, so the resume point
+  /// advances as the user moves through (or simply reopens) the feed: the next
+  /// cold start opens on the next unseen video rather than the one just shown.
+  /// Already-watched videos before the offset are dropped, so the user cannot
+  /// scroll back to them on resume.
   void _persistResumeWindow(
     String mode,
     List<VideoEvent> videos,

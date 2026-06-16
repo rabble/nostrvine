@@ -71,6 +71,7 @@ VideoEvent _fullVideo() => VideoEvent(
   textTrackRef: 'https://cdn.divine.video/captions.vtt',
   textTrackContent: 'WEBVTT\n\n00:00.000 --> 00:06.000\nHello',
   contentWarningLabels: const ['nudity'],
+  moderationLabels: const ['violence'],
   proofSummary: ProofVerificationSummary(
     status: 'present',
     level: 'basic_proof',
@@ -141,6 +142,7 @@ void main() {
       expect(restored.reposterPubkeys, equals([_reposterPubkey]));
       expect(restored.collaboratorPubkeys, equals([_otherCollab]));
       expect(restored.contentWarningLabels, equals(['nudity']));
+      expect(restored.moderationLabels, equals(['violence']));
       expect(restored.rawTags, equals({'platform': 'vine', 'views': '42'}));
     });
 
@@ -196,6 +198,7 @@ void main() {
       expect(restored.proofSummary, isNull);
       expect(restored.reposterPubkeys, isNull);
       expect(restored.hashtags, isEmpty);
+      expect(restored.moderationLabels, isEmpty);
       expect(restored.rawTags, isEmpty);
       expect(restored.isRepost, isFalse);
     });

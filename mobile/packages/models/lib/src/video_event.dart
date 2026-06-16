@@ -203,11 +203,15 @@ class VideoEvent {
 
   /// Reconstructs a [VideoEvent] from a map produced by [toJson].
   ///
-  /// Inverse of [toJson], used to rehydrate cached feed snapshots. The
-  /// internal fields that [toJson] deliberately omits (`nostrEventTags`,
-  /// `moderationLabels`, `warnLabels`) are not restored and fall back to
-  /// their defaults — they are republishing / UI-only state, irrelevant to
-  /// a cached feed row.
+  /// Inverse of [toJson], used to rehydrate cached feed snapshots.
+  ///
+  /// `moderationLabels` is persisted and restored because it is a hard
+  /// content-filter "hide" signal — dropping it would let a moderated video
+  /// slip through the content-preference filter on cold start when the user's
+  /// preferences changed between sessions. The remaining omitted fields
+  /// (`nostrEventTags`, `warnLabels`) fall back to their defaults: `warnLabels`
+  /// is recomputed by the warning-labels resolver on read, and `nostrEventTags`
+  /// is heavy republishing state the content-label path does not consult.
   factory VideoEvent.fromJson(Map<String, dynamic> json) {
     List<String> stringList(Object? value) =>
         (value as List<dynamic>?)?.map((e) => e.toString()).toList() ??
@@ -277,6 +281,7 @@ class VideoEvent {
       textTrackRef: json['textTrackRef'] as String?,
       textTrackContent: json['textTrackContent'] as String?,
       contentWarningLabels: stringList(json['contentWarningLabels']),
+      moderationLabels: stringList(json['moderationLabels']),
       proofSummary: json['proofSummary'] == null
           ? null
           : ProofVerificationSummary.fromJson(
@@ -1538,6 +1543,7 @@ class VideoEvent {
     'textTrackRef': textTrackRef,
     'textTrackContent': textTrackContent,
     'contentWarningLabels': contentWarningLabels,
+    'moderationLabels': moderationLabels,
     'proofSummary': proofSummary?.toJson(),
   };
 

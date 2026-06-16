@@ -27,7 +27,6 @@ class HomeFeedResult extends Equatable {
     this.nextCursor,
     this.paginationCursor,
     this.hasMore,
-    this.rawResponseBody,
   });
 
   /// All videos (following + list), sorted by createdAt descending.
@@ -59,13 +58,6 @@ class HomeFeedResult extends Equatable {
 
   /// Whether the upstream feed has more data to fetch.
   final bool? hasMore;
-
-  /// The raw JSON response body from the API, if available.
-  ///
-  /// Populated on initial (non-paginated) home feed fetches so the
-  /// BLoC can cache it for instant display on next cold start.
-  /// Excluded from equality checks.
-  final String? rawResponseBody;
 
   @override
   List<Object?> get props => [

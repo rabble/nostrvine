@@ -3365,8 +3365,8 @@ void main() {
         act: (bloc) =>
             bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         verify: (_) {
-          // Active index 0 + offset 2 = 2 → forward window is [fresh-2], so the
-          // next cold start opens past the just-shown video.
+          // Active index 0 + offset 1 = 1 → forward window starts past the
+          // just-shown video, dropping only it.
           final captured = verify(
             () => mockCache.writeVideos(
               pubkey: any(named: 'pubkey'),
@@ -3375,7 +3375,7 @@ void main() {
             ),
           ).captured;
           final window = captured.last as List<VideoEvent>;
-          expect(window.map((v) => v.id), equals(['fresh-2']));
+          expect(window.map((v) => v.id), equals(['fresh-1', 'fresh-2']));
         },
       );
 
@@ -3388,6 +3388,9 @@ void main() {
           await Future<void>.delayed(Duration.zero);
           bloc.add(const VideoFeedActiveIndexChanged(2));
         },
+        // The swipe persist is trailing-debounced, so wait past the debounce
+        // window for the disk write to fire.
+        wait: const Duration(milliseconds: 700),
         expect: () => [
           const VideoFeedBlocState(mode: FeedMode.following),
           isA<VideoFeedBlocState>()
@@ -3400,8 +3403,9 @@ void main() {
           ),
         ],
         verify: (_) {
-          // Last write is the swipe: active index 2 + offset 2 = 4 → [fresh-4].
-          // (An earlier load-time write from index 0 also occurs.)
+          // Last write is the swipe: active index 2 + offset 1 = 3 →
+          // [fresh-3, fresh-4]. (An earlier load-time write from index 0 also
+          // occurs.)
           final captured = verify(
             () => mockCache.writeVideos(
               pubkey: any(named: 'pubkey'),
@@ -3410,7 +3414,7 @@ void main() {
             ),
           ).captured;
           final window = captured.last as List<VideoEvent>;
-          expect(window.map((v) => v.id), equals(['fresh-4']));
+          expect(window.map((v) => v.id), equals(['fresh-3', 'fresh-4']));
         },
       );
     });

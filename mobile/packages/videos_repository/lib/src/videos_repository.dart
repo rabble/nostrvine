@@ -222,7 +222,7 @@ class VideosRepository {
     }
 
     // 1. Fetch following videos (Funnelcake API → Nostr relay waterfall)
-    final (:videos, :rawBody) = await _fetchFollowingVideos(
+    final videos = await _fetchFollowingVideos(
       authors: authors,
       userPubkey: userPubkey,
       limit: limit,
@@ -231,7 +231,7 @@ class VideosRepository {
 
     // 2. If no list refs, return following-only result
     if (videoRefs.isEmpty) {
-      final result = HomeFeedResult(videos: videos, rawResponseBody: rawBody);
+      final result = HomeFeedResult(videos: videos);
       if (until == null) _inMemoryFeedCache?.set('home', result);
       return result;
     }
@@ -246,10 +246,7 @@ class VideosRepository {
   }
 
   /// Fetches videos from followed users via Funnelcake API or Nostr relays.
-  ///
-  /// Returns a record with the videos and the raw JSON response body
-  /// (when available from Funnelcake initial page) for cache-first loading.
-  Future<({List<VideoEvent> videos, String? rawBody})> _fetchFollowingVideos({
+  Future<List<VideoEvent>> _fetchFollowingVideos({
     required List<String> authors,
     String? userPubkey,
     int limit = _defaultLimit,
@@ -281,8 +278,7 @@ class VideosRepository {
     );
   }
 
-  Future<({List<VideoEvent> videos, String? rawBody})>
-  _fetchVisibleHomeVideosFromStatsApi({
+  Future<List<VideoEvent>> _fetchVisibleHomeVideosFromStatsApi({
     required String userPubkey,
     required int limit,
     int? until,
@@ -290,7 +286,6 @@ class VideosRepository {
     var cursor = until;
     final visible = <VideoEvent>[];
     final seenIds = <String>{};
-    String? rawBody;
 
     // Intentionally walk until we have enough visible videos or the upstream
     // feed is exhausted. A hard page cap caused premature EOF on reply-dense
@@ -305,7 +300,6 @@ class VideosRepository {
       final videos = _transformVideoStats(response.videos);
       final hydratedVideos = await _hydrateVideosWithBulkStats(videos);
       _appendUniqueVideos(visible, hydratedVideos, seenIds: seenIds);
-      rawBody ??= response.rawBody;
       if (response.videos.length < limit || !response.hasMore) break;
 
       final nextCursor =
@@ -314,18 +308,17 @@ class VideosRepository {
       cursor = nextCursor;
     }
 
-    return (videos: visible.take(limit).toList(), rawBody: rawBody);
+    return visible.take(limit).toList();
   }
 
-  Future<({List<VideoEvent> videos, String? rawBody})>
-  _fetchVisibleHomeVideosFromRelays({
+  Future<List<VideoEvent>> _fetchVisibleHomeVideosFromRelays({
     required List<String> authors,
     required int limit,
     int? until,
   }) async {
     // Nostr fallback — skip when authors list is empty (fast-path startup
     // before follow list is ready).
-    if (authors.isEmpty) return (videos: <VideoEvent>[], rawBody: null);
+    if (authors.isEmpty) return <VideoEvent>[];
 
     var cursor = until;
     final visible = <VideoEvent>[];
@@ -355,7 +348,7 @@ class VideosRepository {
       cursor = nextCursor;
     }
 
-    return (videos: visible.take(limit).toList(), rawBody: null);
+    return visible.take(limit).toList();
   }
 
   Future<List<VideoEvent>> _hydrateVideosWithBulkStats(
@@ -2492,7 +2485,6 @@ class VideosRepository {
       videos: videos,
       paginationCursor: response.nextCursor,
       hasMore: response.hasMore,
-      rawResponseBody: response.rawBody,
     );
     if (isFirstPage) {
       _recommendationSessionSeed = requestSeed;
