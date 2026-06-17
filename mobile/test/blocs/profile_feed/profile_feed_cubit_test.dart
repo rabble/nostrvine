@@ -423,6 +423,14 @@ void main() {
     test(
       'cold load -> loadMore -> realtime add compose in newest-first order',
       () async {
+        final originalDebounce = ProfileFeedCubit.relaySnapshotDebounce;
+        ProfileFeedCubit.relaySnapshotDebounce = const Duration(
+          milliseconds: 20,
+        );
+        addTearDown(
+          () => ProfileFeedCubit.relaySnapshotDebounce = originalDebounce,
+        );
+
         // Cold load: first page, more available.
         final cubit = await buildReady(
           _result(
@@ -447,8 +455,9 @@ void main() {
         expect(cubit.state.videos.map((v) => v.id), ['a', 'b']);
 
         // Realtime add slots the newest video ahead of the paginated list
-        // without disturbing the pagination cursor.
+        // without disturbing the pagination cursor (debounced new-video path).
         h.onNew!(_video('c', createdAt: 5000), _author);
+        await Future<void>.delayed(const Duration(milliseconds: 60));
         await pumpEventQueue();
 
         expect(cubit.state.videos.map((v) => v.id), ['c', 'a', 'b']);
@@ -557,18 +566,61 @@ void main() {
     });
 
     test('optimistic add: new video prepended; reposts ignored', () async {
+      final originalDebounce = ProfileFeedCubit.relaySnapshotDebounce;
+      ProfileFeedCubit.relaySnapshotDebounce = const Duration(milliseconds: 20);
+      addTearDown(
+        () => ProfileFeedCubit.relaySnapshotDebounce = originalDebounce,
+      );
+
       final cubit = await buildReady(_result([_video('a')]));
       addTearDown(cubit.close);
 
+      // New-video notifications are debounced, so allow the quiet window to
+      // elapse before asserting the merged result.
       h.onNew!(_video('b', createdAt: 5000), _author);
+      await Future<void>.delayed(const Duration(milliseconds: 60));
       await pumpEventQueue();
       expect(cubit.state.videos.map((v) => v.id), ['b', 'a']);
 
       final before = cubit.state.videos.length;
       h.onNew!(_video('a'), _author); // duplicate -> no change
+      await Future<void>.delayed(const Duration(milliseconds: 60));
       await pumpEventQueue();
       expect(cubit.state.videos.length, before);
     });
+
+    test(
+      'new-video bursts coalesce into a single emit (debounce)',
+      () async {
+        final originalDebounce = ProfileFeedCubit.relaySnapshotDebounce;
+        ProfileFeedCubit.relaySnapshotDebounce = const Duration(
+          milliseconds: 20,
+        );
+        addTearDown(
+          () => ProfileFeedCubit.relaySnapshotDebounce = originalDebounce,
+        );
+
+        final cubit = await buildReady(_result([_video('a')]));
+        addTearDown(cubit.close);
+
+        final emitted = <List<String>>[];
+        final sub = cubit.stream.listen(
+          (s) => emitted.add(s.videos.map((v) => v.id).toList()),
+        );
+        addTearDown(sub.cancel);
+
+        // The relay delivers an author's backlog as a burst of per-video
+        // "new video" notifications. They must collapse to one emit, not one
+        // grid rebuild per video.
+        for (var i = 0; i < 5; i++) {
+          h.onNew!(_video('b$i', createdAt: 5000 + i), _author);
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 60));
+        await pumpEventQueue();
+
+        expect(emitted, hasLength(1));
+      },
+    );
 
     test(
       'relay-snapshot bursts coalesce into a single reconciliation '

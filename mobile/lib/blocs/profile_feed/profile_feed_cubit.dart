@@ -67,7 +67,15 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
       _onRelaySnapshot,
       transformer: _debounceSequential(relaySnapshotDebounce),
     );
-    on<ProfileFeedNewVideoReceived>(_onNewVideo, transformer: sequential());
+    // Debounced: the relay delivers an author's whole backlog as individual
+    // "new video" notifications (the subscription marks them live, not
+    // historical), so a 100-video profile would otherwise emit — and rebuild
+    // the grid — once per video. Bursts coalesce here; the debounced relay
+    // snapshot reconciles the full set.
+    on<ProfileFeedNewVideoReceived>(
+      _onNewVideo,
+      transformer: _debounceSequential(relaySnapshotDebounce),
+    );
     on<ProfileFeedVideoUpdated>(_onVideoUpdated, transformer: restartable());
     on<ProfileFeedInitialLoadTimedOut>(
       _onInitialLoadTimedOut,
