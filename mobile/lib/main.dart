@@ -1330,28 +1330,25 @@ Future<void> _startOpenVineApp() async {
   // This also forces package:sqlite3 onto the SQLCipher build (Android) and
   // runs the one-time plaintext→encrypted migration, both of which must happen
   // before any sqlite3 open. (#570, finding C2)
-  String? dbCipherKey;
-  try {
-    dbCipherKey = await DatabaseEncryptionBootstrap(
-      // resetOnError MUST stay false here: the cipher key is the one secret
-      // whose loss makes the encrypted DB unrecoverable. A transient keystore
-      // read error must throw (caught below → plaintext this launch, retry
-      // next) rather than silently deleting the key and triggering the §6
-      // key-loss recovery. (#570 C2)
+  final dbCipherKey = await resolveStartupDatabaseCipherKey(
+    // resetOnError MUST stay false here: the cipher key is the one secret
+    // whose loss makes the encrypted DB unrecoverable. A transient keystore
+    // read error must throw rather than silently deleting the key and
+    // triggering the §6 key-loss recovery. (#570 C2)
+    resolveCipherKey: () => DatabaseEncryptionBootstrap(
       secureStorage: const FlutterSecureStorage(
         aOptions: AndroidOptions(encryptedSharedPreferences: true),
       ),
-    ).resolveCipherKey();
-  } catch (error, stack) {
-    // SQLCipher build misconfiguration or an unexpected keystore failure.
-    // Report and degrade to a plaintext database so the app still launches;
-    // the device-QA gate prevents an unencrypted build from shipping. (#570 C2)
-    await CrashReportingService.instance.recordError(
+    ).resolveCipherKey(),
+    // SQLCipher build misconfiguration or secure-storage failures must fail
+    // closed after reporting. Continuing with a null key would open an
+    // existing encrypted DB as plaintext and spam SQLITE_NOTADB.
+    recordError: (error, stack) => CrashReportingService.instance.recordError(
       error,
       stack,
       reason: 'DatabaseEncryptionBootstrap.resolveCipherKey failed',
-    );
-  }
+    ),
+  );
 
   // Create ProviderContainer to initialize services BEFORE runApp
   final container = ProviderContainer(

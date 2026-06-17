@@ -74,6 +74,163 @@ fi
 echo "🖥️  Building macOS App..."
 cd "$(dirname "$0")"
 
+DEBUG_APP_PATH="build/macos/Build/Products/Debug/Divine.app"
+RELEASE_APP_PATH="build/macos/Build/Products/Release/Divine.app"
+MACOS_BUNDLE_ID="${MACOS_BUNDLE_ID:-co.openvine.app}"
+
+find_macos_signing_identity() {
+    if [[ -n "${MACOS_SIGNING_IDENTITY:-}" ]]; then
+        echo "$MACOS_SIGNING_IDENTITY"
+        return 0
+    fi
+
+    local hash
+    local display_identity
+    local tmp_file
+    local signature_details
+    local team_id
+
+    while IFS='|' read -r hash display_identity; do
+        [[ -n "$hash" ]] || continue
+        tmp_file="$(mktemp "${TMPDIR:-/tmp}/divine-codesign-probe.XXXXXX")"
+        printf 'codesign probe\n' > "$tmp_file"
+
+        if codesign --force --sign "$hash" "$tmp_file" >/dev/null 2>&1; then
+            signature_details="$(codesign -dvvv "$tmp_file" 2>&1)"
+            team_id="$(sed -n 's/^TeamIdentifier=//p' <<<"$signature_details" | head -1)"
+            rm -f "$tmp_file"
+
+            if [[ -n "$team_id" && "$team_id" != "not set" ]]; then
+                echo "$hash|$display_identity|$team_id"
+                return 0
+            fi
+        else
+            rm -f "$tmp_file"
+        fi
+    done < <(
+        security find-identity -v -p codesigning \
+            | sed -n 's/^[[:space:]]*[0-9]*)[[:space:]]*\([A-F0-9]\{40\}\)[[:space:]]*"\(Apple Development:.*\)"/\1|\2/p'
+    )
+
+    return 1
+}
+
+team_id_from_identity() {
+    local identity="$1"
+    local detected_team_id
+
+    if [[ "$identity" == *"|"*"|"* ]]; then
+        detected_team_id="${identity##*|}"
+        if [[ -n "$detected_team_id" ]]; then
+            echo "$detected_team_id"
+            return 0
+        fi
+    fi
+
+    if [[ -n "${MACOS_DEVELOPMENT_TEAM:-}" ]]; then
+        echo "$MACOS_DEVELOPMENT_TEAM"
+        return 0
+    fi
+
+    echo "❌ Could not infer Apple Team ID from signing identity: $identity" >&2
+    echo "   Set MACOS_DEVELOPMENT_TEAM=<TEAMID> and rerun." >&2
+    return 1
+}
+
+expand_macos_entitlements() {
+    local source_plist="$1"
+    local output_plist="$2"
+    local team_id="$3"
+    local bundle_id="$4"
+
+    sed \
+        -e "s/\\\$(AppIdentifierPrefix)/${team_id}./g" \
+        -e "s/\\\$(CFBundleIdentifier)/${bundle_id}/g" \
+        "$source_plist" > "$output_plist"
+}
+
+verify_macos_keychain_entitlements() {
+    local app_path="$1"
+    local expected_access_group="$2"
+    local signature_details
+    local entitlements
+
+    signature_details="$(codesign -dvvv "$app_path" 2>&1)"
+    if grep -q 'Signature=adhoc' <<<"$signature_details"; then
+        echo "❌ macOS app is still ad-hoc signed; Keychain will fail with OSStatus -34018." >&2
+        return 1
+    fi
+    if grep -q 'TeamIdentifier=not set' <<<"$signature_details"; then
+        echo "❌ macOS app has no TeamIdentifier; Keychain entitlements are not usable." >&2
+        return 1
+    fi
+
+    entitlements="$(codesign -d --entitlements :- "$app_path" 2>&1)"
+    if ! grep -q 'keychain-access-groups' <<<"$entitlements"; then
+        echo "❌ macOS app is missing keychain-access-groups entitlement." >&2
+        return 1
+    fi
+    if ! grep -q "$expected_access_group" <<<"$entitlements"; then
+        echo "❌ macOS app keychain entitlement does not include $expected_access_group." >&2
+        return 1
+    fi
+
+    codesign --verify --deep --strict --verbose=2 "$app_path"
+}
+
+sign_macos_app() {
+    local app_path="$1"
+    local build_mode="$2"
+    local source_entitlements
+    local identity
+    local signing_identity
+    local display_identity
+    local team_id
+    local expanded_entitlements
+    local expected_access_group
+
+    if [[ ! -d "$app_path" ]]; then
+        echo "❌ macOS app not found at $app_path" >&2
+        return 1
+    fi
+
+    if [[ "$build_mode" == "release" ]]; then
+        source_entitlements="macos/Runner/Release.entitlements"
+    else
+        source_entitlements="macos/Runner/DebugProfile.entitlements"
+    fi
+
+    identity="$(find_macos_signing_identity)"
+    if [[ -z "$identity" ]]; then
+        echo "❌ No Apple Development codesigning identity found." >&2
+        echo "   Install a local Apple Development certificate or set MACOS_SIGNING_IDENTITY." >&2
+        return 1
+    fi
+
+    team_id="$(team_id_from_identity "$identity")"
+    if [[ "$identity" == *"|"* ]]; then
+        signing_identity="${identity%%|*}"
+        display_identity="${identity#*|}"
+        display_identity="${display_identity%|*}"
+    else
+        signing_identity="$identity"
+        display_identity="$identity"
+    fi
+
+    expected_access_group="${team_id}.${MACOS_BUNDLE_ID}"
+    expanded_entitlements="$(mktemp "${TMPDIR:-/tmp}/divine-macos-entitlements.XXXXXX")"
+    expand_macos_entitlements "$source_entitlements" "$expanded_entitlements" "$team_id" "$MACOS_BUNDLE_ID"
+
+    echo "🔏 Signing macOS app with identity: $display_identity"
+    echo "🔐 Keychain access group: $expected_access_group"
+    codesign --force --deep --sign "$signing_identity" \
+        --entitlements "$expanded_entitlements" \
+        "$app_path"
+
+    rm -f "$expanded_entitlements"
+    verify_macos_keychain_entitlements "$app_path" "$expected_access_group"
+}
+
 # Reset camera permissions to fix stuck TCC state
 echo "🔐 Resetting camera permissions for fresh build..."
 tccutil reset Camera com.openvine.divine 2>/dev/null || true
@@ -187,7 +344,8 @@ echo "🚀 Building macOS app..."
 if [[ "$BUILD_MODE" == "release" ]]; then
     echo "🏗️  Building Flutter macOS release..."
     flutter build macos --release $DART_DEFINES
-    
+    sign_macos_app "$RELEASE_APP_PATH" "release"
+
     echo "📦 Creating Xcode archive..."
     cd macos
     
@@ -262,6 +420,7 @@ EOF
     cd ..
 else
     flutter build macos --debug $DART_DEFINES
+    sign_macos_app "$DEBUG_APP_PATH" "debug"
 fi
 
 echo "✅ macOS build complete!"

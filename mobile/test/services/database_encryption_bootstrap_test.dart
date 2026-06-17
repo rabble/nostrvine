@@ -144,4 +144,26 @@ void main() {
       expect(store[dbCipherKeyStorageKey], equals(key));
     });
   });
+
+  group('resolveStartupDatabaseCipherKey', () {
+    test('records and rethrows bootstrap failures', () async {
+      final error = StateError('secure storage unavailable');
+      Object? recordedError;
+      StackTrace? recordedStack;
+
+      await expectLater(
+        resolveStartupDatabaseCipherKey(
+          resolveCipherKey: () async => throw error,
+          recordError: (error, stack) async {
+            recordedError = error;
+            recordedStack = stack;
+          },
+        ),
+        throwsA(same(error)),
+      );
+
+      expect(recordedError, same(error));
+      expect(recordedStack, isNotNull);
+    });
+  });
 }
