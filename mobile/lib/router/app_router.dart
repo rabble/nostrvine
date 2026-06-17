@@ -16,6 +16,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/pooled_fullscreen_feed_route.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/router/router_refresh_listenable.dart';
 import 'package:openvine/router/universal_link_resolver.dart';
@@ -89,7 +90,6 @@ import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/page_load_observer.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
-import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Global route observer for [RouteAware] subscribers (e.g. pausing video
@@ -141,21 +141,6 @@ String rewriteResetPasswordDeepLink(Uri uri) {
       ..write(Uri.encodeQueryComponent(email));
   }
   return buffer.toString();
-}
-
-/// Redirect target for the fullscreen video feed route.
-///
-/// The route receives its videos through in-memory `extra` args, which the web
-/// platform discards on page reload / direct navigation. When [extra] is not a
-/// valid args object, redirect to the home feed instead of showing an error
-/// screen. Returns `null` (no redirect) when the args are present.
-@visibleForTesting
-String? fullscreenFeedRedirect(Object? extra) {
-  if (extra is PooledFullscreenVideoFeedArgs ||
-      extra is ProfilePooledFullscreenVideoFeedArgs) {
-    return null;
-  }
-  return VideoFeedPage.pathForIndex(0);
 }
 
 /// Redirects deep links for people-lists routes to the home feed when the
@@ -1399,36 +1384,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: PooledFullscreenVideoFeedScreen.path,
         name: PooledFullscreenVideoFeedScreen.routeName,
         redirect: (context, state) => fullscreenFeedRedirect(state.extra),
-        builder: (ctx, st) {
-          final extra = st.extra;
-          if (extra is PooledFullscreenVideoFeedArgs) {
-            return PooledFullscreenVideoFeedScreen(
-              source: extra.source,
-              feedRepository: extra.feedRepository,
-              initialIndex: extra.initialIndex,
-              initialVideoId: extra.initialVideoId,
-              initialStableId: extra.initialStableId,
-              contextTitle: extra.contextTitle,
-              trafficSource: extra.trafficSource,
-              sourceDetail: extra.sourceDetail,
-              autoOpenComments: extra.autoOpenComments,
-              onPageChanged: extra.onPageChanged,
-            );
-          }
-          if (extra is ProfilePooledFullscreenVideoFeedArgs) {
-            return ProfileVideoFeedView(
-              npub: '',
-              userIdHex: extra.userIdHex,
-              videoIndex: extra.initialIndex,
-              videos: extra.seedVideos,
-              initialVideoId: extra.initialVideoId,
-              initialStableId: extra.initialStableId,
-              contextTitleOverride: extra.contextTitle,
-              onPageChanged: extra.onPageChanged ?? (_) {},
-            );
-          }
-          return RouteErrorScreen(message: ctx.l10n.routeNoVideosToDisplay);
-        },
+        builder: buildPooledFullscreenFeed,
       ),
       // Engagement lists for own videos: who liked / reposted this video.
       // Reached when the video owner taps the Like or Repost button on

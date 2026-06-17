@@ -2,7 +2,8 @@
 // ABOUTME: home feed when its in-memory `extra` args are missing (web reload).
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/router/app_router.dart' show fullscreenFeedRedirect;
+import 'package:openvine/router/pooled_fullscreen_feed_route.dart'
+    show fullscreenFeedRedirect;
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 
