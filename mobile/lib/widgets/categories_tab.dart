@@ -68,13 +68,13 @@ class CategoriesDiscoveryView extends StatelessWidget {
       ),
       CategoriesStatus.error => Center(
         child: Column(
+          spacing: 16,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               context.l10n.categoriesCouldNotLoadCategories,
-              style: const TextStyle(color: Colors.white70, fontSize: 16),
+              style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
             ),
-            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: onRetry,
               child: Text(context.l10n.commonRetry),
@@ -112,7 +112,7 @@ class _CategoriesListBody extends StatelessWidget {
       return Center(
         child: Text(
           context.l10n.categoriesNoCategoriesAvailable,
-          style: const TextStyle(color: Colors.white70, fontSize: 16),
+          style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
         ),
       );
     }

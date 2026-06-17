@@ -52,51 +52,25 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
       emit(state.copyWith(isRefreshing: true));
     }
 
-    try {
-      await emit.forEach<CacheResult<List<VideoCategory>>>(
-        _categoriesRepository.watchCategoriesCached(),
-        onData: (result) {
-          return state.copyWith(
-            categoriesStatus: CategoriesStatus.loaded,
-            categories: result.data,
-            isRefreshing: result.isStale,
-          );
-        },
-        onError: (error, stackTrace) {
-          addError(error, stackTrace);
-          if (state.categories.isNotEmpty) {
-            return state.copyWith(
-              categoriesStatus: CategoriesStatus.loaded,
-              isRefreshing: false,
-            );
-          }
-          return state.copyWith(
-            categoriesStatus: CategoriesStatus.error,
-            isRefreshing: false,
-          );
-        },
-      );
-    } on FunnelcakeException catch (e, stackTrace) {
-      addError(e, stackTrace);
-      emit(
-        state.copyWith(
+    // The cache stream surfaces every failure through [onError], so all error
+    // handling lives there rather than in an outer try/catch.
+    await emit.forEach<CacheResult<List<VideoCategory>>>(
+      _categoriesRepository.watchCategoriesCached(),
+      onData: (result) => state.copyWith(
+        categoriesStatus: CategoriesStatus.loaded,
+        categories: result.data,
+        isRefreshing: result.isStale,
+      ),
+      onError: (error, stackTrace) {
+        addError(error, stackTrace);
+        return state.copyWith(
           categoriesStatus: state.categories.isEmpty
               ? CategoriesStatus.error
               : CategoriesStatus.loaded,
           isRefreshing: false,
-        ),
-      );
-    } catch (e, stackTrace) {
-      addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          categoriesStatus: state.categories.isEmpty
-              ? CategoriesStatus.error
-              : CategoriesStatus.loaded,
-          isRefreshing: false,
-        ),
-      );
-    }
+        );
+      },
+    );
   }
 
   Future<void> _onCategorySelected(
