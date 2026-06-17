@@ -301,12 +301,14 @@ class ProfileLikedVideosBloc
   Future<({List<VideoEvent> videos, int nextPageOffset, bool hasMoreContent})>
   _reconcile(List<String> freshIds) async {
     final byId = {for (final video in state.videos) video.id: video};
-    final addedCount = (freshIds.length - state.likedEventIds.length).clamp(
-      0,
-      freshIds.length,
-    );
+    // Count items newly prepended at the top by anchoring on the previous
+    // top ID rather than on a length delta. A length delta breaks when the
+    // persisted ID list was capped (its length no longer reflects the true
+    // previous total), which would otherwise balloon the window to a full
+    // re-fetch on reopen. Falls back to 0 (no growth) if the old top is gone.
+    final newAtTop = _newItemsAtTop(freshIds);
     final windowSize =
-        (max(state.nextPageOffset, state.videos.length) + addedCount).clamp(
+        (max(state.nextPageOffset, state.videos.length) + newAtTop).clamp(
           0,
           freshIds.length,
         );
@@ -328,6 +330,16 @@ class ProfileLikedVideosBloc
       nextPageOffset: windowIds.length,
       hasMoreContent: windowIds.length < freshIds.length,
     );
+  }
+
+  /// Number of fresh IDs prepended above the previous top item, located by
+  /// finding the old top ID in [freshIds]. Returns 0 when there is no prior
+  /// list or the old top is gone, so a capped persisted list can never
+  /// balloon the reconcile window into a full re-fetch.
+  int _newItemsAtTop(List<String> freshIds) {
+    if (state.likedEventIds.isEmpty) return 0;
+    final index = freshIds.indexOf(state.likedEventIds.first);
+    return index < 0 ? 0 : index;
   }
 
   static const ProfileVideoListSnapshot _emptySnapshot =
@@ -362,7 +374,12 @@ class ProfileLikedVideosBloc
     try {
       await CacheSync.write<ProfileVideoListSnapshot>(
         key: _cacheKey,
-        value: snapshot,
+        value: ProfileVideoListSnapshot.capped(
+          videos: snapshot.videos,
+          itemIds: snapshot.itemIds,
+          nextPageOffset: snapshot.nextPageOffset,
+          hasMoreContent: snapshot.hasMoreContent,
+        ),
         toJson: (s) => s.toJson(),
       );
     } on Object catch (e) {

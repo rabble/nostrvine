@@ -5,6 +5,7 @@
 import 'dart:convert';
 
 import 'package:models/models.dart';
+import 'package:openvine/blocs/profile_shared/profile_snapshot_window.dart';
 
 /// A point-in-time snapshot of a cursor-paginated profile video tab.
 ///
@@ -28,6 +29,33 @@ class ProfileVideoCursorSnapshot {
       videos: videos,
       paginationCursor: data['paginationCursor'] as int?,
       hasMoreContent: data['hasMoreContent'] as bool? ?? false,
+    );
+  }
+
+  /// Builds a snapshot capped to [ProfileSnapshotWindow.maxItems].
+  ///
+  /// Keeps the head of the feed and re-anchors [paginationCursor] to the last
+  /// kept video's timestamp so a load-more after reopen continues right after
+  /// the persisted window rather than skipping the dropped tail. [hasMoreContent]
+  /// is forced `true` whenever videos were dropped.
+  factory ProfileVideoCursorSnapshot.capped({
+    required List<VideoEvent> videos,
+    required int? paginationCursor,
+    required bool hasMoreContent,
+  }) {
+    const max = ProfileSnapshotWindow.maxItems;
+    if (videos.length <= max) {
+      return ProfileVideoCursorSnapshot(
+        videos: videos,
+        paginationCursor: paginationCursor,
+        hasMoreContent: hasMoreContent,
+      );
+    }
+    final keptVideos = videos.sublist(0, max);
+    return ProfileVideoCursorSnapshot(
+      videos: keptVideos,
+      paginationCursor: keptVideos.last.createdAt,
+      hasMoreContent: true,
     );
   }
 

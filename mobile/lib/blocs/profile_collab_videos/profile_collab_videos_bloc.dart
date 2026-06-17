@@ -202,7 +202,11 @@ class ProfileCollabVideosBloc
     try {
       await CacheSync.write<ProfileVideoCursorSnapshot>(
         key: _cacheKey,
-        value: snapshot,
+        value: ProfileVideoCursorSnapshot.capped(
+          videos: snapshot.videos,
+          paginationCursor: snapshot.paginationCursor,
+          hasMoreContent: snapshot.hasMoreContent,
+        ),
         toJson: (s) => s.toJson(),
       );
     } on Object catch (e) {

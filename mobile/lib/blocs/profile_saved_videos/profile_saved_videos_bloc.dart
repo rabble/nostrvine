@@ -217,12 +217,12 @@ class ProfileSavedVideosBloc
   Future<({List<VideoEvent> videos, int nextPageOffset, bool hasMoreContent})>
   _reconcile(List<String> freshIds) async {
     final byId = {for (final video in state.videos) video.id: video};
-    final addedCount = (freshIds.length - state.savedEventIds.length).clamp(
-      0,
-      freshIds.length,
-    );
+    // Anchor on the previous top ID rather than a length delta, so a capped
+    // persisted ID list can't balloon the reconcile window into a full
+    // re-fetch on reopen (see ProfileLikedVideosBloc for the rationale).
+    final newAtTop = _newItemsAtTop(freshIds);
     final windowSize =
-        (max(state.nextPageOffset, state.videos.length) + addedCount).clamp(
+        (max(state.nextPageOffset, state.videos.length) + newAtTop).clamp(
           0,
           freshIds.length,
         );
@@ -244,6 +244,16 @@ class ProfileSavedVideosBloc
       nextPageOffset: windowIds.length,
       hasMoreContent: windowIds.length < freshIds.length,
     );
+  }
+
+  /// Number of fresh IDs prepended above the previous top item, located by
+  /// finding the old top ID in [freshIds]. Returns 0 when there is no prior
+  /// list or the old top is gone, so a capped persisted list can never
+  /// balloon the reconcile window into a full re-fetch.
+  int _newItemsAtTop(List<String> freshIds) {
+    if (state.savedEventIds.isEmpty) return 0;
+    final index = freshIds.indexOf(state.savedEventIds.first);
+    return index < 0 ? 0 : index;
   }
 
   static const ProfileVideoListSnapshot _emptySnapshot =
@@ -274,7 +284,12 @@ class ProfileSavedVideosBloc
     try {
       await CacheSync.write<ProfileVideoListSnapshot>(
         key: _cacheKey,
-        value: snapshot,
+        value: ProfileVideoListSnapshot.capped(
+          videos: snapshot.videos,
+          itemIds: snapshot.itemIds,
+          nextPageOffset: snapshot.nextPageOffset,
+          hasMoreContent: snapshot.hasMoreContent,
+        ),
         toJson: (s) => s.toJson(),
       );
     } on Object catch (e) {

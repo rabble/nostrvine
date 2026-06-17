@@ -5,6 +5,7 @@
 import 'dart:convert';
 
 import 'package:models/models.dart';
+import 'package:openvine/blocs/profile_shared/profile_snapshot_window.dart';
 
 /// A point-in-time snapshot of an ID-list-backed profile video tab.
 ///
@@ -34,6 +35,39 @@ class ProfileVideoListSnapshot {
       itemIds: itemIds,
       nextPageOffset: data['nextPageOffset'] as int? ?? videos.length,
       hasMoreContent: data['hasMoreContent'] as bool? ?? false,
+    );
+  }
+
+  /// Builds a snapshot capped to [ProfileSnapshotWindow.maxItems].
+  ///
+  /// Keeps the **head** of both lists (the most-recent items the user sees
+  /// first on reopen) and clamps [nextPageOffset] into the kept ID range.
+  /// When anything is dropped, [hasMoreContent] is forced `true` so pagination
+  /// (which re-resolves the full ID list via the reopen revalidation) knows
+  /// there is more beyond the persisted window.
+  factory ProfileVideoListSnapshot.capped({
+    required List<VideoEvent> videos,
+    required List<String> itemIds,
+    required int nextPageOffset,
+    required bool hasMoreContent,
+  }) {
+    const max = ProfileSnapshotWindow.maxItems;
+    if (videos.length <= max && itemIds.length <= max) {
+      return ProfileVideoListSnapshot(
+        videos: videos,
+        itemIds: itemIds,
+        nextPageOffset: nextPageOffset,
+        hasMoreContent: hasMoreContent,
+      );
+    }
+    final keptVideos = videos.length > max ? videos.sublist(0, max) : videos;
+    final keptIds = itemIds.length > max ? itemIds.sublist(0, max) : itemIds;
+    return ProfileVideoListSnapshot(
+      videos: keptVideos,
+      itemIds: keptIds,
+      nextPageOffset: nextPageOffset.clamp(0, keptIds.length),
+      hasMoreContent:
+          hasMoreContent || videos.length > max || itemIds.length > max,
     );
   }
 

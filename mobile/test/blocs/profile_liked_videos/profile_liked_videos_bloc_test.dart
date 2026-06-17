@@ -438,6 +438,69 @@ void main() {
       );
 
       blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'reopen of a capped snapshot revalidates without bulk-fetching the '
+        'full liked list',
+        setUp: () async {
+          // Simulates a power user: the persisted window was capped to 50,
+          // but the real liked list is far longer. The cap must not make
+          // reconcile think 250 items were "added" and re-fetch them all.
+          final cachedIds = List.generate(50, (i) => 'v$i');
+          final cachedVideos = cachedIds.map(createTestVideo).toList();
+          await cacheDao.write(
+            key: '$currentUserPubkey:$currentUserPubkey:profile_liked_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: cachedVideos,
+              itemIds: cachedIds,
+              nextPageOffset: 50,
+              hasMoreContent: true,
+            ).toJson(),
+          );
+          // Fresh full list: same top 50, then 250 more.
+          final freshIds = List.generate(300, (i) => 'v$i');
+          when(() => mockLikesRepository.syncUserReactions()).thenAnswer(
+            (_) async => LikesSyncResult(
+              orderedEventIds: freshIds,
+              eventIdToReactionId: const {},
+            ),
+          );
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer((invocation) async {
+            final ids = invocation.positionalArguments[0] as List<String>;
+            return ids.map(createTestVideo).toList();
+          });
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ProfileLikedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', true)
+              .having((s) => s.videos.length, 'cached videos', 50),
+          // Window stays bounded to what was displayed; the full ID list is
+          // restored in memory so pagination can continue past the cap.
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', false)
+              .having((s) => s.videos.length, 'revalidated videos', 50)
+              .having((s) => s.likedEventIds.length, 'full id list', 300)
+              .having((s) => s.hasMoreContent, 'hasMoreContent', true),
+        ],
+        verify: (_) {
+          // The reconcile window is the displayed 50, all already cached, so
+          // no video fetch happens — proving no 250-item bulk re-fetch.
+          verifyNever(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
         'preserves order of liked event IDs in result',
         setUp: () {
           final video1 = createTestVideo('event1');
