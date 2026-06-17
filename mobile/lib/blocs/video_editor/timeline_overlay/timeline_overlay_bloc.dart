@@ -74,7 +74,16 @@ class TimelineOverlayBloc
           item.id: item.waveformRightChannel!,
     };
 
-    final total = event.totalVideoDuration;
+    // Clips may not be measured yet during a draft load, surfacing a transient
+    // totalVideoDuration of zero. Clamping every item's end to zero would
+    // collapse the whole timeline — sounds, layers, filters and markers — and
+    // _onTotalDurationChanged would then drop the zero-length items. Fall back
+    // to maxDuration (the editor's hard duration ceiling, so nothing real is
+    // truncated) until a valid total arrives via
+    // TimelineOverlayTotalDurationChanged, which re-clamps every item.
+    final total = event.totalVideoDuration > Duration.zero
+        ? event.totalVideoDuration
+        : VideoEditorConstants.maxDuration;
 
     final sounds = <TimelineOverlayItem>[
       for (final track in event.audioTracks)
@@ -170,11 +179,22 @@ class TimelineOverlayBloc
         ? Duration(milliseconds: (track.duration! * 1000).round())
         : null;
 
+    // A persisted track can carry an invalid composition window — e.g. a sound
+    // added before its duration was known ends up with endTime=0 (see
+    // _openMusicLibrary), or a probe that never resolved leaves endTime null.
+    // Mirror the render-path heal in audioTrackFromMetaForRender: treat any
+    // missing/inverted window as "play across the whole video" so the bar
+    // spans [0, total] instead of collapsing to an invisible zero-width strip.
+    final endTime = track.endTime;
+    final hasWindow = endTime != null && endTime > track.startTime;
+
     return TimelineOverlayItem(
       id: track.id,
       type: .sound,
-      startTime: track.startTime,
-      endTime: _clampEnd(track.endTime ?? .zero, total),
+      startTime: hasWindow ? track.startTime : .zero,
+      // No valid window → span the whole video. [total] is guaranteed > 0 by
+      // _onUpdateItems (transient-zero is substituted with maxDuration there).
+      endTime: hasWindow ? _clampEnd(endTime, total) : total,
       label: track.title ?? track.pubkey,
       maxDuration: sourceDuration != null
           ? sourceDuration - track.startOffset

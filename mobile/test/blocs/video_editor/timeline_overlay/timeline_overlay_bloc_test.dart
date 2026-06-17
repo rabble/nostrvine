@@ -198,6 +198,133 @@ void main() {
       );
 
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'spans the whole video when a sound carries a zero-length window',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
+            // A sound added before its duration was known persists
+            // startTime=0/endTime=0 — an invisible zero-width bar unless the
+            // timeline heals it to play across the whole video.
+            audioTracks: [
+              _audioEvent(
+                id: 'sound-1',
+                start: Duration.zero,
+                end: Duration.zero,
+              ),
+            ],
+            totalVideoDuration: const Duration(seconds: 12),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>()
+              .having(
+                (s) => s.items.first.startTime,
+                'startTime',
+                Duration.zero,
+              )
+              .having(
+                (s) => s.items.first.endTime,
+                'endTime',
+                const Duration(seconds: 12),
+              ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'falls back to maxDuration when an invalid-window sound has no total',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
+            // total is transiently zero (clips not yet measured during a draft
+            // load); the heal must not collapse the bar back to zero width.
+            audioTracks: [
+              _audioEvent(
+                id: 'sound-1',
+                start: Duration.zero,
+                end: Duration.zero,
+              ),
+            ],
+            totalVideoDuration: Duration.zero,
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>()
+              .having(
+                (s) => s.items.first.startTime,
+                'startTime',
+                Duration.zero,
+              )
+              .having(
+                (s) => s.items.first.endTime,
+                'endTime',
+                VideoEditorConstants.maxDuration,
+              ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'keeps markers within reach when total is transiently zero',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          const TimelineOverlayItemsUpdate(
+            layers: <Layer>[],
+            filters: <FilterState>[],
+            audioTracks: <AudioEvent>[],
+            // The shared maxDuration fallback also guards marker clamping, so a
+            // transient zero total can't collapse every marker onto 0.
+            timelineMarkers: [Duration(seconds: 3)],
+            totalVideoDuration: Duration.zero,
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>().having(
+            (s) => s.timelineMarkers,
+            'timelineMarkers',
+            const [Duration(seconds: 3)],
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'spans the whole video when a sound has no endTime',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          const TimelineOverlayItemsUpdate(
+            layers: <Layer>[],
+            filters: <FilterState>[],
+            audioTracks: [
+              // endTime omitted (null): a probe that never resolved leaves the
+              // composition window open.
+              AudioEvent(
+                id: 'sound-1',
+                pubkey: 'pubkey-sound-1',
+                createdAt: 1704067200,
+                title: 'Beat',
+              ),
+            ],
+            totalVideoDuration: Duration(seconds: 12),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>()
+              .having(
+                (s) => s.items.first.startTime,
+                'startTime',
+                Duration.zero,
+              )
+              .having(
+                (s) => s.items.first.endTime,
+                'endTime',
+                const Duration(seconds: 12),
+              ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
         'leaves source duration null when the track has no duration',
         build: TimelineOverlayBloc.new,
         act: (bloc) => bloc.add(
