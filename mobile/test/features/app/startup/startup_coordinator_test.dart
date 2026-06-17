@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_metrics.dart';
@@ -76,37 +77,48 @@ void main() {
       await initFuture;
     });
 
-    test('should track initialization timing', () async {
-      coordinator.registerService(
-        name: 'FastService',
-        phase: StartupPhase.critical,
-        initialize: () async {
-          await Future.delayed(const Duration(milliseconds: 50));
-        },
-      );
+    test('should track initialization timing', () {
+      // `MetricsCollector` measures durations via `package:clock`'s `clock`,
+      // which `fakeAsync` drives, so the 50 ms and 200 ms timings are exact
+      // and deterministic. Real wall-clock timing flaked under CI scheduler
+      // pressure when both timers fired on one starved tick and collapsed to
+      // equal (fastMs == slowMs == 200), defeating an earlier relative
+      // `fastMs < slowMs` bound.
+      fakeAsync((async) {
+        final coordinator = StartupCoordinator()
+          ..registerService(
+            name: 'FastService',
+            phase: StartupPhase.critical,
+            initialize: () =>
+                Future<void>.delayed(const Duration(milliseconds: 50)),
+          )
+          ..registerService(
+            name: 'SlowService',
+            phase: StartupPhase.critical,
+            initialize: () =>
+                Future<void>.delayed(const Duration(milliseconds: 200)),
+          );
 
-      coordinator.registerService(
-        name: 'SlowService',
-        phase: StartupPhase.critical,
-        initialize: () async {
-          await Future.delayed(const Duration(milliseconds: 200));
-        },
-      );
+        var initialized = false;
+        coordinator.initialize().then((_) => initialized = true);
 
-      await coordinator.initialize();
+        async.elapse(const Duration(milliseconds: 200));
+        expect(initialized, isTrue);
 
-      final metrics = coordinator.metrics;
-      final fastMs = metrics.serviceTimings['FastService']!.inMilliseconds;
-      final slowMs = metrics.serviceTimings['SlowService']!.inMilliseconds;
-      expect(metrics.totalDuration.inMilliseconds, greaterThanOrEqualTo(200));
-      // Use a relative comparison rather than an absolute <100 ms bound.
-      // `Future.delayed(50 ms)` guarantees at least 50 ms but can run much
-      // longer under scheduler pressure — a CI run has been observed at
-      // 114 ms for FastService, which flaked the old absolute assertion.
-      // Relative ordering (FastService finished before SlowService) is
-      // what this benchmark really cares about.
-      expect(fastMs, lessThan(slowMs));
-      expect(slowMs, greaterThanOrEqualTo(200));
+        final metrics = coordinator.metrics;
+        expect(
+          metrics.serviceTimings['FastService'],
+          const Duration(milliseconds: 50),
+        );
+        expect(
+          metrics.serviceTimings['SlowService'],
+          const Duration(milliseconds: 200),
+        );
+        expect(
+          metrics.totalDuration,
+          greaterThanOrEqualTo(const Duration(milliseconds: 200)),
+        );
+      });
     });
 
     test('should handle service dependencies', () async {
