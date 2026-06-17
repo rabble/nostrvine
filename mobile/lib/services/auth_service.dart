@@ -301,6 +301,15 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// (post-router-gate) to get a guaranteed non-null value.
   NostrIdentity? get currentIdentity => _currentIdentity;
 
+  /// Whether the current identity signs over a non-interactive network RPC
+  /// (the Keycast OAuth-only signer) and so can hang on a flaky connection.
+  ///
+  /// Viewer-media auth uses this to bound signing with a short timeout. Local
+  /// and interactive remote signers (bunker / Amber / NIP-07) return `false`
+  /// and are never timed out. Defaults to `false` when no identity is set.
+  bool get viewerAuthSignsRemotely =>
+      _currentIdentity?.signsRemotelyNonInteractive ?? false;
+
   /// The current user's signing identity, guaranteed non-null.
   ///
   /// Throws [StateError] if called when no identity is set. This should only

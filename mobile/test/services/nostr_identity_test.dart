@@ -569,4 +569,68 @@ void main() {
       }
     });
   });
+
+  group('signsRemotelyNonInteractive', () {
+    late _MockNostrSigner mockSigner;
+
+    setUp(() {
+      mockSigner = _MockNostrSigner();
+    });
+
+    test('LocalNostrIdentity signs in-process — false', () {
+      final mockKeyContainer = _MockSecureKeyContainer();
+      when(() => mockKeyContainer.publicKeyHex).thenReturn(testPublicKey);
+      when(() => mockKeyContainer.isDisposed).thenReturn(false);
+
+      final identity = LocalNostrIdentity(keyContainer: mockKeyContainer);
+
+      expect(identity.signsRemotelyNonInteractive, isFalse);
+    });
+
+    test('KeycastNostrIdentity without a local signer (OAuth-only) — true', () {
+      final identity = KeycastNostrIdentity(
+        pubkey: testPublicKey,
+        rpcSigner: mockSigner,
+      );
+
+      expect(identity.signsRemotelyNonInteractive, isTrue);
+    });
+
+    test('KeycastNostrIdentity with a local signer signs locally — false', () {
+      final identity = KeycastNostrIdentity(
+        pubkey: testPublicKey,
+        rpcSigner: mockSigner,
+        localSigner: _MockLocalKeySigner(),
+      );
+
+      expect(identity.signsRemotelyNonInteractive, isFalse);
+    });
+
+    test('BunkerNostrIdentity is interactive (human-paced) — false', () {
+      final identity = BunkerNostrIdentity(
+        pubkey: testPublicKey,
+        remoteSigner: mockSigner,
+      );
+
+      expect(identity.signsRemotelyNonInteractive, isFalse);
+    });
+
+    test('AmberNostrIdentity is interactive (human-paced) — false', () {
+      final identity = AmberNostrIdentity(
+        pubkey: testPublicKey,
+        amberSigner: mockSigner,
+      );
+
+      expect(identity.signsRemotelyNonInteractive, isFalse);
+    });
+
+    test('Nip07NostrIdentity is interactive (human-paced) — false', () {
+      final identity = Nip07NostrIdentity(
+        pubkey: testPublicKey,
+        nip07Signer: mockSigner,
+      );
+
+      expect(identity.signsRemotelyNonInteractive, isFalse);
+    });
+  });
 }

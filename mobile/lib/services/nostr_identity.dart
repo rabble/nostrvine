@@ -28,6 +28,16 @@ sealed class NostrIdentity implements NostrSigner {
   /// `sign_canonical` RPC. NIP-46 (bunker) and NIP-55 (amber) identities
   /// always return null because their protocols only define event signing.
   Future<String?> signCanonicalPayload(Uint8List payload);
+
+  /// Whether this identity signs remotely over a non-interactive network
+  /// round-trip (no human approval step in the loop).
+  ///
+  /// True ONLY for the Keycast OAuth-only signer, whose signing is bounded by
+  /// a network RPC and can therefore hang on a flaky connection. Viewer-media
+  /// auth uses this to apply a short caller-side timeout. Interactive remote
+  /// signers (NIP-46 bunker, NIP-55 Amber, NIP-07 extension) are human-paced —
+  /// the user reads a prompt and approves — so they must NOT be timed out.
+  bool get signsRemotelyNonInteractive;
 }
 
 /// Identity backed by a local [SecureKeyContainer] with a private key.
@@ -50,6 +60,9 @@ class LocalNostrIdentity extends NostrIdentity implements IsolateDecryptSigner {
   @override
   Future<String?> signCanonicalPayload(Uint8List payload) =>
       _signer.signCanonicalPayload(payload);
+
+  @override
+  bool get signsRemotelyNonInteractive => false;
 
   @override
   bool get canDecryptInIsolate => _signer.canDecryptInIsolate;
@@ -150,6 +163,12 @@ class KeycastNostrIdentity extends NostrIdentity
     return null;
   }
 
+  /// OAuth-only Keycast (no matching local key) signs over the network RPC,
+  /// so viewer-media auth bounds it with a short timeout. When a local signer
+  /// is present, signing is in-process and fast — not timed out.
+  @override
+  bool get signsRemotelyNonInteractive => _localSigner == null;
+
   @override
   bool get canDecryptInIsolate => _localSigner?.canDecryptInIsolate ?? false;
 
@@ -232,6 +251,11 @@ class BunkerNostrIdentity extends NostrIdentity {
   @override
   Future<String?> signCanonicalPayload(Uint8List payload) async => null;
 
+  // Interactive (NIP-46): the user approves in their bunker app, so signing
+  // is human-paced and must not be timed out.
+  @override
+  bool get signsRemotelyNonInteractive => false;
+
   @override
   Future<Map?> getRelays() => _remoteSigner.getRelays();
 
@@ -279,6 +303,11 @@ class AmberNostrIdentity extends NostrIdentity {
   /// gracefully.
   @override
   Future<String?> signCanonicalPayload(Uint8List payload) async => null;
+
+  // Interactive (NIP-55): the user approves in Amber, so signing is
+  // human-paced and must not be timed out.
+  @override
+  bool get signsRemotelyNonInteractive => false;
 
   @override
   Future<Map?> getRelays() => _amberSigner.getRelays();
@@ -329,6 +358,11 @@ class Nip07NostrIdentity extends NostrIdentity {
 
   @override
   Future<String?> signCanonicalPayload(Uint8List payload) async => null;
+
+  // Interactive (NIP-07): the user approves in the browser extension, so
+  // signing is human-paced and must not be timed out.
+  @override
+  bool get signsRemotelyNonInteractive => false;
 
   @override
   Future<Map?> getRelays() => _nip07Signer.getRelays();
