@@ -7,6 +7,7 @@ import 'package:meta/meta.dart';
 import 'package:nostr_client/src/models/models.dart';
 import 'package:nostr_client/src/nip89_client_tag.dart';
 import 'package:nostr_client/src/publish_result.dart';
+import 'package:nostr_client/src/query_concurrency_limiter.dart';
 import 'package:nostr_client/src/relay_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/utils/hash_util.dart';
@@ -102,6 +103,20 @@ class NostrClient {
   final Nostr _nostr;
   final RelayManager _relayManager;
   final AppDbClient? _dbClient;
+
+  /// Maximum number of concurrent one-shot relay queries ([queryEvents]).
+  ///
+  /// Caps the per-item fan-out (like counts, badges, profiles, repost-source
+  /// fetches) a high-volume screen triggers, so the app can't trip a relay's
+  /// "too many concurrent REQs" limit. Override in tests before constructing
+  /// the client. See [QueryConcurrencyLimiter].
+  @visibleForTesting
+  static int maxConcurrentQueries = 4;
+
+  late final QueryConcurrencyLimiter _queryConcurrency =
+      QueryConcurrencyLimiter(
+        maxConcurrentQueries,
+      );
 
   /// The signer used by this client for event signing and NIP-44 encryption.
   ///
@@ -522,14 +537,24 @@ class NostrClient {
       await retryDisconnectedRelays();
     }
     final filtersJson = filters.map((f) => f.toJson()).toList();
-    final websocketEvents = await _nostr.queryEvents(
-      filtersJson,
-      id: subscriptionId,
-      tempRelays: effectiveTempRelays,
-      relayTypes: relayTypes,
-      sendAfterAuth: sendAfterAuth,
-      timeout: timeout,
-    );
+    // Throttle concurrent one-shot REQs so high fan-out (a profile with many
+    // videos → per-item like-count/badge/profile/repost fetches) can't trip a
+    // relay's "too many concurrent REQs" limit. Released in `finally`; the
+    // underlying query is itself time-bounded, so the slot can't leak.
+    await _queryConcurrency.acquire();
+    final List<Event> websocketEvents;
+    try {
+      websocketEvents = await _nostr.queryEvents(
+        filtersJson,
+        id: subscriptionId,
+        tempRelays: effectiveTempRelays,
+        relayTypes: relayTypes,
+        sendAfterAuth: sendAfterAuth,
+        timeout: timeout,
+      );
+    } finally {
+      _queryConcurrency.release();
+    }
 
     // Cache websocket results (fire-and-forget)
     if (websocketEvents.isNotEmpty) {
