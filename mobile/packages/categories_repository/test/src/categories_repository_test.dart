@@ -1,12 +1,15 @@
 // ABOUTME: Tests for CategoriesRepository
 // ABOUTME: Verifies caching, filtering, and featured-first ordering
 
+import 'package:cache_sync/cache_sync.dart';
 import 'package:categories_repository/categories_repository.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart'
     show RecommendationsResponse, VideoCategory, VideoStats;
 import 'package:test/test.dart';
+
+import '../../../cache_sync/test/fake_cache_dao.dart';
 
 class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
@@ -106,6 +109,72 @@ void main() {
 
         // 'animals' is featured, so should come first
         expect(result.first.name, equals('animals'));
+      });
+    });
+
+    group('watchCategoriesCached', () {
+      late FakeCacheDao cacheDao;
+
+      setUp(() async {
+        cacheDao = FakeCacheDao();
+        await CacheSync.init(dao: cacheDao);
+      });
+
+      test('emits disk-cached categories before live refresh', () async {
+        const refreshedCategories = <VideoCategory>[
+          VideoCategory(name: 'animals', videoCount: 350),
+          VideoCategory(name: 'music', videoCount: 250),
+        ];
+        var calls = 0;
+        when(() => apiClient.getCategories(limit: 100)).thenAnswer((_) async {
+          calls += 1;
+          return calls == 1 ? sampleCategories : refreshedCategories;
+        });
+
+        await repository.watchCategoriesCached().toList();
+
+        final restartedRepository = CategoriesRepository(
+          funnelcakeApiClient: apiClient,
+          blockFilter: (pubkey) => pubkey == blockedPubkey,
+        );
+
+        final results = await restartedRepository
+            .watchCategoriesCached()
+            .toList();
+
+        expect(results, hasLength(2));
+        expect(results[0].isStale, isTrue);
+        expect(results[0].data, [
+          const VideoCategory(name: 'animals', videoCount: 300),
+          const VideoCategory(name: 'music', videoCount: 200),
+          const VideoCategory(name: 'comedy', videoCount: 500),
+        ]);
+        expect(results[1].isLive, isTrue);
+        expect(results[1].data, refreshedCategories);
+        verify(() => apiClient.getCategories(limit: 100)).called(2);
+      });
+
+      test('force refresh bypasses the disk cache', () async {
+        var calls = 0;
+        when(() => apiClient.getCategories(limit: 100)).thenAnswer((_) async {
+          calls += 1;
+          return calls == 1
+              ? sampleCategories
+              : const [VideoCategory(name: 'music', videoCount: 250)];
+        });
+
+        await repository.watchCategoriesCached().toList();
+
+        final results = await repository
+            .watchCategoriesCached(forceRefresh: true)
+            .toList();
+
+        expect(results, hasLength(1));
+        expect(results.single.isLive, isTrue);
+        expect(results.single.data, [
+          const VideoCategory(name: 'music', videoCount: 250),
+        ]);
+        verify(() => apiClient.getCategories(limit: 100)).called(2);
       });
     });
 

@@ -1,6 +1,7 @@
 // ABOUTME: Categories discovery tab for the Explore screen.
 // ABOUTME: Renders the redesigned pinned-first category list and navigates to category detail.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,52 +62,70 @@ class CategoriesDiscoveryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    switch (state.categoriesStatus) {
-      case CategoriesStatus.loading:
-        return const Center(child: CircularProgressIndicator());
-      case CategoriesStatus.error:
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                context.l10n.categoriesCouldNotLoadCategories,
-                style: const TextStyle(color: Colors.white70, fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: onRetry,
-                child: Text(context.l10n.commonRetry),
-              ),
-            ],
-          ),
-        );
-      case CategoriesStatus.loaded:
-        if (state.categories.isEmpty) {
-          return Center(
-            child: Text(
-              context.l10n.categoriesNoCategoriesAvailable,
+    final body = switch (state.categoriesStatus) {
+      CategoriesStatus.loading => const Center(
+        child: CircularProgressIndicator(),
+      ),
+      CategoriesStatus.error => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              context.l10n.categoriesCouldNotLoadCategories,
               style: const TextStyle(color: Colors.white70, fontSize: 16),
             ),
-          );
-        }
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: onRetry,
+              child: Text(context.l10n.commonRetry),
+            ),
+          ],
+        ),
+      ),
+      CategoriesStatus.loaded => _CategoriesListBody(
+        categories: state.categories,
+        onCategoryTap: onCategoryTap,
+      ),
+      CategoriesStatus.initial => const SizedBox.shrink(),
+    };
 
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          itemCount: state.categories.length,
-          separatorBuilder: (_, index) => const SizedBox(height: 8),
-          itemBuilder: (context, index) {
-            final category = state.categories[index];
-            return _CategoryTile(
-              category: category,
-              visuals: CategoryVisuals.forCategory(category, index),
-              onTap: () => onCategoryTap(category),
-            );
-          },
-        );
-      case CategoriesStatus.initial:
-        return const SizedBox.shrink();
+    return LoadingOverlay(isLoading: state.isRefreshing, child: body);
+  }
+}
+
+class _CategoriesListBody extends StatelessWidget {
+  const _CategoriesListBody({
+    required this.categories,
+    required this.onCategoryTap,
+  });
+
+  final List<VideoCategory> categories;
+  final ValueChanged<VideoCategory> onCategoryTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (categories.isEmpty) {
+      return Center(
+        child: Text(
+          context.l10n.categoriesNoCategoriesAvailable,
+          style: const TextStyle(color: Colors.white70, fontSize: 16),
+        ),
+      );
     }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      itemCount: categories.length,
+      separatorBuilder: (_, index) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final category = categories[index];
+        return _CategoryTile(
+          category: category,
+          visuals: CategoryVisuals.forCategory(category, index),
+          onTap: () => onCategoryTap(category),
+        );
+      },
+    );
   }
 }
 

@@ -41,8 +41,8 @@ void main() {
         'emits [loading, loaded] when categories load successfully',
         setUp: () {
           when(
-            () => mockRepository.getCategories(),
-          ).thenAnswer((_) async => categories);
+            () => mockRepository.watchCategoriesCached(),
+          ).thenAnswer((_) => Stream.value(CacheResult.live(categories)));
         },
         build: () => CategoriesBloc(
           categoriesRepository: mockRepository,
@@ -61,16 +61,16 @@ void main() {
           ),
         ],
         verify: (_) {
-          verify(() => mockRepository.getCategories()).called(1);
+          verify(() => mockRepository.watchCategoriesCached()).called(1);
         },
       );
 
       blocTest<CategoriesBloc, CategoriesState>(
         'emits [loading, error] when repository throws',
         setUp: () {
-          when(
-            () => mockRepository.getCategories(),
-          ).thenThrow(const FunnelcakeException('Network error'));
+          when(() => mockRepository.watchCategoriesCached()).thenAnswer(
+            (_) => Stream.error(const FunnelcakeException('Network error')),
+          );
         },
         build: () => CategoriesBloc(
           categoriesRepository: mockRepository,
@@ -93,13 +93,43 @@ void main() {
         ],
       );
 
+      blocTest<CategoriesBloc, CategoriesState>(
+        'shows cached categories as refreshing until live categories arrive',
+        setUp: () {
+          when(() => mockRepository.watchCategoriesCached()).thenAnswer(
+            (_) => Stream.fromIterable([
+              const CacheResult.cached([
+                VideoCategory(name: 'animals', videoCount: 300),
+              ]),
+              const CacheResult.live([
+                VideoCategory(name: 'animals', videoCount: 350),
+              ]),
+            ]),
+          );
+        },
+        build: () => CategoriesBloc(categoriesRepository: mockRepository),
+        act: (bloc) => bloc.add(const CategoriesLoadRequested()),
+        expect: () => [
+          const CategoriesState(categoriesStatus: CategoriesStatus.loading),
+          const CategoriesState(
+            categoriesStatus: CategoriesStatus.loaded,
+            categories: [VideoCategory(name: 'animals', videoCount: 300)],
+            isRefreshing: true,
+          ),
+          const CategoriesState(
+            categoriesStatus: CategoriesStatus.loaded,
+            categories: [VideoCategory(name: 'animals', videoCount: 350)],
+          ),
+        ],
+      );
+
       test('does not re-fetch while a load is already in progress', () async {
         // Use a Completer to keep the first request suspended so the second
         // event arrives while the bloc is still in loading state.
-        final completer = Completer<List<VideoCategory>>();
+        final controller = StreamController<CacheResult<List<VideoCategory>>>();
         when(
-          () => mockRepository.getCategories(),
-        ).thenAnswer((_) => completer.future);
+          () => mockRepository.watchCategoriesCached(),
+        ).thenAnswer((_) => controller.stream);
 
         final bloc = CategoriesBloc(categoriesRepository: mockRepository);
 
@@ -112,10 +142,10 @@ void main() {
         await Future<void>.delayed(Duration.zero);
 
         // Only one network call should have been made.
-        verify(() => mockRepository.getCategories()).called(1);
+        verify(() => mockRepository.watchCategoriesCached()).called(1);
 
         // Clean up.
-        completer.complete([]);
+        await controller.close();
         await bloc.close();
       });
     });

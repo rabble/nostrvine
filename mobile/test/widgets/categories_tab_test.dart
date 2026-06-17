@@ -108,6 +108,24 @@ void main() {
       expect(styleTopLeft.dy, lessThan(technologyTopLeft.dy));
     });
 
+    testWidgets('shows a linear refresh indicator over cached categories', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          state: const CategoriesState(
+            categoriesStatus: CategoriesStatus.loaded,
+            categories: [VideoCategory(name: 'animals', videoCount: 1500)],
+            isRefreshing: true,
+          ),
+        ),
+      );
+
+      expect(find.text('Animals'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
     testWidgets('localizes category video counts for Amharic', (tester) async {
       await tester.pumpWidget(
         buildSubject(

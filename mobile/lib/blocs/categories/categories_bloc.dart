@@ -13,9 +13,10 @@ part 'categories_state.dart';
 
 /// BLoC for video categories.
 ///
-/// Fetches the category list via [CategoriesRepository] (which owns the
-/// in-memory TTL cache) and manages loading videos for a selected category
-/// with pagination.
+/// Fetches the category list via [CategoriesRepository.watchCategoriesCached]
+/// so cached categories render immediately across app starts while a live
+/// refresh runs in the background. Also manages loading videos for a selected
+/// category with pagination.
 class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
   CategoriesBloc({
     required CategoriesRepository categoriesRepository,
@@ -40,25 +41,61 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
     CategoriesLoadRequested event,
     Emitter<CategoriesState> emit,
   ) async {
-    if (state.categoriesStatus == CategoriesStatus.loading) return;
+    if (state.categoriesStatus == CategoriesStatus.loading ||
+        state.isRefreshing) {
+      return;
+    }
 
-    emit(state.copyWith(categoriesStatus: CategoriesStatus.loading));
+    if (state.categories.isEmpty) {
+      emit(state.copyWith(categoriesStatus: CategoriesStatus.loading));
+    } else {
+      emit(state.copyWith(isRefreshing: true));
+    }
 
     try {
-      final categories = await _categoriesRepository.getCategories();
-
-      emit(
-        state.copyWith(
-          categoriesStatus: CategoriesStatus.loaded,
-          categories: categories,
-        ),
+      await emit.forEach<CacheResult<List<VideoCategory>>>(
+        _categoriesRepository.watchCategoriesCached(),
+        onData: (result) {
+          return state.copyWith(
+            categoriesStatus: CategoriesStatus.loaded,
+            categories: result.data,
+            isRefreshing: result.isStale,
+          );
+        },
+        onError: (error, stackTrace) {
+          addError(error, stackTrace);
+          if (state.categories.isNotEmpty) {
+            return state.copyWith(
+              categoriesStatus: CategoriesStatus.loaded,
+              isRefreshing: false,
+            );
+          }
+          return state.copyWith(
+            categoriesStatus: CategoriesStatus.error,
+            isRefreshing: false,
+          );
+        },
       );
     } on FunnelcakeException catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(state.copyWith(categoriesStatus: CategoriesStatus.error));
+      emit(
+        state.copyWith(
+          categoriesStatus: state.categories.isEmpty
+              ? CategoriesStatus.error
+              : CategoriesStatus.loaded,
+          isRefreshing: false,
+        ),
+      );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(state.copyWith(categoriesStatus: CategoriesStatus.error));
+      emit(
+        state.copyWith(
+          categoriesStatus: state.categories.isEmpty
+              ? CategoriesStatus.error
+              : CategoriesStatus.loaded,
+          isRefreshing: false,
+        ),
+      );
     }
   }
 

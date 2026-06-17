@@ -1,6 +1,9 @@
 // ABOUTME: Repository for video categories from the Funnelcake REST API.
-// ABOUTME: Owns the in-memory TTL cache for the categories list.
+// ABOUTME: Owns in-memory and CacheSync-backed caches for the categories list.
 
+import 'dart:convert';
+
+import 'package:cache_sync/cache_sync.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 
@@ -24,7 +27,8 @@ final class CategoryVideosPage {
 /// Wraps [FunnelcakeApiClient.getCategories] and applies
 /// featured-first ordering. Results are cached in memory for
 /// 10 minutes so repeated screen opens do not fire redundant
-/// network requests.
+/// network requests, and can be observed through [watchCategoriesCached]
+/// for disk-backed stale-while-revalidate loading across app starts.
 class CategoriesRepository {
   /// Creates a [CategoriesRepository].
   CategoriesRepository({
@@ -41,6 +45,8 @@ class CategoriesRepository {
 
   List<VideoCategory>? _cache;
   DateTime? _cachedAt;
+
+  static const _categoriesCacheKey = 'global:categories:v1';
 
   bool get _isCacheValid =>
       _cache != null &&
@@ -84,6 +90,25 @@ class CategoriesRepository {
     _cachedAt = DateTime.now();
 
     return ordered;
+  }
+
+  /// Watches the ordered category list through [CacheSync].
+  ///
+  /// Emits cached categories immediately when available, then emits the live
+  /// Funnelcake result once it resolves. The cache intentionally has no TTL:
+  /// categories are safe to show stale while the background refresh catches up.
+  Stream<CacheResult<List<VideoCategory>>> watchCategoriesCached({
+    bool forceRefresh = false,
+  }) {
+    return CacheSync.watchOne<List<VideoCategory>>(
+      key: _categoriesCacheKey,
+      fetch: () => getCategories(forceRefresh: forceRefresh),
+      fromJson: _categoriesFromJson,
+      toJson: _categoriesToJson,
+      policy: forceRefresh
+          ? CacheFetchPolicy.networkOnly
+          : CacheFetchPolicy.cacheAndNetwork,
+    );
   }
 
   /// Returns a filtered page of videos for [category].
@@ -130,5 +155,25 @@ class CategoriesRepository {
   void invalidateCache() {
     _cache = null;
     _cachedAt = null;
+  }
+
+  static List<VideoCategory> _categoriesFromJson(String payload) {
+    final decoded = jsonDecode(payload) as List<dynamic>;
+    return decoded
+        .map((item) => VideoCategory.fromJson(item as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  static String _categoriesToJson(List<VideoCategory> categories) {
+    return jsonEncode(
+      categories
+          .map(
+            (category) => {
+              'name': category.name,
+              'video_count': category.videoCount,
+            },
+          )
+          .toList(growable: false),
+    );
   }
 }
