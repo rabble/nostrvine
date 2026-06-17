@@ -177,7 +177,7 @@ String minorAccountReviewReturnLocationForTest(Uri uri) {
   }
 
   final fromLocation = Uri.parse(from).path;
-  if (_isAuthEntryLocation(fromLocation) ||
+  if (isAuthEntryLocation(fromLocation) ||
       fromLocation == MinorAccountReviewLoadingScreen.path) {
     return VideoFeedPage.pathForIndex(0);
   }
@@ -211,7 +211,16 @@ String? _moderationConversationId(
   return DmRepository.computeConversationId([currentPubkey, moderationPubkey]);
 }
 
-bool _isAuthEntryLocation(String location) {
+/// Whether [location] belongs to the unauthenticated auth-entry flow
+/// (welcome/sign-in and its sub-paths, key import, nostrconnect, invite gate,
+/// reset-password, email verification, and the public minor-account review
+/// entry screens).
+///
+/// Used by the router redirect and by the startup splash-release controller
+/// (#5242), which keeps the native splash up for an authenticated user until
+/// the redirect has navigated off this flow — otherwise the `/welcome` page
+/// flashes before `/home` paints.
+bool isAuthEntryLocation(String location) {
   return location == WelcomeScreen.path ||
       location.startsWith('${WelcomeScreen.path}/') ||
       location.startsWith(KeyImportScreen.path) ||
@@ -325,7 +334,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       // Auth routes don't require authentication — user is in the
       // process of logging in.
-      final isAuthRoute = _isAuthEntryLocation(location);
+      final isAuthRoute = isAuthEntryLocation(location);
 
       // Only bounce to the loading screen on a true cold load (no value yet).
       // Riverpod keeps the previous value during a background refetch

@@ -73,7 +73,6 @@ import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
-import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
@@ -101,6 +100,7 @@ import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/startup/startup_splash_release_controller.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/platform_support.dart';
@@ -925,35 +925,6 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
   return coordinator;
 }
 
-void _removeSplashWhenStartupAuthSettles(AuthService authService) {
-  unawaited(
-    _waitForStartupAuthTerminalState(authService)
-        .timeout(AuthService.startupAuthRestoreTimeout)
-        .catchError((Object error, StackTrace stackTrace) {
-          Log.warning(
-            '[INIT] Auth startup did not settle before splash timeout: $error',
-            name: 'Main',
-            category: LogCategory.system,
-          );
-        })
-        .whenComplete(FlutterNativeSplash.remove),
-  );
-}
-
-Future<void> _waitForStartupAuthTerminalState(AuthService authService) async {
-  if (_isTerminalStartupAuthState(authService.authState)) return;
-  await authService.authStateStream.firstWhere(_isTerminalStartupAuthState);
-}
-
-bool _isTerminalStartupAuthState(AuthState state) {
-  return switch (state) {
-    AuthState.unauthenticated ||
-    AuthState.awaitingTosAcceptance ||
-    AuthState.authenticated => true,
-    AuthState.checking || AuthState.authenticating => false,
-  };
-}
-
 Future<void> _startOpenVineApp() async {
   // Add timing logs for startup diagnostics
   final startTime = DateTime.now();
@@ -1359,7 +1330,10 @@ Future<void> _startOpenVineApp() async {
   );
 
   final startupCoordinator = _createStartupCoordinator(container);
-  _removeSplashWhenStartupAuthSettles(container.read(authServiceProvider));
+  // The native splash is released by [StartupSplashReleaseController], wired in
+  // _DivineAppState.initState once the router exists, so that an authenticated
+  // user's `/welcome` → `/home` redirect is applied before the splash lifts
+  // (#5242). It cannot run here because the GoRouter is built in runApp.
   await startupCoordinator.initializeThrough(StartupPhase.critical);
 
   Log.info('Divine starting...', name: 'Main');
@@ -1614,10 +1588,25 @@ class _DivineAppState extends ConsumerState<DivineApp> {
   StreamSubscription<void>? _shakeSubscription;
   StreamSubscription<NotificationTapEvent>? _notificationTapSubscription;
   QuickActionsCoordinator? _quickActionsCoordinator;
+  late final StartupSplashReleaseController _splashReleaseController;
 
   @override
   void initState() {
     super.initState();
+    // Hold the native splash until an authenticated user's `/welcome` → `/home`
+    // redirect has been applied, so the sign-in page never flashes (#5242).
+    // Constructed synchronously here — before deferred startup triggers
+    // AuthService.initialize() — so it is subscribed before the auth state
+    // settles. Reading goRouterProvider builds the cached router instance.
+    final router = ref.read(goRouterProvider);
+    final authService = ref.read(authServiceProvider);
+    _splashReleaseController = StartupSplashReleaseController(
+      authStateStream: authService.authStateStream,
+      currentAuthState: () => authService.authState,
+      locationListenable: router.routeInformationProvider,
+      currentLocation: () => router.routeInformationProvider.value.uri.path,
+      isAuthEntryLocation: isAuthEntryLocation,
+    );
     // Start deferred startup after the first frame so the shell can paint first.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -1633,6 +1622,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
 
   @override
   void dispose() {
+    _splashReleaseController.dispose();
     _notificationTapSubscription?.cancel();
     unawaited(_quickActionsCoordinator?.dispose());
     _shakeSubscription?.cancel();
