@@ -243,7 +243,9 @@ class _InboxTabContent extends StatelessWidget {
 
 /// A single inbox pane within the shared-axis transition: opaque background,
 /// [opacity] + horizontal [dx] (fraction of width) for the slide/fade, and
-/// [active] gating pointer events so the faded-out pane never intercepts taps.
+/// [active] gating pointer events, semantics, and tickers so the faded-out pane
+/// never intercepts taps, appears to assistive technologies, or keeps
+/// descendant animations running.
 class _InboxTabPane extends StatelessWidget {
   const _InboxTabPane({
     required this.opacity,
@@ -259,15 +261,21 @@ class _InboxTabPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IgnorePointer(
-      ignoring: !active,
-      child: Opacity(
-        opacity: opacity.clamp(0.0, 1.0),
-        child: FractionalTranslation(
-          translation: Offset(dx, 0),
-          child: ColoredBox(
-            color: VineTheme.surfaceContainerHigh,
-            child: child,
+    return TickerMode(
+      enabled: active,
+      child: ExcludeSemantics(
+        excluding: !active,
+        child: IgnorePointer(
+          ignoring: !active,
+          child: Opacity(
+            opacity: opacity.clamp(0.0, 1.0),
+            child: FractionalTranslation(
+              translation: Offset(dx, 0),
+              child: ColoredBox(
+                color: VineTheme.surfaceContainerHigh,
+                child: child,
+              ),
+            ),
           ),
         ),
       ),

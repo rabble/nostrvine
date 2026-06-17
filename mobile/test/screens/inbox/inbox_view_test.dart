@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -296,6 +297,82 @@ void main() {
 
         expect(find.byType(ConversationTile), findsOneWidget);
       });
+
+      testWidgets(
+        'excludes inactive mounted pane from semantics after tab switch',
+        (tester) async {
+          final semantics = tester.ensureSemantics();
+          try {
+            final conversation = DmConversation(
+              id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+              participantPubkeys: const [currentPubkey, otherPubkey],
+              isGroup: false,
+              createdAt: nowUnix,
+              lastMessageContent: 'Hello',
+              lastMessageTimestamp: nowUnix,
+            );
+
+            await tester.pumpWidget(
+              buildSubject(
+                state: ConversationListState(
+                  status: ConversationListStatus.loaded,
+                  conversations: [conversation],
+                  hasMore: false,
+                ),
+              ),
+            );
+            await tester.pump();
+
+            await tester.tap(find.text('Messages'));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 350));
+
+            final conversationLabel = UserProfile.defaultDisplayNameFor(
+              otherPubkey,
+            );
+            bool hasConversationSemantics() {
+              SemanticsNode? root;
+              bool visitPipelineOwner(PipelineOwner owner) {
+                root ??= owner.semanticsOwner?.rootSemanticsNode;
+                owner.visitChildren(visitPipelineOwner);
+                return true;
+              }
+
+              visitPipelineOwner(RendererBinding.instance.rootPipelineOwner);
+              expect(root, isNotNull);
+
+              var found = false;
+              bool visit(SemanticsNode node) {
+                if (node.label.contains(conversationLabel)) {
+                  found = true;
+                }
+                node.visitChildren(visit);
+                return true;
+              }
+
+              visit(root!);
+              return found;
+            }
+
+            expect(
+              hasConversationSemantics(),
+              isTrue,
+            );
+
+            await tester.tap(find.text('Notifications'));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 350));
+
+            expect(find.byType(ConversationTile), findsOneWidget);
+            expect(
+              hasConversationSemantics(),
+              isFalse,
+            );
+          } finally {
+            semantics.dispose();
+          }
+        },
+      );
 
       testWidgets(
         'collapses back to Notifications when the signed-in identity changes',
