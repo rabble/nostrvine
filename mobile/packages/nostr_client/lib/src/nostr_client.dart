@@ -111,7 +111,7 @@ class NostrClient {
   /// "too many concurrent REQs" limit. Override in tests before constructing
   /// the client. See [QueryConcurrencyLimiter].
   @visibleForTesting
-  static int maxConcurrentQueries = 4;
+  static int maxConcurrentQueries = 6;
 
   late final QueryConcurrencyLimiter _queryConcurrency =
       QueryConcurrencyLimiter(
