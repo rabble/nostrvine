@@ -143,6 +143,21 @@ String rewriteResetPasswordDeepLink(Uri uri) {
   return buffer.toString();
 }
 
+/// Redirect target for the fullscreen video feed route.
+///
+/// The route receives its videos through in-memory `extra` args, which the web
+/// platform discards on page reload / direct navigation. When [extra] is not a
+/// valid args object, redirect to the home feed instead of showing an error
+/// screen. Returns `null` (no redirect) when the args are present.
+@visibleForTesting
+String? fullscreenFeedRedirect(Object? extra) {
+  if (extra is PooledFullscreenVideoFeedArgs ||
+      extra is ProfilePooledFullscreenVideoFeedArgs) {
+    return null;
+  }
+  return VideoFeedPage.pathForIndex(0);
+}
+
 /// Redirects deep links for people-lists routes to the home feed when the
 /// [FeatureFlag.curatedLists] feature flag is off.
 ///
@@ -1383,6 +1398,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: PooledFullscreenVideoFeedScreen.path,
         name: PooledFullscreenVideoFeedScreen.routeName,
+        redirect: (context, state) => fullscreenFeedRedirect(state.extra),
         builder: (ctx, st) {
           final extra = st.extra;
           if (extra is PooledFullscreenVideoFeedArgs) {

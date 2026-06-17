@@ -10,7 +10,6 @@ import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 
 import '../helpers/test_provider_overrides.dart';
@@ -60,30 +59,10 @@ void main() {
     expect(find.text(strings.routeUnknownPath), findsOneWidget);
   });
 
-  testWidgets(
-    'pooled fullscreen route without feed args uses RouteErrorScreen with no videos copy',
-    (tester) async {
-      final strings = AppLocalizationsEn();
-      final container = ProviderContainer(
-        overrides: [
-          authServiceProvider.overrideWithValue(authenticatedAuth()),
-          currentMinorAccountReviewStatusProvider.overrideWith(
-            (ref) async => MinorAccountReviewStatus.active(),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-      await container.read(currentMinorAccountReviewStatusProvider.future);
-
-      await _pumpRouter(tester, container);
-
-      container.read(goRouterProvider).go(PooledFullscreenVideoFeedScreen.path);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(RouteErrorScreen), findsOneWidget);
-      expect(find.text(strings.routeNoVideosToDisplay), findsOneWidget);
-    },
-  );
+  // The pooled fullscreen route's no-args fallback (redirect to the home feed
+  // on web reload) is covered by the pure-function test in
+  // fullscreen_feed_redirect_test.dart — asserting it here would require
+  // rendering the full home feed, which the router test harness can't provide.
 }
 
 Future<void> _pumpRouter(
