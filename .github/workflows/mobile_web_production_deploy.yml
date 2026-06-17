@@ -46,6 +46,7 @@ jobs:
             --optimization-level=4 \
             --pwa-strategy=none \
             --dart-define=DEFAULT_ENV=PRODUCTION \
+            --dart-define=BACKEND_URL=https://api.divine.video \
             --no-source-maps
 
       - name: Deploy to Cloudflare Pages
