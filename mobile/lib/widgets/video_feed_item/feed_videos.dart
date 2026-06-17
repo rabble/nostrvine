@@ -340,20 +340,28 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
           final width = video.width;
           final height = video.height;
           final isSquare = width != null && height != null && width == height;
-          return PooledVideoErrorOverlay(
-            video: video,
-            onRetry: onRetry,
-            onVerifyAge: () => retryAgeRestrictedPooledVideo(
-              context: context,
-              ref: ref,
+          return BlocSelector<
+            VideoPlaybackStatusCubit,
+            VideoPlaybackStatusState,
+            bool
+          >(
+            selector: (state) => state.isVerifying(video.id),
+            builder: (context, isVerifyingAge) => PooledVideoErrorOverlay(
               video: video,
-              index: index,
-              retryPlayback: (httpHeaders) =>
-                  _retryPooledVideoAt(index, httpHeaders),
+              onRetry: onRetry,
+              onVerifyAge: () => retryAgeRestrictedPooledVideo(
+                context: context,
+                ref: ref,
+                video: video,
+                index: index,
+                retryPlayback: (httpHeaders) =>
+                    _retryPooledVideoAt(index, httpHeaders),
+              ),
+              errorType: errorType,
+              isVerifying: isVerifyingAge,
+              shouldPortraitExpand: widget.shouldPortraitExpand,
+              isSquare: isSquare,
             ),
-            errorType: errorType,
-            shouldPortraitExpand: widget.shouldPortraitExpand,
-            isSquare: isSquare,
           );
         },
         overlayBuilder: (context, index, controller, {required bool isActive}) {
@@ -577,6 +585,9 @@ class __OverlayState extends ConsumerState<_Overlay> {
     final playbackStatus = context.select(
       (VideoPlaybackStatusCubit cubit) => cubit.state.statusFor(video.id),
     );
+    final isVerifyingAge = context.select(
+      (VideoPlaybackStatusCubit cubit) => cubit.state.isVerifying(video.id),
+    );
 
     final isReady =
         widget.controller != null &&
@@ -600,6 +611,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
           status: playbackStatus,
           onSkip: _skipToNextVideo,
           onVerifyAge: _verifyAgeForVideo,
+          isVerifying: isVerifyingAge,
         );
       case _OverlayContentWarningMode(:final labels):
         return ContentWarningBlurOverlay(
@@ -903,24 +915,32 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
     );
 
     if (isRestricted) {
-      return PooledVideoErrorOverlay(
-        video: video,
-        // Retry is hidden for moderation-restricted content.
-        onRetry: () {},
-        onVerifyAge: () => retryAgeRestrictedPooledVideo(
-          context: context,
-          ref: ref,
+      return BlocSelector<
+        VideoPlaybackStatusCubit,
+        VideoPlaybackStatusState,
+        bool
+      >(
+        selector: (state) => state.isVerifying(video.id),
+        builder: (context, isVerifyingAge) => PooledVideoErrorOverlay(
           video: video,
-          index: index,
-          retryPlayback: (httpHeaders) =>
-              context
-                  .findAncestorStateOfType<InfiniteVideoFeedState>()
-                  ?.retryAt(index, httpHeaders: httpHeaders) ??
-              Future.value(false),
+          // Retry is hidden for moderation-restricted content.
+          onRetry: () {},
+          onVerifyAge: () => retryAgeRestrictedPooledVideo(
+            context: context,
+            ref: ref,
+            video: video,
+            index: index,
+            retryPlayback: (httpHeaders) =>
+                context
+                    .findAncestorStateOfType<InfiniteVideoFeedState>()
+                    ?.retryAt(index, httpHeaders: httpHeaders) ??
+                Future.value(false),
+          ),
+          errorType: VideoErrorType.notFound,
+          isVerifying: isVerifyingAge,
+          shouldPortraitExpand: shouldPortraitExpand,
+          isSquare: isSquare,
         ),
-        errorType: VideoErrorType.notFound,
-        shouldPortraitExpand: shouldPortraitExpand,
-        isSquare: isSquare,
       );
     }
 

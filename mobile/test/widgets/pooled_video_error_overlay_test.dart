@@ -44,7 +44,12 @@ void main() {
       l10n = lookupAppLocalizations(const Locale('en'));
     });
 
-    Widget buildWidget({VideoErrorType? errorType, VideoEvent? video}) {
+    Widget buildWidget({
+      VideoErrorType? errorType,
+      VideoEvent? video,
+      VoidCallback? onVerifyAge,
+      bool isVerifying = false,
+    }) {
       return ProviderScope(
         overrides: [
           videoModerationStatusProvider.overrideWith(
@@ -58,7 +63,9 @@ void main() {
             body: PooledVideoErrorOverlay(
               video: video ?? divineVideo,
               onRetry: () => retryPressed = true,
+              onVerifyAge: onVerifyAge,
               errorType: errorType,
+              isVerifying: isVerifying,
             ),
           ),
         ),
@@ -134,6 +141,28 @@ void main() {
 
         expect(find.text(l10n.videoErrorRetry), findsOneWidget);
       });
+
+      testWidgets(
+        'shows a loading spinner and disables Verify age while verifying',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(
+              errorType: VideoErrorType.ageRestricted,
+              onVerifyAge: () => verifyAgePressed = true,
+              isVerifying: true,
+            ),
+          );
+          // Not pumpAndSettle: the loading spinner animates indefinitely.
+          await tester.pump();
+
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+          // Disabled while verifying — a tap must be a no-op.
+          await tester.tap(find.text(l10n.videoErrorVerifyAgeButton));
+          await tester.pump();
+          expect(verifyAgePressed, isFalse);
+        },
+      );
     });
 
     group('notFound', () {

@@ -1,6 +1,8 @@
 // ABOUTME: Tests age-verification retry wiring for pooled native feed videos.
 // ABOUTME: Verifies successful auth reloads playback and failures surface feedback.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -93,6 +95,46 @@ void main() {
         PlaybackStatus.ready,
       );
       expect(find.text(_failureText), findsNothing);
+    });
+
+    testWidgets('marks the video verifying during the retry and clears it '
+        'after', (tester) async {
+      final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+      final playbackStatusCubit = VideoPlaybackStatusCubit();
+      final authCompleter = Completer<Map<String, String>?>();
+      addTearDown(playbackStatusCubit.close);
+
+      when(
+        () => mediaAuthInterceptor.handleUnauthorizedMedia(
+          context: any(named: 'context'),
+          sha256Hash: _sha256,
+          url: _videoUrl,
+          serverUrl: 'https://media.divine.video',
+          category: 'video',
+        ),
+      ).thenAnswer((_) => authCompleter.future);
+
+      await tester.pumpWidget(
+        _RetryHarness(
+          mediaAuthInterceptor: mediaAuthInterceptor,
+          playbackStatusCubit: playbackStatusCubit,
+          retryPlayback: (_) => true,
+        ),
+      );
+
+      playbackStatusCubit.report(_videoId, PlaybackStatus.ageRestricted);
+      expect(playbackStatusCubit.state.isVerifying(_videoId), isFalse);
+
+      await tester.tap(find.text('Verify'));
+      await tester.pump();
+      // markVerifying runs synchronously before the auth await.
+      expect(playbackStatusCubit.state.isVerifying(_videoId), isTrue);
+
+      authCompleter.complete({'Authorization': 'Nostr token'});
+      await tester.pump();
+      await tester.pump();
+      // Cleared in the finally once the retry resolves.
+      expect(playbackStatusCubit.state.isVerifying(_videoId), isFalse);
     });
 
     testWidgets('keeps gate state and stays silent when auth is declined', (

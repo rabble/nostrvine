@@ -30,6 +30,20 @@ class VideoPlaybackStatusCubit extends Cubit<VideoPlaybackStatusState> {
     emit(state.withStatus(eventId, status));
   }
 
+  /// Marks an age-verification retry as in flight for [eventId], driving the
+  /// "Verify age" button's loading state. Short-circuits when already set.
+  void markVerifying(String eventId) {
+    if (state.isVerifying(eventId)) return;
+    emit(state.withVerifying(eventId, true));
+  }
+
+  /// Clears the in-flight age-verification flag for [eventId]. Short-circuits
+  /// when not set.
+  void clearVerifying(String eventId) {
+    if (!state.isVerifying(eventId)) return;
+    emit(state.withVerifying(eventId, false));
+  }
+
   /// Clears all tracked statuses (call on feed-mode change).
   void clear() {
     emit(state.cleared());

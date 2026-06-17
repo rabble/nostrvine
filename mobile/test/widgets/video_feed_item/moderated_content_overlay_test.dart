@@ -17,6 +17,7 @@ void main() {
       required PlaybackStatus status,
       VoidCallback? onSkip,
       VoidCallback? onVerifyAge,
+      bool isVerifying = false,
     }) {
       return tester.pumpWidget(
         MaterialApp(
@@ -27,6 +28,7 @@ void main() {
               status: status,
               onSkip: onSkip ?? () {},
               onVerifyAge: onVerifyAge,
+              isVerifying: isVerifying,
             ),
           ),
         ),
@@ -102,6 +104,28 @@ void main() {
 
       expect(verified, equals(1));
     });
+
+    testWidgets(
+      'shows a loading spinner and disables Verify age while verifying',
+      (tester) async {
+        var verified = 0;
+        await pumpOverlay(
+          tester,
+          status: PlaybackStatus.ageRestricted,
+          onVerifyAge: () => verified++,
+          isVerifying: true,
+        );
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        // Disabled while verifying — a tap must be a no-op.
+        await tester.tap(
+          find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
+        );
+        await tester.pump();
+        expect(verified, equals(0));
+      },
+    );
 
     testWidgets('calls onSkip when Skip is tapped in ageRestricted state', (
       tester,

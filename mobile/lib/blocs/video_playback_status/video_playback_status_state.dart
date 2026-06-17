@@ -39,9 +39,13 @@ class VideoPlaybackStatusState extends Equatable {
   VideoPlaybackStatusState({
     this.maxEntries = _defaultMaxEntries,
     LinkedHashMap<String, PlaybackStatus>? statuses,
+    Set<String>? verifyingIds,
   }) : _statuses = statuses == null
            ? LinkedHashMap<String, PlaybackStatus>()
-           : LinkedHashMap<String, PlaybackStatus>.from(statuses);
+           : LinkedHashMap<String, PlaybackStatus>.from(statuses),
+       _verifyingIds = verifyingIds == null
+           ? <String>{}
+           : Set<String>.from(verifyingIds);
 
   static const int _defaultMaxEntries = 100;
 
@@ -50,10 +54,18 @@ class VideoPlaybackStatusState extends Equatable {
 
   final LinkedHashMap<String, PlaybackStatus> _statuses;
 
+  /// Event IDs with an age-verification retry currently in flight. Transient
+  /// and small (usually 0-1 entries); not LRU-bounded.
+  final Set<String> _verifyingIds;
+
   /// Returns the status for [eventId], or [PlaybackStatus.ready] when no
   /// status has been recorded.
   PlaybackStatus statusFor(String eventId) =>
       _statuses[eventId] ?? PlaybackStatus.ready;
+
+  /// Whether an age-verification retry is currently in flight for [eventId].
+  /// Drives the "Verify age" button's loading state.
+  bool isVerifying(String eventId) => _verifyingIds.contains(eventId);
 
   /// Returns a new state with [status] recorded for [eventId].
   ///
@@ -67,7 +79,26 @@ class VideoPlaybackStatusState extends Equatable {
     while (next.length > maxEntries) {
       next.remove(next.keys.first);
     }
-    return VideoPlaybackStatusState(maxEntries: maxEntries, statuses: next);
+    return VideoPlaybackStatusState(
+      maxEntries: maxEntries,
+      statuses: next,
+      verifyingIds: _verifyingIds,
+    );
+  }
+
+  /// Returns a new state with [eventId]'s verifying flag set to [verifying].
+  VideoPlaybackStatusState withVerifying(String eventId, bool verifying) {
+    final next = Set<String>.from(_verifyingIds);
+    if (verifying) {
+      next.add(eventId);
+    } else {
+      next.remove(eventId);
+    }
+    return VideoPlaybackStatusState(
+      maxEntries: maxEntries,
+      statuses: _statuses,
+      verifyingIds: next,
+    );
   }
 
   /// Returns a cleared state (used when switching feed modes).
@@ -84,7 +115,7 @@ class VideoPlaybackStatusState extends Equatable {
     // `_statuses.keys.toList()` catches those insertion-order changes.
     // Removing either would silently suppress a whole class of state
     // updates — do not "simplify" this.
-    return [_statuses, _statuses.keys.toList(), maxEntries];
+    return [_statuses, _statuses.keys.toList(), maxEntries, _verifyingIds];
   }
 }
 

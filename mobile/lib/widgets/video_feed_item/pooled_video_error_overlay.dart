@@ -28,6 +28,7 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
     required this.onRetry,
     required this.errorType,
     this.onVerifyAge,
+    this.isVerifying = false,
     this.shouldPortraitExpand = true,
     this.isSquare = false,
     super.key,
@@ -36,6 +37,11 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
   final VideoEvent video;
   final VoidCallback onRetry;
   final VoidCallback? onVerifyAge;
+
+  /// Whether an age-verification retry is in flight. Shows the Verify age
+  /// button's loading state (which also disables it, preventing double taps).
+  final bool isVerifying;
+
   final VideoErrorType? errorType;
 
   /// Mirrors `InfiniteVideoFeed.shouldPortraitExpand`. When `false`, the
@@ -165,7 +171,10 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
                     label: context.l10n.videoErrorVerifyAgeButton,
                     type: DivineButtonType.tertiary,
                     size: DivineButtonSize.small,
-                    onPressed: onVerifyAge,
+                    // Disabled while a retry is in flight so a second tap
+                    // can't kick off a duplicate verification.
+                    onPressed: isVerifying ? null : onVerifyAge,
+                    isLoading: isVerifying,
                   ),
                 if (showRetry)
                   DivineButton(

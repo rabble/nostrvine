@@ -21,6 +21,7 @@ class ModeratedContentOverlay extends StatelessWidget {
     required this.status,
     required this.onSkip,
     this.onVerifyAge,
+    this.isVerifying = false,
     super.key,
   }) : assert(
          status == PlaybackStatus.forbidden ||
@@ -41,6 +42,10 @@ class ModeratedContentOverlay extends StatelessWidget {
   /// Called when the user taps Verify age. Must be non-null when [status]
   /// is [PlaybackStatus.ageRestricted] — enforced by an assertion.
   final VoidCallback? onVerifyAge;
+
+  /// Whether an age-verification retry is in flight. Shows the Verify age
+  /// button's loading state (which also disables it, preventing double taps).
+  final bool isVerifying;
 
   bool get _isAgeRestricted => status == PlaybackStatus.ageRestricted;
 
@@ -81,7 +86,10 @@ class ModeratedContentOverlay extends StatelessWidget {
                 if (_isAgeRestricted && onVerifyAge != null)
                   DivineButton(
                     label: context.l10n.videoErrorVerifyAgeButton,
-                    onPressed: onVerifyAge,
+                    // Disabled while a retry is in flight so a second tap
+                    // can't kick off a duplicate verification.
+                    onPressed: isVerifying ? null : onVerifyAge,
+                    isLoading: isVerifying,
                   ),
                 DivineButton(
                   label: context.l10n.videoErrorSkip,

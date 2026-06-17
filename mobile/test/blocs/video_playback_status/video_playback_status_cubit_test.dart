@@ -100,6 +100,54 @@ void main() {
       expect: () => hasLength(1),
     );
 
+    group('verifying', () {
+      test('markVerifying / clearVerifying toggle the flag', () {
+        final cubit = VideoPlaybackStatusCubit();
+        expect(cubit.state.isVerifying(id1), isFalse);
+
+        cubit.markVerifying(id1);
+        expect(cubit.state.isVerifying(id1), isTrue);
+        expect(cubit.state.isVerifying(id2), isFalse);
+
+        cubit.clearVerifying(id1);
+        expect(cubit.state.isVerifying(id1), isFalse);
+      });
+
+      blocTest<VideoPlaybackStatusCubit, VideoPlaybackStatusState>(
+        'markVerifying short-circuits when already verifying',
+        build: VideoPlaybackStatusCubit.new,
+        act: (cubit) {
+          cubit.markVerifying(id1);
+          cubit.markVerifying(id1);
+        },
+        expect: () => hasLength(1),
+      );
+
+      blocTest<VideoPlaybackStatusCubit, VideoPlaybackStatusState>(
+        'clearVerifying short-circuits when not verifying',
+        build: VideoPlaybackStatusCubit.new,
+        act: (cubit) => cubit.clearVerifying(id1),
+        expect: () => isEmpty,
+      );
+
+      test('reporting a status preserves an in-flight verifying flag', () {
+        final cubit = VideoPlaybackStatusCubit();
+        cubit.markVerifying(id1);
+        cubit.report(id1, PlaybackStatus.ready);
+
+        expect(cubit.state.isVerifying(id1), isTrue);
+        expect(cubit.state.statusFor(id1), PlaybackStatus.ready);
+      });
+
+      test('clear() drops verifying flags', () {
+        final cubit = VideoPlaybackStatusCubit();
+        cubit.markVerifying(id1);
+        cubit.clear();
+
+        expect(cubit.state.isVerifying(id1), isFalse);
+      });
+    });
+
     group('playbackStatusFromError', () {
       test('maps each VideoErrorType to the expected PlaybackStatus', () {
         expect(
