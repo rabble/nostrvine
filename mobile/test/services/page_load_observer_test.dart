@@ -1,11 +1,8 @@
+import 'package:analytics/analytics.dart';
 import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/services/analytics_event_sink.dart';
-import 'package:openvine/services/analytics_surface.dart';
-import 'package:openvine/services/page_load_observer.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 class _RecordingAnalyticsEventSink implements AnalyticsEventSink {

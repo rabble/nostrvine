@@ -2,8 +2,8 @@
 // ABOUTME: Verifies sessions older than 60s are discarded and resetAllSessions
 // ABOUTME: clears all active sessions on app resume.
 
+import 'package:analytics/analytics.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/feed_performance_tracker.dart';
 
 void main() {
   group(FeedPerformanceTracker, () {

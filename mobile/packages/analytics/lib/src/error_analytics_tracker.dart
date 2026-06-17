@@ -1,7 +1,8 @@
 // ABOUTME: Comprehensive error and exception analytics tracking
 // ABOUTME: Tracks errors, exceptions, network failures, and user-facing issues with full context
 
-import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:analytics/src/analytics_event_sink.dart';
+import 'package:analytics/src/firebase_analytics_event_sink.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -12,9 +13,7 @@ class ErrorAnalyticsTracker {
   factory ErrorAnalyticsTracker() => _instance;
   ErrorAnalyticsTracker._internal();
 
-  // Lazy initialization to avoid Firebase dependency during construction
-  FirebaseAnalytics? _analytics;
-  FirebaseAnalytics get analytics => _analytics ??= FirebaseAnalytics.instance;
+  final AnalyticsEventSink _analytics = FirebaseAnalyticsEventSink();
 
   final Map<String, int> _errorCounts = {};
 
@@ -41,7 +40,7 @@ class ErrorAnalyticsTracker {
     );
 
     // Log to Firebase Analytics
-    analytics.logEvent(
+    _analytics.logEvent(
       name: 'app_error',
       parameters: {
         'error_type': errorType,
@@ -87,7 +86,7 @@ class ErrorAnalyticsTracker {
       name: 'ErrorAnalytics',
     );
 
-    analytics.logEvent(
+    _analytics.logEvent(
       name: 'feed_load_error',
       parameters: {
         'feed_type': feedType,
@@ -116,7 +115,7 @@ class ErrorAnalyticsTracker {
       name: 'ErrorAnalytics',
     );
 
-    analytics.logEvent(
+    _analytics.logEvent(
       name: 'operation_timeout',
       parameters: {
         'operation': operation,
@@ -142,7 +141,7 @@ class ErrorAnalyticsTracker {
       name: 'ErrorAnalytics',
     );
 
-    analytics.logEvent(
+    _analytics.logEvent(
       name: 'network_error',
       parameters: {
         'operation': operation,
@@ -171,7 +170,7 @@ class ErrorAnalyticsTracker {
       name: 'ErrorAnalytics',
     );
 
-    analytics.logEvent(
+    _analytics.logEvent(
       name: 'relay_error',
       parameters: {
         'relay_url': Uri.tryParse(relayUrl)?.host ?? 'unknown',
@@ -194,7 +193,7 @@ class ErrorAnalyticsTracker {
     String? videoUrl,
     int? attemptTimeMs,
   }) {
-    analytics.logEvent(
+    _analytics.logEvent(
       name: 'video_playback_error',
       parameters: {
         'video_id': videoId,
@@ -223,7 +222,7 @@ class ErrorAnalyticsTracker {
       name: 'ErrorAnalytics',
     );
 
-    analytics.logEvent(
+    _analytics.logEvent(
       name: 'slow_operation',
       parameters: {
         'operation': operation,
@@ -243,7 +242,7 @@ class ErrorAnalyticsTracker {
     required String location,
     String? actionTaken, // 'retry_shown', 'dismissed', 'error_page'
   }) {
-    analytics.logEvent(
+    _analytics.logEvent(
       name: 'user_facing_error',
       parameters: {
         'error_type': errorType,

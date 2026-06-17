@@ -1,7 +1,8 @@
 // ABOUTME: Feed performance and user engagement analytics
 // ABOUTME: Tracks video feed load times, scroll behavior, and video discovery metrics
 
-import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:analytics/src/analytics_event_sink.dart';
+import 'package:analytics/src/firebase_analytics_event_sink.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:profile_repository/profile_repository.dart'
     show
@@ -24,7 +25,7 @@ const _maxSessionAge = Duration(seconds: 60);
 /// Service for tracking feed performance and user engagement
 class FeedPerformanceTracker {
   factory FeedPerformanceTracker() => _instance ??= FeedPerformanceTracker._();
-  FeedPerformanceTracker._() : _bypassAnalytics = false;
+  FeedPerformanceTracker._() : _analytics = _resolveDefaultSink();
 
   static FeedPerformanceTracker? _instance;
 
@@ -37,27 +38,22 @@ class FeedPerformanceTracker {
     _instance = null;
   }
 
-  /// Creates a testable instance that does not touch [FirebaseAnalytics].
+  /// Creates a testable instance that does not touch Firebase.
+  ///
+  /// Pass a [sink] to assert on emitted events; defaults to a no-op sink.
   @visibleForTesting
-  FeedPerformanceTracker.testInstance({FirebaseAnalytics? analytics})
-    : _analyticsOverride = analytics,
-      _bypassAnalytics = true;
+  FeedPerformanceTracker.testInstance({AnalyticsEventSink? sink})
+    : _analytics = sink ?? const NoOpAnalyticsEventSink();
 
-  // Lazy-init to avoid crashing when Firebase isn't initialized (e.g. tests).
-  FirebaseAnalytics? _analyticsOverride;
-  FirebaseAnalytics? _analyticsInstance;
-  final bool _bypassAnalytics;
+  final AnalyticsEventSink _analytics;
 
-  FirebaseAnalytics? get _analytics {
-    if (_bypassAnalytics) return _analyticsOverride;
-    return _analyticsOverride ?? (_analyticsInstance ??= _initAnalytics());
-  }
-
-  static FirebaseAnalytics? _initAnalytics() {
+  /// Resolves the production sink, falling back to a no-op when Firebase is
+  /// not initialized (e.g. during tests that construct the singleton).
+  static AnalyticsEventSink _resolveDefaultSink() {
     try {
-      return FirebaseAnalytics.instance;
+      return FirebaseAnalyticsEventSink();
     } catch (_) {
-      return null;
+      return const NoOpAnalyticsEventSink();
     }
   }
 
@@ -119,7 +115,7 @@ class FeedPerformanceTracker {
       name: 'FeedPerformance',
     );
 
-    _analytics?.logEvent(
+    _analytics.logEvent(
       name: 'feed_first_batch_received',
       parameters: {
         'feed_type': feedType,
@@ -152,7 +148,7 @@ class FeedPerformanceTracker {
       name: 'FeedPerformance',
     );
 
-    _analytics?.logEvent(
+    _analytics.logEvent(
       name: 'feed_load_complete',
       parameters: {
         'feed_type': feedType,
@@ -169,7 +165,7 @@ class FeedPerformanceTracker {
 
   /// Track feed refresh action
   void trackFeedRefresh(String feedType, {String? trigger}) {
-    _analytics?.logEvent(
+    _analytics.logEvent(
       name: 'feed_refresh',
       parameters: {'feed_type': feedType, 'trigger': ?trigger},
     );
@@ -187,7 +183,7 @@ class FeedPerformanceTracker {
     required int newCount,
     required int loadTimeMs,
   }) {
-    _analytics?.logEvent(
+    _analytics.logEvent(
       name: 'feed_load_more',
       parameters: {
         'feed_type': feedType,
@@ -210,7 +206,7 @@ class FeedPerformanceTracker {
     required int totalVideos,
     required double scrollPercentage,
   }) {
-    _analytics?.logEvent(
+    _analytics.logEvent(
       name: 'feed_scroll_depth',
       parameters: {
         'feed_type': feedType,
@@ -229,7 +225,7 @@ class FeedPerformanceTracker {
     required int positionInFeed,
     int? watchDurationMs,
   }) {
-    _analytics?.logEvent(
+    _analytics.logEvent(
       name: 'feed_video_engagement',
       parameters: {
         'feed_type': feedType,
@@ -243,7 +239,7 @@ class FeedPerformanceTracker {
 
   /// Track empty feed state
   void trackEmptyFeed(String feedType, {String? reason}) {
-    _analytics?.logEvent(
+    _analytics.logEvent(
       name: 'feed_empty',
       parameters: {'feed_type': feedType, 'reason': ?reason},
     );
@@ -260,7 +256,7 @@ class FeedPerformanceTracker {
     required String errorType,
     required String errorMessage,
   }) {
-    _analytics?.logEvent(
+    _analytics.logEvent(
       name: 'feed_error',
       parameters: {
         'feed_type': feedType,
@@ -284,7 +280,7 @@ class FeedPerformanceTracker {
     required String filterType,
     required int resultCount,
   }) {
-    _analytics?.logEvent(
+    _analytics.logEvent(
       name: 'feed_filter',
       parameters: {
         'feed_type': feedType,
@@ -335,7 +331,7 @@ class FeedPerformanceTracker {
         parameters['reason'] = reason.name;
         parameters['latency_ms'] = latencyMs;
     }
-    _analytics?.logEvent(name: 'user_search_source', parameters: parameters);
+    _analytics.logEvent(name: 'user_search_source', parameters: parameters);
   }
 
   /// Track video discovery source
@@ -345,7 +341,7 @@ class FeedPerformanceTracker {
     discoverySource, // 'home_feed', 'explore', 'hashtag', 'profile', 'search'
     int? positionInList,
   }) {
-    _analytics?.logEvent(
+    _analytics.logEvent(
       name: 'video_discovered',
       parameters: {
         'video_id': videoId,

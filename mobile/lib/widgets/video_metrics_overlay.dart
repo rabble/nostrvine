@@ -2,10 +2,11 @@
 // ABOUTME: Shows real-time performance data when videos load, bypassing console logging issues
 
 import 'dart:async';
+
+import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/services/video_loading_metrics.dart';
 
 /// Visual overlay showing video loading metrics in development builds
 /// Fixed to avoid Stack Overflow errors by using StreamBuilder instead of setState

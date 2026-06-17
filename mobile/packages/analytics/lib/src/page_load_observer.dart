@@ -1,9 +1,9 @@
 // ABOUTME: NavigatorObserver that tracks page load performance via ScreenAnalyticsService
 // ABOUTME: Records screen load start on push, content visible after frame render, and cleanup on pop
 
+import 'package:analytics/src/analytics_surface.dart';
+import 'package:analytics/src/screen_analytics_service.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/services/analytics_surface.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class PageLoadObserver extends NavigatorObserver {

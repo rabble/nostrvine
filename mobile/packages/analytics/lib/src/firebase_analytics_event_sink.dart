@@ -1,7 +1,7 @@
 // ABOUTME: Firebase-backed implementation of the analytics event sink.
 
+import 'package:analytics/src/analytics_event_sink.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:openvine/services/analytics_event_sink.dart';
 
 class FirebaseAnalyticsEventSink implements AnalyticsEventSink {
   FirebaseAnalyticsEventSink({FirebaseAnalytics? analytics})

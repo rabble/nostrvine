@@ -1,12 +1,12 @@
 // ABOUTME: BLoC for searching hashtags via HashtagRepository (Funnelcake API).
 // ABOUTME: Debounces queries and delegates to server-side hashtag search.
 
+import 'package:analytics/analytics.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:openvine/constants/search_constants.dart';
-import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:stream_transform/stream_transform.dart';
 
 part 'hashtag_search_event.dart';

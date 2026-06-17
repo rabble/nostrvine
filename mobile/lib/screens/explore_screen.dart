@@ -1,6 +1,7 @@
 // ABOUTME: Explore screen with proper Vine theme and video grid functionality
 // ABOUTME: Pure Riverpod architecture for video discovery with grid/feed modes
 
+import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -27,9 +28,6 @@ import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
-import 'package:openvine/services/error_analytics_tracker.dart';
-import 'package:openvine/services/feed_performance_tracker.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';

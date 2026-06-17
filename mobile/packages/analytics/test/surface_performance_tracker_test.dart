@@ -1,11 +1,8 @@
 // ABOUTME: Tests for user-visible surface performance analytics.
 // ABOUTME: Verifies terminal surface_load events and stale session cleanup.
 
+import 'package:analytics/analytics.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/analytics_event_sink.dart';
-import 'package:openvine/services/analytics_surface.dart';
-import 'package:openvine/services/page_load_history.dart';
-import 'package:openvine/services/surface_performance_tracker.dart';
 
 class RecordingAnalyticsEventSink implements AnalyticsEventSink {
   final events = <({String name, Map<String, Object> parameters})>[];

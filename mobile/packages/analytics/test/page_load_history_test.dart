@@ -1,5 +1,5 @@
+import 'package:analytics/analytics.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/page_load_history.dart';
 
 void main() {
   group(PageLoadHistory, () {

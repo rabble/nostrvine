@@ -23,6 +23,7 @@ environment:
   flutter: ^3.44.0
 
 workspace:
+  - packages/analytics
   - packages/app_update_repository
   - packages/app_version_client
   - packages/blossom_upload_service
@@ -86,6 +87,9 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+
+  # Analytics — unified event schema and the single Firebase analytics surface.
+  analytics:
 
   blossom_upload_service:
 
@@ -272,7 +276,6 @@ dependencies:
   window_manager: ^0.5.1
   firebase_core: ^4.4.0
   firebase_crashlytics: ^5.0.7
-  firebase_analytics: ^12.1.2
   go_router: ^16.2.4
   # Runtime splash-screen control via FlutterNativeSplash.preserve/remove.
   # Used ONLY for the runtime API — do NOT add a flutter_native_splash:

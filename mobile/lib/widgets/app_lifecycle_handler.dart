@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:analytics/analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,9 +15,6 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/background_activity_manager.dart';
-import 'package:openvine/services/feed_performance_tracker.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/services/surface_performance_tracker.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:unified_logger/unified_logger.dart';
 

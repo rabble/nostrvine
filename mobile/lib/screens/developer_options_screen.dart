@@ -3,6 +3,7 @@
 // ABOUTME: Shows page load performance timing data for debugging
 // ABOUTME: Includes video format selector for A/B testing server-side formats
 
+import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -16,7 +17,6 @@ import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
-import 'package:openvine/services/page_load_history.dart';
 import 'package:openvine/services/video_format_preference.dart';
 import 'package:unified_logger/unified_logger.dart';
 

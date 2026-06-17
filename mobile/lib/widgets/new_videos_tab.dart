@@ -1,6 +1,7 @@
 // ABOUTME: New Videos tab widget showing recent videos sorted by time
 // ABOUTME: Extracted from ExploreScreen for better separation of concerns
 
+import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
@@ -12,9 +13,6 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/feed_repository_provider.dart';
 import 'package:openvine/providers/new_videos_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/services/error_analytics_tracker.dart';
-import 'package:openvine/services/feed_performance_tracker.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';

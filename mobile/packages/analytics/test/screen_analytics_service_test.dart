@@ -2,10 +2,8 @@
 // ABOUTME: Verifies sessions older than 60s are discarded and resetAllSessions
 // ABOUTME: clears all active sessions on app resume.
 
+import 'package:analytics/analytics.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/analytics_event_sink.dart';
-import 'package:openvine/services/analytics_surface.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
 
 class RecordingAnalyticsEventSink implements AnalyticsEventSink {
   final events = <({String name, Map<String, Object> parameters})>[];

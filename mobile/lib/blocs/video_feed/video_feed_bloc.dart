@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:analytics/analytics.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
@@ -13,15 +14,14 @@ import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/video_feed/home_feed_cache.dart';
 import 'package:openvine/blocs/video_feed/home_feed_resume_manager.dart';
-import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
+part 'feed_mode_preference_store.dart';
 part 'video_feed_event.dart';
 part 'video_feed_state.dart';
-part 'feed_mode_preference_store.dart';
 
 /// Default interval between auto-refreshes of the home feed.
 const _defaultAutoRefreshMinInterval = Duration(minutes: 10);

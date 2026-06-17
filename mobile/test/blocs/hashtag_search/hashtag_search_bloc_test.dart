@@ -1,13 +1,13 @@
 // ABOUTME: Tests for HashtagSearchBloc - hashtag search via HashtagRepository.
 // ABOUTME: Tests loading states, error handling, debouncing, and API delegation.
 
+import 'package:analytics/analytics.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
-import 'package:openvine/services/feed_performance_tracker.dart';
 
 class _MockHashtagRepository extends Mock implements HashtagRepository {}
 

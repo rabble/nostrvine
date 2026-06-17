@@ -3,6 +3,7 @@
 // ABOUTME: via MultiBlocProvider and exercises a content widget that mirrors
 // ABOUTME: the production screen.
 
+import 'package:analytics/analytics.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -21,11 +22,8 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/comments.dart';
-import 'package:openvine/services/analytics_event_sink.dart';
-import 'package:openvine/services/analytics_surface.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/social_service.dart';
-import 'package:openvine/services/surface_performance_tracker.dart';
 
 import '../../builders/comment_builder.dart';
 import '../../helpers/test_helpers.dart';

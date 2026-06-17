@@ -3,11 +3,11 @@
 
 import 'dart:async';
 
+import 'package:analytics/src/analytics_event_sink.dart';
+import 'package:analytics/src/firebase_analytics_event_sink.dart';
+import 'package:analytics/src/page_load_history.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
-import 'package:openvine/services/analytics_event_sink.dart';
-import 'package:openvine/services/firebase_analytics_event_sink.dart';
-import 'package:openvine/services/page_load_history.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Maximum age for a session before it is considered stale and discarded.

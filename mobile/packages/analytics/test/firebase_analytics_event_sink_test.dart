@@ -1,7 +1,7 @@
+import 'package:analytics/analytics.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/services/firebase_analytics_event_sink.dart';
 
 class _MockFirebaseAnalytics extends Mock implements FirebaseAnalytics {}
 

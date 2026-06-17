@@ -1,5 +1,5 @@
+import 'package:analytics/analytics.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/analytics_surface.dart';
 
 void main() {
   group('AnalyticsSurface', () {

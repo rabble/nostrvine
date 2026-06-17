@@ -1,7 +1,6 @@
 // ABOUTME: Comments-specific adapter for surface performance analytics.
 
-import 'package:openvine/services/analytics_surface.dart';
-import 'package:openvine/services/surface_performance_tracker.dart';
+import 'package:analytics/analytics.dart';
 
 class CommentsSurfacePerformanceTelemetry {
   CommentsSurfacePerformanceTelemetry()

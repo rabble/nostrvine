@@ -1,9 +1,9 @@
 // ABOUTME: Tests for FeedPerformanceTracker swipe convenience methods.
 // ABOUTME: Verifies video swipe tracking delegates to correct feed types.
 
+import 'package:analytics/analytics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockFeedPerformanceTracker extends Mock

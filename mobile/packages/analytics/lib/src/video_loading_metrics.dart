@@ -1,12 +1,19 @@
 // ABOUTME: Comprehensive video loading performance metrics and analytics
 // ABOUTME: Tracks video loading bottlenecks from initialization to first frame playback
 
-import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:analytics/src/analytics_event_sink.dart';
+import 'package:analytics/src/feed_performance_tracker.dart';
+import 'package:analytics/src/firebase_analytics_event_sink.dart';
 import 'package:flutter/foundation.dart';
+import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/services/feed_performance_tracker.dart';
-import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Supplies the current media-cache metrics for periodic reporting.
+///
+/// The app wires this to its media-cache singleton so the analytics package
+/// stays decoupled from the app's cache instance.
+typedef CacheMetricsProvider = CacheMetrics Function();
 
 /// Tracks different stages of video loading for performance analysis
 class VideoLoadingMetrics {
@@ -14,8 +21,14 @@ class VideoLoadingMetrics {
   factory VideoLoadingMetrics() => _instance;
   VideoLoadingMetrics._internal();
 
-  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+  final AnalyticsEventSink _analytics = FirebaseAnalyticsEventSink();
   final Map<String, _VideoLoadingSession> _activeSessions = {};
+
+  /// Optional source of media-cache metrics, wired by the app at startup.
+  ///
+  /// When null, periodic cache-metrics reporting is skipped (keeps the
+  /// package usable without a cache, e.g. in tests).
+  CacheMetricsProvider? cacheMetricsProvider;
 
   // Add a static variable to count metrics for visibility
   static int _metricsCount = 0;
@@ -464,8 +477,9 @@ class VideoLoadingMetrics {
   /// (e.g., on app background).
   void reportCacheMetrics() {
     if (kIsWeb) return;
-    final metrics = openVineMediaCache.metrics;
-    final metricsMap = metrics.toMap();
+    final provider = cacheMetricsProvider;
+    if (provider == null) return;
+    final metricsMap = provider().toMap();
 
     _analytics.logEvent(
       name: 'video_cache_performance',

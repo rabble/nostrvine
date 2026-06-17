@@ -1,0 +1,28 @@
+name: analytics
+description: Unified analytics event schema and a single Firebase analytics surface.
+version: 0.1.0+1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_analytics: ^12.1.2
+  firebase_crashlytics: ^5.0.7
+  media_cache:
+    path: ../media_cache
+  models:
+    path: ../models
+  profile_repository:
+    path: ../profile_repository
+  unified_logger:
+    path: ../unified_logger
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^10.2.0
+  mocktail: any
