@@ -594,8 +594,8 @@ class ConfigurationOptimizer {
 ### Deployment Steps
 1. **Deploy to Staging**
    ```bash
-   # Deploy to staging environment
-   ./deploy.sh staging
+   # Web deploys run from CI (.github/workflows/mobile_web_*),
+   # not the removed ./deploy.sh script.
    
    # Run full test suite
    flutter test test/integration/

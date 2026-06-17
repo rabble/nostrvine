@@ -7,10 +7,10 @@ Status: Historical
 
 ## 🚀 Quick Start
 
-Run the deployment script:
-```bash
-./deploy.sh
-```
+Web deploys run from CI, not a local script. Production web is built and
+deployed by `.github/workflows/mobile_web_production_deploy.yml`; PR
+previews by `mobile_pr_preview_build.yml` + `mobile_pr_preview_deploy.yml`.
+The legacy `./deploy.sh` / `./deploy-openvine-web.sh` scripts were removed.
 
 ## ✅ Pre-Deployment Checklist
 
