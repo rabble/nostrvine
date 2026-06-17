@@ -2891,7 +2891,14 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     // Backfill _authorBuckets with videos by this author that already exist in other subscription types
     // This handles the case where the user's videos were already loaded in discovery/home feeds
     // Also includes reposts BY this user (where reposterPubkey matches)
+    //
+    // Membership is checked against a Set built once (O(M) total) rather than
+    // a per-video `bucket.any` linear scan (O(M×N), with two toLowerCase
+    // allocations per comparison). This loop runs synchronously on the main
+    // thread on every subscribe call, so for an author with many videos and a
+    // large cross-feed cache the quadratic form blocked the UI for seconds.
     final bucket = _authorBuckets.putIfAbsent(pubkey, () => []);
+    final seenBucketIds = {for (final e in bucket) e.id.toLowerCase()};
     for (final eventList in _eventLists.values) {
       for (final video in eventList) {
         // Include original videos by this author
@@ -2899,10 +2906,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         // Include reposts made by this author
         final isRepostByAuthor =
             video.isRepost && video.reposterPubkey == pubkey;
+        if (!isOriginalByAuthor && !isRepostByAuthor) continue;
 
-        // Use case-insensitive ID comparison for consistent deduplication
-        if ((isOriginalByAuthor || isRepostByAuthor) &&
-            !bucket.any((e) => e.id.toLowerCase() == video.id.toLowerCase())) {
+        // Set.add returns false when the (case-insensitive) ID is already
+        // present, giving O(1) dedup in place of the previous linear scan.
+        if (seenBucketIds.add(video.id.toLowerCase())) {
           bucket.add(video);
         }
       }
