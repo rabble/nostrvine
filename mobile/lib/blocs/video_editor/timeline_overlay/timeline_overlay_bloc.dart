@@ -175,7 +175,14 @@ class TimelineOverlayBloc
     Float32List? leftChannel,
     Float32List? rightChannel,
   }) {
-    final sourceDuration = track.duration != null
+    // Treat a non-positive duration as "unknown" — matching
+    // _resolveSoundDurationSecs / _healMissingAudioDurations, which key off
+    // `(duration ?? 0) <= 0`. A persisted-but-zero duration must NOT become a
+    // zero-length sourceDuration: that would drive maxDuration to <= 0 and let
+    // a trim gesture immediately collapse the now-visible bar back to nothing.
+    // Falling through to null gives it the maxDuration fallback below instead.
+    final hasDuration = (track.duration ?? 0) > 0;
+    final sourceDuration = hasDuration
         ? Duration(milliseconds: (track.duration! * 1000).round())
         : null;
 

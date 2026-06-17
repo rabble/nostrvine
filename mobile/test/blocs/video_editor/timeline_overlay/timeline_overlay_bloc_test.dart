@@ -357,6 +357,41 @@ void main() {
       );
 
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'treats a zero duration as unknown so a trim cannot collapse the bar',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
+            // A persisted-but-zero duration must be normalized to "unknown",
+            // otherwise sourceDuration becomes zero and maxDuration <= 0, which
+            // a trim gesture would use to collapse the now-visible bar.
+            audioTracks: [
+              _audioEvent(
+                id: 'sound-1',
+                start: Duration.zero,
+                end: Duration.zero,
+              ).copyWith(duration: 0),
+            ],
+            totalVideoDuration: const Duration(seconds: 12),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>()
+              .having(
+                (s) => s.items.first.sourceDuration,
+                'sourceDuration',
+                isNull,
+              )
+              .having(
+                (s) => s.items.first.maxDuration,
+                'maxDuration',
+                VideoEditorConstants.maxDuration,
+              ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
         'clears selection when not trimming',
         build: TimelineOverlayBloc.new,
         seed: () => const TimelineOverlayState(selectedItemId: 'sound-1'),
