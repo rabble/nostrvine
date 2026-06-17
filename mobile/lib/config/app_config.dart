@@ -5,7 +5,7 @@ class AppConfig {
   // Backend configuration
   static const String backendBaseUrl = String.fromEnvironment(
     'BACKEND_URL',
-    defaultValue: 'https://api.openvine.co',
+    defaultValue: 'https://api.divine.video',
   );
 
   static const String inviteServerBaseUrl = String.fromEnvironment(

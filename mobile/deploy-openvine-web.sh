@@ -49,7 +49,7 @@ build_web() {
         --release \
         --tree-shake-icons \
         --optimization-level=4 \
-        --dart-define=BACKEND_URL=https://api.openvine.co \
+        --dart-define=BACKEND_URL=https://api.divine.video \
         --dart-define=ENVIRONMENT=production \
         --no-source-maps
     
@@ -143,7 +143,7 @@ main() {
 # Show current configuration
 echo -e "\n${BLUE}Current Configuration:${NC}"
 echo -e "  App Name: OpenVine"
-echo -e "  Backend API: https://api.openvine.co"
+echo -e "  Backend API: https://api.divine.video"
 echo -e "  Target Domain: https://app.openvine.co"
 echo -e "  Project: openvine-app (Cloudflare Pages)"
 

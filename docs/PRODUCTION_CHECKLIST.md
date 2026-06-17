@@ -63,14 +63,14 @@ wrangler deploy --env production
 ### 6. Configure Stream Webhooks
 1. Go to Cloudflare Dashboard → Stream → Settings → Webhooks
 2. Add webhook:
-   - URL: `https://api.openvine.co/v1/webhooks/stream-complete`
+   - URL: `https://api.divine.video/v1/webhooks/stream-complete`
    - Secret: (use the STREAM_WEBHOOK_SECRET from step 4)
    - Events: ✓ Video ready to stream
 
 ### 7. Update Mobile App
 Edit `mobile/lib/config/app_config.dart`:
 ```dart
-static const String backendBaseUrl = 'https://api.openvine.co';
+static const String backendBaseUrl = 'https://api.divine.video';
 ```
 
 ### 8. Build & Deploy Apps
@@ -78,13 +78,13 @@ static const String backendBaseUrl = 'https://api.openvine.co';
 cd mobile
 
 # Android
-flutter build apk --release --dart-define=BACKEND_URL=https://api.openvine.co
+flutter build apk --release --dart-define=BACKEND_URL=https://api.divine.video
 
 # iOS (macOS only)
-flutter build ios --release --dart-define=BACKEND_URL=https://api.openvine.co
+flutter build ios --release --dart-define=BACKEND_URL=https://api.divine.video
 
 # Web
-flutter build web --release --dart-define=BACKEND_URL=https://api.openvine.co
+flutter build web --release --dart-define=BACKEND_URL=https://api.divine.video
 npx wrangler pages deploy build/web --project-name nostrvine-web
 ```
 
@@ -92,7 +92,7 @@ npx wrangler pages deploy build/web --project-name nostrvine-web
 
 ### 1. Backend Health Check
 ```bash
-curl https://api.openvine.co/health
+curl https://api.divine.video/health
 ```
 
 ### 2. Test Video Upload Flow
@@ -125,10 +125,10 @@ wrangler tail --env production
 
 ## 📊 Production URLs
 
-- **Backend API**: https://api.openvine.co
-- **Health Check**: https://api.openvine.co/health
+- **Backend API**: https://api.divine.video
+- **Health Check**: https://api.divine.video/health
 - **Web App**: https://app.openvine.co (after Pages deployment)
-- **Analytics**: https://api.openvine.co/api/analytics/dashboard
+- **Analytics**: https://api.divine.video/api/analytics/dashboard
 
 ## 💰 Cost Monitoring
 

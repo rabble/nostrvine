@@ -86,7 +86,7 @@ fi
 
 # Check API configuration
 echo -e "\n${YELLOW}Checking API configuration...${NC}"
-if grep -q "api.openvine.co" lib/config/app_config.dart; then
+if grep -q "api.divine.video" lib/config/app_config.dart; then
     echo -e "${GREEN}✅ App configured for production API${NC}"
 else
     echo -e "${RED}❌ App not configured for production API${NC}"
@@ -124,5 +124,5 @@ fi
 # Show configured domains
 echo -e "\n${BLUE}Configured Domains:${NC}"
 echo -e "Web App: ${GREEN}https://app.openvine.co${NC}"
-echo -e "API: ${GREEN}https://api.openvine.co${NC}"
-echo -e "Staging API: ${GREEN}https://staging-api.openvine.co${NC}"
+echo -e "API: ${GREEN}https://api.divine.video${NC}"
+echo -e "Staging API: ${GREEN}https://api.staging.divine.video${NC}"

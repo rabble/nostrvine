@@ -91,7 +91,7 @@ case $choice in
         
         # Update backend URL for production
         echo "Using production backend URL..."
-        export BACKEND_URL="https://api.nostrvine.com"
+        export BACKEND_URL="https://api.divine.video"
         
         # Clean and build
         flutter clean
@@ -115,7 +115,7 @@ case $choice in
         
         # Update backend URL for production
         echo "Using production backend URL..."
-        export BACKEND_URL="https://api.nostrvine.com"
+        export BACKEND_URL="https://api.divine.video"
         
         # Clean and build
         flutter clean
@@ -132,7 +132,7 @@ case $choice in
         echo -e "\n${YELLOW}Building and deploying web app...${NC}"
         
         # Update backend URL for production
-        export BACKEND_URL="https://api.nostrvine.com"
+        export BACKEND_URL="https://api.divine.video"
         
         # Build web
         flutter clean
@@ -165,7 +165,7 @@ case $choice in
         
         # Check backend health
         echo -e "\nChecking backend health..."
-        BACKEND_URL=${BACKEND_URL:-"https://api.nostrvine.com"}
+        BACKEND_URL=${BACKEND_URL:-"https://api.divine.video"}
         
         if curl -s "$BACKEND_URL/health" | grep -q "healthy"; then
             echo -e "${GREEN}✅ Backend is healthy${NC}"
