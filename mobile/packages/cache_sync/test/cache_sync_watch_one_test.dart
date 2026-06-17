@@ -197,6 +197,47 @@ void main() {
       expect(events[0].data, equals(3));
     });
 
+    test('fetches live data when cache read fails', () async {
+      await CacheSync.init(dao: ThrowingCacheDao(throwOnRead: true));
+
+      final events = await CacheSync.watchOne<int>(
+        key: 'read:fails',
+        fetch: () async => 4,
+        fromJson: int.parse,
+        toJson: (v) => '$v',
+      ).toList();
+
+      expect(events, equals([const CacheResult.live(4)]));
+    });
+
+    test('fetches live data when corrupted cache delete fails', () async {
+      await CacheSync.init(
+        dao: ThrowingCacheDao(readPayload: 'bad', throwOnDelete: true),
+      );
+
+      final events = await CacheSync.watchOne<int>(
+        key: 'delete:fails',
+        fetch: () async => 5,
+        fromJson: int.parse,
+        toJson: (v) => '$v',
+      ).toList();
+
+      expect(events, equals([const CacheResult.live(5)]));
+    });
+
+    test('emits live data when cache write fails', () async {
+      await CacheSync.init(dao: ThrowingCacheDao(throwOnWrite: true));
+
+      final events = await CacheSync.watchOne<int>(
+        key: 'write:fails',
+        fetch: () async => 6,
+        fromJson: int.parse,
+        toJson: (v) => '$v',
+      ).toList();
+
+      expect(events, equals([const CacheResult.live(6)]));
+    });
+
     test('respects TTL option — writes entry with expiry', () async {
       await CacheSync.watchOne<int>(
         key: 'ttl:key',

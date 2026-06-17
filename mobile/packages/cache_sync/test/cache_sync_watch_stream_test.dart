@@ -201,6 +201,47 @@ void main() {
       expect(dao.rawRead('ws:corrupt'), equals('42'));
     });
 
+    test('serves live events when cache read fails', () async {
+      await CacheSync.init(dao: ThrowingCacheDao(throwOnRead: true));
+
+      final events = await CacheSync.watchStream<int>(
+        key: 'ws:read:fails',
+        source: () => Stream.value(4),
+        fromJson: int.parse,
+        toJson: (v) => '$v',
+      ).toList();
+
+      expect(events, equals([const CacheResult.live(4)]));
+    });
+
+    test('serves live events when corrupted cache delete fails', () async {
+      await CacheSync.init(
+        dao: ThrowingCacheDao(readPayload: 'bad', throwOnDelete: true),
+      );
+
+      final events = await CacheSync.watchStream<int>(
+        key: 'ws:delete:fails',
+        source: () => Stream.value(5),
+        fromJson: int.parse,
+        toJson: (v) => '$v',
+      ).toList();
+
+      expect(events, equals([const CacheResult.live(5)]));
+    });
+
+    test('emits live events when cache write fails', () async {
+      await CacheSync.init(dao: ThrowingCacheDao(throwOnWrite: true));
+
+      final events = await CacheSync.watchStream<int>(
+        key: 'ws:write:fails',
+        source: () => Stream.value(6),
+        fromJson: int.parse,
+        toJson: (v) => '$v',
+      ).toList();
+
+      expect(events, equals([const CacheResult.live(6)]));
+    });
+
     test(
       'cancelling outer subscription cancels source stream immediately',
       () async {

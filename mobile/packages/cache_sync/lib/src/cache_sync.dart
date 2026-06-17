@@ -208,14 +208,14 @@ abstract final class CacheSync {
     // 1. Serve from cache when applicable.
     var servedCachedValue = false;
     if (policy != CacheFetchPolicy.networkOnly) {
-      final cached = await _dao.read(key);
+      final cached = await _readPayloadBestEffort(key);
       if (cached != null && cached.isNotEmpty) {
         try {
           controller.add(CacheResult.cached(fromJson(cached)));
           servedCachedValue = true;
         } on Object {
           // Corrupted cache entry — ignore and fetch fresh.
-          await _dao.delete(key);
+          await _deletePayloadBestEffort(key);
         }
       }
     }
@@ -231,7 +231,7 @@ abstract final class CacheSync {
       final value = await fetch();
       final payload = toJson(value);
       if (payload.isNotEmpty) {
-        await _dao.write(key: key, payload: payload, ttl: ttl);
+        await _writePayloadBestEffort(key: key, payload: payload, ttl: ttl);
       }
       if (!controller.isClosed) {
         controller.add(CacheResult.live(value));
@@ -258,13 +258,13 @@ abstract final class CacheSync {
     // 1. Serve from cache when applicable.
     var servedCachedValue = false;
     if (policy != CacheFetchPolicy.networkOnly) {
-      final cached = await _dao.read(key);
+      final cached = await _readPayloadBestEffort(key);
       if (cached != null && cached.isNotEmpty) {
         try {
           controller.add(CacheResult.cached(fromJson(cached)));
           servedCachedValue = true;
         } on Object {
-          await _dao.delete(key);
+          await _deletePayloadBestEffort(key);
         }
       }
     }
@@ -278,15 +278,17 @@ abstract final class CacheSync {
     // 2. Subscribe to source stream.
     if (controller.isClosed) return;
 
-    final iterator = StreamIterator<T>(source());
-    registerIterator(iterator);
+    StreamIterator<T>? iterator;
 
     try {
+      iterator = StreamIterator<T>(source());
+      registerIterator(iterator);
+
       while (!controller.isClosed && await iterator.moveNext()) {
         final value = iterator.current;
         final payload = toJson(value);
         if (payload.isNotEmpty) {
-          await _dao.write(key: key, payload: payload, ttl: ttl);
+          await _writePayloadBestEffort(key: key, payload: payload, ttl: ttl);
         }
         if (!controller.isClosed) {
           controller.add(CacheResult.live(value));
@@ -297,8 +299,36 @@ abstract final class CacheSync {
         controller.addError(e, st);
       }
     } finally {
-      await iterator.cancel();
+      await iterator?.cancel();
       if (!controller.isClosed) await controller.close();
+    }
+  }
+
+  static Future<String?> _readPayloadBestEffort(String key) async {
+    try {
+      return await _dao.read(key);
+    } on Object {
+      return null;
+    }
+  }
+
+  static Future<void> _writePayloadBestEffort({
+    required String key,
+    required String payload,
+    required Duration? ttl,
+  }) async {
+    try {
+      await _dao.write(key: key, payload: payload, ttl: ttl);
+    } on Object {
+      // Cache persistence is best-effort; callers must still receive live data.
+    }
+  }
+
+  static Future<void> _deletePayloadBestEffort(String key) async {
+    try {
+      await _dao.delete(key);
+    } on Object {
+      // Corrupt entries should not prevent a live refresh.
     }
   }
 }

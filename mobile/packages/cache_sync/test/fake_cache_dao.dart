@@ -72,6 +72,50 @@ class FakeCacheDao implements CacheDao {
   String? rawRead(String key) => _store[key]?.payload;
 }
 
+/// [CacheDao] test double that can fail individual storage operations.
+class ThrowingCacheDao implements CacheDao {
+  ThrowingCacheDao({
+    this.readPayload,
+    this.throwOnRead = false,
+    this.throwOnWrite = false,
+    this.throwOnDelete = false,
+  });
+
+  final String? readPayload;
+  final bool throwOnRead;
+  final bool throwOnWrite;
+  final bool throwOnDelete;
+
+  @override
+  Future<String?> read(String key) async {
+    if (throwOnRead) throw StateError('cache read failed');
+    return readPayload;
+  }
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {
+    if (throwOnWrite) throw StateError('cache write failed');
+  }
+
+  @override
+  Future<void> delete(String key) async {
+    if (throwOnDelete) throw StateError('cache delete failed');
+  }
+
+  @override
+  Future<void> deletePrefix(String prefix) async {}
+
+  @override
+  Future<int> totalPayloadBytes() async => 0;
+
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
+}
+
 class _Entry {
   _Entry({required this.payload, this.expiresAt})
     : cachedAt = DateTime.now().toUtc();
