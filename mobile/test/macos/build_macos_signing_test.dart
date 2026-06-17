@@ -10,23 +10,25 @@ void main() {
       script = File('build_macos.sh').readAsStringSync();
     });
 
-    test('debug builds are explicitly signed with expanded entitlements', () {
+    test('debug builds use Xcode signing and provisioning', () {
       expect(
         script,
-        contains(r'sign_macos_app "$DEBUG_APP_PATH" "debug"'),
+        contains('xcodebuild_signed_macos_app "debug"'),
         reason:
-            'Debug builds must not rely on Flutter ad-hoc signing because '
-            'Keychain-backed secure storage needs real entitlements.',
+            'Debug builds must not rely on Flutter ad-hoc signing or bare '
+            'manual codesign because Keychain-backed secure storage needs '
+            'real entitlements and a matching provisioning profile.',
       );
       expect(
         script,
-        contains('expand_macos_entitlements'),
+        contains('-allowProvisioningUpdates'),
         reason:
-            'The entitlements plist contains Xcode build-setting placeholders '
-            'that must be expanded before manual codesign.',
+            'Xcode needs permission to create or refresh the Mac team '
+            'provisioning profile for restricted entitlements.',
       );
-      expect(script, contains(r'$(AppIdentifierPrefix)'));
-      expect(script, contains(r'$(CFBundleIdentifier)'));
+      expect(script, contains('CODE_SIGNING_ALLOWED=YES'));
+      expect(script, contains('CODE_SIGNING_REQUIRED=YES'));
+      expect(script, contains(r'SYMROOT="$symroot"'));
     });
 
     test('release build output is signed before archiving', () {
@@ -50,6 +52,20 @@ void main() {
       expect(script, contains('Signature=adhoc'));
       expect(script, contains('TeamIdentifier=not set'));
       expect(script, contains('keychain-access-groups'));
+    });
+
+    test('xcode signed debug app is verified for embedded provisioning', () {
+      expect(
+        script,
+        contains(r'verify_macos_embedded_provisioning_profile "$app_path"'),
+        reason:
+            'A valid code signature alone is not enough. macOS AMFI rejects '
+            'restricted entitlements at launch when no matching profile is '
+            'embedded.',
+      );
+      expect(script, contains('embedded.provisionprofile'));
+      expect(script, contains('embedded.mobileprovision'));
+      expect(script, contains('Restricted entitlements will be rejected'));
     });
   });
 }

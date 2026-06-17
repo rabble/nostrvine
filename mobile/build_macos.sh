@@ -178,6 +178,19 @@ verify_macos_keychain_entitlements() {
     codesign --verify --deep --strict --verbose=2 "$app_path"
 }
 
+verify_macos_embedded_provisioning_profile() {
+    local app_path="$1"
+
+    if [[ -f "$app_path/Contents/embedded.provisionprofile" ]] || \
+       [[ -f "$app_path/Contents/embedded.mobileprovision" ]]; then
+        return 0
+    fi
+
+    echo "❌ macOS app is missing an embedded provisioning profile." >&2
+    echo "   Restricted entitlements will be rejected by AMFI at launch." >&2
+    return 1
+}
+
 sign_macos_app() {
     local app_path="$1"
     local build_mode="$2"
@@ -229,6 +242,56 @@ sign_macos_app() {
 
     rm -f "$expanded_entitlements"
     verify_macos_keychain_entitlements "$app_path" "$expected_access_group"
+}
+
+xcodebuild_signed_macos_app() {
+    local build_mode="$1"
+    local configuration
+    local app_path
+    local identity
+    local team_id
+    local expected_access_group
+    local symroot
+
+    if [[ "$build_mode" == "release" ]]; then
+        configuration="Release"
+        app_path="$RELEASE_APP_PATH"
+    else
+        configuration="Debug"
+        app_path="$DEBUG_APP_PATH"
+    fi
+
+    identity="$(find_macos_signing_identity)"
+    if [[ -z "$identity" ]]; then
+        echo "❌ No Apple Development codesigning identity found." >&2
+        echo "   Install a local Apple Development certificate or set MACOS_SIGNING_IDENTITY." >&2
+        return 1
+    fi
+
+    team_id="$(team_id_from_identity "$identity")"
+    expected_access_group="${team_id}.${MACOS_BUNDLE_ID}"
+    symroot="$(pwd)/build/macos/Build/Products"
+
+    echo "🔏 Building signed macOS $build_mode app with Xcode automatic signing..."
+    echo "🔐 Keychain access group: $expected_access_group"
+    (
+        cd macos
+        xcodebuild -workspace Runner.xcworkspace \
+                   -scheme Runner \
+                   -configuration "$configuration" \
+                   -destination platform=macOS \
+                   SYMROOT="$symroot" \
+                   CODE_SIGNING_ALLOWED=YES \
+                   CODE_SIGNING_REQUIRED=YES \
+                   CODE_SIGN_STYLE=Automatic \
+                   DEVELOPMENT_TEAM="$team_id" \
+                   PRODUCT_BUNDLE_IDENTIFIER="$MACOS_BUNDLE_ID" \
+                   -allowProvisioningUpdates \
+                   build
+    )
+
+    verify_macos_keychain_entitlements "$app_path" "$expected_access_group"
+    verify_macos_embedded_provisioning_profile "$app_path"
 }
 
 # Reset camera permissions to fix stuck TCC state
@@ -420,7 +483,7 @@ EOF
     cd ..
 else
     flutter build macos --debug $DART_DEFINES
-    sign_macos_app "$DEBUG_APP_PATH" "debug"
+    xcodebuild_signed_macos_app "debug"
 fi
 
 echo "✅ macOS build complete!"
