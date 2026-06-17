@@ -498,8 +498,7 @@ class VideoEventPublisher {
   ///    published and stop (avoids re-publishing a previously accepted
   ///    event whose `OK` was lost).
   /// 2. Up to 3 attempts of `POST /api/events`. A 200 acceptance is
-  ///    published; a 401/403/422 is a non-retryable failure; a transient
-  ///    REST failure falls back to a WebSocket `publishEvent`
+  ///    published; any REST failure falls back to a WebSocket `publishEvent`
   ///    (fire-and-forget, not `publishEventAwaitOk`).
   /// 3. Before each retry, re-check relay presence so a false-negative
   ///    WebSocket `OK` does not produce a duplicate publish.
@@ -597,8 +596,8 @@ class VideoEventPublisher {
     return _EventPublishOutcome.transientFailure;
   }
 
-  /// One publish attempt: REST first, WebSocket fire-and-forget on transient
-  /// REST failure.
+  /// One publish attempt: REST first, WebSocket fire-and-forget on any REST
+  /// failure.
   Future<_EventPublishOutcome> _publishViaRestThenWebSocket(
     EventApiClient apiClient,
     Event event,
@@ -608,12 +607,13 @@ class VideoEventPublisher {
       case EventApiAccepted():
         return _EventPublishOutcome.published;
       case EventApiRejected(:final statusCode, :final reason):
-        Log.error(
-          '❌ REST publish rejected ($statusCode) for ${event.id}: $reason',
+        Log.warning(
+          '⚠️ REST publish rejected ($statusCode) for ${event.id}: $reason; '
+          'falling back to WebSocket fire-and-forget',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        return _EventPublishOutcome.permanentlyRejected;
+        return _publishViaWebSocketFireAndForget(event);
       case EventApiTransientFailure(:final reason):
         Log.warning(
           '⚠️ REST publish transient failure for ${event.id} ($reason); '

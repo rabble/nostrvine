@@ -198,22 +198,23 @@ void main() {
       },
     );
 
-    test('REST 401/403/422 fails without WebSocket fallback', () async {
+    test('REST rejection falls back to WebSocket send success', () async {
       final signedEvent = createSignedEvent();
       stubSigning(signedEvent);
       stubRest(const EventApiRejected(statusCode: 422, reason: 'bad event'));
+      stubWebSocket(PublishSuccess(event: signedEvent));
 
       final result = await publisher.publishDirectUpload(createUpload());
 
-      expect(result, isFalse);
-      verifyNever(() => mockNostrClient.publishEvent(any()));
-      verifyNever(
+      expect(result, isTrue);
+      verify(() => mockNostrClient.publishEvent(signedEvent)).called(1);
+      verify(
         () => mockUploadManager.updateUploadStatus(
-          any(),
+          'test-upload-id',
           UploadStatus.published,
-          nostrEventId: any(named: 'nostrEventId'),
+          nostrEventId: signedEvent.id,
         ),
-      );
+      ).called(1);
     });
 
     test('retry reuses the original signed event id (no re-sign)', () async {
