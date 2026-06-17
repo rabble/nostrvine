@@ -41,7 +41,22 @@ class ForegroundIdleWarmupScheduler {
 
   /// Starts the scheduler once.
   void start() {
-    if (_startupTimer != null || _periodicTimer != null) return;
+    if (_startupTimer != null || _periodicTimer != null) {
+      Log.debug(
+        'Foreground idle warmup scheduler already started',
+        name: 'ForegroundIdleWarmupScheduler',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    Log.info(
+      'Foreground idle warmup scheduler started '
+      '(startupDelay=${_startupDelay.inSeconds}s, '
+      'interval=${_interval.inMinutes}m)',
+      name: 'ForegroundIdleWarmupScheduler',
+      category: LogCategory.system,
+    );
 
     _startupTimer = Timer(_startupDelay, () {
       _requestSafely(ForegroundIdleWarmupTrigger.startupSettled);
@@ -53,6 +68,13 @@ class ForegroundIdleWarmupScheduler {
 
   /// Cancels all scheduled warmup requests.
   void stop() {
+    if (_startupTimer != null || _periodicTimer != null) {
+      Log.info(
+        'Foreground idle warmup scheduler stopped',
+        name: 'ForegroundIdleWarmupScheduler',
+        category: LogCategory.system,
+      );
+    }
     _startupTimer?.cancel();
     _periodicTimer?.cancel();
     _startupTimer = null;
@@ -60,6 +82,11 @@ class ForegroundIdleWarmupScheduler {
   }
 
   void _requestSafely(ForegroundIdleWarmupTrigger trigger) {
+    Log.info(
+      'Foreground idle warmup scheduler fired (${trigger.name})',
+      name: 'ForegroundIdleWarmupScheduler',
+      category: LogCategory.system,
+    );
     unawaited(
       Future.sync(() => _requestWarmup(trigger)).catchError((Object error) {
         Log.warning(
@@ -89,6 +116,7 @@ class ForegroundIdleWarmupTask {
     required this.id,
     required this.run,
     required this.cooldown,
+    this.timeout = const Duration(seconds: 12),
   });
 
   /// Surface warmed by this task.
@@ -96,6 +124,9 @@ class ForegroundIdleWarmupTask {
 
   /// Minimum time between successful runs.
   final Duration cooldown;
+
+  /// Maximum time this low-priority task may occupy the serial queue.
+  final Duration timeout;
 
   /// Performs the data-only warmup.
   final Future<void> Function() run;
@@ -131,9 +162,24 @@ class ForegroundIdleWarmupCoordinator {
     required ForegroundIdleWarmupTrigger trigger,
   }) {
     final inFlight = _inFlight;
-    if (inFlight != null) return inFlight;
+    if (inFlight != null) {
+      Log.debug(
+        'Foreground idle warmup coalesced (${trigger.name})',
+        name: 'ForegroundIdleWarmupCoordinator',
+        category: LogCategory.system,
+      );
+      return inFlight;
+    }
 
-    if (!_canRun) return Future<void>.value();
+    if (!_canRun) {
+      Log.debug(
+        'Foreground idle warmup skipped (${trigger.name}): '
+        'foreground=${_isForeground()}, idle=${_isIdle()}',
+        name: 'ForegroundIdleWarmupCoordinator',
+        category: LogCategory.system,
+      );
+      return Future<void>.value();
+    }
 
     final future = _run(trigger).whenComplete(() {
       _inFlight = null;
@@ -145,13 +191,51 @@ class ForegroundIdleWarmupCoordinator {
   bool get _canRun => _isForeground() && _isIdle();
 
   Future<void> _run(ForegroundIdleWarmupTrigger trigger) async {
+    Log.info(
+      'Foreground idle warmup started (${trigger.name})',
+      name: 'ForegroundIdleWarmupCoordinator',
+      category: LogCategory.system,
+    );
+
     for (final task in _tasks) {
-      if (!_canRun) return;
-      if (_isCoolingDown(task)) continue;
+      if (!_canRun) {
+        Log.info(
+          'Foreground idle warmup stopped before ${task.id.name}: '
+          'foreground=${_isForeground()}, idle=${_isIdle()}',
+          name: 'ForegroundIdleWarmupCoordinator',
+          category: LogCategory.system,
+        );
+        return;
+      }
+      if (_isCoolingDown(task)) {
+        Log.debug(
+          'Foreground idle warmup skipped ${task.id.name}: cooling down',
+          name: 'ForegroundIdleWarmupCoordinator',
+          category: LogCategory.system,
+        );
+        continue;
+      }
 
       try {
-        await task.run();
+        Log.debug(
+          'Foreground idle warmup running ${task.id.name}',
+          name: 'ForegroundIdleWarmupCoordinator',
+          category: LogCategory.system,
+        );
+        await task.run().timeout(task.timeout);
         _lastSuccessAt[task.id] = _now();
+        Log.info(
+          'Foreground idle warmup completed ${task.id.name}',
+          name: 'ForegroundIdleWarmupCoordinator',
+          category: LogCategory.system,
+        );
+      } on TimeoutException {
+        Log.warning(
+          'Foreground idle warmup timed out '
+          '(${task.id.name}, ${trigger.name}, ${task.timeout.inSeconds}s)',
+          name: 'ForegroundIdleWarmupCoordinator',
+          category: LogCategory.system,
+        );
       } catch (error) {
         Log.warning(
           'Foreground idle warmup failed '

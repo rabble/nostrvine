@@ -255,6 +255,50 @@ void main() {
       expect(calls, ['forYou', 'popular', 'forYou']);
     });
 
+    test('timed out tasks do not block later tasks or consume cooldown', () {
+      fakeAsync((async) {
+        final slowTask = Completer<void>();
+        final coordinator = coordinatorWith([
+          ForegroundIdleWarmupTask(
+            id: ForegroundIdleWarmupTaskId.forYou,
+            cooldown: const Duration(minutes: 5),
+            timeout: const Duration(seconds: 1),
+            run: () async {
+              calls.add('forYou');
+              await slowTask.future;
+            },
+          ),
+          task(ForegroundIdleWarmupTaskId.newVideos),
+          task(ForegroundIdleWarmupTaskId.popular),
+        ]);
+
+        unawaited(
+          coordinator.requestWarmup(
+            trigger: ForegroundIdleWarmupTrigger.startupSettled,
+          ),
+        );
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+
+        expect(calls, ['forYou', 'newVideos', 'popular']);
+
+        unawaited(
+          coordinator.requestWarmup(
+            trigger: ForegroundIdleWarmupTrigger.periodicIdleCheck,
+          ),
+        );
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+
+        expect(calls, [
+          'forYou',
+          'newVideos',
+          'popular',
+          'forYou',
+        ]);
+      });
+    });
+
     test('stops before the next task if the app stops being idle', () async {
       final coordinator = coordinatorWith([
         task(
