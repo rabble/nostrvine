@@ -13,7 +13,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/services/startup_performance_service.dart';

@@ -11,7 +11,7 @@ void main() {}
 //import 'package:flutter_test/flutter_test.dart';
 //import 'package:models/models.dart';
 //import 'package:openvine/providers/video_events_providers.dart';
-//import 'package:openvine/screens/explore_screen.dart';
+//import 'package:openvine/screens/explore/explore_screen.dart';
 //import '../providers/test_infrastructure.dart';
 //import '../helpers/test_provider_overrides.dart';
 //import 'package:plugin_platform_interface/plugin_platform_interface.dart';

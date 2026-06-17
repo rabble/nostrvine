@@ -10,7 +10,7 @@ import 'package:openvine/mixins/page_controller_sync_mixin.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/explore/explore_screen.dart';
 
 /// Router-driven ExploreScreen - PageView syncs with URL bidirectionally
 class ExploreScreenRouter extends ConsumerStatefulWidget {

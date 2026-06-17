@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/video_events_providers.dart';
-import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/explore/explore_screen.dart';
 
 // Mock class for VideoEvents provider
 class VideoEventsMock extends VideoEvents {
@@ -38,9 +38,10 @@ void main() {
       });
 
       test('ExploreScreen should have constructor', () {
-        // GREEN: Constructor works
+        // ExploreScreen is a thin Page (StatelessWidget) that provides
+        // ExploreTabsCubit to its ConsumerStatefulWidget view.
         const screen = ExploreScreen();
-        expect(screen, isA<ConsumerStatefulWidget>());
+        expect(screen, isA<StatelessWidget>());
       });
     });
 

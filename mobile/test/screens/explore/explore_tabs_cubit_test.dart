@@ -1,0 +1,99 @@
+// ABOUTME: Unit tests for ExploreTabsCubit availability + tab ordering logic.
+
+import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/screens/explore/explore_tabs_cubit.dart';
+
+void main() {
+  group(ExploreTabsCubit, () {
+    test('initial state has only the base tabs', () {
+      final cubit = ExploreTabsCubit();
+      addTearDown(cubit.close);
+
+      expect(cubit.state.classicsAvailable, isFalse);
+      expect(cubit.state.forYouAvailable, isFalse);
+      expect(cubit.state.appsAvailable, isFalse);
+      expect(
+        cubit.state.tabNames,
+        const ['new', 'popular', 'categories', 'lists'],
+      );
+      expect(cubit.state.tabCount, 4);
+    });
+
+    blocTest<ExploreTabsCubit, ExploreTabsState>(
+      'emits new tab order when availability changes',
+      build: ExploreTabsCubit.new,
+      act: (cubit) => cubit.updateAvailability(
+        classicsAvailable: true,
+        forYouAvailable: true,
+        appsAvailable: true,
+      ),
+      expect: () => [
+        isA<ExploreTabsState>().having((s) => s.tabCount, 'tabCount', 7).having(
+          (s) => s.tabNames,
+          'tabNames',
+          const [
+            'classics',
+            'new',
+            'popular',
+            'categories',
+            'for_you',
+            'lists',
+            'apps',
+          ],
+        ),
+      ],
+    );
+
+    blocTest<ExploreTabsCubit, ExploreTabsState>(
+      'does not emit when availability is unchanged',
+      build: ExploreTabsCubit.new,
+      act: (cubit) => cubit.updateAvailability(
+        classicsAvailable: false,
+        forYouAvailable: false,
+        appsAvailable: false,
+      ),
+      expect: () => const <ExploreTabsState>[],
+    );
+
+    group('index <-> name conversion', () {
+      test('shifts indices when an earlier optional tab appears', () {
+        const withoutClassics = ExploreTabsState();
+        expect(withoutClassics.indexForName('popular'), 1);
+        expect(withoutClassics.newVideosIndex, 0);
+        expect(withoutClassics.trendingIndex, 1);
+
+        const withClassics = ExploreTabsState(classicsAvailable: true);
+        expect(withClassics.indexForName('classics'), 0);
+        expect(withClassics.indexForName('popular'), 2);
+        expect(withClassics.newVideosIndex, 1);
+        expect(withClassics.trendingIndex, 2);
+      });
+
+      test('nameForIndex round-trips with indexForName', () {
+        const state = ExploreTabsState(
+          classicsAvailable: true,
+          forYouAvailable: true,
+          appsAvailable: true,
+        );
+        for (final name in state.tabNames) {
+          expect(state.nameForIndex(state.indexForName(name)), name);
+        }
+      });
+
+      test('unknown name falls back to the default tab index', () {
+        const state = ExploreTabsState();
+        expect(
+          state.indexForName('does-not-exist'),
+          state.indexForName(exploreDefaultTabName),
+        );
+      });
+
+      test('out-of-range index falls back to popular', () {
+        const state = ExploreTabsState();
+        expect(state.nameForIndex(999), 'popular');
+        expect(state.nameForIndex(-1), 'popular');
+      });
+    });
+  });
+}

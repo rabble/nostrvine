@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
-import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

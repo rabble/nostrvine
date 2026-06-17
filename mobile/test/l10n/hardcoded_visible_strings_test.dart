@@ -9,7 +9,7 @@ void main() {
   group('hardcoded visible strings', () {
     test('Explore search and category counts use l10n keys', () {
       final exploreSource = File(
-        'lib/screens/explore_screen.dart',
+        'lib/screens/explore/explore_view.dart',
       ).readAsStringSync();
       final categoriesSource = File(
         'lib/widgets/categories_tab.dart',
