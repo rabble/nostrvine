@@ -148,9 +148,26 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     _ => false,
   };
 
-  /// Track the userIdHex the BLoCs were created for.
-  String? _blocsUserIdHex;
-  bool? _blocsIncludeVideoReplies;
+  /// The dependency identities the tab BLoCs were last created for.
+  ///
+  /// The BLoCs capture these at construction (in [build]), so when any of
+  /// them changes identity — profile switch, auth flip, account switch,
+  /// sign-out, or an explicit provider invalidation — the BLoCs must be torn
+  /// down and rebuilt, otherwise they keep operating on a stale signer /
+  /// repository (see `rules/state_management.md`, captured-dependency trap).
+  /// Strings compare by value; repositories don't override `==` so they
+  /// compare by identity, which is exactly the swap signal we need.
+  ({
+    String userIdHex,
+    bool includeVideoReplies,
+    String currentUserPubkey,
+    Object likesRepository,
+    Object repostsRepository,
+    Object videosRepository,
+    Object commentsRepository,
+    Object contentBlocklistRepository,
+  })?
+  _blocsDeps;
 
   /// Track which tabs have been synced (lazy loading).
   bool _likedTabSynced = false;
@@ -291,10 +308,21 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     );
     final currentUserPubkey = nostrService.publicKey;
 
-    // Create BLoCs if not already created, or recreate if userIdHex changed
-    // Store references for refresh capability
-    if (_blocsUserIdHex != widget.userIdHex ||
-        _blocsIncludeVideoReplies != includeVideoReplies) {
+    final blocsDeps = (
+      userIdHex: widget.userIdHex,
+      includeVideoReplies: includeVideoReplies,
+      currentUserPubkey: currentUserPubkey,
+      likesRepository: likesRepository as Object,
+      repostsRepository: repostsRepository as Object,
+      videosRepository: videosRepository as Object,
+      commentsRepository: commentsRepository as Object,
+      contentBlocklistRepository: contentBlocklistRepository as Object,
+    );
+
+    // Create the tab BLoCs on first build, and recreate them whenever any
+    // captured dependency changes identity (profile switch, auth flip,
+    // account switch, sign-out). Store references for refresh capability.
+    if (_blocsDeps != blocsDeps) {
       _likedVideosBloc?.close();
       _repostedVideosBloc?.close();
       _collabVideosBloc?.close();
@@ -384,8 +412,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       );
       // Sync deferred until user views Comments tab
 
-      _blocsUserIdHex = widget.userIdHex;
-      _blocsIncludeVideoReplies = includeVideoReplies;
+      _blocsDeps = blocsDeps;
 
       // Kick off the lazy sync for the currently selected tab. On a fresh
       // mount this will no-op for tab 0 (videos use [widget.videos] and

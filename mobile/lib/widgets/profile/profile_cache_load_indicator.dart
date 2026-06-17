@@ -15,12 +15,16 @@ class ProfileCacheLoadIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
-      height: height,
-      child: LinearProgressIndicator(
-        minHeight: height,
-        color: VineTheme.primary,
-        backgroundColor: VineTheme.transparent,
+    // Purely decorative background-refresh hint; the cached grid is already
+    // on screen, so keep it out of the semantics tree.
+    return const ExcludeSemantics(
+      child: SizedBox(
+        height: height,
+        child: LinearProgressIndicator(
+          minHeight: height,
+          color: VineTheme.primary,
+          backgroundColor: VineTheme.transparent,
+        ),
       ),
     );
   }

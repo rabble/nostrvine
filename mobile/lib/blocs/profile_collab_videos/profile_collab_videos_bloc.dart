@@ -117,6 +117,7 @@ class ProfileCollabVideosBloc
         videos: collabVideos,
         hasMoreContent: hasMore,
         paginationCursor: cursor,
+        clearCursor: cursor == null,
         isRefreshing: false,
       ),
     );

@@ -63,6 +63,10 @@ final class ProfileCollabVideosState extends Equatable {
   bool get isLoading => status == ProfileCollabVideosStatus.loading;
 
   /// Create a copy with updated values.
+  ///
+  /// Pass [clearCursor] to reset [paginationCursor] back to `null` (the
+  /// end-of-feed signal) — a plain `paginationCursor: null` cannot do this
+  /// because the null-coalescing fallback would keep the old value.
   ProfileCollabVideosState copyWith({
     ProfileCollabVideosStatus? status,
     List<VideoEvent>? videos,
@@ -70,6 +74,7 @@ final class ProfileCollabVideosState extends Equatable {
     bool? isRefreshing,
     bool? hasMoreContent,
     int? paginationCursor,
+    bool clearCursor = false,
   }) {
     return ProfileCollabVideosState(
       status: status ?? this.status,
@@ -77,7 +82,9 @@ final class ProfileCollabVideosState extends Equatable {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       hasMoreContent: hasMoreContent ?? this.hasMoreContent,
-      paginationCursor: paginationCursor ?? this.paginationCursor,
+      paginationCursor: clearCursor
+          ? null
+          : (paginationCursor ?? this.paginationCursor),
     );
   }
 
