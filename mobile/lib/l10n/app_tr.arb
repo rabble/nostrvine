@@ -532,6 +532,7 @@
     "videoErrorSkip": "Atla",
     "videoErrorVerifyAgeButton": "Yaşı doğrula",
     "videoErrorVerifyAgeFailed": "Yaşın doğrulanamadı. Lütfen tekrar dene.",
+    "videoErrorVerifyAgeSignerUnreachable": "Doğrulama zaman aşımına uğradı. Bağlantını kontrol et ve tekrar dene.",
     "videoFollowButtonFollowing": "Takip ediliyor",
     "videoFollowButtonFollow": "Takip et",
     "audioAttributionOriginalSound": "Orijinal ses",

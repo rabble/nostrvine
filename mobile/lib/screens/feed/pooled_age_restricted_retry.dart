@@ -9,6 +9,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/viewer_auth_result.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 const _logName = 'PooledAgeRestrictedRetry';
@@ -69,7 +70,7 @@ Future<void> retryAgeRestrictedPooledVideo({
       return;
     }
 
-    final headers = await ref
+    final authResult = await ref
         .read(mediaAuthInterceptorProvider)
         .handleUnauthorizedMedia(
           context: context,
@@ -79,32 +80,34 @@ Future<void> retryAgeRestrictedPooledVideo({
           category: 'video',
         );
     if (!context.mounted) return;
-    if (headers == null) {
-      // handleUnauthorizedMedia returns null both when the viewer declines the
-      // age dialog (a deliberate choice — stay silent) and when they accept but
-      // the signed viewer-auth header could not be created (e.g. a remote
-      // signer that failed or timed out). Distinguish the two by the persisted
-      // verification flag so an auth failure isn't a silent no-op.
-      final accepted = ref
-          .read(ageVerificationServiceProvider)
-          .isAdultContentVerified;
-      if (accepted) {
-        _showVerifyAgeFailed(context);
-      }
-      return;
-    }
 
-    // The hash-bound token authorizes any variant of the blob, so the feed
-    // applies these headers to every resolved playback source
-    // (optimized/HLS/raw) for the retried item.
-    final playbackSucceeded = await retryPlayback(headers);
-    if (!context.mounted) return;
-    if (!playbackSucceeded) {
-      _showVerifyAgeFailed(context);
-      return;
+    switch (authResult) {
+      case ViewerAuthAuthorized(:final headers):
+        // The hash-bound token authorizes any variant of the blob, so the feed
+        // applies these headers to every resolved playback source
+        // (optimized/HLS/raw) for the retried item.
+        final playbackSucceeded = await retryPlayback(headers);
+        if (!context.mounted) return;
+        if (!playbackSucceeded) {
+          _showVerifyAgeFailed(context);
+          return;
+        }
+        playbackStatusCubit.report(video.id, PlaybackStatus.ready);
+      case ViewerAuthSignerUnreachable():
+        // A remote signer timed out — distinct from a verify failure, since the
+        // remedy is checking the connection rather than re-verifying.
+        _showSignerUnreachable(context);
+      case ViewerAuthUnavailable():
+        // Unavailable covers both a deliberate decline (stay silent) and an
+        // accept-then-no-header case (surface feedback). Distinguish the two by
+        // the persisted verification flag so an auth failure isn't silent.
+        final accepted = ref
+            .read(ageVerificationServiceProvider)
+            .isAdultContentVerified;
+        if (accepted) {
+          _showVerifyAgeFailed(context);
+        }
     }
-
-    playbackStatusCubit.report(video.id, PlaybackStatus.ready);
   } finally {
     if (!playbackStatusCubit.isClosed) {
       playbackStatusCubit.clearVerifying(video.id);
@@ -118,6 +121,18 @@ void _showVerifyAgeFailed(BuildContext context) {
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
     DivineSnackbarContainer.snackBar(context.l10n.videoErrorVerifyAgeFailed),
+  );
+}
+
+/// Surfaces the connectivity-specific message when a remote signer didn't
+/// respond in time, so the viewer knows to check their connection rather than
+/// re-verify their age.
+void _showSignerUnreachable(BuildContext context) {
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    DivineSnackbarContainer.snackBar(
+      context.l10n.videoErrorVerifyAgeSignerUnreachable,
+    ),
   );
 }
 

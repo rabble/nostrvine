@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
+import 'package:openvine/services/viewer_auth_result.dart';
 
 /// Creates viewer auth headers for media GET requests.
 class MediaViewerAuthService {
@@ -32,69 +33,72 @@ class MediaViewerAuthService {
   /// timeout is the de-facto reachability proxy for remote signers.
   bool get canCreateHeaders => _authService.isAuthenticated;
 
-  /// Returns request headers for a media GET, or null when no viewer auth can
-  /// be created for the current user/request shape.
+  /// Creates viewer-auth headers for a media GET.
   ///
   /// For the Keycast OAuth-only remote signer, the signing round-trip is
   /// bounded by [_signTimeout]; if the signer does not respond in time this
-  /// returns null — the same "no headers" result every caller already handles
-  /// — rather than hanging on Keycast's 30s ceiling. Local and interactive
-  /// remote signers (bunker / Amber / NIP-07) are awaited unbounded so a human
-  /// approval step is never cut off.
-  Future<Map<String, String>?> createAuthHeaders({
+  /// returns [ViewerAuthSignerUnreachable] — distinct from the
+  /// [ViewerAuthUnavailable] "no headers" result — rather than hanging on
+  /// Keycast's 30s ceiling. Local and interactive remote signers (bunker /
+  /// Amber / NIP-07) are awaited unbounded so a human approval step is never
+  /// cut off.
+  Future<ViewerAuthResult> createAuthHeaders({
     String? sha256Hash,
     String? url,
     String? serverUrl,
   }) async {
     if (!_authService.isAuthenticated) {
-      return null;
+      return const ViewerAuthUnavailable();
     }
 
     final boundSigning =
         _authService.currentIdentity?.signsRemotelyNonInteractive ?? false;
 
-    if (sha256Hash != null && sha256Hash.isNotEmpty) {
-      final header = await _bound(
-        boundSigning,
-        () => _blossomAuthService.createGetAuthHeader(
-          sha256Hash: sha256Hash,
-          serverUrl: serverUrl,
-        ),
-      );
-      return _authorizationHeaders(header);
+    try {
+      if (sha256Hash != null && sha256Hash.isNotEmpty) {
+        final header = await _bound(
+          boundSigning,
+          () => _blossomAuthService.createGetAuthHeader(
+            sha256Hash: sha256Hash,
+            serverUrl: serverUrl,
+          ),
+        );
+        return _result(header);
+      }
+
+      if (url != null && url.isNotEmpty) {
+        final token = await _bound(
+          boundSigning,
+          () => _nip98AuthService.createAuthToken(
+            url: url,
+            method: HttpMethod.get,
+          ),
+        );
+        return _result(token?.authorizationHeader);
+      }
+    } on TimeoutException {
+      return const ViewerAuthSignerUnreachable();
     }
 
-    if (url != null && url.isNotEmpty) {
-      final token = await _bound(
-        boundSigning,
-        () =>
-            _nip98AuthService.createAuthToken(url: url, method: HttpMethod.get),
-      );
-      return _authorizationHeaders(token?.authorizationHeader);
-    }
-
-    return null;
+    return const ViewerAuthUnavailable();
   }
 
   /// Awaits [sign]. When [bound] (the non-interactive remote signer), the call
-  /// is capped at [_signTimeout] and a timeout yields null — the same "no
-  /// headers" result every caller already handles — instead of hanging on the
-  /// remote RPC's own 30s ceiling. Unbounded otherwise, so a local or
-  /// interactive (human-approved) sign is never cut off.
+  /// is capped at [_signTimeout]; the [TimeoutException] propagates to
+  /// [createAuthHeaders], which maps it to [ViewerAuthSignerUnreachable]
+  /// instead of hanging on the remote RPC's own 30s ceiling. Unbounded
+  /// otherwise, so a local or interactive (human-approved) sign is never cut
+  /// off.
   Future<T?> _bound<T>(bool bound, Future<T?> Function() sign) async {
     if (!bound) return sign();
-    try {
-      return await sign().timeout(_signTimeout);
-    } on TimeoutException {
-      return null;
-    }
+    return sign().timeout(_signTimeout);
   }
 
-  Map<String, String>? _authorizationHeaders(String? authorizationHeader) {
+  ViewerAuthResult _result(String? authorizationHeader) {
     if (authorizationHeader == null || authorizationHeader.isEmpty) {
-      return null;
+      return const ViewerAuthUnavailable();
     }
 
-    return {'Authorization': authorizationHeader};
+    return ViewerAuthAuthorized({'Authorization': authorizationHeader});
   }
 }

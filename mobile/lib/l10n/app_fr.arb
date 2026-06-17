@@ -532,6 +532,7 @@
     "videoErrorSkip": "Passer",
     "videoErrorVerifyAgeButton": "Vérifier l'âge",
     "videoErrorVerifyAgeFailed": "Impossible de vérifier ton âge. Réessaie.",
+    "videoErrorVerifyAgeSignerUnreachable": "Délai de vérification dépassé. Vérifie ta connexion et réessaie.",
     "videoFollowButtonFollowing": "Abonné",
     "videoFollowButtonFollow": "Suivre",
     "audioAttributionOriginalSound": "Son original",

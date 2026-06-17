@@ -1421,6 +1421,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Възрастта ти не можа да бъде потвърдена. Опитай пак.';
 
   @override
+  String get videoErrorVerifyAgeSignerUnreachable =>
+      'Потвърждаването изтече. Провери връзката си и опитай пак.';
+
+  @override
   String get videoFollowButtonFollowing => 'Следване';
 
   @override

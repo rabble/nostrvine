@@ -1309,6 +1309,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoErrorVerifyAgeFailed => '年齢を確認できませんでした。もう一回試してみて';
 
   @override
+  String get videoErrorVerifyAgeSignerUnreachable =>
+      '確認がタイムアウトしました。接続を確認して、もう一回試してみて';
+
+  @override
   String get videoFollowButtonFollowing => 'フォロー中';
 
   @override

@@ -9,6 +9,7 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/nostr_identity.dart';
+import 'package:openvine/services/viewer_auth_result.dart';
 
 class MockAuthService extends Mock implements AuthService {}
 
@@ -63,13 +64,17 @@ void main() {
         ),
       ).thenAnswer((_) async => 'Nostr blossom-token');
 
-      final headers = await service.createAuthHeaders(
+      final result = await service.createAuthHeaders(
         sha256Hash: 'abc123',
         url: 'https://media.divine.video/abc123/720p.mp4',
         serverUrl: 'https://media.divine.video',
       );
 
-      expect(headers, equals({'Authorization': 'Nostr blossom-token'}));
+      expect(result, isA<ViewerAuthAuthorized>());
+      expect(
+        result.headersOrNull,
+        equals({'Authorization': 'Nostr blossom-token'}),
+      );
       verify(
         () => mockBlossomAuthService.createGetAuthHeader(
           sha256Hash: 'abc123',
@@ -100,11 +105,15 @@ void main() {
         ),
       );
 
-      final headers = await service.createAuthHeaders(
+      final result = await service.createAuthHeaders(
         url: 'https://media.divine.video/no-hash/playlist.m3u8',
       );
 
-      expect(headers, equals({'Authorization': 'Nostr nip98-token'}));
+      expect(result, isA<ViewerAuthAuthorized>());
+      expect(
+        result.headersOrNull,
+        equals({'Authorization': 'Nostr nip98-token'}),
+      );
       verify(
         () => mockNip98AuthService.createAuthToken(
           url: 'https://media.divine.video/no-hash/playlist.m3u8',
@@ -122,12 +131,12 @@ void main() {
     test('returns null when the user is unauthenticated', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(false);
 
-      final headers = await service.createAuthHeaders(
+      final result = await service.createAuthHeaders(
         sha256Hash: 'abc123',
         url: 'https://media.divine.video/abc123/720p.mp4',
       );
 
-      expect(headers, isNull);
+      expect(result, isA<ViewerAuthUnavailable>());
       verifyNever(
         () => mockBlossomAuthService.createGetAuthHeader(
           sha256Hash: any(named: 'sha256Hash'),
@@ -151,12 +160,16 @@ void main() {
         ),
       ).thenAnswer((_) async => 'Nostr blossom-token');
 
-      final headers = await service.createAuthHeaders(
+      final result = await service.createAuthHeaders(
         sha256Hash: 'abc123',
         url: 'https://media.divine.video/abc123/720p.mp4',
       );
 
-      expect(headers, equals({'Authorization': 'Nostr blossom-token'}));
+      expect(result, isA<ViewerAuthAuthorized>());
+      expect(
+        result.headersOrNull,
+        equals({'Authorization': 'Nostr blossom-token'}),
+      );
       verify(
         () => mockBlossomAuthService.createGetAuthHeader(sha256Hash: 'abc123'),
       ).called(1);
@@ -170,7 +183,8 @@ void main() {
 
     group('remote-signer timeout', () {
       test(
-        'bounds a hung remote Blossom sign and returns null at the timeout',
+        'bounds a hung remote Blossom sign and reports the signer unreachable '
+        'at the timeout',
         () {
           fakeAsync((async) {
             when(() => mockAuthService.isAuthenticated).thenReturn(true);
@@ -188,7 +202,7 @@ void main() {
               ),
             ).thenAnswer((_) => Completer<String?>().future);
 
-            Map<String, String>? result;
+            ViewerAuthResult? result;
             var completed = false;
             service
                 .createAuthHeaders(
@@ -207,13 +221,14 @@ void main() {
             // Fires at the timeout, far short of Keycast's 30s ceiling.
             async.elapse(const Duration(seconds: 2));
             expect(completed, isTrue);
-            expect(result, isNull);
+            expect(result, isA<ViewerAuthSignerUnreachable>());
           });
         },
       );
 
       test(
-        'bounds a hung remote NIP-98 sign and returns null at the timeout',
+        'bounds a hung remote NIP-98 sign and reports the signer unreachable '
+        'at the timeout',
         () {
           fakeAsync((async) {
             when(() => mockAuthService.isAuthenticated).thenReturn(true);
@@ -230,7 +245,7 @@ void main() {
               ),
             ).thenAnswer((_) => Completer<Nip98Token?>().future);
 
-            Map<String, String>? result;
+            ViewerAuthResult? result;
             var completed = false;
             service
                 .createAuthHeaders(
@@ -243,7 +258,7 @@ void main() {
 
             async.elapse(const Duration(seconds: 7));
             expect(completed, isTrue);
-            expect(result, isNull);
+            expect(result, isA<ViewerAuthSignerUnreachable>());
           });
         },
       );
@@ -263,12 +278,16 @@ void main() {
           ),
         ).thenAnswer((_) async => 'Nostr fast-token');
 
-        final headers = await service.createAuthHeaders(
+        final result = await service.createAuthHeaders(
           sha256Hash: 'abc123',
           serverUrl: 'https://media.divine.video',
         );
 
-        expect(headers, equals({'Authorization': 'Nostr fast-token'}));
+        expect(result, isA<ViewerAuthAuthorized>());
+        expect(
+          result.headersOrNull,
+          equals({'Authorization': 'Nostr fast-token'}),
+        );
       });
 
       test('does NOT bound a non-interactive=false signer — a slow-but-valid '
@@ -290,7 +309,7 @@ void main() {
             ),
           ).thenAnswer((_) => completer.future);
 
-          Map<String, String>? result;
+          ViewerAuthResult? result;
           var completed = false;
           service
               .createAuthHeaders(
@@ -311,7 +330,11 @@ void main() {
           completer.complete('Nostr slow-token');
           async.flushMicrotasks();
           expect(completed, isTrue);
-          expect(result, equals({'Authorization': 'Nostr slow-token'}));
+          expect(result, isA<ViewerAuthAuthorized>());
+          expect(
+            result?.headersOrNull,
+            equals({'Authorization': 'Nostr slow-token'}),
+          );
         });
       });
     });

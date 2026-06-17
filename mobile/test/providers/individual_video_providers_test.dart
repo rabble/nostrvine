@@ -3,6 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
+import 'package:openvine/services/viewer_auth_result.dart';
 
 class MockMediaViewerAuthService extends Mock
     implements MediaViewerAuthService {}
@@ -31,7 +32,10 @@ void main() {
           url: any(named: 'url'),
           serverUrl: any(named: 'serverUrl'),
         ),
-      ).thenAnswer((_) async => {'Authorization': 'Nostr blossom'});
+      ).thenAnswer(
+        (_) async =>
+            const ViewerAuthAuthorized({'Authorization': 'Nostr blossom'}),
+      );
 
       final headers = await createViewerAuthHeadersForVideo(
         mediaViewerAuthService: mockMediaViewerAuthService,
@@ -62,7 +66,10 @@ void main() {
           url: any(named: 'url'),
           serverUrl: any(named: 'serverUrl'),
         ),
-      ).thenAnswer((_) async => {'Authorization': 'Nostr extracted'});
+      ).thenAnswer(
+        (_) async =>
+            const ViewerAuthAuthorized({'Authorization': 'Nostr extracted'}),
+      );
 
       final headers = await createViewerAuthHeadersForVideo(
         mediaViewerAuthService: mockMediaViewerAuthService,
@@ -94,7 +101,10 @@ void main() {
             url: any(named: 'url'),
             serverUrl: any(named: 'serverUrl'),
           ),
-        ).thenAnswer((_) async => {'Authorization': 'Nostr nip98'});
+        ).thenAnswer(
+          (_) async =>
+              const ViewerAuthAuthorized({'Authorization': 'Nostr nip98'}),
+        );
 
         final headers = await createViewerAuthHeadersForVideo(
           mediaViewerAuthService: mockMediaViewerAuthService,

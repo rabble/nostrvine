@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
+import 'package:openvine/services/viewer_auth_result.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Service for intercepting unauthorized media requests and handling authentication flow
@@ -21,9 +22,13 @@ class MediaAuthInterceptor {
   final ContentFilterService _contentFilterService;
   final MediaViewerAuthService _mediaViewerAuthService;
 
-  /// Handle 401 unauthorized response from Blossom media server
-  /// Returns request headers if user verifies adult content access, null otherwise
-  Future<Map<String, String>?> handleUnauthorizedMedia({
+  /// Handle 401 unauthorized response from Blossom media server.
+  ///
+  /// Returns [ViewerAuthAuthorized] with request headers when the viewer can
+  /// see adult content, [ViewerAuthSignerUnreachable] when a remote signer
+  /// timed out, or [ViewerAuthUnavailable] when the viewer declined / is
+  /// blocked by preference / no headers could be created.
+  Future<ViewerAuthResult> handleUnauthorizedMedia({
     required BuildContext context,
     String? sha256Hash,
     String? url,
@@ -52,7 +57,7 @@ class MediaAuthInterceptor {
           name: 'MediaAuthInterceptor',
           category: LogCategory.system,
         );
-        return null;
+        return const ViewerAuthUnavailable();
       }
 
       // Auto-create auth headers only when the user is already verified and
@@ -84,7 +89,7 @@ class MediaAuthInterceptor {
           name: 'MediaAuthInterceptor',
           category: LogCategory.system,
         );
-        return null;
+        return const ViewerAuthUnavailable();
       }
 
       final verified = await _ageVerificationService.verifyAdultContentAccess(
@@ -97,7 +102,7 @@ class MediaAuthInterceptor {
           name: 'MediaAuthInterceptor',
           category: LogCategory.system,
         );
-        return null;
+        return const ViewerAuthUnavailable();
       }
 
       Log.info(
@@ -118,7 +123,7 @@ class MediaAuthInterceptor {
         name: 'MediaAuthInterceptor',
         category: LogCategory.system,
       );
-      return null;
+      return const ViewerAuthUnavailable();
     }
   }
 

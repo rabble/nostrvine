@@ -666,6 +666,10 @@
   "videoErrorSkip": "Skip",
   "videoErrorVerifyAgeButton": "Verify age",
   "videoErrorVerifyAgeFailed": "Couldn't verify your age. Please try again.",
+  "videoErrorVerifyAgeSignerUnreachable": "Verification timed out. Check your connection and try again.",
+  "@videoErrorVerifyAgeSignerUnreachable": {
+    "description": "Snackbar shown when tapping Verify age on an age-restricted video and the remote signer didn't respond in time (timeout). Distinct from videoErrorVerifyAgeFailed because the remedy is checking connectivity, not re-verifying age."
+  },
   "videoFollowButtonFollowing": "Following",
   "videoFollowButtonFollow": "Follow",
   "audioAttributionOriginalSound": "Original sound",

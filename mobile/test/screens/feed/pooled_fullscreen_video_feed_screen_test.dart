@@ -28,6 +28,7 @@ import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/services/viewer_auth_result.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
@@ -931,7 +932,7 @@ void main() {
               serverUrl: 'https://media.divine.video',
               category: 'video',
             ),
-          ).thenAnswer((_) async => headers);
+          ).thenAnswer((_) async => const ViewerAuthAuthorized(headers));
 
           await tester.pumpWidget(
             buildSubject(
@@ -1024,7 +1025,7 @@ void main() {
               serverUrl: 'https://media.divine.video',
               category: 'video',
             ),
-          ).thenAnswer((_) async => headers);
+          ).thenAnswer((_) async => const ViewerAuthAuthorized(headers));
 
           await tester.pumpWidget(
             buildSubject(

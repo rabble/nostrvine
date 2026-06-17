@@ -532,6 +532,7 @@
     "videoErrorSkip": "Overslaan",
     "videoErrorVerifyAgeButton": "Leeftijd verifiëren",
     "videoErrorVerifyAgeFailed": "We konden je leeftijd niet verifiëren. Probeer het opnieuw.",
+    "videoErrorVerifyAgeSignerUnreachable": "Verificatie duurde te lang. Controleer je verbinding en probeer het opnieuw.",
     "videoFollowButtonFollowing": "Volgend",
     "videoFollowButtonFollow": "Volgen",
     "audioAttributionOriginalSound": "Origineel geluid",

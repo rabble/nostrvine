@@ -16,6 +16,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
+import 'package:openvine/services/viewer_auth_result.dart';
 
 class _MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
 
@@ -34,6 +35,10 @@ const _videoUrl = 'https://media.divine.video/$_sha256/720p.mp4';
 
 String get _failureText =>
     lookupAppLocalizations(const Locale('en')).videoErrorVerifyAgeFailed;
+
+String get _signerUnreachableText => lookupAppLocalizations(
+  const Locale('en'),
+).videoErrorVerifyAgeSignerUnreachable;
 
 AgeVerificationService _ageService({required bool verified}) {
   final service = _MockAgeVerificationService();
@@ -64,7 +69,10 @@ void main() {
           serverUrl: 'https://media.divine.video',
           category: 'video',
         ),
-      ).thenAnswer((_) async => {'Authorization': 'Nostr token'});
+      ).thenAnswer(
+        (_) async =>
+            const ViewerAuthAuthorized({'Authorization': 'Nostr token'}),
+      );
 
       await tester.pumpWidget(
         _RetryHarness(
@@ -101,7 +109,7 @@ void main() {
         'after', (tester) async {
       final mediaAuthInterceptor = _MockMediaAuthInterceptor();
       final playbackStatusCubit = VideoPlaybackStatusCubit();
-      final authCompleter = Completer<Map<String, String>?>();
+      final authCompleter = Completer<ViewerAuthResult>();
       addTearDown(playbackStatusCubit.close);
 
       when(
@@ -130,7 +138,9 @@ void main() {
       // markVerifying runs synchronously before the auth await.
       expect(playbackStatusCubit.state.isVerifying(_videoId), isTrue);
 
-      authCompleter.complete({'Authorization': 'Nostr token'});
+      authCompleter.complete(
+        const ViewerAuthAuthorized({'Authorization': 'Nostr token'}),
+      );
       await tester.pump();
       await tester.pump();
       // Cleared in the finally once the retry resolves.
@@ -142,7 +152,7 @@ void main() {
       (tester) async {
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();
         final playbackStatusCubit = VideoPlaybackStatusCubit();
-        final authCompleter = Completer<Map<String, String>?>();
+        final authCompleter = Completer<ViewerAuthResult>();
         var retryCount = 0;
         addTearDown(playbackStatusCubit.close);
 
@@ -184,7 +194,9 @@ void main() {
           ),
         ).called(1);
 
-        authCompleter.complete({'Authorization': 'Nostr token'});
+        authCompleter.complete(
+          const ViewerAuthAuthorized({'Authorization': 'Nostr token'}),
+        );
         await tester.pump();
         await tester.pump();
 
@@ -209,7 +221,7 @@ void main() {
           serverUrl: 'https://media.divine.video',
           category: 'video',
         ),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => const ViewerAuthUnavailable());
 
       await tester.pumpWidget(
         _RetryHarness(
@@ -258,7 +270,7 @@ void main() {
             serverUrl: 'https://media.divine.video',
             category: 'video',
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => const ViewerAuthUnavailable());
 
         await tester.pumpWidget(
           _RetryHarness(
@@ -303,7 +315,10 @@ void main() {
           serverUrl: 'https://media.divine.video',
           category: 'video',
         ),
-      ).thenAnswer((_) async => {'Authorization': 'Nostr token'});
+      ).thenAnswer(
+        (_) async =>
+            const ViewerAuthAuthorized({'Authorization': 'Nostr token'}),
+      );
 
       await tester.pumpWidget(
         _RetryHarness(
@@ -329,6 +344,54 @@ void main() {
       );
       expect(find.text(_failureText), findsOneWidget);
     });
+
+    testWidgets(
+      'surfaces the connectivity message when the remote signer is unreachable',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        final playbackStatusCubit = VideoPlaybackStatusCubit();
+        var retryCount = 0;
+        addTearDown(playbackStatusCubit.close);
+
+        // A non-interactive remote signer timed out: distinct from a verify
+        // failure, so the viewer is told to check their connection.
+        when(
+          () => mediaAuthInterceptor.handleUnauthorizedMedia(
+            context: any(named: 'context'),
+            sha256Hash: _sha256,
+            url: _videoUrl,
+            serverUrl: 'https://media.divine.video',
+            category: 'video',
+          ),
+        ).thenAnswer((_) async => const ViewerAuthSignerUnreachable());
+
+        await tester.pumpWidget(
+          _RetryHarness(
+            mediaAuthInterceptor: mediaAuthInterceptor,
+            playbackStatusCubit: playbackStatusCubit,
+            retryPlayback: (_) {
+              retryCount++;
+              return true;
+            },
+          ),
+        );
+
+        playbackStatusCubit.report(_videoId, PlaybackStatus.ageRestricted);
+
+        await tester.tap(find.text('Verify'));
+        await tester.pump();
+        await tester.pump();
+
+        expect(retryCount, 0);
+        expect(
+          playbackStatusCubit.state.statusFor(_videoId),
+          PlaybackStatus.ageRestricted,
+        );
+        // The distinct signer-unreachable copy, not the generic verify failure.
+        expect(find.text(_signerUnreachableText), findsOneWidget);
+        expect(find.text(_failureText), findsNothing);
+      },
+    );
 
     testWidgets(
       'refuses retry and surfaces feedback when sha256 cannot be resolved',

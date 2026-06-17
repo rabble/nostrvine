@@ -15,6 +15,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
+import 'package:openvine/services/viewer_auth_result.dart';
 import 'package:openvine/widgets/video_feed_item/verifying_aware_video_error_overlay.dart';
 
 class _MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
@@ -110,7 +111,7 @@ void main() {
     ) async {
       final interceptor = _MockMediaAuthInterceptor();
       final cubit = VideoPlaybackStatusCubit();
-      final authCompleter = Completer<Map<String, String>?>();
+      final authCompleter = Completer<ViewerAuthResult>();
       addTearDown(cubit.close);
 
       when(
@@ -134,7 +135,9 @@ void main() {
       expect(cubit.state.isVerifying(_videoId), isTrue);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-      authCompleter.complete({'Authorization': 'Nostr token'});
+      authCompleter.complete(
+        const ViewerAuthAuthorized({'Authorization': 'Nostr token'}),
+      );
       await tester.pump();
       await tester.pump();
       // Cleared in the retry helper's finally once playback reloads.

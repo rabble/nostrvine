@@ -1434,6 +1434,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu am putut verifica vârsta. Încearcă din nou.';
 
   @override
+  String get videoErrorVerifyAgeSignerUnreachable =>
+      'Timpul de verificare a expirat. Verifică-ți conexiunea și încearcă din nou.';
+
+  @override
   String get videoFollowButtonFollowing => 'Urmărit';
 
   @override

@@ -17,6 +17,7 @@ import 'package:openvine/services/broken_video_tracker.dart'
     show BrokenVideoTracker;
 import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
+import 'package:openvine/services/viewer_auth_result.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:video_player/video_player.dart';
@@ -1137,17 +1138,23 @@ Map<String, String>? _computeAuthHeadersSync(
 }
 
 /// Builds viewer auth headers for a legacy video playback request.
+///
+/// This prefetch/cache path only needs the headers, so it collapses the
+/// richer [ViewerAuthResult] (including a remote-signer timeout) to
+/// null — the surfaced "signer unreachable" message lives on the
+/// interactive Verify-age retry path, not here.
 Future<Map<String, String>?> createViewerAuthHeadersForVideo({
   required MediaViewerAuthService mediaViewerAuthService,
   required VideoControllerParams params,
-}) {
+}) async {
   final sha256 = _resolveSha256ForParams(params);
   final serverUrl = _extractServerUrl(params.videoUrl);
-  return mediaViewerAuthService.createAuthHeaders(
+  final result = await mediaViewerAuthService.createAuthHeaders(
     sha256Hash: sha256,
     url: params.videoUrl,
     serverUrl: serverUrl,
   );
+  return result.headersOrNull;
 }
 
 /// Generate auth headers asynchronously and cache them for future use

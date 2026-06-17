@@ -8,6 +8,7 @@ import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
+import 'package:openvine/services/viewer_auth_result.dart';
 
 class MockAgeVerificationService extends Mock
     implements AgeVerificationService {}
@@ -70,7 +71,7 @@ void main() {
         );
 
         // Assert
-        expect(result, isNull);
+        expect(result, isA<ViewerAuthUnavailable>());
         verify(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
         ).called(1);
@@ -99,7 +100,11 @@ void main() {
             url: any(named: 'url'),
             serverUrl: any(named: 'serverUrl'),
           ),
-        ).thenAnswer((_) async => {'Authorization': 'Nostr abc123token'});
+        ).thenAnswer(
+          (_) async => const ViewerAuthAuthorized({
+            'Authorization': 'Nostr abc123token',
+          }),
+        );
 
         // Act
         final result = await interceptor.handleUnauthorizedMedia(
@@ -109,7 +114,11 @@ void main() {
         );
 
         // Assert
-        expect(result, equals({'Authorization': 'Nostr abc123token'}));
+        expect(result, isA<ViewerAuthAuthorized>());
+        expect(
+          result.headersOrNull,
+          equals({'Authorization': 'Nostr abc123token'}),
+        );
         verifyNever(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
         );
@@ -138,7 +147,11 @@ void main() {
             url: any(named: 'url'),
             serverUrl: any(named: 'serverUrl'),
           ),
-        ).thenAnswer((_) async => {'Authorization': 'Nostr abc123token'});
+        ).thenAnswer(
+          (_) async => const ViewerAuthAuthorized({
+            'Authorization': 'Nostr abc123token',
+          }),
+        );
 
         // Act
         final result = await interceptor.handleUnauthorizedMedia(
@@ -148,7 +161,11 @@ void main() {
         );
 
         // Assert
-        expect(result, equals({'Authorization': 'Nostr abc123token'}));
+        expect(result, isA<ViewerAuthAuthorized>());
+        expect(
+          result.headersOrNull,
+          equals({'Authorization': 'Nostr abc123token'}),
+        );
         verify(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
         ).called(1);
@@ -173,7 +190,11 @@ void main() {
           url: any(named: 'url'),
           serverUrl: any(named: 'serverUrl'),
         ),
-      ).thenAnswer((_) async => {'Authorization': 'Nostr tokenWithServer'});
+      ).thenAnswer(
+        (_) async => const ViewerAuthAuthorized({
+          'Authorization': 'Nostr tokenWithServer',
+        }),
+      );
 
       // Act
       final result = await interceptor.handleUnauthorizedMedia(
@@ -184,7 +205,11 @@ void main() {
       );
 
       // Assert
-      expect(result, equals({'Authorization': 'Nostr tokenWithServer'}));
+      expect(result, isA<ViewerAuthAuthorized>());
+      expect(
+        result.headersOrNull,
+        equals({'Authorization': 'Nostr tokenWithServer'}),
+      );
       verify(
         () => mockMediaViewerAuthService.createAuthHeaders(
           sha256Hash: 'xyz789',
@@ -206,7 +231,10 @@ void main() {
           url: any(named: 'url'),
           serverUrl: any(named: 'serverUrl'),
         ),
-      ).thenAnswer((_) async => {'Authorization': 'Nostr token'});
+      ).thenAnswer(
+        (_) async =>
+            const ViewerAuthAuthorized({'Authorization': 'Nostr token'}),
+      );
 
       // Act - Test with different category (future-proofing for violence, etc.)
       await interceptor.handleUnauthorizedMedia(
@@ -237,7 +265,7 @@ void main() {
             url: any(named: 'url'),
             serverUrl: any(named: 'serverUrl'),
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => const ViewerAuthUnavailable());
 
         // Act
         final result = await interceptor.handleUnauthorizedMedia(
@@ -247,7 +275,37 @@ void main() {
         );
 
         // Assert
-        expect(result, isNull);
+        expect(result, isA<ViewerAuthUnavailable>());
+      },
+    );
+
+    test(
+      'propagates ViewerAuthSignerUnreachable when the remote signer times out',
+      () async {
+        when(
+          () => mockContentFilterService.adultPlaybackPreference,
+        ).thenReturn(ContentFilterPreference.show);
+        when(
+          () => mockAgeVerificationService.isAdultContentVerified,
+        ).thenReturn(true);
+        when(
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        ).thenAnswer((_) async => const ViewerAuthSignerUnreachable());
+
+        // Act
+        final result = await interceptor.handleUnauthorizedMedia(
+          context: mockContext,
+          sha256Hash: 'abc123',
+          category: 'nudity',
+        );
+
+        // Assert — the timeout outcome reaches the caller unchanged so the UI
+        // can show the connectivity-specific message.
+        expect(result, isA<ViewerAuthSignerUnreachable>());
       },
     );
   });

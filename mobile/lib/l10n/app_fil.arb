@@ -360,6 +360,7 @@
     "videoErrorSkip": "Laktawan",
     "videoErrorVerifyAgeButton": "I-verify ang edad",
     "videoErrorVerifyAgeFailed": "Hindi na-verify ang edad mo. Subukan ulit.",
+    "videoErrorVerifyAgeSignerUnreachable": "Nag-timeout ang pag-verify. I-check ang koneksyon mo at subukan ulit.",
     "videoFollowButtonFollowing": "Sinusundan",
     "videoFollowButtonFollow": "Sundan",
     "audioAttributionOriginalSound": "Original sound",

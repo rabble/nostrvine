@@ -561,6 +561,7 @@
     "videoErrorSkip": "Пропусни",
     "videoErrorVerifyAgeButton": "Потвърди възрастта",
     "videoErrorVerifyAgeFailed": "Възрастта ти не можа да бъде потвърдена. Опитай пак.",
+    "videoErrorVerifyAgeSignerUnreachable": "Потвърждаването изтече. Провери връзката си и опитай пак.",
     "videoFollowButtonFollowing": "Следване",
     "videoFollowButtonFollow": "Следвай",
     "audioAttributionOriginalSound": "Оригинален звук",

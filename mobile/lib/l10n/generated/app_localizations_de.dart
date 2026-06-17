@@ -1417,6 +1417,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wir konnten dein Alter nicht bestätigen. Bitte versuch es nochmal.';
 
   @override
+  String get videoErrorVerifyAgeSignerUnreachable =>
+      'Zeitüberschreitung bei der Überprüfung. Prüf deine Verbindung und versuch es nochmal.';
+
+  @override
   String get videoFollowButtonFollowing => 'Gefolgt';
 
   @override
