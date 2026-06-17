@@ -90,7 +90,6 @@ lib/widgets/video_feed_item/content_warning_helpers.dart
 lib/widgets/video_feed_item/feed_videos.dart
 lib/widgets/video_feed_item/pooled_video_error_overlay.dart
 lib/widgets/video_feed_item/subtitle_overlay.dart
-lib/widgets/video_feed_item/video_error_overlay.dart
 lib/widgets/video_metadata/modes/capture/video_metadata_capture_bottom_bar.dart
 lib/widgets/video_metadata/modes/edit/video_metadata_edit_bottom_bar.dart
 lib/widgets/video_metrics_overlay.dart

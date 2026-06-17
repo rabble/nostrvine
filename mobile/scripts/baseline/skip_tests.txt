@@ -83,5 +83,4 @@ test/widgets/settings_bottom_nav_test.dart
 test/widgets/settings_delete_account_test.dart
 test/widgets/settings_screen_scaffold_test.dart
 test/widgets/user_profile_tile_layout_test.dart
-test/widgets/video_error_overlay_test.dart
 test/widgets/video_overlay_context_title_simple_test.dart
