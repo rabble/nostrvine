@@ -1593,18 +1593,16 @@ class _DivineAppState extends ConsumerState<DivineApp> {
   @override
   void initState() {
     super.initState();
-    // Hold the native splash until an authenticated user's `/welcome` → `/home`
-    // redirect has been applied, so the sign-in page never flashes (#5242).
-    // Constructed synchronously here — before deferred startup triggers
-    // AuthService.initialize() — so it is subscribed before the auth state
-    // settles. Reading goRouterProvider builds the cached router instance.
+    // Subscribe before deferred startup settles auth; routerDelegate reliably
+    // notifies after redirect configuration changes (#5242).
     final router = ref.read(goRouterProvider);
     final authService = ref.read(authServiceProvider);
     _splashReleaseController = StartupSplashReleaseController(
       authStateStream: authService.authStateStream,
       currentAuthState: () => authService.authState,
-      locationListenable: router.routeInformationProvider,
-      currentLocation: () => router.routeInformationProvider.value.uri.path,
+      locationListenable: router.routerDelegate,
+      currentLocation: () =>
+          router.routerDelegate.currentConfiguration.uri.path,
       isAuthEntryLocation: isAuthEntryLocation,
     );
     // Start deferred startup after the first frame so the shell can paint first.

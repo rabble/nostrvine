@@ -5,8 +5,8 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:openvine/services/auth_service.dart';
 
 /// Releases the native splash once startup auth has settled — and, for an
-/// authenticated user, only after the router has navigated off the auth-entry
-/// flow (`/welcome`).
+/// authenticated user, only after the router reports it has navigated off the
+/// auth-entry flow (`/welcome`).
 ///
 /// This reproduces the synchronous-after-redirect ordering proven in #2953
 /// (commit b7e06144a) while keeping splash logic out of [AuthService] (#5074).
@@ -27,8 +27,8 @@ class StartupSplashReleaseController {
   ///
   /// [authStateStream] / [currentAuthState] report the auth state;
   /// [locationListenable] / [currentLocation] report the current router
-  /// location (e.g. `GoRouter.routeInformationProvider` and
-  /// `() => router.routeInformationProvider.value.uri.path`);
+  /// location. Use a signal that fires after redirects, such as
+  /// `GoRouter.routerDelegate` with `currentConfiguration.uri.path`.
   /// [isAuthEntryLocation] is the router predicate of the same name.
   /// [release] defaults to [FlutterNativeSplash.remove]; [timeout] defaults to
   /// [AuthService.startupAuthRestoreTimeout].

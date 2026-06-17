@@ -60,6 +60,52 @@ void main() {
       });
     });
 
+    test(
+      'authenticated release follows delegate-style redirect notification',
+      () {
+        fakeAsync((async) {
+          final auth = StreamController<AuthState>.broadcast();
+          final location = _RouterDelegateLocation('/welcome');
+          var state = AuthState.checking;
+          var releases = 0;
+
+          final controller = StartupSplashReleaseController(
+            authStateStream: auth.stream,
+            currentAuthState: () => state,
+            locationListenable: location,
+            currentLocation: () => location.value,
+            isAuthEntryLocation: isAuthEntryLocation,
+            timeout: timeout,
+            release: () => releases++,
+          );
+
+          state = AuthState.authenticated;
+          auth.add(AuthState.authenticated);
+          async.flushMicrotasks();
+          expect(releases, 0);
+
+          location.setSilently('/home');
+          expect(
+            releases,
+            0,
+            reason:
+                'GoRouteInformationProvider redirect writeback does not notify',
+          );
+
+          location.notifyRedirectApplied();
+          expect(
+            releases,
+            1,
+            reason:
+                'GoRouterDelegate notifies after currentConfiguration updates',
+          );
+
+          controller.dispose();
+          unawaited(auth.close());
+        });
+      },
+    );
+
     test('unauthenticated releases immediately while on /welcome', () {
       fakeAsync((async) {
         final auth = StreamController<AuthState>.broadcast();
@@ -249,4 +295,18 @@ void main() {
       });
     });
   });
+}
+
+class _RouterDelegateLocation extends ChangeNotifier {
+  _RouterDelegateLocation(this.value);
+
+  String value;
+
+  void setSilently(String nextValue) {
+    value = nextValue;
+  }
+
+  void notifyRedirectApplied() {
+    notifyListeners();
+  }
 }

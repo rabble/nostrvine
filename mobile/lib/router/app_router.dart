@@ -211,15 +211,6 @@ String? _moderationConversationId(
   return DmRepository.computeConversationId([currentPubkey, moderationPubkey]);
 }
 
-/// Whether [location] belongs to the unauthenticated auth-entry flow
-/// (welcome/sign-in and its sub-paths, key import, nostrconnect, invite gate,
-/// reset-password, email verification, and the public minor-account review
-/// entry screens).
-///
-/// Used by the router redirect and by the startup splash-release controller
-/// (#5242), which keeps the native splash up for an authenticated user until
-/// the redirect has navigated off this flow — otherwise the `/welcome` page
-/// flashes before `/home` paints.
 bool isAuthEntryLocation(String location) {
   return location == WelcomeScreen.path ||
       location.startsWith('${WelcomeScreen.path}/') ||
