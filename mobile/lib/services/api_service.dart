@@ -32,6 +32,7 @@ class ApiService {
        _authService = authService,
        _rateLimiter = rateLimiter;
   static String get _baseUrl => AppConfig.backendBaseUrl;
+  static String get _mediaBaseUrl => AppConfig.mediaApiBaseUrl;
   static const Duration _defaultTimeout = Duration(seconds: 30);
 
   final http.Client _client;
@@ -59,7 +60,7 @@ class ApiService {
         await _rateLimiter.checkLimit('/v1/media/request-upload');
       }
 
-      final uri = Uri.parse('$_baseUrl/v1/media/request-upload');
+      final uri = Uri.parse('$_mediaBaseUrl/v1/media/request-upload');
 
       final requestBody = {
         'nostr_pubkey': nostrPubkey,
@@ -113,7 +114,7 @@ class ApiService {
     );
 
     try {
-      final uri = Uri.parse('$_baseUrl/v1/media/status');
+      final uri = Uri.parse('$_mediaBaseUrl/v1/media/status');
 
       final response = await _client
           .get(uri, headers: await _getHeaders(url: uri.toString()))
@@ -153,12 +154,7 @@ class ApiService {
     try {
       final uri = Uri.parse('$_baseUrl/v1/account/moderation-status');
       final response = await _client
-          .get(
-            uri,
-            headers: await _getHeaders(
-              url: uri.toString(),
-            ),
-          )
+          .get(uri, headers: await _getHeaders(url: uri.toString()))
           .timeout(_defaultTimeout);
 
       if (response.statusCode == 200) {
@@ -174,9 +170,7 @@ class ApiService {
       throw const ApiException('Request timeout for moderation status');
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException(
-        'Network error during moderation status request: $e',
-      );
+      throw ApiException('Network error during moderation status request: $e');
     }
   }
 
@@ -221,9 +215,7 @@ class ApiService {
       throw const ApiException('Request timeout for parent contact submission');
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException(
-        'Network error during parent contact submission: $e',
-      );
+      throw ApiException('Network error during parent contact submission: $e');
     }
   }
 

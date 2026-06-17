@@ -71,6 +71,7 @@ wrangler deploy --env production
 Edit `mobile/lib/config/app_config.dart`:
 ```dart
 static const String backendBaseUrl = 'https://api.divine.video';
+static const String mediaApiBaseUrl = 'https://api.openvine.co';
 ```
 
 ### 8. Build & Deploy Apps
@@ -78,13 +79,19 @@ static const String backendBaseUrl = 'https://api.divine.video';
 cd mobile
 
 # Android
-flutter build apk --release --dart-define=BACKEND_URL=https://api.divine.video
+flutter build apk --release \
+  --dart-define=BACKEND_URL=https://api.divine.video \
+  --dart-define=MEDIA_API_URL=https://api.openvine.co
 
 # iOS (macOS only)
-flutter build ios --release --dart-define=BACKEND_URL=https://api.divine.video
+flutter build ios --release \
+  --dart-define=BACKEND_URL=https://api.divine.video \
+  --dart-define=MEDIA_API_URL=https://api.openvine.co
 
 # Web
-flutter build web --release --dart-define=BACKEND_URL=https://api.divine.video
+flutter build web --release \
+  --dart-define=BACKEND_URL=https://api.divine.video \
+  --dart-define=MEDIA_API_URL=https://api.openvine.co
 npx wrangler pages deploy build/web --project-name nostrvine-web
 ```
 
@@ -126,6 +133,7 @@ wrangler tail --env production
 ## 📊 Production URLs
 
 - **Backend API**: https://api.divine.video
+- **Legacy Media API**: https://api.openvine.co
 - **Health Check**: https://api.divine.video/health
 - **Web App**: https://app.openvine.co (after Pages deployment)
 - **Analytics**: https://api.divine.video/api/analytics/dashboard

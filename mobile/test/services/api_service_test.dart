@@ -61,6 +61,44 @@ void main() {
         expect(result['signed_fields'], isA<Map<String, dynamic>>());
       });
 
+      test('posts to the media API host', () async {
+        final mockResponse = MockResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+        when(() => mockResponse.body).thenReturn(
+          jsonEncode({
+            'upload_url': 'https://example.com/upload',
+            'signed_fields': {'key': 'value'},
+          }),
+        );
+
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => mockResponse);
+
+        await apiService.requestSignedUpload(
+          nostrPubkey: 'test_pubkey',
+          fileSize: 1024,
+          mimeType: 'video/mp4',
+        );
+
+        final captured =
+            verify(
+                  () => mockClient.post(
+                    captureAny(),
+                    headers: any(named: 'headers'),
+                    body: any(named: 'body'),
+                  ),
+                ).captured.single
+                as Uri;
+
+        expect(captured.host, 'api.openvine.co');
+        expect(captured.path, '/v1/media/request-upload');
+      });
+
       test('should handle API error responses', () async {
         // Arrange
         final mockResponse = MockResponse();
@@ -139,6 +177,37 @@ void main() {
           final result = await apiService.getMinorAccountReviewStatus();
 
           expect(result['restriction'], isA<Map<String, dynamic>>());
+        },
+      );
+
+      test(
+        'getMinorAccountReviewStatus uses the Divine backend host',
+        () async {
+          final mockResponse = MockResponse();
+          when(() => mockResponse.statusCode).thenReturn(200);
+          when(() => mockResponse.body).thenReturn(
+            jsonEncode({
+              'restriction': {'status': 'active'},
+            }),
+          );
+
+          when(
+            () => mockClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => mockResponse);
+
+          await apiService.getMinorAccountReviewStatus();
+
+          final captured =
+              verify(
+                    () => mockClient.get(
+                      captureAny(),
+                      headers: any(named: 'headers'),
+                    ),
+                  ).captured.single
+                  as Uri;
+
+          expect(captured.host, 'api.divine.video');
+          expect(captured.path, '/v1/account/moderation-status');
         },
       );
 

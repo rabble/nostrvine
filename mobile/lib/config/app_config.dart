@@ -8,6 +8,11 @@ class AppConfig {
     defaultValue: 'https://api.divine.video',
   );
 
+  static const String mediaApiBaseUrl = String.fromEnvironment(
+    'MEDIA_API_URL',
+    defaultValue: 'https://api.openvine.co',
+  );
+
   static const String inviteServerBaseUrl = String.fromEnvironment(
     'INVITE_SERVER_URL',
     defaultValue: 'https://invite.divine.video',
@@ -35,20 +40,20 @@ class AppConfig {
   // API endpoints
   static String get healthUrl => '$backendBaseUrl/health';
   static String get nip96InfoUrl =>
-      '$backendBaseUrl/.well-known/nostr/nip96.json';
+      '$mediaApiBaseUrl/.well-known/nostr/nip96.json';
 
   static String get streamUploadRequestUrl =>
-      '$backendBaseUrl/v1/media/request-upload';
+      '$mediaApiBaseUrl/v1/media/request-upload';
   static String streamStatusUrl(String videoId) =>
-      '$backendBaseUrl/v1/media/status/$videoId';
+      '$mediaApiBaseUrl/v1/media/status/$videoId';
   static String get streamWebhookUrl =>
-      '$backendBaseUrl/v1/webhooks/stream-complete';
+      '$mediaApiBaseUrl/v1/webhooks/stream-complete';
 
   // Cloudinary endpoints
   static String get cloudinarySignedUploadUrl =>
-      '$backendBaseUrl/v1/media/cloudinary/request-upload';
-  static String get cloudinaryWebhookUrl => '$backendBaseUrl/v1/media/webhook';
-  static String get readyEventsUrl => '$backendBaseUrl/v1/media/ready-events';
+      '$mediaApiBaseUrl/v1/media/cloudinary/request-upload';
+  static String get cloudinaryWebhookUrl => '$mediaApiBaseUrl/v1/media/webhook';
+  static String get readyEventsUrl => '$mediaApiBaseUrl/v1/media/ready-events';
 
   // App configuration
   static const String appName = 'Divine';
@@ -92,6 +97,7 @@ class AppConfig {
   static Map<String, dynamic> getConfigSummary() => {
     'environment': environment,
     'backendUrl': backendBaseUrl,
+    'mediaApiUrl': mediaApiBaseUrl,
     'inviteServerUrl': inviteServerBaseUrl,
     'appsDirectoryUrl': appsDirectoryBaseUrl,
     'isDevelopment': isDevelopment,
