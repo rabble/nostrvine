@@ -44,10 +44,10 @@ class ForegroundIdleWarmupScheduler {
     if (_startupTimer != null || _periodicTimer != null) return;
 
     _startupTimer = Timer(_startupDelay, () {
-      unawaited(_requestWarmup(ForegroundIdleWarmupTrigger.startupSettled));
+      _requestSafely(ForegroundIdleWarmupTrigger.startupSettled);
     });
     _periodicTimer = Timer.periodic(_interval, (_) {
-      unawaited(_requestWarmup(ForegroundIdleWarmupTrigger.periodicIdleCheck));
+      _requestSafely(ForegroundIdleWarmupTrigger.periodicIdleCheck);
     });
   }
 
@@ -57,6 +57,19 @@ class ForegroundIdleWarmupScheduler {
     _periodicTimer?.cancel();
     _startupTimer = null;
     _periodicTimer = null;
+  }
+
+  void _requestSafely(ForegroundIdleWarmupTrigger trigger) {
+    unawaited(
+      Future.sync(() => _requestWarmup(trigger)).catchError((Object error) {
+        Log.warning(
+          'Scheduled foreground idle warmup failed '
+          '(${trigger.name}): $error',
+          name: 'ForegroundIdleWarmupScheduler',
+          category: LogCategory.system,
+        );
+      }),
+    );
   }
 }
 
