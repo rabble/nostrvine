@@ -52,17 +52,18 @@ class _InboxViewState extends ConsumerState<InboxView>
   /// Currently selected tab.
   InboxTab _selectedTab = InboxTab.notifications;
 
-  /// Whether the Messages tab has been opened at least once. The pane is
-  /// built lazily on first open so its `ConversationListBloc` (and the DM
-  /// history backfill it kicks off) only starts when the user actually
-  /// navigates to Messages — then it stays mounted so later switches don't
-  /// reload. Notifications is the default tab and is always mounted.
+  /// Whether the Messages tab UI has been opened at least once. The
+  /// `ConversationListBloc` is provided by `InboxPage` and starts immediately
+  /// so DM backfill and streams can warm the tab before it is visible; this flag
+  /// only keeps the Messages pane out of the animated stack until first open.
+  /// After that first open, the pane stays mounted so later switches preserve
+  /// UI state. Notifications is the default tab and is always mounted.
   bool _messagesActivated = false;
 
   /// Pubkey the current tab state belongs to. When the signed-in identity
-  /// changes we collapse back to Notifications and re-arm lazy Messages
-  /// activation, so the new account doesn't eagerly start its DM backfill
-  /// before the user navigates to Messages.
+  /// changes we collapse back to Notifications and re-arm lazy Messages UI
+  /// activation. The account-scoped DM bloc still starts from `InboxPage` so
+  /// Messages can be ready by the time the user opens it.
   String? _activePubkey;
   bool _pubkeyObserved = false;
 
@@ -98,7 +99,7 @@ class _InboxViewState extends ConsumerState<InboxView>
   }
 
   /// Resets the tab state to its defaults when the signed-in identity changes,
-  /// so a new account opens on Notifications and re-arms lazy Messages loading.
+  /// so a new account opens on Notifications and re-arms lazy Messages UI.
   void _syncToIdentity(String? currentPubkey) {
     if (!_pubkeyObserved) {
       _pubkeyObserved = true;
