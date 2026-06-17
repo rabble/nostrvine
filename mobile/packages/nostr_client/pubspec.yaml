@@ -16,6 +16,7 @@ dependencies:
   meta: ^1.17.0
   nostr_sdk:
     path: ../nostr_sdk
+  pool: ^1.5.1
   shared_preferences: ^2.5.3
 
 dev_dependencies:

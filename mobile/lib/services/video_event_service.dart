@@ -245,7 +245,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   // Side-channel observers that fire for every video that flows through the
   // service after filtering — both REST-loaded batches via [filterVideoList]
   // and WebSocket-driven additions via [_addVideoToSubscription], including
-  // historical (paginated) ones that [_notifyNewVideo] intentionally skips.
+  // historical (paginated) ones.
   // Composition-root concerns (e.g. badge caches) wire themselves here
   // without coupling this service to any specific consumer.
   final List<void Function(Iterable<VideoEvent> videos)> _videoObservers = [];
@@ -267,13 +267,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// [updated] is the new video with updated metadata.
   final List<void Function(VideoEvent updated)> _onVideoUpdatedCallbacks = [];
 
-  /// Callback type for new video notifications.
-  /// Called when a NEW video is added (not an update to existing).
-  /// [newVideo] is the newly added video.
-  /// [authorPubkey] is the video author's pubkey (or reposter's pubkey for reposts).
-  final List<void Function(VideoEvent newVideo, String authorPubkey)>
-  _onNewVideoCallbacks = [];
-
   /// Register a callback to be notified when a video is updated.
   /// Returns a function that can be called to unregister the callback.
   VoidCallback addVideoUpdateListener(
@@ -281,16 +274,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   ) {
     _onVideoUpdatedCallbacks.add(callback);
     return () => _onVideoUpdatedCallbacks.remove(callback);
-  }
-
-  /// Register a callback to be notified when a NEW video is added.
-  /// Returns a function that can be called to unregister the callback.
-  /// This is called for new videos added via any subscription type.
-  VoidCallback addNewVideoListener(
-    void Function(VideoEvent newVideo, String authorPubkey) callback,
-  ) {
-    _onNewVideoCallbacks.add(callback);
-    return () => _onNewVideoCallbacks.remove(callback);
   }
 
   /// Remove a previously registered video update callback.
@@ -306,21 +289,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       } catch (e) {
         Log.error(
           'Error in video update callback: $e',
-          name: 'VideoEventService',
-          category: LogCategory.video,
-        );
-      }
-    }
-  }
-
-  /// Notify all registered callbacks that a NEW video was added.
-  void _notifyNewVideo(VideoEvent newVideo, String authorPubkey) {
-    for (final callback in _onNewVideoCallbacks) {
-      try {
-        callback(newVideo, authorPubkey);
-      } catch (e) {
-        Log.error(
-          'Error in new video callback: $e',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -4618,15 +4586,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       final authorHex = videoEvent.isRepost && videoEvent.reposterPubkey != null
           ? videoEvent.reposterPubkey!
           : videoEvent.pubkey;
-      final wasAdded = _addToAuthorBucket(
-        videoEvent,
-        authorHex,
-        isHistorical: isHistorical,
-      );
-      // Notify listeners when a new (non-historical) video is added
-      if (wasAdded && !isHistorical) {
-        _notifyNewVideo(videoEvent, authorHex);
-      }
+      _addToAuthorBucket(videoEvent, authorHex, isHistorical: isHistorical);
     }
 
     if (subscriptionType != SubscriptionType.profile) {
@@ -4638,14 +4598,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
       // Add to current user's bucket (for own profile)
       if (currentUserPubkey.isNotEmpty && authorHex == currentUserPubkey) {
-        final wasAdded = _addToAuthorBucket(
-          videoEvent,
-          authorHex,
-          isHistorical: isHistorical,
-        );
-        if (wasAdded && !isHistorical) {
-          _notifyNewVideo(videoEvent, authorHex);
-        }
+        _addToAuthorBucket(videoEvent, authorHex, isHistorical: isHistorical);
       }
 
       // Cross-populate author bucket for OTHER users whose profiles were viewed.
@@ -4653,14 +4606,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // in discovery/home feeds (fixes stale 0-video profile state).
       if (authorHex != currentUserPubkey &&
           _authorBuckets.containsKey(authorHex)) {
-        final wasAdded = _addToAuthorBucket(
-          videoEvent,
-          authorHex,
-          isHistorical: isHistorical,
-        );
-        if (wasAdded && !isHistorical) {
-          _notifyNewVideo(videoEvent, authorHex);
-        }
+        _addToAuthorBucket(videoEvent, authorHex, isHistorical: isHistorical);
       }
     }
 

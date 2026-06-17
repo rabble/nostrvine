@@ -91,9 +91,6 @@ void main() {
         () => videoEventService.addVideoUpdateListener(any()),
       ).thenReturn(() {});
       when(
-        () => videoEventService.addNewVideoListener(any()),
-      ).thenReturn(() {});
-      when(
         () => videoEventService.removedVideoIds,
       ).thenAnswer((_) => const Stream<String>.empty());
       when(

@@ -81,10 +81,6 @@ class _Harness {
       onUpdate = i.positionalArguments[0] as void Function(VideoEvent);
       return () {};
     });
-    when(() => ves.addNewVideoListener(any())).thenAnswer((i) {
-      onNew = i.positionalArguments[0] as void Function(VideoEvent, String);
-      return () {};
-    });
     when(() => blocklist.shouldFilterFromFeeds(any())).thenReturn(false);
   }
 
@@ -94,7 +90,6 @@ class _Harness {
 
   void Function()? onChanged;
   void Function(VideoEvent)? onUpdate;
-  void Function(VideoEvent, String)? onNew;
 
   List<VideoEvent> enrichInput = const [];
   Future<List<VideoEvent>> Function(List<VideoEvent>)? enrichOverride;
@@ -153,7 +148,6 @@ void main() {
     registerFallbackValue(<VideoEvent>[]);
     registerFallbackValue(() {});
     registerFallbackValue((VideoEvent _) {});
-    registerFallbackValue((VideoEvent _, String _) {});
   });
 
   group('ProfileFeedCubit', () {
@@ -423,12 +417,10 @@ void main() {
     test(
       'cold load -> loadMore -> realtime add compose in newest-first order',
       () async {
-        final originalDebounce = ProfileFeedCubit.relaySnapshotDebounce;
-        ProfileFeedCubit.relaySnapshotDebounce = const Duration(
-          milliseconds: 20,
-        );
+        final originalAudit = ProfileFeedCubit.relaySnapshotAudit;
+        ProfileFeedCubit.relaySnapshotAudit = const Duration(milliseconds: 20);
         addTearDown(
-          () => ProfileFeedCubit.relaySnapshotDebounce = originalDebounce,
+          () => ProfileFeedCubit.relaySnapshotAudit = originalAudit,
         );
 
         // Cold load: first page, more available.
@@ -454,9 +446,13 @@ void main() {
         await pumpEventQueue();
         expect(cubit.state.videos.map((v) => v.id), ['a', 'b']);
 
-        // Realtime add slots the newest video ahead of the paginated list
-        // without disturbing the pagination cursor (debounced new-video path).
-        h.onNew!(_video('c', createdAt: 5000), _author);
+        // A new relay video for this author slots ahead of the paginated list
+        // without disturbing the pagination cursor. It flows through the
+        // audited snapshot reconciliation (the sole realtime add path).
+        when(
+          () => h.ves.authorVideos(_author),
+        ).thenReturn([_video('c', createdAt: 5000)]);
+        h.onChanged!();
         await Future<void>.delayed(const Duration(milliseconds: 60));
         await pumpEventQueue();
 
@@ -565,73 +561,44 @@ void main() {
       );
     });
 
-    test('optimistic add: new video prepended; reposts ignored', () async {
-      final originalDebounce = ProfileFeedCubit.relaySnapshotDebounce;
-      ProfileFeedCubit.relaySnapshotDebounce = const Duration(milliseconds: 20);
-      addTearDown(
-        () => ProfileFeedCubit.relaySnapshotDebounce = originalDebounce,
-      );
-
-      final cubit = await buildReady(_result([_video('a')]));
-      addTearDown(cubit.close);
-
-      // New-video notifications are debounced, so allow the quiet window to
-      // elapse before asserting the merged result.
-      h.onNew!(_video('b', createdAt: 5000), _author);
-      await Future<void>.delayed(const Duration(milliseconds: 60));
-      await pumpEventQueue();
-      expect(cubit.state.videos.map((v) => v.id), ['b', 'a']);
-
-      final before = cubit.state.videos.length;
-      h.onNew!(_video('a'), _author); // duplicate -> no change
-      await Future<void>.delayed(const Duration(milliseconds: 60));
-      await pumpEventQueue();
-      expect(cubit.state.videos.length, before);
-    });
-
     test(
-      'new-video bursts coalesce into a single emit (debounce)',
+      'snapshot add: new video prepended; duplicate snapshot no-ops',
       () async {
-        final originalDebounce = ProfileFeedCubit.relaySnapshotDebounce;
-        ProfileFeedCubit.relaySnapshotDebounce = const Duration(
-          milliseconds: 20,
-        );
+        final originalAudit = ProfileFeedCubit.relaySnapshotAudit;
+        ProfileFeedCubit.relaySnapshotAudit = const Duration(milliseconds: 20);
         addTearDown(
-          () => ProfileFeedCubit.relaySnapshotDebounce = originalDebounce,
+          () => ProfileFeedCubit.relaySnapshotAudit = originalAudit,
         );
 
         final cubit = await buildReady(_result([_video('a')]));
         addTearDown(cubit.close);
 
-        final emitted = <List<String>>[];
-        final sub = cubit.stream.listen(
-          (s) => emitted.add(s.videos.map((v) => v.id).toList()),
-        );
-        addTearDown(sub.cancel);
-
-        // The relay delivers an author's backlog as a burst of per-video
-        // "new video" notifications. They must collapse to one emit, not one
-        // grid rebuild per video.
-        for (var i = 0; i < 5; i++) {
-          h.onNew!(_video('b$i', createdAt: 5000 + i), _author);
-        }
+        // A new relay video flows through the audited snapshot path; allow the
+        // window to elapse before asserting the merged result.
+        when(
+          () => h.ves.authorVideos(_author),
+        ).thenReturn([_video('b', createdAt: 5000), _video('a')]);
+        h.onChanged!();
         await Future<void>.delayed(const Duration(milliseconds: 60));
         await pumpEventQueue();
+        expect(cubit.state.videos.map((v) => v.id), ['b', 'a']);
 
-        expect(emitted, hasLength(1));
+        // A repeat snapshot with the same set produces no further change.
+        final before = cubit.state.videos.length;
+        h.onChanged!();
+        await Future<void>.delayed(const Duration(milliseconds: 60));
+        await pumpEventQueue();
+        expect(cubit.state.videos.length, before);
       },
     );
 
     test(
-      'relay-snapshot bursts coalesce into a single reconciliation '
-      '(debounce)',
+      'relay-snapshot bursts coalesce into a single reconciliation (audit)',
       () async {
-        final original = ProfileFeedCubit.relaySnapshotDebounce;
-        ProfileFeedCubit.relaySnapshotDebounce = const Duration(
-          milliseconds: 20,
-        );
+        final originalAudit = ProfileFeedCubit.relaySnapshotAudit;
+        ProfileFeedCubit.relaySnapshotAudit = const Duration(milliseconds: 20);
         addTearDown(
-          () => ProfileFeedCubit.relaySnapshotDebounce = original,
+          () => ProfileFeedCubit.relaySnapshotAudit = originalAudit,
         );
 
         final cubit = await buildReady(_result(const []));
@@ -644,16 +611,25 @@ void main() {
           () => h.ves.authorVideos(_author),
         ).thenReturn([_video('relay', createdAt: 9000)]);
 
-        // A burst of app-wide VideoEventService notifications (e.g. other
-        // feeds streaming) all land inside one debounce window.
+        final emitted = <List<String>>[];
+        final sub = cubit.stream.listen(
+          (s) => emitted.add(s.videos.map((v) => v.id).toList()),
+        );
+        addTearDown(sub.cancel);
+
+        // A burst of app-wide VideoEventService notifications (e.g. other feeds
+        // streaming, or this author's backlog arriving as live events) all land
+        // inside one audit window.
         for (var i = 0; i < 5; i++) {
           h.onChanged!();
         }
         await Future<void>.delayed(const Duration(milliseconds: 60));
+        await pumpEventQueue();
 
         // The O(videos) snapshot reconciliation runs once, not once per
-        // notification — yet still lands the new relay video.
+        // notification, and lands the new relay video in a single emit.
         verify(() => h.ves.authorVideos(_author)).called(1);
+        expect(emitted, hasLength(1));
         expect(cubit.state.videos.map((v) => v.id), contains('relay'));
       },
     );

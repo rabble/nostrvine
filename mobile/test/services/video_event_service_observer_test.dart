@@ -63,7 +63,7 @@ void main() {
 
     test(
       'fires per video added via addVideoEvent (covers WebSocket path '
-      'including historical pagination that _notifyNewVideo skips)',
+      'including historical pagination)',
       () {
         final received = <String>[];
         service.addVideoObserver(

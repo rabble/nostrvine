@@ -31,18 +31,10 @@ final class ProfileFeedFiltersChanged extends ProfileFeedEvent {
 }
 
 /// Internal: the VideoEventService relay snapshot changed (via `addListener`).
+/// This is the sole realtime add path — new videos for the author flow through
+/// here too, since the service always notifies listeners when a video lands.
 final class ProfileFeedRelaySnapshotChanged extends ProfileFeedEvent {
   const ProfileFeedRelaySnapshotChanged();
-}
-
-/// Internal: a new video for this author arrived (optimistic add).
-final class ProfileFeedNewVideoReceived extends ProfileFeedEvent {
-  const ProfileFeedNewVideoReceived(this.video);
-
-  final VideoEvent video;
-
-  @override
-  List<Object?> get props => [video];
 }
 
 /// Internal: a video by this author was updated; collapses to a refresh.
