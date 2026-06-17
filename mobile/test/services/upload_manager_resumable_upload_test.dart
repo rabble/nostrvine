@@ -700,12 +700,18 @@ void main() {
       expect(result!.id, equals(upload.id));
     });
 
-    test('returns upload in readyToPublish status', () async {
-      final upload = PendingUpload.create(
-        localVideoPath: videoFile.path,
-        nostrPubkey: 'test-pubkey',
-        title: 'Ready video',
-      ).copyWith(status: UploadStatus.readyToPublish);
+    test('returns publishable readyToPublish upload', () async {
+      final upload =
+          PendingUpload.create(
+            localVideoPath: videoFile.path,
+            nostrPubkey: 'test-pubkey',
+            title: 'Ready video',
+          ).copyWith(
+            status: UploadStatus.readyToPublish,
+            videoId: 'ready-video',
+            cdnUrl: 'https://media.divine.video/ready-video',
+            thumbnailPath: 'https://media.divine.video/ready-video-thumb.jpg',
+          );
 
       final box = Hive.box<PendingUpload>('pending_uploads');
       await box.put(upload.id, upload);
@@ -714,6 +720,50 @@ void main() {
       expect(result, isNotNull);
       expect(result!.status, equals(UploadStatus.readyToPublish));
     });
+
+    test('skips readyToPublish upload without an HTTP thumbnail', () async {
+      final upload =
+          PendingUpload.create(
+            localVideoPath: videoFile.path,
+            nostrPubkey: 'test-pubkey',
+            title: 'Ready video without thumbnail',
+          ).copyWith(
+            status: UploadStatus.readyToPublish,
+            videoId: 'ready-video-no-thumb',
+            cdnUrl: 'https://media.divine.video/ready-video-no-thumb',
+          );
+
+      final box = Hive.box<PendingUpload>('pending_uploads');
+      await box.put(upload.id, upload);
+
+      final result = uploadManager.findReusableUpload(videoFile.path);
+      expect(result, isNull);
+    });
+
+    test(
+      'cleanup moves readyToPublish upload without thumbnail to failed',
+      () async {
+        final upload =
+            PendingUpload.create(
+              localVideoPath: videoFile.path,
+              nostrPubkey: 'test-pubkey',
+              title: 'Stale ready video',
+            ).copyWith(
+              status: UploadStatus.readyToPublish,
+              videoId: 'stale-ready-video',
+              cdnUrl: 'https://media.divine.video/stale-ready-video',
+            );
+
+        final box = Hive.box<PendingUpload>('pending_uploads');
+        await box.put(upload.id, upload);
+
+        await uploadManager.cleanupProblematicUploads();
+
+        final cleanedUpload = uploadManager.getUpload(upload.id);
+        expect(cleanedUpload, isNotNull);
+        expect(cleanedUpload!.status, equals(UploadStatus.failed));
+      },
+    );
 
     test(
       'returns failed upload only when it has a resumable session',

@@ -260,6 +260,14 @@ class UploadManager {
     return upload.nostrPubkey == currentPubkey;
   }
 
+  bool _isPublishableReadyUpload(PendingUpload upload) {
+    if (upload.status != UploadStatus.readyToPublish) return false;
+    return upload.videoId != null &&
+        upload.videoId!.isNotEmpty &&
+        _isHttpUrl(upload.cdnUrl) &&
+        _isHttpUrl(upload.thumbnailPath);
+  }
+
   /// Get uploads by status
   List<PendingUpload> getUploadsByStatus(UploadStatus status) =>
       pendingUploads.where((upload) => upload.status == status).toList();
@@ -300,6 +308,10 @@ class UploadManager {
       if (upload.status == UploadStatus.published) continue;
       if (upload.status == UploadStatus.pending) continue;
       if (upload.status == UploadStatus.paused) continue;
+      if (upload.status == UploadStatus.readyToPublish &&
+          !_isPublishableReadyUpload(upload)) {
+        continue;
+      }
       if (upload.status == UploadStatus.failed &&
           upload.resumableSession == null) {
         continue;
@@ -1989,9 +2001,9 @@ class UploadManager {
       // Fix uploads that are ready to publish but missing required data
       // These should be moved back to failed status so user can retry
       if (upload.status == UploadStatus.readyToPublish &&
-          (upload.videoId == null || upload.cdnUrl == null)) {
+          !_isPublishableReadyUpload(upload)) {
         Log.error(
-          'Fixing stuck upload: ${upload.id} (missing videoId/cdnUrl) - moving to failed',
+          'Fixing stuck upload: ${upload.id} (missing publishable video data) - moving to failed',
           name: 'UploadManager',
           category: LogCategory.video,
         );
