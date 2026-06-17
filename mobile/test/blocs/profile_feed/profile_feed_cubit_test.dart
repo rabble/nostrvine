@@ -570,6 +570,42 @@ void main() {
       expect(cubit.state.videos.length, before);
     });
 
+    test(
+      'relay-snapshot bursts coalesce into a single reconciliation '
+      '(debounce)',
+      () async {
+        final original = ProfileFeedCubit.relaySnapshotDebounce;
+        ProfileFeedCubit.relaySnapshotDebounce = const Duration(
+          milliseconds: 20,
+        );
+        addTearDown(
+          () => ProfileFeedCubit.relaySnapshotDebounce = original,
+        );
+
+        final cubit = await buildReady(_result(const []));
+        addTearDown(cubit.close);
+
+        // Cold-load interactions are irrelevant — only count the snapshot
+        // reconciliation triggered by the burst below.
+        clearInteractions(h.ves);
+        when(
+          () => h.ves.authorVideos(_author),
+        ).thenReturn([_video('relay', createdAt: 9000)]);
+
+        // A burst of app-wide VideoEventService notifications (e.g. other
+        // feeds streaming) all land inside one debounce window.
+        for (var i = 0; i < 5; i++) {
+          h.onChanged!();
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 60));
+
+        // The O(videos) snapshot reconciliation runs once, not once per
+        // notification — yet still lands the new relay video.
+        verify(() => h.ves.authorVideos(_author)).called(1);
+        expect(cubit.state.videos.map((v) => v.id), contains('relay'));
+      },
+    );
+
     test('VideoUpdated for this author triggers a refresh', () async {
       final cubit = await buildReady(_result([_video('a')], nextOffset: 1));
       addTearDown(cubit.close);

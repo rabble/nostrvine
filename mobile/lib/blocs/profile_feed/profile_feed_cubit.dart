@@ -13,10 +13,24 @@ import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:stream_transform/stream_transform.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 part 'profile_feed_event.dart';
 part 'profile_feed_state.dart';
+
+/// Debounces an event stream, then processes the survivors sequentially.
+///
+/// Used for [ProfileFeedRelaySnapshotChanged]: the cubit listens to the
+/// app-wide [VideoEventService], so a single profile pays a snapshot
+/// reconciliation for *every* global relay event — even ones for other
+/// feeds. Debouncing collapses those bursts so a high-video-count author's
+/// profile recomputes its (O(videos)) snapshot once per quiet window rather
+/// than hundreds of times during streaming.
+EventTransformer<E> _debounceSequential<E>(Duration duration) {
+  return (events, mapper) =>
+      sequential<E>().call(events.debounce(duration), mapper);
+}
 
 /// Enriches REST-sourced videos with their full Nostr tag set. Injected so the
 /// cubit stays decoupled from `NostrClient` / the enrichment util and testable.
@@ -51,7 +65,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
     on<ProfileFeedFiltersChanged>(_onFiltersChanged, transformer: sequential());
     on<ProfileFeedRelaySnapshotChanged>(
       _onRelaySnapshot,
-      transformer: sequential(),
+      transformer: _debounceSequential(relaySnapshotDebounce),
     );
     on<ProfileFeedNewVideoReceived>(_onNewVideo, transformer: sequential());
     on<ProfileFeedVideoUpdated>(_onVideoUpdated, transformer: restartable());
@@ -72,6 +86,14 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
   /// source settles, so the loading spinner can't strand (#4164).
   @visibleForTesting
   static Duration initialLoadHardTimeout = const Duration(seconds: 10);
+
+  /// Quiet window for coalescing [ProfileFeedRelaySnapshotChanged] bursts. The
+  /// cubit listens to the app-wide [VideoEventService], so unrelated feeds'
+  /// relay traffic would otherwise trigger a full snapshot reconciliation per
+  /// event — multi-second jank on profiles with many videos. See
+  /// [_debounceSequential].
+  @visibleForTesting
+  static Duration relaySnapshotDebounce = const Duration(milliseconds: 250);
 
   final String _authorPubkey;
   final VideosRepository _videosRepository;
