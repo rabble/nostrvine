@@ -4,10 +4,11 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
+import 'package:openvine/services/nostr_identity.dart';
 
 class MockAuthService extends Mock implements AuthService {}
 
@@ -15,10 +16,16 @@ class MockBlossomAuthService extends Mock implements BlossomAuthService {}
 
 class MockNip98AuthService extends Mock implements Nip98AuthService {}
 
+class MockNostrSigner extends Mock implements NostrSigner {}
+
+const _testPublicKey =
+    'aabbccdd0123456789abcdef0123456789abcdef0123456789abcdef01234567';
+
 void main() {
   late MockAuthService mockAuthService;
   late MockBlossomAuthService mockBlossomAuthService;
   late MockNip98AuthService mockNip98AuthService;
+  late MockNostrSigner mockNostrSigner;
   late MediaViewerAuthService service;
 
   setUpAll(() {
@@ -29,10 +36,16 @@ void main() {
     mockAuthService = MockAuthService();
     mockBlossomAuthService = MockBlossomAuthService();
     mockNip98AuthService = MockNip98AuthService();
+    mockNostrSigner = MockNostrSigner();
     // Default: the signer is not the non-interactive remote one, so signing is
     // awaited unbounded (matches every pre-existing test's expectation). The
     // timeout tests below opt in by stubbing this true.
-    when(() => mockAuthService.viewerAuthSignsRemotely).thenReturn(false);
+    when(() => mockAuthService.currentIdentity).thenReturn(
+      BunkerNostrIdentity(
+        pubkey: _testPublicKey,
+        remoteSigner: mockNostrSigner,
+      ),
+    );
     service = MediaViewerAuthService(
       authService: mockAuthService,
       blossomAuthService: mockBlossomAuthService,
@@ -161,9 +174,12 @@ void main() {
         () {
           fakeAsync((async) {
             when(() => mockAuthService.isAuthenticated).thenReturn(true);
-            when(
-              () => mockAuthService.viewerAuthSignsRemotely,
-            ).thenReturn(true);
+            when(() => mockAuthService.currentIdentity).thenReturn(
+              KeycastNostrIdentity(
+                pubkey: _testPublicKey,
+                rpcSigner: mockNostrSigner,
+              ),
+            );
             // Signer never responds (e.g. unreachable Keycast RPC).
             when(
               () => mockBlossomAuthService.createGetAuthHeader(
@@ -201,9 +217,12 @@ void main() {
         () {
           fakeAsync((async) {
             when(() => mockAuthService.isAuthenticated).thenReturn(true);
-            when(
-              () => mockAuthService.viewerAuthSignsRemotely,
-            ).thenReturn(true);
+            when(() => mockAuthService.currentIdentity).thenReturn(
+              KeycastNostrIdentity(
+                pubkey: _testPublicKey,
+                rpcSigner: mockNostrSigner,
+              ),
+            );
             when(
               () => mockNip98AuthService.createAuthToken(
                 url: any(named: 'url'),
@@ -231,7 +250,12 @@ void main() {
 
       test('a fast remote sign still returns real headers', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
-        when(() => mockAuthService.viewerAuthSignsRemotely).thenReturn(true);
+        when(() => mockAuthService.currentIdentity).thenReturn(
+          KeycastNostrIdentity(
+            pubkey: _testPublicKey,
+            rpcSigner: mockNostrSigner,
+          ),
+        );
         when(
           () => mockBlossomAuthService.createGetAuthHeader(
             sha256Hash: any(named: 'sha256Hash'),
@@ -247,49 +271,49 @@ void main() {
         expect(headers, equals({'Authorization': 'Nostr fast-token'}));
       });
 
-      test(
-        'does NOT bound a non-interactive=false signer — a slow-but-valid '
-        'sign past the timeout still returns headers',
-        () {
-          fakeAsync((async) {
-            when(() => mockAuthService.isAuthenticated).thenReturn(true);
-            // Interactive / local signer: must never be truncated.
-            when(
-              () => mockAuthService.viewerAuthSignsRemotely,
-            ).thenReturn(false);
-            final completer = Completer<String?>();
-            when(
-              () => mockBlossomAuthService.createGetAuthHeader(
-                sha256Hash: any(named: 'sha256Hash'),
-                serverUrl: any(named: 'serverUrl'),
-              ),
-            ).thenAnswer((_) => completer.future);
+      test('does NOT bound a non-interactive=false signer — a slow-but-valid '
+          'sign past the timeout still returns headers', () {
+        fakeAsync((async) {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          // Interactive / local signer: must never be truncated.
+          when(() => mockAuthService.currentIdentity).thenReturn(
+            BunkerNostrIdentity(
+              pubkey: _testPublicKey,
+              remoteSigner: mockNostrSigner,
+            ),
+          );
+          final completer = Completer<String?>();
+          when(
+            () => mockBlossomAuthService.createGetAuthHeader(
+              sha256Hash: any(named: 'sha256Hash'),
+              serverUrl: any(named: 'serverUrl'),
+            ),
+          ).thenAnswer((_) => completer.future);
 
-            Map<String, String>? result;
-            var completed = false;
-            service
-                .createAuthHeaders(
-                  sha256Hash: 'abc123',
-                  serverUrl: 'https://media.divine.video',
-                )
-                .then((r) {
-                  result = r;
-                  completed = true;
-                });
+          Map<String, String>? result;
+          var completed = false;
+          service
+              .createAuthHeaders(
+                sha256Hash: 'abc123',
+                serverUrl: 'https://media.divine.video',
+              )
+              .then((r) {
+                result = r;
+                completed = true;
+              });
 
-            // Well past the 6s timeout: because the timeout is NOT applied to
-            // this signer, the call is still awaiting the human approval.
-            async.elapse(const Duration(seconds: 20));
-            expect(completed, isFalse);
+          // Well past the 6s timeout: because the timeout is NOT applied to
+          // this signer, the call is still awaiting the human approval.
+          async.elapse(const Duration(seconds: 20));
+          expect(completed, isFalse);
 
-            // The valid signature finally arrives and is used.
-            completer.complete('Nostr slow-token');
-            async.flushMicrotasks();
-            expect(completed, isTrue);
-            expect(result, equals({'Authorization': 'Nostr slow-token'}));
-          });
-        },
-      );
+          // The valid signature finally arrives and is used.
+          completer.complete('Nostr slow-token');
+          async.flushMicrotasks();
+          expect(completed, isTrue);
+          expect(result, equals({'Authorization': 'Nostr slow-token'}));
+        });
+      });
     });
   });
 }
@@ -299,8 +323,7 @@ Event _createMockEvent() {
   return Event.fromJson({
     'id': 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
     'kind': 27235,
-    'pubkey':
-        'aabbccdd0123456789abcdef0123456789abcdef0123456789abcdef01234567',
+    'pubkey': _testPublicKey,
     'created_at': timestamp,
     'content': '',
     'tags': const <List<String>>[

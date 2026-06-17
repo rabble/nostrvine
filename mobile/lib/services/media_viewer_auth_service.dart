@@ -35,12 +35,11 @@ class MediaViewerAuthService {
   /// Returns request headers for a media GET, or null when no viewer auth can
   /// be created for the current user/request shape.
   ///
-  /// For the Keycast OAuth-only remote signer
-  /// ([AuthService.viewerAuthSignsRemotely]) the signing round-trip is bounded
-  /// by [_signTimeout]; if the signer does not respond in time this returns
-  /// null — the same "no headers" result every caller already handles — rather
-  /// than hanging on Keycast's 30s ceiling. Local and interactive remote
-  /// signers (bunker / Amber / NIP-07) are awaited unbounded so a human
+  /// For the Keycast OAuth-only remote signer, the signing round-trip is
+  /// bounded by [_signTimeout]; if the signer does not respond in time this
+  /// returns null — the same "no headers" result every caller already handles
+  /// — rather than hanging on Keycast's 30s ceiling. Local and interactive
+  /// remote signers (bunker / Amber / NIP-07) are awaited unbounded so a human
   /// approval step is never cut off.
   Future<Map<String, String>?> createAuthHeaders({
     String? sha256Hash,
@@ -51,7 +50,8 @@ class MediaViewerAuthService {
       return null;
     }
 
-    final boundSigning = _authService.viewerAuthSignsRemotely;
+    final boundSigning =
+        _authService.currentIdentity?.signsRemotelyNonInteractive ?? false;
 
     if (sha256Hash != null && sha256Hash.isNotEmpty) {
       final header = await _bound(
@@ -67,10 +67,8 @@ class MediaViewerAuthService {
     if (url != null && url.isNotEmpty) {
       final token = await _bound(
         boundSigning,
-        () => _nip98AuthService.createAuthToken(
-          url: url,
-          method: HttpMethod.get,
-        ),
+        () =>
+            _nip98AuthService.createAuthToken(url: url, method: HttpMethod.get),
       );
       return _authorizationHeaders(token?.authorizationHeader);
     }
