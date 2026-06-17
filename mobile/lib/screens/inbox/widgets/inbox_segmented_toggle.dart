@@ -9,6 +9,11 @@ import 'package:openvine/l10n/l10n.dart';
 /// The two tabs available in the inbox segmented toggle.
 enum InboxTab { messages, notifications }
 
+/// Duration of an inbox tab switch. The indicator-pill slide and label fade in
+/// this toggle and the shared-axis content transition in `inbox_view.dart` both
+/// run over this single duration so the toggle and the panes move in lockstep.
+const Duration kInboxTabTransitionDuration = Duration(milliseconds: 200);
+
 /// Total height of each toggle segment, including the 4px inset that frames
 /// the sliding indicator pill.
 const double _kSegmentHeight = 48;
@@ -21,8 +26,10 @@ const double _kIndicatorInset = 4;
 /// Matches the Figma design: rounded container with `surfaceContainer` bg,
 /// `outlineMuted` 2px border, 20px radius. A single `primary` indicator pill
 /// animates between the two segments; the active label uses `onPrimaryButton`
-/// text, the inactive one `onSurfaceMuted`. The slide uses [kTabScrollDuration]
-/// so it stays in sync with the inbox `TabBarView` driven by the same toggle.
+/// text, the inactive one `onSurfaceMuted`. The pill slide and label fade run
+/// over [kInboxTabTransitionDuration] — the same duration that drives the
+/// shared-axis content transition in `inbox_view.dart` — so the toggle and the
+/// panes move together. Both collapse to no animation under reduced motion.
 class InboxSegmentedToggle extends StatelessWidget {
   const InboxSegmentedToggle({
     required this.selected,
@@ -83,11 +90,14 @@ class _IndicatorPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : kInboxTabTransitionDuration;
     return Padding(
       padding: const EdgeInsets.all(_kIndicatorInset),
       child: AnimatedAlign(
-        duration: kTabScrollDuration,
-        curve: Curves.ease,
+        duration: duration,
+        curve: Curves.easeInOut,
         alignment: selected == InboxTab.notifications
             ? AlignmentDirectional.centerStart
             : AlignmentDirectional.centerEnd,
@@ -136,6 +146,9 @@ class _ToggleButton extends StatelessWidget {
     final fontSize = MediaQuery.textScalerOf(
       context,
     ).scale(VineTheme.titleMediumFont().fontSize!).clamp(0.0, 20.0);
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : kInboxTabTransitionDuration;
 
     return Semantics(
       button: true,
@@ -151,8 +164,8 @@ class _ToggleButton extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 AnimatedDefaultTextStyle(
-                  duration: kTabScrollDuration,
-                  curve: Curves.ease,
+                  duration: duration,
+                  curve: Curves.easeInOut,
                   style: VineTheme.titleMediumFont(
                     color: isSelected
                         ? VineTheme.onPrimaryButton

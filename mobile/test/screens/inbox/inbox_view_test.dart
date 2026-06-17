@@ -47,17 +47,19 @@ class _MockNotificationBadgeCubit extends MockCubit<int>
     implements NotificationBadgeCubit {}
 
 class _MockAuthService extends MockAuthService {
-  _MockAuthService(this._pubkey) {
+  _MockAuthService(this.pubkey) {
     when(() => authState).thenReturn(AuthState.authenticated);
     when(() => isAuthenticated).thenReturn(true);
     when(
       () => authStateStream,
     ).thenAnswer((_) => const Stream<AuthState>.empty());
   }
-  final String _pubkey;
+
+  /// Mutable so a test can simulate an account switch mid-flight.
+  String pubkey;
 
   @override
-  String? get currentPublicKeyHex => _pubkey;
+  String? get currentPublicKeyHex => pubkey;
 }
 
 void main() {
@@ -92,6 +94,7 @@ void main() {
       ConversationListState? state,
       int dmUnreadCount = 0,
       int notificationUnreadCount = 0,
+      Stream<int>? notificationStream,
     }) {
       if (state != null) {
         whenListen(
@@ -123,7 +126,7 @@ void main() {
       when(() => mockNotifBadgeCubit.state).thenReturn(notificationUnreadCount);
       whenListen(
         mockNotifBadgeCubit,
-        const Stream<int>.empty(),
+        notificationStream ?? const Stream<int>.empty(),
         initialState: notificationUnreadCount,
       );
 
@@ -293,6 +296,54 @@ void main() {
 
         expect(find.byType(ConversationTile), findsOneWidget);
       });
+
+      testWidgets(
+        'collapses back to Notifications when the signed-in identity changes',
+        (tester) async {
+          final notificationController = StreamController<int>();
+          addTearDown(notificationController.close);
+
+          final conversation = DmConversation(
+            id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+            participantPubkeys: const [currentPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: nowUnix,
+            lastMessageContent: 'Hello',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                conversations: [conversation],
+                hasMore: false,
+              ),
+              notificationStream: notificationController.stream,
+            ),
+          );
+          await tester.pump();
+
+          // Open Messages so the pane is activated and the tab is selected.
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+          expect(find.byType(ConversationTile), findsOneWidget);
+
+          // Simulate an account switch: the auth service reports a new pubkey
+          // and a watched cubit emits to drive the InboxView rebuild.
+          mockAuthService.pubkey = otherPubkey;
+          notificationController.add(1);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          final toggle = tester.widget<InboxSegmentedToggle>(
+            find.byType(InboxSegmentedToggle),
+          );
+          expect(toggle.selected, InboxTab.notifications);
+          expect(find.byType(ConversationTile), findsNothing);
+        },
+      );
 
       testWidgets(
         'renders $MessageRequestsBanner when request conversations exist',

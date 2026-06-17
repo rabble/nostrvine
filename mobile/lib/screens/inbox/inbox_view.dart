@@ -59,13 +59,21 @@ class _InboxViewState extends ConsumerState<InboxView>
   /// reload. Notifications is the default tab and is always mounted.
   bool _messagesActivated = false;
 
+  /// Pubkey the current tab state belongs to. When the signed-in identity
+  /// changes we collapse back to Notifications and re-arm lazy Messages
+  /// activation, so the new account doesn't eagerly start its DM backfill
+  /// before the user navigates to Messages.
+  String? _activePubkey;
+  bool _pubkeyObserved = false;
+
   @override
   void initState() {
     super.initState();
     _transitionController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 160),
-      value: _selectedTab == InboxTab.notifications ? 0 : 1,
+      duration: kInboxTabTransitionDuration,
+      // Notifications is the default tab (value 0); Messages is value 1.
+      value: 0,
     );
   }
 
@@ -81,11 +89,27 @@ class _InboxViewState extends ConsumerState<InboxView>
       _selectedTab = tab;
       if (tab == InboxTab.messages) _messagesActivated = true;
     });
-    if (tab == InboxTab.messages) {
-      _transitionController.forward();
+    final target = tab == InboxTab.messages ? 1.0 : 0.0;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _transitionController.value = target;
     } else {
-      _transitionController.reverse();
+      _transitionController.animateTo(target);
     }
+  }
+
+  /// Resets the tab state to its defaults when the signed-in identity changes,
+  /// so a new account opens on Notifications and re-arms lazy Messages loading.
+  void _syncToIdentity(String? currentPubkey) {
+    if (!_pubkeyObserved) {
+      _pubkeyObserved = true;
+      _activePubkey = currentPubkey;
+      return;
+    }
+    if (currentPubkey == _activePubkey) return;
+    _activePubkey = currentPubkey;
+    _selectedTab = InboxTab.notifications;
+    _messagesActivated = false;
+    _transitionController.value = 0;
   }
 
   @override
@@ -109,6 +133,7 @@ class _InboxViewState extends ConsumerState<InboxView>
     final notificationCount = context.watch<NotificationBadgeCubit>().state;
     final messageCount = context.watch<DmUnreadCountCubit>().state;
     final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
+    _syncToIdentity(currentPubkey);
 
     return ColoredBox(
       color: VineTheme.surfaceBackground,
