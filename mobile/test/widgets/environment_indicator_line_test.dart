@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/environment_indicator_provider.dart';
+import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/widgets/environment_indicator_line.dart';
 
 void main() {
@@ -79,6 +81,64 @@ void main() {
         ),
         equals(VineTheme.accentPurple),
       );
+    });
+  });
+
+  group('environmentIndicatorColorProvider', () {
+    ProviderContainer createContainer(EnvironmentConfig environment) {
+      final container = ProviderContainer(
+        overrides: [currentEnvironmentProvider.overrideWithValue(environment)],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('returns null in production with only Divine/default relays', () {
+      final container = createContainer(EnvironmentConfig.production);
+      container
+          .read(configuredRelayUrlsProvider.notifier)
+          .setUrls(freshAccountRelays);
+
+      expect(container.read(environmentIndicatorColorProvider), isNull);
+    });
+
+    test('returns environment color for non-production Divine-only relays', () {
+      const staging = EnvironmentConfig(environment: AppEnvironment.staging);
+      final container = createContainer(staging);
+      container
+          .read(configuredRelayUrlsProvider.notifier)
+          .setUrls(divineRelays);
+
+      expect(
+        container.read(environmentIndicatorColorProvider),
+        equals(Color(staging.indicatorColorValue)),
+      );
+    });
+
+    test('returns purple for a user-chosen relay', () {
+      final container = createContainer(EnvironmentConfig.production);
+      container
+          .read(configuredRelayUrlsProvider.notifier)
+          .setUrls(withUserChosenRelay);
+
+      expect(
+        container.read(environmentIndicatorColorProvider),
+        equals(VineTheme.accentPurple),
+      );
+    });
+
+    test('clears purple after the user-chosen relay is removed', () {
+      final container = createContainer(EnvironmentConfig.production);
+      final relayState = container.read(configuredRelayUrlsProvider.notifier);
+
+      relayState.setUrls(withUserChosenRelay);
+      expect(
+        container.read(environmentIndicatorColorProvider),
+        equals(VineTheme.accentPurple),
+      );
+
+      relayState.setUrls(divineRelays);
+      expect(container.read(environmentIndicatorColorProvider), isNull);
     });
   });
 

@@ -1,6 +1,6 @@
 # Environment / relay indicator line
 
-Status: Approved (brainstorm) — pending implementation
+Status: Implemented in PR #5253
 Date: 2026-06-17
 
 ## Problem
@@ -32,11 +32,13 @@ Purple takes precedence when both conditions hold.
 - **Visibility:** non-production **OR** using non-Divine relays. Hidden in
   production when on Divine-only relays.
 - **Precedence:** purple wins over the environment color.
-- **Purple trigger:** the client's **configured/outbox relay set**
-  (`NostrClient.configuredRelays` = env relay + the user's NIP-65 relays).
-  Transient read/indexer relays (e.g. `purplepag.es`) are not in this set and
-  do not trigger purple.
-- **Style:** a ~3px non-interactive line at the bottom edge.
+- **Purple trigger:** the client's current **configured/outbox relay set**
+  (`NostrClient.configuredRelays` = env relay + the user's NIP-65 relays),
+  excluding relays every account is auto-seeded with for indexer lookup and DM
+  reachability. Transient read/indexer relays (e.g. `purplepag.es`) do not
+  trigger purple unless they are also genuinely user-chosen relays.
+- **Style:** a 4px non-interactive line above the bottom navigation bar, with
+  rounded top corners.
 
 ## Non-goals
 
@@ -64,31 +66,39 @@ bool isDivineHostedRelayUrl(String url) {
   return _divineHostedRelayHosts.contains(host) || isLoopbackHost(host);
 }
 
-/// True if any relay in [configuredRelays] is not Divine-hosted.
-bool hasNonDivineRelay(Iterable<String> configuredRelays) =>
-    configuredRelays.any((url) => !isDivineHostedRelayUrl(url));
+/// True if [configuredRelays] includes a relay the user added beyond the
+/// Divine-operated relays, loopback, and the app's own [defaultRelayUrls].
+bool usesUserChosenRelay(
+  Iterable<String> configuredRelays, {
+  required Iterable<String> defaultRelayUrls,
+}) { ... }
 ```
 
 Reuses the existing `isLoopbackHost` helper in the same file. The host list is
-the set of `EnvironmentConfig.relayUrl` hosts across environments; kept as a
-const here (the util already owns `_divineRelayHost`).
+the set of `EnvironmentConfig.relayUrl` hosts across environments. The default
+relay exclusion covers `EnvironmentConfig.indexerRelays` and
+`IndexerRelayConfig.safeFallbackRelays`, so a fresh account seeded with app
+plumbing does not show as user-chosen non-Divine relay use.
 
 ### 2. State — `environmentIndicatorColorProvider` → `Color?`
 
-A Riverpod provider (colocated with the widget or in `environment_provider`)
-that returns the line color, or `null` when the line should be hidden.
+A Riverpod provider that returns the line color, or `null` when the line should
+be hidden.
 
 - `ref.watch(currentEnvironmentProvider)` — recompute on environment switch.
-- `ref.watch(relayStatisticsStreamProvider)` (or the equivalent relay-status
-  stream provider) — recompute when the relay set changes (add / remove /
-  NIP-65 discovery). The value is only used as a change trigger.
-- Reads `nostrService.configuredRelays`.
+- `ref.watch(configuredRelayUrlsProvider)` — recompute when the configured
+  relay set changes (add / remove / NIP-65 discovery). The provider is updated
+  by `relaySetChangeBridge` from the current relay-status map keys, which are
+  created from the configured relays and pruned on removal, so the
+  always-mounted indicator does not initialize the Nostr client itself.
 
 Logic:
 
 ```
-final relays = nostrService.configuredRelays;
-if (hasNonDivineRelay(relays)) return <purple>;
+final relays = ref.watch(configuredRelayUrlsProvider);
+if (usesUserChosenRelay(relays, defaultRelayUrls: defaultRelayUrls)) {
+  return <purple>;
+}
 if (!environment.isProduction) return Color(environment.indicatorColorValue);
 return null; // production + Divine-only → hidden
 ```
@@ -101,23 +111,32 @@ already uses) — no raw `Color(0x...)` literal in the widget.
 ```dart
 final color = ref.watch(environmentIndicatorColorProvider);
 if (color == null) return const SizedBox.shrink();
-return Container(height: 3, width: double.infinity, color: color);
+return ExcludeSemantics(
+  child: SizedBox(
+    height: 4,
+    width: double.infinity,
+    child: ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      child: ColoredBox(color: color),
+    ),
+  ),
+);
 ```
 
-Mounted at the bottom edge of `lib/router/app_shell.dart`, full width, below
-the bottom navigation bar and above the system home-indicator inset. Excluded
-from semantics (decorative).
+Mounted in `lib/router/app_shell.dart`, full width, above the bottom navigation
+bar. Excluded from semantics (decorative).
 
 ## Testing
 
 - `relay_url_utils` unit tests: `isDivineHostedRelayUrl` true for each Divine
   host + loopback, false for `purplepag.es` / `wss://relay.nos.social` /
-  malformed; `hasNonDivineRelay` true/false cases.
+  malformed; `usesUserChosenRelay` true/false/default-relay cases.
 - Provider tests (ProviderContainer with overrides): purple when configured
-  relays include a non-Divine host; environment color in non-production with
-  Divine-only relays; null in production with Divine-only relays.
-- Widget test: renders a 3px line of the provided color; renders
-  `SizedBox.shrink` when the provider is null.
+  relays include a user-chosen relay; environment color in non-production with
+  Divine-only relays; null in production with Divine/default relays; purple
+  clears after the user-chosen relay is removed.
+- Widget test: renders a colored line of the provided color; renders nothing
+  when the provider is null.
 
 ## Risk / rollback
 

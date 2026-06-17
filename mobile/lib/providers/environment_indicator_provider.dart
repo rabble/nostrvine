@@ -36,19 +36,16 @@ Color? environmentIndicatorColor({
 
 /// The current indicator bar color, or `null` when hidden.
 ///
-/// Sources the active relay set from [relayStatisticsStreamProvider] (keyed by
-/// relay URL) rather than the Nostr client, so the always-mounted indicator
-/// never forces the client to initialise at shell build. Until relay stats
-/// exist, the relay set is empty and the indicator falls back to
-/// environment-only logic.
+/// Sources the active relay set from [configuredRelayUrlsProvider], which is
+/// updated by the app-shell relay bridge from the current relay status map.
+/// This keeps the always-mounted decorative indicator from forcing client
+/// initialization, while still tracking relay additions and removals.
 final environmentIndicatorColorProvider = Provider<Color?>((ref) {
   final environment = ref.watch(currentEnvironmentProvider);
-  final relayStats = ref.watch(relayStatisticsStreamProvider);
-  final activeRelays =
-      relayStats.asData?.value.keys.toList() ?? const <String>[];
+  final configuredRelays = ref.watch(configuredRelayUrlsProvider);
   return environmentIndicatorColor(
     environment: environment,
-    configuredRelays: activeRelays,
+    configuredRelays: configuredRelays,
     // Relays every account is auto-seeded with (NIP-65 indexers + DM
     // fallbacks). Excluded so only genuinely user-added relays show purple.
     defaultRelayUrls: <String>{

@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -15,6 +16,24 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'relay_providers.g.dart';
+
+/// Current configured relay URLs, including the environment default relay.
+///
+/// Updated by [relaySetChangeBridge] from the active relay status map so UI
+/// that only needs the relay set can react without constructing its own client.
+final configuredRelayUrlsProvider =
+    NotifierProvider<ConfiguredRelayUrls, List<String>>(
+      ConfiguredRelayUrls.new,
+    );
+
+class ConfiguredRelayUrls extends Notifier<List<String>> {
+  @override
+  List<String> build() => const <String>[];
+
+  void setUrls(List<String> urls) {
+    state = List.unmodifiable(urls);
+  }
+}
 
 /// Connection status service for monitoring network connectivity
 @Riverpod(keepAlive: true)
@@ -144,8 +163,13 @@ void relaySetChangeBridge(Ref ref) {
 
   Set<String> previousRelaySet = nostrService.relayStatuses.keys.toSet();
   Timer? debounceTimer;
+  var disposed = false;
 
   void processStatuses(Map<String, RelayConnectionStatus> statuses) {
+    ref
+        .read(configuredRelayUrlsProvider.notifier)
+        .setUrls(statuses.keys.toList(growable: false));
+
     final currentRelaySet = statuses.keys.toSet();
 
     // Only trigger if the set of relay URLs has changed (not just status)
@@ -194,13 +218,20 @@ void relaySetChangeBridge(Ref ref) {
     }
   }
 
-  // Process current state immediately to establish baseline
-  processStatuses(nostrService.relayStatuses);
+  // Publish the initial relay set after provider initialization. Riverpod
+  // disallows mutating another provider while this bridge is building.
+  Timer.run(() {
+    if (disposed) return;
+    ref
+        .read(configuredRelayUrlsProvider.notifier)
+        .setUrls(nostrService.relayStatuses.keys.toList(growable: false));
+  });
 
   // Listen to relay status stream for future updates
   final subscription = nostrService.relayStatusStream.listen(processStatuses);
 
   ref.onDispose(() {
+    disposed = true;
     debounceTimer?.cancel();
     subscription.cancel();
   });
