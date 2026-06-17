@@ -42,8 +42,51 @@ class InboxView extends ConsumerStatefulWidget {
   ConsumerState<InboxView> createState() => _InboxViewState();
 }
 
-class _InboxViewState extends ConsumerState<InboxView> {
+class _InboxViewState extends ConsumerState<InboxView>
+    with SingleTickerProviderStateMixin {
+  /// Drives the shared-axis transition between the two tabs. `0` fully shows
+  /// Notifications, `1` fully shows Messages. Runs linearly; the curves are
+  /// applied per-property in [_InboxTabContent].
+  late final AnimationController _transitionController;
+
+  /// Currently selected tab.
   InboxTab _selectedTab = InboxTab.notifications;
+
+  /// Whether the Messages tab has been opened at least once. The pane is
+  /// built lazily on first open so its `ConversationListBloc` (and the DM
+  /// history backfill it kicks off) only starts when the user actually
+  /// navigates to Messages — then it stays mounted so later switches don't
+  /// reload. Notifications is the default tab and is always mounted.
+  bool _messagesActivated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _transitionController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 160),
+      value: _selectedTab == InboxTab.notifications ? 0 : 1,
+    );
+  }
+
+  @override
+  void dispose() {
+    _transitionController.dispose();
+    super.dispose();
+  }
+
+  void _onTabSelected(InboxTab tab) {
+    if (tab == _selectedTab) return;
+    setState(() {
+      _selectedTab = tab;
+      if (tab == InboxTab.messages) _messagesActivated = true;
+    });
+    if (tab == InboxTab.messages) {
+      _transitionController.forward();
+    } else {
+      _transitionController.reverse();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,32 +119,130 @@ class _InboxViewState extends ConsumerState<InboxView> {
             // Segmented toggle (Messages / Notifications)
             InboxSegmentedToggle(
               selected: _selectedTab,
-              onChanged: (tab) => setState(() => _selectedTab = tab),
+              onChanged: _onTabSelected,
               notificationCount: notificationCount,
               messageCount: messageCount,
             ),
-            // Content area with rounded top corners
+            // Content area with rounded top corners. Both tabs stay mounted
+            // (Notifications always, Messages once first opened) so returning
+            // to a tab never reloads. The shared-axis transition slides +
+            // cross-fades between them; each pane sits on an opaque surface so
+            // neither the near-black background nor the other tab shows
+            // through.
             Expanded(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(32),
                 child: ColoredBox(
                   color: VineTheme.surfaceContainerHigh,
-                  child: _selectedTab == InboxTab.messages
-                      ? KeyedSubtree(
-                          key: ValueKey('messages-$currentPubkey'),
-                          child: const _MessagesContent(),
-                        )
-                      // BLoC-driven view (video-anchored grouping +
-                      // 56x56 thumbnails + l10n messages); see
-                      // lib/notifications/view/inbox_notifications_page.dart.
-                      : KeyedSubtree(
-                          key: ValueKey('notifications-$currentPubkey'),
-                          child: const InboxNotificationsPage(),
-                        ),
+                  child: _InboxTabContent(
+                    animation: _transitionController,
+                    selected: _selectedTab,
+                    // BLoC-driven view (video-anchored grouping + 56x56
+                    // thumbnails + l10n); see
+                    // lib/notifications/view/inbox_notifications_page.dart.
+                    notifications: KeyedSubtree(
+                      key: ValueKey('notifications-$currentPubkey'),
+                      child: const InboxNotificationsPage(),
+                    ),
+                    messages: _messagesActivated
+                        ? KeyedSubtree(
+                            key: ValueKey('messages-$currentPubkey'),
+                            child: const _MessagesContent(),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
                 ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Horizontal travel of each pane during the transition, as a fraction of the
+/// pane width — the subtle shared-axis slide.
+const double _kTabSlideFraction = 0.06;
+
+/// Material shared-axis transition between the two inbox tabs: a short
+/// horizontal slide combined with an overlapping cross-fade.
+///
+/// [animation] runs `0` (Notifications) → `1` (Messages). Both panes stay
+/// mounted and are painted on an opaque surface, so the near-black background
+/// never flashes and the panes never bleed through one another. The selected
+/// pane is the only one that receives pointer events.
+class _InboxTabContent extends StatelessWidget {
+  const _InboxTabContent({
+    required this.animation,
+    required this.selected,
+    required this.notifications,
+    required this.messages,
+  });
+
+  final Animation<double> animation;
+  final InboxTab selected;
+  final Widget notifications;
+  final Widget messages;
+
+  @override
+  Widget build(BuildContext context) {
+    final notificationsSelected = selected == InboxTab.notifications;
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, _) {
+        final t = animation.value;
+        final slide = Curves.easeInOut.transform(t);
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            _InboxTabPane(
+              opacity: Curves.easeInOut.transform(1 - t),
+              dx: -_kTabSlideFraction * slide,
+              active: notificationsSelected,
+              child: notifications,
+            ),
+            _InboxTabPane(
+              opacity: Curves.easeInOut.transform(t),
+              dx: _kTabSlideFraction * (1 - slide),
+              active: !notificationsSelected,
+              child: messages,
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// A single inbox pane within the shared-axis transition: opaque background,
+/// [opacity] + horizontal [dx] (fraction of width) for the slide/fade, and
+/// [active] gating pointer events so the faded-out pane never intercepts taps.
+class _InboxTabPane extends StatelessWidget {
+  const _InboxTabPane({
+    required this.opacity,
+    required this.dx,
+    required this.active,
+    required this.child,
+  });
+
+  final double opacity;
+  final double dx;
+  final bool active;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      ignoring: !active,
+      child: Opacity(
+        opacity: opacity.clamp(0.0, 1.0),
+        child: FractionalTranslation(
+          translation: Offset(dx, 0),
+          child: ColoredBox(
+            color: VineTheme.surfaceContainerHigh,
+            child: child,
+          ),
         ),
       ),
     );

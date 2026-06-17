@@ -194,6 +194,7 @@ void main() {
         // Switch to Messages tab (default is Notifications).
         await tester.tap(find.text('Messages'));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         expect(find.byType(FollowingBar), findsOneWidget);
       });
@@ -207,8 +208,18 @@ void main() {
         // Switch to Messages tab (default is Notifications).
         await tester.tap(find.text('Messages'));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        // Both tabs stay alive in the TabBarView, so scope to the Messages
+        // subtree (the Notifications tab shows its own spinner with a null
+        // notification repository).
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('messages-$currentPubkey')),
+            matching: find.byType(CircularProgressIndicator),
+          ),
+          findsOneWidget,
+        );
       });
 
       testWidgets('renders $InboxEmptyState when status is error', (
@@ -226,6 +237,7 @@ void main() {
         // Switch to Messages tab (default is Notifications).
         await tester.tap(find.text('Messages'));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         expect(find.byType(InboxEmptyState), findsOneWidget);
       });
@@ -245,6 +257,7 @@ void main() {
           // Switch to Messages tab (default is Notifications).
           await tester.tap(find.text('Messages'));
           await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(find.byType(InboxEmptyState), findsOneWidget);
         },
@@ -275,7 +288,8 @@ void main() {
 
         // Switch to Messages tab (default is Notifications).
         await tester.tap(find.text('Messages'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         expect(find.byType(ConversationTile), findsOneWidget);
       });
@@ -306,6 +320,7 @@ void main() {
           // Switch to Messages tab (default is Notifications).
           await tester.tap(find.text('Messages'));
           await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(find.byType(MessageRequestsBanner), findsOneWidget);
         },
@@ -346,7 +361,8 @@ void main() {
 
           // Switch to Messages tab (default is Notifications).
           await tester.tap(find.text('Messages'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(find.byType(MessageRequestsBanner), findsOneWidget);
           expect(find.byType(ConversationTile), findsOneWidget);
@@ -370,6 +386,7 @@ void main() {
           await tester.tap(find.text('Messages'));
           // pump (not pumpAndSettle): LinearProgressIndicator animates forever.
           await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(find.byType(LinearProgressIndicator), findsOneWidget);
         },
@@ -390,6 +407,7 @@ void main() {
           // Switch to Messages tab (default is Notifications).
           await tester.tap(find.text('Messages'));
           await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(find.byType(LinearProgressIndicator), findsNothing);
         },
@@ -423,7 +441,8 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Messages'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         await tester.drag(find.byType(ListView), const Offset(0, -5000));
         await tester.pump();
@@ -457,7 +476,8 @@ void main() {
 
         // Switch to Messages tab (default is Notifications).
         await tester.tap(find.text('Messages'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         when(
           () => mockGoRouter.push(any(), extra: any(named: 'extra')),
@@ -500,6 +520,7 @@ void main() {
         // Switch to Messages tab (default is Notifications).
         await tester.tap(find.text('Messages'));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         when(() => mockGoRouter.pushNamed(any())).thenAnswer((_) async => null);
 
@@ -535,6 +556,7 @@ void main() {
         // Switch to Messages tab (default is Notifications).
         await tester.tap(find.text('Messages'));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
         await tester.pump(const Duration(milliseconds: 100));
 
         // FollowingBar uses fetchUserProfileProvider for names. When the
