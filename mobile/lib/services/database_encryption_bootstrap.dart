@@ -117,13 +117,13 @@ class DatabaseEncryptionBootstrap {
   }
 }
 
-/// Resolves the startup DB cipher key and fails closed on bootstrap errors.
+/// Resolves the startup DB cipher key and lets startup continue on bootstrap
+/// errors.
 ///
-/// Native app startup must not continue with a `null` cipher key after a
-/// secure-storage or SQLCipher bootstrap failure: an existing encrypted DB
-/// would be opened as plaintext and repeatedly surface SQLITE_NOTADB. Web and
-/// intentional plaintext migration deferrals still return `null` from
-/// [resolveCipherKey].
+/// Startup must not freeze before `runApp` when secure storage or SQLCipher
+/// bootstrap fails. Record the failure and return `null`, matching the pre-#5248
+/// fallback path so the app can still render. Web and intentional plaintext
+/// migration deferrals also return `null` from [resolveCipherKey].
 Future<String?> resolveStartupDatabaseCipherKey({
   required Future<String?> Function() resolveCipherKey,
   required Future<void> Function(Object error, StackTrace stack) recordError,
@@ -132,7 +132,7 @@ Future<String?> resolveStartupDatabaseCipherKey({
     return await resolveCipherKey();
   } catch (error, stack) {
     await recordError(error, stack);
-    Error.throwWithStackTrace(error, stack);
+    return null;
   }
 }
 
