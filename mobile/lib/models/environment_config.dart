@@ -97,6 +97,20 @@ class EnvironmentConfig {
     return url;
   }
 
+  /// Get REST event publish base URL.
+  ///
+  /// NIP-98 signs the exact publish URL. The events endpoint validates against
+  /// the relay HTTP origin, not the production FunnelCake API host.
+  String get eventPublishBaseUrl {
+    final url = relayUrl;
+    if (url.startsWith('wss://')) {
+      return url.replaceFirst('wss://', 'https://');
+    } else if (url.startsWith('ws://')) {
+      return url.replaceFirst('ws://', 'http://');
+    }
+    return url;
+  }
+
   /// Base URL for the Divine identity verification service
   /// (verifyer.divine.video). Single host across all environments — the
   /// service is not part of local_stack.

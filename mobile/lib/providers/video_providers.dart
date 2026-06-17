@@ -169,10 +169,10 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
   final profileStatsDao = ref.watch(databaseProvider).profileStatsDao;
   final savedSoundsService = ref.watch(savedSoundsServiceProvider);
 
-  // REST-first publish: POST the signed event to {apiBaseUrl}/api/events with
+  // REST-first publish: POST the signed event to {eventPublishBaseUrl}/api/events with
   // NIP-98 auth, falling back to the WebSocket relay pool on transient
-  // failures. apiBaseUrl resolves to https://api.divine.video (production) and
-  // https://relay.staging.divine.video (staging).
+  // failures. NIP-98 validates the exact URL, so event publish uses the relay
+  // HTTP origin rather than production's FunnelCake API host.
   final environmentConfig = ref.watch(currentEnvironmentProvider);
   final nip98AuthService = ref.watch(nip98AuthServiceProvider);
   final eventApiHttpClient = http.Client();
@@ -180,7 +180,7 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
   final eventApiClient = EventApiClient(
     httpClient: eventApiHttpClient,
     nip98AuthService: nip98AuthService,
-    apiBaseUrl: () => environmentConfig.apiBaseUrl,
+    apiBaseUrl: () => environmentConfig.eventPublishBaseUrl,
   );
 
   return VideoEventPublisher(

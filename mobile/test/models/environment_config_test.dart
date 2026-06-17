@@ -75,6 +75,15 @@ void main() {
       });
     });
 
+    group('eventPublishBaseUrl', () {
+      test('production uses relay.divine.video for NIP-98 event publish', () {
+        const config = EnvironmentConfig(
+          environment: AppEnvironment.production,
+        );
+        expect(config.eventPublishBaseUrl, 'https://relay.divine.video');
+      });
+    });
+
     test('blossomUrl is same for all environments', () {
       const poc = EnvironmentConfig(environment: AppEnvironment.poc);
       const staging = EnvironmentConfig(environment: AppEnvironment.staging);
