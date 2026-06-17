@@ -31,6 +31,11 @@ void main() {
       );
     });
 
+    test('users maps to the two-person collaborations glyph', () {
+      expect(DivineIconName.users.fileName, 'users');
+      expect(DivineIconName.users.assetPath, 'assets/icon/users.svg');
+    });
+
     test('all enum values have non-empty file names', () {
       for (final icon in DivineIconName.values) {
         expect(

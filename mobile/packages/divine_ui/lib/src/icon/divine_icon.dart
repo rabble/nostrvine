@@ -209,6 +209,7 @@ enum DivineIconName {
   userFocus('user_focus'),
   userMinus('userMinus'),
   userPlus('userPlus'),
+  users('users'),
   videoCamera('video_camera'),
   warning('warning'),
   warningCircle('warning_circle'),
