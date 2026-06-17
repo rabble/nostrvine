@@ -345,7 +345,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       }
 
       if (authState == AuthState.authenticated && isReviewLoadingRoute) {
-        if (reviewStatusAsync.hasError || reviewStatus?.isRestricted == true) {
+        // Only route to the restricted-account screen once the backend has
+        // *confirmed* a restriction. If the status could not be fetched
+        // (a non-404/501 API failure surfaces here as AsyncError), fail open
+        // and return the user to their destination instead of stranding them
+        // on the review screen — an account whose restriction we cannot prove
+        // must not be treated as restricted, and bouncing an errored status
+        // through the review screen risks a loading-screen ↔ review-screen
+        // loop (issue #5195).
+        if (reviewStatus?.isRestricted == true) {
           return MinorAccountReviewScreen.path;
         }
         return _minorAccountReviewReturnLocation(state);
