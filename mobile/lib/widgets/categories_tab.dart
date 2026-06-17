@@ -89,7 +89,11 @@ class CategoriesDiscoveryView extends StatelessWidget {
       CategoriesStatus.initial => const SizedBox.shrink(),
     };
 
-    return LoadingOverlay(isLoading: state.isRefreshing, child: body);
+    return LoadingOverlay(
+      isLoading: state.isRefreshing,
+      padding: const .only(top: 4),
+      child: body,
+    );
   }
 }
 

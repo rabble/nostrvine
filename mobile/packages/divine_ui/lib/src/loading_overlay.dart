@@ -21,6 +21,7 @@ class LoadingOverlay extends StatelessWidget {
   const LoadingOverlay({
     required this.child,
     required this.isLoading,
+    this.padding = .zero,
     super.key,
   });
 
@@ -30,6 +31,9 @@ class LoadingOverlay extends StatelessWidget {
   /// When true, a [LinearProgressIndicator] is shown at the top edge.
   final bool isLoading;
 
+  /// Optional padding applied around the loading indicator.
+  final EdgeInsets padding;
+
   static const _animationDuration = Duration(milliseconds: 200);
 
   @override
@@ -38,16 +42,19 @@ class LoadingOverlay extends StatelessWidget {
       children: [
         child,
 
-        AnimatedSize(
-          duration: _animationDuration,
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: isLoading
-                ? const LinearProgressIndicator(
-                    color: VineTheme.primary,
-                    backgroundColor: Colors.transparent,
-                  )
-                : const SizedBox(width: .infinity),
+        Padding(
+          padding: padding,
+          child: AnimatedSize(
+            duration: _animationDuration,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: isLoading
+                  ? const LinearProgressIndicator(
+                      color: VineTheme.primary,
+                      backgroundColor: Colors.transparent,
+                    )
+                  : const SizedBox(width: .infinity),
+            ),
           ),
         ),
       ],
