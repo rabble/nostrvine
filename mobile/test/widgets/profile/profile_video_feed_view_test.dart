@@ -101,6 +101,53 @@ void main() {
       ).thenReturn(ContentPolicyState.empty());
     });
 
+    Future<FullscreenFeedBloc> pumpProfileVideoFeed(
+      WidgetTester tester, {
+      required List<VideoEvent> seedVideos,
+      required int videoIndex,
+      required String? initialVideoId,
+      required String? initialStableId,
+    }) async {
+      await tester.pumpWidget(
+        testProviderScope(
+          additionalOverrides: [
+            videosRepositoryProvider.overrideWithValue(videosRepository),
+            videoEventServiceProvider.overrideWithValue(videoEventService),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              blocklistRepository,
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: BlocProvider(
+              create: (_) => VideoVolumeCubit(
+                sharedPreferences: createMockSharedPreferences(),
+                systemVolumeListener: _FakeSystemVolumeListener(),
+              ),
+              child: ProfileVideoFeedView(
+                npub: 'npub1profile',
+                userIdHex: _profilePubkey,
+                videoIndex: videoIndex,
+                videos: seedVideos,
+                initialVideoId: initialVideoId,
+                initialStableId: initialStableId,
+                contextTitleOverride: 'Profile',
+                onPageChanged: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.runAsync(() async {
+        await Future<void>.delayed(Duration.zero);
+      });
+
+      final contentContext = tester.element(find.byType(FullscreenFeedContent));
+      return contentContext.read<FullscreenFeedBloc>();
+    }
+
     testWidgets(
       'seeds fullscreen with the tapped video before live profile videos load',
       (tester) async {
@@ -128,46 +175,13 @@ void main() {
           ),
         );
 
-        await tester.pumpWidget(
-          testProviderScope(
-            additionalOverrides: [
-              videosRepositoryProvider.overrideWithValue(videosRepository),
-              videoEventServiceProvider.overrideWithValue(videoEventService),
-              contentBlocklistRepositoryProvider.overrideWithValue(
-                blocklistRepository,
-              ),
-            ],
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: BlocProvider(
-                create: (_) => VideoVolumeCubit(
-                  sharedPreferences: createMockSharedPreferences(),
-                  systemVolumeListener: _FakeSystemVolumeListener(),
-                ),
-                child: ProfileVideoFeedView(
-                  npub: 'npub1profile',
-                  userIdHex: _profilePubkey,
-                  videoIndex: 0,
-                  videos: seedVideos,
-                  initialVideoId: target.id,
-                  initialStableId: targetStableId,
-                  contextTitleOverride: 'Profile',
-                  onPageChanged: (_) {},
-                ),
-              ),
-            ),
-          ),
+        final fullscreenBloc = await pumpProfileVideoFeed(
+          tester,
+          seedVideos: seedVideos,
+          videoIndex: 0,
+          initialVideoId: target.id,
+          initialStableId: targetStableId,
         );
-
-        await tester.runAsync(() async {
-          await Future<void>.delayed(Duration.zero);
-        });
-
-        final contentContext = tester.element(
-          find.byType(FullscreenFeedContent),
-        );
-        final fullscreenBloc = contentContext.read<FullscreenFeedBloc>();
 
         expect(fullscreenBloc.state.status, FullscreenFeedStatus.ready);
         expect(fullscreenBloc.state.videos, seedVideos);
@@ -209,51 +223,180 @@ void main() {
           ),
         );
 
-        await tester.pumpWidget(
-          testProviderScope(
-            additionalOverrides: [
-              videosRepositoryProvider.overrideWithValue(videosRepository),
-              videoEventServiceProvider.overrideWithValue(videoEventService),
-              contentBlocklistRepositoryProvider.overrideWithValue(
-                blocklistRepository,
-              ),
-            ],
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: BlocProvider(
-                create: (_) => VideoVolumeCubit(
-                  sharedPreferences: createMockSharedPreferences(),
-                  systemVolumeListener: _FakeSystemVolumeListener(),
-                ),
-                child: ProfileVideoFeedView(
-                  npub: 'npub1profile',
-                  userIdHex: _profilePubkey,
-                  videoIndex: 4,
-                  videos: seedVideos,
-                  initialVideoId: 'target-video',
-                  initialStableId: targetStableId,
-                  contextTitleOverride: 'Profile',
-                  onPageChanged: (_) {},
-                ),
-              ),
-            ),
-          ),
+        final fullscreenBloc = await pumpProfileVideoFeed(
+          tester,
+          seedVideos: seedVideos,
+          videoIndex: 4,
+          initialVideoId: 'target-video',
+          initialStableId: targetStableId,
         );
-
-        await tester.runAsync(() async {
-          await Future<void>.delayed(Duration.zero);
-        });
-
-        final contentContext = tester.element(
-          find.byType(FullscreenFeedContent),
-        );
-        final fullscreenBloc = contentContext.read<FullscreenFeedBloc>();
 
         expect(fullscreenBloc.state.status, FullscreenFeedStatus.ready);
         expect(fullscreenBloc.state.videos, containsAll(seedVideos));
         expect(fullscreenBloc.state.videos, containsAll(liveFirstPage));
         expect(fullscreenBloc.state.currentVideo?.id, 'target-video');
+      },
+    );
+
+    testWidgets(
+      'switches back to the live profile page once load-more finds the target',
+      (tester) async {
+        const targetStableId = 'stable-target';
+        final seedOnly = _video('seed-only', createdAt: 1000);
+        final seedVideos = [
+          _video('seed-0', createdAt: 6000),
+          _video('seed-1', createdAt: 5000),
+          _video('target-video', createdAt: 2000, stableId: targetStableId),
+          seedOnly,
+        ];
+        final liveFirstPage = List.generate(
+          50,
+          (index) => _video('live-$index', createdAt: 8000 - index),
+        );
+        final liveSecondPage = [
+          _video('target-video', createdAt: 2000, stableId: targetStableId),
+        ];
+
+        when(
+          () => videosRepository.getAuthorFeed(
+            authorPubkey: any(named: 'authorPubkey'),
+            offset: any(named: 'offset'),
+            relaySeed: any(named: 'relaySeed'),
+            skipCache: any(named: 'skipCache'),
+          ),
+        ).thenAnswer(
+          (_) async => AuthorFeedResult(
+            authorPubkey: _profilePubkey,
+            videos: liveFirstPage,
+            hasMore: true,
+            nextOffset: liveFirstPage.length,
+          ),
+        );
+        when(
+          () => videosRepository.getAuthorFeed(
+            authorPubkey: any(named: 'authorPubkey'),
+            offset: liveFirstPage.length,
+          ),
+        ).thenAnswer(
+          (_) async => AuthorFeedResult(
+            authorPubkey: _profilePubkey,
+            videos: liveSecondPage,
+            hasMore: false,
+          ),
+        );
+
+        final fullscreenBloc = await pumpProfileVideoFeed(
+          tester,
+          seedVideos: seedVideos,
+          videoIndex: 2,
+          initialVideoId: 'target-video',
+          initialStableId: targetStableId,
+        );
+
+        expect(fullscreenBloc.state.videos, contains(seedOnly));
+        expect(fullscreenBloc.state.currentVideo?.id, 'target-video');
+
+        fullscreenBloc.add(const FullscreenFeedLoadMoreRequested());
+        await tester.runAsync(() async {
+          await Future<void>.delayed(Duration.zero);
+        });
+
+        expect(fullscreenBloc.state.videos, containsAll(liveFirstPage));
+        expect(fullscreenBloc.state.videos, containsAll(liveSecondPage));
+        expect(fullscreenBloc.state.videos, isNot(contains(seedOnly)));
+        expect(fullscreenBloc.state.currentVideo?.id, 'target-video');
+      },
+    );
+
+    testWidgets(
+      'uses live profile videos when the seed lacks the tapped target',
+      (tester) async {
+        const targetStableId = 'stable-target';
+        final seedOnly = _video('seed-only', createdAt: 1000);
+        final liveTarget = _video(
+          'target-video',
+          createdAt: 2000,
+          stableId: targetStableId,
+        );
+        final liveVideos = [
+          _video('live-0', createdAt: 3000),
+          liveTarget,
+        ];
+
+        when(
+          () => videosRepository.getAuthorFeed(
+            authorPubkey: any(named: 'authorPubkey'),
+            offset: any(named: 'offset'),
+            relaySeed: any(named: 'relaySeed'),
+            skipCache: any(named: 'skipCache'),
+          ),
+        ).thenAnswer(
+          (_) async => AuthorFeedResult(
+            authorPubkey: _profilePubkey,
+            videos: liveVideos,
+            hasMore: false,
+          ),
+        );
+
+        final fullscreenBloc = await pumpProfileVideoFeed(
+          tester,
+          seedVideos: [seedOnly],
+          videoIndex: 0,
+          initialVideoId: liveTarget.id,
+          initialStableId: targetStableId,
+        );
+
+        expect(fullscreenBloc.state.videos, liveVideos);
+        expect(fullscreenBloc.state.videos, isNot(contains(seedOnly)));
+        expect(fullscreenBloc.state.currentVideo?.id, liveTarget.id);
+      },
+    );
+
+    testWidgets(
+      'uses live profile videos when the live page already has the target',
+      (tester) async {
+        const targetStableId = 'stable-target';
+        final seedOnly = _video('seed-only', createdAt: 1000);
+        final liveTarget = _video(
+          'target-video',
+          createdAt: 2000,
+          stableId: targetStableId,
+        );
+        final liveVideos = [
+          _video('live-0', createdAt: 3000),
+          liveTarget,
+        ];
+        final seedVideos = [
+          seedOnly,
+          _video('target-video', createdAt: 2000, stableId: targetStableId),
+        ];
+
+        when(
+          () => videosRepository.getAuthorFeed(
+            authorPubkey: any(named: 'authorPubkey'),
+            offset: any(named: 'offset'),
+            relaySeed: any(named: 'relaySeed'),
+            skipCache: any(named: 'skipCache'),
+          ),
+        ).thenAnswer(
+          (_) async => AuthorFeedResult(
+            authorPubkey: _profilePubkey,
+            videos: liveVideos,
+            hasMore: false,
+          ),
+        );
+
+        final fullscreenBloc = await pumpProfileVideoFeed(
+          tester,
+          seedVideos: seedVideos,
+          videoIndex: 1,
+          initialVideoId: liveTarget.id,
+          initialStableId: targetStableId,
+        );
+
+        expect(fullscreenBloc.state.videos, liveVideos);
+        expect(fullscreenBloc.state.videos, isNot(contains(seedOnly)));
+        expect(fullscreenBloc.state.currentVideo?.id, liveTarget.id);
       },
     );
   });

@@ -114,11 +114,13 @@ class _ProfileFullscreenContentState extends State<_ProfileFullscreenContent> {
   late final ProfileFeedCubit _cubit;
   late final FeedRepository _feedRepository;
   late final int _initialIndex;
+  late final bool _seedContainsInitialTarget;
 
   @override
   void initState() {
     super.initState();
     _cubit = context.read<ProfileFeedCubit>();
+    _seedContainsInitialTarget = _containsInitialTarget(widget.seedVideos);
 
     final initialState = _cubit.state;
     _initialIndex = _resolveInitialIndex(_effectiveVideos(initialState));
@@ -134,11 +136,17 @@ class _ProfileFullscreenContentState extends State<_ProfileFullscreenContent> {
     );
   }
 
+  // Adapts the scoped live cubit feed to the launch seed while the new cubit
+  // catches up to the tapped video from the profile grid.
   List<VideoEvent> _effectiveVideos(ProfileFeedState state) {
     final liveVideos = state.videos;
     final seedVideos = widget.seedVideos;
     if (liveVideos.isEmpty) return seedVideos;
-    if (seedVideos.isEmpty || !_seedContainsInitialTarget()) return liveVideos;
+    if (seedVideos.isEmpty || !_seedContainsInitialTarget) return liveVideos;
+
+    // Once live paging reaches the tapped target, the cubit-owned list is
+    // authoritative again; seed-only items can drop until live paging reaches
+    // them through the normal profile feed path.
     if (_containsInitialTarget(liveVideos)) return liveVideos;
 
     return mergeProfileFeedVideoLists(liveVideos, seedVideos);
@@ -152,9 +160,6 @@ class _ProfileFullscreenContentState extends State<_ProfileFullscreenContent> {
 
     return widget.videoIndex.clamp(0, videos.length - 1);
   }
-
-  bool _seedContainsInitialTarget() =>
-      _containsInitialTarget(widget.seedVideos);
 
   bool _containsInitialTarget(List<VideoEvent> videos) =>
       _indexOfInitialTarget(videos) >= 0;
