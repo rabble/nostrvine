@@ -17,8 +17,11 @@ import 'package:openvine/services/auth_service.dart';
 /// function. This helps us understand what SHOULD happen without Firebase
 /// dependencies.
 ///
-/// IMPORTANT: This must stay in sync with the `redirect` callback in
-/// `app_router.dart`. When you add a new auth route there, add it here too.
+/// The authenticated auth-route decision (rule 1, including the expired-session
+/// login-options exception) delegates to the real
+/// [authenticatedRedirectsFromAuthEntry] helper, so that branch cannot drift
+/// from the router. Only the unauthenticated `isAuthRoute` mirror (rule 2)
+/// remains a local copy — keep it in sync when adding a new auth route.
 ///
 /// The actual redirect logic is:
 /// 1. If authenticated AND on top-level auth entry routes -> redirect to /home/0
@@ -42,22 +45,14 @@ String? testRedirectLogic({
       location.startsWith(ResetPasswordScreen.path) ||
       location.startsWith(EmailVerificationScreen.path);
 
-  // Authenticated users should be redirected from top-level auth entry routes.
-  // Deep-link auth routes remain accessible while authenticated.
-  final shouldRedirectAuthenticated =
-      location == WelcomeScreen.path ||
-      location == NostrConnectScreen.path ||
-      location == WelcomeScreen.inviteGatePath ||
-      location == WelcomeScreen.createAccountPath ||
-      location == WelcomeScreen.loginOptionsPath;
-
   // Rule 1: Authenticated users on redirectable auth routes go to home.
-  if (authState == AuthState.authenticated && shouldRedirectAuthenticated) {
-    // Allow expired-session users through to login options
-    // so they can re-authenticate instead of being bounced home
-    if (hasExpiredOAuthSession && location == WelcomeScreen.loginOptionsPath) {
-      return null;
-    }
+  // Delegates to the real shared helper so this mirror cannot drift from the
+  // router; the expired-session login-options exception lives there too.
+  if (authState == AuthState.authenticated &&
+      authenticatedRedirectsFromAuthEntry(
+        location,
+        hasExpiredOAuthSession: hasExpiredOAuthSession,
+      )) {
     return VideoFeedPage.pathForIndex(0);
   }
 
@@ -488,5 +483,72 @@ void main() {
         expect(rebuilt, equals(KeyImportScreen.path));
       },
     );
+  });
+
+  group('authenticatedRedirectsFromAuthEntry', () {
+    group('redirects an authenticated user home from', () {
+      for (final location in <String>[
+        WelcomeScreen.path,
+        NostrConnectScreen.path,
+        WelcomeScreen.inviteGatePath,
+        WelcomeScreen.createAccountPath,
+        WelcomeScreen.loginOptionsPath,
+      ]) {
+        test(location, () {
+          expect(
+            authenticatedRedirectsFromAuthEntry(
+              location,
+              hasExpiredOAuthSession: false,
+            ),
+            isTrue,
+            reason: '$location is a sign-in entry point — bounce home',
+          );
+        });
+      }
+    });
+
+    group('leaves an authenticated user on', () {
+      for (final location in <String>[
+        WelcomeScreen.resetPasswordPath,
+        ResetPasswordScreen.path,
+        EmailVerificationScreen.path,
+        KeyImportScreen.path,
+        VideoFeedPage.pathForIndex(0),
+        ExploreScreen.path,
+      ]) {
+        test(location, () {
+          expect(
+            authenticatedRedirectsFromAuthEntry(
+              location,
+              hasExpiredOAuthSession: false,
+            ),
+            isFalse,
+            reason: '$location is a route the router leaves the user on',
+          );
+        });
+      }
+    });
+
+    test('leaves an expired-session user on login options', () {
+      expect(
+        authenticatedRedirectsFromAuthEntry(
+          WelcomeScreen.loginOptionsPath,
+          hasExpiredOAuthSession: true,
+        ),
+        isFalse,
+        reason: 'expired-session users must reach login options to re-auth',
+      );
+    });
+
+    test('still redirects an expired-session user from /welcome', () {
+      expect(
+        authenticatedRedirectsFromAuthEntry(
+          WelcomeScreen.path,
+          hasExpiredOAuthSession: true,
+        ),
+        isTrue,
+        reason: 'the expired-session exception only applies to login options',
+      );
+    });
   });
 }

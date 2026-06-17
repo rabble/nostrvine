@@ -12,8 +12,16 @@ import 'package:openvine/startup/startup_splash_release_controller.dart';
 /// timeout floor. Fired exactly once.
 void main() {
   group(StartupSplashReleaseController, () {
-    bool isAuthEntryLocation(String location) =>
-        location == '/welcome' || location.startsWith('/welcome/');
+    // Mirrors the redirect-away set in `authenticatedRedirectsFromAuthEntry`:
+    // an authenticated user is bounced home only from the sign-in entry
+    // points, not from the deep-link auth routes they are left on
+    // (reset-password, email verification, key import).
+    bool authenticatedRedirectPending(String location) =>
+        location == '/welcome' ||
+        location == '/welcome/login-options' ||
+        location == '/welcome/create-account' ||
+        location == '/welcome/invite' ||
+        location == '/nostr-connect';
 
     // A non-default timeout keeps the floor explicit in the elapse math.
     const timeout = Duration(seconds: 5);
@@ -30,7 +38,7 @@ void main() {
           currentAuthState: () => state,
           locationListenable: location,
           currentLocation: () => location.value,
-          isAuthEntryLocation: isAuthEntryLocation,
+          authenticatedRedirectPending: authenticatedRedirectPending,
           timeout: timeout,
           release: () => releases++,
         );
@@ -74,7 +82,7 @@ void main() {
             currentAuthState: () => state,
             locationListenable: location,
             currentLocation: () => location.value,
-            isAuthEntryLocation: isAuthEntryLocation,
+            authenticatedRedirectPending: authenticatedRedirectPending,
             timeout: timeout,
             release: () => releases++,
           );
@@ -118,7 +126,7 @@ void main() {
           currentAuthState: () => state,
           locationListenable: location,
           currentLocation: () => location.value,
-          isAuthEntryLocation: isAuthEntryLocation,
+          authenticatedRedirectPending: authenticatedRedirectPending,
           timeout: timeout,
           release: () => releases++,
         );
@@ -150,7 +158,7 @@ void main() {
           currentAuthState: () => state,
           locationListenable: location,
           currentLocation: () => location.value,
-          isAuthEntryLocation: isAuthEntryLocation,
+          authenticatedRedirectPending: authenticatedRedirectPending,
           timeout: timeout,
           release: () => releases++,
         );
@@ -178,7 +186,7 @@ void main() {
           currentAuthState: () => state,
           locationListenable: location,
           currentLocation: () => location.value,
-          isAuthEntryLocation: isAuthEntryLocation,
+          authenticatedRedirectPending: authenticatedRedirectPending,
           timeout: timeout,
           release: () => releases++,
         );
@@ -198,6 +206,91 @@ void main() {
       });
     });
 
+    test(
+      'authenticated reset-password deep link releases without waiting for '
+      'the timeout',
+      () {
+        fakeAsync((async) {
+          final auth = StreamController<AuthState>.broadcast();
+          // A cold-start deep link lands an authenticated user directly on the
+          // nested reset-password route, which the router intentionally leaves
+          // them on — no home-redirect is pending, so the splash must release
+          // at once rather than hang until the timeout floor (#5242 review).
+          final location = ValueNotifier<String>(
+            '/welcome/login-options/reset-password',
+          );
+          var state = AuthState.checking;
+          var releases = 0;
+
+          final controller = StartupSplashReleaseController(
+            authStateStream: auth.stream,
+            currentAuthState: () => state,
+            locationListenable: location,
+            currentLocation: () => location.value,
+            authenticatedRedirectPending: authenticatedRedirectPending,
+            timeout: timeout,
+            release: () => releases++,
+          );
+
+          state = AuthState.authenticated;
+          auth.add(AuthState.authenticated);
+          async.flushMicrotasks();
+          expect(
+            releases,
+            1,
+            reason:
+                'an authenticated deep-link auth route the router leaves the '
+                'user on must release immediately, not at the timeout',
+          );
+
+          // No lingering timer to fire later.
+          async.elapse(timeout * 2);
+          expect(releases, 1);
+
+          controller.dispose();
+          location.dispose();
+          unawaited(auth.close());
+        });
+      },
+    );
+
+    test(
+      'authenticated email-verification deep link releases immediately',
+      () {
+        fakeAsync((async) {
+          final auth = StreamController<AuthState>.broadcast();
+          final location = ValueNotifier<String>('/verify-email');
+          var state = AuthState.checking;
+          var releases = 0;
+
+          final controller = StartupSplashReleaseController(
+            authStateStream: auth.stream,
+            currentAuthState: () => state,
+            locationListenable: location,
+            currentLocation: () => location.value,
+            authenticatedRedirectPending: authenticatedRedirectPending,
+            timeout: timeout,
+            release: () => releases++,
+          );
+
+          state = AuthState.authenticated;
+          auth.add(AuthState.authenticated);
+          async.flushMicrotasks();
+          expect(
+            releases,
+            1,
+            reason:
+                '/verify-email is a deep-link auth route an authenticated user '
+                'stays on — release',
+          );
+
+          controller.dispose();
+          location.dispose();
+          unawaited(auth.close());
+        });
+      },
+    );
+
     test('timeout floor releases when no terminal state is reached', () {
       fakeAsync((async) {
         final auth = StreamController<AuthState>.broadcast();
@@ -209,7 +302,7 @@ void main() {
           currentAuthState: () => AuthState.checking,
           locationListenable: location,
           currentLocation: () => location.value,
-          isAuthEntryLocation: isAuthEntryLocation,
+          authenticatedRedirectPending: authenticatedRedirectPending,
           timeout: timeout,
           release: () => releases++,
         );
@@ -238,7 +331,7 @@ void main() {
           currentAuthState: () => state,
           locationListenable: location,
           currentLocation: () => location.value,
-          isAuthEntryLocation: isAuthEntryLocation,
+          authenticatedRedirectPending: authenticatedRedirectPending,
           timeout: timeout,
           release: () => releases++,
         );
@@ -274,7 +367,7 @@ void main() {
           currentAuthState: () => AuthState.authenticated,
           locationListenable: location,
           currentLocation: () => location.value,
-          isAuthEntryLocation: isAuthEntryLocation,
+          authenticatedRedirectPending: authenticatedRedirectPending,
           timeout: timeout,
           release: () => releases++,
         );

@@ -1603,7 +1603,11 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       locationListenable: router.routerDelegate,
       currentLocation: () =>
           router.routerDelegate.currentConfiguration.uri.path,
-      isAuthEntryLocation: isAuthEntryLocation,
+      authenticatedRedirectPending: (location) =>
+          authenticatedRedirectsFromAuthEntry(
+            location,
+            hasExpiredOAuthSession: authService.hasExpiredOAuthSession,
+          ),
     );
     // Start deferred startup after the first frame so the shell can paint first.
     WidgetsBinding.instance.addPostFrameCallback((_) {

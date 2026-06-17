@@ -177,7 +177,7 @@ String minorAccountReviewReturnLocationForTest(Uri uri) {
   }
 
   final fromLocation = Uri.parse(from).path;
-  if (isAuthEntryLocation(fromLocation) ||
+  if (_isAuthEntryLocation(fromLocation) ||
       fromLocation == MinorAccountReviewLoadingScreen.path) {
     return VideoFeedPage.pathForIndex(0);
   }
@@ -211,7 +211,7 @@ String? _moderationConversationId(
   return DmRepository.computeConversationId([currentPubkey, moderationPubkey]);
 }
 
-bool isAuthEntryLocation(String location) {
+bool _isAuthEntryLocation(String location) {
   return location == WelcomeScreen.path ||
       location.startsWith('${WelcomeScreen.path}/') ||
       location.startsWith(KeyImportScreen.path) ||
@@ -223,6 +223,40 @@ bool isAuthEntryLocation(String location) {
       location == MinorAccountReviewScreen.welcomePath ||
       location == MinorAccountReviewParentConsentScreen.path ||
       location == MinorAccountReviewUnder13Screen.path;
+}
+
+/// Whether an authenticated user currently on [location] is one the router's
+/// auth-route redirect bounces home to the feed.
+///
+/// Mirrors the authenticated auth-route redirect in [goRouterProvider]: an
+/// authenticated user is only redirected home from the sign-in entry points
+/// (`/welcome`, `/nostr-connect`, `/welcome/invite`, `/welcome/create-account`,
+/// `/welcome/login-options`), with the same expired-session exception for login
+/// options (an expired-session user must reach login options to re-authenticate
+/// rather than be bounced home).
+///
+/// It is deliberately narrower than [_isAuthEntryLocation]: auth-entry routes an
+/// authenticated user is intentionally left on — reset-password and
+/// email-verification deep links, key import (an account-switch route), and the
+/// minor-account-review entry routes — return `false`.
+///
+/// The startup splash gate (`StartupSplashReleaseController`, #5242) uses this
+/// to hold the splash only while a home-redirect is actually pending, so a
+/// cold-start auth deep link releases the splash as soon as auth settles
+/// instead of waiting for the restore timeout. Keep this in sync with the
+/// auth-route redirect above; `login_flow_redirect_test` exercises it directly.
+bool authenticatedRedirectsFromAuthEntry(
+  String location, {
+  required bool hasExpiredOAuthSession,
+}) {
+  if (hasExpiredOAuthSession && location == WelcomeScreen.loginOptionsPath) {
+    return false;
+  }
+  return location == WelcomeScreen.path ||
+      location == NostrConnectScreen.path ||
+      location == WelcomeScreen.inviteGatePath ||
+      location == WelcomeScreen.createAccountPath ||
+      location == WelcomeScreen.loginOptionsPath;
 }
 
 @visibleForTesting
@@ -325,7 +359,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       // Auth routes don't require authentication — user is in the
       // process of logging in.
-      final isAuthRoute = isAuthEntryLocation(location);
+      final isAuthRoute = _isAuthEntryLocation(location);
 
       // Only bounce to the loading screen on a true cold load (no value yet).
       // Riverpod keeps the previous value during a background refetch
