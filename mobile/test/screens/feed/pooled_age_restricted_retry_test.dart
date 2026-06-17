@@ -137,6 +137,62 @@ void main() {
       expect(playbackStatusCubit.state.isVerifying(_videoId), isFalse);
     });
 
+    testWidgets(
+      'ignores duplicate retry calls while verification is in flight',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        final playbackStatusCubit = VideoPlaybackStatusCubit();
+        final authCompleter = Completer<Map<String, String>?>();
+        var retryCount = 0;
+        addTearDown(playbackStatusCubit.close);
+
+        when(
+          () => mediaAuthInterceptor.handleUnauthorizedMedia(
+            context: any(named: 'context'),
+            sha256Hash: _sha256,
+            url: _videoUrl,
+            serverUrl: 'https://media.divine.video',
+            category: 'video',
+          ),
+        ).thenAnswer((_) => authCompleter.future);
+
+        await tester.pumpWidget(
+          _RetryHarness(
+            mediaAuthInterceptor: mediaAuthInterceptor,
+            playbackStatusCubit: playbackStatusCubit,
+            retryPlayback: (_) {
+              retryCount++;
+              return true;
+            },
+          ),
+        );
+
+        await tester.tap(find.text('Verify'));
+        await tester.pump();
+        expect(playbackStatusCubit.state.isVerifying(_videoId), isTrue);
+
+        await tester.tap(find.text('Verify'));
+        await tester.pump();
+
+        verify(
+          () => mediaAuthInterceptor.handleUnauthorizedMedia(
+            context: any(named: 'context'),
+            sha256Hash: _sha256,
+            url: _videoUrl,
+            serverUrl: 'https://media.divine.video',
+            category: 'video',
+          ),
+        ).called(1);
+
+        authCompleter.complete({'Authorization': 'Nostr token'});
+        await tester.pump();
+        await tester.pump();
+
+        expect(retryCount, 1);
+        expect(playbackStatusCubit.state.isVerifying(_videoId), isFalse);
+      },
+    );
+
     testWidgets('keeps gate state and stays silent when auth is declined', (
       tester,
     ) async {

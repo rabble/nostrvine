@@ -357,7 +357,7 @@ class _DivineButtonContent extends StatelessWidget {
       child: Material(
         color: VineTheme.transparent,
         child: InkWell(
-          onTap: onPressed,
+          onTap: _isEnabled ? onPressed : null,
           borderRadius: BorderRadius.circular(_borderRadius),
           splashColor: _foregroundColor.withValues(alpha: 0.1),
           highlightColor: _foregroundColor.withValues(alpha: 0.05),

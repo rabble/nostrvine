@@ -35,6 +35,9 @@ Future<void> retryAgeRestrictedPooledVideo({
   // the tap is never a silent wait. Captured up front (sync, pre-await) and
   // cleared in `finally` regardless of which branch exits.
   final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
+  if (playbackStatusCubit.state.isVerifying(video.id)) {
+    return;
+  }
   playbackStatusCubit.markVerifying(video.id);
   try {
     final videoUrl = video.videoUrl;

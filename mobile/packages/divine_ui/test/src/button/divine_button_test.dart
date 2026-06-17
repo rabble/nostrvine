@@ -227,7 +227,22 @@ void main() {
         );
 
         await tester.tap(find.byType(DivineButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        expect(pressed, isFalse);
+      });
+
+      testWidgets('does not call onPressed while loading', (tester) async {
+        var pressed = false;
+        await tester.pumpWidget(
+          buildTestWidget(
+            onPressed: () => pressed = true,
+            isLoading: true,
+          ),
+        );
+
+        await tester.tap(find.byType(DivineButton));
+        await tester.pump();
 
         expect(pressed, isFalse);
       });
