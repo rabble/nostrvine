@@ -3,13 +3,17 @@
 // ABOUTME: (cache-aware relay fetch with SQLite local storage)
 
 import 'dart:async';
+import 'dart:math';
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:cache_sync/cache_sync.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/aid.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -47,8 +51,15 @@ class ProfileRepostedVideosBloc
        _currentUserPubkey = currentUserPubkey,
        _targetUserPubkey = targetUserPubkey,
        super(const ProfileRepostedVideosState()) {
-    on<ProfileRepostedVideosSyncRequested>(_onSyncRequested);
+    on<ProfileRepostedVideosSyncRequested>(
+      _onSyncRequested,
+      transformer: droppable(),
+    );
     on<ProfileRepostedVideosSubscriptionRequested>(_onSubscriptionRequested);
+    on<ProfileRepostedVideosReconcileRequested>(
+      _onReconcileRequested,
+      transformer: sequential(),
+    );
     on<ProfileRepostedVideosLoadMoreRequested>(_onLoadMoreRequested);
   }
 
@@ -65,395 +76,421 @@ class ProfileRepostedVideosBloc
   bool get _isOtherUserProfile =>
       _targetUserPubkey != null && _targetUserPubkey != _currentUserPubkey;
 
-  /// Handle sync request - syncs repost records from repository then loads
-  /// videos.
+  /// Cache key for this profile's reposted-videos snapshot.
   ///
-  /// For own profile: Uses "show cached first, refresh in background" pattern:
-  /// 1. Load cached IDs from local storage (instant)
-  /// 2. Fetch videos for cached IDs and show immediately
-  /// 3. Sync from relay in background, update if new reposts found
+  /// Follows the `${pubkey}:${operation}` convention (RFC #4244) so
+  /// `CacheSync.invalidatePrefix(currentPubkey)` at sign-out clears the
+  /// signed-out user's own-profile entry.
+  String get _cacheKey {
+    final pubkey = _targetUserPubkey ?? _currentUserPubkey;
+    return '$pubkey:profile_reposted_videos';
+  }
+
+  /// Handle sync request using stale-while-revalidate backed by [CacheSync].
   ///
-  /// For other profiles: Fetch from relay (no cache available).
+  /// On reopen the persisted snapshot is deserialized once and served
+  /// immediately; revalidation then only refreshes the reposted-ID list and
+  /// reconciles it against the shown videos (no bulk re-fetch / re-serialize).
   Future<void> _onSyncRequested(
     ProfileRepostedVideosSyncRequested event,
     Emitter<ProfileRepostedVideosState> emit,
   ) async {
-    // Don't re-sync if already syncing
-    if (state.status == ProfileRepostedVideosStatus.syncing) return;
-
-    Log.info(
-      'ProfileRepostedVideosBloc: Starting sync for '
-      '${_isOtherUserProfile ? "other user" : "own profile"}',
-      name: 'ProfileRepostedVideosBloc',
-      category: LogCategory.video,
-    );
-
-    // For other profiles, use the original flow (no cache available)
-    if (_isOtherUserProfile) {
-      await _syncOtherUserReposts(emit);
-      return;
+    if (state.videos.isNotEmpty && !state.isRefreshing) {
+      emit(state.copyWith(isRefreshing: true));
     }
 
-    // For own profile: show cached data first, then refresh in background
-    await _syncOwnProfileReposts(emit);
-  }
-
-  /// Sync reposts for other user's profile (no cache available).
-  Future<void> _syncOtherUserReposts(
-    Emitter<ProfileRepostedVideosState> emit,
-  ) async {
-    emit(state.copyWith(status: ProfileRepostedVideosStatus.syncing));
-
-    try {
-      final addressableIds = await _repostsRepository.fetchUserReposts(
-        _targetUserPubkey!,
-      );
-
-      Log.info(
-        'ProfileRepostedVideosBloc: Fetched ${addressableIds.length} repost '
-        'IDs for other user',
-        name: 'ProfileRepostedVideosBloc',
-        category: LogCategory.video,
-      );
-
-      if (addressableIds.isEmpty) {
-        emit(
-          state.copyWith(
-            status: ProfileRepostedVideosStatus.success,
-            videos: [],
-            repostedAddressableIds: [],
-            hasMoreContent: false,
-            clearError: true,
-          ),
-        );
-        return;
-      }
-
-      emit(
-        state.copyWith(
-          status: ProfileRepostedVideosStatus.loading,
-          repostedAddressableIds: addressableIds,
-        ),
-      );
-
-      final firstPageIds = addressableIds.take(_pageSize).toList();
-      final videos = await _fetchVideos(firstPageIds, cacheResults: true);
-
-      Log.info(
-        'ProfileRepostedVideosBloc: Loaded ${videos.length} videos '
-        '(first page of ${addressableIds.length} total)',
-        name: 'ProfileRepostedVideosBloc',
-        category: LogCategory.video,
-      );
-
+    final cached = await _readCachedSnapshot();
+    if (isClosed) return;
+    if (cached != null && cached.videos.isNotEmpty) {
       emit(
         state.copyWith(
           status: ProfileRepostedVideosStatus.success,
-          videos: videos,
-          hasMoreContent: addressableIds.length > _pageSize,
+          videos: cached.videos,
+          repostedAddressableIds: cached.itemIds,
+          nextPageOffset: cached.nextPageOffset,
+          hasMoreContent: cached.hasMoreContent,
+          isRefreshing: true,
           clearError: true,
         ),
       );
-    } on FetchRepostsFailedException catch (e) {
+    }
+
+    try {
+      if (state.videos.isEmpty) {
+        await _coldLoad(emit);
+      } else {
+        await _warmRevalidate(emit);
+      }
+    } catch (e, stackTrace) {
       Log.error(
-        'ProfileRepostedVideosBloc: Fetch reposts failed - ${e.message}',
+        'ProfileRepostedVideosBloc: Sync failed - $e',
         name: 'ProfileRepostedVideosBloc',
         category: LogCategory.video,
       );
+      addError(e, stackTrace);
+      if (isClosed) return;
+      if (state.videos.isNotEmpty) {
+        emit(state.copyWith(isRefreshing: false));
+        return;
+      }
       emit(
         state.copyWith(
           status: ProfileRepostedVideosStatus.failure,
-          error: ProfileRepostedVideosError.syncFailed,
-        ),
-      );
-    } catch (e) {
-      Log.error(
-        'ProfileRepostedVideosBloc: Failed to load videos - $e',
-        name: 'ProfileRepostedVideosBloc',
-        category: LogCategory.video,
-      );
-      emit(
-        state.copyWith(
-          status: ProfileRepostedVideosStatus.failure,
-          error: ProfileRepostedVideosError.loadFailed,
+          isRefreshing: false,
+          error: _errorFor(e),
         ),
       );
     }
   }
 
-  /// Sync reposts for own profile using "show cached first" pattern.
-  Future<void> _syncOwnProfileReposts(
+  /// Cold path: nothing cached. Resolve the reposted-ID list (own profile
+  /// prefers the instant local list, falling back to the relay) and fetch the
+  /// first page.
+  Future<void> _coldLoad(Emitter<ProfileRepostedVideosState> emit) async {
+    final List<String> addressableIds;
+    if (_isOtherUserProfile) {
+      addressableIds = await _repostsRepository.fetchUserReposts(
+        _targetUserPubkey!,
+      );
+    } else {
+      final localIds = await _repostsRepository
+          .getOrderedRepostedAddressableIds();
+      if (localIds.isNotEmpty) {
+        _scheduleBackgroundRelaySync();
+        addressableIds = localIds;
+      } else {
+        addressableIds =
+            (await _repostsRepository.syncUserReposts()).orderedAddressableIds;
+      }
+    }
+    if (isClosed) return;
+
+    if (addressableIds.isEmpty) {
+      emit(
+        state.copyWith(
+          status: ProfileRepostedVideosStatus.success,
+          videos: [],
+          repostedAddressableIds: [],
+          nextPageOffset: 0,
+          hasMoreContent: false,
+          isRefreshing: false,
+          clearError: true,
+        ),
+      );
+      await _persistSnapshot(_emptySnapshot);
+      return;
+    }
+
+    final firstPageIds = addressableIds.take(_pageSize).toList();
+    final videos = await _fetchVideos(firstPageIds, cacheResults: true);
+    if (isClosed) return;
+
+    final snapshot = ProfileVideoListSnapshot(
+      videos: videos,
+      itemIds: addressableIds,
+      nextPageOffset: firstPageIds.length,
+      hasMoreContent: addressableIds.length > firstPageIds.length,
+    );
+    emit(
+      state.copyWith(
+        status: ProfileRepostedVideosStatus.success,
+        videos: videos,
+        repostedAddressableIds: addressableIds,
+        nextPageOffset: snapshot.nextPageOffset,
+        hasMoreContent: snapshot.hasMoreContent,
+        isRefreshing: false,
+        clearError: true,
+      ),
+    );
+    await _persistSnapshot(snapshot);
+  }
+
+  /// Warm path: cached videos are already on screen. Refresh the reposted-ID
+  /// list against the relay and reconcile it against the shown videos.
+  Future<void> _warmRevalidate(
     Emitter<ProfileRepostedVideosState> emit,
   ) async {
-    try {
-      // Step 1: Get cached IDs from local storage (instant - no relay)
-      final cachedIds = await _repostsRepository
-          .getOrderedRepostedAddressableIds();
+    final List<String> freshIds;
+    if (_isOtherUserProfile) {
+      freshIds = await _repostsRepository.fetchUserReposts(_targetUserPubkey!);
+    } else {
+      freshIds =
+          (await _repostsRepository.syncUserReposts()).orderedAddressableIds;
+    }
+    if (isClosed) return;
 
-      Log.info(
-        'ProfileRepostedVideosBloc: Got ${cachedIds.length} cached repost IDs',
-        name: 'ProfileRepostedVideosBloc',
-        category: LogCategory.video,
-      );
+    if (listEquals(freshIds, state.repostedAddressableIds)) {
+      emit(state.copyWith(isRefreshing: false));
+      return;
+    }
 
-      // If we have cached data, load videos immediately
-      if (cachedIds.isNotEmpty) {
-        emit(
-          state.copyWith(
-            status: ProfileRepostedVideosStatus.loading,
-            repostedAddressableIds: cachedIds,
-          ),
+    final reconciled = await _reconcile(freshIds);
+    if (isClosed) return;
+    emit(
+      state.copyWith(
+        status: ProfileRepostedVideosStatus.success,
+        videos: reconciled.videos,
+        repostedAddressableIds: freshIds,
+        nextPageOffset: reconciled.nextPageOffset,
+        hasMoreContent: reconciled.hasMoreContent,
+        isRefreshing: false,
+        clearError: true,
+      ),
+    );
+    await _persistSnapshot(
+      ProfileVideoListSnapshot(
+        videos: reconciled.videos,
+        itemIds: freshIds,
+        nextPageOffset: reconciled.nextPageOffset,
+        hasMoreContent: reconciled.hasMoreContent,
+      ),
+    );
+  }
+
+  /// Reconciles displayed videos against a fresh [freshIds] list: keeps reposts
+  /// still present, drops the rest, and fetches only the newly-reposted IDs in
+  /// the loaded window. Bounded so it never bulk-fetches.
+  Future<({List<VideoEvent> videos, int nextPageOffset, bool hasMoreContent})>
+  _reconcile(List<String> freshIds) async {
+    final byId = <String, VideoEvent>{};
+    for (final video in state.videos) {
+      final id = _computeAddressableId(video);
+      if (id != null) byId[id] = video;
+    }
+    final addedCount = (freshIds.length - state.repostedAddressableIds.length)
+        .clamp(0, freshIds.length);
+    final windowSize =
+        (max(state.nextPageOffset, state.videos.length) + addedCount).clamp(
+          0,
+          freshIds.length,
         );
+    final windowIds = freshIds.take(windowSize).toList();
 
-        // Fetch videos for cached IDs
-        final firstPageIds = cachedIds.take(_pageSize).toList();
-        final videos = await _fetchVideos(firstPageIds, cacheResults: true);
-
-        Log.info(
-          'ProfileRepostedVideosBloc: Loaded ${videos.length} videos from '
-          'cache (first page of ${cachedIds.length} total)',
-          name: 'ProfileRepostedVideosBloc',
-          category: LogCategory.video,
-        );
-
-        emit(
-          state.copyWith(
-            status: ProfileRepostedVideosStatus.success,
-            videos: videos,
-            hasMoreContent: cachedIds.length > _pageSize,
-            clearError: true,
-          ),
-        );
-
-        // Step 2: Sync from relay in background (fire and forget)
-        // The subscription handler will update the list if new reposts are found
-        unawaited(
-          _repostsRepository
-              .syncUserReposts()
-              .then((_) {
-                Log.debug(
-                  'ProfileRepostedVideosBloc: Background relay sync completed',
-                  name: 'ProfileRepostedVideosBloc',
-                  category: LogCategory.video,
-                );
-              })
-              .catchError((e) {
-                Log.warning(
-                  'ProfileRepostedVideosBloc: Background sync failed - $e',
-                  name: 'ProfileRepostedVideosBloc',
-                  category: LogCategory.video,
-                );
-              }),
-        );
-      } else {
-        // No cached data - need to sync from relay (show loading state)
-        emit(state.copyWith(status: ProfileRepostedVideosStatus.syncing));
-
-        final syncResult = await _repostsRepository.syncUserReposts();
-        final addressableIds = syncResult.orderedAddressableIds;
-
-        Log.info(
-          'ProfileRepostedVideosBloc: Synced ${addressableIds.length} repost '
-          'IDs from relay (no cache)',
-          name: 'ProfileRepostedVideosBloc',
-          category: LogCategory.video,
-        );
-
-        if (addressableIds.isEmpty) {
-          emit(
-            state.copyWith(
-              status: ProfileRepostedVideosStatus.success,
-              videos: [],
-              repostedAddressableIds: [],
-              hasMoreContent: false,
-              clearError: true,
-            ),
-          );
-          return;
-        }
-
-        emit(
-          state.copyWith(
-            status: ProfileRepostedVideosStatus.loading,
-            repostedAddressableIds: addressableIds,
-          ),
-        );
-
-        final firstPageIds = addressableIds.take(_pageSize).toList();
-        final videos = await _fetchVideos(firstPageIds, cacheResults: true);
-
-        Log.info(
-          'ProfileRepostedVideosBloc: Loaded ${videos.length} videos '
-          '(first page of ${addressableIds.length} total)',
-          name: 'ProfileRepostedVideosBloc',
-          category: LogCategory.video,
-        );
-
-        emit(
-          state.copyWith(
-            status: ProfileRepostedVideosStatus.success,
-            videos: videos,
-            hasMoreContent: addressableIds.length > _pageSize,
-            clearError: true,
-          ),
-        );
+    final missingIds = windowIds.where((id) => !byId.containsKey(id)).toList();
+    if (missingIds.isNotEmpty) {
+      for (final video in await _fetchVideos(missingIds, cacheResults: true)) {
+        final id = _computeAddressableId(video);
+        if (id != null) byId[id] = video;
       }
-    } on SyncFailedException catch (e) {
-      Log.error(
-        'ProfileRepostedVideosBloc: Sync failed - ${e.message}',
+    }
+
+    final videos = windowIds
+        .map((id) => byId[id])
+        .whereType<VideoEvent>()
+        .toList();
+    return (
+      videos: videos,
+      nextPageOffset: windowIds.length,
+      hasMoreContent: windowIds.length < freshIds.length,
+    );
+  }
+
+  static const ProfileVideoListSnapshot _emptySnapshot =
+      ProfileVideoListSnapshot(
+        videos: [],
+        itemIds: [],
+        nextPageOffset: 0,
+        hasMoreContent: false,
+      );
+
+  /// Reads and deserializes the persisted snapshot once; `null` on miss or
+  /// failure (cache problems must never break the load).
+  Future<ProfileVideoListSnapshot?> _readCachedSnapshot() async {
+    try {
+      return await CacheSync.read<ProfileVideoListSnapshot>(
+        key: _cacheKey,
+        fromJson: ProfileVideoListSnapshot.fromJson,
+      );
+    } on Object catch (e) {
+      Log.warning(
+        'ProfileRepostedVideosBloc: Failed to read cached snapshot - $e',
         name: 'ProfileRepostedVideosBloc',
         category: LogCategory.video,
       );
-      emit(
-        state.copyWith(
-          status: ProfileRepostedVideosStatus.failure,
-          error: ProfileRepostedVideosError.syncFailed,
-        ),
+      return null;
+    }
+  }
+
+  /// Persists [snapshot] under [_cacheKey] so reopening restores it.
+  Future<void> _persistSnapshot(ProfileVideoListSnapshot snapshot) async {
+    try {
+      await CacheSync.write<ProfileVideoListSnapshot>(
+        key: _cacheKey,
+        value: snapshot,
+        toJson: (s) => s.toJson(),
       );
-    } catch (e) {
-      Log.error(
-        'ProfileRepostedVideosBloc: Failed to load videos - $e',
+    } on Object catch (e) {
+      Log.warning(
+        'ProfileRepostedVideosBloc: Failed to persist snapshot - $e',
         name: 'ProfileRepostedVideosBloc',
         category: LogCategory.video,
-      );
-      emit(
-        state.copyWith(
-          status: ProfileRepostedVideosStatus.failure,
-          error: ProfileRepostedVideosError.loadFailed,
-        ),
       );
     }
   }
 
-  /// Subscribe to reposted IDs changes and update the video list reactively.
+  /// Fire-and-forget relay sync that keeps the in-memory reposted list fresh
+  /// for the live subscription after serving an instant local snapshot.
+  void _scheduleBackgroundRelaySync() {
+    unawaited(
+      _repostsRepository
+          .syncUserReposts()
+          .then((_) {
+            Log.debug(
+              'ProfileRepostedVideosBloc: Background relay sync completed',
+              name: 'ProfileRepostedVideosBloc',
+              category: LogCategory.video,
+            );
+          })
+          .catchError((Object e) {
+            Log.warning(
+              'ProfileRepostedVideosBloc: Background sync failed - $e',
+              name: 'ProfileRepostedVideosBloc',
+              category: LogCategory.video,
+            );
+          }),
+    );
+  }
+
+  ProfileRepostedVideosError _errorFor(Object error) =>
+      error is SyncFailedException || error is FetchRepostsFailedException
+      ? ProfileRepostedVideosError.syncFailed
+      : ProfileRepostedVideosError.loadFailed;
+
+  /// Subscribe to reposted IDs changes and reconcile the video list reactively.
   ///
-  /// Uses emit.forEach to listen to the repository stream and emit state
-  /// changes when reposted IDs change (videos added or removed).
-  ///
-  /// Note: This only works for the current user's own profile, as the
-  /// RepostsRepository only tracks the authenticated user's reposts.
-  /// For other users' profiles, this subscription has no effect.
+  /// Dispatches [ProfileRepostedVideosReconcileRequested] on change so the
+  /// async handler can fetch a newly-reposted clip — `emit.forEach`'s callback
+  /// is synchronous and cannot await. Own profile only.
   Future<void> _onSubscriptionRequested(
     ProfileRepostedVideosSubscriptionRequested event,
     Emitter<ProfileRepostedVideosState> emit,
   ) async {
-    // Only subscribe for own profile - the repository only tracks current
-    // user's reposts, so watching it for other users would show wrong data.
     if (_isOtherUserProfile) return;
 
     await emit.forEach<Set<String>>(
       _repostsRepository.watchRepostedAddressableIds(),
       onData: (repostedIdsSet) {
         final newIds = repostedIdsSet.toList();
-
-        // Skip if IDs haven't changed
-        if (listEquals(newIds, state.repostedAddressableIds)) return state;
-
-        // Skip if we haven't done initial sync yet
-        if (state.status == ProfileRepostedVideosStatus.initial ||
+        if (listEquals(newIds, state.repostedAddressableIds) ||
+            state.status == ProfileRepostedVideosStatus.initial ||
             state.status == ProfileRepostedVideosStatus.syncing) {
           return state;
         }
-
         Log.info(
-          'ProfileRepostedVideosBloc: Reposted IDs changed, updating list',
+          'ProfileRepostedVideosBloc: Reposted IDs changed, reconciling list',
           name: 'ProfileRepostedVideosBloc',
           category: LogCategory.video,
         );
-
-        // If a video was unreposted, remove it from the list immediately
-        if (newIds.length < state.repostedAddressableIds.length) {
-          final removedIds = state.repostedAddressableIds
-              .where((id) => !newIds.contains(id))
-              .toSet();
-          final updatedVideos = state.videos
-              .where((v) => !removedIds.contains(_computeAddressableId(v)))
-              .toList();
-
-          return state.copyWith(
-            repostedAddressableIds: newIds,
-            videos: updatedVideos,
-          );
-        }
-
-        // If a video was reposted, we need to fetch it asynchronously.
-        // For now, just update the IDs - the video will be fetched on next
-        // sync.
-        if (newIds.length > state.repostedAddressableIds.length) {
-          return state.copyWith(repostedAddressableIds: newIds);
-        }
-
+        add(ProfileRepostedVideosReconcileRequested(newIds));
         return state;
       },
     );
   }
 
-  /// Handle load more request - fetches the next page of videos.
-  ///
-  /// Uses [state.videos.length] to determine the offset and fetches
-  /// the next [_pageSize] videos from [state.repostedAddressableIds].
+  /// Reconcile the displayed videos against a fresh reposted-ID list.
+  Future<void> _onReconcileRequested(
+    ProfileRepostedVideosReconcileRequested event,
+    Emitter<ProfileRepostedVideosState> emit,
+  ) async {
+    final freshIds = event.addressableIds;
+    if (listEquals(freshIds, state.repostedAddressableIds)) return;
+
+    try {
+      final reconciled = await _reconcile(freshIds);
+      if (isClosed) return;
+      emit(
+        state.copyWith(
+          status: ProfileRepostedVideosStatus.success,
+          videos: reconciled.videos,
+          repostedAddressableIds: freshIds,
+          nextPageOffset: reconciled.nextPageOffset,
+          hasMoreContent: reconciled.hasMoreContent,
+          clearError: true,
+        ),
+      );
+      await _persistSnapshot(
+        ProfileVideoListSnapshot(
+          videos: reconciled.videos,
+          itemIds: freshIds,
+          nextPageOffset: reconciled.nextPageOffset,
+          hasMoreContent: reconciled.hasMoreContent,
+        ),
+      );
+    } catch (e, stackTrace) {
+      Log.error(
+        'ProfileRepostedVideosBloc: Failed to reconcile reposts - $e',
+        name: 'ProfileRepostedVideosBloc',
+        category: LogCategory.video,
+      );
+      addError(e, stackTrace);
+    }
+  }
+
+  /// Handle load more request - fetches the next page of videos and grows the
+  /// persisted snapshot so reopening restores the full scrolled list.
   Future<void> _onLoadMoreRequested(
     ProfileRepostedVideosLoadMoreRequested event,
     Emitter<ProfileRepostedVideosState> emit,
   ) async {
-    // Skip if not in success state, already loading, or no more content
     if (state.status != ProfileRepostedVideosStatus.success ||
         state.isLoadingMore ||
         !state.hasMoreContent) {
       return;
     }
 
-    final currentCount = state.videos.length;
+    final offset = state.nextPageOffset;
     final totalCount = state.repostedAddressableIds.length;
 
-    // No more to load
-    if (currentCount >= totalCount) {
+    if (offset >= totalCount) {
       emit(state.copyWith(hasMoreContent: false));
       return;
     }
 
-    Log.info(
-      'ProfileRepostedVideosBloc: Loading more videos '
-      '(current: $currentCount, total: $totalCount)',
-      name: 'ProfileRepostedVideosBloc',
-      category: LogCategory.video,
-    );
-
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      // Get the next page of addressable IDs
       final nextPageIds = state.repostedAddressableIds
-          .skip(currentCount)
+          .skip(offset)
           .take(_pageSize)
           .toList();
+      final newVideos = await _fetchVideos(nextPageIds, cacheResults: true);
 
-      // Fetch videos for the next page
-      final newVideos = await _fetchVideos(nextPageIds);
+      final existingIds = state.videos
+          .map(_computeAddressableId)
+          .whereType<String>()
+          .toSet();
+      final uniqueNewVideos = newVideos.where((v) {
+        final id = _computeAddressableId(v);
+        return id == null || !existingIds.contains(id);
+      }).toList();
 
-      Log.info(
-        'ProfileRepostedVideosBloc: Loaded ${newVideos.length} more videos',
-        name: 'ProfileRepostedVideosBloc',
-        category: LogCategory.video,
-      );
-
-      // Append to existing videos
-      final allVideos = [...state.videos, ...newVideos];
-      final hasMore = allVideos.length < totalCount;
+      final newOffset = offset + nextPageIds.length;
+      final allVideos = [...state.videos, ...uniqueNewVideos];
+      final hasMore = newOffset < totalCount;
 
       emit(
         state.copyWith(
           videos: allVideos,
           isLoadingMore: false,
           hasMoreContent: hasMore,
+          nextPageOffset: newOffset,
         ),
       );
-    } catch (e) {
+      await _persistSnapshot(
+        ProfileVideoListSnapshot(
+          videos: allVideos,
+          itemIds: state.repostedAddressableIds,
+          nextPageOffset: newOffset,
+          hasMoreContent: hasMore,
+        ),
+      );
+    } catch (e, stackTrace) {
       Log.error(
         'ProfileRepostedVideosBloc: Failed to load more videos - $e',
         name: 'ProfileRepostedVideosBloc',
         category: LogCategory.video,
       );
+      addError(e, stackTrace);
       emit(state.copyWith(isLoadingMore: false));
     }
   }

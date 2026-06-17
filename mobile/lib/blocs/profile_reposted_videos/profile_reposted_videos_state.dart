@@ -46,7 +46,9 @@ final class ProfileRepostedVideosState extends Equatable {
     this.repostedAddressableIds = const [],
     this.error,
     this.isLoadingMore = false,
+    this.isRefreshing = false,
     this.hasMoreContent = true,
+    this.nextPageOffset = 0,
   });
 
   /// The current loading status
@@ -65,8 +67,15 @@ final class ProfileRepostedVideosState extends Equatable {
   /// Whether more videos are being loaded (pagination)
   final bool isLoadingMore;
 
+  /// Whether a background revalidation is in progress while cached content is
+  /// already on screen. Drives the sticky progress bar in the tab bar.
+  final bool isRefreshing;
+
   /// Whether there are more videos to load
   final bool hasMoreContent;
+
+  /// Offset into [repostedAddressableIds] for the next page fetch.
+  final int nextPageOffset;
 
   /// Whether data has been successfully loaded
   bool get isLoaded => status == ProfileRepostedVideosStatus.success;
@@ -84,7 +93,9 @@ final class ProfileRepostedVideosState extends Equatable {
     ProfileRepostedVideosError? error,
     bool clearError = false,
     bool? isLoadingMore,
+    bool? isRefreshing,
     bool? hasMoreContent,
+    int? nextPageOffset,
   }) {
     return ProfileRepostedVideosState(
       status: status ?? this.status,
@@ -93,7 +104,9 @@ final class ProfileRepostedVideosState extends Equatable {
           repostedAddressableIds ?? this.repostedAddressableIds,
       error: clearError ? null : (error ?? this.error),
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
       hasMoreContent: hasMoreContent ?? this.hasMoreContent,
+      nextPageOffset: nextPageOffset ?? this.nextPageOffset,
     );
   }
 
@@ -104,6 +117,8 @@ final class ProfileRepostedVideosState extends Equatable {
     repostedAddressableIds,
     error,
     isLoadingMore,
+    isRefreshing,
     hasMoreContent,
+    nextPageOffset,
   ];
 }

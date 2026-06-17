@@ -292,4 +292,105 @@ void main() {
       },
     );
   });
+
+  group('VideoEvent.fromJson', () {
+    test('round-trips every persisted field through toJson', () {
+      final original = _fullVideo();
+      final restored = VideoEvent.fromJson(
+        jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>,
+      );
+
+      expect(restored.id, equals(original.id));
+      expect(restored.pubkey, equals(original.pubkey));
+      expect(restored.createdAt, equals(original.createdAt));
+      expect(restored.content, equals(original.content));
+      expect(restored.timestamp, equals(original.timestamp));
+      expect(restored.title, equals(original.title));
+      expect(restored.videoUrl, equals(original.videoUrl));
+      expect(restored.thumbnailUrl, equals(original.thumbnailUrl));
+      expect(restored.duration, equals(original.duration));
+      expect(restored.dimensions, equals(original.dimensions));
+      expect(restored.mimeType, equals(original.mimeType));
+      expect(restored.sha256, equals(original.sha256));
+      expect(restored.fileSize, equals(original.fileSize));
+      expect(restored.hashtags, equals(original.hashtags));
+      expect(restored.categories, equals(original.categories));
+      expect(restored.publishedAt, equals(original.publishedAt));
+      expect(restored.rawTags, equals(original.rawTags));
+      expect(restored.vineId, equals(original.vineId));
+      expect(restored.group, equals(original.group));
+      expect(restored.altText, equals(original.altText));
+      expect(restored.blurhash, equals(original.blurhash));
+      expect(restored.isRepost, equals(original.isRepost));
+      expect(restored.reposterId, equals(original.reposterId));
+      expect(restored.reposterPubkey, equals(original.reposterPubkey));
+      expect(restored.reposterPubkeys, equals(original.reposterPubkeys));
+      expect(restored.repostedAt, equals(original.repostedAt));
+      expect(restored.isFlaggedContent, equals(original.isFlaggedContent));
+      expect(restored.moderationStatus, equals(original.moderationStatus));
+      expect(restored.originalLoops, equals(original.originalLoops));
+      expect(restored.originalLikes, equals(original.originalLikes));
+      expect(restored.originalComments, equals(original.originalComments));
+      expect(restored.originalReposts, equals(original.originalReposts));
+      expect(
+        restored.expirationTimestamp,
+        equals(original.expirationTimestamp),
+      );
+      expect(restored.audioEventId, equals(original.audioEventId));
+      expect(restored.audioEventRelay, equals(original.audioEventRelay));
+      expect(restored.nostrLikeCount, equals(original.nostrLikeCount));
+      expect(restored.nostrCommentCount, equals(original.nostrCommentCount));
+      expect(restored.nostrRepostCount, equals(original.nostrRepostCount));
+      expect(restored.authorName, equals(original.authorName));
+      expect(restored.authorAvatar, equals(original.authorAvatar));
+      expect(
+        restored.collaboratorPubkeys,
+        equals(original.collaboratorPubkeys),
+      );
+      expect(restored.inspiredByVideo, equals(original.inspiredByVideo));
+      expect(restored.inspiredByNpub, equals(original.inspiredByNpub));
+      expect(restored.textTrackRef, equals(original.textTrackRef));
+      expect(restored.textTrackContent, equals(original.textTrackContent));
+      expect(
+        restored.contentWarningLabels,
+        equals(original.contentWarningLabels),
+      );
+      expect(restored.proofSummary, equals(original.proofSummary));
+    });
+
+    test('round-trips a minimal video with only required fields', () {
+      final minimal = VideoEvent(
+        id: _id,
+        pubkey: _pubkey,
+        createdAt: 1704067200,
+        content: '',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(
+          1704067200 * 1000,
+          isUtc: true,
+        ),
+      );
+      final restored = VideoEvent.fromJson(
+        jsonDecode(jsonEncode(minimal.toJson())) as Map<String, dynamic>,
+      );
+
+      expect(restored.id, equals(minimal.id));
+      expect(restored.timestamp, equals(minimal.timestamp));
+      expect(restored.videoUrl, isNull);
+      expect(restored.inspiredByVideo, isNull);
+      expect(restored.proofSummary, isNull);
+      expect(restored.hashtags, isEmpty);
+      expect(restored.isRepost, isFalse);
+    });
+
+    test('defaults internal-only fields omitted from toJson to empty', () {
+      final restored = VideoEvent.fromJson(
+        jsonDecode(jsonEncode(_fullVideo().toJson())) as Map<String, dynamic>,
+      );
+
+      // nostrEventTags and warnLabels are not persisted and default to empty;
+      // moderationLabels IS persisted (a hard content-filter signal).
+      expect(restored.nostrEventTags, isEmpty);
+      expect(restored.warnLabels, isEmpty);
+    });
+  });
 }

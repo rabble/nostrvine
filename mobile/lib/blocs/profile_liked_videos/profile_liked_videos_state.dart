@@ -45,6 +45,7 @@ final class ProfileLikedVideosState extends Equatable {
     this.likedEventIds = const [],
     this.error,
     this.isLoadingMore = false,
+    this.isRefreshing = false,
     this.hasMoreContent = true,
     this.nextPageOffset = 0,
   });
@@ -63,6 +64,10 @@ final class ProfileLikedVideosState extends Equatable {
 
   /// Whether more videos are being loaded (pagination)
   final bool isLoadingMore;
+
+  /// Whether a background revalidation is in progress while cached content is
+  /// already on screen. Drives the thin progress bar in the grid.
+  final bool isRefreshing;
 
   /// Whether there are more videos to load
   final bool hasMoreContent;
@@ -90,6 +95,7 @@ final class ProfileLikedVideosState extends Equatable {
     ProfileLikedVideosError? error,
     bool clearError = false,
     bool? isLoadingMore,
+    bool? isRefreshing,
     bool? hasMoreContent,
     int? nextPageOffset,
   }) {
@@ -99,6 +105,7 @@ final class ProfileLikedVideosState extends Equatable {
       likedEventIds: likedEventIds ?? this.likedEventIds,
       error: clearError ? null : (error ?? this.error),
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
       hasMoreContent: hasMoreContent ?? this.hasMoreContent,
       nextPageOffset: nextPageOffset ?? this.nextPageOffset,
     );
@@ -111,6 +118,7 @@ final class ProfileLikedVideosState extends Equatable {
     likedEventIds,
     error,
     isLoadingMore,
+    isRefreshing,
     hasMoreContent,
     nextPageOffset,
   ];

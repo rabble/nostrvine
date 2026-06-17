@@ -206,6 +206,26 @@ void main() {
 
         expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
       });
+
+      testWidgets('keeps cached grid on screen while refreshing', (
+        tester,
+      ) async {
+        final videos = _createTestVideos(count: 3);
+        when(() => mockBloc.state).thenReturn(
+          ProfileLikedVideosState(
+            status: ProfileLikedVideosStatus.success,
+            videos: videos,
+            isRefreshing: true,
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+
+        // The grid stays on screen during the background revalidation. The
+        // progress bar itself lives in the pinned tab bar header
+        // (profile_grid.dart), not in the grid body.
+        expect(find.byType(SliverGrid), findsOneWidget);
+      });
     });
 
     group('interactions', () {

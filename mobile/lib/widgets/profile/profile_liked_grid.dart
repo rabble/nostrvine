@@ -51,6 +51,16 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid>
   @override
   ScrollController get paginationScrollController => _primaryScrollController!;
 
+  /// Prefetch the next page ~1.5 viewports before the bottom so it is already
+  /// loaded by the time the user scrolls to it — keeping scrolling smooth
+  /// instead of stalling on the loading-more indicator.
+  @override
+  double get paginationLoadMoreThreshold {
+    final positions = paginationScrollController.positions;
+    if (positions.isEmpty) return super.paginationLoadMoreThreshold;
+    return positions.first.viewportDimension * 1.5;
+  }
+
   @override
   bool canLoadMore() {
     final bloc = context.read<ProfileLikedVideosBloc>();
@@ -85,19 +95,25 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid>
   Widget build(BuildContext context) {
     return BlocBuilder<ProfileLikedVideosBloc, ProfileLikedVideosState>(
       builder: (context, state) {
-        if (state.status == ProfileLikedVideosStatus.initial ||
-            state.status == ProfileLikedVideosStatus.syncing ||
-            state.status == ProfileLikedVideosStatus.loading) {
+        final likedVideos = state.videos;
+
+        // Cold open with no cached content yet (initial / syncing / loading):
+        // full-screen spinner. `success` (→ empty state) and `failure`
+        // (→ error screen) are the only settled empty states.
+        if (likedVideos.isEmpty &&
+            state.status != ProfileLikedVideosStatus.success &&
+            state.status != ProfileLikedVideosStatus.failure) {
           return const ProfileTabLoadingState();
         }
 
-        if (state.status == ProfileLikedVideosStatus.failure) {
+        // Only surface the failure screen when there is nothing cached to
+        // show; a failed background refresh keeps the cached grid on screen.
+        if (state.status == ProfileLikedVideosStatus.failure &&
+            likedVideos.isEmpty) {
           return ProfileTabErrorState(
             message: context.l10n.profileErrorLoadingLiked,
           );
         }
-
-        final likedVideos = state.videos;
 
         if (likedVideos.isEmpty) {
           return ProfileTabEmptyState(
@@ -108,6 +124,10 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid>
           );
         }
 
+        // The revalidation bar lives in the pinned tab bar header (see
+        // _SliverAppBarDelegate in profile_grid.dart) so it stays sticky
+        // directly under the tabs while scrolling — a body overlay would be
+        // painted behind the pinned header.
         return CustomScrollView(
           physics: const ClampingScrollPhysics(),
           slivers: [

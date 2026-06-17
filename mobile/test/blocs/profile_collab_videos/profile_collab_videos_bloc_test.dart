@@ -2,17 +2,52 @@
 // ABOUTME: videos. Tests confirmed repository fetch and state management.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.dart';
+import 'package:openvine/blocs/profile_shared/profile_video_cursor_snapshot.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
+/// In-memory [CacheDao] so the bloc's [CacheSync] reads/writes are isolated
+/// per test without touching disk.
+class _InMemoryCacheDao implements CacheDao {
+  final Map<String, String> _store = {};
+
+  @override
+  Future<String?> read(String key) async => _store[key];
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {
+    _store[key] = payload;
+  }
+
+  @override
+  Future<void> delete(String key) async => _store.remove(key);
+
+  @override
+  Future<void> deletePrefix(String prefix) async =>
+      _store.removeWhere((key, _) => key.startsWith(prefix));
+
+  @override
+  Future<int> totalPayloadBytes() async =>
+      _store.values.fold<int>(0, (sum, v) => sum + v.length);
+
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
+}
+
 void main() {
   group(ProfileCollabVideosBloc, () {
     late _MockVideosRepository mockVideosRepository;
+    late _InMemoryCacheDao cacheDao;
 
     // 64-character hex pubkeys for testing
     const targetPubkey =
@@ -20,8 +55,10 @@ void main() {
     const authorPubkey =
         'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
-    setUp(() {
+    setUp(() async {
       mockVideosRepository = _MockVideosRepository();
+      cacheDao = _InMemoryCacheDao();
+      await CacheSync.init(dao: cacheDao);
     });
 
     ProfileCollabVideosBloc createBloc() => ProfileCollabVideosBloc(
@@ -268,7 +305,59 @@ void main() {
       );
 
       blocTest<ProfileCollabVideosBloc, ProfileCollabVideosState>(
-        'does not re-fetch when already loading',
+        'reopen serves cache, then reconciles against the confirmed feed',
+        build: () {
+          // Authoritative confirmed feed now: [new, cached-1] — cached-2 is no
+          // longer confirmed (removed), new was added.
+          when(
+            () => mockVideosRepository.getCollabVideos(
+              taggedPubkey: targetPubkey,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              createTestVideo(id: 'new', pubkey: authorPubkey),
+              createTestVideo(id: 'cached-1', pubkey: authorPubkey),
+            ],
+          );
+          return createBloc();
+        },
+        setUp: () async {
+          await cacheDao.write(
+            key: '$targetPubkey:profile_collab_videos',
+            payload: ProfileVideoCursorSnapshot(
+              videos: [
+                createTestVideo(id: 'cached-1', pubkey: authorPubkey),
+                createTestVideo(id: 'cached-2', pubkey: authorPubkey),
+              ],
+              paginationCursor: 100,
+              hasMoreContent: false,
+            ).toJson(),
+          );
+        },
+        act: (bloc) => bloc.add(const ProfileCollabVideosFetchRequested()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          // Cached feed served instantly.
+          isA<ProfileCollabVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', true)
+              .having((s) => s.videos.map((v) => v.id).toList(), 'cached', [
+                'cached-1',
+                'cached-2',
+              ]),
+          // Fresh page is authoritative: new prepended, the unconfirmed
+          // cached-2 dropped.
+          isA<ProfileCollabVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', false)
+              .having((s) => s.videos.map((v) => v.id).toList(), 'reconciled', [
+                'new',
+                'cached-1',
+              ]),
+        ],
+      );
+
+      blocTest<ProfileCollabVideosBloc, ProfileCollabVideosState>(
+        'droppable: ignores a second fetch while one is in flight',
         build: () {
           when(
             () => mockVideosRepository.getCollabVideos(
@@ -278,11 +367,20 @@ void main() {
           ).thenAnswer((_) async => []);
           return createBloc();
         },
-        seed: () => const ProfileCollabVideosState(
-          status: ProfileCollabVideosStatus.loading,
-        ),
-        act: (bloc) => bloc.add(const ProfileCollabVideosFetchRequested()),
-        expect: () => <ProfileCollabVideosState>[],
+        act: (bloc) {
+          bloc
+            ..add(const ProfileCollabVideosFetchRequested())
+            ..add(const ProfileCollabVideosFetchRequested());
+        },
+        wait: const Duration(milliseconds: 50),
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.getCollabVideos(
+              taggedPubkey: targetPubkey,
+              limit: any(named: 'limit'),
+            ),
+          ).called(1);
+        },
       );
     });
 

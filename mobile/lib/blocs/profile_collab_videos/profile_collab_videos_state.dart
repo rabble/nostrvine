@@ -32,6 +32,7 @@ final class ProfileCollabVideosState extends Equatable {
     this.status = ProfileCollabVideosStatus.initial,
     this.videos = const [],
     this.isLoadingMore = false,
+    this.isRefreshing = false,
     this.hasMoreContent = true,
     this.paginationCursor,
   });
@@ -44,6 +45,10 @@ final class ProfileCollabVideosState extends Equatable {
 
   /// Whether more videos are being loaded (pagination).
   final bool isLoadingMore;
+
+  /// Whether a background revalidation is in progress while cached content is
+  /// already on screen. Drives the sticky progress bar in the tab bar.
+  final bool isRefreshing;
 
   /// Whether there are more videos to load.
   final bool hasMoreContent;
@@ -62,6 +67,7 @@ final class ProfileCollabVideosState extends Equatable {
     ProfileCollabVideosStatus? status,
     List<VideoEvent>? videos,
     bool? isLoadingMore,
+    bool? isRefreshing,
     bool? hasMoreContent,
     int? paginationCursor,
   }) {
@@ -69,6 +75,7 @@ final class ProfileCollabVideosState extends Equatable {
       status: status ?? this.status,
       videos: videos ?? this.videos,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
       hasMoreContent: hasMoreContent ?? this.hasMoreContent,
       paginationCursor: paginationCursor ?? this.paginationCursor,
     );
@@ -79,6 +86,7 @@ final class ProfileCollabVideosState extends Equatable {
     status,
     videos,
     isLoadingMore,
+    isRefreshing,
     hasMoreContent,
     paginationCursor,
   ];

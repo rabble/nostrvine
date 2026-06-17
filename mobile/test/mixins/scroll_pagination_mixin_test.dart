@@ -59,6 +59,38 @@ void main() {
       },
     );
 
+    testWidgets(
+      'a larger paginationLoadMoreThreshold triggers further from the bottom',
+      (tester) async {
+        var loadMoreCalls = 0;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: _TestWidget(
+              canLoadMore: () => true,
+              onLoadMore: () async => loadMoreCalls++,
+              // Prefetch a full extra screen ahead of the default 200px.
+              loadMoreThreshold: 2000,
+            ),
+          ),
+        );
+
+        final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+        final scrollController = state.paginationScrollController;
+
+        // 1000px from the bottom: past the default 200px threshold (no
+        // trigger) but inside the overridden 2000px one (triggers).
+        scrollController.jumpTo(
+          scrollController.position.maxScrollExtent - 1000,
+        );
+        await tester.pump();
+
+        expect(loadMoreCalls, 1);
+      },
+    );
+
     testWidgets('does not trigger when canLoadMore returns false', (
       tester,
     ) async {
@@ -132,10 +164,15 @@ void main() {
 
 /// Test widget that uses [ScrollPaginationMixin].
 class _TestWidget extends StatefulWidget {
-  const _TestWidget({required this.canLoadMore, required this.onLoadMore});
+  const _TestWidget({
+    required this.canLoadMore,
+    required this.onLoadMore,
+    this.loadMoreThreshold,
+  });
 
   final bool Function() canLoadMore;
   final FutureOr<void> Function() onLoadMore;
+  final double? loadMoreThreshold;
 
   @override
   State<_TestWidget> createState() => _TestWidgetState();
@@ -146,6 +183,10 @@ class _TestWidgetState extends State<_TestWidget> with ScrollPaginationMixin {
 
   @override
   ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  double get paginationLoadMoreThreshold =>
+      widget.loadMoreThreshold ?? super.paginationLoadMoreThreshold;
 
   @override
   bool canLoadMore() => widget.canLoadMore();

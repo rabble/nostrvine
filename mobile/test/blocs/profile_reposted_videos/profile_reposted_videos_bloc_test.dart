@@ -5,10 +5,12 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
+import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -16,10 +18,43 @@ class _MockRepostsRepository extends Mock implements RepostsRepository {}
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
+/// In-memory [CacheDao] so the bloc's [CacheSync] reads/writes are isolated
+/// per test without touching disk.
+class _InMemoryCacheDao implements CacheDao {
+  final Map<String, String> _store = {};
+
+  @override
+  Future<String?> read(String key) async => _store[key];
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {
+    _store[key] = payload;
+  }
+
+  @override
+  Future<void> delete(String key) async => _store.remove(key);
+
+  @override
+  Future<void> deletePrefix(String prefix) async =>
+      _store.removeWhere((key, _) => key.startsWith(prefix));
+
+  @override
+  Future<int> totalPayloadBytes() async =>
+      _store.values.fold<int>(0, (sum, v) => sum + v.length);
+
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
+}
+
 void main() {
   group('ProfileRepostedVideosBloc', () {
     late _MockRepostsRepository mockRepostsRepository;
     late _MockVideosRepository mockVideosRepository;
+    late _InMemoryCacheDao cacheDao;
     late StreamController<Set<String>> repostedIdsController;
 
     // 64-character hex pubkeys for testing
@@ -28,9 +63,11 @@ void main() {
     const otherUserPubkey =
         'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
-    setUp(() {
+    setUp(() async {
       mockRepostsRepository = _MockRepostsRepository();
       mockVideosRepository = _MockVideosRepository();
+      cacheDao = _InMemoryCacheDao();
+      await CacheSync.init(dao: cacheDao);
       repostedIdsController = StreamController<Set<String>>.broadcast();
 
       // Default stub for watchRepostedAddressableIds
@@ -165,15 +202,24 @@ void main() {
           state.videos,
           const ['34236:abc:123'],
           null,
-          true,
-          false,
+          true, // isLoadingMore
+          false, // isRefreshing
+          false, // hasMoreContent
+          0, // nextPageOffset
         ]);
+      });
+
+      test('copyWith updates isRefreshing', () {
+        const state = ProfileRepostedVideosState();
+
+        expect(state.isRefreshing, isFalse);
+        expect(state.copyWith(isRefreshing: true).isRefreshing, isTrue);
       });
     });
 
     group('ProfileRepostedVideosSyncRequested', () {
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
-        'emits [syncing, success] with empty videos when no reposted IDs',
+        'emits [success] with empty videos when no reposted IDs',
         setUp: () {
           when(
             () => mockRepostsRepository.syncUserReposts(),
@@ -181,10 +227,8 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
         expect: () => [
-          const ProfileRepostedVideosState(
-            status: ProfileRepostedVideosStatus.syncing,
-          ),
           const ProfileRepostedVideosState(
             status: ProfileRepostedVideosStatus.success,
             hasMoreContent: false,
@@ -193,7 +237,7 @@ void main() {
       );
 
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
-        'emits [syncing, loading, success] when videos found',
+        'emits [success] with videos when reposts found',
         setUp: () {
           final addressableId1 = createAddressableId(currentUserPubkey, 'd1');
           final addressableId2 = createAddressableId(currentUserPubkey, 'd2');
@@ -226,33 +270,27 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
         expect: () => [
-          const ProfileRepostedVideosState(
-            status: ProfileRepostedVideosStatus.syncing,
-          ),
-          isA<ProfileRepostedVideosState>()
-              .having(
-                (s) => s.status,
-                'status',
-                ProfileRepostedVideosStatus.loading,
-              )
-              .having(
-                (s) => s.repostedAddressableIds.length,
-                'addressable IDs count',
-                2,
-              ),
           isA<ProfileRepostedVideosState>()
               .having(
                 (s) => s.status,
                 'status',
                 ProfileRepostedVideosStatus.success,
               )
-              .having((s) => s.videos.length, 'videos count', 2),
+              .having((s) => s.isRefreshing, 'isRefreshing', false)
+              .having(
+                (s) => s.repostedAddressableIds.length,
+                'addressable IDs count',
+                2,
+              )
+              .having((s) => s.videos.length, 'videos count', 2)
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 2),
         ],
       );
 
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
-        'emits [syncing, failure] when sync fails',
+        'emits [failure] when sync fails and nothing is cached',
         setUp: () {
           when(
             () => mockRepostsRepository.syncUserReposts(),
@@ -260,10 +298,8 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
         expect: () => [
-          const ProfileRepostedVideosState(
-            status: ProfileRepostedVideosStatus.syncing,
-          ),
           const ProfileRepostedVideosState(
             status: ProfileRepostedVideosStatus.failure,
             error: ProfileRepostedVideosError.syncFailed,
@@ -272,42 +308,98 @@ void main() {
       );
 
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
-        'emits [syncing, failure] when sync reposts fails',
-        setUp: () {
-          // syncUserReposts throws SyncFailedException, not FetchRepostsFailedException
-          when(
-            () => mockRepostsRepository.syncUserReposts(),
-          ).thenThrow(const SyncFailedException('Network error'));
+        'serves cached snapshot, then only flips the bar off when unchanged',
+        setUp: () async {
+          final id1 = createAddressableId(currentUserPubkey, 'd1');
+          final id2 = createAddressableId(currentUserPubkey, 'd2');
+          await cacheDao.write(
+            key: '$currentUserPubkey:profile_reposted_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: [
+                createTestVideo(
+                  id: 'e1',
+                  pubkey: currentUserPubkey,
+                  vineId: 'd1',
+                ),
+                createTestVideo(
+                  id: 'e2',
+                  pubkey: currentUserPubkey,
+                  vineId: 'd2',
+                ),
+              ],
+              itemIds: [id1, id2],
+              nextPageOffset: 2,
+              hasMoreContent: false,
+            ).toJson(),
+          );
+          when(() => mockRepostsRepository.syncUserReposts()).thenAnswer(
+            (_) async => RepostsSyncResult(
+              orderedAddressableIds: [id1, id2],
+              addressableIdToRepostId: const {},
+            ),
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
         expect: () => [
-          const ProfileRepostedVideosState(
-            status: ProfileRepostedVideosStatus.syncing,
-          ),
-          const ProfileRepostedVideosState(
-            status: ProfileRepostedVideosStatus.failure,
-            error: ProfileRepostedVideosError.syncFailed,
-          ),
+          isA<ProfileRepostedVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', true)
+              .having((s) => s.videos.length, 'cached videos', 2),
+          isA<ProfileRepostedVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', false)
+              .having((s) => s.videos.length, 'unchanged videos', 2),
         ],
-      );
-
-      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
-        'does not re-sync while already syncing',
-        setUp: () {
-          when(
-            () => mockRepostsRepository.syncUserReposts(),
-          ).thenAnswer((_) async => const RepostsSyncResult.empty());
-        },
-        build: createBloc,
-        seed: () => const ProfileRepostedVideosState(
-          status: ProfileRepostedVideosStatus.syncing,
-        ),
-        act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
-        expect: () => <ProfileRepostedVideosState>[],
         verify: (_) {
-          verifyNever(() => mockRepostsRepository.syncUserReposts());
+          verifyNever(
+            () => mockVideosRepository.getVideosByAddressableIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          );
         },
+      );
+
+      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+        'reopen restores the full scrolled-through list from cache',
+        setUp: () async {
+          final ids = List.generate(
+            40,
+            (i) => createAddressableId(currentUserPubkey, 'd$i'),
+          );
+          final videos = List.generate(
+            36,
+            (i) => createTestVideo(
+              id: 'e$i',
+              pubkey: currentUserPubkey,
+              vineId: 'd$i',
+            ),
+          );
+          await cacheDao.write(
+            key: '$otherUserPubkey:profile_reposted_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: videos,
+              itemIds: ids,
+              nextPageOffset: 36,
+              hasMoreContent: true,
+            ).toJson(),
+          );
+          when(
+            () => mockRepostsRepository.fetchUserReposts(any()),
+          ).thenAnswer((_) async => ids);
+        },
+        build: () => createBloc(targetUserPubkey: otherUserPubkey),
+        act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<ProfileRepostedVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', true)
+              .having((s) => s.videos.length, 'cached videos', 36)
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 36),
+          isA<ProfileRepostedVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', false)
+              .having((s) => s.videos.length, 'revalidated videos', 36),
+        ],
       );
 
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
@@ -334,7 +426,6 @@ void main() {
 
           when(() => mockRepostsRepository.syncUserReposts()).thenAnswer(
             (_) async => RepostsSyncResult(
-              // Order: d3, d1, d2 (by recency)
               orderedAddressableIds: [
                 addressableId3,
                 addressableId1,
@@ -343,7 +434,6 @@ void main() {
               addressableIdToRepostId: const {},
             ),
           );
-          // VideosRepository preserves order from input
           when(
             () => mockVideosRepository.getVideosByAddressableIds(
               any(),
@@ -353,15 +443,8 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
         expect: () => [
-          const ProfileRepostedVideosState(
-            status: ProfileRepostedVideosStatus.syncing,
-          ),
-          isA<ProfileRepostedVideosState>().having(
-            (s) => s.status,
-            'status',
-            ProfileRepostedVideosStatus.loading,
-          ),
           isA<ProfileRepostedVideosState>()
               .having(
                 (s) => s.status,
@@ -446,33 +529,59 @@ void main() {
       );
 
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
-        'updates repostedAddressableIds when video is reposted',
+        'fetches and prepends the video when a new repost arrives via stream',
+        setUp: () {
+          when(
+            () => mockVideosRepository.getVideosByAddressableIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              createTestVideo(
+                id: 'e2',
+                pubkey: currentUserPubkey,
+                vineId: 'd2',
+              ),
+            ],
+          );
+        },
         build: createBloc,
         seed: () => ProfileRepostedVideosState(
           status: ProfileRepostedVideosStatus.success,
           repostedAddressableIds: [
             createAddressableId(currentUserPubkey, 'd1'),
           ],
+          videos: [
+            createTestVideo(id: 'e1', pubkey: currentUserPubkey, vineId: 'd1'),
+          ],
+          nextPageOffset: 1,
         ),
         act: (bloc) async {
           bloc.add(const ProfileRepostedVideosSubscriptionRequested());
           await Future<void>.delayed(const Duration(milliseconds: 50));
+          // d2 reposted, prepended (most-recent-first).
           repostedIdsController.add({
-            createAddressableId(currentUserPubkey, 'd1'),
             createAddressableId(currentUserPubkey, 'd2'),
+            createAddressableId(currentUserPubkey, 'd1'),
           });
         },
         wait: const Duration(milliseconds: 100),
         expect: () => [
-          // IDs are updated, video will be fetched on next sync
-          isA<ProfileRepostedVideosState>().having(
-            (s) => s.repostedAddressableIds,
-            'repostedAddressableIds',
-            containsAll([
-              createAddressableId(currentUserPubkey, 'd1'),
-              createAddressableId(currentUserPubkey, 'd2'),
-            ]),
-          ),
+          isA<ProfileRepostedVideosState>()
+              .having(
+                (s) => s.repostedAddressableIds,
+                'repostedAddressableIds',
+                containsAll([
+                  createAddressableId(currentUserPubkey, 'd1'),
+                  createAddressableId(currentUserPubkey, 'd2'),
+                ]),
+              )
+              // The new repost is fetched and shown at the top.
+              .having((s) => s.videos.map((v) => v.vineId).toList(), 'videos', [
+                'd2',
+                'd1',
+              ]),
         ],
       );
     });
@@ -521,6 +630,7 @@ void main() {
           repostedAddressableIds: [
             createAddressableId(currentUserPubkey, 'd1'),
           ],
+          nextPageOffset: 1,
         ),
         act: (bloc) => bloc.add(const ProfileRepostedVideosLoadMoreRequested()),
         expect: () => [
@@ -606,9 +716,6 @@ void main() {
         wait: const Duration(milliseconds: 100),
         expect: () => [
           const ProfileRepostedVideosState(
-            status: ProfileRepostedVideosStatus.syncing,
-          ),
-          const ProfileRepostedVideosState(
             status: ProfileRepostedVideosStatus.success,
             hasMoreContent: false,
           ),
@@ -647,10 +754,8 @@ void main() {
         },
         build: () => createBloc(targetUserPubkey: currentUserPubkey),
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
         expect: () => [
-          const ProfileRepostedVideosState(
-            status: ProfileRepostedVideosStatus.syncing,
-          ),
           const ProfileRepostedVideosState(
             status: ProfileRepostedVideosStatus.success,
             hasMoreContent: false,
@@ -687,21 +792,8 @@ void main() {
         },
         build: () => createBloc(targetUserPubkey: otherUserPubkey),
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
         expect: () => [
-          const ProfileRepostedVideosState(
-            status: ProfileRepostedVideosStatus.syncing,
-          ),
-          isA<ProfileRepostedVideosState>()
-              .having(
-                (s) => s.status,
-                'status',
-                ProfileRepostedVideosStatus.loading,
-              )
-              .having(
-                (s) => s.repostedAddressableIds.length,
-                'addressable IDs count',
-                1,
-              ),
           isA<ProfileRepostedVideosState>()
               .having(
                 (s) => s.status,

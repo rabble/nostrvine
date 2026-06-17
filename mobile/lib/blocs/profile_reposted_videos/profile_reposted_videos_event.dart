@@ -35,3 +35,17 @@ final class ProfileRepostedVideosLoadMoreRequested
     extends ProfileRepostedVideosEvent {
   const ProfileRepostedVideosLoadMoreRequested();
 }
+
+/// Internal: reconcile the displayed videos against a fresh reposted-ID list.
+///
+/// Dispatched from the [RepostsRepository.watchRepostedAddressableIds]
+/// subscription when the repost set changes. Drops unreposted videos and
+/// fetches any newly-reposted IDs in the loaded window so they appear without
+/// re-resolving the whole window.
+final class ProfileRepostedVideosReconcileRequested
+    extends ProfileRepostedVideosEvent {
+  const ProfileRepostedVideosReconcileRequested(this.addressableIds);
+
+  /// The fresh, ordered (most-recent-first) reposted addressable IDs.
+  final List<String> addressableIds;
+}

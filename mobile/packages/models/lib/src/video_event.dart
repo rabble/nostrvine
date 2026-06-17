@@ -689,6 +689,7 @@ class VideoEvent {
       contentWarningLabels: contentWarningLabels,
     );
   }
+
   final String id;
   final String pubkey;
   final int createdAt;

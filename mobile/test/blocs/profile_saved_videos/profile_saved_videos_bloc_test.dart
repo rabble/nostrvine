@@ -2,10 +2,12 @@
 // ABOUTME: BookmarkService and paginating through VideosRepository.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_saved_videos/profile_saved_videos_bloc.dart';
+import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -13,19 +15,58 @@ class _MockBookmarkService extends Mock implements BookmarkService {}
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
+/// In-memory [CacheDao] so the bloc's [CacheSync] reads/writes are isolated
+/// per test without touching disk.
+class _InMemoryCacheDao implements CacheDao {
+  final Map<String, String> _store = {};
+
+  @override
+  Future<String?> read(String key) async => _store[key];
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {
+    _store[key] = payload;
+  }
+
+  @override
+  Future<void> delete(String key) async => _store.remove(key);
+
+  @override
+  Future<void> deletePrefix(String prefix) async =>
+      _store.removeWhere((key, _) => key.startsWith(prefix));
+
+  @override
+  Future<int> totalPayloadBytes() async =>
+      _store.values.fold<int>(0, (sum, v) => sum + v.length);
+
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
+}
+
 void main() {
   group('ProfileSavedVideosBloc', () {
     late _MockBookmarkService mockBookmarkService;
     late _MockVideosRepository mockVideosRepository;
+    late _InMemoryCacheDao cacheDao;
 
-    setUp(() {
+    const currentUserPubkey =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+    setUp(() async {
       mockBookmarkService = _MockBookmarkService();
       mockVideosRepository = _MockVideosRepository();
+      cacheDao = _InMemoryCacheDao();
+      await CacheSync.init(dao: cacheDao);
     });
 
     ProfileSavedVideosBloc createBloc() => ProfileSavedVideosBloc(
       bookmarkService: Future.value(mockBookmarkService),
       videosRepository: mockVideosRepository,
+      currentUserPubkey: currentUserPubkey,
     );
 
     VideoEvent createTestVideo(String id) {
@@ -87,15 +128,52 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ProfileSavedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
         expect: () => [
-          const ProfileSavedVideosState(
-            status: ProfileSavedVideosStatus.syncing,
-          ),
           const ProfileSavedVideosState(
             status: ProfileSavedVideosStatus.success,
             hasMoreContent: false,
           ),
         ],
+      );
+
+      blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
+        'reopen restores the cached list, then flips the bar off when '
+        'bookmarks are unchanged',
+        setUp: () async {
+          await cacheDao.write(
+            key: '$currentUserPubkey:profile_saved_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: [createTestVideo('video-1'), createTestVideo('video-2')],
+              itemIds: const ['video-1', 'video-2'],
+              nextPageOffset: 2,
+              hasMoreContent: false,
+            ).toJson(),
+          );
+          when(() => mockBookmarkService.globalBookmarks).thenReturn(const [
+            BookmarkItem(type: 'e', id: 'video-1'),
+            BookmarkItem(type: 'e', id: 'video-2'),
+          ]);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ProfileSavedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileSavedVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', true)
+              .having((s) => s.videos.length, 'cached videos', 2),
+          isA<ProfileSavedVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', false)
+              .having((s) => s.videos.length, 'unchanged videos', 2),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          );
+        },
       );
 
       blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(

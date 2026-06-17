@@ -54,9 +54,20 @@ mixin ScrollPaginationMixin<T extends StatefulWidget> on State<T> {
   /// ignored.
   FutureOr<void> onLoadMore();
 
-  /// Distance from the bottom edge (in logical pixels) at which loading
+  /// Default distance from the bottom edge (in logical pixels) at which
+  /// loading is triggered.
+  static const double _defaultThreshold = 200;
+
+  /// Distance from the bottom edge (in logical pixels) at which [onLoadMore]
   /// is triggered.
-  static const double _threshold = 200;
+  ///
+  /// Defaults to [_defaultThreshold]. Override with a larger value (for
+  /// example a multiple of the viewport height) to prefetch the next page
+  /// well before the user reaches the bottom, so it is usually ready in time
+  /// and the loading-more indicator is not seen. Called on every scroll tick,
+  /// so keep it cheap.
+  @protected
+  double get paginationLoadMoreThreshold => _defaultThreshold;
 
   Future<void>? _pendingPaginationLoad;
 
@@ -79,8 +90,9 @@ mixin ScrollPaginationMixin<T extends StatefulWidget> on State<T> {
     if (_pendingPaginationLoad != null) return;
     if (!canLoadMore()) return;
 
+    final threshold = paginationLoadMoreThreshold;
     final isNearBottom = paginationScrollController.positions.any(
-      (position) => position.pixels >= position.maxScrollExtent - _threshold,
+      (position) => position.pixels >= position.maxScrollExtent - threshold,
     );
     if (!isNearBottom) {
       return;

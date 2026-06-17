@@ -35,6 +35,7 @@ final class ProfileSavedVideosState extends Equatable {
     this.savedEventIds = const [],
     this.error,
     this.isLoadingMore = false,
+    this.isRefreshing = false,
     this.hasMoreContent = true,
     this.nextPageOffset = 0,
   });
@@ -54,6 +55,10 @@ final class ProfileSavedVideosState extends Equatable {
 
   /// Whether more videos are being loaded (pagination).
   final bool isLoadingMore;
+
+  /// Whether a background revalidation is in progress while cached content is
+  /// already on screen. Drives the sticky progress bar in the tab bar.
+  final bool isRefreshing;
 
   /// Whether there are more videos to load.
   final bool hasMoreContent;
@@ -79,6 +84,7 @@ final class ProfileSavedVideosState extends Equatable {
     ProfileSavedVideosError? error,
     bool clearError = false,
     bool? isLoadingMore,
+    bool? isRefreshing,
     bool? hasMoreContent,
     int? nextPageOffset,
   }) {
@@ -88,6 +94,7 @@ final class ProfileSavedVideosState extends Equatable {
       savedEventIds: savedEventIds ?? this.savedEventIds,
       error: clearError ? null : (error ?? this.error),
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
       hasMoreContent: hasMoreContent ?? this.hasMoreContent,
       nextPageOffset: nextPageOffset ?? this.nextPageOffset,
     );
@@ -100,6 +107,7 @@ final class ProfileSavedVideosState extends Equatable {
     savedEventIds,
     error,
     isLoadingMore,
+    isRefreshing,
     hasMoreContent,
     nextPageOffset,
   ];

@@ -45,3 +45,17 @@ final class ProfileLikedVideosLoadMoreRequested
 final class ProfileLikedVideosBlocklistChanged extends ProfileLikedVideosEvent {
   const ProfileLikedVideosBlocklistChanged();
 }
+
+/// Internal: reconcile the displayed videos against a fresh liked-ID list.
+///
+/// Dispatched from the [LikesRepository.watchLikedEventIds] subscription when
+/// the liked set changes. Drops unliked videos and fetches any newly-liked
+/// IDs in the loaded window (e.g. a video the user just liked at the top) so
+/// it appears without re-resolving the whole window.
+final class ProfileLikedVideosReconcileRequested
+    extends ProfileLikedVideosEvent {
+  const ProfileLikedVideosReconcileRequested(this.likedEventIds);
+
+  /// The fresh, ordered (most-recent-first) liked event IDs.
+  final List<String> likedEventIds;
+}

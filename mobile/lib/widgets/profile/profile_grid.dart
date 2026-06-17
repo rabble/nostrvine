@@ -1,6 +1,8 @@
 // ABOUTME: Profile grid view with header, stats, action buttons, and tabbed content
 // ABOUTME: Reusable between own profile and others' profile screens
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,6 +21,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_tab_index_provider.dart';
 import 'package:openvine/widgets/profile/profile_banner_layer.dart';
+import 'package:openvine/widgets/profile/profile_cache_load_indicator.dart';
 import 'package:openvine/widgets/profile/profile_collabs_grid.dart';
 import 'package:openvine/widgets/profile/profile_comments_grid.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
@@ -122,6 +125,28 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   ProfileCollabVideosBloc? _collabVideosBloc;
   ProfileSavedVideosBloc? _savedVideosBloc;
   ProfileCommentsBloc? _commentsBloc;
+
+  /// Mirrors each cached tab's `isRefreshing` so the pinned tab bar can show a
+  /// sticky cache-revalidation bar directly under the tabs while that grid
+  /// scrolls (a body overlay would be drawn behind the header).
+  bool _likedRefreshing = false;
+  StreamSubscription<ProfileLikedVideosState>? _likedRefreshSub;
+  bool _repostsRefreshing = false;
+  StreamSubscription<ProfileRepostedVideosState>? _repostsRefreshSub;
+  bool _savedRefreshing = false;
+  StreamSubscription<ProfileSavedVideosState>? _savedRefreshSub;
+  bool _collabsRefreshing = false;
+  StreamSubscription<ProfileCollabVideosState>? _collabsRefreshSub;
+
+  /// Whether the currently-selected tab is revalidating cached content.
+  ///
+  /// The 4th tab (index 3) is Saved on own profiles and Collabs on others.
+  bool get _activeTabRefreshing => switch (_tabController.index) {
+    1 => _likedRefreshing,
+    2 => _repostsRefreshing,
+    3 => widget.isOwnProfile ? _savedRefreshing : _collabsRefreshing,
+    _ => false,
+  };
 
   /// Track the userIdHex the BLoCs were created for.
   String? _blocsUserIdHex;
@@ -237,6 +262,10 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     widget.refreshNotifier?.removeListener(_onRefreshRequested);
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
+    _likedRefreshSub?.cancel();
+    _repostsRefreshSub?.cancel();
+    _savedRefreshSub?.cancel();
+    _collabsRefreshSub?.cancel();
     // Close the BLoCs we created
     _likedVideosBloc?.close();
     _repostedVideosBloc?.close();
@@ -290,6 +319,16 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       )..add(const ProfileLikedVideosSubscriptionRequested());
       // Sync deferred until user views Liked tab
 
+      // Mirror the Liked bloc's refreshing flag so the pinned tab bar can
+      // render the sticky revalidation bar.
+      _likedRefreshSub?.cancel();
+      _likedRefreshing = false;
+      _likedRefreshSub = _likedVideosBloc!.stream.listen((likedState) {
+        if (likedState.isRefreshing != _likedRefreshing && mounted) {
+          setState(() => _likedRefreshing = likedState.isRefreshing);
+        }
+      });
+
       _repostedVideosBloc = ProfileRepostedVideosBloc(
         repostsRepository: repostsRepository,
         videosRepository: videosRepository,
@@ -298,19 +337,42 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       )..add(const ProfileRepostedVideosSubscriptionRequested());
       // Sync deferred until user views Reposts tab
 
+      _repostsRefreshSub?.cancel();
+      _repostsRefreshing = false;
+      _repostsRefreshSub = _repostedVideosBloc!.stream.listen((repostsState) {
+        if (repostsState.isRefreshing != _repostsRefreshing && mounted) {
+          setState(() => _repostsRefreshing = repostsState.isRefreshing);
+        }
+      });
+
       // 4th tab: Saved (own profile) or Collabs (other profile).
       // Only create the bloc that will actually be used.
       if (widget.isOwnProfile) {
         _savedVideosBloc = ProfileSavedVideosBloc(
           bookmarkService: ref.read(bookmarkServiceProvider.future),
           videosRepository: videosRepository,
+          currentUserPubkey: currentUserPubkey,
         );
+        _savedRefreshSub?.cancel();
+        _savedRefreshing = false;
+        _savedRefreshSub = _savedVideosBloc!.stream.listen((savedState) {
+          if (savedState.isRefreshing != _savedRefreshing && mounted) {
+            setState(() => _savedRefreshing = savedState.isRefreshing);
+          }
+        });
         _collabVideosBloc = null;
       } else {
         _collabVideosBloc = ProfileCollabVideosBloc(
           videosRepository: videosRepository,
           targetUserPubkey: widget.userIdHex,
         );
+        _collabsRefreshSub?.cancel();
+        _collabsRefreshing = false;
+        _collabsRefreshSub = _collabVideosBloc!.stream.listen((collabsState) {
+          if (collabsState.isRefreshing != _collabsRefreshing && mounted) {
+            setState(() => _collabsRefreshing = collabsState.isRefreshing);
+          }
+        });
         _savedVideosBloc = null;
       }
       // Sync deferred until user views the 4th tab
@@ -431,6 +493,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                 scrollController: widget.scrollController,
                 isOwnProfile: widget.isOwnProfile,
                 headerKey: _headerKey,
+                // Sticky cache-revalidation bar for the active cached tab.
+                isRefreshing: _activeTabRefreshing,
               ),
             ],
             body: tabContent,
@@ -464,12 +528,16 @@ class _ProfileTabBar extends StatefulWidget {
     required this.scrollController,
     required this.isOwnProfile,
     required this.headerKey,
+    required this.isRefreshing,
   });
 
   final TabController controller;
   final ScrollController? scrollController;
   final bool isOwnProfile;
   final GlobalKey headerKey;
+
+  /// Whether to show the sticky cache-revalidation bar under the tabs.
+  final bool isRefreshing;
 
   @override
   State<_ProfileTabBar> createState() => _ProfileTabBarState();
@@ -548,6 +616,7 @@ class _ProfileTabBarState extends State<_ProfileTabBar> {
       pinned: true,
       delegate: _SliverAppBarDelegate(
         topInset: _tabBarTopInset,
+        isRefreshing: widget.isRefreshing,
         TabBar(
           controller: widget.controller,
           indicatorColor: VineTheme.tabIndicatorGreen,
@@ -630,10 +699,17 @@ class _ProfileTab extends StatelessWidget {
 /// the header. The rounded top corners of the tab content viewport are
 /// applied separately, on the body's [ColoredBox] wrapper.
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  _SliverAppBarDelegate(this._tabBar, {required this.topInset});
+  _SliverAppBarDelegate(
+    this._tabBar, {
+    required this.topInset,
+    required this.isRefreshing,
+  });
 
   final PreferredSizeWidget _tabBar;
   final double topInset;
+
+  /// Whether to overlay the sticky cache-revalidation bar at the bottom edge.
+  final bool isRefreshing;
 
   /// Height of the divider line painted between the tab bar and the tile
   /// grid.
@@ -655,21 +731,37 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) => DecoratedBox(
     decoration: const BoxDecoration(color: VineTheme.surfaceBackground),
-    child: Column(
+    child: Stack(
+      clipBehavior: .none,
       children: [
-        Padding(
-          padding: EdgeInsets.only(top: topInset),
-          child: _tabBar,
+        Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.only(top: topInset),
+              child: _tabBar,
+            ),
+            const ColoredBox(
+              color: VineTheme.outlineMuted,
+              child: SizedBox(height: _dividerHeight, width: double.infinity),
+            ),
+          ],
         ),
-        const ColoredBox(
-          color: VineTheme.outlineMuted,
-          child: SizedBox(height: _dividerHeight, width: double.infinity),
-        ),
+        // Overlaid on the bottom edge so showing/hiding it never changes the
+        // header extent — the grid below does not jump.
+        if (isRefreshing)
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: -4,
+            child: ProfileCacheLoadIndicator(),
+          ),
       ],
     ),
   );
 
   @override
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) =>
-      topInset != oldDelegate.topInset || _tabBar != oldDelegate._tabBar;
+      topInset != oldDelegate.topInset ||
+      _tabBar != oldDelegate._tabBar ||
+      isRefreshing != oldDelegate.isRefreshing;
 }
