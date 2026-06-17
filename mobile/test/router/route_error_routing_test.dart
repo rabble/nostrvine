@@ -1,4 +1,4 @@
-// ABOUTME: Localized route error UI: unknown paths (errorBuilder) and bad pooled extras
+// ABOUTME: Localized route error UI for unknown paths via GoRouter.errorBuilder
 // ABOUTME: Covers GoRouter.errorBuilder and RouteErrorScreen from app routes (#3371)
 
 import 'package:flutter/material.dart';
@@ -59,10 +59,10 @@ void main() {
     expect(find.text(strings.routeUnknownPath), findsOneWidget);
   });
 
-  // The pooled fullscreen route's no-args fallback (redirect to the home feed
-  // on web reload) is covered by the pure-function test in
-  // fullscreen_feed_redirect_test.dart — asserting it here would require
-  // rendering the full home feed, which the router test harness can't provide.
+  // The pooled fullscreen route's no-args redirect is covered at the route
+  // helper level in fullscreen_feed_redirect_test.dart. A widget assertion for
+  // the redirect target would require rendering the full home feed, which this
+  // focused error-route harness does not provide.
 }
 
 Future<void> _pumpRouter(
