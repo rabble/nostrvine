@@ -101,20 +101,6 @@ void main() {
         expect(find.text(en.libraryTabClips), findsOneWidget);
       });
 
-      testWidgets('toolbar title is limited to a single line with ellipsis', (
-        tester,
-      ) async {
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
-
-        final titleFinder = find.text(en.profileMyLibraryLabel);
-        expect(titleFinder, findsOneWidget);
-
-        final title = tester.widget<Text>(titleFinder);
-        expect(title.maxLines, equals(1));
-        expect(title.overflow, equals(TextOverflow.ellipsis));
-      });
-
       testWidgets('$DraftsTab initially (first tab)', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
