@@ -38,14 +38,12 @@ lib/screens/sounds_screen.dart	4
 lib/screens/user_list_people_screen.dart	6
 lib/services/share_service.dart	3
 lib/widgets/auth/forgot_password_dialog.dart	1
-lib/widgets/badge_explanation_modal.dart	14
 lib/widgets/character_counter_widget.dart	2
 lib/widgets/classic_viners_slider.dart	1
 lib/widgets/classic_vines_tab.dart	3
 lib/widgets/composable_video_grid.dart	2
 lib/widgets/export_progress_widget.dart	3
 lib/widgets/for_you_tab.dart	6
-lib/widgets/global_upload_indicator.dart	1
 lib/widgets/library/sounds_tab.dart	3
 lib/widgets/list_card.dart	2
 lib/widgets/new_videos_tab.dart	2
@@ -53,10 +51,8 @@ lib/widgets/popular_videos_tab.dart	2
 lib/widgets/profile/profile_block_confirmation_dialog.dart	1
 lib/widgets/profile_editor/username_status_indicator.dart	2
 lib/widgets/proofmode_badge.dart	7
-lib/widgets/proofmode_badge_row.dart	3
 lib/widgets/share_video_menu.dart	18
 lib/widgets/sound_tile.dart	2
-lib/widgets/upload_progress_indicator.dart	5
 lib/widgets/user_search_view.dart	2
 lib/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart	3
 lib/widgets/video_editor/main_editor/video_editor_layer_reorder_sheet.dart	1

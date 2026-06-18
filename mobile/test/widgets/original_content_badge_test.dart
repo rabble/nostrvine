@@ -1,26 +1,14 @@
-// ABOUTME: Tests for Original Content badge display logic
-// ABOUTME: Verifies badge shows for original content (non-reposts) but not for reposts or vintage vines
+// ABOUTME: Tests for the OriginalContentBadge widget and original-content event logic
+// ABOUTME: Verifies the badge renders correctly and VideoEvent flags original vs repost vs vintage vine
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/moderation_label_service.dart';
-import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/proofmode_badge.dart';
-import 'package:openvine/widgets/proofmode_badge_row.dart';
-
-class _MockModerationLabelService extends Mock
-    implements ModerationLabelService {}
-
-class _MockVideoModerationStatusService extends Mock
-    implements VideoModerationStatusService {}
 
 void main() {
   group('Original Content Badge Tests (TDD)', () {
@@ -142,135 +130,6 @@ void main() {
         expect(videoEvent.shouldShowNotDivineBadge, false);
         expect(videoEvent.isOriginalVine, true);
       },
-    );
-
-    testWidgets(
-      'ProofModeBadgeRow shows OriginalContentBadge for original user content',
-      (WidgetTester tester) async {
-        // Arrange - Create original user video
-        final event = Event.fromJson({
-          'id': 'test1234567890abcdef',
-          'pubkey': 'pubkey1234567890abcdef',
-          'created_at': 1234567890,
-          'kind': 34236,
-          'content': 'Test video',
-          'tags': [
-            ['url', 'https://example.com/video.mp4'],
-          ],
-          'sig': 'sig1234567890abcdef',
-        });
-
-        final videoEvent = VideoEvent.fromNostrEvent(event);
-
-        // Act
-        await tester.pumpWidget(
-          MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ProofModeBadgeRow(video: videoEvent)),
-          ),
-        );
-
-        // Assert - Original badge should be visible
-        expect(find.text('Original'), findsOneWidget);
-        expect(find.byType(OriginalContentBadge), findsOneWidget);
-      },
-      // Skip: shouldShowOriginalBadge was deprecated, now always returns false
-      // Use shouldShowNotDivineBadge instead
-      skip: true,
-    );
-
-    testWidgets(
-      'ProofModeBadgeRow does NOT show OriginalContentBadge for reposts',
-      (WidgetTester tester) async {
-        // Arrange - Create repost
-        final originalEvent = Event.fromJson({
-          'id': 'original1234567890abcdef',
-          'pubkey': 'pubkey1234567890abcdef',
-          'created_at': 1234567890,
-          'kind': 34236,
-          'content': 'Original video',
-          'tags': [
-            ['url', 'https://example.com/video.mp4'],
-          ],
-          'sig': 'sig1234567890abcdef',
-        });
-
-        final videoEvent = VideoEvent.createRepostEvent(
-          originalEvent: VideoEvent.fromNostrEvent(originalEvent),
-          repostEventId: 'repost1234567890abcdef',
-          reposterPubkey: 'reposter1234567890abcdef',
-          repostedAt: DateTime.now(),
-        );
-
-        final mockLabelService = _MockModerationLabelService();
-        when(
-          () => mockLabelService.getAIDetectionResult(any()),
-        ).thenReturn(null);
-        when(
-          () => mockLabelService.getAIDetectionByHash(any()),
-        ).thenReturn(null);
-
-        // Act
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              moderationLabelServiceProvider.overrideWithValue(
-                mockLabelService,
-              ),
-              videoModerationStatusServiceProvider.overrideWithValue(
-                _MockVideoModerationStatusService(),
-              ),
-            ],
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(body: ProofModeBadgeRow(video: videoEvent)),
-            ),
-          ),
-        );
-
-        // Assert - Original badge should NOT be visible
-        expect(find.byType(OriginalContentBadge), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'ProofModeBadgeRow does NOT show OriginalContentBadge for vintage vines',
-      (WidgetTester tester) async {
-        // Arrange - Create vintage vine
-        final event = Event.fromJson({
-          'id': 'vintage1234567890abcdef',
-          'pubkey': 'pubkey1234567890abcdef',
-          'created_at': 1234567890,
-          'kind': 34236,
-          'content': 'Vintage vine',
-          'tags': [
-            ['url', 'https://example.com/video.mp4'],
-            ['loops', '10000'],
-          ],
-          'sig': 'sig1234567890abcdef',
-        });
-
-        final videoEvent = VideoEvent.fromNostrEvent(event);
-
-        // Act
-        await tester.pumpWidget(
-          MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ProofModeBadgeRow(video: videoEvent)),
-          ),
-        );
-
-        // Assert - Original Content badge should NOT be visible (vintage vines show their own badge)
-        expect(find.byType(OriginalContentBadge), findsNothing);
-
-        // But OriginalVineBadge should be visible
-        expect(find.byType(OriginalVineBadge), findsOneWidget);
-      },
-      // TODO(any): Fix and re-enable these tests
-      skip: true,
     );
   });
 }

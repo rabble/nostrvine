@@ -45,7 +45,6 @@ lib/screens/video_metadata/video_metadata_cover_screen.dart
 lib/screens/web_auth_screen.dart
 lib/widgets/add_to_list_dialog.dart
 lib/widgets/app_lifecycle_handler.dart
-lib/widgets/badge_explanation_modal.dart
 lib/widgets/bug_report_dialog.dart
 lib/widgets/classic_vines_tab.dart
 lib/widgets/composable_video_grid.dart
@@ -56,7 +55,6 @@ lib/widgets/find_people_sheet.dart
 lib/widgets/for_you_tab.dart
 lib/widgets/gallery_permission_sheet.dart
 lib/widgets/geo_blocking_gate.dart
-lib/widgets/global_upload_indicator.dart
 lib/widgets/library/sounds_tab.dart
 lib/widgets/new_videos_tab.dart
 lib/widgets/popular_videos_tab.dart
@@ -67,7 +65,6 @@ lib/widgets/profile/profile_reposts_grid.dart
 lib/widgets/profile/profile_saved_grid.dart
 lib/widgets/profile/profile_video_feed_view.dart
 lib/widgets/profile_editor/username_status_indicator.dart
-lib/widgets/proofmode_badge_row.dart
 lib/widgets/report_content_dialog.dart
 lib/widgets/save_original_progress_sheet.dart
 lib/widgets/share_video_menu.dart
