@@ -1,6 +1,6 @@
 // ABOUTME: Unit tests for NotificationsDao with read status and cleanup
 // ABOUTME: operations. Tests upsertNotification, getAllNotifications,
-// ABOUTME: markAsRead, deleteOlderThan.
+// ABOUTME: markAsRead, deleteCachedBefore.
 
 import 'dart:io';
 
@@ -330,38 +330,64 @@ void main() {
       });
     });
 
-    group('deleteOlderThan', () {
-      test('deletes notifications older than timestamp', () async {
-        await dao.upsertNotification(
-          id: 'notif_old',
-          type: 'like',
-          fromPubkey: testPubkey,
-          timestamp: 1700000000,
+    group('deleteCachedBefore', () {
+      test(
+        'deletes rows cached before the cutoff but keeps a freshly cached row '
+        'even when its content is old',
+        () async {
+          // Stale cache row (cached 8 days ago) → deleted.
+          await database
+              .into(database.notifications)
+              .insert(
+                NotificationsCompanion.insert(
+                  id: 'notif_stale_cache',
+                  type: 'like',
+                  fromPubkey: testPubkey,
+                  timestamp: 1700000000,
+                  cachedAt: DateTime.now().subtract(const Duration(days: 8)),
+                ),
+              );
+          // Freshly cached row describing an old event → survives. This is the
+          // regression: retention keys on cachedAt, not the content timestamp.
+          await database
+              .into(database.notifications)
+              .insert(
+                NotificationsCompanion.insert(
+                  id: 'notif_fresh_cache',
+                  type: 'follow',
+                  fromPubkey: testPubkey,
+                  timestamp: 1700000000,
+                  cachedAt: DateTime.now(),
+                ),
+              );
+
+          final deleted = await dao.deleteCachedBefore(
+            DateTime.now().subtract(const Duration(days: 7)),
+          );
+
+          expect(deleted, equals(1));
+          final results = await dao.getAllNotifications();
+          expect(results, hasLength(1));
+          expect(results.first.id, equals('notif_fresh_cache'));
+        },
+      );
+
+      test('keeps all when none were cached before the cutoff', () async {
+        await database
+            .into(database.notifications)
+            .insert(
+              NotificationsCompanion.insert(
+                id: 'notif_1',
+                type: 'like',
+                fromPubkey: testPubkey,
+                timestamp: 1700000000,
+                cachedAt: DateTime.now(),
+              ),
+            );
+
+        final deleted = await dao.deleteCachedBefore(
+          DateTime.now().subtract(const Duration(days: 7)),
         );
-        await dao.upsertNotification(
-          id: 'notif_new',
-          type: 'follow',
-          fromPubkey: testPubkey,
-          timestamp: 1700000002,
-        );
-
-        final deleted = await dao.deleteOlderThan(1700000001);
-
-        expect(deleted, equals(1));
-        final results = await dao.getAllNotifications();
-        expect(results, hasLength(1));
-        expect(results.first.id, equals('notif_new'));
-      });
-
-      test('keeps all when none are older', () async {
-        await dao.upsertNotification(
-          id: 'notif_1',
-          type: 'like',
-          fromPubkey: testPubkey,
-          timestamp: 1700000000,
-        );
-
-        final deleted = await dao.deleteOlderThan(1699999999);
 
         expect(deleted, equals(0));
         final results = await dao.getAllNotifications();

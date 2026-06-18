@@ -134,33 +134,45 @@ void main() {
         expect(result.expiredHashtagStatsDeleted, equals(1));
       });
 
-      test('deletes old notifications', () async {
+      test('deletes notifications cached more than 7 days ago', () async {
         final dao = database.notificationsDao;
 
-        // Insert notification from 8 days ago (older than 7 day retention)
-        final oldTimestamp = nowUnix() - (8 * 24 * 60 * 60);
-        await dao.upsertNotification(
-          id: 'old_notification',
-          type: 'like',
-          fromPubkey: testPubkey,
-          timestamp: oldTimestamp,
-        );
+        // Cached 8 days ago (older than the 7-day cache retention) → deleted.
+        await database
+            .into(database.notifications)
+            .insert(
+              NotificationsCompanion.insert(
+                id: 'stale_cache',
+                type: 'like',
+                fromPubkey: testPubkey,
+                timestamp: nowUnix(),
+                cachedAt: DateTime.now().subtract(const Duration(days: 8)),
+              ),
+            );
 
-        // Insert recent notification
-        await dao.upsertNotification(
-          id: 'recent_notification',
-          type: 'like',
-          fromPubkey: testPubkey,
-          timestamp: nowUnix(),
-        );
+        // Freshly cached but describing an 8-day-old event → must survive.
+        // Retention keys on cachedAt, not the notification's content age, so
+        // a still-current notification about an old event still hydrates the
+        // next cold start.
+        await database
+            .into(database.notifications)
+            .insert(
+              NotificationsCompanion.insert(
+                id: 'fresh_cache_old_content',
+                type: 'like',
+                fromPubkey: testPubkey,
+                timestamp: nowUnix() - (8 * 24 * 60 * 60),
+                cachedAt: DateTime.now(),
+              ),
+            );
 
         // Run cleanup
         final result = await database.runStartupCleanup();
 
-        // Old notification should be deleted
+        // Only the stale cache row should be deleted.
         final notifications = await dao.getAllNotifications();
         expect(notifications.length, equals(1));
-        expect(notifications.first.id, equals('recent_notification'));
+        expect(notifications.first.id, equals('fresh_cache_old_content'));
 
         expect(result.oldNotificationsDeleted, equals(1));
       });

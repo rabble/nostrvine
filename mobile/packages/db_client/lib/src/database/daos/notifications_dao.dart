@@ -1,5 +1,5 @@
 // ABOUTME: Data Access Object for notification persistence operations.
-// ABOUTME: Provides CRUD with timestamp-based cleanup.
+// ABOUTME: Provides CRUD with cache-age-based cleanup.
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/drift.dart';
@@ -79,11 +79,18 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
     return (delete(notifications)..where((t) => t.id.equals(id))).go();
   }
 
-  /// Delete notifications older than a timestamp
-  Future<int> deleteOlderThan(int timestamp) {
+  /// Deletes cache rows last written before [cutoff].
+  ///
+  /// Retention is keyed on `cachedAt` (when the row was written through),
+  /// not the notification's own `timestamp` (its `createdAt`). The cache is
+  /// a write-through snapshot of the latest first page (see [replaceAll]);
+  /// pruning by content age would wipe still-current notifications that
+  /// merely describe events older than the retention window, defeating
+  /// cold-start hydration.
+  Future<int> deleteCachedBefore(DateTime cutoff) {
     return (delete(
       notifications,
-    )..where((t) => t.timestamp.isSmallerThan(Variable(timestamp)))).go();
+    )..where((t) => t.cachedAt.isSmallerThanValue(cutoff))).go();
   }
 
   /// Watch all notifications (reactive stream)

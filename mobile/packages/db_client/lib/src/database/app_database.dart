@@ -671,7 +671,7 @@ class AppDatabase extends _$AppDatabase {
   /// - Expired Nostr events (based on expire_at timestamp, including NULL)
   /// - Expired profile stats (older than 5 minutes)
   /// - Expired hashtag stats (older than 1 hour)
-  /// - Old notifications (older than 7 days)
+  /// - Notification cache rows written more than 7 days ago
   ///
   /// Returns a [CleanupResult] with counts of deleted records.
   Future<CleanupResult> runStartupCleanup() async {
@@ -684,13 +684,14 @@ class AppDatabase extends _$AppDatabase {
     // Delete expired hashtag stats (1 hour expiry)
     final expiredHashtagStatsDeleted = await hashtagStatsDao.deleteExpired();
 
-    // Delete old notifications (7 day retention)
-    final notificationCutoff =
-        DateTime.now()
-            .subtract(const Duration(days: _notificationRetentionDays))
-            .millisecondsSinceEpoch ~/
-        1000;
-    final oldNotificationsDeleted = await notificationsDao.deleteOlderThan(
+    // Delete notification cache rows written more than 7 days ago. Retention
+    // is keyed on when the row was cached, not the notification's own age, so
+    // still-current notifications about older events survive to hydrate the
+    // next cold start.
+    final notificationCutoff = DateTime.now().subtract(
+      const Duration(days: _notificationRetentionDays),
+    );
+    final oldNotificationsDeleted = await notificationsDao.deleteCachedBefore(
       notificationCutoff,
     );
 
