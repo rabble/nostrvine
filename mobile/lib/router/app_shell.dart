@@ -30,6 +30,17 @@ import 'package:openvine/widgets/vine_bottom_nav.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Duration of the cross-fade applied when switching between bottom-nav tabs.
+/// Kept short so tab switches stay snappy.
+const Duration _kTabFadeDuration = Duration(milliseconds: 120);
+
+/// Shell chrome (app bar + bottom nav) wrapped around the [StatefulShellRoute]
+/// branch container.
+///
+/// [child] is the `StatefulNavigationShell` (rendered via
+/// [AppShellBranchContainer]); [currentIndex] is its active branch. AppShell
+/// itself no longer animates the tab switch — the cross-fade lives in
+/// [AppShellBranchContainer], which keeps every branch alive.
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({required this.child, required this.currentIndex, super.key});
 
@@ -268,21 +279,17 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
     // Watch page context to determine if back button should show and if on search route
     final pageCtxAsync = ref.watch(pageContextProvider);
 
-    // Check if on own profile grid view - if so, let ProfileScreenRouter render its own scaffold
+    // Own profile grid renders its own scrollable header (avatar + stats), so
+    // AppShell suppresses its app bar for it — like home / inbox / explore grid.
     final isOwnProfileGrid = pageCtxAsync.maybeWhen(
       data: (ctx) {
         if (ctx.type != RouteType.profile) return false;
-        if (ctx.videoIndex != null) return false; // Video mode uses shell
+        if (ctx.videoIndex != null) return false; // Video mode uses the app bar
         final currentNpub = ref.read(authServiceProvider).currentNpub;
         return ctx.npub == 'me' || ctx.npub == currentNpub;
       },
       orElse: () => false,
     );
-
-    // Own profile grid uses its own scaffold - just return the child
-    if (isOwnProfileGrid) {
-      return child;
-    }
 
     // Inbox manages its own header (segmented toggle replaces app bar)
     final isInbox = pageCtxAsync.maybeWhen(
@@ -329,7 +336,8 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
       // instead of the standard AppBar, for full-screen video UX.
       // Inbox uses its own segmented toggle header.
       // Explore grid manages its own header (search bar + tabs).
-      appBar: currentIndex == 0 || isInbox || isExploreGrid
+      // Own profile grid renders its own scrollable header.
+      appBar: currentIndex == 0 || isInbox || isExploreGrid || isOwnProfileGrid
           ? null
           : DiVineAppBar(
               titleWidget: _buildTappableTitle(context, ref, title),
@@ -419,7 +427,6 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
             )
           : child,
       // Bottom nav visible for all shell routes (search, tabs, etc.).
-      // For search (currentIndex=-1), no tab is highlighted.
       // PointerInterceptor ensures the bottom nav receives taps on web
       // even when HTML platform views (video elements) overlap the area.
       //
@@ -435,6 +442,50 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Cross-fades between the [StatefulShellRoute] branch navigators.
+///
+/// Every branch stays mounted (state preserved); the active branch is fully
+/// opaque and interactive, the others sit at opacity 0 with their tickers
+/// paused and pointer events ignored. On a tab switch the outgoing branch
+/// fades out while the incoming one fades in — a true cross-fade between two
+/// live tabs. Within-tab navigation never reaches here (those are
+/// [NoTransitionPage]s inside a single branch).
+class AppShellBranchContainer extends StatelessWidget {
+  const AppShellBranchContainer({
+    required this.currentIndex,
+    required this.children,
+    super.key,
+  });
+
+  /// Index (in [children]) of the branch navigator to display.
+  final int currentIndex;
+
+  /// The branch navigators, one per [StatefulShellBranch], kept alive.
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : _kTabFadeDuration;
+    return Stack(
+      fit: StackFit.expand,
+      children: List.generate(children.length, (index) {
+        final isActive = index == currentIndex;
+        return AnimatedOpacity(
+          opacity: isActive ? 1 : 0,
+          duration: duration,
+          curve: Curves.easeInOut,
+          child: IgnorePointer(
+            ignoring: !isActive,
+            child: TickerMode(enabled: isActive, child: children[index]),
+          ),
+        );
+      }),
     );
   }
 }

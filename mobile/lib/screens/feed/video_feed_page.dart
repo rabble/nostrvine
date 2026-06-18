@@ -183,7 +183,9 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// open. See the listeners in [build] for the rationale.
   void _syncFeedActive() {
     if (!mounted) return;
-    final routeType = ref.read(pageContextProvider).asData?.value.type;
+    // Global active tab — not the branch-scoped pageContextProvider, which is
+    // pinned to "home" inside the home branch and never reports leaving it.
+    final routeType = ref.read(activeRouteTypeProvider).asData?.value;
     // Hold the current state until the route context resolves.
     if (routeType == null) return;
 
@@ -205,15 +207,15 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     // pushed routes keep this widget mounted, so playback must follow these
     // signals instead of assuming disposal handles every transition.
     //
-    // GoRouter's routeInformationProvider collapses to the shell location
-    // ("/home") while popping between pushed routes (e.g. profile → fullscreen
-    // video → pop back to profile), so the route type alone cannot tell whether
-    // the feed is actually visible. [shellObscuredProvider] — driven by
-    // AppShell's RouteAware subscription to the root navigator — supplies that
-    // missing signal: it stays true until the route directly above the shell is
-    // popped, so closing the video while the profile is still open keeps the
-    // feed paused, while a genuine return to home resumes it.
-    ref.listen(pageContextProvider, (_, _) => _syncFeedActive());
+    // Uses activeRouteTypeProvider (the *global* active tab), NOT
+    // pageContextProvider: inside the StatefulShellRoute home branch the latter
+    // is scoped to "home" and never flips when the tab is backgrounded, so it
+    // would leave the feed playing on other tabs. [shellObscuredProvider] —
+    // driven by AppShell's RouteAware subscription to the root navigator —
+    // covers the orthogonal case where a full-screen route covers the shell
+    // (e.g. profile → fullscreen video → pop back to profile), which the route
+    // type alone cannot detect.
+    ref.listen(activeRouteTypeProvider, (_, _) => _syncFeedActive());
     ref.listen(shellObscuredProvider, (_, _) => _syncFeedActive());
     ref.listen(overlayVisibilityProvider, (_, _) => _syncFeedActive());
 

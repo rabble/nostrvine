@@ -28,7 +28,6 @@ import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
 import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
-import 'package:openvine/widgets/vine_bottom_nav.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -308,10 +307,11 @@ class _ProfileScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // No bottom nav here — the enclosing AppShell provides the shared
+    // VineBottomNav for every tab (own-profile no longer bypasses the shell).
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
       body: body,
-      bottomNavigationBar: const VineBottomNav(currentIndex: 3),
     );
   }
 }

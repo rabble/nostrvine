@@ -1,54 +1,27 @@
-// ABOUTME: Navigator keys for per-tab state preservation
-// ABOUTME: Each tab has its own navigator key to maintain independent navigation stacks
+// ABOUTME: Navigator keys for the root navigator and the four shell branches
+// ABOUTME: Each bottom-nav tab is a StatefulShellBranch with its own navigator
 
 import 'package:flutter/widgets.dart';
 
-/// Navigator keys for per-tab state preservation in the app shell.
+/// Navigator keys for the app's root navigator and the four bottom-nav
+/// branches of the [StatefulShellRoute].
 ///
-/// Each key maintains a separate navigation stack, allowing tabs to preserve
-/// their state when switching between them.
+/// Each branch key identifies the [Navigator] built for that tab. Because
+/// `StatefulShellRoute` keeps every branch's navigator alive, these keys let
+/// each tab preserve its own navigation stack and state while inactive.
 class NavigatorKeys {
   /// Root navigator key for the entire app.
   static final root = GlobalKey<NavigatorState>(debugLabel: 'root');
 
-  /// Home tab navigator key.
+  /// Home tab branch navigator key.
   static final home = GlobalKey<NavigatorState>(debugLabel: 'home');
 
-  /// Explore tab navigator key for grid mode (no video index).
-  static final exploreGrid = GlobalKey<NavigatorState>(
-    debugLabel: 'explore-grid',
-  );
+  /// Explore tab branch navigator key (grid + feed routes).
+  static final explore = GlobalKey<NavigatorState>(debugLabel: 'explore');
 
-  /// Explore tab navigator key for feed mode (with video index).
-  static final exploreFeed = GlobalKey<NavigatorState>(
-    debugLabel: 'explore-feed',
-  );
-
-  /// Notifications tab navigator key.
-  static final notifications = GlobalKey<NavigatorState>(
-    debugLabel: 'notifications',
-  );
-
-  /// Inbox tab navigator key (Messages + Notifications).
+  /// Inbox tab branch navigator key (inbox + notifications routes).
   static final inbox = GlobalKey<NavigatorState>(debugLabel: 'inbox');
 
-  /// Profile tab navigator key for grid mode (no video index).
-  static final profileGrid = GlobalKey<NavigatorState>(
-    debugLabel: 'profile-grid',
-  );
-
-  /// Profile tab navigator key for feed mode (with video index).
-  static final profileFeed = GlobalKey<NavigatorState>(
-    debugLabel: 'profile-feed',
-  );
-
-  /// Liked videos navigator key for grid mode (no video index).
-  static final likedVideosGrid = GlobalKey<NavigatorState>(
-    debugLabel: 'liked-videos-grid',
-  );
-
-  /// Liked videos navigator key for feed mode (with video index).
-  static final likedVideosFeed = GlobalKey<NavigatorState>(
-    debugLabel: 'liked-videos-feed',
-  );
+  /// Profile tab branch navigator key (profile + liked-videos routes).
+  static final profile = GlobalKey<NavigatorState>(debugLabel: 'profile');
 }

@@ -246,6 +246,34 @@ List<String> stringListRouteExtra(Object? extra) {
 bool _isPublicRecorderLocation(String location) =>
     location == VideoRecorderScreen.path;
 
+/// Builds a [StatefulShellBranch] page whose subtree sees its *own* route's
+/// [RouteContext] via a scoped [pageContextProvider], rather than the
+/// globally-active route's.
+///
+/// `StatefulShellRoute` keeps every branch mounted, but the tab screens gate
+/// their content on the global [pageContextProvider] (they render a
+/// placeholder when its type doesn't match). Without this scope an inactive
+/// branch would see the active tab's context and blank out — breaking both
+/// state preservation and the live cross-fade. Scoping per branch makes each
+/// tab keep rendering its real content while inactive. [NoTransitionPage]
+/// keeps within-branch navigation (e.g. grid → feed) instant; the *between
+/// tab* cross-fade is done by [AppShellBranchContainer].
+Page<void> _branchPage(GoRouterState state, Widget child) {
+  return NoTransitionPage<void>(
+    key: state.pageKey,
+    child: ProviderScope(
+      overrides: [
+        pageContextProvider.overrideWith(
+          (ref) => Stream<RouteContext>.value(
+            parseRoute(state.uri.toString()),
+          ),
+        ),
+      ],
+      child: child,
+    ),
+  );
+}
+
 final goRouterProvider = Provider<GoRouter>((ref) {
   // Use ref.read to avoid recreating the router on auth state changes
   final authService = ref.read(authServiceProvider);
@@ -463,216 +491,135 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: VideoRecorderScreen.routeName,
         builder: (_, _) => const VideoRecorderRoute(),
       ),
-      // Shell owns the shared scaffold and bottom navigation. Individual tab
-      // route state that must survive a child swap is restored explicitly from
-      // route params or tab-position providers.
-      ShellRoute(
-        builder: (context, state, child) {
-          final location = state.uri.toString();
-          final current = tabIndexFromLocation(location);
-          return AppShell(currentIndex: current, child: child);
-        },
-        routes: [
-          // HOME tab subtree
-          GoRoute(
-            path: VideoFeedPage.pathWithIndex,
-            name: VideoFeedPage.routeName,
-            pageBuilder: (ctx, st) {
-              final initialIndex = homeInitialIndexFromPathParameters(
-                st.pathParameters,
-              );
-              return NoTransitionPage(
-                key: st.pageKey,
-                child: Navigator(
-                  key: NavigatorKeys.home,
-                  onGenerateRoute: (r) => MaterialPageRoute(
-                    builder: (_) => VideoFeedPage(initialIndex: initialIndex),
-                    settings: const RouteSettings(
-                      name: VideoFeedPage.routeName,
+      // Bottom-nav tabs live in a StatefulShellRoute so every tab keeps its
+      // own Navigator (and state) alive while inactive — that is what lets the
+      // tab switch cross-fade between two live tabs (see AppShellBranchContainer).
+      //
+      // Each branch screen reads the *globally-active* route via
+      // pageContextProvider and renders a placeholder when it doesn't match.
+      // Because all branches stay mounted, [_branchPage] scopes
+      // pageContextProvider per branch so each tab sees *its own* route context
+      // (not the active tab's) and keeps rendering real content while inactive.
+      StatefulShellRoute(
+        builder: (context, state, navigationShell) => AppShell(
+          currentIndex: navigationShell.currentIndex,
+          child: navigationShell,
+        ),
+        navigatorContainerBuilder: (context, navigationShell, children) =>
+            AppShellBranchContainer(
+              currentIndex: navigationShell.currentIndex,
+              children: children,
+            ),
+        branches: [
+          // HOME tab
+          StatefulShellBranch(
+            navigatorKey: NavigatorKeys.home,
+            initialLocation: VideoFeedPage.pathForIndex(0),
+            routes: [
+              GoRoute(
+                path: VideoFeedPage.pathWithIndex,
+                name: VideoFeedPage.routeName,
+                pageBuilder: (ctx, st) => _branchPage(
+                  st,
+                  VideoFeedPage(
+                    initialIndex: homeInitialIndexFromPathParameters(
+                      st.pathParameters,
                     ),
                   ),
                 ),
-              );
-            },
+              ),
+            ],
           ),
 
-          // EXPLORE tab - grid mode (no index)
-          GoRoute(
-            path: ExploreScreen.path,
-            name: ExploreScreen.routeName,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.exploreGrid,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const ExploreScreen(),
-                  settings: const RouteSettings(name: ExploreScreen.routeName),
-                ),
+          // EXPLORE tab (grid + tab-by-name + feed)
+          StatefulShellBranch(
+            navigatorKey: NavigatorKeys.explore,
+            initialLocation: ExploreScreen.path,
+            routes: [
+              GoRoute(
+                path: ExploreScreen.path,
+                name: ExploreScreen.routeName,
+                pageBuilder: (ctx, st) =>
+                    _branchPage(st, const ExploreScreen()),
               ),
-            ),
+              GoRoute(
+                path: ExploreScreen.pathTabSubpath,
+                pageBuilder: (ctx, st) {
+                  final tabName = ExploreScreen.tabNameFromPathParameter(
+                    st.pathParameters['name'],
+                  );
+                  if (tabName == null) {
+                    return _branchPage(
+                      st,
+                      RouteErrorScreen(message: ctx.l10n.routeUnknownPath),
+                    );
+                  }
+                  return _branchPage(
+                    st,
+                    ExploreScreen(initialTabName: tabName),
+                  );
+                },
+              ),
+              GoRoute(
+                path: ExploreScreen.pathWithIndex,
+                pageBuilder: (ctx, st) =>
+                    _branchPage(st, const ExploreScreen()),
+              ),
+            ],
           ),
 
-          // EXPLORE tab - select a specific tab by name (grid mode)
-          GoRoute(
-            path: ExploreScreen.pathTabSubpath,
-            pageBuilder: (ctx, st) {
-              final tabName = ExploreScreen.tabNameFromPathParameter(
-                st.pathParameters['name'],
-              );
-              if (tabName == null) {
-                return NoTransitionPage(
-                  key: st.pageKey,
-                  child: RouteErrorScreen(message: ctx.l10n.routeUnknownPath),
-                );
-              }
-              return NoTransitionPage(
-                key: st.pageKey,
-                child: Navigator(
-                  key: NavigatorKeys.exploreGrid,
-                  onGenerateRoute: (r) => MaterialPageRoute(
-                    builder: (_) => ExploreScreen(initialTabName: tabName),
-                    settings: const RouteSettings(
-                      name: ExploreScreen.routeName,
-                    ),
-                  ),
-                ),
-              );
-            },
+          // INBOX tab (inbox + notifications share tab position 2)
+          StatefulShellBranch(
+            navigatorKey: NavigatorKeys.inbox,
+            initialLocation: InboxPage.path,
+            routes: [
+              GoRoute(
+                path: NotificationsPage.pathWithIndex,
+                name: NotificationsPage.routeName,
+                pageBuilder: (ctx, st) =>
+                    _branchPage(st, const NotificationsPage()),
+              ),
+              GoRoute(
+                path: InboxPage.path,
+                name: InboxPage.routeName,
+                pageBuilder: (ctx, st) => _branchPage(st, const InboxPage()),
+              ),
+            ],
           ),
 
-          // EXPLORE tab - feed mode (with video index)
-          GoRoute(
-            path: ExploreScreen.pathWithIndex,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.exploreFeed,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const ExploreScreen(),
-                  settings: const RouteSettings(name: ExploreScreen.routeName),
-                ),
+          // PROFILE tab (own profile grid/feed + liked-videos)
+          StatefulShellBranch(
+            navigatorKey: NavigatorKeys.profile,
+            initialLocation: ProfileScreenRouter.path,
+            routes: [
+              GoRoute(
+                path: ProfileScreenRouter.path,
+                name: ProfileScreenRouter.routeName,
+                pageBuilder: (ctx, st) =>
+                    _branchPage(st, const ProfileScreenRouter()),
               ),
-            ),
-          ),
-
-          // NOTIFICATIONS tab subtree
-          GoRoute(
-            path: NotificationsPage.pathWithIndex,
-            name: NotificationsPage.routeName,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.notifications,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const NotificationsPage(),
-                  settings: const RouteSettings(
-                    name: NotificationsPage.routeName,
-                  ),
-                ),
+              GoRoute(
+                path: ProfileScreenRouter.pathWithNpub,
+                pageBuilder: (ctx, st) =>
+                    _branchPage(st, const ProfileScreenRouter()),
               ),
-            ),
-          ),
-
-          // INBOX tab (Messages + Notifications combined)
-          GoRoute(
-            path: InboxPage.path,
-            name: InboxPage.routeName,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.inbox,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const InboxPage(),
-                  settings: const RouteSettings(name: InboxPage.routeName),
-                ),
+              GoRoute(
+                path: ProfileScreenRouter.pathWithIndex,
+                pageBuilder: (ctx, st) =>
+                    _branchPage(st, const ProfileScreenRouter()),
               ),
-            ),
-          ),
-
-          // PROFILE tab subtree - grid mode (no index)
-          GoRoute(
-            path: ProfileScreenRouter.path,
-            name: ProfileScreenRouter.routeName,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.profileGrid,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const ProfileScreenRouter(),
-                  settings: const RouteSettings(
-                    name: ProfileScreenRouter.routeName,
-                  ),
-                ),
+              GoRoute(
+                path: LikedVideosScreenRouter.path,
+                name: LikedVideosScreenRouter.routeName,
+                pageBuilder: (ctx, st) =>
+                    _branchPage(st, const LikedVideosScreenRouter()),
               ),
-            ),
-          ),
-
-          // PROFILE tab subtree - grid mode (with npub)
-          GoRoute(
-            path: ProfileScreenRouter.pathWithNpub,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.profileGrid,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const ProfileScreenRouter(),
-                  settings: const RouteSettings(
-                    name: ProfileScreenRouter.routeName,
-                  ),
-                ),
+              GoRoute(
+                path: LikedVideosScreenRouter.pathWithIndex,
+                pageBuilder: (ctx, st) =>
+                    _branchPage(st, const LikedVideosScreenRouter()),
               ),
-            ),
-          ),
-          // PROFILE tab subtree - feed mode (with video index)
-          GoRoute(
-            path: ProfileScreenRouter.pathWithIndex,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.profileFeed,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const ProfileScreenRouter(),
-                  settings: const RouteSettings(
-                    name: ProfileScreenRouter.routeName,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // LIKED VIDEOS route - grid mode (no index)
-          GoRoute(
-            path: LikedVideosScreenRouter.path,
-            name: LikedVideosScreenRouter.routeName,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.likedVideosGrid,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const LikedVideosScreenRouter(),
-                  settings: const RouteSettings(
-                    name: LikedVideosScreenRouter.routeName,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // LIKED VIDEOS route - feed mode (with video index)
-          GoRoute(
-            path: LikedVideosScreenRouter.pathWithIndex,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.likedVideosFeed,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const LikedVideosScreenRouter(),
-                  settings: const RouteSettings(
-                    name: LikedVideosScreenRouter.routeName,
-                  ),
-                ),
-              ),
-            ),
+            ],
           ),
         ],
       ),
