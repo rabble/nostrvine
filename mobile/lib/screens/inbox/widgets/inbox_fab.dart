@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 
 /// Green FAB for starting a new conversation.
 ///
-/// 56x56 circle with `primary` background and a `+` icon.
+/// A [size]×[size] circle with `primary` background and a `+` icon.
 /// Positioned by the parent layout (typically bottom-right).
 class InboxFab extends StatelessWidget {
   const InboxFab({required this.onPressed, super.key});
