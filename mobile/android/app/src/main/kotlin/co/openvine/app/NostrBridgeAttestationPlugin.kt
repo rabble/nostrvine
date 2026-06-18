@@ -161,12 +161,19 @@ class NostrBridgeAttestationPlugin(
             return
         }
 
-        // Remove the pigeon-managed JavaScript interface for divineSandboxBridge
-        // and replace it with a WebMessageListener that reports isMainFrame. The
-        // listener injects a JS object exposing the same `.postMessage(string)`
-        // API the bridge bootstrap already calls, so the bootstrap is unchanged.
+        // Replace the pigeon-managed JavaScript interface for divineSandboxBridge
+        // with a WebMessageListener that reports isMainFrame. The listener injects
+        // a JS object exposing the same `.postMessage(string)` API the bridge
+        // bootstrap already calls, so the bootstrap is unchanged.
+        //
+        // Install the listener BEFORE removing the pigeon interface: if
+        // addWebMessageListener throws on malformed origin rules, the original
+        // divineSandboxBridge channel is still in place, so Dart's nonce-only
+        // fallback keeps a working channel instead of facing a dead bridge.
+        // Both register the same name, but neither takes effect until the next
+        // document load and the interface is removed synchronously here, so the
+        // page never sees both.
         try {
-            webView.removeJavascriptInterface(BRIDGE_CHANNEL_NAME)
             val attestingListener = FrameAttestingWebMessageListener { payload ->
                 eventSink?.success(payload)
             }
@@ -176,10 +183,12 @@ class NostrBridgeAttestationPlugin(
                 allowedOriginRules.toSet(),
                 attestingListener,
             )
+            webView.removeJavascriptInterface(BRIDGE_CHANNEL_NAME)
             listener = attestingListener
             result.success(null)
         } catch (e: IllegalArgumentException) {
             // Malformed origin rules — roll back so Dart degrades to nonce-only.
+            // The pigeon interface was not removed, so the channel still exists.
             policy.detach(webViewId)
             Log.w(
                 TAG,

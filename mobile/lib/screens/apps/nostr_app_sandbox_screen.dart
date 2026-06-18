@@ -765,13 +765,16 @@ String buildBridgeBootstrapScript({
 }
 
 /// Normalises an app's allowed origins to `scheme://host[:port]` rules for
-/// `WebViewCompat.addWebMessageListener` on Android. Entries that cannot form
-/// an origin (unparseable, empty host, or a non-http(s)/ws scheme — which would
-/// make `Uri.origin` throw) are dropped, so the result is always a valid rule
-/// set the native side can pass through.
+/// `WebViewCompat.addWebMessageListener` on Android. Only `http`/`https`
+/// entries survive: `Uri.origin` is defined solely for those schemes and
+/// throws a `StateError` for anything else (`ws`/`wss`, `nostrsigner:`, …),
+/// and a websocket URL can never be a web frame's origin so it is meaningless
+/// for `addWebMessageListener` regardless. Unparseable entries and those with
+/// an empty host are dropped too, so the result is always a valid rule set the
+/// native side can pass through.
 @visibleForTesting
 List<String> webMessageAllowedOriginRules(List<String> allowedOrigins) {
-  const originSchemes = {'http', 'https', 'ws', 'wss'};
+  const originSchemes = {'http', 'https'};
   final rules = <String>[];
   for (final origin in allowedOrigins) {
     final parsed = Uri.tryParse(origin);

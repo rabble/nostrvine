@@ -742,9 +742,25 @@ void main() {
         expect(
           webMessageAllowedOriginRules(const [
             'https://primal.net',
-            'nostrsigner:', // non-http(s)/ws scheme — Uri.origin would throw
+            'nostrsigner:', // non-http(s) scheme — Uri.origin would throw
             'not a uri at all',
             '', // empty
+          ]),
+          equals(['https://primal.net']),
+        );
+      });
+
+      test('drops ws/wss entries without throwing (Uri.origin is http(s) '
+          'only)', () {
+        // wss:// is valid in remote-sourced allowedOrigins (relay URLs) and
+        // passes a naive scheme check, but Uri.origin throws a StateError for
+        // any non-http(s) scheme. The rule set must filter these out rather
+        // than let the error escape the unawaited attestation chain.
+        expect(
+          webMessageAllowedOriginRules(const [
+            'https://primal.net',
+            'wss://relay.example.com',
+            'ws://relay.example.com',
           ]),
           equals(['https://primal.net']),
         );
