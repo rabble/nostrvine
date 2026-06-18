@@ -1531,13 +1531,15 @@ class NotificationRepository {
     final referencedEventId = n.referencedEventId;
     if (referencedEventId != null &&
         referencedEventId.isNotEmpty &&
-        referencedEventId != rootEventId) {
+        referencedEventId != rootEventId &&
+        !n.isReferencedVideo) {
       return true;
     }
 
     final targetCommentId = n.targetCommentId;
     return targetCommentId != null &&
         targetCommentId.isNotEmpty &&
+        !n.isReferencedVideo &&
         n.sourceEventId.isNotEmpty &&
         targetCommentId != n.sourceEventId &&
         targetCommentId != rootEventId;
@@ -1547,15 +1549,21 @@ class NotificationRepository {
   ///
   /// New staging Funnelcake payloads for NIP-22 comments can omit
   /// `referenced_event_id` while including `root_event_id`. For comments, the
-  /// root ID is the video we want to open and group on.
+  /// root ID is the video we want to open and group on unless the referenced
+  /// event is itself a video, which happens for comments on video replies.
   static String? _videoAnchorEventId(
     NotificationKind kind,
     RelayNotification n,
   ) {
-    if (kind == NotificationKind.comment &&
-        n.rootEventId != null &&
-        n.rootEventId!.isNotEmpty) {
-      return n.rootEventId;
+    if (kind == NotificationKind.comment) {
+      if (n.isReferencedVideo &&
+          n.referencedEventId != null &&
+          n.referencedEventId!.isNotEmpty) {
+        return n.referencedEventId;
+      }
+      if (n.rootEventId != null && n.rootEventId!.isNotEmpty) {
+        return n.rootEventId;
+      }
     }
     return n.referencedEventId;
   }

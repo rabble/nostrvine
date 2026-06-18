@@ -84,6 +84,9 @@ void main() {
       when(
         () => mockVideoEventService.shouldHideVideo(any()),
       ).thenReturn(false);
+      when(
+        () => mockVideoEventService.isVideoEventLocallyDeleted(any()),
+      ).thenReturn(false);
     });
 
     tearDown(() async {
@@ -559,6 +562,31 @@ void main() {
         ).thenReturn(true);
 
         await tester.pumpWidget(buildSubject(videoId: 'hidden_video_id'));
+        await tester.pump();
+
+        expect(find.text('Video not found'), findsOneWidget);
+        expect(find.bySemanticsLabel('Close video player'), findsOneWidget);
+      });
+
+      testWidgets('renders exit button when video was locally deleted', (
+        tester,
+      ) async {
+        final video = createTestVideoEvent(
+          id: 'deleted_video_id',
+          pubkey: 'deleted_pubkey',
+          title: 'Deleted Video',
+        );
+
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'deleted_video_id',
+          ),
+        ).thenAnswer((_) async => video);
+        when(
+          () => mockVideoEventService.isVideoEventLocallyDeleted(video),
+        ).thenReturn(true);
+
+        await tester.pumpWidget(buildSubject(videoId: 'deleted_video_id'));
         await tester.pump();
 
         expect(find.text('Video not found'), findsOneWidget);

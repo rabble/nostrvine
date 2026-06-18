@@ -955,6 +955,41 @@ void main() {
         expect(item.videoEventId, equals('video_root'));
       });
 
+      test(
+        'comment on a video reply anchors to the referenced video, not root',
+        () async {
+          stubNotifications([
+            makeNotification(
+              id: 'c-reply-video',
+              sourcePubkey: 'pub_a',
+              sourceKind: 1111,
+              notificationType: 'comment',
+              sourceEventId: 'comment_event_id',
+              referencedEventId: 'reply_video_event',
+              rootEventId: 'thread_root_event',
+              targetCommentId: 'reply_video_event',
+              referencedDTag: 'reply-video-dtag',
+              content: 'comment on a video reply',
+            ),
+          ]);
+          stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.comment));
+          expect(item.videoEventId, equals('reply_video_event'));
+          expect(
+            item.videoAddressableId,
+            equals(
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              '$userPubkey:reply-video-dtag',
+            ),
+          );
+        },
+      );
+
       test('grouped video notifications leave addressable id null when neither '
           'VideoStats nor the payload carries a usable d-tag', () async {
         stubNotifications([
@@ -1397,6 +1432,7 @@ void main() {
             notificationType: 'reply',
             sourceKind: 1111,
             sourceEventId: 'reply_event_id',
+            isReferencedVideo: false,
             referencedEventId: 'parent_comment_id',
             rootEventId: 'someone_else_video_id',
             targetCommentId: 'parent_comment_id',
@@ -1417,6 +1453,7 @@ void main() {
             notificationType: 'comment',
             sourceKind: 1111,
             sourceEventId: 'reply_event_id',
+            isReferencedVideo: false,
             referencedEventId: 'parent_comment_id',
             rootEventId: 'someone_else_video_id',
             targetCommentId: 'parent_comment_id',

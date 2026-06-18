@@ -180,6 +180,81 @@ void main() {
       },
     );
 
+    test(
+      'does not route lowercase reply e-tags to parent comment ids',
+      () async {
+        when(
+          () => videoEventService.getVideoById('comment_reply_only'),
+        ).thenReturn(null);
+        when(() => nostrClient.fetchEventById('comment_reply_only')).thenAnswer(
+          (_) async => Event('e' * 64, 1111, const [
+            ['e', 'parent_comment_1', '', 'reply'],
+          ], 'nested reply'),
+        );
+
+        final resolved = await resolver
+            .resolveVideoEventIdFromNotificationTarget('comment_reply_only');
+
+        expect(resolved, isNull);
+        verifyNever(() => videoEventService.getVideoById('parent_comment_1'));
+        verifyNever(() => nostrClient.fetchEventById('parent_comment_1'));
+      },
+    );
+
+    test(
+      'rejects unmarked legacy e-tag candidates that resolve to comments',
+      () async {
+        when(
+          () => videoEventService.getVideoById('comment_with_parent_only'),
+        ).thenReturn(null);
+        when(
+          () => nostrClient.fetchEventById('comment_with_parent_only'),
+        ).thenAnswer(
+          (_) async => Event('e' * 64, 1111, const [
+            ['e', 'parent_comment_1'],
+          ], 'legacy nested reply'),
+        );
+        when(
+          () => videoEventService.getVideoById('parent_comment_1'),
+        ).thenReturn(null);
+        when(() => nostrClient.fetchEventById('parent_comment_1')).thenAnswer(
+          (_) async => Event('f' * 64, 1111, const [], 'parent comment'),
+        );
+
+        final resolved = await resolver
+            .resolveVideoEventIdFromNotificationTarget(
+              'comment_with_parent_only',
+            );
+
+        expect(resolved, isNull);
+      },
+    );
+
+    test(
+      'keeps legacy unmarked e-tag fallback when candidate is a video',
+      () async {
+        when(
+          () => videoEventService.getVideoById('legacy_comment'),
+        ).thenReturn(null);
+        when(() => nostrClient.fetchEventById('legacy_comment')).thenAnswer(
+          (_) async => Event('e' * 64, 1111, const [
+            ['e', 'legacy_video_1'],
+          ], 'legacy top-level comment'),
+        );
+        when(
+          () => videoEventService.getVideoById('legacy_video_1'),
+        ).thenReturn(null);
+        when(() => nostrClient.fetchEventById('legacy_video_1')).thenAnswer(
+          (_) async => Event('f' * 64, 22, const [], 'legacy video'),
+        );
+
+        final resolved = await resolver
+            .resolveVideoEventIdFromNotificationTarget('legacy_comment');
+
+        expect(resolved, equals('legacy_video_1'));
+      },
+    );
+
     test('returns null when no resolvable video tags exist', () async {
       when(() => videoEventService.getVideoById('comment_2')).thenReturn(null);
       when(() => nostrClient.fetchEventById('comment_2')).thenAnswer(

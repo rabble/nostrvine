@@ -44,9 +44,12 @@ class NotificationTargetResolver {
       }
     }
 
-    // Fallback: lowercase e tags (NIP-10 style / older events)
-    String? replyId;
-    String? firstEtagId;
+    // Fallback: lowercase e tags (NIP-10 style / older events).
+    //
+    // Reply markers point at the immediate parent, which can be another
+    // comment. Never route to those blindly; only unmarked legacy candidates
+    // are probed below.
+    final legacyCandidates = <String>[];
 
     for (final tag in event.tags) {
       if (tag.length < 2 || tag[0] != 'e') continue;
@@ -54,18 +57,22 @@ class NotificationTargetResolver {
       final candidateId = tag[1];
       if (candidateId.isEmpty) continue;
 
-      firstEtagId ??= candidateId;
-
       final marker = tag.length > 3 ? tag[3] : '';
       if (marker == 'root') {
         return candidateId;
       }
-      if (marker == 'reply') {
-        replyId ??= candidateId;
+      if (marker.isEmpty) {
+        legacyCandidates.add(candidateId);
       }
     }
 
-    return replyId ?? firstEtagId;
+    for (final candidateId in legacyCandidates) {
+      if (await _isResolvableVideoEvent(candidateId)) {
+        return candidateId;
+      }
+    }
+
+    return null;
   }
 
   bool _isVideoAddressableId(String value) {
@@ -74,5 +81,13 @@ class NotificationTargetResolver {
 
     final kind = int.tryParse(parts.first);
     return kind != null && NIP71VideoKinds.isAcceptableVideoKind(kind);
+  }
+
+  Future<bool> _isResolvableVideoEvent(String eventId) async {
+    final cachedVideo = _videoEventService.getVideoById(eventId);
+    if (cachedVideo != null) return true;
+
+    final event = await _nostrService.fetchEventById(eventId);
+    return event != null && NIP71VideoKinds.isAcceptableVideoKind(event.kind);
   }
 }
