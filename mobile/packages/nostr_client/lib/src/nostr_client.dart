@@ -1271,6 +1271,7 @@ class NostrClient {
   Future<void> dispose() async {
     await closeAllSubscriptions();
     await _relayManager.dispose();
+    await _queryPool.close();
     _nostr.close();
     _subscriptionFilters.clear();
     _isDisposed = true;

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart' hide Filter;
@@ -130,6 +131,81 @@ void main() {
     });
 
     group('queryEvents', () {
+      test('caps concurrent WebSocket queries and releases slots', () async {
+        final originalMaxConcurrentQueries = NostrClient.maxConcurrentQueries;
+        NostrClient.maxConcurrentQueries = 2;
+        addTearDown(
+          () => NostrClient.maxConcurrentQueries = originalMaxConcurrentQueries,
+        );
+
+        var activeQueries = 0;
+        var maxActiveQueries = 0;
+        final pendingQueries = Queue<Completer<List<Event>>>();
+
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) {
+          activeQueries++;
+          if (activeQueries > maxActiveQueries) {
+            maxActiveQueries = activeQueries;
+          }
+          final completer = Completer<List<Event>>();
+          pendingQueries.add(completer);
+          return completer.future.whenComplete(() => activeQueries--);
+        });
+
+        final results = [
+          for (var i = 0; i < 4; i++)
+            client
+                .queryEvents(
+                  [
+                    Filter(kinds: const [1059]),
+                  ],
+                  useCache: false,
+                )
+                .then<Object>((events) => events.map((e) => e.id).toList())
+                .catchError((Object _) => 'error'),
+        ];
+
+        await pumpEventQueue();
+
+        expect(pendingQueries, hasLength(2));
+        expect(activeQueries, 2);
+
+        pendingQueries.removeFirst().complete([_createTestEvent(id: 'one')]);
+        await pumpEventQueue();
+
+        expect(pendingQueries, hasLength(2));
+        expect(activeQueries, 2);
+
+        pendingQueries.removeFirst().completeError(StateError('boom'));
+        await pumpEventQueue();
+
+        expect(pendingQueries, hasLength(2));
+        expect(activeQueries, 2);
+
+        pendingQueries.removeFirst().complete([_createTestEvent(id: 'three')]);
+        pendingQueries.removeFirst().complete([_createTestEvent(id: 'four')]);
+
+        await expectLater(
+          Future.wait(results),
+          completion([
+            ['one'],
+            'error',
+            ['three'],
+            ['four'],
+          ]),
+        );
+        expect(maxActiveQueries, 2);
+      });
+
       test(
         'reconnects before querying when no relays are connected (#5202)',
         () async {
