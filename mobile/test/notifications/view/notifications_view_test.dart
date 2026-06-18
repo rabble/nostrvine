@@ -355,10 +355,9 @@ void main() {
         expect(find.byType(NotificationEmptyState), findsOneWidget);
       });
 
-      testWidgets('keeps the empty state (no full-screen spinner) while a '
-          'manual refresh is in flight on an already-loaded empty inbox', (
-        tester,
-      ) async {
+      testWidgets('keeps the empty state and shows the thin revalidation bar '
+          '(no full-screen spinner) while a manual refresh is in flight on an '
+          'already-loaded empty inbox', (tester) async {
         when(() => mockBloc.state).thenReturn(
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
@@ -369,7 +368,22 @@ void main() {
         await _pumpView(tester, mockBloc);
 
         expect(find.byType(NotificationEmptyState), findsOneWidget);
+        // Non-blocking in-flight affordance over the empty state, never a
+        // full-screen spinner.
         expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      });
+
+      testWidgets('hides the revalidation bar on a settled empty inbox '
+          '(loaded, not refreshing)', (tester) async {
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(status: NotificationFeedStatus.loaded),
+        );
+
+        await _pumpView(tester, mockBloc);
+
+        expect(find.byType(NotificationEmptyState), findsOneWidget);
+        expect(find.byType(LinearProgressIndicator), findsNothing);
       });
     });
 

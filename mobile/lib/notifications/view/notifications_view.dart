@@ -158,27 +158,41 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
           // Empty + cold start → full-screen spinner. This is the only
           // remaining full-screen spinner, gated on the `initial` status
           // alone: once the feed has loaded, an empty inbox keeps its empty
-          // state during a manual refresh instead of blinking back to a
-          // spinner — the refresh affordance lives in the RefreshIndicator,
-          // not a full-screen takeover. Cold start keeps `status == initial`
-          // until the first refresh resolves, so this still covers the
-          // empty-cache launch.
+          // state during a manual refresh (with the thin revalidation bar as
+          // the non-blocking in-flight affordance) instead of blinking back
+          // to a spinner. Cold start keeps `status == initial` until the
+          // first refresh resolves, so this still covers the empty-cache
+          // launch.
           if (state.status == NotificationFeedStatus.initial) {
             return const Center(
               child: CircularProgressIndicator(color: VineTheme.vineGreen),
             );
           }
 
-          // Empty + loaded → empty state with pull-to-refresh.
-          return RefreshIndicator(
-            color: VineTheme.onPrimary,
-            backgroundColor: VineTheme.vineGreen,
-            onRefresh: () async {
-              context.read<NotificationFeedBloc>().add(
-                const NotificationFeedRefreshed(),
-              );
-            },
-            child: const _ScrollableEmptyState(),
+          // Empty + loaded → empty state with pull-to-refresh. The
+          // revalidation bar overlays the top while a refresh is in flight so
+          // a slow or hanging refresh keeps a visible non-blocking affordance:
+          // the empty state has no RefreshIndicator spinner of its own once
+          // `onRefresh` returns.
+          return Stack(
+            children: [
+              RefreshIndicator(
+                color: VineTheme.onPrimary,
+                backgroundColor: VineTheme.vineGreen,
+                onRefresh: () async {
+                  context.read<NotificationFeedBloc>().add(
+                    const NotificationFeedRefreshed(),
+                  );
+                },
+                child: const _ScrollableEmptyState(),
+              ),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: _RevalidationBar(visible: state.isRefreshing),
+              ),
+            ],
           );
         },
       ),
