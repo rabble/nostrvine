@@ -607,6 +607,8 @@ class _LibraryToolbar extends StatelessWidget {
               child: Text(
                 context.l10n.profileMyLibraryLabel,
                 style: VineTheme.titleMediumFont(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
