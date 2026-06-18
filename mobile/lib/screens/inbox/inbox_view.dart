@@ -194,10 +194,12 @@ const double _kTabSlideFraction = 0.06;
 /// Inset of the compose FAB from the bottom-right of the Messages pane.
 const double _kFabInset = 16;
 
-/// Bottom padding reserved on the conversation list so the FAB (56pt tall,
-/// inset [_kFabInset] from the bottom) never covers the last conversation
-/// tile when scrolled to the end. Equals the FAB's footprint plus a margin.
-const double _kConversationListBottomInset = _kFabInset + 56 + _kFabInset;
+/// Bottom padding reserved on the conversation list so the compose FAB
+/// ([InboxFab], inset [_kFabInset] from the bottom) never covers the last
+/// conversation tile when scrolled to the end. Equals the FAB's footprint
+/// plus a margin, so it tracks [InboxFab.size] automatically.
+const double _kConversationListBottomInset =
+    _kFabInset + InboxFab.size + _kFabInset;
 
 /// Material shared-axis transition between the two inbox tabs: a short
 /// horizontal slide combined with an overlapping cross-fade.

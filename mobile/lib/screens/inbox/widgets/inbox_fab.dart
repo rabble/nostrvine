@@ -13,13 +13,18 @@ class InboxFab extends StatelessWidget {
 
   final VoidCallback onPressed;
 
+  /// Diameter of the circular FAB. Single source of truth — layouts that
+  /// reserve space for the FAB (e.g. the conversation list bottom inset)
+  /// derive from this rather than re-hardcoding the value.
+  static const double size = 56;
+
   static const double _borderRadius = 24;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 56,
-      height: 56,
+      width: size,
+      height: size,
       child: GestureDetector(
         onTap: onPressed,
         child: DecoratedBox(
