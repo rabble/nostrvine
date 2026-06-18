@@ -354,6 +354,23 @@ void main() {
 
         expect(find.byType(NotificationEmptyState), findsOneWidget);
       });
+
+      testWidgets('keeps the empty state (no full-screen spinner) while a '
+          'manual refresh is in flight on an already-loaded empty inbox', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            isRefreshing: true,
+          ),
+        );
+
+        await _pumpView(tester, mockBloc);
+
+        expect(find.byType(NotificationEmptyState), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+      });
     });
 
     group('loaded with notifications', () {

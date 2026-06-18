@@ -155,11 +155,15 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
             );
           }
 
-          // Empty + still loading → full-screen spinner. This is the only
-          // remaining full-screen spinner: it fires solely on a cold start
-          // with nothing cached to show.
-          if (state.status == NotificationFeedStatus.initial ||
-              state.isRefreshing) {
+          // Empty + cold start → full-screen spinner. This is the only
+          // remaining full-screen spinner, gated on the `initial` status
+          // alone: once the feed has loaded, an empty inbox keeps its empty
+          // state during a manual refresh instead of blinking back to a
+          // spinner — the refresh affordance lives in the RefreshIndicator,
+          // not a full-screen takeover. Cold start keeps `status == initial`
+          // until the first refresh resolves, so this still covers the
+          // empty-cache launch.
+          if (state.status == NotificationFeedStatus.initial) {
             return const Center(
               child: CircularProgressIndicator(color: VineTheme.vineGreen),
             );
