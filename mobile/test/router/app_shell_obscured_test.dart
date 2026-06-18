@@ -1,4 +1,4 @@
-// ABOUTME: Verifies AppShell drives homeShellObscuredProvider via RouteAware.
+// ABOUTME: Verifies AppShell drives shellObscuredProvider via RouteAware.
 // ABOUTME: A route directly above the shell flips it; nested routes do not.
 
 import 'dart:async';
@@ -17,8 +17,8 @@ import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
-import 'package:openvine/providers/home_shell_obscured_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -98,7 +98,7 @@ void main() {
   });
 
   testWidgets(
-    'homeShellObscuredProvider only flips for the route directly above the '
+    'shellObscuredProvider only flips for the route directly above the '
     'shell',
     (tester) async {
       await tester.pumpWidget(
@@ -115,7 +115,7 @@ void main() {
       final navigator = Navigator.of(tester.element(find.byType(AppShell)));
 
       // Nothing pushed yet.
-      expect(container.read(homeShellObscuredProvider), isFalse);
+      expect(container.read(shellObscuredProvider), isFalse);
 
       // Push a profile over the shell → obscured.
       unawaited(
@@ -124,7 +124,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(container.read(homeShellObscuredProvider), isTrue);
+      expect(container.read(shellObscuredProvider), isTrue);
 
       // Push a fullscreen video over the profile → still obscured (the shell's
       // RouteAware does not fire for a push above the profile).
@@ -134,17 +134,17 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(container.read(homeShellObscuredProvider), isTrue);
+      expect(container.read(shellObscuredProvider), isTrue);
 
       // Close the video → back to the profile. The shell is still covered.
       navigator.pop();
       await tester.pumpAndSettle();
-      expect(container.read(homeShellObscuredProvider), isTrue);
+      expect(container.read(shellObscuredProvider), isTrue);
 
       // Close the profile → shell revealed.
       navigator.pop();
       await tester.pumpAndSettle();
-      expect(container.read(homeShellObscuredProvider), isFalse);
+      expect(container.read(shellObscuredProvider), isFalse);
     },
   );
 }

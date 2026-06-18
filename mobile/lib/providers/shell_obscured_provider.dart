@@ -17,12 +17,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// GoRouter's `routeInformationProvider` collapses to the shell location
 /// (`/home`) while popping between pushed routes, so the feed cannot rely on
 /// route reporting alone to tell whether it is actually visible.
-final homeShellObscuredProvider =
-    NotifierProvider<HomeShellObscuredNotifier, bool>(
-      HomeShellObscuredNotifier.new,
-    );
+final shellObscuredProvider = NotifierProvider<ShellObscuredNotifier, bool>(
+  ShellObscuredNotifier.new,
+);
 
-class HomeShellObscuredNotifier extends Notifier<bool> {
+class ShellObscuredNotifier extends Notifier<bool> {
   @override
   bool build() => false;
 

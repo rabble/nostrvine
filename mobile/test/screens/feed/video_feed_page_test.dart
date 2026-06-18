@@ -17,7 +17,7 @@ import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/providers/home_shell_obscured_provider.dart';
+import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
@@ -600,9 +600,9 @@ void main() {
           );
 
       void setObscured(WidgetTester tester, {required bool obscured}) {
-        containerOf(tester)
-            .read(homeShellObscuredProvider.notifier)
-            .setObscured(obscured: obscured);
+        containerOf(
+          tester,
+        ).read(shellObscuredProvider.notifier).setObscured(obscured: obscured);
       }
 
       testWidgets(

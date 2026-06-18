@@ -15,8 +15,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/for_you_provider.dart';
-import 'package:openvine/providers/home_shell_obscured_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
@@ -69,9 +69,7 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
     // never lands during this shell's own build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref
-          .read(homeShellObscuredProvider.notifier)
-          .setObscured(obscured: obscured);
+      ref.read(shellObscuredProvider.notifier).setObscured(obscured: obscured);
     });
   }
 

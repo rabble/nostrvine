@@ -9,9 +9,9 @@ import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/home_shell_obscured_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
@@ -140,6 +140,10 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     _currentIndex = widget.initialIndex < 0 ? 0 : widget.initialIndex;
     _pagePosition = ValueNotifier<double>(_currentIndex.toDouble());
     WidgetsBinding.instance.addObserver(this);
+    // Seed playback from the current signals once mounted, in case this view is
+    // first built on a non-home route (e.g. a deep link) where no later change
+    // fires the [build] listeners. Deferred so the providers can resolve.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncFeedActive());
   }
 
   int _clampIndexForItemCount(int index, int itemCount) {
@@ -189,7 +193,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     if (routeType == null) return;
 
     final isHomeRoute = routeType == RouteType.home;
-    final isObscured = ref.read(homeShellObscuredProvider);
+    final isObscured = ref.read(shellObscuredProvider);
     final hasOverlay = ref.read(overlayVisibilityProvider).hasVisibleOverlay;
 
     final shouldBeActive = isHomeRoute && !isObscured && !hasOverlay;
@@ -209,13 +213,13 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     // GoRouter's routeInformationProvider collapses to the shell location
     // ("/home") while popping between pushed routes (e.g. profile → fullscreen
     // video → pop back to profile), so the route type alone cannot tell whether
-    // the feed is actually visible. [homeShellObscuredProvider] — driven by
+    // the feed is actually visible. [shellObscuredProvider] — driven by
     // AppShell's RouteAware subscription to the root navigator — supplies that
     // missing signal: it stays true until the route directly above the shell is
     // popped, so closing the video while the profile is still open keeps the
     // feed paused, while a genuine return to home resumes it.
     ref.listen(pageContextProvider, (_, _) => _syncFeedActive());
-    ref.listen(homeShellObscuredProvider, (_, _) => _syncFeedActive());
+    ref.listen(shellObscuredProvider, (_, _) => _syncFeedActive());
     ref.listen(overlayVisibilityProvider, (_, _) => _syncFeedActive());
 
     // Refresh feed when blocklist changes (block from profile, DM, or relay).
