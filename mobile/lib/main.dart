@@ -100,6 +100,7 @@ import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/startup/database_bootstrap_failure_app.dart';
 import 'package:openvine/startup/startup_splash_release_controller.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -1301,25 +1302,31 @@ Future<void> _startOpenVineApp() async {
   // This also forces package:sqlite3 onto the SQLCipher build (Android) and
   // runs the one-time plaintext→encrypted migration, both of which must happen
   // before any sqlite3 open. (#570, finding C2)
-  final dbCipherKey = await resolveStartupDatabaseCipherKey(
-    // resetOnError MUST stay false here: the cipher key is the one secret
-    // whose loss makes the encrypted DB unrecoverable. A transient keystore
-    // read error must throw rather than silently deleting the key and
-    // triggering the §6 key-loss recovery. (#570 C2)
-    resolveCipherKey: () => DatabaseEncryptionBootstrap(
-      secureStorage: const FlutterSecureStorage(
-        aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  final dbCipherKeyResult = await resolveDatabaseBootstrapForAppStart(
+    resolveCipherKey: () => resolveStartupDatabaseCipherKey(
+      // resetOnError MUST stay false here: the cipher key is the one secret
+      // whose loss makes the encrypted DB unrecoverable. A transient keystore
+      // read error must throw rather than silently deleting the key and
+      // triggering the §6 key-loss recovery. (#570 C2)
+      resolveCipherKey: () => DatabaseEncryptionBootstrap(
+        secureStorage: const FlutterSecureStorage(
+          aOptions: AndroidOptions(encryptedSharedPreferences: true),
+        ),
+      ).resolveCipherKey(),
+      // SQLCipher build misconfiguration or secure-storage failures must fail
+      // closed after reporting. Continuing with a null key would open an
+      // existing encrypted DB as plaintext and spam SQLITE_NOTADB.
+      recordError: (error, stack) => CrashReportingService.instance.recordError(
+        error,
+        stack,
+        reason: 'DatabaseEncryptionBootstrap.resolveCipherKey failed',
       ),
-    ).resolveCipherKey(),
-    // SQLCipher build misconfiguration or secure-storage failures must fail
-    // closed after reporting. Continuing with a null key would open an
-    // existing encrypted DB as plaintext and spam SQLITE_NOTADB.
-    recordError: (error, stack) => CrashReportingService.instance.recordError(
-      error,
-      stack,
-      reason: 'DatabaseEncryptionBootstrap.resolveCipherKey failed',
     ),
+    runApp: runApp,
+    removeNativeSplash: FlutterNativeSplash.remove,
   );
+  if (dbCipherKeyResult.didRenderFailureApp) return;
+  final dbCipherKey = dbCipherKeyResult.cipherKey;
 
   // Create ProviderContainer to initialize services BEFORE runApp
   final container = ProviderContainer(

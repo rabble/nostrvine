@@ -131,7 +131,12 @@ Future<String?> resolveStartupDatabaseCipherKey({
   try {
     return await resolveCipherKey();
   } catch (error, stack) {
-    await recordError(error, stack);
+    try {
+      await recordError(error, stack);
+    } catch (_) {
+      // Startup still needs to fail with the bootstrap root cause even if
+      // telemetry is unavailable during early app initialization.
+    }
     Error.throwWithStackTrace(error, stack);
   }
 }

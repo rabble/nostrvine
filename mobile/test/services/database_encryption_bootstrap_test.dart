@@ -165,5 +165,17 @@ void main() {
       expect(recordedError, same(error));
       expect(recordedStack, isNotNull);
     });
+
+    test('rethrows bootstrap root cause when recording fails', () async {
+      final bootstrapError = StateError('secure storage unavailable');
+
+      await expectLater(
+        resolveStartupDatabaseCipherKey(
+          resolveCipherKey: () async => throw bootstrapError,
+          recordError: (_, _) async => throw StateError('crash reporter down'),
+        ),
+        throwsA(same(bootstrapError)),
+      );
+    });
   });
 }
