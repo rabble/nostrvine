@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
@@ -17,7 +18,6 @@ import 'package:openvine/services/broken_video_tracker.dart'
     show BrokenVideoTracker;
 import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
-import 'package:openvine/services/viewer_auth_result.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:video_player/video_player.dart';

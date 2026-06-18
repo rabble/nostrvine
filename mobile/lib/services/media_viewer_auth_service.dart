@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
+import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
-import 'package:openvine/services/viewer_auth_result.dart';
 
 /// Creates viewer auth headers for media GET requests.
 class MediaViewerAuthService {

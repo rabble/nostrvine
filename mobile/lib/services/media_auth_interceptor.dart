@@ -2,10 +2,10 @@
 // ABOUTME: Coordinates age verification and signed auth header creation for age-restricted content
 
 import 'package:flutter/material.dart';
+import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
-import 'package:openvine/services/viewer_auth_result.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Service for intercepting unauthorized media requests and handling authentication flow

@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
-import 'package:openvine/services/viewer_auth_result.dart';
 
 class MockMediaViewerAuthService extends Mock
     implements MediaViewerAuthService {}

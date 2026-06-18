@@ -2,7 +2,7 @@
 // ABOUTME: Confirms only the authorized variant exposes headers.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/viewer_auth_result.dart';
+import 'package:openvine/models/viewer_auth_result.dart';
 
 void main() {
   group(ViewerAuthResult, () {

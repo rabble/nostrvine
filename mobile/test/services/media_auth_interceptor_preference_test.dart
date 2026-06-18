@@ -4,11 +4,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
-import 'package:openvine/services/viewer_auth_result.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MockAgeVerificationService extends Mock

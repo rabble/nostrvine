@@ -13,9 +13,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
-import 'package:openvine/services/viewer_auth_result.dart';
 import 'package:openvine/widgets/video_feed_item/verifying_aware_video_error_overlay.dart';
 
 class _MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
