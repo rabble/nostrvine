@@ -501,6 +501,55 @@ void main() {
       );
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'duplicate placeholder emits do not block resolving a later target',
+        build: () => createBloc(
+          initialVideoId: 'target-video',
+          initialStableId: 'stable-target-video',
+        ),
+        act: (bloc) async {
+          final placeholder = createTestVideo('placeholder-video');
+          final target = createTestVideo(
+            'target-video',
+            rawTags: const {'d': 'stable-target-video'},
+          );
+
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          // Two identical placeholder emits before the target arrives. The
+          // second one previously latched initialTargetResolved via the
+          // preserve branch, which then blocked the real target from ever
+          // being resolved (regression behind #5306's profile feed cache).
+          videosController.add([placeholder]);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([placeholder]);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([createTestVideo('newer-video'), target]);
+        },
+        wait: const Duration(milliseconds: 250),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having(
+                (s) => s.currentVideo?.id,
+                'currentVideo',
+                'placeholder-video',
+              )
+              .having(
+                (s) => s.initialTargetResolved,
+                'initialTargetResolved',
+                false,
+              ),
+          isA<FullscreenFeedState>()
+              .having((s) => s.currentIndex, 'currentIndex', 1)
+              .having((s) => s.currentVideo?.id, 'currentVideo', 'target-video')
+              .having(
+                (s) => s.initialTargetResolved,
+                'initialTargetResolved',
+                true,
+              ),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'cancels previous subscription when started again',
         build: createBloc,
         act: (bloc) async {

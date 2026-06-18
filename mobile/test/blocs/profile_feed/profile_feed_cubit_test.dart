@@ -316,6 +316,66 @@ void main() {
         expect(persisted.nextOffset, 2);
         expect(persisted.hasMoreContent, isFalse);
       });
+
+      test(
+        'revalidation failure keeps the restored window (offline reopen)',
+        () async {
+          await seedSnapshot(
+            ProfileVideoOffsetSnapshot(
+              videos: [
+                _video('v1', createdAt: 5000),
+                _video('v2', createdAt: 4000),
+              ],
+              nextOffset: 120,
+              totalVideoCount: 200,
+              hasMoreContent: true,
+            ),
+          );
+          // Head revalidation fails (e.g. offline); the restored window must
+          // survive and the cursor must not be reset.
+          h.stubAuthorFeedThrows(Exception('offline'));
+
+          final cubit = h.build();
+          addTearDown(cubit.close);
+          await pumpEventQueue();
+
+          expect(cubit.state.status, ProfileFeedStatus.ready);
+          expect(cubit.state.videos.map((v) => v.id), ['v1', 'v2']);
+          expect(cubit.state.nextOffset, 120);
+          expect(cubit.state.hasMoreContent, isTrue);
+          expect(cubit.state.isRefreshing, isFalse);
+        },
+      );
+
+      test('Nostr-fallback loadMore persists the grown window', () async {
+        // No snapshot seeded -> cold load into Nostr-fallback mode (a null
+        // REST offset), then a relay-backed load-more.
+        h.stubAuthorFeed(
+          _result(
+            [_video('a', createdAt: 3000)],
+            totalCount: 50,
+            hasMore: true,
+          ),
+        );
+        final cubit = h.build();
+        addTearDown(cubit.close);
+        await pumpEventQueue(times: 3);
+        expect(cubit.state.nextOffset, isNull);
+
+        when(() => h.ves.authorVideos(_author)).thenReturn([
+          _video('a', createdAt: 3000),
+          _video('b', createdAt: 2000),
+        ]);
+        cubit.add(const ProfileFeedLoadMoreRequested());
+        await pumpEventQueue(times: 3);
+
+        expect(cubit.state.videos.map((v) => v.id), containsAll(['a', 'b']));
+
+        final persisted = await readSnapshot();
+        expect(persisted, isNotNull);
+        expect(persisted!.videos.map((v) => v.id), containsAll(['a', 'b']));
+        expect(persisted.nextOffset, isNull);
+      });
     });
 
     test('cold load: REST success -> ready with envelope', () async {

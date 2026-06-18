@@ -253,12 +253,21 @@ class FullscreenFeedBloc
       }
     }
 
+    // Preserve the currently-shown video's position across a reorder/prepend.
+    // Crucially, do NOT latch [initialTargetResolved] here: when an initial
+    // target is still pending (specified but not yet present), preserving a
+    // placeholder/seed video must not mark resolution as done — otherwise a
+    // later emit that finally contains the target can never jump to it. Only
+    // an actual target match (above) or "no target specified" resolves.
     final currentVideo = state.currentVideo;
     final preservedIndex = currentVideo == null
         ? -1
         : indexOfMatchingVideo(videos, currentVideo);
     if (preservedIndex >= 0) {
-      return (index: preservedIndex, initialTargetResolved: true);
+      return (
+        index: preservedIndex,
+        initialTargetResolved: state.initialTargetResolved,
+      );
     }
 
     return (

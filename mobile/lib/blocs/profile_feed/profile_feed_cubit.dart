@@ -7,16 +7,17 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
-import 'package:cache_sync/cache_sync.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
-import 'package:models/models.dart' hide LogCategory;
+import 'package:models/models.dart';
+import 'package:openvine/blocs/profile_feed/profile_feed_enrichment_merge.dart';
+import 'package:openvine/blocs/profile_feed/profile_video_metadata_cache.dart';
+import 'package:openvine/blocs/profile_feed/profile_video_snapshot_cache.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_offset_snapshot.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:stream_transform/stream_transform.dart';
-import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 part 'profile_feed_event.dart';
@@ -114,14 +115,9 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
   final ContentBlocklistRepository _blocklistRepository;
   final EnrichVideos _enrichVideos;
 
-  /// CacheSync key for this author's persisted Videos-tab window.
-  ///
-  /// Scoped to the author (the persisted videos are the unfiltered public
-  /// feed — blocklist/content filters are re-applied on every emit, so the
-  /// payload is viewer-independent). Follows the `${pubkey}:${operation}`
-  /// convention so sign-out's `invalidatePrefix(currentPubkey)` clears the
-  /// signed-out user's own-profile entry.
-  String get _cacheKey => '$_authorPubkey:profile_videos';
+  /// Best-effort stale-while-revalidate persistence for the Videos tab.
+  late final ProfileVideoSnapshotCache _snapshotCache =
+      ProfileVideoSnapshotCache(_authorPubkey);
 
   /// Accumulated **unfiltered** source list (REST + relay). Not UI state — it's
   /// the source [ProfileFeedFiltersChanged] re-filters in place without a
@@ -130,7 +126,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
 
   /// Backfill cache for engagement counts, used on the Nostr-fallback loadMore
   /// branch where there is no REST hydration.
-  final Map<String, _VideoMetadataCache> _metadataCache = {};
+  final ProfileVideoMetadataCache _metadataCache = ProfileVideoMetadataCache();
 
   /// True while a cold-load fetch is in flight (timer-coupled lifecycle
   /// bookkeeping; the observable result is [ProfileFeedState.isInitialLoad]).
@@ -182,7 +178,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
     // Stale-while-revalidate: a persisted snapshot restores the full
     // scrolled-through window + REST cursor instantly, so reopening a profile
     // does not re-paginate from the relay (#5279 extended to the Videos tab).
-    final cached = await _readCachedSnapshot();
+    final cached = await _snapshotCache.read();
     if (isClosed) return;
     if (cached != null && cached.videos.isNotEmpty) {
       await _restoreFromCache(emit, cached: cached, relaySeed: relaySeed);
@@ -239,7 +235,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
       mergeProfileFeedVideoLists(relaySeed, cached.videos),
     );
     _unfilteredVideos = merged;
-    _cacheVideoMetadata(merged);
+    _metadataCache.cache(merged);
     unawaited(_subscribe());
 
     emit(
@@ -265,6 +261,11 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
   /// pagination cursor so the scrolled-through tail is not dropped and the user
   /// does not re-paginate from the start. Stale cursors self-heal on the next
   /// load-more (an over-shot offset returns empty → `hasMoreContent` flips off).
+  ///
+  /// A `null` restored cursor (Nostr-fallback) is preserved too: even if this
+  /// REST refresh succeeds, pagination stays on the relay `until` path until a
+  /// full refresh re-resolves the offset. That keeps the restored tail intact
+  /// at the cost of one stale-mode pagination, and self-heals on pull-to-refresh.
   Future<void> _revalidateHead(
     Emitter<ProfileFeedState> emit, {
     required List<VideoEvent> relaySeed,
@@ -280,7 +281,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
         mergeProfileFeedVideoLists(_unfilteredVideos, result.videos),
       );
       _unfilteredVideos = merged;
-      _cacheVideoMetadata(merged);
+      _metadataCache.cache(merged);
       emit(
         state.copyWith(
           videos: _applyFeedFilters(merged),
@@ -495,7 +496,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
         final after = _videoEventService.authorVideos(_authorPubkey).length;
 
         _unfilteredVideos = _withoutTombstones(
-          _applyMetadataCache(
+          _metadataCache.apply(
             _videoEventService
                 .authorVideos(_authorPubkey)
                 .where((v) => !v.isRepost)
@@ -542,7 +543,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
         ? mergeProfileFeedVideoLists(_unfilteredVideos, pageVideos)
         : pageVideos;
     _unfilteredVideos = _withoutTombstones(merged);
-    _cacheVideoMetadata(_unfilteredVideos);
+    _metadataCache.cache(_unfilteredVideos);
     final filtered = _applyFeedFilters(_unfilteredVideos);
 
     emit(
@@ -594,10 +595,11 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
     ProfileFeedEnrichmentReady event,
     Emitter<ProfileFeedState> emit,
   ) {
-    _unfilteredVideos = _mergeVideosReplacingCurrentKeys(
+    _unfilteredVideos = mergeProfileFeedEnrichment(
       current: _unfilteredVideos,
       sourceKeys: event.sourceKeys,
       incoming: event.enriched,
+      removeTombstones: _withoutTombstones,
     );
     emit(
       state.copyWith(
@@ -691,7 +693,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
         .authorVideos(_authorPubkey)
         .where((v) => !v.isRepost)
         .toList();
-    videos = _applyMetadataCache(videos);
+    videos = _metadataCache.apply(videos);
     return _withoutTombstones(_videoEventService.filterVideoList(videos));
   }
 
@@ -714,146 +716,6 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
         .toList();
   }
 
-  void _cacheVideoMetadata(List<VideoEvent> videos) {
-    for (final video in videos) {
-      if (video.originalLoops != null ||
-          video.rawTags['views'] != null ||
-          video.originalLikes != null ||
-          video.originalComments != null ||
-          video.originalReposts != null ||
-          video.nostrLikeCount != null) {
-        _metadataCache[video.id.toLowerCase()] = _VideoMetadataCache(
-          originalLoops: video.originalLoops,
-          views: video.rawTags['views'],
-          originalLikes: video.originalLikes,
-          originalComments: video.originalComments,
-          originalReposts: video.originalReposts,
-          nostrLikeCount: video.nostrLikeCount,
-        );
-      }
-    }
-  }
-
-  List<VideoEvent> _applyMetadataCache(List<VideoEvent> videos) {
-    return videos.map((video) {
-      final cached = _metadataCache[video.id.toLowerCase()];
-      if (cached == null) return video;
-      final currentViews = video.rawTags['views'];
-      final shouldApply =
-          (video.originalLoops == null && cached.originalLoops != null) ||
-          (currentViews == null && cached.views != null) ||
-          (video.originalLikes == null && cached.originalLikes != null) ||
-          (video.originalComments == null && cached.originalComments != null) ||
-          (video.originalReposts == null && cached.originalReposts != null) ||
-          (video.nostrLikeCount == null && cached.nostrLikeCount != null);
-      if (!shouldApply) return video;
-      return video.copyWith(
-        originalLoops: video.originalLoops ?? cached.originalLoops,
-        rawTags: currentViews == null && cached.views != null
-            ? {...video.rawTags, 'views': cached.views!}
-            : video.rawTags,
-        originalLikes: video.originalLikes ?? cached.originalLikes,
-        originalComments: video.originalComments ?? cached.originalComments,
-        originalReposts: video.originalReposts ?? cached.originalReposts,
-        nostrLikeCount: video.nostrLikeCount ?? cached.nostrLikeCount,
-      );
-    }).toList();
-  }
-
-  /// Merges enriched copies over [sourceKeys] against the current list, filling
-  /// missing fields without clobbering relay updates that arrived during the
-  /// enrichment window (#3705).
-  List<VideoEvent> _mergeVideosReplacingCurrentKeys({
-    required List<VideoEvent> current,
-    required Set<String> sourceKeys,
-    required List<VideoEvent> incoming,
-  }) {
-    if (sourceKeys.isEmpty) {
-      return _withoutTombstones(mergeProfileFeedVideoLists(current, incoming));
-    }
-    final currentByKey = {
-      for (final video in current)
-        if (sourceKeys.contains(canonicalProfileFeedVideoKey(video)))
-          canonicalProfileFeedVideoKey(video): video,
-    };
-    final keepFromCurrent = current
-        .where((v) => !sourceKeys.contains(canonicalProfileFeedVideoKey(v)))
-        .toList();
-    final mergedSource = incoming.map((video) {
-      final currentVideo = currentByKey[canonicalProfileFeedVideoKey(video)];
-      return currentVideo == null
-          ? video
-          : _mergeEnrichmentIntoCurrent(currentVideo, video);
-    }).toList();
-    return _withoutTombstones(
-      mergeProfileFeedVideoLists(keepFromCurrent, mergedSource),
-    );
-  }
-
-  VideoEvent _mergeEnrichmentIntoCurrent(
-    VideoEvent current,
-    VideoEvent enriched,
-  ) {
-    return current.copyWith(
-      publishedAt:
-          (current.publishedAt != null && current.publishedAt!.isNotEmpty)
-          ? current.publishedAt
-          : enriched.publishedAt,
-      rawTags: mergeVideoRawTagsPrimaryWins(current.rawTags, enriched.rawTags),
-      contentWarningLabels: current.contentWarningLabels.isNotEmpty
-          ? current.contentWarningLabels
-          : enriched.contentWarningLabels,
-      title: current.title ?? enriched.title,
-      videoUrl: current.videoUrl ?? enriched.videoUrl,
-      thumbnailUrl: current.thumbnailUrl ?? enriched.thumbnailUrl,
-      duration: current.duration ?? enriched.duration,
-      dimensions: current.dimensions ?? enriched.dimensions,
-      mimeType: current.mimeType ?? enriched.mimeType,
-      sha256: current.sha256 ?? enriched.sha256,
-      fileSize: current.fileSize ?? enriched.fileSize,
-      hashtags: current.hashtags.isNotEmpty
-          ? current.hashtags
-          : enriched.hashtags,
-      vineId: current.vineId ?? enriched.vineId,
-      group: current.group ?? enriched.group,
-      altText: current.altText ?? enriched.altText,
-      blurhash: current.blurhash ?? enriched.blurhash,
-      originalLoops: mergeNullableEngagementMax(
-        current.originalLoops,
-        enriched.originalLoops,
-      ),
-      originalLikes: mergeNullableEngagementMax(
-        current.originalLikes,
-        enriched.originalLikes,
-      ),
-      originalComments: mergeNullableEngagementMax(
-        current.originalComments,
-        enriched.originalComments,
-      ),
-      originalReposts: mergeNullableEngagementMax(
-        current.originalReposts,
-        enriched.originalReposts,
-      ),
-      audioEventId: current.audioEventId ?? enriched.audioEventId,
-      audioEventRelay: current.audioEventRelay ?? enriched.audioEventRelay,
-      collaboratorPubkeys: current.collaboratorPubkeys.isNotEmpty
-          ? current.collaboratorPubkeys
-          : enriched.collaboratorPubkeys,
-      inspiredByVideo: current.inspiredByVideo ?? enriched.inspiredByVideo,
-      textTrackRef: current.textTrackRef ?? enriched.textTrackRef,
-      textTrackContent: current.textTrackContent ?? enriched.textTrackContent,
-      nostrEventTags: current.nostrEventTags.isNotEmpty
-          ? current.nostrEventTags
-          : enriched.nostrEventTags,
-      authorName: current.authorName ?? enriched.authorName,
-      authorAvatar: current.authorAvatar ?? enriched.authorAvatar,
-      nostrLikeCount: mergeNullableEngagementMax(
-        current.nostrLikeCount,
-        enriched.nostrLikeCount,
-      ),
-    );
-  }
-
   bool _sameVideoSequence(List<VideoEvent> left, List<VideoEvent> right) {
     if (left.length != right.length) return false;
     for (var i = 0; i < left.length; i++) {
@@ -870,53 +732,14 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
     return true;
   }
 
-  // ---------------------------------------------------------------------------
-  // CacheSync persistence (stale-while-revalidate)
-  // ---------------------------------------------------------------------------
-
-  /// Reads the persisted snapshot once; `null` on miss or failure (a cache
-  /// problem must never break an otherwise-fine cold load).
-  Future<ProfileVideoOffsetSnapshot?> _readCachedSnapshot() async {
-    try {
-      return await CacheSync.read<ProfileVideoOffsetSnapshot>(
-        key: _cacheKey,
-        fromJson: ProfileVideoOffsetSnapshot.fromJson,
-      );
-    } on Object catch (error) {
-      Log.warning(
-        'Failed to read cached profile-videos snapshot - $error',
-        name: 'ProfileFeedCubit',
-        category: LogCategory.video,
-      );
-      return null;
-    }
-  }
-
-  /// Persists the current source window + cursor so a reopen restores it.
-  /// Fire-and-forget: cache writes are best-effort and must never block or
-  /// fail an emit. Capping bounds the serialized payload (see
-  /// [ProfileSnapshotWindow]).
-  void _persistSnapshot() {
-    final snapshot = ProfileVideoOffsetSnapshot.capped(
-      videos: _unfilteredVideos,
-      nextOffset: state.nextOffset,
-      totalVideoCount: state.totalVideoCount,
-      hasMoreContent: state.hasMoreContent,
-    );
-    unawaited(
-      CacheSync.write<ProfileVideoOffsetSnapshot>(
-        key: _cacheKey,
-        value: snapshot,
-        toJson: (s) => s.toJson(),
-      ).catchError((Object error) {
-        Log.warning(
-          'Failed to persist profile-videos snapshot - $error',
-          name: 'ProfileFeedCubit',
-          category: LogCategory.video,
-        );
-      }),
-    );
-  }
+  /// Persists the current source window + cursor via [_snapshotCache] so a
+  /// reopen restores it (stale-while-revalidate).
+  void _persistSnapshot() => _snapshotCache.write(
+    videos: _unfilteredVideos,
+    nextOffset: state.nextOffset,
+    totalVideoCount: state.totalVideoCount,
+    hasMoreContent: state.hasMoreContent,
+  );
 
   @override
   Future<void> close() {
@@ -925,23 +748,4 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
     _initialLoadTimer?.cancel();
     return super.close();
   }
-}
-
-/// Cached engagement metadata used to backfill Nostr-only videos.
-class _VideoMetadataCache {
-  const _VideoMetadataCache({
-    this.originalLoops,
-    this.views,
-    this.originalLikes,
-    this.originalComments,
-    this.originalReposts,
-    this.nostrLikeCount,
-  });
-
-  final int? originalLoops;
-  final String? views;
-  final int? originalLikes;
-  final int? originalComments;
-  final int? originalReposts;
-  final int? nostrLikeCount;
 }
