@@ -1,11 +1,10 @@
 // ABOUTME: Unit tests for ExploreTabsCubit availability + tab ordering logic.
 
+import 'package:analytics/analytics.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
-import 'package:openvine/services/analytics_event_sink.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 
 class _MockTopHashtagsLoader extends Mock implements TopHashtagsLoader {}

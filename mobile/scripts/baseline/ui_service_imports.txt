@@ -15,7 +15,6 @@ lib/screens/comments/widgets/mention_overlay.dart
 lib/screens/content_filters_screen.dart
 lib/screens/curated_list_feed_screen.dart
 lib/screens/developer_options_screen.dart
-lib/screens/discover_lists_screen.dart
 lib/screens/feed/pooled_fullscreen_video_feed_screen.dart
 lib/screens/feed/video_feed_page.dart
 lib/screens/geo_blocked_screen.dart

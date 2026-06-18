@@ -1,9 +1,9 @@
 // ABOUTME: Cubit owning explore tab availability, ordering, and name<->index
 // ABOUTME: mapping, plus the screen's analytics + hashtag-loading side effects.
 
+import 'package:analytics/analytics.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 
 part 'explore_tabs_state.dart';
