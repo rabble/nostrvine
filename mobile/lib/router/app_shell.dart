@@ -73,6 +73,13 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
     });
   }
 
+  // Resets the flag whenever a fresh shell mounts. Without this, a stale
+  // `true` survives when the shell is removed while covered and later
+  // re-shown without a pop event reaching it (e.g. sign-out navigates to
+  // /welcome, then the user returns home) — the home feed would stay paused.
+  @override
+  void didPush() => _setShellObscured(obscured: false);
+
   @override
   void didPushNext() => _setShellObscured(obscured: true);
 

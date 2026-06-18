@@ -13,6 +13,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// profile is still open) does not flip it back to `false` — only popping the
 /// route directly above the shell does.
 ///
+/// `didPush` resets it to `false` whenever a fresh shell mounts, so a stale
+/// `true` left behind when the shell is removed while covered and re-shown
+/// without a pop event (e.g. sign-out → /welcome → back to home) cannot keep
+/// the feed paused.
+///
 /// The home feed reads this to know it is offstage behind a pushed screen.
 /// GoRouter's `routeInformationProvider` collapses to the shell location
 /// (`/home`) while popping between pushed routes, so the feed cannot rely on

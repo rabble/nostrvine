@@ -21,6 +21,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
@@ -34,10 +35,25 @@ class _MockNotificationBadgeCubit extends MockCubit<int>
 class _MockAppUpdateBloc extends MockBloc<AppUpdateEvent, AppUpdateState>
     implements AppUpdateBloc {}
 
-Widget _buildSubject({
+List<Override> _overrides({
   required _MockAuthService mockAuthService,
   required SharedPreferences sharedPreferences,
-}) {
+}) => [
+  pageContextProvider.overrideWith(
+    (ref) => Stream.value(const RouteContext(type: RouteType.home)),
+  ),
+  videoControllerAutoCleanupProvider.overrideWithValue(null),
+  relayStatisticsBridgeProvider.overrideWithValue(null),
+  relaySetChangeBridgeProvider.overrideWithValue(null),
+  zendeskIdentitySyncProvider.overrideWithValue(null),
+  pushNotificationSyncProvider.overrideWithValue(null),
+  blocklistSyncBridgeProvider.overrideWithValue(null),
+  authServiceProvider.overrideWithValue(mockAuthService),
+  sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+  currentEnvironmentProvider.overrideWithValue(EnvironmentConfig.production),
+];
+
+Widget _wrapWithBlocs(Widget child) {
   final dmCubit = _MockDmUnreadCountCubit();
   when(() => dmCubit.state).thenReturn(0);
 
@@ -53,34 +69,31 @@ Widget _buildSubject({
       BlocProvider<NotificationBadgeCubit>.value(value: notifBadgeCubit),
       BlocProvider<AppUpdateBloc>.value(value: appUpdateBloc),
     ],
-    child: ProviderScope(
-      overrides: [
-        pageContextProvider.overrideWith(
-          (ref) => Stream.value(const RouteContext(type: RouteType.home)),
-        ),
-        videoControllerAutoCleanupProvider.overrideWithValue(null),
-        relayStatisticsBridgeProvider.overrideWithValue(null),
-        relaySetChangeBridgeProvider.overrideWithValue(null),
-        zendeskIdentitySyncProvider.overrideWithValue(null),
-        pushNotificationSyncProvider.overrideWithValue(null),
-        blocklistSyncBridgeProvider.overrideWithValue(null),
-        authServiceProvider.overrideWithValue(mockAuthService),
-        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-        currentEnvironmentProvider.overrideWithValue(
-          EnvironmentConfig.production,
-        ),
-      ],
-      child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        // The shell subscribes to this observer to learn when a full-screen
-        // route covers it.
-        navigatorObservers: [routeObserver],
-        home: const AppShell(currentIndex: 0, child: SizedBox.shrink()),
-      ),
-    ),
+    child: child,
   );
 }
+
+// The shell subscribes to [routeObserver] to learn when a full-screen route
+// covers it, so the test app must register it on the navigator.
+Widget _appShellMaterialApp() => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  navigatorObservers: [routeObserver],
+  home: const AppShell(currentIndex: 0, child: SizedBox.shrink()),
+);
+
+Widget _buildSubject({
+  required _MockAuthService mockAuthService,
+  required SharedPreferences sharedPreferences,
+}) => _wrapWithBlocs(
+  ProviderScope(
+    overrides: _overrides(
+      mockAuthService: mockAuthService,
+      sharedPreferences: sharedPreferences,
+    ),
+    child: _appShellMaterialApp(),
+  ),
+);
 
 void main() {
   late _MockAuthService mockAuthService;
@@ -144,6 +157,41 @@ void main() {
       // Close the profile → shell revealed.
       navigator.pop();
       await tester.pumpAndSettle();
+      expect(container.read(shellObscuredProvider), isFalse);
+    },
+  );
+
+  testWidgets(
+    'a freshly mounted shell clears a stale obscured flag from a removed shell',
+    (tester) async {
+      final container = ProviderContainer(
+        overrides: _overrides(
+          mockAuthService: mockAuthService,
+          sharedPreferences: sharedPreferences,
+        ),
+      );
+      addTearDown(container.dispose);
+
+      // Residue of a shell torn down while a route still covered it: sign-out
+      // navigates away (e.g. to /welcome) without a pop event reaching the
+      // shell, so didPopNext never fires and the flag stays true.
+      container
+          .read(shellObscuredProvider.notifier)
+          .setObscured(obscured: true);
+      expect(container.read(shellObscuredProvider), isTrue);
+
+      await tester.pumpWidget(
+        _wrapWithBlocs(
+          UncontrolledProviderScope(
+            container: container,
+            child: _appShellMaterialApp(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // didPush fires once as the fresh shell subscribes, clearing the flag so
+      // the home feed can resume.
       expect(container.read(shellObscuredProvider), isFalse);
     },
   );
