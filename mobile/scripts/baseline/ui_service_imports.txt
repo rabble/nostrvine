@@ -15,12 +15,9 @@ lib/screens/comments/widgets/mention_overlay.dart
 lib/screens/content_filters_screen.dart
 lib/screens/curated_list_feed_screen.dart
 lib/screens/developer_options_screen.dart
-lib/screens/discover_lists_screen.dart
 lib/screens/explore_screen.dart
 lib/screens/feed/pooled_fullscreen_video_feed_screen.dart
 lib/screens/feed/video_feed_page.dart
-lib/screens/followers/my_followers_screen.dart
-lib/screens/following/my_following_screen.dart
 lib/screens/geo_blocked_screen.dart
 lib/screens/hashtag_feed_screen.dart
 lib/screens/inbox/conversation/conversation_view.dart
@@ -32,8 +29,6 @@ lib/screens/key_import_screen.dart
 lib/screens/library_screen.dart
 lib/screens/library_trash_screen.dart
 lib/screens/liked_videos_screen_router.dart
-lib/screens/other_profile_screen.dart
-lib/screens/profile_screen_router.dart
 lib/screens/relay_diagnostic_screen.dart
 lib/screens/relay_settings_screen.dart
 lib/screens/search_results/widgets/search_user_tile.dart
@@ -63,7 +58,6 @@ lib/widgets/for_you_tab.dart
 lib/widgets/gallery_permission_sheet.dart
 lib/widgets/geo_blocking_gate.dart
 lib/widgets/global_upload_indicator.dart
-lib/widgets/hashtag_search_view.dart
 lib/widgets/library/sounds_tab.dart
 lib/widgets/new_videos_tab.dart
 lib/widgets/popular_videos_tab.dart
@@ -92,6 +86,5 @@ lib/widgets/video_feed_item/pooled_video_error_overlay.dart
 lib/widgets/video_feed_item/subtitle_overlay.dart
 lib/widgets/video_metadata/modes/capture/video_metadata_capture_bottom_bar.dart
 lib/widgets/video_metadata/modes/edit/video_metadata_edit_bottom_bar.dart
-lib/widgets/video_metrics_overlay.dart
 lib/widgets/video_metrics_tracker.dart
 lib/widgets/watermark_download_progress_sheet.dart
