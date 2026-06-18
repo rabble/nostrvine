@@ -49,6 +49,11 @@ void main() {
       when(
         () => mockDmRepository.historyRecoveryStream,
       ).thenAnswer((_) => const Stream<bool>.empty());
+      // Recovery-aware request gate (#5304): recovery complete so the normal
+      // accepted/request split applies.
+      when(
+        () => mockDmRepository.isHistoryRecoveryComplete,
+      ).thenReturn(true);
       when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
       when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
       when(() => mockDmRepository.stopListening()).thenAnswer((_) async {});
