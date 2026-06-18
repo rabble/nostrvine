@@ -611,9 +611,14 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
                           borderRadius: BorderRadius.circular(20),
                         ),
                       ),
-                      child: Icon(
-                        isSubscribed ? Icons.check : Icons.add,
+                      child: DivineIcon(
+                        icon: isSubscribed
+                            ? DivineIconName.check
+                            : DivineIconName.plus,
                         size: 20,
+                        color: isSubscribed
+                            ? VineTheme.vineGreen
+                            : VineTheme.backgroundColor,
                       ),
                     ),
                   ),
