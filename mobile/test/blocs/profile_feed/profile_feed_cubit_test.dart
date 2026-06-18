@@ -187,11 +187,20 @@ void main() {
   group('ProfileFeedCubit', () {
     late _Harness h;
     late _InMemoryCacheDao cacheDao;
+    late Duration originalSnapshotPersistDebounce;
 
     setUp(() async {
+      originalSnapshotPersistDebounce =
+          ProfileFeedCubit.snapshotPersistDebounce;
+      ProfileFeedCubit.snapshotPersistDebounce = Duration.zero;
       h = _Harness();
       cacheDao = _InMemoryCacheDao();
       await CacheSync.init(dao: cacheDao);
+    });
+
+    tearDown(() {
+      ProfileFeedCubit.snapshotPersistDebounce =
+          originalSnapshotPersistDebounce;
     });
 
     Future<ProfileFeedCubit> buildReady(AuthorFeedResult result) async {
@@ -217,53 +226,50 @@ void main() {
         );
 
     group('CacheSync stale-while-revalidate', () {
-      test(
-        'reopen restores the persisted window + cursor instantly, then '
-        'revalidates the head without clobbering the cursor',
-        () async {
-          await seedSnapshot(
-            ProfileVideoOffsetSnapshot(
-              videos: [
-                _video('v1', createdAt: 5000),
-                _video('v2', createdAt: 4000),
-                _video('v3', createdAt: 3000),
-              ],
-              nextOffset: 150,
-              totalVideoCount: 300,
-              hasMoreContent: true,
-            ),
-          );
-          // Head revalidation returns the freshest first page (no new clips).
-          h.stubAuthorFeed(
-            _result(
-              [_video('v1', createdAt: 5000)],
-              totalCount: 300,
-              nextOffset: 50,
-              hasMore: true,
-            ),
-          );
+      test('reopen restores the persisted window + cursor instantly, then '
+          'revalidates the head without clobbering the cursor', () async {
+        await seedSnapshot(
+          ProfileVideoOffsetSnapshot(
+            videos: [
+              _video('v1', createdAt: 5000),
+              _video('v2', createdAt: 4000),
+              _video('v3', createdAt: 3000),
+            ],
+            nextOffset: 150,
+            totalVideoCount: 300,
+            hasMoreContent: true,
+          ),
+        );
+        // Head revalidation returns the freshest first page (no new clips).
+        h.stubAuthorFeed(
+          _result(
+            [_video('v1', createdAt: 5000)],
+            totalCount: 300,
+            nextOffset: 50,
+            hasMore: true,
+          ),
+        );
 
-          final cubit = h.build();
-          addTearDown(cubit.close);
-          await pumpEventQueue();
+        final cubit = h.build();
+        addTearDown(cubit.close);
+        await pumpEventQueue();
 
-          expect(cubit.state.status, ProfileFeedStatus.ready);
-          expect(cubit.state.videos.map((v) => v.id), ['v1', 'v2', 'v3']);
-          // Cursor comes from the snapshot, NOT the head refresh's offset (50).
-          expect(cubit.state.nextOffset, 150);
-          expect(cubit.state.hasMoreContent, isTrue);
-          expect(cubit.state.totalVideoCount, 300);
-          expect(cubit.state.isInitialLoad, isFalse);
-          expect(cubit.state.isRefreshing, isFalse);
-          verify(
-            () => h.repo.getAuthorFeed(
-              authorPubkey: _author,
-              relaySeed: any(named: 'relaySeed'),
-              skipCache: true,
-            ),
-          ).called(1);
-        },
-      );
+        expect(cubit.state.status, ProfileFeedStatus.ready);
+        expect(cubit.state.videos.map((v) => v.id), ['v1', 'v2', 'v3']);
+        // Cursor comes from the snapshot, NOT the head refresh's offset (50).
+        expect(cubit.state.nextOffset, 150);
+        expect(cubit.state.hasMoreContent, isTrue);
+        expect(cubit.state.totalVideoCount, 300);
+        expect(cubit.state.isInitialLoad, isFalse);
+        expect(cubit.state.isRefreshing, isFalse);
+        verify(
+          () => h.repo.getAuthorFeed(
+            authorPubkey: _author,
+            relaySeed: any(named: 'relaySeed'),
+            skipCache: true,
+          ),
+        ).called(1);
+      });
 
       test('cold load persists the resolved window', () async {
         h.stubAuthorFeed(
@@ -635,9 +641,7 @@ void main() {
       () async {
         final originalAudit = ProfileFeedCubit.relaySnapshotAudit;
         ProfileFeedCubit.relaySnapshotAudit = const Duration(milliseconds: 20);
-        addTearDown(
-          () => ProfileFeedCubit.relaySnapshotAudit = originalAudit,
-        );
+        addTearDown(() => ProfileFeedCubit.relaySnapshotAudit = originalAudit);
 
         // Cold load: first page, more available.
         final cubit = await buildReady(
@@ -782,9 +786,7 @@ void main() {
       () async {
         final originalAudit = ProfileFeedCubit.relaySnapshotAudit;
         ProfileFeedCubit.relaySnapshotAudit = const Duration(milliseconds: 20);
-        addTearDown(
-          () => ProfileFeedCubit.relaySnapshotAudit = originalAudit,
-        );
+        addTearDown(() => ProfileFeedCubit.relaySnapshotAudit = originalAudit);
 
         final cubit = await buildReady(_result([_video('a')]));
         addTearDown(cubit.close);
@@ -813,9 +815,7 @@ void main() {
       () async {
         final originalAudit = ProfileFeedCubit.relaySnapshotAudit;
         ProfileFeedCubit.relaySnapshotAudit = const Duration(milliseconds: 20);
-        addTearDown(
-          () => ProfileFeedCubit.relaySnapshotAudit = originalAudit,
-        );
+        addTearDown(() => ProfileFeedCubit.relaySnapshotAudit = originalAudit);
 
         final cubit = await buildReady(_result(const []));
         addTearDown(cubit.close);

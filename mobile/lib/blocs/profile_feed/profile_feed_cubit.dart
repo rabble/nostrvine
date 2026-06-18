@@ -109,6 +109,12 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
   @visibleForTesting
   static Duration relaySnapshotAudit = const Duration(milliseconds: 250);
 
+  /// Debounce window for persisting the Videos-tab snapshot. The snapshot
+  /// contains full [VideoEvent] payloads, so serializing it on every emit during
+  /// relay/enrichment bursts is unnecessary main-isolate work.
+  @visibleForTesting
+  static Duration snapshotPersistDebounce = const Duration(milliseconds: 250);
+
   final String _authorPubkey;
   final VideosRepository _videosRepository;
   final VideoEventService _videoEventService;
@@ -132,6 +138,8 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
   /// bookkeeping; the observable result is [ProfileFeedState.isInitialLoad]).
   bool _initialLoadPending = false;
   Timer? _initialLoadTimer;
+  Timer? _snapshotPersistTimer;
+  ProfileVideoOffsetSnapshot? _pendingSnapshot;
 
   VoidCallback? _removeChangeListener;
   VoidCallback? _unregisterUpdate;
@@ -734,18 +742,32 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
 
   /// Persists the current source window + cursor via [_snapshotCache] so a
   /// reopen restores it (stale-while-revalidate).
-  void _persistSnapshot() => _snapshotCache.write(
-    videos: _unfilteredVideos,
-    nextOffset: state.nextOffset,
-    totalVideoCount: state.totalVideoCount,
-    hasMoreContent: state.hasMoreContent,
-  );
+  void _persistSnapshot() {
+    _pendingSnapshot = ProfileVideoOffsetSnapshot.capped(
+      videos: _unfilteredVideos,
+      nextOffset: state.nextOffset,
+      totalVideoCount: state.totalVideoCount,
+      hasMoreContent: state.hasMoreContent,
+    );
+    if (_snapshotPersistTimer?.isActive ?? false) return;
+    _snapshotPersistTimer = Timer(snapshotPersistDebounce, _flushSnapshot);
+  }
+
+  void _flushSnapshot() {
+    final snapshot = _pendingSnapshot;
+    _pendingSnapshot = null;
+    _snapshotPersistTimer?.cancel();
+    _snapshotPersistTimer = null;
+    if (snapshot == null || isClosed) return;
+    _snapshotCache.writeSnapshot(snapshot);
+  }
 
   @override
   Future<void> close() {
     _removeChangeListener?.call();
     _unregisterUpdate?.call();
     _initialLoadTimer?.cancel();
+    _flushSnapshot();
     return super.close();
   }
 }

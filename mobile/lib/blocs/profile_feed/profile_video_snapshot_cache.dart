@@ -51,13 +51,18 @@ class ProfileVideoSnapshotCache {
     required int? nextOffset,
     required int? totalVideoCount,
     required bool hasMoreContent,
-  }) {
-    final snapshot = ProfileVideoOffsetSnapshot.capped(
+  }) => writeSnapshot(
+    ProfileVideoOffsetSnapshot.capped(
       videos: videos,
       nextOffset: nextOffset,
       totalVideoCount: totalVideoCount,
       hasMoreContent: hasMoreContent,
-    );
+    ),
+  );
+
+  /// Persists a pre-built snapshot. Used when callers coalesce writes and keep
+  /// the latest capped payload outside this helper.
+  void writeSnapshot(ProfileVideoOffsetSnapshot snapshot) {
     unawaited(
       CacheSync.write<ProfileVideoOffsetSnapshot>(
         key: _key,

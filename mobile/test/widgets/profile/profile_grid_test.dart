@@ -1,3 +1,4 @@
+import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
+import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -31,6 +33,9 @@ class _MockContentBlocklistRepository extends Mock
 
 class _MockBookmarkService extends Mock implements BookmarkService {}
 
+class _MockProfileFeedCubit extends MockBloc<ProfileFeedEvent, ProfileFeedState>
+    implements ProfileFeedCubit {}
+
 void main() {
   const userIdHex =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -42,6 +47,7 @@ void main() {
     late _MockCommentsRepository commentsRepository;
     late _MockContentBlocklistRepository blocklistRepository;
     late _MockBookmarkService bookmarkService;
+    late _MockProfileFeedCubit profileFeedCubit;
     late MockNostrClient nostrClient;
 
     setUp(() {
@@ -51,6 +57,7 @@ void main() {
       commentsRepository = _MockCommentsRepository();
       blocklistRepository = _MockContentBlocklistRepository();
       bookmarkService = _MockBookmarkService();
+      profileFeedCubit = _MockProfileFeedCubit();
       nostrClient = createMockNostrService();
 
       when(() => nostrClient.publicKey).thenReturn(userIdHex);
@@ -70,17 +77,27 @@ void main() {
       when(() => blocklistRepository.hasMutedUs(any())).thenReturn(false);
       when(() => blocklistRepository.hasBlockedUs(any())).thenReturn(false);
       when(() => bookmarkService.globalBookmarks).thenReturn(const []);
+      whenListen(
+        profileFeedCubit,
+        const Stream<ProfileFeedState>.empty(),
+        initialState: const ProfileFeedState(status: ProfileFeedStatus.ready),
+      );
     });
 
     Widget buildSubject({required bool isOwnProfile}) {
       return testMaterialApp(
         theme: VineTheme.theme,
         home: Scaffold(
-          body: BlocProvider<MyProfileBloc>(
-            create: (_) => MyProfileBloc(
-              profileRepository: createMockProfileRepository(),
-              pubkey: userIdHex,
-            ),
+          body: MultiBlocProvider(
+            providers: [
+              BlocProvider<MyProfileBloc>(
+                create: (_) => MyProfileBloc(
+                  profileRepository: createMockProfileRepository(),
+                  pubkey: userIdHex,
+                ),
+              ),
+              BlocProvider<ProfileFeedCubit>.value(value: profileFeedCubit),
+            ],
             child: ProfileGridView(
               key: const ValueKey('profile-grid'),
               userIdHex: userIdHex,
