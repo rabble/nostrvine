@@ -183,33 +183,93 @@ void main() {
       testWidgets('renders loading indicator when notifications is empty', (
         tester,
       ) async {
-        when(() => mockBloc.state).thenReturn(
-          NotificationFeedState(status: NotificationFeedStatus.loading),
-        );
+        when(
+          () => mockBloc.state,
+        ).thenReturn(NotificationFeedState(isRefreshing: true));
 
         await _pumpView(tester, mockBloc);
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
+      testWidgets('renders cached list (not full-screen spinner) when hydrated '
+          'notifications are present and refresh is still in flight', (
+        tester,
+      ) async {
+        // Cold-start path: repository emits hydrated cache; bloc is
+        // still refreshing because `refresh()` has not returned yet.
+        // The view must surface the cached rows under the active tab
+        // instead of masking them behind a full-screen spinner.
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            isRefreshing: true,
+            notifications: [
+              ActorNotification(
+                id: 'cached_1',
+                type: NotificationKind.follow,
+                actor: ActorInfo(
+                  pubkey: 'cached_actor',
+                  displayName: 'Loading…',
+                ),
+                timestamp: DateTime(2026),
+              ),
+            ],
+          ),
+        );
+
+        await _pumpView(tester, mockBloc);
+
+        expect(find.byType(NotificationListItem), findsOneWidget);
+        // No full-screen spinner — the inner ListView never renders
+        // a CircularProgressIndicator unless `isLoadingMore` is true.
+        expect(
+          find.descendant(
+            of: find.byType(NotificationsView),
+            matching: find.byType(CircularProgressIndicator),
+          ),
+          findsNothing,
+        );
+      });
+
+      testWidgets('shows the thin revalidation bar over cached items while '
+          'isRefreshing is true', (tester) async {
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            isRefreshing: true,
+            notifications: [
+              ActorNotification(
+                id: 'cached_1',
+                type: NotificationKind.follow,
+                actor: ActorInfo(
+                  pubkey: 'cached_actor',
+                  displayName: 'Loading…',
+                ),
+                timestamp: DateTime(2026),
+              ),
+            ],
+          ),
+        );
+
+        await _pumpView(tester, mockBloc);
+
+        expect(find.byType(NotificationListItem), findsOneWidget);
+        expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      });
+
       testWidgets(
-        'renders cached list (not full-screen spinner) when hydrated '
-        'notifications are present and refresh is still in flight',
+        'hides the revalidation bar once the refresh settles (loaded, not '
+        'refreshing)',
         (tester) async {
-          // Cold-start path: repository emits hydrated cache; bloc is
-          // still in `loading` because `refresh()` has not returned yet.
-          // The view must surface the cached rows under the active tab
-          // instead of masking them behind a full-screen spinner.
           when(() => mockBloc.state).thenReturn(
             NotificationFeedState(
-              status: NotificationFeedStatus.loading,
+              status: NotificationFeedStatus.loaded,
               notifications: [
                 ActorNotification(
                   id: 'cached_1',
                   type: NotificationKind.follow,
                   actor: ActorInfo(
                     pubkey: 'cached_actor',
-                    displayName: 'Loading…',
+                    displayName: 'Alice',
                   ),
                   timestamp: DateTime(2026),
                 ),
@@ -220,15 +280,7 @@ void main() {
           await _pumpView(tester, mockBloc);
 
           expect(find.byType(NotificationListItem), findsOneWidget);
-          // No full-screen spinner — the inner ListView never renders
-          // a CircularProgressIndicator unless `isLoadingMore` is true.
-          expect(
-            find.descendant(
-              of: find.byType(NotificationsView),
-              matching: find.byType(CircularProgressIndicator),
-            ),
-            findsNothing,
-          );
+          expect(find.byType(LinearProgressIndicator), findsNothing);
         },
       );
 
@@ -454,78 +506,70 @@ void main() {
         expect(result.videoDetailRoutes.single.extra?.autoOpenComments, isTrue);
       });
 
-      testWidgets(
-        'reply tap resolves target comment to root video and opens '
-        'comments thread',
-        (tester) async {
-          final videoService = _MockVideoEventService();
-          final nostrClient = _MockNostrClient();
-          final videosRepository = _MockVideosRepository();
-          const parentCommentId = 'parent_comment_id';
-          const rootVideoEventId = 'reply_root_video';
+      testWidgets('reply tap resolves target comment to root video and opens '
+          'comments thread', (tester) async {
+        final videoService = _MockVideoEventService();
+        final nostrClient = _MockNostrClient();
+        final videosRepository = _MockVideosRepository();
+        const parentCommentId = 'parent_comment_id';
+        const rootVideoEventId = 'reply_root_video';
 
-          when(
-            () => videoService.getVideoById(parentCommentId),
-          ).thenReturn(null);
-          when(() => nostrClient.fetchEventById(parentCommentId)).thenAnswer((
-            _,
-          ) async {
-            final event = Event(
-              'a' * 64,
-              1111,
-              const [
-                ['E', rootVideoEventId],
-              ],
-              'parent comment text',
-              createdAt: 1700000000,
-            );
-            event.id = parentCommentId;
-            return event;
-          });
+        when(() => videoService.getVideoById(parentCommentId)).thenReturn(null);
+        when(() => nostrClient.fetchEventById(parentCommentId)).thenAnswer((
+          _,
+        ) async {
+          final event = Event(
+            'a' * 64,
+            1111,
+            const [
+              ['E', rootVideoEventId],
+            ],
+            'parent comment text',
+            createdAt: 1700000000,
+          );
+          event.id = parentCommentId;
+          return event;
+        });
 
-          when(() => mockBloc.state).thenReturn(
-            NotificationFeedState(
-              status: NotificationFeedStatus.loaded,
-              notifications: [
-                ActorNotification(
-                  id: 'r1',
-                  type: NotificationKind.reply,
-                  actor: ActorInfo(pubkey: 'replier', displayName: 'Bob'),
-                  timestamp: DateTime(2026),
-                  targetEventId: parentCommentId,
-                ),
-              ],
-            ),
-          );
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              ActorNotification(
+                id: 'r1',
+                type: NotificationKind.reply,
+                actor: ActorInfo(pubkey: 'replier', displayName: 'Bob'),
+                timestamp: DateTime(2026),
+                targetEventId: parentCommentId,
+              ),
+            ],
+          ),
+        );
 
-          final result = await _pumpRoutedViewFull(
-            tester,
-            mockBloc,
-            videoEventService: videoService,
-            nostrClient: nostrClient,
-            videosRepository: videosRepository,
-          );
+        final result = await _pumpRoutedViewFull(
+          tester,
+          mockBloc,
+          videoEventService: videoService,
+          nostrClient: nostrClient,
+          videosRepository: videosRepository,
+        );
 
-          await tester.tap(find.byType(NotificationListItem).first);
-          await tester.pumpAndSettle();
+        await tester.tap(find.byType(NotificationListItem).first);
+        await tester.pumpAndSettle();
 
-          verify(() => nostrClient.fetchEventById(parentCommentId)).called(1);
-          verifyNever(
-            () => videosRepository.fetchVideoWithStatsForRouteId(any()),
-          );
-          expect(result.videoArgs, isEmpty);
-          expect(result.videoDetailRoutes, hasLength(1));
-          expect(result.videoDetailRoutes.single.videoId, rootVideoEventId);
-          expect(
-            result.videoDetailRoutes.single.extra?.autoOpenComments,
-            isTrue,
-          );
-          expect(
-            result.videoDetailRoutes.single.extra?.fallbackVideoIds,
-            isEmpty,
-          );
-        },
-      );
+        verify(() => nostrClient.fetchEventById(parentCommentId)).called(1);
+        verifyNever(
+          () => videosRepository.fetchVideoWithStatsForRouteId(any()),
+        );
+        expect(result.videoArgs, isEmpty);
+        expect(result.videoDetailRoutes, hasLength(1));
+        expect(result.videoDetailRoutes.single.videoId, rootVideoEventId);
+        expect(result.videoDetailRoutes.single.extra?.autoOpenComments, isTrue);
+        expect(
+          result.videoDetailRoutes.single.extra?.fallbackVideoIds,
+          isEmpty,
+        );
+      });
 
       testWidgets(
         'reply tap waits for root video resolution before pushing video route',
@@ -742,67 +786,63 @@ void main() {
     // -----------------------------------------------------------------------
 
     group('tap routing — like', () {
-      testWidgets(
-        'like tap opens the target video with autoOpenComments:false '
-        'using the stable addressable id through the durable video route',
-        (tester) async {
-          final videoService = _MockVideoEventService();
-          final nostrClient = _MockNostrClient();
-          final videosRepository = _MockVideosRepository();
-          const addressableId =
-              '34236:'
-              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-              ':vine-like';
+      testWidgets('like tap opens the target video with autoOpenComments:false '
+          'using the stable addressable id through the durable video route', (
+        tester,
+      ) async {
+        final videoService = _MockVideoEventService();
+        final nostrClient = _MockNostrClient();
+        final videosRepository = _MockVideosRepository();
+        const addressableId =
+            '34236:'
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+            ':vine-like';
 
-          when(() => mockBloc.state).thenReturn(
-            NotificationFeedState(
-              status: NotificationFeedStatus.loaded,
-              notifications: [
-                VideoNotification(
-                  id: 'like-1',
-                  type: NotificationKind.like,
-                  videoEventId: 'liked_video_event',
-                  videoAddressableId: addressableId,
-                  actors: const [
-                    ActorInfo(pubkey: 'liker_pubkey', displayName: 'Alice'),
-                  ],
-                  totalCount: 1,
-                  timestamp: DateTime(2026),
-                ),
-              ],
-            ),
-          );
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              VideoNotification(
+                id: 'like-1',
+                type: NotificationKind.like,
+                videoEventId: 'liked_video_event',
+                videoAddressableId: addressableId,
+                actors: const [
+                  ActorInfo(pubkey: 'liker_pubkey', displayName: 'Alice'),
+                ],
+                totalCount: 1,
+                timestamp: DateTime(2026),
+              ),
+            ],
+          ),
+        );
 
-          final result = await _pumpRoutedViewFull(
-            tester,
-            mockBloc,
-            videoEventService: videoService,
-            nostrClient: nostrClient,
-            videosRepository: videosRepository,
-          );
+        final result = await _pumpRoutedViewFull(
+          tester,
+          mockBloc,
+          videoEventService: videoService,
+          nostrClient: nostrClient,
+          videosRepository: videosRepository,
+        );
 
-          await tester.tap(find.byType(NotificationListItem).first);
-          await tester.pumpAndSettle();
+        await tester.tap(find.byType(NotificationListItem).first);
+        await tester.pumpAndSettle();
 
-          verifyNever(
-            () => videosRepository.fetchVideoWithStatsForRouteId(any()),
-          );
-          expect(result.videoArgs, isEmpty);
-          expect(result.videoDetailRoutes, hasLength(1));
-          expect(
-            result.videoDetailRoutes.single.videoId,
-            equals(addressableId),
-          );
-          expect(
-            result.videoDetailRoutes.single.extra?.autoOpenComments,
-            isFalse,
-          );
-          expect(
-            result.videoDetailRoutes.single.extra?.fallbackVideoIds,
-            equals(['liked_video_event']),
-          );
-        },
-      );
+        verifyNever(
+          () => videosRepository.fetchVideoWithStatsForRouteId(any()),
+        );
+        expect(result.videoArgs, isEmpty);
+        expect(result.videoDetailRoutes, hasLength(1));
+        expect(result.videoDetailRoutes.single.videoId, equals(addressableId));
+        expect(
+          result.videoDetailRoutes.single.extra?.autoOpenComments,
+          isFalse,
+        );
+        expect(
+          result.videoDetailRoutes.single.extra?.fallbackVideoIds,
+          equals(['liked_video_event']),
+        );
+      });
 
       testWidgets(
         'like tap falls back to raw eventId when no addressable id is set',
@@ -921,127 +961,111 @@ void main() {
     });
 
     group('tap routing — follow', () {
-      testWidgets(
-        'follow tap navigates to the actor profile',
-        (tester) async {
-          final videoService = _MockVideoEventService();
-          final nostrClient = _MockNostrClient();
-          final videosRepository = _MockVideosRepository();
-          // A real 64-char hex pubkey so encodePubKey produces a valid npub.
-          final followerPubkey = 'a' * 64;
+      testWidgets('follow tap navigates to the actor profile', (tester) async {
+        final videoService = _MockVideoEventService();
+        final nostrClient = _MockNostrClient();
+        final videosRepository = _MockVideosRepository();
+        // A real 64-char hex pubkey so encodePubKey produces a valid npub.
+        final followerPubkey = 'a' * 64;
 
-          when(() => mockBloc.state).thenReturn(
-            NotificationFeedState(
-              status: NotificationFeedStatus.loaded,
-              notifications: [
-                ActorNotification(
-                  id: 'follow-1',
-                  type: NotificationKind.follow,
-                  actor: ActorInfo(
-                    pubkey: followerPubkey,
-                    displayName: 'Dave',
-                  ),
-                  timestamp: DateTime(2026),
-                ),
-              ],
-            ),
-          );
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              ActorNotification(
+                id: 'follow-1',
+                type: NotificationKind.follow,
+                actor: ActorInfo(pubkey: followerPubkey, displayName: 'Dave'),
+                timestamp: DateTime(2026),
+              ),
+            ],
+          ),
+        );
 
-          final result = await _pumpRoutedViewFull(
-            tester,
-            mockBloc,
-            videoEventService: videoService,
-            nostrClient: nostrClient,
-            videosRepository: videosRepository,
-          );
+        final result = await _pumpRoutedViewFull(
+          tester,
+          mockBloc,
+          videoEventService: videoService,
+          nostrClient: nostrClient,
+          videosRepository: videosRepository,
+        );
 
-          await tester.tap(find.byType(NotificationListItem).first);
-          await tester.pumpAndSettle();
+        await tester.tap(find.byType(NotificationListItem).first);
+        await tester.pumpAndSettle();
 
-          expect(result.videoArgs, isEmpty);
-          expect(result.profileNpubs, hasLength(1));
-          // npub must be the bech32 encoding of followerPubkey.
-          expect(result.profileNpubs.single, startsWith('npub'));
-        },
-      );
+        expect(result.videoArgs, isEmpty);
+        expect(result.profileNpubs, hasLength(1));
+        // npub must be the bech32 encoding of followerPubkey.
+        expect(result.profileNpubs.single, startsWith('npub'));
+      });
     });
 
     group('tap routing — mention', () {
-      testWidgets(
-        'mention tap resolves the mention event to the root video '
-        'and opens with autoOpenComments:true',
-        (tester) async {
-          final videoService = _MockVideoEventService();
-          final nostrClient = _MockNostrClient();
-          final videosRepository = _MockVideosRepository();
-          const mentionEventId = 'mention_kind1_event';
-          const rootVideoEventId = 'mention_root_video';
+      testWidgets('mention tap resolves the mention event to the root video '
+          'and opens with autoOpenComments:true', (tester) async {
+        final videoService = _MockVideoEventService();
+        final nostrClient = _MockNostrClient();
+        final videosRepository = _MockVideosRepository();
+        const mentionEventId = 'mention_kind1_event';
+        const rootVideoEventId = 'mention_root_video';
 
-          // The mention event is a kind-1 with an uppercase E tag pointing
-          // to the root video — the same resolver path used for replies.
-          when(
-            () => videoService.getVideoById(mentionEventId),
-          ).thenReturn(null);
-          when(
-            () => nostrClient.fetchEventById(mentionEventId),
-          ).thenAnswer((_) async {
-            final event = Event(
-              'c' * 64,
-              1,
-              const [
-                ['E', rootVideoEventId],
-              ],
-              'hey @user great video',
-              createdAt: 1700000000,
-            );
-            event.id = mentionEventId;
-            return event;
-          });
+        // The mention event is a kind-1 with an uppercase E tag pointing
+        // to the root video — the same resolver path used for replies.
+        when(() => videoService.getVideoById(mentionEventId)).thenReturn(null);
+        when(() => nostrClient.fetchEventById(mentionEventId)).thenAnswer((
+          _,
+        ) async {
+          final event = Event(
+            'c' * 64,
+            1,
+            const [
+              ['E', rootVideoEventId],
+            ],
+            'hey @user great video',
+            createdAt: 1700000000,
+          );
+          event.id = mentionEventId;
+          return event;
+        });
 
-          when(() => mockBloc.state).thenReturn(
-            NotificationFeedState(
-              status: NotificationFeedStatus.loaded,
-              notifications: [
-                ActorNotification(
-                  id: 'mention-1',
-                  type: NotificationKind.mention,
-                  actor: ActorInfo(
-                    pubkey: 'mentioner_pubkey',
-                    displayName: 'Eve',
-                  ),
-                  timestamp: DateTime(2026),
-                  targetEventId: mentionEventId,
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              ActorNotification(
+                id: 'mention-1',
+                type: NotificationKind.mention,
+                actor: ActorInfo(
+                  pubkey: 'mentioner_pubkey',
+                  displayName: 'Eve',
                 ),
-              ],
-            ),
-          );
+                timestamp: DateTime(2026),
+                targetEventId: mentionEventId,
+              ),
+            ],
+          ),
+        );
 
-          final result = await _pumpRoutedViewFull(
-            tester,
-            mockBloc,
-            videoEventService: videoService,
-            nostrClient: nostrClient,
-            videosRepository: videosRepository,
-          );
+        final result = await _pumpRoutedViewFull(
+          tester,
+          mockBloc,
+          videoEventService: videoService,
+          nostrClient: nostrClient,
+          videosRepository: videosRepository,
+        );
 
-          await tester.tap(find.byType(NotificationListItem).first);
-          await tester.pumpAndSettle();
+        await tester.tap(find.byType(NotificationListItem).first);
+        await tester.pumpAndSettle();
 
-          verify(
-            () => nostrClient.fetchEventById(mentionEventId),
-          ).called(1);
-          verifyNever(
-            () => videosRepository.fetchVideoWithStatsForRouteId(any()),
-          );
-          expect(result.videoArgs, isEmpty);
-          expect(result.videoDetailRoutes, hasLength(1));
-          expect(result.videoDetailRoutes.single.videoId, rootVideoEventId);
-          expect(
-            result.videoDetailRoutes.single.extra?.autoOpenComments,
-            isTrue,
-          );
-        },
-      );
+        verify(() => nostrClient.fetchEventById(mentionEventId)).called(1);
+        verifyNever(
+          () => videosRepository.fetchVideoWithStatsForRouteId(any()),
+        );
+        expect(result.videoArgs, isEmpty);
+        expect(result.videoDetailRoutes, hasLength(1));
+        expect(result.videoDetailRoutes.single.videoId, rootVideoEventId);
+        expect(result.videoDetailRoutes.single.extra?.autoOpenComments, isTrue);
+      });
 
       testWidgets(
         'mention tap falls back to actor profile when resolver cannot '
@@ -1057,9 +1081,9 @@ void main() {
           when(
             () => videoService.getVideoById(mentionEventId),
           ).thenReturn(null);
-          when(
-            () => nostrClient.fetchEventById(mentionEventId),
-          ).thenAnswer((_) async {
+          when(() => nostrClient.fetchEventById(mentionEventId)).thenAnswer((
+            _,
+          ) async {
             final event = Event(
               'd' * 64,
               1,

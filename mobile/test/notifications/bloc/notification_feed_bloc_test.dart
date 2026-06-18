@@ -29,10 +29,7 @@ const _bobPubkey =
 const _videoEventId =
     '1111111111111111111111111111111111111111111111111111111111111111';
 
-ActorInfo _actor({
-  String pubkey = _alicePubkey,
-  String displayName = 'Alice',
-}) {
+ActorInfo _actor({String pubkey = _alicePubkey, String displayName = 'Alice'}) {
   return ActorInfo(pubkey: pubkey, displayName: displayName);
 }
 
@@ -89,18 +86,16 @@ void main() {
       when(
         () => mockNotificationRepo.watchSnapshot(),
       ).thenAnswer((_) => snapshotController.stream);
-      when(() => mockNotificationRepo.refresh()).thenAnswer(
-        (_) async => NotificationPage.empty,
-      );
-      when(() => mockNotificationRepo.loadNextPage()).thenAnswer(
-        (_) async => NotificationPage.empty,
-      );
+      when(
+        () => mockNotificationRepo.refresh(),
+      ).thenAnswer((_) async => NotificationPage.empty);
+      when(
+        () => mockNotificationRepo.loadNextPage(),
+      ).thenAnswer((_) async => NotificationPage.empty);
       when(
         () => mockNotificationRepo.markAsRead(any()),
       ).thenAnswer((_) async {});
-      when(
-        () => mockNotificationRepo.markAllAsRead(),
-      ).thenAnswer((_) async {});
+      when(() => mockNotificationRepo.markAllAsRead()).thenAnswer((_) async {});
       when(() => mockNotificationRepo.resetPaginationDepth()).thenReturn(null);
     });
 
@@ -152,10 +147,7 @@ void main() {
         build: createBloc,
         act: (_) async {
           snapshotController.add(
-            NotificationPage(
-              items: [_actorNotif()],
-              unreadCount: 1,
-            ),
+            NotificationPage(items: [_actorNotif()], unreadCount: 1),
           );
           await Future<void>.delayed(Duration.zero);
         },
@@ -195,11 +187,12 @@ void main() {
 
     group('NotificationFeedStarted', () {
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'emits loading then loaded; refreshes then marks seen on open (#4708)',
+        'emits refreshing then loaded; refreshes then marks seen on open '
+        '(#4708)',
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedStarted()),
         expect: () => [
-          NotificationFeedState(status: NotificationFeedStatus.loading),
+          NotificationFeedState(isRefreshing: true),
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         verify: (_) {
@@ -223,7 +216,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedStarted()),
         expect: () => [
-          NotificationFeedState(status: NotificationFeedStatus.loading),
+          NotificationFeedState(isRefreshing: true),
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         errors: () => [isA<Exception>()],
@@ -244,7 +237,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedStarted()),
         expect: () => [
-          NotificationFeedState(status: NotificationFeedStatus.loading),
+          NotificationFeedState(isRefreshing: true),
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         errors: () => [
@@ -254,11 +247,7 @@ void main() {
                 'context',
                 NotificationFeedBlocReportableSites.markSeenOnOpen,
               )
-              .having(
-                (r) => r.unwrap(),
-                'unwrap',
-                isA<StateError>(),
-              ),
+              .having((r) => r.unwrap(), 'unwrap', isA<StateError>()),
         ],
         verify: (_) {
           verify(() => mockNotificationRepo.refresh()).called(1);
@@ -276,7 +265,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedStarted()),
         expect: () => [
-          NotificationFeedState(status: NotificationFeedStatus.loading),
+          NotificationFeedState(isRefreshing: true),
           NotificationFeedState(
             status: NotificationFeedStatus.failure,
             refreshError: true,
@@ -295,7 +284,7 @@ void main() {
         },
         build: createBloc,
         seed: () => NotificationFeedState(
-          status: NotificationFeedStatus.loading,
+          isRefreshing: true,
           notifications: [
             ActorNotification(
               id: 'cached_1',
@@ -310,10 +299,10 @@ void main() {
         ),
         act: (bloc) => bloc.add(NotificationFeedStarted()),
         expect: () => [
-          // The bloc's first emit (loading) deduplicates against the seed
-          // (already loading), so only the post-catch `loaded` state is
-          // surfaced. The cached row is preserved and `refreshError` flips
-          // so the view renders the inline banner instead of the full
+          // The bloc's first emit (isRefreshing: true) deduplicates against
+          // the seed (already refreshing), so only the post-catch `loaded`
+          // state is surfaced. The cached row is preserved and `refreshError`
+          // flips so the view renders the inline banner instead of the full
           // failure screen.
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
@@ -345,7 +334,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedStarted()),
         expect: () => [
-          NotificationFeedState(status: NotificationFeedStatus.loading),
+          NotificationFeedState(isRefreshing: true),
           NotificationFeedState(
             status: NotificationFeedStatus.failure,
             refreshError: true,
@@ -464,13 +453,16 @@ void main() {
 
     group('NotificationFeedRefreshed', () {
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'calls refresh and emits loaded',
+        'emits refreshing then loaded',
         build: createBloc,
-        seed: () => NotificationFeedState(
-          status: NotificationFeedStatus.failure,
-        ),
+        seed: () =>
+            NotificationFeedState(status: NotificationFeedStatus.failure),
         act: (bloc) => bloc.add(NotificationFeedRefreshed()),
         expect: () => [
+          NotificationFeedState(
+            status: NotificationFeedStatus.failure,
+            isRefreshing: true,
+          ),
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         verify: (_) {
@@ -492,6 +484,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedRefreshed()),
         expect: () => [
+          NotificationFeedState(isRefreshing: true),
           NotificationFeedState(
             status: NotificationFeedStatus.failure,
             refreshError: true,
@@ -525,6 +518,24 @@ void main() {
         ),
         act: (bloc) => bloc.add(NotificationFeedRefreshed()),
         expect: () => [
+          // Cached row stays on screen while the refresh runs (the thin
+          // revalidation bar shows in the view), then `refreshError` flips
+          // so the inline banner replaces the bar on the terminal emit.
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              ActorNotification(
+                id: 'cached_1',
+                type: NotificationKind.follow,
+                actor: const ActorInfo(
+                  pubkey: 'pubkey_cached',
+                  displayName: 'Loading…',
+                ),
+                timestamp: DateTime(2026),
+              ),
+            ],
+            isRefreshing: true,
+          ),
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
             notifications: [
@@ -555,6 +566,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedRefreshed()),
         expect: () => [
+          NotificationFeedState(isRefreshing: true),
           NotificationFeedState(
             status: NotificationFeedStatus.failure,
             refreshError: true,

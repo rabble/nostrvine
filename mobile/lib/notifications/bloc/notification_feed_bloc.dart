@@ -32,23 +32,11 @@ class NotificationFeedBloc
        _followRepository = followRepository,
        super(const NotificationFeedState()) {
     on<_SnapshotChanged>(_onSnapshotChanged);
-    on<NotificationFeedStarted>(
-      _onStarted,
-      transformer: droppable(),
-    );
-    on<NotificationFeedLoadMore>(
-      _onLoadMore,
-      transformer: droppable(),
-    );
-    on<NotificationFeedRefreshed>(
-      _onRefreshed,
-      transformer: droppable(),
-    );
+    on<NotificationFeedStarted>(_onStarted, transformer: droppable());
+    on<NotificationFeedLoadMore>(_onLoadMore, transformer: droppable());
+    on<NotificationFeedRefreshed>(_onRefreshed, transformer: droppable());
     on<NotificationFeedItemTapped>(_onItemTapped);
-    on<NotificationFeedFollowBack>(
-      _onFollowBack,
-      transformer: sequential(),
-    );
+    on<NotificationFeedFollowBack>(_onFollowBack, transformer: sequential());
 
     // Project the repository's snapshot stream into BLoC state via a
     // private event so emit() stays inside an event handler.
@@ -110,11 +98,19 @@ class NotificationFeedBloc
     NotificationFeedStarted event,
     Emitter<NotificationFeedState> emit,
   ) async {
-    emit(state.copyWith(status: NotificationFeedStatus.loading));
+    // Stale-while-revalidate: keep any hydrated/cached items rendered and
+    // flag the in-flight refresh so the view shows a thin progress bar
+    // instead of a blanking full-screen spinner.
+    emit(state.copyWith(isRefreshing: true));
 
     try {
       await _notificationRepository.refresh();
-      emit(state.copyWith(status: NotificationFeedStatus.loaded));
+      emit(
+        state.copyWith(
+          status: NotificationFeedStatus.loaded,
+          isRefreshing: false,
+        ),
+      );
       await _markSeenOnOpen();
     } on Exception catch (e, s) {
       // `NotificationRepository.refresh` propagates typed
@@ -137,6 +133,7 @@ class NotificationFeedBloc
           status: hasCachedItems
               ? NotificationFeedStatus.loaded
               : NotificationFeedStatus.failure,
+          isRefreshing: false,
           refreshError: true,
         ),
       );
@@ -148,10 +145,7 @@ class NotificationFeedBloc
       // DivineBlocObserver forwards to Crashlytics. Recovery emit
       // mirrors the matrix-NO arm so the UX is preserved.
       addError(
-        Reportable(
-          e,
-          context: NotificationFeedBlocReportableSites.onStarted,
-        ),
+        Reportable(e, context: NotificationFeedBlocReportableSites.onStarted),
         s,
       );
       final hasCachedItems = state.notifications.isNotEmpty;
@@ -160,6 +154,7 @@ class NotificationFeedBloc
           status: hasCachedItems
               ? NotificationFeedStatus.loaded
               : NotificationFeedStatus.failure,
+          isRefreshing: false,
           refreshError: true,
         ),
       );
@@ -223,10 +218,7 @@ class NotificationFeedBloc
     } catch (e, s) {
       // Errors (StateError, TypeError) — matrix-YES invariant.
       addError(
-        Reportable(
-          e,
-          context: NotificationFeedBlocReportableSites.onLoadMore,
-        ),
+        Reportable(e, context: NotificationFeedBlocReportableSites.onLoadMore),
         s,
       );
       emit(state.copyWith(isLoadingMore: false));
@@ -238,9 +230,15 @@ class NotificationFeedBloc
     NotificationFeedRefreshed event,
     Emitter<NotificationFeedState> emit,
   ) async {
+    emit(state.copyWith(isRefreshing: true));
     try {
       await _notificationRepository.refresh();
-      emit(state.copyWith(status: NotificationFeedStatus.loaded));
+      emit(
+        state.copyWith(
+          status: NotificationFeedStatus.loaded,
+          isRefreshing: false,
+        ),
+      );
     } on Exception catch (e, s) {
       // `NotificationRepository.refresh` propagates typed
       // `FunnelcakeException` (4xx/5xx/timeout). Per
@@ -254,6 +252,7 @@ class NotificationFeedBloc
           status: hasCachedItems
               ? NotificationFeedStatus.loaded
               : NotificationFeedStatus.failure,
+          isRefreshing: false,
           refreshError: true,
         ),
       );
@@ -261,10 +260,7 @@ class NotificationFeedBloc
       // Errors (StateError, TypeError) — matrix-YES invariant.
       // Recovery emit mirrors the matrix-NO arm so the UX is preserved.
       addError(
-        Reportable(
-          e,
-          context: NotificationFeedBlocReportableSites.onRefreshed,
-        ),
+        Reportable(e, context: NotificationFeedBlocReportableSites.onRefreshed),
         s,
       );
       final hasCachedItems = state.notifications.isNotEmpty;
@@ -273,6 +269,7 @@ class NotificationFeedBloc
           status: hasCachedItems
               ? NotificationFeedStatus.loaded
               : NotificationFeedStatus.failure,
+          isRefreshing: false,
           refreshError: true,
         ),
       );

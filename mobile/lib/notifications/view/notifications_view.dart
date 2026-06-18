@@ -111,39 +111,55 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
           }
 
           // Cached or freshly-loaded items present → render the list
-          // even while the first-page refresh is still in flight. The
-          // inline refresh-error banner handles the soft-failure
-          // affordance via `state.refreshError`.
+          // immediately (stale-while-revalidate). A thin revalidation bar
+          // overlays the top while a network refresh is in flight, so a
+          // background refresh never blanks the cached list. The inline
+          // refresh-error banner handles the soft-failure affordance via
+          // `state.refreshError`.
           if (visible.isNotEmpty) {
-            return RefreshIndicator(
-              color: VineTheme.onPrimary,
-              backgroundColor: VineTheme.vineGreen,
-              onRefresh: () async {
-                context.read<NotificationFeedBloc>().add(
-                  const NotificationFeedRefreshed(),
-                );
-              },
-              child: _NotificationList(
-                notifications: visible,
-                isLoadingMore: state.isLoadingMore,
-                hasMore: state.hasMore,
-                scrollController: _scrollController,
-                showRefreshErrorBanner: state.refreshError,
-                onRetryRefresh: () => context.read<NotificationFeedBloc>().add(
-                  const NotificationFeedRefreshed(),
+            return Stack(
+              children: [
+                RefreshIndicator(
+                  color: VineTheme.onPrimary,
+                  backgroundColor: VineTheme.vineGreen,
+                  onRefresh: () async {
+                    context.read<NotificationFeedBloc>().add(
+                      const NotificationFeedRefreshed(),
+                    );
+                  },
+                  child: _NotificationList(
+                    notifications: visible,
+                    isLoadingMore: state.isLoadingMore,
+                    hasMore: state.hasMore,
+                    scrollController: _scrollController,
+                    showRefreshErrorBanner: state.refreshError,
+                    onRetryRefresh: () => context
+                        .read<NotificationFeedBloc>()
+                        .add(const NotificationFeedRefreshed()),
+                    onItemTap: (notification) =>
+                        _onItemTap(context, notification),
+                    onProfileTap: (pubkey) =>
+                        _navigateToProfile(context, pubkey),
+                    onFollowBack: (pubkey) => context
+                        .read<NotificationFeedBloc>()
+                        .add(NotificationFeedFollowBack(pubkey)),
+                  ),
                 ),
-                onItemTap: (notification) => _onItemTap(context, notification),
-                onProfileTap: (pubkey) => _navigateToProfile(context, pubkey),
-                onFollowBack: (pubkey) => context
-                    .read<NotificationFeedBloc>()
-                    .add(NotificationFeedFollowBack(pubkey)),
-              ),
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: _RevalidationBar(visible: state.isRefreshing),
+                ),
+              ],
             );
           }
 
-          // Empty + still loading → full-screen spinner.
+          // Empty + still loading → full-screen spinner. This is the only
+          // remaining full-screen spinner: it fires solely on a cold start
+          // with nothing cached to show.
           if (state.status == NotificationFeedStatus.initial ||
-              state.status == NotificationFeedStatus.loading) {
+              state.isRefreshing) {
             return const Center(
               child: CircularProgressIndicator(color: VineTheme.vineGreen),
             );
@@ -329,6 +345,52 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 // ---------------------------------------------------------------------------
 // Private sub-widgets
 // ---------------------------------------------------------------------------
+
+/// Thin background-refresh bar overlaid at the top of the cached list while
+/// a network revalidation is in flight (stale-while-revalidate).
+///
+/// Fades and slides (size) in/out as [visible] toggles so the bar never
+/// pops abruptly. Purely decorative — the cached list is already on screen —
+/// so it stays out of the semantics tree. Mirrors `ProfileCacheLoadIndicator`.
+class _RevalidationBar extends StatelessWidget {
+  const _RevalidationBar({required this.visible});
+
+  /// Whether a network revalidation is currently in flight.
+  final bool visible;
+
+  static const double _height = 4;
+  static const _transitionDuration = Duration(milliseconds: 250);
+
+  @override
+  Widget build(BuildContext context) {
+    // Honour the reduced-motion preference — collapse the animation to an
+    // instant swap rather than dropping the affordance entirely.
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : _transitionDuration;
+
+    return ExcludeSemantics(
+      child: AnimatedSwitcher(
+        duration: duration,
+        transitionBuilder: (child, animation) => SizeTransition(
+          sizeFactor: animation,
+          child: FadeTransition(opacity: animation, child: child),
+        ),
+        child: visible
+            ? const SizedBox(
+                key: ValueKey('revalidation-bar'),
+                height: _height,
+                child: LinearProgressIndicator(
+                  minHeight: _height,
+                  color: VineTheme.vineGreen,
+                  backgroundColor: VineTheme.transparent,
+                ),
+              )
+            : const SizedBox(key: ValueKey('revalidation-bar-hidden')),
+      ),
+    );
+  }
+}
 
 class _ScrollableEmptyState extends StatelessWidget {
   const _ScrollableEmptyState();

@@ -1,20 +1,23 @@
 // ABOUTME: State for NotificationFeedBloc — tracks notifications list,
-// ABOUTME: loading/pagination status, and unread count.
+// ABOUTME: load/refresh status, and unread count.
 
 part of 'notification_feed_bloc.dart';
 
 /// Status of the notification feed.
+///
+/// "Refresh in flight" is tracked separately via
+/// [NotificationFeedState.isRefreshing] so a background revalidation never
+/// blanks out already-rendered (cached) items — see
+/// [NotificationFeedState] for the stale-while-revalidate contract.
 enum NotificationFeedStatus {
-  /// No data loaded yet.
+  /// No data loaded yet (cold start, before the first emission).
   initial,
-
-  /// Currently loading notifications.
-  loading,
 
   /// Notifications loaded successfully.
   loaded,
 
-  /// An error occurred while loading notifications.
+  /// An error occurred while loading notifications and there is nothing
+  /// cached to fall back to.
   failure,
 }
 
@@ -26,6 +29,7 @@ final class NotificationFeedState extends Equatable {
     this.unreadCount = 0,
     this.hasMore = true,
     this.isLoadingMore = false,
+    this.isRefreshing = false,
     this.refreshError = false,
   });
 
@@ -53,6 +57,15 @@ final class NotificationFeedState extends Equatable {
 
   /// Whether a load-more operation is in progress.
   final bool isLoadingMore;
+
+  /// Whether a first-page network refresh is currently in flight.
+  ///
+  /// This is the stale-while-revalidate signal: when cached items are
+  /// already on screen, the view keeps rendering them and shows a thin
+  /// `LinearProgressIndicator` instead of a blanking full-screen spinner.
+  /// The full-screen spinner is reserved for the cold-start case where
+  /// there is nothing cached to show yet.
+  final bool isRefreshing;
 
   /// Whether the most recent first-page refresh failed.
   ///
@@ -84,6 +97,7 @@ final class NotificationFeedState extends Equatable {
     int? unreadCount,
     bool? hasMore,
     bool? isLoadingMore,
+    bool? isRefreshing,
     bool? refreshError,
   }) {
     return NotificationFeedState(
@@ -92,6 +106,7 @@ final class NotificationFeedState extends Equatable {
       unreadCount: unreadCount ?? this.unreadCount,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
       refreshError: refreshError ?? this.refreshError,
     );
   }
@@ -103,6 +118,7 @@ final class NotificationFeedState extends Equatable {
     unreadCount,
     hasMore,
     isLoadingMore,
+    isRefreshing,
     refreshError,
   ];
 }
