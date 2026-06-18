@@ -7,13 +7,16 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:cache_sync/cache_sync.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
-import 'package:models/models.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/profile_shared/profile_video_offset_snapshot.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:stream_transform/stream_transform.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 part 'profile_feed_event.dart';
@@ -111,6 +114,15 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
   final ContentBlocklistRepository _blocklistRepository;
   final EnrichVideos _enrichVideos;
 
+  /// CacheSync key for this author's persisted Videos-tab window.
+  ///
+  /// Scoped to the author (the persisted videos are the unfiltered public
+  /// feed — blocklist/content filters are re-applied on every emit, so the
+  /// payload is viewer-independent). Follows the `${pubkey}:${operation}`
+  /// convention so sign-out's `invalidatePrefix(currentPubkey)` clears the
+  /// signed-out user's own-profile entry.
+  String get _cacheKey => '$_authorPubkey:profile_videos';
+
   /// Accumulated **unfiltered** source list (REST + relay). Not UI state — it's
   /// the source [ProfileFeedFiltersChanged] re-filters in place without a
   /// re-fetch. Same source-cache category as the injected dependencies.
@@ -166,6 +178,18 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
     emit(state.copyWith(status: ProfileFeedStatus.loading));
 
     final relaySeed = _relayVideosSnapshot();
+
+    // Stale-while-revalidate: a persisted snapshot restores the full
+    // scrolled-through window + REST cursor instantly, so reopening a profile
+    // does not re-paginate from the relay (#5279 extended to the Videos tab).
+    final cached = await _readCachedSnapshot();
+    if (isClosed) return;
+    if (cached != null && cached.videos.isNotEmpty) {
+      await _restoreFromCache(emit, cached: cached, relaySeed: relaySeed);
+      return;
+    }
+
+    // Cold open — no cache to serve.
     if (relaySeed.isEmpty) {
       _beginInitialLoadTracking();
     }
@@ -195,6 +219,83 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
       await _doRefresh(emit, backfillInitialPage: true);
     } else if (!isClosed && result != null) {
       await _backfillInitialRestPage(emit);
+    }
+  }
+
+  /// Serves the persisted snapshot immediately (full window + cursor), then
+  /// revalidates the head in the background.
+  ///
+  /// The cached videos are merged with the current [relaySeed] so any realtime
+  /// data already in [VideoEventService] (e.g. a just-published clip) shows on
+  /// top of the restored window. [ProfileFeedState.nextOffset] /
+  /// [ProfileFeedState.hasMoreContent] come straight from the snapshot so
+  /// scrolling resumes where the user left off.
+  Future<void> _restoreFromCache(
+    Emitter<ProfileFeedState> emit, {
+    required ProfileVideoOffsetSnapshot cached,
+    required List<VideoEvent> relaySeed,
+  }) async {
+    final merged = _withoutTombstones(
+      mergeProfileFeedVideoLists(relaySeed, cached.videos),
+    );
+    _unfilteredVideos = merged;
+    _cacheVideoMetadata(merged);
+    unawaited(_subscribe());
+
+    emit(
+      state.copyWith(
+        status: ProfileFeedStatus.ready,
+        videos: _applyFeedFilters(merged),
+        nextOffset: cached.nextOffset,
+        totalVideoCount: cached.totalVideoCount,
+        hasMoreContent: cached.hasMoreContent,
+        isInitialLoad: false,
+        isRefreshing: true,
+        isFetchingTotalCount: cached.totalVideoCount == null,
+        lastUpdated: DateTime.now(),
+      ),
+    );
+    _persistSnapshot();
+
+    await _revalidateHead(emit, relaySeed: relaySeed);
+  }
+
+  /// Refreshes the head of a cache-restored feed: re-fetches the first REST
+  /// page and merges it into the restored window, **preserving** the restored
+  /// pagination cursor so the scrolled-through tail is not dropped and the user
+  /// does not re-paginate from the start. Stale cursors self-heal on the next
+  /// load-more (an over-shot offset returns empty → `hasMoreContent` flips off).
+  Future<void> _revalidateHead(
+    Emitter<ProfileFeedState> emit, {
+    required List<VideoEvent> relaySeed,
+  }) async {
+    try {
+      final result = await _videosRepository.getAuthorFeed(
+        authorPubkey: _authorPubkey,
+        relaySeed: relaySeed,
+        skipCache: true,
+      );
+      if (isClosed) return;
+      final merged = _withoutTombstones(
+        mergeProfileFeedVideoLists(_unfilteredVideos, result.videos),
+      );
+      _unfilteredVideos = merged;
+      _cacheVideoMetadata(merged);
+      emit(
+        state.copyWith(
+          videos: _applyFeedFilters(merged),
+          totalVideoCount: result.totalCount ?? state.totalVideoCount,
+          isRefreshing: false,
+          isFetchingTotalCount: false,
+          lastUpdated: DateTime.now(),
+        ),
+      );
+      _enrichInBackground();
+      _persistSnapshot();
+    } on Object catch (error, stackTrace) {
+      if (isClosed) return;
+      addError(error, stackTrace);
+      emit(state.copyWith(isRefreshing: false, isFetchingTotalCount: false));
     }
   }
 
@@ -412,6 +513,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
             lastUpdated: DateTime.now(),
           ),
         );
+        _persistSnapshot();
       }
     } on Object catch (error, stackTrace) {
       if (isClosed) return;
@@ -458,6 +560,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
         lastUpdated: DateTime.now(),
       ),
     );
+    _persistSnapshot();
   }
 
   // ---------------------------------------------------------------------------
@@ -502,6 +605,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
         lastUpdated: DateTime.now(),
       ),
     );
+    _persistSnapshot();
   }
 
   // ---------------------------------------------------------------------------
@@ -532,6 +636,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
         lastUpdated: DateTime.now(),
       ),
     );
+    _persistSnapshot();
   }
 
   void _onFiltersChanged(
@@ -763,6 +868,54 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
       if (l.nostrLikeCount != r.nostrLikeCount) return false;
     }
     return true;
+  }
+
+  // ---------------------------------------------------------------------------
+  // CacheSync persistence (stale-while-revalidate)
+  // ---------------------------------------------------------------------------
+
+  /// Reads the persisted snapshot once; `null` on miss or failure (a cache
+  /// problem must never break an otherwise-fine cold load).
+  Future<ProfileVideoOffsetSnapshot?> _readCachedSnapshot() async {
+    try {
+      return await CacheSync.read<ProfileVideoOffsetSnapshot>(
+        key: _cacheKey,
+        fromJson: ProfileVideoOffsetSnapshot.fromJson,
+      );
+    } on Object catch (error) {
+      Log.warning(
+        'Failed to read cached profile-videos snapshot - $error',
+        name: 'ProfileFeedCubit',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+  }
+
+  /// Persists the current source window + cursor so a reopen restores it.
+  /// Fire-and-forget: cache writes are best-effort and must never block or
+  /// fail an emit. Capping bounds the serialized payload (see
+  /// [ProfileSnapshotWindow]).
+  void _persistSnapshot() {
+    final snapshot = ProfileVideoOffsetSnapshot.capped(
+      videos: _unfilteredVideos,
+      nextOffset: state.nextOffset,
+      totalVideoCount: state.totalVideoCount,
+      hasMoreContent: state.hasMoreContent,
+    );
+    unawaited(
+      CacheSync.write<ProfileVideoOffsetSnapshot>(
+        key: _cacheKey,
+        value: snapshot,
+        toJson: (s) => s.toJson(),
+      ).catchError((Object error) {
+        Log.warning(
+          'Failed to persist profile-videos snapshot - $error',
+          name: 'ProfileFeedCubit',
+          category: LogCategory.video,
+        );
+      }),
+    );
   }
 
   @override

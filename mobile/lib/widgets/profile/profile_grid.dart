@@ -11,6 +11,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.dart';
 import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
+import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/blocs/profile_saved_videos/profile_saved_videos_bloc.dart';
@@ -143,13 +144,17 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   /// Resolved by tab [ProfileTabKind] rather than raw index: the own profile's
   /// tab order differs from other profiles' (Collabs is inserted at index 1 on
   /// the own profile, per #5213), so a fixed index would track the wrong tab.
-  bool get _activeTabRefreshing => switch (_tabKinds[_tabController.index]) {
-    ProfileTabKind.liked => _likedRefreshing,
-    ProfileTabKind.reposts => _repostsRefreshing,
-    ProfileTabKind.collabs => _collabsRefreshing,
-    ProfileTabKind.saved => _savedRefreshing,
-    ProfileTabKind.videos || ProfileTabKind.comments => false,
-  };
+  /// Videos reads the [ProfileFeedCubit]'s refreshing flag, passed in from
+  /// [build] because that cubit is provided by the ancestor `ProfileFeedScope`.
+  bool _activeTabRefreshing(bool videosRefreshing) =>
+      switch (_tabKinds[_tabController.index]) {
+        ProfileTabKind.videos => videosRefreshing,
+        ProfileTabKind.liked => _likedRefreshing,
+        ProfileTabKind.reposts => _repostsRefreshing,
+        ProfileTabKind.collabs => _collabsRefreshing,
+        ProfileTabKind.saved => _savedRefreshing,
+        ProfileTabKind.comments => false,
+      };
 
   /// The dependency identities the tab BLoCs were last created for.
   ///
@@ -392,6 +397,13 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     );
     final currentUserPubkey = nostrService.publicKey;
 
+    // The Videos tab's BLoC is provided by the ancestor `ProfileFeedScope`, so
+    // its revalidation flag is read here (rather than via a stored stream
+    // subscription like the tabs created below) to drive the sticky bar.
+    final videosRefreshing = context.select<ProfileFeedCubit, bool>(
+      (cubit) => cubit.state.isRefreshing,
+    );
+
     final blocsDeps = (
       userIdHex: widget.userIdHex,
       isOwnProfile: widget.isOwnProfile,
@@ -581,7 +593,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                 tabs: [for (final kind in _tabKinds) _tabPresentationFor(kind)],
                 headerKey: _headerKey,
                 // Sticky cache-revalidation bar for the active cached tab.
-                isRefreshing: _activeTabRefreshing,
+                isRefreshing: _activeTabRefreshing(videosRefreshing),
               ),
             ],
             body: tabContent,

@@ -4,12 +4,14 @@
 
 import 'dart:async';
 
+import 'package:cache_sync/cache_sync.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
+import 'package:openvine/blocs/profile_shared/profile_video_offset_snapshot.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:videos_repository/videos_repository.dart';
@@ -20,6 +22,38 @@ class _MockVideoEventService extends Mock implements VideoEventService {}
 
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
+
+/// In-memory [CacheDao] so the cubit's [CacheSync] reads/writes are isolated
+/// per test without touching disk.
+class _InMemoryCacheDao implements CacheDao {
+  final Map<String, String> _store = {};
+
+  @override
+  Future<String?> read(String key) async => _store[key];
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {
+    _store[key] = payload;
+  }
+
+  @override
+  Future<void> delete(String key) async => _store.remove(key);
+
+  @override
+  Future<void> deletePrefix(String prefix) async =>
+      _store.removeWhere((key, _) => key.startsWith(prefix));
+
+  @override
+  Future<int> totalPayloadBytes() async =>
+      _store.values.fold<int>(0, (sum, v) => sum + v.length);
+
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
+}
 
 const _author =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -152,8 +186,13 @@ void main() {
 
   group('ProfileFeedCubit', () {
     late _Harness h;
+    late _InMemoryCacheDao cacheDao;
 
-    setUp(() => h = _Harness());
+    setUp(() async {
+      h = _Harness();
+      cacheDao = _InMemoryCacheDao();
+      await CacheSync.init(dao: cacheDao);
+    });
 
     Future<ProfileFeedCubit> buildReady(AuthorFeedResult result) async {
       h.stubAuthorFeed(result);
@@ -161,6 +200,123 @@ void main() {
       await pumpEventQueue();
       return cubit;
     }
+
+    const cacheKey = '$_author:profile_videos';
+
+    Future<void> seedSnapshot(ProfileVideoOffsetSnapshot snapshot) =>
+        CacheSync.write<ProfileVideoOffsetSnapshot>(
+          key: cacheKey,
+          value: snapshot,
+          toJson: (s) => s.toJson(),
+        );
+
+    Future<ProfileVideoOffsetSnapshot?> readSnapshot() =>
+        CacheSync.read<ProfileVideoOffsetSnapshot>(
+          key: cacheKey,
+          fromJson: ProfileVideoOffsetSnapshot.fromJson,
+        );
+
+    group('CacheSync stale-while-revalidate', () {
+      test(
+        'reopen restores the persisted window + cursor instantly, then '
+        'revalidates the head without clobbering the cursor',
+        () async {
+          await seedSnapshot(
+            ProfileVideoOffsetSnapshot(
+              videos: [
+                _video('v1', createdAt: 5000),
+                _video('v2', createdAt: 4000),
+                _video('v3', createdAt: 3000),
+              ],
+              nextOffset: 150,
+              totalVideoCount: 300,
+              hasMoreContent: true,
+            ),
+          );
+          // Head revalidation returns the freshest first page (no new clips).
+          h.stubAuthorFeed(
+            _result(
+              [_video('v1', createdAt: 5000)],
+              totalCount: 300,
+              nextOffset: 50,
+              hasMore: true,
+            ),
+          );
+
+          final cubit = h.build();
+          addTearDown(cubit.close);
+          await pumpEventQueue();
+
+          expect(cubit.state.status, ProfileFeedStatus.ready);
+          expect(cubit.state.videos.map((v) => v.id), ['v1', 'v2', 'v3']);
+          // Cursor comes from the snapshot, NOT the head refresh's offset (50).
+          expect(cubit.state.nextOffset, 150);
+          expect(cubit.state.hasMoreContent, isTrue);
+          expect(cubit.state.totalVideoCount, 300);
+          expect(cubit.state.isInitialLoad, isFalse);
+          expect(cubit.state.isRefreshing, isFalse);
+          verify(
+            () => h.repo.getAuthorFeed(
+              authorPubkey: _author,
+              relaySeed: any(named: 'relaySeed'),
+              skipCache: true,
+            ),
+          ).called(1);
+        },
+      );
+
+      test('cold load persists the resolved window', () async {
+        h.stubAuthorFeed(
+          _result(
+            [_video('a', createdAt: 5000), _video('b', createdAt: 4000)],
+            totalCount: 2,
+            hasMore: false,
+          ),
+        );
+
+        final cubit = h.build();
+        addTearDown(cubit.close);
+        await pumpEventQueue(times: 3);
+
+        final persisted = await readSnapshot();
+        expect(persisted, isNotNull);
+        expect(persisted!.videos.map((v) => v.id), ['a', 'b']);
+        expect(persisted.totalVideoCount, 2);
+        expect(persisted.hasMoreContent, isFalse);
+      });
+
+      test('REST load-more grows the persisted window', () async {
+        h.stubAuthorFeedSequence([
+          _result(
+            [_video('a', createdAt: 5000)],
+            totalCount: 1,
+            nextOffset: 1,
+            hasMore: true,
+          ),
+          _result(
+            [_video('b', createdAt: 4000)],
+            totalCount: 2,
+            nextOffset: 2,
+            hasMore: false,
+          ),
+        ]);
+
+        final cubit = h.build();
+        addTearDown(cubit.close);
+        await pumpEventQueue(times: 3);
+
+        cubit.add(const ProfileFeedLoadMoreRequested());
+        await pumpEventQueue(times: 3);
+
+        expect(cubit.state.videos.map((v) => v.id), ['a', 'b']);
+        expect(cubit.state.nextOffset, 2);
+
+        final persisted = await readSnapshot();
+        expect(persisted!.videos.map((v) => v.id), ['a', 'b']);
+        expect(persisted.nextOffset, 2);
+        expect(persisted.hasMoreContent, isFalse);
+      });
+    });
 
     test('cold load: REST success -> ready with envelope', () async {
       final cubit = await buildReady(
