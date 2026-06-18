@@ -83,7 +83,7 @@ String buildBridgeBootstrapScript({
     _metadata: {
       name: 'diVine',
       version: '1.0',
-      supports: ['nip04', 'nip44'],
+      supports: ['nip44'],
     },
     getPublicKey() {
       if (this._pubkey) return Promise.resolve(this._pubkey);

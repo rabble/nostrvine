@@ -147,6 +147,28 @@ void main() {
     );
 
     test(
+      'signs an event with empty content',
+      () async {
+        final result = await service.handleRequest(
+          app: _app(promptRequiredFor: const ['signEvent']),
+          origin: Uri.parse('https://primal.net'),
+          method: 'signEvent',
+          args: {
+            'event': {
+              'kind': 1,
+              'content': '',
+              'tags': const <List<String>>[],
+            },
+          },
+          promptForPermission: (_) async => true,
+        );
+
+        expect(result.success, isTrue);
+        expect((result.data! as Map)['content'], '');
+      },
+    );
+
+    test(
       'routes nip44.encrypt through the signer',
       () async {
         final result = await service.handleRequest(

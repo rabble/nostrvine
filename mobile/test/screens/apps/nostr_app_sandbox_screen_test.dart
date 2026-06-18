@@ -602,7 +602,15 @@ void main() {
       test('includes provider metadata', () {
         final script = buildBridgeBootstrapScript(nonce: 'n');
         expect(script, contains("name: 'diVine'"));
-        expect(script, contains("'nip04', 'nip44'"));
+        expect(script, contains("supports: ['nip44']"));
+      });
+
+      test('advertises only capabilities the bridge actually exposes', () {
+        // nip04 is intentionally not advertised: the bridge exposes no
+        // window.nostr.nip04 object and the host rejects nip04 methods, so
+        // claiming support would mislead feature-detecting apps.
+        final script = buildBridgeBootstrapScript(nonce: 'n');
+        expect(script, isNot(contains('nip04')));
       });
 
       test('dispatches nostr:ready event', () {

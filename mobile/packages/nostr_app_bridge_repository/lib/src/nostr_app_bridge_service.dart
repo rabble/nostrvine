@@ -326,9 +326,13 @@ class NostrAppBridgeService {
       eventData['kind'],
       fieldName: 'event.kind',
     );
+    // Content must be a string but may be empty: NIP-01/NIP-07 permit empty
+    // content for many kinds (contact lists, deletions, reactions, and
+    // addressable events that carry their data only in tags).
     final content = _readRequiredString(
       eventData['content'],
       fieldName: 'event.content',
+      allowEmpty: true,
     );
     final tags = _readTags(eventData['tags']);
     final createdAt = _readOptionalInt(eventData['created_at']);
@@ -410,10 +414,13 @@ class NostrAppBridgeService {
   static String _readRequiredString(
     dynamic value, {
     required String fieldName,
+    bool allowEmpty = false,
   }) {
-    if (value is! String || value.isEmpty) {
+    if (value is! String || (!allowEmpty && value.isEmpty)) {
       throw ArgumentError(
-        '$fieldName must be a non-empty string',
+        allowEmpty
+            ? '$fieldName must be a string'
+            : '$fieldName must be a non-empty string',
       );
     }
     return value;
