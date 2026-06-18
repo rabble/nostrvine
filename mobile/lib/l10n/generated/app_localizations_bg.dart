@@ -1422,7 +1422,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoErrorVerifyAgeSignerUnreachable =>
-      'Потвърждаването изтече. Провери връзката си и опитай пак.';
+      'Потвърждаването изтече. Провери връзката си или опитай пак след малко.';
 
   @override
   String get videoFollowButtonFollowing => 'Следване';

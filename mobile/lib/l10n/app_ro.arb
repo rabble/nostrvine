@@ -532,7 +532,7 @@
     "videoErrorSkip": "Sari peste",
     "videoErrorVerifyAgeButton": "Verifică vârsta",
     "videoErrorVerifyAgeFailed": "Nu am putut verifica vârsta. Încearcă din nou.",
-    "videoErrorVerifyAgeSignerUnreachable": "Timpul de verificare a expirat. Verifică-ți conexiunea și încearcă din nou.",
+    "videoErrorVerifyAgeSignerUnreachable": "Timpul de verificare a expirat. Verifică-ți conexiunea sau încearcă din nou în scurt timp.",
     "videoFollowButtonFollowing": "Urmărit",
     "videoFollowButtonFollow": "Urmărește",
     "audioAttributionOriginalSound": "Sunet original",

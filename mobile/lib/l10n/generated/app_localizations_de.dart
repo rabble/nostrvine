@@ -1418,7 +1418,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoErrorVerifyAgeSignerUnreachable =>
-      'Zeitüberschreitung bei der Überprüfung. Prüf deine Verbindung und versuch es nochmal.';
+      'Zeitüberschreitung bei der Überprüfung. Prüf deine Verbindung oder versuch es gleich nochmal.';
 
   @override
   String get videoFollowButtonFollowing => 'Gefolgt';

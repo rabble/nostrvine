@@ -532,7 +532,7 @@
     "videoErrorSkip": "Hoppa över",
     "videoErrorVerifyAgeButton": "Verifiera ålder",
     "videoErrorVerifyAgeFailed": "Det gick inte att verifiera din ålder. Försök igen.",
-    "videoErrorVerifyAgeSignerUnreachable": "Timeout vid verifiering. Kontrollera din anslutning och försök igen.",
+    "videoErrorVerifyAgeSignerUnreachable": "Timeout vid verifiering. Kontrollera din anslutning eller försök igen om en stund.",
     "videoFollowButtonFollowing": "Följer",
     "videoFollowButtonFollow": "Följ",
     "audioAttributionOriginalSound": "Originalljud",

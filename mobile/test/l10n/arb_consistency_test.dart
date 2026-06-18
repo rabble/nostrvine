@@ -80,13 +80,31 @@ void main() {
 
       for (final file in arbFiles) {
         final arb = _readArb(file);
+        final value = arb['videoErrorVerifyAgeSignerUnreachable'];
 
         expect(
-          arb['videoErrorVerifyAgeSignerUnreachable'],
+          value,
+          isA<String>().having((s) => s.isNotEmpty, 'isNotEmpty', isTrue),
+          reason:
+              '${file.path} must define a non-empty signer-unreachable '
+              'message',
+        );
+        expect(
+          value,
           isNot(source),
           reason:
               '${file.path} must not fall back to English for the age-gate '
               'signer-unreachable message',
+        );
+        // The whole point of this key is a distinct remedy from the generic
+        // verify-failed copy; a translation that collapses to that copy
+        // silently defeats it.
+        expect(
+          value,
+          isNot(arb['videoErrorVerifyAgeFailed']),
+          reason:
+              '${file.path} signer-unreachable copy must differ from its '
+              'generic videoErrorVerifyAgeFailed copy',
         );
       }
     });

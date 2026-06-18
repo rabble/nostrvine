@@ -1419,7 +1419,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoErrorVerifyAgeSignerUnreachable =>
-      'Przekroczono czas weryfikacji. Sprawdź połączenie i spróbuj ponownie.';
+      'Przekroczono czas weryfikacji. Sprawdź połączenie lub spróbuj ponownie za chwilę.';
 
   @override
   String get videoFollowButtonFollowing => 'Obserwujesz';

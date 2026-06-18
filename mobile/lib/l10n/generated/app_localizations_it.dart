@@ -1422,7 +1422,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get videoErrorVerifyAgeSignerUnreachable =>
-      'Verifica scaduta. Controlla la connessione e riprova.';
+      'Verifica scaduta. Controlla la connessione o riprova tra poco.';
 
   @override
   String get videoFollowButtonFollowing => 'Segui già';

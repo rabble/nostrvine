@@ -532,7 +532,7 @@
     "videoErrorSkip": "Salta",
     "videoErrorVerifyAgeButton": "Verifica età",
     "videoErrorVerifyAgeFailed": "Non è stato possibile verificare la tua età. Riprova.",
-    "videoErrorVerifyAgeSignerUnreachable": "Verifica scaduta. Controlla la connessione e riprova.",
+    "videoErrorVerifyAgeSignerUnreachable": "Verifica scaduta. Controlla la connessione o riprova tra poco.",
     "videoFollowButtonFollowing": "Segui già",
     "videoFollowButtonFollow": "Segui",
     "audioAttributionOriginalSound": "Audio originale",

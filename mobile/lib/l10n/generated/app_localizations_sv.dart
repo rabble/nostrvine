@@ -1396,7 +1396,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoErrorVerifyAgeSignerUnreachable =>
-      'Timeout vid verifiering. Kontrollera din anslutning och försök igen.';
+      'Timeout vid verifiering. Kontrollera din anslutning eller försök igen om en stund.';
 
   @override
   String get videoFollowButtonFollowing => 'Följer';

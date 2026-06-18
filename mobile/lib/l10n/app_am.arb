@@ -614,7 +614,7 @@
     "videoErrorSkip": "ዝለል",
     "videoErrorVerifyAgeButton": "ዕድሜን ያረጋግጡ",
     "videoErrorVerifyAgeFailed": "ዕድሜህን ማረጋገጥ አልተቻለም። እባክህ እንደገና ሞክር",
-    "videoErrorVerifyAgeSignerUnreachable": "ማረጋገጡ ጊዜው አልፎበታል። ግንኙነትህን አረጋግጠህ እንደገና ሞክር።",
+    "videoErrorVerifyAgeSignerUnreachable": "ማረጋገጡ ጊዜው አልፎበታል። ግንኙነትህን አረጋግጥ ወይም ትንሽ ቆይተህ እንደገና ሞክር።",
     "videoFollowButtonFollowing": "በመከተል ላይ",
     "videoFollowButtonFollow": "ተከተል",
     "audioAttributionOriginalSound": "ኦሪጅናል ድምጽ",

@@ -1408,7 +1408,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoErrorVerifyAgeSignerUnreachable =>
-      'Verificatie duurde te lang. Controleer je verbinding en probeer het opnieuw.';
+      'Verificatie duurde te lang. Controleer je verbinding of probeer het straks opnieuw.';
 
   @override
   String get videoFollowButtonFollowing => 'Volgend';

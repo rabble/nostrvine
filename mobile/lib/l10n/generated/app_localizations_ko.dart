@@ -1318,7 +1318,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoErrorVerifyAgeSignerUnreachable =>
-      '확인 시간이 초과되었습니다. 연결을 확인하고 다시 시도해보세요';
+      '확인 시간이 초과되었습니다. 연결을 확인하거나 잠시 후 다시 시도해보세요';
 
   @override
   String get videoFollowButtonFollowing => '팔로잉';

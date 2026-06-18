@@ -1382,7 +1382,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoErrorVerifyAgeSignerUnreachable =>
-      'Doğrulama zaman aşımına uğradı. Bağlantını kontrol et ve tekrar dene.';
+      'Doğrulama zaman aşımına uğradı. Bağlantını kontrol et ya da birazdan tekrar dene.';
 
   @override
   String get videoFollowButtonFollowing => 'Takip ediliyor';

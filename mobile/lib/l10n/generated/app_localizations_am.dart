@@ -1362,7 +1362,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoErrorVerifyAgeSignerUnreachable =>
-      'ማረጋገጡ ጊዜው አልፎበታል። ግንኙነትህን አረጋግጠህ እንደገና ሞክር።';
+      'ማረጋገጡ ጊዜው አልፎበታል። ግንኙነትህን አረጋግጥ ወይም ትንሽ ቆይተህ እንደገና ሞክር።';
 
   @override
   String get videoFollowButtonFollowing => 'በመከተል ላይ';

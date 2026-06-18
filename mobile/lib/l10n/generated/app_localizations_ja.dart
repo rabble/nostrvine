@@ -1310,7 +1310,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoErrorVerifyAgeSignerUnreachable =>
-      '確認がタイムアウトしました。接続を確認して、もう一回試してみて';
+      '確認がタイムアウトしました。接続を確認するか、少し時間をおいてもう一回試してみて';
 
   @override
   String get videoFollowButtonFollowing => 'フォロー中';

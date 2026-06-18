@@ -1427,7 +1427,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get videoErrorVerifyAgeSignerUnreachable =>
-      'Délai de vérification dépassé. Vérifie ta connexion et réessaie.';
+      'Délai de vérification dépassé. Vérifie ta connexion ou réessaie dans un instant.';
 
   @override
   String get videoFollowButtonFollowing => 'Abonné';

@@ -532,7 +532,7 @@
     "videoErrorSkip": "Überspringen",
     "videoErrorVerifyAgeButton": "Alter verifizieren",
     "videoErrorVerifyAgeFailed": "Wir konnten dein Alter nicht bestätigen. Bitte versuch es nochmal.",
-    "videoErrorVerifyAgeSignerUnreachable": "Zeitüberschreitung bei der Überprüfung. Prüf deine Verbindung und versuch es nochmal.",
+    "videoErrorVerifyAgeSignerUnreachable": "Zeitüberschreitung bei der Überprüfung. Prüf deine Verbindung oder versuch es gleich nochmal.",
     "videoFollowButtonFollowing": "Gefolgt",
     "videoFollowButtonFollow": "Folgen",
     "audioAttributionOriginalSound": "Originalton",

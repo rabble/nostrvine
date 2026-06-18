@@ -1418,7 +1418,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoErrorVerifyAgeSignerUnreachable =>
-      'Tempo de verificação esgotado. Verifique sua conexão e tente novamente.';
+      'Tempo de verificação esgotado. Verifique sua conexão ou tente novamente em breve.';
 
   @override
   String get videoFollowButtonFollowing => 'Seguindo';

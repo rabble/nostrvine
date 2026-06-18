@@ -1400,7 +1400,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoErrorVerifyAgeSignerUnreachable =>
-      'Verification timed out. Check your connection and try again.';
+      'Verification timed out. Check your connection or try again shortly.';
 
   @override
   String get videoFollowButtonFollowing => 'Following';

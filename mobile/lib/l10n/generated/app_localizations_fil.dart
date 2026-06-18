@@ -1427,7 +1427,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoErrorVerifyAgeSignerUnreachable =>
-      'Nag-timeout ang pag-verify. I-check ang koneksyon mo at subukan ulit.';
+      'Nag-timeout ang pag-verify. I-check ang koneksyon mo o subukan ulit mamaya.';
 
   @override
   String get videoFollowButtonFollowing => 'Sinusundan';

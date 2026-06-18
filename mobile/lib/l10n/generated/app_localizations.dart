@@ -2509,7 +2509,7 @@ abstract class AppLocalizations {
   /// Snackbar shown when tapping Verify age on an age-restricted video and the remote signer didn't respond in time (timeout). Distinct from videoErrorVerifyAgeFailed because the remedy is checking connectivity, not re-verifying age.
   ///
   /// In en, this message translates to:
-  /// **'Verification timed out. Check your connection and try again.'**
+  /// **'Verification timed out. Check your connection or try again shortly.'**
   String get videoErrorVerifyAgeSignerUnreachable;
 
   /// No description provided for @videoFollowButtonFollowing.
