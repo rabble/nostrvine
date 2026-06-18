@@ -107,7 +107,19 @@ class DatabaseEncryptionBootstrap {
           // inbox open skip the full re-drain and strand recovered chats under
           // "Message requests". Clear DM sync state so recovery re-runs against
           // the fresh DB. See #5304.
-          await _onDatabaseReset?.call();
+          //
+          // Best-effort: a SharedPreferences IO failure here only re-strands
+          // requests (itself healed by the drain-version bump) and must not
+          // escalate into a hard cipher-key-resolution failure now that the DB
+          // has already been recreated.
+          try {
+            await _onDatabaseReset?.call();
+          } on Object catch (e) {
+            Log.warning(
+              'Post-recreate DM sync-state reset failed (non-fatal): $e',
+              name: _logName,
+            );
+          }
         }
         return key;
       case CipherMigrationOutcome.failed:

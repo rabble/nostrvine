@@ -2481,6 +2481,194 @@ void main() {
       );
 
       test(
+        'recovers outgoing NIP-04 by paging authors:[self] newest→oldest, '
+        'flips the conversation to accepted, and terminates (#5304)',
+        () async {
+          const peer = _validPubkeyB;
+          const outgoingId =
+              'facefaceface0001facefaceface0001'
+              'facefaceface0001facefaceface0001';
+          // Self-authored (pubkey == current user) kind-4 to a peer: this is
+          // exactly the shape the `p:[self]` drain filter cannot see.
+          final outgoing = Event.fromJson({
+            'id': outgoingId,
+            'pubkey': _validPubkeyA,
+            'created_at': 500,
+            'kind': EventKind.directMessage,
+            'tags': [
+              ['p', peer],
+            ],
+            'content': 'encrypted-outgoing',
+            'sig': '',
+          });
+
+          // Gift-wrap drain (p:[self]) exhausts immediately; the NIP-04
+          // recovery (authors:[self], no p) returns one page then empties.
+          final authorsUntils = <int?>[];
+          var nip04Pages = 0;
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            final isNip04Recovery =
+                filter.authors != null && (filter.p?.isEmpty ?? true);
+            if (!isNip04Recovery) return const <Event>[];
+            authorsUntils.add(filter.until);
+            nip04Pages++;
+            return nip04Pages == 1 ? [outgoing] : const <Event>[];
+          });
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(
+            syncState: syncState,
+            nip04Decryptor: (_, _) async => 'recovered reply',
+          );
+
+          await repository.backfillHistoryIfNeeded();
+
+          // The self-authored kind-4 was ingested and flipped the conversation
+          // to accepted (currentUserHasSent: true) for the [self, peer] room.
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: DmRepository.computeConversationId([_validPubkeyA, peer]),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: true,
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).called(1);
+
+          // Paged authors:[self] strictly newest→oldest, then terminated.
+          expect(authorsUntils.length, greaterThanOrEqualTo(2));
+          for (var i = 1; i < authorsUntils.length; i++) {
+            expect(authorsUntils[i]! < authorsUntils[i - 1]!, isTrue);
+          }
+          // NIP-04 recovery ran against a live relay → drain marked complete.
+          expect(syncState.drainCompleteOverride, isTrue);
+        },
+      );
+
+      test(
+        'defers drain completion when outgoing NIP-04 recovery cannot reach a '
+        'relay (no silent skip) (#5304)',
+        () async {
+          final capturedUntil = <int?>[];
+          // Gift-wrap drain reaches the end with relays connected, but the
+          // relay drops before the NIP-04 recovery pass: its first page comes
+          // back empty with 0 connected relays. Recovery must NOT be treated
+          // as "nothing to recover" and the drain must NOT be marked complete.
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            final isNip04Recovery =
+                filter.authors != null && (filter.p?.isEmpty ?? true);
+            if (isNip04Recovery) {
+              // Simulate a disconnect for the recovery window.
+              when(
+                () => mockNostrClient.connectedRelayCount,
+              ).thenReturn(0);
+              return const <Event>[];
+            }
+            capturedUntil.add(filter.until);
+            return const <Event>[]; // gift-wrap drain reaches the end
+          });
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(capturedUntil, isNotEmpty);
+          expect(syncState.drainCompleteOverride, isFalse);
+          expect(syncState.markedCompletePubkeys, isEmpty);
+        },
+      );
+
+      test(
         're-runs once for an install stranded complete by an older drain '
         '(drainVersion below current) — #5202',
         () async {
@@ -2790,9 +2978,16 @@ void main() {
               useCache: any(named: 'useCache'),
             ),
           ).thenAnswer((inv) async {
-            final filters =
-                inv.positionalArguments.first as List<nostr_filter.Filter>;
-            final pubkey = filters.single.p!.single;
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            // The outgoing-NIP-04 recovery pass (#5304) queries authors:[self]
+            // with no p tag after the gift-wrap drain completes. Return empty
+            // so this test stays focused on gift-wrap drain pubkey routing.
+            if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+              return const <Event>[];
+            }
+            final pubkey = filter.p!.single;
             queriedPubkeys.add(pubkey);
 
             if (pubkey == _validPubkeyA) {

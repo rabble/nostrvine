@@ -1327,6 +1327,7 @@ Future<void> _startOpenVineApp() async {
         stack,
         reason: 'DatabaseEncryptionBootstrap.resolveCipherKey failed',
       ),
+    ),
     runApp: runApp,
     removeNativeSplash: FlutterNativeSplash.remove,
   );

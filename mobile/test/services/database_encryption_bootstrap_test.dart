@@ -144,6 +144,25 @@ void main() {
       },
     );
 
+    test(
+      'a failing onDatabaseReset does not abort cipher-key resolution (#5304)',
+      () async {
+        // A SharedPreferences IO failure while clearing DM sync state must not
+        // escalate into a hard cipher-key-resolution failure now that the DB
+        // has already been recreated — it only re-strands requests, which the
+        // drain-version bump heals.
+        final bootstrap = buildBootstrap(
+          outcome: CipherMigrationOutcome.alreadyEncrypted,
+          onDelete: () {},
+          onReset: () => throw StateError('prefs IO failure'),
+        );
+
+        final key = await bootstrap.resolveCipherKey();
+
+        expect(key, matches(RegExp(r'^[0-9a-f]{64}$')));
+      },
+    );
+
     test('does not clear DM sync state when the key is intact', () async {
       const existing =
           '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';

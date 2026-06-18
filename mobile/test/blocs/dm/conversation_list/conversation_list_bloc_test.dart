@@ -727,32 +727,42 @@ void main() {
 
       group('recovery-aware request gate (#5304)', () {
         blocTest<ConversationListBloc, ConversationListState>(
-          'keeps would-be requests in the inbox while DM history recovery '
-          'is still running (post-reinstall window)',
+          'holds back would-be requests (neither inbox nor requests) while '
+          'DM history recovery is running, but keeps accepted chats visible',
           setUp: () {
-            // Unfollowed + never-replied → would normally be requests.
             when(
               () => mockFollowRepository.isFollowing(any()),
             ).thenReturn(false);
             when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
-            final conversations = [
-              _createConversation(id: _testConversationId1),
-              _createConversation(id: _testConversationId2),
-            ];
-            // Recovery NOT complete → the gate suppresses the request split so
-            // a previously-accepted chat is never shown as a brand-new
-            // "message request" before its own message is re-ingested.
+            // Recovery NOT complete. The accepted chat is unambiguous and
+            // stays visible; the unfollowed/never-replied potential is
+            // ambiguous (it may be an established chat whose own message
+            // hasn't been re-ingested yet) and is held back until recovery
+            // completes — shown neither in the inbox (the "reversed" churn
+            // hm21 hit) nor as a request (the original #5304 bug).
             _stubStreams(
               mockDmRepository,
-              potentialRequests: conversations,
+              accepted: [
+                _createConversation(
+                  id: _testConversationId1,
+                  currentUserHasSent: true,
+                ),
+              ],
+              potentialRequests: [
+                _createConversation(id: _testConversationId2),
+              ],
               recoveryComplete: false,
             );
           },
           build: createBloc,
           act: (bloc) => bloc.add(const ConversationListStarted()),
           verify: (bloc) {
+            expect(bloc.state.conversations, hasLength(1));
+            expect(
+              bloc.state.conversations.first.id,
+              equals(_testConversationId1),
+            );
             expect(bloc.state.requestConversations, isEmpty);
-            expect(bloc.state.conversations, hasLength(2));
           },
         );
 

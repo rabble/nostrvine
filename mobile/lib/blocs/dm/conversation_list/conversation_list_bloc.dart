@@ -103,20 +103,22 @@ class ConversationListBloc
         );
 
         // While the one-time history-recovery drain is still running
-        // (post-reinstall window), do NOT segregate conversations into
-        // message requests. A previously-accepted chat re-materializes from
-        // the peer's message before the user's own message is re-ingested, so
-        // the request bucket would transiently surface established
-        // conversations (the #5304 symptom). Keep every conversation in the
-        // inbox until recovery completes, then apply the normal follow-based
-        // split. See #5304.
+        // (post-reinstall window), HOLD BACK the conversations that would
+        // classify as requests. Until the drain re-ingests the user's own
+        // message for a chat, a previously-accepted conversation is
+        // indistinguishable from a genuine request — both have
+        // currentUserHasSent=false and an unfollowed peer. Showing them as
+        // requests is the original #5304 bug; showing them in the inbox makes
+        // real requests flash there and then jump to the Requests tab once
+        // recovery completes. So during recovery we surface only the
+        // unambiguous chats (accepted + followed), backed by the restore
+        // indicator, and let the ambiguous ones settle into their correct
+        // bucket as soon as recovery completes. See #5304.
         final recoveryComplete = _dmRepository.isHistoryRecoveryComplete;
-        final inboxConversations = recoveryComplete
-            ? DmRepository.mergeAndSort(data.accepted, split.followed)
-            : DmRepository.mergeAndSort(data.accepted, [
-                ...split.followed,
-                ...split.requests,
-              ]);
+        final inboxConversations = DmRepository.mergeAndSort(
+          data.accepted,
+          split.followed,
+        );
         final requests = recoveryComplete
             ? split.requests
             : const <DmConversation>[];
