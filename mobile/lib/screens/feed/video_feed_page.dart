@@ -152,11 +152,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-  }
-
-  @override
   void dispose() {
     _pagePosition.dispose();
     unawaited(_autoAdvanceCubit.close());
