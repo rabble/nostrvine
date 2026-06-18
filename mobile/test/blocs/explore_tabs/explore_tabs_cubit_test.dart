@@ -2,7 +2,7 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/screens/explore/explore_tabs_cubit.dart';
+import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 
 void main() {
   group(ExploreTabsCubit, () {

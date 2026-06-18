@@ -9,9 +9,9 @@ import 'package:openvine/providers/video_events_providers.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Banner that surfaces buffered new videos and loads them on tap.
-class ExploreNewVideosBanner extends ConsumerWidget {
+class ExploreBufferedVideosBanner extends ConsumerWidget {
   /// Creates the buffered-videos banner.
-  const ExploreNewVideosBanner({super.key});
+  const ExploreBufferedVideosBanner({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

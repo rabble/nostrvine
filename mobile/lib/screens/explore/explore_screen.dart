@@ -3,8 +3,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
-import 'package:openvine/screens/explore/explore_tabs_cubit.dart';
 import 'package:openvine/screens/explore/explore_view.dart';
 
 /// Explore screen: a thin tabs Page over [ExploreTabsCubit] + [ExploreView].

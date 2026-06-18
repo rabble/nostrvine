@@ -3,8 +3,8 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/screens/explore/explore_tabs_cubit.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 /// The explore screen's scrollable tab bar.

@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -17,14 +18,11 @@ import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
-import 'package:openvine/screens/explore/explore_tabs_cubit.dart';
 import 'package:openvine/screens/explore/widgets/explore_feed_content.dart';
 import 'package:openvine/screens/explore/widgets/explore_tab_bar.dart';
 import 'package:openvine/screens/explore/widgets/explore_tab_view.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -48,8 +46,6 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   TabController? _tabController;
   // Feed mode and videos are derived from URL + providers - no internal state.
   String? _hashtagMode; // When non-null, showing hashtag feed
-
-  final _screenAnalytics = ScreenAnalyticsService();
 
   ExploreTabsCubit get _tabs => context.read<ExploreTabsCubit>();
   ExploreTabsState get _tabsState => _tabs.state;
@@ -92,7 +88,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     _initTabController();
 
     // Track Explore-specific data load completion from child tabs.
-    _screenAnalytics.startScreenLoad('explore_screen');
+    _tabs.trackScreenLoad();
 
     // Load top hashtags for trending navigation
     _loadHashtags();
@@ -115,7 +111,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   }
 
   Future<void> _loadHashtags() async {
-    await TopHashtagsService.instance.loadTopHashtags();
+    await _tabs.loadHashtags();
     // Trigger UI update to show loaded hashtags immediately
     if (mounted) {
       setState(() {});
@@ -158,10 +154,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     ref.read(exploreTabIndexProvider.notifier).state = index;
 
     // Track tab change
-    _screenAnalytics.trackTabChange(
-      screenName: 'explore_screen',
-      tabName: tabName,
-    );
+    _tabs.trackTabChange(tabName);
 
     // Exit feed or hashtag mode when user switches tabs
     _resetToDefaultState();
@@ -368,7 +361,6 @@ class _ExploreViewState extends ConsumerState<ExploreView>
             return ExploreTabView(
               controller: _tabController,
               tabsState: _tabsState,
-              screenAnalytics: _screenAnalytics,
             );
           },
           loading: () => const Center(child: BrandedLoadingIndicator()),

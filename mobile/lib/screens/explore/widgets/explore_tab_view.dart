@@ -2,11 +2,10 @@
 // ABOUTME: buffered-videos banner overlay.
 
 import 'package:flutter/material.dart';
+import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
-import 'package:openvine/screens/explore/explore_tabs_cubit.dart';
 import 'package:openvine/screens/explore/tabs/explore_lists_tab.dart';
-import 'package:openvine/screens/explore/widgets/explore_new_videos_banner.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/screens/explore/widgets/explore_buffered_videos_banner.dart';
 import 'package:openvine/widgets/categories_tab.dart';
 import 'package:openvine/widgets/classic_vines_tab.dart';
 import 'package:openvine/widgets/for_you_tab.dart';
@@ -22,7 +21,6 @@ class ExploreTabView extends StatelessWidget {
   const ExploreTabView({
     required this.controller,
     required this.tabsState,
-    required this.screenAnalytics,
     super.key,
   });
 
@@ -32,9 +30,6 @@ class ExploreTabView extends StatelessWidget {
   /// Current tab availability/order.
   final ExploreTabsState tabsState;
 
-  /// Screen analytics passed to the feed tabs.
-  final ScreenAnalyticsService screenAnalytics;
-
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -43,8 +38,10 @@ class ExploreTabView extends StatelessWidget {
           controller: controller,
           children: [
             if (tabsState.classicsAvailable) const ClassicVinesTab(),
-            NewVideosTab(screenAnalytics: screenAnalytics),
-            PopularVideosTab(screenAnalytics: screenAnalytics),
+            // Feed tabs default to the ScreenAnalyticsService singleton when
+            // not given one, so no instance needs threading through here.
+            const NewVideosTab(),
+            const PopularVideosTab(),
             const CategoriesTab(),
             if (tabsState.forYouAvailable) const ForYouTab(),
             const ExploreListsTab(),
@@ -60,7 +57,7 @@ class ExploreTabView extends StatelessWidget {
               final currentIndex = controller!.index;
               if (currentIndex == tabsState.newVideosIndex ||
                   currentIndex == tabsState.trendingIndex) {
-                return const ExploreNewVideosBanner();
+                return const ExploreBufferedVideosBanner();
               }
               return const SizedBox.shrink();
             },
