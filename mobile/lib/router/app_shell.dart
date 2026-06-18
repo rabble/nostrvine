@@ -253,6 +253,19 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
   Widget build(BuildContext context) {
     final title = _titleFor(context, ref);
 
+    // Publish the authoritative active branch (navigationShell.currentIndex)
+    // so backgrounded tab screens can pause off it. Deferred to a post-frame
+    // callback because a provider must not be mutated during build. This is
+    // the platform-agnostic source — the URL-derived pageContext can lag on
+    // web for StatefulShellRoute branch switches, which left the home feed
+    // playing on other tabs there.
+    final activeIndex = currentIndex;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final notifier = ref.read(activeBranchIndexProvider.notifier);
+      if (notifier.state != activeIndex) notifier.state = activeIndex;
+    });
+
     // Initialize auto-cleanup provider to ensure only one video plays at a time
     ref.watch(videoControllerAutoCleanupProvider);
 

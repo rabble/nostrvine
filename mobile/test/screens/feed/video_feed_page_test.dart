@@ -17,6 +17,7 @@ import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
@@ -605,26 +606,30 @@ void main() {
         ).read(shellObscuredProvider.notifier).setObscured(obscured: obscured);
       }
 
+      // Drives the authoritative active tab (0 = Home) the home feed pauses on.
+      void setBranchIndex(WidgetTester tester, int index) {
+        containerOf(tester).read(activeBranchIndexProvider.notifier).state =
+            index;
+      }
+
       testWidgets(
-        'stays paused when GoRouter falsely reports "home" while a route still '
-        'covers the shell',
+        'stays paused while a route covers the shell, even on the home tab',
         (tester) async {
-          final controller = await pumpFeed(tester);
+          await pumpFeed(tester);
 
           // Feed starts active on the home tab.
-          controller.add('/home/0');
           await tester.pump();
           expect(feedVideos(tester).isActive, isTrue);
 
-          // Open a profile (full-screen route covers the shell): feed pauses.
+          // A full-screen route covers the shell: feed pauses.
           setObscured(tester, obscured: true);
           await tester.pump();
           expect(feedVideos(tester).isActive, isFalse);
 
-          // Closing a fullscreen video opened from the profile pops back to the
-          // profile, where GoRouter emits the shell location "/home". The
-          // profile still covers the shell, so the feed must NOT resume.
-          controller.add('/home/0');
+          // Home is still the active branch (e.g. a fullscreen video opened
+          // from the profile is popped back to the still-covering profile), but
+          // the shell stays covered, so the feed must NOT resume.
+          setBranchIndex(tester, 0);
           await tester.pump();
           expect(feedVideos(tester).isActive, isFalse);
 
@@ -635,8 +640,7 @@ void main() {
       testWidgets(
         'resumes only once the shell is no longer covered',
         (tester) async {
-          final controller = await pumpFeed(tester);
-          controller.add('/home/0');
+          await pumpFeed(tester);
           await tester.pump();
           expect(feedVideos(tester).isActive, isTrue);
 
@@ -645,8 +649,8 @@ void main() {
           await tester.pump();
           expect(feedVideos(tester).isActive, isFalse);
 
-          // Profile closed (shell revealed) while the route reports home:
-          // the feed resumes.
+          // Profile closed (shell revealed) while home is still the active
+          // branch: the feed resumes.
           setObscured(tester, obscured: false);
           await tester.pump();
           expect(feedVideos(tester).isActive, isTrue);
@@ -655,19 +659,18 @@ void main() {
         },
       );
 
-      testWidgets('pauses on a non-home route and resumes back on home', (
+      testWidgets('pauses on a non-home tab and resumes back on home', (
         tester,
       ) async {
-        final controller = await pumpFeed(tester);
-        controller.add('/home/0');
+        await pumpFeed(tester);
         await tester.pump();
         expect(feedVideos(tester).isActive, isTrue);
 
-        controller.add('/explore');
+        setBranchIndex(tester, 1); // Explore
         await tester.pump();
         expect(feedVideos(tester).isActive, isFalse);
 
-        controller.add('/home/0');
+        setBranchIndex(tester, 0); // back to Home
         await tester.pump();
         expect(feedVideos(tester).isActive, isTrue);
 

@@ -1,5 +1,5 @@
 // ABOUTME: Proves each StatefulShellRoute branch sees its own scoped pageContext
-// ABOUTME: while activeRouteTypeProvider stays global (so feeds can pause)
+// ABOUTME: so a kept-alive inactive branch keeps rendering its real content
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,11 +29,9 @@ class _Probe extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Scoped: this branch's own route. Global: the actually-active tab.
     final scoped = ref.watch(pageContextProvider).asData?.value.type;
-    final active = ref.watch(activeRouteTypeProvider);
     return Text(
-      '$label scoped=${scoped?.name ?? 'none'} active=${active?.name ?? 'none'}',
+      '$label scoped=${scoped?.name ?? 'none'}',
       textDirection: TextDirection.ltr,
     );
   }
@@ -76,81 +74,27 @@ GoRouter _buildRouter() => GoRouter(
 );
 
 void main() {
-  // Regression: activeRouteTypeProvider must not add a second listener to the
-  // single-subscription routerLocationStreamProvider (already consumed by the
-  // global pageContextProvider). If it does, the second listen throws and the
-  // home feed silently keeps playing on other tabs.
-  testWidgets('global pageContext and activeRouteType coexist', (tester) async {
-    final router = GoRouter(
-      initialLocation: '/home/0',
-      routes: [
-        GoRoute(
-          path: '/home/:index',
-          builder: (_, _) => const SizedBox.shrink(),
-        ),
-        GoRoute(path: '/explore', builder: (_, _) => const SizedBox.shrink()),
-      ],
-    );
+  testWidgets('an inactive branch keeps its own scoped pageContext', (
+    tester,
+  ) async {
+    final router = _buildRouter();
     addTearDown(router.dispose);
 
-    RouteType? ctxType;
-    RouteType? activeType;
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [goRouterProvider.overrideWithValue(router)],
-        child: MaterialApp.router(
-          routerConfig: router,
-          builder: (context, child) => Consumer(
-            builder: (context, ref, _) {
-              // Both global providers read at once — the broken version makes
-              // the second one throw "Stream already listened".
-              ctxType = ref.watch(pageContextProvider).asData?.value.type;
-              activeType = ref.watch(activeRouteTypeProvider);
-              return child!;
-            },
-          ),
-        ),
-      ),
+      ProviderScope(child: MaterialApp.router(routerConfig: router)),
     );
     await tester.pumpAndSettle();
 
-    expect(ctxType, RouteType.home);
-    expect(activeType, RouteType.home);
-    expect(tester.takeException(), isNull);
+    expect(find.text('home scoped=home'), findsOneWidget);
+
+    router.go('/explore');
+    await tester.pumpAndSettle();
+
+    // The newly active branch shows its own context...
+    expect(find.text('explore scoped=explore'), findsOneWidget);
+    // ...and the kept-alive home branch STILL renders its OWN content (it did
+    // NOT blank to the active 'explore' route) — that is what gives the
+    // cross-fade two live tabs to dissolve between.
+    expect(find.text('home scoped=home'), findsOneWidget);
   });
-
-  testWidgets(
-    'inactive branch keeps its scoped context; active type stays global',
-    (tester) async {
-      final router = _buildRouter();
-      addTearDown(router.dispose);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          // pageContextProvider (which activeRouteTypeProvider derives from)
-          // resolves the router location via goRouterProvider, so point it at
-          // the test router.
-          overrides: [goRouterProvider.overrideWithValue(router)],
-          child: MaterialApp.router(routerConfig: router),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // On home: home branch sees its own route AND is the active tab.
-      expect(find.text('home scoped=home active=home'), findsOneWidget);
-
-      router.go('/explore');
-      await tester.pumpAndSettle();
-
-      // Active branch: its own route, and it is the active tab.
-      expect(
-        find.text('explore scoped=explore active=explore'),
-        findsOneWidget,
-      );
-      // Kept-alive home branch: still renders its OWN content (scoped=home) so
-      // the cross-fade has something to dissolve, but knows it is NOT the
-      // active tab (active=explore) — which is what lets the home feed pause.
-      expect(find.text('home scoped=home active=explore'), findsOneWidget);
-    },
-  );
 }

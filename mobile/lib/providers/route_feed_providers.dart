@@ -49,6 +49,16 @@ final exploreTabIndexProvider = StateProvider<int>((ref) => 1);
 /// Valid values: 'classics', 'new', 'popular', 'for_you', 'lists', 'apps'
 final forceExploreTabNameProvider = StateProvider<String?>((ref) => null);
 
+/// Index of the currently-active bottom-nav branch
+/// (0 = Home, 1 = Explore, 2 = Inbox, 3 = Profile).
+///
+/// Kept in sync by [AppShell] from the StatefulShellRoute's
+/// `navigationShell.currentIndex` — the authoritative active-tab signal set by
+/// go_router. Backgrounded tab screens (e.g. the home feed) pause off this
+/// rather than the URL-derived pageContext, which can lag on web for
+/// StatefulShellRoute branch switches.
+final activeBranchIndexProvider = StateProvider<int>((ref) => 0);
+
 /// Explore feed state (discovery/all videos)
 /// Returns AsyncValue<VideoFeedState> for route-aware explore screen
 /// Uses tab-specific list when in feed mode, otherwise sorted by loop count

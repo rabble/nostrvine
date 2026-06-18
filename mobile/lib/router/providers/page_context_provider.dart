@@ -725,15 +725,3 @@ final pageContextProvider = StreamProvider<RouteContext>((ref) async* {
 /// active one?" — e.g. the home feed pausing playback when backgrounded —
 /// reads this provider, which derives from the un-scoped router location and
 /// therefore always reflects the real active tab.
-final activeRouteTypeProvider = Provider<RouteType?>((ref) {
-  // Derives from pageContextProvider rather than re-listening
-  // routerLocationStreamProvider directly (that stream is single-subscription
-  // and already consumed by pageContextProvider — a second listener throws and
-  // silently left the home feed playing on other tabs).
-  //
-  // Crucially this provider is NOT overridden per StatefulShellRoute branch (only
-  // pageContextProvider is), so Riverpod instantiates it in the root container
-  // and it always reads the *root* (global) pageContext — the genuinely active
-  // tab — even when read from inside a branch whose pageContext is scoped.
-  return ref.watch(pageContextProvider).asData?.value.type;
-});

@@ -11,6 +11,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/router/router.dart';
@@ -183,13 +184,11 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// open. See the listeners in [build] for the rationale.
   void _syncFeedActive() {
     if (!mounted) return;
-    // Global active tab — not the branch-scoped pageContextProvider, which is
-    // pinned to "home" inside the home branch and never reports leaving it.
-    final routeType = ref.read(activeRouteTypeProvider);
-    // Hold the current state until the route context resolves.
-    if (routeType == null) return;
-
-    final isHomeRoute = routeType == RouteType.home;
+    // Home is the first bottom-nav branch (index 0). Use the authoritative
+    // active-branch index (set by AppShell from navigationShell) rather than
+    // the URL-derived route: the latter can lag on web for StatefulShellRoute
+    // branch switches, which left the feed playing on other tabs there.
+    final isHomeRoute = ref.read(activeBranchIndexProvider) == 0;
     final isObscured = ref.read(shellObscuredProvider);
     final hasOverlay = ref.read(overlayVisibilityProvider).hasVisibleOverlay;
 
@@ -207,15 +206,16 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     // pushed routes keep this widget mounted, so playback must follow these
     // signals instead of assuming disposal handles every transition.
     //
-    // Uses activeRouteTypeProvider (the *global* active tab), NOT
-    // pageContextProvider: inside the StatefulShellRoute home branch the latter
-    // is scoped to "home" and never flips when the tab is backgrounded, so it
-    // would leave the feed playing on other tabs. [shellObscuredProvider] —
-    // driven by AppShell's RouteAware subscription to the root navigator —
-    // covers the orthogonal case where a full-screen route covers the shell
-    // (e.g. profile → fullscreen video → pop back to profile), which the route
-    // type alone cannot detect.
-    ref.listen(activeRouteTypeProvider, (_, _) => _syncFeedActive());
+    // Uses activeBranchIndexProvider (the authoritative active tab from
+    // navigationShell), NOT pageContextProvider: inside the StatefulShellRoute
+    // home branch the latter is scoped to "home" and never flips when the tab
+    // is backgrounded, and the URL-derived route can lag on web — both would
+    // leave the feed playing on other tabs. [shellObscuredProvider] — driven by
+    // AppShell's RouteAware subscription to the root navigator — covers the
+    // orthogonal case where a full-screen route covers the shell (e.g. profile
+    // → fullscreen video → pop back to profile), which the active tab alone
+    // cannot detect.
+    ref.listen(activeBranchIndexProvider, (_, _) => _syncFeedActive());
     ref.listen(shellObscuredProvider, (_, _) => _syncFeedActive());
     ref.listen(overlayVisibilityProvider, (_, _) => _syncFeedActive());
 
