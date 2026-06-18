@@ -247,6 +247,30 @@ void main() {
         },
       );
 
+      test(
+        'forces a one-time re-drain for installs stranded at the pre-#5304 '
+        'drain version (2)',
+        () async {
+          // #5304 bumped the drain version so installs whose earlier drain
+          // completed before the user's own messages were recovered (which
+          // stranded established chats under "Message requests") get one fresh
+          // recovery pass under the new recovery-aware gate + NIP-04 recovery.
+          expect(
+            DmSyncState.currentDrainVersion,
+            greaterThanOrEqualTo(3),
+            reason: 'drain version must advance past the pre-#5304 value (2)',
+          );
+
+          await state.setDrainVersion(pkA, 2);
+          await state.markHistoryDrainComplete(pkA);
+
+          await state.upgradeDrainVersionIfNeeded(pkA);
+
+          expect(state.historyDrainComplete(pkA), isFalse);
+          expect(state.drainVersion(pkA), DmSyncState.currentDrainVersion);
+        },
+      );
+
       test('clear and clearAll reset the drain version', () async {
         await state.setDrainVersion(pkA, DmSyncState.currentDrainVersion);
         await state.setDrainVersion(pkB, DmSyncState.currentDrainVersion);

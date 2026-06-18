@@ -43,6 +43,7 @@ void main() {
       required CipherMigrationOutcome outcome,
       required void Function() onDelete,
       bool cipherAvailable = true,
+      void Function()? onReset,
     }) {
       return DatabaseEncryptionBootstrap(
         secureStorage: storage,
@@ -50,6 +51,7 @@ void main() {
         isCipherAvailable: () => cipherAvailable,
         migrate: (_) async => outcome,
         deleteDatabase: () async => onDelete(),
+        onDatabaseReset: onReset == null ? null : () async => onReset(),
       );
     }
 
@@ -120,6 +122,55 @@ void main() {
 
       expect(key, matches(RegExp(r'^[0-9a-f]{64}$')));
       expect(deleted, isTrue);
+    });
+
+    test(
+      'clears DM sync state on key loss so the inbox re-drains (#5304)',
+      () async {
+        // Key-loss recreate wipes the Drift DB but leaves SharedPreferences; the
+        // bootstrap must signal a reset so the DM sync cursors / drain-complete
+        // flag are cleared, otherwise recovered chats stay stranded under
+        // "Message requests".
+        var reset = false;
+        final bootstrap = buildBootstrap(
+          outcome: CipherMigrationOutcome.alreadyEncrypted,
+          onDelete: () {},
+          onReset: () => reset = true,
+        );
+
+        await bootstrap.resolveCipherKey();
+
+        expect(reset, isTrue);
+      },
+    );
+
+    test('does not clear DM sync state when the key is intact', () async {
+      const existing =
+          '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+      store[dbCipherKeyStorageKey] = existing;
+      var reset = false;
+      final bootstrap = buildBootstrap(
+        outcome: CipherMigrationOutcome.alreadyEncrypted,
+        onDelete: () {},
+        onReset: () => reset = true,
+      );
+
+      await bootstrap.resolveCipherKey();
+
+      expect(reset, isFalse, reason: 'key intact => not a reset');
+    });
+
+    test('does not clear DM sync state on a normal migration', () async {
+      var reset = false;
+      final bootstrap = buildBootstrap(
+        outcome: CipherMigrationOutcome.migrated,
+        onDelete: () {},
+        onReset: () => reset = true,
+      );
+
+      await bootstrap.resolveCipherKey();
+
+      expect(reset, isFalse);
     });
 
     test('returns null (plaintext fallback) when migration failed', () async {

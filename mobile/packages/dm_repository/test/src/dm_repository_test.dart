@@ -2350,7 +2350,15 @@ void main() {
         ).thenAnswer((inv) async {
           final filters =
               inv.positionalArguments.first as List<nostr_filter.Filter>;
-          final until = filters.single.until;
+          final filter = filters.single;
+          // The outgoing-NIP-04 recovery pass (#5304) runs after the gift-wrap
+          // drain reaches the end and queries `authors:[self]` with no `p`
+          // tag. Return empty (and don't capture its cursor) so these gift-wrap
+          // pagination assertions stay focused on the drain itself.
+          if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+            return const <Event>[];
+          }
+          final until = filter.until;
           capturedUntil.add(until);
           // Mirror NIP-01 `until` (inclusive) semantics.
           return history
@@ -2400,6 +2408,75 @@ void main() {
           await repository.backfillHistoryIfNeeded();
 
           expect(syncState.drainCompleteOverride, isTrue);
+        },
+      );
+
+      test(
+        "queries the user's own outgoing NIP-04 (authors:[self], kind 4) "
+        'when the drain completes (#5304)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          final capturedFilters = <nostr_filter.Filter>[];
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((inv) async {
+            capturedFilters.addAll(
+              inv.positionalArguments.first as List<nostr_filter.Filter>,
+            );
+            // Gift-wrap drain exhausts immediately; the NIP-04 recovery query
+            // also returns empty — we only assert that it was issued.
+            return const <Event>[];
+          });
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          // The user's own outgoing NIP-04 is `author=self, p=recipient`,
+          // invisible to the `p:[self]` drain filter; this authors-scoped pass
+          // lets such legacy conversations re-prove `currentUserHasSent` so
+          // they are not stranded as message requests after a wipe.
+          expect(
+            capturedFilters.any(
+              (f) =>
+                  (f.authors?.contains(_validPubkeyA) ?? false) &&
+                  (f.kinds?.contains(EventKind.directMessage) ?? false),
+            ),
+            isTrue,
+          );
+          expect(syncState.drainCompleteOverride, isTrue);
+        },
+      );
+
+      test(
+        'isHistoryRecoveryComplete reflects the persisted drain-complete flag '
+        '(#5304)',
+        () {
+          final incomplete = _FakeDmSyncState()..drainCompleteOverride = false;
+          expect(
+            createRepository(syncState: incomplete).isHistoryRecoveryComplete,
+            isFalse,
+          );
+
+          final complete = _FakeDmSyncState()..drainCompleteOverride = true;
+          expect(
+            createRepository(syncState: complete).isHistoryRecoveryComplete,
+            isTrue,
+          );
+        },
+      );
+
+      test(
+        'isHistoryRecoveryComplete is true when no sync state is wired (#5304)',
+        () {
+          expect(createRepository().isHistoryRecoveryComplete, isTrue);
         },
       );
 

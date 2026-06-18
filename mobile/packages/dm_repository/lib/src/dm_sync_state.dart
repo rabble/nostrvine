@@ -36,7 +36,13 @@ class DmSyncState {
   /// recovered (inherent reinstall-recovery limit). Pre-#5202 installs have no
   /// version key (reads as 0). Bump this whenever a drain-correctness fix must
   /// force one more recovery pass. See #5202.
-  static const int currentDrainVersion = 2;
+  ///
+  /// Bumped to 3 for #5304: combined with the recovery-aware request gate and
+  /// the NIP-04 `authors:[self]` recovery pass, a single forced re-drain
+  /// unsticks installs whose earlier drain completed before the user's own
+  /// historical messages were recovered — which had stranded established chats
+  /// under "Message requests".
+  static const int currentDrainVersion = 3;
 
   /// Returns the newest (highest) `created_at` unix timestamp we have
   /// successfully processed for [pubkey], or `null` if nothing has been

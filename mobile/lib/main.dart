@@ -11,6 +11,7 @@ import 'package:cache_sync/cache_sync.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart'
     show DivineVideoPlayerController;
+import 'package:dm_repository/dm_repository.dart' show DmSyncState;
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -1312,6 +1313,11 @@ Future<void> _startOpenVineApp() async {
         secureStorage: const FlutterSecureStorage(
           aOptions: AndroidOptions(encryptedSharedPreferences: true),
         ),
+        // On the key-loss recreate the Drift DB is wiped but SharedPreferences
+        // survives; clear the DM sync state so the next inbox open runs a full
+        // re-drain instead of skipping it as "already complete" (which had
+        // left recovered chats stranded under "Message requests"). See #5304.
+        onDatabaseReset: () => DmSyncState(sharedPreferences).clearAll(),
       ).resolveCipherKey(),
       // SQLCipher build misconfiguration or secure-storage failures must fail
       // closed after reporting. Continuing with a null key would open an
@@ -1321,7 +1327,6 @@ Future<void> _startOpenVineApp() async {
         stack,
         reason: 'DatabaseEncryptionBootstrap.resolveCipherKey failed',
       ),
-    ),
     runApp: runApp,
     removeNativeSplash: FlutterNativeSplash.remove,
   );

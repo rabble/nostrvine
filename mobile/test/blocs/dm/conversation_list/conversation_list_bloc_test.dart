@@ -60,6 +60,7 @@ void _stubStreams(
   List<DmConversation> potentialRequests = const [],
   Stream<bool>? recoveryStream,
   bool isRecovering = false,
+  bool recoveryComplete = true,
 }) {
   when(
     () => repo.watchAcceptedConversations(limit: any(named: 'limit')),
@@ -68,6 +69,9 @@ void _stubStreams(
     () => repo.watchPotentialRequests(),
   ).thenAnswer((_) => Stream.value(potentialRequests));
   when(() => repo.isRecoveringHistory).thenReturn(isRecovering);
+  // Recovery-aware request gate (#5304): defaults to "complete" so the normal
+  // follow-based split applies; gate tests pass `recoveryComplete: false`.
+  when(() => repo.isHistoryRecoveryComplete).thenReturn(recoveryComplete);
   when(
     () => repo.historyRecoveryStream,
   ).thenAnswer((_) => recoveryStream ?? const Stream<bool>.empty());
@@ -88,6 +92,11 @@ void main() {
         () => mockFollowRepository.followingStream,
       ).thenAnswer((_) => const Stream<List<String>>.empty());
       when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+      // Recovery-aware request gate (#5304): default to "recovery complete"
+      // so existing split assertions hold; gate tests override to false.
+      when(
+        () => mockDmRepository.isHistoryRecoveryComplete,
+      ).thenReturn(true);
 
       // Stub subscription lifecycle methods (#2766).
       when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
@@ -716,6 +725,77 @@ void main() {
         },
       );
 
+      group('recovery-aware request gate (#5304)', () {
+        blocTest<ConversationListBloc, ConversationListState>(
+          'keeps would-be requests in the inbox while DM history recovery '
+          'is still running (post-reinstall window)',
+          setUp: () {
+            // Unfollowed + never-replied → would normally be requests.
+            when(
+              () => mockFollowRepository.isFollowing(any()),
+            ).thenReturn(false);
+            when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+            final conversations = [
+              _createConversation(id: _testConversationId1),
+              _createConversation(id: _testConversationId2),
+            ];
+            // Recovery NOT complete → the gate suppresses the request split so
+            // a previously-accepted chat is never shown as a brand-new
+            // "message request" before its own message is re-ingested.
+            _stubStreams(
+              mockDmRepository,
+              potentialRequests: conversations,
+              recoveryComplete: false,
+            );
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(const ConversationListStarted()),
+          verify: (bloc) {
+            expect(bloc.state.requestConversations, isEmpty);
+            expect(bloc.state.conversations, hasLength(2));
+          },
+        );
+
+        blocTest<ConversationListBloc, ConversationListState>(
+          'applies the request split once history recovery completes',
+          setUp: () {
+            final recoveryController = StreamController<bool>();
+            when(
+              () => mockFollowRepository.isFollowing(any()),
+            ).thenReturn(false);
+            when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+            final conversations = [
+              _createConversation(id: _testConversationId1),
+            ];
+            // Start mid-recovery: the gate suppresses the split.
+            _stubStreams(
+              mockDmRepository,
+              potentialRequests: conversations,
+              recoveryComplete: false,
+              isRecovering: true,
+              recoveryStream: recoveryController.stream,
+            );
+            // Recovery completes: flip the flag, then signal via the recovery
+            // stream so the combined stream re-fires and re-classifies.
+            Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
+              when(
+                () => mockDmRepository.isHistoryRecoveryComplete,
+              ).thenReturn(true);
+              recoveryController.add(false);
+            });
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(const ConversationListStarted()),
+          wait: const Duration(milliseconds: 200),
+          verify: (bloc) {
+            // After recovery completes, the unfollowed/never-replied chat is
+            // correctly classified as a request.
+            expect(bloc.state.requestConversations, hasLength(1));
+            expect(bloc.state.conversations, isEmpty);
+          },
+        );
+      });
+
       blocTest<ConversationListBloc, ConversationListState>(
         'conversations from followed users stay in normal list',
         setUp: () {
@@ -1119,6 +1199,9 @@ void main() {
         () => mockFollowRepository.followingStream,
       ).thenAnswer((_) => const Stream<List<String>>.empty());
       when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+      when(
+        () => mockDmRepository.isHistoryRecoveryComplete,
+      ).thenReturn(true);
       when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
       when(() => mockDmRepository.stopListening()).thenAnswer((_) async {});
       when(

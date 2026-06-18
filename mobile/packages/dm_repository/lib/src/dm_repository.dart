@@ -481,6 +481,61 @@ class DmRepository {
     return events;
   }
 
+  /// Recovers the user's OWN outgoing NIP-04 (kind-4) messages after a wipe.
+  ///
+  /// The live subscription and history drain both filter `p:[self]`, which
+  /// matches incoming NIP-04 (`author=peer, p=self`) and the user's NIP-17
+  /// self-wraps, but never the user's outgoing NIP-04 (`author=self,
+  /// p=recipient`, per NIP-04). Without this pass a legacy conversation the
+  /// user only ever replied to over NIP-04 cannot re-prove `currentUserHasSent`
+  /// and is stranded under "Message requests". Pages `authors:[self]` kind-4
+  /// newest→oldest and routes each through [_handleIncomingEvent], which
+  /// already sets `currentUserHasSent` for self-authored messages. Bounded by
+  /// [DmHistoryDrainConfig.maxPages]; best-effort so a relay hiccup never
+  /// blocks drain completion. See #5304.
+  Future<void> _recoverOutgoingNip04(String pubkey) async {
+    try {
+      var cursor = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      for (var page = 0; page < DmHistoryDrainConfig.maxPages; page++) {
+        if (_disposed || _userPubkey != pubkey) return;
+        final events = await _nostrClient.queryEvents(
+          [
+            nostr_filter.Filter(
+              authors: [pubkey],
+              kinds: [EventKind.directMessage],
+              until: cursor,
+              limit: DmHistoryDrainConfig.pageSize,
+            ),
+          ],
+          subscriptionId: 'dm_drain_nip04_${pubkey}_$page',
+          useCache: false,
+        );
+        if (_disposed || _userPubkey != pubkey) return;
+        if (events.isEmpty) return;
+        for (final event in events) {
+          if (_disposed || _userPubkey != pubkey) return;
+          await _handleIncomingEvent(event);
+        }
+        // Step strictly below the oldest event seen so the loop terminates;
+        // `until` is inclusive, so a re-requested boundary is absorbed by the
+        // hasGiftWrap dedup in [_handleNip04Event].
+        final minCreatedAt = events
+            .map((event) => event.createdAt)
+            .reduce((a, b) => a < b ? a : b);
+        final next = minCreatedAt < cursor ? minCreatedAt : cursor - 1;
+        if (next <= 0) return;
+        cursor = next;
+      }
+    } on Object catch (e) {
+      // Best-effort completeness pass; relay/IO failures are expected on flaky
+      // networks and must not block drain completion (see error_handling.md).
+      Log.warning(
+        'Outgoing NIP-04 recovery did not finish for $pubkey: $e',
+        category: LogCategory.system,
+      );
+    }
+  }
+
   /// Whether a DM history recovery (the backfill drain or a failed-decrypt
   /// replay) is actively doing work right now. The inbox surfaces this as a
   /// restore progress indicator so the user knows chats are still being
@@ -491,6 +546,26 @@ class DmRepository {
   /// value, so callers should seed with [isRecoveringHistory] (e.g.
   /// `historyRecoveryStream.startWith(repo.isRecoveringHistory)`). See #5202.
   Stream<bool> get historyRecoveryStream => _recoveryStateController.stream;
+
+  /// Whether the one-time history-recovery drain has fully completed for the
+  /// current user.
+  ///
+  /// Until this is `true` — notably the post-reinstall window while the drain
+  /// pages back through history — the inbox MUST NOT segregate conversations
+  /// into message requests. After a wipe a previously-accepted chat
+  /// re-materializes from the peer's message before the user's own
+  /// (self-wrapped) message is re-ingested, so `currentUserHasSent` is still
+  /// `false` and the conversation would transiently classify as a request even
+  /// though the user had replied. Gating the request split on this flag closes
+  /// that window; it flips `true` (and re-fires the recovery stream via
+  /// [_endRecovery]) when the drain reaches relay exhaustion. Falls back to
+  /// `true` when uninitialized so the inbox never hides the split forever.
+  /// See #5304.
+  bool get isHistoryRecoveryComplete {
+    final syncState = _syncState;
+    if (syncState == null || _userPubkey.isEmpty) return true;
+    return syncState.historyDrainComplete(_userPubkey);
+  }
 
   void _beginRecovery() {
     _activeRecoveryOps++;
@@ -733,6 +808,14 @@ class DmRepository {
       }
 
       if (reachedEnd) {
+        // Before declaring history complete, recover the user's OWN outgoing
+        // NIP-04 messages. The paged drain above filters `p:[self]`, which
+        // matches incoming NIP-04 and the user's NIP-17 self-wraps but never
+        // the user's outgoing kind-4 (`author=self, p=recipient`, per NIP-04),
+        // so a legacy conversation the user only ever replied to over NIP-04
+        // could not re-prove `currentUserHasSent` and stayed stranded under
+        // "Message requests". Best-effort — never blocks completion. See #5304.
+        await _recoverOutgoingNip04(pubkey);
         await syncState.markHistoryDrainComplete(pubkey);
         Log.info(
           'DM history drain complete for $pubkey: '

@@ -95,27 +95,46 @@ class ConversationListBloc
         ),
       ),
       onData: (data) {
+        final userPubkey = _dmRepository.userPubkey;
         final split = DmRepository.classifyPotentialRequests(
           data.potentialRequests,
-          userPubkey: _dmRepository.userPubkey,
+          userPubkey: userPubkey,
           isFollowing: _followRepository.isFollowing,
         );
-        final merged = DmRepository.mergeAndSort(data.accepted, split.followed);
-        final userPubkey = _dmRepository.userPubkey;
+
+        // While the one-time history-recovery drain is still running
+        // (post-reinstall window), do NOT segregate conversations into
+        // message requests. A previously-accepted chat re-materializes from
+        // the peer's message before the user's own message is re-ingested, so
+        // the request bucket would transiently surface established
+        // conversations (the #5304 symptom). Keep every conversation in the
+        // inbox until recovery completes, then apply the normal follow-based
+        // split. See #5304.
+        final recoveryComplete = _dmRepository.isHistoryRecoveryComplete;
+        final inboxConversations = recoveryComplete
+            ? DmRepository.mergeAndSort(data.accepted, split.followed)
+            : DmRepository.mergeAndSort(data.accepted, [
+                ...split.followed,
+                ...split.requests,
+              ]);
+        final requests = recoveryComplete
+            ? split.requests
+            : const <DmConversation>[];
+
         return state.copyWith(
           status: ConversationListStatus.loaded,
           conversations:
               _blocklistRepository?.filterBlockedConversations(
-                merged,
+                inboxConversations,
                 userPubkey: userPubkey,
               ) ??
-              merged,
+              inboxConversations,
           requestConversations:
               _blocklistRepository?.filterBlockedConversations(
-                split.requests,
+                requests,
                 userPubkey: userPubkey,
               ) ??
-              split.requests,
+              requests,
           potentialRequests: data.potentialRequests,
           hasMore: data.accepted.length == state.currentLimit,
           isLoadingMore: false,
