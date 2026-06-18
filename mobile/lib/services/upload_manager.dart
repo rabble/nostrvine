@@ -17,6 +17,7 @@ import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/upload_initialization_helper.dart';
+import 'package:openvine/services/upload_publishability.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:path/path.dart' as path;
@@ -251,21 +252,10 @@ class UploadManager {
 
   bool _isVisibleToCurrentOwner(PendingUpload upload) {
     if (!_scopeUploadsToCurrentUser) return true;
-
     final currentPubkey = _currentNostrPubkey;
-    if (currentPubkey == null || currentPubkey.isEmpty) {
-      return false;
-    }
-
-    return upload.nostrPubkey == currentPubkey;
-  }
-
-  bool _isPublishableReadyUpload(PendingUpload upload) {
-    if (upload.status != UploadStatus.readyToPublish) return false;
-    return upload.videoId != null &&
-        upload.videoId!.isNotEmpty &&
-        _isHttpUrl(upload.cdnUrl) &&
-        _isHttpUrl(upload.thumbnailPath);
+    return currentPubkey != null &&
+        currentPubkey.isNotEmpty &&
+        upload.nostrPubkey == currentPubkey;
   }
 
   /// Get uploads by status
@@ -309,7 +299,7 @@ class UploadManager {
       if (upload.status == UploadStatus.pending) continue;
       if (upload.status == UploadStatus.paused) continue;
       if (upload.status == UploadStatus.readyToPublish &&
-          !_isPublishableReadyUpload(upload)) {
+          !readyUploadIsPublishable(upload)) {
         continue;
       }
       if (upload.status == UploadStatus.failed &&
@@ -1998,10 +1988,8 @@ class UploadManager {
     var fixedCount = 0;
 
     for (final upload in uploads) {
-      // Fix uploads that are ready to publish but missing required data
-      // These should be moved back to failed status so user can retry
       if (upload.status == UploadStatus.readyToPublish &&
-          !_isPublishableReadyUpload(upload)) {
+          !readyUploadIsPublishable(upload)) {
         Log.error(
           'Fixing stuck upload: ${upload.id} (missing publishable video data) - moving to failed',
           name: 'UploadManager',
