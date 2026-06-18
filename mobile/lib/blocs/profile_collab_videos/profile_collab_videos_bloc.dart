@@ -147,10 +147,12 @@ class ProfileCollabVideosBloc
         .where((v) => v.isSupportedOnCurrentPlatform)
         .toList();
     final freshIds = fresh.map((v) => v.id).toSet();
-    final tail = state.videos
-        .skip(_pageSize)
-        .where((v) => !freshIds.contains(v.id))
-        .toList();
+    final tail = firstPage.length >= _pageSize
+        ? state.videos
+              .skip(_tailStartAfterFreshOverlap(fresh))
+              .where((v) => !freshIds.contains(v.id))
+              .toList()
+        : <VideoEvent>[];
     final allVideos = [...fresh, ...tail];
     // A short fresh page means the feed ends there; the cached tail (if any)
     // is no longer confirmed.
@@ -180,6 +182,19 @@ class ProfileCollabVideosBloc
         hasMoreContent: hasMore,
       ),
     );
+  }
+
+  int _tailStartAfterFreshOverlap(List<VideoEvent> fresh) {
+    if (fresh.isEmpty) return 0;
+
+    final freshIds = fresh.map((v) => v.id).toSet();
+    for (var i = state.videos.length - 1; i >= 0; i--) {
+      if (freshIds.contains(state.videos[i].id)) {
+        return i + 1;
+      }
+    }
+
+    return fresh.length.clamp(0, state.videos.length);
   }
 
   Future<ProfileVideoCursorSnapshot?> _readCachedSnapshot() async {

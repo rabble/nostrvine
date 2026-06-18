@@ -587,8 +587,8 @@ class ProfileLikedVideosBloc
   ///
   /// Re-fetching (rather than only filtering the held list down) is what lets a
   /// now-UNBLOCKED author's liked videos reappear — the cached snapshot stores
-  /// the previously-filtered window, so dropping-only would never restore them
-  /// (#codex-review). The videos are already in local storage, so
+  /// the previously-filtered window, so dropping-only would never restore them.
+  /// The videos are already in local storage, so
   /// [_fetchVideos] is a cache-first read, not a relay round-trip, and the
   /// re-resolved (re-filtered) window is persisted so a reopen stays correct.
   Future<void> _onBlocklistChanged(

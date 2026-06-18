@@ -357,6 +357,58 @@ void main() {
       );
 
       blocTest<ProfileCollabVideosBloc, ProfileCollabVideosState>(
+        'reopen preserves cached tail after a full first-page overlap',
+        build: () {
+          when(
+            () => mockVideosRepository.getCollabVideos(
+              taggedPubkey: targetPubkey,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              for (var i = 1; i <= 17; i++)
+                createTestVideo(id: 'cached-$i', pubkey: authorPubkey),
+              createTestVideo(id: 'new-confirmed', pubkey: authorPubkey),
+            ],
+          );
+          return createBloc();
+        },
+        setUp: () async {
+          await cacheDao.write(
+            key: '$targetPubkey:profile_collab_videos',
+            payload: ProfileVideoCursorSnapshot(
+              videos: [
+                for (var i = 1; i <= 17; i++)
+                  createTestVideo(id: 'cached-$i', pubkey: authorPubkey),
+                createTestVideo(id: 'tail-1', pubkey: authorPubkey),
+              ],
+              paginationCursor: 100,
+              hasMoreContent: true,
+            ).toJson(),
+          );
+        },
+        act: (bloc) => bloc.add(const ProfileCollabVideosFetchRequested()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileCollabVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', true)
+              .having((s) => s.videos.last.id, 'cached tail', 'tail-1'),
+          isA<ProfileCollabVideosState>()
+              .having((s) => s.isRefreshing, 'isRefreshing', false)
+              .having(
+                (s) => s.videos.map((v) => v.id).toList(),
+                'videos',
+                [
+                  for (var i = 1; i <= 17; i++) 'cached-$i',
+                  'new-confirmed',
+                  'tail-1',
+                ],
+              )
+              .having((s) => s.hasMoreContent, 'hasMoreContent', isTrue),
+        ],
+      );
+
+      blocTest<ProfileCollabVideosBloc, ProfileCollabVideosState>(
         'droppable: ignores a second fetch while one is in flight',
         build: () {
           when(
