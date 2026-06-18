@@ -21,7 +21,7 @@ const _maxScreenSessionAge = Duration(seconds: 60);
 class ScreenAnalyticsService {
   factory ScreenAnalyticsService() => _instance ??= ScreenAnalyticsService._();
   ScreenAnalyticsService._({AnalyticsEventSink? sink})
-    : _sink = sink ?? _createAnalyticsSink();
+    : _sink = sink ?? FirebaseAnalyticsEventSink();
 
   static ScreenAnalyticsService? _instance;
 
@@ -48,14 +48,6 @@ class ScreenAnalyticsService {
                : const NoOpAnalyticsEventSink());
 
   final AnalyticsEventSink _sink;
-
-  static AnalyticsEventSink _createAnalyticsSink() {
-    try {
-      return FirebaseAnalyticsEventSink();
-    } catch (_) {
-      return const NoOpAnalyticsEventSink();
-    }
-  }
 
   final Map<String, _ScreenSession> _activeSessions = {};
 

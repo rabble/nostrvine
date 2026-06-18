@@ -25,7 +25,7 @@ const _maxSessionAge = Duration(seconds: 60);
 /// Service for tracking feed performance and user engagement
 class FeedPerformanceTracker {
   factory FeedPerformanceTracker() => _instance ??= FeedPerformanceTracker._();
-  FeedPerformanceTracker._() : _analytics = _resolveDefaultSink();
+  FeedPerformanceTracker._() : _analytics = FirebaseAnalyticsEventSink();
 
   static FeedPerformanceTracker? _instance;
 
@@ -46,16 +46,6 @@ class FeedPerformanceTracker {
     : _analytics = sink ?? const NoOpAnalyticsEventSink();
 
   final AnalyticsEventSink _analytics;
-
-  /// Resolves the production sink, falling back to a no-op when Firebase is
-  /// not initialized (e.g. during tests that construct the singleton).
-  static AnalyticsEventSink _resolveDefaultSink() {
-    try {
-      return FirebaseAnalyticsEventSink();
-    } catch (_) {
-      return const NoOpAnalyticsEventSink();
-    }
-  }
 
   final Map<String, _FeedLoadSession> _activeSessions = {};
 

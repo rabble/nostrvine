@@ -33,7 +33,7 @@ class SurfacePerformanceTracker {
   SurfacePerformanceTracker._({
     AnalyticsEventSink? sink,
     DateTime Function()? now,
-  }) : _sink = sink ?? _createAnalyticsSink(),
+  }) : _sink = sink ?? FirebaseAnalyticsEventSink(),
        _now = now ?? DateTime.now;
 
   static SurfacePerformanceTracker? _instance;
@@ -60,14 +60,6 @@ class SurfacePerformanceTracker {
   /// Number of active tracking sessions.
   int get activeSessionCount => _activeSessions.length;
 
-  static AnalyticsEventSink _createAnalyticsSink() {
-    try {
-      return FirebaseAnalyticsEventSink();
-    } catch (_) {
-      return const NoOpAnalyticsEventSink();
-    }
-  }
-
   /// Clear all active sessions.
   ///
   /// Call this when the app resumes from background to prevent stale start
@@ -92,10 +84,7 @@ class SurfacePerformanceTracker {
       params: _safeParameters(params),
     );
 
-    UnifiedLogger.info(
-      'Surface load started: $safeName',
-      name: 'SurfacePerf',
-    );
+    UnifiedLogger.info('Surface load started: $safeName', name: 'SurfacePerf');
   }
 
   /// Mark when the surface is first visible.
