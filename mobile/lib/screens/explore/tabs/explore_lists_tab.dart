@@ -122,8 +122,8 @@ class ExploreListsTab extends ConsumerWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.group,
+                    const DivineIcon(
+                      icon: DivineIconName.user,
                       color: VineTheme.vineGreen,
                       size: 18,
                     ),
@@ -158,8 +158,8 @@ class ExploreListsTab extends ConsumerWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.video_library,
+                    const DivineIcon(
+                      icon: DivineIconName.playlist,
                       color: VineTheme.vineGreen,
                       size: 18,
                     ),
@@ -220,8 +220,8 @@ class ExploreListsTab extends ConsumerWidget {
                       ),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.video_library,
+                          const DivineIcon(
+                            icon: DivineIconName.playlist,
                             color: VineTheme.vineGreen,
                             size: 20,
                           ),
@@ -268,8 +268,8 @@ class ExploreListsTab extends ConsumerWidget {
                       ),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.group,
+                          const DivineIcon(
+                            icon: DivineIconName.user,
                             color: VineTheme.vineGreen,
                             size: 20,
                           ),
@@ -346,8 +346,8 @@ class _SubscribedListsSection extends ConsumerWidget {
           children: [
             Row(
               children: [
-                const Icon(
-                  Icons.playlist_add_check,
+                const DivineIcon(
+                  icon: DivineIconName.checks,
                   color: VineTheme.vineGreen,
                   size: 20,
                 ),
@@ -388,8 +388,8 @@ class _SubscribedListsSection extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
-              const Icon(
-                Icons.playlist_add_check,
+              const DivineIcon(
+                icon: DivineIconName.checks,
                 color: VineTheme.vineGreen,
                 size: 20,
               ),
