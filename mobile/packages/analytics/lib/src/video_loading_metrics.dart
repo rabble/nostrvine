@@ -4,7 +4,7 @@
 import 'package:analytics/src/analytics_event_sink.dart';
 import 'package:analytics/src/feed_performance_tracker.dart';
 import 'package:analytics/src/firebase_analytics_event_sink.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:unified_logger/unified_logger.dart';
@@ -19,9 +19,16 @@ typedef CacheMetricsProvider = CacheMetrics Function();
 class VideoLoadingMetrics {
   static final VideoLoadingMetrics _instance = VideoLoadingMetrics._internal();
   factory VideoLoadingMetrics() => _instance;
-  VideoLoadingMetrics._internal();
+  VideoLoadingMetrics._internal() : _analytics = FirebaseAnalyticsEventSink();
 
-  final AnalyticsEventSink _analytics = FirebaseAnalyticsEventSink();
+  /// Creates a testable instance that does not touch Firebase Analytics.
+  @visibleForTesting
+  VideoLoadingMetrics.testInstance({
+    AnalyticsEventSink? sink,
+    this.cacheMetricsProvider,
+  }) : _analytics = sink ?? const NoOpAnalyticsEventSink();
+
+  final AnalyticsEventSink _analytics;
   final Map<String, _VideoLoadingSession> _activeSessions = {};
 
   /// Optional source of media-cache metrics, wired by the app at startup.
@@ -457,10 +464,7 @@ class VideoLoadingMetrics {
       parameters: {
         'video_id': session.videoId, // Truncate for privacy
         'error_type': session.errorType!,
-        'error_message': session.errorMessage!.substring(
-          0,
-          100,
-        ), // Truncate long messages
+        'error_message': _truncate(session.errorMessage!, 100),
         'time_to_error_ms': totalDuration,
         'stage_when_failed': session._getCurrentStage().name,
         'video_url_domain': Uri.tryParse(session.videoUrl)?.host ?? 'unknown',
@@ -520,6 +524,11 @@ class VideoLoadingMetrics {
       'Cleared all video loading sessions',
       name: 'VideoLoadingMetrics',
     );
+  }
+
+  String _truncate(String value, int maxLength) {
+    if (value.length <= maxLength) return value;
+    return value.substring(0, maxLength);
   }
 }
 

@@ -4,6 +4,7 @@
 import 'package:analytics/src/analytics_event_sink.dart';
 import 'package:analytics/src/firebase_analytics_event_sink.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:unified_logger/unified_logger.dart';
 
 /// Service for tracking errors and exceptions across the app
@@ -11,9 +12,14 @@ class ErrorAnalyticsTracker {
   static final ErrorAnalyticsTracker _instance =
       ErrorAnalyticsTracker._internal();
   factory ErrorAnalyticsTracker() => _instance;
-  ErrorAnalyticsTracker._internal();
+  ErrorAnalyticsTracker._internal() : _analytics = FirebaseAnalyticsEventSink();
 
-  final AnalyticsEventSink _analytics = FirebaseAnalyticsEventSink();
+  /// Creates a testable instance that does not touch Firebase Analytics.
+  @visibleForTesting
+  ErrorAnalyticsTracker.testInstance({AnalyticsEventSink? sink})
+    : _analytics = sink ?? const NoOpAnalyticsEventSink();
+
+  final AnalyticsEventSink _analytics;
 
   final Map<String, int> _errorCounts = {};
 
