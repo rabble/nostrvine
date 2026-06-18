@@ -2,6 +2,8 @@
 // ABOUTME: Verifies that overlay visibility and tab switches pause/resume the
 // ABOUTME: native video feed
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +17,7 @@ import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/home_shell_obscured_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
@@ -539,6 +542,137 @@ void main() {
       verify(
         () => videoFeedBloc.add(const VideoFeedRefreshRequested()),
       ).called(1);
+    });
+
+    group('home feed playback follows the visible route', () {
+      FeedVideos feedVideos(WidgetTester tester) => tester.widget<FeedVideos>(
+        find.byType(FeedVideos, skipOffstage: false),
+      );
+
+      Future<StreamController<String>> pumpFeed(WidgetTester tester) async {
+        final controller = StreamController<String>.broadcast();
+        addTearDown(controller.close);
+
+        final video = createTestVideoEvent();
+        final state = VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          videos: [video],
+        );
+        when(() => videoFeedBloc.state).thenReturn(state);
+        whenListen(
+          videoFeedBloc,
+          const Stream<VideoFeedBlocState>.empty(),
+          initialState: state,
+        );
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              routerLocationStreamProvider.overrideWith(
+                (_) => controller.stream,
+              ),
+            ],
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+                BlocProvider<VideoPlaybackStatusCubit>(
+                  create: (_) => VideoPlaybackStatusCubit(),
+                ),
+                BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+              ],
+              child: const VideoFeedView(),
+            ),
+          ),
+        );
+        await tester.pump();
+        return controller;
+      }
+
+      Future<void> drainAndDispose(WidgetTester tester) async {
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      }
+
+      ProviderContainer containerOf(WidgetTester tester) =>
+          ProviderScope.containerOf(
+            tester.element(find.byType(VideoFeedView, skipOffstage: false)),
+          );
+
+      void setObscured(WidgetTester tester, {required bool obscured}) {
+        containerOf(tester)
+            .read(homeShellObscuredProvider.notifier)
+            .setObscured(obscured: obscured);
+      }
+
+      testWidgets(
+        'stays paused when GoRouter falsely reports "home" while a route still '
+        'covers the shell',
+        (tester) async {
+          final controller = await pumpFeed(tester);
+
+          // Feed starts active on the home tab.
+          controller.add('/home/0');
+          await tester.pump();
+          expect(feedVideos(tester).isActive, isTrue);
+
+          // Open a profile (full-screen route covers the shell): feed pauses.
+          setObscured(tester, obscured: true);
+          await tester.pump();
+          expect(feedVideos(tester).isActive, isFalse);
+
+          // Closing a fullscreen video opened from the profile pops back to the
+          // profile, where GoRouter emits the shell location "/home". The
+          // profile still covers the shell, so the feed must NOT resume.
+          controller.add('/home/0');
+          await tester.pump();
+          expect(feedVideos(tester).isActive, isFalse);
+
+          await drainAndDispose(tester);
+        },
+      );
+
+      testWidgets(
+        'resumes only once the shell is no longer covered',
+        (tester) async {
+          final controller = await pumpFeed(tester);
+          controller.add('/home/0');
+          await tester.pump();
+          expect(feedVideos(tester).isActive, isTrue);
+
+          // Profile pushed over the shell pauses the feed.
+          setObscured(tester, obscured: true);
+          await tester.pump();
+          expect(feedVideos(tester).isActive, isFalse);
+
+          // Profile closed (shell revealed) while the route reports home:
+          // the feed resumes.
+          setObscured(tester, obscured: false);
+          await tester.pump();
+          expect(feedVideos(tester).isActive, isTrue);
+
+          await drainAndDispose(tester);
+        },
+      );
+
+      testWidgets('pauses on a non-home route and resumes back on home', (
+        tester,
+      ) async {
+        final controller = await pumpFeed(tester);
+        controller.add('/home/0');
+        await tester.pump();
+        expect(feedVideos(tester).isActive, isTrue);
+
+        controller.add('/explore');
+        await tester.pump();
+        expect(feedVideos(tester).isActive, isFalse);
+
+        controller.add('/home/0');
+        await tester.pump();
+        expect(feedVideos(tester).isActive, isTrue);
+
+        await drainAndDispose(tester);
+      });
     });
   });
 }

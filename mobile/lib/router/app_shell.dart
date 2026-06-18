@@ -15,6 +15,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/for_you_provider.dart';
+import 'package:openvine/providers/home_shell_obscured_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
@@ -39,9 +40,46 @@ class AppShell extends ConsumerStatefulWidget {
   ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends ConsumerState<AppShell> {
+class _AppShellState extends ConsumerState<AppShell> with RouteAware {
   int get currentIndex => widget.currentIndex;
   Widget get child => widget.child;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Observe the root navigator so the home feed knows when a full-screen
+    // route (profile, fullscreen video, recorder) covers the shell. The
+    // subscription is keyed on the shell's own route, so didPopNext only fires
+    // when the route directly above the shell is popped — not when a route
+    // above another pushed route closes.
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  void _setShellObscured({required bool obscured}) {
+    // RouteAware callbacks can fire mid-frame; defer the provider write so it
+    // never lands during this shell's own build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref
+          .read(homeShellObscuredProvider.notifier)
+          .setObscured(obscured: obscured);
+    });
+  }
+
+  @override
+  void didPushNext() => _setShellObscured(obscured: true);
+
+  @override
+  void didPopNext() => _setShellObscured(obscured: false);
 
   String _titleFor(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;

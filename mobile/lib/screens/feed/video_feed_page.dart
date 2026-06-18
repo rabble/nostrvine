@@ -9,6 +9,7 @@ import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/home_shell_obscured_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
@@ -103,15 +104,10 @@ class VideoFeedView extends ConsumerStatefulWidget {
 
 class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     with WidgetsBindingObserver {
-  /// Whether the home tab is currently active.
-  ///
-  /// Used to prevent overlay-close from resuming playback when the user
-  /// has navigated away to another tab (e.g. Search).
-  bool _isOnHomeTab = true;
-
   /// Tracks whether the new native player feed should be active.
   ///
-  /// Drives [FeedVideos] pause/resume on tab switches and overlay open/close.
+  /// Drives [FeedVideos] pause/resume on tab switches, route pushes, and
+  /// overlay open/close. Kept in sync by [_syncFeedActive].
   bool _isNewFeedActive = true;
 
   /// Guards so startup milestones fire only once.
@@ -182,57 +178,50 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
   void _resumeAutoAdvanceAfterSwipe() => _autoAdvanceCubit.resumeAfterSwipe();
 
+  /// Recomputes whether the home feed should be playing and updates
+  /// [_isNewFeedActive] if it changed. The feed is active only when the home
+  /// route is current, nothing is pushed over the shell, and no overlay is
+  /// open. See the listeners in [build] for the rationale.
+  void _syncFeedActive() {
+    if (!mounted) return;
+    final routeType = ref.read(pageContextProvider).asData?.value.type;
+    // Hold the current state until the route context resolves.
+    if (routeType == null) return;
+
+    final isHomeRoute = routeType == RouteType.home;
+    final isObscured = ref.read(homeShellObscuredProvider);
+    final hasOverlay = ref.read(overlayVisibilityProvider).hasVisibleOverlay;
+
+    final shouldBeActive = isHomeRoute && !isObscured && !hasOverlay;
+    if (shouldBeActive == _isNewFeedActive) return;
+    setState(() => _isNewFeedActive = shouldBeActive);
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Pause/resume when navigating away from/back to home tab. Some pushed
-    // routes keep this widget mounted, so playback must follow route context
-    // instead of assuming disposal handles every transition.
-    ref.listen(pageContextProvider, (_, next) {
-      final routeType = next.asData?.value.type;
-      if (routeType == null) return;
-
-      final isHome = routeType == RouteType.home;
-      if (isHome == _isOnHomeTab) return;
-      _isOnHomeTab = isHome;
-
-      // Don't resume when GoRouter falsely reports "home" while a pushed
-      // overlay (e.g. video recorder) is still open. This happens because
-      // GoRouter's routeInformationProvider can emit the shell-route
-      // location when popping between pushed routes (recorder → editor →
-      // pop back to recorder). The overlay listener handles resume when
-      // the overlay actually closes.
-      if (isHome && ref.read(overlayVisibilityProvider).hasVisibleOverlay) {
-        return;
-      }
-
-      setState(() => _isNewFeedActive = isHome);
-    });
+    // The home feed plays only while it is the visible top-level screen: the
+    // home route is current, no full-screen route covers the shell, and no
+    // overlay (page/bottom sheet) is open. Each signal lives in its own
+    // provider, so re-evaluate playback whenever any of them changes. Some
+    // pushed routes keep this widget mounted, so playback must follow these
+    // signals instead of assuming disposal handles every transition.
+    //
+    // GoRouter's routeInformationProvider collapses to the shell location
+    // ("/home") while popping between pushed routes (e.g. profile → fullscreen
+    // video → pop back to profile), so the route type alone cannot tell whether
+    // the feed is actually visible. [homeShellObscuredProvider] — driven by
+    // AppShell's RouteAware subscription to the root navigator — supplies that
+    // missing signal: it stays true until the route directly above the shell is
+    // popped, so closing the video while the profile is still open keeps the
+    // feed paused, while a genuine return to home resumes it.
+    ref.listen(pageContextProvider, (_, _) => _syncFeedActive());
+    ref.listen(homeShellObscuredProvider, (_, _) => _syncFeedActive());
+    ref.listen(overlayVisibilityProvider, (_, _) => _syncFeedActive());
 
     // Refresh feed when blocklist changes (block from profile, DM, or relay).
     ref.listen(blocklistVersionProvider, (previous, current) {
       if (previous != null && current > previous) {
         context.read<VideoFeedBloc>().add(const VideoFeedBlocklistChanged());
-      }
-    });
-
-    // Pause/resume for overlays (drawer, pages, bottom sheets), but only when
-    // on the home tab. Without this guard, closing an overlay while on
-    // another tab would incorrectly resume the home feed audio.
-    //
-    // Bottom sheets retain the current player for instant resume.
-    // Pages/drawer release all players to free memory.
-    ref.listen(overlayVisibilityProvider, (previous, current) {
-      if (!_isOnHomeTab) return;
-
-      final hadOverlay = previous?.hasVisibleOverlay ?? false;
-      final hasOverlay = current.hasVisibleOverlay;
-
-      if (hasOverlay && !hadOverlay) {
-        // Overlay opened - pause with retention based on overlay type
-        setState(() => _isNewFeedActive = false);
-      } else if (!hasOverlay && hadOverlay) {
-        // All overlays closed - resume playback
-        setState(() => _isNewFeedActive = true);
       }
     });
 
