@@ -6,12 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -21,7 +19,6 @@ import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/explore/widgets/explore_feed_content.dart';
 import 'package:openvine/screens/explore/widgets/explore_tab_bar.dart';
 import 'package:openvine/screens/explore/widgets/explore_tab_view.dart';
-import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
@@ -42,10 +39,9 @@ class ExploreView extends ConsumerStatefulWidget {
 }
 
 class _ExploreViewState extends ConsumerState<ExploreView>
-    with TickerProviderStateMixin, GridPrefetchMixin {
+    with TickerProviderStateMixin {
   TabController? _tabController;
   // Feed mode and videos are derived from URL + providers - no internal state.
-  String? _hashtagMode; // When non-null, showing hashtag feed
 
   ExploreTabsCubit get _tabs => context.read<ExploreTabsCubit>();
   ExploreTabsState get _tabsState => _tabs.state;
@@ -167,10 +163,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     final wasInFeedMode =
         pageContext.whenOrNull(data: (ctx) => ctx.videoIndex != null) ?? false;
     final shouldReset =
-        pageContext.whenOrNull(
-          data: (ctx) => ctx.videoIndex != null || _hashtagMode != null,
-        ) ??
-        false;
+        pageContext.whenOrNull(data: (ctx) => ctx.videoIndex != null) ?? false;
 
     if (shouldReset) {
       // Stop all video playback BEFORE navigating back to grid mode so videos
@@ -181,26 +174,10 @@ class _ExploreViewState extends ConsumerState<ExploreView>
         disposeAllVideoControllers(ref);
       }
 
-      // Clear hashtag mode
-      setState(() => _hashtagMode = null);
-
       // Navigate back to grid mode (no videoIndex) — URL drives UI state.
       // TabController's index persists across route changes.
       context.go(ExploreScreen.path);
     }
-  }
-
-  void _enterFeedMode(List<VideoEvent> videos, int startIndex) {
-    if (!mounted) return;
-
-    // Pre-warm adjacent videos before navigation for faster playback
-    prefetchAroundIndex(startIndex, videos);
-
-    // Store video list in provider so it survives widget recreation
-    ref.read(exploreTabVideosProvider.notifier).state = videos;
-
-    // Navigate to update URL — URL drives the UI state.
-    context.go(ExploreScreen.pathForIndex(startIndex));
   }
 
   @override
@@ -315,7 +292,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
               .read(pageContextProvider)
               .whenOrNull(data: (ctx) => ctx.videoIndex != null) ??
           false;
-      if (isInFeedMode || _hashtagMode != null) {
+      if (isInFeedMode) {
         _resetToDefaultState();
       }
     } else {
@@ -336,25 +313,6 @@ class _ExploreViewState extends ConsumerState<ExploreView>
               return ExploreFeedContent(
                 key: const Key('explore-feed'),
                 startIndex: ctx.videoIndex ?? 0,
-              );
-            }
-
-            // Clear hashtag mode when URL shows we're on main explore (e.g.
-            // user tapped bottom-nav "Explore" to go back).
-            if (ctx.type == RouteType.explore &&
-                ctx.hashtag == null &&
-                _hashtagMode != null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  setState(() => _hashtagMode = null);
-                }
-              });
-              // Still show grid content this frame (not hashtag content).
-            } else if (_hashtagMode != null) {
-              return HashtagFeedScreen(
-                hashtag: _hashtagMode!,
-                embedded: true,
-                onVideoTap: _enterFeedMode,
               );
             }
 

@@ -24,7 +24,7 @@ class ExploreTabsCubit extends Cubit<ExploreTabsState> {
   /// singletons; inject fakes in tests.
   ExploreTabsCubit({
     ScreenAnalyticsService? screenAnalytics,
-    TopHashtagsService? topHashtags,
+    TopHashtagsLoader? topHashtags,
   }) : _screenAnalytics = screenAnalytics ?? ScreenAnalyticsService(),
        _topHashtags = topHashtags ?? TopHashtagsService.instance,
        super(const ExploreTabsState());
@@ -32,7 +32,7 @@ class ExploreTabsCubit extends Cubit<ExploreTabsState> {
   static const _screenName = 'explore_screen';
 
   final ScreenAnalyticsService _screenAnalytics;
-  final TopHashtagsService _topHashtags;
+  final TopHashtagsLoader _topHashtags;
 
   /// Updates which optional tabs are available.
   ///

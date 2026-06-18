@@ -5,6 +5,12 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Minimal seam for loading hashtag suggestions.
+abstract interface class TopHashtagsLoader {
+  /// Loads the top hashtag data used by explore surfaces.
+  Future<void> loadTopHashtags();
+}
+
 class HashtagData {
   HashtagData({
     required this.rank,
@@ -28,7 +34,7 @@ class HashtagData {
   final double percentage;
 }
 
-class TopHashtagsService {
+class TopHashtagsService implements TopHashtagsLoader {
   TopHashtagsService._();
   static final TopHashtagsService _instance = TopHashtagsService._();
   static TopHashtagsService get instance => _instance;
@@ -68,6 +74,7 @@ class TopHashtagsService {
   bool get isLoaded => _isLoaded;
 
   /// Load top hashtags from JSON file
+  @override
   Future<void> loadTopHashtags() async {
     if (_isLoaded) {
       Log.debug(

@@ -50,18 +50,17 @@ class PopularVideosTab extends ConsumerStatefulWidget {
 }
 
 class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
-  // Analytics services - use provided or create defaults
-  late final ScreenAnalyticsService? _screenAnalytics;
-  late final FeedPerformanceTracker? _feedTracker;
-  late final ErrorAnalyticsTracker? _errorTracker;
+  late final ScreenAnalyticsService _screenAnalytics;
+  late final FeedPerformanceTracker _feedTracker;
+  late final ErrorAnalyticsTracker _errorTracker;
   DateTime? _feedLoadStartTime;
 
   @override
   void initState() {
     super.initState();
-    _screenAnalytics = widget.screenAnalytics;
-    _feedTracker = widget.feedTracker;
-    _errorTracker = widget.errorTracker;
+    _screenAnalytics = widget.screenAnalytics ?? ScreenAnalyticsService();
+    _feedTracker = widget.feedTracker ?? FeedPerformanceTracker();
+    _errorTracker = widget.errorTracker ?? ErrorAnalyticsTracker();
   }
 
   @override
@@ -80,7 +79,7 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
     // Track feed loading start
     if (feedAsync.isLoading && _feedLoadStartTime == null) {
       _feedLoadStartTime = DateTime.now();
-      _feedTracker?.startFeedLoad('popular');
+      _feedTracker.startFeedLoad('popular');
     }
 
     // CRITICAL: Check hasValue FIRST before isLoading
@@ -119,9 +118,9 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
 
     // Track feed loaded with videos
     if (_feedLoadStartTime != null) {
-      _feedTracker?.markFirstVideosReceived('popular', videos.length);
-      _feedTracker?.markFeedDisplayed('popular', videos.length);
-      _screenAnalytics?.markDataLoaded(
+      _feedTracker.markFirstVideosReceived('popular', videos.length);
+      _feedTracker.markFeedDisplayed('popular', videos.length);
+      _screenAnalytics.markDataLoaded(
         'explore_screen',
         dataMetrics: {'tab': 'popular', 'video_count': videos.length},
       );
@@ -130,7 +129,7 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
 
     // Track empty feed
     if (videos.isEmpty) {
-      _feedTracker?.trackEmptyFeed('popular');
+      _feedTracker.trackEmptyFeed('popular');
     }
 
     // Get the feed state for pagination info
@@ -152,12 +151,12 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
     final loadTime = _feedLoadStartTime != null
         ? DateTime.now().difference(_feedLoadStartTime!).inMilliseconds
         : null;
-    _feedTracker?.trackFeedError(
+    _feedTracker.trackFeedError(
       'popular',
       errorType: 'load_failed',
       errorMessage: error.toString(),
     );
-    _errorTracker?.trackFeedLoadError(
+    _errorTracker.trackFeedLoadError(
       feedType: 'popular',
       errorType: 'provider_error',
       errorMessage: error.toString(),
@@ -178,7 +177,7 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
           .difference(_feedLoadStartTime!)
           .inMilliseconds;
       if (elapsed > 5000) {
-        _errorTracker?.trackSlowOperation(
+        _errorTracker.trackSlowOperation(
           operation: 'popular_feed_load',
           durationMs: elapsed,
           thresholdMs: 5000,
