@@ -4,7 +4,6 @@
 # document an intentional no-op. Epic: #4336 (#3588).
 lib/blocs/video_recorder/video_recorder_bloc.dart
 lib/main.dart
-lib/screens/apps/nostr_app_sandbox_screen.dart
 lib/services/auth_service.dart
 lib/services/relay_discovery_service.dart
 lib/services/video_editor/clip_thumbnail_manager.dart

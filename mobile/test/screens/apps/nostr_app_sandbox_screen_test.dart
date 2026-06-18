@@ -10,6 +10,7 @@ import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/screens/apps/nostr_app_sandbox_bridge.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';

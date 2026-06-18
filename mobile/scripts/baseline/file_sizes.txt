@@ -12,7 +12,6 @@ lib/providers/clip_manager_provider.dart	894
 lib/providers/individual_video_providers.dart	1410
 lib/providers/video_editor_provider.dart	1051
 lib/router/app_router.dart	1562
-lib/screens/apps/nostr_app_sandbox_screen.dart	842
 lib/screens/auth/invite_gate_screen.dart	819
 lib/screens/auth/nostr_connect_screen.dart	817
 lib/screens/creator_analytics_screen.dart	1406
