@@ -299,6 +299,47 @@ void main() {
       });
 
       testWidgets(
+        'reserves bottom padding on the conversation list so the FAB does '
+        'not cover the last tile',
+        (tester) async {
+          final conversation = DmConversation(
+            id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+            participantPubkeys: const [currentPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: nowUnix,
+            lastMessageContent: 'Hello',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                conversations: [conversation],
+                hasMore: false,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          final listView = tester.widget<ListView>(
+            find.ancestor(
+              of: find.byType(ConversationTile),
+              matching: find.byType(ListView),
+            ),
+          );
+          final padding = listView.padding! as EdgeInsets;
+          // FAB is 56pt tall and inset 16pt from the bottom, so the list must
+          // reserve at least that much to keep the last tile fully visible.
+          expect(padding.bottom, greaterThanOrEqualTo(56 + 16));
+        },
+      );
+
+      testWidgets(
         'excludes inactive mounted pane from semantics after tab switch',
         (tester) async {
           final semantics = tester.ensureSemantics();

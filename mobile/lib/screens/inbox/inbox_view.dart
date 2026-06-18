@@ -191,6 +191,14 @@ class _InboxViewState extends ConsumerState<InboxView>
 /// pane width — the subtle shared-axis slide.
 const double _kTabSlideFraction = 0.06;
 
+/// Inset of the compose FAB from the bottom-right of the Messages pane.
+const double _kFabInset = 16;
+
+/// Bottom padding reserved on the conversation list so the FAB (56pt tall,
+/// inset [_kFabInset] from the bottom) never covers the last conversation
+/// tile when scrolled to the end. Equals the FAB's footprint plus a margin.
+const double _kConversationListBottomInset = _kFabInset + 56 + _kFabInset;
+
 /// Material shared-axis transition between the two inbox tabs: a short
 /// horizontal slide combined with an overlapping cross-fade.
 ///
@@ -366,8 +374,8 @@ class _MessagesContent extends ConsumerWidget {
           ),
           // FAB positioned bottom-right
           PositionedDirectional(
-            end: 16,
-            bottom: 16,
+            end: _kFabInset,
+            bottom: _kFabInset,
             child: InboxFab(onPressed: () => _onNewConversation(context, ref)),
           ),
         ],
@@ -539,6 +547,7 @@ class _ConversationListState extends ConsumerState<_ConversationList>
 
     return ListView.builder(
       controller: _scrollController,
+      padding: const EdgeInsets.only(bottom: _kConversationListBottomInset),
       itemCount: conversations.length + bannerOffset + (hasMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (hasRequests && index == 0) {
