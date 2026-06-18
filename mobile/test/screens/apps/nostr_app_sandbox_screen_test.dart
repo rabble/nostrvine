@@ -415,7 +415,7 @@ void main() {
       },
     );
 
-    group('iOS frame attestation', () {
+    group('platform frame attestation', () {
       void Function(dynamic event)? attestedEventHandler;
       List<String> capturedScripts = <String>[];
 
@@ -716,6 +716,44 @@ void main() {
         expect(
           html,
           contains("const __divineBridgeNonce = 'NONCE-XYZ';"),
+        );
+      });
+    });
+
+    group('webMessageAllowedOriginRules', () {
+      test('normalises allowed origins to scheme://host[:port] rules', () {
+        expect(
+          webMessageAllowedOriginRules(const [
+            'https://primal.net',
+            'https://app.example.com:8080',
+          ]),
+          equals(['https://primal.net', 'https://app.example.com:8080']),
+        );
+      });
+
+      test('strips paths and trailing slashes to the bare origin', () {
+        expect(
+          webMessageAllowedOriginRules(const ['https://primal.net/app/']),
+          equals(['https://primal.net']),
+        );
+      });
+
+      test('drops entries that cannot form an origin', () {
+        expect(
+          webMessageAllowedOriginRules(const [
+            'https://primal.net',
+            'nostrsigner:', // non-http(s)/ws scheme — Uri.origin would throw
+            'not a uri at all',
+            '', // empty
+          ]),
+          equals(['https://primal.net']),
+        );
+      });
+
+      test('returns empty when no origin can be formed', () {
+        expect(
+          webMessageAllowedOriginRules(const ['nostrsigner:', 'file:///x']),
+          isEmpty,
         );
       });
     });

@@ -131,6 +131,12 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     implementation("androidx.multidex:multidex:2.0.1")
 
+    // WebViewCompat.addWebMessageListener for per-frame origin attestation on the
+    // Nostr sandbox bridge (#4105). The webview_flutter_android plugin already
+    // resolves this version transitively as `implementation`, so it is not visible
+    // to app code without declaring it here. Pinned to match the plugin's version.
+    implementation("androidx.webkit:webkit:1.15.0")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.mockk:mockk:1.13.13")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")

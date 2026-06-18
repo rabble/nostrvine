@@ -119,6 +119,7 @@ dependencies:
   dio: ^5.8.0
   web: ^1.1.1
   webview_flutter: ^4.13.0
+  webview_flutter_android: ^4.10.13 # Direct dep for AndroidWebViewController (frame attestation, #4105)
   webview_flutter_wkwebview: ^3.24.1
 
   permission_handler: ^12.0.1 # Handle runtime permissions

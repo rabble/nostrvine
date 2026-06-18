@@ -62,6 +62,9 @@ class MainActivity : FlutterActivity() {
     // NIP-55 Android Signer plugin
     private var nostrSignerPlugin: NostrSignerPlugin? = null
 
+    // Nostr bridge per-frame origin attestation plugin (#4105)
+    private var nostrBridgeAttestationPlugin: NostrBridgeAttestationPlugin? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
@@ -76,6 +79,12 @@ class MainActivity : FlutterActivity() {
 
         // Set up NIP-55 Android Signer plugin
         nostrSignerPlugin = NostrSignerPlugin(this, flutterEngine)
+
+        // Set up Nostr bridge frame attestation channel. Must run after
+        // super.configureFlutterEngine (which registers WebViewFlutterPlugin via
+        // GeneratedPluginRegistrant) — WebViewFlutterAndroidExternalApi.getWebView
+        // returns null until that plugin is registered.
+        nostrBridgeAttestationPlugin = NostrBridgeAttestationPlugin(flutterEngine)
     }
 
     @Suppress("DEPRECATION")
@@ -143,6 +152,7 @@ class MainActivity : FlutterActivity() {
         activityScope.cancel()
         navigationChannel = null
         nostrSignerPlugin = null
+        nostrBridgeAttestationPlugin = null
         // Unregister callback when activity is destroyed
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && backCallback != null) {
             onBackInvokedDispatcher.unregisterOnBackInvokedCallback(backCallback!!)

@@ -18,6 +18,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/apps/nostr_app_permission_prompt_sheet.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 typedef SandboxViewBuilder =
@@ -67,7 +68,7 @@ class NostrAppSandboxScreen extends ConsumerStatefulWidget {
 }
 
 class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
-  // iOS frame attestation channels.
+  // iOS/Android frame attestation channels.
   static const MethodChannel _attestationMethodChannel = MethodChannel(
     'co.openvine/nostr_bridge_attestation',
   );
@@ -111,18 +112,29 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
   void dispose() {
     _attestedMessageSubscription?.cancel();
     if (_isNativeAttestationActive) {
-      final platformController = _webViewController?.platform;
-      if (platformController is WebKitWebViewController) {
+      final webViewId = _attestationWebViewId();
+      if (webViewId != null) {
         unawaited(
           _attestationMethodChannel.invokeMethod<void>(
             'detach',
-            {'webViewId': platformController.webViewIdentifier},
+            {'webViewId': webViewId},
           ),
         );
       }
     }
     _ownedBootstrapHttpClient?.close();
     super.dispose();
+  }
+
+  /// The native WebView identifier for the active controller, on whichever
+  /// platform exposes one. Used to address attach/detach to the right WebView.
+  int? _attestationWebViewId() {
+    final platformController = _webViewController?.platform;
+    return switch (platformController) {
+      WebKitWebViewController() => platformController.webViewIdentifier,
+      AndroidWebViewController() => platformController.webViewIdentifier,
+      _ => null,
+    };
   }
 
   bool _handleNavigationAttempt(Uri uri) {
@@ -241,11 +253,12 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
       },
     );
 
-    // On iOS, replace the pigeon handler with the frame-attesting one and
-    // hand off the document-start bootstrap script to the native plugin.
-    // Must run before the page loads so the native handler is in place when
-    // the bootstrap script fires its first postMessage.
-    if (defaultTargetPlatform == TargetPlatform.iOS) {
+    // Replace the pigeon message channel with the native frame-attesting one
+    // (iOS: WKScriptMessageHandler reading frameInfo; Android: WebMessageListener
+    // reporting isMainFrame). Must run before the page loads so the native
+    // handler is in place when the bridge fires its first postMessage.
+    if (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android) {
       await _activateNativeAttestation(controller);
     }
 
@@ -258,34 +271,56 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
         _isAllowedOrigin(uri);
   }
 
-  /// Activates platform-level frame attestation on iOS by replacing the
-  /// pigeon-managed WKScriptMessageHandler with a native one that includes
-  /// WKScriptMessage.frameInfo. Messages arrive via EventChannel instead of
-  /// the addJavaScriptChannel callback.
+  /// Activates platform-level frame attestation by replacing the pigeon-managed
+  /// message channel with a native one that surfaces the platform-attested main-
+  /// frame signal. Attested messages then arrive via the EventChannel instead of
+  /// the `addJavaScriptChannel` callback.
   ///
-  /// Also hands the document-start bridge bootstrap script to the native
-  /// plugin so it can be installed as a `WKUserScript` without the Dart
-  /// layer needing to import private webview_flutter_wkwebview src types.
+  /// - iOS: swaps the `WKScriptMessageHandler` for one that reads
+  ///   `WKScriptMessage.frameInfo.isMainFrame`, and hands off the document-start
+  ///   bootstrap script to the native plugin as a `WKUserScript`.
+  /// - Android: swaps the `divineSandboxBridge` JS interface for a
+  ///   `WebViewCompat.addWebMessageListener` whose listener reports `isMainFrame`,
+  ///   scoped to the app's allowed origins. The bootstrap is still injected via
+  ///   the HTML-rewrite path; the listener's injected JS object exposes the same
+  ///   `.postMessage` API the bootstrap already calls.
   ///
-  /// Falls back to nonce-only enforcement when the native plugin is
-  /// unavailable (e.g. in tests that do not configure the channel, or if a
-  /// previous sandbox is still attached). Logs a warning so the degraded
-  /// security posture is visible in unified logs.
+  /// Falls back to nonce-only enforcement when the native plugin is unavailable
+  /// (tests that don't configure the channel; a previous sandbox still attached;
+  /// `WEB_MESSAGE_LISTENER` unsupported; no resolvable allowed origins). Logs a
+  /// warning so the degraded security posture is visible in unified logs.
   Future<void> _activateNativeAttestation(WebViewController controller) async {
     final platformController = controller.platform;
-    if (platformController is! WebKitWebViewController) return;
-
-    final bootstrapScript = buildBridgeBootstrapScript(
-      nonce: _bridgeNonce,
-      pubkey: _currentUserPubkey,
-      autoLoginScript: widget.app.autoLoginScript,
-    );
+    final Map<String, Object?> attachArgs;
+    if (platformController is WebKitWebViewController) {
+      attachArgs = {
+        'webViewId': platformController.webViewIdentifier,
+        'bootstrapScript': buildBridgeBootstrapScript(
+          nonce: _bridgeNonce,
+          pubkey: _currentUserPubkey,
+          autoLoginScript: widget.app.autoLoginScript,
+        ),
+      };
+    } else if (platformController is AndroidWebViewController) {
+      final allowedOriginRules = webMessageAllowedOriginRules(
+        widget.app.allowedOrigins,
+      );
+      if (allowedOriginRules.isEmpty) {
+        // No resolvable origins to scope the listener to. Keep the nonce-only
+        // JS-channel path rather than removing it for a listener that would
+        // never be injected into any frame.
+        return;
+      }
+      attachArgs = {
+        'webViewId': platformController.webViewIdentifier,
+        'allowedOriginRules': allowedOriginRules,
+      };
+    } else {
+      return;
+    }
 
     try {
-      await _attestationMethodChannel.invokeMethod<void>('attach', {
-        'webViewId': platformController.webViewIdentifier,
-        'bootstrapScript': bootstrapScript,
-      });
+      await _attestationMethodChannel.invokeMethod<void>('attach', attachArgs);
       _isNativeAttestationActive = true;
       _attestedMessageSubscription = _attestationEventChannel
           .receiveBroadcastStream()
@@ -298,8 +333,8 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
         category: LogCategory.system,
       );
     } on MissingPluginException catch (_) {
-      // Channel is not registered (tests, simulator without the plugin set
-      // up). Nonce gate remains the only defence on iOS in this case.
+      // Channel is not registered (tests, simulator/emulator without the plugin
+      // set up). Nonce gate remains the only defence in this case.
     }
   }
 
@@ -727,6 +762,27 @@ String buildBridgeBootstrapScript({
   }));
 })();
 ''';
+}
+
+/// Normalises an app's allowed origins to `scheme://host[:port]` rules for
+/// `WebViewCompat.addWebMessageListener` on Android. Entries that cannot form
+/// an origin (unparseable, empty host, or a non-http(s)/ws scheme — which would
+/// make `Uri.origin` throw) are dropped, so the result is always a valid rule
+/// set the native side can pass through.
+@visibleForTesting
+List<String> webMessageAllowedOriginRules(List<String> allowedOrigins) {
+  const originSchemes = {'http', 'https', 'ws', 'wss'};
+  final rules = <String>[];
+  for (final origin in allowedOrigins) {
+    final parsed = Uri.tryParse(origin);
+    if (parsed == null ||
+        parsed.host.isEmpty ||
+        !originSchemes.contains(parsed.scheme)) {
+      continue;
+    }
+    rules.add(parsed.origin);
+  }
+  return rules;
 }
 
 /// Escapes a string for safe embedding inside a JS single-quoted
