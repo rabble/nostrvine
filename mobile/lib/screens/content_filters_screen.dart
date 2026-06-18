@@ -90,25 +90,18 @@ class ContentFiltersView extends StatelessWidget {
                     title: context.l10n.contentFiltersAdultContent,
                     labels: _adultLabels,
                     state: state,
-                    locked: !state.isAgeVerified,
                     onChanged: cubit.setPreference,
                   ),
                   _CategoryGroup(
                     title: context.l10n.contentFiltersSubstances,
                     labels: _substanceLabels,
                     state: state,
-                    lockedLabels: !state.isAgeVerified
-                        ? ContentFilterService.ageRestrictedCategories
-                        : const {},
                     onChanged: cubit.setPreference,
                   ),
                   _CategoryGroup(
                     title: context.l10n.contentFiltersOther,
                     labels: _otherLabels,
                     state: state,
-                    lockedLabels: !state.isAgeVerified
-                        ? ContentFilterService.ageRestrictedCategories
-                        : const {},
                     onChanged: cubit.setPreference,
                   ),
                 ],
@@ -162,15 +155,11 @@ class _CategoryGroup extends StatelessWidget {
     required this.labels,
     required this.state,
     required this.onChanged,
-    this.locked = false,
-    this.lockedLabels = const {},
   });
 
   final String title;
   final List<ContentLabel> labels;
   final ContentFiltersState state;
-  final bool locked;
-  final Set<ContentLabel> lockedLabels;
   final Future<void> Function(
     ContentLabel label,
     ContentFilterPreference preference,
@@ -187,7 +176,7 @@ class _CategoryGroup extends StatelessWidget {
           (label) => _ContentFilterRow(
             label: label,
             preference: state.preferenceFor(label),
-            locked: locked || lockedLabels.contains(label),
+            locked: state.isLabelLocked(label),
             onChanged: (preference) {
               onChanged(label, preference);
             },

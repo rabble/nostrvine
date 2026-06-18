@@ -21,6 +21,37 @@ void main() {
     registerFallbackValue(ContentFilterPreference.show);
   });
 
+  group(ContentFiltersState, () {
+    test('locks always-filtered labels regardless of age verification', () {
+      expect(
+        const ContentFiltersState(
+          isAgeVerified: true,
+        ).isLabelLocked(ContentLabel.porn),
+        isTrue,
+      );
+    });
+
+    test('locks age-restricted labels only until age verified', () {
+      expect(
+        const ContentFiltersState().isLabelLocked(ContentLabel.gambling),
+        isTrue,
+      );
+      expect(
+        const ContentFiltersState(
+          isAgeVerified: true,
+        ).isLabelLocked(ContentLabel.gambling),
+        isFalse,
+      );
+    });
+
+    test('does not lock unrestricted visible labels', () {
+      expect(
+        const ContentFiltersState().isLabelLocked(ContentLabel.flashingLights),
+        isFalse,
+      );
+    });
+  });
+
   group(ContentFiltersCubit, () {
     late _MockContentFilterService filterService;
     late _MockAgeVerificationService ageService;

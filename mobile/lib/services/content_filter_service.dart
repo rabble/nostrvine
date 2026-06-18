@@ -185,11 +185,13 @@ class ContentFilterService extends ChangeNotifier {
         await _save();
         notifyListeners();
       }
-      Log.warning(
-        'Cannot set always-filtered category $label to $preference',
-        name: 'ContentFilterService',
-        category: LogCategory.system,
-      );
+      if (preference != ContentFilterPreference.hide) {
+        Log.warning(
+          'Cannot set always-filtered category $label to $preference',
+          name: 'ContentFilterService',
+          category: LogCategory.system,
+        );
+      }
       return;
     }
 

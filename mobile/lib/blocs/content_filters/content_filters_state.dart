@@ -11,8 +11,9 @@ enum ContentFiltersStatus { loading, ready }
 /// State for [ContentFiltersCubit].
 ///
 /// [preferences] is read once from `ContentFilterService` on load (replacing
-/// the pre-migration per-row imperative reads in `build`). Adult categories are
-/// locked in the UI when [isAgeVerified] is false.
+/// the pre-migration per-row imperative reads in `build`). The state also owns
+/// whether a label is locked in the UI so widgets only render state and
+/// dispatch actions.
 class ContentFiltersState extends Equatable {
   const ContentFiltersState({
     this.status = ContentFiltersStatus.loading,
@@ -27,6 +28,12 @@ class ContentFiltersState extends Equatable {
   /// Preference for [label], defaulting to "show" until loaded.
   ContentFilterPreference preferenceFor(ContentLabel label) =>
       preferences[label] ?? ContentFilterPreference.show;
+
+  /// Whether [label] should be locked in the UI.
+  bool isLabelLocked(ContentLabel label) =>
+      ContentFilterService.alwaysFilteredCategories.contains(label) ||
+      (!isAgeVerified &&
+          ContentFilterService.ageRestrictedCategories.contains(label));
 
   ContentFiltersState copyWith({
     ContentFiltersStatus? status,
