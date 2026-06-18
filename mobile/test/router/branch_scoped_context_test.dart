@@ -31,7 +31,7 @@ class _Probe extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Scoped: this branch's own route. Global: the actually-active tab.
     final scoped = ref.watch(pageContextProvider).asData?.value.type;
-    final active = ref.watch(activeRouteTypeProvider).asData?.value;
+    final active = ref.watch(activeRouteTypeProvider);
     return Text(
       '$label scoped=${scoped?.name ?? 'none'} active=${active?.name ?? 'none'}',
       textDirection: TextDirection.ltr,
@@ -76,6 +76,49 @@ GoRouter _buildRouter() => GoRouter(
 );
 
 void main() {
+  // Regression: activeRouteTypeProvider must not add a second listener to the
+  // single-subscription routerLocationStreamProvider (already consumed by the
+  // global pageContextProvider). If it does, the second listen throws and the
+  // home feed silently keeps playing on other tabs.
+  testWidgets('global pageContext and activeRouteType coexist', (tester) async {
+    final router = GoRouter(
+      initialLocation: '/home/0',
+      routes: [
+        GoRoute(
+          path: '/home/:index',
+          builder: (_, _) => const SizedBox.shrink(),
+        ),
+        GoRoute(path: '/explore', builder: (_, _) => const SizedBox.shrink()),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    RouteType? ctxType;
+    RouteType? activeType;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [goRouterProvider.overrideWithValue(router)],
+        child: MaterialApp.router(
+          routerConfig: router,
+          builder: (context, child) => Consumer(
+            builder: (context, ref, _) {
+              // Both global providers read at once — the broken version makes
+              // the second one throw "Stream already listened".
+              ctxType = ref.watch(pageContextProvider).asData?.value.type;
+              activeType = ref.watch(activeRouteTypeProvider);
+              return child!;
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(ctxType, RouteType.home);
+    expect(activeType, RouteType.home);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'inactive branch keeps its scoped context; active type stays global',
     (tester) async {
@@ -84,8 +127,9 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          // activeRouteTypeProvider derives from goRouterProvider, so point it
-          // at the test router.
+          // pageContextProvider (which activeRouteTypeProvider derives from)
+          // resolves the router location via goRouterProvider, so point it at
+          // the test router.
           overrides: [goRouterProvider.overrideWithValue(router)],
           child: MaterialApp.router(routerConfig: router),
         ),

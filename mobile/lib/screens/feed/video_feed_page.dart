@@ -185,7 +185,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     if (!mounted) return;
     // Global active tab — not the branch-scoped pageContextProvider, which is
     // pinned to "home" inside the home branch and never reports leaving it.
-    final routeType = ref.read(activeRouteTypeProvider).asData?.value;
+    final routeType = ref.read(activeRouteTypeProvider);
     // Hold the current state until the route context resolves.
     if (routeType == null) return;
 
