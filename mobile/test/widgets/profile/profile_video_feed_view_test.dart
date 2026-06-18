@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cache_sync/cache_sync.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +39,41 @@ class _FakeSystemVolumeListener implements SystemVolumeListener {
 
 class _FakeVideoEvent extends Fake implements VideoEvent {}
 
+/// In-memory [CacheDao] so the [ProfileFeedCubit]'s [CacheSync] reads/writes
+/// are isolated per test. Without it, the shared global [CacheSync] (which
+/// other test files initialize) leaks one test's persisted snapshot into the
+/// next under the same author key — only visible under `very_good test
+/// --optimization`, which runs every test file in a single isolate.
+class _InMemoryCacheDao implements CacheDao {
+  final Map<String, String> _store = {};
+
+  @override
+  Future<String?> read(String key) async => _store[key];
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {
+    _store[key] = payload;
+  }
+
+  @override
+  Future<void> delete(String key) async => _store.remove(key);
+
+  @override
+  Future<void> deletePrefix(String prefix) async =>
+      _store.removeWhere((key, _) => key.startsWith(prefix));
+
+  @override
+  Future<int> totalPayloadBytes() async =>
+      _store.values.fold<int>(0, (sum, v) => sum + v.length);
+
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
+}
+
 const _profilePubkey =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
@@ -65,7 +101,11 @@ void main() {
       registerFallbackValue(_FakeVideoEvent());
     });
 
-    setUp(() {
+    setUp(() async {
+      // Fresh per-test cache so the ProfileFeedCubit's snapshot persistence
+      // can't leak across tests in the shared --optimization isolate.
+      await CacheSync.init(dao: _InMemoryCacheDao());
+
       videosRepository = _MockVideosRepository();
       videoEventService = _MockVideoEventService();
       blocklistRepository = _MockContentBlocklistRepository();
