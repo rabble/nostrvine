@@ -43,6 +43,32 @@ double _opacityOf(WidgetTester tester, Key key) {
   return fade.opacity.value;
 }
 
+/// Whether branch [key] is excluded from the semantics tree, read off the
+/// [ExcludeSemantics] that [AppShellBranchContainer] wraps each branch in.
+///
+/// Asserting the wrapper's `excluding` flag rather than querying the compiled
+/// semantics tree avoids `find.bySemanticsLabel`, which reads cached
+/// `debugSemantics` that goes stale when a subtree is dynamically excluded.
+bool _semanticsExcluded(WidgetTester tester, Key key) => tester
+    .widget<ExcludeSemantics>(
+      find
+          .ancestor(
+            of: find.byKey(key),
+            matching: find.byType(ExcludeSemantics),
+          )
+          .first,
+    )
+    .excluding;
+
+/// Whether branch [key] is excluded from focus traversal.
+bool _focusExcluded(WidgetTester tester, Key key) => tester
+    .widget<ExcludeFocus>(
+      find
+          .ancestor(of: find.byKey(key), matching: find.byType(ExcludeFocus))
+          .first,
+    )
+    .excluding;
+
 void main() {
   group(AppShellBranchContainer, () {
     testWidgets('keeps every branch mounted, only the active one opaque', (
@@ -125,6 +151,35 @@ void main() {
       expect(tester.hasRunningAnimations, isFalse);
       expect(_opacityOf(tester, _keys[0]), 0.0);
       expect(_opacityOf(tester, _keys[2]), 1.0);
+    });
+
+    testWidgets('excludes inactive branches from semantics and focus', (
+      tester,
+    ) async {
+      final index = ValueNotifier<int>(0);
+      addTearDown(index.dispose);
+
+      await tester.pumpWidget(_buildSubject(index));
+      await tester.pumpAndSettle();
+
+      // The active branch stays in the semantics/focus trees; the three
+      // opacity-0 branches are excluded so screen readers and focus traversal
+      // skip them (Opacity/IgnorePointer alone do not hide them).
+      expect(_semanticsExcluded(tester, _keys[0]), isFalse);
+      expect(_focusExcluded(tester, _keys[0]), isFalse);
+      for (final key in [_keys[1], _keys[2], _keys[3]]) {
+        expect(_semanticsExcluded(tester, key), isTrue);
+        expect(_focusExcluded(tester, key), isTrue);
+      }
+
+      index.value = 2;
+      await tester.pumpAndSettle();
+
+      // Exclusion follows the active branch after a switch.
+      expect(_semanticsExcluded(tester, _keys[2]), isFalse);
+      expect(_focusExcluded(tester, _keys[2]), isFalse);
+      expect(_semanticsExcluded(tester, _keys[0]), isTrue);
+      expect(_focusExcluded(tester, _keys[0]), isTrue);
     });
   });
 }

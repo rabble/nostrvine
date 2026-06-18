@@ -258,6 +258,16 @@ bool _isPublicRecorderLocation(String location) =>
 /// tab keep rendering its real content while inactive. [NoTransitionPage]
 /// keeps within-branch navigation (e.g. grid → feed) instant; the *between
 /// tab* cross-fade is done by [AppShellBranchContainer].
+///
+/// Scoping caveat: only a *direct* `ref.watch(pageContextProvider)` from a
+/// widget in this subtree observes the branch-local override. A root-level
+/// provider that derives from [pageContextProvider] (e.g.
+/// [activeRouteTypeProvider], [activeVideoIdProvider],
+/// [videoControllerAutoCleanupProvider]) is instantiated in the root container
+/// and therefore always reads the *global* route — by design, since playback
+/// gating must follow the genuinely-active tab. Any new provider that reads
+/// [pageContextProvider] inherits this global behaviour even when consumed
+/// inside a branch; reach for the scoped value only via a direct widget read.
 Page<void> _branchPage(GoRouterState state, Widget child) {
   return NoTransitionPage<void>(
     key: state.pageKey,

@@ -418,14 +418,15 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
                     }
                   : null,
             ),
-      body: currentIndex == 0
-          ? Column(
-              children: [
-                Expanded(child: child),
-                const UpdateBanner(),
-              ],
-            )
-          : child,
+      // Keep the branch container in the same slot regardless of tab so
+      // switching to/from home never reparents it (which would relayout all
+      // four kept-alive branches). The UpdateBanner only shows on home.
+      body: Column(
+        children: [
+          Expanded(child: child),
+          if (currentIndex == 0) const UpdateBanner(),
+        ],
+      ),
       // Bottom nav visible for all shell routes (search, tabs, etc.).
       // PointerInterceptor ensures the bottom nav receives taps on web
       // even when HTML platform views (video elements) overlap the area.
@@ -450,10 +451,14 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
 ///
 /// Every branch stays mounted (state preserved); the active branch is fully
 /// opaque and interactive, the others sit at opacity 0 with their tickers
-/// paused and pointer events ignored. On a tab switch the outgoing branch
-/// fades out while the incoming one fades in — a true cross-fade between two
-/// live tabs. Within-tab navigation never reaches here (those are
-/// [NoTransitionPage]s inside a single branch).
+/// paused, pointer events ignored, and — crucially — excluded from the
+/// semantics and focus trees. `Opacity`/`IgnorePointer` alone do not hide a
+/// subtree from screen readers or focus traversal, so without
+/// [ExcludeSemantics]/[ExcludeFocus] the three hidden tabs would still be
+/// announced and focusable. On a tab switch the outgoing branch fades out
+/// while the incoming one fades in — a true cross-fade between two live tabs.
+/// Within-tab navigation never reaches here (those are [NoTransitionPage]s
+/// inside a single branch).
 class AppShellBranchContainer extends StatelessWidget {
   const AppShellBranchContainer({
     required this.currentIndex,
@@ -480,9 +485,15 @@ class AppShellBranchContainer extends StatelessWidget {
           opacity: isActive ? 1 : 0,
           duration: duration,
           curve: Curves.easeInOut,
-          child: IgnorePointer(
-            ignoring: !isActive,
-            child: TickerMode(enabled: isActive, child: children[index]),
+          child: ExcludeSemantics(
+            excluding: !isActive,
+            child: ExcludeFocus(
+              excluding: !isActive,
+              child: IgnorePointer(
+                ignoring: !isActive,
+                child: TickerMode(enabled: isActive, child: children[index]),
+              ),
+            ),
           ),
         );
       }),
