@@ -31,6 +31,7 @@ class DivineVideoDraft {
     required this.publishStatus,
     required this.publishAttempts,
     this.publishError,
+    this.sourceDraftId,
     this.allowAudioReuse = false,
     this.expireTime,
     this.proofManifestJson,
@@ -163,6 +164,7 @@ class DivineVideoDraft {
       allowAudioReuse: json['allowAudioReuse'] as bool? ?? false,
       publishError: json['publishError'] as String?,
       publishAttempts: json['publishAttempts'] as int? ?? 0,
+      sourceDraftId: json['sourceDraftId'] as String?,
       proofManifestJson: json['proofManifestJson'] as String?,
       editorStateHistory:
           (json['editorStateHistory'] as Map<String, dynamic>?) ?? const {},
@@ -238,6 +240,7 @@ class DivineVideoDraft {
   final PublishStatus publishStatus;
   final String? proofManifestJson;
   final String? publishError;
+  final String? sourceDraftId;
   final int publishAttempts;
   final bool allowAudioReuse;
 
@@ -314,6 +317,8 @@ class DivineVideoDraft {
     PublishStatus? publishStatus,
     String? publishError,
     bool clearPublishError = false,
+    String? sourceDraftId,
+    bool clearSourceDraftId = false,
     Duration? expireTime,
     bool? allowAudioReuse,
     int? publishAttempts,
@@ -351,6 +356,9 @@ class DivineVideoDraft {
     publishError: clearPublishError
         ? null
         : (publishError ?? this.publishError),
+    sourceDraftId: clearSourceDraftId
+        ? null
+        : (sourceDraftId ?? this.sourceDraftId),
     publishAttempts: publishAttempts ?? this.publishAttempts,
     proofManifestJson: clearProofManifestJson
         ? null
@@ -397,6 +405,7 @@ class DivineVideoDraft {
     'allowAudioReuse': allowAudioReuse,
     'publishStatus': publishStatus.name,
     'publishError': publishError,
+    if (sourceDraftId != null) 'sourceDraftId': sourceDraftId,
     'publishAttempts': publishAttempts,
     'proofManifestJson': proofManifestJson,
     if (editorStateHistory.isNotEmpty) 'editorStateHistory': editorStateHistory,

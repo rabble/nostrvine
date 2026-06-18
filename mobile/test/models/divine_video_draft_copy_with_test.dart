@@ -150,6 +150,33 @@ void main() {
       });
     });
 
+    group('copyWith clearSourceDraftId', () {
+      test('clears sourceDraftId when clearSourceDraftId is true', () {
+        final draft = _createDraft().copyWith(
+          sourceDraftId: 'draft_source',
+          skipUpdateLastModified: true,
+        );
+
+        final cleared = draft.copyWith(
+          clearSourceDraftId: true,
+          skipUpdateLastModified: true,
+        );
+
+        expect(cleared.sourceDraftId, isNull);
+      });
+
+      test('preserves sourceDraftId when clearSourceDraftId is false', () {
+        final draft = _createDraft().copyWith(
+          sourceDraftId: 'draft_source',
+          skipUpdateLastModified: true,
+        );
+
+        final preserved = draft.copyWith(skipUpdateLastModified: true);
+
+        expect(preserved.sourceDraftId, equals('draft_source'));
+      });
+    });
+
     group('copyWith clearProofManifestJson', () {
       test('clears proofManifestJson when flag is true', () {
         final draft = _createDraft();
@@ -192,6 +219,19 @@ void main() {
 
         expect(json.containsKey('selectedSound'), isFalse);
       });
+    });
+
+    test('persists sourceDraftId through JSON', () {
+      final draft = _createDraft().copyWith(
+        sourceDraftId: 'draft_source',
+        skipUpdateLastModified: true,
+      );
+
+      final json = draft.toJson();
+      final restored = DivineVideoDraft.fromJson(json, '/tmp');
+
+      expect(json['sourceDraftId'], equals('draft_source'));
+      expect(restored.sourceDraftId, equals('draft_source'));
     });
   });
 }

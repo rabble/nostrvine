@@ -111,6 +111,7 @@ void main() {
 
       setUp(() {
         when(() => draft.id).thenReturn(draftId);
+        when(() => draft.sourceDraftId).thenReturn(null);
       });
 
       group('when the upload is a success', () {
@@ -179,6 +180,54 @@ void main() {
                 status: PublishStatus.failed,
                 publishError: 'ops',
               ),
+            ).called(1);
+          },
+        );
+      });
+
+      group('when a transient publish copy succeeds', () {
+        final publishDraft = _MockVineDraft();
+
+        const publishDraftId = 'draft_publish_1';
+        const sourceDraftId = 'draft_1';
+
+        setUp(() {
+          when(() => publishDraft.id).thenReturn(publishDraftId);
+          when(() => publishDraft.sourceDraftId).thenReturn(sourceDraftId);
+        });
+
+        blocTest(
+          'deletes the publish copy and the source draft',
+          build: () => BackgroundPublishBloc(
+            videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+            draftStorageService: mockDraftStorageService,
+          ),
+          act: (bloc) => bloc.add(
+            BackgroundPublishRequested(
+              draft: publishDraft,
+              publishmentProcess: Future.value(const PublishSuccess()),
+            ),
+          ),
+          expect: () => [
+            BackgroundPublishState(
+              uploads: [
+                BackgroundUpload(
+                  draft: publishDraft,
+                  result: null,
+                  progress: 0,
+                ),
+              ],
+            ),
+            const BackgroundPublishState(
+              recentlySucceededIds: {publishDraftId},
+            ),
+          ],
+          verify: (_) {
+            verify(
+              () => mockDraftStorageService.deleteDraft(publishDraftId),
+            ).called(1);
+            verify(
+              () => mockDraftStorageService.deleteDraft(sourceDraftId),
             ).called(1);
           },
         );
@@ -257,6 +306,7 @@ void main() {
 
       setUp(() {
         when(() => draft.id).thenReturn(draftId);
+        when(() => draft.sourceDraftId).thenReturn(null);
       });
 
       blocTest(
@@ -353,12 +403,14 @@ void main() {
     });
 
     group('BackgroundPublishVanished', () {
-      final draft = _MockVineDraft();
+      late _MockVineDraft draft;
 
       const draftId = '1';
 
       setUp(() {
+        draft = _MockVineDraft();
         when(() => draft.id).thenReturn(draftId);
+        when(() => draft.sourceDraftId).thenReturn(null);
       });
       blocTest(
         'removes the background upload and resets status to draft',
@@ -400,6 +452,34 @@ void main() {
           // recentlySucceededIds must be empty — Vanished is not a publish
           // success and must never trigger a success snackbar.
           expect(bloc.state.recentlySucceededIds, isEmpty);
+        },
+      );
+
+      blocTest(
+        'deletes a transient publish copy instead of mutating the source draft',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        setUp: () {
+          when(() => draft.sourceDraftId).thenReturn('draft_source');
+        },
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draft, result: null, progress: 1.0),
+          ],
+        ),
+        act: (bloc) => bloc.add(BackgroundPublishVanished(draftId: draftId)),
+        expect: () => [const BackgroundPublishState()],
+        verify: (_) {
+          verify(() => mockDraftStorageService.deleteDraft(draftId)).called(1);
+          verifyNever(
+            () => mockDraftStorageService.updatePublishStatus(
+              draftId: any(named: 'draftId'),
+              status: any(named: 'status'),
+              publishError: any(named: 'publishError'),
+            ),
+          );
         },
       );
     });
@@ -473,6 +553,7 @@ void main() {
         draft = _MockVineDraft();
         mockPublishService = _MockVideoPublishService();
         when(() => draft.id).thenReturn(draftId);
+        when(() => draft.sourceDraftId).thenReturn(null);
       });
 
       blocTest<BackgroundPublishBloc, BackgroundPublishState>(

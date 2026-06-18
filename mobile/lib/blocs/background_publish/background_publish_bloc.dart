@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -84,8 +82,7 @@ class BackgroundPublishBloc
         ),
       );
 
-      // Draft is no longer needed after successful publish
-      unawaited(_draftStorageService.deleteDraft(event.draft.id));
+      await _deletePublishedDrafts(event.draft);
     } else {
       // Update the upload with the result
       final updatedUploads = state.uploads.map((upload) {
@@ -97,14 +94,11 @@ class BackgroundPublishBloc
 
       emit(state.copyWith(uploads: updatedUploads));
 
-      // Persist failed status in the database
       final errorMessage = result is PublishError ? result.userMessage : null;
-      unawaited(
-        _draftStorageService.updatePublishStatus(
-          draftId: event.draft.id,
-          status: PublishStatus.failed,
-          publishError: errorMessage,
-        ),
+      await _persistPublishStatus(
+        draftId: event.draft.id,
+        status: PublishStatus.failed,
+        publishError: errorMessage,
       );
     }
   }
@@ -137,21 +131,28 @@ class BackgroundPublishBloc
     emit(state.copyWith(uploads: updatedUploads));
   }
 
-  void _onBackgroundPublishVanished(
+  Future<void> _onBackgroundPublishVanished(
     BackgroundPublishVanished event,
     Emitter<BackgroundPublishState> emit,
-  ) {
+  ) async {
+    final uploadToVanish = state.uploads.cast<BackgroundUpload?>().firstWhere(
+      (upload) => upload!.draft.id == event.draftId,
+      orElse: () => null,
+    );
     final remainingUploads = state.uploads.where((upload) {
       return upload.draft.id != event.draftId;
     }).toList();
     emit(state.copyWith(uploads: remainingUploads));
 
-    // Reset to draft so resumePendingPublishes won't re-surface it
-    unawaited(
-      _draftStorageService.updatePublishStatus(
-        draftId: event.draftId,
-        status: PublishStatus.draft,
-      ),
+    final vanishedDraft = uploadToVanish?.draft;
+    if (vanishedDraft?.sourceDraftId != null) {
+      await _deleteDraft(vanishedDraft!.id);
+      return;
+    }
+
+    await _persistPublishStatus(
+      draftId: event.draftId,
+      status: PublishStatus.draft,
     );
   }
 
@@ -207,5 +208,50 @@ class BackgroundPublishBloc
       progress: 0,
     );
     emit(state.copyWith(uploads: [...state.uploads, failedUpload]));
+  }
+
+  Future<void> _deletePublishedDrafts(DivineVideoDraft publishedDraft) async {
+    await _deleteDraft(publishedDraft.id);
+
+    final sourceDraftId = publishedDraft.sourceDraftId;
+    if (sourceDraftId != null && sourceDraftId != publishedDraft.id) {
+      await _deleteDraft(sourceDraftId);
+    }
+  }
+
+  Future<void> _deleteDraft(String draftId) async {
+    try {
+      await _draftStorageService.deleteDraft(draftId);
+    } catch (error, stackTrace) {
+      Log.error(
+        'Failed to delete publish draft $draftId: $error',
+        category: LogCategory.video,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      addError(error, stackTrace);
+    }
+  }
+
+  Future<void> _persistPublishStatus({
+    required String draftId,
+    required PublishStatus status,
+    String? publishError,
+  }) async {
+    try {
+      await _draftStorageService.updatePublishStatus(
+        draftId: draftId,
+        status: status,
+        publishError: publishError,
+      );
+    } catch (error, stackTrace) {
+      Log.error(
+        'Failed to persist publish status for draft $draftId: $error',
+        category: LogCategory.video,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      addError(error, stackTrace);
+    }
   }
 }

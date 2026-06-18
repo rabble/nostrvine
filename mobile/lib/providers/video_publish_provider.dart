@@ -238,12 +238,14 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
           final videoFile = File(videoPath);
           if (!videoFile.existsSync()) {
             Log.warning(
-              '🗑️ Deleting draft ${draft.id} - video file no longer exists: $videoPath',
+              '⚠️ Pending publish draft ${draft.id} references missing video file: $videoPath',
               name: 'VideoPublishNotifier',
               category: LogCategory.video,
             );
-            await _draftService.deleteDraft(draft.id);
-            continue;
+            if (draft.sourceDraftId != null) {
+              await _draftService.deleteDraft(draft.id);
+              continue;
+            }
           }
         } catch (e) {
           Log.warning(
@@ -251,9 +253,10 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
             name: 'VideoPublishNotifier',
             category: LogCategory.video,
           );
-          // Delete draft if we can't verify the video
-          await _draftService.deleteDraft(draft.id);
-          continue;
+          if (draft.sourceDraftId != null) {
+            await _draftService.deleteDraft(draft.id);
+            continue;
+          }
         }
       }
 
@@ -394,6 +397,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         proofManifestJson: proofManifestJson,
         publishStatus: PublishStatus.publishing,
         clearPublishError: true,
+        sourceDraftId: draft.sourceDraftId ?? draft.id,
         publishAttempts: draft.publishAttempts + 1,
       );
 
@@ -403,16 +407,6 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         category: .video,
       );
       await _draftService.saveDraft(publishDraft);
-
-      // Delete the original draft since we now have the publish draft
-      if (!draft.id.startsWith(VideoEditorConstants.publishPrefixId)) {
-        Log.debug(
-          '🗑️ Deleting original draft: ${draft.id}',
-          name: 'VideoPublishNotifier',
-          category: .video,
-        );
-        await _draftService.deleteDraft(draft.id);
-      }
 
       Log.info(
         '📤 Uploading video',
