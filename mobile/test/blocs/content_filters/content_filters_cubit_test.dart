@@ -49,7 +49,7 @@ void main() {
       setUp: () {
         when(() => ageService.isAdultContentVerified).thenReturn(true);
         when(
-          () => filterService.getPreference(ContentLabel.violence),
+          () => filterService.getPreference(ContentLabel.flashingLights),
         ).thenReturn(ContentFilterPreference.hide);
       },
       build: buildCubit,
@@ -60,8 +60,8 @@ void main() {
             .having((s) => s.status, 'status', ContentFiltersStatus.ready)
             .having((s) => s.isAgeVerified, 'isAgeVerified', true)
             .having(
-              (s) => s.preferenceFor(ContentLabel.violence),
-              'violence',
+              (s) => s.preferenceFor(ContentLabel.flashingLights),
+              'flashingLights',
               ContentFilterPreference.hide,
             )
             .having(
@@ -88,25 +88,25 @@ void main() {
       ),
       setUp: () {
         when(
-          () => filterService.getPreference(ContentLabel.violence),
+          () => filterService.getPreference(ContentLabel.flashingLights),
         ).thenReturn(ContentFilterPreference.hide);
       },
       build: buildCubit,
       act: (cubit) => cubit.setPreference(
-        ContentLabel.violence,
+        ContentLabel.flashingLights,
         ContentFilterPreference.hide,
       ),
       expect: () => [
         isA<ContentFiltersState>().having(
-          (s) => s.preferenceFor(ContentLabel.violence),
-          'violence',
+          (s) => s.preferenceFor(ContentLabel.flashingLights),
+          'flashingLights',
           ContentFilterPreference.hide,
         ),
       ],
       verify: (_) {
         verify(
           () => filterService.setPreference(
-            ContentLabel.violence,
+            ContentLabel.flashingLights,
             ContentFilterPreference.hide,
           ),
         ).called(1);

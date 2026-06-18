@@ -46,31 +46,17 @@ class ContentFiltersView extends StatelessWidget {
   static const List<ContentLabel> _adultLabels = [
     ContentLabel.nudity,
     ContentLabel.sexual,
-    ContentLabel.porn,
-  ];
-
-  static const List<ContentLabel> _violenceLabels = [
-    ContentLabel.graphicMedia,
-    ContentLabel.violence,
-    ContentLabel.selfHarm,
   ];
 
   static const List<ContentLabel> _substanceLabels = [
-    ContentLabel.drugs,
     ContentLabel.alcohol,
     ContentLabel.tobacco,
-    ContentLabel.gambling,
   ];
 
   static const List<ContentLabel> _otherLabels = [
     ContentLabel.profanity,
-    ContentLabel.hate,
-    ContentLabel.harassment,
     ContentLabel.flashingLights,
-    ContentLabel.aiGenerated,
-    ContentLabel.deepfake,
-    ContentLabel.spam,
-    ContentLabel.scam,
+    ContentLabel.gambling,
     ContentLabel.spoiler,
     ContentLabel.misleading,
   ];
@@ -108,21 +94,21 @@ class ContentFiltersView extends StatelessWidget {
                     onChanged: cubit.setPreference,
                   ),
                   _CategoryGroup(
-                    title: context.l10n.contentFiltersViolenceGore,
-                    labels: _violenceLabels,
-                    state: state,
-                    onChanged: cubit.setPreference,
-                  ),
-                  _CategoryGroup(
                     title: context.l10n.contentFiltersSubstances,
                     labels: _substanceLabels,
                     state: state,
+                    lockedLabels: !state.isAgeVerified
+                        ? ContentFilterService.ageRestrictedCategories
+                        : const {},
                     onChanged: cubit.setPreference,
                   ),
                   _CategoryGroup(
                     title: context.l10n.contentFiltersOther,
                     labels: _otherLabels,
                     state: state,
+                    lockedLabels: !state.isAgeVerified
+                        ? ContentFilterService.ageRestrictedCategories
+                        : const {},
                     onChanged: cubit.setPreference,
                   ),
                 ],
@@ -177,12 +163,14 @@ class _CategoryGroup extends StatelessWidget {
     required this.state,
     required this.onChanged,
     this.locked = false,
+    this.lockedLabels = const {},
   });
 
   final String title;
   final List<ContentLabel> labels;
   final ContentFiltersState state;
   final bool locked;
+  final Set<ContentLabel> lockedLabels;
   final Future<void> Function(
     ContentLabel label,
     ContentFilterPreference preference,
@@ -199,7 +187,7 @@ class _CategoryGroup extends StatelessWidget {
           (label) => _ContentFilterRow(
             label: label,
             preference: state.preferenceFor(label),
-            locked: locked,
+            locked: locked || lockedLabels.contains(label),
             onChanged: (preference) {
               onChanged(label, preference);
             },
@@ -248,6 +236,7 @@ class _ContentFilterRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
+      key: ValueKey('content-filter-${label.value}'),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [

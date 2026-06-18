@@ -138,46 +138,43 @@ void main() {
         expect(filter(video), isTrue);
       });
 
-      test('returns false for video with violence label (warn by default)', () {
+      test('returns true for video with violence label', () {
         final filter = createNsfwFilter(
           contentFilterService,
           moderationLabelService: moderationLabelService,
         );
         final video = _createVideo(contentWarningLabels: ['violence']);
 
-        expect(filter(video), isFalse);
+        expect(filter(video), isTrue);
       });
 
-      test('returns false for video with drugs label (show by default)', () {
+      test('returns true for video with drugs label', () {
         final filter = createNsfwFilter(
           contentFilterService,
           moderationLabelService: moderationLabelService,
         );
         final video = _createVideo(contentWarningLabels: ['drugs']);
 
-        expect(filter(video), isFalse);
+        expect(filter(video), isTrue);
       });
 
-      test(
-        'still hides a video whose moderationLabels survived a cache '
-        'round-trip',
-        () {
-          final filter = createNsfwFilter(
-            contentFilterService,
-            moderationLabelService: moderationLabelService,
-          );
-          // The home-feed cache stores videos via toJson and rehydrates them
-          // via fromJson on cold start. The ML "hide" signal must survive that
-          // trip, otherwise a moderated video slips past the filter while the
-          // cached window is served.
-          final original = _createVideo(moderationLabels: ['nudity']);
-          final cached = VideoEvent.fromJson(original.toJson());
+      test('still hides a video whose moderationLabels survived a cache '
+          'round-trip', () {
+        final filter = createNsfwFilter(
+          contentFilterService,
+          moderationLabelService: moderationLabelService,
+        );
+        // The home-feed cache stores videos via toJson and rehydrates them
+        // via fromJson on cold start. The ML "hide" signal must survive that
+        // trip, otherwise a moderated video slips past the filter while the
+        // cached window is served.
+        final original = _createVideo(moderationLabels: ['nudity']);
+        final cached = VideoEvent.fromJson(original.toJson());
 
-          expect(filter(original), isTrue);
-          expect(cached.moderationLabels, equals(['nudity']));
-          expect(filter(cached), isTrue);
-        },
-      );
+        expect(filter(original), isTrue);
+        expect(cached.moderationLabels, equals(['nudity']));
+        expect(filter(cached), isTrue);
+      });
     });
 
     group('NSFW hashtag detection', () {
@@ -242,8 +239,9 @@ void main() {
           contentFilterService,
           moderationLabelService: moderationLabelService,
         );
-        // 'drugs' is recognized and defaults to show
-        final video = _createVideo(contentWarningLabels: ['drugs']);
+        // 'flashing-lights' is recognized and defaults to warn, which does
+        // not hide.
+        final video = _createVideo(contentWarningLabels: ['flashing-lights']);
 
         expect(filter(video), isFalse);
       });
@@ -270,9 +268,9 @@ void main() {
         },
       );
 
-      test('returns true for violence when user sets to hide', () async {
+      test('returns true for flashing lights when user sets to hide', () async {
         await contentFilterService.setPreference(
-          ContentLabel.violence,
+          ContentLabel.flashingLights,
           ContentFilterPreference.hide,
         );
 
@@ -280,7 +278,7 @@ void main() {
           contentFilterService,
           moderationLabelService: moderationLabelService,
         );
-        final video = _createVideo(contentWarningLabels: ['violence']);
+        final video = _createVideo(contentWarningLabels: ['flashing-lights']);
 
         expect(filter(video), isTrue);
       });
@@ -292,19 +290,21 @@ void main() {
           contentFilterService,
           moderationLabelService: moderationLabelService,
         );
-        // drugs=show, nudity=hide → most restrictive wins → hide
-        final video = _createVideo(contentWarningLabels: ['drugs', 'nudity']);
+        // alcohol=hide while unverified, nudity=hide -> hide wins
+        final video = _createVideo(contentWarningLabels: ['alcohol', 'nudity']);
 
         expect(filter(video), isTrue);
       });
 
-      test('returns false when all labels map to warn or show', () {
+      test('returns false when all labels map to warn', () {
         final filter = createNsfwFilter(
           contentFilterService,
           moderationLabelService: moderationLabelService,
         );
-        // drugs=show, violence=warn → most restrictive is warn, not hide
-        final video = _createVideo(contentWarningLabels: ['drugs', 'violence']);
+        // flashing-lights=warn, misleading=warn -> most restrictive is warn.
+        final video = _createVideo(
+          contentWarningLabels: ['flashing-lights', 'misleading'],
+        );
 
         expect(filter(video), isFalse);
       });
@@ -321,7 +321,7 @@ void main() {
             hashtags: ['nsfw'],
           );
 
-          // Should still filter (nudity=hide), no double-add issues
+          // Should still filter because nudity is age-gated to hide.
           expect(filter(video), isTrue);
         },
       );
@@ -417,13 +417,13 @@ void main() {
       test('unknown label hides the video even if the user preferenced the '
           'known label as show', () async {
         // Simulate an age-verified user who has explicitly opted in to
-        // seeing violence. Without the unknown-label short-circuit, a
-        // video labeled ['violence', 'unknown-x'] would pass through
+        // seeing alcohol content. Without the unknown-label short-circuit, a
+        // video labeled ['alcohol', 'unknown-x'] would pass through
         // because the combined preference resolves to show.
         await ageService.initialize();
         await ageService.setAdultContentVerified(true);
         await contentFilterService.setPreference(
-          ContentLabel.violence,
+          ContentLabel.alcohol,
           ContentFilterPreference.show,
         );
 
@@ -432,7 +432,7 @@ void main() {
           moderationLabelService: moderationLabelService,
         );
         final video = _createVideo(
-          moderationLabels: const ['violence', 'unknown-x'],
+          moderationLabels: const ['alcohol', 'unknown-x'],
         );
 
         // The unknown label must force-hide regardless of user preference.
@@ -463,7 +463,7 @@ void main() {
       test('returns trusted hash-based warn labels', () async {
         await seedModerationLabels([
           ['L', 'content-warning'],
-          ['l', 'violence', 'content-warning'],
+          ['l', 'flashing-lights', 'content-warning'],
           ['x', 'trusted-warning-hash'],
         ]);
 
@@ -473,7 +473,7 @@ void main() {
         );
         final labels = resolver(_createVideo(sha256: 'trusted-warning-hash'));
 
-        expect(labels, equals(['violence']));
+        expect(labels, equals(['flashing-lights']));
       });
     });
   });

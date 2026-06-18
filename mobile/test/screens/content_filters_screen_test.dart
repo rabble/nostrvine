@@ -60,23 +60,50 @@ void main() {
 
       final l10n = l10nOf(tester);
       expect(find.text(l10n.contentFiltersAdultContent), findsOneWidget);
-      expect(find.text(l10n.contentFiltersViolenceGore), findsOneWidget);
+      expect(find.text(l10n.contentFiltersViolenceGore), findsNothing);
       expect(find.text(l10n.contentFiltersSubstances), findsOneWidget);
+      expect(find.text(l10n.contentFiltersOther), findsOneWidget);
     });
 
-    testWidgets('renders the full supported Other label set', (tester) async {
+    testWidgets('hides categories that are always filtered out', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
       final l10n = l10nOf(tester);
-      await tester.scrollUntilVisible(
-        find.text(l10n.contentLabelDeepfake),
-        200,
-      );
+      expect(find.text(l10n.contentLabelPornography), findsNothing);
+      expect(find.text(l10n.contentLabelGraphicMedia), findsNothing);
+      expect(find.text(l10n.contentLabelViolence), findsNothing);
+      expect(find.text(l10n.contentLabelSelfHarm), findsNothing);
+      expect(find.text(l10n.contentLabelDrugUse), findsNothing);
+      expect(find.text(l10n.contentLabelHateSpeech), findsNothing);
+      expect(find.text(l10n.contentLabelHarassment), findsNothing);
+      expect(find.text(l10n.contentLabelAiGenerated), findsNothing);
+      expect(find.text(l10n.contentLabelDeepfake), findsNothing);
+      expect(find.text(l10n.contentLabelSpam), findsNothing);
+      expect(find.text(l10n.contentLabelScam), findsNothing);
+    });
+
+    testWidgets('moves gambling under Other while substances stay visible', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
-      expect(find.text(l10n.contentLabelDeepfake), findsOneWidget);
-      expect(find.text(l10n.contentLabelSpam), findsOneWidget);
-      expect(find.text(l10n.contentLabelScam), findsOneWidget);
+
+      final l10n = l10nOf(tester);
+      expect(find.text(l10n.contentLabelAlcohol), findsOneWidget);
+      expect(find.text(l10n.contentLabelTobacco), findsOneWidget);
+
+      await tester.scrollUntilVisible(find.text(l10n.contentLabelGambling), 80);
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.contentFiltersOther), findsOneWidget);
+      expect(find.text(l10n.contentLabelGambling), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text(l10n.contentFiltersOther)).dy,
+        lessThan(tester.getTopLeft(find.text(l10n.contentLabelGambling)).dy),
+      );
     });
 
     testWidgets('shows the age-gate banner when not verified', (tester) async {
@@ -88,6 +115,47 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'locks alcohol tobacco profanity and gambling when not verified',
+      (tester) async {
+        when(
+          () => filterService.getPreference(ContentLabel.alcohol),
+        ).thenReturn(ContentFilterPreference.hide);
+        when(
+          () => filterService.getPreference(ContentLabel.tobacco),
+        ).thenReturn(ContentFilterPreference.hide);
+        when(
+          () => filterService.getPreference(ContentLabel.profanity),
+        ).thenReturn(ContentFilterPreference.hide);
+        when(
+          () => filterService.getPreference(ContentLabel.gambling),
+        ).thenReturn(ContentFilterPreference.hide);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        Future<void> tapShowFor(ContentLabel label) async {
+          final row = find.byKey(ValueKey('content-filter-${label.value}'));
+          await tester.scrollUntilVisible(row, 80);
+          await tester.pumpAndSettle();
+          await tester.tap(
+            find.descendant(
+              of: row,
+              matching: find.text(l10nOf(tester).contentFiltersShow),
+            ),
+          );
+          await tester.pump();
+        }
+
+        await tapShowFor(ContentLabel.alcohol);
+        await tapShowFor(ContentLabel.tobacco);
+        await tapShowFor(ContentLabel.profanity);
+        await tapShowFor(ContentLabel.gambling);
+
+        verifyNever(() => filterService.setPreference(any(), any()));
+      },
+    );
 
     testWidgets('hides the age-gate banner when verified', (tester) async {
       when(() => ageService.isAdultContentVerified).thenReturn(true);

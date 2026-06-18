@@ -124,24 +124,24 @@ void main() {
       () async {
         await seedModerationLabels([
           ['L', 'content-warning'],
-          ['l', 'violence', 'content-warning'],
-          ['x', 'sha-violence'],
+          ['l', 'flashing-lights', 'content-warning'],
+          ['x', 'sha-flashing-lights'],
         ]);
 
         final result = videoEventService.filterVideoList([
-          _createVideo(id: 'video-2', sha256: 'sha-violence'),
+          _createVideo(id: 'video-2', sha256: 'sha-flashing-lights'),
         ]);
 
         expect(result, hasLength(1));
         expect(result.single.contentWarningLabels, isEmpty);
-        expect(result.single.warnLabels, equals(['violence']));
+        expect(result.single.warnLabels, equals(['flashing-lights']));
       },
     );
 
     test('applies trusted addressable labels to replaceable videos', () async {
       await seedModerationLabels([
         ['L', 'content-warning'],
-        ['l', 'graphic-media', 'content-warning'],
+        ['l', 'flashing-lights', 'content-warning'],
         ['a', '34236:creator_pubkey_hex:replaceable-video-d-tag'],
       ]);
 
@@ -155,7 +155,7 @@ void main() {
 
       expect(result, hasLength(1));
       expect(result.single.contentWarningLabels, isEmpty);
-      expect(result.single.warnLabels, equals(['graphic-media']));
+      expect(result.single.warnLabels, equals(['flashing-lights']));
     });
   });
 }

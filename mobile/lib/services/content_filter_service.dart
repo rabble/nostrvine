@@ -23,9 +23,11 @@ enum ContentFilterPreference {
 
 /// Service that manages per-category content filter preferences.
 ///
-/// Each [ContentLabel] can be independently set to [ContentFilterPreference]
-/// (show, warn, or hide). Adult content categories are locked to [hide]
-/// unless the user has verified they are 18+.
+/// Visible [ContentLabel] categories can be independently set to
+/// [ContentFilterPreference] (show, warn, or hide). Categories in
+/// [ageRestrictedCategories] are locked to [hide] unless the user has verified
+/// they are 18+. Categories in [alwaysFilteredCategories] are always locked to
+/// [hide].
 ///
 /// Persists preferences in SharedPreferences as a JSON map.
 class ContentFilterService extends ChangeNotifier {
@@ -46,31 +48,54 @@ class ContentFilterService extends ChangeNotifier {
     ContentLabel.porn,
   };
 
+  /// Visible categories locked to hide unless the user is age-verified.
+  static const Set<ContentLabel> ageRestrictedCategories = {
+    ...adultCategories,
+    ContentLabel.alcohol,
+    ContentLabel.tobacco,
+    ContentLabel.profanity,
+    ContentLabel.gambling,
+  };
+
+  /// Categories that Divine always filters out and does not expose as toggles.
+  static const Set<ContentLabel> alwaysFilteredCategories = {
+    ContentLabel.graphicMedia,
+    ContentLabel.violence,
+    ContentLabel.selfHarm,
+    ContentLabel.porn,
+    ContentLabel.drugs,
+    ContentLabel.hate,
+    ContentLabel.harassment,
+    ContentLabel.aiGenerated,
+    ContentLabel.deepfake,
+    ContentLabel.spam,
+    ContentLabel.scam,
+  };
+
   /// Default preferences for each category.
   static const Map<ContentLabel, ContentFilterPreference> _defaults = {
-    // Adult content — hide by default
-    ContentLabel.nudity: ContentFilterPreference.hide,
-    ContentLabel.sexual: ContentFilterPreference.hide,
+    // Visible adult content starts at warn when the age gate is unlocked.
+    ContentLabel.nudity: ContentFilterPreference.warn,
+    ContentLabel.sexual: ContentFilterPreference.warn,
+    // Always-filtered categories are not user-configurable.
+    ContentLabel.graphicMedia: ContentFilterPreference.hide,
+    ContentLabel.violence: ContentFilterPreference.hide,
+    ContentLabel.selfHarm: ContentFilterPreference.hide,
     ContentLabel.porn: ContentFilterPreference.hide,
-    // Violence — warn by default
-    ContentLabel.graphicMedia: ContentFilterPreference.warn,
-    ContentLabel.violence: ContentFilterPreference.warn,
-    ContentLabel.selfHarm: ContentFilterPreference.warn,
-    // Substances — show by default
-    ContentLabel.drugs: ContentFilterPreference.show,
-    ContentLabel.alcohol: ContentFilterPreference.show,
-    ContentLabel.tobacco: ContentFilterPreference.show,
-    ContentLabel.gambling: ContentFilterPreference.show,
-    // Other — show by default
-    ContentLabel.profanity: ContentFilterPreference.show,
-    ContentLabel.hate: ContentFilterPreference.warn,
-    ContentLabel.harassment: ContentFilterPreference.warn,
-    ContentLabel.flashingLights: ContentFilterPreference.warn,
-    ContentLabel.aiGenerated: ContentFilterPreference.show,
-    ContentLabel.deepfake: ContentFilterPreference.warn,
+    ContentLabel.drugs: ContentFilterPreference.hide,
+    ContentLabel.hate: ContentFilterPreference.hide,
+    ContentLabel.harassment: ContentFilterPreference.hide,
+    ContentLabel.aiGenerated: ContentFilterPreference.hide,
+    ContentLabel.deepfake: ContentFilterPreference.hide,
     ContentLabel.spam: ContentFilterPreference.hide,
     ContentLabel.scam: ContentFilterPreference.hide,
-    ContentLabel.spoiler: ContentFilterPreference.show,
+    // Visible non-adult categories start at warn.
+    ContentLabel.alcohol: ContentFilterPreference.warn,
+    ContentLabel.tobacco: ContentFilterPreference.warn,
+    ContentLabel.gambling: ContentFilterPreference.warn,
+    ContentLabel.profanity: ContentFilterPreference.warn,
+    ContentLabel.flashingLights: ContentFilterPreference.warn,
+    ContentLabel.spoiler: ContentFilterPreference.warn,
     ContentLabel.misleading: ContentFilterPreference.warn,
   };
 
@@ -105,6 +130,9 @@ class ContentFilterService extends ChangeNotifier {
         if (label == ContentLabel.other) continue;
         _preferences.putIfAbsent(label, () => _defaultFor(label));
       }
+      if (_enforceAlwaysFilteredCategories()) {
+        await _save();
+      }
 
       _initialized = true;
 
@@ -124,14 +152,18 @@ class ContentFilterService extends ChangeNotifier {
         if (label == ContentLabel.other) continue;
         _preferences.putIfAbsent(label, () => _defaultFor(label));
       }
+      _enforceAlwaysFilteredCategories();
       _initialized = true;
     }
   }
 
   /// Get the preference for a specific content label.
   ContentFilterPreference getPreference(ContentLabel label) {
-    // Adult categories are locked to hide if not age-verified
-    if (adultCategories.contains(label) &&
+    if (alwaysFilteredCategories.contains(label)) {
+      return ContentFilterPreference.hide;
+    }
+    // Age-restricted categories are locked to hide if not age-verified.
+    if (ageRestrictedCategories.contains(label) &&
         !ageVerificationService.isAdultContentVerified) {
       return ContentFilterPreference.hide;
     }
@@ -140,18 +172,33 @@ class ContentFilterService extends ChangeNotifier {
 
   /// Set the preference for a specific content label.
   ///
-  /// Adult categories cannot be set to anything other than [hide]
+  /// Age-restricted categories cannot be set to anything other than [hide]
   /// unless the user is age-verified.
   Future<void> setPreference(
     ContentLabel label,
     ContentFilterPreference preference,
   ) async {
-    // Enforce age gate for adult categories
-    if (adultCategories.contains(label) &&
+    if (alwaysFilteredCategories.contains(label)) {
+      final changed = _preferences[label] != ContentFilterPreference.hide;
+      _preferences[label] = ContentFilterPreference.hide;
+      if (changed) {
+        await _save();
+        notifyListeners();
+      }
+      Log.warning(
+        'Cannot set always-filtered category $label to $preference',
+        name: 'ContentFilterService',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    // Enforce age gate for restricted categories.
+    if (ageRestrictedCategories.contains(label) &&
         !ageVerificationService.isAdultContentVerified &&
         preference != ContentFilterPreference.hide) {
       Log.warning(
-        'Cannot set adult category $label to $preference without age '
+        'Cannot set age-restricted category $label to $preference without age '
         'verification',
         name: 'ContentFilterService',
         category: LogCategory.system,
@@ -221,7 +268,7 @@ class ContentFilterService extends ChangeNotifier {
   ///
   /// Called when the user un-checks age verification.
   Future<void> lockAdultCategories() async {
-    for (final label in adultCategories) {
+    for (final label in ageRestrictedCategories) {
       _preferences[label] = ContentFilterPreference.hide;
     }
     await _save();
@@ -239,7 +286,8 @@ class ContentFilterService extends ChangeNotifier {
   /// prompt the first time they play a given adult video — a safe default
   /// that can be overridden per-category in Content Filters.
   Future<void> unlockAdultCategories() async {
-    for (final label in adultCategories) {
+    for (final label in ageRestrictedCategories) {
+      if (alwaysFilteredCategories.contains(label)) continue;
       if ((_preferences[label] ?? _defaultFor(label)) ==
           ContentFilterPreference.hide) {
         _preferences[label] = ContentFilterPreference.warn;
@@ -331,6 +379,17 @@ class ContentFilterService extends ChangeNotifier {
   /// Get the default preference for a given label.
   static ContentFilterPreference _defaultFor(ContentLabel label) {
     return _defaults[label] ?? ContentFilterPreference.show;
+  }
+
+  bool _enforceAlwaysFilteredCategories() {
+    var changed = false;
+    for (final label in alwaysFilteredCategories) {
+      if (_preferences[label] != ContentFilterPreference.hide) {
+        _preferences[label] = ContentFilterPreference.hide;
+        changed = true;
+      }
+    }
+    return changed;
   }
 
   /// Parse a preference from its string name.
