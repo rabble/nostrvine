@@ -89,6 +89,8 @@ VideoEvent _fullVideo() => VideoEvent(
     version: 1,
     checks: const {'proofmode_present': true},
   ),
+  eventKind: 34236,
+  sourceRelay: 'wss://relay.divine.video',
 );
 
 const _expectedKeys = <String>{
@@ -140,11 +142,15 @@ const _expectedKeys = <String>{
   'contentWarningLabels',
   'moderationLabels',
   'proofSummary',
+  'eventKind',
+  'sourceRelay',
 };
 
 const _excludedDerivedGetters = <String>{
   'hashCode',
   'isExpired',
+  'shareKind',
+  'isAddressableShareKind',
   'stableId',
   'addressableId',
   'effectiveThumbnailUrl',

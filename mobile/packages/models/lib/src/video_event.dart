@@ -199,6 +199,8 @@ class VideoEvent {
     this.moderationLabels = const [],
     this.warnLabels = const [],
     this.proofSummary,
+    this.eventKind,
+    this.sourceRelay,
   });
 
   /// Reconstructs a [VideoEvent] from a map produced by [toJson].
@@ -282,6 +284,8 @@ class VideoEvent {
       textTrackContent: json['textTrackContent'] as String?,
       contentWarningLabels: stringList(json['contentWarningLabels']),
       moderationLabels: stringList(json['moderationLabels']),
+      eventKind: optInt(json['eventKind']),
+      sourceRelay: json['sourceRelay'] as String?,
       proofSummary: json['proofSummary'] == null
           ? null
           : ProofVerificationSummary.fromJson(
@@ -332,6 +336,7 @@ class VideoEvent {
     int? expirationTimestamp;
     String? audioEventId;
     String? audioEventRelay;
+    String? sourceRelay;
     final collaboratorPubkeys = <String>[];
     InspiredByInfo? inspiredByVideo;
     String? textTrackRef;
@@ -493,7 +498,10 @@ class VideoEvent {
         case 'r':
           // NIP-25 reference - might contain media URLs. Also handle "r" tags
           // with type annotation (e.g., ["r", "url", "video"])
-          if (tag.length >= 3) {
+          if (tagValue.startsWith('wss://') || tagValue.startsWith('ws://')) {
+            // Relay hint for this event; keep the first one seen.
+            sourceRelay ??= tagValue;
+          } else if (tag.length >= 3) {
             final url = tagValue;
             final type = tag[2];
 
@@ -690,6 +698,8 @@ class VideoEvent {
           .toList(),
       textTrackRef: textTrackRef,
       contentWarningLabels: contentWarningLabels,
+      eventKind: event.kind,
+      sourceRelay: sourceRelay,
     );
   }
   final String id;
@@ -721,6 +731,18 @@ class VideoEvent {
   final String? group; // 'h' tag - group/community identification
   final String? altText; // 'alt' tag - accessibility text
   final String? blurhash; // 'blurhash' tag - for progressive image loading
+
+  /// The NIP-71 event kind this video was parsed from (22, 34236, …).
+  ///
+  /// Preserved so consumers (e.g. building a NIP-18 `q` citation in a DM) can
+  /// distinguish an addressable event (`naddr`/coordinate) from a regular one
+  /// (`nevent`/id). Null for events rehydrated from pre-migration caches; use
+  /// [shareKind] for a safe value.
+  final int? eventKind;
+
+  /// A relay hint (`wss://`/`ws://`) where this event was advertised, captured
+  /// from an `r` tag if present. Used as a relay hint when citing the video.
+  final String? sourceRelay;
 
   // Repost metadata fields
   final bool isRepost;
@@ -864,6 +886,22 @@ class VideoEvent {
   /// For addressable events (Kind 34236), returns the vineId (d tag).
   /// Falls back to event id for non-addressable events.
   String get stableId => vineId ?? id;
+
+  /// Best-effort NIP-71 kind for citing this video.
+  ///
+  /// Returns [eventKind] when known; otherwise infers from addressability —
+  /// a present `d` tag implies the addressable short-video kind (34236), and
+  /// its absence implies the regular short-video kind (22).
+  int get shareKind =>
+      eventKind ??
+      (vineId != null
+          ? NIP71VideoKinds.addressableShortVideo
+          : NIP71VideoKinds.shortVideo);
+
+  /// Whether this video is an addressable event (referenced by coordinate).
+  bool get isAddressableShareKind =>
+      shareKind == NIP71VideoKinds.addressableShortVideo ||
+      shareKind == NIP71VideoKinds.addressableNormalVideo;
 
   /// Zalgo-safe video content for display.
   String get displayContent => stripZalgo(content);
@@ -1412,6 +1450,8 @@ class VideoEvent {
     List<String>? moderationLabels,
     List<String>? warnLabels,
     ProofVerificationSummary? proofSummary,
+    int? eventKind,
+    String? sourceRelay,
   }) => VideoEvent(
     id: id ?? this.id,
     pubkey: pubkey ?? this.pubkey,
@@ -1471,6 +1511,8 @@ class VideoEvent {
     moderationLabels: moderationLabels ?? this.moderationLabels,
     warnLabels: warnLabels ?? this.warnLabels,
     proofSummary: proofSummary ?? this.proofSummary,
+    eventKind: eventKind ?? this.eventKind,
+    sourceRelay: sourceRelay ?? this.sourceRelay,
   );
 
   @override
@@ -1548,6 +1590,8 @@ class VideoEvent {
     'contentWarningLabels': contentWarningLabels,
     'moderationLabels': moderationLabels,
     'proofSummary': proofSummary?.toJson(),
+    'eventKind': eventKind,
+    'sourceRelay': sourceRelay,
   };
 
   /// Create a VideoEvent instance representing a repost

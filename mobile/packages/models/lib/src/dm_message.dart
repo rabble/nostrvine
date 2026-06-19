@@ -2,6 +2,7 @@
 // ABOUTME: Supports both Kind 14 (text) and Kind 15 (file) messages.
 
 import 'package:equatable/equatable.dart';
+import 'package:models/src/dm_shared_video_ref.dart';
 
 /// A decrypted NIP-17 direct message.
 ///
@@ -24,6 +25,7 @@ class DmMessage extends Equatable {
     this.subject,
     this.tags = const [],
     this.fileMetadata,
+    this.sharedVideoRef,
   });
 
   /// The rumor event ID (kind 14 or 15).
@@ -60,8 +62,18 @@ class DmMessage extends Equatable {
   /// File metadata for kind 15 messages. Null for kind 14.
   final DmFileMetadata? fileMetadata;
 
+  /// Structured reference to a video event cited via a NIP-18 `q` tag.
+  ///
+  /// Non-null when this message shares a video (e.g. a reel shared into the
+  /// DM); lets the UI render a deterministic video card. Null for ordinary
+  /// messages and for legacy URL-only shares.
+  final DmSharedVideoRef? sharedVideoRef;
+
   /// Whether this is a file message (kind 15).
   bool get isFileMessage => messageKind == 15;
+
+  /// Whether this message carries a structured shared-video reference.
+  bool get hasSharedVideo => sharedVideoRef != null;
 
   /// Whether this message was sent by the given pubkey.
   bool isSentBy(String pubkey) => senderPubkey == pubkey;
@@ -79,6 +91,7 @@ class DmMessage extends Equatable {
     subject,
     tags,
     fileMetadata,
+    sharedVideoRef,
   ];
 }
 
