@@ -241,7 +241,7 @@ void main() {
         await changeSound(tester, sound('b'));
 
         expect(clipNotifier.clearAllCallCount, 1);
-        expect(editorNotifier.selectSoundCalls, [sound('b')]);
+        expect(editorNotifier.selectRecorderAudioTrackCalls, [sound('b')]);
       });
 
       testWidgets('does not clear clips when the same sound is reselected', (
@@ -255,7 +255,7 @@ void main() {
         await changeSound(tester, sound('a'));
 
         expect(clipNotifier.clearAllCallCount, 0);
-        expect(editorNotifier.selectSoundCalls, [sound('a')]);
+        expect(editorNotifier.selectRecorderAudioTrackCalls, [sound('a')]);
       });
 
       testWidgets('does not clear when there are no recorded clips', (
@@ -267,7 +267,7 @@ void main() {
         await changeSound(tester, sound('b'));
 
         expect(clipNotifier.clearAllCallCount, 0);
-        expect(editorNotifier.selectSoundCalls, [sound('b')]);
+        expect(editorNotifier.selectRecorderAudioTrackCalls, [sound('b')]);
       });
     });
   });
@@ -296,7 +296,7 @@ class _TestVideoEditorNotifier extends VideoEditorNotifier {
   _TestVideoEditorNotifier({this.selectedSound});
 
   final AudioEvent? selectedSound;
-  final List<AudioEvent?> selectSoundCalls = [];
+  final List<AudioEvent?> selectRecorderAudioTrackCalls = [];
 
   @override
   VideoEditorProviderState build() {
@@ -304,8 +304,12 @@ class _TestVideoEditorNotifier extends VideoEditorNotifier {
   }
 
   @override
-  void selectSound(AudioEvent? sound) {
-    selectSoundCalls.add(sound);
-    state = state.copyWith(selectedSound: sound);
+  void selectRecorderAudioTrack(AudioEvent? sound) {
+    selectRecorderAudioTrackCalls.add(sound);
+    state = state.copyWith(
+      selectedSound: sound,
+      clearSelectedSound: sound == null,
+      seedSelectedSoundAsAudioTrack: sound != null,
+    );
   }
 }

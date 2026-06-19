@@ -410,6 +410,27 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     state = state.copyWith(
       selectedSound: sound,
       clearSelectedSound: sound == null,
+      seedSelectedSoundAsAudioTrack: false,
+    );
+    invalidateFinalRenderedClip();
+    triggerAutosave();
+  }
+
+  /// Select a recorder-backed sound that should become an editor audio track.
+  ///
+  /// Lip-sync records clips while playing this sound, then mutes those clips
+  /// before opening the editor. The selected sound must therefore be seeded
+  /// into the editor timeline exactly once on editor initialization.
+  void selectRecorderAudioTrack(AudioEvent? sound) {
+    if (sound == state.selectedSound &&
+        state.seedSelectedSoundAsAudioTrack == (sound != null)) {
+      return;
+    }
+
+    state = state.copyWith(
+      selectedSound: sound,
+      clearSelectedSound: sound == null,
+      seedSelectedSoundAsAudioTrack: sound != null,
     );
     invalidateFinalRenderedClip();
     triggerAutosave();
@@ -799,6 +820,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       inspiredByVideo: draft.inspiredByVideo,
       inspiredByNpub: draft.inspiredByNpub,
       selectedSound: draft.selectedSound,
+      seedSelectedSoundAsAudioTrack: false,
       contentWarnings: draft.contentWarnings,
       finalRenderedClip: validFinalRenderedClip,
       clearFinalRenderedClip: validFinalRenderedClip == null,

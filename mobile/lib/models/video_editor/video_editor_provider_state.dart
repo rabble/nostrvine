@@ -35,6 +35,7 @@ class VideoEditorProviderState {
     this.inspiredByVideo,
     this.inspiredByNpub,
     this.selectedSound,
+    this.seedSelectedSoundAsAudioTrack = false,
     this.contentWarnings = const {},
     this.proofManifestJson,
     this.thumbnailTimestamp,
@@ -104,6 +105,14 @@ class VideoEditorProviderState {
   /// This is persisted in drafts and used for audio playback during editing.
   final AudioEvent? selectedSound;
 
+  /// Whether [selectedSound] was recorded against in the recorder and should
+  /// be seeded into the editor timeline as a concrete audio track.
+  ///
+  /// Generic editor/draft sound state is not enough to infer this. Lip-sync
+  /// uses this handoff flag so restoring a draft or selecting audio elsewhere
+  /// cannot accidentally create a duplicate editor track.
+  final bool seedSelectedSoundAsAudioTrack;
+
   /// NIP-32 content warning labels for sensitive content self-labeling.
   final Set<ContentLabel> contentWarnings;
 
@@ -171,6 +180,7 @@ class VideoEditorProviderState {
     bool clearInspiredByNpub = false,
     AudioEvent? selectedSound,
     bool clearSelectedSound = false,
+    bool? seedSelectedSoundAsAudioTrack,
     Set<ContentLabel>? contentWarnings,
     Duration? thumbnailTimestamp,
     bool clearThumbnailTimestamp = false,
@@ -207,6 +217,9 @@ class VideoEditorProviderState {
       selectedSound: clearSelectedSound
           ? null
           : (selectedSound ?? this.selectedSound),
+      seedSelectedSoundAsAudioTrack:
+          !clearSelectedSound &&
+          (seedSelectedSoundAsAudioTrack ?? this.seedSelectedSoundAsAudioTrack),
       contentWarnings: contentWarnings ?? this.contentWarnings,
       proofManifestJson: clearProofManifestJson || clearFinalRenderedClip
           ? null

@@ -121,6 +121,32 @@ void main() {
     );
   });
 
+  group('VideoEditorCanvas.shouldSeedSelectedSoundAsAudioTrack', () {
+    test('requires both a selected sound and recorder handoff flag', () {
+      expect(
+        VideoEditorCanvas.shouldSeedSelectedSoundAsAudioTrack(
+          hasSelectedSound: true,
+          seedSelectedSoundAsAudioTrack: true,
+        ),
+        isTrue,
+      );
+      expect(
+        VideoEditorCanvas.shouldSeedSelectedSoundAsAudioTrack(
+          hasSelectedSound: true,
+          seedSelectedSoundAsAudioTrack: false,
+        ),
+        isFalse,
+      );
+      expect(
+        VideoEditorCanvas.shouldSeedSelectedSoundAsAudioTrack(
+          hasSelectedSound: false,
+          seedSelectedSoundAsAudioTrack: true,
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('VideoEditorCanvas.shouldSyncPlayerForClipStateChange', () {
     test('skips split render intermediate clip updates', () {
       final source = _createClip(id: 'source');

@@ -171,6 +171,16 @@ void main() {
         // Callback is not invoked just by rendering
         expect(receivedSound, isNull);
       });
+
+      test('opens selection first when no sound is selected', () {
+        expect(VideoEditorAudioChip.shouldOpenTimingScreen(null), isFalse);
+      });
+
+      test('opens timing directly when a sound is selected', () {
+        final sound = _createTestAudioEvent(title: 'Test Sound');
+
+        expect(VideoEditorAudioChip.shouldOpenTimingScreen(sound), isTrue);
+      });
     });
   });
 }

@@ -3,6 +3,7 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
@@ -27,6 +28,7 @@ void main() {
       expect(state.inspiredByVideo, isNull);
       expect(state.inspiredByNpub, isNull);
       expect(state.selectedSound, isNull);
+      expect(state.seedSelectedSoundAsAudioTrack, isFalse);
       expect(state.contentWarnings, isEmpty);
       expect(state.proofManifestJson, isNull);
       expect(state.deleteButtonKey, isA<GlobalKey>());
@@ -108,11 +110,24 @@ void main() {
     });
 
     test('copyWith with clearSelectedSound sets sound to null', () {
-      final state = VideoEditorProviderState();
+      final state = VideoEditorProviderState(
+        selectedSound: _sound,
+        seedSelectedSoundAsAudioTrack: true,
+      );
 
       final cleared = state.copyWith(clearSelectedSound: true);
 
       expect(cleared.selectedSound, isNull);
+      expect(cleared.seedSelectedSoundAsAudioTrack, isFalse);
+    });
+
+    test('copyWith can mark selected sound as recorder audio handoff', () {
+      final state = VideoEditorProviderState(selectedSound: _sound);
+
+      final updated = state.copyWith(seedSelectedSoundAsAudioTrack: true);
+
+      expect(updated.selectedSound, _sound);
+      expect(updated.seedSelectedSoundAsAudioTrack, isTrue);
     });
 
     test('thumbnailTimestamp defaults to null', () {
@@ -190,3 +205,11 @@ void main() {
     });
   });
 }
+
+const _sound = AudioEvent(
+  id: 'sound-id',
+  pubkey: 'pubkey',
+  createdAt: 1704067200,
+  url: 'https://example.com/sound.mp3',
+  duration: 5,
+);

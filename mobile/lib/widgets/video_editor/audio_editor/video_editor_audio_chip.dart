@@ -35,6 +35,10 @@ class VideoEditorAudioChip extends StatelessWidget {
   /// Called when audio selection ends (e.g. to resume playback).
   final VoidCallback? onSelectionEnded;
 
+  @visibleForTesting
+  static bool shouldOpenTimingScreen(AudioEvent? selectedSound) =>
+      selectedSound != null;
+
   Future<void> _selectAudio(BuildContext context) async {
     final previousSound = selectedSound;
     onSelectionStarted?.call();
@@ -43,7 +47,7 @@ class VideoEditorAudioChip extends StatelessWidget {
       // No sound yet: the selection sheet already trims long sounds via the
       // timing screen and returns the final, timed sound, so use its result
       // directly. Re-opening the timing screen here would show it twice.
-      if (previousSound == null) {
+      if (!shouldOpenTimingScreen(previousSound)) {
         final result = await VineBottomSheet.show<AudioEvent>(
           context: context,
           maxChildSize: 1,
@@ -63,7 +67,7 @@ class VideoEditorAudioChip extends StatelessWidget {
           opaque: false,
           barrierColor: VineTheme.transparent,
           pageBuilder: (_, _, _) =>
-              VideoAudioEditorTimingScreen(sound: previousSound),
+              VideoAudioEditorTimingScreen(sound: previousSound!),
         ),
       );
 

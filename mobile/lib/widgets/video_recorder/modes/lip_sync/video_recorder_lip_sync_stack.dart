@@ -102,6 +102,6 @@ class _LipSyncAudioButton extends ConsumerWidget {
     if (sound != previousSound && ref.read(clipManagerProvider).hasClips) {
       await ref.read(clipManagerProvider.notifier).clearAll();
     }
-    ref.read(videoEditorProvider.notifier).selectSound(sound);
+    ref.read(videoEditorProvider.notifier).selectRecorderAudioTrack(sound);
   }
 }

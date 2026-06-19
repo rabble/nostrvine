@@ -82,6 +82,12 @@ class VideoEditorCanvas extends StatelessWidget {
         previous.clips != current.clips;
   }
 
+  @visibleForTesting
+  static bool shouldSeedSelectedSoundAsAudioTrack({
+    required bool hasSelectedSound,
+    required bool seedSelectedSoundAsAudioTrack,
+  }) => hasSelectedSound && seedSelectedSoundAsAudioTrack;
+
   @override
   Widget build(BuildContext context) {
     final isSubEditorOpen = context.select(
@@ -1442,9 +1448,14 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
               if (editorStateHistory.isEmpty) {
                 final clips = ref.read(clipManagerProvider).clips;
-                final selectedSound = ref
-                    .read(videoEditorProvider)
-                    .selectedSound;
+                final editorState = ref.read(videoEditorProvider);
+                final selectedSound = editorState.selectedSound;
+                final shouldSeedSelectedSound =
+                    VideoEditorCanvas.shouldSeedSelectedSoundAsAudioTrack(
+                      hasSelectedSound: selectedSound != null,
+                      seedSelectedSoundAsAudioTrack:
+                          editorState.seedSelectedSoundAsAudioTrack,
+                    );
 
                 scope.requireEditor.stateManager.replaceHistory(
                   scope.requireEditor.stateHistory.first.copyWith(
@@ -1455,12 +1466,14 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                           .toList(),
                       // Lip-sync: the recorder picked a sound the clips were
                       // recorded against (and muted on handoff). Seed it as the
-                      // timeline's audio track so it's visible and editable. The
-                      // editor re-clamps the window to the real video duration
-                      // on the next TimelineOverlayTotalDurationChanged.
-                      if (selectedSound != null)
+                      // timeline's audio track only when the recorder marked
+                      // this as a handoff, not for every selected editor/draft
+                      // sound. The editor re-clamps the window to the real
+                      // video duration on the next
+                      // TimelineOverlayTotalDurationChanged.
+                      if (shouldSeedSelectedSound)
                         VideoEditorConstants.audioStateHistoryKey: [
-                          selectedSound
+                          selectedSound!
                               .copyWith(
                                 id:
                                     '${selectedSound.id}-'
