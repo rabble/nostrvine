@@ -3129,6 +3129,48 @@
   "@dmReactionAddCustomA11yLabel": {
     "description": "Screen-reader label for the '+' button at the end of the quick-row that opens the full emoji picker."
   },
+  "dmReelReplyComposerHint": "Message {name}…",
+  "@dmReelReplyComposerHint": {
+    "description": "Hint text in the in-player reply composer when replying to a reel that {name} shared in a DM.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dmReelReplyComposerHintSelf": "Reply to yourself…",
+  "@dmReelReplyComposerHintSelf": {
+    "description": "Hint text in the in-player reply composer when the reel was shared by the current user themselves."
+  },
+  "dmReelReplyComposerSemanticLabel": "Reply to this reel",
+  "@dmReelReplyComposerSemanticLabel": {
+    "description": "Screen-reader label for the in-player reel reply text field."
+  },
+  "dmReelReplyViewChat": "View chat",
+  "@dmReelReplyViewChat": {
+    "description": "Tappable action in the 'Sent · View chat' confirmation that opens the DM conversation."
+  },
+  "dmReelReplyViewChatA11yLabel": "Open chat",
+  "@dmReelReplyViewChatA11yLabel": {
+    "description": "Screen-reader label for the 'View chat' action shown after sending a reply or reaction from the reel player."
+  },
+  "dmReelReplySentAnnouncement": "Reply sent",
+  "@dmReelReplySentAnnouncement": {
+    "description": "Screen-reader announcement after a reel reply sends successfully."
+  },
+  "dmReelReactionSentAnnouncement": "Reacted {emoji}",
+  "@dmReelReactionSentAnnouncement": {
+    "description": "Screen-reader announcement after a reel quick-reaction is sent.",
+    "placeholders": {
+      "emoji": {
+        "type": "String"
+      }
+    }
+  },
+  "dmReelReplyFailed": "Couldn't send",
+  "@dmReelReplyFailed": {
+    "description": "Transient toast shown in the reel player when a reply or reaction fails to send."
+  },
   "dmReactionChipOwnA11yLabel": "Your reaction: {emoji}",
   "@dmReactionChipOwnA11yLabel": {
     "description": "Screen-reader label for a reaction chip created by the current account.",

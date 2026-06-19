@@ -9818,6 +9818,54 @@ abstract class AppLocalizations {
   /// **'Add custom emoji reaction'**
   String get dmReactionAddCustomA11yLabel;
 
+  /// Hint text in the in-player reply composer when replying to a reel that {name} shared in a DM.
+  ///
+  /// In en, this message translates to:
+  /// **'Message {name}…'**
+  String dmReelReplyComposerHint(String name);
+
+  /// Hint text in the in-player reply composer when the reel was shared by the current user themselves.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to yourself…'**
+  String get dmReelReplyComposerHintSelf;
+
+  /// Screen-reader label for the in-player reel reply text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to this reel'**
+  String get dmReelReplyComposerSemanticLabel;
+
+  /// Tappable action in the 'Sent · View chat' confirmation that opens the DM conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'View chat'**
+  String get dmReelReplyViewChat;
+
+  /// Screen-reader label for the 'View chat' action shown after sending a reply or reaction from the reel player.
+  ///
+  /// In en, this message translates to:
+  /// **'Open chat'**
+  String get dmReelReplyViewChatA11yLabel;
+
+  /// Screen-reader announcement after a reel reply sends successfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply sent'**
+  String get dmReelReplySentAnnouncement;
+
+  /// Screen-reader announcement after a reel quick-reaction is sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Reacted {emoji}'**
+  String dmReelReactionSentAnnouncement(String emoji);
+
+  /// Transient toast shown in the reel player when a reply or reaction fails to send.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send'**
+  String get dmReelReplyFailed;
+
   /// Screen-reader label for a reaction chip created by the current account.
   ///
   /// In en, this message translates to:

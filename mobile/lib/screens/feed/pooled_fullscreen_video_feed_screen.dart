@@ -31,6 +31,7 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/nav_rounded_shell.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/inline_comment_composer_bar.dart';
+import 'package:openvine/widgets/video_feed_item/reel_dm_reply_bar.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Always centers — including contain-fit (non-portrait) videos.
@@ -287,6 +288,10 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     with RouteAware, WidgetsBindingObserver {
   late final ValueNotifier<double> _pagePosition;
   final _feedVideosKey = GlobalKey<FeedVideosState>();
+
+  /// Whether the in-player DM reply composer is focused. When true the reel
+  /// pauses so the user can type without the video playing under the keyboard.
+  bool _replyComposerFocused = false;
 
   /// Feed-scoped Auto playback state; exposed to descendants via
   /// `BlocProvider.value` in [build].
@@ -547,6 +552,14 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               final showCommentBar =
                   currentUserPubkey != null && state.currentVideo != null;
 
+              // The DM reply/reaction bar shows only when the reel was opened
+              // from a DM thread (dmReplyContext present), alongside the
+              // public comment composer.
+              final showDmReplyBar =
+                  widget.dmReplyContext != null &&
+                  currentUserPubkey != null &&
+                  state.currentVideo != null;
+
               final appBar = DiVineAppBar(
                 title: widget.contextTitle ?? '',
                 showBackButton: true,
@@ -632,6 +645,10 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                                 removeBottom: true,
                                 child: FeedVideos(
                                   key: _feedVideosKey,
+                                  // Pause the reel while the DM reply composer
+                                  // is focused so it doesn't play under the
+                                  // keyboard.
+                                  isActive: !_replyComposerFocused,
                                   videos: state.videos,
                                   contextTitle: widget.contextTitle,
                                   currentIndex: state.currentIndex,
@@ -671,6 +688,17 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       ),
                     ),
                     if (showCommentBar) const InlineCommentComposerBar(),
+                    if (showDmReplyBar)
+                      ReelReplyPauseController(
+                        setComposerFocused: (focused) {
+                          if (mounted && focused != _replyComposerFocused) {
+                            setState(() => _replyComposerFocused = focused);
+                          }
+                        },
+                        child: ReelDmReplyBarHost(
+                          dmReplyContext: widget.dmReplyContext!,
+                        ),
+                      ),
                   ],
                 ),
               );
