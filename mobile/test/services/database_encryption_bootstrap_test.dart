@@ -37,6 +37,11 @@ void main() {
         store[inv.namedArguments[#key] as String] =
             inv.namedArguments[#value] as String;
       });
+      when(
+        () => storage.delete(key: any(named: 'key')),
+      ).thenAnswer((inv) async {
+        store.remove(inv.namedArguments[#key] as String);
+      });
     });
 
     DatabaseEncryptionBootstrap buildBootstrap({
@@ -66,7 +71,10 @@ void main() {
         onDelete: () {},
       );
 
-      expect(bootstrap.resolveCipherKey(), throwsStateError);
+      expect(
+        bootstrap.resolveCipherKey(),
+        throwsA(isA<SqlCipherUnavailableError>()),
+      );
     });
 
     test(
@@ -243,6 +251,44 @@ void main() {
       expect(key, matches(RegExp(r'^[0-9a-f]{64}$')));
       expect(store[dbCipherKeyStorageKey], equals(key));
     });
+  });
+
+  group('resetEncryptedDatabaseCache', () {
+    late _MockSecureStorage storage;
+    late Map<String, String> store;
+
+    setUp(() {
+      storage = _MockSecureStorage();
+      store = <String, String>{
+        dbCipherKeyStorageKey:
+            '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99',
+        'auth_key': 'must-stay',
+      };
+      when(
+        () => storage.delete(key: any(named: 'key')),
+      ).thenAnswer((inv) async {
+        store.remove(inv.namedArguments[#key] as String);
+      });
+    });
+
+    test(
+      'backs up DB, deletes only DB cipher key, and clears reset state',
+      () async {
+        var deleted = false;
+        var reset = false;
+
+        await resetEncryptedDatabaseCache(
+          secureStorage: storage,
+          deleteDatabase: () async => deleted = true,
+          onDatabaseReset: () async => reset = true,
+        );
+
+        expect(deleted, isTrue);
+        expect(store, isNot(contains(dbCipherKeyStorageKey)));
+        expect(store['auth_key'], equals('must-stay'));
+        expect(reset, isTrue);
+      },
+    );
   });
 
   group('resolveStartupDatabaseCipherKey', () {

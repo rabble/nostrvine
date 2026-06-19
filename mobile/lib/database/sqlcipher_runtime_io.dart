@@ -1,6 +1,7 @@
 // ABOUTME: Native SQLCipher runtime bootstrap (Android lib override + availability probe).
 // ABOUTME: Forces package:sqlite3 to load libsqlcipher.so on Android before first use.
 
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
@@ -11,13 +12,21 @@ import 'package:sqlite3/sqlite3.dart';
 ///
 /// Android ships a plain `libsqlite3.so`, so `package:sqlite3` must be told to
 /// load `libsqlcipher.so` instead — before ANY sqlite3 call and before drift
-/// spawns its background isolate. iOS/macOS link the SQLCipher pod
-/// automatically when it is the only sqlite3 provider, so no override is
-/// needed there (the runtime [isSqlCipherAvailable] probe is the safety net).
+/// spawns its background isolate.
+///
+/// iOS/macOS can also link plain sqlite3 through unrelated dependencies
+/// (Firebase Messaging is explicitly called out by `sqlcipher_flutter_libs`).
+/// CocoaPods links SQLCipher into the app process, so force package:sqlite3 to
+/// resolve process symbols instead of opening sqlite3.framework or stale
+/// CSQLite.framework pins first.
 Future<void> ensureSqlCipherRuntime() async {
   if (Platform.isAndroid) {
     await applyWorkaroundToOpenSqlCipherOnOldAndroidVersions();
     open.overrideFor(OperatingSystem.android, openCipherOnAndroid);
+  } else if (Platform.isIOS || Platform.isMacOS) {
+    open.overrideFor(open.os!, () {
+      return DynamicLibrary.process();
+    });
   }
 }
 

@@ -26,10 +26,23 @@ Future<DatabaseBootstrapStartupResult> resolveDatabaseBootstrapForAppStart({
   required Future<String?> Function() resolveCipherKey,
   required void Function(Widget app) runApp,
   required VoidCallback removeNativeSplash,
+  Future<void> Function(Object error, StackTrace stack)?
+  repairLocalDatabaseCache,
+  bool Function(Object error)? shouldRepairLocalDatabaseCache,
 }) async {
   try {
     return DatabaseBootstrapStartupResult.ready(await resolveCipherKey());
   } catch (error, stack) {
+    final shouldRepair = shouldRepairLocalDatabaseCache?.call(error) ?? true;
+    if (repairLocalDatabaseCache != null && shouldRepair) {
+      try {
+        await repairLocalDatabaseCache(error, stack);
+        return DatabaseBootstrapStartupResult.ready(await resolveCipherKey());
+      } catch (_) {
+        // Fall through to the final fail-closed UI below. The initial
+        // bootstrap failure has already been recorded by the resolver.
+      }
+    }
     removeNativeSplash();
     runApp(DatabaseBootstrapFailureApp(error: error, stack: stack));
     return const DatabaseBootstrapStartupResult.failure();
@@ -91,6 +104,17 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
                         decoration: TextDecoration.none,
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Diagnostic: ${databaseBootstrapDiagnosticCode(error)}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: VineTheme.onSurfaceVariant,
+                        fontSize: 12,
+                        height: 1.35,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
                     const SizedBox(height: 24),
                     DivineButton(
                       label: 'close Divine',
@@ -110,6 +134,20 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
       ),
     );
   }
+}
+
+String databaseBootstrapDiagnosticCode(Object error) {
+  final message = error.toString();
+  if (message.contains('SQLCipher is not linked')) {
+    return 'db-sqlcipher-unavailable';
+  }
+  if (message.contains('secure storage')) {
+    return 'db-secure-storage';
+  }
+  if (message.contains('SQLITE_NOTADB') || message.contains('not a database')) {
+    return 'db-cipher-mismatch';
+  }
+  return 'db-bootstrap-failed';
 }
 
 class _DebugErrorDetails extends StatelessWidget {

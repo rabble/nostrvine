@@ -76,11 +76,7 @@ class DatabaseEncryptionBootstrap {
 
     await _ensureRuntime();
     if (!_isCipherAvailable()) {
-      throw StateError(
-        'SQLCipher is not linked; refusing to start with an unencrypted local '
-        'database. Verify sqlcipher_flutter_libs replaced sqlite3_flutter_libs '
-        'and that no dependency links plain sqlite3.',
-      );
+      throw SqlCipherUnavailableError();
     }
 
     final (key, wasGenerated) = await _readOrCreateKey();
@@ -164,6 +160,15 @@ class DatabaseEncryptionBootstrap {
   }
 }
 
+class SqlCipherUnavailableError extends StateError {
+  SqlCipherUnavailableError()
+    : super(
+        'SQLCipher is not linked; refusing to start with an unencrypted local '
+        'database. Verify sqlcipher_flutter_libs replaced sqlite3_flutter_libs '
+        'and that no dependency links plain sqlite3.',
+      );
+}
+
 /// Resolves the startup DB cipher key and fails closed on bootstrap errors.
 ///
 /// Native app startup must not continue with a `null` cipher key after a
@@ -190,6 +195,25 @@ Future<String?> resolveStartupDatabaseCipherKey({
 
 bool _isValidCipherKey(String value) =>
     RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(value);
+
+/// Backs up the encrypted local database cache and removes only its DB cipher
+/// key so the next bootstrap creates a fresh encrypted cache.
+Future<void> resetEncryptedDatabaseCache({
+  required FlutterSecureStorage secureStorage,
+  Future<void> Function()? deleteDatabase,
+  Future<void> Function()? onDatabaseReset,
+}) async {
+  await (deleteDatabase ?? backUpAndRemoveSharedDatabase)();
+  await secureStorage.delete(key: dbCipherKeyStorageKey);
+  try {
+    await onDatabaseReset?.call();
+  } on Object catch (e) {
+    Log.warning(
+      'Post-recreate DM sync-state reset failed (non-fatal): $e',
+      name: DatabaseEncryptionBootstrap._logName,
+    );
+  }
+}
 
 /// Generates a 64-character hex (raw 32-byte) cipher key from a CSPRNG.
 ///
