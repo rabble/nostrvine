@@ -49,12 +49,20 @@ class CollaboratorVisibility extends Equatable {
   /// True when the current user authored the video. Always false in
   /// fallback mode.
   bool get isInviterView =>
-      _hasStatusPipeline && currentUserPubkey == creatorPubkey;
+      _hasStatusPipeline && _samePubkey(currentUserPubkey, creatorPubkey);
 
   /// Status for [pubkey]. Returns [CollaboratorStatus.pending] when the
   /// status pipeline is unavailable or no entry exists.
-  CollaboratorStatus statusFor(String pubkey) =>
-      statusByPubkey[pubkey] ?? CollaboratorStatus.pending;
+  CollaboratorStatus statusFor(String pubkey) {
+    final directStatus = statusByPubkey[pubkey];
+    if (directStatus != null) return directStatus;
+
+    final normalizedPubkey = pubkey.toLowerCase();
+    for (final entry in statusByPubkey.entries) {
+      if (entry.key.toLowerCase() == normalizedPubkey) return entry.value;
+    }
+    return CollaboratorStatus.pending;
+  }
 
   /// Pubkeys to render. The current user's pubkey is filtered out when
   /// they have locally ignored the invite. In fallback mode this is the
@@ -82,8 +90,11 @@ class CollaboratorVisibility extends Equatable {
   }
 
   bool _isHiddenByCurrentUserIgnore(String pubkey) =>
-      pubkey == currentUserPubkey &&
+      _samePubkey(pubkey, currentUserPubkey) &&
       statusFor(pubkey) == CollaboratorStatus.ignored;
+
+  static bool _samePubkey(String a, String b) =>
+      a.toLowerCase() == b.toLowerCase();
 
   @override
   List<Object?> get props => [

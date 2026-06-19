@@ -6,8 +6,12 @@ import 'package:test/test.dart';
 
 const _creator =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const _creatorUpper =
+    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const _collab1 =
     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+const _collab1Upper =
+    'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
 const _collab2 =
     'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
 const _viewer =
@@ -76,6 +80,18 @@ void main() {
         );
         expect(vis.isPendingForInviter(_collab1), isTrue);
         expect(vis.isPendingForInviter(_collab2), isFalse);
+      });
+
+      test('creator and status comparisons are case-insensitive', () {
+        const vis = CollaboratorVisibility(
+          taggedPubkeys: [_collab1],
+          statusByPubkey: {_collab1Upper: CollaboratorStatus.pending},
+          currentUserPubkey: _creatorUpper,
+          creatorPubkey: _creator,
+        );
+        expect(vis.isInviterView, isTrue);
+        expect(vis.isPendingForInviter(_collab1), isTrue);
+        expect(vis.pendingCount, equals(1));
       });
 
       test('missing entries default to pending', () {
@@ -149,6 +165,19 @@ void main() {
         );
         expect(vis.visiblePubkeys, equals([_collab2]));
       });
+
+      test(
+        'current user ignore is hidden when visibility receives normalized tag',
+        () {
+          const vis = CollaboratorVisibility(
+            taggedPubkeys: [_collab1],
+            statusByPubkey: {_collab1Upper: CollaboratorStatus.ignored},
+            currentUserPubkey: _collab1Upper,
+            creatorPubkey: _creator,
+          );
+          expect(vis.visiblePubkeys, isEmpty);
+        },
+      );
 
       test('current user not filtered out when their status is confirmed', () {
         const vis = CollaboratorVisibility(
