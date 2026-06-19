@@ -523,6 +523,24 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     _triggerAutosave();
   }
 
+  /// Mutes every clip by setting its volume to zero.
+  ///
+  /// Used by lip-sync mode before handing off to the editor so the recorded
+  /// clips are silent and only the selected sound is audible.
+  void muteAllClips() {
+    if (_clips.isEmpty || _clips.every((c) => c.volume == 0)) return;
+    for (var i = 0; i < _clips.length; i++) {
+      _clips[i] = _clips[i].copyWith(volume: 0);
+    }
+    state = state.copyWith(clips: List.unmodifiable(_clips));
+    Log.debug(
+      '🔇 Muted all clips for lip-sync',
+      name: 'ClipManagerNotifier',
+      category: .video,
+    );
+    _triggerAutosave();
+  }
+
   /// Update ghost frame path for a clip.
   void updateGhostFrame({
     required String clipId,

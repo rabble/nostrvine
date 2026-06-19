@@ -11,7 +11,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
@@ -47,6 +49,13 @@ Future<void> openVideoEditorFromRecorder(
 
   final bloc = context.read<VideoRecorderBloc>();
   final recorderMode = bloc.state.recorderMode;
+
+  // Lip-sync records against a selected sound, so silence the clips before the
+  // editor: only the chosen audio should be heard, with the clips muted and
+  // the sound carried in as its own track (seeded on editor init).
+  if (recorderMode == VideoRecorderMode.lipSync) {
+    ref.read(clipManagerProvider.notifier).muteAllClips();
+  }
 
   if (!recorderMode.hasVideoEditor) {
     ref.read(videoEditorProvider.notifier).startRenderVideo();

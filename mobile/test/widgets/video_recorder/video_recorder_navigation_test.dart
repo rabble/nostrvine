@@ -13,8 +13,11 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -54,11 +57,13 @@ void main() {
   late _MockAuthService mockAuthService;
   late _MockVideoRecorderBloc recorderBloc;
   late _FakeVideoEditorNotifier fakeEditor;
+  late _FakeClipManagerNotifier fakeClipManager;
 
   setUp(() {
     mockAuthService = _MockAuthService();
     recorderBloc = _MockVideoRecorderBloc();
     fakeEditor = _FakeVideoEditorNotifier();
+    fakeClipManager = _FakeClipManagerNotifier();
 
     when(() => recorderBloc.state).thenReturn(const VideoRecorderBlocState());
     when(
@@ -97,6 +102,7 @@ void main() {
       overrides: [
         authServiceProvider.overrideWithValue(mockAuthService),
         videoEditorProvider.overrideWith(() => fakeEditor),
+        clipManagerProvider.overrideWith(() => fakeClipManager),
       ],
       child: MaterialApp.router(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -136,6 +142,35 @@ void main() {
 
         expect(find.text('library'), findsOneWidget);
         expect(fakeEditor.saveAsDraftCalled, isFalse);
+      });
+
+      testWidgets('openVideoEditorFromRecorder mutes clips in lip-sync mode', (
+        tester,
+      ) async {
+        when(() => recorderBloc.state).thenReturn(
+          const VideoRecorderBlocState(recorderMode: VideoRecorderMode.lipSync),
+        );
+
+        await tester.pumpWidget(buildHarness());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('open-editor')));
+        await tester.pumpAndSettle();
+
+        expect(fakeClipManager.muteAllClipsCalled, isTrue);
+        expect(find.text('editor'), findsOneWidget);
+      });
+
+      testWidgets('openVideoEditorFromRecorder does not mute clips in '
+          'capture mode', (tester) async {
+        await tester.pumpWidget(buildHarness());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('open-editor')));
+        await tester.pumpAndSettle();
+
+        expect(fakeClipManager.muteAllClipsCalled, isFalse);
+        expect(find.text('editor'), findsOneWidget);
       });
     });
 
@@ -188,6 +223,18 @@ void main() {
       });
     });
   });
+}
+
+class _FakeClipManagerNotifier extends ClipManagerNotifier {
+  bool muteAllClipsCalled = false;
+
+  @override
+  ClipManagerState build() => ClipManagerState();
+
+  @override
+  void muteAllClips() {
+    muteAllClipsCalled = true;
+  }
 }
 
 class _RecorderHarness extends ConsumerWidget {

@@ -80,6 +80,46 @@ void main() {
       expect(state.totalDuration, equals(const Duration(seconds: 2)));
     });
 
+    group('muteAllClips', () {
+      test('sets every clip volume to zero', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+        notifier.addClip(
+          limitClipDuration: false,
+          video: EditorVideo.file('/path/to/video1.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+        notifier.addClip(
+          limitClipDuration: false,
+          video: EditorVideo.file('/path/to/video2.mp4'),
+          duration: const Duration(seconds: 1),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        expect(
+          container.read(clipManagerProvider).clips.every((c) => c.volume == 1),
+          isTrue,
+        );
+
+        notifier.muteAllClips();
+
+        expect(
+          container.read(clipManagerProvider).clips.every((c) => c.volume == 0),
+          isTrue,
+        );
+      });
+
+      test('does nothing when there are no clips', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        notifier.muteAllClips();
+
+        expect(container.read(clipManagerProvider).clips, isEmpty);
+      });
+    });
+
     test('deleteClip removes clip from state', () async {
       final notifier = container.read(clipManagerProvider.notifier);
 
