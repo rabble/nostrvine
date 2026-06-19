@@ -733,9 +733,14 @@ class CameraController: NSObject {
         if session.canAddOutput(photoOutput) {
             session.addOutput(photoOutput)
             self.photoOutput = photoOutput
-            if let connection = photoOutput.connection(with: .video),
-               connection.isVideoOrientationSupported {
-                connection.videoOrientation = .portrait
+            if let connection = photoOutput.connection(with: .video) {
+                if connection.isVideoOrientationSupported {
+                    connection.videoOrientation = .portrait
+                }
+                if connection.isVideoMirroringSupported {
+                    let isFront = currentLens == .front
+                    connection.isVideoMirrored = isFront && mirrorFrontCameraOutput
+                }
             }
             DivineCameraLog.shared.debug("DivineCamera: Photo output added successfully")
         } else {
@@ -1191,6 +1196,15 @@ class CameraController: NSObject {
                         videoConnection.isVideoMirrored = isFront && self.mirrorFrontCameraOutput
                     }
                 }
+                if let photoConnection = self.photoOutput?.connection(with: .video) {
+                    if photoConnection.isVideoOrientationSupported {
+                        photoConnection.videoOrientation = .portrait
+                    }
+                    let isFront = newDevice.position == .front
+                    if photoConnection.isVideoMirroringSupported {
+                        photoConnection.isVideoMirrored = isFront && self.mirrorFrontCameraOutput
+                    }
+                }
             } catch {
                 // Re-add old input if failed
                 if let oldInput = self.videoInput {
@@ -1247,6 +1261,7 @@ class CameraController: NSObject {
                 enableScreenFlash()
                 currentTorchMode = .on
                 isAutoFlashMode = false
+                currentFlashMode = .off
                 return true
             } else if mode == "auto" {
                 // Auto mode for front camera - will check brightness when recording starts
@@ -1287,7 +1302,11 @@ class CameraController: NSObject {
                 DivineCameraLog.shared.debug("DivineCamera: Auto flash mode enabled - will check brightness when recording starts")
                 
             case "on":
+                if device.isTorchModeSupported(.off) {
+                    device.torchMode = .off
+                }
                 currentFlashMode = .on
+                currentTorchMode = .off
                 isAutoFlashMode = false
                 
             case "torch":
@@ -1295,6 +1314,7 @@ class CameraController: NSObject {
                     device.torchMode = .on
                 }
                 currentTorchMode = .on
+                currentFlashMode = .off
                 isAutoFlashMode = false
                 
             default:
@@ -2118,7 +2138,16 @@ class CameraController: NSObject {
             return "off"
         }
     }
-    
+
+    private func photoFlashMode(for output: AVCapturePhotoOutput) -> AVCaptureDevice.FlashMode {
+        let requestedMode = currentFlashMode
+        let supportedModes = output.supportedFlashModes
+        if supportedModes.contains(NSNumber(value: requestedMode.rawValue)) {
+            return requestedMode
+        }
+        return .off
+    }
+
     /// Releases all camera resources.
     func release() {
         // Restore screen brightness if screen flash was enabled
@@ -2200,7 +2229,7 @@ extension CameraController: FlutterTexture {
             let settings = AVCapturePhotoSettings(
                 format: [AVVideoCodecKey: AVVideoCodecType.jpeg]
             )
-            settings.flashMode = .off
+            settings.flashMode = self.photoFlashMode(for: photoOutput)
 
             let delegate = PhotoCaptureDelegate(
                 outputDirectory: outputDirectory,

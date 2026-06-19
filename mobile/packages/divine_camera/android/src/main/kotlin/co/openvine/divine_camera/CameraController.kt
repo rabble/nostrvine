@@ -1096,6 +1096,8 @@ class CameraController(
                     enableScreenFlash()
                     isTorchEnabled = true
                     isAutoFlashMode = false
+                    currentFlashMode = ImageCapture.FLASH_MODE_OFF
+                    applyPhotoFlashMode()
                     return true
                 } else if (mode == "auto") {
                     // Auto mode for front camera - will check brightness when recording starts
@@ -1103,6 +1105,7 @@ class CameraController(
                     isTorchEnabled = false
                     isAutoFlashMode = true
                     currentFlashMode = ImageCapture.FLASH_MODE_AUTO
+                    applyPhotoFlashMode()
                     DivineCameraLog.d(TAG, "Auto flash mode enabled for front camera")
                     return true
                 } else {
@@ -1141,8 +1144,10 @@ class CameraController(
                     cam.cameraControl.enableTorch(true)
                     isTorchEnabled = true
                     isAutoFlashMode = false
+                    currentFlashMode = ImageCapture.FLASH_MODE_OFF
                 }
             }
+            applyPhotoFlashMode()
             true
         } catch (e: Exception) {
             DivineCameraLog.e(TAG, "Failed to set flash mode", e)
@@ -1807,6 +1812,8 @@ class CameraController(
         val owner = activity as LifecycleOwner
         val photo = ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+            .setTargetRotation(currentTargetRotation())
             .setFlashMode(currentFlashMode)
             .build()
         return try {
@@ -1851,6 +1858,9 @@ class CameraController(
             return
         }
 
+        capture.targetRotation = currentTargetRotation()
+        capture.flashMode = currentFlashMode
+
         val outputDir = when {
             outputDirectory != null -> File(outputDirectory)
             useCache -> context.cacheDir
@@ -1884,6 +1894,13 @@ class CameraController(
                 }
             }
         )
+    }
+
+    private fun currentTargetRotation(): Int =
+        activity.windowManager.defaultDisplay.rotation
+
+    private fun applyPhotoFlashMode() {
+        imageCapture?.flashMode = currentFlashMode
     }
 
     /**
