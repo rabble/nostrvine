@@ -2436,16 +2436,31 @@ void main() {
     });
 
     group('watchLikedEventIds', () {
-      test('returns stream from local storage when available', () async {
+      test('seeds from local storage, then streams repository cache', () async {
         when(
           () => mockLocalStorage.watchLikedEventIds(),
-        ).thenAnswer((_) => Stream.value(<String>['event1', 'event2']));
+        ).thenAnswer((_) => Stream.value(<String>['stale_event']));
+        when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
+          (_) async => [
+            createLikeRecord(
+              targetEventId: 'older_event_id_1234567890abcdef',
+              reactionEventId: 'older_reaction_id_1234567890abcdef',
+              createdAt: DateTime.utc(2024),
+            ),
+            createLikeRecord(
+              targetEventId: 'newer_event_id_1234567890abcdef',
+              reactionEventId: 'newer_reaction_id_1234567890abcdef',
+              createdAt: DateTime.utc(2024, 1, 2),
+            ),
+          ],
+        );
 
         repository = createRepository();
-        expect(
-          await repository.watchLikedEventIds().first,
-          containsAll(['event1', 'event2']),
-        );
+        expect(await repository.watchLikedEventIds().first, [
+          'newer_event_id_1234567890abcdef',
+          'older_event_id_1234567890abcdef',
+        ]);
+        verifyNever(() => mockLocalStorage.watchLikedEventIds());
       });
 
       test('returns internal stream when no local storage', () async {
