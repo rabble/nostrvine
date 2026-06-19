@@ -14,6 +14,7 @@ import 'package:dm_repository/src/collaborator_invite_recovery.dart';
 import 'package:dm_repository/src/dm_decryption_worker.dart';
 import 'package:dm_repository/src/dm_reactions_repository.dart';
 import 'package:dm_repository/src/dm_repository_reportable_sites.dart';
+import 'package:dm_repository/src/dm_shared_video_citation.dart';
 import 'package:dm_repository/src/dm_sync_state.dart';
 import 'package:dm_repository/src/nip17_message_service.dart';
 import 'package:flutter/foundation.dart';
@@ -1576,6 +1577,51 @@ class DmRepository {
     }
 
     return result;
+  }
+
+  /// Shares a video into a 1:1 NIP-17 DM as a kind-14 rumor that cites the
+  /// video with a NIP-18 `q` tag and a NIP-21 `nostr:` URI, in addition to the
+  /// human-readable [baseContent] (which keeps the `https://divine.video` URL
+  /// so non-Nostr clients still render a link).
+  ///
+  /// [videoKind] selects the citation form — addressable (34236/34235) emits a
+  /// coordinate + `naddr`; regular (22) emits an id + `nevent`. When a valid
+  /// citation can't be built, falls back to a plain-text [sendMessage] so the
+  /// share still goes through (the URL remains in [baseContent]).
+  ///
+  /// Throws the same errors as [sendMessage].
+  Future<NIP17SendResult> sendSharedVideo({
+    required String recipientPubkey,
+    required String baseContent,
+    required int videoKind,
+    required String videoAuthorPubkey,
+    String? videoDTag,
+    String? videoEventId,
+    String? relayHint,
+    String? replyToId,
+  }) async {
+    final citation = DmSharedVideoCitation.build(
+      videoKind: videoKind,
+      authorPubkey: videoAuthorPubkey,
+      relayHint: relayHint ?? DmShareConstants.defaultRelayHint,
+      dTag: videoDTag,
+      eventId: videoEventId,
+    );
+
+    if (citation == null) {
+      return sendMessage(
+        recipientPubkey: recipientPubkey,
+        content: baseContent,
+        replyToId: replyToId,
+      );
+    }
+
+    return sendMessage(
+      recipientPubkey: recipientPubkey,
+      content: '$baseContent\n${citation.nostrUri}',
+      additionalTags: [citation.qTag],
+      replyToId: replyToId,
+    );
   }
 
   /// Re-publish only the sender self-addressed gift wrap for an
@@ -3274,6 +3320,7 @@ class DmRepository {
       fileMetadata = null;
     }
 
+    final tags = _parseTagsJson(row.tagsJson);
     return DmMessage(
       id: row.id,
       conversationId: row.conversationId,
@@ -3284,8 +3331,9 @@ class DmRepository {
       messageKind: row.messageKind,
       replyToId: row.replyToId,
       subject: row.subject,
-      tags: _parseTagsJson(row.tagsJson),
+      tags: tags,
       fileMetadata: fileMetadata,
+      sharedVideoRef: DmSharedVideoCitation.parse(tags),
     );
   }
 

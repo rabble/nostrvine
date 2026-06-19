@@ -111,6 +111,7 @@ class VideoSharingService {
       // Prefer NIP-17 when DmRepository is available
       if (_dmRepository != null) {
         return _shareViaNip17(
+          video: video,
           recipientPubkey: recipientPubkey,
           content: dmContent,
         );
@@ -133,13 +134,19 @@ class VideoSharingService {
   }
 
   Future<ShareResult> _shareViaNip17({
+    required VideoEvent video,
     required String recipientPubkey,
     required String content,
   }) async {
     final dmRepo = _dmRepository!;
-    final result = await dmRepo.sendMessage(
+    final result = await dmRepo.sendSharedVideo(
       recipientPubkey: recipientPubkey,
-      content: content,
+      baseContent: content,
+      videoKind: video.shareKind,
+      videoAuthorPubkey: video.pubkey,
+      videoDTag: video.vineId,
+      videoEventId: video.id,
+      relayHint: video.sourceRelay,
     );
 
     if (result.success) {

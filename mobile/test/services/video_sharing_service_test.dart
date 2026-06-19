@@ -363,9 +363,14 @@ void main() {
     test('uses NIP-17 when DmRepository is available', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
-        () => mockDmRepository.sendMessage(
+        () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
-          content: any(named: 'content'),
+          baseContent: any(named: 'baseContent'),
+          videoKind: any(named: 'videoKind'),
+          videoAuthorPubkey: any(named: 'videoAuthorPubkey'),
+          videoDTag: any(named: 'videoDTag'),
+          videoEventId: any(named: 'videoEventId'),
+          relayHint: any(named: 'relayHint'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -398,9 +403,14 @@ void main() {
 
       // Verify NIP-17 was used, NOT NIP-04
       verify(
-        () => mockDmRepository.sendMessage(
+        () => mockDmRepository.sendSharedVideo(
           recipientPubkey: _recipientPubkey,
-          content: any(named: 'content'),
+          baseContent: any(named: 'baseContent'),
+          videoKind: any(named: 'videoKind'),
+          videoAuthorPubkey: any(named: 'videoAuthorPubkey'),
+          videoDTag: any(named: 'videoDTag'),
+          videoEventId: any(named: 'videoEventId'),
+          relayHint: any(named: 'relayHint'),
         ),
       ).called(1);
       verifyNever(
@@ -415,9 +425,14 @@ void main() {
     test('returns failure when NIP-17 send fails', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
-        () => mockDmRepository.sendMessage(
+        () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
-          content: any(named: 'content'),
+          baseContent: any(named: 'baseContent'),
+          videoKind: any(named: 'videoKind'),
+          videoAuthorPubkey: any(named: 'videoAuthorPubkey'),
+          videoDTag: any(named: 'videoDTag'),
+          videoEventId: any(named: 'videoEventId'),
+          relayHint: any(named: 'relayHint'),
         ),
       ).thenAnswer(
         (_) async => const NIP17SendResult.failure('Relay rejected'),
@@ -442,9 +457,14 @@ void main() {
     test('includes personal message in content', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
-        () => mockDmRepository.sendMessage(
+        () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
-          content: any(named: 'content'),
+          baseContent: any(named: 'baseContent'),
+          videoKind: any(named: 'videoKind'),
+          videoAuthorPubkey: any(named: 'videoAuthorPubkey'),
+          videoDTag: any(named: 'videoDTag'),
+          videoEventId: any(named: 'videoEventId'),
+          relayHint: any(named: 'relayHint'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -473,9 +493,14 @@ void main() {
       );
 
       final captured = verify(
-        () => mockDmRepository.sendMessage(
+        () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
-          content: captureAny(named: 'content'),
+          baseContent: captureAny(named: 'baseContent'),
+          videoKind: any(named: 'videoKind'),
+          videoAuthorPubkey: any(named: 'videoAuthorPubkey'),
+          videoDTag: any(named: 'videoDTag'),
+          videoEventId: any(named: 'videoEventId'),
+          relayHint: any(named: 'relayHint'),
         ),
       ).captured;
 
@@ -485,9 +510,14 @@ void main() {
     test('share message contains quoted title and share URL', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
-        () => mockDmRepository.sendMessage(
+        () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
-          content: any(named: 'content'),
+          baseContent: any(named: 'baseContent'),
+          videoKind: any(named: 'videoKind'),
+          videoAuthorPubkey: any(named: 'videoAuthorPubkey'),
+          videoDTag: any(named: 'videoDTag'),
+          videoEventId: any(named: 'videoEventId'),
+          relayHint: any(named: 'relayHint'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -518,9 +548,14 @@ void main() {
       );
 
       final captured = verify(
-        () => mockDmRepository.sendMessage(
+        () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
-          content: captureAny(named: 'content'),
+          baseContent: captureAny(named: 'baseContent'),
+          videoKind: any(named: 'videoKind'),
+          videoAuthorPubkey: any(named: 'videoAuthorPubkey'),
+          videoDTag: any(named: 'videoDTag'),
+          videoEventId: any(named: 'videoEventId'),
+          relayHint: any(named: 'relayHint'),
         ),
       ).captured;
 
@@ -532,9 +567,14 @@ void main() {
     test('share message without title contains only share URL', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
-        () => mockDmRepository.sendMessage(
+        () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
-          content: any(named: 'content'),
+          baseContent: any(named: 'baseContent'),
+          videoKind: any(named: 'videoKind'),
+          videoAuthorPubkey: any(named: 'videoAuthorPubkey'),
+          videoDTag: any(named: 'videoDTag'),
+          videoEventId: any(named: 'videoEventId'),
+          relayHint: any(named: 'relayHint'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -564,9 +604,14 @@ void main() {
       );
 
       final captured = verify(
-        () => mockDmRepository.sendMessage(
+        () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
-          content: captureAny(named: 'content'),
+          baseContent: captureAny(named: 'baseContent'),
+          videoKind: any(named: 'videoKind'),
+          videoAuthorPubkey: any(named: 'videoAuthorPubkey'),
+          videoDTag: any(named: 'videoDTag'),
+          videoEventId: any(named: 'videoEventId'),
+          relayHint: any(named: 'relayHint'),
         ),
       ).captured;
 
@@ -578,9 +623,14 @@ void main() {
     test('computes correct conversationId', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
-        () => mockDmRepository.sendMessage(
+        () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
-          content: any(named: 'content'),
+          baseContent: any(named: 'baseContent'),
+          videoKind: any(named: 'videoKind'),
+          videoAuthorPubkey: any(named: 'videoAuthorPubkey'),
+          videoDTag: any(named: 'videoDTag'),
+          videoEventId: any(named: 'videoEventId'),
+          relayHint: any(named: 'relayHint'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -616,9 +666,14 @@ void main() {
     test('updates sharing history on NIP-17 success', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
-        () => mockDmRepository.sendMessage(
+        () => mockDmRepository.sendSharedVideo(
           recipientPubkey: any(named: 'recipientPubkey'),
-          content: any(named: 'content'),
+          baseContent: any(named: 'baseContent'),
+          videoKind: any(named: 'videoKind'),
+          videoAuthorPubkey: any(named: 'videoAuthorPubkey'),
+          videoDTag: any(named: 'videoDTag'),
+          videoEventId: any(named: 'videoEventId'),
+          relayHint: any(named: 'relayHint'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(

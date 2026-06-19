@@ -493,6 +493,88 @@ void main() {
         );
       });
 
+      test('sendSharedVideo cites an addressable (34236) video', () async {
+        stubSendRumor(
+          (rumorEvent, recipientPubkey) async =>
+              const NIP17SendResult.failure('relay unavailable'),
+        );
+
+        final repository = createRepository();
+        const author =
+            'cccccccccccccccccccccccccccccccc'
+            'cccccccccccccccccccccccccccccccc';
+
+        await repository.sendSharedVideo(
+          recipientPubkey: _validPubkeyB,
+          baseContent: 'watch this https://divine.video/video/abc',
+          videoKind: 34236,
+          videoAuthorPubkey: author,
+          videoDTag: 'abc',
+          relayHint: 'wss://relay.example',
+        );
+
+        final rumorEvent =
+            verify(
+                  () => mockMessageService.sendRumor(
+                    rumorEvent: captureAny(named: 'rumorEvent'),
+                    recipientPubkey: _validPubkeyB,
+                  ),
+                ).captured.single
+                as Event;
+
+        // q tag cites the video by coordinate, no 4th element (addressable).
+        expect(
+          additionalTagsFromRumor(rumorEvent, _validPubkeyB),
+          contains(equals(['q', '34236:$author:abc', 'wss://relay.example'])),
+        );
+        // Content keeps the divine.video URL AND adds the nostr: URI.
+        expect(rumorEvent.content, contains('nostr:naddr1'));
+        expect(
+          rumorEvent.content,
+          contains('https://divine.video/video/abc'),
+        );
+      });
+
+      test('sendSharedVideo cites a regular (22) video by id', () async {
+        stubSendRumor(
+          (rumorEvent, recipientPubkey) async =>
+              const NIP17SendResult.failure('relay unavailable'),
+        );
+
+        final repository = createRepository();
+        const author =
+            'cccccccccccccccccccccccccccccccc'
+            'cccccccccccccccccccccccccccccccc';
+        const eventId =
+            'dddddddddddddddddddddddddddddddd'
+            'dddddddddddddddddddddddddddddddd';
+
+        await repository.sendSharedVideo(
+          recipientPubkey: _validPubkeyB,
+          baseContent: 'watch this',
+          videoKind: 22,
+          videoAuthorPubkey: author,
+          videoEventId: eventId,
+          relayHint: 'wss://relay.example',
+        );
+
+        final rumorEvent =
+            verify(
+                  () => mockMessageService.sendRumor(
+                    rumorEvent: captureAny(named: 'rumorEvent'),
+                    recipientPubkey: _validPubkeyB,
+                  ),
+                ).captured.single
+                as Event;
+
+        // Regular events carry the author as the 4th q-tag element.
+        expect(
+          additionalTagsFromRumor(rumorEvent, _validPubkeyB),
+          contains(equals(['q', eventId, 'wss://relay.example', author])),
+        );
+        expect(rumorEvent.content, contains('nostr:nevent1'));
+      });
+
       test('persists message and conversation on success', () async {
         stubSendRumor(
           (_, recipientPubkey) async => NIP17SendResult.success(
