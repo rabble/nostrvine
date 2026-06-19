@@ -269,6 +269,7 @@ class NostrAppBridgeService {
           result = await _handleNip44Decrypt(args);
       }
     } on _BridgeInvalidRequestException catch (error) {
+      auditDecision = NostrAppAuditDecision.blocked;
       result = BridgeResult.error(
         'invalid_request',
         errorMessage: error.message,
@@ -305,7 +306,12 @@ class NostrAppBridgeService {
     }
 
     if (relayMap.isEmpty) {
-      final signerRelays = await _signerFactory().getRelays();
+      Map<dynamic, dynamic>? signerRelays;
+      try {
+        signerRelays = await _signerFactory().getRelays();
+      } on Object catch (_) {
+        signerRelays = null;
+      }
       if (signerRelays case final Map<dynamic, dynamic> relays) {
         for (final entry in relays.entries) {
           final key = entry.key;
@@ -379,7 +385,12 @@ class NostrAppBridgeService {
       args['plaintext'],
       fieldName: 'plaintext',
     );
-    final ciphertext = await signer.nip44Encrypt(pubkey, plaintext);
+    final String? ciphertext;
+    try {
+      ciphertext = await signer.nip44Encrypt(pubkey, plaintext);
+    } on Object catch (_) {
+      return const BridgeResult.error('encrypt_failed');
+    }
     if (ciphertext == null || ciphertext.isEmpty) {
       return const BridgeResult.error('encrypt_failed');
     }
@@ -401,7 +412,7 @@ class NostrAppBridgeService {
     final String? plaintext;
     try {
       plaintext = await signer.nip44Decrypt(pubkey, ciphertext);
-    } on Exception {
+    } on Object catch (_) {
       // Signer implementations do not expose structured NIP-44 failure
       // details consistently, so keep decrypt errors stable and non-leaky.
       return const BridgeResult.error('decrypt_failed');
@@ -490,7 +501,11 @@ class NostrAppBridgeService {
                     'event.tags must not contain null elements',
                   );
                 }
-                return item.toString();
+                if (item is String) return item;
+                if (item is num || item is bool) return item.toString();
+                throw const _BridgeInvalidRequestException(
+                  'event.tags must only contain strings, numbers, or booleans',
+                );
               })
               .toList(growable: false);
         })
