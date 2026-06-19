@@ -21,10 +21,24 @@ const double _zoomIndicatorBottomInset = 24.0 + 96.0 + 12.0;
 
 /// Capture-mode stack with viewfinder, controls, and top bar.
 class VideoRecorderCaptureStack extends ConsumerWidget {
-  const VideoRecorderCaptureStack({required this.fromEditor, super.key});
+  const VideoRecorderCaptureStack({
+    required this.fromEditor,
+    this.topBarCenter,
+    this.audioProgressBar,
+    super.key,
+  });
 
   /// Whether the recorder was opened from the video editor.
   final bool fromEditor;
+
+  /// Optional widget rendered in the top bar between the close and next
+  /// buttons. Lip-sync mode uses this slot for the audio-select chip.
+  final Widget? topBarCenter;
+
+  /// Optional waveform progress bar overlaid during recording. Lip-sync mode
+  /// supplies [VideoRecorderAudioProgressBar]; when set, the top bar's generic
+  /// recording-progress bar is suppressed so the two don't overlap.
+  final Widget? audioProgressBar;
 
   void _deleteLastClip(BuildContext context, WidgetRef ref) {
     unawaited(ref.read(clipManagerProvider.notifier).scheduleDeleteLastClip());
@@ -106,10 +120,17 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
             ),
           ),
 
+          // Waveform progress bar overlaid during recording (lip-sync mode).
+          ?audioProgressBar,
+
           // Top bar with close-button and confirm-button
           Align(
             alignment: .topCenter,
-            child: VideoRecorderCaptureTopBar(fromEditor: fromEditor),
+            child: VideoRecorderCaptureTopBar(
+              fromEditor: fromEditor,
+              center: topBarCenter,
+              showRecordingProgress: audioProgressBar == null,
+            ),
           ),
 
           // Countdown overlay

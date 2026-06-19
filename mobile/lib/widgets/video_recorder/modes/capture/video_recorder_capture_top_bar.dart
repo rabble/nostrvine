@@ -12,12 +12,27 @@ import 'package:openvine/widgets/video_recorder/video_recorder_navigation.dart';
 
 /// Top bar for capture mode with close and confirm buttons.
 class VideoRecorderCaptureTopBar extends ConsumerWidget {
-  const VideoRecorderCaptureTopBar({required this.fromEditor, super.key});
+  const VideoRecorderCaptureTopBar({
+    required this.fromEditor,
+    this.center,
+    this.showRecordingProgress = true,
+    super.key,
+  });
 
   static const _animationDuration = Duration(milliseconds: 220);
 
   /// Whether the recorder was opened from the video editor.
   final bool fromEditor;
+
+  /// Optional widget rendered between the close and next buttons while not
+  /// recording. Lip-sync mode uses this slot for the audio-select chip.
+  final Widget? center;
+
+  /// Whether the thin recording-progress bar is shown while recording.
+  ///
+  /// Lip-sync mode sets this to `false` because its audio waveform already
+  /// conveys recording progress, and the two would overlap.
+  final bool showRecordingProgress;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,7 +46,9 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
       child: AnimatedSwitcher(
         duration: _animationDuration,
         child: isRecording
-            ? const _RecordingProgressBar()
+            ? (showRecordingProgress
+                  ? const _RecordingProgressBar()
+                  : const SizedBox.shrink())
             : Padding(
                 padding: const EdgeInsetsGeometry.fromLTRB(12, 12, 12, 0),
                 child: Row(
@@ -48,6 +65,7 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
                           ? context.pop(false)
                           : closeVideoRecorder(context),
                     ),
+                    ?center,
                     AnimatedOpacity(
                       duration: _animationDuration,
                       opacity: hasClips ? 1 : 0,

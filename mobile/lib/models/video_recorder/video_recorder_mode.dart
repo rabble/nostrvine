@@ -1,9 +1,10 @@
 import 'package:models/models.dart' as model show AspectRatio;
 
 enum VideoRecorderMode {
-  capture,
-  classic,
   upload,
+  capture,
+  lipSync,
+  classic,
   ;
 
   /// SharedPreferences key for the last-used recorder mode.
@@ -18,38 +19,44 @@ enum VideoRecorderMode {
       values.firstWhere((m) => m.name == name, orElse: () => capture);
 
   String get label => switch (this) {
-    .capture => 'Capture',
-    .classic => 'Classic',
     .upload => 'Upload',
+    .capture => 'Capture',
+    .lipSync => 'Lip Sync',
+    .classic => 'Classic',
   };
 
   bool get hasRecordingLimit => switch (this) {
-    .capture => false,
-    .classic => true,
     .upload => false,
+    .capture => false,
+    .lipSync => true,
+    .classic => true,
   };
 
   bool get hasVideoEditor => switch (this) {
-    .capture => true,
-    .classic => false,
     .upload => false,
+    .capture => true,
+    .lipSync => true,
+    .classic => false,
   };
 
   bool get supportGridLines => switch (this) {
-    .capture => false,
-    .classic => true,
     .upload => false,
+    .capture => false,
+    .lipSync => false,
+    .classic => true,
   };
 
   bool get supportsCountdownTimer => switch (this) {
-    .capture => true,
-    .classic => false,
     .upload => false,
+    .capture => true,
+    .lipSync => true,
+    .classic => false,
   };
 
   model.AspectRatio get defaultAspectRatio => switch (this) {
-    .capture => .vertical,
-    .classic => .square,
     .upload => .vertical,
+    .capture => .vertical,
+    .lipSync => .vertical,
+    .classic => .square,
   };
 }

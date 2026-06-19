@@ -9,6 +9,10 @@ void main() {
         expect(VideoRecorderMode.capture.label, equals('Capture'));
       });
 
+      test('lipSync has label "Lip Sync"', () {
+        expect(VideoRecorderMode.lipSync.label, equals('Lip Sync'));
+      });
+
       test('classic has label "Classic"', () {
         expect(VideoRecorderMode.classic.label, equals('Classic'));
       });
@@ -21,6 +25,10 @@ void main() {
     group('hasRecordingLimit', () {
       test('capture has no recording limit', () {
         expect(VideoRecorderMode.capture.hasRecordingLimit, isFalse);
+      });
+
+      test('lipSync has recording limit', () {
+        expect(VideoRecorderMode.lipSync.hasRecordingLimit, isTrue);
       });
 
       test('classic has recording limit', () {
@@ -37,6 +45,10 @@ void main() {
         expect(VideoRecorderMode.capture.hasVideoEditor, isTrue);
       });
 
+      test('lipSync has video editor', () {
+        expect(VideoRecorderMode.lipSync.hasVideoEditor, isTrue);
+      });
+
       test('classic has no video editor', () {
         expect(VideoRecorderMode.classic.hasVideoEditor, isFalse);
       });
@@ -49,6 +61,10 @@ void main() {
     group('supportGridLines', () {
       test('capture does not support grid lines', () {
         expect(VideoRecorderMode.capture.supportGridLines, isFalse);
+      });
+
+      test('lipSync does not support grid lines', () {
+        expect(VideoRecorderMode.lipSync.supportGridLines, isFalse);
       });
 
       test('classic supports grid lines', () {
@@ -64,6 +80,13 @@ void main() {
       test('capture defaults to vertical', () {
         expect(
           VideoRecorderMode.capture.defaultAspectRatio,
+          equals(model.AspectRatio.vertical),
+        );
+      });
+
+      test('lipSync defaults to vertical', () {
+        expect(
+          VideoRecorderMode.lipSync.defaultAspectRatio,
           equals(model.AspectRatio.vertical),
         );
       });

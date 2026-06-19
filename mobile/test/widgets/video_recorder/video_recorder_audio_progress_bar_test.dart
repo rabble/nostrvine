@@ -226,7 +226,7 @@ void main() {
         );
       });
 
-      testWidgets('renders within Positioned widget', (tester) async {
+      testWidgets('aligns its content to the top', (tester) async {
         await tester.pumpWidget(
           buildWidget(
             recordingState: VideoRecorderState.recording,
@@ -239,7 +239,15 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(Positioned), findsWidgets);
+        final align = tester.widget<Align>(
+          find
+              .descendant(
+                of: find.byType(VideoRecorderAudioProgressBar),
+                matching: find.byType(Align),
+              )
+              .first,
+        );
+        expect(align.alignment, Alignment.topCenter);
       });
 
       testWidgets('uses SafeArea for status bar padding', (tester) async {

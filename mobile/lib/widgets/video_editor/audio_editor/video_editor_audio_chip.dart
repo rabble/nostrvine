@@ -40,10 +40,10 @@ class VideoEditorAudioChip extends StatelessWidget {
     onSelectionStarted?.call();
 
     try {
-      AudioEvent? soundToEdit = previousSound;
-
-      // If no sound selected, show selection sheet first
-      if (soundToEdit == null) {
+      // No sound yet: the selection sheet already trims long sounds via the
+      // timing screen and returns the final, timed sound, so use its result
+      // directly. Re-opening the timing screen here would show it twice.
+      if (previousSound == null) {
         final result = await VineBottomSheet.show<AudioEvent>(
           context: context,
           maxChildSize: 1,
@@ -52,27 +52,21 @@ class VideoEditorAudioChip extends StatelessWidget {
           buildScrollBody: (scrollController) =>
               AudioSelectionBottomSheet(scrollController: scrollController),
         );
-        if (result == null) {
-          onSoundChanged(null);
-          return;
-        }
-        soundToEdit = result;
-        // Notify parent about initial selection
+        onSoundChanged(result);
+        return;
       }
 
-      if (!context.mounted) return;
-
-      // Open timing screen and wait for result
+      // Re-editing an already-selected sound: jump straight to the timing
+      // screen so the user can adjust the start offset or remove the sound.
       final timingResult = await Navigator.of(context).push<AudioTimingResult>(
         PageRouteBuilder(
           opaque: false,
           barrierColor: VineTheme.transparent,
           pageBuilder: (_, _, _) =>
-              VideoAudioEditorTimingScreen(sound: soundToEdit!),
+              VideoAudioEditorTimingScreen(sound: previousSound),
         ),
       );
 
-      // Handle timing screen result
       if (timingResult != null) {
         switch (timingResult) {
           case AudioTimingConfirmed(:final sound):

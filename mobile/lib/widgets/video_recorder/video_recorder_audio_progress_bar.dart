@@ -35,10 +35,8 @@ class VideoRecorderAudioProgressBar extends ConsumerWidget {
       videoEditorProvider.select((s) => s.selectedSound),
     );
 
-    return Positioned(
-      top: 24,
-      left: 0,
-      right: 0,
+    return Align(
+      alignment: .topCenter,
       child: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),

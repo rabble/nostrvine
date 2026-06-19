@@ -33,6 +33,7 @@ void main() {
       VideoRecorderState recordingState = VideoRecorderState.idle,
       List<DivineVideoClip>? clips,
       Duration activeRecordingDuration = Duration.zero,
+      bool showRecordingProgress = true,
     }) {
       when(() => recorderBloc.state).thenReturn(
         VideoRecorderBlocState(
@@ -53,10 +54,15 @@ void main() {
         ],
         child: BlocProvider<VideoRecorderBloc>.value(
           value: recorderBloc,
-          child: const MaterialApp(
+          child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: VideoRecorderCaptureTopBar(fromEditor: false)),
+            home: Scaffold(
+              body: VideoRecorderCaptureTopBar(
+                fromEditor: false,
+                showRecordingProgress: showRecordingProgress,
+              ),
+            ),
           ),
         ),
       );
@@ -182,6 +188,24 @@ void main() {
         // Should show combined duration 3s + 1s = "00:04"
         expect(find.textContaining('00:04'), findsOneWidget);
       });
+
+      testWidgets(
+        'hides the recording-progress bar when showRecordingProgress is false',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(
+              recordingState: VideoRecorderState.recording,
+              activeRecordingDuration: const Duration(seconds: 2),
+              showRecordingProgress: false,
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          // The time display from the progress bar must not be rendered.
+          expect(find.textContaining('00:02'), findsNothing);
+        },
+      );
     });
   });
 }

@@ -25,6 +25,7 @@ import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_stack.dart';
+import 'package:openvine/widgets/video_recorder/modes/lip_sync/video_recorder_lip_sync_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/upload/video_recorder_upload_stack.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_navigation.dart';
@@ -405,6 +406,12 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
   @override
   Widget build(BuildContext context) {
     return BlocProvider<SoundWaveformBloc>(
+      // Eager: the create factory installs the selected-sound listener that
+      // drives waveform extraction. The only consumer (the lip-sync audio
+      // progress bar) mounts during recording, but extraction must already be
+      // running when the user picks a sound beforehand so the waveform is
+      // ready by the time recording starts.
+      lazy: false,
       create: (context) {
         final bloc = SoundWaveformBloc();
         _setupSoundWaveformListener(bloc);
@@ -451,11 +458,12 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
                       child: switch (context.select(
                         (VideoRecorderBloc b) => b.state.recorderMode,
                       )) {
+                        .upload => const VideoRecorderUploadStack(),
                         .capture => VideoRecorderCaptureStack(
                           fromEditor: widget.fromEditor,
                         ),
+                        .lipSync => const VideoRecorderLipSyncStack(),
                         .classic => const VideoRecorderClassicStack(),
-                        .upload => const VideoRecorderUploadStack(),
                       },
                     ),
                   ),
