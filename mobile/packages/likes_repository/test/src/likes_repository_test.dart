@@ -105,9 +105,6 @@ void main() {
         () => mockLocalStorage.getAllLikeRecords(),
       ).thenAnswer((_) async => []);
       when(
-        () => mockLocalStorage.watchLikedEventIds(),
-      ).thenAnswer((_) => Stream.value(<String>[]));
-      when(
         () => mockLocalStorage.isLiked(any()),
       ).thenAnswer((_) async => false);
       when(
@@ -2437,9 +2434,26 @@ void main() {
 
     group('watchLikedEventIds', () {
       test('seeds from local storage, then streams repository cache', () async {
+        final mockEvent = MockEvent();
+        when(() => mockEvent.id).thenReturn(testReactionEventId);
         when(
-          () => mockLocalStorage.watchLikedEventIds(),
-        ).thenAnswer((_) => Stream.value(<String>['stale_event']));
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer((_) async => mockEvent);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.deleteLikeRecord(any()),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenAnswer((_) async => MockEvent());
         when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
           (_) async => [
             createLikeRecord(
@@ -2456,11 +2470,35 @@ void main() {
         );
 
         repository = createRepository();
-        expect(await repository.watchLikedEventIds().first, [
+        final stream = StreamIterator(repository.watchLikedEventIds());
+
+        expect(await stream.moveNext(), isTrue);
+        expect(stream.current, [
           'newer_event_id_1234567890abcdef',
           'older_event_id_1234567890abcdef',
         ]);
-        verifyNever(() => mockLocalStorage.watchLikedEventIds());
+
+        await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+
+        expect(await stream.moveNext(), isTrue);
+        expect(stream.current, [
+          testEventId,
+          'newer_event_id_1234567890abcdef',
+          'older_event_id_1234567890abcdef',
+        ]);
+
+        await repository.unlikeEvent(testEventId);
+
+        expect(await stream.moveNext(), isTrue);
+        expect(stream.current, [
+          'newer_event_id_1234567890abcdef',
+          'older_event_id_1234567890abcdef',
+        ]);
+
+        await stream.cancel();
       });
 
       test('returns internal stream when no local storage', () async {

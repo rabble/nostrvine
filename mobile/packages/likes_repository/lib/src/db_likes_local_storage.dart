@@ -99,11 +99,6 @@ class DbLikesLocalStorage implements LikesLocalStorage {
   }
 
   @override
-  Stream<List<String>> watchLikedEventIds() {
-    return _dao.watchLikedEventIds(_userPubkey);
-  }
-
-  @override
   Future<void> clearAll() async {
     await _dao.deleteAllForUser(_userPubkey);
   }

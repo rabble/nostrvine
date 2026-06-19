@@ -131,20 +131,6 @@ class PersonalReactionsDao extends DatabaseAccessor<AppDatabase>
     return query.get();
   }
 
-  /// Watch all liked event IDs for a user (reactive stream).
-  ///
-  /// Emits an ordered list (most recent first) whenever the user's likes
-  /// change. Ordering is critical for correct pagination in the UI.
-  Stream<List<String>> watchLikedEventIds(String userPubkey) {
-    final query = select(personalReactions)
-      ..where((t) => t.userPubkey.equals(userPubkey))
-      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
-
-    return query.watch().map(
-      (rows) => rows.map((r) => r.targetEventId).toList(),
-    );
-  }
-
   /// Watch all reaction records for a user (reactive stream).
   Stream<List<PersonalReactionRow>> watchAllReactions(String userPubkey) {
     final query = select(personalReactions)

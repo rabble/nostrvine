@@ -4,8 +4,6 @@
 // Null safety ignore for test files
 // ignore_for_file: prefer_const_constructors
 
-import 'dart:async';
-
 import 'package:db_client/db_client.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -355,34 +353,6 @@ void main() {
         final result = await storage.isLiked(testTargetEventId);
 
         expect(result, isFalse);
-      });
-    });
-
-    group('watchLikedEventIds', () {
-      test('returns stream from dao', () async {
-        final controller = StreamController<List<String>>();
-        when(
-          () => mockDao.watchLikedEventIds(any()),
-        ).thenAnswer((_) => controller.stream);
-
-        final stream = storage.watchLikedEventIds();
-
-        // Add values to controller
-        controller
-          ..add([testTargetEventId])
-          ..add([testTargetEventId, testTargetEventId2]);
-
-        final emissions = await stream.take(2).toList();
-
-        expect(emissions[0], equals([testTargetEventId]));
-        expect(
-          emissions[1],
-          equals([testTargetEventId, testTargetEventId2]),
-        );
-
-        verify(() => mockDao.watchLikedEventIds(testUserPubkey)).called(1);
-
-        await controller.close();
       });
     });
 

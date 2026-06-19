@@ -51,11 +51,6 @@ abstract class LikesLocalStorage {
   /// Checks if an event is liked.
   Future<bool> isLiked(String targetEventId);
 
-  /// Watches all liked event IDs (reactive stream).
-  ///
-  /// Emits an ordered list (most recent first) whenever likes change.
-  Stream<List<String>> watchLikedEventIds();
-
   /// Clears all like records.
   ///
   /// Used when logging out or resetting local data.
