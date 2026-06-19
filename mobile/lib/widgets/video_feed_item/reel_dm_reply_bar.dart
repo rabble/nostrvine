@@ -179,7 +179,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
     ScreenAnalyticsService().trackInteraction(
       ReelReplyConstants.analyticsScreen,
       'dm_reel_opened',
-      params: {'is_group': _ctx.isGroup},
+      params: {'is_group': _ctx.isGroup ? 1 : 0},
     );
   }
 
@@ -275,7 +275,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
       ReelReplyConstants.analyticsScreen,
       'dm_reel_emoji_sent',
       params: {
-        'is_group': _ctx.isGroup,
+        'is_group': _ctx.isGroup ? 1 : 0,
         'emoji': emoji,
         'source': fromPicker ? 'picker' : 'quick',
       },
@@ -350,7 +350,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
       ScreenAnalyticsService().trackInteraction(
         ReelReplyConstants.analyticsScreen,
         'dm_reel_reply_sent',
-        params: {'is_group': _ctx.isGroup},
+        params: {'is_group': _ctx.isGroup ? 1 : 0},
       );
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
