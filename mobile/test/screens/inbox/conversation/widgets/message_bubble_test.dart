@@ -825,6 +825,36 @@ void main() {
         expect(find.text('My Cool Video'), findsOneWidget);
       });
 
+      testWidgets('drops the nostr: citation line beneath the card', (
+        tester,
+      ) async {
+        when(
+          () => mockVideoEventService.getVideoById('abc123'),
+        ).thenReturn(testVideo);
+
+        await tester.pumpWidget(
+          buildWithVideoMessage(
+            // The q-tag share appends a NIP-21 citation after the URL; it must
+            // not render as a redundant "View video" link beside the card.
+            message:
+                'https://divine.video/video/abc123\n'
+                'nostr:naddr1qqxnzd3cxqmrzv3exgmr2wfeqy',
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+        final redundantLink = find.byWidgetPredicate(
+          (w) =>
+              w is RichText &&
+              (w.text.toPlainText().contains('nostr:') ||
+                  w.text.toPlainText().contains(
+                    AppLocalizationsEn().clickableTextViewVideoLink,
+                  )),
+        );
+        expect(redundantLink, findsNothing);
+      });
+
       testWidgets('shows the unavailable card when video not found', (
         tester,
       ) async {

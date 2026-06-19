@@ -39,6 +39,15 @@ final _emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
 /// the title isn't duplicated alongside the overlay-footer rendering.
 final _quotedTitleRegex = RegExp(r'^".*"$');
 
+/// Matches a line that is just a NIP-21 `nostr:` citation (or bare entity).
+/// The share body carries a `nostr:naddr…`/`nevent…` reference for other
+/// clients to resolve, but in-app it duplicates the tappable video card, so
+/// the bubble drops it rather than rendering a redundant "View video" link.
+final _nostrRefLineRegex = RegExp(
+  r'^(?:nostr:)?(?:naddr|nevent|note|npub|nprofile)1[0-9a-z]+$',
+  caseSensitive: false,
+);
+
 /// Width of the video share card thumbnail (also used to cap the
 /// surrounding bubble's max width so the bubble doesn't grow wider
 /// than the card when a personal note wraps below it).
@@ -127,8 +136,17 @@ class MessageBubble extends StatelessWidget {
     final String? personalMessage;
     final String? textAfterUrl;
     if (videoMatch != null) {
-      final after = safeMessage.substring(videoMatch.end).trim();
-      textAfterUrl = after.isEmpty ? null : after;
+      // Drop the machine-readable `nostr:` citation line (kept on the wire for
+      // other clients) so it doesn't render as a redundant "View video" link
+      // beside the tappable card.
+      final afterLines = safeMessage
+          .substring(videoMatch.end)
+          .split('\n')
+          .map((line) => line.trim())
+          .where((line) => line.isNotEmpty)
+          .where((line) => !_nostrRefLineRegex.hasMatch(line))
+          .toList();
+      textAfterUrl = afterLines.isEmpty ? null : afterLines.join('\n');
 
       final beforeLines = safeMessage
           .substring(0, videoMatch.start)
@@ -136,6 +154,7 @@ class MessageBubble extends StatelessWidget {
           .map((line) => line.trim())
           .where((line) => line.isNotEmpty)
           .where((line) => !_quotedTitleRegex.hasMatch(line))
+          .where((line) => !_nostrRefLineRegex.hasMatch(line))
           .toList();
       personalMessage = beforeLines.isEmpty ? null : beforeLines.join('\n');
     } else {
