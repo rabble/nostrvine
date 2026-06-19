@@ -453,13 +453,11 @@ void main() {
 ### Phase 2: Input/Form Widgets (Week 2)
 - `hashtag_input_widget.dart`
 - `character_counter_widget.dart`
-- `upload_progress_indicator.dart`
 - `camera_controls_overlay.dart`
 
 ### Phase 3: Support/Utility Widgets (Week 3)
 - `notification_badge.dart`
 - `feed_transition_indicator.dart`
-- `global_upload_indicator.dart`
 - `content_warning.dart`
 
 ### Phase 4: Complex/Integration Widgets (Week 4)

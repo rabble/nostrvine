@@ -1,6 +1,6 @@
 # Badge Guide For `divine-web`
 
-This document describes the current badge behavior in `divine-mobile` as of PR `#2003`.
+This document describes the current badge behavior in `divine-mobile`.
 
 Use this as the implementation guide for `divine-web`. The goal is to match the mobile app's badge decisions, not to infer behavior from screenshots.
 
@@ -8,9 +8,10 @@ Use this as the implementation guide for `divine-web`. The goal is to match the 
 
 The current mobile implementation lives here:
 
-- `lib/widgets/proofmode_badge_row.dart`
 - `lib/widgets/proofmode_badge.dart`
-- `lib/widgets/badge_explanation_modal.dart`
+- `lib/widgets/video_feed_item/metadata/metadata_badges_row.dart`
+- `lib/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart`
+- `lib/widgets/video_feed_item/metadata/metadata_verification_section.dart`
 - `lib/utils/proofmode_helpers.dart`
 - `lib/extensions/video_event_extensions.dart`
 - `packages/models/lib/src/video_event.dart`
@@ -239,75 +240,16 @@ In code terms, current mobile behavior is implemented by these booleans:
 - `isPossiblyAI`
 - `video.shouldShowNotDivineBadge`
 
-## Explanation Modal Behavior
+## Metadata Sheet Behavior
 
-The badge opens `BadgeExplanationModal`.
+Mobile no longer opens a badge-specific explanation modal. The info action,
+video title, and video description open `MetadataExpandedSheet`.
 
-There are two top-level modal modes:
+The metadata sheet header renders non-interactive badge labels from
+`MetadataBadgesRow` between the title and description.
 
-### Original Vine modal
-
-Shown when:
-
-- `video.isOriginalVine == true`
-
-Title:
-
-- `Original Vine Archive`
-
-Content:
-
-- explains this is preserved Vine archive content
-- optionally shows original loops
-- links to the archive preservation / DMCA page
-
-### Verification modal
-
-Shown for everything else.
-
-Title:
-
-- `Video Verification`
-
-Sections:
-
-- intro sentence
-- `ProofMode Verification`
-- `AI Detection`
-- external links
-
-## Verification Modal Intro Copy Rules
-
-Current mobile intro logic:
-
-1. If `video.hasProofMode`
-   - "This video's authenticity is verified using Proofmode technology."
-2. Else if AI result exists and `aiScore < 0.5`
-   - if Divine-hosted:
-     - "This video is hosted on Divine and AI detection indicates it is likely human-made, even though no ProofMode verification data is attached."
-   - else:
-     - "AI detection indicates this video is likely human-made, though no ProofMode verification data is attached."
-3. Else if Divine-hosted
-   - "This video is hosted on Divine, but no ProofMode verification data is attached yet."
-4. Else
-   - "This video is hosted outside Divine and does not include ProofMode verification data."
-
-## Verification Detail Copy Rules
-
-Current mobile descriptions:
-
-- platinum
-  - "Platinum: Device hardware attestation, cryptographic signatures, Content Credentials (C2PA), and AI scan confirms human origin."
-- gold
-  - "Gold: Captured on a real device with hardware attestation, cryptographic signatures, and Content Credentials (C2PA)."
-- silver from proof
-  - "Silver: Cryptographic signatures prove this video hasn't been altered since recording."
-- bronze
-  - "Bronze: Basic metadata signatures are present."
-- silver from AI-only
-  - "Silver: AI scan confirms this video is likely human-created."
-- unverified
-  - "No verification data available for this video."
+`MetadataVerificationSection` appears later in the sheet only when
+`video.hasProofMode == true`.
 
 Proof checklist items:
 
@@ -317,32 +259,6 @@ Proof checklist items:
 - Proof manifest
 
 Each item is shown as pass/fail based on whether the corresponding field exists.
-
-## AI Detection Section Behavior
-
-If an AI result already exists:
-
-- show percentage: `N% likelihood of being AI-generated`
-- show a progress bar using `aiScore`
-- show source if present
-- show moderator confirmation if `isVerified == true`
-
-If no AI result exists yet:
-
-- show `AI scan: Not yet scanned`
-- show `Check if AI-generated` button
-
-When the user presses `Check if AI-generated`:
-
-- mobile resolves `sha256`
-- calls the moderation status service
-- if result has `aiScore`, the modal updates in place
-- if no result exists yet, it shows `No scan results available yet.`
-
-This same on-demand check exists in:
-
-- the main verification modal
-- the `Not Divine Hosted` explanation popup
 
 ## Current Edge Cases To Preserve
 

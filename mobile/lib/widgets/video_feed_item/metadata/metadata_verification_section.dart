@@ -1,7 +1,6 @@
 // ABOUTME: Verification section for the metadata expanded sheet.
 // ABOUTME: Shows a checklist of ProofMode/C2PA verification signals present
-// ABOUTME: on the video, adapting the _ProofCheckList pattern from
-// ABOUTME: BadgeExplanationModal.
+// ABOUTME: on the video.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
