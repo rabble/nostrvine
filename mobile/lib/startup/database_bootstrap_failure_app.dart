@@ -2,6 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:openvine/services/database_encryption_bootstrap.dart';
 
 /// Result of resolving the DB cipher key during app startup.
 class DatabaseBootstrapStartupResult {
@@ -33,7 +34,7 @@ Future<DatabaseBootstrapStartupResult> resolveDatabaseBootstrapForAppStart({
   try {
     return DatabaseBootstrapStartupResult.ready(await resolveCipherKey());
   } catch (error, stack) {
-    final shouldRepair = shouldRepairLocalDatabaseCache?.call(error) ?? true;
+    final shouldRepair = shouldRepairLocalDatabaseCache?.call(error) ?? false;
     if (repairLocalDatabaseCache != null && shouldRepair) {
       try {
         await repairLocalDatabaseCache(error, stack);
@@ -137,6 +138,10 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
 }
 
 String databaseBootstrapDiagnosticCode(Object error) {
+  if (error is SqlCipherUnavailableError) {
+    return 'db-sqlcipher-unavailable';
+  }
+
   final message = error.toString();
   if (message.contains('SQLCipher is not linked')) {
     return 'db-sqlcipher-unavailable';

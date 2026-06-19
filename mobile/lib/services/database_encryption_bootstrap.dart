@@ -7,6 +7,7 @@ import 'package:db_client/db_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:openvine/database/sqlcipher_runtime.dart';
+import 'package:sqlite3/sqlite3.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Secure-storage key for the at-rest DB cipher key. Versioned so a future
@@ -139,23 +140,7 @@ class DatabaseEncryptionBootstrap {
       name: _logName,
     );
     await _deleteDatabase();
-    // The Drift DB is now empty but SharedPreferences survives, so the DM sync
-    // cursors / `historyDrainComplete` flag would make the next inbox open skip
-    // the full re-drain and strand recovered chats under "Message requests".
-    // Clear DM sync state so recovery re-runs against the fresh DB. See #5304.
-    //
-    // Best-effort: a SharedPreferences IO failure here only re-strands requests
-    // (itself healed by the drain-version bump) and must not escalate into a
-    // hard cipher-key-resolution failure now that the DB has already been
-    // recreated.
-    try {
-      await _onDatabaseReset?.call();
-    } on Object catch (e) {
-      Log.warning(
-        'Post-recreate DM sync-state reset failed (non-fatal): $e',
-        name: _logName,
-      );
-    }
+    await _runPostDatabaseReset(_onDatabaseReset);
     return key;
   }
 }
@@ -196,6 +181,29 @@ Future<String?> resolveStartupDatabaseCipherKey({
 bool _isValidCipherKey(String value) =>
     RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(value);
 
+const _sqliteCorrupt = 11;
+const _sqliteNotADb = 26;
+
+/// Returns whether a startup bootstrap failure is safe to repair by backing up
+/// the local encrypted DB cache and retrying once.
+///
+/// Keep this as an allowlist. Secure-storage, SQLCipher linkage, and other
+/// transient startup failures must fail closed because deleting or rotating the
+/// DB cipher key can make an otherwise recoverable encrypted DB unusable.
+bool shouldRepairLocalDatabaseCacheAfterBootstrapError(Object error) {
+  if (error is SqlCipherUnavailableError) return false;
+  if (error is SqliteException) {
+    return error.resultCode == _sqliteNotADb ||
+        error.resultCode == _sqliteCorrupt;
+  }
+
+  final message = error.toString();
+  return message.contains('SQLITE_NOTADB') ||
+      message.contains('SQLITE_CORRUPT') ||
+      message.contains('database disk image is malformed') ||
+      message.contains('file is not a database');
+}
+
 /// Backs up the encrypted local database cache and removes only its DB cipher
 /// key so the next bootstrap creates a fresh encrypted cache.
 Future<void> resetEncryptedDatabaseCache({
@@ -205,6 +213,20 @@ Future<void> resetEncryptedDatabaseCache({
 }) async {
   await (deleteDatabase ?? backUpAndRemoveSharedDatabase)();
   await secureStorage.delete(key: dbCipherKeyStorageKey);
+  await _runPostDatabaseReset(onDatabaseReset);
+}
+
+Future<void> _runPostDatabaseReset(
+  Future<void> Function()? onDatabaseReset,
+) async {
+  // The Drift DB is now empty but SharedPreferences survives, so the DM sync
+  // cursors / `historyDrainComplete` flag would make the next inbox open skip
+  // the full re-drain and strand recovered chats under "Message requests".
+  // Clear DM sync state so recovery re-runs against the fresh DB. See #5304.
+  //
+  // Best-effort: a SharedPreferences IO failure here only re-strands requests
+  // (itself healed by the drain-version bump) and must not escalate into a hard
+  // cipher-key-resolution failure now that the DB has already been recreated.
   try {
     await onDatabaseReset?.call();
   } on Object catch (e) {
