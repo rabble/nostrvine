@@ -31,8 +31,8 @@ abstract class ReelReplyConstants {
   /// Quick-reaction emoji set (shared with the DM thread picker).
   static const List<String> quickEmojis = kDefaultDmReactionEmojis;
 
-  /// Emoji-fly animation duration.
-  static const flyDuration = Duration(milliseconds: 450);
+  /// Reaction-burst animation duration.
+  static const flyDuration = Duration(milliseconds: 700);
 
   /// Analytics screen name for in-player DM reel engagement.
   static const analyticsScreen = 'dm_reel_player';
@@ -148,14 +148,17 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
   // Reaction throttle state (presentation-only; the cubit owns the wire).
   Timer? _throttleTimer;
   String? _coalescedEmoji;
+  Offset? _coalescedAt;
   String? _lastDispatchedEmoji;
 
   /// Optimistically-selected emoji, highlighted immediately on tap.
   String? _optimisticEmoji;
 
-  // Emoji-fly animation.
+  // Reaction-burst animation.
   late final AnimationController _flyController;
-  String? _flyingEmoji;
+  final GlobalKey _stackKey = GlobalKey();
+  String? _burstEmoji;
+  Offset _burstOrigin = Offset.zero;
 
   DmReplyContext get _ctx => widget.dmReplyContext;
 
@@ -170,7 +173,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
           duration: ReelReplyConstants.flyDuration,
         )..addStatusListener((status) {
           if (status == AnimationStatus.completed && mounted) {
-            setState(() => _flyingEmoji = null);
+            setState(() => _burstEmoji = null);
           }
         });
     ScreenAnalyticsService().trackInteraction(
@@ -223,16 +226,18 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
         ?.emoji;
   }
 
-  void _onEmojiTap(String emoji, {bool fromPicker = false}) {
+  void _onEmojiTap(String emoji, {Offset? at, bool fromPicker = false}) {
     // No-op when the active reaction already matches (set, not toggle).
     if (_activeEmoji == emoji) return;
     setState(() => _optimisticEmoji = emoji);
 
     if (_throttleTimer?.isActive ?? false) {
-      _coalescedEmoji = emoji; // collapse rapid taps to the latest
+      // Collapse rapid taps to the latest emoji + its tap position.
+      _coalescedEmoji = emoji;
+      _coalescedAt = at;
       return;
     }
-    _dispatchReaction(emoji, fromPicker: fromPicker);
+    _dispatchReaction(emoji, at: at, fromPicker: fromPicker);
     _startThrottle();
   }
 
@@ -240,15 +245,17 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
     _throttleTimer?.cancel();
     _throttleTimer = Timer(ReelReplyConstants.reactionThrottle, () {
       final pending = _coalescedEmoji;
+      final pendingAt = _coalescedAt;
       _coalescedEmoji = null;
+      _coalescedAt = null;
       if (pending != null && pending != _lastDispatchedEmoji) {
-        _dispatchReaction(pending);
+        _dispatchReaction(pending, at: pendingAt);
         _startThrottle();
       }
     });
   }
 
-  void _dispatchReaction(String emoji, {bool fromPicker = false}) {
+  void _dispatchReaction(String emoji, {Offset? at, bool fromPicker = false}) {
     _lastDispatchedEmoji = emoji;
     context.read<ConversationReactionsCubit>().add(
       ConversationReactionSet(
@@ -258,7 +265,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
         emoji: emoji,
       ),
     );
-    _playEmojiFly(emoji);
+    _playEmojiFly(emoji, at);
     SemanticsService.sendAnnouncement(
       View.of(context),
       context.l10n.dmReelReactionSentAnnouncement(emoji),
@@ -275,9 +282,23 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
     );
   }
 
-  void _playEmojiFly(String emoji) {
+  void _playEmojiFly(String emoji, Offset? globalAt) {
     if (MediaQuery.of(context).disableAnimations) return;
-    setState(() => _flyingEmoji = emoji);
+    final box = _stackKey.currentContext?.findRenderObject() as RenderBox?;
+    Offset origin;
+    if (box != null && box.hasSize) {
+      origin = (globalAt != null)
+          ? box.globalToLocal(globalAt)
+          // No tap position (e.g. picked from the full picker): rise from
+          // just above the emoji row, horizontally centered.
+          : Offset(box.size.width / 2, box.size.height - 40);
+    } else {
+      origin = Offset.zero;
+    }
+    setState(() {
+      _burstEmoji = emoji;
+      _burstOrigin = origin;
+    });
     _flyController.forward(from: 0);
   }
 
@@ -380,6 +401,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
             ),
           ),
           child: Stack(
+            key: _stackKey,
             clipBehavior: Clip.none,
             children: [
               Padding(
@@ -401,15 +423,16 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
                       emojis: ReelReplyConstants.quickEmojis,
                       activeEmoji: _activeEmojiForHighlight(),
                       moreLabel: context.l10n.dmReactionAddCustomA11yLabel,
-                      onEmojiTap: _onEmojiTap,
+                      onEmojiTap: (emoji, at) => _onEmojiTap(emoji, at: at),
                       onMoreTap: _onMoreTap,
                     ),
                   ],
                 ),
               ),
-              if (_flyingEmoji != null)
-                _FlyingEmoji(
-                  emoji: _flyingEmoji!,
+              if (_burstEmoji != null)
+                _ReactionBurst(
+                  emoji: _burstEmoji!,
+                  origin: _burstOrigin,
                   animation: _flyController,
                 ),
             ],
@@ -557,7 +580,10 @@ class _QuickReactionRow extends StatelessWidget {
   final List<String> emojis;
   final String? activeEmoji;
   final String moreLabel;
-  final ValueChanged<String> onEmojiTap;
+
+  /// Called with the tapped emoji + the tap's global position (so the
+  /// reaction burst can originate from the button).
+  final void Function(String emoji, Offset at) onEmojiTap;
   final VoidCallback onMoreTap;
 
   @override
@@ -569,7 +595,7 @@ class _QuickReactionRow extends StatelessWidget {
           _ReactionEmojiButton(
             emoji: emoji,
             isActive: emoji == activeEmoji,
-            onTap: () => onEmojiTap(emoji),
+            onTap: (at) => onEmojiTap(emoji, at),
           ),
         _MorePickerButton(label: moreLabel, onTap: onMoreTap),
       ],
@@ -586,7 +612,9 @@ class _ReactionEmojiButton extends StatelessWidget {
 
   final String emoji;
   final bool isActive;
-  final VoidCallback onTap;
+
+  /// Called with the tap's global position so the burst can start there.
+  final ValueChanged<Offset> onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -594,26 +622,23 @@ class _ReactionEmojiButton extends StatelessWidget {
       button: true,
       selected: isActive,
       label: emoji,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: isActive
-              ? VineTheme.primary.withValues(alpha: 0.18)
-              : Colors.transparent,
-          border: isActive
-              ? Border.all(color: VineTheme.primary, width: 1.5)
-              : null,
-        ),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: onTap,
-              child: Center(
-                child: Text(emoji, style: const TextStyle(fontSize: 28)),
-              ),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapUp: (details) => onTap(details.globalPosition),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isActive
+                ? VineTheme.primary.withValues(alpha: 0.18)
+                : Colors.transparent,
+            border: isActive
+                ? Border.all(color: VineTheme.primary, width: 1.5)
+                : null,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            child: Center(
+              child: Text(emoji, style: const TextStyle(fontSize: 28)),
             ),
           ),
         ),
@@ -630,23 +655,33 @@ class _MorePickerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 48×48 tap target, but a smaller (32) visible circle + 18px glyph so the
+    // "+" sits in proportion with the bare 28px emoji glyphs beside it.
     return Semantics(
       button: true,
       label: label,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-        child: Material(
-          color: VineTheme.iconButtonBackground,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            child: const SizedBox(
-              width: 48,
-              height: 48,
-              child: DivineIcon(
-                icon: DivineIconName.plus,
-                color: VineTheme.onSurface,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: const SizedBox(
+          width: 48,
+          height: 48,
+          child: Center(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: VineTheme.iconButtonBackground,
+              ),
+              child: SizedBox(
+                width: 32,
+                height: 32,
+                child: Center(
+                  child: DivineIcon(
+                    icon: DivineIconName.plus,
+                    color: VineTheme.onSurfaceMuted,
+                    size: 18,
+                  ),
+                ),
               ),
             ),
           ),
@@ -656,12 +691,21 @@ class _MorePickerButton extends StatelessWidget {
   }
 }
 
-/// A single emoji that floats up and fades when a reaction is sent.
-class _FlyingEmoji extends StatelessWidget {
-  const _FlyingEmoji({required this.emoji, required this.animation});
+/// A TikTok/Instagram-style reaction burst: the tapped emoji pops in at the
+/// tap point and rises, with a few smaller satellite copies spreading out,
+/// rotating, and fading as they float up over the reel.
+class _ReactionBurst extends StatelessWidget {
+  const _ReactionBurst({
+    required this.emoji,
+    required this.origin,
+    required this.animation,
+  });
 
   final String emoji;
+  final Offset origin;
   final Animation<double> animation;
+
+  static const int _count = 6;
 
   @override
   Widget build(BuildContext context) {
@@ -669,17 +713,58 @@ class _FlyingEmoji extends StatelessWidget {
       child: IgnorePointer(
         child: AnimatedBuilder(
           animation: animation,
-          builder: (context, child) {
+          builder: (context, _) {
             final t = animation.value;
-            return Align(
-              alignment: Alignment(0, 0.2 - t * 1.2),
-              child: Opacity(
-                opacity: (1 - t).clamp(0.0, 1.0),
-                child: Transform.scale(scale: 1 + t * 0.6, child: child),
-              ),
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                for (var i = 0; i < _count; i++) _particle(i, t),
+              ],
             );
           },
-          child: Text(emoji, style: const TextStyle(fontSize: 40)),
+        ),
+      ),
+    );
+  }
+
+  Widget _particle(int i, double t) {
+    // Stagger each satellite slightly after the main glyph.
+    final delay = i * 0.05;
+    final span = 1 - delay;
+    final localT = span <= 0 ? 0.0 : ((t - delay) / span).clamp(0.0, 1.0);
+    if (localT <= 0) return const SizedBox.shrink();
+
+    final isMain = i == 0;
+    final pop = Curves.easeOutBack.transform(localT);
+    final ease = Curves.easeOut.transform(localT);
+
+    final size = isMain ? 56.0 : 26.0;
+    final scale = isMain ? (0.5 + pop * 0.6) : (0.3 + pop * 0.5);
+    final rise = ease * (isMain ? 64.0 : 120.0);
+    final side = i.isEven ? 1.0 : -1.0;
+    final drift = isMain ? 0.0 : side * (10.0 + i * 7.0) * ease;
+    final angle = isMain ? 0.0 : side * localT * 0.5;
+    // Hold opacity, then fade out over the final 40% of the flight.
+    final opacity = (1 - ((localT - 0.6) / 0.4).clamp(0.0, 1.0)).clamp(
+      0.0,
+      1.0,
+    );
+
+    return Positioned(
+      left: origin.dx + drift - size / 2,
+      top: origin.dy - rise - size / 2,
+      width: size,
+      height: size,
+      child: Opacity(
+        opacity: opacity,
+        child: Transform.rotate(
+          angle: angle,
+          child: Transform.scale(
+            scale: scale,
+            child: Center(
+              child: Text(emoji, style: TextStyle(fontSize: size * 0.8)),
+            ),
+          ),
         ),
       ),
     );
