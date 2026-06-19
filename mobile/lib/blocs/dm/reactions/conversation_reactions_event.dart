@@ -59,6 +59,43 @@ class ConversationReactionToggled extends ConversationReactionsEvent {
   ];
 }
 
+/// Set a reaction on a message (set-not-toggle semantics).
+///
+/// Unlike [ConversationReactionToggled], re-selecting the active emoji is a
+/// **no-op** (it does NOT remove the reaction); selecting a different emoji
+/// supersedes the prior one (cap-at-one, enforced by the repository). Used by
+/// the in-player quick-reaction bar where tapping the active emoji should keep
+/// it rather than clear it.
+class ConversationReactionSet extends ConversationReactionsEvent {
+  /// Construct a set event.
+  const ConversationReactionSet({
+    required this.conversationId,
+    required this.messageId,
+    required this.messageAuthorPubkey,
+    required this.emoji,
+  });
+
+  /// Conversation context for the optimistic insert.
+  final String conversationId;
+
+  /// Rumor id of the message being reacted to.
+  final String messageId;
+
+  /// Author of the target message — receiver of the reaction wrap.
+  final String messageAuthorPubkey;
+
+  /// Reaction emoji codepoint (or NIP-30 shortcode).
+  final String emoji;
+
+  @override
+  List<Object?> get props => [
+    conversationId,
+    messageId,
+    messageAuthorPubkey,
+    emoji,
+  ];
+}
+
 /// Retry a previously-failed reaction publish.
 class ConversationReactionRetryRequested extends ConversationReactionsEvent {
   /// Construct a retry event.

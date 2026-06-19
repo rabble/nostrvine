@@ -155,6 +155,156 @@ void main() {
       },
     );
 
+    DmReaction ownReaction(String emoji) => DmReaction(
+      id: 'own-$emoji',
+      conversationId: _convo,
+      targetMessageId: _msgId,
+      targetMessageAuthor: _peer,
+      reactorPubkey: _owner,
+      emoji: emoji,
+      createdAt: 1700000000,
+      ownerPubkey: _owner,
+      publishStatus: DmReactionPublishStatus.sent,
+    );
+
+    blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+      'set publishes when there is no active reaction',
+      build: () {
+        when(
+          () => repo.publish(
+            conversationId: any(named: 'conversationId'),
+            targetMessageId: any(named: 'targetMessageId'),
+            targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            emoji: any(named: 'emoji'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const DmReactionPublishResult(success: true, rumorId: 'r-set'),
+        );
+        return ConversationReactionsCubit(
+          reactionsRepository: repo,
+          ownerPubkey: _owner,
+        );
+      },
+      act: (cubit) => cubit.add(
+        const ConversationReactionSet(
+          conversationId: _convo,
+          messageId: _msgId,
+          messageAuthorPubkey: _peer,
+          emoji: '❤️',
+        ),
+      ),
+      verify: (_) {
+        verify(
+          () => repo.publish(
+            conversationId: _convo,
+            targetMessageId: _msgId,
+            targetMessageAuthor: _peer,
+            emoji: '❤️',
+          ),
+        ).called(1);
+      },
+    );
+
+    blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+      'set is a no-op when the active emoji already matches',
+      build: () {
+        when(
+          () => repo.publish(
+            conversationId: any(named: 'conversationId'),
+            targetMessageId: any(named: 'targetMessageId'),
+            targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            emoji: any(named: 'emoji'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const DmReactionPublishResult(success: true, rumorId: 'x'),
+        );
+        return ConversationReactionsCubit(
+          reactionsRepository: repo,
+          ownerPubkey: _owner,
+        );
+      },
+      act: (cubit) async {
+        cubit.add(const ConversationReactionsStarted(conversationId: _convo));
+        await Future<void>.delayed(Duration.zero);
+        streamController.add([ownReaction('❤️')]);
+        await Future<void>.delayed(Duration.zero);
+        cubit.add(
+          const ConversationReactionSet(
+            conversationId: _convo,
+            messageId: _msgId,
+            messageAuthorPubkey: _peer,
+            emoji: '❤️',
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+      },
+      verify: (_) {
+        verifyNever(
+          () => repo.publish(
+            conversationId: any(named: 'conversationId'),
+            targetMessageId: any(named: 'targetMessageId'),
+            targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            emoji: any(named: 'emoji'),
+          ),
+        );
+        // And it must NOT remove the active reaction (set != toggle).
+        verifyNever(
+          () => repo.removeOwn(
+            rumorId: any(named: 'rumorId'),
+            targetMessageAuthor: any(named: 'targetMessageAuthor'),
+          ),
+        );
+      },
+    );
+
+    blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+      'set with a different emoji publishes (supersede handled by repo)',
+      build: () {
+        when(
+          () => repo.publish(
+            conversationId: any(named: 'conversationId'),
+            targetMessageId: any(named: 'targetMessageId'),
+            targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            emoji: any(named: 'emoji'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const DmReactionPublishResult(success: true, rumorId: 'r-new'),
+        );
+        return ConversationReactionsCubit(
+          reactionsRepository: repo,
+          ownerPubkey: _owner,
+        );
+      },
+      act: (cubit) async {
+        cubit.add(const ConversationReactionsStarted(conversationId: _convo));
+        await Future<void>.delayed(Duration.zero);
+        streamController.add([ownReaction('❤️')]);
+        await Future<void>.delayed(Duration.zero);
+        cubit.add(
+          const ConversationReactionSet(
+            conversationId: _convo,
+            messageId: _msgId,
+            messageAuthorPubkey: _peer,
+            emoji: '😂',
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+      },
+      verify: (_) {
+        verify(
+          () => repo.publish(
+            conversationId: _convo,
+            targetMessageId: _msgId,
+            targetMessageAuthor: _peer,
+            emoji: '😂',
+          ),
+        ).called(1);
+      },
+    );
+
     blocTest<ConversationReactionsCubit, ConversationReactionsState>(
       'subscription tick groups reactions by message id',
       build: () => ConversationReactionsCubit(

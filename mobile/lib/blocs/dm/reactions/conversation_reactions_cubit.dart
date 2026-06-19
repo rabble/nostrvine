@@ -35,6 +35,7 @@ class ConversationReactionsCubit
        super(const ConversationReactionsState()) {
     on<ConversationReactionsStarted>(_onStarted, transformer: restartable());
     on<ConversationReactionToggled>(_onToggled, transformer: sequential());
+    on<ConversationReactionSet>(_onSet, transformer: sequential());
     on<ConversationReactionRetryRequested>(
       _onRetryRequested,
       transformer: sequential(),
@@ -76,31 +77,64 @@ class ConversationReactionsCubit
     ConversationReactionToggled event,
     Emitter<ConversationReactionsState> emit,
   ) async {
-    final key = ReactionPublishKey(
-      messageId: event.messageId,
-      emoji: event.emoji,
-    );
-    // Toggle-off: if we already have a live matching reaction, find it
-    // and dispatch a removeOwn.
-    final list = state.reactionsByMessageId[event.messageId];
-    if (list != null) {
-      final existing = list.firstWhereOrNull(
-        (r) => r.reactorPubkey == _ownerPubkey && r.emoji == event.emoji,
-      );
-      if (existing != null) {
-        try {
-          await _reactionsRepository.removeOwn(
-            rumorId: existing.id,
-            targetMessageAuthor: event.messageAuthorPubkey,
-          );
-        } on Object catch (e, st) {
-          addError(e, st);
-        }
-        return;
+    // Toggle-off: if we already have a live matching reaction, remove it.
+    final existing = _ownLiveReaction(event.messageId, event.emoji);
+    if (existing != null) {
+      try {
+        await _reactionsRepository.removeOwn(
+          rumorId: existing.id,
+          targetMessageAuthor: event.messageAuthorPubkey,
+        );
+      } on Object catch (e, st) {
+        addError(e, st);
       }
+      return;
     }
 
-    // Publish path. Emit pending immediately so the chip flips fast.
+    await _publishReaction(
+      conversationId: event.conversationId,
+      messageId: event.messageId,
+      messageAuthorPubkey: event.messageAuthorPubkey,
+      emoji: event.emoji,
+      emit: emit,
+    );
+  }
+
+  Future<void> _onSet(
+    ConversationReactionSet event,
+    Emitter<ConversationReactionsState> emit,
+  ) async {
+    // Set-not-toggle: re-selecting the active emoji is a no-op (keep it);
+    // a different emoji supersedes the prior one in the repository.
+    if (_ownLiveReaction(event.messageId, event.emoji) != null) return;
+
+    await _publishReaction(
+      conversationId: event.conversationId,
+      messageId: event.messageId,
+      messageAuthorPubkey: event.messageAuthorPubkey,
+      emoji: event.emoji,
+      emit: emit,
+    );
+  }
+
+  /// The current account's live reaction with [emoji] on [messageId], or null.
+  DmReaction? _ownLiveReaction(String messageId, String emoji) {
+    final list = state.reactionsByMessageId[messageId];
+    return list?.firstWhereOrNull(
+      (r) => r.reactorPubkey == _ownerPubkey && r.emoji == emoji,
+    );
+  }
+
+  /// Optimistically mark the publish pending, send, then settle the pending
+  /// map by outcome. Shared by the toggle and set paths.
+  Future<void> _publishReaction({
+    required String conversationId,
+    required String messageId,
+    required String messageAuthorPubkey,
+    required String emoji,
+    required Emitter<ConversationReactionsState> emit,
+  }) async {
+    final key = ReactionPublishKey(messageId: messageId, emoji: emoji);
     final nextPending =
         Map<ReactionPublishKey, ReactionPublishLocalStatus>.from(state.pending)
           ..[key] = ReactionPublishLocalStatus.sending;
@@ -108,10 +142,10 @@ class ConversationReactionsCubit
 
     try {
       final result = await _reactionsRepository.publish(
-        conversationId: event.conversationId,
-        targetMessageId: event.messageId,
-        targetMessageAuthor: event.messageAuthorPubkey,
-        emoji: event.emoji,
+        conversationId: conversationId,
+        targetMessageId: messageId,
+        targetMessageAuthor: messageAuthorPubkey,
+        emoji: emoji,
       );
       final newPending =
           Map<ReactionPublishKey, ReactionPublishLocalStatus>.from(
