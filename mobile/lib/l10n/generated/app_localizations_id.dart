@@ -5562,31 +5562,31 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String dmReelReplyComposerHint(String name) {
-    return 'Message $name…';
+    return 'Kirim pesan ke $name…';
   }
 
   @override
-  String get dmReelReplyComposerHintSelf => 'Reply to yourself…';
+  String get dmReelReplyComposerHintSelf => 'Balas diri sendiri…';
 
   @override
-  String get dmReelReplyComposerSemanticLabel => 'Reply to this reel';
+  String get dmReelReplyComposerSemanticLabel => 'Balas reel ini';
 
   @override
-  String get dmReelReplyViewChat => 'View chat';
+  String get dmReelReplyViewChat => 'Lihat obrolan';
 
   @override
-  String get dmReelReplyViewChatA11yLabel => 'Open chat';
+  String get dmReelReplyViewChatA11yLabel => 'Buka obrolan';
 
   @override
-  String get dmReelReplySentAnnouncement => 'Reply sent';
+  String get dmReelReplySentAnnouncement => 'Balasan terkirim';
 
   @override
   String dmReelReactionSentAnnouncement(String emoji) {
-    return 'Reacted $emoji';
+    return 'Bereaksi $emoji';
   }
 
   @override
-  String get dmReelReplyFailed => 'Couldn\'t send';
+  String get dmReelReplyFailed => 'Tidak dapat mengirim';
 
   @override
   String dmReactionChipOwnA11yLabel(String emoji) {

@@ -5720,31 +5720,31 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String dmReelReplyComposerHint(String name) {
-    return 'Message $name…';
+    return 'Wyślij wiadomość do $name…';
   }
 
   @override
-  String get dmReelReplyComposerHintSelf => 'Reply to yourself…';
+  String get dmReelReplyComposerHintSelf => 'Odpowiedz sobie…';
 
   @override
-  String get dmReelReplyComposerSemanticLabel => 'Reply to this reel';
+  String get dmReelReplyComposerSemanticLabel => 'Odpowiedz na ten reel';
 
   @override
-  String get dmReelReplyViewChat => 'View chat';
+  String get dmReelReplyViewChat => 'Zobacz czat';
 
   @override
-  String get dmReelReplyViewChatA11yLabel => 'Open chat';
+  String get dmReelReplyViewChatA11yLabel => 'Otwórz czat';
 
   @override
-  String get dmReelReplySentAnnouncement => 'Reply sent';
+  String get dmReelReplySentAnnouncement => 'Odpowiedź wysłana';
 
   @override
   String dmReelReactionSentAnnouncement(String emoji) {
-    return 'Reacted $emoji';
+    return 'Zareagowano $emoji';
   }
 
   @override
-  String get dmReelReplyFailed => 'Couldn\'t send';
+  String get dmReelReplyFailed => 'Nie udało się wysłać';
 
   @override
   String dmReactionChipOwnA11yLabel(String emoji) {

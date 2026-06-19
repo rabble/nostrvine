@@ -5474,31 +5474,31 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String dmReelReplyComposerHint(String name) {
-    return 'Message $name…';
+    return 'ለ$name መልእክት…';
   }
 
   @override
-  String get dmReelReplyComposerHintSelf => 'Reply to yourself…';
+  String get dmReelReplyComposerHintSelf => 'ለራስዎ ይመልሱ…';
 
   @override
-  String get dmReelReplyComposerSemanticLabel => 'Reply to this reel';
+  String get dmReelReplyComposerSemanticLabel => 'ለዚህ ሪል ይመልሱ';
 
   @override
-  String get dmReelReplyViewChat => 'View chat';
+  String get dmReelReplyViewChat => 'ውይይት ይመልከቱ';
 
   @override
-  String get dmReelReplyViewChatA11yLabel => 'Open chat';
+  String get dmReelReplyViewChatA11yLabel => 'ውይይት ይክፈቱ';
 
   @override
-  String get dmReelReplySentAnnouncement => 'Reply sent';
+  String get dmReelReplySentAnnouncement => 'መልስ ተልኳል';
 
   @override
   String dmReelReactionSentAnnouncement(String emoji) {
-    return 'Reacted $emoji';
+    return 'በ$emoji ምላሽ ሰጥተዋል';
   }
 
   @override
-  String get dmReelReplyFailed => 'Couldn\'t send';
+  String get dmReelReplyFailed => 'መላክ አልተቻለም';
 
   @override
   String dmReactionChipOwnA11yLabel(String emoji) {
