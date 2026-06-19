@@ -18,6 +18,14 @@ QueryExecutor openEncryptedConnection({required String rawKeyHex}) {
   throw UnsupportedError('No database implementation found for this platform');
 }
 
+/// Stub implementation - will be replaced by conditional imports
+Future<bool> encryptedDatabaseOpensWithKey({
+  required String rawKeyHex,
+  String? databasePath,
+}) async {
+  throw UnsupportedError('No database implementation found for this platform');
+}
+
 /// Outcome of [migratePlaintextToEncrypted]. Mirrors the native enum so app
 /// code that switches on it compiles when only the stub is available.
 enum CipherMigrationOutcome {

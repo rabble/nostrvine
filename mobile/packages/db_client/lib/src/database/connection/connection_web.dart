@@ -31,6 +31,16 @@ QueryExecutor openEncryptedConnection({required String rawKeyHex}) {
   );
 }
 
+/// Web never opens SQLCipher databases; startup skips DB encryption there.
+Future<bool> encryptedDatabaseOpensWithKey({
+  required String rawKeyHex,
+  String? databasePath,
+}) async {
+  throw UnsupportedError(
+    'SQLCipher at-rest encryption is not supported on web',
+  );
+}
+
 /// No-op on web (key-loss recovery is native-only). Never reached at runtime.
 Future<void> backUpAndRemoveSharedDatabase() async {}
 

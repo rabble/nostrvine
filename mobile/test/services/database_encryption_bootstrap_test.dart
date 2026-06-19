@@ -44,6 +44,7 @@ void main() {
       required void Function() onDelete,
       bool cipherAvailable = true,
       void Function()? onReset,
+      bool Function(String rawKeyHex)? canOpenEncryptedDatabase,
     }) {
       return DatabaseEncryptionBootstrap(
         secureStorage: storage,
@@ -52,6 +53,9 @@ void main() {
         migrate: (_) async => outcome,
         deleteDatabase: () async => onDelete(),
         onDatabaseReset: onReset == null ? null : () async => onReset(),
+        canOpenEncryptedDatabase: canOpenEncryptedDatabase == null
+            ? null
+            : (rawKeyHex) async => canOpenEncryptedDatabase(rawKeyHex),
       );
     }
 
@@ -123,6 +127,32 @@ void main() {
       expect(key, matches(RegExp(r'^[0-9a-f]{64}$')));
       expect(deleted, isTrue);
     });
+
+    test(
+      'backs up DB and rotates key when stored key no longer opens it',
+      () async {
+        const staleKey =
+            '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+        store[dbCipherKeyStorageKey] = staleKey;
+        var deleted = false;
+        var reset = false;
+
+        final bootstrap = buildBootstrap(
+          outcome: CipherMigrationOutcome.alreadyEncrypted,
+          onDelete: () => deleted = true,
+          onReset: () => reset = true,
+          canOpenEncryptedDatabase: (rawKeyHex) => rawKeyHex != staleKey,
+        );
+
+        final key = await bootstrap.resolveCipherKey();
+
+        expect(key, matches(RegExp(r'^[0-9a-f]{64}$')));
+        expect(key, isNot(equals(staleKey)));
+        expect(store[dbCipherKeyStorageKey], equals(key));
+        expect(deleted, isTrue);
+        expect(reset, isTrue);
+      },
+    );
 
     test(
       'clears DM sync state on key loss so the inbox re-drains (#5304)',

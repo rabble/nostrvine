@@ -30,6 +30,7 @@ class DatabaseEncryptionBootstrap {
     Future<CipherMigrationOutcome> Function(String rawKeyHex)? migrate,
     Future<void> Function()? deleteDatabase,
     Future<void> Function()? onDatabaseReset,
+    Future<bool> Function(String rawKeyHex)? canOpenEncryptedDatabase,
   }) : _secureStorage = secureStorage,
        _ensureRuntime = ensureRuntime ?? ensureSqlCipherRuntime,
        _isCipherAvailable = isCipherAvailable ?? isSqlCipherAvailable,
@@ -37,13 +38,17 @@ class DatabaseEncryptionBootstrap {
            migrate ??
            ((rawKeyHex) => migratePlaintextToEncrypted(rawKeyHex: rawKeyHex)),
        _deleteDatabase = deleteDatabase ?? backUpAndRemoveSharedDatabase,
-       _onDatabaseReset = onDatabaseReset;
+       _onDatabaseReset = onDatabaseReset,
+       _canOpenEncryptedDatabase =
+           canOpenEncryptedDatabase ??
+           ((rawKeyHex) => encryptedDatabaseOpensWithKey(rawKeyHex: rawKeyHex));
 
   final FlutterSecureStorage _secureStorage;
   final Future<void> Function() _ensureRuntime;
   final bool Function() _isCipherAvailable;
   final Future<CipherMigrationOutcome> Function(String rawKeyHex) _migrate;
   final Future<void> Function() _deleteDatabase;
+  final Future<bool> Function(String rawKeyHex) _canOpenEncryptedDatabase;
 
   /// Invoked after the key-loss recreate wipes the Drift DB, so callers can
   /// clear local state that lives OUTSIDE the database (e.g. the DM sync
@@ -88,38 +93,18 @@ class DatabaseEncryptionBootstrap {
         return key;
       case CipherMigrationOutcome.alreadyEncrypted:
         if (wasGenerated) {
-          // Key-loss recovery (#570 §6): the keystore was cleared but an
-          // encrypted database remains. It is cryptographically unrecoverable,
-          // so it is backed up (not hard-deleted) and recreated under the
-          // freshly generated key. Local-only data is preserved in the backup;
-          // DMs resync from relays. Accepted tradeoff for the rare
-          // keystore-reset case — pending product signoff on the user-facing
-          // notice.
-          Log.warning(
-            'Cipher key was missing but an encrypted database exists '
-            '(keystore reset). Backing up the unrecoverable database and '
-            'recreating under a new key.',
-            name: _logName,
+          return _recoverUnusableEncryptedDatabase(key, reason: 'missing');
+        }
+        if (!await _canOpenEncryptedDatabase(key)) {
+          final replacementKey = generateCipherKeyHex();
+          await _secureStorage.write(
+            key: dbCipherKeyStorageKey,
+            value: replacementKey,
           );
-          await _deleteDatabase();
-          // The Drift DB is now empty but SharedPreferences survives, so the
-          // DM sync cursors / `historyDrainComplete` flag would make the next
-          // inbox open skip the full re-drain and strand recovered chats under
-          // "Message requests". Clear DM sync state so recovery re-runs against
-          // the fresh DB. See #5304.
-          //
-          // Best-effort: a SharedPreferences IO failure here only re-strands
-          // requests (itself healed by the drain-version bump) and must not
-          // escalate into a hard cipher-key-resolution failure now that the DB
-          // has already been recreated.
-          try {
-            await _onDatabaseReset?.call();
-          } on Object catch (e) {
-            Log.warning(
-              'Post-recreate DM sync-state reset failed (non-fatal): $e',
-              name: _logName,
-            );
-          }
+          return _recoverUnusableEncryptedDatabase(
+            replacementKey,
+            reason: 'stale',
+          );
         }
         return key;
       case CipherMigrationOutcome.failed:
@@ -141,6 +126,41 @@ class DatabaseEncryptionBootstrap {
     final key = generateCipherKeyHex();
     await _secureStorage.write(key: dbCipherKeyStorageKey, value: key);
     return (key, true);
+  }
+
+  Future<String> _recoverUnusableEncryptedDatabase(
+    String key, {
+    required String reason,
+  }) async {
+    // Key-loss recovery (#570 §6): the keystore was cleared, or it contains a
+    // valid-looking key that no longer opens the encrypted DB. Either way the
+    // DB is cryptographically unrecoverable, so it is backed up (not
+    // hard-deleted) and recreated under the current key. Local-only data is
+    // preserved in the backup; DMs resync from relays.
+    Log.warning(
+      'Encrypted database is unrecoverable ($reason cipher key). Backing it '
+      'up and recreating under a new key.',
+      name: _logName,
+    );
+    await _deleteDatabase();
+    // The Drift DB is now empty but SharedPreferences survives, so the DM sync
+    // cursors / `historyDrainComplete` flag would make the next inbox open skip
+    // the full re-drain and strand recovered chats under "Message requests".
+    // Clear DM sync state so recovery re-runs against the fresh DB. See #5304.
+    //
+    // Best-effort: a SharedPreferences IO failure here only re-strands requests
+    // (itself healed by the drain-version bump) and must not escalate into a
+    // hard cipher-key-resolution failure now that the DB has already been
+    // recreated.
+    try {
+      await _onDatabaseReset?.call();
+    } on Object catch (e) {
+      Log.warning(
+        'Post-recreate DM sync-state reset failed (non-fatal): $e',
+        name: _logName,
+      );
+    }
+    return key;
   }
 }
 

@@ -67,6 +67,35 @@ QueryExecutor openEncryptedConnection({required String rawKeyHex}) {
   });
 }
 
+/// Returns whether the shared encrypted database opens with [rawKeyHex].
+///
+/// This is a startup guard for the app layer: a valid-looking key can remain
+/// in secure storage while the database file belongs to a different key
+/// (backup/restore drift, partial reinstall, manual sandbox surgery). In that
+/// case the DB is just as unrecoverable as a missing key and should be backed
+/// up/recreated before the first Drift provider touches it.
+Future<bool> encryptedDatabaseOpensWithKey({
+  required String rawKeyHex,
+  String? databasePath,
+}) async {
+  _rawKeyLiteral(rawKeyHex);
+
+  final dbPath = databasePath ?? await getSharedDatabasePath();
+  if (!File(dbPath).existsSync()) return true;
+
+  Database? db;
+  try {
+    db = sqlite3.open(dbPath);
+    applyCipherKey(db, rawKeyHex);
+    return true;
+  } on SqliteException catch (e) {
+    if (e.resultCode == _sqliteNotADb) return false;
+    rethrow;
+  } finally {
+    db?.dispose();
+  }
+}
+
 /// Keys [rawDb] with [rawKeyHex] and verifies SQLCipher is actually active.
 ///
 /// `PRAGMA key` must be the first statement on the connection. On plain
