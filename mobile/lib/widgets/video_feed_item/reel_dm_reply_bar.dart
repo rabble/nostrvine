@@ -32,7 +32,10 @@ abstract class ReelReplyConstants {
   static const List<String> quickEmojis = kDefaultDmReactionEmojis;
 
   /// Reaction-burst animation duration.
-  static const flyDuration = Duration(milliseconds: 700);
+  static const flyDuration = Duration(milliseconds: 900);
+
+  /// Number of emoji particles in a reaction burst.
+  static const int burstCount = 18;
 
   /// Analytics screen name for in-player DM reel engagement.
   static const analyticsScreen = 'dm_reel_player';
@@ -148,7 +151,6 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
   // Reaction throttle state (presentation-only; the cubit owns the wire).
   Timer? _throttleTimer;
   String? _coalescedEmoji;
-  Offset? _coalescedAt;
   String? _lastDispatchedEmoji;
 
   /// Optimistically-selected emoji, highlighted immediately on tap.
@@ -226,18 +228,16 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
         ?.emoji;
   }
 
-  void _onEmojiTap(String emoji, {Offset? at, bool fromPicker = false}) {
+  void _onEmojiTap(String emoji, {bool fromPicker = false}) {
     // No-op when the active reaction already matches (set, not toggle).
     if (_activeEmoji == emoji) return;
     setState(() => _optimisticEmoji = emoji);
 
     if (_throttleTimer?.isActive ?? false) {
-      // Collapse rapid taps to the latest emoji + its tap position.
-      _coalescedEmoji = emoji;
-      _coalescedAt = at;
+      _coalescedEmoji = emoji; // collapse rapid taps to the latest emoji
       return;
     }
-    _dispatchReaction(emoji, at: at, fromPicker: fromPicker);
+    _dispatchReaction(emoji, fromPicker: fromPicker);
     _startThrottle();
   }
 
@@ -245,17 +245,15 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
     _throttleTimer?.cancel();
     _throttleTimer = Timer(ReelReplyConstants.reactionThrottle, () {
       final pending = _coalescedEmoji;
-      final pendingAt = _coalescedAt;
       _coalescedEmoji = null;
-      _coalescedAt = null;
       if (pending != null && pending != _lastDispatchedEmoji) {
-        _dispatchReaction(pending, at: pendingAt);
+        _dispatchReaction(pending);
         _startThrottle();
       }
     });
   }
 
-  void _dispatchReaction(String emoji, {Offset? at, bool fromPicker = false}) {
+  void _dispatchReaction(String emoji, {bool fromPicker = false}) {
     _lastDispatchedEmoji = emoji;
     context.read<ConversationReactionsCubit>().add(
       ConversationReactionSet(
@@ -265,7 +263,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
         emoji: emoji,
       ),
     );
-    _playEmojiFly(emoji, at);
+    _playEmojiFly(emoji);
     SemanticsService.sendAnnouncement(
       View.of(context),
       context.l10n.dmReelReactionSentAnnouncement(emoji),
@@ -282,19 +280,15 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
     );
   }
 
-  void _playEmojiFly(String emoji, Offset? globalAt) {
+  void _playEmojiFly(String emoji) {
     if (MediaQuery.of(context).disableAnimations) return;
+    // The burst always erupts from the horizontal center of the bar, just
+    // above the emoji row, and fountains up the middle of the screen —
+    // independent of which emoji was tapped.
     final box = _stackKey.currentContext?.findRenderObject() as RenderBox?;
-    Offset origin;
-    if (box != null && box.hasSize) {
-      origin = (globalAt != null)
-          ? box.globalToLocal(globalAt)
-          // No tap position (e.g. picked from the full picker): rise from
-          // just above the emoji row, horizontally centered.
-          : Offset(box.size.width / 2, box.size.height - 40);
-    } else {
-      origin = Offset.zero;
-    }
+    final origin = (box != null && box.hasSize)
+        ? Offset(box.size.width / 2, box.size.height - 36)
+        : Offset.zero;
     setState(() {
       _burstEmoji = emoji;
       _burstOrigin = origin;
@@ -423,7 +417,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
                       emojis: ReelReplyConstants.quickEmojis,
                       activeEmoji: _activeEmojiForHighlight(),
                       moreLabel: context.l10n.dmReactionAddCustomA11yLabel,
-                      onEmojiTap: (emoji, at) => _onEmojiTap(emoji, at: at),
+                      onEmojiTap: _onEmojiTap,
                       onMoreTap: _onMoreTap,
                     ),
                   ],
@@ -580,10 +574,7 @@ class _QuickReactionRow extends StatelessWidget {
   final List<String> emojis;
   final String? activeEmoji;
   final String moreLabel;
-
-  /// Called with the tapped emoji + the tap's global position (so the
-  /// reaction burst can originate from the button).
-  final void Function(String emoji, Offset at) onEmojiTap;
+  final ValueChanged<String> onEmojiTap;
   final VoidCallback onMoreTap;
 
   @override
@@ -595,7 +586,7 @@ class _QuickReactionRow extends StatelessWidget {
           _ReactionEmojiButton(
             emoji: emoji,
             isActive: emoji == activeEmoji,
-            onTap: (at) => onEmojiTap(emoji, at),
+            onTap: () => onEmojiTap(emoji),
           ),
         _MorePickerButton(label: moreLabel, onTap: onMoreTap),
       ],
@@ -612,9 +603,7 @@ class _ReactionEmojiButton extends StatelessWidget {
 
   final String emoji;
   final bool isActive;
-
-  /// Called with the tap's global position so the burst can start there.
-  final ValueChanged<Offset> onTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -624,7 +613,7 @@ class _ReactionEmojiButton extends StatelessWidget {
       label: emoji,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTapUp: (details) => onTap(details.globalPosition),
+        onTap: onTap,
         child: DecoratedBox(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
@@ -705,7 +694,11 @@ class _ReactionBurst extends StatelessWidget {
   final Offset origin;
   final Animation<double> animation;
 
-  static const int _count = 6;
+  /// Deterministic fractional hash in [0, 1) for particle [i] on stream [s].
+  static double _rand(int i, int s) {
+    final x = (i + 1) * (s == 0 ? 0.61803398875 : 0.38196601125) + s * 0.123;
+    return x - x.floorToDouble();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -718,7 +711,8 @@ class _ReactionBurst extends StatelessWidget {
             return Stack(
               clipBehavior: Clip.none,
               children: [
-                for (var i = 0; i < _count; i++) _particle(i, t),
+                for (var i = 0; i < ReelReplyConstants.burstCount; i++)
+                  _particle(i, t),
               ],
             );
           },
@@ -728,31 +722,39 @@ class _ReactionBurst extends StatelessWidget {
   }
 
   Widget _particle(int i, double t) {
-    // Stagger each satellite slightly after the main glyph.
-    final delay = i * 0.05;
+    final isMain = i == 0;
+    // Stagger so particles erupt in quick succession.
+    final delay = isMain ? 0.0 : _rand(i, 2) * 0.18;
     final span = 1 - delay;
     final localT = span <= 0 ? 0.0 : ((t - delay) / span).clamp(0.0, 1.0);
     if (localT <= 0) return const SizedBox.shrink();
 
-    final isMain = i == 0;
     final pop = Curves.easeOutBack.transform(localT);
-    final ease = Curves.easeOut.transform(localT);
+    final ease = Curves.easeOutCubic.transform(localT);
 
-    final size = isMain ? 56.0 : 26.0;
-    final scale = isMain ? (0.5 + pop * 0.6) : (0.3 + pop * 0.5);
-    final rise = ease * (isMain ? 64.0 : 120.0);
-    final side = i.isEven ? 1.0 : -1.0;
-    final drift = isMain ? 0.0 : side * (10.0 + i * 7.0) * ease;
-    final angle = isMain ? 0.0 : side * localT * 0.5;
-    // Hold opacity, then fade out over the final 40% of the flight.
-    final opacity = (1 - ((localT - 0.6) / 0.4).clamp(0.0, 1.0)).clamp(
+    final r1 = _rand(i, 0);
+    final r2 = _rand(i, 1);
+
+    final size = isMain ? 60.0 : (24.0 + r1 * 20.0);
+    final scale = isMain ? (0.5 + pop * 0.65) : (0.3 + pop * 0.6);
+
+    // Fountain upward: each particle shoots along an upward angle (spread
+    // left/right of vertical) a varying distance, so they fan out the center.
+    final spread = isMain ? 0.0 : (r1 - 0.5) * 2.0; // radians: roughly ±1
+    final dist = isMain ? 170.0 : (170.0 + r2 * 230.0);
+    final dx = math.sin(spread) * dist * ease;
+    final dy = -(math.cos(spread).abs() * dist + (isMain ? 40.0 : 0.0)) * ease;
+    final angle = isMain ? 0.0 : (r2 - 0.5) * 1.2 * localT;
+
+    // Fade out over the final ~45% of the flight.
+    final opacity = (1 - ((localT - 0.55) / 0.45).clamp(0.0, 1.0)).clamp(
       0.0,
       1.0,
     );
 
     return Positioned(
-      left: origin.dx + drift - size / 2,
-      top: origin.dy - rise - size / 2,
+      left: origin.dx + dx - size / 2,
+      top: origin.dy + dy - size / 2,
       width: size,
       height: size,
       child: Opacity(
@@ -762,7 +764,7 @@ class _ReactionBurst extends StatelessWidget {
           child: Transform.scale(
             scale: scale,
             child: Center(
-              child: Text(emoji, style: TextStyle(fontSize: size * 0.8)),
+              child: Text(emoji, style: TextStyle(fontSize: size * 0.82)),
             ),
           ),
         ),
