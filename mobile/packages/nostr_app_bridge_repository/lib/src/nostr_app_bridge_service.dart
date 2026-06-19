@@ -130,6 +130,15 @@ class BridgeSignedEvent {
   final Map<String, dynamic> json;
 }
 
+class _BridgeInvalidRequestException implements Exception {
+  const _BridgeInvalidRequestException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 /// Handles NIP-07 bridge requests from third-party Nostr web
 /// apps running inside the host application.
 class NostrAppBridgeService {
@@ -246,17 +255,24 @@ class NostrAppBridgeService {
     }
 
     late final BridgeResult result;
-    switch (method) {
-      case 'getPublicKey':
-        result = _handleGetPublicKey();
-      case 'getRelays':
-        result = await _handleGetRelays();
-      case 'signEvent':
-        result = await _handleSignEvent(args);
-      case 'nip44.encrypt':
-        result = await _handleNip44Encrypt(args);
-      case 'nip44.decrypt':
-        result = await _handleNip44Decrypt(args);
+    try {
+      switch (method) {
+        case 'getPublicKey':
+          result = _handleGetPublicKey();
+        case 'getRelays':
+          result = await _handleGetRelays();
+        case 'signEvent':
+          result = await _handleSignEvent(args);
+        case 'nip44.encrypt':
+          result = await _handleNip44Encrypt(args);
+        case 'nip44.decrypt':
+          result = await _handleNip44Decrypt(args);
+      }
+    } on _BridgeInvalidRequestException catch (error) {
+      result = BridgeResult.error(
+        'invalid_request',
+        errorMessage: error.message,
+      );
     }
 
     _recordAudit(
@@ -382,7 +398,14 @@ class NostrAppBridgeService {
       args['ciphertext'],
       fieldName: 'ciphertext',
     );
-    final plaintext = await signer.nip44Decrypt(pubkey, ciphertext);
+    final String? plaintext;
+    try {
+      plaintext = await signer.nip44Decrypt(pubkey, ciphertext);
+    } on Exception {
+      // Signer implementations do not expose structured NIP-44 failure
+      // details consistently, so keep decrypt errors stable and non-leaky.
+      return const BridgeResult.error('decrypt_failed');
+    }
     if (plaintext == null || plaintext.isEmpty) {
       return const BridgeResult.error('decrypt_failed');
     }
@@ -403,7 +426,9 @@ class NostrAppBridgeService {
     required String fieldName,
   }) {
     if (value is! Map) {
-      throw ArgumentError('$fieldName must be an object');
+      throw _BridgeInvalidRequestException(
+        '$fieldName must be an object',
+      );
     }
 
     return value.map(
@@ -417,7 +442,7 @@ class NostrAppBridgeService {
     bool allowEmpty = false,
   }) {
     if (value is! String || (!allowEmpty && value.isEmpty)) {
-      throw ArgumentError(
+      throw _BridgeInvalidRequestException(
         allowEmpty
             ? '$fieldName must be a string'
             : '$fieldName must be a non-empty string',
@@ -432,7 +457,9 @@ class NostrAppBridgeService {
   }) {
     if (value is int) return value;
     if (value is num) return value.toInt();
-    throw ArgumentError('$fieldName must be an integer');
+    throw _BridgeInvalidRequestException(
+      '$fieldName must be an integer',
+    );
   }
 
   static int? _readOptionalInt(dynamic value) {
@@ -444,17 +471,28 @@ class NostrAppBridgeService {
   static List<List<String>> _readTags(dynamic value) {
     if (value == null) return const [];
     if (value is! List) {
-      throw ArgumentError('event.tags must be an array');
+      throw const _BridgeInvalidRequestException(
+        'event.tags must be an array',
+      );
     }
 
     return value
         .map<List<String>>((dynamic tag) {
           if (tag is! List) {
-            throw ArgumentError(
+            throw const _BridgeInvalidRequestException(
               'event.tags must only contain arrays',
             );
           }
-          return tag.map((item) => item.toString()).toList(growable: false);
+          return tag
+              .map((item) {
+                if (item == null) {
+                  throw const _BridgeInvalidRequestException(
+                    'event.tags must not contain null elements',
+                  );
+                }
+                return item.toString();
+              })
+              .toList(growable: false);
         })
         .toList(growable: false);
   }

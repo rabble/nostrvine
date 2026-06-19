@@ -169,6 +169,94 @@ void main() {
     );
 
     test(
+      'signs control character content with JSON-compatible event id',
+      () async {
+        const tagPubkey =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+        final result = await service.handleRequest(
+          app: _app(promptRequiredFor: const ['signEvent']),
+          origin: Uri.parse('https://primal.net'),
+          method: 'signEvent',
+          args: {
+            'event': {
+              'kind': 1,
+              'created_at': 1234567890,
+              'content': 'line\nbell\u0007nul\u0000unit\u001f',
+              'tags': [
+                ['p', tagPubkey],
+                ['mixed', '42', 'true'],
+              ],
+            },
+          },
+          promptForPermission: (_) async => true,
+        );
+
+        expect(result.success, isTrue);
+        expect(
+          (result.data! as Map)['id'],
+          'bf207992e6131b67730e9d8eb00bcbc1dbb98c25d3ac9974da4d'
+          '6fda5c3c4ef4',
+        );
+      },
+    );
+
+    test(
+      'rejects null tag elements with a stable invalid request error',
+      () async {
+        final result = await service.handleRequest(
+          app: _app(promptRequiredFor: const ['signEvent']),
+          origin: Uri.parse('https://primal.net'),
+          method: 'signEvent',
+          args: {
+            'event': {
+              'kind': 1,
+              'content': 'hello',
+              'tags': const [
+                ['p', null],
+              ],
+            },
+          },
+          promptForPermission: (_) async => true,
+        );
+
+        expect(result.success, isFalse);
+        expect(result.errorCode, 'invalid_request');
+        expect(
+          result.errorMessage,
+          'event.tags must not contain null elements',
+        );
+      },
+    );
+
+    test(
+      'keeps primitive tag coercion for compatibility',
+      () async {
+        final result = await service.handleRequest(
+          app: _app(promptRequiredFor: const ['signEvent']),
+          origin: Uri.parse('https://primal.net'),
+          method: 'signEvent',
+          args: {
+            'event': {
+              'kind': 1,
+              'content': 'hello',
+              'tags': const [
+                ['amount', 42, true],
+              ],
+            },
+          },
+          promptForPermission: (_) async => true,
+        );
+
+        expect(result.success, isTrue);
+        expect(authProvider.lastTags, [
+          ['amount', '42', 'true'],
+        ]);
+      },
+    );
+
+    test(
       'routes nip44.encrypt through the signer',
       () async {
         final result = await service.handleRequest(
@@ -191,6 +279,37 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.data, 'ciphertext-for-top secret');
+      },
+    );
+
+    test(
+      'returns decrypt failed when nip44.decrypt signer throws',
+      () async {
+        signer.nip44DecryptException = Exception(
+          'Unknown encryption version 3',
+        );
+
+        final result = await service.handleRequest(
+          app: _app(
+            allowedMethods: const [
+              'getPublicKey',
+              'signEvent',
+              'nip44.decrypt',
+            ],
+          ),
+          origin: Uri.parse('https://primal.net'),
+          method: 'nip44.decrypt',
+          args: const {
+            'pubkey':
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            'ciphertext': 'bad-version-ciphertext',
+          },
+        );
+
+        expect(result.success, isFalse);
+        expect(result.errorCode, 'decrypt_failed');
+        expect(result.errorMessage, isNull);
       },
     );
 
@@ -263,6 +382,8 @@ NostrAppDirectoryEntry _app({
 }
 
 class _FakeAuthProvider implements BridgeAuthProvider {
+  List<List<String>>? lastTags;
+
   @override
   String? get currentPublicKeyHex => 'f' * 64;
 
@@ -282,6 +403,7 @@ class _FakeAuthProvider implements BridgeAuthProvider {
     required List<List<String>> tags,
     int? createdAt,
   }) async {
+    lastTags = tags;
     final event = Event(
       'f' * 64,
       kind,
@@ -294,6 +416,8 @@ class _FakeAuthProvider implements BridgeAuthProvider {
 }
 
 class _FakeSigner implements NostrSigner {
+  Exception? nip44DecryptException;
+
   @override
   void close() {}
 
@@ -328,6 +452,10 @@ class _FakeSigner implements NostrSigner {
     String pubkey,
     String ciphertext,
   ) async {
+    final exception = nip44DecryptException;
+    if (exception != null) {
+      throw exception;
+    }
     return 'plaintext-for-$ciphertext';
   }
 
