@@ -1627,6 +1627,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get metadataDeviceAttestation => 'Cihaz tasdik';
 
   @override
+  String get metadataPgpSignature => 'PGP imzası';
+
+  @override
+  String get metadataC2paCredentials => 'C2PA İçerik Kimlik Bilgileri';
+
+  @override
   String get metadataProofManifest => 'Kanıt manifestosu';
 
   @override
@@ -3267,134 +3273,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String uploadProgressPausedPercent(int percent) {
     return 'Duraklatıldı %$percent';
   }
-
-  @override
-  String get badgeExplanationClose => 'Kapat';
-
-  @override
-  String get badgeExplanationOriginalVineArchive => 'Orijinal Vine Arşivi';
-
-  @override
-  String get badgeExplanationCameraProof => 'Kamera Kanıtı';
-
-  @override
-  String get badgeExplanationAuthenticitySignals => 'Gerceklik Sinyalleri';
-
-  @override
-  String get badgeExplanationVineArchiveIntro =>
-      'Bu video, Internet Archive\'dan kurtarılmış orijinal bir Vine\'dır.';
-
-  @override
-  String get badgeExplanationVineArchiveHistory =>
-      'Vine 2017\'de kapanmadan önce, ArchiveTeam ve Internet Archive milyonlarca Vine\'ı gelecek için korumak amacıyla çalıştı. Bu içerik, o tarihi koruma çabasının bir parçasıdır.';
-
-  @override
-  String badgeExplanationOriginalStats(int loops) {
-    return 'Orijinal istatistikler: $loops döngü';
-  }
-
-  @override
-  String get badgeExplanationLearnVineArchive =>
-      'Vine arşivi koruması hakkında daha fazla bilgi';
-
-  @override
-  String get badgeExplanationLearnProofmode =>
-      'Proofmode doğrulaması hakkında daha fazla bilgi';
-
-  @override
-  String get badgeExplanationLearnAuthenticity =>
-      'Divine gerçeklik sinyalleri hakkında daha fazla bilgi';
-
-  @override
-  String get badgeExplanationInspectProofCheck => 'ProofCheck Aracı ile İncele';
-
-  @override
-  String get badgeExplanationInspectMedia => 'Medya ayrıntılarını incele';
-
-  @override
-  String get badgeExplanationProofmodeVerified =>
-      'Bu videonun orijinalliği Proofmode teknolojisi ile doğrulandı.';
-
-  @override
-  String get badgeExplanationDivineHostedHumanMade =>
-      'Bu video Divine\'de barındırılıyor ve yapay zeka tespiti muhtemelen insan yapımı olduğunu gösteriyor, ancak kriptografik kamera doğrulama verisi içermiyor.';
-
-  @override
-  String get badgeExplanationHumanMadeNoCrypto =>
-      'Yapay zeka tespiti bu videonun muhtemelen insan yapımı olduğunu gösteriyor, ancak kriptografik kamera doğrulama verisi içermiyor.';
-
-  @override
-  String get badgeExplanationDivineHostedNoCrypto =>
-      'Bu video Divine\'de barındırılıyor, ancak henüz kriptografik kamera doğrulama verisi içermiyor.';
-
-  @override
-  String get badgeExplanationExternalNoCrypto =>
-      'Bu video Divine dışında barındırılıyor ve kriptografik kamera doğrulama verisi içermiyor.';
-
-  @override
-  String get badgeExplanationDeviceAttestation => 'Cihaz tasdik';
-
-  @override
-  String get badgeExplanationPgpSignature => 'PGP imzası';
-
-  @override
-  String get badgeExplanationC2paCredentials => 'C2PA İçerik Kimlik Bilgileri';
-
-  @override
-  String get badgeExplanationProofManifest => 'Kanıt manifestosu';
-
-  @override
-  String get badgeExplanationAiDetection => 'Yapay Zeka Tespiti';
-
-  @override
-  String get badgeExplanationAiNotScanned =>
-      'Yapay zeka taraması: Henüz taranmadı';
-
-  @override
-  String get badgeExplanationNoScanResults =>
-      'Henüz tarama sonucu mevcut değil.';
-
-  @override
-  String get badgeExplanationCheckAiGenerated =>
-      'Yapay zeka üretimi mi kontrol et';
-
-  @override
-  String badgeExplanationAiLikelihood(int percentage) {
-    return 'Yapay zeka üretimi olma olasılığı %$percentage';
-  }
-
-  @override
-  String badgeExplanationScannedBy(String source) {
-    return 'Tarayıcı: $source';
-  }
-
-  @override
-  String get badgeExplanationVerifiedByModerator =>
-      'İnsan moderatör tarafından doğrulandı';
-
-  @override
-  String get badgeExplanationVerificationPlatinum =>
-      'Platin: Cihaz donanımı tasdik, kriptografik imzalar, İçerik Kimlik Bilgileri (C2PA) ve yapay zeka taraması insan kökenini doğrular.';
-
-  @override
-  String get badgeExplanationVerificationGold =>
-      'Altın: Donanım tasdik, kriptografik imzalar ve İçerik Kimlik Bilgileri (C2PA) ile gerçek bir cihazda çekildi.';
-
-  @override
-  String get badgeExplanationVerificationSilver =>
-      'Gümüş: Kriptografik imzalar bu videonun kayıttan bu yana değiştirilmediğini kanıtlar.';
-
-  @override
-  String get badgeExplanationVerificationBronze =>
-      'Bronz: Temel meta veri imzaları mevcut.';
-
-  @override
-  String get badgeExplanationVerificationSilverAiScan =>
-      'Gümüş: Yapay zeka taraması bu videonun muhtemelen insan tarafından oluşturulduğunu doğrular.';
-
-  @override
-  String get badgeExplanationNoVerification =>
-      'Bu video için doğrulama verisi mevcut değil.';
 
   @override
   String get shareMenuTitle => 'Videoyu Paylaş';
@@ -5797,10 +5675,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get trendingTitle => 'Gündemde';
-
-  @override
-  String get proofmodeCheckAiGenerated =>
-      'Yapay zeka ile oluşturulup oluşturulmadığını kontrol et';
 
   @override
   String get libraryDeleteConfirm => 'Sil';

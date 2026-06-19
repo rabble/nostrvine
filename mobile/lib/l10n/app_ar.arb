@@ -629,6 +629,8 @@
     "metadataOriginalSound": "صوت أصلي",
     "metadataVerificationLabel": "التحقق",
     "metadataDeviceAttestation": "تصديق الجهاز",
+    "metadataPgpSignature": "توقيع PGP",
+    "metadataC2paCredentials": "بيانات اعتماد المحتوى C2PA",
     "metadataProofManifest": "بيان الإثبات",
     "metadataCreatorLabel": "الصانع",
     "metadataCollaboratorsLabel": "المتعاونون",
@@ -1388,61 +1390,6 @@
             }
         }
     },
-    "badgeExplanationClose": "إغلاق",
-    "badgeExplanationOriginalVineArchive": "أرشيف Vine الأصلي",
-    "badgeExplanationCameraProof": "إثبات الكاميرا",
-    "badgeExplanationAuthenticitySignals": "إشارات الأصالة",
-    "badgeExplanationVineArchiveIntro": "هذا الفيديو من Vine أصلي تمت استعادته من Internet Archive.",
-    "badgeExplanationVineArchiveHistory": "قبل إغلاق Vine عام 2017، عمل ArchiveTeam و Internet Archive على حفظ ملايين مقاطع Vine للأجيال القادمة. هذا المحتوى جزء من ذلك الجهد التاريخي للحفظ.",
-    "badgeExplanationOriginalStats": "الإحصائيات الأصلية: {loops} تكرار",
-    "@badgeExplanationOriginalStats": {
-        "placeholders": {
-            "loops": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationLearnVineArchive": "اعرف المزيد عن حفظ أرشيف Vine",
-    "badgeExplanationLearnProofmode": "اعرف المزيد عن التحقق بـ Proofmode",
-    "badgeExplanationLearnAuthenticity": "اعرف المزيد عن إشارات أصالة Divine",
-    "badgeExplanationInspectProofCheck": "الفحص بأداة ProofCheck",
-    "badgeExplanationInspectMedia": "فحص تفاصيل الوسائط",
-    "badgeExplanationProofmodeVerified": "تم التحقق من أصالة هذا الفيديو باستخدام تقنية Proofmode.",
-    "badgeExplanationDivineHostedHumanMade": "هذا الفيديو مستضاف على Divine، وتشير أدوات كشف الذكاء الاصطناعي إلى أنّه من صنع البشر على الأغلب، لكنّه لا يتضمّن بيانات تحقق تشفيري من الكاميرا.",
-    "badgeExplanationHumanMadeNoCrypto": "تشير أدوات كشف الذكاء الاصطناعي إلى أنّ هذا الفيديو من صنع البشر على الأغلب، رغم أنّه لا يتضمّن بيانات تحقق تشفيري من الكاميرا.",
-    "badgeExplanationDivineHostedNoCrypto": "هذا الفيديو مستضاف على Divine، لكنّه لا يتضمّن بيانات تحقق تشفيري من الكاميرا بعد.",
-    "badgeExplanationExternalNoCrypto": "هذا الفيديو مستضاف خارج Divine ولا يتضمّن بيانات تحقق تشفيري من الكاميرا.",
-    "badgeExplanationDeviceAttestation": "تصديق الجهاز",
-    "badgeExplanationPgpSignature": "توقيع PGP",
-    "badgeExplanationC2paCredentials": "بيانات اعتماد المحتوى C2PA",
-    "badgeExplanationProofManifest": "بيان الإثبات",
-    "badgeExplanationAiDetection": "كشف الذكاء الاصطناعي",
-    "badgeExplanationAiNotScanned": "فحص الذكاء الاصطناعي: لم يتم الفحص بعد",
-    "badgeExplanationNoScanResults": "لا توجد نتائج فحص متاحة بعد.",
-    "badgeExplanationCheckAiGenerated": "تحقّق إن كان مُنشأ بالذكاء الاصطناعي",
-    "badgeExplanationAiLikelihood": "{percentage}% احتمال أنّه مُنشأ بالذكاء الاصطناعي",
-    "@badgeExplanationAiLikelihood": {
-        "placeholders": {
-            "percentage": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationScannedBy": "تم الفحص بواسطة: {source}",
-    "@badgeExplanationScannedBy": {
-        "placeholders": {
-            "source": {
-                "type": "String"
-            }
-        }
-    },
-    "badgeExplanationVerifiedByModerator": "تم التحقق بواسطة مشرف بشري",
-    "badgeExplanationVerificationPlatinum": "بلاتيني: تصديق عتاد الجهاز، توقيعات تشفيرية، بيانات اعتماد المحتوى (C2PA)، وفحص الذكاء الاصطناعي يؤكّد الأصل البشري.",
-    "badgeExplanationVerificationGold": "ذهبي: تم التصوير على جهاز حقيقي مع تصديق العتاد، وتوقيعات تشفيرية، وبيانات اعتماد المحتوى (C2PA).",
-    "badgeExplanationVerificationSilver": "فضي: التوقيعات التشفيرية تثبت أنّ هذا الفيديو لم يعدل منذ التسجيل.",
-    "badgeExplanationVerificationBronze": "برونزي: توقيعات بيانات أساسية موجودة.",
-    "badgeExplanationVerificationSilverAiScan": "فضي: فحص الذكاء الاصطناعي يؤكّد أنّ هذا الفيديو من صنع البشر على الأغلب.",
-    "badgeExplanationNoVerification": "لا توجد بيانات تحقق متاحة لهذا الفيديو.",
     "shareMenuTitle": "مشاركة الفيديو",
     "shareMenuReportAiContent": "الإبلاغ عن محتوى بالذكاء الاصطناعي",
     "shareMenuReportAiContentSubtitle": "إبلاغ سريع عن محتوى يُشتبه بأنّه مُنشأ بالذكاء الاصطناعي",
@@ -2480,7 +2427,6 @@
     "libraryWebUnavailableHeadline": "المكتبة متوفّرة في التطبيق على الجوال",
     "notificationFollowBack": "متابعة بالمقابل",
     "profileSetupUploadStaged": "تم الرفع — اضغط على حفظ للتطبيق",
-    "proofmodeCheckAiGenerated": "التحقق إذا كان مُنشأً بالذكاء الاصطناعي",
     "dmSendFailedMessage": "تعذّر إرسال الرسالة",
     "dmSendFailedRetry": "إعادة المحاولة",
     "dmSendPartialMessage": "أُرسلت، لكنّها لم تُزامَن مع أجهزتك الأخرى",

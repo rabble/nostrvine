@@ -1627,6 +1627,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get metadataDeviceAttestation => 'تصديق الجهاز';
 
   @override
+  String get metadataPgpSignature => 'توقيع PGP';
+
+  @override
+  String get metadataC2paCredentials => 'بيانات اعتماد المحتوى C2PA';
+
+  @override
   String get metadataProofManifest => 'بيان الإثبات';
 
   @override
@@ -3249,133 +3255,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String uploadProgressPausedPercent(int percent) {
     return 'موقوف مؤقتًا $percent%';
   }
-
-  @override
-  String get badgeExplanationClose => 'إغلاق';
-
-  @override
-  String get badgeExplanationOriginalVineArchive => 'أرشيف Vine الأصلي';
-
-  @override
-  String get badgeExplanationCameraProof => 'إثبات الكاميرا';
-
-  @override
-  String get badgeExplanationAuthenticitySignals => 'إشارات الأصالة';
-
-  @override
-  String get badgeExplanationVineArchiveIntro =>
-      'هذا الفيديو من Vine أصلي تمت استعادته من Internet Archive.';
-
-  @override
-  String get badgeExplanationVineArchiveHistory =>
-      'قبل إغلاق Vine عام 2017، عمل ArchiveTeam و Internet Archive على حفظ ملايين مقاطع Vine للأجيال القادمة. هذا المحتوى جزء من ذلك الجهد التاريخي للحفظ.';
-
-  @override
-  String badgeExplanationOriginalStats(int loops) {
-    return 'الإحصائيات الأصلية: $loops تكرار';
-  }
-
-  @override
-  String get badgeExplanationLearnVineArchive =>
-      'اعرف المزيد عن حفظ أرشيف Vine';
-
-  @override
-  String get badgeExplanationLearnProofmode =>
-      'اعرف المزيد عن التحقق بـ Proofmode';
-
-  @override
-  String get badgeExplanationLearnAuthenticity =>
-      'اعرف المزيد عن إشارات أصالة Divine';
-
-  @override
-  String get badgeExplanationInspectProofCheck => 'الفحص بأداة ProofCheck';
-
-  @override
-  String get badgeExplanationInspectMedia => 'فحص تفاصيل الوسائط';
-
-  @override
-  String get badgeExplanationProofmodeVerified =>
-      'تم التحقق من أصالة هذا الفيديو باستخدام تقنية Proofmode.';
-
-  @override
-  String get badgeExplanationDivineHostedHumanMade =>
-      'هذا الفيديو مستضاف على Divine، وتشير أدوات كشف الذكاء الاصطناعي إلى أنّه من صنع البشر على الأغلب، لكنّه لا يتضمّن بيانات تحقق تشفيري من الكاميرا.';
-
-  @override
-  String get badgeExplanationHumanMadeNoCrypto =>
-      'تشير أدوات كشف الذكاء الاصطناعي إلى أنّ هذا الفيديو من صنع البشر على الأغلب، رغم أنّه لا يتضمّن بيانات تحقق تشفيري من الكاميرا.';
-
-  @override
-  String get badgeExplanationDivineHostedNoCrypto =>
-      'هذا الفيديو مستضاف على Divine، لكنّه لا يتضمّن بيانات تحقق تشفيري من الكاميرا بعد.';
-
-  @override
-  String get badgeExplanationExternalNoCrypto =>
-      'هذا الفيديو مستضاف خارج Divine ولا يتضمّن بيانات تحقق تشفيري من الكاميرا.';
-
-  @override
-  String get badgeExplanationDeviceAttestation => 'تصديق الجهاز';
-
-  @override
-  String get badgeExplanationPgpSignature => 'توقيع PGP';
-
-  @override
-  String get badgeExplanationC2paCredentials => 'بيانات اعتماد المحتوى C2PA';
-
-  @override
-  String get badgeExplanationProofManifest => 'بيان الإثبات';
-
-  @override
-  String get badgeExplanationAiDetection => 'كشف الذكاء الاصطناعي';
-
-  @override
-  String get badgeExplanationAiNotScanned =>
-      'فحص الذكاء الاصطناعي: لم يتم الفحص بعد';
-
-  @override
-  String get badgeExplanationNoScanResults => 'لا توجد نتائج فحص متاحة بعد.';
-
-  @override
-  String get badgeExplanationCheckAiGenerated =>
-      'تحقّق إن كان مُنشأ بالذكاء الاصطناعي';
-
-  @override
-  String badgeExplanationAiLikelihood(int percentage) {
-    return '$percentage% احتمال أنّه مُنشأ بالذكاء الاصطناعي';
-  }
-
-  @override
-  String badgeExplanationScannedBy(String source) {
-    return 'تم الفحص بواسطة: $source';
-  }
-
-  @override
-  String get badgeExplanationVerifiedByModerator =>
-      'تم التحقق بواسطة مشرف بشري';
-
-  @override
-  String get badgeExplanationVerificationPlatinum =>
-      'بلاتيني: تصديق عتاد الجهاز، توقيعات تشفيرية، بيانات اعتماد المحتوى (C2PA)، وفحص الذكاء الاصطناعي يؤكّد الأصل البشري.';
-
-  @override
-  String get badgeExplanationVerificationGold =>
-      'ذهبي: تم التصوير على جهاز حقيقي مع تصديق العتاد، وتوقيعات تشفيرية، وبيانات اعتماد المحتوى (C2PA).';
-
-  @override
-  String get badgeExplanationVerificationSilver =>
-      'فضي: التوقيعات التشفيرية تثبت أنّ هذا الفيديو لم يعدل منذ التسجيل.';
-
-  @override
-  String get badgeExplanationVerificationBronze =>
-      'برونزي: توقيعات بيانات أساسية موجودة.';
-
-  @override
-  String get badgeExplanationVerificationSilverAiScan =>
-      'فضي: فحص الذكاء الاصطناعي يؤكّد أنّ هذا الفيديو من صنع البشر على الأغلب.';
-
-  @override
-  String get badgeExplanationNoVerification =>
-      'لا توجد بيانات تحقق متاحة لهذا الفيديو.';
 
   @override
   String get shareMenuTitle => 'مشاركة الفيديو';
@@ -5765,10 +5644,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get trendingTitle => 'الرائج';
-
-  @override
-  String get proofmodeCheckAiGenerated =>
-      'التحقق إذا كان مُنشأً بالذكاء الاصطناعي';
 
   @override
   String get libraryDeleteConfirm => 'حذف';

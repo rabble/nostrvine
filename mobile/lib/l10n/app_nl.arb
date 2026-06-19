@@ -632,6 +632,8 @@
     "metadataOriginalSound": "Origineel geluid",
     "metadataVerificationLabel": "Verificatie",
     "metadataDeviceAttestation": "Apparaatattestatie",
+    "metadataPgpSignature": "PGP-handtekening",
+    "metadataC2paCredentials": "C2PA Content Credentials",
     "metadataProofManifest": "Proof-manifest",
     "metadataCreatorLabel": "Maker",
     "metadataCollaboratorsLabel": "Samenwerkers",
@@ -1398,61 +1400,6 @@
             }
         }
     },
-    "badgeExplanationClose": "Sluiten",
-    "badgeExplanationOriginalVineArchive": "Origineel Vine-archief",
-    "badgeExplanationCameraProof": "Cameraproof",
-    "badgeExplanationAuthenticitySignals": "Authenticiteitssignalen",
-    "badgeExplanationVineArchiveIntro": "Deze video is een originele Vine, teruggehaald uit het Internet Archive.",
-    "badgeExplanationVineArchiveHistory": "Voor Vine in 2017 sloot, werkten ArchiveTeam en het Internet Archive samen om miljoenen Vines voor het nageslacht te bewaren. Deze inhoud is onderdeel van dat historische bewaarproject.",
-    "badgeExplanationOriginalStats": "Originele stats: {loops} loops",
-    "@badgeExplanationOriginalStats": {
-        "placeholders": {
-            "loops": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationLearnVineArchive": "Meer over het behoud van het Vine-archief",
-    "badgeExplanationLearnProofmode": "Meer over Proofmode-verificatie",
-    "badgeExplanationLearnAuthenticity": "Meer over Divine-authenticiteitssignalen",
-    "badgeExplanationInspectProofCheck": "Inspecteren met ProofCheck-tool",
-    "badgeExplanationInspectMedia": "Mediadetails inspecteren",
-    "badgeExplanationProofmodeVerified": "De authenticiteit van deze video is geverifieerd met Proofmode-technologie.",
-    "badgeExplanationDivineHostedHumanMade": "Deze video staat op Divine en AI-detectie geeft aan dat hij waarschijnlijk door een mens is gemaakt, maar hij bevat geen cryptografische cameraverificatie-data.",
-    "badgeExplanationHumanMadeNoCrypto": "AI-detectie geeft aan dat deze video waarschijnlijk door een mens is gemaakt, maar hij bevat geen cryptografische cameraverificatie-data.",
-    "badgeExplanationDivineHostedNoCrypto": "Deze video staat op Divine, maar bevat nog geen cryptografische cameraverificatie-data.",
-    "badgeExplanationExternalNoCrypto": "Deze video staat buiten Divine en bevat geen cryptografische cameraverificatie-data.",
-    "badgeExplanationDeviceAttestation": "Apparaatattestatie",
-    "badgeExplanationPgpSignature": "PGP-handtekening",
-    "badgeExplanationC2paCredentials": "C2PA Content Credentials",
-    "badgeExplanationProofManifest": "Proof-manifest",
-    "badgeExplanationAiDetection": "AI-detectie",
-    "badgeExplanationAiNotScanned": "AI-scan: nog niet gescand",
-    "badgeExplanationNoScanResults": "Nog geen scanresultaten beschikbaar.",
-    "badgeExplanationCheckAiGenerated": "Check of AI-gegenereerd",
-    "badgeExplanationAiLikelihood": "{percentage}% kans dat het AI-gegenereerd is",
-    "@badgeExplanationAiLikelihood": {
-        "placeholders": {
-            "percentage": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationScannedBy": "Gescand door: {source}",
-    "@badgeExplanationScannedBy": {
-        "placeholders": {
-            "source": {
-                "type": "String"
-            }
-        }
-    },
-    "badgeExplanationVerifiedByModerator": "Geverifieerd door menselijke moderator",
-    "badgeExplanationVerificationPlatinum": "Platina: apparaathardware-attestatie, cryptografische handtekeningen, Content Credentials (C2PA) en AI-scan bevestigt menselijke oorsprong.",
-    "badgeExplanationVerificationGold": "Goud: opgenomen op een echt apparaat met hardware-attestatie, cryptografische handtekeningen en Content Credentials (C2PA).",
-    "badgeExplanationVerificationSilver": "Zilver: cryptografische handtekeningen bewijzen dat deze video sinds de opname niet is aangepast.",
-    "badgeExplanationVerificationBronze": "Brons: basis-metadata-handtekeningen zijn aanwezig.",
-    "badgeExplanationVerificationSilverAiScan": "Zilver: AI-scan bevestigt dat deze video waarschijnlijk door een mens is gemaakt.",
-    "badgeExplanationNoVerification": "Geen verificatiedata beschikbaar voor deze video.",
     "shareMenuTitle": "Video delen",
     "shareMenuReportAiContent": "AI-inhoud melden",
     "shareMenuReportAiContentSubtitle": "Snel vermoedelijk AI-gegenereerde inhoud melden",
@@ -2488,7 +2435,6 @@
     "libraryWebUnavailableHeadline": "Bibliotheek is beschikbaar in de mobiele app",
     "notificationFollowBack": "Terugvolgen",
     "profileSetupUploadStaged": "Geüpload — tik op Opslaan om toe te passen",
-    "proofmodeCheckAiGenerated": "Controleren of AI-gegenereerd",
     "dmSendFailedMessage": "Bericht kon niet worden verzonden",
     "dmSendFailedRetry": "Opnieuw",
     "dmSendPartialMessage": "Verzonden, maar niet gesynchroniseerd met je andere apparaten",

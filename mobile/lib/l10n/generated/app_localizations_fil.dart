@@ -1672,6 +1672,12 @@ class AppLocalizationsFil extends AppLocalizations {
   String get metadataDeviceAttestation => 'Device attestation';
 
   @override
+  String get metadataPgpSignature => 'PGP signature';
+
+  @override
+  String get metadataC2paCredentials => 'C2PA Content Credentials';
+
+  @override
   String get metadataProofManifest => 'Proof manifest';
 
   @override
@@ -3336,133 +3342,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String uploadProgressPausedPercent(int percent) {
     return 'Naka-pause $percent%';
   }
-
-  @override
-  String get badgeExplanationClose => 'Isara';
-
-  @override
-  String get badgeExplanationOriginalVineArchive => 'Original Vine Archive';
-
-  @override
-  String get badgeExplanationCameraProof => 'Camera Proof';
-
-  @override
-  String get badgeExplanationAuthenticitySignals => 'Mga Authenticity Signal';
-
-  @override
-  String get badgeExplanationVineArchiveIntro =>
-      'Ang video na ito ay isang original Vine na nakuha mula sa Internet Archive.';
-
-  @override
-  String get badgeExplanationVineArchiveHistory =>
-      'Bago nagsara ang Vine noong 2017, nagtulungan ang ArchiveTeam at Internet Archive para mapreserba ang milyun-milyong Vine para sa kasaysayan. Ang content na ito ay bahagi ng makasaysayang preservation effort na iyon.';
-
-  @override
-  String badgeExplanationOriginalStats(int loops) {
-    return 'Original na stats: $loops loops';
-  }
-
-  @override
-  String get badgeExplanationLearnVineArchive =>
-      'Alamin pa ang tungkol sa Vine archive preservation';
-
-  @override
-  String get badgeExplanationLearnProofmode =>
-      'Alamin pa ang tungkol sa Proofmode verification';
-
-  @override
-  String get badgeExplanationLearnAuthenticity =>
-      'Alamin pa ang tungkol sa Divine authenticity signals';
-
-  @override
-  String get badgeExplanationInspectProofCheck =>
-      'Suriin gamit ang ProofCheck Tool';
-
-  @override
-  String get badgeExplanationInspectMedia => 'Suriin ang detalye ng media';
-
-  @override
-  String get badgeExplanationProofmodeVerified =>
-      'Ang authenticity ng video na ito ay na-verify gamit ang Proofmode technology.';
-
-  @override
-  String get badgeExplanationDivineHostedHumanMade =>
-      'Naka-host sa Divine ang video na ito at ipinapahiwatig ng AI detection na malamang gawa ito ng tao, pero hindi pa ito kasama sa cryptographic camera-verification data.';
-
-  @override
-  String get badgeExplanationHumanMadeNoCrypto =>
-      'Ipinapahiwatig ng AI detection na malamang gawa ng tao ang video na ito, kahit hindi pa ito may cryptographic camera-verification data.';
-
-  @override
-  String get badgeExplanationDivineHostedNoCrypto =>
-      'Naka-host sa Divine ang video na ito, pero wala pa itong cryptographic camera-verification data.';
-
-  @override
-  String get badgeExplanationExternalNoCrypto =>
-      'Naka-host sa labas ng Divine ang video na ito at walang cryptographic camera-verification data.';
-
-  @override
-  String get badgeExplanationDeviceAttestation => 'Device attestation';
-
-  @override
-  String get badgeExplanationPgpSignature => 'PGP signature';
-
-  @override
-  String get badgeExplanationC2paCredentials => 'C2PA Content Credentials';
-
-  @override
-  String get badgeExplanationProofManifest => 'Proof manifest';
-
-  @override
-  String get badgeExplanationAiDetection => 'AI Detection';
-
-  @override
-  String get badgeExplanationAiNotScanned => 'AI scan: Hindi pa na-scan';
-
-  @override
-  String get badgeExplanationNoScanResults =>
-      'Wala pang scan result na available.';
-
-  @override
-  String get badgeExplanationCheckAiGenerated => 'Tingnan kung AI-generated';
-
-  @override
-  String badgeExplanationAiLikelihood(int percentage) {
-    return '$percentage% tsansa na AI-generated';
-  }
-
-  @override
-  String badgeExplanationScannedBy(String source) {
-    return 'Sini-scan ng: $source';
-  }
-
-  @override
-  String get badgeExplanationVerifiedByModerator =>
-      'Na-verify ng human moderator';
-
-  @override
-  String get badgeExplanationVerificationPlatinum =>
-      'Platinum: Device hardware attestation, cryptographic signatures, Content Credentials (C2PA), at kinukumpirma ng AI scan na gawa ng tao.';
-
-  @override
-  String get badgeExplanationVerificationGold =>
-      'Gold: Naitala sa totoong device na may hardware attestation, cryptographic signatures, at Content Credentials (C2PA).';
-
-  @override
-  String get badgeExplanationVerificationSilver =>
-      'Silver: Pinapatunayan ng cryptographic signatures na hindi nabago ang video na ito mula nang itala.';
-
-  @override
-  String get badgeExplanationVerificationBronze =>
-      'Bronze: May basic metadata signatures.';
-
-  @override
-  String get badgeExplanationVerificationSilverAiScan =>
-      'Silver: Kinukumpirma ng AI scan na malamang gawa ng tao ang video na ito.';
-
-  @override
-  String get badgeExplanationNoVerification =>
-      'Walang available na verification data para sa video na ito.';
 
   @override
   String get shareMenuTitle => 'I-share ang Video';
@@ -5885,9 +5764,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get trendingTitle => 'Trending';
-
-  @override
-  String get proofmodeCheckAiGenerated => 'Tingnan kung AI-generated';
 
   @override
   String get libraryDeleteConfirm => 'Burahin';

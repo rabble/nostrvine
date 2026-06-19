@@ -1552,6 +1552,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get metadataDeviceAttestation => 'デバイスの認証';
 
   @override
+  String get metadataPgpSignature => 'PGP 署名';
+
+  @override
+  String get metadataC2paCredentials => 'C2PA コンテンツ認証情報';
+
+  @override
   String get metadataProofManifest => '証明マニフェスト';
 
   @override
@@ -3131,125 +3137,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String uploadProgressPausedPercent(int percent) {
     return '一時停止 $percent%';
   }
-
-  @override
-  String get badgeExplanationClose => '閉じる';
-
-  @override
-  String get badgeExplanationOriginalVineArchive => 'オリジナル Vine アーカイブ';
-
-  @override
-  String get badgeExplanationCameraProof => 'カメラ証明';
-
-  @override
-  String get badgeExplanationAuthenticitySignals => '真正性シグナル';
-
-  @override
-  String get badgeExplanationVineArchiveIntro =>
-      'この動画はインターネットアーカイブから復元されたオリジナルの Vine だよ。';
-
-  @override
-  String get badgeExplanationVineArchiveHistory =>
-      '2017年に Vine が終了する前、ArchiveTeam とインターネットアーカイブが数百万もの Vine を後世のために保存してたんだ。このコンテンツはその歴史的な保存活動の一部だよ。';
-
-  @override
-  String badgeExplanationOriginalStats(int loops) {
-    return 'オリジナルの数値: $loopsループ';
-  }
-
-  @override
-  String get badgeExplanationLearnVineArchive => 'Vine アーカイブの保存についてもっと詳しく';
-
-  @override
-  String get badgeExplanationLearnProofmode => 'Proofmode による認証についてもっと詳しく';
-
-  @override
-  String get badgeExplanationLearnAuthenticity => 'Divine の真正性シグナルについてもっと詳しく';
-
-  @override
-  String get badgeExplanationInspectProofCheck => 'ProofCheck ツールで調査';
-
-  @override
-  String get badgeExplanationInspectMedia => 'メディアの詳細を確認';
-
-  @override
-  String get badgeExplanationProofmodeVerified =>
-      'この動画の真正性は Proofmode 技術で検証されてるよ。';
-
-  @override
-  String get badgeExplanationDivineHostedHumanMade =>
-      'この動画は Divine でホストされてて、AI 検出では人間が作った可能性が高いけど、暗号学的なカメラ検証データはないよ。';
-
-  @override
-  String get badgeExplanationHumanMadeNoCrypto =>
-      'AI 検出では人間が作った可能性が高いけど、暗号学的なカメラ検証データはないよ。';
-
-  @override
-  String get badgeExplanationDivineHostedNoCrypto =>
-      'この動画は Divine でホストされてるけど、まだ暗号学的なカメラ検証データはないよ。';
-
-  @override
-  String get badgeExplanationExternalNoCrypto =>
-      'この動画は Divine の外部でホストされてて、暗号学的なカメラ検証データはないよ。';
-
-  @override
-  String get badgeExplanationDeviceAttestation => 'デバイスの認証';
-
-  @override
-  String get badgeExplanationPgpSignature => 'PGP 署名';
-
-  @override
-  String get badgeExplanationC2paCredentials => 'C2PA コンテンツ認証情報';
-
-  @override
-  String get badgeExplanationProofManifest => '証明マニフェスト';
-
-  @override
-  String get badgeExplanationAiDetection => 'AI 検出';
-
-  @override
-  String get badgeExplanationAiNotScanned => 'AI スキャン: 未スキャン';
-
-  @override
-  String get badgeExplanationNoScanResults => 'まだスキャン結果がないよ。';
-
-  @override
-  String get badgeExplanationCheckAiGenerated => 'AI 生成かチェック';
-
-  @override
-  String badgeExplanationAiLikelihood(int percentage) {
-    return 'AI 生成の可能性 $percentage%';
-  }
-
-  @override
-  String badgeExplanationScannedBy(String source) {
-    return 'スキャン元: $source';
-  }
-
-  @override
-  String get badgeExplanationVerifiedByModerator => '人間のモデレーターが検証済み';
-
-  @override
-  String get badgeExplanationVerificationPlatinum =>
-      'プラチナ: デバイスのハードウェア認証、暗号署名、コンテンツ認証 (C2PA)、AI スキャンで人間の作成を確認。';
-
-  @override
-  String get badgeExplanationVerificationGold =>
-      'ゴールド: ハードウェア認証、暗号署名、コンテンツ認証 (C2PA) 付きの実機で撮影。';
-
-  @override
-  String get badgeExplanationVerificationSilver =>
-      'シルバー: 暗号署名で、この動画が録画以降改変されてないことを証明。';
-
-  @override
-  String get badgeExplanationVerificationBronze => 'ブロンズ: 基本的なメタデータ署名あり。';
-
-  @override
-  String get badgeExplanationVerificationSilverAiScan =>
-      'シルバー: AI スキャンで、人間が作った可能性が高いと判定。';
-
-  @override
-  String get badgeExplanationNoVerification => 'この動画には検証データがないよ。';
 
   @override
   String get shareMenuTitle => '動画を共有';
@@ -5589,9 +5476,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get trendingTitle => 'トレンド';
-
-  @override
-  String get proofmodeCheckAiGenerated => 'AI生成かチェック';
 
   @override
   String get libraryDeleteConfirm => '削除';

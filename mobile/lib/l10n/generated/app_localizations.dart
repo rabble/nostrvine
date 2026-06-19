@@ -2926,6 +2926,18 @@ abstract class AppLocalizations {
   /// **'Device attestation'**
   String get metadataDeviceAttestation;
 
+  /// No description provided for @metadataPgpSignature.
+  ///
+  /// In en, this message translates to:
+  /// **'PGP signature'**
+  String get metadataPgpSignature;
+
+  /// No description provided for @metadataC2paCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'C2PA Content Credentials'**
+  String get metadataC2paCredentials;
+
   /// No description provided for @metadataProofManifest.
   ///
   /// In en, this message translates to:
@@ -5773,210 +5785,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Paused {percent}%'**
   String uploadProgressPausedPercent(int percent);
-
-  /// No description provided for @badgeExplanationClose.
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get badgeExplanationClose;
-
-  /// No description provided for @badgeExplanationOriginalVineArchive.
-  ///
-  /// In en, this message translates to:
-  /// **'Original Vine Archive'**
-  String get badgeExplanationOriginalVineArchive;
-
-  /// No description provided for @badgeExplanationCameraProof.
-  ///
-  /// In en, this message translates to:
-  /// **'Camera Proof'**
-  String get badgeExplanationCameraProof;
-
-  /// No description provided for @badgeExplanationAuthenticitySignals.
-  ///
-  /// In en, this message translates to:
-  /// **'Authenticity Signals'**
-  String get badgeExplanationAuthenticitySignals;
-
-  /// No description provided for @badgeExplanationVineArchiveIntro.
-  ///
-  /// In en, this message translates to:
-  /// **'This video is an original Vine recovered from the Internet Archive.'**
-  String get badgeExplanationVineArchiveIntro;
-
-  /// No description provided for @badgeExplanationVineArchiveHistory.
-  ///
-  /// In en, this message translates to:
-  /// **'Before Vine shut down in 2017, ArchiveTeam and the Internet Archive worked to preserve millions of Vines for posterity. This content is part of that historic preservation effort.'**
-  String get badgeExplanationVineArchiveHistory;
-
-  /// No description provided for @badgeExplanationOriginalStats.
-  ///
-  /// In en, this message translates to:
-  /// **'Original stats: {loops} loops'**
-  String badgeExplanationOriginalStats(int loops);
-
-  /// No description provided for @badgeExplanationLearnVineArchive.
-  ///
-  /// In en, this message translates to:
-  /// **'Learn more about the Vine archive preservation'**
-  String get badgeExplanationLearnVineArchive;
-
-  /// No description provided for @badgeExplanationLearnProofmode.
-  ///
-  /// In en, this message translates to:
-  /// **'Learn more about Proofmode verification'**
-  String get badgeExplanationLearnProofmode;
-
-  /// No description provided for @badgeExplanationLearnAuthenticity.
-  ///
-  /// In en, this message translates to:
-  /// **'Learn more about Divine authenticity signals'**
-  String get badgeExplanationLearnAuthenticity;
-
-  /// No description provided for @badgeExplanationInspectProofCheck.
-  ///
-  /// In en, this message translates to:
-  /// **'Inspect with ProofCheck Tool'**
-  String get badgeExplanationInspectProofCheck;
-
-  /// No description provided for @badgeExplanationInspectMedia.
-  ///
-  /// In en, this message translates to:
-  /// **'Inspect media details'**
-  String get badgeExplanationInspectMedia;
-
-  /// No description provided for @badgeExplanationProofmodeVerified.
-  ///
-  /// In en, this message translates to:
-  /// **'This video\'s authenticity is verified using Proofmode technology.'**
-  String get badgeExplanationProofmodeVerified;
-
-  /// No description provided for @badgeExplanationDivineHostedHumanMade.
-  ///
-  /// In en, this message translates to:
-  /// **'This video is hosted on Divine and AI detection indicates it is likely human-made, but it does not include cryptographic camera-verification data.'**
-  String get badgeExplanationDivineHostedHumanMade;
-
-  /// No description provided for @badgeExplanationHumanMadeNoCrypto.
-  ///
-  /// In en, this message translates to:
-  /// **'AI detection indicates this video is likely human-made, though it does not include cryptographic camera-verification data.'**
-  String get badgeExplanationHumanMadeNoCrypto;
-
-  /// No description provided for @badgeExplanationDivineHostedNoCrypto.
-  ///
-  /// In en, this message translates to:
-  /// **'This video is hosted on Divine, but it does not include cryptographic camera-verification data yet.'**
-  String get badgeExplanationDivineHostedNoCrypto;
-
-  /// No description provided for @badgeExplanationExternalNoCrypto.
-  ///
-  /// In en, this message translates to:
-  /// **'This video is hosted outside Divine and does not include cryptographic camera-verification data.'**
-  String get badgeExplanationExternalNoCrypto;
-
-  /// No description provided for @badgeExplanationDeviceAttestation.
-  ///
-  /// In en, this message translates to:
-  /// **'Device attestation'**
-  String get badgeExplanationDeviceAttestation;
-
-  /// No description provided for @badgeExplanationPgpSignature.
-  ///
-  /// In en, this message translates to:
-  /// **'PGP signature'**
-  String get badgeExplanationPgpSignature;
-
-  /// No description provided for @badgeExplanationC2paCredentials.
-  ///
-  /// In en, this message translates to:
-  /// **'C2PA Content Credentials'**
-  String get badgeExplanationC2paCredentials;
-
-  /// No description provided for @badgeExplanationProofManifest.
-  ///
-  /// In en, this message translates to:
-  /// **'Proof manifest'**
-  String get badgeExplanationProofManifest;
-
-  /// No description provided for @badgeExplanationAiDetection.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Detection'**
-  String get badgeExplanationAiDetection;
-
-  /// No description provided for @badgeExplanationAiNotScanned.
-  ///
-  /// In en, this message translates to:
-  /// **'AI scan: Not yet scanned'**
-  String get badgeExplanationAiNotScanned;
-
-  /// No description provided for @badgeExplanationNoScanResults.
-  ///
-  /// In en, this message translates to:
-  /// **'No scan results available yet.'**
-  String get badgeExplanationNoScanResults;
-
-  /// No description provided for @badgeExplanationCheckAiGenerated.
-  ///
-  /// In en, this message translates to:
-  /// **'Check if AI-generated'**
-  String get badgeExplanationCheckAiGenerated;
-
-  /// No description provided for @badgeExplanationAiLikelihood.
-  ///
-  /// In en, this message translates to:
-  /// **'{percentage}% likelihood of being AI-generated'**
-  String badgeExplanationAiLikelihood(int percentage);
-
-  /// No description provided for @badgeExplanationScannedBy.
-  ///
-  /// In en, this message translates to:
-  /// **'Scanned by: {source}'**
-  String badgeExplanationScannedBy(String source);
-
-  /// No description provided for @badgeExplanationVerifiedByModerator.
-  ///
-  /// In en, this message translates to:
-  /// **'Verified by human moderator'**
-  String get badgeExplanationVerifiedByModerator;
-
-  /// No description provided for @badgeExplanationVerificationPlatinum.
-  ///
-  /// In en, this message translates to:
-  /// **'Platinum: Device hardware attestation, cryptographic signatures, Content Credentials (C2PA), and AI scan confirms human origin.'**
-  String get badgeExplanationVerificationPlatinum;
-
-  /// No description provided for @badgeExplanationVerificationGold.
-  ///
-  /// In en, this message translates to:
-  /// **'Gold: Captured on a real device with hardware attestation, cryptographic signatures, and Content Credentials (C2PA).'**
-  String get badgeExplanationVerificationGold;
-
-  /// No description provided for @badgeExplanationVerificationSilver.
-  ///
-  /// In en, this message translates to:
-  /// **'Silver: Cryptographic signatures prove this video hasn\'t been altered since recording.'**
-  String get badgeExplanationVerificationSilver;
-
-  /// No description provided for @badgeExplanationVerificationBronze.
-  ///
-  /// In en, this message translates to:
-  /// **'Bronze: Basic metadata signatures are present.'**
-  String get badgeExplanationVerificationBronze;
-
-  /// No description provided for @badgeExplanationVerificationSilverAiScan.
-  ///
-  /// In en, this message translates to:
-  /// **'Silver: AI scan confirms this video is likely human-created.'**
-  String get badgeExplanationVerificationSilverAiScan;
-
-  /// No description provided for @badgeExplanationNoVerification.
-  ///
-  /// In en, this message translates to:
-  /// **'No verification data available for this video.'**
-  String get badgeExplanationNoVerification;
 
   /// No description provided for @shareMenuTitle.
   ///
@@ -10231,12 +10039,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Trending'**
   String get trendingTitle;
-
-  /// No description provided for @proofmodeCheckAiGenerated.
-  ///
-  /// In en, this message translates to:
-  /// **'Check if AI-generated'**
-  String get proofmodeCheckAiGenerated;
 
   /// No description provided for @libraryDeleteConfirm.
   ///

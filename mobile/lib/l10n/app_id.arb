@@ -629,6 +629,8 @@
     "metadataOriginalSound": "Suara asli",
     "metadataVerificationLabel": "Verifikasi",
     "metadataDeviceAttestation": "Atestasi perangkat",
+    "metadataPgpSignature": "Tanda tangan PGP",
+    "metadataC2paCredentials": "Kredensial Konten C2PA",
     "metadataProofManifest": "Manifes bukti",
     "metadataCreatorLabel": "Kreator",
     "metadataCollaboratorsLabel": "Kolaborator",
@@ -1395,61 +1397,6 @@
             }
         }
     },
-    "badgeExplanationClose": "Tutup",
-    "badgeExplanationOriginalVineArchive": "Arsip Vine Asli",
-    "badgeExplanationCameraProof": "Bukti Kamera",
-    "badgeExplanationAuthenticitySignals": "Sinyal Keaslian",
-    "badgeExplanationVineArchiveIntro": "Video ini adalah Vine asli yang dipulihkan dari Internet Archive.",
-    "badgeExplanationVineArchiveHistory": "Sebelum Vine ditutup pada 2017, ArchiveTeam dan Internet Archive bekerja untuk melestarikan jutaan Vine untuk anak cucu. Konten ini adalah bagian dari upaya pelestarian bersejarah itu.",
-    "badgeExplanationOriginalStats": "Statistik asli: {loops} loop",
-    "@badgeExplanationOriginalStats": {
-        "placeholders": {
-            "loops": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationLearnVineArchive": "Pelajari lebih lanjut tentang pelestarian arsip Vine",
-    "badgeExplanationLearnProofmode": "Pelajari lebih lanjut tentang verifikasi Proofmode",
-    "badgeExplanationLearnAuthenticity": "Pelajari lebih lanjut tentang sinyal keaslian Divine",
-    "badgeExplanationInspectProofCheck": "Periksa dengan Alat ProofCheck",
-    "badgeExplanationInspectMedia": "Periksa detail media",
-    "badgeExplanationProofmodeVerified": "Keaslian video ini diverifikasi menggunakan teknologi Proofmode.",
-    "badgeExplanationDivineHostedHumanMade": "Video ini di-host di Divine dan deteksi AI menunjukkan kemungkinan buatan manusia, tapi tidak mencakup data verifikasi kamera kriptografis.",
-    "badgeExplanationHumanMadeNoCrypto": "Deteksi AI menunjukkan video ini kemungkinan buatan manusia, meskipun tidak mencakup data verifikasi kamera kriptografis.",
-    "badgeExplanationDivineHostedNoCrypto": "Video ini di-host di Divine, tapi belum mencakup data verifikasi kamera kriptografis.",
-    "badgeExplanationExternalNoCrypto": "Video ini di-host di luar Divine dan tidak mencakup data verifikasi kamera kriptografis.",
-    "badgeExplanationDeviceAttestation": "Atestasi perangkat",
-    "badgeExplanationPgpSignature": "Tanda tangan PGP",
-    "badgeExplanationC2paCredentials": "Kredensial Konten C2PA",
-    "badgeExplanationProofManifest": "Manifes bukti",
-    "badgeExplanationAiDetection": "Deteksi AI",
-    "badgeExplanationAiNotScanned": "Scan AI: Belum dipindai",
-    "badgeExplanationNoScanResults": "Belum ada hasil pindai yang tersedia.",
-    "badgeExplanationCheckAiGenerated": "Cek apakah dihasilkan AI",
-    "badgeExplanationAiLikelihood": "{percentage}% kemungkinan dihasilkan AI",
-    "@badgeExplanationAiLikelihood": {
-        "placeholders": {
-            "percentage": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationScannedBy": "Dipindai oleh: {source}",
-    "@badgeExplanationScannedBy": {
-        "placeholders": {
-            "source": {
-                "type": "String"
-            }
-        }
-    },
-    "badgeExplanationVerifiedByModerator": "Diverifikasi oleh moderator manusia",
-    "badgeExplanationVerificationPlatinum": "Platinum: Atestasi hardware perangkat, tanda tangan kriptografis, Kredensial Konten (C2PA), dan scan AI mengonfirmasi asal manusia.",
-    "badgeExplanationVerificationGold": "Emas: Diambil dengan perangkat asli yang memiliki atestasi hardware, tanda tangan kriptografis, dan Kredensial Konten (C2PA).",
-    "badgeExplanationVerificationSilver": "Perak: Tanda tangan kriptografis membuktikan video ini tidak diubah sejak direkam.",
-    "badgeExplanationVerificationBronze": "Perunggu: Tanda tangan metadata dasar tersedia.",
-    "badgeExplanationVerificationSilverAiScan": "Perak: Scan AI mengonfirmasi video ini kemungkinan dibuat manusia.",
-    "badgeExplanationNoVerification": "Tidak ada data verifikasi untuk video ini.",
     "shareMenuTitle": "Bagikan Video",
     "shareMenuReportAiContent": "Laporkan Konten AI",
     "shareMenuReportAiContentSubtitle": "Laporan cepat dugaan konten yang dihasilkan AI",
@@ -2487,7 +2434,6 @@
     "libraryWebUnavailableHeadline": "Perpustakaan ada di aplikasi seluler",
     "notificationFollowBack": "Ikuti balik",
     "profileSetupUploadStaged": "Diunggah — ketuk Simpan untuk menerapkan",
-    "proofmodeCheckAiGenerated": "Periksa apakah dibuat oleh AI",
     "dmSendFailedMessage": "Pesan gagal dikirim",
     "dmSendFailedRetry": "Coba Lagi",
     "dmSendPartialMessage": "Terkirim, tapi tidak tersinkron ke perangkat lainmu",

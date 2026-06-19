@@ -632,6 +632,8 @@
     "metadataOriginalSound": "Originalljud",
     "metadataVerificationLabel": "Verifiering",
     "metadataDeviceAttestation": "Enhetsattestering",
+    "metadataPgpSignature": "PGP-signatur",
+    "metadataC2paCredentials": "C2PA Content Credentials",
     "metadataProofManifest": "Bevismanifest",
     "metadataCreatorLabel": "Kreatör",
     "metadataCollaboratorsLabel": "Samarbetspartner",
@@ -1398,61 +1400,6 @@
             }
         }
     },
-    "badgeExplanationClose": "Stäng",
-    "badgeExplanationOriginalVineArchive": "Originalt Vine-arkiv",
-    "badgeExplanationCameraProof": "Kamerabevis",
-    "badgeExplanationAuthenticitySignals": "Äkthetssignaler",
-    "badgeExplanationVineArchiveIntro": "Den här videon är en originalvine som återhämtats från Internet Archive.",
-    "badgeExplanationVineArchiveHistory": "Innan Vine stängde 2017 arbetade ArchiveTeam och Internet Archive för att bevara miljontals vines för framtiden. Det här innehållet är en del av den historiska bevarandeinsatsen.",
-    "badgeExplanationOriginalStats": "Originalstatistik: {loops} loopar",
-    "@badgeExplanationOriginalStats": {
-        "placeholders": {
-            "loops": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationLearnVineArchive": "Läs mer om Vine-arkivets bevarande",
-    "badgeExplanationLearnProofmode": "Läs mer om Proofmode-verifiering",
-    "badgeExplanationLearnAuthenticity": "Läs mer om Divines äkthetssignaler",
-    "badgeExplanationInspectProofCheck": "Inspektera med ProofCheck-verktyget",
-    "badgeExplanationInspectMedia": "Inspektera mediadetaljer",
-    "badgeExplanationProofmodeVerified": "Den här videons äkthet är verifierad med Proofmode-teknik.",
-    "badgeExplanationDivineHostedHumanMade": "Den här videon hostas på Divine och AI-detektering indikerar att den troligen är mänskligt gjord, men den inkluderar inga kryptografiska kameraverifieringsdata.",
-    "badgeExplanationHumanMadeNoCrypto": "AI-detektering indikerar att den här videon troligen är mänskligt gjord, men den inkluderar inga kryptografiska kameraverifieringsdata.",
-    "badgeExplanationDivineHostedNoCrypto": "Den här videon hostas på Divine, men den inkluderar ännu inga kryptografiska kameraverifieringsdata.",
-    "badgeExplanationExternalNoCrypto": "Den här videon hostas utanför Divine och inkluderar inga kryptografiska kameraverifieringsdata.",
-    "badgeExplanationDeviceAttestation": "Enhetsattestering",
-    "badgeExplanationPgpSignature": "PGP-signatur",
-    "badgeExplanationC2paCredentials": "C2PA Content Credentials",
-    "badgeExplanationProofManifest": "Bevismanifest",
-    "badgeExplanationAiDetection": "AI-detektering",
-    "badgeExplanationAiNotScanned": "AI-skanning: Inte skannad än",
-    "badgeExplanationNoScanResults": "Inga skanningsresultat tillgängliga än.",
-    "badgeExplanationCheckAiGenerated": "Kontrollera om AI-genererad",
-    "badgeExplanationAiLikelihood": "{percentage} % sannolikhet att vara AI-genererad",
-    "@badgeExplanationAiLikelihood": {
-        "placeholders": {
-            "percentage": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationScannedBy": "Skannad av: {source}",
-    "@badgeExplanationScannedBy": {
-        "placeholders": {
-            "source": {
-                "type": "String"
-            }
-        }
-    },
-    "badgeExplanationVerifiedByModerator": "Verifierad av mänsklig moderator",
-    "badgeExplanationVerificationPlatinum": "Platina: Enhetens hårdvaruattestering, kryptografiska signaturer, Content Credentials (C2PA) och AI-skanning bekräftar mänskligt ursprung.",
-    "badgeExplanationVerificationGold": "Guld: Fotograferad på en riktig enhet med hårdvaruattestering, kryptografiska signaturer och Content Credentials (C2PA).",
-    "badgeExplanationVerificationSilver": "Silver: Kryptografiska signaturer bevisar att den här videon inte har ändrats sedan inspelningen.",
-    "badgeExplanationVerificationBronze": "Brons: Grundläggande metadatasignaturer finns.",
-    "badgeExplanationVerificationSilverAiScan": "Silver: AI-skanning bekräftar att den här videon troligen är människoskapad.",
-    "badgeExplanationNoVerification": "Ingen verifieringsdata tillgänglig för den här videon.",
     "shareMenuTitle": "Dela video",
     "shareMenuReportAiContent": "Rapportera AI-innehåll",
     "shareMenuReportAiContentSubtitle": "Snabbrapportera misstänkt AI-genererat innehåll",
@@ -2488,7 +2435,6 @@
     "libraryWebUnavailableHeadline": "Biblioteket finns i mobilappen",
     "notificationFollowBack": "Följ tillbaka",
     "profileSetupUploadStaged": "Uppladdad — tryck på Spara för att tillämpa",
-    "proofmodeCheckAiGenerated": "Kontrollera om AI-genererat",
     "dmSendFailedMessage": "Meddelandet kunde inte skickas",
     "dmSendFailedRetry": "Försök igen",
     "dmSendPartialMessage": "Skickat, men inte synkat till dina andra enheter",

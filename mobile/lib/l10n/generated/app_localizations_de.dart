@@ -1666,6 +1666,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get metadataDeviceAttestation => 'Geräteattestierung';
 
   @override
+  String get metadataPgpSignature => 'PGP-Signatur';
+
+  @override
+  String get metadataC2paCredentials => 'C2PA Content Credentials';
+
+  @override
   String get metadataProofManifest => 'Proof-Manifest';
 
   @override
@@ -3323,133 +3329,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String uploadProgressPausedPercent(int percent) {
     return 'Pausiert bei $percent%';
   }
-
-  @override
-  String get badgeExplanationClose => 'Schließen';
-
-  @override
-  String get badgeExplanationOriginalVineArchive => 'Original-Vine-Archiv';
-
-  @override
-  String get badgeExplanationCameraProof => 'Kamera-Nachweis';
-
-  @override
-  String get badgeExplanationAuthenticitySignals => 'Authentizitätssignale';
-
-  @override
-  String get badgeExplanationVineArchiveIntro =>
-      'Dieses Video ist ein Original-Vine, das aus dem Internet Archive wiederhergestellt wurde.';
-
-  @override
-  String get badgeExplanationVineArchiveHistory =>
-      'Bevor Vine 2017 abgeschaltet wurde, haben ArchiveTeam und das Internet Archive daran gearbeitet, Millionen von Vines für die Nachwelt zu bewahren. Dieser Inhalt ist Teil dieses historischen Bewahrungsprojekts.';
-
-  @override
-  String badgeExplanationOriginalStats(int loops) {
-    return 'Originalstatistik: $loops Loops';
-  }
-
-  @override
-  String get badgeExplanationLearnVineArchive =>
-      'Mehr über die Bewahrung des Vine-Archivs erfahren';
-
-  @override
-  String get badgeExplanationLearnProofmode =>
-      'Mehr über Proofmode-Verifizierung erfahren';
-
-  @override
-  String get badgeExplanationLearnAuthenticity =>
-      'Mehr über Divine-Authentizitätssignale erfahren';
-
-  @override
-  String get badgeExplanationInspectProofCheck =>
-      'Mit ProofCheck-Tool inspizieren';
-
-  @override
-  String get badgeExplanationInspectMedia => 'Mediendetails inspizieren';
-
-  @override
-  String get badgeExplanationProofmodeVerified =>
-      'Die Authentizität dieses Videos wird mit Proofmode-Technologie verifiziert.';
-
-  @override
-  String get badgeExplanationDivineHostedHumanMade =>
-      'Dieses Video wird auf Divine gehostet, und die KI-Erkennung deutet darauf hin, dass es wahrscheinlich von Menschen gemacht wurde, aber es enthält keine kryptografischen Kamera-Verifizierungsdaten.';
-
-  @override
-  String get badgeExplanationHumanMadeNoCrypto =>
-      'Die KI-Erkennung deutet darauf hin, dass dieses Video wahrscheinlich von Menschen gemacht wurde, auch wenn es keine kryptografischen Kamera-Verifizierungsdaten enthält.';
-
-  @override
-  String get badgeExplanationDivineHostedNoCrypto =>
-      'Dieses Video wird auf Divine gehostet, enthält aber noch keine kryptografischen Kamera-Verifizierungsdaten.';
-
-  @override
-  String get badgeExplanationExternalNoCrypto =>
-      'Dieses Video wird außerhalb von Divine gehostet und enthält keine kryptografischen Kamera-Verifizierungsdaten.';
-
-  @override
-  String get badgeExplanationDeviceAttestation => 'Geräteattestierung';
-
-  @override
-  String get badgeExplanationPgpSignature => 'PGP-Signatur';
-
-  @override
-  String get badgeExplanationC2paCredentials => 'C2PA Content Credentials';
-
-  @override
-  String get badgeExplanationProofManifest => 'Proof-Manifest';
-
-  @override
-  String get badgeExplanationAiDetection => 'KI-Erkennung';
-
-  @override
-  String get badgeExplanationAiNotScanned => 'KI-Scan: Noch nicht gescannt';
-
-  @override
-  String get badgeExplanationNoScanResults =>
-      'Noch keine Scan-Ergebnisse verfügbar.';
-
-  @override
-  String get badgeExplanationCheckAiGenerated => 'Auf KI-Generierung prüfen';
-
-  @override
-  String badgeExplanationAiLikelihood(int percentage) {
-    return '$percentage% Wahrscheinlichkeit, KI-generiert zu sein';
-  }
-
-  @override
-  String badgeExplanationScannedBy(String source) {
-    return 'Gescannt von: $source';
-  }
-
-  @override
-  String get badgeExplanationVerifiedByModerator =>
-      'Von menschlichem Moderator verifiziert';
-
-  @override
-  String get badgeExplanationVerificationPlatinum =>
-      'Platin: Geräte-Hardware-Attestierung, kryptografische Signaturen, Content Credentials (C2PA) und KI-Scan bestätigt menschlichen Ursprung.';
-
-  @override
-  String get badgeExplanationVerificationGold =>
-      'Gold: Auf einem echten Gerät mit Hardware-Attestierung, kryptografischen Signaturen und Content Credentials (C2PA) aufgenommen.';
-
-  @override
-  String get badgeExplanationVerificationSilver =>
-      'Silber: Kryptografische Signaturen beweisen, dass dieses Video seit der Aufnahme nicht verändert wurde.';
-
-  @override
-  String get badgeExplanationVerificationBronze =>
-      'Bronze: Grundlegende Metadaten-Signaturen vorhanden.';
-
-  @override
-  String get badgeExplanationVerificationSilverAiScan =>
-      'Silber: KI-Scan bestätigt, dass dieses Video wahrscheinlich von Menschen erstellt wurde.';
-
-  @override
-  String get badgeExplanationNoVerification =>
-      'Keine Verifizierungsdaten für dieses Video verfügbar.';
 
   @override
   String get shareMenuTitle => 'Video teilen';
@@ -5884,9 +5763,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get trendingTitle => 'Im Trend';
-
-  @override
-  String get proofmodeCheckAiGenerated => 'Prüfen, ob KI-generiert';
 
   @override
   String get libraryDeleteConfirm => 'Löschen';

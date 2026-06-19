@@ -888,6 +888,8 @@
   "metadataOriginalSound": "Original sound",
   "metadataVerificationLabel": "Verification",
   "metadataDeviceAttestation": "Device attestation",
+  "metadataPgpSignature": "PGP signature",
+  "metadataC2paCredentials": "C2PA Content Credentials",
   "metadataProofManifest": "Proof manifest",
   "metadataCreatorLabel": "Creator",
   "metadataCollaboratorsLabel": "Collaborators",
@@ -1803,61 +1805,6 @@
       }
     }
   },
-  "badgeExplanationClose": "Close",
-  "badgeExplanationOriginalVineArchive": "Original Vine Archive",
-  "badgeExplanationCameraProof": "Camera Proof",
-  "badgeExplanationAuthenticitySignals": "Authenticity Signals",
-  "badgeExplanationVineArchiveIntro": "This video is an original Vine recovered from the Internet Archive.",
-  "badgeExplanationVineArchiveHistory": "Before Vine shut down in 2017, ArchiveTeam and the Internet Archive worked to preserve millions of Vines for posterity. This content is part of that historic preservation effort.",
-  "badgeExplanationOriginalStats": "Original stats: {loops} loops",
-  "@badgeExplanationOriginalStats": {
-    "placeholders": {
-      "loops": {
-        "type": "int"
-      }
-    }
-  },
-  "badgeExplanationLearnVineArchive": "Learn more about the Vine archive preservation",
-  "badgeExplanationLearnProofmode": "Learn more about Proofmode verification",
-  "badgeExplanationLearnAuthenticity": "Learn more about Divine authenticity signals",
-  "badgeExplanationInspectProofCheck": "Inspect with ProofCheck Tool",
-  "badgeExplanationInspectMedia": "Inspect media details",
-  "badgeExplanationProofmodeVerified": "This video's authenticity is verified using Proofmode technology.",
-  "badgeExplanationDivineHostedHumanMade": "This video is hosted on Divine and AI detection indicates it is likely human-made, but it does not include cryptographic camera-verification data.",
-  "badgeExplanationHumanMadeNoCrypto": "AI detection indicates this video is likely human-made, though it does not include cryptographic camera-verification data.",
-  "badgeExplanationDivineHostedNoCrypto": "This video is hosted on Divine, but it does not include cryptographic camera-verification data yet.",
-  "badgeExplanationExternalNoCrypto": "This video is hosted outside Divine and does not include cryptographic camera-verification data.",
-  "badgeExplanationDeviceAttestation": "Device attestation",
-  "badgeExplanationPgpSignature": "PGP signature",
-  "badgeExplanationC2paCredentials": "C2PA Content Credentials",
-  "badgeExplanationProofManifest": "Proof manifest",
-  "badgeExplanationAiDetection": "AI Detection",
-  "badgeExplanationAiNotScanned": "AI scan: Not yet scanned",
-  "badgeExplanationNoScanResults": "No scan results available yet.",
-  "badgeExplanationCheckAiGenerated": "Check if AI-generated",
-  "badgeExplanationAiLikelihood": "{percentage}% likelihood of being AI-generated",
-  "@badgeExplanationAiLikelihood": {
-    "placeholders": {
-      "percentage": {
-        "type": "int"
-      }
-    }
-  },
-  "badgeExplanationScannedBy": "Scanned by: {source}",
-  "@badgeExplanationScannedBy": {
-    "placeholders": {
-      "source": {
-        "type": "String"
-      }
-    }
-  },
-  "badgeExplanationVerifiedByModerator": "Verified by human moderator",
-  "badgeExplanationVerificationPlatinum": "Platinum: Device hardware attestation, cryptographic signatures, Content Credentials (C2PA), and AI scan confirms human origin.",
-  "badgeExplanationVerificationGold": "Gold: Captured on a real device with hardware attestation, cryptographic signatures, and Content Credentials (C2PA).",
-  "badgeExplanationVerificationSilver": "Silver: Cryptographic signatures prove this video hasn't been altered since recording.",
-  "badgeExplanationVerificationBronze": "Bronze: Basic metadata signatures are present.",
-  "badgeExplanationVerificationSilverAiScan": "Silver: AI scan confirms this video is likely human-created.",
-  "badgeExplanationNoVerification": "No verification data available for this video.",
   "shareMenuTitle": "Share Video",
   "shareMenuReportAiContent": "Report AI Content",
   "shareMenuReportAiContentSubtitle": "Quick report suspected AI-generated content",
@@ -3321,7 +3268,6 @@
   "videoMetadataContentWarnings": "Content Warnings",
   "videoEditorStickers": "Stickers",
   "trendingTitle": "Trending",
-  "proofmodeCheckAiGenerated": "Check if AI-generated",
   "libraryDeleteConfirm": "Delete",
   "libraryWebUnavailableHeadline": "Library is available in the mobile app",
   "libraryWebUnavailableDescription": "Drafts and clips are saved on your device, so open Divine on your phone to manage them.",

@@ -1670,6 +1670,13 @@ class AppLocalizationsBg extends AppLocalizations {
   String get metadataDeviceAttestation => 'Атестация на устройството';
 
   @override
+  String get metadataPgpSignature => 'PGP подпис';
+
+  @override
+  String get metadataC2paCredentials =>
+      'C2PA Идентификационни данни за съдържание';
+
+  @override
   String get metadataProofManifest => 'Доказателствен манифест';
 
   @override
@@ -3331,134 +3338,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String uploadProgressPausedPercent(int percent) {
     return 'На пауза $percent%';
   }
-
-  @override
-  String get badgeExplanationClose => 'Затвори';
-
-  @override
-  String get badgeExplanationOriginalVineArchive => 'Оригинален архив на Vine';
-
-  @override
-  String get badgeExplanationCameraProof => 'Доказателство от камерата';
-
-  @override
-  String get badgeExplanationAuthenticitySignals => 'Сигнали за автентичност';
-
-  @override
-  String get badgeExplanationVineArchiveIntro =>
-      'Това видео е оригинален Vine, възстановен от Internet Archive.';
-
-  @override
-  String get badgeExplanationVineArchiveHistory =>
-      'Преди Vine да затвори през 2017 г., ArchiveTeam и Internet Archive работиха, за да запазят милиони Vines за поколенията. Това съдържание е част от тези усилия за запазване на историята.';
-
-  @override
-  String badgeExplanationOriginalStats(int loops) {
-    return 'Оригинални статистики: $loops лупа';
-  }
-
-  @override
-  String get badgeExplanationLearnVineArchive =>
-      'Научи повече за запазването на Vine архива';
-
-  @override
-  String get badgeExplanationLearnProofmode =>
-      'Научи повече за проверката в Proofmode';
-
-  @override
-  String get badgeExplanationLearnAuthenticity =>
-      'Научи повече за Divine сигналите за автентичност';
-
-  @override
-  String get badgeExplanationInspectProofCheck => 'Провери с ProofCheck';
-
-  @override
-  String get badgeExplanationInspectMedia => 'Провери подробностите за медията';
-
-  @override
-  String get badgeExplanationProofmodeVerified =>
-      'Автентичността на това видео е потвърдена с технологията Proofmode.';
-
-  @override
-  String get badgeExplanationDivineHostedHumanMade =>
-      'Това видео е хостнато в Divine. AI проверката показва, че вероятно е направено от човек, но няма криптографски данни от камерата.';
-
-  @override
-  String get badgeExplanationHumanMadeNoCrypto =>
-      'AI проверката показва, че това видео вероятно е направено от човек, но няма криптографски данни от камерата.';
-
-  @override
-  String get badgeExplanationDivineHostedNoCrypto =>
-      'Това видео е хостнато в Divine, но още няма криптографски данни от камерата.';
-
-  @override
-  String get badgeExplanationExternalNoCrypto =>
-      'Това видео е хостнато извън Divine и няма криптографски данни от камерата.';
-
-  @override
-  String get badgeExplanationDeviceAttestation => 'Атестация на устройството';
-
-  @override
-  String get badgeExplanationPgpSignature => 'PGP подпис';
-
-  @override
-  String get badgeExplanationC2paCredentials =>
-      'C2PA Идентификационни данни за съдържание';
-
-  @override
-  String get badgeExplanationProofManifest => 'Доказателствен манифест';
-
-  @override
-  String get badgeExplanationAiDetection => 'AI проверка';
-
-  @override
-  String get badgeExplanationAiNotScanned => 'AI проверка: още не е сканирано';
-
-  @override
-  String get badgeExplanationNoScanResults =>
-      'Още няма резултати от сканиране.';
-
-  @override
-  String get badgeExplanationCheckAiGenerated =>
-      'Провери дали е генерирано от AI';
-
-  @override
-  String badgeExplanationAiLikelihood(int percentage) {
-    return '$percentage% вероятност да е генерирано от AI';
-  }
-
-  @override
-  String badgeExplanationScannedBy(String source) {
-    return 'Сканирано от: $source';
-  }
-
-  @override
-  String get badgeExplanationVerifiedByModerator =>
-      'Проверено от човешки модератор';
-
-  @override
-  String get badgeExplanationVerificationPlatinum =>
-      'Platinum: Хардуерна атестация на устройството, криптографски подписи, идентификационни данни за съдържание (C2PA) и AI сканиране потвърждават човешкия произход.';
-
-  @override
-  String get badgeExplanationVerificationGold =>
-      'Злато: Заснето на реално устройство с хардуерна атестация, криптографски подписи и идентификационни данни за съдържание (C2PA).';
-
-  @override
-  String get badgeExplanationVerificationSilver =>
-      'Сребро: криптографските подписи доказват, че това видео не е било променяно след записа.';
-
-  @override
-  String get badgeExplanationVerificationBronze =>
-      'Бронз: Налице са подписи на основни метаданни.';
-
-  @override
-  String get badgeExplanationVerificationSilverAiScan =>
-      'Сребро: AI проверката потвърждава, че видеото вероятно е направено от човек.';
-
-  @override
-  String get badgeExplanationNoVerification =>
-      'Няма данни за верификация за това видео.';
 
   @override
   String get shareMenuTitle => 'Сподели видео';
@@ -5868,9 +5747,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get trendingTitle => 'Тенденция';
-
-  @override
-  String get proofmodeCheckAiGenerated => 'Провери дали е генерирано от AI';
 
   @override
   String get libraryDeleteConfirm => 'Изтриване';

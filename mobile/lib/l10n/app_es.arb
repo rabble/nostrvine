@@ -632,6 +632,8 @@
     "metadataOriginalSound": "Sonido original",
     "metadataVerificationLabel": "Verificación",
     "metadataDeviceAttestation": "Atestación de dispositivo",
+    "metadataPgpSignature": "Firma PGP",
+    "metadataC2paCredentials": "Credenciales de contenido C2PA",
     "metadataProofManifest": "Manifiesto de prueba",
     "metadataCreatorLabel": "Creador",
     "metadataCollaboratorsLabel": "Colaboradores",
@@ -1402,61 +1404,6 @@
             }
         }
     },
-    "badgeExplanationClose": "Cerrar",
-    "badgeExplanationOriginalVineArchive": "Archivo Vine original",
-    "badgeExplanationCameraProof": "Prueba de cámara",
-    "badgeExplanationAuthenticitySignals": "Señales de autenticidad",
-    "badgeExplanationVineArchiveIntro": "Este video es un Vine original recuperado del Internet Archive.",
-    "badgeExplanationVineArchiveHistory": "Antes de que Vine cerrara en 2017, ArchiveTeam y el Internet Archive trabajaron para preservar millones de Vines para la posteridad. Este contenido es parte de ese esfuerzo histórico de preservación.",
-    "badgeExplanationOriginalStats": "Estadísticas originales: {loops} loops",
-    "@badgeExplanationOriginalStats": {
-        "placeholders": {
-            "loops": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationLearnVineArchive": "Conocé más sobre la preservación del archivo de Vine",
-    "badgeExplanationLearnProofmode": "Conocé más sobre la verificación Proofmode",
-    "badgeExplanationLearnAuthenticity": "Conocé más sobre las señales de autenticidad de Divine",
-    "badgeExplanationInspectProofCheck": "Inspeccionar con la herramienta ProofCheck",
-    "badgeExplanationInspectMedia": "Inspeccionar detalles del medio",
-    "badgeExplanationProofmodeVerified": "La autenticidad de este video está verificada con tecnología Proofmode.",
-    "badgeExplanationDivineHostedHumanMade": "Este video está alojado en Divine y la detección de IA indica que probablemente fue hecho por humanos, pero no incluye datos criptográficos de verificación de cámara.",
-    "badgeExplanationHumanMadeNoCrypto": "La detección de IA indica que este video probablemente fue hecho por humanos, pero no incluye datos criptográficos de verificación de cámara.",
-    "badgeExplanationDivineHostedNoCrypto": "Este video está alojado en Divine, pero todavía no incluye datos criptográficos de verificación de cámara.",
-    "badgeExplanationExternalNoCrypto": "Este video está alojado fuera de Divine y no incluye datos criptográficos de verificación de cámara.",
-    "badgeExplanationDeviceAttestation": "Atestación de dispositivo",
-    "badgeExplanationPgpSignature": "Firma PGP",
-    "badgeExplanationC2paCredentials": "Credenciales de contenido C2PA",
-    "badgeExplanationProofManifest": "Manifiesto de prueba",
-    "badgeExplanationAiDetection": "Detección de IA",
-    "badgeExplanationAiNotScanned": "Escaneo de IA: todavía no escaneado",
-    "badgeExplanationNoScanResults": "Todavía no hay resultados de escaneo disponibles.",
-    "badgeExplanationCheckAiGenerated": "Verificar si es generado por IA",
-    "badgeExplanationAiLikelihood": "{percentage}% de probabilidad de ser generado por IA",
-    "@badgeExplanationAiLikelihood": {
-        "placeholders": {
-            "percentage": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationScannedBy": "Escaneado por: {source}",
-    "@badgeExplanationScannedBy": {
-        "placeholders": {
-            "source": {
-                "type": "String"
-            }
-        }
-    },
-    "badgeExplanationVerifiedByModerator": "Verificado por un moderador humano",
-    "badgeExplanationVerificationPlatinum": "Platino: atestación de hardware del dispositivo, firmas criptográficas, credenciales de contenido (C2PA) y el escaneo de IA confirma origen humano.",
-    "badgeExplanationVerificationGold": "Oro: capturado en un dispositivo real con atestación de hardware, firmas criptográficas y credenciales de contenido (C2PA).",
-    "badgeExplanationVerificationSilver": "Plata: las firmas criptográficas demuestran que este video no se alteró desde que se grabó.",
-    "badgeExplanationVerificationBronze": "Bronce: hay firmas de metadatos básicas.",
-    "badgeExplanationVerificationSilverAiScan": "Plata: el escaneo de IA confirma que este video probablemente fue creado por humanos.",
-    "badgeExplanationNoVerification": "No hay datos de verificación disponibles para este video.",
     "shareMenuTitle": "Compartir video",
     "shareMenuReportAiContent": "Reportar contenido de IA",
     "shareMenuReportAiContentSubtitle": "Reporte rápido de contenido sospechoso de ser generado por IA",
@@ -2496,7 +2443,6 @@
     "libraryWebUnavailableHeadline": "La biblioteca está en la app móvil",
     "notificationFollowBack": "Seguir de vuelta",
     "profileSetupUploadStaged": "Subida — toca Guardar para aplicar",
-    "proofmodeCheckAiGenerated": "Verificar si fue generado por IA",
     "dmSendFailedMessage": "No se pudo enviar el mensaje",
     "dmSendFailedRetry": "Reintentar",
     "dmSendPartialMessage": "Enviado, pero no se sincronizó con tus otros dispositivos",

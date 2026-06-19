@@ -1606,6 +1606,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get metadataDeviceAttestation => 'የመሣሪያ ማረጋገጫ';
 
   @override
+  String get metadataPgpSignature => 'PGP ፊርማ';
+
+  @override
+  String get metadataC2paCredentials => 'C2PA የይዘት ምስክርነቶች';
+
+  @override
   String get metadataProofManifest => 'ማረጋገጫ አንጸባራቂ';
 
   @override
@@ -3226,126 +3232,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String uploadProgressPausedPercent(int percent) {
     return 'ባለበት ቆሟል $percent%';
   }
-
-  @override
-  String get badgeExplanationClose => 'ገጠመ';
-
-  @override
-  String get badgeExplanationOriginalVineArchive => 'ኦሪጅናል Vine መዝገብ ቤት';
-
-  @override
-  String get badgeExplanationCameraProof => 'የካሜራ ማረጋገጫ';
-
-  @override
-  String get badgeExplanationAuthenticitySignals => 'የትክክለኛነት ምልክቶች';
-
-  @override
-  String get badgeExplanationVineArchiveIntro =>
-      'ይህ ቪዲዮ ከInternet Archive የተመለሰ ኦሪጅናል Vine ነው።';
-
-  @override
-  String get badgeExplanationVineArchiveHistory =>
-      'Vine በ2017 ከመዘጋቱ በፊት ArchiveTeam እና Internet Archive በሚሊዮኖች የሚቆጠሩ Vines ለትውልድ ለማቆየት ሰርተዋል። ይህ ይዘት የዚያ ታሪካዊ የጥበቃ ጥረት አካል ነው።';
-
-  @override
-  String badgeExplanationOriginalStats(int loops) {
-    return 'ኦሪጅናል ስታትስ፡ $loops ሉፖች';
-  }
-
-  @override
-  String get badgeExplanationLearnVineArchive => 'ስለ Vine ማህደር አጠባበቅ የበለጠ ይረዱ';
-
-  @override
-  String get badgeExplanationLearnProofmode => 'ስለ ProofMode ማረጋገጫ ተጨማሪ ተማር';
-
-  @override
-  String get badgeExplanationLearnAuthenticity =>
-      'ስለ Divine ትክክለኛነት ምልክቶች የበለጠ ይወቁ';
-
-  @override
-  String get badgeExplanationInspectProofCheck => 'በProofCheck መሳሪያ መርምር';
-
-  @override
-  String get badgeExplanationInspectMedia => 'የሚዲያ ዝርዝሮችን መርምር';
-
-  @override
-  String get badgeExplanationProofmodeVerified =>
-      'የዚህ ቪዲዮ ትክክለኛነት የተረጋገጠው የፕሮፍሞድ ቴክኖሎጂን በመጠቀም ነው።';
-
-  @override
-  String get badgeExplanationDivineHostedHumanMade =>
-      'ይህ ቪዲዮ የተስተናገደው በDivine ነው እና AI ማወቂያው በሰው ሰራሽ ሊሆን እንደሚችል ይጠቁማል፣ ነገር ግን ምስጠራ ካሜራ-ማረጋገጫ ውሂብን አያካትትም።';
-
-  @override
-  String get badgeExplanationHumanMadeNoCrypto =>
-      'የአይአይ ማወቂያ ይህ ቪዲዮ የሰው ሰራሽ እንደሆነ ያሳያል፣ ምንም እንኳን ክሪፕቶግራፊክ የካሜራ ማረጋገጫ ውሂብን ባያካትትም።';
-
-  @override
-  String get badgeExplanationDivineHostedNoCrypto =>
-      'ይህ ቪዲዮ የተስተናገደው በDivine ላይ ነው፣ ነገር ግን እስካሁን ክሪፕቶግራፊክ የካሜራ-ማረጋገጫ ውሂብን አያካትትም።';
-
-  @override
-  String get badgeExplanationExternalNoCrypto =>
-      'ይህ ቪዲዮ የሚስተናገደው ከDivine ውጪ ነው እና ምስጠራ ካሜራ-ማረጋገጫ ውሂብን አያካትትም።';
-
-  @override
-  String get badgeExplanationDeviceAttestation => 'የመሣሪያ ማረጋገጫ';
-
-  @override
-  String get badgeExplanationPgpSignature => 'PGP ፊርማ';
-
-  @override
-  String get badgeExplanationC2paCredentials => 'C2PA የይዘት ምስክርነቶች';
-
-  @override
-  String get badgeExplanationProofManifest => 'ማረጋገጫ አንጸባራቂ';
-
-  @override
-  String get badgeExplanationAiDetection => 'AI ማግኘት';
-
-  @override
-  String get badgeExplanationAiNotScanned => 'AI ስካን፡ ገና አልተቃኘም።';
-
-  @override
-  String get badgeExplanationNoScanResults => 'እስካሁን ምንም የፍተሻ ውጤቶች አልተገኙም።';
-
-  @override
-  String get badgeExplanationCheckAiGenerated => 'AI የመነጨ መሆኑን ያረጋግጡ';
-
-  @override
-  String badgeExplanationAiLikelihood(int percentage) {
-    return '$percentage% በ AI የመነጨ ዕድል';
-  }
-
-  @override
-  String badgeExplanationScannedBy(String source) {
-    return 'የተቃኘው፡ $source';
-  }
-
-  @override
-  String get badgeExplanationVerifiedByModerator => 'በሰው አወያይ የተረጋገጠ';
-
-  @override
-  String get badgeExplanationVerificationPlatinum =>
-      'ፕላቲኒየም፡ የመሣሪያ ሃርድዌር ማረጋገጫ፣ የምስጠራ ፊርማዎች፣ የይዘት ምስክርነቶች (C2PA) እና AI ቅኝት የሰውን አመጣጥ ያረጋግጣል።';
-
-  @override
-  String get badgeExplanationVerificationGold =>
-      'ወርቅ፡ በሃርድዌር ማረጋገጫ፣ ምስጢራዊ ፊርማዎች እና የይዘት ምስክርነቶች (C2PA) በእውነተኛ መሳሪያ ላይ ተይዟል።';
-
-  @override
-  String get badgeExplanationVerificationSilver =>
-      'ብር፡ ክሪፕቶግራፊክ ፊርማዎች ይህ ቪዲዮ ከተቀዳ በኋላ እንዳልተለወጠ ያረጋግጣሉ።';
-
-  @override
-  String get badgeExplanationVerificationBronze => 'ነሐስ፡ መሰረታዊ የሜታዳታ ፊርማዎች አሉ።';
-
-  @override
-  String get badgeExplanationVerificationSilverAiScan =>
-      'ብር፡ AI ስካን ይህ ቪዲዮ በሰው የተፈጠረ ሊሆን እንደሚችል ያረጋግጣል።';
-
-  @override
-  String get badgeExplanationNoVerification => 'ለዚህ ቪዲዮ ምንም የማረጋገጫ ውሂብ አይገኝም።';
 
   @override
   String get shareMenuTitle => 'ቪዲዮ አጋራ';
@@ -5702,9 +5588,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get trendingTitle => 'በመታየት ላይ ያለ';
-
-  @override
-  String get proofmodeCheckAiGenerated => 'AI የመነጨ መሆኑን ያረጋግጡ';
 
   @override
   String get libraryDeleteConfirm => 'ሰርዝ';

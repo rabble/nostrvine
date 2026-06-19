@@ -180,13 +180,13 @@ void main() {
       when(() => bloc.state).thenReturn(
         ClipEditorState(clips: [clip('clip-1'), clip('clip-2')]),
       );
-      final l10n = lookupAppLocalizations(const Locale('en'));
 
       await tester.pumpWidget(build());
 
-      await tester.tap(
-        find.bySemanticsLabel(l10n.videoEditorMultiSelectSemanticLabel),
+      final controls = tester.widget<VideoEditorTimelineControls>(
+        find.byType(VideoEditorTimelineControls),
       );
+      controls.onMultiSelect?.call();
       await tester.pump();
 
       verify(

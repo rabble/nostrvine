@@ -31,14 +31,12 @@ class MetadataVerificationSection extends StatelessWidget {
             label: l10n.metadataDeviceAttestation,
             passed: video.hasProofModeDeviceAttestation,
           ),
-          // Reuse the badge-explanation copy — same English value, no
-          // dedicated `metadata*` key exists for these two signals.
           _VerificationCheckItem(
-            label: l10n.badgeExplanationPgpSignature,
+            label: l10n.metadataPgpSignature,
             passed: video.hasProofModePgpFingerprint,
           ),
           _VerificationCheckItem(
-            label: l10n.badgeExplanationC2paCredentials,
+            label: l10n.metadataC2paCredentials,
             passed: video.hasProofModeC2paManifestId,
           ),
           _VerificationCheckItem(

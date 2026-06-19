@@ -629,6 +629,8 @@
     "metadataOriginalSound": "Orijinal ses",
     "metadataVerificationLabel": "Doğrulama",
     "metadataDeviceAttestation": "Cihaz tasdik",
+    "metadataPgpSignature": "PGP imzası",
+    "metadataC2paCredentials": "C2PA İçerik Kimlik Bilgileri",
     "metadataProofManifest": "Kanıt manifestosu",
     "metadataCreatorLabel": "İçerik üretici",
     "metadataCollaboratorsLabel": "İşbirlikçiler",
@@ -1395,61 +1397,6 @@
             }
         }
     },
-    "badgeExplanationClose": "Kapat",
-    "badgeExplanationOriginalVineArchive": "Orijinal Vine Arşivi",
-    "badgeExplanationCameraProof": "Kamera Kanıtı",
-    "badgeExplanationAuthenticitySignals": "Gerceklik Sinyalleri",
-    "badgeExplanationVineArchiveIntro": "Bu video, Internet Archive'dan kurtarılmış orijinal bir Vine'dır.",
-    "badgeExplanationVineArchiveHistory": "Vine 2017'de kapanmadan önce, ArchiveTeam ve Internet Archive milyonlarca Vine'ı gelecek için korumak amacıyla çalıştı. Bu içerik, o tarihi koruma çabasının bir parçasıdır.",
-    "badgeExplanationOriginalStats": "Orijinal istatistikler: {loops} döngü",
-    "@badgeExplanationOriginalStats": {
-        "placeholders": {
-            "loops": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationLearnVineArchive": "Vine arşivi koruması hakkında daha fazla bilgi",
-    "badgeExplanationLearnProofmode": "Proofmode doğrulaması hakkında daha fazla bilgi",
-    "badgeExplanationLearnAuthenticity": "Divine gerçeklik sinyalleri hakkında daha fazla bilgi",
-    "badgeExplanationInspectProofCheck": "ProofCheck Aracı ile İncele",
-    "badgeExplanationInspectMedia": "Medya ayrıntılarını incele",
-    "badgeExplanationProofmodeVerified": "Bu videonun orijinalliği Proofmode teknolojisi ile doğrulandı.",
-    "badgeExplanationDivineHostedHumanMade": "Bu video Divine'de barındırılıyor ve yapay zeka tespiti muhtemelen insan yapımı olduğunu gösteriyor, ancak kriptografik kamera doğrulama verisi içermiyor.",
-    "badgeExplanationHumanMadeNoCrypto": "Yapay zeka tespiti bu videonun muhtemelen insan yapımı olduğunu gösteriyor, ancak kriptografik kamera doğrulama verisi içermiyor.",
-    "badgeExplanationDivineHostedNoCrypto": "Bu video Divine'de barındırılıyor, ancak henüz kriptografik kamera doğrulama verisi içermiyor.",
-    "badgeExplanationExternalNoCrypto": "Bu video Divine dışında barındırılıyor ve kriptografik kamera doğrulama verisi içermiyor.",
-    "badgeExplanationDeviceAttestation": "Cihaz tasdik",
-    "badgeExplanationPgpSignature": "PGP imzası",
-    "badgeExplanationC2paCredentials": "C2PA İçerik Kimlik Bilgileri",
-    "badgeExplanationProofManifest": "Kanıt manifestosu",
-    "badgeExplanationAiDetection": "Yapay Zeka Tespiti",
-    "badgeExplanationAiNotScanned": "Yapay zeka taraması: Henüz taranmadı",
-    "badgeExplanationNoScanResults": "Henüz tarama sonucu mevcut değil.",
-    "badgeExplanationCheckAiGenerated": "Yapay zeka üretimi mi kontrol et",
-    "badgeExplanationAiLikelihood": "Yapay zeka üretimi olma olasılığı %{percentage}",
-    "@badgeExplanationAiLikelihood": {
-        "placeholders": {
-            "percentage": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationScannedBy": "Tarayıcı: {source}",
-    "@badgeExplanationScannedBy": {
-        "placeholders": {
-            "source": {
-                "type": "String"
-            }
-        }
-    },
-    "badgeExplanationVerifiedByModerator": "İnsan moderatör tarafından doğrulandı",
-    "badgeExplanationVerificationPlatinum": "Platin: Cihaz donanımı tasdik, kriptografik imzalar, İçerik Kimlik Bilgileri (C2PA) ve yapay zeka taraması insan kökenini doğrular.",
-    "badgeExplanationVerificationGold": "Altın: Donanım tasdik, kriptografik imzalar ve İçerik Kimlik Bilgileri (C2PA) ile gerçek bir cihazda çekildi.",
-    "badgeExplanationVerificationSilver": "Gümüş: Kriptografik imzalar bu videonun kayıttan bu yana değiştirilmediğini kanıtlar.",
-    "badgeExplanationVerificationBronze": "Bronz: Temel meta veri imzaları mevcut.",
-    "badgeExplanationVerificationSilverAiScan": "Gümüş: Yapay zeka taraması bu videonun muhtemelen insan tarafından oluşturulduğunu doğrular.",
-    "badgeExplanationNoVerification": "Bu video için doğrulama verisi mevcut değil.",
     "shareMenuTitle": "Videoyu Paylaş",
     "shareMenuReportAiContent": "Yapay Zeka İçeriği Bildir",
     "shareMenuReportAiContentSubtitle": "Şüpheli yapay zeka üretimi içeriği hızlı bildir",
@@ -2487,7 +2434,6 @@
     "libraryWebUnavailableHeadline": "Kitaplık mobil uygulamada",
     "notificationFollowBack": "Geri takip et",
     "profileSetupUploadStaged": "Yüklendi — uygulamak için Kaydet'e dokunun",
-    "proofmodeCheckAiGenerated": "Yapay zeka ile oluşturulup oluşturulmadığını kontrol et",
     "dmSendFailedMessage": "Mesaj gönderilemedi",
     "dmSendFailedRetry": "Tekrar Dene",
     "dmSendPartialMessage": "Gönderildi, ama diğer cihazlarınla eşitlenmedi",

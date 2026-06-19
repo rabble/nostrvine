@@ -632,6 +632,8 @@
     "metadataOriginalSound": "Sunet original",
     "metadataVerificationLabel": "Verificare",
     "metadataDeviceAttestation": "Atestare de dispozitiv",
+    "metadataPgpSignature": "Semnătură PGP",
+    "metadataC2paCredentials": "Credentiale de conținut C2PA",
     "metadataProofManifest": "Manifest de dovezi",
     "metadataCreatorLabel": "Creator",
     "metadataCollaboratorsLabel": "Colaboratori",
@@ -1398,61 +1400,6 @@
             }
         }
     },
-    "badgeExplanationClose": "Închide",
-    "badgeExplanationOriginalVineArchive": "Arhivă Vine originală",
-    "badgeExplanationCameraProof": "Dovadă de cameră",
-    "badgeExplanationAuthenticitySignals": "Semnale de autenticitate",
-    "badgeExplanationVineArchiveIntro": "Acest videoclip e un Vine original recuperat din Internet Archive.",
-    "badgeExplanationVineArchiveHistory": "Înainte ca Vine să se închidă în 2017, ArchiveTeam și Internet Archive au lucrat ca să păstreze milioane de Vine-uri pentru posteritate. Acest conținut face parte din acel efort istoric de conservare.",
-    "badgeExplanationOriginalStats": "Statistici originale: {loops} bucle",
-    "@badgeExplanationOriginalStats": {
-        "placeholders": {
-            "loops": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationLearnVineArchive": "Află mai multe despre conservarea arhivei Vine",
-    "badgeExplanationLearnProofmode": "Află mai multe despre verificarea Proofmode",
-    "badgeExplanationLearnAuthenticity": "Află mai multe despre semnalele de autenticitate Divine",
-    "badgeExplanationInspectProofCheck": "Inspectează cu unealta ProofCheck",
-    "badgeExplanationInspectMedia": "Inspectează detaliile media",
-    "badgeExplanationProofmodeVerified": "Autenticitatea acestui videoclip e verificată cu tehnologia Proofmode.",
-    "badgeExplanationDivineHostedHumanMade": "Acest videoclip e găzduit pe Divine și detecția AI indică că e probabil făcut de om, dar nu include date criptografice de verificare a camerei.",
-    "badgeExplanationHumanMadeNoCrypto": "Detecția AI indică că acest videoclip e probabil făcut de om, deși nu include date criptografice de verificare a camerei.",
-    "badgeExplanationDivineHostedNoCrypto": "Acest videoclip e găzduit pe Divine, dar încă nu include date criptografice de verificare a camerei.",
-    "badgeExplanationExternalNoCrypto": "Acest videoclip e găzduit în afara Divine și nu include date criptografice de verificare a camerei.",
-    "badgeExplanationDeviceAttestation": "Atestare dispozitiv",
-    "badgeExplanationPgpSignature": "Semnătură PGP",
-    "badgeExplanationC2paCredentials": "Credentiale de conținut C2PA",
-    "badgeExplanationProofManifest": "Manifest de dovezi",
-    "badgeExplanationAiDetection": "Detecție AI",
-    "badgeExplanationAiNotScanned": "Scanare AI: Încă nescanat",
-    "badgeExplanationNoScanResults": "Încă nu sunt rezultate de scanare disponibile.",
-    "badgeExplanationCheckAiGenerated": "Verifică dacă e generat de AI",
-    "badgeExplanationAiLikelihood": "{percentage}% probabilitate să fie generat de AI",
-    "@badgeExplanationAiLikelihood": {
-        "placeholders": {
-            "percentage": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationScannedBy": "Scanat de: {source}",
-    "@badgeExplanationScannedBy": {
-        "placeholders": {
-            "source": {
-                "type": "String"
-            }
-        }
-    },
-    "badgeExplanationVerifiedByModerator": "Verificat de un moderator uman",
-    "badgeExplanationVerificationPlatinum": "Platină: Atestare hardware de dispozitiv, semnături criptografice, credentiale de conținut (C2PA) și scanare AI confirmă originea umană.",
-    "badgeExplanationVerificationGold": "Aur: Capturat pe un dispozitiv real cu atestare hardware, semnături criptografice și credentiale de conținut (C2PA).",
-    "badgeExplanationVerificationSilver": "Argint: Semnăturile criptografice dovedesc că acest videoclip n-a fost modificat de la înregistrare.",
-    "badgeExplanationVerificationBronze": "Bronz: Sunt prezente semnături de metadate de bază.",
-    "badgeExplanationVerificationSilverAiScan": "Argint: Scanarea AI confirmă că acest videoclip e probabil creat de om.",
-    "badgeExplanationNoVerification": "Nu sunt date de verificare disponibile pentru acest videoclip.",
     "shareMenuTitle": "Partajează videoclipul",
     "shareMenuReportAiContent": "Raportează conținut AI",
     "shareMenuReportAiContentSubtitle": "Raportează rapid conținut suspect de a fi generat de AI",
@@ -2488,7 +2435,6 @@
     "libraryWebUnavailableHeadline": "Biblioteca e în aplicația mobilă",
     "notificationFollowBack": "Urmărește înapoi",
     "profileSetupUploadStaged": "Încărcată — apasă pe Salvează pentru a aplica",
-    "proofmodeCheckAiGenerated": "Verifică dacă este generat de AI",
     "dmSendFailedMessage": "Mesajul nu a putut fi trimis",
     "dmSendFailedRetry": "Reîncearcă",
     "dmSendPartialMessage": "Trimis, dar nu s-a sincronizat cu celelalte dispozitive",

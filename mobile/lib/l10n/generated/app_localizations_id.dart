@@ -1620,6 +1620,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get metadataDeviceAttestation => 'Atestasi perangkat';
 
   @override
+  String get metadataPgpSignature => 'Tanda tangan PGP';
+
+  @override
+  String get metadataC2paCredentials => 'Kredensial Konten C2PA';
+
+  @override
   String get metadataProofManifest => 'Manifes bukti';
 
   @override
@@ -3261,133 +3267,6 @@ class AppLocalizationsId extends AppLocalizations {
   String uploadProgressPausedPercent(int percent) {
     return 'Dijeda $percent%';
   }
-
-  @override
-  String get badgeExplanationClose => 'Tutup';
-
-  @override
-  String get badgeExplanationOriginalVineArchive => 'Arsip Vine Asli';
-
-  @override
-  String get badgeExplanationCameraProof => 'Bukti Kamera';
-
-  @override
-  String get badgeExplanationAuthenticitySignals => 'Sinyal Keaslian';
-
-  @override
-  String get badgeExplanationVineArchiveIntro =>
-      'Video ini adalah Vine asli yang dipulihkan dari Internet Archive.';
-
-  @override
-  String get badgeExplanationVineArchiveHistory =>
-      'Sebelum Vine ditutup pada 2017, ArchiveTeam dan Internet Archive bekerja untuk melestarikan jutaan Vine untuk anak cucu. Konten ini adalah bagian dari upaya pelestarian bersejarah itu.';
-
-  @override
-  String badgeExplanationOriginalStats(int loops) {
-    return 'Statistik asli: $loops loop';
-  }
-
-  @override
-  String get badgeExplanationLearnVineArchive =>
-      'Pelajari lebih lanjut tentang pelestarian arsip Vine';
-
-  @override
-  String get badgeExplanationLearnProofmode =>
-      'Pelajari lebih lanjut tentang verifikasi Proofmode';
-
-  @override
-  String get badgeExplanationLearnAuthenticity =>
-      'Pelajari lebih lanjut tentang sinyal keaslian Divine';
-
-  @override
-  String get badgeExplanationInspectProofCheck =>
-      'Periksa dengan Alat ProofCheck';
-
-  @override
-  String get badgeExplanationInspectMedia => 'Periksa detail media';
-
-  @override
-  String get badgeExplanationProofmodeVerified =>
-      'Keaslian video ini diverifikasi menggunakan teknologi Proofmode.';
-
-  @override
-  String get badgeExplanationDivineHostedHumanMade =>
-      'Video ini di-host di Divine dan deteksi AI menunjukkan kemungkinan buatan manusia, tapi tidak mencakup data verifikasi kamera kriptografis.';
-
-  @override
-  String get badgeExplanationHumanMadeNoCrypto =>
-      'Deteksi AI menunjukkan video ini kemungkinan buatan manusia, meskipun tidak mencakup data verifikasi kamera kriptografis.';
-
-  @override
-  String get badgeExplanationDivineHostedNoCrypto =>
-      'Video ini di-host di Divine, tapi belum mencakup data verifikasi kamera kriptografis.';
-
-  @override
-  String get badgeExplanationExternalNoCrypto =>
-      'Video ini di-host di luar Divine dan tidak mencakup data verifikasi kamera kriptografis.';
-
-  @override
-  String get badgeExplanationDeviceAttestation => 'Atestasi perangkat';
-
-  @override
-  String get badgeExplanationPgpSignature => 'Tanda tangan PGP';
-
-  @override
-  String get badgeExplanationC2paCredentials => 'Kredensial Konten C2PA';
-
-  @override
-  String get badgeExplanationProofManifest => 'Manifes bukti';
-
-  @override
-  String get badgeExplanationAiDetection => 'Deteksi AI';
-
-  @override
-  String get badgeExplanationAiNotScanned => 'Scan AI: Belum dipindai';
-
-  @override
-  String get badgeExplanationNoScanResults =>
-      'Belum ada hasil pindai yang tersedia.';
-
-  @override
-  String get badgeExplanationCheckAiGenerated => 'Cek apakah dihasilkan AI';
-
-  @override
-  String badgeExplanationAiLikelihood(int percentage) {
-    return '$percentage% kemungkinan dihasilkan AI';
-  }
-
-  @override
-  String badgeExplanationScannedBy(String source) {
-    return 'Dipindai oleh: $source';
-  }
-
-  @override
-  String get badgeExplanationVerifiedByModerator =>
-      'Diverifikasi oleh moderator manusia';
-
-  @override
-  String get badgeExplanationVerificationPlatinum =>
-      'Platinum: Atestasi hardware perangkat, tanda tangan kriptografis, Kredensial Konten (C2PA), dan scan AI mengonfirmasi asal manusia.';
-
-  @override
-  String get badgeExplanationVerificationGold =>
-      'Emas: Diambil dengan perangkat asli yang memiliki atestasi hardware, tanda tangan kriptografis, dan Kredensial Konten (C2PA).';
-
-  @override
-  String get badgeExplanationVerificationSilver =>
-      'Perak: Tanda tangan kriptografis membuktikan video ini tidak diubah sejak direkam.';
-
-  @override
-  String get badgeExplanationVerificationBronze =>
-      'Perunggu: Tanda tangan metadata dasar tersedia.';
-
-  @override
-  String get badgeExplanationVerificationSilverAiScan =>
-      'Perak: Scan AI mengonfirmasi video ini kemungkinan dibuat manusia.';
-
-  @override
-  String get badgeExplanationNoVerification =>
-      'Tidak ada data verifikasi untuk video ini.';
 
   @override
   String get shareMenuTitle => 'Bagikan Video';
@@ -5792,9 +5671,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get trendingTitle => 'Trending';
-
-  @override
-  String get proofmodeCheckAiGenerated => 'Periksa apakah dibuat oleh AI';
 
   @override
   String get libraryDeleteConfirm => 'Hapus';

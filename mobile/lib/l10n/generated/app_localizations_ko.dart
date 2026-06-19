@@ -1560,6 +1560,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get metadataDeviceAttestation => '기기 증명';
 
   @override
+  String get metadataPgpSignature => 'PGP 서명';
+
+  @override
+  String get metadataC2paCredentials => 'C2PA 콘텐츠 자격 증명';
+
+  @override
   String get metadataProofManifest => '증명 매니페스트';
 
   @override
@@ -3143,125 +3149,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String uploadProgressPausedPercent(int percent) {
     return '일시 정지 $percent%';
   }
-
-  @override
-  String get badgeExplanationClose => '닫기';
-
-  @override
-  String get badgeExplanationOriginalVineArchive => '오리지널 Vine 아카이브';
-
-  @override
-  String get badgeExplanationCameraProof => '카메라 증명';
-
-  @override
-  String get badgeExplanationAuthenticitySignals => '진본 신호';
-
-  @override
-  String get badgeExplanationVineArchiveIntro =>
-      '이 영상은 Internet Archive에서 복구한 오리지널 Vine이에요.';
-
-  @override
-  String get badgeExplanationVineArchiveHistory =>
-      '2017년 Vine이 문을 닫기 전에 ArchiveTeam과 Internet Archive는 수백만 개의 Vine을 보존하기 위해 노력했어요. 이 콘텐츠는 그 역사적 보존 노력의 일부예요.';
-
-  @override
-  String badgeExplanationOriginalStats(int loops) {
-    return '오리지널 통계: 루프 $loops회';
-  }
-
-  @override
-  String get badgeExplanationLearnVineArchive => 'Vine 아카이브 보존에 대해 더 알아보기';
-
-  @override
-  String get badgeExplanationLearnProofmode => 'Proofmode 인증에 대해 더 알아보기';
-
-  @override
-  String get badgeExplanationLearnAuthenticity => 'Divine 진본 신호에 대해 더 알아보기';
-
-  @override
-  String get badgeExplanationInspectProofCheck => 'ProofCheck 도구로 검사';
-
-  @override
-  String get badgeExplanationInspectMedia => '미디어 세부 정보 검사';
-
-  @override
-  String get badgeExplanationProofmodeVerified =>
-      '이 영상의 진본 여부는 Proofmode 기술로 인증됐어요.';
-
-  @override
-  String get badgeExplanationDivineHostedHumanMade =>
-      '이 영상은 Divine에 호스팅되어 있으며 AI 감지 결과 사람이 만들었을 가능성이 높아요. 단, 암호학적 카메라 인증 데이터는 포함되어 있지 않아요.';
-
-  @override
-  String get badgeExplanationHumanMadeNoCrypto =>
-      'AI 감지 결과 이 영상은 사람이 만들었을 가능성이 높은데, 암호학적 카메라 인증 데이터는 포함되어 있지 않아요.';
-
-  @override
-  String get badgeExplanationDivineHostedNoCrypto =>
-      '이 영상은 Divine에 호스팅되어 있지만 아직 암호학적 카메라 인증 데이터가 포함되어 있지 않아요.';
-
-  @override
-  String get badgeExplanationExternalNoCrypto =>
-      '이 영상은 Divine 외부에 호스팅되어 있으며 암호학적 카메라 인증 데이터가 포함되어 있지 않아요.';
-
-  @override
-  String get badgeExplanationDeviceAttestation => '기기 증명';
-
-  @override
-  String get badgeExplanationPgpSignature => 'PGP 서명';
-
-  @override
-  String get badgeExplanationC2paCredentials => 'C2PA 콘텐츠 자격 증명';
-
-  @override
-  String get badgeExplanationProofManifest => '증명 매니페스트';
-
-  @override
-  String get badgeExplanationAiDetection => 'AI 감지';
-
-  @override
-  String get badgeExplanationAiNotScanned => 'AI 검사: 아직 검사되지 않음';
-
-  @override
-  String get badgeExplanationNoScanResults => '아직 검사 결과가 없어요.';
-
-  @override
-  String get badgeExplanationCheckAiGenerated => 'AI 생성 여부 확인';
-
-  @override
-  String badgeExplanationAiLikelihood(int percentage) {
-    return 'AI 생성 가능성 $percentage%';
-  }
-
-  @override
-  String badgeExplanationScannedBy(String source) {
-    return '검사 주체: $source';
-  }
-
-  @override
-  String get badgeExplanationVerifiedByModerator => '사람 관리자가 검증했어요';
-
-  @override
-  String get badgeExplanationVerificationPlatinum =>
-      '플래티널: 기기 하드웨어 증명, 암호학적 서명, 콘텐츠 자격 증명(C2PA), AI 검사가 사람 출처임을 확인했어요.';
-
-  @override
-  String get badgeExplanationVerificationGold =>
-      '골드: 하드웨어 증명이 있는 실제 기기로 캡처되었고, 암호학적 서명과 콘텐츠 자격 증명(C2PA)이 있어요.';
-
-  @override
-  String get badgeExplanationVerificationSilver =>
-      '실버: 암호학적 서명이 녹화 이후 이 영상이 변경되지 않았음을 증명해요.';
-
-  @override
-  String get badgeExplanationVerificationBronze => '브론즈: 기본 메타데이터 서명이 있어요.';
-
-  @override
-  String get badgeExplanationVerificationSilverAiScan =>
-      '실버: AI 검사가 이 영상은 사람이 만들었을 가능성이 높다고 확인했어요.';
-
-  @override
-  String get badgeExplanationNoVerification => '이 영상에 대한 인증 데이터가 없어요.';
 
   @override
   String get shareMenuTitle => '영상 공유';
@@ -5605,9 +5492,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get trendingTitle => '트렌딩';
-
-  @override
-  String get proofmodeCheckAiGenerated => 'AI 생성 여부 확인';
 
   @override
   String get libraryDeleteConfirm => '삭제';

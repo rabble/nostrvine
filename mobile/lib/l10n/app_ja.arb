@@ -629,6 +629,8 @@
     "metadataOriginalSound": "オリジナルサウンド",
     "metadataVerificationLabel": "認証",
     "metadataDeviceAttestation": "デバイスの認証",
+    "metadataPgpSignature": "PGP 署名",
+    "metadataC2paCredentials": "C2PA コンテンツ認証情報",
     "metadataProofManifest": "証明マニフェスト",
     "metadataCreatorLabel": "クリエイター",
     "metadataCollaboratorsLabel": "コラボレーター",
@@ -1388,61 +1390,6 @@
             }
         }
     },
-    "badgeExplanationClose": "閉じる",
-    "badgeExplanationOriginalVineArchive": "オリジナル Vine アーカイブ",
-    "badgeExplanationCameraProof": "カメラ証明",
-    "badgeExplanationAuthenticitySignals": "真正性シグナル",
-    "badgeExplanationVineArchiveIntro": "この動画はインターネットアーカイブから復元されたオリジナルの Vine だよ。",
-    "badgeExplanationVineArchiveHistory": "2017年に Vine が終了する前、ArchiveTeam とインターネットアーカイブが数百万もの Vine を後世のために保存してたんだ。このコンテンツはその歴史的な保存活動の一部だよ。",
-    "badgeExplanationOriginalStats": "オリジナルの数値: {loops}ループ",
-    "@badgeExplanationOriginalStats": {
-        "placeholders": {
-            "loops": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationLearnVineArchive": "Vine アーカイブの保存についてもっと詳しく",
-    "badgeExplanationLearnProofmode": "Proofmode による認証についてもっと詳しく",
-    "badgeExplanationLearnAuthenticity": "Divine の真正性シグナルについてもっと詳しく",
-    "badgeExplanationInspectProofCheck": "ProofCheck ツールで調査",
-    "badgeExplanationInspectMedia": "メディアの詳細を確認",
-    "badgeExplanationProofmodeVerified": "この動画の真正性は Proofmode 技術で検証されてるよ。",
-    "badgeExplanationDivineHostedHumanMade": "この動画は Divine でホストされてて、AI 検出では人間が作った可能性が高いけど、暗号学的なカメラ検証データはないよ。",
-    "badgeExplanationHumanMadeNoCrypto": "AI 検出では人間が作った可能性が高いけど、暗号学的なカメラ検証データはないよ。",
-    "badgeExplanationDivineHostedNoCrypto": "この動画は Divine でホストされてるけど、まだ暗号学的なカメラ検証データはないよ。",
-    "badgeExplanationExternalNoCrypto": "この動画は Divine の外部でホストされてて、暗号学的なカメラ検証データはないよ。",
-    "badgeExplanationDeviceAttestation": "デバイスの認証",
-    "badgeExplanationPgpSignature": "PGP 署名",
-    "badgeExplanationC2paCredentials": "C2PA コンテンツ認証情報",
-    "badgeExplanationProofManifest": "証明マニフェスト",
-    "badgeExplanationAiDetection": "AI 検出",
-    "badgeExplanationAiNotScanned": "AI スキャン: 未スキャン",
-    "badgeExplanationNoScanResults": "まだスキャン結果がないよ。",
-    "badgeExplanationCheckAiGenerated": "AI 生成かチェック",
-    "badgeExplanationAiLikelihood": "AI 生成の可能性 {percentage}%",
-    "@badgeExplanationAiLikelihood": {
-        "placeholders": {
-            "percentage": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationScannedBy": "スキャン元: {source}",
-    "@badgeExplanationScannedBy": {
-        "placeholders": {
-            "source": {
-                "type": "String"
-            }
-        }
-    },
-    "badgeExplanationVerifiedByModerator": "人間のモデレーターが検証済み",
-    "badgeExplanationVerificationPlatinum": "プラチナ: デバイスのハードウェア認証、暗号署名、コンテンツ認証 (C2PA)、AI スキャンで人間の作成を確認。",
-    "badgeExplanationVerificationGold": "ゴールド: ハードウェア認証、暗号署名、コンテンツ認証 (C2PA) 付きの実機で撮影。",
-    "badgeExplanationVerificationSilver": "シルバー: 暗号署名で、この動画が録画以降改変されてないことを証明。",
-    "badgeExplanationVerificationBronze": "ブロンズ: 基本的なメタデータ署名あり。",
-    "badgeExplanationVerificationSilverAiScan": "シルバー: AI スキャンで、人間が作った可能性が高いと判定。",
-    "badgeExplanationNoVerification": "この動画には検証データがないよ。",
     "shareMenuTitle": "動画を共有",
     "shareMenuReportAiContent": "AI コンテンツを報告",
     "shareMenuReportAiContentSubtitle": "AI 生成の疑いがあるコンテンツをサクッと報告",
@@ -2480,7 +2427,6 @@
     "libraryWebUnavailableHeadline": "ライブラリはモバイルアプリで利用できます",
     "notificationFollowBack": "フォローバック",
     "profileSetupUploadStaged": "アップロードしたよ — 適用するには「保存」をタップしてね",
-    "proofmodeCheckAiGenerated": "AI生成かチェック",
     "dmSendFailedMessage": "メッセージを送信できなかった",
     "dmSendFailedRetry": "もう一回",
     "dmSendPartialMessage": "送信したけど、ほかのデバイスには同期できなかった",

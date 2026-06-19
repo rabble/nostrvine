@@ -691,6 +691,8 @@
     "metadataOriginalSound": "Оригинален звук",
     "metadataVerificationLabel": "Проверка",
     "metadataDeviceAttestation": "Атестация на устройството",
+    "metadataPgpSignature": "PGP подпис",
+    "metadataC2paCredentials": "C2PA Идентификационни данни за съдържание",
     "metadataProofManifest": "Доказателствен манифест",
     "metadataCreatorLabel": "Създател",
     "metadataCollaboratorsLabel": "Сътрудници",
@@ -1478,61 +1480,6 @@
             }
         }
     },
-    "badgeExplanationClose": "Затвори",
-    "badgeExplanationOriginalVineArchive": "Оригинален архив на Vine",
-    "badgeExplanationCameraProof": "Доказателство от камерата",
-    "badgeExplanationAuthenticitySignals": "Сигнали за автентичност",
-    "badgeExplanationVineArchiveIntro": "Това видео е оригинален Vine, възстановен от Internet Archive.",
-    "badgeExplanationVineArchiveHistory": "Преди Vine да затвори през 2017 г., ArchiveTeam и Internet Archive работиха, за да запазят милиони Vines за поколенията. Това съдържание е част от тези усилия за запазване на историята.",
-    "badgeExplanationOriginalStats": "Оригинални статистики: {loops} лупа",
-    "@badgeExplanationOriginalStats": {
-        "placeholders": {
-            "loops": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationLearnVineArchive": "Научи повече за запазването на Vine архива",
-    "badgeExplanationLearnProofmode": "Научи повече за проверката в Proofmode",
-    "badgeExplanationLearnAuthenticity": "Научи повече за Divine сигналите за автентичност",
-    "badgeExplanationInspectProofCheck": "Провери с ProofCheck",
-    "badgeExplanationInspectMedia": "Провери подробностите за медията",
-    "badgeExplanationProofmodeVerified": "Автентичността на това видео е потвърдена с технологията Proofmode.",
-    "badgeExplanationDivineHostedHumanMade": "Това видео е хостнато в Divine. AI проверката показва, че вероятно е направено от човек, но няма криптографски данни от камерата.",
-    "badgeExplanationHumanMadeNoCrypto": "AI проверката показва, че това видео вероятно е направено от човек, но няма криптографски данни от камерата.",
-    "badgeExplanationDivineHostedNoCrypto": "Това видео е хостнато в Divine, но още няма криптографски данни от камерата.",
-    "badgeExplanationExternalNoCrypto": "Това видео е хостнато извън Divine и няма криптографски данни от камерата.",
-    "badgeExplanationDeviceAttestation": "Атестация на устройството",
-    "badgeExplanationPgpSignature": "PGP подпис",
-    "badgeExplanationC2paCredentials": "C2PA Идентификационни данни за съдържание",
-    "badgeExplanationProofManifest": "Доказателствен манифест",
-    "badgeExplanationAiDetection": "AI проверка",
-    "badgeExplanationAiNotScanned": "AI проверка: още не е сканирано",
-    "badgeExplanationNoScanResults": "Още няма резултати от сканиране.",
-    "badgeExplanationCheckAiGenerated": "Провери дали е генерирано от AI",
-    "badgeExplanationAiLikelihood": "{percentage}% вероятност да е генерирано от AI",
-    "@badgeExplanationAiLikelihood": {
-        "placeholders": {
-            "percentage": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationScannedBy": "Сканирано от: {source}",
-    "@badgeExplanationScannedBy": {
-        "placeholders": {
-            "source": {
-                "type": "String"
-            }
-        }
-    },
-    "badgeExplanationVerifiedByModerator": "Проверено от човешки модератор",
-    "badgeExplanationVerificationPlatinum": "Platinum: Хардуерна атестация на устройството, криптографски подписи, идентификационни данни за съдържание (C2PA) и AI сканиране потвърждават човешкия произход.",
-    "badgeExplanationVerificationGold": "Злато: Заснето на реално устройство с хардуерна атестация, криптографски подписи и идентификационни данни за съдържание (C2PA).",
-    "badgeExplanationVerificationSilver": "Сребро: криптографските подписи доказват, че това видео не е било променяно след записа.",
-    "badgeExplanationVerificationBronze": "Бронз: Налице са подписи на основни метаданни.",
-    "badgeExplanationVerificationSilverAiScan": "Сребро: AI проверката потвърждава, че видеото вероятно е направено от човек.",
-    "badgeExplanationNoVerification": "Няма данни за верификация за това видео.",
     "shareMenuTitle": "Сподели видео",
     "shareMenuReportAiContent": "Докладвай AI боклук",
     "shareMenuReportAiContentSubtitle": "Сигнал за съмнително AI-генерирано съдържание",
@@ -2580,7 +2527,6 @@
     "videoMetadataContentWarnings": "Предупреждения за съдържанието",
     "videoEditorStickers": "Стикери",
     "trendingTitle": "Тенденция",
-    "proofmodeCheckAiGenerated": "Провери дали е генерирано от AI",
     "libraryDeleteConfirm": "Изтриване",
     "libraryWebUnavailableHeadline": "Библиотеката е налична в мобилното приложение",
     "libraryWebUnavailableDescription": "Черновите и клиповете се пазят на устройството ти, затова отвори Divine на телефона си, за да ги управляваш.",

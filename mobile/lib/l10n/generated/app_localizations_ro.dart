@@ -1682,6 +1682,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get metadataDeviceAttestation => 'Atestare de dispozitiv';
 
   @override
+  String get metadataPgpSignature => 'Semnătură PGP';
+
+  @override
+  String get metadataC2paCredentials => 'Credentiale de conținut C2PA';
+
+  @override
   String get metadataProofManifest => 'Manifest de dovezi';
 
   @override
@@ -3377,134 +3383,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String uploadProgressPausedPercent(int percent) {
     return 'Pauză la $percent%';
   }
-
-  @override
-  String get badgeExplanationClose => 'Închide';
-
-  @override
-  String get badgeExplanationOriginalVineArchive => 'Arhivă Vine originală';
-
-  @override
-  String get badgeExplanationCameraProof => 'Dovadă de cameră';
-
-  @override
-  String get badgeExplanationAuthenticitySignals => 'Semnale de autenticitate';
-
-  @override
-  String get badgeExplanationVineArchiveIntro =>
-      'Acest videoclip e un Vine original recuperat din Internet Archive.';
-
-  @override
-  String get badgeExplanationVineArchiveHistory =>
-      'Înainte ca Vine să se închidă în 2017, ArchiveTeam și Internet Archive au lucrat ca să păstreze milioane de Vine-uri pentru posteritate. Acest conținut face parte din acel efort istoric de conservare.';
-
-  @override
-  String badgeExplanationOriginalStats(int loops) {
-    return 'Statistici originale: $loops bucle';
-  }
-
-  @override
-  String get badgeExplanationLearnVineArchive =>
-      'Află mai multe despre conservarea arhivei Vine';
-
-  @override
-  String get badgeExplanationLearnProofmode =>
-      'Află mai multe despre verificarea Proofmode';
-
-  @override
-  String get badgeExplanationLearnAuthenticity =>
-      'Află mai multe despre semnalele de autenticitate Divine';
-
-  @override
-  String get badgeExplanationInspectProofCheck =>
-      'Inspectează cu unealta ProofCheck';
-
-  @override
-  String get badgeExplanationInspectMedia => 'Inspectează detaliile media';
-
-  @override
-  String get badgeExplanationProofmodeVerified =>
-      'Autenticitatea acestui videoclip e verificată cu tehnologia Proofmode.';
-
-  @override
-  String get badgeExplanationDivineHostedHumanMade =>
-      'Acest videoclip e găzduit pe Divine și detecția AI indică că e probabil făcut de om, dar nu include date criptografice de verificare a camerei.';
-
-  @override
-  String get badgeExplanationHumanMadeNoCrypto =>
-      'Detecția AI indică că acest videoclip e probabil făcut de om, deși nu include date criptografice de verificare a camerei.';
-
-  @override
-  String get badgeExplanationDivineHostedNoCrypto =>
-      'Acest videoclip e găzduit pe Divine, dar încă nu include date criptografice de verificare a camerei.';
-
-  @override
-  String get badgeExplanationExternalNoCrypto =>
-      'Acest videoclip e găzduit în afara Divine și nu include date criptografice de verificare a camerei.';
-
-  @override
-  String get badgeExplanationDeviceAttestation => 'Atestare dispozitiv';
-
-  @override
-  String get badgeExplanationPgpSignature => 'Semnătură PGP';
-
-  @override
-  String get badgeExplanationC2paCredentials => 'Credentiale de conținut C2PA';
-
-  @override
-  String get badgeExplanationProofManifest => 'Manifest de dovezi';
-
-  @override
-  String get badgeExplanationAiDetection => 'Detecție AI';
-
-  @override
-  String get badgeExplanationAiNotScanned => 'Scanare AI: Încă nescanat';
-
-  @override
-  String get badgeExplanationNoScanResults =>
-      'Încă nu sunt rezultate de scanare disponibile.';
-
-  @override
-  String get badgeExplanationCheckAiGenerated =>
-      'Verifică dacă e generat de AI';
-
-  @override
-  String badgeExplanationAiLikelihood(int percentage) {
-    return '$percentage% probabilitate să fie generat de AI';
-  }
-
-  @override
-  String badgeExplanationScannedBy(String source) {
-    return 'Scanat de: $source';
-  }
-
-  @override
-  String get badgeExplanationVerifiedByModerator =>
-      'Verificat de un moderator uman';
-
-  @override
-  String get badgeExplanationVerificationPlatinum =>
-      'Platină: Atestare hardware de dispozitiv, semnături criptografice, credentiale de conținut (C2PA) și scanare AI confirmă originea umană.';
-
-  @override
-  String get badgeExplanationVerificationGold =>
-      'Aur: Capturat pe un dispozitiv real cu atestare hardware, semnături criptografice și credentiale de conținut (C2PA).';
-
-  @override
-  String get badgeExplanationVerificationSilver =>
-      'Argint: Semnăturile criptografice dovedesc că acest videoclip n-a fost modificat de la înregistrare.';
-
-  @override
-  String get badgeExplanationVerificationBronze =>
-      'Bronz: Sunt prezente semnături de metadate de bază.';
-
-  @override
-  String get badgeExplanationVerificationSilverAiScan =>
-      'Argint: Scanarea AI confirmă că acest videoclip e probabil creat de om.';
-
-  @override
-  String get badgeExplanationNoVerification =>
-      'Nu sunt date de verificare disponibile pentru acest videoclip.';
 
   @override
   String get shareMenuTitle => 'Partajează videoclipul';
@@ -5965,9 +5843,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get trendingTitle => 'În tendințe';
-
-  @override
-  String get proofmodeCheckAiGenerated => 'Verifică dacă este generat de AI';
 
   @override
   String get libraryDeleteConfirm => 'Șterge';

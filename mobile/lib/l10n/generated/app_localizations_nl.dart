@@ -1654,6 +1654,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get metadataDeviceAttestation => 'Apparaatattestatie';
 
   @override
+  String get metadataPgpSignature => 'PGP-handtekening';
+
+  @override
+  String get metadataC2paCredentials => 'C2PA Content Credentials';
+
+  @override
   String get metadataProofManifest => 'Proof-manifest';
 
   @override
@@ -3296,133 +3302,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String uploadProgressPausedPercent(int percent) {
     return 'Gepauzeerd $percent%';
   }
-
-  @override
-  String get badgeExplanationClose => 'Sluiten';
-
-  @override
-  String get badgeExplanationOriginalVineArchive => 'Origineel Vine-archief';
-
-  @override
-  String get badgeExplanationCameraProof => 'Cameraproof';
-
-  @override
-  String get badgeExplanationAuthenticitySignals => 'Authenticiteitssignalen';
-
-  @override
-  String get badgeExplanationVineArchiveIntro =>
-      'Deze video is een originele Vine, teruggehaald uit het Internet Archive.';
-
-  @override
-  String get badgeExplanationVineArchiveHistory =>
-      'Voor Vine in 2017 sloot, werkten ArchiveTeam en het Internet Archive samen om miljoenen Vines voor het nageslacht te bewaren. Deze inhoud is onderdeel van dat historische bewaarproject.';
-
-  @override
-  String badgeExplanationOriginalStats(int loops) {
-    return 'Originele stats: $loops loops';
-  }
-
-  @override
-  String get badgeExplanationLearnVineArchive =>
-      'Meer over het behoud van het Vine-archief';
-
-  @override
-  String get badgeExplanationLearnProofmode =>
-      'Meer over Proofmode-verificatie';
-
-  @override
-  String get badgeExplanationLearnAuthenticity =>
-      'Meer over Divine-authenticiteitssignalen';
-
-  @override
-  String get badgeExplanationInspectProofCheck =>
-      'Inspecteren met ProofCheck-tool';
-
-  @override
-  String get badgeExplanationInspectMedia => 'Mediadetails inspecteren';
-
-  @override
-  String get badgeExplanationProofmodeVerified =>
-      'De authenticiteit van deze video is geverifieerd met Proofmode-technologie.';
-
-  @override
-  String get badgeExplanationDivineHostedHumanMade =>
-      'Deze video staat op Divine en AI-detectie geeft aan dat hij waarschijnlijk door een mens is gemaakt, maar hij bevat geen cryptografische cameraverificatie-data.';
-
-  @override
-  String get badgeExplanationHumanMadeNoCrypto =>
-      'AI-detectie geeft aan dat deze video waarschijnlijk door een mens is gemaakt, maar hij bevat geen cryptografische cameraverificatie-data.';
-
-  @override
-  String get badgeExplanationDivineHostedNoCrypto =>
-      'Deze video staat op Divine, maar bevat nog geen cryptografische cameraverificatie-data.';
-
-  @override
-  String get badgeExplanationExternalNoCrypto =>
-      'Deze video staat buiten Divine en bevat geen cryptografische cameraverificatie-data.';
-
-  @override
-  String get badgeExplanationDeviceAttestation => 'Apparaatattestatie';
-
-  @override
-  String get badgeExplanationPgpSignature => 'PGP-handtekening';
-
-  @override
-  String get badgeExplanationC2paCredentials => 'C2PA Content Credentials';
-
-  @override
-  String get badgeExplanationProofManifest => 'Proof-manifest';
-
-  @override
-  String get badgeExplanationAiDetection => 'AI-detectie';
-
-  @override
-  String get badgeExplanationAiNotScanned => 'AI-scan: nog niet gescand';
-
-  @override
-  String get badgeExplanationNoScanResults =>
-      'Nog geen scanresultaten beschikbaar.';
-
-  @override
-  String get badgeExplanationCheckAiGenerated => 'Check of AI-gegenereerd';
-
-  @override
-  String badgeExplanationAiLikelihood(int percentage) {
-    return '$percentage% kans dat het AI-gegenereerd is';
-  }
-
-  @override
-  String badgeExplanationScannedBy(String source) {
-    return 'Gescand door: $source';
-  }
-
-  @override
-  String get badgeExplanationVerifiedByModerator =>
-      'Geverifieerd door menselijke moderator';
-
-  @override
-  String get badgeExplanationVerificationPlatinum =>
-      'Platina: apparaathardware-attestatie, cryptografische handtekeningen, Content Credentials (C2PA) en AI-scan bevestigt menselijke oorsprong.';
-
-  @override
-  String get badgeExplanationVerificationGold =>
-      'Goud: opgenomen op een echt apparaat met hardware-attestatie, cryptografische handtekeningen en Content Credentials (C2PA).';
-
-  @override
-  String get badgeExplanationVerificationSilver =>
-      'Zilver: cryptografische handtekeningen bewijzen dat deze video sinds de opname niet is aangepast.';
-
-  @override
-  String get badgeExplanationVerificationBronze =>
-      'Brons: basis-metadata-handtekeningen zijn aanwezig.';
-
-  @override
-  String get badgeExplanationVerificationSilverAiScan =>
-      'Zilver: AI-scan bevestigt dat deze video waarschijnlijk door een mens is gemaakt.';
-
-  @override
-  String get badgeExplanationNoVerification =>
-      'Geen verificatiedata beschikbaar voor deze video.';
 
   @override
   String get shareMenuTitle => 'Video delen';
@@ -5840,9 +5719,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get trendingTitle => 'Trending';
-
-  @override
-  String get proofmodeCheckAiGenerated => 'Controleren of AI-gegenereerd';
 
   @override
   String get libraryDeleteConfirm => 'Verwijderen';

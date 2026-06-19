@@ -632,6 +632,8 @@
     "metadataOriginalSound": "Oryginalny dźwięk",
     "metadataVerificationLabel": "Weryfikacja",
     "metadataDeviceAttestation": "Atestacja urządzenia",
+    "metadataPgpSignature": "Podpis PGP",
+    "metadataC2paCredentials": "Poświadczenia treści C2PA",
     "metadataProofManifest": "Manifest dowodowy",
     "metadataCreatorLabel": "Twórca",
     "metadataCollaboratorsLabel": "Współtwórcy",
@@ -1398,61 +1400,6 @@
             }
         }
     },
-    "badgeExplanationClose": "Zamknij",
-    "badgeExplanationOriginalVineArchive": "Oryginalne archiwum Vine",
-    "badgeExplanationCameraProof": "Dowód z aparatu",
-    "badgeExplanationAuthenticitySignals": "Sygnały autentyczności",
-    "badgeExplanationVineArchiveIntro": "Ten film to oryginalne Vine odzyskane z Internet Archive.",
-    "badgeExplanationVineArchiveHistory": "Zanim Vine zamknęło się w 2017 roku, ArchiveTeam i Internet Archive pracowały nad zachowaniem milionów Vineów dla potomności. Ta treść jest częścią tej historycznej akcji zachowania.",
-    "badgeExplanationOriginalStats": "Oryginalne statystyki: {loops} pętli",
-    "@badgeExplanationOriginalStats": {
-        "placeholders": {
-            "loops": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationLearnVineArchive": "Dowiedz się więcej o zachowaniu archiwum Vine",
-    "badgeExplanationLearnProofmode": "Dowiedz się więcej o weryfikacji Proofmode",
-    "badgeExplanationLearnAuthenticity": "Dowiedz się więcej o sygnałach autentyczności Divine",
-    "badgeExplanationInspectProofCheck": "Sprawdź narzędziem ProofCheck",
-    "badgeExplanationInspectMedia": "Sprawdź szczegóły mediow",
-    "badgeExplanationProofmodeVerified": "Autentyczność tego filmu jest zweryfikowana technologią Proofmode.",
-    "badgeExplanationDivineHostedHumanMade": "Ten film jest hostowany na Divine, a detekcja AI wskazuje, że jest prawdopodobnie stworzony przez człowieka, ale nie zawiera kryptograficznych danych weryfikacyjnych z aparatu.",
-    "badgeExplanationHumanMadeNoCrypto": "Detekcja AI wskazuje, że ten film jest prawdopodobnie stworzony przez człowieka, choć nie zawiera kryptograficznych danych weryfikacyjnych z aparatu.",
-    "badgeExplanationDivineHostedNoCrypto": "Ten film jest hostowany na Divine, ale jeszcze nie zawiera kryptograficznych danych weryfikacyjnych z aparatu.",
-    "badgeExplanationExternalNoCrypto": "Ten film jest hostowany poza Divine i nie zawiera kryptograficznych danych weryfikacyjnych z aparatu.",
-    "badgeExplanationDeviceAttestation": "Atestacja urządzenia",
-    "badgeExplanationPgpSignature": "Podpis PGP",
-    "badgeExplanationC2paCredentials": "Poświadczenia treści C2PA",
-    "badgeExplanationProofManifest": "Manifest dowodowy",
-    "badgeExplanationAiDetection": "Detekcja AI",
-    "badgeExplanationAiNotScanned": "Skan AI: Jeszcze nie zeskanowano",
-    "badgeExplanationNoScanResults": "Brak dostępnych wyników skanu.",
-    "badgeExplanationCheckAiGenerated": "Sprawdź, czy wygenerowane przez AI",
-    "badgeExplanationAiLikelihood": "{percentage}% prawdopodobieństwa, że wygenerowane przez AI",
-    "@badgeExplanationAiLikelihood": {
-        "placeholders": {
-            "percentage": {
-                "type": "int"
-            }
-        }
-    },
-    "badgeExplanationScannedBy": "Skanowane przez: {source}",
-    "@badgeExplanationScannedBy": {
-        "placeholders": {
-            "source": {
-                "type": "String"
-            }
-        }
-    },
-    "badgeExplanationVerifiedByModerator": "Zweryfikowane przez moderatora-człowieka",
-    "badgeExplanationVerificationPlatinum": "Platyna: Atestacja sprzętu urządzenia, podpisy kryptograficzne, poświadczenia treści (C2PA) i skan AI potwierdzają ludzkie pochodzenie.",
-    "badgeExplanationVerificationGold": "Złoto: Nagrane na prawdziwym urządzeniu z atestacją sprzętu, podpisami kryptograficznymi i poświadczeniami treści (C2PA).",
-    "badgeExplanationVerificationSilver": "Srebro: Podpisy kryptograficzne udowadniają, że film nie został zmieniony od momentu nagrania.",
-    "badgeExplanationVerificationBronze": "Brąz: Obecne są podstawowe podpisy metadanych.",
-    "badgeExplanationVerificationSilverAiScan": "Srebro: Skan AI potwierdza, że film jest prawdopodobnie stworzony przez człowieka.",
-    "badgeExplanationNoVerification": "Brak danych weryfikacyjnych dla tego filmu.",
     "shareMenuTitle": "Udostępnij film",
     "shareMenuReportAiContent": "Zgłoś treść AI",
     "shareMenuReportAiContentSubtitle": "Szybko zgłoś podejrzewaną treść wygenerowaną przez AI",
@@ -2488,7 +2435,6 @@
     "libraryWebUnavailableHeadline": "Biblioteka jest w aplikacji mobilnej",
     "notificationFollowBack": "Zaobserwuj",
     "profileSetupUploadStaged": "Przesłano — dotknij Zapisz, aby zastosować",
-    "proofmodeCheckAiGenerated": "Sprawdź, czy wygenerowane przez AI",
     "dmSendFailedMessage": "Nie udało się wysłać wiadomości",
     "dmSendFailedRetry": "Spróbuj ponownie",
     "dmSendPartialMessage": "Wysłano, ale nie zsynchronizowano z twoimi innymi urządzeniami",

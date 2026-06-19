@@ -193,9 +193,7 @@ void main() {
   group('_OverviewSection (via $MetadataExpandedSheet)', () {
     testWidgetsWithSurfaceSize(
       'renders fetched parent context for a video reply',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final video = _makeVideo(
           title: 'Comment video',
           rawTags: const {
@@ -266,9 +264,7 @@ void main() {
 
     testWidgetsWithSurfaceSize(
       'still renders the section without title or description',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final video = _makeVideo();
 
         await tester.pumpWidget(
@@ -305,9 +301,7 @@ void main() {
 
     testWidgetsWithSurfaceSize(
       'prefers published_at for the visible posted date',
-      (
-        tester,
-      ) async {
+      (tester) async {
         const publishedAt = 1700604800;
         final video = _makeVideo(
           title: 'Who knew?',
@@ -328,9 +322,7 @@ void main() {
 
     testWidgetsWithSurfaceSize(
       'renders Vine-era date for a classic vine timestamp',
-      (
-        tester,
-      ) async {
+      (tester) async {
         // 2012-12-11 21:38 UTC — a classic Vine-era timestamp.
         final video = _makeVideo(
           title: 'Classic vine',
@@ -349,9 +341,7 @@ void main() {
 
     testWidgetsWithSurfaceSize(
       'applies labelSmall typography with onSurfaceVariant color',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final video = _makeVideo(title: 'Who knew?');
 
         await tester.pumpWidget(
@@ -370,9 +360,7 @@ void main() {
 
     testWidgetsWithSurfaceSize(
       'wraps the date in a Semantics with the localized label',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final semantics = tester.ensureSemantics();
         try {
           final video = _makeVideo(title: 'Who knew?');
@@ -494,9 +482,7 @@ void main() {
 
     testWidgetsWithSurfaceSize(
       'renders the divine-mark icon next to the Human-Made label',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
         await tester.pumpWidget(
           buildSubject(child: MetadataBadgesRow(video: video)),
@@ -658,9 +644,7 @@ void main() {
 
     testWidgetsWithSurfaceSize(
       'hashtag chip exposes a tappable button affordance',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final semantics = tester.ensureSemantics();
         try {
           final video = _makeVideo(hashtags: ['comedy']);
@@ -710,10 +694,7 @@ void main() {
         // The visible chip is the Container immediately above the
         // tag's Text — its bounds match the rendered 40 dp height.
         final containerFinder = find
-            .ancestor(
-              of: find.text('comedy'),
-              matching: find.byType(Container),
-            )
+            .ancestor(of: find.text('comedy'), matching: find.byType(Container))
             .first;
         expect(tester.getSize(containerFinder).height, equals(40));
       },
@@ -815,10 +796,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final l10n = _l10n(tester);
-        expect(
-          find.text(l10n.metadataCollaboratorsLabel),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.metadataCollaboratorsLabel), findsOneWidget);
         expect(find.text('Alice'), findsOneWidget);
         expect(find.text('Bob'), findsOneWidget);
         expect(
@@ -864,9 +842,7 @@ void main() {
           findsOneWidget,
         );
         // The pending chip is wrapped in an Opacity.
-        final opacityWidgets = tester.widgetList<Opacity>(
-          find.byType(Opacity),
-        );
+        final opacityWidgets = tester.widgetList<Opacity>(find.byType(Opacity));
         expect(opacityWidgets, hasLength(1));
         expect(opacityWidgets.first.opacity, closeTo(0.7, 0.001));
       },
@@ -888,9 +864,7 @@ void main() {
             child: const MetadataCollaboratorsSectionBody(
               visibility: CollaboratorVisibility(
                 taggedPubkeys: [_collaborator1, _collaborator2],
-                statusByPubkey: {
-                  _collaborator1: CollaboratorStatus.ignored,
-                },
+                statusByPubkey: {_collaborator1: CollaboratorStatus.ignored},
                 currentUserPubkey: _collaborator1,
                 creatorPubkey: _creatorPubkey,
               ),
@@ -913,9 +887,7 @@ void main() {
             child: const MetadataCollaboratorsSectionBody(
               visibility: CollaboratorVisibility(
                 taggedPubkeys: [_collaborator1],
-                statusByPubkey: {
-                  _collaborator1: CollaboratorStatus.ignored,
-                },
+                statusByPubkey: {_collaborator1: CollaboratorStatus.ignored},
                 currentUserPubkey: _collaborator1,
                 creatorPubkey: _creatorPubkey,
               ),
@@ -924,10 +896,7 @@ void main() {
         );
 
         final l10n = _l10n(tester);
-        expect(
-          find.text(l10n.metadataCollaboratorsLabel),
-          findsNothing,
-        );
+        expect(find.text(l10n.metadataCollaboratorsLabel), findsNothing);
       },
     );
 
@@ -944,9 +913,7 @@ void main() {
             child: const MetadataCollaboratorsSectionBody(
               visibility: CollaboratorVisibility(
                 taggedPubkeys: [_collaborator1],
-                statusByPubkey: {
-                  _collaborator1: CollaboratorStatus.pending,
-                },
+                statusByPubkey: {_collaborator1: CollaboratorStatus.pending},
                 currentUserPubkey: _reposterPubkey,
                 creatorPubkey: _creatorPubkey,
               ),
@@ -1059,9 +1026,7 @@ void main() {
 
     testWidgetsWithSurfaceSize(
       'hides when relay returns empty and no pre-populated data',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final video = _makeVideo();
 
         await tester.pumpWidget(
@@ -1095,8 +1060,8 @@ void main() {
       final l10n = _l10n(tester);
       expect(find.text(l10n.metadataVerificationLabel), findsOneWidget);
       expect(find.text(l10n.metadataDeviceAttestation), findsOneWidget);
-      expect(find.text(l10n.badgeExplanationPgpSignature), findsOneWidget);
-      expect(find.text(l10n.badgeExplanationC2paCredentials), findsOneWidget);
+      expect(find.text(l10n.metadataPgpSignature), findsOneWidget);
+      expect(find.text(l10n.metadataC2paCredentials), findsOneWidget);
       expect(find.text(l10n.metadataProofManifest), findsOneWidget);
       // Three passed (device attestation, PGP via manifest, proof manifest),
       // one failed (C2PA). DivineIcon renders SVGs — find by widget type
@@ -1172,9 +1137,7 @@ void main() {
   group('$MetadataExpandedSheet full integration', () {
     testWidgetsWithSurfaceSize(
       'renders all sections for fully populated video',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final video = _makeVideo(
           title: 'Who knew?',
           content: 'What really happens behind the scenes',
@@ -1284,9 +1247,7 @@ void main() {
 
     testWidgetsWithSurfaceSize(
       'renders only populated sections for sparse video',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final video = _makeVideo(title: 'Simple video', hashtags: ['hello']);
 
         await tester.pumpWidget(
