@@ -56,15 +56,12 @@ AppLocalizations get _l10n => lookupAppLocalizations(const Locale('en'));
 
 void main() {
   group(CollaboratorAvatarRow, () {
-    testWidgets(
-      'renders SizedBox.shrink when video has no collaborators',
-      (tester) async {
-        await tester.pumpWidget(
-          _wrap(CollaboratorAvatarRow(video: _video())),
-        );
-        expect(find.byIcon(Icons.people), findsNothing);
-      },
-    );
+    testWidgets('renders SizedBox.shrink when video has no collaborators', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_wrap(CollaboratorAvatarRow(video: _video())));
+      expect(find.byIcon(Icons.people), findsNothing);
+    });
   });
 
   group(CollaboratorAvatarRowBody, () {
@@ -106,9 +103,7 @@ void main() {
         );
 
         // Exactly one avatar is wrapped in Opacity (the pending one).
-        final opacityWidgets = tester.widgetList<Opacity>(
-          find.byType(Opacity),
-        );
+        final opacityWidgets = tester.widgetList<Opacity>(find.byType(Opacity));
         expect(opacityWidgets, hasLength(1));
         expect(opacityWidgets.first.opacity, closeTo(0.55, 0.001));
 
@@ -126,103 +121,91 @@ void main() {
       },
     );
 
-    testWidgets(
-      'inviter view: pending count appears in label suffix',
-      (tester) async {
-        await tester.pumpWidget(
-          _wrap(
-            const CollaboratorAvatarRowBody(
-              visibility: CollaboratorVisibility(
-                taggedPubkeys: [_collab1, _collab2],
-                statusByPubkey: {
-                  _collab1: CollaboratorStatus.pending,
-                  _collab2: CollaboratorStatus.pending,
-                },
-                currentUserPubkey: _creatorPubkey,
-                creatorPubkey: _creatorPubkey,
-              ),
-            ),
-            overrides: [
-              fetchUserProfileProvider(
-                _collab1,
-              ).overrideWith((ref) async => _makeProfile(_collab1, 'Alice')),
-              fetchUserProfileProvider(
-                _collab2,
-              ).overrideWith((ref) async => _makeProfile(_collab2, 'Bob')),
-            ],
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final base = _l10n.videoCollaboratorWithMore('Alice', 1);
-        final expectedLabel = _l10n.videoCollaboratorWithPendingSuffix(
-          base,
-          2,
-        );
-        expect(find.text(expectedLabel), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'recipient view (ignored): own avatar filtered out',
-      (tester) async {
-        await tester.pumpWidget(
-          _wrap(
-            const CollaboratorAvatarRowBody(
-              visibility: CollaboratorVisibility(
-                taggedPubkeys: [_collab1, _collab2],
-                statusByPubkey: {_collab1: CollaboratorStatus.ignored},
-                currentUserPubkey: _collab1,
-                creatorPubkey: _creatorPubkey,
-              ),
-            ),
-            overrides: [
-              fetchUserProfileProvider(
-                _collab1,
-              ).overrideWith((ref) async => _makeProfile(_collab1, 'Alice')),
-              fetchUserProfileProvider(
-                _collab2,
-              ).overrideWith((ref) async => _makeProfile(_collab2, 'Bob')),
-            ],
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Row still renders for _collab2.
-        expect(find.byIcon(Icons.people), findsOneWidget);
-        // Label is the single-collaborator variant naming Bob — not Alice.
-        expect(
-          find.text(_l10n.videoCollaboratorWithOne('Bob')),
-          findsOneWidget,
-        );
-        expect(
-          find.text(_l10n.videoCollaboratorWithOne('Alice')),
-          findsNothing,
-        );
-        // No pending decoration on recipient view.
-        expect(find.byType(Opacity), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'recipient view (ignored, sole collaborator): row shrinks',
-      (tester) async {
-        await tester.pumpWidget(
-          _wrap(
-            const CollaboratorAvatarRowBody(
-              visibility: CollaboratorVisibility(
-                taggedPubkeys: [_collab1],
-                statusByPubkey: {_collab1: CollaboratorStatus.ignored},
-                currentUserPubkey: _collab1,
-                creatorPubkey: _creatorPubkey,
-              ),
+    testWidgets('inviter view: pending count appears in label suffix', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const CollaboratorAvatarRowBody(
+            visibility: CollaboratorVisibility(
+              taggedPubkeys: [_collab1, _collab2],
+              statusByPubkey: {
+                _collab1: CollaboratorStatus.pending,
+                _collab2: CollaboratorStatus.pending,
+              },
+              currentUserPubkey: _creatorPubkey,
+              creatorPubkey: _creatorPubkey,
             ),
           ),
-        );
+          overrides: [
+            fetchUserProfileProvider(
+              _collab1,
+            ).overrideWith((ref) async => _makeProfile(_collab1, 'Alice')),
+            fetchUserProfileProvider(
+              _collab2,
+            ).overrideWith((ref) async => _makeProfile(_collab2, 'Bob')),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.people), findsNothing);
-      },
-    );
+      final base = _l10n.videoCollaboratorWithMore('Alice', 1);
+      final expectedLabel = _l10n.videoCollaboratorWithPendingSuffix(base, 2);
+      expect(find.text(expectedLabel), findsOneWidget);
+    });
+
+    testWidgets('recipient view (ignored): own avatar filtered out', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const CollaboratorAvatarRowBody(
+            visibility: CollaboratorVisibility(
+              taggedPubkeys: [_collab1, _collab2],
+              statusByPubkey: {_collab1: CollaboratorStatus.ignored},
+              currentUserPubkey: _collab1,
+              creatorPubkey: _creatorPubkey,
+            ),
+          ),
+          overrides: [
+            fetchUserProfileProvider(
+              _collab1,
+            ).overrideWith((ref) async => _makeProfile(_collab1, 'Alice')),
+            fetchUserProfileProvider(
+              _collab2,
+            ).overrideWith((ref) async => _makeProfile(_collab2, 'Bob')),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Row still renders for _collab2.
+      expect(find.byIcon(Icons.people), findsOneWidget);
+      // Label is the single-collaborator variant naming Bob — not Alice.
+      expect(find.text(_l10n.videoCollaboratorWithOne('Bob')), findsOneWidget);
+      expect(find.text(_l10n.videoCollaboratorWithOne('Alice')), findsNothing);
+      // No pending decoration on recipient view.
+      expect(find.byType(Opacity), findsNothing);
+    });
+
+    testWidgets('recipient view (ignored, sole collaborator): row shrinks', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const CollaboratorAvatarRowBody(
+            visibility: CollaboratorVisibility(
+              taggedPubkeys: [_collab1],
+              statusByPubkey: {_collab1: CollaboratorStatus.ignored},
+              currentUserPubkey: _collab1,
+              creatorPubkey: _creatorPubkey,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.people), findsNothing);
+    });
 
     testWidgets(
       'recipient view (confirmed): own avatar visible without decoration',
@@ -334,13 +317,48 @@ void main() {
         findsNothing,
       );
 
-      await tester.tap(
-        find.text(_l10n.videoCollaboratorWithMore('Alice', 2)),
-      );
+      await tester.tap(find.text(_l10n.videoCollaboratorWithMore('Alice', 2)));
       await tester.pumpAndSettle();
 
       expect(find.text(_l10n.metadataCollaboratorsLabel), findsOneWidget);
       expect(find.text('Alice'), findsOneWidget);
+      expect(find.text('Bob'), findsOneWidget);
+      expect(find.text('Casey'), findsOneWidget);
+    });
+
+    testWidgets('expanded picker omits collaborator ignored by current user', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const CollaboratorAvatarRowBody(
+            visibility: CollaboratorVisibility(
+              taggedPubkeys: [_collab1, _collab2, _collab3],
+              statusByPubkey: {_collab1: CollaboratorStatus.ignored},
+              currentUserPubkey: _collab1,
+              creatorPubkey: _creatorPubkey,
+            ),
+          ),
+          overrides: [
+            fetchUserProfileProvider(
+              _collab1,
+            ).overrideWith((ref) async => _makeProfile(_collab1, 'Alice')),
+            fetchUserProfileProvider(
+              _collab2,
+            ).overrideWith((ref) async => _makeProfile(_collab2, 'Bob')),
+            fetchUserProfileProvider(
+              _collab3,
+            ).overrideWith((ref) async => _makeProfile(_collab3, 'Casey')),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(_l10n.videoCollaboratorWithMore('Bob', 1)));
+      await tester.pumpAndSettle();
+
+      expect(find.text(_l10n.metadataCollaboratorsLabel), findsOneWidget);
+      expect(find.text('Alice'), findsNothing);
       expect(find.text('Bob'), findsOneWidget);
       expect(find.text('Casey'), findsOneWidget);
     });

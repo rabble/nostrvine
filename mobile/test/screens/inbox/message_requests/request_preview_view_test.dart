@@ -106,9 +106,9 @@ void main() {
       );
 
       when(() => mockPreviewCubit.conversationId).thenReturn(conversationId);
-      when(() => mockInviteActionsCubit.state).thenReturn(
-        const CollaboratorInviteActionsState(),
-      );
+      when(
+        () => mockInviteActionsCubit.state,
+      ).thenReturn(const CollaboratorInviteActionsState());
       when(
         () => mockInviteActionsCubit.acceptInvite(any()),
       ).thenAnswer((_) async {});
@@ -276,12 +276,50 @@ void main() {
         await tester.tap(find.text(l10n.inboxCollabInviteNotMineButton));
         await tester.pump();
 
-        verify(
-          () => mockInviteActionsCubit.ignoreInvite(any()),
-        ).called(1);
-        verifyNever(
-          () => mockActionsCubit.declineRequest(any()),
+        verify(() => mockInviteActionsCubit.ignoreInvite(any())).called(1);
+        verifyNever(() => mockActionsCubit.declineRequest(any()));
+      });
+
+      testWidgets('renders sent collaborator invite preview without actions', (
+        tester,
+      ) async {
+        const inviteMessage = DmMessage(
+          id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          conversationId: conversationId,
+          senderPubkey: currentPubkey,
+          content: 'You were invited to collaborate.',
+          createdAt: 1700000000,
+          giftWrapId:
+              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          tags: [
+            ['divine', 'collab-invite'],
+            [
+              'a',
+              '34236:aabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd:skate-loop',
+              'wss://relay.divine.video',
+            ],
+            ['p', currentPubkey],
+            ['role', 'Collaborator'],
+            ['title', 'Skate loop'],
+          ],
         );
+
+        await tester.pumpWidget(
+          buildSubject(
+            previewState: const RequestPreviewState(
+              status: RequestPreviewStatus.loaded,
+              messageCount: 1,
+              participantPubkeys: [otherPubkey],
+              messages: [inviteMessage],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.inboxCollabInviteCardTitle), findsOneWidget);
+        expect(find.text(l10n.inboxCollabInviteSentStatus), findsOneWidget);
+        expect(find.text(l10n.inboxCollabInviteCoPostButton), findsNothing);
+        expect(find.text(l10n.inboxCollabInviteNotMineButton), findsNothing);
       });
     });
 

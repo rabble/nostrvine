@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +22,22 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 /// Mock for FollowRepository
 class _MockFollowRepository extends Mock implements FollowRepository {}
+
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
+
+_MockContentBlocklistRepository _createMockContentBlocklistRepository({
+  Set<String> blockedPubkeys = const {},
+}) {
+  final mock = _MockContentBlocklistRepository();
+  when(
+    () => mock.shouldFilterFromFeeds(any()),
+  ).thenReturn(false);
+  for (final pubkey in blockedPubkeys) {
+    when(() => mock.shouldFilterFromFeeds(pubkey)).thenReturn(true);
+  }
+  return mock;
+}
 
 /// Create a mock ProfileRepository
 _MockProfileRepository _createMockProfileRepository({
@@ -216,6 +233,9 @@ void main() {
             overrides: [
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                _createMockContentBlocklistRepository(),
+              ),
             ],
             child: const MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -246,6 +266,9 @@ void main() {
                 _createMockProfileRepository(),
               ),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                _createMockContentBlocklistRepository(),
+              ),
             ],
             child: const MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -278,6 +301,9 @@ void main() {
                 _createMockProfileRepository(),
               ),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                _createMockContentBlocklistRepository(),
+              ),
             ],
             child: const MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -297,55 +323,57 @@ void main() {
         expect(find.text('Go back'), findsOneWidget);
       });
 
-      testWidgets(
-        'falls back to local follows when getMyFollowers fails',
-        (tester) async {
-          final profile = UserProfile(
-            pubkey: 'pubkey1',
-            name: 'User One',
-            rawData: const {'name': 'User One'},
-            createdAt: DateTime.now(),
-            eventId: 'event1',
-          );
+      testWidgets('falls back to local follows when getMyFollowers fails', (
+        tester,
+      ) async {
+        final profile = UserProfile(
+          pubkey: 'pubkey1',
+          name: 'User One',
+          rawData: const {'name': 'User One'},
+          createdAt: DateTime.now(),
+          eventId: 'event1',
+        );
 
-          final mockFollowRepo = _createMockFollowRepository(
-            followingPubkeys: ['pubkey1'],
-          );
-          when(
-            mockFollowRepo.getMyFollowers,
-          ).thenAnswer((_) async => throw Exception('relay down'));
+        final mockFollowRepo = _createMockFollowRepository(
+          followingPubkeys: ['pubkey1'],
+        );
+        when(
+          mockFollowRepo.getMyFollowers,
+        ).thenAnswer((_) async => throw Exception('relay down'));
 
-          final mockProfileRepo = _createMockProfileRepository();
-          when(
-            () => mockProfileRepo.getCachedProfile(pubkey: 'pubkey1'),
-          ).thenAnswer((_) async => profile);
+        final mockProfileRepo = _createMockProfileRepository();
+        when(
+          () => mockProfileRepo.getCachedProfile(pubkey: 'pubkey1'),
+        ).thenAnswer((_) async => profile);
 
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                profileRepositoryProvider.overrideWithValue(mockProfileRepo),
-                followRepositoryProvider.overrideWithValue(mockFollowRepo),
-              ],
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: UserPickerSheet(
-                    title: 'Title',
-                    filterMode: UserPickerFilterMode.mutualFollowsOnly,
-                  ),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+              followRepositoryProvider.overrideWithValue(mockFollowRepo),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                _createMockContentBlocklistRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.mutualFollowsOnly,
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-          expect(find.byType(CircularProgressIndicator), findsNothing);
-          expect(find.text('User One'), findsOneWidget);
-          expect(tester.takeException(), isNull);
-        },
-      );
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.text('User One'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
 
       testWidgets('displays follow list after loading', (tester) async {
         final followPubkeys = ['pubkey1', 'pubkey2'];
@@ -386,6 +414,9 @@ void main() {
             overrides: [
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                _createMockContentBlocklistRepository(),
+              ),
             ],
             child: const MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -404,6 +435,70 @@ void main() {
 
         // Should not show empty state
         expect(find.text('Your crew is out there'), findsNothing);
+      });
+
+      testWidgets('filters blocked users from the follow list', (tester) async {
+        final allowedProfile = UserProfile(
+          pubkey: 'pubkey1',
+          name: 'Allowed User',
+          rawData: const {'name': 'Allowed User'},
+          createdAt: DateTime.now(),
+          eventId: 'event1',
+        );
+        final blockedProfile = UserProfile(
+          pubkey: 'pubkey2',
+          name: 'Blocked User',
+          rawData: const {'name': 'Blocked User'},
+          createdAt: DateTime.now(),
+          eventId: 'event2',
+        );
+
+        final mockFollowRepo = _createMockFollowRepository(
+          followingPubkeys: [allowedProfile.pubkey, blockedProfile.pubkey],
+        );
+        final mockProfileRepo = _createMockProfileRepository(
+          cachedProfiles: [allowedProfile, blockedProfile],
+        );
+        when(
+          () => mockProfileRepo.getCachedProfile(
+            pubkey: allowedProfile.pubkey,
+          ),
+        ).thenAnswer((_) async => allowedProfile);
+        when(
+          () => mockProfileRepo.getCachedProfile(
+            pubkey: blockedProfile.pubkey,
+          ),
+        ).thenAnswer((_) async => blockedProfile);
+        final mockBlocklistRepo = _createMockContentBlocklistRepository(
+          blockedPubkeys: {blockedProfile.pubkey},
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+              followRepositoryProvider.overrideWithValue(mockFollowRepo),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                mockBlocklistRepo,
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  filterMode: UserPickerFilterMode.mutualFollowsOnly,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.text('Allowed User'), findsOneWidget);
+        expect(find.text('Blocked User'), findsNothing);
       });
 
       testWidgets(
@@ -434,6 +529,9 @@ void main() {
               overrides: [
                 profileRepositoryProvider.overrideWithValue(mockProfileRepo),
                 followRepositoryProvider.overrideWithValue(mockFollowRepo),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  _createMockContentBlocklistRepository(),
+                ),
               ],
               child: const MaterialApp(
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -938,6 +1036,9 @@ void main() {
               profileRepositoryProvider.overrideWithValue(null),
               followRepositoryProvider.overrideWithValue(
                 _createMockFollowRepository(),
+              ),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                _createMockContentBlocklistRepository(),
               ),
             ],
             child: const MaterialApp(

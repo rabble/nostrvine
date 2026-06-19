@@ -51,6 +51,11 @@ class CollaboratorResponseService {
           'Could not determine collaborator pubkey',
         );
       }
+      if (currentPubkey == invite.creatorPubkey) {
+        return const CollaboratorResponseResult.failure(
+          'Creators cannot accept their own collaborator invites',
+        );
+      }
 
       final event = await _authService.createAndSignEvent(
         kind: CollaborationEventKinds.collaboratorResponse,

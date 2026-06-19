@@ -161,12 +161,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     }
   }
 
-  /// Loads profiles of followed users for local search.
-  ///
-  /// For [UserPickerFilterMode.mutualFollowsOnly], fetches the current user's
-  /// followers from the relay in parallel with profile loading, then filters
-  /// the list to actual mutual follows. This way the mutual-follow check
-  /// happens once when the sheet opens rather than per-profile after selection.
+  /// Loads followed profiles for local search.
   Future<void> _loadFollowProfiles() async {
     final followRepo = ref.read(followRepositoryProvider);
     final profileRepo = ref.read(profileRepositoryProvider);
@@ -176,9 +171,8 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     }
 
     final followingPubkeys = followRepo.followingPubkeys;
+    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
 
-    // Start both fetches in parallel: profile cache (fast, SQLite) and
-    // my followers from relay (needed for mutual-follow filtering).
     final profilesFuture = Future.wait(
       followingPubkeys.map((pk) => profileRepo.getCachedProfile(pubkey: pk)),
     );
@@ -198,6 +192,12 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
       ).wait;
 
       var profiles = rawProfiles.whereType<UserProfile>().toList();
+      profiles = profiles
+          .where(
+            (profile) =>
+                !blocklistRepository.shouldFilterFromFeeds(profile.pubkey),
+          )
+          .toList();
 
       // When mutual-follow fetch fails, fall back to local follows so the
       // picker remains usable instead of hanging in loading.

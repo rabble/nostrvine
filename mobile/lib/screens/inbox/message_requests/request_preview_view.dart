@@ -12,6 +12,7 @@ import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/collaborator_invite.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
@@ -43,6 +44,8 @@ class RequestPreviewView extends ConsumerWidget {
     final otherPubkey = participantPubkeys.isNotEmpty
         ? participantPubkeys.first
         : '';
+    final currentPubkey =
+        ref.watch(authServiceProvider).currentPublicKeyHex ?? '';
 
     final profileAsync = ref.watch(userProfileReactiveProvider(otherPubkey));
 
@@ -72,6 +75,7 @@ class RequestPreviewView extends ConsumerWidget {
                   displayName: displayName,
                   profile: profile,
                   otherPubkey: otherPubkey,
+                  currentPubkey: currentPubkey,
                   messageCount: messageCount,
                   messages: messages,
                 ),
@@ -90,6 +94,7 @@ class _ProfileContent extends StatelessWidget {
     required this.displayName,
     required this.profile,
     required this.otherPubkey,
+    required this.currentPubkey,
     required this.messageCount,
     required this.messages,
   });
@@ -97,6 +102,7 @@ class _ProfileContent extends StatelessWidget {
   final String displayName;
   final UserProfile? profile;
   final String otherPubkey;
+  final String currentPubkey;
   final int messageCount;
   final List<DmMessage> messages;
 
@@ -164,6 +170,7 @@ class _ProfileContent extends StatelessWidget {
               _InvitePreview(
                 messages: messages,
                 senderDisplayName: displayName,
+                currentPubkey: currentPubkey,
               ),
             ],
           ),
@@ -177,24 +184,31 @@ class _InvitePreview extends StatelessWidget {
   const _InvitePreview({
     required this.messages,
     required this.senderDisplayName,
+    required this.currentPubkey,
   });
 
   final List<DmMessage> messages;
   final String senderDisplayName;
+  final String currentPubkey;
 
   @override
   Widget build(BuildContext context) {
-    final inviteMessages = messages
-        .map(CollaboratorInviteParser.parse)
-        .whereType<CollaboratorInvite>()
-        .toList();
-    if (inviteMessages.isEmpty) return const SizedBox.shrink();
+    ({DmMessage message, CollaboratorInvite invite})? inviteMessage;
+    for (final message in messages) {
+      final invite = CollaboratorInviteParser.parse(message);
+      if (invite == null) continue;
+      inviteMessage = (message: message, invite: invite);
+      break;
+    }
+    if (inviteMessage == null) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(top: 24),
       child: CollaboratorInviteCard(
-        invite: inviteMessages.first,
-        isSent: false,
+        invite: inviteMessage.invite,
+        isSent:
+            currentPubkey.isNotEmpty &&
+            inviteMessage.message.senderPubkey == currentPubkey,
         senderDisplayName: senderDisplayName,
       ),
     );

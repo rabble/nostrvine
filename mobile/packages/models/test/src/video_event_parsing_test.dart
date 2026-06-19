@@ -334,14 +334,8 @@ void main() {
 
     test('should ignore invalid thumbnail URLs from imeta tags', () {
       final invalidImetaTags = [
-        [
-          'imeta',
-          'thumb https:///missing-host.jpg',
-        ],
-        [
-          'imeta',
-          'image https:///missing-host.jpg',
-        ],
+        ['imeta', 'thumb https:///missing-host.jpg'],
+        ['imeta', 'image https:///missing-host.jpg'],
       ];
 
       for (final imetaTag in invalidImetaTags) {
@@ -431,10 +425,7 @@ void main() {
 
       expect(videoEvent.collaboratorPubkeys, hasLength(1));
       expect(videoEvent.collaboratorPubkeys, contains(collabPubkey1));
-      expect(
-        videoEvent.collaboratorPubkeys,
-        isNot(contains(authorPubkey)),
-      );
+      expect(videoEvent.collaboratorPubkeys, isNot(contains(authorPubkey)));
     });
 
     test('should deduplicate collaborator pubkeys', () {
@@ -468,12 +459,7 @@ void main() {
         34236,
         [
           ['url', 'https://example.com/video.mp4'],
-          [
-            'p',
-            collabPubkey1,
-            'wss://relay.divine.video',
-            'collaborator',
-          ],
+          ['p', collabPubkey1, 'wss://relay.divine.video', 'collaborator'],
           ['p', strayMentionPubkey, 'wss://relay.divine.video', 'mention'],
           ['p', collabPubkey2, 'wss://relay.divine.video'],
         ],
@@ -503,11 +489,36 @@ void main() {
 
       expect(
         videoEvent.collaboratorPubkeys,
-        equals([
-          collabPubkey1,
-          collabPubkey2,
-        ]),
+        equals([collabPubkey1, collabPubkey2]),
       );
+    });
+
+    test('should normalize uppercase collaborator pubkeys', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+          [
+            'p',
+            collabPubkey1.toUpperCase(),
+            'wss://relay.divine.video',
+            'collaborator',
+          ],
+          [
+            'p',
+            authorPubkey.toUpperCase(),
+            'wss://relay.divine.video',
+            'collaborator',
+          ],
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.collaboratorPubkeys, equals([collabPubkey1]));
     });
 
     test('should return empty collaborators when no p-tags', () {
@@ -579,10 +590,7 @@ void main() {
         videoEvent.inspiredByVideo!.relayUrl,
         equals('wss://relay.divine.video'),
       );
-      expect(
-        videoEvent.inspiredByVideo!.creatorPubkey,
-        equals(creatorPubkey),
-      );
+      expect(videoEvent.inspiredByVideo!.creatorPubkey, equals(creatorPubkey));
       expect(videoEvent.inspiredByVideo!.dTag, equals('test-d-tag'));
       expect(videoEvent.hasInspiredBy, isTrue);
     });
@@ -617,10 +625,7 @@ void main() {
 
       final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
 
-      expect(
-        videoEvent.inspiredByNpub,
-        equals('npub1abc123def456ghi789'),
-      );
+      expect(videoEvent.inspiredByNpub, equals('npub1abc123def456ghi789'));
       expect(videoEvent.hasInspiredBy, isTrue);
     });
 
@@ -646,11 +651,7 @@ void main() {
         34236,
         [
           ['url', 'https://example.com/video.mp4'],
-          [
-            'a',
-            '34236:$creatorPubkey:test-d-tag',
-            'wss://relay.divine.video',
-          ],
+          ['a', '34236:$creatorPubkey:test-d-tag', 'wss://relay.divine.video'],
         ],
         'Inspired by nostr:npub1xyz789abc',
         createdAt: 1757385263,
@@ -684,17 +685,13 @@ void main() {
 
   group(InspiredByInfo, () {
     test('should parse creatorPubkey from addressableId', () {
-      const info = InspiredByInfo(
-        addressableId: '34236:abc123:my-video',
-      );
+      const info = InspiredByInfo(addressableId: '34236:abc123:my-video');
 
       expect(info.creatorPubkey, equals('abc123'));
     });
 
     test('should parse dTag from addressableId', () {
-      const info = InspiredByInfo(
-        addressableId: '34236:abc123:my-video',
-      );
+      const info = InspiredByInfo(addressableId: '34236:abc123:my-video');
 
       expect(info.dTag, equals('my-video'));
     });
@@ -738,9 +735,7 @@ void main() {
         addressableId: '34236:abc:vid',
         relayUrl: 'wss://relay2.com', // Different relay, same ID
       );
-      const info3 = InspiredByInfo(
-        addressableId: '34236:different:vid',
-      );
+      const info3 = InspiredByInfo(addressableId: '34236:different:vid');
 
       expect(info1, equals(info2));
       expect(info1, isNot(equals(info3)));

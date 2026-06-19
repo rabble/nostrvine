@@ -551,11 +551,14 @@ class VideoEvent {
         case 'p':
           // Divine collaborator p-tag convention on NIP-71 video events:
           // ["p", "<pubkey>", "<relay>", "collaborator"]
-          if (tagValue.isNotEmpty && tagValue != event.pubkey) {
+          final normalizedPubkey = tagValue.toLowerCase();
+          final normalizedAuthorPubkey = event.pubkey.toLowerCase();
+          if (normalizedPubkey.isNotEmpty &&
+              normalizedPubkey != normalizedAuthorPubkey) {
             final role = tag.length >= 4 ? tag[3].toLowerCase() : null;
             if (role == 'collaborator' &&
-                !collaboratorPubkeys.contains(tagValue)) {
-              collaboratorPubkeys.add(tagValue);
+                !collaboratorPubkeys.contains(normalizedPubkey)) {
+              collaboratorPubkeys.add(normalizedPubkey);
             }
           }
         case 'a':
