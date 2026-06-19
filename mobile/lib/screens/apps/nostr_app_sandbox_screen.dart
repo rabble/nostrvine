@@ -517,10 +517,21 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
         id: responseId,
         result: BridgeResult.error(
           'invalid_request',
-          errorMessage: error.toString(),
+          errorMessage: _safeBridgeErrorMessage(error),
         ),
       );
     }
+  }
+
+  String? _safeBridgeErrorMessage(Object error) {
+    const safeFormatMessages = {
+      'Bridge payload must be a JSON object',
+      'Bridge method is required',
+      'Bridge args must be an object',
+    };
+
+    final message = error is FormatException ? error.message : null;
+    return safeFormatMessages.contains(message) ? message : null;
   }
 
   Future<bool> _showPermissionPrompt(BridgePermissionRequest request) async {

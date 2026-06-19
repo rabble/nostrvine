@@ -194,6 +194,7 @@ void main() {
         );
 
         expect(result.success, isTrue);
+        // Pins JSON-compatible event serialization for control characters.
         expect(
           (result.data! as Map)['id'],
           'bf207992e6131b67730e9d8eb00bcbc1dbb98c25d3ac9974da4d'

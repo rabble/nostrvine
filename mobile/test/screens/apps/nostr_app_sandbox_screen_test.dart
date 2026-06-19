@@ -335,6 +335,65 @@ void main() {
       );
     });
 
+    testWidgets('keeps static bridge request errors but hides exception text', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final sharedPreferences = await SharedPreferences.getInstance();
+      Future<void> Function(String message)? bridgeHandler;
+      final executedScripts = <String>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: NostrAppSandboxScreen(
+            app: _fixtureApp(),
+            sandboxBuilder: (_) => const SizedBox.shrink(),
+            bridgeServiceOverride: _ThrowingBridgeService(sharedPreferences),
+            javaScriptRunnerOverride: (script) async {
+              executedScripts.add(script);
+            },
+            onBridgeMessageHandlerReady: (handler) => bridgeHandler = handler,
+            bridgeNonceOverride: 'test-nonce',
+            currentUserPubkeyOverride: 'f' * 64,
+          ),
+        ),
+      );
+
+      await bridgeHandler!(
+        jsonEncode({
+          'id': 'missing-method',
+          'args': <String, dynamic>{},
+          'nonce': 'test-nonce',
+        }),
+      );
+      await bridgeHandler!(
+        jsonEncode({
+          'id': 'service-error',
+          'method': 'getPublicKey',
+          'args': <String, dynamic>{},
+          'nonce': 'test-nonce',
+        }),
+      );
+      await bridgeHandler!('{bad json');
+      await tester.pump();
+
+      expect(executedScripts, hasLength(3));
+      expect(executedScripts[0], contains('missing-method'));
+      expect(executedScripts[0], contains('Bridge method is required'));
+
+      expect(executedScripts[1], contains('service-error'));
+      expect(executedScripts[1], contains('invalid_request'));
+      expect(executedScripts[1], isNot(contains('secret internal failure')));
+      expect(executedScripts[1], isNot(contains('"message"')));
+
+      expect(executedScripts[2], contains('unknown'));
+      expect(executedScripts[2], contains('invalid_request'));
+      expect(executedScripts[2], isNot(contains('FormatException')));
+      expect(executedScripts[2], isNot(contains('"message"')));
+    });
+
     testWidgets(
       'rejects bridge messages with a mismatched nonce as unauthorized',
       (tester) async {
@@ -1089,6 +1148,31 @@ class _FakeAuthProvider implements BridgeAuthProvider {
   }) async {
     final event = Event('f' * 64, kind, tags, content, createdAt: createdAt);
     return BridgeSignedEvent(json: event.toJson());
+  }
+}
+
+class _ThrowingBridgeService extends NostrAppBridgeService {
+  _ThrowingBridgeService(SharedPreferences sharedPreferences)
+    : super(
+        authProvider: _FakeAuthProvider(),
+        policy: NostrAppBridgePolicy(
+          grantStore: NostrAppGrantStore(
+            sharedPreferences: sharedPreferences,
+          ),
+          currentUserPubkey: 'f' * 64,
+        ),
+        signerFactory: _FakeNostrSigner.new,
+      );
+
+  @override
+  Future<BridgeResult> handleRequest({
+    required NostrAppDirectoryEntry app,
+    required Uri origin,
+    required String method,
+    required Map<String, dynamic> args,
+    BridgePermissionPrompter? promptForPermission,
+  }) async {
+    throw StateError('secret internal failure');
   }
 }
 
