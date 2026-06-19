@@ -80,9 +80,9 @@ void main() {
       home: Scaffold(
         body: Align(
           alignment: Alignment.bottomCenter,
-          // Disable animations so the emoji-fly overlay (which renders a
-          // second copy of the tapped emoji) never appears — keeps emoji
-          // finders unambiguous and exercises the reduced-motion path.
+          // Disable animations to exercise the reduced-motion path (the
+          // player reaction overlay is suppressed) — these tests have no
+          // ReelReplyBridge, so a reaction never triggers an overlay anyway.
           child: Builder(
             builder: (context) => MediaQuery(
               data: MediaQuery.of(context).copyWith(disableAnimations: true),
@@ -192,5 +192,42 @@ void main() {
         emoji: '😂',
       ),
     ).called(1);
+  });
+
+  testWidgets('tapping an emoji triggers the player reaction overlay', (
+    tester,
+  ) async {
+    String? reacted;
+    // Animations enabled (no disableAnimations MediaQuery) + a ReelReplyBridge
+    // so the bar forwards the reaction to the player overlay.
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepo),
+          dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
+          authServiceProvider.overrideWithValue(auth),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.bottomCenter,
+              child: ReelReplyBridge(
+                setComposerFocused: (_) {},
+                playReaction: (emoji) => reacted = emoji,
+                child: ReelDmReplyBarHost(dmReplyContext: context()),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('❤️'));
+    await tester.pump();
+
+    expect(reacted, '❤️');
   });
 }

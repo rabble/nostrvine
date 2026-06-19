@@ -31,12 +31,6 @@ abstract class ReelReplyConstants {
   /// Quick-reaction emoji set (shared with the DM thread picker).
   static const List<String> quickEmojis = kDefaultDmReactionEmojis;
 
-  /// Reaction-burst animation duration.
-  static const flyDuration = Duration(milliseconds: 900);
-
-  /// Number of emoji particles in a reaction burst.
-  static const int burstCount = 18;
-
   /// Analytics screen name for in-player DM reel engagement.
   static const analyticsScreen = 'dm_reel_player';
 }
@@ -86,28 +80,31 @@ class ReelDmReplyBarHost extends ConsumerWidget {
               ),
         ),
       ],
-      child: _ReelDmReplyBar(
-        dmReplyContext: dmReplyContext,
-        ownerPubkey: ownerPubkey,
-        onComposerFocusChanged: _onComposerFocusChanged(context),
+      child: Builder(
+        builder: (context) {
+          final bridge = ReelReplyBridge.maybeOf(context);
+          return _ReelDmReplyBar(
+            dmReplyContext: dmReplyContext,
+            ownerPubkey: ownerPubkey,
+            // The player owns pausing + the full-screen reaction overlay; the
+            // bar just emits the signals, staying decoupled from its State.
+            onComposerFocusChanged: bridge?.setComposerFocused,
+            onReaction: bridge?.playReaction,
+          );
+        },
       ),
     );
   }
-
-  // The player owns pausing; the bar only emits the focus signal. Looked up
-  // lazily so this widget stays decoupled from the player's state type.
-  ValueChanged<bool>? _onComposerFocusChanged(BuildContext context) {
-    final pauseController = ReelReplyPauseController.maybeOf(context);
-    return pauseController?.setComposerFocused;
-  }
 }
 
-/// Inherited bridge so the bar can ask the player to pause while the composer
-/// is focused, without coupling to the player's private State type.
-class ReelReplyPauseController extends InheritedWidget {
-  /// Construct the controller.
-  const ReelReplyPauseController({
+/// Inherited bridge so the bar can drive player-owned behavior (pause on
+/// compose, the full-screen reaction overlay) without coupling to the player's
+/// private State type.
+class ReelReplyBridge extends InheritedWidget {
+  /// Construct the bridge.
+  const ReelReplyBridge({
     required this.setComposerFocused,
+    required this.playReaction,
     required super.child,
     super.key,
   });
@@ -115,13 +112,17 @@ class ReelReplyPauseController extends InheritedWidget {
   /// Called with `true` when the reply composer gains focus, `false` on blur.
   final ValueChanged<bool> setComposerFocused;
 
-  /// The nearest controller, or null when none is in scope.
-  static ReelReplyPauseController? maybeOf(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<ReelReplyPauseController>();
+  /// Plays the full-screen center reaction animation for the given emoji.
+  final ValueChanged<String> playReaction;
+
+  /// The nearest bridge, or null when none is in scope.
+  static ReelReplyBridge? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<ReelReplyBridge>();
 
   @override
-  bool updateShouldNotify(ReelReplyPauseController oldWidget) =>
-      setComposerFocused != oldWidget.setComposerFocused;
+  bool updateShouldNotify(ReelReplyBridge oldWidget) =>
+      setComposerFocused != oldWidget.setComposerFocused ||
+      playReaction != oldWidget.playReaction;
 }
 
 class _ReelDmReplyBar extends StatefulWidget {
@@ -129,18 +130,21 @@ class _ReelDmReplyBar extends StatefulWidget {
     required this.dmReplyContext,
     required this.ownerPubkey,
     this.onComposerFocusChanged,
+    this.onReaction,
   });
 
   final DmReplyContext dmReplyContext;
   final String ownerPubkey;
   final ValueChanged<bool>? onComposerFocusChanged;
 
+  /// Triggers the player's full-screen reaction overlay for the given emoji.
+  final ValueChanged<String>? onReaction;
+
   @override
   State<_ReelDmReplyBar> createState() => _ReelDmReplyBarState();
 }
 
-class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
-    with SingleTickerProviderStateMixin {
+class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _hasText = false;
@@ -156,12 +160,6 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
   /// Optimistically-selected emoji, highlighted immediately on tap.
   String? _optimisticEmoji;
 
-  // Reaction-burst animation.
-  late final AnimationController _flyController;
-  final GlobalKey _stackKey = GlobalKey();
-  String? _burstEmoji;
-  Offset _burstOrigin = Offset.zero;
-
   DmReplyContext get _ctx => widget.dmReplyContext;
 
   @override
@@ -169,15 +167,6 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
     super.initState();
     _controller.addListener(_handleTextChanged);
     _focusNode.addListener(_handleFocusChanged);
-    _flyController =
-        AnimationController(
-          vsync: this,
-          duration: ReelReplyConstants.flyDuration,
-        )..addStatusListener((status) {
-          if (status == AnimationStatus.completed && mounted) {
-            setState(() => _burstEmoji = null);
-          }
-        });
     ScreenAnalyticsService().trackInteraction(
       ReelReplyConstants.analyticsScreen,
       'dm_reel_opened',
@@ -188,7 +177,6 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
   @override
   void dispose() {
     _throttleTimer?.cancel();
-    _flyController.dispose();
     _controller
       ..removeListener(_handleTextChanged)
       ..dispose();
@@ -263,7 +251,9 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
         emoji: emoji,
       ),
     );
-    _playEmojiFly(emoji);
+    if (!MediaQuery.of(context).disableAnimations) {
+      widget.onReaction?.call(emoji);
+    }
     SemanticsService.sendAnnouncement(
       View.of(context),
       context.l10n.dmReelReactionSentAnnouncement(emoji),
@@ -278,22 +268,6 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
         'source': fromPicker ? 'picker' : 'quick',
       },
     );
-  }
-
-  void _playEmojiFly(String emoji) {
-    if (MediaQuery.of(context).disableAnimations) return;
-    // The burst always erupts from the horizontal center of the bar, just
-    // above the emoji row, and fountains up the middle of the screen —
-    // independent of which emoji was tapped.
-    final box = _stackKey.currentContext?.findRenderObject() as RenderBox?;
-    final origin = (box != null && box.hasSize)
-        ? Offset(box.size.width / 2, box.size.height - 36)
-        : Offset.zero;
-    setState(() {
-      _burstEmoji = emoji;
-      _burstOrigin = origin;
-    });
-    _flyController.forward(from: 0);
   }
 
   Future<void> _onMoreTap() async {
@@ -394,42 +368,29 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar>
                   MediaQuery.viewInsetsOf(context).bottom,
             ),
           ),
-          child: Stack(
-            key: _stackKey,
-            clipBehavior: Clip.none,
-            children: [
-              Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _ComposerPill(
-                      controller: _controller,
-                      focusNode: _focusNode,
-                      hasText: _hasText,
-                      hint: _composerHint,
-                      semanticLabel:
-                          context.l10n.dmReelReplyComposerSemanticLabel,
-                      onSubmit: _handleSubmit,
-                    ),
-                    const SizedBox(height: 8),
-                    _QuickReactionRow(
-                      emojis: ReelReplyConstants.quickEmojis,
-                      activeEmoji: _activeEmojiForHighlight(),
-                      moreLabel: context.l10n.dmReactionAddCustomA11yLabel,
-                      onEmojiTap: _onEmojiTap,
-                      onMoreTap: _onMoreTap,
-                    ),
-                  ],
+          child: Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _ComposerPill(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  hasText: _hasText,
+                  hint: _composerHint,
+                  semanticLabel: context.l10n.dmReelReplyComposerSemanticLabel,
+                  onSubmit: _handleSubmit,
                 ),
-              ),
-              if (_burstEmoji != null)
-                _ReactionBurst(
-                  emoji: _burstEmoji!,
-                  origin: _burstOrigin,
-                  animation: _flyController,
+                const SizedBox(height: 8),
+                _QuickReactionRow(
+                  emojis: ReelReplyConstants.quickEmojis,
+                  activeEmoji: _activeEmojiForHighlight(),
+                  moreLabel: context.l10n.dmReactionAddCustomA11yLabel,
+                  onEmojiTap: _onEmojiTap,
+                  onMoreTap: _onMoreTap,
                 ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -672,99 +633,6 @@ class _MorePickerButton extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A TikTok/Instagram-style reaction burst: the tapped emoji pops in at the
-/// tap point and rises, with a few smaller satellite copies spreading out,
-/// rotating, and fading as they float up over the reel.
-class _ReactionBurst extends StatelessWidget {
-  const _ReactionBurst({
-    required this.emoji,
-    required this.origin,
-    required this.animation,
-  });
-
-  final String emoji;
-  final Offset origin;
-  final Animation<double> animation;
-
-  /// Deterministic fractional hash in [0, 1) for particle [i] on stream [s].
-  static double _rand(int i, int s) {
-    final x = (i + 1) * (s == 0 ? 0.61803398875 : 0.38196601125) + s * 0.123;
-    return x - x.floorToDouble();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: IgnorePointer(
-        child: AnimatedBuilder(
-          animation: animation,
-          builder: (context, _) {
-            final t = animation.value;
-            return Stack(
-              clipBehavior: Clip.none,
-              children: [
-                for (var i = 0; i < ReelReplyConstants.burstCount; i++)
-                  _particle(i, t),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _particle(int i, double t) {
-    final isMain = i == 0;
-    // Stagger so particles erupt in quick succession.
-    final delay = isMain ? 0.0 : _rand(i, 2) * 0.18;
-    final span = 1 - delay;
-    final localT = span <= 0 ? 0.0 : ((t - delay) / span).clamp(0.0, 1.0);
-    if (localT <= 0) return const SizedBox.shrink();
-
-    final pop = Curves.easeOutBack.transform(localT);
-    final ease = Curves.easeOutCubic.transform(localT);
-
-    final r1 = _rand(i, 0);
-    final r2 = _rand(i, 1);
-
-    final size = isMain ? 60.0 : (24.0 + r1 * 20.0);
-    final scale = isMain ? (0.5 + pop * 0.65) : (0.3 + pop * 0.6);
-
-    // Fountain upward: each particle shoots along an upward angle (spread
-    // left/right of vertical) a varying distance, so they fan out the center.
-    final spread = isMain ? 0.0 : (r1 - 0.5) * 2.0; // radians: roughly ±1
-    final dist = isMain ? 170.0 : (170.0 + r2 * 230.0);
-    final dx = math.sin(spread) * dist * ease;
-    final dy = -(math.cos(spread).abs() * dist + (isMain ? 40.0 : 0.0)) * ease;
-    final angle = isMain ? 0.0 : (r2 - 0.5) * 1.2 * localT;
-
-    // Fade out over the final ~45% of the flight.
-    final opacity = (1 - ((localT - 0.55) / 0.45).clamp(0.0, 1.0)).clamp(
-      0.0,
-      1.0,
-    );
-
-    return Positioned(
-      left: origin.dx + dx - size / 2,
-      top: origin.dy + dy - size / 2,
-      width: size,
-      height: size,
-      child: Opacity(
-        opacity: opacity,
-        child: Transform.rotate(
-          angle: angle,
-          child: Transform.scale(
-            scale: scale,
-            child: Center(
-              child: Text(emoji, style: TextStyle(fontSize: size * 0.82)),
             ),
           ),
         ),

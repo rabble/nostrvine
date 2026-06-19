@@ -31,6 +31,7 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/nav_rounded_shell.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/inline_comment_composer_bar.dart';
+import 'package:openvine/widgets/video_feed_item/reaction_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/reel_dm_reply_bar.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -292,6 +293,11 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   /// Whether the in-player DM reply composer is focused. When true the reel
   /// pauses so the user can type without the video playing under the keyboard.
   bool _replyComposerFocused = false;
+
+  /// Emoji currently being animated by the full-screen reaction overlay (null
+  /// when idle). [_reactionNonce] remounts the overlay so repeated taps replay.
+  String? _reactionEmoji;
+  int _reactionNonce = 0;
 
   /// Feed-scoped Auto playback state; exposed to descendants via
   /// `BlocProvider.value` in [build].
@@ -628,79 +634,108 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   preferredSize: appBar.preferredSize,
                   child: TextFieldTapRegion(child: appBar),
                 ),
-                body: Column(
+                body: Stack(
                   children: [
-                    Expanded(
-                      // Match the home feed: when the comment bar is on
-                      // screen, the video carries the same rounded
-                      // bottom corners as `video_feed_page.dart`, so
-                      // the corners reveal [VineTheme.navGreen] (the
-                      // outer color [NavRoundedShell] paints). It
-                      // shares its hex (`#00150D`) with the comment
-                      // bar's [VineTheme.surfaceBackground], so the
-                      // rounded cutouts seam continuously into the bar.
-                      child: Stack(
-                        children: [
-                          VideoTapShield(
-                            child: _MaybeRoundFeedBottom(
-                              roundCorners: showCommentBar,
-                              child: MediaQuery.removePadding(
-                                context: context,
-                                removeBottom: true,
-                                child: FeedVideos(
-                                  key: _feedVideosKey,
-                                  // Pause the reel while the DM reply composer
-                                  // is focused so it doesn't play under the
-                                  // keyboard.
-                                  isActive: !_replyComposerFocused,
-                                  videos: state.videos,
-                                  contextTitle: widget.contextTitle,
-                                  currentIndex: state.currentIndex,
-                                  hasMore: state.canLoadMore,
-                                  isLoadingMore: state.isLoadingMore,
-                                  trafficSource: widget.trafficSource,
-                                  sourceDetail: widget.sourceDetail,
-                                  onActiveVideoChanged: (video, index) {
-                                    _resumeAutoAdvanceAfterSwipe();
-                                    FeedPerformanceTracker()
-                                        .startVideoSwipeTracking(video.id);
-                                    context.read<FullscreenFeedBloc>().add(
-                                      FullscreenFeedIndexChanged(index),
-                                    );
-                                    widget.onPageChanged?.call(index);
-                                  },
-                                  onNearEnd: () {
-                                    if (state.canLoadMore) {
-                                      _triggerLoadMore();
-                                    }
-                                  },
+                    Column(
+                      children: [
+                        Expanded(
+                          // Match the home feed: when the comment bar is on
+                          // screen, the video carries the same rounded
+                          // bottom corners as `video_feed_page.dart`, so
+                          // the corners reveal [VineTheme.navGreen] (the
+                          // outer color [NavRoundedShell] paints). It
+                          // shares its hex (`#00150D`) with the comment
+                          // bar's [VineTheme.surfaceBackground], so the
+                          // rounded cutouts seam continuously into the bar.
+                          child: Stack(
+                            children: [
+                              VideoTapShield(
+                                child: _MaybeRoundFeedBottom(
+                                  roundCorners: showCommentBar,
+                                  child: MediaQuery.removePadding(
+                                    context: context,
+                                    removeBottom: true,
+                                    child: FeedVideos(
+                                      key: _feedVideosKey,
+                                      // Pause the reel while the DM reply composer
+                                      // is focused so it doesn't play under the
+                                      // keyboard.
+                                      isActive: !_replyComposerFocused,
+                                      videos: state.videos,
+                                      contextTitle: widget.contextTitle,
+                                      currentIndex: state.currentIndex,
+                                      hasMore: state.canLoadMore,
+                                      isLoadingMore: state.isLoadingMore,
+                                      trafficSource: widget.trafficSource,
+                                      sourceDetail: widget.sourceDetail,
+                                      onActiveVideoChanged: (video, index) {
+                                        _resumeAutoAdvanceAfterSwipe();
+                                        FeedPerformanceTracker()
+                                            .startVideoSwipeTracking(video.id);
+                                        context.read<FullscreenFeedBloc>().add(
+                                          FullscreenFeedIndexChanged(index),
+                                        );
+                                        widget.onPageChanged?.call(index);
+                                      },
+                                      onNearEnd: () {
+                                        if (state.canLoadMore) {
+                                          _triggerLoadMore();
+                                        }
+                                      },
+                                    ),
+                                  ),
                                 ),
                               ),
+                              Positioned(
+                                left: 0,
+                                right: 0,
+                                bottom: 16,
+                                child: LoadingMorePill(
+                                  isVisible:
+                                      state.isLoadingMore &&
+                                      state.currentIndex >=
+                                          state.videos.length - 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (showCommentBar) const InlineCommentComposerBar(),
+                        if (showDmReplyBar)
+                          ReelReplyBridge(
+                            setComposerFocused: (focused) {
+                              if (mounted && focused != _replyComposerFocused) {
+                                setState(
+                                  () => _replyComposerFocused = focused,
+                                );
+                              }
+                            },
+                            playReaction: (emoji) {
+                              if (mounted) {
+                                setState(() {
+                                  _reactionEmoji = emoji;
+                                  _reactionNonce++;
+                                });
+                              }
+                            },
+                            child: ReelDmReplyBarHost(
+                              dmReplyContext: widget.dmReplyContext!,
                             ),
                           ),
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            bottom: 16,
-                            child: LoadingMorePill(
-                              isVisible:
-                                  state.isLoadingMore &&
-                                  state.currentIndex >= state.videos.length - 1,
-                            ),
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
-                    if (showCommentBar) const InlineCommentComposerBar(),
-                    if (showDmReplyBar)
-                      ReelReplyPauseController(
-                        setComposerFocused: (focused) {
-                          if (mounted && focused != _replyComposerFocused) {
-                            setState(() => _replyComposerFocused = focused);
-                          }
-                        },
-                        child: ReelDmReplyBarHost(
-                          dmReplyContext: widget.dmReplyContext!,
+                    // Full-screen TikTok/IG-style reaction pop, centered over
+                    // the reel.
+                    if (_reactionEmoji != null)
+                      Positioned.fill(
+                        child: ReactionOverlay(
+                          key: ValueKey(_reactionNonce),
+                          emoji: _reactionEmoji!,
+                          onComplete: () {
+                            if (mounted) {
+                              setState(() => _reactionEmoji = null);
+                            }
+                          },
                         ),
                       ),
                   ],
