@@ -1,7 +1,6 @@
 // ABOUTME: Tests for VideoRecorderView - main video recording UI
 // ABOUTME: Tests screen initialization, camera setup, UI elements, and lifecycle
 
-@Tags(['skip_very_good_optimization'])
 import 'dart:core';
 
 import 'package:bloc_test/bloc_test.dart';

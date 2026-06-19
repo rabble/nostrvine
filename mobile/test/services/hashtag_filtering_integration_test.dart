@@ -1,4 +1,4 @@
-@Tags(['skip_very_good_optimization', 'integration'])
+@Tags(['integration'])
 // ABOUTME: Integration tests for hashtag filtering functionality in VideoEventService
 // ABOUTME: Tests server-side filtering and client-side hashtag processing
 import 'package:flutter_test/flutter_test.dart';

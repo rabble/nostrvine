@@ -1,6 +1,8 @@
 // ABOUTME: Tests for Drift table schema definitions
 // ABOUTME: Verifies NostrEvents and UserProfiles tables are properly defined
 
+// Permanent: opens file-backed Drift databases through path_provider temp paths;
+// keep isolated until DB and path-provider globals are per-test fixtures.
 @Tags(['skip_very_good_optimization'])
 import 'dart:io';
 

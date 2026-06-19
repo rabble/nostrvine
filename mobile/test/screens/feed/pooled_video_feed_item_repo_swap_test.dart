@@ -9,7 +9,6 @@
 // provider rebuilds (auth flip / sign-out / account switch), the key
 // changes, the stale bloc is closed, and a fresh one wraps the new repos.
 
-@Tags(['skip_very_good_optimization'])
 import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

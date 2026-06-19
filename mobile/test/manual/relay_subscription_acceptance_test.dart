@@ -18,11 +18,10 @@
 // which this protocol-level test needs. Mirrors the self-contained shape of
 // nip98_relay_acceptance_test.dart (#5111).
 
-// Permanent: a manual, Docker-dependent real-network acceptance test (raw WS to
-// localhost:47777). It must stay out of the VGV merged optimizer isolate — its
-// setUpAll opens real sockets even when the stack is absent. Matches
-// nip98_relay_acceptance_test.dart.
-@Tags(['skip_very_good_optimization', 'integration'])
+// Manual, Docker-dependent real-network acceptance test (raw WS to
+// localhost:47777). The integration tag keeps it out of normal VGV unit-test
+// runs unless explicitly requested.
+@Tags(['integration'])
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';

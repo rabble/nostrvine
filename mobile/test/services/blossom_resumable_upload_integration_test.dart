@@ -1,4 +1,4 @@
-@Tags(['skip_very_good_optimization', 'integration'])
+@Tags(['integration'])
 // ABOUTME: Integration-style coverage for the Divine resumable Blossom upload flow
 // ABOUTME: Verifies capability discovery, opaque uploadUrl handling, and canonical completion URLs
 import 'dart:io';

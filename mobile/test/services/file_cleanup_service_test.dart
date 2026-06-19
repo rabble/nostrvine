@@ -1,7 +1,6 @@
 // ABOUTME: Tests for FileCleanupService file-existence guard behavior.
 // ABOUTME: Keeps cleanup from touching shared database state when no file exists.
 
-@Tags(['skip_very_good_optimization'])
 import 'package:db_client/db_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';

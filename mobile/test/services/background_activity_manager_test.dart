@@ -1,4 +1,7 @@
 // Test for BackgroundActivityManager functionality
+// Permanent: exercises process-wide WidgetsBinding lifecycle notifications and
+// BackgroundActivityManager singleton state; keep isolated until the manager is
+// injectable/resettable per test.
 @Tags(['skip_very_good_optimization'])
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

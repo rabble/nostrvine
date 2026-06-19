@@ -47,6 +47,8 @@ class MockProVideoEditor extends ProVideoEditor {
   }
 }
 
+// Permanent: swaps PathProviderPlatform.instance and ProVideoEditor.instance;
+// keep isolated until VideoEditorSplitService accepts injected dependencies.
 @Tags(['skip_very_good_optimization'])
 void main() {
   late MockProVideoEditor mockProVideoEditor;

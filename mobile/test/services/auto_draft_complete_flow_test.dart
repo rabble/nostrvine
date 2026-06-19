@@ -1,4 +1,4 @@
-@Tags(['skip_very_good_optimization', 'integration'])
+@Tags(['integration'])
 // ABOUTME: Integration test for complete auto-draft flow from recording to publish
 // ABOUTME: Validates end-to-end behavior: record → auto-draft → edit → publish → retry
 import 'package:db_client/db_client.dart';

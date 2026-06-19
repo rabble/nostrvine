@@ -11,6 +11,9 @@
 //   - Query parameters must be included in the u tag
 //   - Expired created_at, wrong signature, mismatched method/url → 401
 
+// Permanent: a manual, Docker-dependent real-network acceptance test that nulls
+// HttpOverrides.global; VGV merged-isolate tests must keep flutter_test's HTTP
+// mock intact.
 @Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:convert';
 import 'dart:io';

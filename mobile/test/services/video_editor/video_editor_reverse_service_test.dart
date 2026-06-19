@@ -69,6 +69,8 @@ class _FakeProVideoEditor extends ProVideoEditor {
   }
 }
 
+// Permanent: swaps PathProviderPlatform.instance and ProVideoEditor.instance;
+// keep isolated until VideoEditorReverseService accepts injected dependencies.
 @Tags(['skip_very_good_optimization'])
 void main() {
   late Directory tempDir;

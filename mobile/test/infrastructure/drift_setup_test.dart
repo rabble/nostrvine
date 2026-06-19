@@ -9,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+// Permanent: opens file-backed Drift databases through path_provider temp paths;
+// keep isolated until DB and path-provider globals are per-test fixtures.
 @Tags(['skip_very_good_optimization'])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

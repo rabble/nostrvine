@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for UploadManager.getUploadByFilePath method
 // ABOUTME: Tests file path lookup functionality using the public API
 
+// Permanent: initializes Hive's process-wide box registry and the shared test
+// platform-channel environment for UploadManager lookup coverage.
 @Tags(['skip_very_good_optimization'])
 import 'dart:io';
 

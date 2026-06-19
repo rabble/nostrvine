@@ -1,3 +1,7 @@
+// Permanent: existing active and skipped assertions depend on
+// VideoEventService subscription lifecycle timing; keep isolated until the
+// subscription dedupe tests use non-completing streams and layer-correct
+// assertions.
 @Tags(['skip_very_good_optimization'])
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';

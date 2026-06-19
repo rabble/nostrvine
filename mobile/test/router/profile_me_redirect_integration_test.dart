@@ -1,4 +1,4 @@
-@Tags(['skip_very_good_optimization', 'integration'])
+@Tags(['integration'])
 // ABOUTME: Integration test for /profile/me/ redirect with full app context
 // ABOUTME: Tests redirect logic + profile screen rendering in realistic scenario
 import 'package:flutter/material.dart';

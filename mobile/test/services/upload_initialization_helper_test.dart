@@ -18,6 +18,8 @@ class MockPathProviderPlatform extends Fake
   }
 }
 
+// Permanent: mutates PathProviderPlatform.instance and Hive's process-wide box
+// registry while validating upload initialization failure paths.
 @Tags(['skip_very_good_optimization'])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

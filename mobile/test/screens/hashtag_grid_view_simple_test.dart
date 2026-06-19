@@ -1,4 +1,4 @@
-@Tags(['skip_very_good_optimization', 'integration'])
+@Tags(['integration'])
 // ABOUTME: Simple integration test for HashtagFeedScreen grid view
 // ABOUTME: Verifies hashtag feed shows grid when embedded and list when standalone
 import 'package:flutter/material.dart';

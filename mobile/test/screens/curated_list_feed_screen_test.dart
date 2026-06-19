@@ -1,7 +1,6 @@
 // ABOUTME: Tests for curated list feed owner/subscription actions.
 // ABOUTME: Verifies subscribed external lists expose an explicit unfollow menu.
 
-@Tags(['skip_very_good_optimization'])
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -1,6 +1,8 @@
 // ABOUTME: Regression tests for macOS sandbox compliance in UploadManager
 // ABOUTME: Ensures no access to ~/Documents and proper permission error handling
 
+// Permanent: mutates PathProviderPlatform.instance and Hive's process-wide box
+// registry while validating sandbox path behavior.
 @Tags(['skip_very_good_optimization'])
 library;
 

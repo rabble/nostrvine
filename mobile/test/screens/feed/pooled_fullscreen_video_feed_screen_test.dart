@@ -1,6 +1,8 @@
 // ABOUTME: Widget tests for PooledFullscreenVideoFeedScreen
 // ABOUTME: Tests native feed rendering and BLoC event dispatching
 
+// Permanent: installs native MethodChannel handlers for the pooled video
+// player; keep isolated until those channel handlers are per-test fixtures.
 @Tags(['skip_very_good_optimization'])
 import 'dart:async';
 

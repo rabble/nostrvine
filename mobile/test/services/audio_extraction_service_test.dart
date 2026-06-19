@@ -2,6 +2,9 @@
 // ABOUTME: Tests audio extraction result model, exceptions, cleanup, and
 // ABOUTME: core extraction path with ProVideoEditor mock.
 
+// Permanent: swaps the global ProVideoEditor.instance while exercising file
+// extraction paths; remove when AudioExtractionService accepts an injected
+// editor dependency.
 @Tags(['skip_very_good_optimization'])
 import 'dart:io';
 import 'dart:ui';

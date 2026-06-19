@@ -1,4 +1,3 @@
-@Tags(['skip_very_good_optimization'])
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -1,7 +1,6 @@
 // ABOUTME: Regression test for tapping descriptions in VideoOverlayActions.
 // ABOUTME: Verifies the inline description opens the metadata sheet.
 
-@Tags(['skip_very_good_optimization'])
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

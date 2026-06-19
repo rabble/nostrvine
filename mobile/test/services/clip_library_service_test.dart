@@ -1,7 +1,6 @@
 // ABOUTME: Tests for ClipLibraryService - persistent storage for video clips
 // ABOUTME: Covers save, load, delete, and thumbnail generation for clips
 
-@Tags(['skip_very_good_optimization'])
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
