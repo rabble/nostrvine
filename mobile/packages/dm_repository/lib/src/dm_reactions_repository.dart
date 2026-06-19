@@ -61,15 +61,28 @@ class DmReactionsRepository {
     NIP17MessageService? messageService,
     String? userPubkey,
     DmReactionsRepositoryErrorReporter? errorReporter,
+    ConversationsDao? conversationsDao,
+    DirectMessagesDao? directMessagesDao,
   }) : _reactionsDao = reactionsDao,
        _messageService = messageService,
        _userPubkey = userPubkey ?? '',
-       _errorReporter = errorReporter;
+       _errorReporter = errorReporter,
+       _conversationsDao = conversationsDao,
+       _directMessagesDao = directMessagesDao;
 
   final DmReactionsDao _reactionsDao;
   NIP17MessageService? _messageService;
   String _userPubkey;
   final DmReactionsRepositoryErrorReporter? _errorReporter;
+
+  /// Source of conversation participant sets, used to fan a group reaction's
+  /// gift wrap out to every member. Null in legacy/test wiring → 1:1 only.
+  final ConversationsDao? _conversationsDao;
+
+  /// Source of the reacted message's stored conversation id, used to resolve
+  /// the conversation (1:1 **or** group) for an incoming reaction. Null in
+  /// legacy/test wiring → 1:1 inference only.
+  final DirectMessagesDao? _directMessagesDao;
 
   /// Maximum permitted reaction content length. NIP-25 has no hard cap,
   /// but anything over ~128 chars is almost certainly malformed.
@@ -184,10 +197,14 @@ class DmReactionsRepository {
     }
 
     try {
-      final result = await _sendRumorWithTimeout(
+      final recipients = await _resolveWrapRecipients(
+        conversationId: conversationId,
+        targetMessageAuthor: targetMessageAuthor,
+      );
+      final result = await _fanOutRumor(
         messageService: messageService,
         rumor: rumor,
-        recipientPubkey: targetMessageAuthor,
+        recipients: recipients,
       );
       switch (result) {
         case NIP17SendSuccess():
@@ -271,6 +288,17 @@ class DmReactionsRepository {
     final decoded = jsonDecode(rumorJson) as Map<String, dynamic>;
     final rumor = Event.fromJson(decoded);
 
+    final retryRow = await _reactionsDao.getById(
+      id: rumorId,
+      ownerPubkey: _userPubkey,
+    );
+    final recipients = retryRow != null
+        ? await _resolveWrapRecipients(
+            conversationId: retryRow.conversationId,
+            targetMessageAuthor: targetMessageAuthor,
+          )
+        : <String>[targetMessageAuthor];
+
     // Persist `pending` so the chip surfaces in-flight state across
     // a cubit rebuild. If this DAO write fails, we still attempt the
     // send — the user-visible recovery path is the chip falling back
@@ -282,10 +310,10 @@ class DmReactionsRepository {
     }
 
     try {
-      final result = await _sendRumorWithTimeout(
+      final result = await _fanOutRumor(
         messageService: messageService,
         rumor: rumor,
-        recipientPubkey: targetMessageAuthor,
+        recipients: recipients,
       );
       switch (result) {
         case NIP17SendSuccess():
@@ -328,6 +356,10 @@ class DmReactionsRepository {
   }) async {
     final messageService = _messageService;
     if (messageService == null || _userPubkey.isEmpty) return;
+    final row = await _reactionsDao.getById(
+      id: rumorId,
+      ownerPubkey: _userPubkey,
+    );
     try {
       await _reactionsDao.softDelete(id: rumorId, ownerPubkey: _userPubkey);
     } on Object catch (e, st) {
@@ -338,10 +370,16 @@ class DmReactionsRepository {
       );
       return;
     }
+    final recipients = row != null
+        ? await _resolveWrapRecipients(
+            conversationId: row.conversationId,
+            targetMessageAuthor: targetMessageAuthor,
+          )
+        : <String>[targetMessageAuthor];
     unawaited(
       _publishKind5Deletion(
         reactionEventId: rumorId,
-        recipientPubkey: targetMessageAuthor,
+        recipients: recipients,
         messageService: messageService,
       ),
     );
@@ -384,9 +422,10 @@ class DmReactionsRepository {
       return;
     }
     targetAuthor ??= rumorEvent.pubkey;
-    final conversationId = _resolveConversationIdForReaction(
+    final conversationId = await _resolveConversationIdForReaction(
       reactorPubkey: rumorEvent.pubkey,
       targetAuthor: targetAuthor,
+      targetMessageId: targetMessageId,
     );
     if (conversationId == null) return;
     try {
@@ -491,23 +530,86 @@ class DmReactionsRepository {
     } on Object {
       // Best-effort; the new publish proceeds regardless.
     }
+    final recipients = await _resolveWrapRecipients(
+      conversationId: priorRow.conversationId,
+      targetMessageAuthor: targetMessageAuthor,
+    );
     unawaited(
       _publishKind5Deletion(
         reactionEventId: priorRow.id,
-        recipientPubkey: targetMessageAuthor,
+        recipients: recipients,
         messageService: messageService,
       ),
     );
   }
 
+  /// Resolve the gift-wrap recipient set for a reaction in [conversationId].
+  ///
+  /// For a group conversation, returns every participant except the current
+  /// user (the wrap fans out to all members). For a 1:1 (or when the
+  /// conversation can't be resolved), returns `[targetMessageAuthor]` so the
+  /// behavior is byte-identical to the pre-group path.
+  Future<List<String>> _resolveWrapRecipients({
+    required String conversationId,
+    required String targetMessageAuthor,
+  }) async {
+    final dao = _conversationsDao;
+    if (dao == null) return [targetMessageAuthor];
+    try {
+      final convo = await dao.getConversation(
+        conversationId,
+        ownerPubkey: _userPubkey,
+      );
+      if (convo == null || !convo.isGroup) return [targetMessageAuthor];
+      final decoded = jsonDecode(convo.participantPubkeys);
+      if (decoded is! List) return [targetMessageAuthor];
+      final others = decoded
+          .whereType<String>()
+          .where((p) => p != _userPubkey)
+          .toList();
+      return others.isEmpty ? [targetMessageAuthor] : others;
+    } on Object {
+      return [targetMessageAuthor];
+    }
+  }
+
+  /// Wrap [rumor] to each of [recipients] (each send also self-wraps for
+  /// cross-device recovery; self-wrap copies dedupe on the rumor id at the
+  /// receiver). Succeeds if any recipient wrap lands.
+  Future<NIP17SendResult> _fanOutRumor({
+    required NIP17MessageService messageService,
+    required Event rumor,
+    required List<String> recipients,
+  }) async {
+    NIP17SendResult? lastSuccess;
+    NIP17SendResult? lastFailure;
+    for (final recipient in recipients) {
+      final result = await _sendRumorWithTimeout(
+        messageService: messageService,
+        rumor: rumor,
+        recipientPubkey: recipient,
+      );
+      switch (result) {
+        case NIP17SendSuccess():
+          lastSuccess = result;
+        case NIP17SendFailure():
+          lastFailure = result;
+      }
+    }
+    return lastSuccess ??
+        lastFailure ??
+        const NIP17SendResult.failure('No reaction wrap recipients');
+  }
+
   Future<void> _publishKind5Deletion({
     required String reactionEventId,
-    required String recipientPubkey,
+    required List<String> recipients,
     required NIP17MessageService messageService,
   }) async {
+    if (recipients.isEmpty) return;
     try {
       final deletion = messageService.buildRumor(
-        recipientPubkey: recipientPubkey,
+        recipientPubkey: recipients.first,
         content: '',
         eventKind: EventKind.eventDeletion,
         additionalTags: [
@@ -515,9 +617,10 @@ class DmReactionsRepository {
           ['k', EventKind.reaction.toString()],
         ],
       );
-      await messageService.sendRumor(
-        rumorEvent: deletion,
-        recipientPubkey: recipientPubkey,
+      await _fanOutRumor(
+        messageService: messageService,
+        rumor: deletion,
+        recipients: recipients,
       );
     } on Object catch (e) {
       Log.warning(
@@ -527,14 +630,32 @@ class DmReactionsRepository {
     }
   }
 
-  /// Resolve conversation id for an incoming 1:1 reaction. Group
-  /// reactions (3+ participants) need a target-message lookup to recover
-  /// the full participant set — deferred from v1; group reactions drop
-  /// silently rather than mis-attribute to a phantom 1:1.
-  String? _resolveConversationIdForReaction({
+  /// Resolve the conversation id for an incoming reaction.
+  ///
+  /// A kind-7 reaction only carries `e`/`p`/`k` tags, never the full group
+  /// participant set, so the authoritative source is the reacted message's
+  /// stored row (looked up by its rumor id) — this resolves both 1:1 and
+  /// group conversations correctly. When the target isn't in the local store
+  /// (e.g. a group reaction arriving before the reel message synced — a
+  /// narrow window since the reel is persisted at send time), falls back to
+  /// 1:1 inference, dropping group reactions rather than mis-attributing them.
+  Future<String?> _resolveConversationIdForReaction({
     required String reactorPubkey,
     required String targetAuthor,
-  }) {
+    required String targetMessageId,
+  }) async {
+    final messagesDao = _directMessagesDao;
+    if (messagesDao != null) {
+      try {
+        final targetRow = await messagesDao.getMessageById(
+          targetMessageId,
+          ownerPubkey: _userPubkey,
+        );
+        if (targetRow != null) return targetRow.conversationId;
+      } on Object {
+        // Fall through to 1:1 inference.
+      }
+    }
     if (reactorPubkey != _userPubkey && targetAuthor != _userPubkey) {
       return null;
     }

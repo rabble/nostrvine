@@ -454,6 +454,8 @@ DmReactionsRepository dmReactionsRepository(Ref ref) {
   final db = ref.watch(databaseProvider);
   final repository = DmReactionsRepository(
     reactionsDao: db.dmReactionsDao,
+    conversationsDao: db.conversationsDao,
+    directMessagesDao: db.directMessagesDao,
     errorReporter: (error, stackTrace, {required site}) {
       unawaited(
         CrashReportingService.instance.recordError(

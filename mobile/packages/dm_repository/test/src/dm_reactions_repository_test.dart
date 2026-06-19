@@ -15,6 +15,10 @@ import 'package:nostr_sdk/event_kind.dart';
 
 class _MockDmReactionsDao extends Mock implements DmReactionsDao {}
 
+class _MockConversationsDao extends Mock implements ConversationsDao {}
+
+class _MockDirectMessagesDao extends Mock implements DirectMessagesDao {}
+
 class _MockNip17MessageService extends Mock implements NIP17MessageService {}
 
 class _FakeEvent extends Fake implements Event {}
@@ -42,9 +46,15 @@ void main() {
     late _MockNip17MessageService mockMessageService;
     late List<String> reporterSites;
 
-    DmReactionsRepository createRepository({bool initialized = true}) {
+    DmReactionsRepository createRepository({
+      bool initialized = true,
+      ConversationsDao? conversationsDao,
+      DirectMessagesDao? directMessagesDao,
+    }) {
       final repository = DmReactionsRepository(
         reactionsDao: mockDao,
+        conversationsDao: conversationsDao,
+        directMessagesDao: directMessagesDao,
         errorReporter: (_, _, {required site}) {
           reporterSites.add(site);
         },
@@ -113,6 +123,17 @@ void main() {
       mockDao = _MockDmReactionsDao();
       mockMessageService = _MockNip17MessageService();
       reporterSites = <String>[];
+
+      // Default: no row for getById. removeOwn/retry look the reacted row up
+      // to resolve the conversation's wrap-recipient set; with no
+      // ConversationsDao wired (1:1 path), the resolver falls back to
+      // [targetMessageAuthor]. Per-test stubs override this where needed.
+      when(
+        () => mockDao.getById(
+          id: any(named: 'id'),
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((_) async => null);
     });
 
     test('watchForConversation returns empty when uninitialized', () async {
@@ -674,6 +695,208 @@ void main() {
           id: any(named: 'id'),
           ownerPubkey: any(named: 'ownerPubkey'),
         ),
+      );
+    });
+
+    group('group reactions', () {
+      const thirdPubkey =
+          '1111111111111111111111111111111111111111111111111111111111111111';
+      const groupConversationId = 'group-convo-id';
+
+      test(
+        'publish fans the reaction wrap out to every group member',
+        () async {
+          final mockConversationsDao = _MockConversationsDao();
+          when(
+            () => mockConversationsDao.getConversation(
+              groupConversationId,
+              ownerPubkey: _ownerPubkey,
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: groupConversationId,
+              participantPubkeys: jsonEncode([
+                _ownerPubkey,
+                _otherPubkey,
+                thirdPubkey,
+              ]),
+              isGroup: true,
+              isRead: true,
+              currentUserHasSent: true,
+              createdAt: 1700000000,
+              ownerPubkey: _ownerPubkey,
+            ),
+          );
+          when(
+            () => mockDao.getOwnLiveReaction(
+              targetMessageId: _targetMessageId,
+              reactorPubkey: _ownerPubkey,
+              ownerPubkey: _ownerPubkey,
+            ),
+          ).thenAnswer((_) async => null);
+          final rumor = reactionRumor();
+          when(
+            () => mockMessageService.buildRumor(
+              recipientPubkey: _otherPubkey,
+              content: '🔥',
+              eventKind: EventKind.reaction,
+              additionalTags: any(named: 'additionalTags'),
+            ),
+          ).thenReturn(rumor);
+          when(
+            () => mockDao.insertOptimistic(
+              placeholderId: any(named: 'placeholderId'),
+              conversationId: any(named: 'conversationId'),
+              targetMessageId: any(named: 'targetMessageId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              reactorPubkey: any(named: 'reactorPubkey'),
+              emoji: any(named: 'emoji'),
+              createdAt: any(named: 'createdAt'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              rumorEventJson: any(named: 'rumorEventJson'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: rumor.id,
+              messageEventId: _giftWrapId,
+              recipientPubkey: _otherPubkey,
+            ),
+          );
+          when(
+            () => mockDao.swapPlaceholderId(
+              placeholderId: any(named: 'placeholderId'),
+              realRumorId: any(named: 'realRumorId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {});
+
+          final repository = createRepository(
+            conversationsDao: mockConversationsDao,
+          );
+          final result = await repository.publish(
+            conversationId: groupConversationId,
+            targetMessageId: _targetMessageId,
+            targetMessageAuthor: _otherPubkey,
+            emoji: '🔥',
+          );
+
+          expect(result.success, isTrue);
+          // Wrapped to BOTH non-self members (fan-out), not just the author.
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: _otherPubkey,
+            ),
+          ).called(1);
+          verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
+              recipientPubkey: thirdPubkey,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'persistIncoming resolves the group conversation via the reel message',
+        () async {
+          final mockMessagesDao = _MockDirectMessagesDao();
+          when(
+            () => mockMessagesDao.getMessageById(
+              _targetMessageId,
+              ownerPubkey: _ownerPubkey,
+            ),
+          ).thenAnswer(
+            (_) async => const DirectMessageRow(
+              id: _targetMessageId,
+              conversationId: groupConversationId,
+              senderPubkey: _otherPubkey,
+              content: 'reel',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapId,
+              messageKind: 14,
+              isDeleted: false,
+              ownerPubkey: _ownerPubkey,
+            ),
+          );
+          when(
+            () => mockDao.upsertIncoming(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              targetMessageId: any(named: 'targetMessageId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              reactorPubkey: any(named: 'reactorPubkey'),
+              emoji: any(named: 'emoji'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {});
+
+          final repository = createRepository(
+            directMessagesDao: mockMessagesDao,
+          );
+          // A third party (neither us nor the author) reacts in the group.
+          await repository.persistIncoming(
+            rumorEvent: reactionRumor(reactorPubkey: thirdPubkey),
+            giftWrapId: _giftWrapId,
+          );
+
+          verify(
+            () => mockDao.upsertIncoming(
+              id: any(named: 'id'),
+              conversationId: groupConversationId,
+              targetMessageId: any(named: 'targetMessageId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              reactorPubkey: thirdPubkey,
+              emoji: any(named: 'emoji'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'persistIncoming drops a group reaction when the reel is unsynced',
+        () async {
+          final mockMessagesDao = _MockDirectMessagesDao();
+          when(
+            () => mockMessagesDao.getMessageById(
+              _targetMessageId,
+              ownerPubkey: _ownerPubkey,
+            ),
+          ).thenAnswer((_) async => null);
+
+          final repository = createRepository(
+            directMessagesDao: mockMessagesDao,
+          );
+          await repository.persistIncoming(
+            rumorEvent: reactionRumor(reactorPubkey: thirdPubkey),
+            giftWrapId: _giftWrapId,
+          );
+
+          verifyNever(
+            () => mockDao.upsertIncoming(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              targetMessageId: any(named: 'targetMessageId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              reactorPubkey: any(named: 'reactorPubkey'),
+              emoji: any(named: 'emoji'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+        },
       );
     });
   });
