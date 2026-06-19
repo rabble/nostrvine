@@ -602,6 +602,121 @@ void main() {
         );
       });
 
+      testWidgets('likeComment tap falls back to actor profile when the root '
+          'video cannot be resolved', (tester) async {
+        final videoService = _MockVideoEventService();
+        final nostrClient = _MockNostrClient();
+        final videosRepository = _MockVideosRepository();
+        const commentEventId = 'unresolvable_comment_event';
+        final likerPubkey = 'a' * 64;
+
+        // Resolver returns null: the comment is not a video and carries no
+        // E/e tag pointing at a root video, so _navigateToVideo returns false.
+        when(() => videoService.getVideoById(commentEventId)).thenReturn(null);
+        when(() => nostrClient.fetchEventById(commentEventId)).thenAnswer((
+          _,
+        ) async {
+          final event = Event(
+            'd' * 64,
+            1111,
+            const [],
+            'orphan comment with no root reference',
+            createdAt: 1700000000,
+          );
+          event.id = commentEventId;
+          return event;
+        });
+
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              ActorNotification(
+                id: 'lc-fail',
+                type: NotificationKind.likeComment,
+                actor: ActorInfo(pubkey: likerPubkey, displayName: 'Liz'),
+                timestamp: DateTime(2026),
+                targetEventId: commentEventId,
+              ),
+            ],
+          ),
+        );
+
+        final result = await _pumpRoutedViewFull(
+          tester,
+          mockBloc,
+          videoEventService: videoService,
+          nostrClient: nostrClient,
+          videosRepository: videosRepository,
+        );
+
+        await tester.tap(find.byType(NotificationListItem).first);
+        await tester.pumpAndSettle();
+
+        // Pre-fix this dead-ended (row marked read, no navigation). The shared
+        // #5079 fallback now sends every unresolvable OpenVideoTarget kind to
+        // the actor profile, not just mention.
+        expect(result.videoArgs, isEmpty);
+        expect(result.videoDetailRoutes, isEmpty);
+        expect(result.profileNpubs, hasLength(1));
+        expect(result.profileNpubs.single, startsWith('npub'));
+      });
+
+      testWidgets('reply tap falls back to actor profile when the root '
+          'video cannot be resolved', (tester) async {
+        final videoService = _MockVideoEventService();
+        final nostrClient = _MockNostrClient();
+        final videosRepository = _MockVideosRepository();
+        const parentCommentId = 'unresolvable_parent_comment';
+        final replierPubkey = 'b' * 64;
+
+        when(() => videoService.getVideoById(parentCommentId)).thenReturn(null);
+        when(() => nostrClient.fetchEventById(parentCommentId)).thenAnswer((
+          _,
+        ) async {
+          final event = Event(
+            'd' * 64,
+            1111,
+            const [],
+            'orphan reply with no root reference',
+            createdAt: 1700000000,
+          );
+          event.id = parentCommentId;
+          return event;
+        });
+
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              ActorNotification(
+                id: 'r-fail',
+                type: NotificationKind.reply,
+                actor: ActorInfo(pubkey: replierPubkey, displayName: 'Bob'),
+                timestamp: DateTime(2026),
+                targetEventId: parentCommentId,
+              ),
+            ],
+          ),
+        );
+
+        final result = await _pumpRoutedViewFull(
+          tester,
+          mockBloc,
+          videoEventService: videoService,
+          nostrClient: nostrClient,
+          videosRepository: videosRepository,
+        );
+
+        await tester.tap(find.byType(NotificationListItem).first);
+        await tester.pumpAndSettle();
+
+        expect(result.videoArgs, isEmpty);
+        expect(result.videoDetailRoutes, isEmpty);
+        expect(result.profileNpubs, hasLength(1));
+        expect(result.profileNpubs.single, startsWith('npub'));
+      });
+
       testWidgets(
         'reply tap waits for root video resolution before pushing video route',
         (tester) async {

@@ -255,17 +255,25 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
         switch (target) {
           case OpenVideoTarget():
             // targetEventId is the event the resolver walks to find the root
-            // video. A mention with no resolvable video falls back to the
-            // actor's profile.
+            // video. Any comment/reply/likeComment/mention whose root video
+            // can't be resolved falls back to the actor's profile, mirroring
+            // the push executor's #5079 fallback contract
+            // (main.dart:_resolveAndPushVideoLink) so the tap never silently
+            // dead-ends regardless of kind.
             final navigated = await _navigateToVideo(
               context,
               targetEventId!,
               videoAddressableId: videoAddressableId,
               notificationKind: type,
             );
-            if (!navigated &&
-                type == NotificationKind.mention &&
-                context.mounted) {
+            if (!navigated && context.mounted) {
+              Log.warning(
+                'Notification tap could not resolve a video '
+                '(kind=$type, targetEventId=$targetEventId) — '
+                'falling back to actor profile',
+                name: 'NotificationsView',
+                category: LogCategory.ui,
+              );
               _navigateToProfile(context, actor.pubkey);
             }
           case OpenProfileTarget(:final actorPubkey):
