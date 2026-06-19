@@ -51,7 +51,7 @@ class CollaboratorResponseService {
           'Could not determine collaborator pubkey',
         );
       }
-      if (currentPubkey == invite.creatorPubkey) {
+      if (currentPubkey.toLowerCase() == invite.creatorPubkey.toLowerCase()) {
         return const CollaboratorResponseResult.failure(
           'Creators cannot accept their own collaborator invites',
         );

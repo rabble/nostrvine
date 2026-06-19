@@ -274,5 +274,41 @@ void main() {
         );
       },
     );
+
+    test(
+      'acceptInvite no-ops when current user matches uppercase invite creator',
+      () async {
+        final uppercaseInvite = CollaboratorInvite(
+          messageId: invite.messageId,
+          videoAddress: '34236:${creatorPubkey.toUpperCase()}:skate-loop',
+          videoKind: invite.videoKind,
+          creatorPubkey: creatorPubkey.toUpperCase(),
+          videoDTag: invite.videoDTag,
+          role: invite.role,
+          title: invite.title,
+        );
+        final selfCreatorCubit = CollaboratorInviteActionsCubit(
+          stateStore: store,
+          responseService: responseService,
+          currentUserPubkey: creatorPubkey,
+        );
+        addTearDown(selfCreatorCubit.close);
+
+        await expectLater(
+          selfCreatorCubit.acceptInvite(uppercaseInvite),
+          throwsA(isA<AssertionError>()),
+        );
+
+        verifyNever(() => responseService.acceptInvite(any()));
+        verifyNever(
+          () => store.setState(
+            videoAddress: any(named: 'videoAddress'),
+            creatorPubkey: any(named: 'creatorPubkey'),
+            collaboratorPubkey: any(named: 'collaboratorPubkey'),
+            state: any(named: 'state'),
+          ),
+        );
+      },
+    );
   });
 }
