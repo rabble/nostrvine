@@ -187,6 +187,13 @@ void main() {
         );
       });
 
+      test('capturePhoto throws', () {
+        expect(
+          () => basePlatform.capturePhoto(),
+          throwsA(isA<UnimplementedError>()),
+        );
+      });
+
       test('pausePreview throws', () {
         expect(
           () => basePlatform.pausePreview(),

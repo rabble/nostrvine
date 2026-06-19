@@ -6,6 +6,7 @@ import 'package:divine_camera/src/models/audio_device.dart';
 import 'package:divine_camera/src/models/camera_lens.dart';
 import 'package:divine_camera/src/models/camera_state.dart';
 import 'package:divine_camera/src/models/flash_mode.dart';
+import 'package:divine_camera/src/models/photo_capture_result.dart';
 import 'package:divine_camera/src/models/remote_record_trigger.dart';
 import 'package:divine_camera/src/models/video_quality.dart';
 import 'package:divine_camera/src/models/video_recording_result.dart';
@@ -265,6 +266,30 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
     );
     if (result == null) return null;
     return VideoRecordingResult.fromMap(result);
+  }
+
+  @override
+  Future<PhotoCaptureResult?> capturePhoto({
+    String? outputDirectory,
+    bool useCache = true,
+  }) async {
+    try {
+      final result = await methodChannel.invokeMapMethod<dynamic, dynamic>(
+        'capturePhoto',
+        {'outputDirectory': ?outputDirectory, 'useCache': useCache},
+      );
+      if (result == null) return null;
+      return PhotoCaptureResult.fromMap(result);
+    } on PlatformException catch (e, stackTrace) {
+      Log.error(
+        'capturePhoto failed: ${e.code} ${e.message ?? ''}',
+        name: 'DivineCameraMethodChannel',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
   }
 
   @override

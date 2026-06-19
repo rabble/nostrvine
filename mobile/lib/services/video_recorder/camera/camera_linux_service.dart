@@ -6,7 +6,8 @@ import 'package:divine_camera/divine_camera.dart'
         CameraLensMetadata,
         DivineCameraLens,
         DivineVideoQuality,
-        DivineVideoStabilizationMode;
+        DivineVideoStabilizationMode,
+        PhotoCaptureResult;
 import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
@@ -128,6 +129,10 @@ class CameraLinuxService extends CameraService {
 
   @override
   Future<EditorVideo?> stopRecording() async => null;
+
+  @override
+  Future<PhotoCaptureResult?> capturePhoto({String? outputDirectory}) async =>
+      null;
 
   @override
   Future<void> handleAppLifecycleState(AppLifecycleState state) async {

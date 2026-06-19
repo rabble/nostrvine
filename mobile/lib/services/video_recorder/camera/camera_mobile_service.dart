@@ -341,6 +341,42 @@ class CameraMobileService extends CameraService {
   }
 
   @override
+  Future<PhotoCaptureResult?> capturePhoto({String? outputDirectory}) async {
+    if (!_isInitialized) return null;
+    try {
+      final docsDir = await getDocumentsPath();
+      final outputPath = outputDirectory ?? docsDir;
+
+      Log.info(
+        '📷 Capturing photo to: $outputPath',
+        name: 'CameraMobileService',
+        category: .video,
+      );
+
+      final result = await _camera.capturePhoto(
+        outputDirectory: outputPath,
+        useCache: false,
+      );
+
+      if (result == null) {
+        Log.warning(
+          '📷 Photo capture returned no result',
+          name: 'CameraMobileService',
+          category: .video,
+        );
+      }
+      return result;
+    } catch (e) {
+      Log.error(
+        '📷 Failed to capture photo (unexpected error): $e',
+        name: 'CameraMobileService',
+        category: .video,
+      );
+      return null;
+    }
+  }
+
+  @override
   Future<void> handleAppLifecycleState(AppLifecycleState state) async {
     return _camera.handleAppLifecycleState(state);
   }

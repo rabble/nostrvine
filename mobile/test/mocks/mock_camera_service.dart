@@ -6,7 +6,8 @@ import 'package:divine_camera/divine_camera.dart'
         CameraLensMetadata,
         DivineCameraLens,
         DivineVideoQuality,
-        DivineVideoStabilizationMode;
+        DivineVideoStabilizationMode,
+        PhotoCaptureResult;
 import 'package:flutter/material.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
@@ -99,6 +100,16 @@ class MockCameraService extends CameraService {
   Future<EditorVideo?> stopRecording() async {
     _isRecording = false;
     return null; // Return null in mock
+  }
+
+  @override
+  Future<PhotoCaptureResult?> capturePhoto({String? outputDirectory}) async {
+    if (!_isInitialized) return null;
+    return const PhotoCaptureResult(
+      filePath: '/mock/photo.jpg',
+      width: 1080,
+      height: 1920,
+    );
   }
 
   @override

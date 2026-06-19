@@ -110,6 +110,12 @@ class MockDivineCameraPlatform
   Future<VideoRecordingResult?> stopRecording() async => null;
 
   @override
+  Future<PhotoCaptureResult?> capturePhoto({
+    String? outputDirectory,
+    bool useCache = true,
+  }) async => null;
+
+  @override
   Future<void> pausePreview() async {}
 
   @override

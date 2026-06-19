@@ -6,7 +6,8 @@ import 'package:divine_camera/divine_camera.dart'
         CameraLensMetadata,
         DivineCameraLens,
         DivineVideoQuality,
-        DivineVideoStabilizationMode;
+        DivineVideoStabilizationMode,
+        PhotoCaptureResult;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
@@ -86,6 +87,12 @@ abstract class CameraService {
 
   /// Stops video recording.
   Future<EditorVideo?> stopRecording();
+
+  /// Captures a single still photo (e.g. for stop-motion).
+  ///
+  /// [outputDirectory] specifies where to save the photo. Returns the
+  /// captured photo, or null if the camera is not ready or capture failed.
+  Future<PhotoCaptureResult?> capturePhoto({String? outputDirectory});
 
   /// Handles app lifecycle changes (pause, resume, etc.).
   Future<void> handleAppLifecycleState(AppLifecycleState state);

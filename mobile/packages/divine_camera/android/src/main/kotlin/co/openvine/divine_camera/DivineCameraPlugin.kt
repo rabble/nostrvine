@@ -144,6 +144,12 @@ class DivineCameraPlugin :
                 stopRecording(oneShotResult)
             }
 
+            "capturePhoto" -> {
+                val useCache = call.argument<Boolean>("useCache") ?: true
+                val outputDirectory = call.argument<String>("outputDirectory")
+                capturePhoto(useCache, outputDirectory, oneShotResult)
+            }
+
             "pausePreview" -> {
                 pausePreview(oneShotResult)
             }
@@ -376,6 +382,25 @@ class DivineCameraPlugin :
             }
         } catch (e: Exception) {
             result.error("RECORD_STOP_EXCEPTION", e.message, null)
+        }
+    }
+
+    private fun capturePhoto(useCache: Boolean, outputDirectory: String?, result: Result) {
+        val controller = cameraController
+        if (controller == null) {
+            result.error("NOT_INITIALIZED", "Camera not initialized", null)
+            return
+        }
+        try {
+            controller.capturePhoto(outputDirectory, useCache) { photoResult, error ->
+                if (error != null) {
+                    result.error("PHOTO_CAPTURE_ERROR", error, null)
+                } else {
+                    result.success(photoResult)
+                }
+            }
+        } catch (e: Exception) {
+            result.error("PHOTO_CAPTURE_EXCEPTION", e.message, null)
         }
     }
 

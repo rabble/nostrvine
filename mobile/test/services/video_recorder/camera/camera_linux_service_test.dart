@@ -89,6 +89,12 @@ void main() {
 
         expect(result, isNull);
       });
+
+      test('capturePhoto returns null', () async {
+        final result = await service.capturePhoto();
+
+        expect(result, isNull);
+      });
     });
 
     group('camera control methods', () {

@@ -215,7 +215,13 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             
         case "stopRecording":
             stopRecording(result: result)
-            
+
+        case "capturePhoto":
+            let args = call.arguments as? [String: Any] ?? [:]
+            let useCache = args["useCache"] as? Bool ?? true
+            let outputDirectory = args["outputDirectory"] as? String
+            capturePhoto(useCache: useCache, outputDirectory: outputDirectory, result: result)
+
         case "pausePreview":
             pausePreview(result: result)
             
@@ -420,13 +426,30 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             result(Self.cameraError("NOT_INITIALIZED", "Camera not initialized"))
             return
         }
-        
+
         controller.stopRecording { recordingResult, error in
             DispatchQueue.main.async {
                 if let error = error {
                     result(Self.cameraError("RECORD_STOP_ERROR", error))
                 } else {
                     result(recordingResult)
+                }
+            }
+        }
+    }
+
+    private func capturePhoto(useCache: Bool, outputDirectory: String?, result: @escaping FlutterResult) {
+        guard let controller = cameraController else {
+            result(Self.cameraError("NOT_INITIALIZED", "Camera not initialized"))
+            return
+        }
+
+        controller.capturePhoto(outputDirectory: outputDirectory, useCache: useCache) { photoResult, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    result(Self.cameraError("PHOTO_CAPTURE_ERROR", error))
+                } else {
+                    result(photoResult)
                 }
             }
         }

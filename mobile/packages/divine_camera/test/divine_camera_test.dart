@@ -155,6 +155,18 @@ class MockDivineCameraPlatform
   }
 
   @override
+  Future<PhotoCaptureResult?> capturePhoto({
+    String? outputDirectory,
+    bool useCache = true,
+  }) async {
+    return const PhotoCaptureResult(
+      filePath: '/test/photo.jpg',
+      width: 1080,
+      height: 1920,
+    );
+  }
+
+  @override
   Future<void> pausePreview() async {}
 
   @override
@@ -217,10 +229,7 @@ void main() {
       });
 
       test('listAudioDevices throws', () {
-        expect(
-          () => basePlatform.listAudioDevices(),
-          throwsUnimplementedError,
-        );
+        expect(() => basePlatform.listAudioDevices(), throwsUnimplementedError);
       });
     });
   });
@@ -289,9 +298,7 @@ void main() {
       });
 
       test('mirrorFrontCameraOutput reflects initialization value', () async {
-        await DivineCamera.instance.initialize(
-          mirrorFrontCameraOutput: true,
-        );
+        await DivineCamera.instance.initialize(mirrorFrontCameraOutput: true);
 
         expect(DivineCamera.instance.mirrorFrontCameraOutput, isTrue);
       });
@@ -580,6 +587,36 @@ void main() {
       });
     });
 
+    group('photo capture', () {
+      test('captures a photo when initialized', () async {
+        await DivineCamera.instance.initialize();
+
+        final result = await DivineCamera.instance.capturePhoto();
+
+        expect(result, isNotNull);
+        expect(result!.filePath, '/test/photo.jpg');
+        expect(result.width, 1080);
+        expect(result.height, 1920);
+      });
+
+      test('returns null when not initialized', () async {
+        await DivineCamera.instance.dispose();
+
+        final result = await DivineCamera.instance.capturePhoto();
+
+        expect(result, isNull);
+      });
+
+      test('returns null while recording', () async {
+        await DivineCamera.instance.initialize();
+        await DivineCamera.instance.startRecording();
+
+        final result = await DivineCamera.instance.capturePhoto();
+
+        expect(result, isNull);
+      });
+    });
+
     group('listAudioDevices', () {
       test('returns list of audio devices', () async {
         final devices = await DivineCamera.instance.listAudioDevices();
@@ -738,9 +775,7 @@ void main() {
     });
 
     test('copyWith creates new state with updated values', () {
-      const original = CameraState(
-        isInitialized: true,
-      );
+      const original = CameraState(isInitialized: true);
 
       final copied = original.copyWith(
         flashMode: DivineCameraFlashMode.on,
@@ -798,9 +833,7 @@ void main() {
     });
 
     test('duration getter returns null when durationMs is null', () {
-      const result = VideoRecordingResult(
-        filePath: '/path/to/video.mp4',
-      );
+      const result = VideoRecordingResult(filePath: '/path/to/video.mp4');
 
       expect(result.duration, isNull);
     });
@@ -935,10 +968,7 @@ void main() {
     });
 
     test('toNativeString returns correct string for volumeUp', () {
-      expect(
-        RemoteRecordTrigger.volumeUp.toNativeString(),
-        equals('volumeUp'),
-      );
+      expect(RemoteRecordTrigger.volumeUp.toNativeString(), equals('volumeUp'));
     });
 
     test('toNativeString returns correct string for volumeDown', () {
@@ -994,10 +1024,7 @@ void main() {
     });
 
     test('toString returns formatted string', () {
-      const state = CameraState(
-        isInitialized: true,
-        textureId: 1,
-      );
+      const state = CameraState(isInitialized: true, textureId: 1);
 
       final str = state.toString();
 
@@ -1152,9 +1179,7 @@ void main() {
     });
 
     test('file getter returns File object', () {
-      const result = VideoRecordingResult(
-        filePath: '/path/to/video.mp4',
-      );
+      const result = VideoRecordingResult(filePath: '/path/to/video.mp4');
 
       expect(result.file.path, '/path/to/video.mp4');
     });
@@ -1608,9 +1633,7 @@ void main() {
     });
 
     test('props returns correct list', () {
-      const metadata = CameraLensMetadata(
-        lensType: 'back',
-      );
+      const metadata = CameraLensMetadata(lensType: 'back');
 
       final props = metadata.props;
 
@@ -1648,10 +1671,7 @@ void main() {
     });
 
     test('fromMap handles null currentLensMetadata', () {
-      final map = {
-        'isInitialized': true,
-        'currentLensMetadata': null,
-      };
+      final map = {'isInitialized': true, 'currentLensMetadata': null};
 
       final state = CameraState.fromMap(map);
 
@@ -1659,9 +1679,7 @@ void main() {
     });
 
     test('fromMap handles missing currentLensMetadata', () {
-      final map = {
-        'isInitialized': true,
-      };
+      final map = {'isInitialized': true};
 
       final state = CameraState.fromMap(map);
 
@@ -1743,10 +1761,7 @@ class _NoExposureSupportMock extends MockDivineCameraPlatform {
     bool mirrorFrontCameraOutput = false,
     bool enableAutoLensSwitch = false,
   }) async {
-    return const CameraState(
-      isInitialized: true,
-      isFocusPointSupported: true,
-    );
+    return const CameraState(isInitialized: true, isFocusPointSupported: true);
   }
 }
 
@@ -1760,10 +1775,7 @@ class _SingleCameraMock extends MockDivineCameraPlatform {
     bool mirrorFrontCameraOutput = false,
     bool enableAutoLensSwitch = false,
   }) async {
-    return const CameraState(
-      isInitialized: true,
-      hasBackCamera: true,
-    );
+    return const CameraState(isInitialized: true, hasBackCamera: true);
   }
 }
 
@@ -1781,28 +1793,24 @@ void _runMethodChannelTests() {
       capturedCalls = <MethodCall>[];
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            methodChannelImpl.methodChannel,
-            (methodCall) async {
-              capturedCalls.add(methodCall);
-              switch (methodCall.method) {
-                case 'setRemoteRecordControlEnabled':
-                  return true;
-                case 'setVolumeKeysEnabled':
-                  return true;
-                default:
-                  return null;
-              }
-            },
-          );
+          .setMockMethodCallHandler(methodChannelImpl.methodChannel, (
+            methodCall,
+          ) async {
+            capturedCalls.add(methodCall);
+            switch (methodCall.method) {
+              case 'setRemoteRecordControlEnabled':
+                return true;
+              case 'setVolumeKeysEnabled':
+                return true;
+              default:
+                return null;
+            }
+          });
     });
 
     tearDown(() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            methodChannelImpl.methodChannel,
-            null,
-          );
+          .setMockMethodCallHandler(methodChannelImpl.methodChannel, null);
     });
 
     test('onRemoteRecordTrigger getter returns null initially', () {
@@ -1866,19 +1874,18 @@ void _runMethodChannelTests() {
     group('listAudioDevices', () {
       test('returns parsed devices from method channel', () async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(
-              methodChannelImpl.methodChannel,
-              (methodCall) async {
-                capturedCalls.add(methodCall);
-                if (methodCall.method == 'listAudioDevices') {
-                  return <Map<dynamic, dynamic>>[
-                    {'id': 'mic-1', 'name': 'Built-in Microphone'},
-                    {'id': 'mic-2', 'name': 'External Mic'},
-                  ];
-                }
-                return null;
-              },
-            );
+            .setMockMethodCallHandler(methodChannelImpl.methodChannel, (
+              methodCall,
+            ) async {
+              capturedCalls.add(methodCall);
+              if (methodCall.method == 'listAudioDevices') {
+                return <Map<dynamic, dynamic>>[
+                  {'id': 'mic-1', 'name': 'Built-in Microphone'},
+                  {'id': 'mic-2', 'name': 'External Mic'},
+                ];
+              }
+              return null;
+            });
 
         final devices = await methodChannelImpl.listAudioDevices();
 
@@ -1891,13 +1898,12 @@ void _runMethodChannelTests() {
 
       test('returns empty list when platform returns null', () async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(
-              methodChannelImpl.methodChannel,
-              (methodCall) async {
-                capturedCalls.add(methodCall);
-                return null;
-              },
-            );
+            .setMockMethodCallHandler(methodChannelImpl.methodChannel, (
+              methodCall,
+            ) async {
+              capturedCalls.add(methodCall);
+              return null;
+            });
 
         final devices = await methodChannelImpl.listAudioDevices();
 

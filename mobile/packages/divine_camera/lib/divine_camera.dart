@@ -6,6 +6,7 @@ import 'package:divine_camera/src/models/audio_device.dart';
 import 'package:divine_camera/src/models/camera_lens.dart';
 import 'package:divine_camera/src/models/camera_state.dart';
 import 'package:divine_camera/src/models/flash_mode.dart';
+import 'package:divine_camera/src/models/photo_capture_result.dart';
 import 'package:divine_camera/src/models/remote_record_trigger.dart';
 import 'package:divine_camera/src/models/video_quality.dart';
 import 'package:divine_camera/src/models/video_recording_result.dart';
@@ -18,6 +19,7 @@ export 'src/models/camera_lens.dart';
 export 'src/models/camera_lens_metadata.dart';
 export 'src/models/camera_state.dart';
 export 'src/models/flash_mode.dart';
+export 'src/models/photo_capture_result.dart';
 export 'src/models/remote_record_trigger.dart';
 export 'src/models/video_quality.dart';
 export 'src/models/video_recording_result.dart';
@@ -296,6 +298,29 @@ class DivineCamera {
       _state = _state.copyWith(isRecording: false);
       _notifyStateChanged();
     }
+  }
+
+  /// Captures a single still photo from the live camera feed.
+  ///
+  /// Intended for stop-motion capture: each call writes one JPEG frame to
+  /// disk and returns its location. Audio is never involved.
+  ///
+  /// [useCache] if true, saves the photo to the cache directory (temporary),
+  /// otherwise to the documents directory (permanent). Defaults to true.
+  /// [outputDirectory] specifies where to save the photo.
+  ///
+  /// Returns the captured photo result, or null if the camera is not ready
+  /// or capture failed. Capture is rejected while a video recording is in
+  /// progress.
+  Future<PhotoCaptureResult?> capturePhoto({
+    String? outputDirectory,
+    bool useCache = true,
+  }) async {
+    if (!_state.isInitialized || _state.isRecording) return null;
+    return _platform.capturePhoto(
+      outputDirectory: outputDirectory,
+      useCache: useCache,
+    );
   }
 
   /// Handles app lifecycle changes (pause, resume, etc.).

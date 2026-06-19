@@ -6,6 +6,7 @@ import 'package:divine_camera/src/models/audio_device.dart';
 import 'package:divine_camera/src/models/camera_lens.dart';
 import 'package:divine_camera/src/models/camera_state.dart';
 import 'package:divine_camera/src/models/flash_mode.dart';
+import 'package:divine_camera/src/models/photo_capture_result.dart';
 import 'package:divine_camera/src/models/remote_record_trigger.dart';
 import 'package:divine_camera/src/models/video_quality.dart';
 import 'package:divine_camera/src/models/video_recording_result.dart';
@@ -120,6 +121,20 @@ abstract class DivineCameraPlatform extends PlatformInterface {
     throw UnimplementedError('stopRecording() has not been implemented.');
   }
 
+  /// Captures a single still photo from the live camera feed.
+  ///
+  /// [useCache] if true, saves the photo to the cache directory (temporary),
+  /// otherwise to the documents directory (permanent). Defaults to true.
+  /// [outputDirectory] specifies where to save the photo.
+  ///
+  /// Returns the captured photo result, or null if capture failed.
+  Future<PhotoCaptureResult?> capturePhoto({
+    String? outputDirectory,
+    bool useCache = true,
+  }) {
+    throw UnimplementedError('capturePhoto() has not been implemented.');
+  }
+
   /// Pauses the camera preview.
   Future<void> pausePreview() {
     throw UnimplementedError('pausePreview() has not been implemented.');
@@ -159,18 +174,14 @@ abstract class DivineCameraPlatform extends PlatformInterface {
   /// Callback for when a remote record trigger is detected (volume button
   /// or Bluetooth remote).
   void Function(RemoteRecordTrigger trigger)? get onRemoteRecordTrigger {
-    throw UnimplementedError(
-      'onRemoteRecordTrigger has not been implemented.',
-    );
+    throw UnimplementedError('onRemoteRecordTrigger has not been implemented.');
   }
 
   /// Sets the callback for when a remote record trigger is detected.
   set onRemoteRecordTrigger(
     void Function(RemoteRecordTrigger trigger)? callback,
   ) {
-    throw UnimplementedError(
-      'onRemoteRecordTrigger has not been implemented.',
-    );
+    throw UnimplementedError('onRemoteRecordTrigger has not been implemented.');
   }
 
   /// Enables or disables remote record control via volume buttons.
@@ -199,8 +210,6 @@ abstract class DivineCameraPlatform extends PlatformInterface {
   /// Returns an empty list on platforms that do not support device
   /// enumeration.
   Future<List<AudioDevice>> listAudioDevices() {
-    throw UnimplementedError(
-      'listAudioDevices() has not been implemented.',
-    );
+    throw UnimplementedError('listAudioDevices() has not been implemented.');
   }
 }

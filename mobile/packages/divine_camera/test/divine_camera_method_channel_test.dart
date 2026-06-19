@@ -14,114 +14,102 @@ void main() {
   setUp(() {
     platform = MethodChannelDivineCamera();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-          channel,
-          (methodCall) async {
-            final args = methodCall.arguments as Map<dynamic, dynamic>?;
-            switch (methodCall.method) {
-              case 'getPlatformVersion':
-                return 'Android 14';
-              case 'initializeCamera':
-                return {
-                  'isInitialized': true,
-                  'isRecording': false,
-                  'flashMode': 'off',
-                  'lens': args?['lens'] ?? 'back',
-                  'zoomLevel': 1.0,
-                  'minZoomLevel': 1.0,
-                  'maxZoomLevel': 8.0,
-                  'aspectRatio': 1.777,
-                  'hasFlash': true,
-                  'hasFrontCamera': true,
-                  'hasBackCamera': true,
-                  'isFocusPointSupported': true,
-                  'isExposurePointSupported': true,
-                  'textureId': 1,
-                  'availableLenses': [
-                    'front',
-                    'back',
-                    'ultraWide',
-                    'telephoto',
-                  ],
-                };
-              case 'disposeCamera':
-                return null;
-              case 'setFlashMode':
-                return true;
-              case 'setFocusPoint':
-                return true;
-              case 'setExposurePoint':
-                return true;
-              case 'cancelFocusAndMetering':
-                return true;
-              case 'setZoomLevel':
-                return true;
-              case 'setVideoStabilizationMode':
-                return true;
-              case 'switchCamera':
-                return {
-                  'isInitialized': true,
-                  'isRecording': false,
-                  'flashMode': 'off',
-                  'lens': args?['lens'] ?? 'front',
-                  'zoomLevel': 1.0,
-                  'minZoomLevel': 1.0,
-                  'maxZoomLevel': 8.0,
-                  'aspectRatio': 1.777,
-                  'hasFlash': true,
-                  'hasFrontCamera': true,
-                  'hasBackCamera': true,
-                  'isFocusPointSupported': true,
-                  'isExposurePointSupported': true,
-                  'textureId': 1,
-                  'availableLenses': [
-                    'front',
-                    'back',
-                    'ultraWide',
-                    'telephoto',
-                  ],
-                };
-              case 'startRecording':
-                return null;
-              case 'stopRecording':
-                return {
-                  'filePath': '/path/to/video.mp4',
-                  'durationMs': 5000,
-                  'width': 1920,
-                  'height': 1080,
-                };
-              case 'pausePreview':
-                return null;
-              case 'resumePreview':
-                return null;
-              case 'getCameraState':
-                return {
-                  'isInitialized': true,
-                  'isRecording': false,
-                  'flashMode': 'off',
-                  'lens': 'back',
-                  'zoomLevel': 1.0,
-                  'minZoomLevel': 1.0,
-                  'maxZoomLevel': 8.0,
-                  'aspectRatio': 1.777,
-                  'hasFlash': true,
-                  'hasFrontCamera': true,
-                  'hasBackCamera': true,
-                  'isFocusPointSupported': true,
-                  'isExposurePointSupported': true,
-                  'textureId': 1,
-                  'availableLenses': [
-                    'front',
-                    'back',
-                    'ultraWide',
-                    'telephoto',
-                  ],
-                };
-              default:
-                return null;
-            }
-          },
-        );
+        .setMockMethodCallHandler(channel, (methodCall) async {
+          final args = methodCall.arguments as Map<dynamic, dynamic>?;
+          switch (methodCall.method) {
+            case 'getPlatformVersion':
+              return 'Android 14';
+            case 'initializeCamera':
+              return {
+                'isInitialized': true,
+                'isRecording': false,
+                'flashMode': 'off',
+                'lens': args?['lens'] ?? 'back',
+                'zoomLevel': 1.0,
+                'minZoomLevel': 1.0,
+                'maxZoomLevel': 8.0,
+                'aspectRatio': 1.777,
+                'hasFlash': true,
+                'hasFrontCamera': true,
+                'hasBackCamera': true,
+                'isFocusPointSupported': true,
+                'isExposurePointSupported': true,
+                'textureId': 1,
+                'availableLenses': ['front', 'back', 'ultraWide', 'telephoto'],
+              };
+            case 'disposeCamera':
+              return null;
+            case 'setFlashMode':
+              return true;
+            case 'setFocusPoint':
+              return true;
+            case 'setExposurePoint':
+              return true;
+            case 'cancelFocusAndMetering':
+              return true;
+            case 'setZoomLevel':
+              return true;
+            case 'setVideoStabilizationMode':
+              return true;
+            case 'switchCamera':
+              return {
+                'isInitialized': true,
+                'isRecording': false,
+                'flashMode': 'off',
+                'lens': args?['lens'] ?? 'front',
+                'zoomLevel': 1.0,
+                'minZoomLevel': 1.0,
+                'maxZoomLevel': 8.0,
+                'aspectRatio': 1.777,
+                'hasFlash': true,
+                'hasFrontCamera': true,
+                'hasBackCamera': true,
+                'isFocusPointSupported': true,
+                'isExposurePointSupported': true,
+                'textureId': 1,
+                'availableLenses': ['front', 'back', 'ultraWide', 'telephoto'],
+              };
+            case 'startRecording':
+              return null;
+            case 'stopRecording':
+              return {
+                'filePath': '/path/to/video.mp4',
+                'durationMs': 5000,
+                'width': 1920,
+                'height': 1080,
+              };
+            case 'capturePhoto':
+              return {
+                'filePath': '/path/to/photo.jpg',
+                'width': 1080,
+                'height': 1920,
+              };
+            case 'pausePreview':
+              return null;
+            case 'resumePreview':
+              return null;
+            case 'getCameraState':
+              return {
+                'isInitialized': true,
+                'isRecording': false,
+                'flashMode': 'off',
+                'lens': 'back',
+                'zoomLevel': 1.0,
+                'minZoomLevel': 1.0,
+                'maxZoomLevel': 8.0,
+                'aspectRatio': 1.777,
+                'hasFlash': true,
+                'hasFrontCamera': true,
+                'hasBackCamera': true,
+                'isFocusPointSupported': true,
+                'isExposurePointSupported': true,
+                'textureId': 1,
+                'availableLenses': ['front', 'back', 'ultraWide', 'telephoto'],
+              };
+            default:
+              return null;
+          }
+        });
   });
 
   tearDown(() {
@@ -161,9 +149,7 @@ void main() {
     });
 
     test('initializeCamera with enableScreenFlash false', () async {
-      final state = await platform.initializeCamera(
-        enableScreenFlash: false,
-      );
+      final state = await platform.initializeCamera(enableScreenFlash: false);
 
       expect(state.isInitialized, isTrue);
     });
@@ -305,10 +291,7 @@ void main() {
     });
 
     test('startRecording with useCache false', () async {
-      await expectLater(
-        platform.startRecording(useCache: false),
-        completes,
-      );
+      await expectLater(platform.startRecording(useCache: false), completes);
     });
 
     test('startRecording with outputDirectory', () async {
@@ -320,18 +303,15 @@ void main() {
 
     test('startRecording returns false on PlatformException', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            channel,
-            (methodCall) async {
-              if (methodCall.method == 'startRecording') {
-                throw PlatformException(
-                  code: 'RECORD_START_ERROR',
-                  message: 'Recording failed to start',
-                );
-              }
-              return null;
-            },
-          );
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            if (methodCall.method == 'startRecording') {
+              throw PlatformException(
+                code: 'RECORD_START_ERROR',
+                message: 'Recording failed to start',
+              );
+            }
+            return null;
+          });
 
       final result = await platform.startRecording();
       expect(result, isFalse);
@@ -352,6 +332,68 @@ void main() {
       expect(result.durationMs, 5000);
       expect(result.width, 1920);
       expect(result.height, 1080);
+    });
+
+    test('capturePhoto returns PhotoCaptureResult', () async {
+      final result = await platform.capturePhoto();
+
+      expect(result, isNotNull);
+      expect(result!.filePath, '/path/to/photo.jpg');
+      expect(result.width, 1080);
+      expect(result.height, 1920);
+    });
+
+    test('capturePhoto forwards outputDirectory and useCache', () async {
+      Map<dynamic, dynamic>? sentArgs;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            if (methodCall.method == 'capturePhoto') {
+              sentArgs = methodCall.arguments as Map<dynamic, dynamic>?;
+              return {'filePath': '/custom/photo.jpg'};
+            }
+            return null;
+          });
+
+      await platform.capturePhoto(outputDirectory: '/custom', useCache: false);
+
+      expect(sentArgs?['outputDirectory'], '/custom');
+      expect(sentArgs?['useCache'], isFalse);
+    });
+
+    test('capturePhoto returns null when result is null', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            if (methodCall.method == 'capturePhoto') {
+              return null;
+            }
+            return null;
+          });
+
+      final result = await platform.capturePhoto();
+      expect(result, isNull);
+    });
+
+    test('capturePhoto returns null and logs on PlatformException', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            if (methodCall.method == 'capturePhoto') {
+              throw PlatformException(
+                code: 'PHOTO_CAPTURE_ERROR',
+                message: 'Capture failed',
+              );
+            }
+            return null;
+          });
+
+      final result = await platform.capturePhoto();
+      expect(result, isNull);
+
+      final logged = LogCaptureService().getRecentLogs().any(
+        (entry) =>
+            entry.level == LogLevel.error &&
+            entry.message.contains('PHOTO_CAPTURE_ERROR'),
+      );
+      expect(logged, isTrue);
     });
 
     test('pausePreview completes without error', () async {
@@ -520,11 +562,7 @@ void main() {
 
       await expectLater(
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .handlePlatformMessage(
-              'divine_camera',
-              envelope,
-              (data) {},
-            ),
+            .handlePlatformMessage('divine_camera', envelope, (data) {}),
         completes,
       );
 
@@ -544,11 +582,7 @@ void main() {
       // Should not throw
       await expectLater(
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .handlePlatformMessage(
-              'divine_camera',
-              envelope,
-              (data) {},
-            ),
+            .handlePlatformMessage('divine_camera', envelope, (data) {}),
         completes,
       );
     });
@@ -558,19 +592,13 @@ void main() {
 
       const codec = StandardMethodCodec();
       final envelope = codec.encodeMethodCall(
-        const MethodCall('onRecordingAutoStopped', {
-          'filePath': '/test.mp4',
-        }),
+        const MethodCall('onRecordingAutoStopped', {'filePath': '/test.mp4'}),
       );
 
       // Should not throw
       await expectLater(
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .handlePlatformMessage(
-              'divine_camera',
-              envelope,
-              (data) {},
-            ),
+            .handlePlatformMessage('divine_camera', envelope, (data) {}),
         completes,
       );
     });
@@ -584,11 +612,7 @@ void main() {
       // Should not throw, just return null
       await expectLater(
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .handlePlatformMessage(
-              'divine_camera',
-              envelope,
-              (data) {},
-            ),
+            .handlePlatformMessage('divine_camera', envelope, (data) {}),
         completes,
       );
     });
@@ -683,10 +707,7 @@ void main() {
 
     test('falls back to the native name when none is provided', () async {
       const message = 'onNativeLog-test-default-name-unique';
-      await dispatchNativeLog({
-        'level': 'info',
-        'message': message,
-      });
+      await dispatchNativeLog({'level': 'info', 'message': message});
 
       final entry = latestEntryWithMessage(message);
       expect(entry, isNotNull);
