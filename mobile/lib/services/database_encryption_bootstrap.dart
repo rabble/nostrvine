@@ -7,7 +7,6 @@ import 'package:db_client/db_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:openvine/database/sqlcipher_runtime.dart';
-import 'package:sqlite3/sqlite3.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Secure-storage key for the at-rest DB cipher key. Versioned so a future
@@ -192,13 +191,11 @@ const _sqliteNotADb = 26;
 /// DB cipher key can make an otherwise recoverable encrypted DB unusable.
 bool shouldRepairLocalDatabaseCacheAfterBootstrapError(Object error) {
   if (error is SqlCipherUnavailableError) return false;
-  if (error is SqliteException) {
-    return error.resultCode == _sqliteNotADb ||
-        error.resultCode == _sqliteCorrupt;
-  }
 
   final message = error.toString();
-  return message.contains('SQLITE_NOTADB') ||
+  return message.contains('SqliteException($_sqliteNotADb)') ||
+      message.contains('SqliteException($_sqliteCorrupt)') ||
+      message.contains('SQLITE_NOTADB') ||
       message.contains('SQLITE_CORRUPT') ||
       message.contains('database disk image is malformed') ||
       message.contains('file is not a database');
