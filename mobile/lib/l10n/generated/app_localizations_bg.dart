@@ -7799,7 +7799,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoRecorderCaptureNextLabel => 'Следваща';
 
   @override
-  String get videoRecorderLipSyncAddAudioFirst => 'Add audio before recording';
+  String get videoRecorderLipSyncAddAudioFirst => 'Добавете аудио преди запис';
 
   @override
   String get videoRecorderToggleFlashLabel => 'Превключване на светкавицата';

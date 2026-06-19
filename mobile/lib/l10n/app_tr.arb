@@ -3006,6 +3006,7 @@
     "videoRecorderAutosaveRestoreFailure": "Taslağınız geri yüklenemedi",
     "videoRecorderCaptureCloseLabel": "Kapat",
     "videoRecorderCaptureNextLabel": "İleri",
+    "videoRecorderLipSyncAddAudioFirst": "Kayıttan önce ses ekleyin",
     "videoRecorderClipDeletedMessage": "Klip çöp kutusuna taşındı",
     "videoRecorderClipUndoLabel": "Geri al",
     "libraryTrashTitle": "Son silinenler",

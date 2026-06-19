@@ -7882,7 +7882,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoRecorderCaptureNextLabel => 'Dalej';
 
   @override
-  String get videoRecorderLipSyncAddAudioFirst => 'Add audio before recording';
+  String get videoRecorderLipSyncAddAudioFirst => 'Dodaj audio przed nagraniem';
 
   @override
   String get videoRecorderToggleFlashLabel => 'Przełącz lampę błyskową';

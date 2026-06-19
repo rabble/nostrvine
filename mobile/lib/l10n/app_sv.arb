@@ -2772,6 +2772,7 @@
     "videoRecorderContinueToEditorLabel": "Fortsätt till videoredigeraren",
     "videoRecorderCaptureCloseLabel": "Stäng",
     "videoRecorderCaptureNextLabel": "Nästa",
+    "videoRecorderLipSyncAddAudioFirst": "Lägg till ljud innan inspelning",
     "videoRecorderToggleFlashLabel": "Växla blixt",
     "videoRecorderCycleTimerLabel": "Växla timer",
     "videoRecorderToggleAspectRatioLabel": "Växla bildförhållande",

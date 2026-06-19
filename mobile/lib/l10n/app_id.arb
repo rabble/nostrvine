@@ -3006,6 +3006,7 @@
     "videoRecorderAutosaveRestoreFailure": "Tidak dapat memulihkan draf kamu",
     "videoRecorderCaptureCloseLabel": "Tutup",
     "videoRecorderCaptureNextLabel": "Berikutnya",
+    "videoRecorderLipSyncAddAudioFirst": "Tambahkan audio sebelum merekam",
     "videoRecorderClipDeletedMessage": "Klip dipindahkan ke sampah",
     "videoRecorderClipUndoLabel": "Urungkan",
     "libraryTrashTitle": "Baru-baru ini dihapus",

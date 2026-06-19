@@ -3022,6 +3022,7 @@
     "videoRecorderContinueToEditorLabel": "Продължете към видеоредактора",
     "videoRecorderCaptureCloseLabel": "Затвори",
     "videoRecorderCaptureNextLabel": "Следваща",
+    "videoRecorderLipSyncAddAudioFirst": "Добавете аудио преди запис",
     "videoRecorderToggleFlashLabel": "Превключване на светкавицата",
     "videoRecorderCycleTimerLabel": "Цикъл таймер",
     "videoRecorderToggleAspectRatioLabel": "Превключване на пропорциите",

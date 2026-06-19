@@ -2772,6 +2772,7 @@
     "videoRecorderContinueToEditorLabel": "Continuer vers l'éditeur vidéo",
     "videoRecorderCaptureCloseLabel": "Fermer",
     "videoRecorderCaptureNextLabel": "Suivant",
+    "videoRecorderLipSyncAddAudioFirst": "Ajoutez de l'audio avant d'enregistrer",
     "videoRecorderToggleFlashLabel": "Activer/désactiver le flash",
     "videoRecorderCycleTimerLabel": "Changer le minuteur",
     "videoRecorderToggleAspectRatioLabel": "Changer le format d'image",

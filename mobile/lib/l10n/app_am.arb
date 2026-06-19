@@ -3332,6 +3332,7 @@
     "videoRecorderContinueToEditorLabel": "ወደ ቪዲዮ አርታዒ ይቀጥሉ",
     "videoRecorderCaptureCloseLabel": "ገጠመ",
     "videoRecorderCaptureNextLabel": "ቀጥሎ",
+    "videoRecorderLipSyncAddAudioFirst": "ከመቅረጽ በፊት ኦዲዮ ያክሉ",
     "videoRecorderToggleFlashLabel": "ብልጭታ ቀያይር",
     "videoRecorderCycleTimerLabel": "የዑደት ሰዓት ቆጣሪ",
     "videoRecorderToggleAspectRatioLabel": "ምጥጥን ቀያይር",

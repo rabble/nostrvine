@@ -7708,7 +7708,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoRecorderCaptureNextLabel => 'İleri';
 
   @override
-  String get videoRecorderLipSyncAddAudioFirst => 'Add audio before recording';
+  String get videoRecorderLipSyncAddAudioFirst => 'Kayıttan önce ses ekleyin';
 
   @override
   String get videoRecorderToggleFlashLabel => 'Flaşı değiştir';

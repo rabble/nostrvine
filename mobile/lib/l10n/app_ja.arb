@@ -2999,6 +2999,7 @@
     "videoRecorderAutosaveRestoreFailure": "下書きを復元できませんでした",
     "videoRecorderCaptureCloseLabel": "閉じる",
     "videoRecorderCaptureNextLabel": "次へ",
+    "videoRecorderLipSyncAddAudioFirst": "録画する前にオーディオを追加してください",
     "videoRecorderClipDeletedMessage": "クリップをゴミ箱に移動しました",
     "videoRecorderClipUndoLabel": "元に戻す",
     "libraryTrashTitle": "最近削除した項目",

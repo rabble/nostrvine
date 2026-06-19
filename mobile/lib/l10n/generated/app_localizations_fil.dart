@@ -7815,7 +7815,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoRecorderCaptureNextLabel => 'Susunod';
 
   @override
-  String get videoRecorderLipSyncAddAudioFirst => 'Add audio before recording';
+  String get videoRecorderLipSyncAddAudioFirst =>
+      'Magdagdag ng audio bago mag-record';
 
   @override
   String get videoRecorderToggleFlashLabel => 'I-toggle ang flash';

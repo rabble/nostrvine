@@ -2772,6 +2772,7 @@
     "videoRecorderContinueToEditorLabel": "Doorgaan naar video-editor",
     "videoRecorderCaptureCloseLabel": "Sluiten",
     "videoRecorderCaptureNextLabel": "Volgende",
+    "videoRecorderLipSyncAddAudioFirst": "Voeg audio toe vóór de opname",
     "videoRecorderToggleFlashLabel": "Flitser in-/uitschakelen",
     "videoRecorderCycleTimerLabel": "Timer wisselen",
     "videoRecorderToggleAspectRatioLabel": "Beeldverhouding wisselen",

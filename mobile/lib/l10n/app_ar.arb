@@ -2999,6 +2999,7 @@
     "videoRecorderAutosaveRestoreFailure": "تعذر استعادة مسودتك",
     "videoRecorderCaptureCloseLabel": "إغلاق",
     "videoRecorderCaptureNextLabel": "التالي",
+    "videoRecorderLipSyncAddAudioFirst": "أضف صوتًا قبل التسجيل",
     "videoRecorderClipDeletedMessage": "تم نقل المقطع إلى المهملات",
     "videoRecorderClipUndoLabel": "تراجع",
     "libraryTrashTitle": "المحذوفة مؤخرًا",

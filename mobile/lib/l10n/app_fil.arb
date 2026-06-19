@@ -1689,6 +1689,7 @@
     "videoRecorderContinueToEditorLabel": "Magpatuloy sa video editor",
     "videoRecorderCaptureCloseLabel": "Isara",
     "videoRecorderCaptureNextLabel": "Susunod",
+    "videoRecorderLipSyncAddAudioFirst": "Magdagdag ng audio bago mag-record",
     "videoRecorderToggleFlashLabel": "I-toggle ang flash",
     "videoRecorderCycleTimerLabel": "I-cycle ang timer",
     "videoRecorderToggleAspectRatioLabel": "I-toggle ang aspect ratio",

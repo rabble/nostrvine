@@ -2772,6 +2772,7 @@
     "videoRecorderContinueToEditorLabel": "Zum Videoeditor weiter",
     "videoRecorderCaptureCloseLabel": "Schließen",
     "videoRecorderCaptureNextLabel": "Weiter",
+    "videoRecorderLipSyncAddAudioFirst": "Audio vor der Aufnahme hinzufügen",
     "videoRecorderToggleFlashLabel": "Blitz ein-/ausschalten",
     "videoRecorderCycleTimerLabel": "Timer wechseln",
     "videoRecorderToggleAspectRatioLabel": "Seitenverhältnis wechseln",

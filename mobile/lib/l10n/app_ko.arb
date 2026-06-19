@@ -2295,6 +2295,7 @@
     "videoRecorderAutosaveRestoreFailure": "임시저장을 복원할 수 없습니다",
     "videoRecorderCaptureCloseLabel": "닫기",
     "videoRecorderCaptureNextLabel": "다음",
+    "videoRecorderLipSyncAddAudioFirst": "녹화하기 전에 오디오를 추가하세요",
     "videoRecorderClipDeletedMessage": "클립이 휴지통으로 이동되었습니다",
     "videoRecorderClipUndoLabel": "실행 취소",
     "libraryTrashTitle": "최근 삭제된 항목",

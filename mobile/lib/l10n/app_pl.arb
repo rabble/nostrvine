@@ -2772,6 +2772,7 @@
     "videoRecorderContinueToEditorLabel": "Przejdź do edytora wideo",
     "videoRecorderCaptureCloseLabel": "Zamknij",
     "videoRecorderCaptureNextLabel": "Dalej",
+    "videoRecorderLipSyncAddAudioFirst": "Dodaj audio przed nagraniem",
     "videoRecorderToggleFlashLabel": "Przełącz lampę błyskową",
     "videoRecorderCycleTimerLabel": "Zmień timer",
     "videoRecorderToggleAspectRatioLabel": "Przełącz proporcje",
