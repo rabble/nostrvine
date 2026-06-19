@@ -549,12 +549,16 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               // so the action column / author info land at the same gap
               // above the comment bar. The bar's own `SafeArea`-style
               // padding handles the home-indicator visually.
+              // When the reel is opened FROM a DM, only the private DM reply
+              // bar is shown — the public comment composer is suppressed so a
+              // private-context reply can't be mistaken for (or accidentally
+              // posted as) a public comment. Public commenting is still one
+              // tap away via the right-rail comment button. Matches TikTok/IG.
               final showCommentBar =
-                  currentUserPubkey != null && state.currentVideo != null;
+                  widget.dmReplyContext == null &&
+                  currentUserPubkey != null &&
+                  state.currentVideo != null;
 
-              // The DM reply/reaction bar shows only when the reel was opened
-              // from a DM thread (dmReplyContext present), alongside the
-              // public comment composer.
               final showDmReplyBar =
                   widget.dmReplyContext != null &&
                   currentUserPubkey != null &&
