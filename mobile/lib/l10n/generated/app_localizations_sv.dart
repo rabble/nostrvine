@@ -7736,6 +7736,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoRecorderCaptureNextLabel => 'Nästa';
 
   @override
+  String get videoRecorderLipSyncAddAudioFirst => 'Add audio before recording';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Växla blixt';
 
   @override

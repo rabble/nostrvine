@@ -1,13 +1,16 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_chip.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_audio_progress_bar.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dart';
 
 /// Lip-sync mode stack.
 ///
@@ -24,7 +27,39 @@ class VideoRecorderLipSyncStack extends StatelessWidget {
       fromEditor: false,
       topBarCenter: _LipSyncAudioButton(),
       audioProgressBar: VideoRecorderAudioProgressBar(),
+      recordButton: _LipSyncRecordButton(),
     );
+  }
+}
+
+/// Record button gated on an audio selection.
+///
+/// Until a sound is picked it renders disabled (grayed) and a tap shows a
+/// snackbar telling the user to add audio first, rather than starting a
+/// recording that wouldn't be synced to anything.
+class _LipSyncRecordButton extends ConsumerWidget {
+  const _LipSyncRecordButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasSound = ref.watch(
+      videoEditorProvider.select((s) => s.selectedSound != null),
+    );
+
+    return RecordButton(
+      onBlockedTap: hasSound ? null : () => _showAddAudioSnackbar(context),
+    );
+  }
+
+  void _showAddAudioSnackbar(BuildContext context) {
+    ScaffoldMessenger.of(context)
+      ..removeCurrentSnackBar()
+      ..showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          context.l10n.videoRecorderLipSyncAddAudioFirst,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 140),
+        ),
+      );
   }
 }
 

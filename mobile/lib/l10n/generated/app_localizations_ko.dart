@@ -7479,6 +7479,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoRecorderCaptureNextLabel => '다음';
 
   @override
+  String get videoRecorderLipSyncAddAudioFirst => 'Add audio before recording';
+
+  @override
   String get videoRecorderToggleFlashLabel => '플래시 전환';
 
   @override

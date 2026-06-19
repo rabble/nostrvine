@@ -13436,6 +13436,12 @@ abstract class AppLocalizations {
   /// **'Next'**
   String get videoRecorderCaptureNextLabel;
 
+  /// Snackbar shown when the user taps the record button in lip-sync mode without first selecting a sound.
+  ///
+  /// In en, this message translates to:
+  /// **'Add audio before recording'**
+  String get videoRecorderLipSyncAddAudioFirst;
+
   /// No description provided for @videoRecorderToggleFlashLabel.
   ///
   /// In en, this message translates to:

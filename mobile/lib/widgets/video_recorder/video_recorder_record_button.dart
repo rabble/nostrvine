@@ -10,10 +10,20 @@ import 'package:openvine/widgets/video_recorder/shutter_gesture_detector.dart';
 
 /// Circular record button for starting/stopping video recording.
 class RecordButton extends ConsumerWidget {
-  const RecordButton({super.key});
+  const RecordButton({this.onBlockedTap, super.key});
+
+  /// When non-null, the button is shown in a disabled (grayed) state and a tap
+  /// invokes this callback instead of starting recording. Lip-sync mode uses
+  /// this to require an audio selection before recording.
+  final VoidCallback? onBlockedTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final onBlockedTap = this.onBlockedTap;
+    if (onBlockedTap != null) {
+      return _BlockedRecordButton(onTap: onBlockedTap);
+    }
+
     final state = context.select(
       (VideoRecorderBloc b) => (
         isRecording: b.state.isRecording,
@@ -70,42 +80,84 @@ class RecordButton extends ConsumerWidget {
                 VideoRecorderZoomedByLongPress(details.localOffsetFromOrigin),
               )
             : null,
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 200),
-          opacity: isEnabled ? 1.0 : 0.5,
+        child: _RecordButtonVisual(
+          isEnabled: isEnabled,
+          isRecording: state.isRecording,
+        ),
+      ),
+    );
+  }
+}
+
+/// Record button shown disabled (grayed) with a tap that reports a reason
+/// instead of starting recording. Used by lip-sync mode to require an audio
+/// selection before recording.
+class _BlockedRecordButton extends StatelessWidget {
+  const _BlockedRecordButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      identifier: 'divine-camera-record-button',
+      button: true,
+      tooltip: context.l10n.videoRecorderStartRecordingTooltip,
+      onTap: onTap,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: const _RecordButtonVisual(isEnabled: false, isRecording: false),
+      ),
+    );
+  }
+}
+
+/// The visual chrome of the record button: a 96px ring with an inner shape
+/// that morphs between the idle dot and the recording square.
+class _RecordButtonVisual extends StatelessWidget {
+  const _RecordButtonVisual({
+    required this.isEnabled,
+    required this.isRecording,
+  });
+
+  final bool isEnabled;
+  final bool isRecording;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 200),
+      opacity: isEnabled ? 1.0 : 0.5,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
+        width: 96,
+        height: 96,
+        decoration: BoxDecoration(
+          border: .all(
+            color: isRecording ? VineTheme.error : VineTheme.whiteText,
+            width: 4,
+          ),
+          borderRadius: .circular(36),
+        ),
+        child: Center(
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 100),
-            width: 96,
-            height: 96,
-            decoration: BoxDecoration(
-              border: .all(
-                color: state.isRecording
-                    ? VineTheme.error
-                    : VineTheme.whiteText,
-                width: 4,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            width: isRecording ? 32 : 64,
+            height: isRecording ? 32 : 64,
+            decoration: ShapeDecoration(
+              color: VineTheme.error,
+              shape: RoundedRectangleBorder(
+                borderRadius: .circular(isRecording ? 6 : 20),
               ),
-              borderRadius: .circular(36),
-            ),
-            child: Center(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-                width: state.isRecording ? 32 : 64,
-                height: state.isRecording ? 32 : 64,
-                decoration: ShapeDecoration(
-                  color: VineTheme.error,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: .circular(state.isRecording ? 6 : 20),
-                  ),
-                  shadows: const [
-                    BoxShadow(
-                      color: VineTheme.innerShadow,
-                      blurRadius: 1,
-                      offset: Offset(1, 1),
-                    ),
-                  ],
+              shadows: const [
+                BoxShadow(
+                  color: VineTheme.innerShadow,
+                  blurRadius: 1,
+                  offset: Offset(1, 1),
                 ),
-              ),
+              ],
             ),
           ),
         ),

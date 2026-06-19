@@ -7893,6 +7893,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoRecorderCaptureNextLabel => 'Următorul';
 
   @override
+  String get videoRecorderLipSyncAddAudioFirst => 'Add audio before recording';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'Activează/dezactivează blițul';
 
   @override

@@ -18,6 +18,7 @@ import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_ch
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/lip_sync/video_recorder_lip_sync_stack.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_audio_progress_bar.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -135,6 +136,58 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.textContaining('My Sound'), findsOneWidget);
+      });
+    });
+
+    group('record button gating', () {
+      AudioEvent sound(String id) => AudioEvent(
+        id: id,
+        pubkey: 'pubkey',
+        createdAt: 1704067200,
+        url: 'https://example.com/audio/$id.mp3',
+        title: id,
+        duration: 5,
+      );
+
+      testWidgets('blocks the record button when no sound is selected', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        final recordButton = tester.widget<RecordButton>(
+          find.byType(RecordButton),
+        );
+        expect(recordButton.onBlockedTap, isNotNull);
+      });
+
+      testWidgets('shows a snackbar when tapping the blocked record button', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(RecordButton));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.videoRecorderLipSyncAddAudioFirst),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('does not block the record button when a sound is selected', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(selectedSound: sound('a')));
+        await tester.pumpAndSettle();
+
+        final recordButton = tester.widget<RecordButton>(
+          find.byType(RecordButton),
+        );
+        expect(recordButton.onBlockedTap, isNull);
       });
     });
 

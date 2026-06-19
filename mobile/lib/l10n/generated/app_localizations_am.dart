@@ -7593,6 +7593,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoRecorderCaptureNextLabel => 'ቀጥሎ';
 
   @override
+  String get videoRecorderLipSyncAddAudioFirst => 'Add audio before recording';
+
+  @override
   String get videoRecorderToggleFlashLabel => 'ብልጭታ ቀያይር';
 
   @override

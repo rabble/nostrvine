@@ -4396,6 +4396,10 @@
   "videoRecorderContinueToEditorLabel": "Continue to video editor",
   "videoRecorderCaptureCloseLabel": "Close",
   "videoRecorderCaptureNextLabel": "Next",
+  "videoRecorderLipSyncAddAudioFirst": "Add audio before recording",
+  "@videoRecorderLipSyncAddAudioFirst": {
+    "description": "Snackbar shown when the user taps the record button in lip-sync mode without first selecting a sound."
+  },
   "videoRecorderToggleFlashLabel": "Toggle flash",
   "videoRecorderCycleTimerLabel": "Cycle timer",
   "videoRecorderToggleAspectRatioLabel": "Toggle aspect ratio",

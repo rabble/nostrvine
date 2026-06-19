@@ -37,6 +37,7 @@ void main() {
       bool canRecord = true,
       bool isCameraInitialized = true,
       List<DivineVideoClip>? clips,
+      VoidCallback? onBlockedTap,
     }) {
       when(() => recorderBloc.state).thenReturn(
         VideoRecorderBlocState(
@@ -55,10 +56,12 @@ void main() {
         ],
         child: BlocProvider<VideoRecorderBloc>.value(
           value: recorderBloc,
-          child: const MaterialApp(
+          child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: Center(child: RecordButton())),
+            home: Scaffold(
+              body: Center(child: RecordButton(onBlockedTap: onBlockedTap)),
+            ),
           ),
         ),
       );
@@ -163,6 +166,39 @@ void main() {
           find.byType(AnimatedOpacity),
         );
         expect(opacity.opacity, equals(1.0));
+      });
+    });
+
+    group('blocked state', () {
+      testWidgets('renders grayed out when onBlockedTap is provided', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(onBlockedTap: () {}));
+        await tester.pumpAndSettle();
+
+        final opacity = tester.widget<AnimatedOpacity>(
+          find.byType(AnimatedOpacity),
+        );
+        expect(opacity.opacity, equals(0.5));
+      });
+
+      testWidgets('tap invokes onBlockedTap instead of starting recording', (
+        tester,
+      ) async {
+        var blockedTaps = 0;
+        await tester.pumpWidget(buildWidget(onBlockedTap: () => blockedTaps++));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(RecordButton));
+        await tester.pumpAndSettle();
+
+        expect(blockedTaps, equals(1));
+        verifyNever(
+          () => recorderBloc.add(const VideoRecorderRecordingToggleRequested()),
+        );
+        verifyNever(
+          () => recorderBloc.add(const VideoRecorderRecordingStartRequested()),
+        );
       });
     });
 
