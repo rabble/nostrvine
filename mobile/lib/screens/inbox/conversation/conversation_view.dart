@@ -469,13 +469,18 @@ class _MessageList extends StatelessWidget {
             index == 0 ||
             messages[index - 1].senderPubkey != message.senderPubkey;
 
+        // participantPubkeys excludes self, so a length > 1 is a group.
+        final isGroup = participantPubkeys.length > 1;
+        final isReelShare =
+            message.hasSharedVideo ||
+            tryExtractDivineVideoUrl(message.content) != null;
+
         // Context for the in-player reply/reaction bar when this bubble's
-        // shared reel is opened. participantPubkeys excludes self, so a
-        // length > 1 is a group.
+        // shared reel is opened.
         final dmReplyContext = DmReplyContext(
           conversationId: message.conversationId,
           participantPubkeys: participantPubkeys,
-          isGroup: participantPubkeys.length > 1,
+          isGroup: isGroup,
           sharedReelMessageId: message.id,
           messageAuthorPubkey: message.senderPubkey,
           hintName: senderDisplayName,
@@ -505,14 +510,23 @@ class _MessageList extends StatelessWidget {
                 : CrossAxisAlignment.start,
             children: [
               bubble,
-              ReactionsRow(
-                conversationId: message.conversationId,
-                messageId: message.id,
-                messageAuthorPubkey: message.senderPubkey,
-                ownerPubkey: currentPubkey,
-                isSentByMe: isSent,
-                otherParticipantName: senderDisplayName,
-              ),
+              // Groups show each member's reaction on a shared reel
+              // individually; everything else uses the aggregated chips.
+              if (isGroup && isReelShare)
+                PerPersonReactionsRow(
+                  messageId: message.id,
+                  ownerPubkey: currentPubkey,
+                  isSentByMe: isSent,
+                )
+              else
+                ReactionsRow(
+                  conversationId: message.conversationId,
+                  messageId: message.id,
+                  messageAuthorPubkey: message.senderPubkey,
+                  ownerPubkey: currentPubkey,
+                  isSentByMe: isSent,
+                  otherParticipantName: senderDisplayName,
+                ),
             ],
           );
         }

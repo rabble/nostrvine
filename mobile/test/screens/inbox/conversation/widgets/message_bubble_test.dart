@@ -825,7 +825,7 @@ void main() {
         expect(find.text('My Cool Video'), findsOneWidget);
       });
 
-      testWidgets('falls back to link text when video not found', (
+      testWidgets('shows the unavailable card when video not found', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -835,6 +835,12 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        expect(
+          find.text(AppLocalizationsEn().notificationsVideoUnavailable),
+          findsOneWidget,
+        );
+        expect(find.byType(VideoThumbnailWidget), findsNothing);
+        // The URL is no longer rendered as a tappable link.
         final richTextFinder = find.byWidgetPredicate(
           (widget) =>
               widget is RichText &&
@@ -842,11 +848,10 @@ void main() {
                 'https://divine.video/video/unknown-id',
               ),
         );
-        expect(richTextFinder, findsOneWidget);
-        expect(find.byType(VideoThumbnailWidget), findsNothing);
+        expect(richTextFinder, findsNothing);
       });
 
-      testWidgets('tapping unresolved Divine video link navigates in-app', (
+      testWidgets('unresolved video card is not a tappable link', (
         tester,
       ) async {
         final router = _messageRouter('https://divine.video/video/unknown-id');
@@ -865,13 +870,13 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        _linkRecognizer(
-          tester,
-          'https://divine.video/video/unknown-id',
-        ).onTap!();
-        await tester.pumpAndSettle();
-
-        expect(find.text('video:unknown-id'), findsOneWidget);
+        // The unavailable card replaces the old tappable link — nothing to
+        // tap, so navigation never happens.
+        expect(
+          find.text(AppLocalizationsEn().notificationsVideoUnavailable),
+          findsOneWidget,
+        );
+        expect(find.text('video:unknown-id'), findsNothing);
       });
 
       testWidgets('preserves surrounding text alongside video preview', (

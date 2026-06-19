@@ -523,11 +523,7 @@ class _VideoLinkPreview extends ConsumerWidget {
       child: BlocBuilder<VideoLinkPreviewCubit, VideoLinkPreviewState>(
         builder: (context, state) => switch (state) {
           VideoLinkPreviewLoading() => _buildLoadingPlaceholder(),
-          VideoLinkPreviewNotFound() => _MessageText(
-            message: 'https://divine.video/video/$videoStableId',
-            isSent: isSent,
-            dmReplyContext: dmReplyContext,
-          ),
+          VideoLinkPreviewNotFound() => const _VideoUnavailableCard(),
           VideoLinkPreviewResolved(:final video) => _VideoCard(
             video: video,
             dmReplyContext: dmReplyContext,
@@ -553,6 +549,41 @@ class _VideoLinkPreview extends ConsumerWidget {
               color: VineTheme.vineGreen,
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Non-tappable placeholder shown when a shared video can't be resolved
+/// (deleted, blocked, or unreachable). Deliberately has no tap target so a
+/// dead reel can never open the player or a reply bar.
+class _VideoUnavailableCard extends StatelessWidget {
+  const _VideoUnavailableCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: _videoCardWidth,
+        height: _videoCardHeight,
+        color: VineTheme.cardBackground,
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const DivineIcon(
+              icon: DivineIconName.warningCircle,
+              color: VineTheme.onSurfaceMuted,
+              size: 32,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              context.l10n.notificationsVideoUnavailable,
+              style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+            ),
+          ],
         ),
       ),
     );

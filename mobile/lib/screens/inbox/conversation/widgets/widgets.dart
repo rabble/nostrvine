@@ -5,5 +5,6 @@ export 'full_reaction_emoji_picker_sheet.dart';
 export 'message_actions_sheet.dart';
 export 'message_bubble.dart';
 export 'message_input_bar.dart';
+export 'per_person_reactions_row.dart';
 export 'reaction_picker_overlay.dart';
 export 'reactions_row.dart';
