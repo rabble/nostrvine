@@ -274,9 +274,7 @@ Page<void> _branchPage(GoRouterState state, Widget child) {
     child: ProviderScope(
       overrides: [
         pageContextProvider.overrideWith(
-          (ref) => Stream<RouteContext>.value(
-            parseRoute(state.uri.toString()),
-          ),
+          (ref) => Stream<RouteContext>.value(parseRoute(state.uri.path)),
         ),
       ],
       child: child,
@@ -1423,77 +1421,4 @@ List<NavigatorObserver> _buildRouterObservers() {
   ];
 
   return observers;
-}
-
-/// Maps URL location to bottom nav tab index.
-///
-/// Returns the tab index for tab routes:
-/// - 0: Home
-/// - 1: Explore (also for hashtag routes)
-/// - 2: Notifications
-/// - 3: Profile (also for liked-videos)
-///
-/// Returns -1 for non-tab routes (like search, settings, edit-profile)
-/// to hide the bottom navigation bar.
-int tabIndexFromLocation(String loc) {
-  final uri = Uri.parse(loc);
-  final first = uri.pathSegments.isEmpty ? '' : uri.pathSegments.first;
-  switch (first) {
-    case 'home':
-      return 0;
-    case 'explore':
-      return 1;
-    case 'notifications':
-    case 'inbox':
-      return 2; // Inbox replaces notifications in the same tab position
-    case 'profile':
-    case 'liked-videos':
-      return 3; // Liked videos keeps profile tab active
-    case 'search':
-    case 'badges':
-    case 'apps':
-    case 'invites':
-    case 'settings':
-    case 'relay-settings':
-    case 'relay-diagnostic':
-    case 'blossom-settings':
-    case 'notification-settings':
-    case 'key-management':
-    case 'safety-settings':
-    case 'content-filters':
-    case 'content-preferences':
-    case 'app-language':
-    case 'support-center':
-    case 'legal':
-    case 'nostr-settings':
-    case 'bluesky-settings':
-    case 'developer-options':
-    case 'edit-profile':
-    case 'setup-profile':
-    case 'import-key':
-    case 'nostr-connect':
-    case 'welcome':
-    case 'video-recorder':
-    case 'video-editor':
-    case 'video-metadata':
-    case 'clip-manager':
-    case 'drafts':
-    case 'followers':
-    case 'following':
-    case 'video-feed':
-    case 'profile-view':
-    case 'sound':
-    case 'list':
-    case 'discover-lists':
-    case 'people-lists':
-    case 'people-list-members':
-    case 'people-list-add-people':
-    case 'people-list-create':
-    case 'creator-analytics':
-    case 'hashtag':
-    case 'categories':
-      return -1; // Non-tab routes - no bottom nav (outside shell)
-    default:
-      return 0; // fallback to home
-  }
 }

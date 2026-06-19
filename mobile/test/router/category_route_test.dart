@@ -20,15 +20,5 @@ void main() {
       expect(context.categoryName, 'animals');
       expect(context.videoIndex, isNull);
     });
-
-    test(
-      'tabIndexFromLocation hides bottom nav for category gallery routes',
-      () {
-        expect(
-          tabIndexFromLocation(CategoryGalleryScreen.locationFor('animals')),
-          -1,
-        );
-      },
-    );
   });
 }

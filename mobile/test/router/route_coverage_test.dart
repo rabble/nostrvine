@@ -108,10 +108,6 @@ void main() {
         expect(context.type, RouteType.invites);
       });
 
-      test('${InvitesScreen.path} is treated as a non-tab route', () {
-        expect(tabIndexFromLocation(InvitesScreen.path), -1);
-      });
-
       test('${BadgesScreen.path} parses to RouteType.badges', () {
         final context = parseRoute(BadgesScreen.path);
         expect(context.type, RouteType.badges);
@@ -122,25 +118,15 @@ void main() {
         expect(path, BadgesScreen.path);
       });
 
-      test('${BadgesScreen.path} is treated as a non-tab route', () {
-        expect(tabIndexFromLocation(BadgesScreen.path), -1);
+      test('${NostrSettingsScreen.path} parses to RouteType.nostrSettings', () {
+        final context = parseRoute(NostrSettingsScreen.path);
+        expect(context.type, RouteType.nostrSettings);
       });
 
-      test(
-        '${NostrSettingsScreen.path} parses to RouteType.nostrSettings',
-        () {
-          final context = parseRoute(NostrSettingsScreen.path);
-          expect(context.type, RouteType.nostrSettings);
-        },
-      );
-
-      test(
-        '${Nip05SettingsScreen.path} parses to RouteType.nip05Settings',
-        () {
-          final context = parseRoute(Nip05SettingsScreen.path);
-          expect(context.type, RouteType.nip05Settings);
-        },
-      );
+      test('${Nip05SettingsScreen.path} parses to RouteType.nip05Settings', () {
+        final context = parseRoute(Nip05SettingsScreen.path);
+        expect(context.type, RouteType.nip05Settings);
+      });
 
       test(
         '${Nip05SettingsScreen.path} round-trips through buildRoute(parseRoute())',
@@ -206,22 +192,6 @@ void main() {
         );
         expect(path, AppDetailScreen.pathForSlug('primal'));
       });
-    });
-
-    group('Apps routes hide the bottom nav', () {
-      test('${AppsDirectoryScreen.path} is treated as a non-tab route', () {
-        expect(tabIndexFromLocation(AppsDirectoryScreen.path), -1);
-      });
-
-      test(
-        '${AppDetailScreen.pathForSlug('primal')} is treated as a non-tab route',
-        () {
-          expect(
-            tabIndexFromLocation(AppDetailScreen.pathForSlug('primal')),
-            -1,
-          );
-        },
-      );
     });
 
     group('Tab routes parse correctly', () {
@@ -359,15 +329,12 @@ void main() {
         },
       );
 
-      test(
-        '/people-lists/list%3A123/add-people parses to '
-        'RouteType.peopleListAddPeople',
-        () {
-          final context = parseRoute('/people-lists/list%3A123/add-people');
-          expect(context.type, RouteType.peopleListAddPeople);
-          expect(context.listId, 'list:123');
-        },
-      );
+      test('/people-lists/list%3A123/add-people parses to '
+          'RouteType.peopleListAddPeople', () {
+        final context = parseRoute('/people-lists/list%3A123/add-people');
+        expect(context.type, RouteType.peopleListAddPeople);
+        expect(context.listId, 'list:123');
+      });
     });
 
     group('Standalone routes parse correctly', () {

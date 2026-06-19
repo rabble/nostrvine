@@ -15,7 +15,7 @@ Page<void> _scopedPage(GoRouterState st, Widget child) =>
       child: ProviderScope(
         overrides: [
           pageContextProvider.overrideWith(
-            (ref) => Stream<RouteContext>.value(parseRoute(st.uri.toString())),
+            (ref) => Stream<RouteContext>.value(parseRoute(st.uri.path)),
           ),
         ],
         child: child,
@@ -96,5 +96,62 @@ void main() {
     // NOT blank to the active 'explore' route) — that is what gives the
     // cross-fade two live tabs to dissolve between.
     expect(find.text('home scoped=home'), findsOneWidget);
+  });
+
+  testWidgets('branch-scoped pageContext ignores query parameters', (
+    tester,
+  ) async {
+    RouteContext? captured;
+    final router = GoRouter(
+      initialLocation:
+          '/profile/npub1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqlz5yt?utm_source=test',
+      routes: [
+        StatefulShellRoute(
+          builder: (context, state, shell) => shell,
+          navigatorContainerBuilder: (context, shell, children) =>
+              AppShellBranchContainer(
+                currentIndex: shell.currentIndex,
+                children: children,
+              ),
+          branches: [
+            StatefulShellBranch(
+              initialLocation: '/profile/me',
+              routes: [
+                GoRoute(
+                  path: '/profile/:npub',
+                  pageBuilder: (context, state) => _scopedPage(
+                    state,
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final ctx = ref
+                            .watch(pageContextProvider)
+                            .asData
+                            ?.value;
+                        if (ctx != null) captured = ctx;
+                        return const SizedBox();
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(child: MaterialApp.router(routerConfig: router)),
+    );
+    await tester.pumpAndSettle();
+
+    final ctx = captured;
+    expect(ctx, isNotNull);
+    expect(ctx!.type, RouteType.profile);
+    expect(
+      ctx.npub,
+      'npub1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqlz5yt',
+    );
   });
 }
