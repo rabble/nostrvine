@@ -15,7 +15,7 @@ part of 'repository_providers.dart';
 /// feed display. The full FollowRepository will update this when ready.
 
 @ProviderFor(cachedFollowingList)
-const cachedFollowingListProvider = CachedFollowingListProvider._();
+final cachedFollowingListProvider = CachedFollowingListProvider._();
 
 /// Cached following list loaded directly from SharedPreferences.
 ///
@@ -31,7 +31,7 @@ final class CachedFollowingListProvider
   /// Available immediately after authentication (no NostrClient needed).
   /// This provides the follow list from the previous session for instant
   /// feed display. The full FollowRepository will update this when ready.
-  const CachedFollowingListProvider._()
+  CachedFollowingListProvider._()
     : super(
         from: null,
         argument: null,
@@ -78,7 +78,7 @@ String _$cachedFollowingListHash() =>
 /// - PersonalEventCacheService (for caching contact list events)
 
 @ProviderFor(followRepository)
-const followRepositoryProvider = FollowRepositoryProvider._();
+final followRepositoryProvider = FollowRepositoryProvider._();
 
 /// Provider for FollowRepository instance
 ///
@@ -107,7 +107,7 @@ final class FollowRepositoryProvider
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
   /// - PersonalEventCacheService (for caching contact list events)
-  const FollowRepositoryProvider._()
+  FollowRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -150,7 +150,7 @@ String _$followRepositoryHash() => r'fb0dd5265e3906366876638e6a2026d1b672e8c9';
 /// until the repository owns its own persistence (Phase 1b).
 
 @ProviderFor(curatedListRepository)
-const curatedListRepositoryProvider = CuratedListRepositoryProvider._();
+final curatedListRepositoryProvider = CuratedListRepositoryProvider._();
 
 /// Provider for [CuratedListRepository] instance.
 ///
@@ -173,7 +173,7 @@ final class CuratedListRepositoryProvider
   /// [BehaviorSubject] stream for reactive BLoC subscription. Data is
   /// bridged from the legacy [CuratedListService] via [setSubscribedLists]
   /// until the repository owns its own persistence (Phase 1b).
-  const CuratedListRepositoryProvider._()
+  CuratedListRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -215,7 +215,7 @@ String _$curatedListRepositoryHash() =>
 /// Creates a HashtagRepository for searching hashtags via the Funnelcake API.
 
 @ProviderFor(hashtagRepository)
-const hashtagRepositoryProvider = HashtagRepositoryProvider._();
+final hashtagRepositoryProvider = HashtagRepositoryProvider._();
 
 /// Provider for HashtagRepository instance.
 ///
@@ -232,7 +232,7 @@ final class HashtagRepositoryProvider
   /// Provider for HashtagRepository instance.
   ///
   /// Creates a HashtagRepository for searching hashtags via the Funnelcake API.
-  const HashtagRepositoryProvider._()
+  HashtagRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -273,7 +273,7 @@ String _$hashtagRepositoryHash() => r'fe5341fcbbd62c6418fd00154f9ea24112476251';
 /// Keep-alive so the categories cache survives tab and screen transitions.
 
 @ProviderFor(categoriesRepository)
-const categoriesRepositoryProvider = CategoriesRepositoryProvider._();
+final categoriesRepositoryProvider = CategoriesRepositoryProvider._();
 
 /// Provider for CategoriesRepository instance.
 ///
@@ -290,7 +290,7 @@ final class CategoriesRepositoryProvider
   /// Provider for CategoriesRepository instance.
   ///
   /// Keep-alive so the categories cache survives tab and screen transitions.
-  const CategoriesRepositoryProvider._()
+  CategoriesRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -337,7 +337,7 @@ String _$categoriesRepositoryHash() =>
 /// - FunnelcakeApiClient for fast REST-based profile search
 
 @ProviderFor(profileRepository)
-const profileRepositoryProvider = ProfileRepositoryProvider._();
+final profileRepositoryProvider = ProfileRepositoryProvider._();
 
 /// Provider for ProfileRepository instance
 ///
@@ -364,7 +364,7 @@ final class ProfileRepositoryProvider
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
   /// - FunnelcakeApiClient for fast REST-based profile search
-  const ProfileRepositoryProvider._()
+  ProfileRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -403,7 +403,7 @@ String _$profileRepositoryHash() => r'387526a9d5084ffca862ce5ea06c3c568b9f653c';
 /// Curation Service - manages NIP-51 video curation sets
 
 @ProviderFor(curationRepository)
-const curationRepositoryProvider = CurationRepositoryProvider._();
+final curationRepositoryProvider = CurationRepositoryProvider._();
 
 /// Curation Service - manages NIP-51 video curation sets
 
@@ -416,7 +416,7 @@ final class CurationRepositoryProvider
         >
     with $Provider<CurationRepository> {
   /// Curation Service - manages NIP-51 video curation sets
-  const CurationRepositoryProvider._()
+  CurationRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -456,13 +456,13 @@ String _$curationRepositoryHash() =>
 /// Lists state notifier - manages curated lists state
 
 @ProviderFor(CuratedListsState)
-const curatedListsStateProvider = CuratedListsStateProvider._();
+final curatedListsStateProvider = CuratedListsStateProvider._();
 
 /// Lists state notifier - manages curated lists state
 final class CuratedListsStateProvider
     extends $AsyncNotifierProvider<CuratedListsState, List<CuratedList>> {
   /// Lists state notifier - manages curated lists state
-  const CuratedListsStateProvider._()
+  CuratedListsStateProvider._()
     : super(
         from: null,
         argument: null,
@@ -489,8 +489,7 @@ abstract class _$CuratedListsState extends $AsyncNotifier<List<CuratedList>> {
   FutureOr<List<CuratedList>> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref =
         this.ref as $Ref<AsyncValue<List<CuratedList>>, List<CuratedList>>;
     final element =
@@ -501,7 +500,7 @@ abstract class _$CuratedListsState extends $AsyncNotifier<List<CuratedList>> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -513,7 +512,7 @@ abstract class _$CuratedListsState extends $AsyncNotifier<List<CuratedList>> {
 /// itself has no Flutter dependencies; this provider owns all UI glue.
 
 @ProviderFor(peopleListsRepository)
-const peopleListsRepositoryProvider = PeopleListsRepositoryProvider._();
+final peopleListsRepositoryProvider = PeopleListsRepositoryProvider._();
 
 /// Repository for NIP-51 kind 30000 people lists.
 ///
@@ -536,7 +535,7 @@ final class PeopleListsRepositoryProvider
   /// [PeopleListsRepositoryImpl] backed by a [LocalPeopleListsCache] that opens
   /// a lazily-created `hive_ce` box named [_peopleListsBoxName]. The repository
   /// itself has no Flutter dependencies; this provider owns all UI glue.
-  const PeopleListsRepositoryProvider._()
+  PeopleListsRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -576,7 +575,7 @@ String _$peopleListsRepositoryHash() =>
 /// Bookmark service for NIP-51 bookmarks
 
 @ProviderFor(bookmarkService)
-const bookmarkServiceProvider = BookmarkServiceProvider._();
+final bookmarkServiceProvider = BookmarkServiceProvider._();
 
 /// Bookmark service for NIP-51 bookmarks
 
@@ -589,7 +588,7 @@ final class BookmarkServiceProvider
         >
     with $FutureModifier<BookmarkService>, $FutureProvider<BookmarkService> {
   /// Bookmark service for NIP-51 bookmarks
-  const BookmarkServiceProvider._()
+  BookmarkServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -642,7 +641,7 @@ String _$bookmarkServiceHash() => r'2430aa71f0c433b0c192fb434b3777877eb41a49';
 /// Read operations return cached/empty data; write operations check keys.
 
 @ProviderFor(dmReactionsRepository)
-const dmReactionsRepositoryProvider = DmReactionsRepositoryProvider._();
+final dmReactionsRepositoryProvider = DmReactionsRepositoryProvider._();
 
 /// Provider for NIP-17 DM repository.
 ///
@@ -699,7 +698,7 @@ final class DmReactionsRepositoryProvider
   ///
   /// Non-nullable: the repository works without keys at construction time.
   /// Read operations return cached/empty data; write operations check keys.
-  const DmReactionsRepositoryProvider._()
+  DmReactionsRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -737,12 +736,12 @@ String _$dmReactionsRepositoryHash() =>
     r'6ef28a0c4a76c2ece84048f04c0b8962a1f1ab48';
 
 @ProviderFor(dmRepository)
-const dmRepositoryProvider = DmRepositoryProvider._();
+final dmRepositoryProvider = DmRepositoryProvider._();
 
 final class DmRepositoryProvider
     extends $FunctionalProvider<DmRepository, DmRepository, DmRepository>
     with $Provider<DmRepository> {
-  const DmRepositoryProvider._()
+  DmRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -787,7 +786,7 @@ String _$dmRepositoryHash() => r'db555e77673032bf3d1c10788e9b448c363e81e0';
 /// - NostrClient from nostrServiceProvider (for relay communication)
 
 @ProviderFor(commentsRepository)
-const commentsRepositoryProvider = CommentsRepositoryProvider._();
+final commentsRepositoryProvider = CommentsRepositoryProvider._();
 
 /// Provider for CommentsRepository instance
 ///
@@ -814,7 +813,7 @@ final class CommentsRepositoryProvider
   ///
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
-  const CommentsRepositoryProvider._()
+  CommentsRepositoryProvider._()
     : super(
         from: null,
         argument: null,

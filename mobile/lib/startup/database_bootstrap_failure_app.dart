@@ -138,13 +138,14 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
 }
 
 String databaseBootstrapDiagnosticCode(Object error) {
-  if (error is SqlCipherUnavailableError) {
-    return 'db-sqlcipher-unavailable';
+  if (error is DatabaseCipherUnavailableError) {
+    return 'db-cipher-unavailable';
   }
 
   final message = error.toString();
-  if (message.contains('SQLCipher is not linked')) {
-    return 'db-sqlcipher-unavailable';
+  if (message.contains('SQLCipher is not linked') ||
+      message.contains('SQLite3MultipleCiphers is not active')) {
+    return 'db-cipher-unavailable';
   }
   if (message.contains('secure storage')) {
     return 'db-secure-storage';

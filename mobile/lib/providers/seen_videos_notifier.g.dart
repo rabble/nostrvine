@@ -11,13 +11,13 @@ part of 'seen_videos_notifier.dart';
 /// Notifier for managing seen videos state reactively
 
 @ProviderFor(SeenVideosNotifier)
-const seenVideosProvider = SeenVideosNotifierProvider._();
+final seenVideosProvider = SeenVideosNotifierProvider._();
 
 /// Notifier for managing seen videos state reactively
 final class SeenVideosNotifierProvider
     extends $NotifierProvider<SeenVideosNotifier, SeenVideosState> {
   /// Notifier for managing seen videos state reactively
-  const SeenVideosNotifierProvider._()
+  SeenVideosNotifierProvider._()
     : super(
         from: null,
         argument: null,
@@ -53,8 +53,7 @@ abstract class _$SeenVideosNotifier extends $Notifier<SeenVideosState> {
   SeenVideosState build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<SeenVideosState, SeenVideosState>;
     final element =
         ref.element
@@ -64,6 +63,6 @@ abstract class _$SeenVideosNotifier extends $Notifier<SeenVideosState> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }

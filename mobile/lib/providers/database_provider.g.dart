@@ -10,12 +10,12 @@ part of 'database_provider.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(database)
-const databaseProvider = DatabaseProvider._();
+final databaseProvider = DatabaseProvider._();
 
 final class DatabaseProvider
     extends $FunctionalProvider<AppDatabase, AppDatabase, AppDatabase>
     with $Provider<AppDatabase> {
-  const DatabaseProvider._()
+  DatabaseProvider._()
     : super(
         from: null,
         argument: null,
@@ -54,7 +54,7 @@ String _$databaseHash() => r'8a6f9ab3f9be46444941c5c472f4f76e12a75ba1';
 /// Enables optimistic caching of Nostr events in the local database.
 
 @ProviderFor(appDbClient)
-const appDbClientProvider = AppDbClientProvider._();
+final appDbClientProvider = AppDbClientProvider._();
 
 /// AppDbClient wrapping the database for NostrClient integration.
 /// Enables optimistic caching of Nostr events in the local database.
@@ -64,7 +64,7 @@ final class AppDbClientProvider
     with $Provider<AppDbClient> {
   /// AppDbClient wrapping the database for NostrClient integration.
   /// Enables optimistic caching of Nostr events in the local database.
-  const AppDbClientProvider._()
+  AppDbClientProvider._()
     : super(
         from: null,
         argument: null,

@@ -11,7 +11,7 @@ part of 'watermark_download_provider.dart';
 /// Provides a [WatermarkDownloadService] with injected dependencies.
 
 @ProviderFor(watermarkDownloadService)
-const watermarkDownloadServiceProvider = WatermarkDownloadServiceProvider._();
+final watermarkDownloadServiceProvider = WatermarkDownloadServiceProvider._();
 
 /// Provides a [WatermarkDownloadService] with injected dependencies.
 
@@ -24,7 +24,7 @@ final class WatermarkDownloadServiceProvider
         >
     with $Provider<WatermarkDownloadService> {
   /// Provides a [WatermarkDownloadService] with injected dependencies.
-  const WatermarkDownloadServiceProvider._()
+  WatermarkDownloadServiceProvider._()
     : super(
         from: null,
         argument: null,

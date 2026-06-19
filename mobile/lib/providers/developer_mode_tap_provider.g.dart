@@ -10,11 +10,11 @@ part of 'developer_mode_tap_provider.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(DeveloperModeTapCounter)
-const developerModeTapCounterProvider = DeveloperModeTapCounterProvider._();
+final developerModeTapCounterProvider = DeveloperModeTapCounterProvider._();
 
 final class DeveloperModeTapCounterProvider
     extends $NotifierProvider<DeveloperModeTapCounter, int> {
-  const DeveloperModeTapCounterProvider._()
+  DeveloperModeTapCounterProvider._()
     : super(
         from: null,
         argument: null,
@@ -48,8 +48,7 @@ abstract class _$DeveloperModeTapCounter extends $Notifier<int> {
   int build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<int, int>;
     final element =
         ref.element
@@ -59,6 +58,6 @@ abstract class _$DeveloperModeTapCounter extends $Notifier<int> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }

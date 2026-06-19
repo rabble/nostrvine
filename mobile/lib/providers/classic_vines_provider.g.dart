@@ -17,7 +17,7 @@ part of 'classic_vines_provider.dart';
 /// transient failures and empty pages.
 
 @ProviderFor(ClassicVinesFeed)
-const classicVinesFeedProvider = ClassicVinesFeedProvider._();
+final classicVinesFeedProvider = ClassicVinesFeedProvider._();
 
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
@@ -35,7 +35,7 @@ final class ClassicVinesFeedProvider
   ///
   /// Pull-to-refresh selects a fresh random slice of classics while retrying
   /// transient failures and empty pages.
-  const ClassicVinesFeedProvider._()
+  ClassicVinesFeedProvider._()
     : super(
         from: null,
         argument: null,
@@ -68,8 +68,7 @@ abstract class _$ClassicVinesFeed extends $AsyncNotifier<VideoFeedState> {
   FutureOr<VideoFeedState> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AsyncValue<VideoFeedState>, VideoFeedState>;
     final element =
         ref.element
@@ -79,14 +78,14 @@ abstract class _$ClassicVinesFeed extends $AsyncNotifier<VideoFeedState> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 /// Provider to check if classic vines feed is loading
 
 @ProviderFor(classicVinesFeedLoading)
-const classicVinesFeedLoadingProvider = ClassicVinesFeedLoadingProvider._();
+final classicVinesFeedLoadingProvider = ClassicVinesFeedLoadingProvider._();
 
 /// Provider to check if classic vines feed is loading
 
@@ -94,7 +93,7 @@ final class ClassicVinesFeedLoadingProvider
     extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
   /// Provider to check if classic vines feed is loading
-  const ClassicVinesFeedLoadingProvider._()
+  ClassicVinesFeedLoadingProvider._()
     : super(
         from: null,
         argument: null,
@@ -133,7 +132,7 @@ String _$classicVinesFeedLoadingHash() =>
 /// Provider to get current classic vines feed video count
 
 @ProviderFor(classicVinesFeedCount)
-const classicVinesFeedCountProvider = ClassicVinesFeedCountProvider._();
+final classicVinesFeedCountProvider = ClassicVinesFeedCountProvider._();
 
 /// Provider to get current classic vines feed video count
 
@@ -141,7 +140,7 @@ final class ClassicVinesFeedCountProvider
     extends $FunctionalProvider<int, int, int>
     with $Provider<int> {
   /// Provider to get current classic vines feed video count
-  const ClassicVinesFeedCountProvider._()
+  ClassicVinesFeedCountProvider._()
     : super(
         from: null,
         argument: null,
@@ -183,7 +182,7 @@ String _$classicVinesFeedCountHash() =>
 /// Classic vines require Funnelcake REST API to be available.
 
 @ProviderFor(classicVinesAvailable)
-const classicVinesAvailableProvider = ClassicVinesAvailableProvider._();
+final classicVinesAvailableProvider = ClassicVinesAvailableProvider._();
 
 /// Provider to check if classic vines are available
 ///
@@ -197,7 +196,7 @@ final class ClassicVinesAvailableProvider
   ///
   /// Delegates to the centralized funnelcakeAvailableProvider.
   /// Classic vines require Funnelcake REST API to be available.
-  const ClassicVinesAvailableProvider._()
+  ClassicVinesAvailableProvider._()
     : super(
         from: null,
         argument: null,
@@ -231,7 +230,7 @@ String _$classicVinesAvailableHash() =>
 /// Also triggers profile prefetching for Viners without avatars.
 
 @ProviderFor(topClassicViners)
-const topClassicVinersProvider = TopClassicVinersProvider._();
+final topClassicVinersProvider = TopClassicVinersProvider._();
 
 /// Provider for top classic Viners derived from classic videos
 ///
@@ -252,7 +251,7 @@ final class TopClassicVinersProvider
   ///
   /// Aggregates videos by pubkey and sorts by total loop count.
   /// Also triggers profile prefetching for Viners without avatars.
-  const TopClassicVinersProvider._()
+  TopClassicVinersProvider._()
     : super(
         from: null,
         argument: null,

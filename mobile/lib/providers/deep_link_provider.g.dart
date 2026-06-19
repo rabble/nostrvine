@@ -12,7 +12,7 @@ part of 'deep_link_provider.dart';
 /// Note: Does NOT auto-initialize - caller must call initialize() after setting up listeners
 
 @ProviderFor(deepLinkService)
-const deepLinkServiceProvider = DeepLinkServiceProvider._();
+final deepLinkServiceProvider = DeepLinkServiceProvider._();
 
 /// Provider for the deep link service
 /// Note: Does NOT auto-initialize - caller must call initialize() after setting up listeners
@@ -23,7 +23,7 @@ final class DeepLinkServiceProvider
     with $Provider<DeepLinkService> {
   /// Provider for the deep link service
   /// Note: Does NOT auto-initialize - caller must call initialize() after setting up listeners
-  const DeepLinkServiceProvider._()
+  DeepLinkServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -61,7 +61,7 @@ String _$deepLinkServiceHash() => r'09d157627be000ddb4b5ef34307797ed3c7745ca';
 /// Stream provider for incoming deep links
 
 @ProviderFor(deepLinks)
-const deepLinksProvider = DeepLinksProvider._();
+final deepLinksProvider = DeepLinksProvider._();
 
 /// Stream provider for incoming deep links
 
@@ -70,7 +70,7 @@ final class DeepLinksProvider
         $FunctionalProvider<AsyncValue<DeepLink>, DeepLink, Stream<DeepLink>>
     with $FutureModifier<DeepLink>, $StreamProvider<DeepLink> {
   /// Stream provider for incoming deep links
-  const DeepLinksProvider._()
+  DeepLinksProvider._()
     : super(
         from: null,
         argument: null,

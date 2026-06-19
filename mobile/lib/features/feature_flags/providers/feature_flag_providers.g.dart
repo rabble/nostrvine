@@ -11,7 +11,7 @@ part of 'feature_flag_providers.dart';
 /// Build configuration provider
 
 @ProviderFor(buildConfiguration)
-const buildConfigurationProvider = BuildConfigurationProvider._();
+final buildConfigurationProvider = BuildConfigurationProvider._();
 
 /// Build configuration provider
 
@@ -24,7 +24,7 @@ final class BuildConfigurationProvider
         >
     with $Provider<BuildConfiguration> {
   /// Build configuration provider
-  const BuildConfigurationProvider._()
+  BuildConfigurationProvider._()
     : super(
         from: null,
         argument: null,
@@ -64,7 +64,7 @@ String _$buildConfigurationHash() =>
 /// Feature flag service provider — kept alive so flag state survives navigation
 
 @ProviderFor(featureFlagService)
-const featureFlagServiceProvider = FeatureFlagServiceProvider._();
+final featureFlagServiceProvider = FeatureFlagServiceProvider._();
 
 /// Feature flag service provider — kept alive so flag state survives navigation
 
@@ -77,7 +77,7 @@ final class FeatureFlagServiceProvider
         >
     with $Provider<FeatureFlagService> {
   /// Feature flag service provider — kept alive so flag state survives navigation
-  const FeatureFlagServiceProvider._()
+  FeatureFlagServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -117,7 +117,7 @@ String _$featureFlagServiceHash() =>
 /// Feature flag state provider (reactive to service changes)
 
 @ProviderFor(featureFlagState)
-const featureFlagStateProvider = FeatureFlagStateProvider._();
+final featureFlagStateProvider = FeatureFlagStateProvider._();
 
 /// Feature flag state provider (reactive to service changes)
 
@@ -130,7 +130,7 @@ final class FeatureFlagStateProvider
         >
     with $Provider<Map<FeatureFlag, bool>> {
   /// Feature flag state provider (reactive to service changes)
-  const FeatureFlagStateProvider._()
+  FeatureFlagStateProvider._()
     : super(
         from: null,
         argument: null,
@@ -169,7 +169,7 @@ String _$featureFlagStateHash() => r'bf39490bff4b6cb74fd70fff0c499635669fef8d';
 /// Individual feature flag check provider family
 
 @ProviderFor(isFeatureEnabled)
-const isFeatureEnabledProvider = IsFeatureEnabledFamily._();
+final isFeatureEnabledProvider = IsFeatureEnabledFamily._();
 
 /// Individual feature flag check provider family
 
@@ -177,7 +177,7 @@ final class IsFeatureEnabledProvider
     extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
   /// Individual feature flag check provider family
-  const IsFeatureEnabledProvider._({
+  IsFeatureEnabledProvider._({
     required IsFeatureEnabledFamily super.from,
     required FeatureFlag super.argument,
   }) : super(
@@ -234,7 +234,7 @@ String _$isFeatureEnabledHash() => r'706cae00a5cf7bf715bcb31deb6840a98727e80e';
 
 final class IsFeatureEnabledFamily extends $Family
     with $FunctionalFamilyOverride<bool, FeatureFlag> {
-  const IsFeatureEnabledFamily._()
+  IsFeatureEnabledFamily._()
     : super(
         retry: null,
         name: r'isFeatureEnabledProvider',

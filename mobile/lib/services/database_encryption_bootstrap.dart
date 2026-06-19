@@ -14,14 +14,14 @@ import 'package:unified_logger/unified_logger.dart';
 @visibleForTesting
 const dbCipherKeyStorageKey = 'db.cipher.key.v1';
 
-/// Resolves the SQLCipher key for the local database before the first
+/// Resolves the SQLite3MultipleCiphers key for the local database before the first
 /// `AppDatabase` open and performs the one-time plaintext→encrypted migration.
 ///
 /// db_client stays keystore-free: this app-layer service reads/generates the
 /// key from [FlutterSecureStorage] and injects it via `db_cipher_key_provider`.
-/// Native runtime hooks (the Android library override, the cipher-availability
-/// probe, the migration, the key-loss backup/recreate path) are injected so
-/// the orchestration is unit-testable on the host VM, which links plain sqlite3.
+/// Native runtime hooks (the cipher-availability probe, the migration, the
+/// key-loss backup/recreate path) are injected so the orchestration is
+/// unit-testable.
 class DatabaseEncryptionBootstrap {
   DatabaseEncryptionBootstrap({
     required FlutterSecureStorage secureStorage,
@@ -62,13 +62,13 @@ class DatabaseEncryptionBootstrap {
   /// Resolves the cipher key for the database provider, or `null` when the
   /// database should open unencrypted.
   ///
-  /// Returns `null` for web (SQLCipher is native-only, #373) and when a
+  /// Returns `null` for web (native DB encryption is out of scope, #373) and when a
   /// populated plaintext database could not be migrated this launch (the
   /// migration left it intact and retries on the next launch).
   ///
-  /// Throws [StateError] when SQLCipher is not the linked SQLite library — a
-  /// build misconfiguration that must fail loudly rather than silently ship an
-  /// unencrypted database.
+  /// Throws [StateError] when SQLite3MultipleCiphers is not the active SQLite
+  /// build — a build misconfiguration that must fail loudly rather than
+  /// silently ship an unencrypted database.
   ///
   /// Must run before the first `AppDatabase` open.
   Future<String?> resolveCipherKey() async {
@@ -76,7 +76,7 @@ class DatabaseEncryptionBootstrap {
 
     await _ensureRuntime();
     if (!_isCipherAvailable()) {
-      throw SqlCipherUnavailableError();
+      throw DatabaseCipherUnavailableError();
     }
 
     final (key, wasGenerated) = await _readOrCreateKey();
@@ -144,19 +144,19 @@ class DatabaseEncryptionBootstrap {
   }
 }
 
-class SqlCipherUnavailableError extends StateError {
-  SqlCipherUnavailableError()
+class DatabaseCipherUnavailableError extends StateError {
+  DatabaseCipherUnavailableError()
     : super(
-        'SQLCipher is not linked; refusing to start with an unencrypted local '
-        'database. Verify sqlcipher_flutter_libs replaced sqlite3_flutter_libs '
-        'and that no dependency links plain sqlite3.',
+        'SQLite3MultipleCiphers is not active; refusing to start with an '
+        'unencrypted local database. Verify package:sqlite3 hooks select '
+        'sqlite3mc and no dependency links plain sqlite3.',
       );
 }
 
 /// Resolves the startup DB cipher key and fails closed on bootstrap errors.
 ///
 /// Native app startup must not continue with a `null` cipher key after a
-/// secure-storage or SQLCipher bootstrap failure: an existing encrypted DB
+/// secure-storage or cipher bootstrap failure: an existing encrypted DB
 /// would be opened as plaintext and repeatedly surface SQLITE_NOTADB. Web and
 /// intentional plaintext migration deferrals still return `null` from
 /// [resolveCipherKey].
@@ -186,11 +186,12 @@ const _sqliteNotADb = 26;
 /// Returns whether a startup bootstrap failure is safe to repair by backing up
 /// the local encrypted DB cache and retrying once.
 ///
-/// Keep this as an allowlist. Secure-storage, SQLCipher linkage, and other
-/// transient startup failures must fail closed because deleting or rotating the
-/// DB cipher key can make an otherwise recoverable encrypted DB unusable.
+/// Keep this as an allowlist. Secure-storage, SQLite3MultipleCiphers linkage,
+/// and other transient startup failures must fail closed because deleting or
+/// rotating the DB cipher key can make an otherwise recoverable encrypted DB
+/// unusable.
 bool shouldRepairLocalDatabaseCacheAfterBootstrapError(Object error) {
-  if (error is SqlCipherUnavailableError) return false;
+  if (error is DatabaseCipherUnavailableError) return false;
 
   final message = error.toString();
   return message.contains('SqliteException($_sqliteNotADb)') ||

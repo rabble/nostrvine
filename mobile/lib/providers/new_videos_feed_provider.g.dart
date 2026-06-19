@@ -14,7 +14,7 @@ part of 'new_videos_feed_provider.dart';
 /// New Videos tab does not share the popular/trending source.
 
 @ProviderFor(NewVideosFeed)
-const newVideosFeedProvider = NewVideosFeedProvider._();
+final newVideosFeedProvider = NewVideosFeedProvider._();
 
 /// New Videos feed provider - shows newest videos first.
 ///
@@ -26,7 +26,7 @@ final class NewVideosFeedProvider
   ///
   /// Delegates video fetching to [VideosRepository.getNewVideos] so the Explore
   /// New Videos tab does not share the popular/trending source.
-  const NewVideosFeedProvider._()
+  NewVideosFeedProvider._()
     : super(
         from: null,
         argument: null,
@@ -56,8 +56,7 @@ abstract class _$NewVideosFeed extends $AsyncNotifier<VideoFeedState> {
   FutureOr<VideoFeedState> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AsyncValue<VideoFeedState>, VideoFeedState>;
     final element =
         ref.element
@@ -67,6 +66,6 @@ abstract class _$NewVideosFeed extends $AsyncNotifier<VideoFeedState> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }

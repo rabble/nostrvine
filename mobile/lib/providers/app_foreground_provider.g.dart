@@ -11,13 +11,13 @@ part of 'app_foreground_provider.dart';
 /// State notifier for tracking app foreground/background state
 
 @ProviderFor(AppForeground)
-const appForegroundProvider = AppForegroundProvider._();
+final appForegroundProvider = AppForegroundProvider._();
 
 /// State notifier for tracking app foreground/background state
 final class AppForegroundProvider
     extends $NotifierProvider<AppForeground, bool> {
   /// State notifier for tracking app foreground/background state
-  const AppForegroundProvider._()
+  AppForegroundProvider._()
     : super(
         from: null,
         argument: null,
@@ -52,8 +52,7 @@ abstract class _$AppForeground extends $Notifier<bool> {
   bool build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<bool, bool>;
     final element =
         ref.element
@@ -63,6 +62,6 @@ abstract class _$AppForeground extends $Notifier<bool> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }

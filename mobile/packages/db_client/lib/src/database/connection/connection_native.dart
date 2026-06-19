@@ -30,22 +30,21 @@ bool get _isFlutterTestProcess =>
     Platform.executable.contains('flutter_tester');
 
 // ---------------------------------------------------------------------------
-// SQLCipher at-rest encryption (#570, finding C2).
+// SQLite3MultipleCiphers at-rest encryption (#570, finding C2).
 //
 // db_client stays low-level: it never reads the platform keystore. The app
 // layer resolves the 64-hex (raw 32-byte) cipher key and injects it here. The
-// real encrypted open + the in-place rekey migration require the SQLCipher
-// native library and must be validated on real devices — the host test VM
-// links plain sqlite3, on which `PRAGMA cipher_version` is empty (the
-// fail-closed guard below throws there). See
+// real encrypted open + the plaintext→encrypted migration require the
+// sqlite3mc native build selected by package:sqlite3 hooks. See
 // `mobile/docs/sqlcipher_at_rest_plan.md`.
 // ---------------------------------------------------------------------------
 
 /// Opens an at-rest-encrypted database connection for native platforms.
 ///
-/// [rawKeyHex] is a 64-character hex (raw 32-byte) SQLCipher key supplied by
+/// [rawKeyHex] is a 64-character hex (raw 32-byte) cipher key supplied by
 /// the app layer. The key is applied in [applyCipherKey], which **fails
-/// closed**: if SQLCipher is not the linked SQLite library the open throws
+/// closed**: if SQLite3MultipleCiphers is not the active SQLite build the open
+/// throws
 /// rather than silently writing plaintext.
 ///
 /// Throws [ArgumentError] if [rawKeyHex] is malformed (the error never embeds
@@ -92,32 +91,34 @@ Future<bool> encryptedDatabaseOpensWithKey({
     if (e.resultCode == _sqliteNotADb) return false;
     rethrow;
   } finally {
-    db?.dispose();
+    db?.close();
   }
 }
 
-/// Keys [rawDb] with [rawKeyHex] and verifies SQLCipher is actually active.
+/// Keys [rawDb] with [rawKeyHex] and verifies SQLite3MultipleCiphers is active.
 ///
-/// `PRAGMA key` must be the first statement on the connection. On plain
-/// SQLite the pragma is an unknown no-op and `PRAGMA cipher_version` returns
-/// no rows — meaning the database would be **unencrypted**. We refuse to open
-/// in that case (fail closed) instead of silently storing plaintext.
+/// The cipher selection pragmas and `PRAGMA key` must run before any real
+/// database use. On plain SQLite these pragmas are unknown no-ops and
+/// `PRAGMA cipher` returns no rows — meaning the database would be
+/// **unencrypted**. We refuse to open in that case (fail closed) instead of
+/// silently storing plaintext.
 @visibleForTesting
 void applyCipherKey(CommonDatabase rawDb, String rawKeyHex) {
+  _rawKeyLiteral(rawKeyHex);
+  _applySqlCipherCompatibility(rawDb);
   try {
     rawDb.execute(formatCipherKeyPragma(rawKeyHex));
   } on SqliteException {
     // Never rethrow the original: SqliteException.toString() appends the
     // causing statement, which is the `PRAGMA key` containing the raw key.
-    throw StateError('Failed to apply the SQLCipher key.');
+    throw StateError('Failed to apply the local database cipher key.');
   }
 
-  final cipherVersion = rawDb.select('PRAGMA cipher_version;');
-  if (cipherVersion.isEmpty) {
+  if (!_isMultipleCiphersAvailable(rawDb)) {
     throw StateError(
-      'SQLCipher is not the active SQLite library; refusing to open the '
-      'database unencrypted. Ensure sqlcipher_flutter_libs is linked and no '
-      'other dependency links plain sqlite3.',
+      'SQLite3MultipleCiphers is not the active SQLite library; refusing to '
+      'open the database unencrypted. Ensure package:sqlite3 hooks select '
+      'sqlite3mc and no dependency links plain sqlite3.',
     );
   }
 
@@ -126,6 +127,15 @@ void applyCipherKey(CommonDatabase rawDb, String rawKeyHex) {
   // so a wrong key fails deterministically at open time.
   rawDb.execute('SELECT count(*) FROM sqlite_master;');
 }
+
+void _applySqlCipherCompatibility(CommonDatabase rawDb) {
+  rawDb
+    ..execute("PRAGMA cipher = 'sqlcipher';")
+    ..execute('PRAGMA legacy = 4;');
+}
+
+bool _isMultipleCiphersAvailable(CommonDatabase rawDb) =>
+    rawDb.select('PRAGMA cipher;').isNotEmpty;
 
 /// Builds the SQLCipher `PRAGMA key` statement for a **raw** 32-byte key.
 ///
@@ -141,14 +151,14 @@ void applyCipherKey(CommonDatabase rawDb, String rawKeyHex) {
 String formatCipherKeyPragma(String rawKeyHex) =>
     'PRAGMA key = ${_rawKeyLiteral(rawKeyHex)};';
 
-/// Returns the SQLCipher raw-key literal (`"x'<hex>'"`) for use in
-/// `PRAGMA key` and `ATTACH ... KEY` clauses. Inlining the validated hex is
+/// Returns the SQLCipher-compatible raw-key literal (`"x'<hex>'"`) for use in
+/// `PRAGMA key` and `PRAGMA rekey` clauses. Inlining the validated hex is
 /// injection-safe because the value is constrained to `[0-9a-fA-F]{64}`.
 String _rawKeyLiteral(String rawKeyHex) {
   if (!RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(rawKeyHex)) {
     throw ArgumentError(
       'rawKeyHex must be exactly 64 hex characters '
-      '(a raw 32-byte SQLCipher key)',
+      '(a raw 32-byte database cipher key)',
     );
   }
   return '"x\'$rawKeyHex\'"';
@@ -175,21 +185,20 @@ enum CipherMigrationOutcome {
 }
 
 /// One-time in-place rekey of the existing **plaintext** `divine_db.db` into a
-/// SQLCipher-encrypted database, using `sqlcipher_export`.
+/// SQLite3MultipleCiphers-encrypted database.
 ///
-/// Safe by construction: the encrypted copy is written to a side file and
-/// verified (key opens it; table/row counts match the source) **before** the
-/// plaintext original is swapped out, and the original is renamed to a backup
-/// rather than deleted. On any failure the plaintext database is left exactly
-/// as it was so the app keeps working and the migration retries next launch.
+/// Safe by construction: a plaintext side-file copy is encrypted and verified
+/// (key opens it; table/row counts match the source) **before** the plaintext
+/// original is swapped out, and the original is renamed to a backup rather
+/// than deleted. On any failure the plaintext database is left exactly as it
+/// was so the app keeps working and the migration retries next launch.
 ///
 /// Wipe-and-resync is intentionally rejected: `divine_db.db` is shared with
 /// drafts, pending uploads/actions, reactions, reposts, etc., which cannot be
 /// re-fetched. See `mobile/docs/sqlcipher_at_rest_plan.md`.
 ///
-/// Requires the SQLCipher native library; returns
-/// [CipherMigrationOutcome.failed] when it is not linked (e.g. the host test
-/// VM), leaving the source intact.
+/// Requires SQLite3MultipleCiphers; returns [CipherMigrationOutcome.failed]
+/// when it is not linked, leaving the source intact.
 Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
   required String rawKeyHex,
   String? databasePath,
@@ -265,7 +274,7 @@ _DbClassification _classifyDatabase(String dbPath) {
   } on SqliteException catch (e) {
     return _encryptedOrIndeterminate(e);
   } finally {
-    db.dispose();
+    db.close();
   }
 }
 
@@ -284,39 +293,33 @@ CipherMigrationOutcome _rekeyPlaintextInPlace({
 
   Database source;
   try {
-    // The source must be opened UNKEYED — sqlcipher_export reads plaintext and
-    // writes the keyed copy through the ATTACH ... KEY clause.
+    // The source must be opened UNKEYED. It remains untouched until a verified
+    // encrypted side-file is ready to promote.
     source = sqlite3.open(dbPath);
   } on SqliteException {
     return CipherMigrationOutcome.failed;
   }
 
   try {
-    if (source.select('PRAGMA cipher_version;').isEmpty) {
-      // SQLCipher not linked — cannot encrypt. Leave plaintext intact.
+    if (!_isMultipleCiphersAvailable(source)) {
+      // SQLite3MultipleCiphers not linked — cannot encrypt. Leave plaintext
+      // intact.
       return CipherMigrationOutcome.failed;
     }
-    // sqlcipher_export does NOT copy user_version, which drift uses as its
-    // schema version; copy it explicitly or drift re-runs every migration on
-    // the encrypted copy. PRAGMA's RHS cannot be a subquery, so read the int
-    // and inline it (an int literal is injection-safe).
-    final userVersion =
-        source.select('PRAGMA main.user_version;').first['user_version']
-            as int? ??
-        0;
-    source
-      ..execute(
-        'ATTACH DATABASE ? AS encrypted KEY ${_rawKeyLiteral(rawKeyHex)};',
-        [encryptedPath],
-      )
-      ..execute("SELECT sqlcipher_export('encrypted');")
-      ..execute('PRAGMA encrypted.user_version = $userVersion;')
-      ..execute('DETACH DATABASE encrypted;');
+    source.execute('VACUUM INTO ?;', [encryptedPath]);
   } on SqliteException {
     _deleteDatabaseAndSidecars(encryptedPath);
     return CipherMigrationOutcome.failed;
   } finally {
-    source.dispose();
+    source.close();
+  }
+
+  if (!_encryptPlaintextMigrationArtifact(
+    encryptedPath: encryptedPath,
+    rawKeyHex: rawKeyHex,
+  )) {
+    _deleteDatabaseAndSidecars(encryptedPath);
+    return CipherMigrationOutcome.failed;
   }
 
   if (!_encryptedCopyMatchesSource(
@@ -343,6 +346,25 @@ CipherMigrationOutcome _rekeyPlaintextInPlace({
   return CipherMigrationOutcome.migrated;
 }
 
+bool _encryptPlaintextMigrationArtifact({
+  required String encryptedPath,
+  required String rawKeyHex,
+}) {
+  Database? db;
+  try {
+    db = sqlite3.open(encryptedPath);
+    _applySqlCipherCompatibility(db);
+    db
+      ..execute('PRAGMA rekey = ${_rawKeyLiteral(rawKeyHex)};')
+      ..execute('SELECT count(*) FROM sqlite_master;');
+    return true;
+  } on SqliteException {
+    return false;
+  } finally {
+    db?.close();
+  }
+}
+
 /// Promotes the verified encrypted migration artifact into the canonical DB
 /// path, carrying WAL/SHM sidecars with it.
 @visibleForTesting
@@ -365,9 +387,8 @@ bool _encryptedCopyMatchesSource({
   Database? encrypted;
   Database? plaintext;
   try {
-    encrypted = sqlite3.open(encryptedPath)
-      ..execute(formatCipherKeyPragma(rawKeyHex));
-    if (encrypted.select('PRAGMA cipher_version;').isEmpty) return false;
+    encrypted = sqlite3.open(encryptedPath);
+    applyCipherKey(encrypted, rawKeyHex);
 
     plaintext = sqlite3.open(plaintextPath, mode: OpenMode.readOnly);
 
@@ -380,8 +401,8 @@ bool _encryptedCopyMatchesSource({
   } on SqliteException {
     return false;
   } finally {
-    encrypted?.dispose();
-    plaintext?.dispose();
+    encrypted?.close();
+    plaintext?.close();
   }
 }
 
@@ -409,7 +430,7 @@ Future<void> backUpAndRemoveSharedDatabase() async {
   _moveSidecars(fromPath: dbPath, toPath: backupPath);
 }
 
-/// Removes plaintext backups left by a successful plaintext→SQLCipher
+/// Removes plaintext backups left by a successful plaintext→encrypted
 /// migration once the encrypted database has opened with its key.
 ///
 /// The migration keeps the plaintext source as
@@ -699,7 +720,7 @@ bool _databaseHasActionableLocalOnlyData(String dbPath) {
   } on SqliteException {
     return true;
   } finally {
-    db.dispose();
+    db.close();
   }
 }
 

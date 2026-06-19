@@ -12,7 +12,7 @@ part of 'individual_video_providers.dart';
 /// Each video gets its own controller instance
 
 @ProviderFor(individualVideoController)
-const individualVideoControllerProvider = IndividualVideoControllerFamily._();
+final individualVideoControllerProvider = IndividualVideoControllerFamily._();
 
 /// Provider for individual video controllers with autoDispose
 /// Each video gets its own controller instance
@@ -27,7 +27,7 @@ final class IndividualVideoControllerProvider
     with $Provider<VideoPlayerController> {
   /// Provider for individual video controllers with autoDispose
   /// Each video gets its own controller instance
-  const IndividualVideoControllerProvider._({
+  IndividualVideoControllerProvider._({
     required IndividualVideoControllerFamily super.from,
     required VideoControllerParams super.argument,
   }) : super(
@@ -92,7 +92,7 @@ final class IndividualVideoControllerFamily extends $Family
           VideoPlayerController,
           VideoControllerParams
         > {
-  const IndividualVideoControllerFamily._()
+  IndividualVideoControllerFamily._()
     : super(
         retry: null,
         name: r'individualVideoControllerProvider',
@@ -114,7 +114,7 @@ final class IndividualVideoControllerFamily extends $Family
 /// Provider for video loading state
 
 @ProviderFor(videoLoadingState)
-const videoLoadingStateProvider = VideoLoadingStateFamily._();
+final videoLoadingStateProvider = VideoLoadingStateFamily._();
 
 /// Provider for video loading state
 
@@ -127,7 +127,7 @@ final class VideoLoadingStateProvider
         >
     with $Provider<VideoLoadingState> {
   /// Provider for video loading state
-  const VideoLoadingStateProvider._({
+  VideoLoadingStateProvider._({
     required VideoLoadingStateFamily super.from,
     required VideoControllerParams super.argument,
   }) : super(
@@ -185,7 +185,7 @@ String _$videoLoadingStateHash() => r'22f741beecbea8885fcd115ef3047a2fa2eb5e0d';
 
 final class VideoLoadingStateFamily extends $Family
     with $FunctionalFamilyOverride<VideoLoadingState, VideoControllerParams> {
-  const VideoLoadingStateFamily._()
+  VideoLoadingStateFamily._()
     : super(
         retry: null,
         name: r'videoLoadingStateProvider',

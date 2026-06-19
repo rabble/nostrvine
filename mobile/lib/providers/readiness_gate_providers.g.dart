@@ -11,14 +11,14 @@ part of 'readiness_gate_providers.dart';
 /// Provider that combines all readiness gates to determine if app is ready for subscriptions
 
 @ProviderFor(appReady)
-const appReadyProvider = AppReadyProvider._();
+final appReadyProvider = AppReadyProvider._();
 
 /// Provider that combines all readiness gates to determine if app is ready for subscriptions
 
 final class AppReadyProvider extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
   /// Provider that combines all readiness gates to determine if app is ready for subscriptions
-  const AppReadyProvider._()
+  AppReadyProvider._()
     : super(
         from: null,
         argument: null,
@@ -56,7 +56,7 @@ String _$appReadyHash() => r'e5ade29720db0ff896154f0423b80168cdce97c8';
 /// Provider that checks if the discovery/explore tab is currently active
 
 @ProviderFor(isDiscoveryTabActive)
-const isDiscoveryTabActiveProvider = IsDiscoveryTabActiveProvider._();
+final isDiscoveryTabActiveProvider = IsDiscoveryTabActiveProvider._();
 
 /// Provider that checks if the discovery/explore tab is currently active
 
@@ -64,7 +64,7 @@ final class IsDiscoveryTabActiveProvider
     extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
   /// Provider that checks if the discovery/explore tab is currently active
-  const IsDiscoveryTabActiveProvider._()
+  IsDiscoveryTabActiveProvider._()
     : super(
         from: null,
         argument: null,

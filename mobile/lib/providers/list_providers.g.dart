@@ -16,7 +16,7 @@ part of 'list_providers.dart';
 /// - no user is currently authenticated (no owner pubkey to scope by).
 
 @ProviderFor(userLists)
-const userListsProvider = UserListsProvider._();
+final userListsProvider = UserListsProvider._();
 
 /// Provider for all user lists (NIP-51 kind 30000 people lists).
 ///
@@ -39,7 +39,7 @@ final class UserListsProvider
   /// every local mutation. Emits an empty list when:
   /// - the [FeatureFlag.curatedLists] feature flag is disabled, or
   /// - no user is currently authenticated (no owner pubkey to scope by).
-  const UserListsProvider._()
+  UserListsProvider._()
     : super(
         from: null,
         argument: null,
@@ -70,7 +70,7 @@ String _$userListsHash() => r'6e9c114c2c52d95c433c3eb6c7093c446f5dc6b9';
 /// Provider for all curated video lists (kind 30005)
 
 @ProviderFor(curatedLists)
-const curatedListsProvider = CuratedListsProvider._();
+final curatedListsProvider = CuratedListsProvider._();
 
 /// Provider for all curated video lists (kind 30005)
 
@@ -85,7 +85,7 @@ final class CuratedListsProvider
         $FutureModifier<List<CuratedList>>,
         $FutureProvider<List<CuratedList>> {
   /// Provider for all curated video lists (kind 30005)
-  const CuratedListsProvider._()
+  CuratedListsProvider._()
     : super(
         from: null,
         argument: null,
@@ -116,7 +116,7 @@ String _$curatedListsHash() => r'74de3f9b86d5444e78e7f2c797370ca75f29f9f5';
 /// Combined provider for both types of lists
 
 @ProviderFor(allLists)
-const allListsProvider = AllListsProvider._();
+final allListsProvider = AllListsProvider._();
 
 /// Combined provider for both types of lists
 
@@ -137,7 +137,7 @@ final class AllListsProvider
           ({List<CuratedList> curatedLists, List<UserList> userLists})
         > {
   /// Combined provider for both types of lists
-  const AllListsProvider._()
+  AllListsProvider._()
     : super(
         from: null,
         argument: null,
@@ -172,7 +172,7 @@ String _$allListsHash() => r'8d7c4fb84d445151d5bb84764da34cedf4e7e8a6';
 /// This persists the lists so they're not lost when leaving/returning to screen
 
 @ProviderFor(DiscoveredLists)
-const discoveredListsProvider = DiscoveredListsProvider._();
+final discoveredListsProvider = DiscoveredListsProvider._();
 
 /// Provider that caches discovered public lists across navigation
 /// This persists the lists so they're not lost when leaving/returning to screen
@@ -180,7 +180,7 @@ final class DiscoveredListsProvider
     extends $NotifierProvider<DiscoveredLists, DiscoveredListsState> {
   /// Provider that caches discovered public lists across navigation
   /// This persists the lists so they're not lost when leaving/returning to screen
-  const DiscoveredListsProvider._()
+  DiscoveredListsProvider._()
     : super(
         from: null,
         argument: null,
@@ -216,8 +216,7 @@ abstract class _$DiscoveredLists extends $Notifier<DiscoveredListsState> {
   DiscoveredListsState build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<DiscoveredListsState, DiscoveredListsState>;
     final element =
         ref.element
@@ -227,14 +226,14 @@ abstract class _$DiscoveredLists extends $Notifier<DiscoveredListsState> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 /// Provider for videos in a specific curated list
 
 @ProviderFor(curatedListVideos)
-const curatedListVideosProvider = CuratedListVideosFamily._();
+final curatedListVideosProvider = CuratedListVideosFamily._();
 
 /// Provider for videos in a specific curated list
 
@@ -247,7 +246,7 @@ final class CuratedListVideosProvider
         >
     with $FutureModifier<List<String>>, $FutureProvider<List<String>> {
   /// Provider for videos in a specific curated list
-  const CuratedListVideosProvider._({
+  CuratedListVideosProvider._({
     required CuratedListVideosFamily super.from,
     required String super.argument,
   }) : super(
@@ -297,7 +296,7 @@ String _$curatedListVideosHash() => r'ce7db4b5ea59279d88325cdc9e928dc5a89a92b0';
 
 final class CuratedListVideosFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<String>>, String> {
-  const CuratedListVideosFamily._()
+  CuratedListVideosFamily._()
     : super(
         retry: null,
         name: r'curatedListVideosProvider',
@@ -318,7 +317,7 @@ final class CuratedListVideosFamily extends $Family
 /// Provider for videos from all members of a user list
 
 @ProviderFor(userListMemberVideos)
-const userListMemberVideosProvider = UserListMemberVideosFamily._();
+final userListMemberVideosProvider = UserListMemberVideosFamily._();
 
 /// Provider for videos from all members of a user list
 
@@ -331,7 +330,7 @@ final class UserListMemberVideosProvider
         >
     with $FutureModifier<List<VideoEvent>>, $StreamProvider<List<VideoEvent>> {
   /// Provider for videos from all members of a user list
-  const UserListMemberVideosProvider._({
+  UserListMemberVideosProvider._({
     required UserListMemberVideosFamily super.from,
     required List<String> super.argument,
   }) : super(
@@ -382,7 +381,7 @@ String _$userListMemberVideosHash() =>
 
 final class UserListMemberVideosFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<VideoEvent>>, List<String>> {
-  const UserListMemberVideosFamily._()
+  UserListMemberVideosFamily._()
     : super(
         retry: null,
         name: r'userListMemberVideosProvider',
@@ -405,7 +404,7 @@ final class UserListMemberVideosFamily extends $Family
 /// on each new result. This enables progressive UI updates via Riverpod.
 
 @ProviderFor(publicListsContainingVideo)
-const publicListsContainingVideoProvider = PublicListsContainingVideoFamily._();
+final publicListsContainingVideoProvider = PublicListsContainingVideoFamily._();
 
 /// Provider that streams public lists containing a specific video
 /// Accumulates results as they arrive from Nostr relays, yielding updated list
@@ -424,7 +423,7 @@ final class PublicListsContainingVideoProvider
   /// Provider that streams public lists containing a specific video
   /// Accumulates results as they arrive from Nostr relays, yielding updated list
   /// on each new result. This enables progressive UI updates via Riverpod.
-  const PublicListsContainingVideoProvider._({
+  PublicListsContainingVideoProvider._({
     required PublicListsContainingVideoFamily super.from,
     required String super.argument,
   }) : super(
@@ -478,7 +477,7 @@ String _$publicListsContainingVideoHash() =>
 
 final class PublicListsContainingVideoFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<CuratedList>>, String> {
-  const PublicListsContainingVideoFamily._()
+  PublicListsContainingVideoFamily._()
     : super(
         retry: null,
         name: r'publicListsContainingVideoProvider',
@@ -502,7 +501,7 @@ final class PublicListsContainingVideoFamily extends $Family
 /// Streams videos as they are fetched from cache or relays
 
 @ProviderFor(curatedListVideoEvents)
-const curatedListVideoEventsProvider = CuratedListVideoEventsFamily._();
+final curatedListVideoEventsProvider = CuratedListVideoEventsFamily._();
 
 /// Provider that fetches actual VideoEvent objects for a curated list
 /// Streams videos as they are fetched from cache or relays
@@ -517,7 +516,7 @@ final class CuratedListVideoEventsProvider
     with $FutureModifier<List<VideoEvent>>, $StreamProvider<List<VideoEvent>> {
   /// Provider that fetches actual VideoEvent objects for a curated list
   /// Streams videos as they are fetched from cache or relays
-  const CuratedListVideoEventsProvider._({
+  CuratedListVideoEventsProvider._({
     required CuratedListVideoEventsFamily super.from,
     required String super.argument,
   }) : super(
@@ -570,7 +569,7 @@ String _$curatedListVideoEventsHash() =>
 
 final class CuratedListVideoEventsFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<VideoEvent>>, String> {
-  const CuratedListVideoEventsFamily._()
+  CuratedListVideoEventsFamily._()
     : super(
         retry: null,
         name: r'curatedListVideoEventsProvider',
@@ -593,7 +592,7 @@ final class CuratedListVideoEventsFamily extends $Family
 /// Use this for discovered lists that aren't in local storage
 
 @ProviderFor(videoEventsByIds)
-const videoEventsByIdsProvider = VideoEventsByIdsFamily._();
+final videoEventsByIdsProvider = VideoEventsByIdsFamily._();
 
 /// Provider that fetches VideoEvent objects directly from a list of video IDs
 /// Use this for discovered lists that aren't in local storage
@@ -608,7 +607,7 @@ final class VideoEventsByIdsProvider
     with $FutureModifier<List<VideoEvent>>, $StreamProvider<List<VideoEvent>> {
   /// Provider that fetches VideoEvent objects directly from a list of video IDs
   /// Use this for discovered lists that aren't in local storage
-  const VideoEventsByIdsProvider._({
+  VideoEventsByIdsProvider._({
     required VideoEventsByIdsFamily super.from,
     required List<String> super.argument,
   }) : super(
@@ -659,7 +658,7 @@ String _$videoEventsByIdsHash() => r'e6a653a18021cfbf8221af6045f7f20a93841622';
 
 final class VideoEventsByIdsFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<VideoEvent>>, List<String>> {
-  const VideoEventsByIdsFamily._()
+  VideoEventsByIdsFamily._()
     : super(
         retry: null,
         name: r'videoEventsByIdsProvider',

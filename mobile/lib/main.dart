@@ -1299,10 +1299,10 @@ Future<void> _startOpenVineApp() async {
   final packageInfo = await PackageInfo.fromPlatform();
 
   // Resolve the at-rest database cipher key before the container so the
-  // database provider opens an encrypted SQLCipher connection on first use.
-  // This also forces package:sqlite3 onto the SQLCipher build (Android) and
-  // runs the one-time plaintext→encrypted migration, both of which must happen
-  // before any sqlite3 open. (#570, finding C2)
+  // database provider opens an encrypted SQLite3MultipleCiphers connection on
+  // first use. This also verifies package:sqlite3 loaded the sqlite3mc hook
+  // build and runs the one-time plaintext→encrypted migration, both of which
+  // must happen before any Drift database open. (#570, finding C2)
   const dbCipherSecureStorage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
@@ -1334,9 +1334,9 @@ Future<void> _startOpenVineApp() async {
         // left recovered chats stranded under "Message requests"). See #5304.
         onDatabaseReset: () => DmSyncState(sharedPreferences).clearAll(),
       ).resolveCipherKey(),
-      // SQLCipher build misconfiguration or secure-storage failures must fail
-      // closed after reporting. Continuing with a null key would open an
-      // existing encrypted DB as plaintext and spam SQLITE_NOTADB.
+      // SQLite3MultipleCiphers build misconfiguration or secure-storage
+      // failures must fail closed after reporting. Continuing with a null key
+      // would open an existing encrypted DB as plaintext and spam SQLITE_NOTADB.
       recordError: recordDatabaseBootstrapFailure,
     ),
     repairLocalDatabaseCache: (error, stack) => resetEncryptedDatabaseCache(

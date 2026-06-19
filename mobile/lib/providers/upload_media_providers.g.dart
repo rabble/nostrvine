@@ -11,7 +11,7 @@ part of 'upload_media_providers.dart';
 /// Blossom BUD-01 authentication service for age-restricted content
 
 @ProviderFor(blossomAuthService)
-const blossomAuthServiceProvider = BlossomAuthServiceProvider._();
+final blossomAuthServiceProvider = BlossomAuthServiceProvider._();
 
 /// Blossom BUD-01 authentication service for age-restricted content
 
@@ -24,7 +24,7 @@ final class BlossomAuthServiceProvider
         >
     with $Provider<BlossomAuthService> {
   /// Blossom BUD-01 authentication service for age-restricted content
-  const BlossomAuthServiceProvider._()
+  BlossomAuthServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -64,7 +64,7 @@ String _$blossomAuthServiceHash() =>
 /// Media authentication interceptor for handling 401 unauthorized responses
 
 @ProviderFor(mediaAuthInterceptor)
-const mediaAuthInterceptorProvider = MediaAuthInterceptorProvider._();
+final mediaAuthInterceptorProvider = MediaAuthInterceptorProvider._();
 
 /// Media authentication interceptor for handling 401 unauthorized responses
 
@@ -77,7 +77,7 @@ final class MediaAuthInterceptorProvider
         >
     with $Provider<MediaAuthInterceptor> {
   /// Media authentication interceptor for handling 401 unauthorized responses
-  const MediaAuthInterceptorProvider._()
+  MediaAuthInterceptorProvider._()
     : super(
         from: null,
         argument: null,
@@ -117,7 +117,7 @@ String _$mediaAuthInterceptorHash() =>
 /// Blossom upload service (uses user-configured Blossom server)
 
 @ProviderFor(blossomUploadService)
-const blossomUploadServiceProvider = BlossomUploadServiceProvider._();
+final blossomUploadServiceProvider = BlossomUploadServiceProvider._();
 
 /// Blossom upload service (uses user-configured Blossom server)
 
@@ -130,7 +130,7 @@ final class BlossomUploadServiceProvider
         >
     with $Provider<BlossomUploadService> {
   /// Blossom upload service (uses user-configured Blossom server)
-  const BlossomUploadServiceProvider._()
+  BlossomUploadServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -170,7 +170,7 @@ String _$blossomUploadServiceHash() =>
 /// Upload manager uses only Blossom upload service
 
 @ProviderFor(uploadManager)
-const uploadManagerProvider = UploadManagerProvider._();
+final uploadManagerProvider = UploadManagerProvider._();
 
 /// Upload manager uses only Blossom upload service
 
@@ -178,7 +178,7 @@ final class UploadManagerProvider
     extends $FunctionalProvider<UploadManager, UploadManager, UploadManager>
     with $Provider<UploadManager> {
   /// Upload manager uses only Blossom upload service
-  const UploadManagerProvider._()
+  UploadManagerProvider._()
     : super(
         from: null,
         argument: null,
@@ -216,7 +216,7 @@ String _$uploadManagerHash() => r'9cfb9aeca47922785af40243c40b4fc2d5f63608';
 /// API service depends on auth service
 
 @ProviderFor(apiService)
-const apiServiceProvider = ApiServiceProvider._();
+final apiServiceProvider = ApiServiceProvider._();
 
 /// API service depends on auth service
 
@@ -224,7 +224,7 @@ final class ApiServiceProvider
     extends $FunctionalProvider<ApiService, ApiService, ApiService>
     with $Provider<ApiService> {
   /// API service depends on auth service
-  const ApiServiceProvider._()
+  ApiServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -262,7 +262,7 @@ String _$apiServiceHash() => r'a114c5e161b816881b395a10c90d043ef94c8de7';
 /// Crosspost API client for Bluesky toggle settings
 
 @ProviderFor(crosspostApiClient)
-const crosspostApiClientProvider = CrosspostApiClientProvider._();
+final crosspostApiClientProvider = CrosspostApiClientProvider._();
 
 /// Crosspost API client for Bluesky toggle settings
 
@@ -275,7 +275,7 @@ final class CrosspostApiClientProvider
         >
     with $Provider<CrosspostApiClient> {
   /// Crosspost API client for Bluesky toggle settings
-  const CrosspostApiClientProvider._()
+  CrosspostApiClientProvider._()
     : super(
         from: null,
         argument: null,
@@ -319,7 +319,7 @@ String _$crosspostApiClientHash() =>
 /// Uses keepAlive to persist across the session (not auto-disposed).
 
 @ProviderFor(audioPlaybackService)
-const audioPlaybackServiceProvider = AudioPlaybackServiceProvider._();
+final audioPlaybackServiceProvider = AudioPlaybackServiceProvider._();
 
 /// Audio playback service for sound playback during recording and preview
 ///
@@ -340,7 +340,7 @@ final class AudioPlaybackServiceProvider
   /// Used by SoundsScreen to preview sounds and by camera screen
   /// for lip-sync recording. Handles audio loading, play/pause, and cleanup.
   /// Uses keepAlive to persist across the session (not auto-disposed).
-  const AudioPlaybackServiceProvider._()
+  AudioPlaybackServiceProvider._()
     : super(
         from: null,
         argument: null,

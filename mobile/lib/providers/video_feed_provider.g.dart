@@ -11,13 +11,13 @@ part of 'video_feed_provider.dart';
 /// Simple discovery video feed provider
 
 @ProviderFor(VideoFeed)
-const videoFeedProvider = VideoFeedProvider._();
+final videoFeedProvider = VideoFeedProvider._();
 
 /// Simple discovery video feed provider
 final class VideoFeedProvider
     extends $AsyncNotifierProvider<VideoFeed, VideoFeedState> {
   /// Simple discovery video feed provider
-  const VideoFeedProvider._()
+  VideoFeedProvider._()
     : super(
         from: null,
         argument: null,
@@ -44,8 +44,7 @@ abstract class _$VideoFeed extends $AsyncNotifier<VideoFeedState> {
   FutureOr<VideoFeedState> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AsyncValue<VideoFeedState>, VideoFeedState>;
     final element =
         ref.element
@@ -55,14 +54,14 @@ abstract class _$VideoFeed extends $AsyncNotifier<VideoFeedState> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 /// Provider to check if video feed is loading
 
 @ProviderFor(videoFeedLoading)
-const videoFeedLoadingProvider = VideoFeedLoadingProvider._();
+final videoFeedLoadingProvider = VideoFeedLoadingProvider._();
 
 /// Provider to check if video feed is loading
 
@@ -70,7 +69,7 @@ final class VideoFeedLoadingProvider
     extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
   /// Provider to check if video feed is loading
-  const VideoFeedLoadingProvider._()
+  VideoFeedLoadingProvider._()
     : super(
         from: null,
         argument: null,
@@ -108,14 +107,14 @@ String _$videoFeedLoadingHash() => r'055850405fbf52cb95fa8a6d62b431fc5b5aed2a';
 /// Provider to get current video count
 
 @ProviderFor(videoFeedCount)
-const videoFeedCountProvider = VideoFeedCountProvider._();
+final videoFeedCountProvider = VideoFeedCountProvider._();
 
 /// Provider to get current video count
 
 final class VideoFeedCountProvider extends $FunctionalProvider<int, int, int>
     with $Provider<int> {
   /// Provider to get current video count
-  const VideoFeedCountProvider._()
+  VideoFeedCountProvider._()
     : super(
         from: null,
         argument: null,
@@ -153,14 +152,14 @@ String _$videoFeedCountHash() => r'de3d7d4c6f880e868a4a0c490b3c4df125040195';
 /// Provider to check if we have videos
 
 @ProviderFor(hasVideos)
-const hasVideosProvider = HasVideosProvider._();
+final hasVideosProvider = HasVideosProvider._();
 
 /// Provider to check if we have videos
 
 final class HasVideosProvider extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
   /// Provider to check if we have videos
-  const HasVideosProvider._()
+  HasVideosProvider._()
     : super(
         from: null,
         argument: null,

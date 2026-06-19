@@ -11,7 +11,7 @@ part of 'auth_providers.dart';
 /// Secure key storage service (foundational service)
 
 @ProviderFor(secureKeyStorage)
-const secureKeyStorageProvider = SecureKeyStorageProvider._();
+final secureKeyStorageProvider = SecureKeyStorageProvider._();
 
 /// Secure key storage service (foundational service)
 
@@ -24,7 +24,7 @@ final class SecureKeyStorageProvider
         >
     with $Provider<SecureKeyStorage> {
   /// Secure key storage service (foundational service)
-  const SecureKeyStorageProvider._()
+  SecureKeyStorageProvider._()
     : super(
         from: null,
         argument: null,
@@ -60,12 +60,12 @@ final class SecureKeyStorageProvider
 String _$secureKeyStorageHash() => r'853547d439994307884d2f47f3d9769daa0a1e96';
 
 @ProviderFor(oauthConfig)
-const oauthConfigProvider = OauthConfigProvider._();
+final oauthConfigProvider = OauthConfigProvider._();
 
 final class OauthConfigProvider
     extends $FunctionalProvider<OAuthConfig, OAuthConfig, OAuthConfig>
     with $Provider<OAuthConfig> {
-  const OauthConfigProvider._()
+  OauthConfigProvider._()
     : super(
         from: null,
         argument: null,
@@ -101,7 +101,7 @@ final class OauthConfigProvider
 String _$oauthConfigHash() => r'2078bce919b9216a65dedc105d471568ba510a52';
 
 @ProviderFor(flutterSecureStorage)
-const flutterSecureStorageProvider = FlutterSecureStorageProvider._();
+final flutterSecureStorageProvider = FlutterSecureStorageProvider._();
 
 final class FlutterSecureStorageProvider
     extends
@@ -111,7 +111,7 @@ final class FlutterSecureStorageProvider
           FlutterSecureStorage
         >
     with $Provider<FlutterSecureStorage> {
-  const FlutterSecureStorageProvider._()
+  FlutterSecureStorageProvider._()
     : super(
         from: null,
         argument: null,
@@ -149,7 +149,7 @@ String _$flutterSecureStorageHash() =>
     r'4d4ab3d09f7188871974df552778d4799beabcd8';
 
 @ProviderFor(secureKeycastStorage)
-const secureKeycastStorageProvider = SecureKeycastStorageProvider._();
+final secureKeycastStorageProvider = SecureKeycastStorageProvider._();
 
 final class SecureKeycastStorageProvider
     extends
@@ -159,7 +159,7 @@ final class SecureKeycastStorageProvider
           SecureKeycastStorage
         >
     with $Provider<SecureKeycastStorage> {
-  const SecureKeycastStorageProvider._()
+  SecureKeycastStorageProvider._()
     : super(
         from: null,
         argument: null,
@@ -197,7 +197,7 @@ String _$secureKeycastStorageHash() =>
     r'c57c0ec02e36cd1a0cc8b850c450af2eb4c496b3';
 
 @ProviderFor(pendingVerificationService)
-const pendingVerificationServiceProvider =
+final pendingVerificationServiceProvider =
     PendingVerificationServiceProvider._();
 
 final class PendingVerificationServiceProvider
@@ -208,7 +208,7 @@ final class PendingVerificationServiceProvider
           PendingVerificationService
         >
     with $Provider<PendingVerificationService> {
-  const PendingVerificationServiceProvider._()
+  PendingVerificationServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -246,12 +246,12 @@ String _$pendingVerificationServiceHash() =>
     r'9b524b7d7fd20c98b2e0942e9ea6358419dc9dd4';
 
 @ProviderFor(oauthClient)
-const oauthClientProvider = OauthClientProvider._();
+final oauthClientProvider = OauthClientProvider._();
 
 final class OauthClientProvider
     extends $FunctionalProvider<KeycastOAuth, KeycastOAuth, KeycastOAuth>
     with $Provider<KeycastOAuth> {
-  const OauthClientProvider._()
+  OauthClientProvider._()
     : super(
         from: null,
         argument: null,
@@ -287,7 +287,7 @@ final class OauthClientProvider
 String _$oauthClientHash() => r'0cc53348fbc3c769c81e52dd200c0efc6c20de3c';
 
 @ProviderFor(passwordResetListener)
-const passwordResetListenerProvider = PasswordResetListenerProvider._();
+final passwordResetListenerProvider = PasswordResetListenerProvider._();
 
 final class PasswordResetListenerProvider
     extends
@@ -297,7 +297,7 @@ final class PasswordResetListenerProvider
           PasswordResetListener
         >
     with $Provider<PasswordResetListener> {
-  const PasswordResetListenerProvider._()
+  PasswordResetListenerProvider._()
     : super(
         from: null,
         argument: null,
@@ -335,7 +335,7 @@ String _$passwordResetListenerHash() =>
     r'3fe0dd6870cd754567aaaf53b5b74f439f232ad4';
 
 @ProviderFor(emailVerificationListener)
-const emailVerificationListenerProvider = EmailVerificationListenerProvider._();
+final emailVerificationListenerProvider = EmailVerificationListenerProvider._();
 
 final class EmailVerificationListenerProvider
     extends
@@ -345,7 +345,7 @@ final class EmailVerificationListenerProvider
           EmailVerificationListener
         >
     with $Provider<EmailVerificationListener> {
-  const EmailVerificationListenerProvider._()
+  EmailVerificationListenerProvider._()
     : super(
         from: null,
         argument: null,
@@ -385,7 +385,7 @@ String _$emailVerificationListenerHash() =>
 /// Web authentication service (for web platform only)
 
 @ProviderFor(webAuthService)
-const webAuthServiceProvider = WebAuthServiceProvider._();
+final webAuthServiceProvider = WebAuthServiceProvider._();
 
 /// Web authentication service (for web platform only)
 
@@ -393,7 +393,7 @@ final class WebAuthServiceProvider
     extends $FunctionalProvider<WebAuthService, WebAuthService, WebAuthService>
     with $Provider<WebAuthService> {
   /// Web authentication service (for web platform only)
-  const WebAuthServiceProvider._()
+  WebAuthServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -431,7 +431,7 @@ String _$webAuthServiceHash() => r'53411c0f6a62bb9b59f90a0d7fc738a553a0b575';
 /// Nostr key manager for cryptographic operations
 
 @ProviderFor(nostrKeyManager)
-const nostrKeyManagerProvider = NostrKeyManagerProvider._();
+final nostrKeyManagerProvider = NostrKeyManagerProvider._();
 
 /// Nostr key manager for cryptographic operations
 
@@ -440,7 +440,7 @@ final class NostrKeyManagerProvider
         $FunctionalProvider<NostrKeyManager, NostrKeyManager, NostrKeyManager>
     with $Provider<NostrKeyManager> {
   /// Nostr key manager for cryptographic operations
-  const NostrKeyManagerProvider._()
+  NostrKeyManagerProvider._()
     : super(
         from: null,
         argument: null,
@@ -478,7 +478,7 @@ String _$nostrKeyManagerHash() => r'a0d67b6d79af5ecdc42bc6616542249200a24b64';
 /// Authentication service
 
 @ProviderFor(authService)
-const authServiceProvider = AuthServiceProvider._();
+final authServiceProvider = AuthServiceProvider._();
 
 /// Authentication service
 
@@ -486,7 +486,7 @@ final class AuthServiceProvider
     extends $FunctionalProvider<AuthService, AuthService, AuthService>
     with $Provider<AuthService> {
   /// Authentication service
-  const AuthServiceProvider._()
+  AuthServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -526,7 +526,7 @@ String _$authServiceHash() => r'5ed8b2e4f69b956cef94207839973aa1f676df4c';
 /// to get automatic rebuilds when authentication state changes.
 
 @ProviderFor(currentAuthState)
-const currentAuthStateProvider = CurrentAuthStateProvider._();
+final currentAuthStateProvider = CurrentAuthStateProvider._();
 
 /// Provider that returns current auth state and rebuilds when it changes.
 /// Widgets should watch this instead of authService.authState directly
@@ -538,7 +538,7 @@ final class CurrentAuthStateProvider
   /// Provider that returns current auth state and rebuilds when it changes.
   /// Widgets should watch this instead of authService.authState directly
   /// to get automatic rebuilds when authentication state changes.
-  const CurrentAuthStateProvider._()
+  CurrentAuthStateProvider._()
     : super(
         from: null,
         argument: null,
@@ -579,7 +579,7 @@ String _$currentAuthStateHash() => r'41c987ffc8f661555bab3ebec9078180411f66eb';
 /// [AuthService.authRpcCapability] directly.
 
 @ProviderFor(currentAuthRpcCapability)
-const currentAuthRpcCapabilityProvider = CurrentAuthRpcCapabilityProvider._();
+final currentAuthRpcCapabilityProvider = CurrentAuthRpcCapabilityProvider._();
 
 /// Provider that returns current RPC capability and rebuilds on changes.
 ///
@@ -598,7 +598,7 @@ final class CurrentAuthRpcCapabilityProvider
   ///
   /// Widgets and repositories should watch this instead of polling
   /// [AuthService.authRpcCapability] directly.
-  const CurrentAuthRpcCapabilityProvider._()
+  CurrentAuthRpcCapabilityProvider._()
     : super(
         from: null,
         argument: null,
@@ -640,7 +640,7 @@ String _$currentAuthRpcCapabilityHash() =>
 /// Invalidate this provider after sign-in or sign-out to refresh the list.
 
 @ProviderFor(knownAccounts)
-const knownAccountsProvider = KnownAccountsProvider._();
+final knownAccountsProvider = KnownAccountsProvider._();
 
 /// Provider that fetches the list of known accounts from the auth service.
 ///
@@ -659,7 +659,7 @@ final class KnownAccountsProvider
   /// Provider that fetches the list of known accounts from the auth service.
   ///
   /// Invalidate this provider after sign-in or sign-out to refresh the list.
-  const KnownAccountsProvider._()
+  KnownAccountsProvider._()
     : super(
         from: null,
         argument: null,
@@ -691,7 +691,7 @@ String _$knownAccountsHash() => r'8e9753265420cf092af04aa07686c98cdaa8eb1e';
 /// Watch this provider at app startup to keep Zendesk identity in sync with auth
 
 @ProviderFor(zendeskIdentitySync)
-const zendeskIdentitySyncProvider = ZendeskIdentitySyncProvider._();
+final zendeskIdentitySyncProvider = ZendeskIdentitySyncProvider._();
 
 /// Provider that sets Zendesk user identity when auth state changes
 /// Watch this provider at app startup to keep Zendesk identity in sync with auth
@@ -701,7 +701,7 @@ final class ZendeskIdentitySyncProvider
     with $Provider<void> {
   /// Provider that sets Zendesk user identity when auth state changes
   /// Watch this provider at app startup to keep Zendesk identity in sync with auth
-  const ZendeskIdentitySyncProvider._()
+  ZendeskIdentitySyncProvider._()
     : super(
         from: null,
         argument: null,
@@ -741,7 +741,7 @@ String _$zendeskIdentitySyncHash() =>
 /// verifier base URL. Stateless — every call hits the network.
 
 @ProviderFor(verifierClient)
-const verifierClientProvider = VerifierClientProvider._();
+final verifierClientProvider = VerifierClientProvider._();
 
 /// Provider for [VerifierClient] pointed at the current environment's
 /// verifier base URL. Stateless — every call hits the network.
@@ -751,7 +751,7 @@ final class VerifierClientProvider
     with $Provider<VerifierClient> {
   /// Provider for [VerifierClient] pointed at the current environment's
   /// verifier base URL. Stateless — every call hits the network.
-  const VerifierClientProvider._()
+  VerifierClientProvider._()
     : super(
         from: null,
         argument: null,
@@ -790,7 +790,7 @@ String _$verifierClientHash() => r'1d6966c5483814cd7fa203e7e9e198dc5c9c232d';
 /// with NIP-39 i tag parsing.
 
 @ProviderFor(identityClaimsRepository)
-const identityClaimsRepositoryProvider = IdentityClaimsRepositoryProvider._();
+final identityClaimsRepositoryProvider = IdentityClaimsRepositoryProvider._();
 
 /// Provider for [IdentityClaimsRepository] composing the verifier client
 /// with NIP-39 i tag parsing.
@@ -805,7 +805,7 @@ final class IdentityClaimsRepositoryProvider
     with $Provider<IdentityClaimsRepository> {
   /// Provider for [IdentityClaimsRepository] composing the verifier client
   /// with NIP-39 i tag parsing.
-  const IdentityClaimsRepositoryProvider._()
+  IdentityClaimsRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -845,7 +845,7 @@ String _$identityClaimsRepositoryHash() =>
 /// NIP-98 authentication service
 
 @ProviderFor(nip98AuthService)
-const nip98AuthServiceProvider = Nip98AuthServiceProvider._();
+final nip98AuthServiceProvider = Nip98AuthServiceProvider._();
 
 /// NIP-98 authentication service
 
@@ -858,7 +858,7 @@ final class Nip98AuthServiceProvider
         >
     with $Provider<Nip98AuthService> {
   /// NIP-98 authentication service
-  const Nip98AuthServiceProvider._()
+  Nip98AuthServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -896,7 +896,7 @@ String _$nip98AuthServiceHash() => r'cfc2e0a65e1dbd9c559886929257fa66a7afb1c6';
 /// Account Deletion Service for NIP-62 Request to Vanish
 
 @ProviderFor(accountDeletionService)
-const accountDeletionServiceProvider = AccountDeletionServiceProvider._();
+final accountDeletionServiceProvider = AccountDeletionServiceProvider._();
 
 /// Account Deletion Service for NIP-62 Request to Vanish
 
@@ -909,7 +909,7 @@ final class AccountDeletionServiceProvider
         >
     with $Provider<AccountDeletionService> {
   /// Account Deletion Service for NIP-62 Request to Vanish
-  const AccountDeletionServiceProvider._()
+  AccountDeletionServiceProvider._()
     : super(
         from: null,
         argument: null,

@@ -10,11 +10,11 @@ part of 'sound_picker_provider.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(SoundPicker)
-const soundPickerProvider = SoundPickerProvider._();
+final soundPickerProvider = SoundPickerProvider._();
 
 final class SoundPickerProvider
     extends $NotifierProvider<SoundPicker, SoundPickerState> {
-  const SoundPickerProvider._()
+  SoundPickerProvider._()
     : super(
         from: null,
         argument: null,
@@ -47,8 +47,7 @@ abstract class _$SoundPicker extends $Notifier<SoundPickerState> {
   SoundPickerState build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<SoundPickerState, SoundPickerState>;
     final element =
         ref.element
@@ -58,6 +57,6 @@ abstract class _$SoundPicker extends $Notifier<SoundPickerState> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }

@@ -3,7 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The 64-hex (raw 32-byte) SQLCipher key for the local database, or `null`
+/// The 64-hex (raw 32-byte) cipher key for the local database, or `null`
 /// when the database should open unencrypted.
 ///
 /// `null` is the default so tests and web fall back to a plaintext connection.

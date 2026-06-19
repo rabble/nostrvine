@@ -9,7 +9,7 @@ part 'database_provider.g.dart';
 @Riverpod(keepAlive: true) // Singleton - lives for app lifetime
 AppDatabase database(Ref ref) {
   // When a cipher key is present (resolved at startup by
-  // DatabaseEncryptionBootstrap), open an at-rest-encrypted SQLCipher
+  // DatabaseEncryptionBootstrap), open an at-rest-encrypted native
   // connection; otherwise (web, tests, or a deferred migration) open the
   // default connection. (#570, finding C2)
   final cipherKey = ref.watch(dbCipherKeyProvider);

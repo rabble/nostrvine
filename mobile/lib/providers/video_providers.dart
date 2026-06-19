@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart' show Provider;
 import 'package:http/http.dart' as http;
 import 'package:likes_repository/likes_repository.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
@@ -522,7 +523,11 @@ LikesRepository likesRepository(Ref ref) {
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - PersonalRepostsDao from databaseProvider (for local storage)
-@Riverpod(keepAlive: true)
+final repostsRepositoryProvider = Provider<RepostsRepository>(
+  repostsRepository,
+  name: 'repostsRepositoryProvider',
+);
+
 RepostsRepository repostsRepository(Ref ref) {
   final authService = ref.watch(authServiceProvider);
 

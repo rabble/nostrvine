@@ -24,7 +24,7 @@ part of 'sounds_providers.dart';
 /// ```
 
 @ProviderFor(soundsRepository)
-const soundsRepositoryProvider = SoundsRepositoryProvider._();
+final soundsRepositoryProvider = SoundsRepositoryProvider._();
 
 /// Provider for SoundsRepository singleton.
 ///
@@ -63,7 +63,7 @@ final class SoundsRepositoryProvider
   /// final repository = ref.watch(soundsRepositoryProvider);
   /// final sounds = await repository.fetchTrendingSounds();
   /// ```
-  const SoundsRepositoryProvider._()
+  SoundsRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -114,7 +114,7 @@ String _$soundsRepositoryHash() => r'd60c97024c6ebb820c3b5e67c8aeb3934df22888';
 /// ```
 
 @ProviderFor(TrendingSounds)
-const trendingSoundsProvider = TrendingSoundsProvider._();
+final trendingSoundsProvider = TrendingSoundsProvider._();
 
 /// Async provider for trending sounds.
 ///
@@ -146,7 +146,7 @@ final class TrendingSoundsProvider
   ///   error: (e, s) => ErrorWidget(message: e.toString()),
   /// );
   /// ```
-  const TrendingSoundsProvider._()
+  TrendingSoundsProvider._()
     : super(
         from: null,
         argument: null,
@@ -186,8 +186,7 @@ abstract class _$TrendingSounds extends $AsyncNotifier<List<AudioEvent>> {
   FutureOr<List<AudioEvent>> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref =
         this.ref as $Ref<AsyncValue<List<AudioEvent>>, List<AudioEvent>>;
     final element =
@@ -198,7 +197,7 @@ abstract class _$TrendingSounds extends $AsyncNotifier<List<AudioEvent>> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -218,7 +217,7 @@ abstract class _$TrendingSounds extends $AsyncNotifier<List<AudioEvent>> {
 /// ```
 
 @ProviderFor(soundById)
-const soundByIdProvider = SoundByIdFamily._();
+final soundByIdProvider = SoundByIdFamily._();
 
 /// Family provider to fetch a single sound by event ID.
 ///
@@ -257,7 +256,7 @@ final class SoundByIdProvider
   ///   error: (e, s) => ErrorWidget(message: e.toString()),
   /// );
   /// ```
-  const SoundByIdProvider._({
+  SoundByIdProvider._({
     required SoundByIdFamily super.from,
     required String super.argument,
   }) : super(
@@ -320,7 +319,7 @@ String _$soundByIdHash() => r'78312c13305ba58abbc71565853a0c1fb67725b9';
 
 final class SoundByIdFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<AudioEvent?>, String> {
-  const SoundByIdFamily._()
+  SoundByIdFamily._()
     : super(
         retry: null,
         name: r'soundByIdProvider',
@@ -362,7 +361,7 @@ final class SoundByIdFamily extends $Family
 /// ```
 
 @ProviderFor(soundsByCreator)
-const soundsByCreatorProvider = SoundsByCreatorFamily._();
+final soundsByCreatorProvider = SoundsByCreatorFamily._();
 
 /// Family provider for sounds by creator pubkey.
 ///
@@ -391,7 +390,7 @@ final class SoundsByCreatorProvider
   /// ```dart
   /// final creatorSoundsAsync = ref.watch(soundsByCreatorProvider(pubkey));
   /// ```
-  const SoundsByCreatorProvider._({
+  SoundsByCreatorProvider._({
     required SoundsByCreatorFamily super.from,
     required String super.argument,
   }) : super(
@@ -449,7 +448,7 @@ String _$soundsByCreatorHash() => r'87b7969dedb7a2e2b2ab6ef4eb1bf9d7796bde36';
 
 final class SoundsByCreatorFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<AudioEvent>>, String> {
-  const SoundsByCreatorFamily._()
+  SoundsByCreatorFamily._()
     : super(
         retry: null,
         name: r'soundsByCreatorProvider',
@@ -487,7 +486,7 @@ final class SoundsByCreatorFamily extends $Family
 /// ```
 
 @ProviderFor(soundUsageCount)
-const soundUsageCountProvider = SoundUsageCountFamily._();
+final soundUsageCountProvider = SoundUsageCountFamily._();
 
 /// Family provider for video usage count of a specific sound.
 ///
@@ -513,7 +512,7 @@ final class SoundUsageCountProvider
   /// final countAsync = ref.watch(soundUsageCountProvider('audio-event-id'));
   /// final count = countAsync.valueOrNull ?? 0;
   /// ```
-  const SoundUsageCountProvider._({
+  SoundUsageCountProvider._({
     required SoundUsageCountFamily super.from,
     required String super.argument,
   }) : super(
@@ -571,7 +570,7 @@ String _$soundUsageCountHash() => r'0006d93e606657fae006e7309d2f8cb8e1c0140d';
 
 final class SoundUsageCountFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<int>, String> {
-  const SoundUsageCountFamily._()
+  SoundUsageCountFamily._()
     : super(
         retry: null,
         name: r'soundUsageCountProvider',
@@ -620,7 +619,7 @@ final class SoundUsageCountFamily extends $Family
 /// ```
 
 @ProviderFor(SelectedSound)
-const selectedSoundProvider = SelectedSoundProvider._();
+final selectedSoundProvider = SelectedSoundProvider._();
 
 /// State provider for the currently selected sound.
 ///
@@ -664,7 +663,7 @@ final class SelectedSoundProvider
   /// // Clear selection
   /// ref.read(selectedSoundProvider.notifier).state = null;
   /// ```
-  const SelectedSoundProvider._()
+  SelectedSoundProvider._()
     : super(
         from: null,
         argument: null,
@@ -718,8 +717,7 @@ abstract class _$SelectedSound extends $Notifier<AudioEvent?> {
   AudioEvent? build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AudioEvent?, AudioEvent?>;
     final element =
         ref.element
@@ -729,7 +727,7 @@ abstract class _$SelectedSound extends $Notifier<AudioEvent?> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -749,7 +747,7 @@ abstract class _$SelectedSound extends $Notifier<AudioEvent?> {
 /// ```
 
 @ProviderFor(soundsStream)
-const soundsStreamProvider = SoundsStreamProvider._();
+final soundsStreamProvider = SoundsStreamProvider._();
 
 /// Stream provider for reactive sounds list updates.
 ///
@@ -788,7 +786,7 @@ final class SoundsStreamProvider
   ///   error: (e, s) => ErrorWidget(message: e.toString()),
   /// );
   /// ```
-  const SoundsStreamProvider._()
+  SoundsStreamProvider._()
     : super(
         from: null,
         argument: null,
@@ -832,7 +830,7 @@ String _$soundsStreamHash() => r'56ff68952009171af0f64e7beab9978232fc3cb4';
 /// ```
 
 @ProviderFor(videosUsingSound)
-const videosUsingSoundProvider = VideosUsingSoundFamily._();
+final videosUsingSoundProvider = VideosUsingSoundFamily._();
 
 /// Family provider to fetch videos that use a specific sound.
 ///
@@ -871,7 +869,7 @@ final class VideosUsingSoundProvider
   ///   error: (e, s) => ErrorWidget(message: e.toString()),
   /// );
   /// ```
-  const VideosUsingSoundProvider._({
+  VideosUsingSoundProvider._({
     required VideosUsingSoundFamily super.from,
     required String super.argument,
   }) : super(
@@ -934,7 +932,7 @@ String _$videosUsingSoundHash() => r'f84cd3226592bd070cb9a0f1028e0b72cec47bed';
 
 final class VideosUsingSoundFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<String>>, String> {
-  const VideosUsingSoundFamily._()
+  VideosUsingSoundFamily._()
     : super(
         retry: null,
         name: r'videosUsingSoundProvider',

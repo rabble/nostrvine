@@ -10,7 +10,7 @@ part of 'moderation_providers.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(contentPolicyEngine)
-const contentPolicyEngineProvider = ContentPolicyEngineProvider._();
+final contentPolicyEngineProvider = ContentPolicyEngineProvider._();
 
 final class ContentPolicyEngineProvider
     extends
@@ -20,7 +20,7 @@ final class ContentPolicyEngineProvider
           ContentPolicyEngine
         >
     with $Provider<ContentPolicyEngine> {
-  const ContentPolicyEngineProvider._()
+  ContentPolicyEngineProvider._()
     : super(
         from: null,
         argument: null,
@@ -69,7 +69,7 @@ String _$contentPolicyEngineHash() =>
 /// the current user.
 
 @ProviderFor(canTargetUser)
-const canTargetUserProvider = CanTargetUserFamily._();
+final canTargetUserProvider = CanTargetUserFamily._();
 
 /// Whether the UI may offer interactions that target [pubkey] —
 /// follow, DM, reply, mention, share-to, tag.
@@ -94,7 +94,7 @@ final class CanTargetUserProvider extends $FunctionalProvider<bool, bool, bool>
   /// Consults [ContentPolicyEngine.canTarget]: the affordance is hidden when
   /// the target's published kind 30000 d=block or kind 10000 mute list names
   /// the current user.
-  const CanTargetUserProvider._({
+  CanTargetUserProvider._({
     required CanTargetUserFamily super.from,
     required String super.argument,
   }) : super(
@@ -160,7 +160,7 @@ String _$canTargetUserHash() => r'96f7718c9d61620ad1b239a7a553df858165007e';
 
 final class CanTargetUserFamily extends $Family
     with $FunctionalFamilyOverride<bool, String> {
-  const CanTargetUserFamily._()
+  CanTargetUserFamily._()
     : super(
         retry: null,
         name: r'canTargetUserProvider',
@@ -192,7 +192,7 @@ final class CanTargetUserFamily extends $Family
 /// even when widgets that watch it dispose and rebuild
 
 @ProviderFor(ageVerificationService)
-const ageVerificationServiceProvider = AgeVerificationServiceProvider._();
+final ageVerificationServiceProvider = AgeVerificationServiceProvider._();
 
 /// Age verification service for content creation restrictions
 /// keepAlive ensures the service persists and maintains in-memory verification state
@@ -209,7 +209,7 @@ final class AgeVerificationServiceProvider
   /// Age verification service for content creation restrictions
   /// keepAlive ensures the service persists and maintains in-memory verification state
   /// even when widgets that watch it dispose and rebuild
-  const AgeVerificationServiceProvider._()
+  AgeVerificationServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -250,7 +250,7 @@ String _$ageVerificationServiceHash() =>
 /// keepAlive ensures preferences persist and are consistent across the app.
 
 @ProviderFor(contentFilterService)
-const contentFilterServiceProvider = ContentFilterServiceProvider._();
+final contentFilterServiceProvider = ContentFilterServiceProvider._();
 
 /// Content filter service for per-category Show/Warn/Hide preferences.
 /// keepAlive ensures preferences persist and are consistent across the app.
@@ -265,7 +265,7 @@ final class ContentFilterServiceProvider
     with $Provider<ContentFilterService> {
   /// Content filter service for per-category Show/Warn/Hide preferences.
   /// keepAlive ensures preferences persist and are consistent across the app.
-  const ContentFilterServiceProvider._()
+  ContentFilterServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -306,7 +306,7 @@ String _$contentFilterServiceHash() =>
 /// to rebuild when the user changes a Show/Warn/Hide setting.
 
 @ProviderFor(contentFilterVersion)
-const contentFilterVersionProvider = ContentFilterVersionProvider._();
+final contentFilterVersionProvider = ContentFilterVersionProvider._();
 
 /// Tracks content filter preference changes. Feed providers watch this
 /// to rebuild when the user changes a Show/Warn/Hide setting.
@@ -316,7 +316,7 @@ final class ContentFilterVersionProvider
     with $Provider<int> {
   /// Tracks content filter preference changes. Feed providers watch this
   /// to rebuild when the user changes a Show/Warn/Hide setting.
-  const ContentFilterVersionProvider._()
+  ContentFilterVersionProvider._()
     : super(
         from: null,
         argument: null,
@@ -355,7 +355,7 @@ String _$contentFilterVersionHash() =>
 /// Account label service for self-labeling content (NIP-32 Kind 1985).
 
 @ProviderFor(accountLabelService)
-const accountLabelServiceProvider = AccountLabelServiceProvider._();
+final accountLabelServiceProvider = AccountLabelServiceProvider._();
 
 /// Account label service for self-labeling content (NIP-32 Kind 1985).
 
@@ -368,7 +368,7 @@ final class AccountLabelServiceProvider
         >
     with $Provider<AccountLabelService> {
   /// Account label service for self-labeling content (NIP-32 Kind 1985).
-  const AccountLabelServiceProvider._()
+  AccountLabelServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -408,7 +408,7 @@ String _$accountLabelServiceHash() =>
 /// Moderation label service for subscribing to Kind 1985 labeler events.
 
 @ProviderFor(moderationLabelService)
-const moderationLabelServiceProvider = ModerationLabelServiceProvider._();
+final moderationLabelServiceProvider = ModerationLabelServiceProvider._();
 
 /// Moderation label service for subscribing to Kind 1985 labeler events.
 
@@ -421,7 +421,7 @@ final class ModerationLabelServiceProvider
         >
     with $Provider<ModerationLabelService> {
   /// Moderation label service for subscribing to Kind 1985 labeler events.
-  const ModerationLabelServiceProvider._()
+  ModerationLabelServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -470,7 +470,7 @@ String _$moderationLabelServiceHash() =>
 /// from the relay are never delivered to new instances.
 
 @ProviderFor(contentBlocklistRepository)
-const contentBlocklistRepositoryProvider =
+final contentBlocklistRepositoryProvider =
     ContentBlocklistRepositoryProvider._();
 
 /// Content blocklist service for filtering unwanted content from feeds
@@ -502,7 +502,7 @@ final class ContentBlocklistRepositoryProvider
   /// [syncBlockListsInBackground] survives widget rebuilds. Without it the
   /// provider auto-disposes, the subscription is lost, and blocks restored
   /// from the relay are never delivered to new instances.
-  const ContentBlocklistRepositoryProvider._()
+  ContentBlocklistRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -543,7 +543,7 @@ String _$contentBlocklistRepositoryHash() =>
 /// Widgets watching this will rebuild when block/unblock actions occur.
 
 @ProviderFor(BlocklistVersion)
-const blocklistVersionProvider = BlocklistVersionProvider._();
+final blocklistVersionProvider = BlocklistVersionProvider._();
 
 /// Version counter to trigger rebuilds when blocklist changes.
 /// Widgets watching this will rebuild when block/unblock actions occur.
@@ -551,7 +551,7 @@ final class BlocklistVersionProvider
     extends $NotifierProvider<BlocklistVersion, int> {
   /// Version counter to trigger rebuilds when blocklist changes.
   /// Widgets watching this will rebuild when block/unblock actions occur.
-  const BlocklistVersionProvider._()
+  BlocklistVersionProvider._()
     : super(
         from: null,
         argument: null,
@@ -587,8 +587,7 @@ abstract class _$BlocklistVersion extends $Notifier<int> {
   int build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<int, int>;
     final element =
         ref.element
@@ -598,7 +597,7 @@ abstract class _$BlocklistVersion extends $Notifier<int> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -614,7 +613,7 @@ abstract class _$BlocklistVersion extends $Notifier<int> {
 /// `_blockListSyncStarted`) so duplicate calls are no-ops.
 
 @ProviderFor(blocklistSyncBridge)
-const blocklistSyncBridgeProvider = BlocklistSyncBridgeProvider._();
+final blocklistSyncBridgeProvider = BlocklistSyncBridgeProvider._();
 
 /// Bridge that starts blocklist sync when the Nostr session becomes ready.
 ///
@@ -640,7 +639,7 @@ final class BlocklistSyncBridgeProvider
   ///
   /// Both sync methods have internal guards (`_mutualMuteSyncStarted`,
   /// `_blockListSyncStarted`) so duplicate calls are no-ops.
-  const BlocklistSyncBridgeProvider._()
+  BlocklistSyncBridgeProvider._()
     : super(
         from: null,
         argument: null,

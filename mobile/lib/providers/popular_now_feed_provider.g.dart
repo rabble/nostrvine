@@ -20,7 +20,7 @@ part of 'popular_now_feed_provider.dart';
 /// - appReady gate becomes true (triggers rebuild to start subscription)
 
 @ProviderFor(PopularNowFeed)
-const popularNowFeedProvider = PopularNowFeedProvider._();
+final popularNowFeedProvider = PopularNowFeedProvider._();
 
 /// PopularNow feed provider - shows newest videos (sorted by creation time)
 ///
@@ -44,7 +44,7 @@ final class PopularNowFeedProvider
   /// - User pulls to refresh
   /// - VideoEventService updates with new videos
   /// - appReady gate becomes true (triggers rebuild to start subscription)
-  const PopularNowFeedProvider._()
+  PopularNowFeedProvider._()
     : super(
         from: null,
         argument: null,
@@ -80,8 +80,7 @@ abstract class _$PopularNowFeed extends $AsyncNotifier<VideoFeedState> {
   FutureOr<VideoFeedState> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AsyncValue<VideoFeedState>, VideoFeedState>;
     final element =
         ref.element
@@ -91,14 +90,14 @@ abstract class _$PopularNowFeed extends $AsyncNotifier<VideoFeedState> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 /// Provider to check if popularNow feed is loading
 
 @ProviderFor(popularNowFeedLoading)
-const popularNowFeedLoadingProvider = PopularNowFeedLoadingProvider._();
+final popularNowFeedLoadingProvider = PopularNowFeedLoadingProvider._();
 
 /// Provider to check if popularNow feed is loading
 
@@ -106,7 +105,7 @@ final class PopularNowFeedLoadingProvider
     extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
   /// Provider to check if popularNow feed is loading
-  const PopularNowFeedLoadingProvider._()
+  PopularNowFeedLoadingProvider._()
     : super(
         from: null,
         argument: null,
@@ -145,7 +144,7 @@ String _$popularNowFeedLoadingHash() =>
 /// Provider to get current popularNow feed video count
 
 @ProviderFor(popularNowFeedCount)
-const popularNowFeedCountProvider = PopularNowFeedCountProvider._();
+final popularNowFeedCountProvider = PopularNowFeedCountProvider._();
 
 /// Provider to get current popularNow feed video count
 
@@ -153,7 +152,7 @@ final class PopularNowFeedCountProvider
     extends $FunctionalProvider<int, int, int>
     with $Provider<int> {
   /// Provider to get current popularNow feed video count
-  const PopularNowFeedCountProvider._()
+  PopularNowFeedCountProvider._()
     : super(
         from: null,
         argument: null,

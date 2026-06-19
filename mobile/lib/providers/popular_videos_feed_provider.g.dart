@@ -19,7 +19,7 @@ part of 'popular_videos_feed_provider.dart';
 /// - Content filter preferences change
 
 @ProviderFor(PopularVideosFeed)
-const popularVideosFeedProvider = PopularVideosFeedProvider._();
+final popularVideosFeedProvider = PopularVideosFeedProvider._();
 
 /// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
@@ -41,7 +41,7 @@ final class PopularVideosFeedProvider
   /// - Pull to refresh
   /// - appReady gate becomes true
   /// - Content filter preferences change
-  const PopularVideosFeedProvider._()
+  PopularVideosFeedProvider._()
     : super(
         from: null,
         argument: null,
@@ -76,8 +76,7 @@ abstract class _$PopularVideosFeed extends $AsyncNotifier<VideoFeedState> {
   FutureOr<VideoFeedState> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AsyncValue<VideoFeedState>, VideoFeedState>;
     final element =
         ref.element
@@ -87,6 +86,6 @@ abstract class _$PopularVideosFeed extends $AsyncNotifier<VideoFeedState> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }

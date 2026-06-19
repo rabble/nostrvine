@@ -99,7 +99,7 @@ dependencies:
 
   # State management
   flutter_riverpod: ^3.0.0
-  riverpod_annotation: ^3.0.0
+  riverpod_annotation: ^4.0.3
   flutter_bloc: ^9.0.0
   bloc_concurrency: ^0.3.0
   freezed_annotation: ^3.0.0
@@ -290,17 +290,13 @@ dependencies:
   package_info_plus: ^9.0.0
   uuid: ^4.5.1
   app_links: ^6.4.1
-  drift: ^2.29.0
-  # SQLCipher at-rest encryption for the local DB (#570, finding C2). Replaces
-  # sqlite3_flutter_libs (the two cannot coexist — both ship a native sqlite3
-  # and collide on iOS/macOS). 0.6.x is the SQLCipher build for the sqlite3 2.x
-  # family; 0.7.0+ is an EOL no-op. sqlite3 is a direct dep so the Android
-  # native-library override (package:sqlite3/open.dart) is referenceable.
-  # drift_flutter was removed: it is unused (db_client opens NativeDatabase
-  # directly) and it transitively pulled sqlite3_flutter_libs back in,
-  # reintroducing the collision.
-  sqlcipher_flutter_libs: ^0.6.8
-  sqlite3: ^2.7.6
+  drift: ^2.34.0
+  # At-rest encryption for the local DB (#570, finding C2) uses
+  # SQLite3MultipleCiphers through package:sqlite3 build hooks. Do not add
+  # sqlcipher_flutter_libs, sqlite3_flutter_libs, or drift_flutter here: sqlite3
+  # 3.x bundles the selected native SQLite implementation through hooks, and
+  # extra Flutter-specific native SQLite providers can make plain SQLite win.
+  sqlite3: ^3.3.3
   video_player_web_hls: ^1.3.0
   firebase_performance: ^0.11.1+4
   firebase_messaging: ^16.1.1
@@ -318,6 +314,7 @@ dependencies:
   app_device_integrity: ^1.1.0
   pointer_interceptor: ^0.10.1+2
   volume_controller: ^3.4.4
+  meta: ^1.18.0
 
 dependency_overrides:
   device_info_plus: ^10.1.2
@@ -343,9 +340,7 @@ dev_dependencies:
   bloc_test: ^10.0.0
 
   # Code generation
-  # TODO(#3142): Unpin after build_runner >2.11.0 fixes InvalidTypeException
-  # with riverpod_generator. See https://github.com/dart-lang/build/issues
-  build_runner: ">=2.7.1 <2.11.0"
+  build_runner: ^2.15.0
   hive_ce_generator: ^1.6.0
 
   # Integration test utilities
@@ -353,7 +348,7 @@ dev_dependencies:
 
   # CLI tools
   args: ^2.4.2
-  riverpod_generator: ^3.0.0
+  riverpod_generator: ^4.0.4
   # custom_lint: ^0.6.4  # Temporarily disabled due to rxdart version conflict
   # riverpod_lint: ^2.3.10  # Depends on custom_lint
   freezed: ^3.0.0
@@ -363,7 +358,7 @@ dev_dependencies:
   golden_toolkit: ^0.15.0
   alchemist: ^0.12.1
   async: ^2.13.0
-  drift_dev: ^2.29.0
+  drift_dev: ^2.34.0
   melos: ^7.3.0
 
 # For information on the generic Dart part of this file, see the
@@ -461,6 +456,11 @@ patrol:
     package_name: co.openvine.app
   ios:
     bundle_id: co.openvine.app
+
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc
 
 melos:
   useRootAsPackage: true

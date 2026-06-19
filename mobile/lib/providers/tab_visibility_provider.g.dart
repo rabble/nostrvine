@@ -10,11 +10,11 @@ part of 'tab_visibility_provider.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(TabVisibility)
-const tabVisibilityProvider = TabVisibilityProvider._();
+final tabVisibilityProvider = TabVisibilityProvider._();
 
 final class TabVisibilityProvider
     extends $NotifierProvider<TabVisibility, int> {
-  const TabVisibilityProvider._()
+  TabVisibilityProvider._()
     : super(
         from: null,
         argument: null,
@@ -47,8 +47,7 @@ abstract class _$TabVisibility extends $Notifier<int> {
   int build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<int, int>;
     final element =
         ref.element
@@ -58,17 +57,17 @@ abstract class _$TabVisibility extends $Notifier<int> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 @ProviderFor(isFeedTabActive)
-const isFeedTabActiveProvider = IsFeedTabActiveProvider._();
+final isFeedTabActiveProvider = IsFeedTabActiveProvider._();
 
 final class IsFeedTabActiveProvider
     extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
-  const IsFeedTabActiveProvider._()
+  IsFeedTabActiveProvider._()
     : super(
         from: null,
         argument: null,
@@ -104,12 +103,12 @@ final class IsFeedTabActiveProvider
 String _$isFeedTabActiveHash() => r'f2e318a0f603f13a04f40d7db6232115994b4e7f';
 
 @ProviderFor(isExploreTabActive)
-const isExploreTabActiveProvider = IsExploreTabActiveProvider._();
+final isExploreTabActiveProvider = IsExploreTabActiveProvider._();
 
 final class IsExploreTabActiveProvider
     extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
-  const IsExploreTabActiveProvider._()
+  IsExploreTabActiveProvider._()
     : super(
         from: null,
         argument: null,
@@ -146,12 +145,12 @@ String _$isExploreTabActiveHash() =>
     r'd040595e2acc4ef80312d6f174a269eac14f1062';
 
 @ProviderFor(isProfileTabActive)
-const isProfileTabActiveProvider = IsProfileTabActiveProvider._();
+final isProfileTabActiveProvider = IsProfileTabActiveProvider._();
 
 final class IsProfileTabActiveProvider
     extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
-  const IsProfileTabActiveProvider._()
+  IsProfileTabActiveProvider._()
     : super(
         from: null,
         argument: null,

@@ -11,7 +11,7 @@ part of 'environment_provider.dart';
 /// Provider for the environment service singleton
 
 @ProviderFor(environmentService)
-const environmentServiceProvider = EnvironmentServiceProvider._();
+final environmentServiceProvider = EnvironmentServiceProvider._();
 
 /// Provider for the environment service singleton
 
@@ -24,7 +24,7 @@ final class EnvironmentServiceProvider
         >
     with $Provider<EnvironmentService> {
   /// Provider for the environment service singleton
-  const EnvironmentServiceProvider._()
+  EnvironmentServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -64,7 +64,7 @@ String _$environmentServiceHash() =>
 /// Provider for current environment config (reactive)
 
 @ProviderFor(currentEnvironment)
-const currentEnvironmentProvider = CurrentEnvironmentProvider._();
+final currentEnvironmentProvider = CurrentEnvironmentProvider._();
 
 /// Provider for current environment config (reactive)
 
@@ -77,7 +77,7 @@ final class CurrentEnvironmentProvider
         >
     with $Provider<EnvironmentConfig> {
   /// Provider for current environment config (reactive)
-  const CurrentEnvironmentProvider._()
+  CurrentEnvironmentProvider._()
     : super(
         from: null,
         argument: null,
@@ -117,7 +117,7 @@ String _$currentEnvironmentHash() =>
 /// Provider for developer mode enabled state
 
 @ProviderFor(isDeveloperModeEnabled)
-const isDeveloperModeEnabledProvider = IsDeveloperModeEnabledProvider._();
+final isDeveloperModeEnabledProvider = IsDeveloperModeEnabledProvider._();
 
 /// Provider for developer mode enabled state
 
@@ -125,7 +125,7 @@ final class IsDeveloperModeEnabledProvider
     extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
   /// Provider for developer mode enabled state
-  const IsDeveloperModeEnabledProvider._()
+  IsDeveloperModeEnabledProvider._()
     : super(
         from: null,
         argument: null,
@@ -164,7 +164,7 @@ String _$isDeveloperModeEnabledHash() =>
 /// Provider to check if showing environment indicator
 
 @ProviderFor(showEnvironmentIndicator)
-const showEnvironmentIndicatorProvider = ShowEnvironmentIndicatorProvider._();
+final showEnvironmentIndicatorProvider = ShowEnvironmentIndicatorProvider._();
 
 /// Provider to check if showing environment indicator
 
@@ -172,7 +172,7 @@ final class ShowEnvironmentIndicatorProvider
     extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
   /// Provider to check if showing environment indicator
-  const ShowEnvironmentIndicatorProvider._()
+  ShowEnvironmentIndicatorProvider._()
     : super(
         from: null,
         argument: null,

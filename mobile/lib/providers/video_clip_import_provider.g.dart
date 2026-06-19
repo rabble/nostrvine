@@ -10,7 +10,7 @@ part of 'video_clip_import_provider.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(videoClipImportService)
-const videoClipImportServiceProvider = VideoClipImportServiceProvider._();
+final videoClipImportServiceProvider = VideoClipImportServiceProvider._();
 
 final class VideoClipImportServiceProvider
     extends
@@ -20,7 +20,7 @@ final class VideoClipImportServiceProvider
           VideoClipImportService
         >
     with $Provider<VideoClipImportService> {
-  const VideoClipImportServiceProvider._()
+  VideoClipImportServiceProvider._()
     : super(
         from: null,
         argument: null,

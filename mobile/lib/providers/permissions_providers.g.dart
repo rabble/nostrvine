@@ -11,7 +11,7 @@ part of 'permissions_providers.dart';
 /// Geo-blocking service for regional compliance
 
 @ProviderFor(geoBlockingService)
-const geoBlockingServiceProvider = GeoBlockingServiceProvider._();
+final geoBlockingServiceProvider = GeoBlockingServiceProvider._();
 
 /// Geo-blocking service for regional compliance
 
@@ -24,7 +24,7 @@ final class GeoBlockingServiceProvider
         >
     with $Provider<GeoBlockingService> {
   /// Geo-blocking service for regional compliance
-  const GeoBlockingServiceProvider._()
+  GeoBlockingServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -61,63 +61,10 @@ final class GeoBlockingServiceProvider
 String _$geoBlockingServiceHash() =>
     r'0475466204746fb8b4c6dd614847e3853d360d12';
 
-/// Permissions service for checking and requesting OS permissions
-
-@ProviderFor(permissionsService)
-const permissionsServiceProvider = PermissionsServiceProvider._();
-
-/// Permissions service for checking and requesting OS permissions
-
-final class PermissionsServiceProvider
-    extends
-        $FunctionalProvider<
-          PermissionsService,
-          PermissionsService,
-          PermissionsService
-        >
-    with $Provider<PermissionsService> {
-  /// Permissions service for checking and requesting OS permissions
-  const PermissionsServiceProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'permissionsServiceProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$permissionsServiceHash();
-
-  @$internal
-  @override
-  $ProviderElement<PermissionsService> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  PermissionsService create(Ref ref) {
-    return permissionsService(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(PermissionsService value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<PermissionsService>(value),
-    );
-  }
-}
-
-String _$permissionsServiceHash() =>
-    r'7212219b8e720fe0fcd19ae7e9313e2c5c5be1d5';
-
 /// Gallery save service for saving videos to device camera roll
 
 @ProviderFor(gallerySaveService)
-const gallerySaveServiceProvider = GallerySaveServiceProvider._();
+final gallerySaveServiceProvider = GallerySaveServiceProvider._();
 
 /// Gallery save service for saving videos to device camera roll
 
@@ -130,7 +77,7 @@ final class GallerySaveServiceProvider
         >
     with $Provider<GallerySaveService> {
   /// Gallery save service for saving videos to device camera roll
-  const GallerySaveServiceProvider._()
+  GallerySaveServiceProvider._()
     : super(
         from: null,
         argument: null,

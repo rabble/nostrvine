@@ -13,7 +13,7 @@ part of 'nostr_client_provider.dart';
 /// code path. Production builds use this provider transparently.
 
 @ProviderFor(nostrClientFactory)
-const nostrClientFactoryProvider = NostrClientFactoryProvider._();
+final nostrClientFactoryProvider = NostrClientFactoryProvider._();
 
 /// Indirection layer over [NostrServiceFactory.create] so tests can
 /// substitute a fake factory without touching the real relay/network
@@ -30,7 +30,7 @@ final class NostrClientFactoryProvider
   /// Indirection layer over [NostrServiceFactory.create] so tests can
   /// substitute a fake factory without touching the real relay/network
   /// code path. Production builds use this provider transparently.
-  const NostrClientFactoryProvider._()
+  NostrClientFactoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -72,7 +72,7 @@ String _$nostrClientFactoryHash() =>
 /// when the keyContainer changes (e.g., user signs out and signs in with different keys)
 
 @ProviderFor(NostrService)
-const nostrServiceProvider = NostrServiceProvider._();
+final nostrServiceProvider = NostrServiceProvider._();
 
 /// Core Nostr service via NostrClient for relay communication
 /// Uses a Notifier to react to auth state changes and recreate the client
@@ -82,7 +82,7 @@ final class NostrServiceProvider
   /// Core Nostr service via NostrClient for relay communication
   /// Uses a Notifier to react to auth state changes and recreate the client
   /// when the keyContainer changes (e.g., user signs out and signs in with different keys)
-  const NostrServiceProvider._()
+  NostrServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -119,8 +119,7 @@ abstract class _$NostrService extends $Notifier<NostrClient> {
   NostrClient build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<NostrClient, NostrClient>;
     final element =
         ref.element
@@ -130,6 +129,6 @@ abstract class _$NostrService extends $Notifier<NostrClient> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }

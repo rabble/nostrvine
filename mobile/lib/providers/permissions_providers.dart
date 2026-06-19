@@ -1,6 +1,7 @@
 // ABOUTME: Permission / geo-blocking / gallery-save providers split from
 // ABOUTME: app_providers.dart
 
+import 'package:flutter_riverpod/flutter_riverpod.dart' show Provider;
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:permissions_service/permissions_service.dart';
@@ -15,10 +16,10 @@ GeoBlockingService geoBlockingService(Ref ref) {
 }
 
 /// Permissions service for checking and requesting OS permissions
-@riverpod
-PermissionsService permissionsService(Ref ref) {
-  return const PermissionHandlerPermissionsService();
-}
+final permissionsServiceProvider = Provider<PermissionsService>(
+  (_) => const PermissionHandlerPermissionsService(),
+  name: 'permissionsServiceProvider',
+);
 
 /// Gallery save service for saving videos to device camera roll
 @riverpod

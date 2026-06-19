@@ -11,7 +11,7 @@ part of 'relay_providers.dart';
 /// Connection status service for monitoring network connectivity
 
 @ProviderFor(connectionStatusService)
-const connectionStatusServiceProvider = ConnectionStatusServiceProvider._();
+final connectionStatusServiceProvider = ConnectionStatusServiceProvider._();
 
 /// Connection status service for monitoring network connectivity
 
@@ -24,7 +24,7 @@ final class ConnectionStatusServiceProvider
         >
     with $Provider<ConnectionStatusService> {
   /// Connection status service for monitoring network connectivity
-  const ConnectionStatusServiceProvider._()
+  ConnectionStatusServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -64,7 +64,7 @@ String _$connectionStatusServiceHash() =>
 /// Relay capability service for detecting NIP-11 Divine extensions
 
 @ProviderFor(relayCapabilityService)
-const relayCapabilityServiceProvider = RelayCapabilityServiceProvider._();
+final relayCapabilityServiceProvider = RelayCapabilityServiceProvider._();
 
 /// Relay capability service for detecting NIP-11 Divine extensions
 
@@ -77,7 +77,7 @@ final class RelayCapabilityServiceProvider
         >
     with $Provider<RelayCapabilityService> {
   /// Relay capability service for detecting NIP-11 Divine extensions
-  const RelayCapabilityServiceProvider._()
+  RelayCapabilityServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -117,7 +117,7 @@ String _$relayCapabilityServiceHash() =>
 /// Relay statistics service for tracking per-relay metrics
 
 @ProviderFor(relayStatisticsService)
-const relayStatisticsServiceProvider = RelayStatisticsServiceProvider._();
+final relayStatisticsServiceProvider = RelayStatisticsServiceProvider._();
 
 /// Relay statistics service for tracking per-relay metrics
 
@@ -130,7 +130,7 @@ final class RelayStatisticsServiceProvider
         >
     with $Provider<RelayStatisticsService> {
   /// Relay statistics service for tracking per-relay metrics
-  const RelayStatisticsServiceProvider._()
+  RelayStatisticsServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -171,7 +171,7 @@ String _$relayStatisticsServiceHash() =>
 /// Use this provider when you need UI to rebuild when statistics change
 
 @ProviderFor(relayStatisticsStream)
-const relayStatisticsStreamProvider = RelayStatisticsStreamProvider._();
+final relayStatisticsStreamProvider = RelayStatisticsStreamProvider._();
 
 /// Stream provider for reactive relay statistics updates
 /// Use this provider when you need UI to rebuild when statistics change
@@ -188,7 +188,7 @@ final class RelayStatisticsStreamProvider
         $StreamProvider<Map<String, RelayStatistics>> {
   /// Stream provider for reactive relay statistics updates
   /// Use this provider when you need UI to rebuild when statistics change
-  const RelayStatisticsStreamProvider._()
+  RelayStatisticsStreamProvider._()
     : super(
         from: null,
         argument: null,
@@ -227,7 +227,7 @@ String _$relayStatisticsStreamHash() =>
 /// Must be watched at app level to activate the bridge.
 
 @ProviderFor(relayStatisticsBridge)
-const relayStatisticsBridgeProvider = RelayStatisticsBridgeProvider._();
+final relayStatisticsBridgeProvider = RelayStatisticsBridgeProvider._();
 
 /// Bridge provider that connects NostrClient relay status updates to
 /// RelayStatisticsService.
@@ -249,7 +249,7 @@ final class RelayStatisticsBridgeProvider
   /// errors) so each relay displays its own real statistics.
   ///
   /// Must be watched at app level to activate the bridge.
-  const RelayStatisticsBridgeProvider._()
+  RelayStatisticsBridgeProvider._()
     : super(
         from: null,
         argument: null,
@@ -291,7 +291,7 @@ String _$relayStatisticsBridgeHash() =>
 /// Only reacts to set membership changes, not connection state flapping.
 
 @ProviderFor(relaySetChangeBridge)
-const relaySetChangeBridgeProvider = RelaySetChangeBridgeProvider._();
+final relaySetChangeBridgeProvider = RelaySetChangeBridgeProvider._();
 
 /// Bridge provider that detects when the configured relay set changes
 /// (relays added or removed) and triggers a full feed reset+resubscribe.
@@ -305,7 +305,7 @@ final class RelaySetChangeBridgeProvider
   /// (relays added or removed) and triggers a full feed reset+resubscribe.
   /// Debounces for 2 seconds to collapse rapid add/remove operations.
   /// Only reacts to set membership changes, not connection state flapping.
-  const RelaySetChangeBridgeProvider._()
+  RelaySetChangeBridgeProvider._()
     : super(
         from: null,
         argument: null,

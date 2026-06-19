@@ -12,7 +12,7 @@ part of 'preferences_providers.dart';
 /// for reuse by default. keepAlive ensures setting persists across widget rebuilds.
 
 @ProviderFor(audioSharingPreferenceService)
-const audioSharingPreferenceServiceProvider =
+final audioSharingPreferenceServiceProvider =
     AudioSharingPreferenceServiceProvider._();
 
 /// Audio sharing preference service for managing whether audio is available
@@ -28,7 +28,7 @@ final class AudioSharingPreferenceServiceProvider
     with $Provider<AudioSharingPreferenceService> {
   /// Audio sharing preference service for managing whether audio is available
   /// for reuse by default. keepAlive ensures setting persists across widget rebuilds.
-  const AudioSharingPreferenceServiceProvider._()
+  AudioSharingPreferenceServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -71,7 +71,7 @@ String _$audioSharingPreferenceServiceHash() =>
 /// for recording on macOS. keepAlive ensures preference persists.
 
 @ProviderFor(audioDevicePreferenceService)
-const audioDevicePreferenceServiceProvider =
+final audioDevicePreferenceServiceProvider =
     AudioDevicePreferenceServiceProvider._();
 
 /// Audio device preference service for managing the preferred input device
@@ -87,7 +87,7 @@ final class AudioDevicePreferenceServiceProvider
     with $Provider<AudioDevicePreferenceService> {
   /// Audio device preference service for managing the preferred input device
   /// for recording on macOS. keepAlive ensures preference persists.
-  const AudioDevicePreferenceServiceProvider._()
+  AudioDevicePreferenceServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -129,7 +129,7 @@ String _$audioDevicePreferenceServiceHash() =>
 /// keepAlive ensures setting persists across widget rebuilds.
 
 @ProviderFor(languagePreferenceService)
-const languagePreferenceServiceProvider = LanguagePreferenceServiceProvider._();
+final languagePreferenceServiceProvider = LanguagePreferenceServiceProvider._();
 
 /// Language preference service for managing the user's preferred content
 /// language. Used for NIP-32 self-labeling on published video events.
@@ -146,7 +146,7 @@ final class LanguagePreferenceServiceProvider
   /// Language preference service for managing the user's preferred content
   /// language. Used for NIP-32 self-labeling on published video events.
   /// keepAlive ensures setting persists across widget rebuilds.
-  const LanguagePreferenceServiceProvider._()
+  LanguagePreferenceServiceProvider._()
     : super(
         from: null,
         argument: null,

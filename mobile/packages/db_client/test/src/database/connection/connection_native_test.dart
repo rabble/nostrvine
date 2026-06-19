@@ -461,18 +461,61 @@ void main() {
     const validKey =
         '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
 
-    test('fails closed when SQLCipher is not the linked library', () {
-      // The host test VM links plain sqlite3, on which PRAGMA cipher_version
-      // returns no rows. The connection must refuse rather than silently
-      // storing plaintext.
-      final db = sqlite3.openInMemory();
-      addTearDown(db.dispose);
-      expect(() => applyCipherKey(db, validKey), throwsStateError);
+    test(
+      'opens a file-backed SQLite3MultipleCiphers database with a raw key',
+      () {
+        final tempRoot = Directory.systemTemp.createTempSync(
+          'db_client_apply_mc_key_test_',
+        );
+        addTearDown(() {
+          if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
+        });
+        final dbPath = p.join(tempRoot.path, 'encrypted.db');
+
+        final db = sqlite3.open(dbPath);
+        applyCipherKey(db, validKey);
+        db
+          ..execute('CREATE TABLE secrets (value TEXT NOT NULL);')
+          ..execute("INSERT INTO secrets (value) VALUES ('kept');")
+          ..close();
+
+        final reopened = sqlite3.open(dbPath);
+        addTearDown(reopened.close);
+        applyCipherKey(reopened, validKey);
+        expect(
+          reopened.select('SELECT value FROM secrets;').first['value'],
+          equals('kept'),
+        );
+      },
+    );
+
+    test('encrypted raw-key database is not readable as plaintext', () {
+      final tempRoot = Directory.systemTemp.createTempSync(
+        'db_client_plaintext_rejects_mc_key_test_',
+      );
+      addTearDown(() {
+        if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
+      });
+      final dbPath = p.join(tempRoot.path, 'encrypted.db');
+
+      final encrypted = sqlite3.open(dbPath);
+      applyCipherKey(encrypted, validKey);
+      encrypted
+        ..execute('CREATE TABLE secrets (value TEXT NOT NULL);')
+        ..execute("INSERT INTO secrets (value) VALUES ('kept');")
+        ..close();
+
+      final plaintext = sqlite3.open(dbPath, mode: OpenMode.readOnly);
+      addTearDown(plaintext.close);
+      expect(
+        () => plaintext.select('SELECT count(*) FROM sqlite_master;'),
+        throwsA(isA<SqliteException>()),
+      );
     });
 
     test('rejects a malformed key before touching the database', () {
       final db = sqlite3.openInMemory();
-      addTearDown(db.dispose);
+      addTearDown(db.close);
       expect(() => applyCipherKey(db, 'not-a-key'), throwsArgumentError);
     });
 
@@ -480,16 +523,21 @@ void main() {
       // SqliteException.toString() appends the causing statement, which is the
       // PRAGMA key containing the raw key. applyCipherKey must convert that to
       // a key-free error before it can escape to Crashlytics.
+      final keyPragma = formatCipherKeyPragma(validKey);
       final leaky = SqliteException(
-        26,
-        'file is not a database',
-        null,
-        formatCipherKeyPragma(validKey), // causing statement embeds the key
+        extendedResultCode: 26,
+        message: 'file is not a database',
+        causingStatement: keyPragma, // causing statement embeds the key
       );
       expect(leaky.toString(), contains(validKey)); // the source really leaks
 
       final db = _MockCipherDb();
-      when(() => db.execute(any())).thenThrow(leaky);
+      when(() => db.execute(any())).thenAnswer((invocation) {
+        final sql = invocation.positionalArguments.first as String;
+        if (sql == keyPragma) {
+          throw leaky;
+        }
+      });
 
       expect(
         () => applyCipherKey(db, validKey),
@@ -554,7 +602,7 @@ void main() {
 
     test('removes an empty plaintext database so a fresh encrypted one is '
         'created on first open', () async {
-      sqlite3.open(dbPath).dispose(); // empty database, no user tables
+      sqlite3.open(dbPath).close(); // empty database, no user tables
       expect(File(dbPath).existsSync(), isTrue);
 
       final outcome = await migratePlaintextToEncrypted(
@@ -578,21 +626,31 @@ void main() {
       );
     });
 
-    test('fails safely and preserves a populated plaintext DB when SQLCipher '
-        'is not linked', () async {
-      _createSqliteDatabase(dbPath, draftCount: 3);
+    test(
+      'migrates a populated plaintext DB to encrypted raw-key storage',
+      () async {
+        _createSqliteDatabase(dbPath, draftCount: 3);
 
-      final outcome = await migratePlaintextToEncrypted(
-        rawKeyHex: validKey,
-        databasePath: dbPath,
-      );
+        final outcome = await migratePlaintextToEncrypted(
+          rawKeyHex: validKey,
+          databasePath: dbPath,
+        );
 
-      // No cipher library on the host VM, so the rekey cannot complete — the
-      // plaintext source must stay intact for retry on the next launch.
-      expect(outcome, equals(CipherMigrationOutcome.failed));
-      expect(File(dbPath).existsSync(), isTrue);
-      expect(_draftCount(dbPath), equals(3));
-    });
+        expect(outcome, equals(CipherMigrationOutcome.migrated));
+        expect(File(dbPath).existsSync(), isTrue);
+        final encrypted = sqlite3.open(dbPath);
+        addTearDown(encrypted.close);
+        applyCipherKey(encrypted, validKey);
+        expect(_draftCountFromOpenDb(encrypted), equals(3));
+
+        final plaintext = sqlite3.open(dbPath, mode: OpenMode.readOnly);
+        addTearDown(plaintext.close);
+        expect(
+          () => plaintext.select('SELECT count(*) FROM sqlite_master;'),
+          throwsA(isA<SqliteException>()),
+        );
+      },
+    );
 
     test('rejects a malformed key', () async {
       _createSqliteDatabase(dbPath, draftCount: 1);
@@ -759,19 +817,21 @@ void _createSqliteDatabase(
       ]);
     }
   } finally {
-    db.dispose();
+    db.close();
   }
 }
 
 int _draftCount(String path) {
   final db = sqlite3.open(path);
   try {
-    return db.select('SELECT COUNT(*) AS count FROM drafts').first['count']
-        as int;
+    return _draftCountFromOpenDb(db);
   } finally {
-    db.dispose();
+    db.close();
   }
 }
+
+int _draftCountFromOpenDb(Database db) =>
+    db.select('SELECT COUNT(*) AS count FROM drafts').first['count'] as int;
 
 int _eventCount(String path) {
   final db = sqlite3.open(path);
@@ -779,7 +839,7 @@ int _eventCount(String path) {
     return db.select('SELECT COUNT(*) AS count FROM event').first['count']
         as int;
   } finally {
-    db.dispose();
+    db.close();
   }
 }
 
@@ -793,7 +853,7 @@ int _tableCount(String path, String table) {
     return db.select('SELECT COUNT(*) AS count FROM $table').first['count']
         as int;
   } finally {
-    db.dispose();
+    db.close();
   }
 }
 

@@ -19,7 +19,7 @@ part of 'user_profile_providers.dart';
 /// FutureProvider, so widget code changes are minimal.
 
 @ProviderFor(userProfileReactive)
-const userProfileReactiveProvider = UserProfileReactiveFamily._();
+final userProfileReactiveProvider = UserProfileReactiveFamily._();
 
 /// Reactive profile provider backed by Drift's watchProfile stream.
 ///
@@ -48,7 +48,7 @@ final class UserProfileReactiveProvider
   ///
   /// Consumers get `AsyncValue<UserProfile?>` — same API as the old
   /// FutureProvider, so widget code changes are minimal.
-  const UserProfileReactiveProvider._({
+  UserProfileReactiveProvider._({
     required UserProfileReactiveFamily super.from,
     required String super.argument,
   }) : super(
@@ -107,7 +107,7 @@ String _$userProfileReactiveHash() =>
 
 final class UserProfileReactiveFamily extends $Family
     with $FunctionalFamilyOverride<Stream<UserProfile?>, String> {
-  const UserProfileReactiveFamily._()
+  UserProfileReactiveFamily._()
     : super(
         retry: null,
         name: r'userProfileReactiveProvider',
@@ -139,7 +139,7 @@ final class UserProfileReactiveFamily extends $Family
 /// rather than a reactive stream.
 
 @ProviderFor(fetchUserProfile)
-const fetchUserProfileProvider = FetchUserProfileFamily._();
+final fetchUserProfileProvider = FetchUserProfileFamily._();
 
 /// One-shot provider: returns cached profile or fetches fresh.
 ///
@@ -158,7 +158,7 @@ final class FetchUserProfileProvider
   ///
   /// Use this when you need a single read (e.g., building a share sheet)
   /// rather than a reactive stream.
-  const FetchUserProfileProvider._({
+  FetchUserProfileProvider._({
     required FetchUserProfileFamily super.from,
     required String super.argument,
   }) : super(
@@ -211,7 +211,7 @@ String _$fetchUserProfileHash() => r'b5565d7d2d026d79ff21286d42511b8aee085d4d';
 
 final class FetchUserProfileFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<UserProfile?>, String> {
-  const FetchUserProfileFamily._()
+  FetchUserProfileFamily._()
     : super(
         retry: null,
         name: r'fetchUserProfileProvider',

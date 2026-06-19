@@ -11,7 +11,7 @@ part of 'nip05_verification_provider.dart';
 /// Provider for the NIP-05 verification service singleton
 
 @ProviderFor(nip05VerificationService)
-const nip05VerificationServiceProvider = Nip05VerificationServiceProvider._();
+final nip05VerificationServiceProvider = Nip05VerificationServiceProvider._();
 
 /// Provider for the NIP-05 verification service singleton
 
@@ -24,7 +24,7 @@ final class Nip05VerificationServiceProvider
         >
     with $Provider<Nip05VerificationService> {
   /// Provider for the NIP-05 verification service singleton
-  const Nip05VerificationServiceProvider._()
+  Nip05VerificationServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -78,7 +78,7 @@ String _$nip05VerificationServiceHash() =>
 /// ```
 
 @ProviderFor(nip05Verification)
-const nip05VerificationProvider = Nip05VerificationFamily._();
+final nip05VerificationProvider = Nip05VerificationFamily._();
 
 /// Provider that returns the NIP-05 verification status for a pubkey.
 ///
@@ -121,7 +121,7 @@ final class Nip05VerificationProvider
   ///   _ => false,
   /// };
   /// ```
-  const Nip05VerificationProvider._({
+  Nip05VerificationProvider._({
     required Nip05VerificationFamily super.from,
     required String super.argument,
   }) : super(
@@ -185,7 +185,7 @@ String _$nip05VerificationHash() => r'fdd40ea0ffdab1324c0114909a431e3f0e7abcd4';
 
 final class Nip05VerificationFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Nip05VerificationStatus>, String> {
-  const Nip05VerificationFamily._()
+  Nip05VerificationFamily._()
     : super(
         retry: null,
         name: r'nip05VerificationProvider',
@@ -223,7 +223,7 @@ final class Nip05VerificationFamily extends $Family
 /// status changes (e.g., after a fresh verification completes).
 
 @ProviderFor(nip05VerificationStream)
-const nip05VerificationStreamProvider = Nip05VerificationStreamFamily._();
+final nip05VerificationStreamProvider = Nip05VerificationStreamFamily._();
 
 /// Stream provider for reactive NIP-05 verification updates.
 ///
@@ -244,7 +244,7 @@ final class Nip05VerificationStreamProvider
   ///
   /// Use this when you need to reactively update UI when verification
   /// status changes (e.g., after a fresh verification completes).
-  const Nip05VerificationStreamProvider._({
+  Nip05VerificationStreamProvider._({
     required Nip05VerificationStreamFamily super.from,
     required String super.argument,
   }) : super(
@@ -299,7 +299,7 @@ String _$nip05VerificationStreamHash() =>
 
 final class Nip05VerificationStreamFamily extends $Family
     with $FunctionalFamilyOverride<Stream<Nip05VerificationStatus>, String> {
-  const Nip05VerificationStreamFamily._()
+  Nip05VerificationStreamFamily._()
     : super(
         retry: null,
         name: r'nip05VerificationStreamProvider',

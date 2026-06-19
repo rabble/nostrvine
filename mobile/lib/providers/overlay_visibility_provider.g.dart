@@ -11,13 +11,13 @@ part of 'overlay_visibility_provider.dart';
 /// Notifier for managing overlay visibility state
 
 @ProviderFor(OverlayVisibility)
-const overlayVisibilityProvider = OverlayVisibilityProvider._();
+final overlayVisibilityProvider = OverlayVisibilityProvider._();
 
 /// Notifier for managing overlay visibility state
 final class OverlayVisibilityProvider
     extends $NotifierProvider<OverlayVisibility, OverlayVisibilityState> {
   /// Notifier for managing overlay visibility state
-  const OverlayVisibilityProvider._()
+  OverlayVisibilityProvider._()
     : super(
         from: null,
         argument: null,
@@ -52,8 +52,7 @@ abstract class _$OverlayVisibility extends $Notifier<OverlayVisibilityState> {
   OverlayVisibilityState build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref =
         this.ref as $Ref<OverlayVisibilityState, OverlayVisibilityState>;
     final element =
@@ -64,6 +63,6 @@ abstract class _$OverlayVisibility extends $Notifier<OverlayVisibilityState> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }

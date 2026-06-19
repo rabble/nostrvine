@@ -14,7 +14,7 @@ part of 'feed_repository_provider.dart';
 /// whichever widget opened the route — the core fix in issue #3383.
 
 @ProviderFor(feedRepository)
-const feedRepositoryProvider = FeedRepositoryProvider._();
+final feedRepositoryProvider = FeedRepositoryProvider._();
 
 /// The app-wide [FeedRepository].
 ///
@@ -28,7 +28,7 @@ final class FeedRepositoryProvider
   ///
   /// keepAlive so the fullscreen feed it backs is decoupled from the lifetime of
   /// whichever widget opened the route — the core fix in issue #3383.
-  const FeedRepositoryProvider._()
+  FeedRepositoryProvider._()
     : super(
         from: null,
         argument: null,

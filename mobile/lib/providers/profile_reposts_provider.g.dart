@@ -17,7 +17,7 @@ part of 'profile_reposts_provider.dart';
 /// This is independent from profileFeedProvider which only returns originals.
 
 @ProviderFor(profileReposts)
-const profileRepostsProvider = ProfileRepostsFamily._();
+final profileRepostsProvider = ProfileRepostsFamily._();
 
 /// Provider that returns only the videos a user has reposted
 ///
@@ -42,7 +42,7 @@ final class ProfileRepostsProvider
   /// - reposterPubkey == userIdHex
   ///
   /// This is independent from profileFeedProvider which only returns originals.
-  const ProfileRepostsProvider._({
+  ProfileRepostsProvider._({
     required ProfileRepostsFamily super.from,
     required String super.argument,
   }) : super(
@@ -98,7 +98,7 @@ String _$profileRepostsHash() => r'6cd7fc7f3b63b4066befc65f6692b2ec1428d130';
 
 final class ProfileRepostsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<VideoEvent>>, String> {
-  const ProfileRepostsFamily._()
+  ProfileRepostsFamily._()
     : super(
         retry: null,
         name: r'profileRepostsProvider',

@@ -15,7 +15,7 @@ part of 'notifications_providers.dart';
 /// outgoing-session cleanup runs before signers and callbacks are cleared.
 
 @ProviderFor(pushNotificationSync)
-const pushNotificationSyncProvider = PushNotificationSyncProvider._();
+final pushNotificationSyncProvider = PushNotificationSyncProvider._();
 
 /// Bridges Nostr session readiness to push notification registration.
 ///
@@ -31,7 +31,7 @@ final class PushNotificationSyncProvider
   /// Registers FCM token only after the signer-backed Nostr client is ready.
   /// Deregisters the last ready client through AuthService's pre-teardown hook so
   /// outgoing-session cleanup runs before signers and callbacks are cleared.
-  const PushNotificationSyncProvider._()
+  PushNotificationSyncProvider._()
     : super(
         from: null,
         argument: null,

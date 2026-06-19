@@ -50,7 +50,7 @@ dependencies:
   http: ^1.4.0
   http_parser: ^4.1.2
 dependency_overrides:
-  meta: ^1.16.0
+  meta: ^1.18.0
 
 dev_dependencies:
   flutter_test:

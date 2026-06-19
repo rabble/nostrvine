@@ -142,7 +142,10 @@ void main() {
         Widget? renderedApp;
         var attempts = 0;
         var repaired = false;
-        final error = SqliteException(26, 'file is not a database');
+        final error = SqliteException(
+          extendedResultCode: 26,
+          message: 'file is not a database',
+        );
 
         final result = await resolveDatabaseBootstrapForAppStart(
           resolveCipherKey: () async {
@@ -207,7 +210,10 @@ void main() {
           resolveCipherKey: () async {
             attempts += 1;
             if (attempts == 1) {
-              throw SqliteException(26, 'file is not a database');
+              throw SqliteException(
+                extendedResultCode: 26,
+                message: 'file is not a database',
+              );
             }
             return 'c' * 64;
           },
@@ -255,12 +261,12 @@ void main() {
       expect(closed, isTrue);
     });
 
-    test('classifies SQLCipher link failures for release diagnostics', () {
+    test('classifies cipher availability failures for release diagnostics', () {
       expect(
         databaseBootstrapDiagnosticCode(
-          SqlCipherUnavailableError(),
+          DatabaseCipherUnavailableError(),
         ),
-        equals('db-sqlcipher-unavailable'),
+        equals('db-cipher-unavailable'),
       );
     });
   });
@@ -269,22 +275,28 @@ void main() {
     test('allowlists sqlite not-a-database and corruption errors', () {
       expect(
         shouldRepairLocalDatabaseCacheAfterBootstrapError(
-          SqliteException(26, 'file is not a database'),
+          SqliteException(
+            extendedResultCode: 26,
+            message: 'file is not a database',
+          ),
         ),
         isTrue,
       );
       expect(
         shouldRepairLocalDatabaseCacheAfterBootstrapError(
-          SqliteException(11, 'database disk image is malformed'),
+          SqliteException(
+            extendedResultCode: 11,
+            message: 'database disk image is malformed',
+          ),
         ),
         isTrue,
       );
     });
 
-    test('excludes SQLCipher linkage and secure-storage failures', () {
+    test('excludes cipher linkage and secure-storage failures', () {
       expect(
         shouldRepairLocalDatabaseCacheAfterBootstrapError(
-          SqlCipherUnavailableError(),
+          DatabaseCipherUnavailableError(),
         ),
         isFalse,
       );

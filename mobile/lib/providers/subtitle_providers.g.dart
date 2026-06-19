@@ -21,7 +21,7 @@ part of 'subtitle_providers.dart';
 /// 4. Otherwise returns an empty list (no subtitles available).
 
 @ProviderFor(subtitleCues)
-const subtitleCuesProvider = SubtitleCuesFamily._();
+final subtitleCuesProvider = SubtitleCuesFamily._();
 
 /// Fetches subtitle cues for a video, using the fastest available path.
 ///
@@ -56,7 +56,7 @@ final class SubtitleCuesProvider
   ///    `39307:<pubkey>:subtitles:<d-tag>`), query the relay for the subtitle
   ///    event and parse its content.
   /// 4. Otherwise returns an empty list (no subtitles available).
-  const SubtitleCuesProvider._({
+  SubtitleCuesProvider._({
     required SubtitleCuesFamily super.from,
     required ({
       String videoId,
@@ -144,7 +144,7 @@ final class SubtitleCuesFamily extends $Family
             String? sha256,
           })
         > {
-  const SubtitleCuesFamily._()
+  SubtitleCuesFamily._()
     : super(
         retry: null,
         name: r'subtitleCuesProvider',
@@ -191,7 +191,7 @@ final class SubtitleCuesFamily extends $Family
 /// applies to all videos.
 
 @ProviderFor(SubtitleVisibility)
-const subtitleVisibilityProvider = SubtitleVisibilityProvider._();
+final subtitleVisibilityProvider = SubtitleVisibilityProvider._();
 
 /// Tracks global subtitle visibility (CC on/off).
 ///
@@ -205,7 +205,7 @@ final class SubtitleVisibilityProvider
   /// When enabled, subtitles are shown on all videos that have them.
   /// This acts as an app-wide preference - toggling on one video
   /// applies to all videos.
-  const SubtitleVisibilityProvider._()
+  SubtitleVisibilityProvider._()
     : super(
         from: null,
         argument: null,
@@ -245,8 +245,7 @@ abstract class _$SubtitleVisibility extends $Notifier<bool> {
   bool build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<bool, bool>;
     final element =
         ref.element
@@ -256,6 +255,6 @@ abstract class _$SubtitleVisibility extends $Notifier<bool> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }

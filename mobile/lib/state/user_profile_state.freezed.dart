@@ -15,12 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$UserProfileState {
 
-// Pending profile requests
- Set<String> get pendingRequests;// Missing profiles to avoid spam
- Set<String> get knownMissingProfiles; Map<String, DateTime> get missingProfileRetryAfter;// Batch fetching state
- Set<String> get pendingBatchPubkeys;// Loading and error state
- bool get isLoading; bool get isInitialized; String? get error;// Stats
- int get totalProfilesRequested;
+ Set<String> get pendingRequests; Set<String> get knownMissingProfiles; Map<String, DateTime> get missingProfileRetryAfter; Set<String> get pendingBatchPubkeys; bool get isLoading; bool get isInitialized; String? get error; int get totalProfilesRequested;
 /// Create a copy of UserProfileState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -218,18 +213,14 @@ class _UserProfileState extends UserProfileState {
   const _UserProfileState({final  Set<String> pendingRequests = const {}, final  Set<String> knownMissingProfiles = const {}, final  Map<String, DateTime> missingProfileRetryAfter = const {}, final  Set<String> pendingBatchPubkeys = const {}, this.isLoading = false, this.isInitialized = false, this.error, this.totalProfilesRequested = 0}): _pendingRequests = pendingRequests,_knownMissingProfiles = knownMissingProfiles,_missingProfileRetryAfter = missingProfileRetryAfter,_pendingBatchPubkeys = pendingBatchPubkeys,super._();
   factory _UserProfileState.fromJson(Map<String, dynamic> json) => _$UserProfileStateFromJson(json);
 
-// Pending profile requests
  final  Set<String> _pendingRequests;
-// Pending profile requests
 @override@JsonKey() Set<String> get pendingRequests {
   if (_pendingRequests is EqualUnmodifiableSetView) return _pendingRequests;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableSetView(_pendingRequests);
 }
 
-// Missing profiles to avoid spam
  final  Set<String> _knownMissingProfiles;
-// Missing profiles to avoid spam
 @override@JsonKey() Set<String> get knownMissingProfiles {
   if (_knownMissingProfiles is EqualUnmodifiableSetView) return _knownMissingProfiles;
   // ignore: implicit_dynamic_type
@@ -243,20 +234,16 @@ class _UserProfileState extends UserProfileState {
   return EqualUnmodifiableMapView(_missingProfileRetryAfter);
 }
 
-// Batch fetching state
  final  Set<String> _pendingBatchPubkeys;
-// Batch fetching state
 @override@JsonKey() Set<String> get pendingBatchPubkeys {
   if (_pendingBatchPubkeys is EqualUnmodifiableSetView) return _pendingBatchPubkeys;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableSetView(_pendingBatchPubkeys);
 }
 
-// Loading and error state
 @override@JsonKey() final  bool isLoading;
 @override@JsonKey() final  bool isInitialized;
 @override final  String? error;
-// Stats
 @override@JsonKey() final  int totalProfilesRequested;
 
 /// Create a copy of UserProfileState

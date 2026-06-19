@@ -1,46 +1,27 @@
-// ABOUTME: Native SQLCipher runtime bootstrap (Android lib override + availability probe).
-// ABOUTME: Forces package:sqlite3 to load libsqlcipher.so on Android before first use.
+// ABOUTME: Native SQLite3MultipleCiphers runtime availability probe.
+// ABOUTME: sqlite3 3.x loads the selected native SQLite build through hooks.
 
-import 'dart:ffi';
-import 'dart:io';
-
-import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
-import 'package:sqlite3/open.dart';
 import 'package:sqlite3/sqlite3.dart';
 
-/// Forces `package:sqlite3` to load the SQLCipher native library.
+/// Ensures `package:sqlite3` has initialized its hook-selected native library.
 ///
-/// Android ships a plain `libsqlite3.so`, so `package:sqlite3` must be told to
-/// load `libsqlcipher.so` instead — before ANY sqlite3 call and before drift
-/// spawns its background isolate.
-///
-/// iOS/macOS can also link plain sqlite3 through unrelated dependencies
-/// (Firebase Messaging is explicitly called out by `sqlcipher_flutter_libs`).
-/// CocoaPods links SQLCipher into the app process, so force package:sqlite3 to
-/// resolve process symbols instead of opening sqlite3.framework or stale
-/// CSQLite.framework pins first.
-Future<void> ensureSqlCipherRuntime() async {
-  if (Platform.isAndroid) {
-    await applyWorkaroundToOpenSqlCipherOnOldAndroidVersions();
-    open.overrideFor(OperatingSystem.android, openCipherOnAndroid);
-  } else if (Platform.isIOS || Platform.isMacOS) {
-    open.overrideFor(open.os!, () {
-      return DynamicLibrary.process();
-    });
-  }
-}
+/// sqlite3 3.x uses build hooks for Android/iOS/macOS/Linux/Windows native
+/// assets, so the legacy sqlcipher_flutter_libs Android workaround and
+/// `open.overrideFor` path are intentionally gone.
+Future<void> ensureSqlCipherRuntime() async {}
 
-/// Probes whether SQLCipher is actually the linked library by opening an
-/// in-memory database and checking the SQLCipher-only `cipher_version` pragma
-/// (empty on plain SQLite). Guards against the iOS failure mode where the
-/// system sqlite3 is linked and `PRAGMA key` silently no-ops.
+/// Probes whether SQLite3MultipleCiphers is the active SQLite implementation.
+///
+/// Upstream SQLite returns no rows for `PRAGMA cipher`; MC returns at least the
+/// currently selected cipher. This is the fail-closed guard before the app can
+/// open or migrate an encrypted local database.
 bool isSqlCipherAvailable() {
   final db = sqlite3.openInMemory();
   try {
-    return db.select('PRAGMA cipher_version;').isNotEmpty;
+    return db.select('PRAGMA cipher;').isNotEmpty;
   } on SqliteException {
     return false;
   } finally {
-    db.dispose();
+    db.close();
   }
 }

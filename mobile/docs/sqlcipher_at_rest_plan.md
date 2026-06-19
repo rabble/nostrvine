@@ -1,119 +1,124 @@
-# SQLCipher at-rest encryption for the local DB (#570, finding C2)
+# SQLite3MultipleCiphers at-rest encryption for the local DB (#570, finding C2)
 
-Status: **device-QA gated before merge.** The full Dart implementation, the
-native dependency swap, and unit tests for every host-testable property are
-committed. What remains before merge is **on-device validation** (the encrypted
-open, the in-place migration, and the iOS/macOS build configuration) — none of
-it can be exercised in CI, which links plain sqlite3 and on which
-`PRAGMA cipher_version` is empty. See the device-QA checklist at the bottom.
+Status: **device-QA gated before merge.** The Dart implementation, dependency
+swap, host tests, and local host probes are in this PR. The final gate is a real
+iOS device and real Android device with a pre-existing encrypted database.
 
 ## Why
 
-DMs (and the rest of the shared `divine_db.db`: drafts, pending uploads,
-pending actions, outgoing DMs, reactions, reposts, notifications, bookmarks,
-NIP-05 verifications) are stored **plaintext at rest** today. For a moderation
-account holding reports about users, plaintext-at-rest is materially more
-sensitive. Decision (#570): encrypt at rest before the T&S moderation launch.
+`divine_db.db` stores user data that includes drafts, pending uploads/actions,
+reactions, reposts, notifications, bookmarks, NIP-05 state, and DMs. That file
+must be encrypted at rest on native platforms. Web / IndexedDB remains out of
+scope until the OPFS encryption work.
 
-## What is NOT in scope
+## Dependency shape
 
-- **Web / IndexedDB** (`connection_web.dart`): SQLCipher is native-only. Web
-  at-rest encryption is deferred behind the OPFS migration (#373). The app
-  guards encryption with `kIsWeb`; the web connection variants throw
-  `UnsupportedError` and are never reached.
-- **Backend D1 retention**: the backend stores DMs plaintext indefinitely in
-  `dm_log` — a separate data-minimization item (tracked as #570 Decision 8).
-- **The `cache_sync.db` cache**: it shares the SQLCipher runtime but is opened
-  unkeyed (plaintext), which SQLCipher supports. Only `divine_db.db` is keyed.
+- `drift` is on the 2.34 line and `sqlite3` is on the 3.3 line.
+- `sqlcipher_flutter_libs` is removed. The 0.7 line is an EOL no-op for sqlite3
+  3.x, and the old Android `open.overrideFor` / SQLCipher workaround is gone.
+- `sqlite3_flutter_libs` and `drift_flutter` must stay out of the app. Extra
+  native SQLite providers can make plain SQLite win.
+- `pubspec.yaml` selects SQLite3MultipleCiphers through the sqlite3 hook:
 
-## Committed in this PR (host-verified)
+```yaml
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc
+```
 
-### Dependency swap — `mobile/pubspec.yaml`
-- `sqlite3_flutter_libs ^0.5.40` → **`sqlcipher_flutter_libs ^0.6.8`**. The two
-  cannot coexist (both ship a native sqlite3 that collides on iOS/macOS). 0.6.x
-  is the SQLCipher build for the sqlite3 2.x family; **0.7.0+ is an EOL no-op**.
-- Removed **`drift_flutter`** — it was unused (db_client opens `NativeDatabase`
-  directly) and transitively pulled `sqlite3_flutter_libs` back in,
-  reintroducing the collision.
-- Added **`sqlite3`** as a direct dep so the Android library override
-  (`package:sqlite3/open.dart`) is referenceable.
+`package:sqlite3` 3.3.3 publishes prebuilt sqlite3mc assets for Android, iOS,
+iOS simulator, macOS, Linux, Windows, and wasm. Local hook output confirmed the
+workspace pubspec define is read and the host build loads `libsqlite3mc.dylib`.
 
-### db_client (`connection_native.dart` + web/stub variants)
-- `formatCipherKeyPragma(rawKeyHex)` — builds the raw-key `PRAGMA key`. **The
-  thrown `ArgumentError` never embeds the key** (fixes the #4945 review finding).
-- `applyCipherKey(db, rawKeyHex)` — keys the connection and **fails closed**:
-  if `PRAGMA cipher_version` is empty (SQLCipher not linked) it throws rather
-  than silently writing plaintext.
-- `openEncryptedConnection({rawKeyHex})` — keyed `NativeDatabase` for the app
-  to inject the key into (db_client never reads the keystore).
-- `migratePlaintextToEncrypted({rawKeyHex})` — one-time in-place rekey via
-  `sqlcipher_export`, **safe by construction**: writes a side file, verifies it
-  (key opens it; table/row counts match the source) before swapping, renames
-  the plaintext original to a backup rather than deleting it, and leaves the
-  source intact on any failure (retries next launch). Copies `user_version`
-  (drift's schema version) explicitly, which `sqlcipher_export` does not.
-  Wipe-and-resync is rejected: `divine_db.db` holds local-only data that cannot
-  be re-fetched.
-- `backUpAndRemoveSharedDatabase()` — used by the §6 key-loss recovery.
+## Key and open sequence
 
-### App layer
-- `lib/database/sqlcipher_runtime.dart` (+ `_io` / `_stub`) — conditional-import
-  glue: on Android, `applyWorkaroundToOpenSqlCipherOnOldAndroidVersions()` +
-  `open.overrideFor(OperatingSystem.android, openCipherOnAndroid)`; a runtime
-  `isSqlCipherAvailable()` probe. No-op on web (no dart:ffi).
-- `lib/services/database_encryption_bootstrap.dart` — reads/generates a 32-byte
-  CSPRNG key in `flutter_secure_storage` (`db.cipher.key.v1`, 64 hex; never
-  logged), forces the SQLCipher runtime, runs the migration, and resolves the
-  key for the database provider. Throws if SQLCipher is not linked.
-- `lib/providers/db_cipher_key_provider.dart` — `Provider<String?>` (null
-  default → plaintext for web/tests), overridden in `main.dart`.
-- `lib/providers/database_provider.dart` — opens an encrypted connection when a
-  key is present, else the default connection.
-- `lib/main.dart` — resolves the key before the `ProviderContainer`; on failure
-  reports to Crashlytics and degrades to plaintext (the device-QA gate prevents
-  an unencrypted build from shipping).
+The app stores a 32-byte CSPRNG key in `flutter_secure_storage` under
+`db.cipher.key.v1`, represented as 64 lower-case hex characters. db_client never
+reads secure storage; the app bootstrap resolves the key and injects it.
 
-### §6 key-loss behavior (implemented; pending product signoff)
-If the keystore is cleared (OS reset / restore without keychain migration), the
-cipher key is gone and the encrypted DB is cryptographically unrecoverable. The
-bootstrap detects this (freshly generated key + an existing encrypted DB),
-**backs up the unrecoverable DB and recreates it under a new key** — DMs resync
-from relays; other local-only data is preserved in the backup but unavailable
-to the app without the lost key. This is the only possible recovery for an
-unrecoverable DB, but the user-facing notice / exact UX **needs product
-signoff** before merge.
+Every keyed native open runs these statements before any database use:
 
-## Device-QA-gated (NOT committed — must be done on real devices)
+```sql
+PRAGMA cipher = 'sqlcipher';
+PRAGMA legacy = 4;
+PRAGMA key = "x'<64 hex chars>'";
+```
 
-### iOS / macOS build configuration
-- On Apple platforms `package:sqlite3` resolves to the SQLCipher pod **only
-  when it is the sole sqlite3 provider** (now true after dropping
-  `sqlite3_flutter_libs`). If a future pod links plain sqlite3, `PRAGMA key`
-  silently no-ops. Mitigations to apply and verify on device:
-  - Add `-framework SQLCipher` to **Other Linker Flags** in the Runner target,
-    and ensure no `libsqlite3.dylib`/`.tbd` sits in *Link Binary With
-    Libraries*.
-  - A Podfile `post_install` that defines `SQLITE_HAS_CODEC=1` across pod build
-    configurations (mirror the SQLCipher podspec) if any pod is found linking
-    plain sqlite3.
-- App Store **export compliance**: AES-256 at rest is standard crypto. Set
-  `ITSAppUsesNonExemptEncryption` in `Info.plist` and confirm the exemption
-  with the compliance owner.
+The raw-key form skips PBKDF2, which is correct for a random 32-byte key and
+preserves compatibility with databases previously written by SQLCipher. The key
+must never appear in logs, exceptions, Crashlytics, analytics, or test output.
 
-These are intentionally not committed half-validated; the committed runtime
-`cipher_version` fail-closed check is the safety net regardless of build config.
+Fail-closed remains mandatory. The runtime and connection probes use
+`PRAGMA cipher`; upstream SQLite returns no rows, while SQLite3MultipleCiphers
+returns the active cipher. If MC is not active, startup refuses to open the local
+database instead of silently writing plaintext.
 
-## Device-QA checklist (must pass before merge)
-- [ ] iOS / Android / macOS build + launch with `sqlcipher_flutter_libs`.
-- [ ] Fresh install: DB is created encrypted; `PRAGMA cipher_version` is
-      non-empty; the file is not readable by plain `sqlite3`.
-- [ ] Upgrade from a populated **plaintext** DB: migration runs once, all
-      tables + row counts preserved, app fully functional, plaintext backup
-      present until the first successful keyed open, then cleaned.
-- [ ] Force-kill mid-migration → next launch recovers (plaintext intact,
-      retried), no data loss.
-- [ ] Key-loss path (clear keystore): DB is backed up + recreated, DMs resync,
-      app does not brick. (Confirm the §6 UX with product first.)
-- [ ] No measurable regression on cold-start DB open on a low-end device
-      (SQLCipher adds ~5–15%).
-- [ ] Key never appears in logs / Crashlytics / analytics.
+## Plaintext-to-encrypted migration
+
+`sqlcipher_export()` is not available under SQLite3MultipleCiphers, so the old
+migration path is replaced with a safe side-file flow:
+
+1. Classify the existing `divine_db.db` by opening it unkeyed. Only
+   `SQLITE_NOTADB` is treated as already encrypted; transient read failures stay
+   indeterminate and retry later.
+2. For populated plaintext DBs, copy the source to
+   `divine_db.db.sqlcipher_migrating` with `VACUUM INTO`.
+3. Open the side file, select `cipher='sqlcipher'` + `legacy=4`, then
+   `PRAGMA rekey = "x'<key>'"`.
+4. Verify the encrypted copy opens with the raw key and that `user_version` plus
+   all user-table row counts match the plaintext source.
+5. Rename the plaintext source to a `.pre_cipher_migration_backup*` file and
+   promote the verified encrypted artifact into place.
+
+On any failure, the plaintext source is left intact and migration retries next
+launch. After a later successful keyed open, old pre-cipher plaintext backups are
+deleted so plaintext does not remain at rest.
+
+## Key-loss recovery
+
+If secure storage loses `db.cipher.key.v1` while an encrypted DB remains, the old
+DB is cryptographically unrecoverable. The bootstrap backs up the unreadable DB
+and creates a fresh encrypted DB under the new key. This is data-preserving in
+the only possible way: the old bytes are retained for forensic/manual recovery,
+but the app cannot unlock them without the lost key.
+
+## Cache database
+
+Only `divine_db.db` is keyed. `cache_sync.db` remains opened unkeyed. MC supports
+plaintext databases, and the cache contains replaceable local cache state.
+
+## Host verification
+
+Host tests now cover the properties that used to be device-only:
+
+- raw-key MC file-backed open succeeds with `cipher='sqlcipher'` + `legacy=4`;
+- the encrypted file is not readable as plaintext SQLite;
+- populated plaintext DB migration preserves `user_version` and row counts;
+- malformed keys and keying failures do not leak the raw key;
+- bootstrap key generation, reuse, key-loss backup, and fail-closed behavior.
+
+Local probes also confirmed keyed in-memory MC databases are unsupported, so
+tests use file-backed DBs.
+
+## Device-QA checklist
+
+- [ ] Real iOS device: existing SQLCipher-encrypted `divine_db.db` opens through
+      the MC compatibility path with no data loss.
+- [ ] Real Android device: existing SQLCipher-encrypted `divine_db.db` opens
+      through the MC compatibility path with no data loss.
+- [ ] Fresh iOS install creates an encrypted DB and plain `sqlite3` cannot read
+      the file.
+- [ ] Fresh Android install creates an encrypted DB and plain `sqlite3` cannot
+      read the file.
+- [ ] Legacy populated plaintext DB migrates once, preserves row counts and
+      `user_version`, then removes pre-cipher plaintext backups after a keyed
+      open.
+- [ ] Force-kill during migration resumes without data loss.
+- [ ] Clear secure storage / simulate key loss: app backs up the unreadable DB,
+      creates a new encrypted DB, and does not brick.
+- [ ] Key material is absent from logs, Crashlytics, analytics, and thrown error
+      strings.
+
+Record device, OS version, build number, and exact result for each item before
+merging.

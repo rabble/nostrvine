@@ -12,7 +12,7 @@ part of 'social_providers.dart';
 /// Returns null when not authenticated (no userPubkey available)
 
 @ProviderFor(pendingActionService)
-const pendingActionServiceProvider = PendingActionServiceProvider._();
+final pendingActionServiceProvider = PendingActionServiceProvider._();
 
 /// Pending action service for offline sync of social actions
 /// Returns null when not authenticated (no userPubkey available)
@@ -27,7 +27,7 @@ final class PendingActionServiceProvider
     with $Provider<PendingActionService?> {
   /// Pending action service for offline sync of social actions
   /// Returns null when not authenticated (no userPubkey available)
-  const PendingActionServiceProvider._()
+  PendingActionServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -81,7 +81,7 @@ String _$pendingActionServiceHash() =>
 /// catching `StateError` in every sweep pass.
 
 @ProviderFor(outgoingDmRetryService)
-const outgoingDmRetryServiceProvider = OutgoingDmRetryServiceProvider._();
+final outgoingDmRetryServiceProvider = OutgoingDmRetryServiceProvider._();
 
 /// Auto-sweep service for the durable `outgoing_dms` queue.
 ///
@@ -122,7 +122,7 @@ final class OutgoingDmRetryServiceProvider
   /// session is not ready — the underlying [DmRepository.recoverSelfWrap]
   /// requires `setCredentials` to have run, and gating here is cleaner than
   /// catching `StateError` in every sweep pass.
-  const OutgoingDmRetryServiceProvider._()
+  OutgoingDmRetryServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -162,7 +162,7 @@ String _$outgoingDmRetryServiceHash() =>
 /// Auto-sweep service for the durable `pending_view_events` queue.
 
 @ProviderFor(viewEventRetryService)
-const viewEventRetryServiceProvider = ViewEventRetryServiceProvider._();
+final viewEventRetryServiceProvider = ViewEventRetryServiceProvider._();
 
 /// Auto-sweep service for the durable `pending_view_events` queue.
 
@@ -175,7 +175,7 @@ final class ViewEventRetryServiceProvider
         >
     with $Provider<ViewEventRetryService?> {
   /// Auto-sweep service for the durable `pending_view_events` queue.
-  const ViewEventRetryServiceProvider._()
+  ViewEventRetryServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -217,7 +217,7 @@ String _$viewEventRetryServiceHash() =>
 /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
 
 @ProviderFor(analyticsService)
-const analyticsServiceProvider = AnalyticsServiceProvider._();
+final analyticsServiceProvider = AnalyticsServiceProvider._();
 
 /// Analytics service with opt-out support.
 ///
@@ -234,7 +234,7 @@ final class AnalyticsServiceProvider
   /// Analytics service with opt-out support.
   ///
   /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
-  const AnalyticsServiceProvider._()
+  AnalyticsServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -272,7 +272,7 @@ String _$analyticsServiceHash() => r'afdabdf0b1d7c769d7b1219062de928f17d34633';
 /// Hashtag cache service for persistent hashtag storage
 
 @ProviderFor(hashtagCacheService)
-const hashtagCacheServiceProvider = HashtagCacheServiceProvider._();
+final hashtagCacheServiceProvider = HashtagCacheServiceProvider._();
 
 /// Hashtag cache service for persistent hashtag storage
 
@@ -285,7 +285,7 @@ final class HashtagCacheServiceProvider
         >
     with $Provider<HashtagCacheService> {
   /// Hashtag cache service for persistent hashtag storage
-  const HashtagCacheServiceProvider._()
+  HashtagCacheServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -325,7 +325,7 @@ String _$hashtagCacheServiceHash() =>
 /// Draft storage service for persisting vine drafts
 
 @ProviderFor(draftStorageService)
-const draftStorageServiceProvider = DraftStorageServiceProvider._();
+final draftStorageServiceProvider = DraftStorageServiceProvider._();
 
 /// Draft storage service for persisting vine drafts
 
@@ -338,7 +338,7 @@ final class DraftStorageServiceProvider
         >
     with $Provider<DraftStorageService> {
   /// Draft storage service for persisting vine drafts
-  const DraftStorageServiceProvider._()
+  DraftStorageServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -378,7 +378,7 @@ String _$draftStorageServiceHash() =>
 /// Clip library service for persisting individual video clips
 
 @ProviderFor(clipLibraryService)
-const clipLibraryServiceProvider = ClipLibraryServiceProvider._();
+final clipLibraryServiceProvider = ClipLibraryServiceProvider._();
 
 /// Clip library service for persisting individual video clips
 
@@ -391,7 +391,7 @@ final class ClipLibraryServiceProvider
         >
     with $Provider<ClipLibraryService> {
   /// Clip library service for persisting individual video clips
-  const ClipLibraryServiceProvider._()
+  ClipLibraryServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -432,7 +432,7 @@ String _$clipLibraryServiceHash() =>
 /// Prevents data leakage between different Nostr accounts
 
 @ProviderFor(userDataCleanupService)
-const userDataCleanupServiceProvider = UserDataCleanupServiceProvider._();
+final userDataCleanupServiceProvider = UserDataCleanupServiceProvider._();
 
 /// User data cleanup service for handling identity changes
 /// Prevents data leakage between different Nostr accounts
@@ -447,7 +447,7 @@ final class UserDataCleanupServiceProvider
     with $Provider<UserDataCleanupService> {
   /// User data cleanup service for handling identity changes
   /// Prevents data leakage between different Nostr accounts
-  const UserDataCleanupServiceProvider._()
+  UserDataCleanupServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -487,7 +487,7 @@ String _$userDataCleanupServiceHash() =>
 /// Hashtag service depends on Video event service and cache service
 
 @ProviderFor(hashtagService)
-const hashtagServiceProvider = HashtagServiceProvider._();
+final hashtagServiceProvider = HashtagServiceProvider._();
 
 /// Hashtag service depends on Video event service and cache service
 
@@ -495,7 +495,7 @@ final class HashtagServiceProvider
     extends $FunctionalProvider<HashtagService, HashtagService, HashtagService>
     with $Provider<HashtagService> {
   /// Hashtag service depends on Video event service and cache service
-  const HashtagServiceProvider._()
+  HashtagServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -535,7 +535,7 @@ String _$hashtagServiceHash() => r'5cd38d3c2e8d78a6f7b74a72b650d79e28938fe4';
 /// Follower count stats have moved to [FollowRepository].
 
 @ProviderFor(socialService)
-const socialServiceProvider = SocialServiceProvider._();
+final socialServiceProvider = SocialServiceProvider._();
 
 /// Social service for follow sets (NIP-51 Kind 30000).
 ///
@@ -547,7 +547,7 @@ final class SocialServiceProvider
   /// Social service for follow sets (NIP-51 Kind 30000).
   ///
   /// Follower count stats have moved to [FollowRepository].
-  const SocialServiceProvider._()
+  SocialServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -585,7 +585,7 @@ String _$socialServiceHash() => r'025a0d7f80743f11d040e4867c012397282404b3';
 /// Content reporting service for NIP-56 compliance
 
 @ProviderFor(contentReportingService)
-const contentReportingServiceProvider = ContentReportingServiceProvider._();
+final contentReportingServiceProvider = ContentReportingServiceProvider._();
 
 /// Content reporting service for NIP-56 compliance
 
@@ -600,7 +600,7 @@ final class ContentReportingServiceProvider
         $FutureModifier<ContentReportingService>,
         $FutureProvider<ContentReportingService> {
   /// Content reporting service for NIP-56 compliance
-  const ContentReportingServiceProvider._()
+  ContentReportingServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -632,7 +632,7 @@ String _$contentReportingServiceHash() =>
 /// Content deletion service for NIP-09 delete events
 
 @ProviderFor(contentDeletionService)
-const contentDeletionServiceProvider = ContentDeletionServiceProvider._();
+final contentDeletionServiceProvider = ContentDeletionServiceProvider._();
 
 /// Content deletion service for NIP-09 delete events
 
@@ -647,7 +647,7 @@ final class ContentDeletionServiceProvider
         $FutureModifier<ContentDeletionService>,
         $FutureProvider<ContentDeletionService> {
   /// Content deletion service for NIP-09 delete events
-  const ContentDeletionServiceProvider._()
+  ContentDeletionServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -679,7 +679,7 @@ String _$contentDeletionServiceHash() =>
 /// Bug report service for collecting diagnostics and sending encrypted reports
 
 @ProviderFor(bugReportService)
-const bugReportServiceProvider = BugReportServiceProvider._();
+final bugReportServiceProvider = BugReportServiceProvider._();
 
 /// Bug report service for collecting diagnostics and sending encrypted reports
 
@@ -692,7 +692,7 @@ final class BugReportServiceProvider
         >
     with $Provider<BugReportService> {
   /// Bug report service for collecting diagnostics and sending encrypted reports
-  const BugReportServiceProvider._()
+  BugReportServiceProvider._()
     : super(
         from: null,
         argument: null,

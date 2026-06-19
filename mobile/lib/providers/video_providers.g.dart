@@ -11,7 +11,7 @@ part of 'video_providers.dart';
 /// Video filter builder for constructing relay-aware filters with server-side sorting
 
 @ProviderFor(videoFilterBuilder)
-const videoFilterBuilderProvider = VideoFilterBuilderProvider._();
+final videoFilterBuilderProvider = VideoFilterBuilderProvider._();
 
 /// Video filter builder for constructing relay-aware filters with server-side sorting
 
@@ -24,7 +24,7 @@ final class VideoFilterBuilderProvider
         >
     with $Provider<VideoFilterBuilder> {
   /// Video filter builder for constructing relay-aware filters with server-side sorting
-  const VideoFilterBuilderProvider._()
+  VideoFilterBuilderProvider._()
     : super(
         from: null,
         argument: null,
@@ -64,7 +64,7 @@ String _$videoFilterBuilderHash() =>
 /// Video visibility manager for controlling video playback based on visibility
 
 @ProviderFor(videoVisibilityManager)
-const videoVisibilityManagerProvider = VideoVisibilityManagerProvider._();
+final videoVisibilityManagerProvider = VideoVisibilityManagerProvider._();
 
 /// Video visibility manager for controlling video playback based on visibility
 
@@ -77,7 +77,7 @@ final class VideoVisibilityManagerProvider
         >
     with $Provider<VideoVisibilityManager> {
   /// Video visibility manager for controlling video playback based on visibility
-  const VideoVisibilityManagerProvider._()
+  VideoVisibilityManagerProvider._()
     : super(
         from: null,
         argument: null,
@@ -117,7 +117,7 @@ String _$videoVisibilityManagerHash() =>
 /// Personal event cache service for ALL user's own events
 
 @ProviderFor(personalEventCacheService)
-const personalEventCacheServiceProvider = PersonalEventCacheServiceProvider._();
+final personalEventCacheServiceProvider = PersonalEventCacheServiceProvider._();
 
 /// Personal event cache service for ALL user's own events
 
@@ -130,7 +130,7 @@ final class PersonalEventCacheServiceProvider
         >
     with $Provider<PersonalEventCacheService> {
   /// Personal event cache service for ALL user's own events
-  const PersonalEventCacheServiceProvider._()
+  PersonalEventCacheServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -170,7 +170,7 @@ String _$personalEventCacheServiceHash() =>
 /// Seen videos service for tracking viewed content
 
 @ProviderFor(seenVideosService)
-const seenVideosServiceProvider = SeenVideosServiceProvider._();
+final seenVideosServiceProvider = SeenVideosServiceProvider._();
 
 /// Seen videos service for tracking viewed content
 
@@ -183,7 +183,7 @@ final class SeenVideosServiceProvider
         >
     with $Provider<SeenVideosService> {
   /// Seen videos service for tracking viewed content
-  const SeenVideosServiceProvider._()
+  SeenVideosServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -222,7 +222,7 @@ String _$seenVideosServiceHash() => r'74099bd4d859b446a3fc0cf1a7f416756a104e43';
 /// Subscription manager for centralized subscription management
 
 @ProviderFor(subscriptionManager)
-const subscriptionManagerProvider = SubscriptionManagerProvider._();
+final subscriptionManagerProvider = SubscriptionManagerProvider._();
 
 /// Subscription manager for centralized subscription management
 
@@ -235,7 +235,7 @@ final class SubscriptionManagerProvider
         >
     with $Provider<SubscriptionManager> {
   /// Subscription manager for centralized subscription management
-  const SubscriptionManagerProvider._()
+  SubscriptionManagerProvider._()
     : super(
         from: null,
         argument: null,
@@ -275,7 +275,7 @@ String _$subscriptionManagerHash() =>
 /// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager
 
 @ProviderFor(videoEventService)
-const videoEventServiceProvider = VideoEventServiceProvider._();
+final videoEventServiceProvider = VideoEventServiceProvider._();
 
 /// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager
 
@@ -288,7 +288,7 @@ final class VideoEventServiceProvider
         >
     with $Provider<VideoEventService> {
   /// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager
-  const VideoEventServiceProvider._()
+  VideoEventServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -327,7 +327,7 @@ String _$videoEventServiceHash() => r'85ef90976750b306638eca4df08291e7c5e2cb54';
 /// Video event publisher for publishing video events to Nostr relays
 
 @ProviderFor(videoEventPublisher)
-const videoEventPublisherProvider = VideoEventPublisherProvider._();
+final videoEventPublisherProvider = VideoEventPublisherProvider._();
 
 /// Video event publisher for publishing video events to Nostr relays
 
@@ -340,7 +340,7 @@ final class VideoEventPublisherProvider
         >
     with $Provider<VideoEventPublisher> {
   /// Video event publisher for publishing video events to Nostr relays
-  const VideoEventPublisherProvider._()
+  VideoEventPublisherProvider._()
     : super(
         from: null,
         argument: null,
@@ -383,7 +383,7 @@ String _$videoEventPublisherHash() =>
 /// and enable creator analytics and recommendation systems.
 
 @ProviderFor(viewEventPublisher)
-const viewEventPublisherProvider = ViewEventPublisherProvider._();
+final viewEventPublisherProvider = ViewEventPublisherProvider._();
 
 /// View event publisher for kind 22236 ephemeral analytics events
 ///
@@ -402,7 +402,7 @@ final class ViewEventPublisherProvider
   ///
   /// Publishes video view events to track watch time, traffic sources,
   /// and enable creator analytics and recommendation systems.
-  const ViewEventPublisherProvider._()
+  ViewEventPublisherProvider._()
     : super(
         from: null,
         argument: null,
@@ -443,7 +443,7 @@ String _$viewEventPublisherHash() =>
 /// Depends on CuratedListService which is async, so watch the state provider
 
 @ProviderFor(subscribedListVideoCache)
-const subscribedListVideoCacheProvider = SubscribedListVideoCacheProvider._();
+final subscribedListVideoCacheProvider = SubscribedListVideoCacheProvider._();
 
 /// Subscribed list video cache for merging subscribed list videos into home feed
 /// Depends on CuratedListService which is async, so watch the state provider
@@ -458,7 +458,7 @@ final class SubscribedListVideoCacheProvider
     with $Provider<SubscribedListVideoCache?> {
   /// Subscribed list video cache for merging subscribed list videos into home feed
   /// Depends on CuratedListService which is async, so watch the state provider
-  const SubscribedListVideoCacheProvider._()
+  SubscribedListVideoCacheProvider._()
     : super(
         from: null,
         argument: null,
@@ -501,7 +501,7 @@ String _$subscribedListVideoCacheHash() =>
 /// encrypted DMs (NIP-17). Otherwise falls back to NIP-04 kind 4.
 
 @ProviderFor(videoSharingService)
-const videoSharingServiceProvider = VideoSharingServiceProvider._();
+final videoSharingServiceProvider = VideoSharingServiceProvider._();
 
 /// Video sharing service
 ///
@@ -520,7 +520,7 @@ final class VideoSharingServiceProvider
   ///
   /// When a [DmRepository] is available the service sends videos via NIP-17
   /// encrypted DMs (NIP-17). Otherwise falls back to NIP-04 kind 4.
-  const VideoSharingServiceProvider._()
+  VideoSharingServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -561,7 +561,7 @@ String _$videoSharingServiceHash() =>
 /// in-memory → personal cache → relay fallback. See [VideoEventResolver].
 
 @ProviderFor(videoEventResolver)
-const videoEventResolverProvider = VideoEventResolverProvider._();
+final videoEventResolverProvider = VideoEventResolverProvider._();
 
 /// Unified resolver for fetching a [VideoEvent] by its event id, with
 /// in-memory → personal cache → relay fallback. See [VideoEventResolver].
@@ -576,7 +576,7 @@ final class VideoEventResolverProvider
     with $Provider<VideoEventResolver> {
   /// Unified resolver for fetching a [VideoEvent] by its event id, with
   /// in-memory → personal cache → relay fallback. See [VideoEventResolver].
-  const VideoEventResolverProvider._()
+  VideoEventResolverProvider._()
     : super(
         from: null,
         argument: null,
@@ -616,7 +616,7 @@ String _$videoEventResolverHash() =>
 /// Service that orchestrates the video-metadata-edit republish flow.
 
 @ProviderFor(videoMetadataUpdateService)
-const videoMetadataUpdateServiceProvider =
+final videoMetadataUpdateServiceProvider =
     VideoMetadataUpdateServiceProvider._();
 
 /// Service that orchestrates the video-metadata-edit republish flow.
@@ -630,7 +630,7 @@ final class VideoMetadataUpdateServiceProvider
         >
     with $Provider<VideoMetadataUpdateService> {
   /// Service that orchestrates the video-metadata-edit republish flow.
-  const VideoMetadataUpdateServiceProvider._()
+  VideoMetadataUpdateServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -670,7 +670,7 @@ String _$videoMetadataUpdateServiceHash() =>
 /// Broken video tracker service for filtering non-functional videos
 
 @ProviderFor(brokenVideoTracker)
-const brokenVideoTrackerProvider = BrokenVideoTrackerProvider._();
+final brokenVideoTrackerProvider = BrokenVideoTrackerProvider._();
 
 /// Broken video tracker service for filtering non-functional videos
 
@@ -685,7 +685,7 @@ final class BrokenVideoTrackerProvider
         $FutureModifier<BrokenVideoTracker>,
         $FutureProvider<BrokenVideoTracker> {
   /// Broken video tracker service for filtering non-functional videos
-  const BrokenVideoTrackerProvider._()
+  BrokenVideoTrackerProvider._()
     : super(
         from: null,
         argument: null,
@@ -723,7 +723,7 @@ String _$brokenVideoTrackerHash() =>
 /// - NostrEventsDao from databaseProvider (for SQLite storage)
 
 @ProviderFor(videoLocalStorage)
-const videoLocalStorageProvider = VideoLocalStorageProvider._();
+final videoLocalStorageProvider = VideoLocalStorageProvider._();
 
 /// Provider for VideoLocalStorage instance (SQLite-backed)
 ///
@@ -748,7 +748,7 @@ final class VideoLocalStorageProvider
   ///
   /// Uses:
   /// - NostrEventsDao from databaseProvider (for SQLite storage)
-  const VideoLocalStorageProvider._()
+  VideoLocalStorageProvider._()
     : super(
         from: null,
         argument: null,
@@ -802,7 +802,7 @@ String _$videoLocalStorageHash() => r'0be44203ec8edf59105a013aae374c07637a3ba0';
 /// - FunnelcakeApiClient for trending/popular video sorting
 
 @ProviderFor(videosRepository)
-const videosRepositoryProvider = VideosRepositoryProvider._();
+final videosRepositoryProvider = VideosRepositoryProvider._();
 
 /// Provider for VideosRepository instance
 ///
@@ -845,7 +845,7 @@ final class VideosRepositoryProvider
   /// - ContentBlocklistRepository for filtering blocked/muted users
   /// - ContentFilterService for filtering NSFW content based on user preferences
   /// - FunnelcakeApiClient for trending/popular video sorting
-  const VideosRepositoryProvider._()
+  VideosRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -890,7 +890,7 @@ String _$videosRepositoryHash() => r'e4ef1b585f6dc5a957af569cd01f750e60ba5838';
 /// - PersonalReactionsDao from databaseProvider (for local storage)
 
 @ProviderFor(likesRepository)
-const likesRepositoryProvider = LikesRepositoryProvider._();
+final likesRepositoryProvider = LikesRepositoryProvider._();
 
 /// Provider for LikesRepository instance
 ///
@@ -913,7 +913,7 @@ final class LikesRepositoryProvider
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
   /// - PersonalReactionsDao from databaseProvider (for local storage)
-  const LikesRepositoryProvider._()
+  LikesRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -947,76 +947,3 @@ final class LikesRepositoryProvider
 }
 
 String _$likesRepositoryHash() => r'fc6229af119fdde9c92deaa2280f26e3ce3bfb00';
-
-/// Provider for RepostsRepository instance
-///
-/// Creates a RepostsRepository for managing user reposts (Kind 16 generic
-/// reposts).
-///
-/// Uses:
-/// - NostrClient from nostrServiceProvider (for relay communication)
-/// - PersonalRepostsDao from databaseProvider (for local storage)
-
-@ProviderFor(repostsRepository)
-const repostsRepositoryProvider = RepostsRepositoryProvider._();
-
-/// Provider for RepostsRepository instance
-///
-/// Creates a RepostsRepository for managing user reposts (Kind 16 generic
-/// reposts).
-///
-/// Uses:
-/// - NostrClient from nostrServiceProvider (for relay communication)
-/// - PersonalRepostsDao from databaseProvider (for local storage)
-
-final class RepostsRepositoryProvider
-    extends
-        $FunctionalProvider<
-          RepostsRepository,
-          RepostsRepository,
-          RepostsRepository
-        >
-    with $Provider<RepostsRepository> {
-  /// Provider for RepostsRepository instance
-  ///
-  /// Creates a RepostsRepository for managing user reposts (Kind 16 generic
-  /// reposts).
-  ///
-  /// Uses:
-  /// - NostrClient from nostrServiceProvider (for relay communication)
-  /// - PersonalRepostsDao from databaseProvider (for local storage)
-  const RepostsRepositoryProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'repostsRepositoryProvider',
-        isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$repostsRepositoryHash();
-
-  @$internal
-  @override
-  $ProviderElement<RepostsRepository> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  RepostsRepository create(Ref ref) {
-    return repostsRepository(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(RepostsRepository value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<RepostsRepository>(value),
-    );
-  }
-}
-
-String _$repostsRepositoryHash() => r'4d3840d9b241111ec4c7e95830e08932048eba31';

@@ -11,7 +11,7 @@ part of 'curation_providers.dart';
 /// Provider for FunnelcakeApiClient (typed client for Funnelcake REST API)
 
 @ProviderFor(funnelcakeApiClient)
-const funnelcakeApiClientProvider = FunnelcakeApiClientProvider._();
+final funnelcakeApiClientProvider = FunnelcakeApiClientProvider._();
 
 /// Provider for FunnelcakeApiClient (typed client for Funnelcake REST API)
 
@@ -24,7 +24,7 @@ final class FunnelcakeApiClientProvider
         >
     with $Provider<FunnelcakeApiClient> {
   /// Provider for FunnelcakeApiClient (typed client for Funnelcake REST API)
-  const FunnelcakeApiClientProvider._()
+  FunnelcakeApiClientProvider._()
     : super(
         from: null,
         argument: null,
@@ -70,7 +70,7 @@ String _$funnelcakeApiClientHash() =>
 /// `client.isAvailable` directly.
 
 @ProviderFor(FunnelcakeAvailable)
-const funnelcakeAvailableProvider = FunnelcakeAvailableProvider._();
+final funnelcakeAvailableProvider = FunnelcakeAvailableProvider._();
 
 /// Single source of truth for Funnelcake REST API availability.
 ///
@@ -88,7 +88,7 @@ final class FunnelcakeAvailableProvider
   ///
   /// All feed providers should watch this instead of checking
   /// `client.isAvailable` directly.
-  const FunnelcakeAvailableProvider._()
+  FunnelcakeAvailableProvider._()
     : super(
         from: null,
         argument: null,
@@ -122,8 +122,7 @@ abstract class _$FunnelcakeAvailable extends $AsyncNotifier<bool> {
   FutureOr<bool> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AsyncValue<bool>, bool>;
     final element =
         ref.element
@@ -133,7 +132,7 @@ abstract class _$FunnelcakeAvailable extends $AsyncNotifier<bool> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -141,7 +140,7 @@ abstract class _$FunnelcakeAvailable extends $AsyncNotifier<bool> {
 /// keepAlive ensures provider persists across tab navigation
 
 @ProviderFor(Curation)
-const curationProvider = CurationProvider._();
+final curationProvider = CurationProvider._();
 
 /// Main curation provider that manages curated content sets
 /// keepAlive ensures provider persists across tab navigation
@@ -149,7 +148,7 @@ final class CurationProvider
     extends $NotifierProvider<Curation, CurationState> {
   /// Main curation provider that manages curated content sets
   /// keepAlive ensures provider persists across tab navigation
-  const CurationProvider._()
+  CurationProvider._()
     : super(
         from: null,
         argument: null,
@@ -185,8 +184,7 @@ abstract class _$Curation extends $Notifier<CurationState> {
   CurationState build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<CurationState, CurationState>;
     final element =
         ref.element
@@ -196,14 +194,14 @@ abstract class _$Curation extends $Notifier<CurationState> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 /// Provider to check if curation is loading
 
 @ProviderFor(curationLoading)
-const curationLoadingProvider = CurationLoadingProvider._();
+final curationLoadingProvider = CurationLoadingProvider._();
 
 /// Provider to check if curation is loading
 
@@ -211,7 +209,7 @@ final class CurationLoadingProvider
     extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
   /// Provider to check if curation is loading
-  const CurationLoadingProvider._()
+  CurationLoadingProvider._()
     : super(
         from: null,
         argument: null,
@@ -249,7 +247,7 @@ String _$curationLoadingHash() => r'e1a04d9f8d90870d340665613c0938b356085039';
 /// Provider to get editor's picks
 
 @ProviderFor(editorsPicks)
-const editorsPicksProvider = EditorsPicksProvider._();
+final editorsPicksProvider = EditorsPicksProvider._();
 
 /// Provider to get editor's picks
 
@@ -262,7 +260,7 @@ final class EditorsPicksProvider
         >
     with $Provider<List<VideoEvent>> {
   /// Provider to get editor's picks
-  const EditorsPicksProvider._()
+  EditorsPicksProvider._()
     : super(
         from: null,
         argument: null,
@@ -300,13 +298,13 @@ String _$editorsPicksHash() => r'47f6f4c73a8e2f6f8aafa718986c063feb530d08';
 /// Provider for analytics-based trending videos with cursor pagination
 
 @ProviderFor(AnalyticsTrending)
-const analyticsTrendingProvider = AnalyticsTrendingProvider._();
+final analyticsTrendingProvider = AnalyticsTrendingProvider._();
 
 /// Provider for analytics-based trending videos with cursor pagination
 final class AnalyticsTrendingProvider
     extends $NotifierProvider<AnalyticsTrending, List<VideoEvent>> {
   /// Provider for analytics-based trending videos with cursor pagination
-  const AnalyticsTrendingProvider._()
+  AnalyticsTrendingProvider._()
     : super(
         from: null,
         argument: null,
@@ -341,8 +339,7 @@ abstract class _$AnalyticsTrending extends $Notifier<List<VideoEvent>> {
   List<VideoEvent> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<List<VideoEvent>, List<VideoEvent>>;
     final element =
         ref.element
@@ -352,20 +349,20 @@ abstract class _$AnalyticsTrending extends $Notifier<List<VideoEvent>> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 /// Provider for analytics-based popular videos
 
 @ProviderFor(AnalyticsPopular)
-const analyticsPopularProvider = AnalyticsPopularProvider._();
+final analyticsPopularProvider = AnalyticsPopularProvider._();
 
 /// Provider for analytics-based popular videos
 final class AnalyticsPopularProvider
     extends $NotifierProvider<AnalyticsPopular, List<VideoEvent>> {
   /// Provider for analytics-based popular videos
-  const AnalyticsPopularProvider._()
+  AnalyticsPopularProvider._()
     : super(
         from: null,
         argument: null,
@@ -400,8 +397,7 @@ abstract class _$AnalyticsPopular extends $Notifier<List<VideoEvent>> {
   List<VideoEvent> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<List<VideoEvent>, List<VideoEvent>>;
     final element =
         ref.element
@@ -411,20 +407,20 @@ abstract class _$AnalyticsPopular extends $Notifier<List<VideoEvent>> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
 /// Provider for trending hashtags
 
 @ProviderFor(TrendingHashtags)
-const trendingHashtagsProvider = TrendingHashtagsProvider._();
+final trendingHashtagsProvider = TrendingHashtagsProvider._();
 
 /// Provider for trending hashtags
 final class TrendingHashtagsProvider
     extends $AsyncNotifierProvider<TrendingHashtags, List<TrendingHashtag>> {
   /// Provider for trending hashtags
-  const TrendingHashtagsProvider._()
+  TrendingHashtagsProvider._()
     : super(
         from: null,
         argument: null,
@@ -452,8 +448,7 @@ abstract class _$TrendingHashtags
   FutureOr<List<TrendingHashtag>> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref =
         this.ref
             as $Ref<AsyncValue<List<TrendingHashtag>>, List<TrendingHashtag>>;
@@ -468,6 +463,6 @@ abstract class _$TrendingHashtags
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }

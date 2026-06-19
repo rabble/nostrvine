@@ -15,7 +15,7 @@ part of 'for_you_provider.dart';
 /// Currently only enabled on staging environment for testing.
 
 @ProviderFor(ForYouFeed)
-const forYouFeedProvider = ForYouFeedProvider._();
+final forYouFeedProvider = ForYouFeedProvider._();
 
 /// For You recommendations feed provider - ML-powered personalized videos
 ///
@@ -29,7 +29,7 @@ final class ForYouFeedProvider
   /// Uses Gorse-based recommendations from Funnelcake REST API.
   /// Falls back to popular videos when personalization isn't available.
   /// Currently only enabled on staging environment for testing.
-  const ForYouFeedProvider._()
+  ForYouFeedProvider._()
     : super(
         from: null,
         argument: null,
@@ -60,8 +60,7 @@ abstract class _$ForYouFeed extends $AsyncNotifier<VideoFeedState> {
   FutureOr<VideoFeedState> build();
   @$mustCallSuper
   @override
-  void runBuild() {
-    final created = build();
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AsyncValue<VideoFeedState>, VideoFeedState>;
     final element =
         ref.element
@@ -71,7 +70,7 @@ abstract class _$ForYouFeed extends $AsyncNotifier<VideoFeedState> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, created);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -80,7 +79,7 @@ abstract class _$ForYouFeed extends $AsyncNotifier<VideoFeedState> {
 /// Available when Funnelcake REST API is available (has recommendations endpoint).
 
 @ProviderFor(forYouAvailable)
-const forYouAvailableProvider = ForYouAvailableProvider._();
+final forYouAvailableProvider = ForYouAvailableProvider._();
 
 /// Provider to check if For You tab should be visible
 ///
@@ -92,7 +91,7 @@ final class ForYouAvailableProvider
   /// Provider to check if For You tab should be visible
   ///
   /// Available when Funnelcake REST API is available (has recommendations endpoint).
-  const ForYouAvailableProvider._()
+  ForYouAvailableProvider._()
     : super(
         from: null,
         argument: null,
@@ -130,7 +129,7 @@ String _$forYouAvailableHash() => r'406ca7b70240fe02deb1c61f455f256440e40cd2';
 /// Provider to check if For You feed is loading
 
 @ProviderFor(forYouFeedLoading)
-const forYouFeedLoadingProvider = ForYouFeedLoadingProvider._();
+final forYouFeedLoadingProvider = ForYouFeedLoadingProvider._();
 
 /// Provider to check if For You feed is loading
 
@@ -138,7 +137,7 @@ final class ForYouFeedLoadingProvider
     extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
   /// Provider to check if For You feed is loading
-  const ForYouFeedLoadingProvider._()
+  ForYouFeedLoadingProvider._()
     : super(
         from: null,
         argument: null,
@@ -176,14 +175,14 @@ String _$forYouFeedLoadingHash() => r'9eea3cee5284c8fd12b7a15e734079db6ba63d09';
 /// Provider to get current For You feed video count
 
 @ProviderFor(forYouFeedCount)
-const forYouFeedCountProvider = ForYouFeedCountProvider._();
+final forYouFeedCountProvider = ForYouFeedCountProvider._();
 
 /// Provider to get current For You feed video count
 
 final class ForYouFeedCountProvider extends $FunctionalProvider<int, int, int>
     with $Provider<int> {
   /// Provider to get current For You feed video count
-  const ForYouFeedCountProvider._()
+  ForYouFeedCountProvider._()
     : super(
         from: null,
         argument: null,

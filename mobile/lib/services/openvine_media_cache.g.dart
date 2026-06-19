@@ -14,7 +14,7 @@ part of 'openvine_media_cache.dart';
 /// The underlying singleton is initialized in main.dart before Riverpod.
 
 @ProviderFor(mediaCache)
-const mediaCacheProvider = MediaCacheProvider._();
+final mediaCacheProvider = MediaCacheProvider._();
 
 /// Provider exposing the media cache singleton for dependency injection.
 ///
@@ -33,7 +33,7 @@ final class MediaCacheProvider
   ///
   /// Use this in Riverpod contexts for testability - can be overridden in tests.
   /// The underlying singleton is initialized in main.dart before Riverpod.
-  const MediaCacheProvider._()
+  MediaCacheProvider._()
     : super(
         from: null,
         argument: null,

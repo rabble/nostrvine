@@ -64,7 +64,7 @@ void main() {
       );
     }
 
-    test('throws StateError when SQLCipher is not linked', () {
+    test('throws StateError when SQLite3MultipleCiphers is not active', () {
       final bootstrap = buildBootstrap(
         cipherAvailable: false,
         outcome: CipherMigrationOutcome.noDatabase,
@@ -73,7 +73,7 @@ void main() {
 
       expect(
         bootstrap.resolveCipherKey(),
-        throwsA(isA<SqlCipherUnavailableError>()),
+        throwsA(isA<DatabaseCipherUnavailableError>()),
       );
     });
 
