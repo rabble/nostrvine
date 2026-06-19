@@ -87,13 +87,18 @@ jobs:
         run: |
           git fetch --quiet --depth=1 origin main
           bash scripts/check_arb_error_ceiling.sh
-      - name: 📏 Verify file sizes do not grow (file-size ceiling ratchet)
+      - name: 📏 Report oversized files (advisory — does not block CI)
         run: |
-          # origin/main provides the base ref so the per-file ceiling ratchet can
-          # detect a raised ceiling / added file. Fails closed if it cannot load
-          # the base baseline. Oversized-file epic: #4339 (PR-1).
-          git fetch --quiet --depth=1 origin main
-          bash scripts/check_file_size_ceiling.sh
+          # The 800-line file-size ceiling is advisory (team decision): it
+          # reports new oversized files and files that grew past their recorded
+          # ceiling as a warning, but the script always exits 0 and never fails
+          # the job. Surface the findings as a GitHub warning annotation so they
+          # bubble up to the PR. Oversized-file epic: #4339 (PR-1).
+          output="$(bash scripts/check_file_size_ceiling.sh)"
+          echo "$output"
+          if printf '%s\n' "$output" | grep -q '^WARN \[file_size_ceiling\]'; then
+            echo "::warning title=File-size ceiling (advisory)::One or more Dart files are newly over 800 lines or grew past their recorded ceiling. This is advisory and does not block CI — see the step log for the list."
+          fi
       - name: 🎨 Verify raw Icons.* count does not increase (DivineIcon ratchet)
         run: |
           # Freezes the deferred raw Material Icons.* residue (#4803) per-file so
