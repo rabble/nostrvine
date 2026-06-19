@@ -1233,6 +1233,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             autoOpenComments: routeExtra?.autoOpenComments ?? false,
             fallbackVideoIds: routeExtra?.fallbackVideoIds ?? const [],
             initialVideo: routeExtra?.initialVideo,
+            dmReplyContext: routeExtra?.dmReplyContext,
           );
         },
       ),

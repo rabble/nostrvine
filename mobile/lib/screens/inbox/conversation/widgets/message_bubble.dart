@@ -18,6 +18,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/universal_link_resolver.dart';
+import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
@@ -69,6 +70,7 @@ class MessageBubble extends StatelessWidget {
     this.isLastInGroup = true,
     this.onLongPress,
     this.deliveryStatus = DmDeliveryStatus.delivered,
+    this.dmReplyContext,
     super.key,
   });
 
@@ -92,6 +94,10 @@ class MessageBubble extends StatelessWidget {
   /// fixtures and call sites that don't track outgoing-queue state work
   /// without churn.
   final DmDeliveryStatus deliveryStatus;
+
+  /// Context for the in-player reply/reaction bar, used when this bubble's
+  /// shared reel is tapped open. Null in non-DM call sites / tests.
+  final DmReplyContext? dmReplyContext;
 
   @override
   Widget build(BuildContext context) {
@@ -211,6 +217,7 @@ class MessageBubble extends StatelessWidget {
                     _VideoLinkPreview(
                       videoStableId: videoStableId,
                       isSent: isSent,
+                      dmReplyContext: dmReplyContext,
                     ),
                     // Optional personal note (text before the URL minus
                     // the quoted title) sits directly under the
@@ -221,6 +228,7 @@ class MessageBubble extends StatelessWidget {
                         child: _MessageText(
                           message: personalMessage,
                           isSent: isSent,
+                          dmReplyContext: dmReplyContext,
                         ),
                       ),
                     if (textAfterUrl != null)
@@ -229,10 +237,15 @@ class MessageBubble extends StatelessWidget {
                         child: _MessageText(
                           message: textAfterUrl,
                           isSent: isSent,
+                          dmReplyContext: dmReplyContext,
                         ),
                       ),
                   ] else
-                    _MessageText(message: safeMessage, isSent: isSent),
+                    _MessageText(
+                      message: safeMessage,
+                      isSent: isSent,
+                      dmReplyContext: dmReplyContext,
+                    ),
                   if (isSent && deliveryStatus != DmDeliveryStatus.delivered)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
@@ -285,10 +298,15 @@ bool _isTrustedDomain(String host) {
 /// [LinkifiedTextSpanBuilder] so URLs / @mentions / #hashtags / nostr
 /// references inside, e.g., a `**bold**` run remain tappable.
 class _MessageText extends ConsumerStatefulWidget {
-  const _MessageText({required this.message, required this.isSent});
+  const _MessageText({
+    required this.message,
+    required this.isSent,
+    this.dmReplyContext,
+  });
 
   final String message;
   final bool isSent;
+  final DmReplyContext? dmReplyContext;
 
   @override
   ConsumerState<_MessageText> createState() => _MessageTextState();
@@ -390,7 +408,13 @@ class _MessageTextState extends ConsumerState<_MessageText> {
   }
 
   void _navigateToVideo(String routeReference) {
-    context.push(VideoDetailScreen.pathForId(routeReference));
+    final dmReplyContext = widget.dmReplyContext;
+    context.push(
+      VideoDetailScreen.pathForId(routeReference),
+      extra: dmReplyContext != null
+          ? VideoDetailRouteExtra(dmReplyContext: dmReplyContext)
+          : null,
+    );
   }
 
   void _navigateToSearch(String username) {
@@ -478,10 +502,15 @@ class _MessageTextState extends ConsumerState<_MessageText> {
 /// and renders state via [BlocBuilder]. Falls back to a tappable link when
 /// the video cannot be resolved.
 class _VideoLinkPreview extends ConsumerWidget {
-  const _VideoLinkPreview({required this.videoStableId, required this.isSent});
+  const _VideoLinkPreview({
+    required this.videoStableId,
+    required this.isSent,
+    this.dmReplyContext,
+  });
 
   final String videoStableId;
   final bool isSent;
+  final DmReplyContext? dmReplyContext;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -497,8 +526,12 @@ class _VideoLinkPreview extends ConsumerWidget {
           VideoLinkPreviewNotFound() => _MessageText(
             message: 'https://divine.video/video/$videoStableId',
             isSent: isSent,
+            dmReplyContext: dmReplyContext,
           ),
-          VideoLinkPreviewResolved(:final video) => _VideoCard(video: video),
+          VideoLinkPreviewResolved(:final video) => _VideoCard(
+            video: video,
+            dmReplyContext: dmReplyContext,
+          ),
         },
       ),
     );
@@ -530,9 +563,10 @@ class _VideoLinkPreview extends ConsumerWidget {
 /// count rendered inside a gradient overlay footer. Mirrors the
 /// `part/video thumbnail` Figma component used elsewhere in the app.
 class _VideoCard extends ConsumerWidget {
-  const _VideoCard({required this.video});
+  const _VideoCard({required this.video, this.dmReplyContext});
 
   final VideoEvent video;
+  final DmReplyContext? dmReplyContext;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -549,7 +583,13 @@ class _VideoCard extends ConsumerWidget {
     };
     final hasAuthor = authorName != null && authorName.isNotEmpty;
     return GestureDetector(
-      onTap: () => context.push(VideoDetailScreen.pathForId(video.id)),
+      onTap: () => context.push(
+        VideoDetailScreen.pathForId(video.id),
+        extra: VideoDetailRouteExtra(
+          initialVideo: video,
+          dmReplyContext: dmReplyContext,
+        ),
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: SizedBox(

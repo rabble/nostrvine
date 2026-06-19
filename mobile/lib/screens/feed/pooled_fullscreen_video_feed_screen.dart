@@ -21,6 +21,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/comments/comments_screen.dart';
+import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_settings_menu.dart';
@@ -153,6 +154,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
     this.sourceDetail,
     this.autoOpenComments = false,
     this.onPageChanged,
+    this.dmReplyContext,
     super.key,
   });
 
@@ -167,6 +169,10 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
+
+  /// Present when the reel was opened from a DM thread — drives the in-player
+  /// reply/reaction bar. Null on feed/profile opens.
+  final DmReplyContext? dmReplyContext;
 
   /// When true, opens the comments sheet immediately after the first frame.
   ///
@@ -225,6 +231,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
         sourceDetail: sourceDetail,
         autoOpenComments: autoOpenComments,
         onPageChanged: onPageChanged,
+        dmReplyContext: dmReplyContext,
       ),
     );
   }
@@ -244,6 +251,7 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
     this.sourceDetail,
     this.autoOpenComments = false,
     this.onPageChanged,
+    this.dmReplyContext,
     super.key,
   });
 
@@ -265,6 +273,10 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
   ///
   /// Used by embedded surfaces to keep the URL in sync.
   final void Function(int index)? onPageChanged;
+
+  /// Present when the reel was opened from a DM thread — drives the in-player
+  /// reply/reaction bar in the body footer.
+  final DmReplyContext? dmReplyContext;
 
   @override
   ConsumerState<FullscreenFeedContent> createState() =>

@@ -15,6 +15,7 @@ import 'package:nostr_client/nostr_client.dart' show NostrClient;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -25,11 +26,16 @@ class VideoDetailRouteExtra {
     this.autoOpenComments = false,
     this.fallbackVideoIds = const [],
     this.initialVideo,
+    this.dmReplyContext,
   });
 
   final bool autoOpenComments;
   final List<String> fallbackVideoIds;
   final VideoEvent? initialVideo;
+
+  /// Present when the reel was opened from a DM thread — drives the in-player
+  /// reply/reaction bar. Null for feed/profile opens.
+  final DmReplyContext? dmReplyContext;
 }
 
 class VideoDetailScreen extends ConsumerStatefulWidget {
@@ -54,6 +60,7 @@ class VideoDetailScreen extends ConsumerStatefulWidget {
     this.fallbackVideoIds = const [],
     this.initialVideo,
     this.videoFeedBuilder,
+    this.dmReplyContext,
     super.key,
   });
 
@@ -62,6 +69,10 @@ class VideoDetailScreen extends ConsumerStatefulWidget {
   final List<String> fallbackVideoIds;
   final VideoEvent? initialVideo;
   final Widget Function(VideoEvent video)? videoFeedBuilder;
+
+  /// Present when opened from a DM thread — forwarded to the player for the
+  /// in-player reply/reaction bar.
+  final DmReplyContext? dmReplyContext;
 
   @override
   ConsumerState<VideoDetailScreen> createState() => _VideoDetailScreenState();
@@ -316,6 +327,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
           contextTitle: 'Shared Video',
           trafficSource: ViewTrafficSource.share,
           autoOpenComments: widget.autoOpenComments,
+          dmReplyContext: widget.dmReplyContext,
         );
   }
 
