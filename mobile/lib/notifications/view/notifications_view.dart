@@ -255,17 +255,18 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
         switch (target) {
           case OpenVideoTarget():
             // targetEventId is the event the resolver walks to find the root
-            // video. A mention with no resolvable video falls back to the
-            // actor's profile.
+            // video. Any comment/reply/likeComment/mention target whose root
+            // video cannot be resolved falls back to the actor's profile —
+            // mirroring the push tap path (`_resolveAndPushVideoLink`, the
+            // #5079 failure-UX contract) so every tap entry point shares one
+            // policy instead of silently dead-ending after marking the row read.
             final navigated = await _navigateToVideo(
               context,
               targetEventId!,
               videoAddressableId: videoAddressableId,
               notificationKind: type,
             );
-            if (!navigated &&
-                type == NotificationKind.mention &&
-                context.mounted) {
+            if (!navigated && context.mounted) {
               _navigateToProfile(context, actor.pubkey);
             }
           case OpenProfileTarget(:final actorPubkey):
