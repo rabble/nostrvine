@@ -161,11 +161,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     }
   }
 
-  /// Loads followed profiles for local search.
-  ///
-  /// For [UserPickerFilterMode.mutualFollowsOnly], fetches the current user's
-  /// followers in parallel with cached profiles so mutual-follow filtering is
-  /// done once when the sheet opens.
+  /// Loads followed profiles and fetches followers in parallel for mutual mode.
   Future<void> _loadFollowProfiles() async {
     final followRepo = ref.read(followRepositoryProvider);
     final profileRepo = ref.read(profileRepositoryProvider);
