@@ -181,6 +181,41 @@ void main() {
       );
     });
 
+    test('replaces superseded addressable video rows for the same '
+        'coordinate', () async {
+      final pubkey = pubkeyFor(55);
+      final older = Event(
+        pubkey,
+        NIP71VideoKinds.addressableShortVideo,
+        const [
+          ['d', 'clip-1'],
+          ['url', 'https://example.com/old.mp4'],
+        ],
+        'old',
+        createdAt: 100,
+      );
+      final latest = Event(
+        pubkey,
+        NIP71VideoKinds.addressableShortVideo,
+        const [
+          ['d', 'clip-1'],
+          ['url', 'https://example.com/new.mp4'],
+        ],
+        'new',
+        createdAt: 200,
+      );
+
+      router.handleEvent(older);
+      router.handleEvent(latest);
+
+      await router.drainForTesting();
+
+      // Same pubkey+kind+d-tag: the older raw row is deleted so cache-first
+      // LIMIT queries don't return a stale duplicate of the edited video.
+      expect(await db.nostrEventsDao.getEventById(older.id), isNull);
+      expect(await db.nostrEventsDao.getEventById(latest.id), isNotNull);
+    });
+
     test(
       'handleEvent enqueues without synchronously persisting the event',
       () async {

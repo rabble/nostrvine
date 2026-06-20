@@ -8,6 +8,7 @@ import 'package:db_client/db_client.dart';
 import 'package:meta/meta.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/event_kind.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 const eventRouterBatchFlushThreshold = 50;
@@ -139,7 +140,7 @@ class EventRouter {
         category: LogCategory.system,
       );
 
-      await _db.nostrEventsDao.cacheEventsBatch(batch);
+      await _persistRawEvents(batch);
 
       final routeBatch = _coalesceReplaceableRouting(batch);
       await _db.transaction(() async {
@@ -161,6 +162,33 @@ class EventRouter {
         error: e,
         stackTrace: stackTrace,
       );
+    }
+  }
+
+  /// Persists raw events, splitting by replaceable semantics.
+  ///
+  /// Addressable / parameterized-replaceable events (e.g. kind 34236 videos)
+  /// go through [upsertEventsBatch] so superseded coordinates are deleted —
+  /// the cache-first feed reads these raw with a SQL `LIMIT`, so stale rows
+  /// would otherwise consume slots and shrink the unique-result count. Every
+  /// other kind keeps all raw rows by id via [cacheEventsBatch]; its current
+  /// value (if any) lives in a denormalized table (e.g. kind 0 → UserProfiles).
+  Future<void> _persistRawEvents(List<Event> batch) async {
+    final addressable = <Event>[];
+    final raw = <Event>[];
+    for (final event in batch) {
+      if (EventKind.isParameterizedReplaceable(event.kind)) {
+        addressable.add(event);
+      } else {
+        raw.add(event);
+      }
+    }
+
+    if (raw.isNotEmpty) {
+      await _db.nostrEventsDao.cacheEventsBatch(raw);
+    }
+    if (addressable.isNotEmpty) {
+      await _db.nostrEventsDao.upsertEventsBatch(addressable);
     }
   }
 
