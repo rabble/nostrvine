@@ -104,6 +104,7 @@ class VideoMetadataUserChip extends ConsumerWidget {
                   removeLabel ?? context.l10n.videoMetadataRemoveSemanticLabel,
               button: true,
               child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: onRemove,
                 child: SizedBox(
                   width: 16,
