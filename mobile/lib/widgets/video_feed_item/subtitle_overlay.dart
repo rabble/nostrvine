@@ -75,7 +75,7 @@ class _SubtitleCuePositionPillState
     final cuesAsync = ref.watch(
       subtitleCuesProvider(
         videoId: widget.video.id,
-        textTrackRef: widget.video.textTrackRef,
+        textTrackRefs: widget.video.textTrackRefs,
         textTrackContent: widget.video.textTrackContent,
         sha256: widget.video.sha256,
       ),

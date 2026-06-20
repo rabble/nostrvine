@@ -8,31 +8,27 @@ part of 'subtitle_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Fetches subtitle cues for a video, using the fastest available path.
+/// Fetches subtitle cues for a video, using ordered fallback.
 ///
 /// 1. If [textTrackContent] is present (REST API embedded the VTT), parse it
 ///    directly — zero network cost.
-/// 2. If [sha256] is present, fetch VTT from the Blossom server at
-///    `https://media.divine.video/{sha256}/vtt`. Returns empty list on 404
-///    (VTT not yet generated). Non-blocking.
-/// 3. If [textTrackRef] is present (addressable coordinates like
-///    `39307:<pubkey>:subtitles:<d-tag>`), query the relay for the subtitle
-///    event and parse its content.
+/// 2. For each ref in [textTrackRefs] (or [textTrackRef] for back-compat),
+///    try HTTP fetch or relay query in order.
+/// 3. If [sha256] is present, fetch from Blossom at
+///    `https://media.divine.video/{sha256}/vtt`.
 /// 4. Otherwise returns an empty list (no subtitles available).
 
 @ProviderFor(subtitleCues)
 final subtitleCuesProvider = SubtitleCuesFamily._();
 
-/// Fetches subtitle cues for a video, using the fastest available path.
+/// Fetches subtitle cues for a video, using ordered fallback.
 ///
 /// 1. If [textTrackContent] is present (REST API embedded the VTT), parse it
 ///    directly — zero network cost.
-/// 2. If [sha256] is present, fetch VTT from the Blossom server at
-///    `https://media.divine.video/{sha256}/vtt`. Returns empty list on 404
-///    (VTT not yet generated). Non-blocking.
-/// 3. If [textTrackRef] is present (addressable coordinates like
-///    `39307:<pubkey>:subtitles:<d-tag>`), query the relay for the subtitle
-///    event and parse its content.
+/// 2. For each ref in [textTrackRefs] (or [textTrackRef] for back-compat),
+///    try HTTP fetch or relay query in order.
+/// 3. If [sha256] is present, fetch from Blossom at
+///    `https://media.divine.video/{sha256}/vtt`.
 /// 4. Otherwise returns an empty list (no subtitles available).
 
 final class SubtitleCuesProvider
@@ -45,22 +41,21 @@ final class SubtitleCuesProvider
     with
         $FutureModifier<List<SubtitleCue>>,
         $FutureProvider<List<SubtitleCue>> {
-  /// Fetches subtitle cues for a video, using the fastest available path.
+  /// Fetches subtitle cues for a video, using ordered fallback.
   ///
   /// 1. If [textTrackContent] is present (REST API embedded the VTT), parse it
   ///    directly — zero network cost.
-  /// 2. If [sha256] is present, fetch VTT from the Blossom server at
-  ///    `https://media.divine.video/{sha256}/vtt`. Returns empty list on 404
-  ///    (VTT not yet generated). Non-blocking.
-  /// 3. If [textTrackRef] is present (addressable coordinates like
-  ///    `39307:<pubkey>:subtitles:<d-tag>`), query the relay for the subtitle
-  ///    event and parse its content.
+  /// 2. For each ref in [textTrackRefs] (or [textTrackRef] for back-compat),
+  ///    try HTTP fetch or relay query in order.
+  /// 3. If [sha256] is present, fetch from Blossom at
+  ///    `https://media.divine.video/{sha256}/vtt`.
   /// 4. Otherwise returns an empty list (no subtitles available).
   SubtitleCuesProvider._({
     required SubtitleCuesFamily super.from,
     required ({
       String videoId,
       String? textTrackRef,
+      List<String> textTrackRefs,
       String? textTrackContent,
       String? sha256,
     })
@@ -96,6 +91,7 @@ final class SubtitleCuesProvider
             as ({
               String videoId,
               String? textTrackRef,
+              List<String> textTrackRefs,
               String? textTrackContent,
               String? sha256,
             });
@@ -103,6 +99,7 @@ final class SubtitleCuesProvider
       ref,
       videoId: argument.videoId,
       textTrackRef: argument.textTrackRef,
+      textTrackRefs: argument.textTrackRefs,
       textTrackContent: argument.textTrackContent,
       sha256: argument.sha256,
     );
@@ -119,18 +116,16 @@ final class SubtitleCuesProvider
   }
 }
 
-String _$subtitleCuesHash() => r'f2f1b2025cc1aed796903a9d96fd5c64b5393263';
+String _$subtitleCuesHash() => r'1715789c0a7b8c19b8261c94c38c649f3c57bc90';
 
-/// Fetches subtitle cues for a video, using the fastest available path.
+/// Fetches subtitle cues for a video, using ordered fallback.
 ///
 /// 1. If [textTrackContent] is present (REST API embedded the VTT), parse it
 ///    directly — zero network cost.
-/// 2. If [sha256] is present, fetch VTT from the Blossom server at
-///    `https://media.divine.video/{sha256}/vtt`. Returns empty list on 404
-///    (VTT not yet generated). Non-blocking.
-/// 3. If [textTrackRef] is present (addressable coordinates like
-///    `39307:<pubkey>:subtitles:<d-tag>`), query the relay for the subtitle
-///    event and parse its content.
+/// 2. For each ref in [textTrackRefs] (or [textTrackRef] for back-compat),
+///    try HTTP fetch or relay query in order.
+/// 3. If [sha256] is present, fetch from Blossom at
+///    `https://media.divine.video/{sha256}/vtt`.
 /// 4. Otherwise returns an empty list (no subtitles available).
 
 final class SubtitleCuesFamily extends $Family
@@ -140,6 +135,7 @@ final class SubtitleCuesFamily extends $Family
           ({
             String videoId,
             String? textTrackRef,
+            List<String> textTrackRefs,
             String? textTrackContent,
             String? sha256,
           })
@@ -153,27 +149,27 @@ final class SubtitleCuesFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Fetches subtitle cues for a video, using the fastest available path.
+  /// Fetches subtitle cues for a video, using ordered fallback.
   ///
   /// 1. If [textTrackContent] is present (REST API embedded the VTT), parse it
   ///    directly — zero network cost.
-  /// 2. If [sha256] is present, fetch VTT from the Blossom server at
-  ///    `https://media.divine.video/{sha256}/vtt`. Returns empty list on 404
-  ///    (VTT not yet generated). Non-blocking.
-  /// 3. If [textTrackRef] is present (addressable coordinates like
-  ///    `39307:<pubkey>:subtitles:<d-tag>`), query the relay for the subtitle
-  ///    event and parse its content.
+  /// 2. For each ref in [textTrackRefs] (or [textTrackRef] for back-compat),
+  ///    try HTTP fetch or relay query in order.
+  /// 3. If [sha256] is present, fetch from Blossom at
+  ///    `https://media.divine.video/{sha256}/vtt`.
   /// 4. Otherwise returns an empty list (no subtitles available).
 
   SubtitleCuesProvider call({
     required String videoId,
     String? textTrackRef,
+    List<String> textTrackRefs = const [],
     String? textTrackContent,
     String? sha256,
   }) => SubtitleCuesProvider._(
     argument: (
       videoId: videoId,
       textTrackRef: textTrackRef,
+      textTrackRefs: textTrackRefs,
       textTrackContent: textTrackContent,
       sha256: sha256,
     ),

@@ -339,7 +339,7 @@ void main() {
       expect(requestedDelays, equals([const Duration(seconds: 5)]));
     });
 
-    test('falls through to relay path on Blossom 404', () async {
+    test('prefers relay textTrackRef over auto-gen sha256 Blossom', () async {
       final container = createContainer();
       addTearDown(container.dispose);
 
@@ -359,7 +359,7 @@ void main() {
             [
               ['d', 'subtitles:test-vine-id'],
             ],
-            'WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000\nFrom relay fallback\n',
+            'WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000\nFrom relay ref\n',
             createdAt: 1757385263,
           ),
         ],
@@ -374,8 +374,36 @@ void main() {
       );
 
       expect(cues, hasLength(1));
-      expect(cues.first.text, equals('From relay fallback'));
+      expect(cues.first.text, equals('From relay ref'));
     });
+
+    test(
+      'returns empty when relay ref misses and Blossom sha256 404s',
+      () async {
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer((_) async => http.Response('missing', 404));
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        final cues = await container.read(
+          subtitleCuesProvider(
+            videoId: 'test-id',
+            sha256: 'abc123',
+            textTrackRef: '39307:$testPubkey:subtitles:test-vine-id',
+          ).future,
+        );
+
+        expect(cues, isEmpty);
+      },
+    );
 
     test('parses Blossom VTT immediately on 200', () async {
       final container = createContainer();
