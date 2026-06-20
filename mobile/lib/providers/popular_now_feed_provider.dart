@@ -33,6 +33,7 @@ part 'popular_now_feed_provider.g.dart';
 @Riverpod(keepAlive: true) // Keep alive to prevent state loss on tab switches
 class PopularNowFeed extends _$PopularNowFeed {
   VideoFeedBuilder? _builder;
+  final _enrichmentAttemptTracker = NostrTagEnrichmentAttemptTracker();
 
   /// REST API pagination cursor (oldest video timestamp). Non-null implies
   /// REST is the active source; null means we are in Nostr-fallback mode.
@@ -532,6 +533,7 @@ class PopularNowFeed extends _$PopularNowFeed {
       videos,
       nostrService: ref.read(nostrServiceProvider),
       callerName: 'PopularNowFeedProvider',
+      attemptTracker: _enrichmentAttemptTracker,
       onEnriched: (enrichedVideos) {
         if (!ref.mounted || !state.hasValue) return;
         // Skip if we've left REST mode while enrichment was running.

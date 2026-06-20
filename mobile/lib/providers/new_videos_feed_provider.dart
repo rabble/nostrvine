@@ -23,6 +23,7 @@ part 'new_videos_feed_provider.g.dart';
 @Riverpod(keepAlive: true)
 class NewVideosFeed extends _$NewVideosFeed {
   int? _nextCursor;
+  final _enrichmentAttemptTracker = NostrTagEnrichmentAttemptTracker();
 
   @override
   Future<VideoFeedState> build() async {
@@ -219,6 +220,7 @@ class NewVideosFeed extends _$NewVideosFeed {
       videos,
       nostrService: ref.read(nostrServiceProvider),
       callerName: 'NewVideosFeedProvider',
+      attemptTracker: _enrichmentAttemptTracker,
       onEnriched: (enrichedVideos) {
         if (!ref.mounted || !state.hasValue) return;
 

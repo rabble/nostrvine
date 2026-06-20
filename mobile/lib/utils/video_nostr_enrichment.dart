@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Filter;
@@ -15,6 +16,66 @@ const _proofCriticalRawTagKeys = <String>{
   'identity_verifier',
   'identity_portable',
 };
+
+/// Bounded, time-based throttle for REST rows that still need relay
+/// enrichment after a previous lookup missed.
+///
+/// Misses are retried after [retryDelay] rather than suppressed forever, so a
+/// transient relay miss/timeout can still recover on a later feed pass.
+class NostrTagEnrichmentAttemptTracker {
+  NostrTagEnrichmentAttemptTracker({
+    this.retryDelay = const Duration(minutes: 5),
+    this.maxEntries = 500,
+    DateTime Function()? now,
+  }) : _now = now ?? DateTime.now;
+
+  final Duration retryDelay;
+  final int maxEntries;
+  final DateTime Function() _now;
+  final _nextAttemptAtById = <String, DateTime>{};
+
+  bool shouldAttempt(String id) {
+    final retryAt = _nextAttemptAtById[id.toLowerCase()];
+    return retryAt == null || !_now().isBefore(retryAt);
+  }
+
+  void recordAttemptResults({
+    required Iterable<String> attemptedIds,
+    required Iterable<String> enrichedIds,
+  }) {
+    final now = _now();
+    final enriched = {for (final id in enrichedIds) id.toLowerCase()};
+
+    for (final id in enriched) {
+      _nextAttemptAtById.remove(id);
+    }
+
+    for (final id in attemptedIds) {
+      final key = id.toLowerCase();
+      if (!enriched.contains(key)) {
+        _nextAttemptAtById[key] = now.add(retryDelay);
+      }
+    }
+
+    _prune(now);
+  }
+
+  @visibleForTesting
+  bool isThrottling(String id) =>
+      _nextAttemptAtById.containsKey(id.toLowerCase());
+
+  void _prune(DateTime now) {
+    _nextAttemptAtById.removeWhere((_, retryAt) => !now.isBefore(retryAt));
+    if (_nextAttemptAtById.length <= maxEntries) return;
+
+    final entries = _nextAttemptAtById.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+    final overflow = _nextAttemptAtById.length - maxEntries;
+    for (final entry in entries.take(overflow)) {
+      _nextAttemptAtById.remove(entry.key);
+    }
+  }
+}
 
 /// Returns whether a REST-sourced video should be fetched from Nostr for the
 /// full event tag set.
@@ -59,11 +120,13 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
   List<VideoEvent> videos, {
   required NostrClient nostrService,
   String callerName = 'VideoEnrichment',
+  NostrTagEnrichmentAttemptTracker? attemptTracker,
 }) async {
   if (videos.isEmpty) return videos;
 
   final idsToEnrich = videos
       .where(needsNostrTagEnrichment)
+      .where((v) => attemptTracker?.shouldAttempt(v.id) ?? true)
       .map((v) => v.id)
       .toList();
 
@@ -80,7 +143,13 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
         .queryEvents([filter])
         .timeout(const Duration(seconds: 5));
 
-    if (nostrEvents.isEmpty) return videos;
+    if (nostrEvents.isEmpty) {
+      attemptTracker?.recordAttemptResults(
+        attemptedIds: idsToEnrich,
+        enrichedIds: const [],
+      );
+      return videos;
+    }
 
     // Build a lookup map: event ID -> parsed VideoEvent for enrichment
     final nostrEventsMap = <String, VideoEvent>{};
@@ -101,7 +170,18 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
       }
     }
 
-    if (nostrEventsMap.isEmpty) return videos;
+    if (nostrEventsMap.isEmpty) {
+      attemptTracker?.recordAttemptResults(
+        attemptedIds: idsToEnrich,
+        enrichedIds: const [],
+      );
+      return videos;
+    }
+
+    attemptTracker?.recordAttemptResults(
+      attemptedIds: idsToEnrich,
+      enrichedIds: nostrEventsMap.keys,
+    );
 
     // Merge Nostr-parsed fields into REST API videos
     return videos.map((video) {
@@ -181,6 +261,10 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
       return video;
     }).toList();
   } catch (e) {
+    attemptTracker?.recordAttemptResults(
+      attemptedIds: idsToEnrich,
+      enrichedIds: const [],
+    );
     // Non-fatal: return original videos if enrichment fails
     Log.warning(
       '$callerName: Failed to enrich with Nostr tags: $e',
@@ -205,12 +289,14 @@ List<VideoEvent> enrichVideosInBackground(
   required NostrClient nostrService,
   required void Function(List<VideoEvent> enrichedVideos) onEnriched,
   String callerName = 'VideoEnrichment',
+  NostrTagEnrichmentAttemptTracker? attemptTracker,
 }) {
   unawaited(
     enrichVideosWithNostrTags(
       videos,
       nostrService: nostrService,
       callerName: callerName,
+      attemptTracker: attemptTracker,
     ).then((enriched) {
       // Only call back if enrichment actually changed something
       if (enriched != videos) {

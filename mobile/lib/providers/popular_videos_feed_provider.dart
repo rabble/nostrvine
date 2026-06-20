@@ -38,6 +38,7 @@ final popularVideosVariantProvider = StateProvider<PopularVideosVariant>(
 @Riverpod(keepAlive: true)
 class PopularVideosFeed extends _$PopularVideosFeed {
   String? _nextCursor;
+  final _enrichmentAttemptTracker = NostrTagEnrichmentAttemptTracker();
 
   @override
   Future<VideoFeedState> build() async {
@@ -284,6 +285,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       videos,
       nostrService: ref.read(nostrServiceProvider),
       callerName: 'PopularVideosFeedProvider',
+      attemptTracker: _enrichmentAttemptTracker,
       onEnriched: (enrichedVideos) {
         if (!ref.mounted || !state.hasValue) return;
 

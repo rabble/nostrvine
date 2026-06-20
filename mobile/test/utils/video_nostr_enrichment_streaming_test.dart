@@ -193,6 +193,46 @@ void main() {
       expect(enriched.first.contentWarningLabels, equals(['nudity']));
     });
 
+    test('throttles unresolved rows until the retry delay expires', () async {
+      var now = DateTime(2026);
+      final tracker = NostrTagEnrichmentAttemptTracker(
+        now: () => now,
+      );
+      final videos = [_createTestVideo(id: 'v1')];
+
+      when(
+        () => mockNostrService.queryEvents(any()),
+      ).thenAnswer((_) async => []);
+
+      await enrichVideosWithNostrTags(
+        videos,
+        nostrService: mockNostrService,
+        attemptTracker: tracker,
+      );
+
+      verify(() => mockNostrService.queryEvents(any())).called(1);
+      expect(tracker.isThrottling('v1'), isTrue);
+      clearInteractions(mockNostrService);
+
+      await enrichVideosWithNostrTags(
+        videos,
+        nostrService: mockNostrService,
+        attemptTracker: tracker,
+      );
+
+      verifyNever(() => mockNostrService.queryEvents(any()));
+
+      now = now.add(const Duration(minutes: 5));
+
+      await enrichVideosWithNostrTags(
+        videos,
+        nostrService: mockNostrService,
+        attemptTracker: tracker,
+      );
+
+      verify(() => mockNostrService.queryEvents(any())).called(1);
+    });
+
     test('enrichment failure does not affect initial return', () async {
       final videos = [_createTestVideo(id: 'v1')];
 

@@ -67,6 +67,7 @@ class VideoFeedPage extends ConsumerWidget {
         .showDivineHostedOnly;
 
     final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+    final enrichmentAttemptTracker = NostrTagEnrichmentAttemptTracker();
 
     return MultiBlocProvider(
       key: ValueKey('video-feed-$showDivineHostedOnly-$contentFilterVersion'),
@@ -89,6 +90,7 @@ class VideoFeedPage extends ConsumerWidget {
               videos,
               nostrService: ref.read(nostrServiceProvider),
               callerName: 'VideoFeedBloc',
+              attemptTracker: enrichmentAttemptTracker,
             ),
           )..add(VideoFeedStarted(mode: initialMode)),
         ),

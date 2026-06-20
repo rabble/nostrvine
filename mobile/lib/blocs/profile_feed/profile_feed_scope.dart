@@ -43,6 +43,7 @@ class ProfileFeedScope extends ConsumerWidget {
     final videosRepository = ref.watch(videosRepositoryProvider);
     final videoEventService = ref.watch(videoEventServiceProvider);
     final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+    final enrichmentAttemptTracker = NostrTagEnrichmentAttemptTracker();
 
     return BlocProvider<ProfileFeedCubit>(
       key: ValueKey((
@@ -62,6 +63,7 @@ class ProfileFeedScope extends ConsumerWidget {
           videos,
           nostrService: ref.read(nostrServiceProvider),
           callerName: 'ProfileFeedCubit',
+          attemptTracker: enrichmentAttemptTracker,
         ),
       ),
       child: BlocListener<ProfileFeedCubit, ProfileFeedState>(
