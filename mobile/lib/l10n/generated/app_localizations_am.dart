@@ -9,6 +9,9 @@ class AppLocalizationsAm extends AppLocalizations {
   AppLocalizationsAm([String locale = 'am']) : super(locale);
 
   @override
+  String get dmMessageBubbleVideoReplyHint => 'የተጠቀሰውን ቪዲዮ ክፈት';
+
+  @override
   String get appTitle => 'Divine';
 
   @override

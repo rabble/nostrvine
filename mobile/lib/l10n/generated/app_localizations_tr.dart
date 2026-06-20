@@ -9,6 +9,9 @@ class AppLocalizationsTr extends AppLocalizations {
   AppLocalizationsTr([String locale = 'tr']) : super(locale);
 
   @override
+  String get dmMessageBubbleVideoReplyHint => 'Atıfta bulunulan videoyu aç';
+
+  @override
   String get appTitle => 'Divine';
 
   @override

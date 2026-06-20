@@ -1,5 +1,6 @@
 {
     "@@locale": "pl",
+    "dmMessageBubbleVideoReplyHint": "Otwórz przywołane wideo",
     "commonSomethingWentWrong": "Coś poszło nie tak",
     "profileFeedError": "Couldn't load videos.",
     "profileFeedLoadMoreError": "Couldn't load more videos. Pull to refresh.",

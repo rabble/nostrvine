@@ -9,6 +9,9 @@ class AppLocalizationsNl extends AppLocalizations {
   AppLocalizationsNl([String locale = 'nl']) : super(locale);
 
   @override
+  String get dmMessageBubbleVideoReplyHint => 'Verwezen video openen';
+
+  @override
   String get appTitle => 'Divine';
 
   @override

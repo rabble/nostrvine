@@ -9,6 +9,9 @@ class AppLocalizationsId extends AppLocalizations {
   AppLocalizationsId([String locale = 'id']) : super(locale);
 
   @override
+  String get dmMessageBubbleVideoReplyHint => 'Buka video yang dirujuk';
+
+  @override
   String get appTitle => 'Divine';
 
   @override

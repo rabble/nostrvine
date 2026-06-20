@@ -9,6 +9,9 @@ class AppLocalizationsPt extends AppLocalizations {
   AppLocalizationsPt([String locale = 'pt']) : super(locale);
 
   @override
+  String get dmMessageBubbleVideoReplyHint => 'Abrir o vídeo referenciado';
+
+  @override
   String get appTitle => 'Divine';
 
   @override

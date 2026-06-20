@@ -1624,6 +1624,50 @@ class DmRepository {
     );
   }
 
+  /// Group counterpart of [sendSharedVideo]: cites a video with a NIP-18 `q`
+  /// tag + NIP-21 `nostr:` URI on a kind-14 rumor sent to every member of a
+  /// group conversation.
+  ///
+  /// Used for a reel reply in a group so the reply self-carries the video
+  /// reference end-to-end (cross-device + other Nostr clients can resolve it
+  /// without the parent message). When a valid citation can't be built, falls
+  /// back to a plain-text [sendGroupMessage].
+  ///
+  /// Throws the same errors as [sendGroupMessage].
+  Future<List<NIP17SendResult>> sendSharedVideoGroup({
+    required List<String> recipientPubkeys,
+    required String baseContent,
+    required int videoKind,
+    required String videoAuthorPubkey,
+    String? videoDTag,
+    String? videoEventId,
+    String? relayHint,
+    String? replyToId,
+  }) async {
+    final citation = DmSharedVideoCitation.build(
+      videoKind: videoKind,
+      authorPubkey: videoAuthorPubkey,
+      relayHint: relayHint ?? DmShareConstants.defaultRelayHint,
+      dTag: videoDTag,
+      eventId: videoEventId,
+    );
+
+    if (citation == null) {
+      return sendGroupMessage(
+        recipientPubkeys: recipientPubkeys,
+        content: baseContent,
+        replyToId: replyToId,
+      );
+    }
+
+    return sendGroupMessage(
+      recipientPubkeys: recipientPubkeys,
+      content: '$baseContent\n${citation.nostrUri}',
+      additionalTags: [citation.qTag],
+      replyToId: replyToId,
+    );
+  }
+
   /// Re-publish only the sender self-addressed gift wrap for an
   /// already-sent rumor whose recipient publish landed but whose
   /// self-wrap did not.
@@ -2230,6 +2274,7 @@ class DmRepository {
     required List<String> recipientPubkeys,
     required String content,
     String? replyToId,
+    List<List<String>> additionalTags = const [],
   }) async {
     _assertInitialized();
     if (recipientPubkeys.isEmpty) {
@@ -2252,7 +2297,8 @@ class DmRepository {
     final results = <NIP17SendResult>[];
 
     for (final pubkey in recipientPubkeys) {
-      final additionalTags = <List<String>>[
+      final rumorTags = <List<String>>[
+        ...additionalTags,
         // Include all recipients as p tags per NIP-17
         for (final pk in recipientPubkeys)
           if (pk != pubkey) ['p', pk],
@@ -2266,7 +2312,7 @@ class DmRepository {
       final rumor = _messageService!.buildRumor(
         recipientPubkey: pubkey,
         content: content,
-        additionalTags: additionalTags,
+        additionalTags: rumorTags,
       );
 
       // Enqueue before publish so an app crash mid-send leaves a
@@ -2309,6 +2355,7 @@ class DmRepository {
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       final firstSuccess = results.firstWhere((r) => r.success);
       final localTags = <List<String>>[
+        ...additionalTags,
         for (final pk in recipientPubkeys) ['p', pk],
         if (replyToId != null) ['e', replyToId],
       ];

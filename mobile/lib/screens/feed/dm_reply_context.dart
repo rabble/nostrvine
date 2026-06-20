@@ -1,15 +1,17 @@
 // ABOUTME: Context that marks a full-screen reel as opened from a DM thread.
-// ABOUTME: Drives the in-player reply/reaction bar. Plain strings only.
+// ABOUTME: Drives the in-player reply/reaction bar.
 
 import 'package:equatable/equatable.dart';
+import 'package:models/models.dart';
 
 /// Identifies the DM conversation a full-screen reel was opened from, so the
 /// player can show a reply/reaction bar that threads back into that chat.
 ///
-/// All fields are plain strings / lists so the value survives travel through
-/// go_router `extra`. It is intentionally `null` for reels opened from the feed
-/// or profile (no bar) and lost on a web hard-reload (the player still works,
-/// just without the bar).
+/// Fields are plain strings / lists plus the immutable [sharedVideoRef] value
+/// object, so the context survives travel through go_router `extra` (an
+/// in-process object reference). It is intentionally `null` for reels opened
+/// from the feed or profile (no bar) and lost on a web hard-reload (the player
+/// still works, just without the bar).
 class DmReplyContext extends Equatable {
   const DmReplyContext({
     required this.conversationId,
@@ -19,6 +21,7 @@ class DmReplyContext extends Equatable {
     required this.messageAuthorPubkey,
     required this.hintName,
     required this.isOwnMessage,
+    this.sharedVideoRef,
   });
 
   /// Deterministic conversation id (matches `DmMessage.conversationId`).
@@ -44,6 +47,15 @@ class DmReplyContext extends Equatable {
   /// (drives the "Reply to yourself…" hint).
   final bool isOwnMessage;
 
+  /// Structured reference to the reel the reply is about, when the shared-reel
+  /// message carries one. Lets a reel reply self-carry the video's NIP-18 `q`
+  /// citation so the reply stays linked to the video across devices and other
+  /// Nostr clients. `null` for legacy URL-only shares the reply can't cite.
+  final DmSharedVideoRef? sharedVideoRef;
+
+  /// Whether a structured video reference is available to cite on a reply.
+  bool get hasSharedVideoRef => sharedVideoRef != null;
+
   @override
   List<Object?> get props => [
     conversationId,
@@ -53,5 +65,6 @@ class DmReplyContext extends Equatable {
     messageAuthorPubkey,
     hintName,
     isOwnMessage,
+    sharedVideoRef,
   ];
 }

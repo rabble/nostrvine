@@ -1,5 +1,6 @@
 {
     "@@locale": "nl",
+    "dmMessageBubbleVideoReplyHint": "Verwezen video openen",
     "commonSomethingWentWrong": "Er ging iets mis",
     "profileFeedError": "Couldn't load videos.",
     "profileFeedLoadMoreError": "Couldn't load more videos. Pull to refresh.",

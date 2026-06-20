@@ -44,19 +44,45 @@ class InlineReelReplyCubit extends Cubit<InlineReelReplyState> {
 
     try {
       final bool ok;
+      // When the reel has a structured video ref, the reply self-carries the
+      // NIP-18 `q` citation so it stays linked to the video across devices and
+      // other Nostr clients; otherwise it threads as a plain reply.
+      final videoRef = _replyContext.sharedVideoRef;
       if (_replyContext.isGroup) {
-        final results = await _dmRepository.sendGroupMessage(
-          recipientPubkeys: _replyContext.participantPubkeys,
-          content: trimmed,
-          replyToId: _replyContext.sharedReelMessageId,
-        );
+        final results = videoRef != null
+            ? await _dmRepository.sendSharedVideoGroup(
+                recipientPubkeys: _replyContext.participantPubkeys,
+                baseContent: trimmed,
+                videoKind: videoRef.videoKind.kind,
+                videoAuthorPubkey: videoRef.authorPubkey ?? '',
+                videoDTag: videoRef.dTag,
+                videoEventId: videoRef.eventId,
+                relayHint: videoRef.relayHint,
+                replyToId: _replyContext.sharedReelMessageId,
+              )
+            : await _dmRepository.sendGroupMessage(
+                recipientPubkeys: _replyContext.participantPubkeys,
+                content: trimmed,
+                replyToId: _replyContext.sharedReelMessageId,
+              );
         ok = results.any((r) => r.success);
       } else {
-        final result = await _dmRepository.sendMessage(
-          recipientPubkey: _replyContext.participantPubkeys.single,
-          content: trimmed,
-          replyToId: _replyContext.sharedReelMessageId,
-        );
+        final result = videoRef != null
+            ? await _dmRepository.sendSharedVideo(
+                recipientPubkey: _replyContext.participantPubkeys.single,
+                baseContent: trimmed,
+                videoKind: videoRef.videoKind.kind,
+                videoAuthorPubkey: videoRef.authorPubkey ?? '',
+                videoDTag: videoRef.dTag,
+                videoEventId: videoRef.eventId,
+                relayHint: videoRef.relayHint,
+                replyToId: _replyContext.sharedReelMessageId,
+              )
+            : await _dmRepository.sendMessage(
+                recipientPubkey: _replyContext.participantPubkeys.single,
+                content: trimmed,
+                replyToId: _replyContext.sharedReelMessageId,
+              );
         ok = result.success;
       }
       emit(

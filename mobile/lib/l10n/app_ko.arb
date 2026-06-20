@@ -1,5 +1,6 @@
 {
     "@@locale": "ko",
+    "dmMessageBubbleVideoReplyHint": "참조된 동영상 열기",
     "commonSomethingWentWrong": "문제가 생겼어요",
     "profileFeedError": "Couldn't load videos.",
     "profileFeedLoadMoreError": "Couldn't load more videos. Pull to refresh.",

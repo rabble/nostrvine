@@ -9,6 +9,9 @@ class AppLocalizationsSv extends AppLocalizations {
   AppLocalizationsSv([String locale = 'sv']) : super(locale);
 
   @override
+  String get dmMessageBubbleVideoReplyHint => 'Öppna den refererade videon';
+
+  @override
   String get appTitle => 'Divine';
 
   @override

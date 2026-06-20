@@ -1,5 +1,6 @@
 {
     "@@locale": "fil",
+    "dmMessageBubbleVideoReplyHint": "Buksan ang tinukoy na video",
     "commonSomethingWentWrong": "May nangyaring problema",
     "profileFeedError": "Couldn't load videos.",
     "profileFeedLoadMoreError": "Couldn't load more videos. Pull to refresh.",

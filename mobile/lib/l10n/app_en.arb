@@ -1,5 +1,9 @@
 {
   "@@locale": "en",
+  "dmMessageBubbleVideoReplyHint": "Open the referenced video",
+  "@dmMessageBubbleVideoReplyHint": {
+    "description": "Accessibility label for the compact quoted-video preview shown above a DM reply that references a shared video; activating it opens that video."
+  },
   "appTitle": "Divine",
   "@appTitle": {
     "description": "App title shown in task switcher"

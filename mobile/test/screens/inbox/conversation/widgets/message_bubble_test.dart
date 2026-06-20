@@ -1128,6 +1128,194 @@ void main() {
       );
     });
 
+    group('quoted video reply preview', () {
+      late _MockVideoEventService mockVideoEventService;
+      late MockNostrClient mockNostrClient;
+
+      final testVideo = VideoEvent(
+        id:
+            '0123456789abcdef0123456789abcdef'
+            '0123456789abcdef0123456789abcdef',
+        pubkey:
+            'abcdef0123456789abcdef0123456789'
+            'abcdef0123456789abcdef0123456789',
+        createdAt: 1757385263,
+        content: 'Test',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
+        title: 'My Cool Video',
+      );
+
+      const quotedRef = DmSharedVideoRef(
+        coordinateOrId: '34236:$_testHexPubkey:abc123',
+        videoKind: DmSharedVideoKind.addressableShortVideo,
+        relayHint: 'wss://relay.example',
+        authorPubkey: _testHexPubkey,
+      );
+
+      setUp(() {
+        mockVideoEventService = _MockVideoEventService();
+        mockNostrClient = createMockNostrService();
+
+        when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
+        when(
+          () => mockVideoEventService.getVideoEventByVineId(any()),
+        ).thenReturn(null);
+        when(
+          () => mockNostrClient.fetchEventById(any()),
+        ).thenAnswer((_) async => null);
+      });
+
+      Widget buildWithQuotedReply({
+        required String message,
+        DmSharedVideoRef? quotedVideoRef,
+      }) => testMaterialApp(
+        home: Scaffold(
+          body: MessageBubble(
+            message: message,
+            timestamp: '2:30 PM',
+            isSent: true,
+            quotedVideoRef: quotedVideoRef,
+          ),
+        ),
+        mockNostrService: mockNostrClient,
+        additionalOverrides: [
+          videoEventServiceProvider.overrideWithValue(
+            mockVideoEventService,
+          ),
+        ],
+      );
+
+      testWidgets(
+        'renders compact quoted thumbnail above the reply text and not the '
+        'full share card',
+        (tester) async {
+          when(
+            () => mockVideoEventService.getVideoEventByVineId('abc123'),
+          ).thenReturn(testVideo);
+
+          await tester.pumpWidget(
+            buildWithQuotedReply(
+              message: 'love this one',
+              quotedVideoRef: quotedRef,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // The compact quoted preview renders the resolved video as a small
+          // thumbnail bounded to 40x56, not the full 248x350 share card.
+          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+          final compactThumb = find.byWidgetPredicate(
+            (w) => w is SizedBox && w.width == 40 && w.height == 56,
+          );
+          expect(compactThumb, findsOneWidget);
+
+          // No full 248x350 share-card SizedBox is present.
+          final fullCard = find.byWidgetPredicate(
+            (w) => w is SizedBox && w.width == 248 && w.height == 350,
+          );
+          expect(fullCard, findsNothing);
+
+          // The reply text renders below the quoted preview.
+          expect(find.text('love this one'), findsOneWidget);
+          final thumbCenter = tester
+              .getCenter(find.byType(VideoThumbnailWidget))
+              .dy;
+          final textCenter = tester.getCenter(find.text('love this one')).dy;
+          expect(thumbCenter, lessThan(textCenter));
+        },
+      );
+
+      testWidgets(
+        'renders the full share card for a non-reply share '
+        '(sharedVideoRef set, quotedVideoRef null)',
+        (tester) async {
+          when(
+            () => mockVideoEventService.getVideoEventByVineId('abc123'),
+          ).thenReturn(testVideo);
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: const Scaffold(
+                body: MessageBubble(
+                  message: 'watch this',
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                  sharedVideoRef: quotedRef,
+                ),
+              ),
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videoEventServiceProvider.overrideWithValue(
+                  mockVideoEventService,
+                ),
+              ],
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // The full share card renders a 248x350 thumbnail (default size),
+          // not the compact 40x56 quoted thumbnail.
+          final fullCard = find.byWidgetPredicate(
+            (w) => w is SizedBox && w.width == 248 && w.height == 350,
+          );
+          expect(fullCard, findsOneWidget);
+          final thumbnail = tester.widget<VideoThumbnailWidget>(
+            find.byType(VideoThumbnailWidget),
+          );
+          expect(thumbnail.width, isNull);
+          expect(thumbnail.height, isNull);
+        },
+      );
+
+      testWidgets(
+        'renders the compact unavailable chip when the quoted video is '
+        'not found',
+        (tester) async {
+          // No cache hit, no relay event → VideoLinkPreviewNotFound.
+          await tester.pumpWidget(
+            buildWithQuotedReply(
+              message: 'still good though',
+              quotedVideoRef: quotedRef,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(AppLocalizationsEn().notificationsVideoUnavailable),
+            findsOneWidget,
+          );
+          expect(find.byType(VideoThumbnailWidget), findsNothing);
+          // The reply comment still renders alongside the unavailable chip.
+          expect(find.text('still good though'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'strips the trailing nostr: citation line from the displayed reply '
+        'text when quotedVideoRef is set',
+        (tester) async {
+          when(
+            () => mockVideoEventService.getVideoEventByVineId('abc123'),
+          ).thenReturn(testVideo);
+
+          await tester.pumpWidget(
+            buildWithQuotedReply(
+              // The reply self-carries a NIP-21 citation of the quoted video on
+              // the wire; it must not render in the bubble text.
+              message:
+                  'this is hilarious\n'
+                  'nostr:naddr1qqxnzd3cxqmrzv3exgmr2wfeqy',
+              quotedVideoRef: quotedRef,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('this is hilarious'), findsOneWidget);
+          expect(find.textContaining('nostr:'), findsNothing);
+        },
+      );
+    });
+
     group('long-press', () {
       testWidgets('calls onLongPress callback', (tester) async {
         var longPressed = false;

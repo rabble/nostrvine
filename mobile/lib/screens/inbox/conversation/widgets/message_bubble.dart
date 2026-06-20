@@ -89,6 +89,7 @@ class MessageBubble extends StatelessWidget {
     this.deliveryStatus = DmDeliveryStatus.delivered,
     this.dmReplyContext,
     this.sharedVideoRef,
+    this.quotedVideoRef,
     super.key,
   });
 
@@ -118,7 +119,15 @@ class MessageBubble extends StatelessWidget {
   final DmReplyContext? dmReplyContext;
 
   /// Structured q-tag video reference parsed from the DM rumor, when present.
+  /// Drives the message's OWN full share card. Mutually exclusive with
+  /// [quotedVideoRef] — the call site passes one or the other.
   final DmSharedVideoRef? sharedVideoRef;
+
+  /// Structured reference to the video this message *replies to*, when the
+  /// message is a reply to a shared-reel DM. Renders a compact WhatsApp-style
+  /// quoted preview above the reply text (distinct from the full [sharedVideoRef]
+  /// card). Null for non-reply messages.
+  final DmSharedVideoRef? quotedVideoRef;
 
   @override
   Widget build(BuildContext context) {
@@ -195,6 +204,19 @@ class MessageBubble extends StatelessWidget {
     final hasVideo = videoStableId != null;
     final effectiveIsFirstInGroup = hasVideo || isFirstInGroup;
     final effectiveIsLastInGroup = hasVideo || isLastInGroup;
+
+    // A reply that references a video (but doesn't itself render a full card)
+    // shows a compact quoted preview above its text. Strip the trailing
+    // machine-readable `nostr:` citation line the reply carries on the wire so
+    // only the user's comment renders below the quote.
+    final hasQuotedVideo = quotedVideoRef != null && !hasVideo;
+    final quotedReplyText = hasQuotedVideo
+        ? safeMessage
+              .split('\n')
+              .where((line) => !_nostrRefLineRegex.hasMatch(line.trim()))
+              .join('\n')
+              .trim()
+        : safeMessage;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -291,12 +313,25 @@ class MessageBubble extends StatelessWidget {
                           dmReplyContext: dmReplyContext,
                         ),
                       ),
-                  ] else
-                    _MessageText(
-                      message: safeMessage,
-                      isSent: isSent,
-                      dmReplyContext: dmReplyContext,
-                    ),
+                  ] else ...[
+                    if (hasQuotedVideo)
+                      Padding(
+                        padding: EdgeInsets.only(
+                          bottom: quotedReplyText.isEmpty ? 0 : 6,
+                        ),
+                        child: _QuotedVideoPreview(
+                          quotedVideoRef: quotedVideoRef!,
+                          isSent: isSent,
+                          dmReplyContext: dmReplyContext,
+                        ),
+                      ),
+                    if (quotedReplyText.isNotEmpty)
+                      _MessageText(
+                        message: quotedReplyText,
+                        isSent: isSent,
+                        dmReplyContext: dmReplyContext,
+                      ),
+                  ],
                   if (isSent && deliveryStatus != DmDeliveryStatus.delivered)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
@@ -643,6 +678,232 @@ class _VideoLinkPreview extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Thumbnail width of the compact quoted-reply preview.
+const double _quotedThumbWidth = 40;
+
+/// Thumbnail height of the compact quoted-reply preview.
+const double _quotedThumbHeight = 56;
+
+/// Corner radius of the compact quoted-reply thumbnail.
+const double _quotedThumbRadius = 6;
+
+/// Compact WhatsApp-style quoted preview of the video a reply references.
+///
+/// Reuses the [VideoLinkPreviewCubit] resolve harness (cache → relay fetch) so
+/// it can render even when the cited video was never seen locally, and swaps
+/// the full [_VideoCard] for a small thumbnail + label strip rendered above the
+/// reply text.
+class _QuotedVideoPreview extends ConsumerWidget {
+  const _QuotedVideoPreview({
+    required this.quotedVideoRef,
+    required this.isSent,
+    this.dmReplyContext,
+  });
+
+  final DmSharedVideoRef quotedVideoRef;
+  final bool isSent;
+  final DmReplyContext? dmReplyContext;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final target = _videoTargetFromRef(quotedVideoRef);
+    if (target == null) return const SizedBox.shrink();
+    return BlocProvider(
+      create: (_) => VideoLinkPreviewCubit(
+        videoStableId: target.stableId,
+        videoEventService: ref.read(videoEventServiceProvider),
+        nostrClient: ref.read(nostrServiceProvider),
+        authorPubkey: target.authorPubkey,
+        videoKind: target.videoKind,
+      ),
+      child: BlocBuilder<VideoLinkPreviewCubit, VideoLinkPreviewState>(
+        builder: (context, state) => switch (state) {
+          VideoLinkPreviewLoading() => _QuotedVideoFrame(
+            isSent: isSent,
+            child: const _QuotedThumbPlaceholder(),
+          ),
+          VideoLinkPreviewNotFound() => _QuotedVideoUnavailable(isSent: isSent),
+          VideoLinkPreviewResolved(:final video) => _QuotedVideoCard(
+            video: video,
+            isSent: isSent,
+            dmReplyContext: dmReplyContext,
+          ),
+        },
+      ),
+    );
+  }
+}
+
+/// Accent-bar framed container that gives the quoted preview its WhatsApp-style
+/// "reply" affordance, readable on both sent and received bubble colors.
+class _QuotedVideoFrame extends StatelessWidget {
+  const _QuotedVideoFrame({
+    required this.isSent,
+    required this.child,
+    this.onTap,
+  });
+
+  final bool isSent;
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = isSent ? VineTheme.whiteText : VineTheme.primary;
+    final frame = DecoratedBox(
+      decoration: BoxDecoration(
+        color: VineTheme.whiteText.withValues(alpha: isSent ? 0.14 : 0.07),
+        borderRadius: BorderRadius.circular(8),
+        border: Border(left: BorderSide(color: accent, width: 3)),
+      ),
+      child: Padding(padding: const EdgeInsets.all(6), child: child),
+    );
+    if (onTap == null) return frame;
+    return GestureDetector(onTap: onTap, child: frame);
+  }
+}
+
+/// Loading placeholder sized to the compact thumbnail.
+class _QuotedThumbPlaceholder extends StatelessWidget {
+  const _QuotedThumbPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: _quotedThumbWidth,
+      height: _quotedThumbHeight,
+      decoration: BoxDecoration(
+        color: VineTheme.cardBackground,
+        borderRadius: BorderRadius.circular(_quotedThumbRadius),
+      ),
+    );
+  }
+}
+
+/// Resolved compact quoted preview: thumbnail + title/author, tappable to open
+/// the referenced video.
+class _QuotedVideoCard extends ConsumerWidget {
+  const _QuotedVideoCard({
+    required this.video,
+    required this.isSent,
+    this.dmReplyContext,
+  });
+
+  final VideoEvent video;
+  final bool isSent;
+  final DmReplyContext? dmReplyContext;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final title = video.title;
+    final hasTitle = title != null && title.isNotEmpty;
+    final profileAsync = ref.watch(userProfileReactiveProvider(video.pubkey));
+    final authorName = switch (profileAsync) {
+      AsyncData(:final value) when value != null => value.bestDisplayName,
+      AsyncData() ||
+      AsyncError() => UserProfile.defaultDisplayNameFor(video.pubkey),
+      AsyncLoading() => null,
+    };
+    final primaryColor = isSent ? VineTheme.whiteText : VineTheme.onSurface;
+    final secondaryColor = isSent
+        ? VineTheme.whiteText.withValues(alpha: 0.7)
+        : VineTheme.onSurfaceMuted;
+    final primaryLabel = hasTitle ? title : (authorName ?? '');
+    final showSecondary =
+        hasTitle && authorName != null && authorName.isNotEmpty;
+
+    return Semantics(
+      button: true,
+      label: context.l10n.dmMessageBubbleVideoReplyHint,
+      child: _QuotedVideoFrame(
+        isSent: isSent,
+        onTap: () => context.push(
+          VideoDetailScreen.pathForId(video.id),
+          extra: VideoDetailRouteExtra(
+            initialVideo: video,
+            dmReplyContext: dmReplyContext,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(_quotedThumbRadius),
+              // VideoThumbnailWidget renders an AspectRatio internally, so it
+              // must be externally bounded (like the full _VideoCard's SizedBox)
+              // — its own width/height params only size the inner image.
+              child: SizedBox(
+                width: _quotedThumbWidth,
+                height: _quotedThumbHeight,
+                child: VideoThumbnailWidget(
+                  video: video,
+                  showPlayIcon: true,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    primaryLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: VineTheme.labelSmallFont(color: primaryColor),
+                  ),
+                  if (showSecondary)
+                    Text(
+                      authorName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: VineTheme.bodySmallFont(color: secondaryColor),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact non-tappable chip shown when the referenced video can't be resolved.
+class _QuotedVideoUnavailable extends StatelessWidget {
+  const _QuotedVideoUnavailable({required this.isSent});
+
+  final bool isSent;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isSent ? VineTheme.whiteText : VineTheme.onSurfaceMuted;
+    return _QuotedVideoFrame(
+      isSent: isSent,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DivineIcon(
+            icon: DivineIconName.warningCircle,
+            color: color,
+            size: 16,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              context.l10n.notificationsVideoUnavailable,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: VineTheme.bodySmallFont(color: color),
+            ),
+          ),
+        ],
       ),
     );
   }

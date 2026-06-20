@@ -1,5 +1,6 @@
 {
     "@@locale": "bg",
+    "dmMessageBubbleVideoReplyHint": "Отваряне на посочения видеоклип",
     "commonSomethingWentWrong": "Нещо се обърка",
     "profileFeedError": "Couldn't load videos.",
     "profileFeedLoadMoreError": "Couldn't load more videos. Pull to refresh.",

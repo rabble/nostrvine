@@ -9,6 +9,9 @@ class AppLocalizationsBg extends AppLocalizations {
   AppLocalizationsBg([String locale = 'bg']) : super(locale);
 
   @override
+  String get dmMessageBubbleVideoReplyHint => 'Отваряне на посочения видеоклип';
+
+  @override
   String get appTitle => 'Divine';
 
   @override

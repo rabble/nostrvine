@@ -130,6 +130,12 @@ abstract class AppLocalizations {
     Locale('tr'),
   ];
 
+  /// Accessibility label for the compact quoted-video preview shown above a DM reply that references a shared video; activating it opens that video.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the referenced video'**
+  String get dmMessageBubbleVideoReplyHint;
+
   /// App title shown in task switcher
   ///
   /// In en, this message translates to:

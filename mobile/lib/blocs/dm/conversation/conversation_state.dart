@@ -231,5 +231,9 @@ DmMessage _outgoingToBubble(OutgoingDm row) {
     content: row.content,
     createdAt: row.createdAt,
     giftWrapId: row.id,
+    // Carry the reply linkage so an optimistic reply bubble can resolve its
+    // parent's shared video and render the quoted preview immediately, before
+    // the persisted `watchMessages` tick replaces this row.
+    replyToId: row.replyToId,
   );
 }

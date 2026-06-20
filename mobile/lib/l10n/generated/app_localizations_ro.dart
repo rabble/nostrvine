@@ -9,6 +9,10 @@ class AppLocalizationsRo extends AppLocalizations {
   AppLocalizationsRo([String locale = 'ro']) : super(locale);
 
   @override
+  String get dmMessageBubbleVideoReplyHint =>
+      'Deschide videoclipul referențiat';
+
+  @override
   String get appTitle => 'Divine';
 
   @override

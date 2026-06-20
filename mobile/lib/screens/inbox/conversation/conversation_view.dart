@@ -352,6 +352,30 @@ class _ConversationContent extends StatelessWidget {
   }
 }
 
+/// The video reference to render as a compact quoted preview above a reply's
+/// text: the parent shared-reel's video (resolved via `replyToId` from
+/// [messagesById]), falling back to the reply's own self-carried citation when
+/// the parent isn't in the local store (cross-device / reinstall). Returns
+/// `null` when [message] is not a reply.
+@visibleForTesting
+DmSharedVideoRef? resolveQuotedVideoRef(
+  DmMessage message,
+  Map<String, DmMessage> messagesById,
+) {
+  final replyToId = message.replyToId;
+  if (replyToId == null) return null;
+  return messagesById[replyToId]?.sharedVideoRef ?? message.sharedVideoRef;
+}
+
+/// The video reference to render as [message]'s own full share card: its
+/// `sharedVideoRef` only when it is NOT a reply. A reply that self-carries a
+/// citation renders a compact quote (via [resolveQuotedVideoRef]) instead of
+/// the full card, so this returns `null` for replies to keep the two paths
+/// mutually exclusive.
+@visibleForTesting
+DmSharedVideoRef? resolveOwnShareVideoRef(DmMessage message) =>
+    message.replyToId == null ? message.sharedVideoRef : null;
+
 class _MessageList extends StatelessWidget {
   const _MessageList({
     required this.messages,
@@ -429,6 +453,9 @@ class _MessageList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Index built once per render pass so a reply bubble can resolve its
+    // parent shared-reel message (and thus the quoted video) in O(1).
+    final messagesById = {for (final m in messages) m.id: m};
     return ListView.builder(
       reverse: true,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -476,7 +503,9 @@ class _MessageList extends StatelessWidget {
             tryExtractDivineVideoUrl(message.content) != null;
 
         // Context for the in-player reply/reaction bar when this bubble's
-        // shared reel is opened.
+        // shared reel is opened. Carries the reel's structured video ref so a
+        // text reply can self-carry the NIP-18 `q` citation (cross-device /
+        // other-client durability).
         final dmReplyContext = DmReplyContext(
           conversationId: message.conversationId,
           participantPubkeys: participantPubkeys,
@@ -485,7 +514,13 @@ class _MessageList extends StatelessWidget {
           messageAuthorPubkey: message.senderPubkey,
           hintName: senderDisplayName,
           isOwnMessage: isSent,
+          sharedVideoRef: message.sharedVideoRef,
         );
+
+        // A non-reply share renders the full card; a reply that references a
+        // video renders a compact quote above its text (mutually exclusive).
+        final ownShareVideoRef = resolveOwnShareVideoRef(message);
+        final quotedVideoRef = resolveQuotedVideoRef(message, messagesById);
 
         Widget buildBubbleWithReactions(DmDeliveryStatus status) {
           final bubble = MessageBubble(
@@ -503,7 +538,8 @@ class _MessageList extends StatelessWidget {
                 _onMessageLongPress(context, message, isSent, status),
             deliveryStatus: status,
             dmReplyContext: dmReplyContext,
-            sharedVideoRef: message.sharedVideoRef,
+            sharedVideoRef: ownShareVideoRef,
+            quotedVideoRef: quotedVideoRef,
           );
           return Column(
             crossAxisAlignment: isSent

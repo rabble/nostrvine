@@ -7905,6 +7905,299 @@ void main() {
           );
         },
       );
+
+      test(
+        'threads additionalTags q-tag onto each recipient rumor and the '
+        'persisted tagsJson',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubDaoInserts();
+
+          const qTag = [
+            'q',
+            '34236:$_validPubkeyD:my-d',
+            'wss://relay.example',
+          ];
+
+          final repo = createRepository();
+          await repo.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'Group share!',
+            additionalTags: const [qTag],
+          );
+
+          // Each recipient's built rumor carries the q-tag (alongside the
+          // other recipient's p-tag).
+          final sentRumors = verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: captureAny(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+            ),
+          ).captured.cast<Event>();
+          expect(sentRumors, hasLength(2));
+          for (final rumor in sentRumors) {
+            expect(rumor.tags, contains(equals(qTag)));
+            // Both other-recipient p-tags ride along per NIP-17.
+            expect(
+              rumor.tags.where((tag) => tag.length >= 2 && tag[0] == 'p'),
+              isNotEmpty,
+            );
+          }
+
+          // The locally-persisted tagsJson carries the q-tag alongside the
+          // per-recipient p-tags.
+          final tagsJson =
+              verify(
+                    () => mockDirectMessagesDao.insertMessage(
+                      id: any(named: 'id'),
+                      conversationId: any(named: 'conversationId'),
+                      senderPubkey: any(named: 'senderPubkey'),
+                      content: any(named: 'content'),
+                      createdAt: any(named: 'createdAt'),
+                      giftWrapId: any(named: 'giftWrapId'),
+                      replyToId: any(named: 'replyToId'),
+                      ownerPubkey: any(named: 'ownerPubkey'),
+                      tagsJson: captureAny(named: 'tagsJson'),
+                    ),
+                  ).captured.single
+                  as String;
+          final persistedTags = (jsonDecode(tagsJson) as List<dynamic>)
+              .map((tag) => (tag as List<dynamic>).cast<String>())
+              .toList();
+          expect(persistedTags, contains(equals(qTag)));
+          expect(persistedTags, contains(equals(['p', _validPubkeyB])));
+          expect(persistedTags, contains(equals(['p', _validPubkeyC])));
+        },
+      );
+
+      test(
+        'threads additionalTags q-tag and the e reply tag into the '
+        'persisted tagsJson',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubDaoInserts();
+
+          const qTag = [
+            'q',
+            '34236:$_validPubkeyD:my-d',
+            'wss://relay.example',
+          ];
+
+          final repo = createRepository();
+          await repo.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'Group reply!',
+            additionalTags: const [qTag],
+            replyToId: _giftWrapEventId,
+          );
+
+          final tagsJson =
+              verify(
+                    () => mockDirectMessagesDao.insertMessage(
+                      id: any(named: 'id'),
+                      conversationId: any(named: 'conversationId'),
+                      senderPubkey: any(named: 'senderPubkey'),
+                      content: any(named: 'content'),
+                      createdAt: any(named: 'createdAt'),
+                      giftWrapId: any(named: 'giftWrapId'),
+                      replyToId: any(named: 'replyToId'),
+                      ownerPubkey: any(named: 'ownerPubkey'),
+                      tagsJson: captureAny(named: 'tagsJson'),
+                    ),
+                  ).captured.single
+                  as String;
+          final persistedTags = (jsonDecode(tagsJson) as List<dynamic>)
+              .map((tag) => (tag as List<dynamic>).cast<String>())
+              .toList();
+          expect(persistedTags, contains(equals(qTag)));
+          expect(persistedTags, contains(equals(['e', _giftWrapEventId])));
+        },
+      );
+    });
+
+    group('sendSharedVideoGroup', () {
+      void stubDaoInserts() {
+        when(
+          () => mockDirectMessagesDao.insertMessage(
+            id: any(named: 'id'),
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+            giftWrapId: any(named: 'giftWrapId'),
+            messageKind: any(named: 'messageKind'),
+            replyToId: any(named: 'replyToId'),
+            subject: any(named: 'subject'),
+            fileType: any(named: 'fileType'),
+            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+            decryptionKey: any(named: 'decryptionKey'),
+            decryptionNonce: any(named: 'decryptionNonce'),
+            fileHash: any(named: 'fileHash'),
+            originalFileHash: any(named: 'originalFileHash'),
+            fileSize: any(named: 'fileSize'),
+            dimensions: any(named: 'dimensions'),
+            blurhash: any(named: 'blurhash'),
+            thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockConversationsDao.upsertConversation(
+            id: any(named: 'id'),
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: any(named: 'lastMessageContent'),
+            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+            subject: any(named: 'subject'),
+            isRead: any(named: 'isRead'),
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+      }
+
+      test(
+        'cites an addressable (34236) video as a q-tag + nostr: URI and '
+        'carries the reply e-tag on every recipient rumor',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async =>
+                const NIP17SendResult.failure('relay unavailable'),
+          );
+
+          final repository = createRepository();
+          const author =
+              'cccccccccccccccccccccccccccccccc'
+              'cccccccccccccccccccccccccccccccc';
+
+          await repository.sendSharedVideoGroup(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            baseContent: 'watch this https://divine.video/video/abc',
+            videoKind: 34236,
+            videoAuthorPubkey: author,
+            videoDTag: 'abc',
+            relayHint: 'wss://relay.example',
+            replyToId: _giftWrapEventId,
+          );
+
+          final sentRumors = verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: captureAny(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+            ),
+          ).captured.cast<Event>();
+          expect(sentRumors, hasLength(2));
+          for (final rumor in sentRumors) {
+            // q tag cites the video by coordinate, no 4th element
+            // (addressable).
+            expect(
+              rumor.tags,
+              contains(
+                equals(['q', '34236:$author:abc', 'wss://relay.example']),
+              ),
+            );
+            // Reply e-tag points at the parent message.
+            expect(rumor.tags, contains(equals(['e', _giftWrapEventId])));
+            // Content keeps the divine.video URL AND adds the nostr: URI.
+            expect(rumor.content, contains('nostr:naddr1'));
+            expect(
+              rumor.content,
+              contains('https://divine.video/video/abc'),
+            );
+          }
+        },
+      );
+
+      test(
+        'falls back to a plain sendGroupMessage when the citation cannot '
+        'be built (invalid author)',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          stubDaoInserts();
+
+          final repository = createRepository();
+
+          await repository.sendSharedVideoGroup(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            baseContent: 'watch this',
+            videoKind: 34236,
+            // Not a 64-char hex pubkey, so DmSharedVideoCitation.build
+            // returns null and the group send degrades to plain text.
+            videoAuthorPubkey: 'not-a-valid-author',
+            videoDTag: 'abc',
+            relayHint: 'wss://relay.example',
+          );
+
+          final sentRumors = verify(
+            () => mockMessageService.sendRumor(
+              rumorEvent: captureAny(named: 'rumorEvent'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+            ),
+          ).captured.cast<Event>();
+          expect(sentRumors, hasLength(2));
+          for (final rumor in sentRumors) {
+            // No q-tag and no appended nostr: URI on the plain fallback.
+            expect(
+              rumor.tags.any((tag) => tag.isNotEmpty && tag[0] == 'q'),
+              isFalse,
+            );
+            expect(rumor.content, equals('watch this'));
+            expect(rumor.content, isNot(contains('nostr:')));
+          }
+
+          // The persisted tagsJson is the plain p-tag set — no q-tag.
+          final tagsJson =
+              verify(
+                    () => mockDirectMessagesDao.insertMessage(
+                      id: any(named: 'id'),
+                      conversationId: any(named: 'conversationId'),
+                      senderPubkey: any(named: 'senderPubkey'),
+                      content: any(named: 'content'),
+                      createdAt: any(named: 'createdAt'),
+                      giftWrapId: any(named: 'giftWrapId'),
+                      replyToId: any(named: 'replyToId'),
+                      ownerPubkey: any(named: 'ownerPubkey'),
+                      tagsJson: captureAny(named: 'tagsJson'),
+                    ),
+                  ).captured.single
+                  as String;
+          final persistedTags = (jsonDecode(tagsJson) as List<dynamic>)
+              .map((tag) => (tag as List<dynamic>).cast<String>())
+              .toList();
+          expect(
+            persistedTags.any((tag) => tag.isNotEmpty && tag[0] == 'q'),
+            isFalse,
+          );
+        },
+      );
     });
 
     group('_mergeDuplicateConversations', () {

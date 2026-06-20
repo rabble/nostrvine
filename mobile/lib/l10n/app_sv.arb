@@ -1,5 +1,6 @@
 {
     "@@locale": "sv",
+    "dmMessageBubbleVideoReplyHint": "Öppna den refererade videon",
     "commonSomethingWentWrong": "Något gick fel",
     "profileFeedError": "Couldn't load videos.",
     "profileFeedLoadMoreError": "Couldn't load more videos. Pull to refresh.",

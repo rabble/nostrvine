@@ -88,5 +88,49 @@ void main() {
         isNull,
       );
     });
+
+    group('dTag', () {
+      test('extracts the <d> from an addressable coordinate', () {
+        expect(addressable.dTag, equals('my-reel'));
+      });
+
+      test('works for an addressable normal video (kind 34235)', () {
+        const ref = DmSharedVideoRef(
+          coordinateOrId: '34235:author:normal-reel',
+          videoKind: DmSharedVideoKind.addressableNormalVideo,
+        );
+        expect(ref.dTag, equals('normal-reel'));
+      });
+
+      test('is null for a regular ref', () {
+        expect(regular.dTag, isNull);
+      });
+
+      test('is null for a malformed addressable coordinate', () {
+        const ref = DmSharedVideoRef(
+          coordinateOrId: '34236:onlyauthor',
+          videoKind: DmSharedVideoKind.addressableShortVideo,
+        );
+        expect(ref.dTag, isNull);
+      });
+
+      test('rejoins a <d> identifier that contains a colon', () {
+        const ref = DmSharedVideoRef(
+          coordinateOrId: '34236:abc:my:reel',
+          videoKind: DmSharedVideoKind.addressableShortVideo,
+        );
+        expect(ref.dTag, equals('my:reel'));
+      });
+    });
+
+    group('eventId', () {
+      test('is the coordinateOrId for a regular ref', () {
+        expect(regular.eventId, equals('a' * 64));
+      });
+
+      test('is null for an addressable ref', () {
+        expect(addressable.eventId, isNull);
+      });
+    });
   });
 }

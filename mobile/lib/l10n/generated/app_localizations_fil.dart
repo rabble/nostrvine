@@ -9,6 +9,9 @@ class AppLocalizationsFil extends AppLocalizations {
   AppLocalizationsFil([String locale = 'fil']) : super(locale);
 
   @override
+  String get dmMessageBubbleVideoReplyHint => 'Buksan ang tinukoy na video';
+
+  @override
   String get appTitle => 'Divine';
 
   @override

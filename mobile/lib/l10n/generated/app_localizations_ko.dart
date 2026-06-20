@@ -9,6 +9,9 @@ class AppLocalizationsKo extends AppLocalizations {
   AppLocalizationsKo([String locale = 'ko']) : super(locale);
 
   @override
+  String get dmMessageBubbleVideoReplyHint => '참조된 동영상 열기';
+
+  @override
   String get appTitle => 'Divine';
 
   @override

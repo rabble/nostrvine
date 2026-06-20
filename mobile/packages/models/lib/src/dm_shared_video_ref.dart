@@ -65,6 +65,21 @@ class DmSharedVideoRef extends Equatable {
       videoKind == DmSharedVideoKind.addressableShortVideo ||
       videoKind == DmSharedVideoKind.addressableNormalVideo;
 
+  /// For an addressable ref, the `<d>` identifier extracted from the
+  /// `<kind>:<author>:<d>` coordinate; `null` for regular events or a
+  /// malformed coordinate.
+  String? get dTag {
+    if (!isAddressable) return null;
+    final parts = coordinateOrId.split(':');
+    if (parts.length < 3) return null;
+    final d = parts.sublist(2).join(':');
+    return d.isEmpty ? null : d;
+  }
+
+  /// For a regular ref, the 64-hex event id (the `coordinateOrId` itself);
+  /// `null` for addressable events.
+  String? get eventId => isAddressable ? null : coordinateOrId;
+
   /// JSON form for persistence in the `direct_messages.shared_video_ref_json`
   /// Drift column.
   Map<String, dynamic> toJson() => <String, dynamic>{
