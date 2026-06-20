@@ -20,6 +20,7 @@ class MockNostrServiceWithDelay implements NostrClient {
   final StreamController<Event> _eventController =
       StreamController<Event>.broadcast();
   final List<String> _eventDeliveryOrder = []; // Track when events arrive
+  final List<Timer> _pendingTimers = [];
   final bool _isInitialized = true;
   bool _eoseCalled = false;
 
@@ -42,12 +43,15 @@ class MockNostrServiceWithDelay implements NostrClient {
     bool sendAfterAuth = false,
     void Function()? onEose,
   }) {
-    // Simulate relay delay: call onEose after 100ms
+    // Simulate relay delay: call onEose after 100ms. Tracked as a cancellable
+    // Timer so dispose() stops it firing onEose on a torn-down service.
     if (onEose != null) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        _eoseCalled = true;
-        onEose();
-      });
+      _pendingTimers.add(
+        Timer(const Duration(milliseconds: 100), () {
+          _eoseCalled = true;
+          onEose();
+        }),
+      );
     }
 
     return _eventController.stream;
@@ -66,6 +70,10 @@ class MockNostrServiceWithDelay implements NostrClient {
 
   @override
   Future<void> dispose() async {
+    for (final timer in _pendingTimers) {
+      timer.cancel();
+    }
+    _pendingTimers.clear();
     await _eventController.close();
   }
 
@@ -143,7 +151,10 @@ void main() {
       );
       testDbPath = p.join(tempDir.path, 'test.db');
       db = AppDatabase.test(NativeDatabase(File(testDbPath)));
-      eventRouter = EventRouter(db);
+      eventRouter = EventRouter(
+        db,
+        config: const EventRouterConfig(autoStart: false),
+      );
     });
 
     tearDown(() async {
@@ -398,8 +409,7 @@ void main() {
       expect(results[1].id, toHex64('middle'));
       expect(results[2].id, toHex64('old'));
     });
-    // TODO(any): Re-enable and fix this test
-  }, skip: true);
+  });
 
   group('Cache-First Integration with VideoEventService', () {
     late AppDatabase db;
@@ -415,7 +425,10 @@ void main() {
       );
       testDbPath = p.join(tempDir.path, 'test.db');
       db = AppDatabase.test(NativeDatabase(File(testDbPath)));
-      eventRouter = EventRouter(db);
+      eventRouter = EventRouter(
+        db,
+        config: const EventRouterConfig(autoStart: false),
+      );
       mockNostrService = MockNostrServiceWithDelay();
       subscriptionManager = SubscriptionManager(mockNostrService);
 
@@ -427,6 +440,7 @@ void main() {
     });
 
     tearDown(() async {
+      await mockNostrService.dispose();
       videoEventService.dispose();
       eventRouter.dispose();
       await db.close();
@@ -635,6 +649,5 @@ void main() {
       expect(events.length, 1);
       expect(events.first.id, toHex64('relay_event'));
     });
-    // TODO(any): Re-enable and fix this test
-  }, skip: true);
+  });
 }

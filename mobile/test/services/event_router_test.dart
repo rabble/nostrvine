@@ -216,6 +216,19 @@ void main() {
       expect(await db.nostrEventsDao.getEventById(latest.id), isNotNull);
     });
 
+    test('ignores events enqueued after dispose', () async {
+      final event = videoEvent(77);
+
+      router.dispose();
+      router.handleEvent(event);
+
+      // A late relay callback after dispose must not re-arm a drain that
+      // would run SQLite against a closing/closed database.
+      await router.drainForTesting();
+
+      expect(await db.nostrEventsDao.getEventById(event.id), isNull);
+    });
+
     test(
       'handleEvent enqueues without synchronously persisting the event',
       () async {

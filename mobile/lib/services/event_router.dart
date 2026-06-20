@@ -57,6 +57,7 @@ class EventRouter {
   final Queue<Event> _backgroundQueue = Queue<Event>();
   Timer? _batchTimer;
   bool _isProcessingBatch = false;
+  bool _disposed = false;
 
   /// Access to database for cache-first queries.
   AppDatabase get db => _db;
@@ -65,6 +66,9 @@ class EventRouter {
     Event event, {
     EventIngestionPriority priority = EventIngestionPriority.normal,
   }) {
+    // After dispose the database may be closing; a late relay callback must
+    // not re-arm a drain that would run SQLite against a closed connection.
+    if (_disposed) return;
     _queueFor(priority).add(event);
     if (_config.autoStart) {
       _scheduleProcessing(immediate: _queuedLength >= _config.maxBatchSize);
@@ -86,7 +90,7 @@ class EventRouter {
       _visibleQueue.length + _normalQueue.length + _backgroundQueue.length;
 
   void _scheduleProcessing({bool immediate = false}) {
-    if (_isProcessingBatch) return;
+    if (_disposed || _isProcessingBatch) return;
     if (immediate || _config.flushDelay == Duration.zero) {
       _batchTimer?.cancel();
       _batchTimer = null;
@@ -114,7 +118,7 @@ class EventRouter {
   }
 
   Future<void> _processNextBatch({bool continueProcessing = true}) async {
-    if (_isProcessingBatch || _queuedLength == 0) return;
+    if (_disposed || _isProcessingBatch || _queuedLength == 0) return;
 
     _isProcessingBatch = true;
     try {
@@ -248,6 +252,7 @@ class EventRouter {
   }
 
   void dispose() {
+    _disposed = true;
     _batchTimer?.cancel();
     _batchTimer = null;
     _visibleQueue.clear();
