@@ -435,31 +435,6 @@ void main() {
       expect(icon.size, 32);
     });
 
-    testWidgets('scales the play badge with playIconSize', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: VideoThumbnailWidget(
-              video: videoWithBlurhash,
-              width: 200,
-              height: 200,
-              showPlayIcon: true,
-              playIconSize: 24,
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // The play glyph scales to two-thirds of the badge diameter so a
-      // compact thumbnail doesn't get a badge wider than the thumb.
-      final icon = tester.widget<DivineIcon>(_divineIcon(DivineIconName.play));
-      expect(icon.size, 24 * 2 / 3);
-    });
-
     testWidgets('applies border radius when provided', (tester) async {
       await tester.pumpWidget(
         MaterialApp(

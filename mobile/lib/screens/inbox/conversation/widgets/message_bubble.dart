@@ -698,10 +698,14 @@ const double _quotedThumbRadius = 6;
 /// width, so there is no horizontal jump as the reel loads.
 const double _quotedPreviewWidth = 200;
 
-/// Play-badge diameter for the compact quoted thumbnail. The shared
-/// [VideoThumbnailWidget] default (48) overflows the 40-wide thumb, so the
-/// quoted preview uses a smaller badge with breathing room around it.
-const double _quotedPlayIconSize = 24;
+/// Diameter of the compact quoted-thumbnail play badge. Smaller than the shared
+/// [VideoThumbnailWidget] default so it reads as a neat chip with margin on the
+/// 40-wide thumb.
+const double _quotedPlayBadgeSize = 22;
+
+/// Play-glyph diameter inside the badge, inset from the badge edge so the
+/// triangle keeps visible padding within the chip.
+const double _quotedPlayGlyphSize = 11;
 
 /// Compact WhatsApp-style quoted preview of the video a reply references.
 ///
@@ -912,14 +916,18 @@ class _QuotedVideoCard extends ConsumerWidget {
             borderRadius: BorderRadius.circular(_quotedThumbRadius),
             // VideoThumbnailWidget renders an AspectRatio internally, so it
             // must be externally bounded (like the full _VideoCard's SizedBox)
-            // — its own width/height params only size the inner image.
+            // — its own width/height params only size the inner image. The
+            // compact play badge is overlaid here (rather than via
+            // showPlayIcon) so it stays visible on dark thumbnails.
             child: SizedBox(
               width: _quotedThumbWidth,
               height: _quotedThumbHeight,
-              child: VideoThumbnailWidget(
-                video: video,
-                showPlayIcon: true,
-                playIconSize: _quotedPlayIconSize,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  VideoThumbnailWidget(video: video),
+                  const Center(child: _QuotedPlayBadge()),
+                ],
               ),
             ),
           ),
@@ -945,6 +953,36 @@ class _QuotedVideoCard extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Compact play badge centered on the quoted-reply thumbnail. The translucent
+/// dark disc reads on light thumbnails; the hairline light ring keeps the chip
+/// visible on dark thumbnails, where a translucent-black disc would otherwise
+/// vanish into the content.
+class _QuotedPlayBadge extends StatelessWidget {
+  const _QuotedPlayBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: _quotedPlayBadgeSize,
+      height: _quotedPlayBadgeSize,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: VineTheme.backgroundColor.withValues(alpha: 0.6),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: VineTheme.whiteText.withValues(alpha: 0.9),
+          width: 1.5,
+        ),
+      ),
+      child: const DivineIcon(
+        icon: DivineIconName.play,
+        color: VineTheme.whiteText,
+        size: _quotedPlayGlyphSize,
       ),
     );
   }

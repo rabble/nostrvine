@@ -1223,12 +1223,15 @@ void main() {
           final textCenter = tester.getCenter(find.text('love this one')).dy;
           expect(thumbCenter, lessThan(textCenter));
 
-          // The compact thumbnail uses the smaller play badge so it doesn't
-          // overflow the 40-wide thumb.
-          final thumbWidget = tester.widget<VideoThumbnailWidget>(
-            find.byType(VideoThumbnailWidget),
+          // The compact thumbnail carries its own small play badge (an 11px
+          // glyph) overlaid on the thumbnail, not the full-size 32px badge —
+          // so it reads as a neat chip with margin on the 40-wide thumb.
+          final playIcon = tester.widget<DivineIcon>(
+            find.byWidgetPredicate(
+              (w) => w is DivineIcon && w.icon == DivineIconName.play,
+            ),
           );
-          expect(thumbWidget.playIconSize, 24);
+          expect(playIcon.size, 11);
 
           // The preview is pinned to a fixed width so the bubble doesn't
           // reflow when the cited reel resolves out of its loading skeleton.
