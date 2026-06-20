@@ -18,6 +18,7 @@ import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/upload_initialization_helper.dart';
 import 'package:openvine/services/upload_publishability.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:path/path.dart' as path;
@@ -403,7 +404,7 @@ class UploadManager {
         name: 'UploadManager',
         category: .video,
       );
-      await ProVideoEditor.instance.renderVideoToFile(
+      await VideoEditorRenderService.renderNativeVideoToFile(
         mergedPath,
         VideoRenderData(
           videoSegments: draft.clips

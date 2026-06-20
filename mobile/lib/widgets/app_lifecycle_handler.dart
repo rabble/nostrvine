@@ -15,6 +15,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/background_activity_manager.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -171,7 +172,7 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
 
       case AppLifecycleState.detached:
         // App is being terminated
-        break;
+        unawaited(VideoEditorRenderService.cancelActiveNativeTasks());
     }
   }
 

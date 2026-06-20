@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -52,16 +53,6 @@ class VideoEditorTransformService {
     );
 
     try {
-      try {
-        await ProVideoEditor.instance.cancel(renderId);
-      } catch (e) {
-        Log.debug(
-          '⏹️ Transform cancel returned for $renderId: $e',
-          name: 'VideoEditorTransformService',
-          category: LogCategory.video,
-        );
-      }
-
       if (outputFile.existsSync()) {
         await outputFile.delete();
         Log.debug(
@@ -71,7 +62,7 @@ class VideoEditorTransformService {
         );
       }
 
-      await ProVideoEditor.instance.renderVideoToFile(
+      await VideoEditorRenderService.renderNativeVideoToFile(
         outputPath,
         VideoRenderData(
           id: renderId,

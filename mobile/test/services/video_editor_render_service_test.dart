@@ -14,6 +14,9 @@ import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _ProgressProVideoEditor extends ProVideoEditor {
   final _progressController = StreamController<ProgressModel>.broadcast();
+  final renderStarts = StreamController<VideoRenderData>.broadcast();
+  final _pendingRenders = <_PendingRender>[];
+  final cancelCalls = <String>[];
 
   @override
   void initializeStream() {}
@@ -27,6 +30,32 @@ class _ProgressProVideoEditor extends ProVideoEditor {
     return _progressController.stream.where(
       (progress) => progress.id == taskId,
     );
+  }
+
+  @override
+  Future<String> renderVideoToFile(
+    String filePath,
+    VideoRenderData value, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
+    final pending = _PendingRender(filePath: filePath, task: value);
+    _pendingRenders.add(pending);
+    renderStarts.add(value);
+    await pending.completer.future;
+    return filePath;
+  }
+
+  @override
+  Future<void> cancel(String taskId) async {
+    cancelCalls.add(taskId);
+    final matchingRender = _pendingRenders.where(
+      (pending) => pending.task.id == taskId && !pending.completer.isCompleted,
+    );
+    if (matchingRender.isNotEmpty) {
+      matchingRender.first.completer.completeError(
+        const RenderCanceledException(),
+      );
+    }
   }
 
   @override
@@ -45,7 +74,18 @@ class _ProgressProVideoEditor extends ProVideoEditor {
     );
   }
 
-  Future<void> dispose() => _progressController.close();
+  Future<void> dispose() async {
+    await _progressController.close();
+    await renderStarts.close();
+  }
+}
+
+class _PendingRender {
+  _PendingRender({required this.filePath, required this.task});
+
+  final String filePath;
+  final VideoRenderData task;
+  final completer = Completer<void>();
 }
 
 Future<void> _flushStreamEvents() => Future<void>.delayed(Duration.zero);
@@ -102,11 +142,13 @@ void main() {
       originalProVideoEditor = ProVideoEditor.instance;
       proVideoEditor = _ProgressProVideoEditor();
       ProVideoEditor.instance = proVideoEditor;
+      VideoEditorRenderService.resetActiveNativeTaskIdsForTesting();
     });
 
     tearDown(() async {
       VideoEditorRenderService.renderVideoOverride = null;
       NativeProofModeService.proofFileOverride = null;
+      VideoEditorRenderService.resetActiveNativeTaskIdsForTesting();
       await proVideoEditor.dispose();
       ProVideoEditor.instance = originalProVideoEditor;
     });
@@ -122,9 +164,9 @@ void main() {
         };
 
         final progressSubscription =
-            VideoEditorRenderService.compositeProgressStreamById(taskId).listen(
-              (progress) => progressValues.add(progress.progress),
-            );
+            VideoEditorRenderService.compositeProgressStreamById(
+              taskId,
+            ).listen((progress) => progressValues.add(progress.progress));
         addTearDown(progressSubscription.cancel);
 
         VideoEditorRenderService.renderVideoOverride =
@@ -212,5 +254,98 @@ void main() {
         expect(progressValues.last, equals(1.0));
       },
     );
+
+    test(
+      'tracks native renders and clears them when teardown cancellation throws',
+      () async {
+        final renderStarted = proVideoEditor.renderStarts.stream.first;
+        final renderFuture = VideoEditorRenderService.renderNativeVideoToFile(
+          '${Directory.systemTemp.path}/render-cancelled.mp4',
+          VideoRenderData(
+            id: 'tracked-render',
+            videoSegments: [
+              VideoSegment(
+                video: EditorVideo.file('${Directory.systemTemp.path}/a.mp4'),
+              ),
+            ],
+          ),
+        );
+
+        await renderStarted;
+        expect(
+          proVideoEditor.cancelCalls,
+          equals(['tracked-render']),
+          reason: 'renders unconditionally pre-cancel the task id',
+        );
+        expect(
+          VideoEditorRenderService.activeNativeTaskIdsForTesting,
+          contains('tracked-render'),
+        );
+
+        final renderCancellation = expectLater(
+          renderFuture,
+          throwsA(isA<RenderCanceledException>()),
+        );
+        await VideoEditorRenderService.cancelActiveNativeTasks();
+
+        expect(
+          proVideoEditor.cancelCalls,
+          equals(['tracked-render', 'tracked-render']),
+        );
+        await renderCancellation;
+        expect(VideoEditorRenderService.activeNativeTaskIdsForTesting, isEmpty);
+      },
+    );
+
+    test('keeps a reused task id tracked for the latest render', () async {
+      final firstRenderStarted = proVideoEditor.renderStarts.stream.first;
+      final firstRender = VideoEditorRenderService.renderNativeVideoToFile(
+        '${Directory.systemTemp.path}/first.mp4',
+        VideoRenderData(
+          id: 'reused-render-id',
+          videoSegments: [
+            VideoSegment(
+              video: EditorVideo.file('${Directory.systemTemp.path}/first.mov'),
+            ),
+          ],
+        ),
+      );
+      await firstRenderStarted;
+
+      final firstCancellation = expectLater(
+        firstRender,
+        throwsA(isA<RenderCanceledException>()),
+      );
+      final secondRenderStarted = proVideoEditor.renderStarts.stream.first;
+      final secondRender = VideoEditorRenderService.renderNativeVideoToFile(
+        '${Directory.systemTemp.path}/second.mp4',
+        VideoRenderData(
+          id: 'reused-render-id',
+          videoSegments: [
+            VideoSegment(
+              video: EditorVideo.file(
+                '${Directory.systemTemp.path}/second.mov',
+              ),
+            ),
+          ],
+        ),
+      );
+      await secondRenderStarted;
+
+      await firstCancellation;
+      expect(
+        VideoEditorRenderService.activeNativeTaskIdsForTesting,
+        equals({'reused-render-id'}),
+      );
+
+      final secondCancellation = expectLater(
+        secondRender,
+        throwsA(isA<RenderCanceledException>()),
+      );
+      await VideoEditorRenderService.cancelActiveNativeTasks();
+
+      await secondCancellation;
+      expect(VideoEditorRenderService.activeNativeTaskIdsForTesting, isEmpty);
+    });
   });
 }

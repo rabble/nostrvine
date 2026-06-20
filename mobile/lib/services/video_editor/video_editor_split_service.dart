@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
@@ -215,7 +216,10 @@ class VideoEditorSplitService {
         category: .video,
       );
 
-      await ProVideoEditor.instance.renderVideoToFile(outputPath, renderData);
+      await VideoEditorRenderService.renderNativeVideoToFile(
+        outputPath,
+        renderData,
+      );
 
       Log.info(
         '✅ Render complete: ${clip.id}',

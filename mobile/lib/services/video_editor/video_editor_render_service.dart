@@ -167,14 +167,12 @@ class _CropParameters {
 }
 
 class _RenderProgressTracker {
-  _RenderProgressTracker({
-    required this.taskId,
-    required int clipCount,
-  }) : _proofBudget =
-           VideoEditorRenderService.proofModeProgressBudgetForClipCount(
-             clipCount,
-           ),
-       _proofSteps = clipCount + 1;
+  _RenderProgressTracker({required this.taskId, required int clipCount})
+    : _proofBudget =
+          VideoEditorRenderService.proofModeProgressBudgetForClipCount(
+            clipCount,
+          ),
+      _proofSteps = clipCount + 1;
 
   final String taskId;
   final double _proofBudget;
@@ -239,6 +237,8 @@ class VideoEditorRenderService {
   static const _logName = 'VideoEditorRenderService';
   static final _compositeProgressController =
       StreamController<ProgressModel>.broadcast();
+  static final Map<String, Object> _activeNativeRenderTokens =
+      <String, Object>{};
 
   @visibleForTesting
   static double proofModeProgressBudgetForClipCount(int clipCount) {
@@ -259,6 +259,15 @@ class VideoEditorRenderService {
     _compositeProgressController.add(
       ProgressModel(id: taskId, progress: progress.clamp(0.0, 1.0)),
     );
+  }
+
+  @visibleForTesting
+  static Set<String> get activeNativeTaskIdsForTesting =>
+      Set.unmodifiable(_activeNativeRenderTokens.keys);
+
+  @visibleForTesting
+  static void resetActiveNativeTaskIdsForTesting() {
+    _activeNativeRenderTokens.clear();
   }
 
   @visibleForTesting
@@ -1017,16 +1026,7 @@ class VideoEditorRenderService {
     String outputPath,
     VideoRenderData task,
   ) async {
-    await cancelTask(task.id);
-    // Surface native renderer diagnostics (encoder fallbacks, bitrate clamps,
-    // OOM guards, render errors) into the unified log via
-    // ProVideoEditorLogForwarder — the signal set behind #4801. A clean render
-    // stays quiet at this level, so it does not flood the capture buffer.
-    await ProVideoEditor.instance.renderVideoToFile(
-      outputPath,
-      task,
-      nativeLogLevel: NativeLogLevel.warning,
-    );
+    await renderNativeVideoToFile(outputPath, task);
   }
 
   static Future<void> cancelTask(String id) async {
@@ -1050,5 +1050,49 @@ class VideoEditorRenderService {
         category: .video,
       );
     }
+  }
+
+  /// Cancels any existing native render with [task.id], tracks this render
+  /// instance, then renders to [outputPath].
+  ///
+  /// All app-owned `pro_video_editor` render entry points should use this
+  /// helper so teardown cancellation has a complete view of native work.
+  static Future<String> renderNativeVideoToFile(
+    String outputPath,
+    VideoRenderData task, {
+    NativeLogLevel? nativeLogLevel = NativeLogLevel.warning,
+  }) async {
+    await cancelTask(task.id);
+    final token = Object();
+    _activeNativeRenderTokens[task.id] = token;
+    try {
+      return await ProVideoEditor.instance.renderVideoToFile(
+        outputPath,
+        task,
+        nativeLogLevel: nativeLogLevel,
+      );
+    } finally {
+      if (identical(_activeNativeRenderTokens[task.id], token)) {
+        _activeNativeRenderTokens.remove(task.id);
+      }
+    }
+  }
+
+  /// Cancels native `pro_video_editor` render tasks started by this app.
+  ///
+  /// Intended for genuine teardown such as `AppLifecycleState.detached`.
+  /// Transient background states must not call this: exports may legitimately
+  /// continue while the user briefly switches apps or locks the device.
+  static Future<void> cancelActiveNativeTasks() async {
+    final taskIds = List<String>.of(_activeNativeRenderTokens.keys);
+    if (taskIds.isEmpty) return;
+
+    Log.info(
+      '⏹️ Cancelling ${taskIds.length} active video editor task(s)',
+      name: _logName,
+      category: .video,
+    );
+
+    await Future.wait<void>(taskIds.map(cancelTask));
   }
 }

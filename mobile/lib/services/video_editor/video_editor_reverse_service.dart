@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -18,10 +19,7 @@ class VideoEditorReverseService {
   }) async {
     final documentsPath = await getDocumentsPath();
     final inputPath = await sourceClip.video.safeFilePath();
-    final outputPath = p.join(
-      documentsPath,
-      '${sourceClip.id}_reversed.mp4',
-    );
+    final outputPath = p.join(documentsPath, '${sourceClip.id}_reversed.mp4');
 
     // Defensive: refuse to render when the input path collides with the
     // output path. We delete the output file before rendering, so a collision
@@ -41,16 +39,6 @@ class VideoEditorReverseService {
     );
 
     try {
-      try {
-        await ProVideoEditor.instance.cancel(renderId);
-      } catch (e) {
-        Log.debug(
-          '⏹️ Reverse cancel returned for $renderId: $e',
-          name: 'VideoEditorReverseService',
-          category: LogCategory.video,
-        );
-      }
-
       if (outputFile.existsSync()) {
         await outputFile.delete();
         Log.debug(
@@ -60,7 +48,7 @@ class VideoEditorReverseService {
         );
       }
 
-      await ProVideoEditor.instance.renderVideoToFile(
+      await VideoEditorRenderService.renderNativeVideoToFile(
         outputPath,
         VideoRenderData(
           id: renderId,

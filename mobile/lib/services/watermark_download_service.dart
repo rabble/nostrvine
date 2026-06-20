@@ -8,6 +8,7 @@ import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/gallery_save_service.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/watermark_image_generator.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -392,7 +393,7 @@ class WatermarkDownloadService {
         ],
       );
 
-      await ProVideoEditor.instance.renderVideoToFile(outputPath, task);
+      await VideoEditorRenderService.renderNativeVideoToFile(outputPath, task);
 
       Log.debug(
         'Watermarked video rendered to: $outputPath',
