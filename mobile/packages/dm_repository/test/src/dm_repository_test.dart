@@ -10577,6 +10577,85 @@ void main() {
       );
 
       test(
+        'reconstructs tagsJson from the rebuilt rumor so a recovered '
+        'shared-video reply keeps its q citation locally',
+        () async {
+          final videoTags = [
+            ['p', _validPubkeyB],
+            ['q', '34236:$_validPubkeyB:my-reel', 'wss://relay.divine.video'],
+          ];
+          final videoRumorJson = jsonEncode({
+            'id': _rumorEventId,
+            'pubkey': _validPubkeyA,
+            'created_at': 1700000000,
+            'kind': EventKind.privateDirectMessage,
+            'tags': videoTags,
+            'content': 'love this reel',
+            'sig': '',
+          });
+          when(() => mockOutgoingDmsDao.getById(_rumorEventId)).thenAnswer(
+            (_) async => OutgoingDm(
+              id: _rumorEventId,
+              conversationId: 'conv',
+              recipientPubkey: _validPubkeyB,
+              content: 'love this reel',
+              createdAt: 1700000000,
+              rumorEventJson: videoRumorJson,
+              recipientWrapStatus: OutgoingWrapStatus.failed,
+              selfWrapStatus: OutgoingWrapStatus.failed,
+              queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
+              ownerPubkey: _validPubkeyA,
+            ),
+          );
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverFullSend(
+            rumorId: _rumorEventId,
+          );
+
+          expect(result.success, isTrue);
+          // The recovered row persists the full rumor tags (including the
+          // NIP-18 q citation) instead of dropping them, so the sender's local
+          // bubble re-derives its sharedVideoRef.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: _rumorEventId,
+              conversationId: 'conv',
+              senderPubkey: _validPubkeyA,
+              content: 'love this reel',
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: _giftWrapEventId2,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: _validPubkeyA,
+              tagsJson: jsonEncode(videoTags),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'on partial delivery: keeps the queue row, marks recipient '
         'sent and self failed, still inserts direct_messages',
         () async {

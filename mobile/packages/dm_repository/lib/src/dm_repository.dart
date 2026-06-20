@@ -1966,6 +1966,13 @@ class DmRepository {
             giftWrapId: result.messageEventId!,
             messageKind: row.messageKind,
             replyToId: row.replyToId,
+            // Reconstruct tagsJson from the rebuilt rumor so a recovered row
+            // hydrates the same read-time-derived fields (e.g. sharedVideoRef
+            // from a NIP-18 q tag) as the happy-path send. Without this the
+            // queue-recovery row drops its tags and the sender loses the
+            // shared-video reference locally. Mirrors the receive path, which
+            // persists the full rumor tags.
+            tagsJson: rumor.tags.isEmpty ? null : jsonEncode(rumor.tags),
             ownerPubkey: _userPubkey,
           );
 
