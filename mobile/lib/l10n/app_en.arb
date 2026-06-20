@@ -5182,5 +5182,14 @@
     "@videoEditorVolumeLongPressHint": {
         "description": "Semantic long-press hint for a volume arc control. Screen readers announce this as the long-press affordance, which mutes or unmutes all timeline tracks at once."
     },
-    "videoEditorSplitFailed": "Split failed. Please try again."
+    "videoEditorSplitFailed": "Split failed. Please try again.",
+    "videoEditEditSubtitles": "Edit subtitles",
+    "subtitleEditorTitle": "Edit subtitles",
+    "subtitleEditorSave": "Save",
+    "subtitleEditorProcessing": "Subtitles are still being generated. Check back in a moment.",
+    "subtitleEditorLoadError": "Couldn't load subtitles. Try again.",
+    "subtitleEditorSaveSuccess": "Subtitles updated",
+    "subtitleEditorSaveError": "Couldn't save subtitles. Try again.",
+    "subtitleEditorRetry": "Retry",
+    "subtitleEditorCueHint": "Caption text"
 }

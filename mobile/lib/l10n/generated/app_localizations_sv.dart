@@ -9064,4 +9064,32 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoEditorSplitFailed => 'Delning misslyckades. Försök igen.';
+
+  @override
+  String get videoEditEditSubtitles => 'Edit subtitles';
+
+  @override
+  String get subtitleEditorTitle => 'Edit subtitles';
+
+  @override
+  String get subtitleEditorSave => 'Save';
+
+  @override
+  String get subtitleEditorProcessing =>
+      'Subtitles are still being generated. Check back in a moment.';
+
+  @override
+  String get subtitleEditorLoadError => 'Couldn\'t load subtitles. Try again.';
+
+  @override
+  String get subtitleEditorSaveSuccess => 'Subtitles updated';
+
+  @override
+  String get subtitleEditorSaveError => 'Couldn\'t save subtitles. Try again.';
+
+  @override
+  String get subtitleEditorRetry => 'Retry';
+
+  @override
+  String get subtitleEditorCueHint => 'Caption text';
 }

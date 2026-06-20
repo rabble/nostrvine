@@ -803,6 +803,17 @@ const _knownUntranslatedDebt = {
   'shareSheetSaveClip',
   'shareSheetSavedClipToClips',
   'shareSheetUntitledClip',
+  // Added by the subtitle editor feature. Existing locales fall back to
+  // English until the next translation pass.
+  'videoEditEditSubtitles',
+  'subtitleEditorTitle',
+  'subtitleEditorSave',
+  'subtitleEditorProcessing',
+  'subtitleEditorLoadError',
+  'subtitleEditorSaveSuccess',
+  'subtitleEditorSaveError',
+  'subtitleEditorRetry',
+  'subtitleEditorCueHint',
 };
 
 Map<String, Object?> _readArb(File file) {

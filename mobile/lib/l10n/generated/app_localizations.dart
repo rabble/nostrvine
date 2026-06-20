@@ -15713,6 +15713,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Split failed. Please try again.'**
   String get videoEditorSplitFailed;
+
+  /// No description provided for @videoEditEditSubtitles.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit subtitles'**
+  String get videoEditEditSubtitles;
+
+  /// No description provided for @subtitleEditorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit subtitles'**
+  String get subtitleEditorTitle;
+
+  /// No description provided for @subtitleEditorSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get subtitleEditorSave;
+
+  /// No description provided for @subtitleEditorProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtitles are still being generated. Check back in a moment.'**
+  String get subtitleEditorProcessing;
+
+  /// No description provided for @subtitleEditorLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load subtitles. Try again.'**
+  String get subtitleEditorLoadError;
+
+  /// No description provided for @subtitleEditorSaveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtitles updated'**
+  String get subtitleEditorSaveSuccess;
+
+  /// No description provided for @subtitleEditorSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save subtitles. Try again.'**
+  String get subtitleEditorSaveError;
+
+  /// No description provided for @subtitleEditorRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get subtitleEditorRetry;
+
+  /// No description provided for @subtitleEditorCueHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Caption text'**
+  String get subtitleEditorCueHint;
 }
 
 class _AppLocalizationsDelegate
