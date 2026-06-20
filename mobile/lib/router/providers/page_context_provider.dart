@@ -46,6 +46,7 @@ import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
+import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
@@ -68,6 +69,7 @@ enum RouteType {
   videoEditor, // Video editor screen
   videoMetadata, // Video editor meta screen
   videoEdit, // Full-screen edit flow for published videos
+  subtitleEdit, // Full-screen subtitle edit flow for published videos
   importKey,
   invites, // Invite codes share/list screen
   badges, // Badge awards dashboard
@@ -283,6 +285,13 @@ RouteContext parseRoute(String path) {
         return RouteContext(type: RouteType.videoEdit, videoId: videoId);
       }
       return const RouteContext(type: RouteType.videoEdit);
+
+    case 'subtitle-edit':
+      if (segments.length > 1) {
+        final videoId = _safeDecode(segments[1]);
+        return RouteContext(type: RouteType.subtitleEdit, videoId: videoId);
+      }
+      return const RouteContext(type: RouteType.subtitleEdit);
 
     case 'settings':
       return const RouteContext(type: RouteType.settings);
@@ -544,6 +553,12 @@ String buildRoute(RouteContext context) {
         return VideoMetadataEditScreen.pathFor(context.videoId!);
       }
       return VideoMetadataEditScreen.path;
+
+    case RouteType.subtitleEdit:
+      if (context.videoId != null) {
+        return SubtitleEditorScreen.pathFor(context.videoId!);
+      }
+      return SubtitleEditorScreen.path;
 
     case RouteType.settings:
       if (context.appSlug != null) {

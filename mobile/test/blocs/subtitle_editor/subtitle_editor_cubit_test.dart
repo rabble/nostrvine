@@ -1,5 +1,7 @@
 // ABOUTME: Tests for SubtitleEditorCubit covering load, edit, and save flows.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -166,5 +168,40 @@ void main() {
       ],
       errors: () => [isA<SubtitleEditException>()],
     );
+
+    test('load completes without emitting after close', () async {
+      final completer = Completer<List<SubtitleCue>>();
+      when(() => repo.loadCues(any())).thenAnswer((_) => completer.future);
+      final cubit = SubtitleEditorCubit(repository: repo, video: _video);
+
+      final loadFuture = cubit.load();
+      expect(cubit.state.status, SubtitleEditorStatus.loading);
+
+      await cubit.close();
+      completer.complete(
+        const [SubtitleCue(start: 0, end: 1000, text: 'late')],
+      );
+
+      await expectLater(loadFuture, completes);
+    });
+
+    test('save completes without emitting after close', () async {
+      final completer = Completer<void>();
+      when(
+        () => repo.publishEditedSubtitles(
+          video: any(named: 'video'),
+          cues: any(named: 'cues'),
+        ),
+      ).thenAnswer((_) => completer.future);
+      final cubit = SubtitleEditorCubit(repository: repo, video: _video);
+
+      final saveFuture = cubit.save();
+      expect(cubit.state.status, SubtitleEditorStatus.saving);
+
+      await cubit.close();
+      completer.complete();
+
+      await expectLater(saveFuture, completes);
+    });
   });
 }

@@ -27,6 +27,7 @@ import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
+import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
@@ -367,6 +368,17 @@ void main() {
         expect(context.type, RouteType.videoEdit);
         expect(context.videoId, 'test-id-abc');
       });
+      test('/subtitle-edit parses to RouteType.subtitleEdit', () {
+        final context = parseRoute('/subtitle-edit');
+        expect(context.type, RouteType.subtitleEdit);
+      });
+      test('/subtitle-edit/:videoId parses videoId', () {
+        final context = parseRoute(
+          SubtitleEditorScreen.pathFor('test-id-abc'),
+        );
+        expect(context.type, RouteType.subtitleEdit);
+        expect(context.videoId, 'test-id-abc');
+      });
     });
 
     group('Edge cases', () {
@@ -429,6 +441,7 @@ void main() {
       'badges': BadgesScreen.path,
       'relay settings': RelaySettingsScreen.path,
       'video edit': VideoMetadataEditScreen.pathFor('test-id-abc'),
+      'subtitle edit': SubtitleEditorScreen.pathFor('test-id-abc'),
       'invites': InvitesScreen.path,
       'people list create': CreatePeopleListPage.path,
       'people list members': '/people-lists/list%3A123',
@@ -465,6 +478,7 @@ void main() {
         RouteType.videoEditor: VideoEditorScreen.path,
         RouteType.videoMetadata: VideoMetadataScreen.path,
         RouteType.videoEdit: VideoMetadataEditScreen.pathFor('test-id-abc'),
+        RouteType.subtitleEdit: SubtitleEditorScreen.pathFor('test-id-abc'),
         RouteType.importKey: KeyImportScreen.path,
         RouteType.invites: InvitesScreen.path,
         RouteType.badges: BadgesScreen.path,

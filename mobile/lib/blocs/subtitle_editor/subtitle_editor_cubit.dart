@@ -29,9 +29,11 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
   /// - [SubtitleEditorStatus.processing] when no cues are available yet.
   /// - [SubtitleEditorStatus.failure] and calls [addError] on any exception.
   Future<void> load() async {
+    if (isClosed) return;
     emit(state.copyWith(status: SubtitleEditorStatus.loading));
     try {
       final cues = await _repository.loadCues(_video);
+      if (isClosed) return;
       if (cues.isEmpty) {
         emit(state.copyWith(status: SubtitleEditorStatus.processing));
         return;
@@ -44,6 +46,7 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
         ),
       );
     } catch (e, st) {
+      if (isClosed) return;
       addError(e, st);
       emit(state.copyWith(status: SubtitleEditorStatus.failure));
     }
@@ -54,6 +57,7 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
   ///
   /// Out-of-range indices are silently ignored.
   void updateCueText(int index, String text) {
+    if (isClosed) return;
     if (index < 0 || index >= state.cues.length) return;
     final updated = List<EditableCue>.from(state.cues);
     updated[index] = updated[index].copyWith(text: text);
@@ -66,12 +70,14 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
   /// - [SubtitleEditorStatus.success] with `isDirty` reset to `false`.
   /// - [SubtitleEditorStatus.failure] and calls [addError] on any exception.
   Future<void> save() async {
+    if (isClosed) return;
     emit(state.copyWith(status: SubtitleEditorStatus.saving));
     try {
       await _repository.publishEditedSubtitles(
         video: _video,
         cues: state.cues.map((c) => c.toCue()).toList(),
       );
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: SubtitleEditorStatus.success,
@@ -79,6 +85,7 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
         ),
       );
     } catch (e, st) {
+      if (isClosed) return;
       addError(e, st);
       emit(state.copyWith(status: SubtitleEditorStatus.failure));
     }

@@ -2182,6 +2182,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         case RouteType.videoEditor:
         case RouteType.videoMetadata:
         case RouteType.videoEdit:
+        case RouteType.subtitleEdit:
           // Pop the video editing flow screens
           router.pop();
           return true; // Handled
