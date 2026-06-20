@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -60,6 +61,27 @@ void main() {
           extra: testVideo,
         ),
       ).called(1);
+    });
+
+    testWidgets('uses DivineButton styling for subtitle editing', (
+      tester,
+    ) async {
+      final mockGoRouter = MockGoRouter();
+
+      await tester.pumpWidget(buildSubject(mockGoRouter));
+
+      expect(find.byType(OutlinedButton), findsNothing);
+      expect(find.byType(DivineButton), findsNWidgets(3));
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is DivineButton &&
+              widget.leadingIcon == DivineIconName.closedCaptioning &&
+              widget.type == DivineButtonType.secondary &&
+              widget.expanded,
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

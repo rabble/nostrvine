@@ -11,14 +11,21 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/subtitle_repository_provider.dart';
+import 'package:openvine/providers/video_providers.dart';
+import 'package:openvine/router/route_error_screen.dart';
 
 /// Full-screen subtitle editor page.
 ///
-/// Wires [SubtitleEditorCubit] via Riverpod DI and delegates rendering to
-/// [SubtitleEditorView].
-class SubtitleEditorScreen extends ConsumerWidget {
-  /// Creates the subtitle editor page for [video].
-  const SubtitleEditorScreen({required this.video, super.key});
+/// The screen is keyed on [videoId] so it can be rebuilt from the route alone.
+/// A [prefetched] video may be passed as a fast path when navigating from a
+/// feed or metadata screen, but route state is not required for correctness.
+class SubtitleEditorScreen extends ConsumerStatefulWidget {
+  /// Creates the subtitle editor page for [videoId].
+  const SubtitleEditorScreen({
+    required this.videoId,
+    this.prefetched,
+    super.key,
+  });
 
   /// Base route path.
   static const path = '/subtitle-edit';
@@ -30,11 +37,59 @@ class SubtitleEditorScreen extends ConsumerWidget {
   static String pathFor(String videoId) =>
       '$path/${Uri.encodeComponent(videoId)}';
 
-  /// The video whose subtitles are being edited.
-  final VideoEvent video;
+  /// The event id of the video whose subtitles are being edited.
+  final String videoId;
+
+  /// Optional prefetched video used to avoid an async resolve on push.
+  final VideoEvent? prefetched;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SubtitleEditorScreen> createState() =>
+      _SubtitleEditorScreenState();
+}
+
+class _SubtitleEditorScreenState extends ConsumerState<SubtitleEditorScreen> {
+  VideoEvent? _resolved;
+  bool _resolveFailed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.prefetched != null && widget.prefetched!.id == widget.videoId) {
+      _resolved = widget.prefetched;
+    } else {
+      _resolve();
+    }
+  }
+
+  Future<void> _resolve() async {
+    final resolver = ref.read(videoEventResolverProvider);
+    final video = await resolver.resolveById(
+      widget.videoId,
+      allowOwnContentBypass: true,
+    );
+    if (!mounted) return;
+    setState(() {
+      _resolved = video;
+      _resolveFailed = video == null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final video = _resolved;
+    if (video == null) {
+      if (_resolveFailed) {
+        return RouteErrorScreen(message: context.l10n.routeInvalidVideoId);
+      }
+      return const Scaffold(
+        backgroundColor: VineTheme.backgroundColor,
+        body: Center(
+          child: CircularProgressIndicator(color: VineTheme.vineGreen),
+        ),
+      );
+    }
+
     final repository = ref.watch(subtitleRepositoryProvider);
     return BlocProvider<SubtitleEditorCubit>(
       key: ObjectKey(repository),
@@ -197,11 +252,9 @@ class _CueRow extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: context.l10n.subtitleEditorCueHint,
               ),
-              onChanged: (value) =>
-                  context.read<SubtitleEditorCubit>().updateCueText(
-                    index,
-                    value,
-                  ),
+              onChanged: (value) => context
+                  .read<SubtitleEditorCubit>()
+                  .updateCueText(index, value),
             ),
           ),
         ],

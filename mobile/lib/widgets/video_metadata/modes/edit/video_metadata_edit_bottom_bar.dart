@@ -201,10 +201,7 @@ class _VideoMetadataEditBottomBarState
           mainAxisSize: MainAxisSize.min,
           spacing: 10,
           children: [
-            _EditSubtitlesButton(
-              onTap: _editSubtitles,
-              isBusy: _isBusy,
-            ),
+            _EditSubtitlesButton(onTap: _editSubtitles, isBusy: _isBusy),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               spacing: 10,
@@ -232,12 +229,9 @@ class _VideoMetadataEditBottomBarState
   }
 }
 
-/// Full-width outlined button to open the subtitle editor.
+/// Full-width secondary button to open the subtitle editor.
 class _EditSubtitlesButton extends StatelessWidget {
-  const _EditSubtitlesButton({
-    required this.onTap,
-    required this.isBusy,
-  });
+  const _EditSubtitlesButton({required this.onTap, required this.isBusy});
 
   final VoidCallback onTap;
   final bool isBusy;
@@ -246,13 +240,12 @@ class _EditSubtitlesButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       identifier: 'edit_subtitles_button',
-      child: SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: isBusy ? null : onTap,
-          icon: const DivineIcon(icon: DivineIconName.closedCaptioning),
-          label: Text(context.l10n.videoEditEditSubtitles),
-        ),
+      child: DivineButton(
+        onPressed: isBusy ? null : onTap,
+        type: DivineButtonType.secondary,
+        expanded: true,
+        leadingIcon: DivineIconName.closedCaptioning,
+        label: context.l10n.videoEditEditSubtitles,
       ),
     );
   }

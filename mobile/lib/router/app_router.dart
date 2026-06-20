@@ -1337,10 +1337,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             return RouteErrorScreen(message: ctx.l10n.routeInvalidVideoId);
           }
           final prefetched = st.extra as VideoEvent?;
-          if (prefetched == null) {
-            return RouteErrorScreen(message: ctx.l10n.routeInvalidVideoId);
-          }
-          return SubtitleEditorScreen(video: prefetched);
+          return SubtitleEditorScreen(videoId: videoId, prefetched: prefetched);
         },
       ),
       GoRoute(
