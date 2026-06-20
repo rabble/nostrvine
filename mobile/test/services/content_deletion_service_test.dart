@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 
+import 'package:db_client/db_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -19,6 +20,8 @@ class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockAuthService extends Mock implements AuthService {}
 
+class _MockProfileStatsDao extends Mock implements ProfileStatsDao {}
+
 class _FakeEvent extends Fake implements Event {}
 
 void main() {
@@ -30,6 +33,7 @@ void main() {
   group(ContentDeletionService, () {
     late _MockNostrClient mockNostrService;
     late _MockAuthService mockAuthService;
+    late _MockProfileStatsDao mockProfileStatsDao;
     late ContentDeletionService service;
     late SharedPreferences prefs;
     late String testPublicKey;
@@ -115,15 +119,20 @@ void main() {
 
       mockNostrService = _MockNostrClient();
       mockAuthService = _MockAuthService();
+      mockProfileStatsDao = _MockProfileStatsDao();
 
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
       when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(
+        () => mockProfileStatsDao.deleteStats(any()),
+      ).thenAnswer((_) async => 1);
 
       service = ContentDeletionService(
         nostrService: mockNostrService,
         authService: mockAuthService,
         prefs: prefs,
+        profileStatsDao: mockProfileStatsDao,
       );
 
       await service.initialize();
@@ -231,6 +240,55 @@ void main() {
               tags: any(named: 'tags'),
             ),
           ).called(1);
+          verify(
+            () => mockProfileStatsDao.deleteStats(testPublicKey),
+          ).called(1);
+        },
+      );
+
+      test(
+        'does not fail a confirmed delete when profile stats invalidation fails',
+        () async {
+          final video = createTestVideoEvent(testPublicKey);
+          final deleteEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', video.id],
+              ['a', video.addressableId!],
+              ['k', '34236'],
+            ],
+            content: 'CONTENT DELETION',
+          );
+
+          when(
+            () => mockProfileStatsDao.deleteStats(testPublicKey),
+          ).thenThrow(Exception('database unavailable'));
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => deleteEvent);
+
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => accepted(deleteEvent.id));
+
+          final result = await service.deleteContent(
+            video: video,
+            reason: 'Personal choice',
+          );
+
+          expect(result.success, isTrue);
+          expect(service.hasBeenDeleted(video.id), isTrue);
+          verify(
+            () => mockProfileStatsDao.deleteStats(testPublicKey),
+          ).called(1);
         },
       );
 
@@ -275,6 +333,7 @@ void main() {
           expect(result.error, contains('blocked: policy'));
           expect(service.hasBeenDeleted(video.id), isFalse);
           expect(service.deletionHistory, isEmpty);
+          verifyNever(() => mockProfileStatsDao.deleteStats(any()));
         },
       );
 

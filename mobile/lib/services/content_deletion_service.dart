@@ -3,6 +3,7 @@
 
 import 'dart:convert';
 
+import 'package:db_client/db_client.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
@@ -114,14 +115,17 @@ class ContentDeletionService {
     required NostrClient nostrService,
     required AuthService authService,
     required SharedPreferences prefs,
+    ProfileStatsDao? profileStatsDao,
   }) : _nostrService = nostrService,
        _authService = authService,
-       _prefs = prefs {
+       _prefs = prefs,
+       _profileStatsDao = profileStatsDao {
     _loadDeletionHistory();
   }
   final NostrClient _nostrService;
   final AuthService _authService;
   final SharedPreferences _prefs;
+  final ProfileStatsDao? _profileStatsDao;
 
   static const String deletionsStorageKey = 'content_deletions_history';
 
@@ -252,6 +256,7 @@ class ContentDeletionService {
 
       _deletionHistory.add(deletion);
       await _saveDeletionHistory();
+      await _invalidateProfileStatsAfterConfirmedDelete();
 
       Log.debug(
         '📱️ Content deletion confirmed: ${deleteEvent.id}',
@@ -268,6 +273,29 @@ class ContentDeletionService {
       return DeleteResult.failure(
         'Failed to delete content: $e',
         DeleteFailureKind.unknown,
+      );
+    }
+  }
+
+  Future<void> _invalidateProfileStatsAfterConfirmedDelete() async {
+    final dao = _profileStatsDao;
+    if (dao == null) return;
+
+    final currentPubkey = _authService.currentPublicKeyHex;
+    if (currentPubkey == null || currentPubkey.isEmpty) return;
+
+    try {
+      await dao.deleteStats(currentPubkey);
+      Log.debug(
+        'Invalidated profile stats cache after content deletion',
+        name: 'ContentDeletionService',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.warning(
+        'Failed to invalidate profile stats after content deletion: $e',
+        name: 'ContentDeletionService',
+        category: LogCategory.system,
       );
     }
   }
