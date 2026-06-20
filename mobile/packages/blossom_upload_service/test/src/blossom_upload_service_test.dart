@@ -2131,6 +2131,71 @@ void main() {
         expect(result.success, isFalse);
         expect(result.failureReason, equals(BlossomUploadFailureReason.auth));
       });
+
+      test('returns upload failure when subtitle PUT is rejected', () async {
+        final mockDio = _MockDio();
+        final mockResponse = _MockResponse();
+        when(() => mockResponse.statusCode).thenReturn(400);
+        when(() => mockResponse.headers).thenReturn(Headers());
+        when(() => mockResponse.data).thenReturn(<String, dynamic>{
+          'message': 'bad VTT',
+        });
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => _signedEvent(_testPublicKey, 24242, const [], ''),
+        );
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((_) async => mockResponse);
+
+        final service = BlossomUploadService(
+          authProvider: mockAuthProvider,
+          dio: mockDio,
+        );
+        final progress = <double>[];
+
+        final result = await service.uploadSubtitleVtt(
+          bytes: Uint8List.fromList(utf8.encode('WEBVTT\n')),
+          onProgress: progress.add,
+        );
+
+        expect(progress.first, equals(0.1));
+        expect(result.success, isFalse);
+        expect(result.statusCode, equals(400));
+        expect(result.errorMessage, isNotNull);
+      });
+
+      test('returns failure when subtitle upload setup throws', () async {
+        when(() => mockAuthProvider.isAuthenticated).thenThrow(
+          StateError('auth state unavailable'),
+        );
+        final service = BlossomUploadService(authProvider: mockAuthProvider);
+
+        final result = await service.uploadSubtitleVtt(
+          bytes: Uint8List.fromList(utf8.encode('WEBVTT\n')),
+        );
+
+        expect(result.success, isFalse);
+        expect(
+          result.errorMessage,
+          contains('Subtitle VTT upload failed'),
+        );
+        expect(
+          result.failureReason,
+          equals(BlossomUploadFailureReason.unknown),
+        );
+      });
     });
 
     group('Model classes', () {

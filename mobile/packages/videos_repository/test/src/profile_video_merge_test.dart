@@ -171,6 +171,39 @@ void main() {
       ]);
     });
 
+    test('keeps plural text-track refs from the primary copy', () {
+      final merged = mergeProfileFeedVideos(
+        _video(
+          id: 'primary',
+          pubkey: 'pubkey',
+          createdAt: 2000,
+          vineId: 'video-subtitles',
+          textTrackRef: 'https://media.divine.video/current-vtt',
+          textTrackRefs: const [
+            'https://media.divine.video/current-vtt',
+            '39307:pubkey:subtitles:current-video-subtitles',
+          ],
+        ),
+        _video(
+          id: 'secondary',
+          pubkey: 'pubkey',
+          createdAt: 1000,
+          vineId: 'video-subtitles',
+          textTrackRef: 'https://media.divine.video/old-vtt',
+          textTrackRefs: const ['https://media.divine.video/old-vtt'],
+        ),
+      );
+
+      expect(
+        merged.textTrackRef,
+        equals('https://media.divine.video/current-vtt'),
+      );
+      expect(merged.textTrackRefs, [
+        'https://media.divine.video/current-vtt',
+        '39307:pubkey:subtitles:current-video-subtitles',
+      ]);
+    });
+
     test('primary fields fall back to secondary when null', () {
       final merged = mergeProfileFeedVideos(
         _video(id: 'v', createdAt: 1000, videoUrl: 'http://old/v.mp4'),

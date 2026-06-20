@@ -16,6 +16,9 @@ final String _reposterPubkey = 'c' * 64;
 final String _otherCollab = 'd' * 64;
 final String _audioEventId = 'e' * 64;
 final String _sha256 = 'f' * 64;
+const String _subtitleEventRef =
+    '39307:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+    'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:subtitles:abc123def';
 
 VideoEvent _fullVideo() => VideoEvent(
   id: _id,
@@ -77,7 +80,7 @@ VideoEvent _fullVideo() => VideoEvent(
   textTrackRef: 'https://cdn.divine.video/captions.vtt',
   textTrackRefs: const [
     'https://cdn.divine.video/captions.vtt',
-    '39307:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:subtitles:abc123def',
+    _subtitleEventRef,
   ],
   textTrackContent: 'WEBVTT\n\n00:00.000 --> 00:06.000\nHello',
   contentWarningLabels: const ['nudity'],
