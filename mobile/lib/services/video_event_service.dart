@@ -2399,37 +2399,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             return;
           }
 
-          Log.verbose(
-            'Parsed direct video: hasVideo=${videoEvent.hasVideo}, videoUrl=${videoEvent.videoUrl}',
-            name: 'VideoEventService',
-            category: LogCategory.video,
-          );
-          Log.verbose(
-            'Thumbnail URL: ${videoEvent.thumbnailUrl}',
-            name: 'VideoEventService',
-            category: LogCategory.video,
-          );
-          Log.verbose(
-            'Has thumbnail: ${videoEvent.thumbnailUrl != null && videoEvent.thumbnailUrl!.isNotEmpty}',
-            name: 'VideoEventService',
-            category: LogCategory.video,
-          );
-          Log.verbose(
-            'Video author pubkey: ${videoEvent.pubkey}',
-            name: 'VideoEventService',
-            category: LogCategory.video,
-          );
-          Log.verbose(
-            'Video title: ${videoEvent.title}',
-            name: 'VideoEventService',
-            category: LogCategory.video,
-          );
-          Log.verbose(
-            'Video hashtags: ${videoEvent.hashtags}',
-            name: 'VideoEventService',
-            category: LogCategory.video,
-          );
-
           // Debug: Special logging for Classic Vines content
           if (videoEvent.pubkey == AppConstants.classicVinesPubkey) {
             Log.info(

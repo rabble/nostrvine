@@ -70,5 +70,33 @@ void main() {
         );
       },
     );
+
+    test('does not eagerly log per-field dumps for parsed video events', () {
+      service.handleEventForTesting(
+        makeProfileVideoEvent(),
+        SubscriptionType.profile,
+      );
+
+      final messages = LogCaptureService()
+          .getRecentLogs()
+          .map((entry) => entry.message)
+          .toList();
+
+      const eagerPrefixes = [
+        'Parsed direct video:',
+        'Thumbnail URL:',
+        'Has thumbnail:',
+        'Video author pubkey:',
+        'Video title:',
+        'Video hashtags:',
+      ];
+      for (final prefix in eagerPrefixes) {
+        expect(
+          messages.where((message) => message.startsWith(prefix)),
+          isEmpty,
+          reason: 'per-event verbose dump "$prefix" must not be logged',
+        );
+      }
+    });
   });
 }
