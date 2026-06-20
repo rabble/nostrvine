@@ -22,7 +22,9 @@ QueryExecutor openConnection() {
   return LazyDatabase(() async {
     final dbPath = await getSharedDatabasePath();
     final dbFile = prepareDatabaseFile(dbPath);
-    return NativeDatabase(dbFile);
+    // Background isolate keeps all SQLite work off the UI isolate; see the
+    // encrypted variant below for the perf rationale.
+    return NativeDatabase.createInBackground(dbFile);
   });
 }
 
@@ -56,7 +58,12 @@ QueryExecutor openEncryptedConnection({required String rawKeyHex}) {
   return LazyDatabase(() async {
     final dbPath = await getSharedDatabasePath();
     final dbFile = prepareDatabaseFile(dbPath);
-    return NativeDatabase(
+    // Open on a background isolate so the SQLite3MultipleCiphers per-page
+    // AES-256-CBC + HMAC-SHA512 work (every read and write) never runs on the
+    // UI isolate. The [setup] closure — including the raw key string and the
+    // top-level helpers — is sendable, so it runs on the spawned isolate and
+    // still fails closed if sqlite3mc is not the active build.
+    return NativeDatabase.createInBackground(
       dbFile,
       setup: (rawDb) {
         applyCipherKey(rawDb, rawKeyHex);

@@ -7,6 +7,8 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/event.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+const eventRouterBatchFlushThreshold = 50;
+
 /// Routes incoming Nostr events to appropriate database tables
 ///
 /// All events go to NostrEvents table (single source of truth)
@@ -34,7 +36,8 @@ class EventRouter {
     _batchTimer ??= Timer(const Duration(milliseconds: 50), _processBatch);
 
     // If queue is large, process immediately
-    if (_eventQueue.length >= 50 && !_isProcessingBatch) {
+    if (_eventQueue.length >= eventRouterBatchFlushThreshold &&
+        !_isProcessingBatch) {
       _batchTimer?.cancel();
       _batchTimer = null;
       await _processBatch();
@@ -61,10 +64,15 @@ class EventRouter {
       // Batch insert to nostr_events table
       await _db.nostrEventsDao.upsertEventsBatch(batch);
 
-      // Process kind-specific routing for each event
-      for (final event in batch) {
-        await _routeEvent(event);
-      }
+      // Run kind-specific routing inside a single transaction so the per-event
+      // writes (e.g. profile upserts) commit once instead of once per event.
+      // Each commit is an fsync + journal write — now also encrypted under
+      // SQLCipher — so collapsing N commits into one is the dominant saving.
+      await _db.transaction(() async {
+        for (final event in batch) {
+          await _routeEvent(event);
+        }
+      });
 
       Log.verbose(
         'Completed batch of ${batch.length} events',
