@@ -545,7 +545,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 // leading slot. The fullscreen feed sits over playing
                 // video so a small icon hit-target is easy to miss.
                 expandLeadingHitArea: true,
-                customActions: const [FeedSettingsMenu()],
+                customActions: [FeedSettingsMenu(video: state.currentVideo)],
                 style: DiVineAppBarStyle.transparentStyle.copyWith(
                   horizontalPadding: 12,
                   // With the default 48 px icon button and 12 px

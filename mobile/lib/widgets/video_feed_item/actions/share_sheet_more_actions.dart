@@ -15,6 +15,8 @@ class _MoreActionsSection extends ConsumerWidget {
     required this.onShareVia,
     required this.onCopyEventJson,
     required this.onCopyEventId,
+    this.onEditVideo,
+    this.onDeleteVideo,
     this.onAddVideoToClips,
     this.onSaveOriginal,
   });
@@ -29,6 +31,8 @@ class _MoreActionsSection extends ConsumerWidget {
   final VoidCallback onShareVia;
   final VoidCallback onCopyEventJson;
   final VoidCallback onCopyEventId;
+  final VoidCallback? onEditVideo;
+  final Future<void> Function()? onDeleteVideo;
   final VoidCallback? onAddVideoToClips;
 
   @override
@@ -41,6 +45,18 @@ class _MoreActionsSection extends ConsumerWidget {
     );
 
     final actions = <_ActionData>[
+      if (onEditVideo != null)
+        _ActionData(
+          icon: DivineIconName.pencilSimpleLine,
+          label: context.l10n.shareMenuEditVideo,
+          onTap: onEditVideo!,
+        ),
+      if (onDeleteVideo != null)
+        _ActionData(
+          icon: DivineIconName.trash,
+          label: context.l10n.shareMenuDeleteVideo,
+          onTap: onDeleteVideo!,
+        ),
       _ActionData(
         icon: DivineIconName.bookmarkSimple,
         label: context.l10n.shareSheetSave,

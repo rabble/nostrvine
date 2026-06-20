@@ -290,6 +290,34 @@ void main() {
       },
     );
 
+    testWidgets('More actions row shows owner edit and delete actions', (
+      tester,
+    ) async {
+      final authService = createMockAuthService();
+      when(() => authService.isAuthenticated).thenReturn(true);
+      when(
+        () => authService.currentPublicKeyHex,
+      ).thenReturn(testVideo.pubkey);
+
+      await tester.pumpWidget(buildSubject(mockAuthService: authService));
+      await tester.tap(find.byType(ShareActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit Video'), findsOneWidget);
+      expect(find.text('Delete Video'), findsOneWidget);
+    });
+
+    testWidgets('More actions row hides owner actions for non-owned videos', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.tap(find.byType(ShareActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit Video'), findsNothing);
+      expect(find.text('Delete Video'), findsNothing);
+    });
+
     testWidgets('tapping Add to clips shows success snackbar with clip title', (
       tester,
     ) async {

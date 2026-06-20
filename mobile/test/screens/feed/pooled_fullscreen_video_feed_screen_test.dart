@@ -141,6 +141,8 @@ const testVideoId3 =
     'c3d4e5f6789012345678901234567890abcdef123456789012345678901234a1b2';
 const testPubkey =
     'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3';
+const otherPubkey =
+    'e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3d4';
 
 class _PopCountingObserver extends NavigatorObserver {
   _PopCountingObserver({required this.onPop});
@@ -258,6 +260,7 @@ void main() {
     Widget buildSubject({
       FullscreenFeedState? state,
       List<dynamic>? additionalOverrides,
+      MockAuthService? mockAuthService,
       String? contextTitle,
       ViewTrafficSource trafficSource = ViewTrafficSource.unknown,
       String? sourceDetail,
@@ -267,6 +270,7 @@ void main() {
 
       return testMaterialApp(
         additionalOverrides: additionalOverrides,
+        mockAuthService: mockAuthService,
         mockProfileRepository: mockProfileRepository,
         mockNip05VerificationService: mockNip05VerificationService,
         home: buildContent(
@@ -1097,6 +1101,69 @@ void main() {
 
         expect(find.byType(FeedSettingsMenu), findsOneWidget);
       });
+
+      testWidgets('shows owner edit and delete actions in the more menu', (
+        tester,
+      ) async {
+        final videos = createTestVideos();
+        final mockAuth = createMockAuthService();
+        when(() => mockAuth.isAuthenticated).thenReturn(true);
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(testPubkey);
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+            ),
+            mockAuthService: mockAuth,
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byType(FeedSettingsMenu));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.text('Edit Video'), findsOneWidget);
+        expect(find.text('Delete Video'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        await tester.pump(Duration.zero);
+      });
+
+      testWidgets(
+        'hides owner edit and delete actions for non-owned videos in the more menu',
+        (tester) async {
+          final videos = createTestVideos();
+          final mockAuth = createMockAuthService();
+          when(() => mockAuth.isAuthenticated).thenReturn(true);
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(otherPubkey);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+              mockAuthService: mockAuth,
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.byType(FeedSettingsMenu));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          expect(find.text('Edit Video'), findsNothing);
+          expect(find.text('Delete Video'), findsNothing);
+
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await tester.pump(Duration.zero);
+        },
+      );
 
       testWidgets('requests pagination at the end when more content exists', (
         tester,

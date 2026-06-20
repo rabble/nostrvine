@@ -18,8 +18,11 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_clip_import_provider.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
+import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
+import 'package:openvine/utils/delete_failure_localization.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
@@ -184,6 +187,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
           isOwnContent: isOwnContent,
           onFindPeople: _handleFindPeople,
           onAddToList: _handleAddToList,
+          onEditVideo: isOwnContent ? _handleEditVideo : null,
+          onDeleteVideo: isOwnContent ? _handleDeleteVideo : null,
           onSaveOriginal: isOwnContent ? _handleSaveOriginal : null,
           onSaveWithWatermark: _handleSaveWithWatermark,
           onAddVideoToClips: canAddVideoToClips ? _handleAddVideoToClips : null,
@@ -321,6 +326,95 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         builder: (context) => SelectListDialog(video: widget.video),
       );
     });
+  }
+
+  void _handleEditVideo() {
+    _presentAfterDismiss<void>((hostContext) async {
+      hostContext.push(
+        VideoMetadataEditScreen.pathFor(widget.video.id),
+        extra: widget.video,
+      );
+    });
+  }
+
+  Future<void> _handleDeleteVideo() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: VineTheme.cardBackground,
+        title: Text(
+          dialogContext.l10n.shareMenuDeleteVideo,
+          style: const TextStyle(color: VineTheme.whiteText),
+        ),
+        content: Text(
+          dialogContext.l10n.shareMenuDeleteConfirmation,
+          style: const TextStyle(color: VineTheme.whiteText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(dialogContext.l10n.shareMenuCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: VineTheme.error),
+            child: Text(dialogContext.l10n.shareMenuDelete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _deleteVideo();
+    }
+  }
+
+  Future<void> _deleteVideo() async {
+    try {
+      final deletionService = await ref.read(
+        contentDeletionServiceProvider.future,
+      );
+      final result = await deletionService.quickDelete(
+        video: widget.video,
+        reason: DeleteReason.personalChoice,
+      );
+
+      if (!mounted) return;
+
+      if (result.success) {
+        ref
+            .read(videoEventServiceProvider)
+            .removeVideoEventCompletely(
+              widget.video,
+            );
+        final messenger = ScaffoldMessenger.of(context);
+        final snackBar = DivineSnackbarContainer.snackBar(
+          context.l10n.shareMenuVideoDeletionRequested,
+        );
+        _safePop(context);
+        messenger.showSnackBar(snackBar);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            localizedDeleteFailureMessage(context, result),
+            error: true,
+          ),
+        );
+      }
+    } catch (e) {
+      Log.error(
+        'Failed to delete video: $e',
+        name: 'ShareActionButton',
+        category: LogCategory.ui,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          context.l10n.shareMenuDeleteFailedGeneric,
+          error: true,
+        ),
+      );
+    }
   }
 
   bool _isUserOwnContent() {
@@ -507,6 +601,8 @@ class _UnifiedShareSheetView extends StatelessWidget {
     required this.onAddToList,
     required this.onSaveWithWatermark,
     this.onAddVideoToClips,
+    this.onEditVideo,
+    this.onDeleteVideo,
     this.onSaveOriginal,
   });
 
@@ -515,6 +611,8 @@ class _UnifiedShareSheetView extends StatelessWidget {
   final bool isOwnContent;
   final VoidCallback onFindPeople;
   final VoidCallback onAddToList;
+  final VoidCallback? onEditVideo;
+  final Future<void> Function()? onDeleteVideo;
   final Future<void> Function()? onSaveOriginal;
   final Future<void> Function() onSaveWithWatermark;
   final VoidCallback? onAddVideoToClips;
@@ -571,6 +669,8 @@ class _UnifiedShareSheetView extends StatelessWidget {
                         onSaveOriginal: onSaveOriginal,
                         onSaveWithWatermark: onSaveWithWatermark,
                         onAddVideoToClips: onAddVideoToClips,
+                        onEditVideo: onEditVideo,
+                        onDeleteVideo: onDeleteVideo,
                         onAddToList: onAddToList,
                         onCopyLink: () =>
                             bloc.add(const ShareSheetCopyLinkRequested()),

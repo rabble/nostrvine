@@ -2,9 +2,17 @@
 // ABOUTME: Renders the More icon button and the playback-controls popover
 // ABOUTME: that toggles auto-advance, audio mute, and closed captions.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
 import 'package:openvine/widgets/video_feed_item/feed_playback_toggles_pill.dart';
 
 /// More icon button + playback-controls popover for feed surfaces.
@@ -21,16 +29,19 @@ import 'package:openvine/widgets/video_feed_item/feed_playback_toggles_pill.dart
 /// `VideoVolumeCubit`, and the Riverpod `subtitleVisibilityProvider`) so the
 /// popover does not need any props from the page — it works as a drop-in
 /// child of any feed surface that provides those scopes.
-class FeedSettingsMenu extends StatefulWidget {
-  const FeedSettingsMenu({super.key});
+class FeedSettingsMenu extends ConsumerStatefulWidget {
+  const FeedSettingsMenu({super.key, this.video});
+
+  final VideoEvent? video;
 
   @override
-  State<FeedSettingsMenu> createState() => _FeedSettingsMenuState();
+  ConsumerState<FeedSettingsMenu> createState() => _FeedSettingsMenuState();
 }
 
-class _FeedSettingsMenuState extends State<FeedSettingsMenu> {
+class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
   final OverlayPortalController _controller = OverlayPortalController();
   final LayerLink _link = LayerLink();
+  OwnerVideoActionsCubit? _ownerVideoActionsCubit;
 
   /// Mirrors [_controller.isShowing] so the trigger button can rebuild via a
   /// [ValueListenableBuilder] without setState on the whole subtree.
@@ -40,6 +51,10 @@ class _FeedSettingsMenuState extends State<FeedSettingsMenu> {
 
   @override
   void dispose() {
+    final ownerVideoActionsCubit = _ownerVideoActionsCubit;
+    if (ownerVideoActionsCubit != null) {
+      unawaited(ownerVideoActionsCubit.close());
+    }
     _isShowing.dispose();
     super.dispose();
   }
@@ -60,14 +75,102 @@ class _FeedSettingsMenuState extends State<FeedSettingsMenu> {
     _isShowing.value = false;
   }
 
+  bool get _isOwnVideo {
+    final video = widget.video;
+    if (video == null) return false;
+    final currentUserPubkey = ref
+        .watch(authServiceProvider)
+        .currentPublicKeyHex;
+    return currentUserPubkey != null && currentUserPubkey == video.pubkey;
+  }
+
+  void _editVideo() {
+    final video = widget.video;
+    if (video == null) return;
+    _close();
+    context.push(VideoMetadataEditScreen.pathFor(video.id), extra: video);
+  }
+
+  Future<void> _confirmDeleteVideo() async {
+    final video = widget.video;
+    if (video == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: VineTheme.cardBackground,
+        title: Text(
+          dialogContext.l10n.shareMenuDeleteVideo,
+          style: const TextStyle(color: VineTheme.whiteText),
+        ),
+        content: Text(
+          dialogContext.l10n.shareMenuDeleteConfirmation,
+          style: const TextStyle(color: VineTheme.whiteText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(dialogContext.l10n.shareMenuCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: VineTheme.error),
+            child: Text(dialogContext.l10n.shareMenuDelete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _deleteVideo(video);
+    }
+  }
+
+  Future<void> _deleteVideo(VideoEvent video) async {
+    final ownerVideoActionsCubit = _ownerVideoActionsCubit ??=
+        OwnerVideoActionsCubit(
+          contentDeletionServiceFuture: ref.read(
+            contentDeletionServiceProvider.future,
+          ),
+          videoEventService: ref.read(videoEventServiceProvider),
+        );
+    await ownerVideoActionsCubit.deleteVideo(video);
+
+    if (!mounted) return;
+
+    final state = ownerVideoActionsCubit.state;
+    if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
+      final messenger = ScaffoldMessenger.of(context);
+      final snackBar = DivineSnackbarContainer.snackBar(
+        context.l10n.shareMenuVideoDeletionRequested,
+      );
+      _close();
+      messenger.showSnackBar(snackBar);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          _localizedDeleteFailureMessage(context, state.deleteFailureKind),
+          error: true,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isOwnVideo = _isOwnVideo;
+
     return CompositedTransformTarget(
       link: _link,
       child: OverlayPortal(
         controller: _controller,
-        overlayChildBuilder: (_) =>
-            _FeedSettingsOverlay(link: _link, onClose: _close),
+        overlayChildBuilder: (_) => _FeedSettingsOverlay(
+          link: _link,
+          onClose: _close,
+          isOwnVideo: isOwnVideo,
+          onEditVideo: _editVideo,
+          onDeleteVideo: _confirmDeleteVideo,
+        ),
         child: ValueListenableBuilder<bool>(
           valueListenable: _isShowing,
           builder: (context, isShowing, _) => DivineIconButton(
@@ -85,14 +188,46 @@ class _FeedSettingsMenuState extends State<FeedSettingsMenu> {
   }
 }
 
+String _localizedDeleteFailureMessage(
+  BuildContext context,
+  OwnerVideoDeleteFailureKind? kind,
+) {
+  final l10n = context.l10n;
+  switch (kind ?? OwnerVideoDeleteFailureKind.unknown) {
+    case OwnerVideoDeleteFailureKind.notInitialized:
+      return l10n.shareMenuDeleteFailedNotInitialized;
+    case OwnerVideoDeleteFailureKind.notOwner:
+      return l10n.shareMenuDeleteFailedNotOwner;
+    case OwnerVideoDeleteFailureKind.notAuthenticated:
+      return l10n.shareMenuDeleteFailedNotAuthenticated;
+    case OwnerVideoDeleteFailureKind.couldNotSign:
+      return l10n.shareMenuDeleteFailedCouldNotSign;
+    case OwnerVideoDeleteFailureKind.relayRejected:
+      return l10n.shareMenuDeleteFailedRelayRejected;
+    case OwnerVideoDeleteFailureKind.relayNoResponse:
+      return l10n.shareMenuDeleteFailedRelayNoResponse;
+    case OwnerVideoDeleteFailureKind.unknown:
+      return l10n.shareMenuDeleteFailedGeneric;
+  }
+}
+
 /// Overlay rendered while the popover is open: a full-screen tap catcher
 /// that dismisses the popover, plus the popover itself anchored 16 px below
 /// the trigger button's bottom-right corner.
 class _FeedSettingsOverlay extends StatelessWidget {
-  const _FeedSettingsOverlay({required this.link, required this.onClose});
+  const _FeedSettingsOverlay({
+    required this.link,
+    required this.onClose,
+    required this.isOwnVideo,
+    required this.onEditVideo,
+    required this.onDeleteVideo,
+  });
 
   final LayerLink link;
   final VoidCallback onClose;
+  final bool isOwnVideo;
+  final VoidCallback onEditVideo;
+  final VoidCallback onDeleteVideo;
 
   @override
   Widget build(BuildContext context) {
@@ -120,12 +255,116 @@ class _FeedSettingsOverlay extends StatelessWidget {
             targetAnchor: Alignment.bottomRight,
             followerAnchor: Alignment.topRight,
             offset: const Offset(0, 16),
-            child: const Material(
+            child: Material(
               color: VineTheme.transparent,
-              child: FeedPlaybackTogglesPill(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isOwnVideo) ...[
+                    _OwnerVideoActionsPill(
+                      onEditVideo: onEditVideo,
+                      onDeleteVideo: onDeleteVideo,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  const FeedPlaybackTogglesPill(),
+                ],
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _OwnerVideoActionsPill extends StatelessWidget {
+  const _OwnerVideoActionsPill({
+    required this.onEditVideo,
+    required this.onDeleteVideo,
+  });
+
+  final VoidCallback onEditVideo;
+  final VoidCallback onDeleteVideo;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: VineTheme.scrim30,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: VineTheme.scrim15),
+        boxShadow: const [
+          BoxShadow(color: VineTheme.shadow25, blurRadius: 4),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 8,
+          children: [
+            _OwnerVideoAction(
+              icon: DivineIconName.pencilSimpleLine,
+              label: context.l10n.shareMenuEditVideo,
+              onTap: onEditVideo,
+            ),
+            _OwnerVideoAction(
+              icon: DivineIconName.trash,
+              label: context.l10n.shareMenuDeleteVideo,
+              onTap: onDeleteVideo,
+              isDestructive: true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OwnerVideoAction extends StatelessWidget {
+  const _OwnerVideoAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isDestructive = false,
+  });
+
+  final DivineIconName icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDestructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDestructive ? VineTheme.error : VineTheme.onSurface;
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: VineTheme.scrim15,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 6,
+              children: [
+                DivineIcon(icon: icon, color: color, size: 18),
+                Text(
+                  label,
+                  style: VineTheme.labelSmallFont(color: color),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
