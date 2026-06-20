@@ -2000,7 +2000,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           (event) {
             eventCount++;
 
-            // Route ALL events to database immediately (Phase 3.2: Drift integration)
+            // Route events to normal-priority persistence without blocking
+            // visible feed updates.
             _eventRouter?.handleEvent(event);
 
             // Track first event arrival time
@@ -2254,16 +2255,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       final event = eventData;
 
       // Route ALL events to database first (single source of truth)
-      // Fire-and-forget: database writes shouldn't block event processing
-      if (_eventRouter != null) {
-        _eventRouter.handleEvent(event).catchError((e) {
-          Log.warning(
-            'EventRouter failed (non-critical): $e',
-            name: 'VideoEventService',
-            category: LogCategory.video,
-          );
-        });
-      }
+      // Fire-and-forget: database writes shouldn't block event processing.
+      _eventRouter?.handleEvent(
+        event,
+        priority: EventIngestionPriority.background,
+      );
 
       // Fast-path de-duplication before logging and processing
       // Use case-insensitive ID comparison for consistent deduplication

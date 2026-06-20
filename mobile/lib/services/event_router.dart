@@ -2,74 +2,148 @@
 // ABOUTME: All events go to NostrEvents table, kind-specific processing extracts to denormalized tables
 
 import 'dart:async';
+import 'dart:collection';
+
 import 'package:db_client/db_client.dart';
+import 'package:meta/meta.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/event.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 const eventRouterBatchFlushThreshold = 50;
 
-/// Routes incoming Nostr events to appropriate database tables
+enum EventIngestionPriority {
+  visible,
+  normal,
+  background,
+}
+
+class EventRouterConfig {
+  const EventRouterConfig({
+    this.flushDelay = const Duration(milliseconds: 50),
+    this.maxBatchSize = eventRouterBatchFlushThreshold,
+    this.autoStart = true,
+  });
+
+  final Duration flushDelay;
+  final int maxBatchSize;
+  final bool autoStart;
+}
+
+typedef EventRouterYield = Future<void> Function();
+
+Future<void> _defaultYieldToEventLoop() => Future<void>.delayed(Duration.zero);
+
+/// Routes incoming Nostr events to appropriate database tables.
 ///
-/// All events go to NostrEvents table (single source of truth)
-/// Kind-specific processing extracts data to denormalized tables
-/// Uses batching to avoid database lock contention
+/// UI surfaces update from in-memory feed state before this persistence path
+/// completes. This router must therefore be best-effort and cooperative:
+/// bounded batches, priority queues, and event-loop yields keep background
+/// ingestion from starving Flutter frames.
 class EventRouter {
-  EventRouter(this._db);
+  EventRouter(
+    this._db, {
+    EventRouterConfig config = const EventRouterConfig(),
+    EventRouterYield yieldToEventLoop = _defaultYieldToEventLoop,
+  }) : _config = config,
+       _yieldToEventLoop = yieldToEventLoop;
 
   final AppDatabase _db;
-  final List<Event> _eventQueue = [];
+  final EventRouterConfig _config;
+  final EventRouterYield _yieldToEventLoop;
+  final Queue<Event> _visibleQueue = Queue<Event>();
+  final Queue<Event> _normalQueue = Queue<Event>();
+  final Queue<Event> _backgroundQueue = Queue<Event>();
   Timer? _batchTimer;
   bool _isProcessingBatch = false;
 
-  /// Access to database for cache-first queries
+  /// Access to database for cache-first queries.
   AppDatabase get db => _db;
 
-  /// Handle incoming event from relay
-  ///
-  /// Queues event for batch processing to avoid database locks
-  Future<void> handleEvent(Event event) async {
-    // Add to batch queue
-    _eventQueue.add(event);
-
-    // Schedule batch processing if not already scheduled
-    _batchTimer ??= Timer(const Duration(milliseconds: 50), _processBatch);
-
-    // If queue is large, process immediately
-    if (_eventQueue.length >= eventRouterBatchFlushThreshold &&
-        !_isProcessingBatch) {
-      _batchTimer?.cancel();
-      _batchTimer = null;
-      await _processBatch();
+  void handleEvent(
+    Event event, {
+    EventIngestionPriority priority = EventIngestionPriority.normal,
+  }) {
+    _queueFor(priority).add(event);
+    if (_config.autoStart) {
+      _scheduleProcessing(immediate: _queuedLength >= _config.maxBatchSize);
     }
   }
 
-  /// Process queued events in a single batch
-  Future<void> _processBatch() async {
-    if (_isProcessingBatch || _eventQueue.isEmpty) return;
+  Queue<Event> _queueFor(EventIngestionPriority priority) {
+    switch (priority) {
+      case EventIngestionPriority.visible:
+        return _visibleQueue;
+      case EventIngestionPriority.normal:
+        return _normalQueue;
+      case EventIngestionPriority.background:
+        return _backgroundQueue;
+    }
+  }
+
+  int get _queuedLength =>
+      _visibleQueue.length + _normalQueue.length + _backgroundQueue.length;
+
+  void _scheduleProcessing({bool immediate = false}) {
+    if (_isProcessingBatch) return;
+    if (immediate || _config.flushDelay == Duration.zero) {
+      _batchTimer?.cancel();
+      _batchTimer = null;
+      unawaited(_processNextBatch());
+      return;
+    }
+
+    _batchTimer ??= Timer(_config.flushDelay, () {
+      _batchTimer = null;
+      unawaited(_processNextBatch());
+    });
+  }
+
+  List<Event> _takeNextBatch() {
+    final batch = <Event>[];
+    while (batch.length < _config.maxBatchSize && _queuedLength > 0) {
+      final queue = _visibleQueue.isNotEmpty
+          ? _visibleQueue
+          : _normalQueue.isNotEmpty
+          ? _normalQueue
+          : _backgroundQueue;
+      batch.add(queue.removeFirst());
+    }
+    return batch;
+  }
+
+  Future<void> _processNextBatch({bool continueProcessing = true}) async {
+    if (_isProcessingBatch || _queuedLength == 0) return;
 
     _isProcessingBatch = true;
-    _batchTimer = null;
+    try {
+      final batch = _takeNextBatch();
+      await _persistBatch(batch);
+    } finally {
+      _isProcessingBatch = false;
+    }
+
+    if (continueProcessing && _queuedLength > 0) {
+      await _yieldToEventLoop();
+      _scheduleProcessing(immediate: true);
+    }
+  }
+
+  Future<void> _persistBatch(List<Event> batch) async {
+    if (batch.isEmpty) return;
 
     try {
-      final batch = List<Event>.from(_eventQueue);
-      _eventQueue.clear();
-
       Log.debug(
         'Processing batch of ${batch.length} events',
         name: 'EventRouter',
         category: LogCategory.system,
       );
 
-      // Batch insert to nostr_events table
-      await _db.nostrEventsDao.upsertEventsBatch(batch);
+      await _db.nostrEventsDao.cacheEventsBatch(batch);
 
-      // Run kind-specific routing inside a single transaction so the per-event
-      // writes (e.g. profile upserts) commit once instead of once per event.
-      // Each commit is an fsync + journal write — now also encrypted under
-      // SQLCipher — so collapsing N commits into one is the dominant saving.
+      final routeBatch = _coalesceReplaceableRouting(batch);
       await _db.transaction(() async {
-        for (final event in batch) {
+        for (final event in routeBatch) {
           await _routeEvent(event);
         }
       });
@@ -87,40 +161,44 @@ class EventRouter {
         error: e,
         stackTrace: stackTrace,
       );
-    } finally {
-      _isProcessingBatch = false;
     }
   }
 
-  /// Route event to specialized tables based on kind
+  List<Event> _coalesceReplaceableRouting(List<Event> batch) {
+    final routeBatch = <Event>[];
+    final latestProfileByPubkey = <String, Event>{};
+
+    for (final event in batch) {
+      if (event.kind == 0) {
+        final existing = latestProfileByPubkey[event.pubkey];
+        if (existing == null || event.createdAt >= existing.createdAt) {
+          latestProfileByPubkey[event.pubkey] = event;
+        }
+      } else {
+        routeBatch.add(event);
+      }
+    }
+
+    routeBatch.addAll(latestProfileByPubkey.values);
+    return routeBatch;
+  }
+
   Future<void> _routeEvent(Event event) async {
     switch (event.kind) {
-      case 0: // Profile metadata
+      case 0:
         await _handleProfileEvent(event);
-
-      case 3: // Contacts
-        // TODO: Future implementation
+      case 3:
         break;
-
-      case 7: // Reactions
-        // TODO: Future implementation
+      case 7:
         break;
-
-      case 6: // Reposts
-      case NIP71VideoKinds.addressableShortVideo: // Videos
-        // Already in events table, queryable via DAO
+      case 6:
+      case NIP71VideoKinds.addressableShortVideo:
         break;
-
       default:
-        // Still in events table, just not processed further
         break;
     }
   }
 
-  /// Handle kind 0 (profile) event
-  ///
-  /// Extracts profile data and stores in UserProfiles table
-  /// Handles malformed JSON gracefully (UserProfile.fromNostrEvent has fallback)
   Future<void> _handleProfileEvent(Event event) async {
     try {
       final profile = UserProfile.fromNostrEvent(event);
@@ -138,7 +216,32 @@ class EventRouter {
         category: LogCategory.system,
         stackTrace: stackTrace,
       );
-      // Don't rethrow - we already stored the raw event
+    }
+  }
+
+  void dispose() {
+    _batchTimer?.cancel();
+    _batchTimer = null;
+    _visibleQueue.clear();
+    _normalQueue.clear();
+    _backgroundQueue.clear();
+  }
+
+  @visibleForTesting
+  Future<void> drainOneBatchForTesting() =>
+      _processNextBatch(continueProcessing: false);
+
+  @visibleForTesting
+  Future<void> drainForTesting() async {
+    while (_queuedLength > 0 || _isProcessingBatch) {
+      if (_isProcessingBatch) {
+        await _yieldToEventLoop();
+      } else {
+        await _processNextBatch(continueProcessing: false);
+        if (_queuedLength > 0) {
+          await _yieldToEventLoop();
+        }
+      }
     }
   }
 }

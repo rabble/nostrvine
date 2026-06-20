@@ -105,6 +105,7 @@ VideoEventService videoEventService(Ref ref) {
   final videoFilterBuilder = ref.watch(videoFilterBuilderProvider);
   final db = ref.watch(databaseProvider);
   final eventRouter = EventRouter(db);
+  ref.onDispose(eventRouter.dispose);
 
   final likesRepository = ref.watch(likesRepositoryProvider);
   final moderationLabelService = ref.watch(moderationLabelServiceProvider);

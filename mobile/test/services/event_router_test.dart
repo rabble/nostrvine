@@ -1,7 +1,6 @@
 // ABOUTME: Tests EventRouter batch caching + transaction-wrapped kind routing
 // ABOUTME: Verifies events are stored and kind 0 profiles extracted in one batch
 
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
@@ -18,10 +17,14 @@ void main() {
 
     setUp(() {
       db = AppDatabase.test(NativeDatabase.memory());
-      router = EventRouter(db);
+      router = EventRouter(
+        db,
+        config: const EventRouterConfig(autoStart: false),
+      );
     });
 
     tearDown(() async {
+      router.dispose();
       await db.close();
     });
 
@@ -36,29 +39,12 @@ void main() {
     Event profileEvent(int seed, {required String content}) =>
         Event(pubkeyFor(seed), 0, const [], content);
 
-    /// Drives [events] through [handleEvent] so the whole list is flushed in a
-    /// single batch. The queue processes immediately once it reaches 50, so the
-    /// list is padded with filler video events and the final `handleEvent` is
-    /// awaited — no reliance on the 50ms batch timer.
+    /// Drives [events] through the deterministic test drain.
     Future<void> flush(List<Event> events) async {
-      // Only the final handleEvent is awaited, and it's the one that trips the
-      // immediate flush. That holds only because the input is padded up to the
-      // production threshold; with that many or more input events, the trip
-      // would fire inside an unawaited call and the batch would not be awaited.
-      assert(
-        events.length < eventRouterBatchFlushThreshold,
-        'flush() awaits only the padded final event; pass fewer than '
-        '$eventRouterBatchFlushThreshold events.',
-      );
-      final padded = [...events];
-      var filler = 1 << 20;
-      while (padded.length < eventRouterBatchFlushThreshold) {
-        padded.add(videoEvent(filler++));
+      for (final event in events) {
+        router.handleEvent(event);
       }
-      for (var i = 0; i < padded.length - 1; i++) {
-        unawaited(router.handleEvent(padded[i]));
-      }
-      await router.handleEvent(padded.last);
+      await router.drainForTesting();
     }
 
     test('stores every event in the batch in the nostr_events table', () async {
@@ -99,5 +85,121 @@ void main() {
       expect(await db.nostrEventsDao.getEventById(video.id), isNotNull);
       expect(await db.nostrEventsDao.getEventById(broken.id), isNotNull);
     });
+
+    test('drains visible events before background events', () async {
+      final background = profileEvent(
+        10,
+        content: jsonEncode({'name': 'background'}),
+      );
+      final visible = profileEvent(
+        11,
+        content: jsonEncode({'name': 'visible'}),
+      );
+
+      router.dispose();
+      router = EventRouter(
+        db,
+        config: const EventRouterConfig(
+          autoStart: false,
+          maxBatchSize: 1,
+        ),
+      );
+
+      router.handleEvent(
+        background,
+        priority: EventIngestionPriority.background,
+      );
+      router.handleEvent(visible, priority: EventIngestionPriority.visible);
+
+      await router.drainOneBatchForTesting();
+
+      expect(await db.nostrEventsDao.getEventById(visible.id), isNotNull);
+      expect(await db.nostrEventsDao.getEventById(background.id), isNull);
+    });
+
+    test(
+      'yields between bounded batches so large drains are cooperative',
+      () async {
+        var yieldCount = 0;
+        router.dispose();
+        router = EventRouter(
+          db,
+          config: const EventRouterConfig(
+            autoStart: false,
+            maxBatchSize: 10,
+          ),
+          yieldToEventLoop: () async {
+            yieldCount++;
+            await Future<void>.delayed(Duration.zero);
+          },
+        );
+
+        for (var i = 0; i < 25; i++) {
+          router.handleEvent(videoEvent(2000 + i));
+        }
+
+        await router.drainForTesting();
+
+        expect(yieldCount, greaterThanOrEqualTo(2));
+        for (var i = 0; i < 25; i++) {
+          expect(
+            await db.nostrEventsDao.getEventById(videoEvent(2000 + i).id),
+            isNotNull,
+          );
+        }
+      },
+    );
+
+    test('stores all raw profile events but routes only the latest profile per '
+        'pubkey', () async {
+      final pubkey = pubkeyFor(44);
+      final older = Event(
+        pubkey,
+        0,
+        const [],
+        jsonEncode({'name': 'old'}),
+        createdAt: 100,
+      );
+      final latest = Event(
+        pubkey,
+        0,
+        const [],
+        jsonEncode({'name': 'new'}),
+        createdAt: 200,
+      );
+
+      router.handleEvent(older);
+      router.handleEvent(latest);
+
+      await router.drainForTesting();
+
+      expect(await db.nostrEventsDao.getEventById(older.id), isNotNull);
+      expect(await db.nostrEventsDao.getEventById(latest.id), isNotNull);
+      expect(
+        (await db.userProfilesDao.getProfile(pubkey))?.name,
+        equals('new'),
+      );
+    });
+
+    test(
+      'handleEvent enqueues without synchronously persisting the event',
+      () async {
+        final event = videoEvent(99);
+
+        router.handleEvent(
+          event,
+          priority: EventIngestionPriority.background,
+        );
+
+        // Enqueue is intentionally fire-and-forget. Persistence happens when the
+        // cooperative router drain runs, so the relay callback can keep updating
+        // in-memory UI state.
+        expect(await db.nostrEventsDao.getEventById(event.id), isNull);
+
+        await router.drainForTesting();
+
+        expect(await db.nostrEventsDao.getEventById(event.id), isNotNull);
+      },
+    );
   });
 }

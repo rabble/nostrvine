@@ -147,12 +147,20 @@ void main() {
     });
 
     tearDown(() async {
+      eventRouter.dispose();
       await db.close();
       final file = File(testDbPath);
       if (file.existsSync()) {
         await file.delete();
       }
     });
+
+    Future<void> cacheEvents(List<Event> events) async {
+      for (final event in events) {
+        eventRouter.handleEvent(event);
+      }
+      await eventRouter.drainForTesting();
+    }
 
     test('filters by kinds', () async {
       // Insert events of different kinds
@@ -183,9 +191,7 @@ void main() {
       profileEvent.id = toHex64('profile1');
       profileEvent.sig = toHex64('sig_profile1');
 
-      await eventRouter.handleEvent(video1);
-      await eventRouter.handleEvent(video2);
-      await eventRouter.handleEvent(profileEvent);
+      await cacheEvents([video1, video2, profileEvent]);
 
       // Query for video events only (kind 34236)
       final results = await db.nostrEventsDao.getEventsByFilter(
@@ -217,9 +223,7 @@ void main() {
         createdAt: 300,
       );
 
-      await eventRouter.handleEvent(user1Video);
-      await eventRouter.handleEvent(user2Video);
-      await eventRouter.handleEvent(user3Video);
+      await cacheEvents([user1Video, user2Video, user3Video]);
 
       // Query for user1 and user2 only
       final results = await db.nostrEventsDao.getEventsByFilter(
@@ -259,9 +263,7 @@ void main() {
         createdAt: 300,
       );
 
-      await eventRouter.handleEvent(catVideo);
-      await eventRouter.handleEvent(dogVideo);
-      await eventRouter.handleEvent(noHashtagVideo);
+      await cacheEvents([catVideo, dogVideo, noHashtagVideo]);
 
       // Query for #cats hashtag
       final results = await db.nostrEventsDao.getEventsByFilter(
@@ -289,9 +291,7 @@ void main() {
         createdAt: 1000,
       );
 
-      await eventRouter.handleEvent(oldVideo);
-      await eventRouter.handleEvent(middleVideo);
-      await eventRouter.handleEvent(newVideo);
+      await cacheEvents([oldVideo, middleVideo, newVideo]);
 
       // Query for events between 200 and 800
       final results = await db.nostrEventsDao.getEventsByFilter(
@@ -329,10 +329,7 @@ void main() {
         hashtags: ['target_tag'],
       );
 
-      await eventRouter.handleEvent(matchingEvent);
-      await eventRouter.handleEvent(wrongAuthor);
-      await eventRouter.handleEvent(wrongHashtag);
-      await eventRouter.handleEvent(wrongTime);
+      await cacheEvents([matchingEvent, wrongAuthor, wrongHashtag, wrongTime]);
 
       // Query with ALL filters
       final results = await db.nostrEventsDao.getEventsByFilter(
@@ -353,7 +350,7 @@ void main() {
     test('respects limit parameter', () async {
       // Insert 10 events
       for (int i = 0; i < 10; i++) {
-        await eventRouter.handleEvent(
+        eventRouter.handleEvent(
           createTestVideoEvent(
             id: 'video_$i',
             pubkey: 'user1',
@@ -361,6 +358,7 @@ void main() {
           ),
         );
       }
+      await eventRouter.drainForTesting();
 
       // Query with limit of 5
       final results = await db.nostrEventsDao.getEventsByFilter(
@@ -388,9 +386,7 @@ void main() {
       );
 
       // Insert in random order
-      await eventRouter.handleEvent(middle);
-      await eventRouter.handleEvent(recent);
-      await eventRouter.handleEvent(old);
+      await cacheEvents([middle, recent, old]);
 
       final results = await db.nostrEventsDao.getEventsByFilter(
         Filter(limit: 10),
@@ -432,12 +428,20 @@ void main() {
 
     tearDown(() async {
       videoEventService.dispose();
+      eventRouter.dispose();
       await db.close();
       final file = File(testDbPath);
       if (file.existsSync()) {
         await file.delete();
       }
     });
+
+    Future<void> cacheEvents(List<Event> events) async {
+      for (final event in events) {
+        eventRouter.handleEvent(event);
+      }
+      await eventRouter.drainForTesting();
+    }
 
     test('cached events are delivered BEFORE relay EOSE', () async {
       // Pre-populate database with cached events
@@ -452,8 +456,7 @@ void main() {
         createdAt: 200,
       );
 
-      await eventRouter.handleEvent(cachedEvent1);
-      await eventRouter.handleEvent(cachedEvent2);
+      await cacheEvents([cachedEvent1, cachedEvent2]);
 
       // Track when events arrive
       final receivedEvents = <String>[];
@@ -499,7 +502,7 @@ void main() {
         pubkey: 'user1',
         createdAt: 100,
       );
-      await eventRouter.handleEvent(cachedEvent);
+      await cacheEvents([cachedEvent]);
 
       // Subscribe
       await videoEventService.subscribeToVideoFeed(
@@ -555,8 +558,7 @@ void main() {
         createdAt: 200,
       );
 
-      await eventRouter.handleEvent(user1Event);
-      await eventRouter.handleEvent(user2Event);
+      await cacheEvents([user1Event, user2Event]);
 
       // Subscribe with author filter for user1 only
       await videoEventService.subscribeToVideoFeed(
@@ -589,8 +591,7 @@ void main() {
         hashtags: ['dogs'],
       );
 
-      await eventRouter.handleEvent(catVideo);
-      await eventRouter.handleEvent(dogVideo);
+      await cacheEvents([catVideo, dogVideo]);
 
       // Subscribe with hashtag filter
       await videoEventService.subscribeToVideoFeed(

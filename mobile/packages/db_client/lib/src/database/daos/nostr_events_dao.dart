@@ -215,6 +215,25 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
+  /// Cache raw events by ID without applying replaceable-event deletion.
+  ///
+  /// Relay ingestion needs to preserve every raw event it receives while
+  /// denormalized tables decide which replaceable value is current.
+  Future<void> cacheEventsBatch(List<Event> events, {int? expireAt}) async {
+    if (events.isEmpty) return;
+
+    final effectiveExpireAt = expireAt ?? _defaultExpireAt();
+
+    await transaction(() async {
+      for (final event in events) {
+        await _insertEvent(event, expireAt: effectiveExpireAt);
+        if (event.kind == 34236) {
+          await db.videoMetricsDao.upsertVideoMetrics(event);
+        }
+      }
+    });
+  }
+
   /// Watch events with a Nostr Filter (reactive stream)
   ///
   /// Returns a Stream that emits whenever the matching events change in the

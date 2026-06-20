@@ -1229,6 +1229,24 @@ void main() {
         final notes = await dao.getEventsByFilter(Filter(kinds: [1]));
         expect(notes.length, equals(1));
       });
+
+      test('cacheEventsBatch preserves raw replaceable events by id', () async {
+        final oldProfile = createEvent(
+          kind: 0,
+          content: '{"name":"old"}',
+          createdAt: 1000,
+        );
+        final newProfile = createEvent(
+          kind: 0,
+          content: '{"name":"new"}',
+          createdAt: 2000,
+        );
+
+        await dao.cacheEventsBatch([oldProfile, newProfile]);
+
+        expect(await dao.getEventById(oldProfile.id), isNotNull);
+        expect(await dao.getEventById(newProfile.id), isNotNull);
+      });
     });
 
     group('watchEventsByFilter (reactive queries)', () {
