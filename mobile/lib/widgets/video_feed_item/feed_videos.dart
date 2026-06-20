@@ -48,6 +48,7 @@ class FeedVideos extends ConsumerStatefulWidget {
     this.currentIndex = 0,
     this.shouldPortraitExpand = true,
     this.isActive = true,
+    this.releaseNeighboursWhenInactive = false,
     this.hasMore = false,
     this.isLoadingMore = false,
     this.onActiveVideoChanged,
@@ -66,6 +67,13 @@ class FeedVideos extends ConsumerStatefulWidget {
   /// screen is obscured (tab switch, overlay open) to pause the active video
   /// without tearing down the widget tree.
   final bool isActive;
+
+  /// See [InfiniteVideoFeed.releaseNeighboursWhenInactive].
+  ///
+  /// Set this for feeds that stay mounted in the background (e.g. the home
+  /// feed inside a `StatefulShellRoute`) so the off-screen neighbour players
+  /// and disk prefetch are released while [isActive] is `false`.
+  final bool releaseNeighboursWhenInactive;
 
   /// Whether more videos can be loaded from the source.
   ///
@@ -262,6 +270,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
         key: _feedKey,
         videos: widget.videos,
         isActive: isFeedActive,
+        releaseNeighboursWhenInactive: widget.releaseNeighboursWhenInactive,
         // mediaCacheProvider is a keepAlive singleton; identity is stable for
         // the app lifetime, so ref.read is safe here. See
         // .claude/rules/state_management.md → "Bridging Riverpod-provided

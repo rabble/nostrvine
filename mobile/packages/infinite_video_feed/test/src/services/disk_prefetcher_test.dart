@@ -352,6 +352,59 @@ void main() {
       });
     });
 
+    group('cancelCycle', () {
+      test('can be called when no operation is active', () {
+        expect(() => prefetcher.cancelCycle(), returnsNormally);
+      });
+
+      test(
+        'halts the running cycle so it does not advance to the next index',
+        () async {
+          final slowCache = _MockMediaCacheManager();
+          final logs2 = <String>[];
+          final slowPrefetcher = DiskPrefetcher(
+            cache: slowCache,
+            log: logs2.add,
+          );
+
+          final downloadCompleter = _ManualCompleter<File?>();
+          var downloadCalls = 0;
+          when(() => slowCache.getCachedFileSync(any())).thenReturn(null);
+          when(
+            () => slowCache.cacheFileCancellable(any(), key: any(named: 'key')),
+          ).thenAnswer((_) {
+            downloadCalls++;
+            return _PendingOperation(downloadCompleter.future);
+          });
+
+          final videos = List.generate(
+            5,
+            (i) => _makeVideo('v$i', url: 'http://example.com/$i.m3u8'),
+          );
+
+          final run = slowPrefetcher.run(
+            startIndex: 0,
+            endIndex: 4,
+            videos: videos,
+            resolveUrls: (v) => [if (v.videoUrl != null) v.videoUrl!],
+          );
+
+          // Let the cycle start the first download and park on it.
+          await Future<void>.delayed(Duration.zero);
+          expect(downloadCalls, equals(1));
+
+          // Pause the whole cycle, then release the in-flight download.
+          slowPrefetcher.cancelCycle();
+          downloadCompleter.complete(null);
+          await run;
+
+          // The loop exited instead of advancing to index 1+.
+          expect(downloadCalls, equals(1));
+          slowPrefetcher.dispose();
+        },
+      );
+    });
+
     group('dispose', () {
       test('cancels active operation without throwing', () {
         expect(() => prefetcher.dispose(), returnsNormally);

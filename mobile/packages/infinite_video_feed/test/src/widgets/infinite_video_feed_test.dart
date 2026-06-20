@@ -1803,5 +1803,244 @@ void main() {
         },
       );
     });
+
+    group('releaseNeighboursWhenInactive', () {
+      testWidgets('collapses the live window to the current video when the '
+          'feed becomes inactive', (tester) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install();
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        final videos = [_makeVideo('cur'), _makeVideo('next')];
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                releaseNeighboursWhenInactive: true,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          // The current and next controllers are live while active.
+          expect(
+            key.currentState!.debugLiveControllerIndices,
+            equals(<int>{0, 1}),
+          );
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                isActive: false,
+                releaseNeighboursWhenInactive: true,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          // The neighbour player is dropped; only the current one is retained.
+          expect(
+            key.currentState!.debugLiveControllerIndices,
+            equals(<int>{0}),
+          );
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
+      testWidgets('keeps the neighbour controller when inactive and the flag '
+          'is off', (tester) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install();
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        final videos = [_makeVideo('cur'), _makeVideo('next')];
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(
+            key.currentState!.debugLiveControllerIndices,
+            equals(<int>{0, 1}),
+          );
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                isActive: false,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          // Default behaviour: the neighbour stays warm while paused.
+          expect(
+            key.currentState!.debugLiveControllerIndices,
+            equals(<int>{0, 1}),
+          );
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
+      testWidgets('re-initialises the neighbour controller when reactivated', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install();
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        final videos = [_makeVideo('cur'), _makeVideo('next')];
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                releaseNeighboursWhenInactive: true,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                isActive: false,
+                releaseNeighboursWhenInactive: true,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          expect(
+            key.currentState!.debugLiveControllerIndices,
+            equals(<int>{0}),
+          );
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                releaseNeighboursWhenInactive: true,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          // The neighbour controller is re-created on reactivation.
+          expect(
+            key.currentState!.debugLiveControllerIndices,
+            equals(<int>{0, 1}),
+          );
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
+      testWidgets('pauses disk prefetch while inactive and resumes when '
+          'active', (tester) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0, 1, 2, 3, 4]);
+        final videos = List.generate(
+          4,
+          (i) => _makeVideo('p$i', videoUrl: 'https://example.com/p$i.mp4'),
+        );
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: videos,
+                cache: cache,
+                isActive: false,
+                releaseNeighboursWhenInactive: true,
+                prefetchCount: 5,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          // Inactive feed never starts a disk download.
+          verifyNever(
+            () => cache.cacheFileCancellable(any(), key: any(named: 'key')),
+          );
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: videos,
+                cache: cache,
+                releaseNeighboursWhenInactive: true,
+                prefetchCount: 5,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Reactivation resumes prefetch from the current index.
+          verify(
+            () => cache.cacheFileCancellable(any(), key: any(named: 'key')),
+          ).called(greaterThanOrEqualTo(1));
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+    });
   });
 }

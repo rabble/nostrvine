@@ -56,10 +56,28 @@ class DiskPrefetcher {
 
   /// Cancels the in-flight HTTP download (if any) and clears the active
   /// operation. Subsequent [run] calls start fresh.
+  ///
+  /// Note: this only stops the current download. A cycle started by [run] is
+  /// driven by a loop that keeps advancing to the next index unless the
+  /// generation changes — so on its own this does not halt an in-flight
+  /// cycle, it just makes the running download return early before the loop
+  /// moves on. Callers that need the whole cycle to stop (e.g. pausing
+  /// prefetch while a feed is backgrounded) must use [cancelCycle].
   void cancelActive() {
     _active?.cancel();
     _active = null;
     _activeIndex = null;
+  }
+
+  /// Cancels the in-flight download and halts the running cycle so no further
+  /// videos are fetched until the next [run].
+  ///
+  /// Bumps the generation, which the [run] loop checks on every iteration, so
+  /// the loop exits instead of advancing to the next index after the current
+  /// download is cancelled.
+  void cancelCycle() {
+    _generation++;
+    cancelActive();
   }
 
   /// Starts a new prefetch cycle covering `[startIndex..endIndex]`

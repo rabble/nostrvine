@@ -41,6 +41,7 @@ class InfiniteVideoFeed extends StatefulWidget {
     this.scrollDirection = Axis.vertical,
     this.keepPreviousAlive = true,
     this.keepNextAlive = true,
+    this.releaseNeighboursWhenInactive = false,
     this.prefetchCount = 25,
     this.shouldPortraitExpand = true,
     this.maxLoopDuration,
@@ -171,6 +172,21 @@ class InfiniteVideoFeed extends StatefulWidget {
   /// When `true`, the controller for index `currentIndex + 1` stays
   /// initialized alongside the current one. Defaults to `true`.
   final bool keepNextAlive;
+
+  /// Whether the neighbour players and disk prefetch are released while the
+  /// feed is inactive (see [isActive]).
+  ///
+  /// When `true` and the feed becomes inactive — e.g. the user switches tabs
+  /// or pushes a route over a feed that stays mounted in the background — the
+  /// previous/next controllers are disposed and any in-flight disk prefetch is
+  /// cancelled. Only the current controller is retained, so playback resumes
+  /// instantly when the feed becomes active again; the neighbours
+  /// re-initialize and prefetch resumes on reactivation.
+  ///
+  /// When `false` (the default), neighbours and prefetch stay warm while
+  /// inactive — appropriate for a feed that only pauses transiently while
+  /// staying on screen (e.g. behind a focused text composer).
+  final bool releaseNeighboursWhenInactive;
 
   /// Number of videos ahead of the current index to prefetch to disk.
   ///
@@ -309,6 +325,14 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
   /// The feed index of the currently active (visible) video.
   int get currentIndex => _currentIndex;
+
+  /// The feed indices that currently have a live player controller.
+  ///
+  /// Exposed for tests that assert the live player window shrinks to the
+  /// current video when the feed is released on inactivity (see
+  /// [InfiniteVideoFeed.releaseNeighboursWhenInactive]).
+  @visibleForTesting
+  Set<int> get debugLiveControllerIndices => _controllers.keys.toSet();
 
   int _clampIndex(int index) {
     if (widget.videos.isEmpty) return 0;
@@ -538,9 +562,35 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _isActive = isActive;
     if (_isActive) {
       _resumeCurrentPlaybackIfReady();
+      if (widget.releaseNeighboursWhenInactive) {
+        // Re-expand the live window and resume disk prefetch now that the
+        // feed is visible again.
+        unawaited(_onIndexChanged(_currentIndex));
+      }
     } else {
       _pauseCurrentPlayback();
+      if (widget.releaseNeighboursWhenInactive) {
+        _releaseNeighboursAndPrefetch();
+      }
     }
+  }
+
+  /// Disposes the neighbour controllers and cancels the in-flight disk
+  /// prefetch, keeping only the current controller alive. Called when the
+  /// feed becomes inactive while
+  /// [InfiniteVideoFeed.releaseNeighboursWhenInactive] is set, so a feed that
+  /// stays mounted in the background stops holding off-screen players and
+  /// downloading upcoming videos.
+  void _releaseNeighboursAndPrefetch() {
+    _prefetcher.cancelCycle();
+    // Bump the window generation so any in-flight neighbour init aborts
+    // instead of re-adding a controller we are about to drop.
+    _playerWindowGeneration++;
+    _controllers.keys
+        .where((index) => index != _currentIndex)
+        .toList()
+        .forEach(_disposeAt);
+    _rebuild();
   }
 
   void _pauseCurrentPlayback() {
@@ -618,10 +668,18 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     final generation = ++_playerWindowGeneration;
 
     final lastIndex = widget.videos.length - 1;
-    final start = widget.keepPreviousAlive
+    // Neighbour players are kept alive while the feed is active. When the feed
+    // is hidden and configured to release them
+    // ([InfiniteVideoFeed.releaseNeighboursWhenInactive]), the window collapses
+    // to the current video so a background feed holds only one native player;
+    // the neighbours re-initialize when it becomes active again.
+    final keepNeighbours = !widget.releaseNeighboursWhenInactive || _isActive;
+    final start = widget.keepPreviousAlive && keepNeighbours
         ? (index - 1).clamp(0, lastIndex)
         : index;
-    final end = widget.keepNextAlive ? (index + 1).clamp(0, lastIndex) : index;
+    final end = widget.keepNextAlive && keepNeighbours
+        ? (index + 1).clamp(0, lastIndex)
+        : index;
 
     // Dispose controllers outside the live window.
     _controllers.keys
@@ -637,6 +695,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     if (_playerWindowGeneration != generation || !mounted) return;
 
     if (widget.keepNextAlive &&
+        keepNeighbours &&
         index + 1 <= lastIndex &&
         !_controllers.containsKey(index + 1)) {
       unawaited(_initController(index + 1));
@@ -654,6 +713,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     if (_playerWindowGeneration != generation || !mounted) return;
 
     if (widget.keepPreviousAlive &&
+        keepNeighbours &&
         index - 1 >= 0 &&
         !_controllers.containsKey(index - 1)) {
       unawaited(_initController(index - 1));
@@ -681,6 +741,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   }
 
   Future<void> _runPrefetch(int index) async {
+    // Pause disk prefetch while a release-on-inactive feed is hidden so a
+    // background feed stops downloading upcoming videos. It resumes from the
+    // current index on reactivation.
+    if (widget.releaseNeighboursWhenInactive && !_isActive) return;
     if (widget.prefetchCount <= 0) return;
 
     // coverage:ignore-start

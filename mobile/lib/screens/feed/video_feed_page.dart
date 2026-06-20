@@ -337,6 +337,11 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       contextTitle: state.feedContextTitle,
                       currentIndex: clampedIndex,
                       isActive: _isNewFeedActive,
+                      // The home feed stays mounted across tab switches and
+                      // pushed routes (StatefulShellRoute keep-alive), so
+                      // release the off-screen neighbour players and pause
+                      // disk prefetch while it is backgrounded.
+                      releaseNeighboursWhenInactive: true,
                       hasMore: state.hasMore,
                       isLoadingMore: state.isLoadingMore,
                       trafficSource: ViewTrafficSource.home,
