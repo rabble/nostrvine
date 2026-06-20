@@ -136,6 +136,27 @@ final class VideoFeedActiveIndexChanged extends VideoFeedEvent {
   List<Object?> get props => [index];
 }
 
+/// Full Nostr tags arrived for REST-sourced feed videos.
+final class VideoFeedEnrichmentReady extends VideoFeedEvent {
+  const VideoFeedEnrichmentReady({
+    required this.source,
+    required this.enrichedVideos,
+    required this.sourceIds,
+  });
+
+  /// Feed source that requested enrichment.
+  final VideoFeedSource source;
+
+  /// Enriched videos returned by the injected enrichment function.
+  final List<VideoEvent> enrichedVideos;
+
+  /// IDs present in the source snapshot that was enriched.
+  final Set<String> sourceIds;
+
+  @override
+  List<Object?> get props => [source, enrichedVideos, sourceIds];
+}
+
 /// A user was blocked or the blocklist changed.
 ///
 /// When [blockedPubkey] is provided, the handler removes that user's videos

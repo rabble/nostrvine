@@ -58,8 +58,8 @@ Relevant code paths:
 
 Current badge logic:
 
-- `proofModeVerificationLevel` reads `rawTags['verification']`.
-- `hasProofMode` is true only when proof-related tags exist on the `VideoEvent`.
+- `proofModeVerificationLevel` reads `rawTags['verification']`, falling back to the compact backend proof summary when present.
+- `hasProofMode` is true when proof-related raw tags or a usable compact proof summary exist on the `VideoEvent`.
 - `shouldShowNotDivineBadge` is true when the video is not hosted on a Divine domain, has no proof tags, and is not classified as an original vine.
 
 Why Charlie can fall through to `Not Divine`:
@@ -71,8 +71,8 @@ Why Charlie can fall through to `Not Divine`:
 Most likely failure mode:
 
 - The post is being rendered from a REST video object that was not fully enriched with its Nostr tags.
-- `lib/utils/video_nostr_enrichment.dart` only attempts enrichment for videos where `rawTags.length < 4`.
-- If Charlie's REST object has a small set of non-proof tags but still misses `verification`, `proofmode`, or original-vine metrics, the UI can still misclassify it.
+- `lib/utils/video_nostr_enrichment.dart` now attempts enrichment for sparse compact rows and semi-compact rows that have ordinary media tags but no proof-critical raw tags or compact proof summary.
+- If Funnelcake returns neither raw proof tags nor the compact proof summary and relay enrichment cannot fetch the full event, the UI can still misclassify it.
 - If the relay query times out or returns no event, the original sparse REST object is also left in place.
 
 Important scope note:
@@ -84,5 +84,5 @@ Recommended follow-up:
 
 1. Capture the affected Charlie video as both REST JSON and raw Nostr event JSON.
 2. Compare `rawTags`, `verification`, `proofmode`, and original-vine metrics before and after enrichment.
-3. Decide whether enrichment eligibility should be broader than `rawTags.length < 4`, or whether badge-critical tags need a stronger merge path.
-4. Add temporary badge logging for the affected event ID so the next bug report includes the exact classification inputs.
+3. Confirm Funnelcake returns a compact `proof` summary on all feed/list/search rows so mobile can render badges without relay fallback.
+4. Add temporary badge logging for the affected event ID only if another report lacks the exact classification inputs.

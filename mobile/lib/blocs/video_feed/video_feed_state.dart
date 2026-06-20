@@ -145,6 +145,7 @@ final class VideoFeedBlocState extends Equatable {
     this.creatorProfiles = const {},
     this.paginationCursor,
     this.currentIndex = 0,
+    this.enrichmentRevision = 0,
   }) : source =
            source ??
            (mode == FeedMode.following
@@ -203,6 +204,13 @@ final class VideoFeedBlocState extends Equatable {
   /// profile lookups are instant hits.
   final Map<String, UserProfile> creatorProfiles;
 
+  /// Monotonic revision bumped when background Nostr enrichment replaces
+  /// videos with the same IDs but richer tag data.
+  ///
+  /// [VideoEvent] equality is ID-based, so without a separate revision the
+  /// BLoC can suppress an otherwise valid state emission.
+  final int enrichmentRevision;
+
   /// Whether data has been successfully loaded.
   bool get isLoaded => status == VideoFeedStatus.success;
 
@@ -239,6 +247,7 @@ final class VideoFeedBlocState extends Equatable {
     String? paginationCursor,
     bool clearPaginationCursor = false,
     int? currentIndex,
+    int? enrichmentRevision,
   }) {
     return VideoFeedBlocState(
       status: status ?? this.status,
@@ -257,6 +266,7 @@ final class VideoFeedBlocState extends Equatable {
           ? null
           : (paginationCursor ?? this.paginationCursor),
       currentIndex: currentIndex ?? this.currentIndex,
+      enrichmentRevision: enrichmentRevision ?? this.enrichmentRevision,
     );
   }
 
@@ -274,5 +284,6 @@ final class VideoFeedBlocState extends Equatable {
     creatorProfiles,
     paginationCursor,
     currentIndex,
+    enrichmentRevision,
   ];
 }

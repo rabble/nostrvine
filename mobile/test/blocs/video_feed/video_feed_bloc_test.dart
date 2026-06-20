@@ -274,6 +274,72 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'applies background Nostr enrichment to following feed videos',
+        setUp: () {
+          final authors = ['author1'];
+          final compactVideo = createTestVideo('video-1').copyWith(
+            rawTags: const {
+              'd': 'video-1',
+              'url': 'https://example.com/video-1.mp4',
+              'title': 'REST row',
+              'thumb': 'https://example.com/video-1.jpg',
+            },
+          );
+
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(authors);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: authors,
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: [compactVideo]));
+        },
+        build: () => VideoFeedBloc(
+          videosRepository: mockVideosRepository,
+          followRepository: mockFollowRepository,
+          curatedListRepository: mockCuratedListRepository,
+          enrichVideos: (videos) async => [
+            videos.single.copyWith(
+              rawTags: {
+                ...videos.single.rawTags,
+                'verification': 'verified_mobile',
+                'proofmode': '{}',
+              },
+            ),
+          ],
+        ),
+        act: (bloc) =>
+            bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          const VideoFeedBlocState(mode: FeedMode.following),
+          isA<VideoFeedBlocState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having(
+                (s) => s.videos.single.hasProofMode,
+                'proof before',
+                isFalse,
+              ),
+          isA<VideoFeedBlocState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having(
+                (s) => s.videos.single.hasProofMode,
+                'proof after',
+                isTrue,
+              )
+              .having(
+                (s) => s.videos.single.rawTags['verification'],
+                'verification tag',
+                'verified_mobile',
+              ),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'maps legacy latest start mode to New Videos',
         setUp: () {
           final videos = createTestVideos(5);
@@ -1077,9 +1143,9 @@ void main() {
           final followingResult = Completer<HomeFeedResult>();
           final newVideosResult = Completer<List<VideoEvent>>();
 
-          when(() => mockFollowRepository.followingPubkeys).thenReturn([
-            'pubkey',
-          ]);
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(['pubkey']);
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
@@ -1285,14 +1351,10 @@ void main() {
           final bloc = createBloc();
           addTearDown(bloc.close);
 
-          bloc.add(
-            const VideoFeedSourceChanged(VideoFeedSource.following()),
-          );
+          bloc.add(const VideoFeedSourceChanged(VideoFeedSource.following()));
           await pumpEventQueue();
 
-          bloc.add(
-            const VideoFeedSourceChanged(VideoFeedSource.newVideos()),
-          );
+          bloc.add(const VideoFeedSourceChanged(VideoFeedSource.newVideos()));
           await pumpEventQueue();
 
           newVideosResult.complete(newVideos);

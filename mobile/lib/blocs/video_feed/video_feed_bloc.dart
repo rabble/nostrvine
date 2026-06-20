@@ -26,6 +26,13 @@ part 'video_feed_state.dart';
 /// Default interval between auto-refreshes of the home feed.
 const _defaultAutoRefreshMinInterval = Duration(minutes: 10);
 
+/// Enriches REST-sourced videos with their full Nostr tag set.
+///
+/// Injected so [VideoFeedBloc] stays decoupled from relay clients while still
+/// letting home feeds repair compact REST rows that omit ProofMode/C2PA tags.
+typedef EnrichVideos =
+    Future<List<VideoEvent>> Function(List<VideoEvent> videos);
+
 /// BLoC for managing the unified video feed.
 ///
 /// Handles:
@@ -46,6 +53,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     Duration autoRefreshMinInterval = _defaultAutoRefreshMinInterval,
     FeedPerformanceTracker? feedTracker,
     HomeFeedCache? homeFeedCache,
+    EnrichVideos? enrichVideos,
   }) : _videosRepository = videosRepository,
        _followRepository = followRepository,
        _curatedListRepository = curatedListRepository,
@@ -56,6 +64,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
        _serveCachedHomeFeed = serveCachedHomeFeed,
        _autoRefreshMinInterval = autoRefreshMinInterval,
        _feedTracker = feedTracker,
+       _enrichVideos = enrichVideos,
        _resumeManager = HomeFeedResumeManager(
          cache: homeFeedCache ?? const HomeFeedCache(),
          videosRepository: videosRepository,
@@ -80,6 +89,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     on<VideoFeedCuratedListsChanged>(_onCuratedListsChanged);
     on<VideoFeedBlocklistChanged>(_onBlocklistChanged);
     on<VideoFeedActiveIndexChanged>(_onActiveIndexChanged);
+    on<VideoFeedEnrichmentReady>(_onEnrichmentReady);
   }
 
   final VideosRepository _videosRepository;
@@ -92,6 +102,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   final bool _serveCachedHomeFeed;
   final Duration _autoRefreshMinInterval;
   final FeedPerformanceTracker? _feedTracker;
+  final EnrichVideos? _enrichVideos;
 
   /// Owns the cross-restart cache serve / splice / resume-persist logic.
   final HomeFeedResumeManager _resumeManager;
@@ -124,6 +135,9 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     VideoFeedSource source,
     Emitter<VideoFeedBlocState> emit,
   ) => !emit.isDone && state.source == source;
+
+  bool _shouldEnrichSource(VideoFeedSource source) =>
+      source.type != VideoFeedSourceType.subscribedList;
 
   /// Handle feed started event.
   ///
@@ -396,6 +410,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
           clearPaginationCursor: result.paginationCursor == null,
         ),
       );
+
+      _scheduleNostrEnrichment(source: source, videos: updatedVideos);
 
       // Batch-fetch profiles for new creators only.
       await _fetchCreatorProfiles(validNewVideos, source, emit);
@@ -670,6 +686,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         ),
       );
 
+      _scheduleNostrEnrichment(source: source, videos: displayedVideos);
+
       _feedTracker?.markFeedDisplayed(source.mode.name, displayedVideos.length);
 
       // Batch-fetch creator profiles to warm the Drift cache.
@@ -846,6 +864,79 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
           .getNewVideos(until: until, skipCache: skipCache)
           .then((videos) => HomeFeedResult(videos: videos)),
   };
+
+  void _scheduleNostrEnrichment({
+    required VideoFeedSource source,
+    required List<VideoEvent> videos,
+  }) {
+    final enrichVideos = _enrichVideos;
+    if (enrichVideos == null ||
+        videos.isEmpty ||
+        !_shouldEnrichSource(source)) {
+      return;
+    }
+
+    final snapshot = List<VideoEvent>.unmodifiable(videos);
+    final sourceIds = {for (final video in snapshot) video.id.toLowerCase()};
+
+    unawaited(
+      enrichVideos(snapshot)
+          .then((enrichedVideos) {
+            if (isClosed || identical(enrichedVideos, snapshot)) return;
+            add(
+              VideoFeedEnrichmentReady(
+                source: source,
+                enrichedVideos: enrichedVideos,
+                sourceIds: sourceIds,
+              ),
+            );
+          })
+          .catchError((Object error, StackTrace stackTrace) {
+            if (!isClosed) addError(error, stackTrace);
+          }),
+    );
+  }
+
+  void _onEnrichmentReady(
+    VideoFeedEnrichmentReady event,
+    Emitter<VideoFeedBlocState> emit,
+  ) {
+    if (state.source != event.source || state.videos.isEmpty) return;
+
+    final enrichedById = {
+      for (final video in event.enrichedVideos) video.id.toLowerCase(): video,
+    };
+
+    var changed = false;
+    final mergedVideos = state.videos.map((video) {
+      final key = video.id.toLowerCase();
+      if (!event.sourceIds.contains(key)) return video;
+
+      final enriched = enrichedById[key];
+      if (enriched == null || identical(enriched, video)) return video;
+
+      changed = true;
+      return enriched;
+    }).toList();
+
+    if (!changed) return;
+
+    emit(
+      state.copyWith(
+        videos: mergedVideos,
+        enrichmentRevision: state.enrichmentRevision + 1,
+      ),
+    );
+
+    if (_usesHomeFeedCache(state.source)) {
+      _resumeManager.persistNow(
+        pubkey: _userPubkey,
+        mode: state.source.mode.name,
+        videos: mergedVideos,
+        activeIndex: state.currentIndex,
+      );
+    }
+  }
 
   /// Batch-fetch creator profiles for the given videos.
   ///

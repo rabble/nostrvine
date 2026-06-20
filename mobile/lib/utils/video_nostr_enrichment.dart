@@ -6,6 +6,43 @@ import 'package:nostr_sdk/nostr_sdk.dart' show Filter;
 import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
+const _proofCriticalRawTagKeys = <String>{
+  'verification',
+  'proofmode',
+  'device_attestation',
+  'c2pa_manifest_id',
+  'identity_binding',
+  'identity_verifier',
+  'identity_portable',
+};
+
+/// Returns whether a REST-sourced video should be fetched from Nostr for the
+/// full event tag set.
+///
+/// Funnelcake has returned both very compact rows with fewer than four tags
+/// and semi-compact rows with ordinary media tags (`d`, `url`, `title`,
+/// thumbnail) but no proof-critical tags. The old raw tag count check missed
+/// the latter, which can hide Human-Made / ProofMode badges until the backend
+/// includes compact proof summaries on all feed rows.
+bool needsNostrTagEnrichment(VideoEvent video) {
+  if (video.rawTags.length < 4) return true;
+  if (video.proofSummary != null) return false;
+  if (video.hasProofMode || video.hasBasicProof) return false;
+
+  final rawTagKeys = video.rawTags.keys.toSet();
+  if (rawTagKeys.intersection(_proofCriticalRawTagKeys).isNotEmpty) {
+    return false;
+  }
+
+  final hasCoreMediaTags =
+      rawTagKeys.contains('d') &&
+      rawTagKeys.contains('title') &&
+      (rawTagKeys.contains('url') ||
+          rawTagKeys.contains('thumb') ||
+          rawTagKeys.contains('thumbnail'));
+  return hasCoreMediaTags;
+}
+
 /// Enrich REST API videos with full Nostr event data.
 ///
 /// REST API responses may be missing fields that are present in the raw
@@ -25,12 +62,8 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
 }) async {
   if (videos.isEmpty) return videos;
 
-  // Collect IDs of videos that need enrichment.
-  // It's possible that stat's are already added like 'views', 'loops', 'id'
-  // which is the reason we check for < 4 tags to identify
-  // videos missing the full tag set.
   final idsToEnrich = videos
-      .where((v) => v.rawTags.length < 4)
+      .where(needsNostrTagEnrichment)
       .map((v) => v.id)
       .toList();
 

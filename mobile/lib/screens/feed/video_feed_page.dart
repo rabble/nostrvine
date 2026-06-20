@@ -10,6 +10,7 @@ import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -21,6 +22,7 @@ import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/view_event_publisher.dart'
     show ViewTrafficSource;
+import 'package:openvine/utils/video_nostr_enrichment.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/nav_rounded_shell.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
@@ -83,6 +85,11 @@ class VideoFeedPage extends ConsumerWidget {
             // on read and the splice-on-refresh keeps the post-active tail
             // fresh, so the cached serve is never stale to the viewer.
             feedTracker: FeedPerformanceTracker(),
+            enrichVideos: (videos) => enrichVideosWithNostrTags(
+              videos,
+              nostrService: ref.read(nostrServiceProvider),
+              callerName: 'VideoFeedBloc',
+            ),
           )..add(VideoFeedStarted(mode: initialMode)),
         ),
         BlocProvider(create: (_) => VideoPlaybackStatusCubit()),
