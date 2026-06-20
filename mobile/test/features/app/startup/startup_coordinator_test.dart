@@ -222,6 +222,43 @@ void main() {
       },
     );
 
+    test('should resolve dependencies completed in earlier phases', () async {
+      coordinator.registerService(
+        name: 'HiveStorage',
+        phase: StartupPhase.critical,
+        initialize: createServiceInitializer('HiveStorage'),
+      );
+
+      coordinator.registerService(
+        name: 'UploadManager',
+        phase: StartupPhase.standard,
+        initialize: createServiceInitializer('UploadManager'),
+        dependencies: ['HiveStorage'],
+      );
+
+      final criticalFuture = coordinator.initializeThrough(
+        StartupPhase.critical,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(initializationLog, contains('HiveStorage:start'));
+      expect(initializationLog, isNot(contains('UploadManager:start')));
+
+      serviceCompleters['HiveStorage']!.complete();
+      await criticalFuture;
+
+      final remainingFuture = coordinator.initializeRemaining();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(initializationLog, contains('UploadManager:start'));
+
+      serviceCompleters['UploadManager']!.complete();
+      await remainingFuture;
+
+      expect(coordinator.isPhaseComplete(StartupPhase.critical), isTrue);
+      expect(coordinator.isPhaseComplete(StartupPhase.standard), isTrue);
+    });
+
     test(
       'should reject service registration after initialization starts',
       () async {

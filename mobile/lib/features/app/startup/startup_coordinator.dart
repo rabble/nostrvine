@@ -206,8 +206,10 @@ class StartupCoordinator {
       for (final serviceName in remaining) {
         final service = _services[serviceName]!;
 
-        // Check if all dependencies are processed
-        if (service.dependencies.every(processed.contains)) {
+        // Dependencies may have completed in an earlier startup phase.
+        if (service.dependencies.every(
+          (dependency) => _isDependencySatisfied(dependency, processed),
+        )) {
           currentLevel.add(serviceName);
         }
       }
@@ -225,6 +227,14 @@ class StartupCoordinator {
     }
 
     return levels;
+  }
+
+  bool _isDependencySatisfied(
+    String dependency,
+    Set<String> processedInCurrentPhase,
+  ) {
+    return processedInCurrentPhase.contains(dependency) ||
+        (_completedServices[dependency] ?? false);
   }
 
   /// Mark a phase as complete
