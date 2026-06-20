@@ -8,6 +8,9 @@ enum DmSharedVideoKind {
   /// Addressable short video (kind 34236) — referenced by `naddr` coordinate.
   addressableShortVideo(34236),
 
+  /// Addressable normal video (kind 34235) — referenced by `naddr` coordinate.
+  addressableNormalVideo(34235),
+
   /// Regular short video (kind 22) — referenced by `nevent` event id.
   shortVideo(22);
 
@@ -16,10 +19,13 @@ enum DmSharedVideoKind {
   /// The numeric NIP-71 event kind.
   final int kind;
 
-  /// Maps a raw kind to a [DmSharedVideoKind]; anything that isn't the
-  /// addressable short-video kind is treated as a regular short video.
-  static DmSharedVideoKind fromKind(int kind) =>
-      kind == addressableShortVideo.kind ? addressableShortVideo : shortVideo;
+  /// Maps a raw kind to a [DmSharedVideoKind]; anything that isn't a supported
+  /// addressable video kind is treated as a regular short video.
+  static DmSharedVideoKind fromKind(int kind) => switch (kind) {
+    34236 => addressableShortVideo,
+    34235 => addressableNormalVideo,
+    _ => shortVideo,
+  };
 }
 
 /// A structured reference to a video event cited inside a NIP-17 DM.
@@ -56,7 +62,8 @@ class DmSharedVideoRef extends Equatable {
 
   /// Whether the reference is to an addressable (coordinate-keyed) event.
   bool get isAddressable =>
-      videoKind == DmSharedVideoKind.addressableShortVideo;
+      videoKind == DmSharedVideoKind.addressableShortVideo ||
+      videoKind == DmSharedVideoKind.addressableNormalVideo;
 
   /// JSON form for persistence in the `direct_messages.shared_video_ref_json`
   /// Drift column.

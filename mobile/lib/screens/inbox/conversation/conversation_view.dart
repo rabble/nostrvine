@@ -503,6 +503,7 @@ class _MessageList extends StatelessWidget {
                 _onMessageLongPress(context, message, isSent, status),
             deliveryStatus: status,
             dmReplyContext: dmReplyContext,
+            sharedVideoRef: message.sharedVideoRef,
           );
           return Column(
             crossAxisAlignment: isSent

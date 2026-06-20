@@ -198,8 +198,10 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
   void _handleSubmit() {
     final text = _controller.text;
     if (text.trim().isEmpty) return;
+    final cubit = context.read<InlineReelReplyCubit>();
+    if (cubit.state.status == InlineReelReplyStatus.sending) return;
     _pendingDraft = text;
-    context.read<InlineReelReplyCubit>().submit(text);
+    cubit.submit(text);
     _controller.clear();
     _focusNode.unfocus();
   }
@@ -227,6 +229,29 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
     }
     _dispatchReaction(emoji, fromPicker: fromPicker);
     _startThrottle();
+  }
+
+  void _reconcileOptimisticReaction(ConversationReactionsState state) {
+    final emoji = _optimisticEmoji;
+    if (emoji == null) return;
+
+    final key = ReactionPublishKey(
+      messageId: _ctx.sharedReelMessageId,
+      emoji: emoji,
+    );
+    final localStatus = state.pending[key];
+    final persisted = state.reactionsByMessageId[_ctx.sharedReelMessageId]
+        ?.firstWhereOrNull((r) => r.reactorPubkey == widget.ownerPubkey)
+        ?.emoji;
+
+    if (localStatus == ReactionPublishLocalStatus.failed) {
+      setState(() {
+        _optimisticEmoji = null;
+        _lastDispatchedEmoji = null;
+      });
+    } else if (persisted != null) {
+      setState(() => _optimisticEmoji = null);
+    }
   }
 
   void _startThrottle() {
@@ -350,12 +375,23 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<InlineReelReplyCubit, InlineReelReplyState>(
-      listenWhen: (prev, curr) =>
-          prev.status != curr.status &&
-          (curr.status == InlineReelReplyStatus.success ||
-              curr.status == InlineReelReplyStatus.failure),
-      listener: (context, state) => _onReplyOutcome(state),
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<InlineReelReplyCubit, InlineReelReplyState>(
+          listenWhen: (prev, curr) =>
+              prev.status != curr.status &&
+              (curr.status == InlineReelReplyStatus.success ||
+                  curr.status == InlineReelReplyStatus.failure),
+          listener: (context, state) => _onReplyOutcome(state),
+        ),
+        BlocListener<ConversationReactionsCubit, ConversationReactionsState>(
+          listenWhen: (prev, curr) =>
+              prev.pending != curr.pending ||
+              prev.reactionsByMessageId[_ctx.sharedReelMessageId] !=
+                  curr.reactionsByMessageId[_ctx.sharedReelMessageId],
+          listener: (context, state) => _reconcileOptimisticReaction(state),
+        ),
+      ],
       child: ColoredBox(
         color: VineTheme.surfaceBackground,
         child: Padding(

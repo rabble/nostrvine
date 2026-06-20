@@ -161,6 +161,94 @@ void main() {
     ).called(1);
   });
 
+  testWidgets('failed optimistic reaction can be retried with the same emoji', (
+    tester,
+  ) async {
+    when(
+      () => reactionsRepo.publish(
+        conversationId: any(named: 'conversationId'),
+        targetMessageId: any(named: 'targetMessageId'),
+        targetMessageAuthor: any(named: 'targetMessageAuthor'),
+        emoji: any(named: 'emoji'),
+      ),
+    ).thenAnswer(
+      (_) async => const DmReactionPublishResult(
+        success: false,
+        rumorId: 'failed-rumor',
+      ),
+    );
+
+    await tester.pumpWidget(wrap(context()));
+    await tester.pump();
+
+    await tester.tap(find.text('❤️'));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.text('❤️'));
+    await tester.pump(ReelReplyConstants.reactionThrottle);
+    await tester.pump();
+
+    verify(
+      () => reactionsRepo.publish(
+        conversationId: any(named: 'conversationId'),
+        targetMessageId: any(named: 'targetMessageId'),
+        targetMessageAuthor: any(named: 'targetMessageAuthor'),
+        emoji: '❤️',
+      ),
+    ).called(2);
+  });
+
+  testWidgets('submit while send is in flight preserves the draft', (
+    tester,
+  ) async {
+    final pendingSend = Completer<NIP17SendResult>();
+    when(
+      () => dmRepo.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+      ),
+    ).thenAnswer((_) => pendingSend.future);
+
+    await tester.pumpWidget(wrap(context()));
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'first reply');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'second reply');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pump();
+
+    expect(find.text('second reply'), findsOneWidget);
+    verify(
+      () => dmRepo.sendMessage(
+        recipientPubkey: _peer,
+        content: 'first reply',
+        replyToId: _reelId,
+      ),
+    ).called(1);
+    verifyNever(
+      () => dmRepo.sendMessage(
+        recipientPubkey: _peer,
+        content: 'second reply',
+        replyToId: _reelId,
+      ),
+    );
+
+    pendingSend.complete(
+      NIP17SendResult.success(
+        rumorEventId: 'r',
+        messageEventId: 'g',
+        recipientPubkey: _peer,
+      ),
+    );
+  });
+
   testWidgets('rapid different-emoji taps throttle to one immediate + one '
       'coalesced publish', (tester) async {
     await tester.pumpWidget(wrap(context()));

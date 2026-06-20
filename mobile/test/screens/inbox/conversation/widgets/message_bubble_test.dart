@@ -773,22 +773,25 @@ void main() {
         ).thenAnswer((_) async => null);
       });
 
-      Widget buildWithVideoMessage({required String message}) =>
-          testMaterialApp(
-            home: Scaffold(
-              body: MessageBubble(
-                message: message,
-                timestamp: '2:30 PM',
-                isSent: true,
-              ),
-            ),
-            mockNostrService: mockNostrClient,
-            additionalOverrides: [
-              videoEventServiceProvider.overrideWithValue(
-                mockVideoEventService,
-              ),
-            ],
-          );
+      Widget buildWithVideoMessage({
+        required String message,
+        DmSharedVideoRef? sharedVideoRef,
+      }) => testMaterialApp(
+        home: Scaffold(
+          body: MessageBubble(
+            message: message,
+            timestamp: '2:30 PM',
+            isSent: true,
+            sharedVideoRef: sharedVideoRef,
+          ),
+        ),
+        mockNostrService: mockNostrClient,
+        additionalOverrides: [
+          videoEventServiceProvider.overrideWithValue(
+            mockVideoEventService,
+          ),
+        ],
+      );
 
       testWidgets('shows loading spinner before video resolves', (
         tester,
@@ -824,6 +827,37 @@ void main() {
 
         expect(find.byType(VideoThumbnailWidget), findsOneWidget);
         expect(find.text('My Cool Video'), findsOneWidget);
+      });
+
+      testWidgets('renders from structured q-tag ref without a legacy URL', (
+        tester,
+      ) async {
+        when(
+          () => mockVideoEventService.getVideoEventByVineId('abc123'),
+        ).thenReturn(testVideo);
+
+        await tester.pumpWidget(
+          buildWithVideoMessage(
+            message:
+                'watch this\n'
+                'nostr:naddr1qqxnzd3cxqmrzv3exgmr2wfeqy',
+            sharedVideoRef: const DmSharedVideoRef(
+              coordinateOrId: '34236:$_testHexPubkey:abc123',
+              videoKind: DmSharedVideoKind.addressableShortVideo,
+              relayHint: 'wss://relay.example',
+              authorPubkey: _testHexPubkey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+        expect(find.text('My Cool Video'), findsOneWidget);
+        expect(find.text('watch this'), findsOneWidget);
+        expect(find.textContaining('nostr:'), findsNothing);
+        verify(
+          () => mockVideoEventService.getVideoEventByVineId('abc123'),
+        ).called(greaterThanOrEqualTo(1));
       });
 
       testWidgets('renders the shared-video bubble on a neutral dark frame', (

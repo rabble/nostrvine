@@ -91,10 +91,14 @@ class DmSharedVideoCitation {
 
       // Addressable coordinate: "<kind>:<author>:<d>".
       final coordParts = value.split(':');
-      if (coordParts.length >= 3 && int.tryParse(coordParts[0]) != null) {
+      final coordinateKind = int.tryParse(coordParts.first);
+      final isSupportedAddressableKind =
+          coordinateKind == DmSharedVideoKind.addressableShortVideo.kind ||
+          coordinateKind == DmSharedVideoKind.addressableNormalVideo.kind;
+      if (coordParts.length >= 3 && isSupportedAddressableKind) {
         return DmSharedVideoRef(
           coordinateOrId: value,
-          videoKind: DmSharedVideoKind.addressableShortVideo,
+          videoKind: DmSharedVideoKind.fromKind(coordinateKind!),
           relayHint: relayHint,
           authorPubkey: coordParts[1].isNotEmpty
               ? coordParts[1]

@@ -114,6 +114,17 @@ void main() {
       expect(ref.isAddressable, isTrue);
     });
 
+    test('parses an addressable normal-video coordinate q tag', () {
+      final ref = DmSharedVideoCitation.parse([
+        ['q', '34235:$author:$dTag', relay],
+      ]);
+      expect(ref, isNotNull);
+      expect(ref!.videoKind, equals(DmSharedVideoKind.addressableNormalVideo));
+      expect(ref.coordinateOrId, equals('34235:$author:$dTag'));
+      expect(ref.authorPubkey, equals(author));
+      expect(ref.isAddressable, isTrue);
+    });
+
     test('parses a regular event-id q tag with 4th author element', () {
       final ref = DmSharedVideoCitation.parse([
         ['q', eventId, relay, author],
@@ -143,6 +154,12 @@ void main() {
         ]),
         isNull,
       );
+      expect(
+        DmSharedVideoCitation.parse([
+          ['q', '1:$author:$dTag'],
+        ]),
+        isNull,
+      );
       expect(DmSharedVideoCitation.parse([]), isNull);
     });
 
@@ -155,6 +172,20 @@ void main() {
       )!;
       final ref = DmSharedVideoCitation.parse([citation.qTag])!;
       expect(ref.coordinateOrId, equals('34236:$author:$dTag'));
+      expect(ref.authorPubkey, equals(author));
+      expect(ref.isAddressable, isTrue);
+    });
+
+    test('round-trips build → parse for addressable normal video', () {
+      final citation = DmSharedVideoCitation.build(
+        videoKind: 34235,
+        authorPubkey: author,
+        relayHint: relay,
+        dTag: dTag,
+      )!;
+      final ref = DmSharedVideoCitation.parse([citation.qTag])!;
+      expect(ref.coordinateOrId, equals('34235:$author:$dTag'));
+      expect(ref.videoKind, equals(DmSharedVideoKind.addressableNormalVideo));
       expect(ref.authorPubkey, equals(author));
       expect(ref.isAddressable, isTrue);
     });

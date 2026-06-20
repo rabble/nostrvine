@@ -88,6 +88,7 @@ class MessageBubble extends StatelessWidget {
     this.onLongPress,
     this.deliveryStatus = DmDeliveryStatus.delivered,
     this.dmReplyContext,
+    this.sharedVideoRef,
     super.key,
   });
 
@@ -116,6 +117,9 @@ class MessageBubble extends StatelessWidget {
   /// shared reel is tapped open. Null in non-DM call sites / tests.
   final DmReplyContext? dmReplyContext;
 
+  /// Structured q-tag video reference parsed from the DM rumor, when present.
+  final DmSharedVideoRef? sharedVideoRef;
+
   @override
   Widget build(BuildContext context) {
     // NIP-17 rumor bodies (and any sender-controlled text reaching the
@@ -125,7 +129,10 @@ class MessageBubble extends StatelessWidget {
     // well-formed input.
     final safeMessage = StringUtils.sanitizeUtf16(message);
     final videoMatch = divineVideoUrlRegex.firstMatch(safeMessage);
-    final videoStableId = videoMatch?.group(1);
+    final structuredVideo = _videoTargetFromRef(sharedVideoRef);
+    final videoStableId = videoMatch?.group(1) ?? structuredVideo?.stableId;
+    final videoAuthorPubkey = structuredVideo?.authorPubkey;
+    final videoKind = structuredVideo?.videoKind;
 
     // Slice the message body around the video URL.
     //
@@ -165,6 +172,16 @@ class MessageBubble extends StatelessWidget {
           .where((line) => !_nostrRefLineRegex.hasMatch(line))
           .toList();
       personalMessage = beforeLines.isEmpty ? null : beforeLines.join('\n');
+    } else if (structuredVideo != null) {
+      final lines = safeMessage
+          .split('\n')
+          .map((line) => line.trim())
+          .where((line) => line.isNotEmpty)
+          .where((line) => !_quotedTitleRegex.hasMatch(line))
+          .where((line) => !_nostrRefLineRegex.hasMatch(line))
+          .toList();
+      personalMessage = lines.isEmpty ? null : lines.join('\n');
+      textAfterUrl = null;
     } else {
       personalMessage = null;
       textAfterUrl = null;
@@ -248,6 +265,8 @@ class MessageBubble extends StatelessWidget {
                   if (videoStableId != null) ...[
                     _VideoLinkPreview(
                       videoStableId: videoStableId,
+                      authorPubkey: videoAuthorPubkey,
+                      videoKind: videoKind,
                       isSent: isSent,
                       dmReplyContext: dmReplyContext,
                     ),
@@ -303,6 +322,42 @@ class MessageBubble extends StatelessWidget {
       bottomRight: Radius.circular(isSent ? 4 : 16),
     );
   }
+}
+
+class _SharedVideoTarget {
+  const _SharedVideoTarget({
+    required this.stableId,
+    required this.videoKind,
+    this.authorPubkey,
+  });
+
+  final String stableId;
+  final int videoKind;
+  final String? authorPubkey;
+}
+
+_SharedVideoTarget? _videoTargetFromRef(DmSharedVideoRef? ref) {
+  if (ref == null) return null;
+  if (!ref.isAddressable) {
+    return _SharedVideoTarget(
+      stableId: ref.coordinateOrId,
+      videoKind: ref.videoKind.kind,
+      authorPubkey: ref.authorPubkey,
+    );
+  }
+
+  final coordParts = ref.coordinateOrId.split(':');
+  if (coordParts.length < 3) return null;
+  final kind = int.tryParse(coordParts[0]);
+  final author = coordParts[1];
+  final dTag = coordParts.sublist(2).join(':');
+  if (kind == null || dTag.isEmpty) return null;
+
+  return _SharedVideoTarget(
+    stableId: dTag,
+    videoKind: kind,
+    authorPubkey: author.isNotEmpty ? author : ref.authorPubkey,
+  );
 }
 
 /// Trusted domains that open without an external-link warning.
@@ -537,11 +592,15 @@ class _VideoLinkPreview extends ConsumerWidget {
   const _VideoLinkPreview({
     required this.videoStableId,
     required this.isSent,
+    this.authorPubkey,
+    this.videoKind,
     this.dmReplyContext,
   });
 
   final String videoStableId;
   final bool isSent;
+  final String? authorPubkey;
+  final int? videoKind;
   final DmReplyContext? dmReplyContext;
 
   @override
@@ -551,6 +610,8 @@ class _VideoLinkPreview extends ConsumerWidget {
         videoStableId: videoStableId,
         videoEventService: ref.read(videoEventServiceProvider),
         nostrClient: ref.read(nostrServiceProvider),
+        authorPubkey: authorPubkey,
+        videoKind: videoKind,
       ),
       child: BlocBuilder<VideoLinkPreviewCubit, VideoLinkPreviewState>(
         builder: (context, state) => switch (state) {

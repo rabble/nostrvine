@@ -25,10 +25,14 @@ void main() {
       expect(regular.isAddressable, isFalse);
     });
 
-    test('DmSharedVideoKind.fromKind maps 34236 and falls back to 22', () {
+    test('DmSharedVideoKind.fromKind maps supported video kinds', () {
       expect(
         DmSharedVideoKind.fromKind(34236),
         equals(DmSharedVideoKind.addressableShortVideo),
+      );
+      expect(
+        DmSharedVideoKind.fromKind(34235),
+        equals(DmSharedVideoKind.addressableNormalVideo),
       );
       expect(
         DmSharedVideoKind.fromKind(22),
@@ -43,6 +47,16 @@ void main() {
     test('round-trips through JSON (addressable)', () {
       final restored = DmSharedVideoRef.fromJson(addressable.toJson());
       expect(restored, equals(addressable));
+    });
+
+    test('round-trips through JSON (addressable normal video)', () {
+      const ref = DmSharedVideoRef(
+        coordinateOrId: '34235:abc123:normal-reel',
+        videoKind: DmSharedVideoKind.addressableNormalVideo,
+      );
+      final restored = DmSharedVideoRef.fromJson(ref.toJson());
+      expect(restored, equals(ref));
+      expect(restored!.isAddressable, isTrue);
     });
 
     test('round-trips through JSON (regular, with author)', () {
