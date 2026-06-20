@@ -82,39 +82,34 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   Widget build(BuildContext context) {
     Log.info('🧭 ProfileScreenRouter.build', name: 'ProfileScreenRouter');
 
-    // Read derived context from router
-    final pageContext = ref.watch(pageContextProvider);
+    // Resolve this branch's route context. Until the scoped provider's
+    // Stream.value emits (the very first sub-frame), fall back to parsing the
+    // branch's own location synchronously so the first frame already renders
+    // the real profile layout — settings button included — instead of a blank
+    // placeholder. GoRouterState.of(context) is a direct widget read, so it
+    // observes this branch's route (matching the scoped override in
+    // app_router.dart), not the globally-active tab's.
+    final routeContext =
+        ref.watch(pageContextProvider).asData?.value ??
+        parseRoute(GoRouterState.of(context).uri.path);
 
     // Check if this is own profile grid view (needs own scaffold)
-    final isOwnProfileGrid = pageContext.maybeWhen(
-      data: (ctx) {
-        if (ctx.type != RouteType.profile) return false;
-        if (ctx.videoIndex != null) return false; // Video mode uses shell
-        final currentNpub = ref.read(authServiceProvider).currentNpub;
-        return ctx.npub == 'me' || ctx.npub == currentNpub;
-      },
-      orElse: () => false,
-    );
+    final currentNpub = ref.read(authServiceProvider).currentNpub;
+    final isOwnProfileGrid =
+        routeContext.type == RouteType.profile &&
+        routeContext.videoIndex == null && // Video mode uses shell
+        (routeContext.npub == 'me' || routeContext.npub == currentNpub);
 
-    final content = switch (pageContext) {
-      // The route context resolves from the location stream on the first
-      // frame, so this is a sub-frame flash with no npub yet — nothing to
-      // skeletonize. Show the bare surface until the context arrives.
-      AsyncLoading() => const _ProfileScaffold(body: SizedBox.shrink()),
-      AsyncError(:final error) => Center(
-        child: Text(context.l10n.profileErrorPrefix(error)),
-      ),
-      AsyncData(:final value) => _ProfileContentView(
-        routeContext: value,
-        scrollController: _scrollController,
-        onFetchProfile: _fetchProfileIfNeeded,
-        onEditProfile: _editProfile,
-        onOpenClips: _openClips,
-        onMore: _more,
-        onShareProfile: _shareProfile,
-        refreshNotifier: _refreshNotifier,
-      ),
-    };
+    final content = _ProfileContentView(
+      routeContext: routeContext,
+      scrollController: _scrollController,
+      onFetchProfile: _fetchProfileIfNeeded,
+      onEditProfile: _editProfile,
+      onOpenClips: _openClips,
+      onMore: _more,
+      onShareProfile: _shareProfile,
+      refreshNotifier: _refreshNotifier,
+    );
 
     if (isOwnProfileGrid) {
       final userIdHex = ref.read(authServiceProvider).currentPublicKeyHex;
