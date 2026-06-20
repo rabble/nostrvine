@@ -256,6 +256,16 @@ void main() {
     });
 
     group('watchLists', () {
+      test('forwards box opener failures as stream errors', () async {
+        final error = StateError('Hive storage is not initialized');
+        final cache = LocalPeopleListsCache(openBox: () async => throw error);
+
+        await expectLater(
+          cache.watchLists(ownerPubkey: _ownerA),
+          emitsInOrder([emitsError(same(error)), emitsDone]),
+        );
+      });
+
       test('emits current lists immediately, then on updates', () async {
         final cache = LocalPeopleListsCache(openBox: makeOpener());
 

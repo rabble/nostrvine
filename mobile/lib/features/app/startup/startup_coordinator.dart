@@ -42,6 +42,12 @@ class StartupCoordinator {
   /// Check if a phase is complete
   bool isPhaseComplete(StartupPhase phase) => _completedPhases[phase] ?? false;
 
+  /// Returns a registered service for startup-registration tests.
+  @visibleForTesting
+  ServiceRegistration? serviceRegistrationForTesting(String name) {
+    return _services[name];
+  }
+
   /// Register a service for initialization
   void registerService({
     required String name,

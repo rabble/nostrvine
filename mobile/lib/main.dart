@@ -724,7 +724,7 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
 
   coordinator.registerService(
     name: 'HiveStorage',
-    phase: StartupPhase.standard,
+    phase: StartupPhase.critical,
     initialize: () async {
       await _runTimedStartupTask(
         phaseName: 'hive_storage',
@@ -733,7 +733,7 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
       );
     },
   );
-  // Critical: home feed reads this cache on first build (cold-start race).
+  // Critical: first-frame BLoCs can subscribe to disk-backed caches.
   coordinator.registerService(
     name: 'CacheSync',
     phase: StartupPhase.critical,
@@ -925,6 +925,13 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
   }
 
   return coordinator;
+}
+
+@visibleForTesting
+StartupCoordinator createStartupCoordinatorForTesting(
+  ProviderContainer container,
+) {
+  return _createStartupCoordinator(container);
 }
 
 Future<void> _startOpenVineApp() async {

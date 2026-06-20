@@ -65,16 +65,23 @@ class LocalPeopleListsCache {
     StreamSubscription<BoxEvent>? subscription;
 
     Future<void> start() async {
-      final box = await _box();
-      if (controller.isClosed) return;
-      controller.add(_collectLists(box, ownerPubkey));
-      subscription = box.watch().listen((event) {
-        final key = event.key;
-        if (key is! String || !_keyBelongsToOwner(key, ownerPubkey)) {
-          return;
-        }
+      try {
+        final box = await _box();
+        if (controller.isClosed) return;
         controller.add(_collectLists(box, ownerPubkey));
-      });
+        subscription = box.watch().listen((event) {
+          final key = event.key;
+          if (key is! String || !_keyBelongsToOwner(key, ownerPubkey)) {
+            return;
+          }
+          controller.add(_collectLists(box, ownerPubkey));
+        });
+      } on Object catch (error, stackTrace) {
+        if (!controller.isClosed) {
+          controller.addError(error, stackTrace);
+          await controller.close();
+        }
+      }
     }
 
     controller = StreamController<List<UserList>>(
