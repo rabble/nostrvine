@@ -248,7 +248,7 @@ class ContentReportingService {
 
   List<String> _targetRelaysForReport(String? sourceRelay) {
     final relay = _normalizeRelayUrl(sourceRelay);
-    return [relay ?? _moderationRelayUrl];
+    return {_moderationRelayUrl, ?relay}.toList();
   }
 
   String? _normalizeRelayUrl(String? relayUrl) {
@@ -257,7 +257,7 @@ class ContentReportingService {
 
     final uri = Uri.tryParse(trimmed);
     if (uri == null || uri.host.isEmpty) return null;
-    if (uri.scheme != 'wss' && uri.scheme != 'ws') return null;
+    if (uri.scheme != 'wss') return null;
     return trimmed;
   }
 
