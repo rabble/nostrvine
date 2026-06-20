@@ -36,6 +36,7 @@ void main() {
       UserProfile? suppliedProfile,
       UserProfile? myProfile,
       UserProfile? riverpodProfile,
+      bool provideMyProfileBloc = true,
     }) {
       Widget layer = ProfileBannerLayer(
         userIdHex: _testUserHex,
@@ -43,7 +44,7 @@ void main() {
         profile: suppliedProfile,
       );
 
-      if (isOwnProfile) {
+      if (isOwnProfile && provideMyProfileBloc) {
         final mockBloc = _MockMyProfileBloc();
         when(() => mockBloc.state).thenReturn(
           myProfile != null
@@ -151,6 +152,22 @@ void main() {
         await tester.pump();
 
         // No banner data anywhere → ProfileBanner falls back to gradient.
+        final banner = tester.widget<ProfileBanner>(find.byType(ProfileBanner));
+        expect(banner.bannerUrl, isNull);
+        expect(banner.profileColor, isNull);
+      },
+    );
+
+    testWidgets(
+      'renders default banner without throwing when own profile has no '
+      'MyProfileBloc ancestor (cold-start pre-scope window)',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(isOwnProfile: true, provideMyProfileBloc: false),
+        );
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
         final banner = tester.widget<ProfileBanner>(find.byType(ProfileBanner));
         expect(banner.bannerUrl, isNull);
         expect(banner.profileColor, isNull);

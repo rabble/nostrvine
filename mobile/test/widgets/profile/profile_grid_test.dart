@@ -15,6 +15,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
+import 'package:openvine/widgets/profile/profile_videos_grid_skeleton.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -84,7 +85,10 @@ void main() {
       );
     });
 
-    Widget buildSubject({required bool isOwnProfile}) {
+    Widget buildSubject({
+      required bool isOwnProfile,
+      bool isLoadingVideos = false,
+    }) {
       return testMaterialApp(
         theme: VineTheme.theme,
         home: Scaffold(
@@ -103,6 +107,7 @@ void main() {
               userIdHex: userIdHex,
               isOwnProfile: isOwnProfile,
               videos: const [],
+              isLoadingVideos: isLoadingVideos,
             ),
           ),
         ),
@@ -147,6 +152,19 @@ void main() {
         expect(find.bySemanticsLabel('reposted_tab'), findsOneWidget);
         expect(find.bySemanticsLabel('saved_tab'), findsOneWidget);
         expect(find.bySemanticsLabel('comments_tab'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'videos tab shows the skeleton grid while the cold feed load is in '
+      'flight (no separate loading view)',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(isOwnProfile: false, isLoadingVideos: true),
+        );
+        await tester.pump();
+
+        expect(find.byType(ProfileVideosGridSkeleton), findsOneWidget);
       },
     );
   });

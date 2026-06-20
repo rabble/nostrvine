@@ -159,23 +159,32 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
       // changes. Watching the whole state would also rebuild on isFresh /
       // extractedUsername / verifiedClaims transitions and on the
       // MyProfileError variant, none of which the header reads here.
-      final selection = context
-          .select<
-            MyProfileBloc,
-            ({UserProfile? profile, bool isInitialOrLoading})
-          >((bloc) {
-            final state = bloc.state;
-            return (
-              profile: switch (state) {
-                MyProfileUpdated(:final profile) => profile,
-                MyProfileLoaded(:final profile) => profile,
-                MyProfileLoading(:final profile) => profile,
-                _ => null,
-              },
-              isInitialOrLoading:
-                  state is MyProfileInitial || state is MyProfileLoading,
-            );
-          });
+      ({UserProfile? profile, bool isInitialOrLoading}) selection;
+      try {
+        selection = context
+            .select<
+              MyProfileBloc,
+              ({UserProfile? profile, bool isInitialOrLoading})
+            >((bloc) {
+              final state = bloc.state;
+              return (
+                profile: switch (state) {
+                  MyProfileUpdated(:final profile) => profile,
+                  MyProfileLoaded(:final profile) => profile,
+                  MyProfileLoading(:final profile) => profile,
+                  _ => null,
+                },
+                isInitialOrLoading:
+                    state is MyProfileInitial || state is MyProfileLoading,
+              );
+            });
+      } on ProviderNotFoundException {
+        // MyProfileBloc is not provided yet — cold start before
+        // profileRepository is ready (the screen renders the real layout as a
+        // skeleton during this window). Treat it as still loading so the
+        // identity shimmers until the bloc is wired in.
+        selection = (profile: null, isInitialOrLoading: true);
+      }
       effectiveProfile = selection.profile ?? widget.profile;
       // Skeleton on the user's own profile is appropriate only while we
       // genuinely have nothing to show. As soon as a cached profile is

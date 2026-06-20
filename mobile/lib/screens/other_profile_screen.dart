@@ -29,7 +29,6 @@ import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/profile/new_people_list_sheet.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
-import 'package:openvine/widgets/profile/profile_loading_view.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -411,14 +410,18 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               return Scaffold(
                 backgroundColor: VineTheme.surfaceBackground,
                 body: switch (feedState.status) {
-                  ProfileFeedStatus.initial ||
-                  ProfileFeedStatus.loading => const ProfileLoadingView(),
                   ProfileFeedStatus.failure => Center(
                     child: Text(
                       context.l10n.profileFeedError,
                       style: const TextStyle(color: VineTheme.whiteText),
                     ),
                   ),
+                  // During the cold load we render the real layout (header
+                  // skeletonizes itself; the videos tab shows a skeleton grid)
+                  // instead of a separate placeholder, so the load→ready
+                  // transition does not pop.
+                  ProfileFeedStatus.initial ||
+                  ProfileFeedStatus.loading ||
                   ProfileFeedStatus.ready => ProfileGridView(
                     userIdHex: widget.pubkey,
                     isOwnProfile: false,
@@ -426,7 +429,9 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                     profileStats: headerStats,
                     displayName: displayName,
                     videos: feedState.videos,
-                    isLoadingVideos: feedState.isInitialLoad,
+                    isLoadingVideos:
+                        feedState.status != ProfileFeedStatus.ready ||
+                        feedState.isInitialLoad,
                     scrollController: _scrollController,
                     onBack: context.pop,
                     onMore: _more,

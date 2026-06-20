@@ -22,9 +22,9 @@ import 'package:openvine/utils/video_identity.dart';
 import 'package:openvine/widgets/profile/pending_collaborator_invite_banner_cubit.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
-import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail_placeholder.dart';
+import 'package:openvine/widgets/profile/profile_videos_grid_skeleton.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Internal class that represents a video entry in the grid
@@ -298,9 +298,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 
     if (allVideos.isEmpty) {
       if (widget.isLoading) {
-        return ProfileTabLoadingState(
-          message: context.l10n.profileLoadingVideos,
-        );
+        return const ProfileVideosGridSkeleton();
       }
       return ProfileTabEmptyState(
         title: context.l10n.profileNoVideosTitle,

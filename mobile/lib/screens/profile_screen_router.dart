@@ -26,7 +26,6 @@ import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/share_position_origin.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
-import 'package:openvine/widgets/profile/profile_loading_view.dart';
 import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -98,7 +97,10 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     );
 
     final content = switch (pageContext) {
-      AsyncLoading() => const ProfileLoadingView(),
+      // The route context resolves from the location stream on the first
+      // frame, so this is a sub-frame flash with no npub yet — nothing to
+      // skeletonize. Show the bare surface until the context arrives.
+      AsyncLoading() => const _ProfileScaffold(body: SizedBox.shrink()),
       AsyncError(:final error) => Center(
         child: Text(context.l10n.profileErrorPrefix(error)),
       ),
@@ -122,7 +124,13 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       );
 
       if (userIdHex == null || profileRepository == null) {
-        return const _ProfileScaffold(body: ProfileLoadingView());
+        // profileRepository isn't ready yet (cold start before the
+        // signer-backed client is up). Render the real profile layout — its
+        // header, stats, and video grid degrade to skeletons while
+        // MyProfileBloc is absent — instead of a separate loading view. Once
+        // the repository resolves, the BlocProvider below mounts and the
+        // layout fills in with real data.
+        return _ProfileScaffold(body: content);
       }
 
       return BlocProvider<MyProfileBloc>(
@@ -509,11 +517,15 @@ class _ProfileDataView extends ConsumerWidget {
         );
       },
       child: switch (feedState.status) {
-        ProfileFeedStatus.initial ||
-        ProfileFeedStatus.loading => const ProfileLoadingView(),
         ProfileFeedStatus.failure => Center(
           child: Text(context.l10n.profileFeedError),
         ),
+        // During the cold load we render the real layout (header/stats
+        // skeletonize themselves; the videos tab shows a skeleton grid)
+        // instead of a separate placeholder, so the load→ready transition
+        // does not pop.
+        ProfileFeedStatus.initial ||
+        ProfileFeedStatus.loading ||
         ProfileFeedStatus.ready => ProfileViewSwitcher(
           npub: npub,
           userIdHex: userIdHex,
@@ -521,7 +533,9 @@ class _ProfileDataView extends ConsumerWidget {
           displayName: displayName,
           profileStats: profileStats,
           videos: feedState.videos,
-          isLoadingVideos: feedState.isInitialLoad,
+          isLoadingVideos:
+              feedState.status != ProfileFeedStatus.ready ||
+              feedState.isInitialLoad,
           videoIndex: videoIndex,
           scrollController: scrollController,
           onEditProfile: onEditProfile,

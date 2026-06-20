@@ -20,6 +20,7 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
+import 'package:openvine/widgets/profile/profile_videos_grid_skeleton.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 import '../../helpers/test_provider_overrides.dart';
@@ -168,17 +169,16 @@ void main() {
         expect(find.text(l10n.profileNoVideosOwnSubtitle), findsOneWidget);
       });
 
-      testWidgets('loading state when isLoading is true and no videos', (
+      testWidgets('skeleton grid when isLoading is true and no videos', (
         tester,
       ) async {
         when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
-        final l10n = lookupAppLocalizations(const Locale('en'));
 
         await tester.pumpWidget(
           buildSubject(userIdHex: _ownPubkey, isLoading: true),
         );
 
-        expect(find.text(l10n.profileLoadingVideos), findsOneWidget);
+        expect(find.byType(ProfileVideosGridSkeleton), findsOneWidget);
       });
 
       testWidgets('video grid when videos are provided', (tester) async {
@@ -743,7 +743,7 @@ void main() {
       // surface as a misleading "No videos" empty state. These tests pin
       // the widget-side contract that drives the screens' wiring choice.
       testWidgets(
-        'shows loading state — not empty state — when isLoading is true '
+        'shows skeleton grid — not empty state — when isLoading is true '
         'and videos is empty',
         (tester) async {
           when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
@@ -753,7 +753,7 @@ void main() {
           );
 
           final l10n = lookupAppLocalizations(const Locale('en'));
-          expect(find.text(l10n.profileLoadingVideos), findsOneWidget);
+          expect(find.byType(ProfileVideosGridSkeleton), findsOneWidget);
           expect(find.text(l10n.profileNoVideosTitle), findsNothing);
         },
       );
@@ -769,7 +769,7 @@ void main() {
 
           final l10n = lookupAppLocalizations(const Locale('en'));
           expect(find.text(l10n.profileNoVideosTitle), findsOneWidget);
-          expect(find.text(l10n.profileLoadingVideos), findsNothing);
+          expect(find.byType(ProfileVideosGridSkeleton), findsNothing);
         },
       );
     });

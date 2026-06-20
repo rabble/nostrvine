@@ -51,11 +51,7 @@ class _ProfileBannerLayerState extends ConsumerState<ProfileBannerLayer> {
     // Resolve effective profile (same logic as ProfileHeaderWidget).
     final UserProfile? effectiveProfile;
     if (widget.isOwnProfile) {
-      final state = context.watch<MyProfileBloc>().state;
-      effectiveProfile = switch (state) {
-        MyProfileUpdated(:final profile) => profile,
-        _ => null,
-      };
+      effectiveProfile = _readOwnProfileBanner(context);
     } else if (widget.profile != null) {
       effectiveProfile = widget.profile;
     } else {
@@ -79,5 +75,23 @@ class _ProfileBannerLayerState extends ConsumerState<ProfileBannerLayer> {
         ),
       ),
     );
+  }
+
+  /// Resolves the own-profile banner from [MyProfileBloc].
+  ///
+  /// Returns `null` when the bloc is not provided yet — cold start before
+  /// profileRepository is ready, where the screen renders the real layout as a
+  /// skeleton — so the banner falls back to its plain placeholder until the
+  /// bloc is wired in. Mirrors the tolerant read in `ProfileHeaderWidget`.
+  UserProfile? _readOwnProfileBanner(BuildContext context) {
+    try {
+      final state = context.watch<MyProfileBloc>().state;
+      return switch (state) {
+        MyProfileUpdated(:final profile) => profile,
+        _ => null,
+      };
+    } on ProviderNotFoundException {
+      return null;
+    }
   }
 }

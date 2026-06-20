@@ -282,6 +282,7 @@ void main() {
       String? displayNameHint,
       String? avatarUrlHint,
       MyProfileState? myProfileState,
+      bool provideMyProfileBloc = true,
       bool curatedListsEnabled = false,
       PeopleListsState? peopleListsState,
       BackgroundPublishState? backgroundPublishState,
@@ -321,17 +322,22 @@ void main() {
       );
 
       if (isOwnProfile) {
-        final mockMyProfileBloc = _MockMyProfileBloc();
-        final state =
-            myProfileState ??
-            (profile != null
-                ? MyProfileUpdated(profile: profile)
-                : const MyProfileInitial());
-        when(() => mockMyProfileBloc.state).thenReturn(state);
-        header = BlocProvider<MyProfileBloc>.value(
-          value: mockMyProfileBloc,
-          child: header,
-        );
+        if (provideMyProfileBloc) {
+          final mockMyProfileBloc = _MockMyProfileBloc();
+          final state =
+              myProfileState ??
+              (profile != null
+                  ? MyProfileUpdated(profile: profile)
+                  : const MyProfileInitial());
+          when(() => mockMyProfileBloc.state).thenReturn(state);
+          header = BlocProvider<MyProfileBloc>.value(
+            value: mockMyProfileBloc,
+            child: header,
+          );
+        }
+        // When provideMyProfileBloc is false, the header is rendered without a
+        // MyProfileBloc ancestor — the cold-start pre-scope window where
+        // profileRepository isn't ready yet.
       } else {
         final mockOthersFollowersBloc = _MockOthersFollowersBloc();
         when(
@@ -1671,6 +1677,25 @@ void main() {
           );
           await tester.pump();
 
+          expect(findIdentitySkeletonizer(tester).enabled, isTrue);
+        },
+      );
+
+      testWidgets(
+        'own profile with no MyProfileBloc ancestor → renders the identity '
+        'skeleton instead of throwing (cold-start pre-scope window where '
+        'profileRepository is not ready yet)',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              provideMyProfileBloc: false,
+            ),
+          );
+          await tester.pump();
+
+          expect(tester.takeException(), isNull);
           expect(findIdentitySkeletonizer(tester).enabled, isTrue);
         },
       );
