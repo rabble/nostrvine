@@ -885,12 +885,13 @@ void main() {
     test(
       'opens the verifyer in the external browser and refreshes profile',
       () async {
-        await launchVerifierFlow(
+        final launched = await launchVerifierFlow(
           editorBloc: editorBloc,
           myProfileBloc: myProfileBloc,
           isWeb: false,
         );
 
+        expect(launched, isTrue);
         expect(launcher.launched, hasLength(1));
         expect(launcher.launched.single.url, 'https://verifyer.divine.video/');
         expect(launcher.launched.single.useExternalApplication, isTrue);
@@ -908,7 +909,7 @@ void main() {
       () async {
         final pushedRoutes = <({String location, Object? extra})>[];
 
-        await launchVerifierFlow(
+        final launched = await launchVerifierFlow(
           editorBloc: editorBloc,
           myProfileBloc: myProfileBloc,
           isWeb: true,
@@ -917,6 +918,7 @@ void main() {
           },
         );
 
+        expect(launched, isTrue);
         expect(launcher.launched, isEmpty);
         expect(pushedRoutes, hasLength(1));
         expect(
@@ -929,6 +931,56 @@ void main() {
         verify(
           () => myProfileBloc.add(const MyProfileFetchRequested()),
         ).called(1);
+      },
+    );
+
+    test(
+      'resets the launch signal and skips refresh when native launch fails',
+      () async {
+        launcher = UrlLauncherTestDouble(launchResult: false);
+        UrlLauncherPlatform.instance = launcher;
+
+        final launched = await launchVerifierFlow(
+          editorBloc: editorBloc,
+          myProfileBloc: myProfileBloc,
+          isWeb: false,
+        );
+
+        expect(launched, isFalse);
+        expect(launcher.launched, hasLength(1));
+        expect(launcher.launched.single.url, 'https://verifyer.divine.video/');
+        verify(
+          () => editorBloc.add(const VerifierWebViewDismissed()),
+        ).called(1);
+        verifyNever(
+          () => myProfileBloc.add(const MyProfileFetchRequested()),
+        );
+      },
+    );
+
+    test(
+      'resets the launch signal and skips refresh when native launch throws',
+      () async {
+        launcher = UrlLauncherTestDouble(
+          launchError: PlatformException(code: 'launch_failed'),
+        );
+        UrlLauncherPlatform.instance = launcher;
+
+        final launched = await launchVerifierFlow(
+          editorBloc: editorBloc,
+          myProfileBloc: myProfileBloc,
+          isWeb: false,
+        );
+
+        expect(launched, isFalse);
+        expect(launcher.launched, hasLength(1));
+        expect(launcher.launched.single.url, 'https://verifyer.divine.video/');
+        verify(
+          () => editorBloc.add(const VerifierWebViewDismissed()),
+        ).called(1);
+        verifyNever(
+          () => myProfileBloc.add(const MyProfileFetchRequested()),
+        );
       },
     );
   });

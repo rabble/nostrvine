@@ -475,13 +475,21 @@ class _ProfileSetupScreenViewState
               prev.verifierStatus != curr.verifierStatus &&
               curr.verifierStatus == VerifierStatus.launchRequested,
           listener: (context, state) async {
-            await launchVerifierFlow(
+            final launched = await launchVerifierFlow(
               editorBloc: context.read<ProfileEditorBloc>(),
               myProfileBloc: context.read<MyProfileBloc>(),
               pushVerifierRoute: (location, {extra}) async {
                 await context.push(location, extra: extra);
               },
             );
+            if (!launched && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(context.l10n.relaySettingsCouldNotOpenBrowser),
+                  backgroundColor: VineTheme.error,
+                ),
+              );
+            }
           },
         ),
       ],
@@ -1848,7 +1856,7 @@ class _VerifiedAccountsSection extends StatelessWidget {
 typedef VerifierRoutePusher =
     Future<void> Function(String location, {Object? extra});
 
-/// Opens the Divine verifyer and refreshes the profile when the user returns.
+/// Opens the Divine verifyer and refreshes the profile after the flow opens.
 ///
 /// Native in-app WebViews cannot complete the verifyer's login flow because it
 /// leaves `verifyer.divine.video` for `login.divine.video` and OAuth providers.
@@ -1857,7 +1865,7 @@ typedef VerifierRoutePusher =
 /// signer bridge because it runs in the browser and does not use
 /// `webview_flutter`.
 @visibleForTesting
-Future<void> launchVerifierFlow({
+Future<bool> launchVerifierFlow({
   required ProfileEditorBloc editorBloc,
   required MyProfileBloc myProfileBloc,
   VerifierRoutePusher? pushVerifierRoute,
@@ -1867,20 +1875,32 @@ Future<void> launchVerifierFlow({
     (app) => app.slug == 'verifyer',
   );
 
-  if (isWeb && pushVerifierRoute != null) {
-    await pushVerifierRoute(
-      WebIframeSandboxScreen.pathForAppId(verifyer.id),
-      extra: verifyer,
-    );
-  } else {
-    await launchUrl(
-      Uri.parse(verifyer.launchUrl),
-      mode: LaunchMode.externalApplication,
+  var launched = false;
+  try {
+    if (isWeb && pushVerifierRoute != null) {
+      await pushVerifierRoute(
+        WebIframeSandboxScreen.pathForAppId(verifyer.id),
+        extra: verifyer,
+      );
+      launched = true;
+    } else {
+      launched = await launchUrl(
+        Uri.parse(verifyer.launchUrl),
+        mode: LaunchMode.externalApplication,
+      );
+    }
+  } catch (error, stackTrace) {
+    UnifiedLogger.warning(
+      'Failed to open Divine verifyer: $error\n$stackTrace',
+      name: 'ProfileSetupScreen',
     );
   }
 
   editorBloc.add(const VerifierWebViewDismissed());
-  myProfileBloc.add(const MyProfileFetchRequested());
+  if (launched) {
+    myProfileBloc.add(const MyProfileFetchRequested());
+  }
+  return launched;
 }
 
 class _GetVerifiedTile extends StatelessWidget {

@@ -17,6 +17,14 @@ class LaunchedCall {
 /// ```
 /// then assert against [launched] after the action under test runs.
 class UrlLauncherTestDouble extends UrlLauncherPlatform {
+  UrlLauncherTestDouble({
+    this.launchResult = true,
+    this.launchError,
+  });
+
+  final bool launchResult;
+  final Object? launchError;
+
   /// Calls captured in order of arrival.
   final List<LaunchedCall> launched = [];
 
@@ -52,6 +60,10 @@ class UrlLauncherTestDouble extends UrlLauncherPlatform {
             options.mode == PreferredLaunchMode.externalApplication,
       ),
     );
-    return true;
+    final error = launchError;
+    if (error != null) {
+      throw error;
+    }
+    return launchResult;
   }
 }
