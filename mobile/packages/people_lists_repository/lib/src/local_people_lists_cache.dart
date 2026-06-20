@@ -33,15 +33,29 @@ const String _logName = 'people_lists_repository.local_cache';
 class LocalPeopleListsCache {
   /// Creates a cache that lazily opens the backing Hive box via [openBox].
   ///
-  /// The opener is invoked at most once per cache instance; subsequent calls
-  /// reuse the cached [Box].
+  /// The opener is invoked once successfully per cache instance; subsequent
+  /// calls reuse the cached [Box]. Failed opens are not cached so callers can
+  /// retry after storage becomes available.
   LocalPeopleListsCache({required Future<Box<dynamic>> Function() openBox})
     : _openBox = openBox;
 
   final Future<Box<dynamic>> Function() _openBox;
   Future<Box<dynamic>>? _boxFuture;
 
-  Future<Box<dynamic>> _box() => _boxFuture ??= _openBox();
+  Future<Box<dynamic>> _box() {
+    final cached = _boxFuture;
+    if (cached != null) return cached;
+
+    final opening = _openBox();
+    _boxFuture = opening;
+
+    return opening.onError<Object>((error, stackTrace) {
+      if (identical(_boxFuture, opening)) {
+        _boxFuture = null;
+      }
+      Error.throwWithStackTrace(error, stackTrace);
+    });
+  }
 
   /// Returns all non-tombstoned lists owned by [ownerPubkey], sorted by
   /// `updatedAt` descending.

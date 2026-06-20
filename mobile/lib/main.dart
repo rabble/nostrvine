@@ -733,7 +733,8 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
       );
     },
   );
-  // Critical: first-frame BLoCs can subscribe to disk-backed caches.
+  // Critical phase (best-effort): first-frame BLoCs can subscribe to
+  // disk-backed caches.
   coordinator.registerService(
     name: 'CacheSync',
     phase: StartupPhase.critical,

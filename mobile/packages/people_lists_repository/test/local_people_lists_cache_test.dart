@@ -266,6 +266,31 @@ void main() {
         );
       });
 
+      test('retries box opener after a failed open', () async {
+        final error = StateError('Hive storage is not initialized');
+        final boxName = 'people_lists_test_retry_${boxCounter++}';
+        var attempts = 0;
+        final cache = LocalPeopleListsCache(
+          openBox: () async {
+            attempts += 1;
+            if (attempts == 1) {
+              throw error;
+            }
+            return Hive.openBox<dynamic>(boxName, path: tempDir.path);
+          },
+        );
+
+        await expectLater(
+          cache.watchLists(ownerPubkey: _ownerA),
+          emitsInOrder([emitsError(same(error)), emitsDone]),
+        );
+
+        final lists = await cache.readLists(ownerPubkey: _ownerA);
+
+        expect(lists, isEmpty);
+        expect(attempts, 2);
+      });
+
       test('emits current lists immediately, then on updates', () async {
         final cache = LocalPeopleListsCache(openBox: makeOpener());
 
