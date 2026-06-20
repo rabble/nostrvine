@@ -101,10 +101,14 @@ const _relayLoopbackHosts = <String>{
 };
 
 /// Compile-time gate for temporary per-conversation classification
-/// diagnostics. Off by default and tree-shaken from release builds; enable
-/// for a targeted repro with `--dart-define=DM_CLASSIFY_DIAGNOSTICS=true`.
+/// diagnostics. Off by default and structurally disabled in release builds:
+/// the `!kReleaseMode` term folds the constant to `false` under AOT product
+/// mode, so `DM_CLASSIFY_DIAGNOSTICS` can never enable follow-graph logging
+/// in a distributed build. Enable for a targeted repro on a debug/profile
+/// build with `--dart-define=DM_CLASSIFY_DIAGNOSTICS=true`.
 // TODO(realmeylisdev): remove DM classify diagnostics after #5374.
-const _classifyDiagnostics = bool.fromEnvironment('DM_CLASSIFY_DIAGNOSTICS');
+const bool _classifyDiagnostics =
+    bool.fromEnvironment('DM_CLASSIFY_DIAGNOSTICS') && !kReleaseMode;
 
 bool _isAllowedDmRelayUrl(String url) {
   final uri = Uri.tryParse(url.trim());
