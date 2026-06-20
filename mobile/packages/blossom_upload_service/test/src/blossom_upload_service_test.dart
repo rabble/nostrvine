@@ -2,6 +2,7 @@
 // multi-server support
 // ABOUTME: Tests configuration persistence, server selection, and upload flow
 
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -2058,6 +2059,77 @@ void main() {
         ).called(1);
 
         await tempDir.delete(recursive: true);
+      });
+    });
+
+    group('uploadSubtitleVtt', () {
+      test(
+        'PUTs VTT bytes with text/vtt content type and returns sha256',
+        () async {
+          final mockDio = _MockDio();
+          final mockResponse = _MockResponse();
+          when(() => mockResponse.statusCode).thenReturn(200);
+          when(() => mockResponse.data).thenReturn(<String, dynamic>{
+            'url': 'https://media.divine.video/abc123',
+          });
+          when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthProvider.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => _signedEvent(_testPublicKey, 24242, const [], ''),
+          );
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer((_) async => mockResponse);
+
+          final service = BlossomUploadService(
+            authProvider: mockAuthProvider,
+            dio: mockDio,
+          );
+
+          final vtt = utf8.encode(
+            'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nhi\n',
+          );
+          final result = await service.uploadSubtitleVtt(
+            bytes: Uint8List.fromList(vtt),
+          );
+
+          expect(result.success, isTrue);
+          final videoId = result.videoId;
+          expect(videoId, isNotNull);
+          expect(result.url, contains(videoId));
+
+          final captured =
+              verify(
+                    () => mockDio.put<dynamic>(
+                      any(),
+                      data: any(named: 'data'),
+                      options: captureAny(named: 'options'),
+                      onSendProgress: any(named: 'onSendProgress'),
+                    ),
+                  ).captured.single
+                  as Options;
+          expect(captured.headers!['Content-Type'], equals('text/vtt'));
+        },
+      );
+
+      test('returns auth failure when not authenticated', () async {
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(false);
+        final service = BlossomUploadService(authProvider: mockAuthProvider);
+        final result = await service.uploadSubtitleVtt(
+          bytes: Uint8List.fromList(utf8.encode('WEBVTT\n')),
+        );
+        expect(result.success, isFalse);
+        expect(result.failureReason, equals(BlossomUploadFailureReason.auth));
       });
     });
 

@@ -2479,6 +2479,136 @@ class BlossomUploadService {
     }
   }
 
+  /// Uploads a subtitle VTT blob (BUD-01) and returns its sha256 and
+  /// canonical URL. MIME defaults to `text/vtt`; Blossom is
+  /// content-addressed so the stored Content-Type does not affect the
+  /// address.
+  Future<BlossomUploadResult> uploadSubtitleVtt({
+    required Uint8List bytes,
+    String mimeType = 'text/vtt',
+    void Function(double)? onProgress,
+  }) async {
+    try {
+      if (!authProvider.isAuthenticated) {
+        return const BlossomUploadResult(
+          success: false,
+          errorMessage: 'Not authenticated',
+          failureReason: BlossomUploadFailureReason.auth,
+        );
+      }
+
+      onProgress?.call(0.1);
+
+      final fileHash = HashUtil.sha256Hash(bytes);
+      final fileSize = bytes.length;
+
+      Log.info(
+        'Subtitle VTT hash: $fileHash, size: $fileSize bytes',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+
+      final serverUrls = await _getServerUrlsForUpload();
+
+      Log.info(
+        'Trying ${serverUrls.length} Blossom servers for subtitle upload',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+
+      BlossomUploadResult? lastError;
+
+      for (final serverUrl in serverUrls) {
+        try {
+          Log.info(
+            'Attempting subtitle upload to: $serverUrl',
+            name: 'BlossomUploadService',
+            category: LogCategory.video,
+          );
+
+          final result = await _uploadToServer(
+            serverUrl: serverUrl,
+            source: _BytesUploadSource(
+              bytes: bytes,
+              filename: 'subtitles.vtt',
+            ),
+            fileHash: fileHash,
+            fileSize: fileSize,
+            contentType: mimeType,
+            onProgress: onProgress,
+          );
+
+          if (result.success) {
+            final canonicalUrl = '$_defaultServerUrl/$fileHash';
+
+            Log.info(
+              'Subtitle uploaded to: $serverUrl, '
+              'canonical URL: $canonicalUrl',
+              name: 'BlossomUploadService',
+              category: LogCategory.video,
+            );
+
+            return BlossomUploadResult(
+              success: true,
+              url: canonicalUrl,
+              fallbackUrl: canonicalUrl,
+              videoId: fileHash,
+            );
+          }
+
+          lastError = result;
+          Log.warning(
+            'Subtitle upload to $serverUrl failed: '
+            '${result.errorMessage}, trying next server...',
+            name: 'BlossomUploadService',
+            category: LogCategory.video,
+          );
+          // coverage:ignore-start
+        } on Object catch (e) {
+          final statusCode = e is DioException ? e.response?.statusCode : null;
+          lastError = BlossomUploadResult(
+            success: false,
+            statusCode: statusCode,
+            errorMessage: 'Upload to $serverUrl failed: $e',
+            failureReason: _classifyUploadException(e),
+          );
+          Log.warning(
+            'Subtitle upload to $serverUrl failed: $e, '
+            'trying next server...',
+            name: 'BlossomUploadService',
+            category: LogCategory.video,
+          );
+          continue;
+          // coverage:ignore-end
+        }
+      }
+
+      Log.error(
+        'All ${serverUrls.length} servers failed for subtitle upload',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+
+      return lastError ??
+          const BlossomUploadResult(
+            success: false,
+            errorMessage: 'All servers failed',
+            failureReason: BlossomUploadFailureReason.unknown,
+          );
+    } on Object catch (e) {
+      Log.error(
+        'Subtitle VTT upload error: $e',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+      return BlossomUploadResult(
+        success: false,
+        errorMessage: 'Subtitle VTT upload failed: $e',
+        failureReason: _classifyUploadException(e),
+      );
+    }
+  }
+
   /// Test connection to a Blossom server
   ///
   /// Returns a [BlossomHealthCheckResult] with status, latency, and any errors.
