@@ -122,9 +122,7 @@ class _ContentWarningMultiSelectState
           trailingAction: DivineIconButton(
             icon: .check,
             size: .small,
-            onPressed: _selected.isNotEmpty
-                ? () => context.pop(_selected)
-                : null,
+            onPressed: () => context.pop(_selected),
           ),
         ),
         const Divider(
@@ -205,9 +203,7 @@ class _ContentLabelTile extends StatelessWidget {
                   style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
                 ),
               ),
-              DivineSpriteCheckbox(
-                state: isChecked ? .selected : .unselected,
-              ),
+              DivineSpriteCheckbox(state: isChecked ? .selected : .unselected),
             ],
           ),
         ),

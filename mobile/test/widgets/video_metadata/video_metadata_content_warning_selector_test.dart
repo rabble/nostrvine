@@ -55,10 +55,7 @@ void main() {
     testWidgets('renders $VideoMetadataContentWarningSelector', (tester) async {
       await tester.pumpWidget(buildWidget());
 
-      expect(
-        find.byType(VideoMetadataContentWarningSelector),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoMetadataContentWarningSelector), findsOneWidget);
     });
 
     testWidgets('renders $VideoMetadataSelectionTile', (tester) async {
@@ -140,9 +137,7 @@ void main() {
       expect(find.text(l10n.videoMetadataContentWarnings), findsOneWidget);
     });
 
-    testWidgets('bottom sheet shows all ContentLabel options', (
-      tester,
-    ) async {
+    testWidgets('bottom sheet shows all ContentLabel options', (tester) async {
       addTearDown(() => tester.view.resetPhysicalSize());
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1;
@@ -179,7 +174,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap "Nudity" in the list.
-      await tester.tap(find.text('Nudity'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.text('Nudity'),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Tap the check (confirm) icon button.
@@ -194,14 +194,55 @@ void main() {
       await tester.pumpAndSettle();
 
       // The bottom sheet pops via go_router with the selected labels.
+      verify(() => mockGoRouter.pop<Set<ContentLabel>>(any())).called(1);
+    });
+
+    testWidgets('can clear all selected content warnings', (tester) async {
+      addTearDown(() => tester.view.resetPhysicalSize());
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1;
+
+      final state = VideoEditorProviderState(
+        contentWarnings: {ContentLabel.nudity},
+      );
+      await tester.pumpWidget(buildWidget(state: state));
+
+      await tester.tap(
+        find.bySemanticsLabel(
+          l10n.videoMetadataSelectContentWarningsSemanticLabel,
+        ),
+        warnIfMissed: false,
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.text('Nudity'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final confirmButton = find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.byWidgetPredicate(
+          (w) => w is DivineIconButton && w.icon == DivineIconName.check,
+        ),
+      );
+      expect(
+        tester.widget<DivineIconButton>(confirmButton).onPressed,
+        isNotNull,
+      );
+
+      await tester.tap(confirmButton);
+      await tester.pumpAndSettle();
+
       verify(
-        () => mockGoRouter.pop<Set<ContentLabel>>(any()),
+        () => mockGoRouter.pop<Set<ContentLabel>>(<ContentLabel>{}),
       ).called(1);
     });
 
-    testWidgets('tapping an option toggles its checkbox state', (
-      tester,
-    ) async {
+    testWidgets('tapping an option toggles its checkbox state', (tester) async {
       addTearDown(() => tester.view.resetPhysicalSize());
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1;
