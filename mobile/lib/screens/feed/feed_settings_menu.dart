@@ -13,6 +13,8 @@ import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dar
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
+import 'package:openvine/utils/delete_failure_localization.dart';
+import 'package:openvine/widgets/owner_video_delete_confirmation_dialog.dart';
 import 'package:openvine/widgets/video_feed_item/feed_playback_toggles_pill.dart';
 
 /// More icon button + playback-controls popover for feed surfaces.
@@ -95,33 +97,8 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
     final video = widget.video;
     if (video == null) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: Text(
-          dialogContext.l10n.shareMenuDeleteVideo,
-          style: const TextStyle(color: VineTheme.whiteText),
-        ),
-        content: Text(
-          dialogContext.l10n.shareMenuDeleteConfirmation,
-          style: const TextStyle(color: VineTheme.whiteText),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(dialogContext.l10n.shareMenuCancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: VineTheme.error),
-            child: Text(dialogContext.l10n.shareMenuDelete),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
+    final confirmed = await showOwnerVideoDeleteConfirmationDialog(context);
+    if (confirmed && mounted) {
       await _deleteVideo(video);
     }
   }
@@ -149,7 +126,9 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         DivineSnackbarContainer.snackBar(
-          _localizedDeleteFailureMessage(context, state.deleteFailureKind),
+          state.deleteResult == null
+              ? context.l10n.shareMenuDeleteFailedGeneric
+              : localizedDeleteFailureMessage(context, state.deleteResult!),
           error: true,
         ),
       );
@@ -185,29 +164,6 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
         ),
       ),
     );
-  }
-}
-
-String _localizedDeleteFailureMessage(
-  BuildContext context,
-  OwnerVideoDeleteFailureKind? kind,
-) {
-  final l10n = context.l10n;
-  switch (kind ?? OwnerVideoDeleteFailureKind.unknown) {
-    case OwnerVideoDeleteFailureKind.notInitialized:
-      return l10n.shareMenuDeleteFailedNotInitialized;
-    case OwnerVideoDeleteFailureKind.notOwner:
-      return l10n.shareMenuDeleteFailedNotOwner;
-    case OwnerVideoDeleteFailureKind.notAuthenticated:
-      return l10n.shareMenuDeleteFailedNotAuthenticated;
-    case OwnerVideoDeleteFailureKind.couldNotSign:
-      return l10n.shareMenuDeleteFailedCouldNotSign;
-    case OwnerVideoDeleteFailureKind.relayRejected:
-      return l10n.shareMenuDeleteFailedRelayRejected;
-    case OwnerVideoDeleteFailureKind.relayNoResponse:
-      return l10n.shareMenuDeleteFailedRelayNoResponse;
-    case OwnerVideoDeleteFailureKind.unknown:
-      return l10n.shareMenuDeleteFailedGeneric;
   }
 }
 

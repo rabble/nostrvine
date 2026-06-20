@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dart';
 import 'package:openvine/blocs/share_sheet/share_sheet_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -19,7 +20,6 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_clip_import_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
-import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/delete_failure_localization.dart';
@@ -27,6 +27,7 @@ import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/find_people_sheet.dart';
+import 'package:openvine/widgets/owner_video_delete_confirmation_dialog.dart';
 import 'package:openvine/widgets/profile/profile_saved_videos_sync_scope.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -130,6 +131,7 @@ class _UnifiedShareSheet extends ConsumerStatefulWidget {
 class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   final TextEditingController _messageController = TextEditingController();
   late final ShareSheetBloc _shareSheetBloc;
+  OwnerVideoActionsCubit? _ownerVideoActionsCubit;
 
   @override
   void initState() {
@@ -150,6 +152,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
 
   @override
   void dispose() {
+    _ownerVideoActionsCubit?.close();
     _shareSheetBloc.close();
     _messageController.dispose();
     super.dispose();
@@ -338,79 +341,38 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   }
 
   Future<void> _handleDeleteVideo() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: Text(
-          dialogContext.l10n.shareMenuDeleteVideo,
-          style: const TextStyle(color: VineTheme.whiteText),
-        ),
-        content: Text(
-          dialogContext.l10n.shareMenuDeleteConfirmation,
-          style: const TextStyle(color: VineTheme.whiteText),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(dialogContext.l10n.shareMenuCancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: VineTheme.error),
-            child: Text(dialogContext.l10n.shareMenuDelete),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
+    final confirmed = await showOwnerVideoDeleteConfirmationDialog(context);
+    if (confirmed && mounted) {
       await _deleteVideo();
     }
   }
 
   Future<void> _deleteVideo() async {
-    try {
-      final deletionService = await ref.read(
-        contentDeletionServiceProvider.future,
-      );
-      final result = await deletionService.quickDelete(
-        video: widget.video,
-        reason: DeleteReason.personalChoice,
-      );
-
-      if (!mounted) return;
-
-      if (result.success) {
-        ref
-            .read(videoEventServiceProvider)
-            .removeVideoEventCompletely(
-              widget.video,
-            );
-        final messenger = ScaffoldMessenger.of(context);
-        final snackBar = DivineSnackbarContainer.snackBar(
-          context.l10n.shareMenuVideoDeletionRequested,
-        );
-        _safePop(context);
-        messenger.showSnackBar(snackBar);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            localizedDeleteFailureMessage(context, result),
-            error: true,
+    final ownerVideoActionsCubit = _ownerVideoActionsCubit ??=
+        OwnerVideoActionsCubit(
+          contentDeletionServiceFuture: ref.read(
+            contentDeletionServiceProvider.future,
           ),
+          videoEventService: ref.read(videoEventServiceProvider),
         );
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to delete video: $e',
-        name: 'ShareActionButton',
-        category: LogCategory.ui,
+    await ownerVideoActionsCubit.deleteVideo(widget.video);
+
+    if (!mounted) return;
+
+    final state = ownerVideoActionsCubit.state;
+    if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
+      final messenger = ScaffoldMessenger.of(context);
+      final snackBar = DivineSnackbarContainer.snackBar(
+        context.l10n.shareMenuVideoDeletionRequested,
       );
-      if (!mounted) return;
+      _safePop(context);
+      messenger.showSnackBar(snackBar);
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         DivineSnackbarContainer.snackBar(
-          context.l10n.shareMenuDeleteFailedGeneric,
+          state.deleteResult == null
+              ? context.l10n.shareMenuDeleteFailedGeneric
+              : localizedDeleteFailureMessage(context, state.deleteResult!),
           error: true,
         ),
       );

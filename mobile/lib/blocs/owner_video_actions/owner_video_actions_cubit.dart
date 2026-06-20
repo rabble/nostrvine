@@ -1,6 +1,7 @@
 // ABOUTME: Cubit for owner-only video actions such as deleting own videos.
 // ABOUTME: Keeps service-layer calls out of feed UI widgets.
 
+import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/content_deletion_service.dart';
@@ -9,32 +10,23 @@ import 'package:unified_logger/unified_logger.dart';
 
 enum OwnerVideoDeleteStatus { idle, deleting, success, failure }
 
-enum OwnerVideoDeleteFailureKind {
-  notInitialized,
-  notOwner,
-  notAuthenticated,
-  couldNotSign,
-  relayRejected,
-  relayNoResponse,
-  unknown,
-}
-
-class OwnerVideoActionsState {
+class OwnerVideoActionsState extends Equatable {
   const OwnerVideoActionsState({
     this.deleteStatus = OwnerVideoDeleteStatus.idle,
-    this.deleteFailureKind,
+    this.deleteResult,
   });
 
   final OwnerVideoDeleteStatus deleteStatus;
-  final OwnerVideoDeleteFailureKind? deleteFailureKind;
+  final DeleteResult? deleteResult;
 
-  OwnerVideoActionsState copyWith({
-    OwnerVideoDeleteStatus? deleteStatus,
-    OwnerVideoDeleteFailureKind? deleteFailureKind,
-  }) => OwnerVideoActionsState(
-    deleteStatus: deleteStatus ?? this.deleteStatus,
-    deleteFailureKind: deleteFailureKind,
-  );
+  @override
+  List<Object?> get props => [
+    deleteStatus,
+    deleteResult?.success,
+    deleteResult?.failureKind,
+    deleteResult?.deleteEventId,
+    deleteResult?.error,
+  ];
 }
 
 class OwnerVideoActionsCubit extends Cubit<OwnerVideoActionsState> {
@@ -67,15 +59,16 @@ class OwnerVideoActionsCubit extends Cubit<OwnerVideoActionsState> {
       if (result.success) {
         _videoEventService.removeVideoEventCompletely(video);
         emit(
-          const OwnerVideoActionsState(
+          OwnerVideoActionsState(
             deleteStatus: OwnerVideoDeleteStatus.success,
+            deleteResult: result,
           ),
         );
       } else {
         emit(
           OwnerVideoActionsState(
             deleteStatus: OwnerVideoDeleteStatus.failure,
-            deleteFailureKind: _mapFailureKind(result.failureKind),
+            deleteResult: result,
           ),
         );
       }
@@ -87,31 +80,14 @@ class OwnerVideoActionsCubit extends Cubit<OwnerVideoActionsState> {
       );
       if (isClosed) return;
       emit(
-        const OwnerVideoActionsState(
+        OwnerVideoActionsState(
           deleteStatus: OwnerVideoDeleteStatus.failure,
-          deleteFailureKind: OwnerVideoDeleteFailureKind.unknown,
+          deleteResult: DeleteResult.failure(
+            'Failed to delete video',
+            DeleteFailureKind.unknown,
+          ),
         ),
       );
-    }
-  }
-
-  OwnerVideoDeleteFailureKind _mapFailureKind(DeleteFailureKind? kind) {
-    switch (kind) {
-      case DeleteFailureKind.notInitialized:
-        return OwnerVideoDeleteFailureKind.notInitialized;
-      case DeleteFailureKind.notOwner:
-        return OwnerVideoDeleteFailureKind.notOwner;
-      case DeleteFailureKind.notAuthenticated:
-        return OwnerVideoDeleteFailureKind.notAuthenticated;
-      case DeleteFailureKind.couldNotSign:
-        return OwnerVideoDeleteFailureKind.couldNotSign;
-      case DeleteFailureKind.relayRejected:
-        return OwnerVideoDeleteFailureKind.relayRejected;
-      case DeleteFailureKind.relayNoResponse:
-        return OwnerVideoDeleteFailureKind.relayNoResponse;
-      case DeleteFailureKind.unknown:
-      case null:
-        return OwnerVideoDeleteFailureKind.unknown;
     }
   }
 }
