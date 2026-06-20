@@ -20,6 +20,7 @@ class VideoThumbnailWidget extends StatefulWidget {
     this.height,
     this.fit = BoxFit.cover,
     this.showPlayIcon = false,
+    this.playIconSize = 48,
     this.borderRadius,
   });
   final VideoEvent video;
@@ -27,6 +28,11 @@ class VideoThumbnailWidget extends StatefulWidget {
   final double? height;
   final BoxFit fit;
   final bool showPlayIcon;
+
+  /// Diameter of the circular play badge shown when [showPlayIcon] is true.
+  /// The play glyph scales proportionally (two-thirds of the badge). Defaults
+  /// to 48 to match full-size cards; compact thumbnails pass a smaller value.
+  final double playIconSize;
   final BorderRadius? borderRadius;
 
   @override
@@ -124,16 +130,16 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
         if (widget.showPlayIcon)
           Center(
             child: Container(
-              width: 48,
-              height: 48,
+              width: widget.playIconSize,
+              height: widget.playIconSize,
               decoration: BoxDecoration(
                 color: VineTheme.backgroundColor.withValues(alpha: 0.6),
                 shape: BoxShape.circle,
               ),
-              child: const DivineIcon(
+              child: DivineIcon(
                 icon: DivineIconName.play,
                 color: VineTheme.whiteText,
-                size: 32,
+                size: widget.playIconSize * 2 / 3,
               ),
             ),
           ),

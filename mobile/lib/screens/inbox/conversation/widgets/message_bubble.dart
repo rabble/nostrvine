@@ -692,6 +692,17 @@ const double _quotedThumbHeight = 56;
 /// Corner radius of the compact quoted-reply thumbnail.
 const double _quotedThumbRadius = 6;
 
+/// Fixed overall width of the compact quoted-reply preview. Pinning it keeps
+/// the bubble from reflowing when the cited video resolves out of its loading
+/// skeleton — the loading, resolved, and unavailable states all render at this
+/// width, so there is no horizontal jump as the reel loads.
+const double _quotedPreviewWidth = 200;
+
+/// Play-badge diameter for the compact quoted thumbnail. The shared
+/// [VideoThumbnailWidget] default (48) overflows the 40-wide thumb, so the
+/// quoted preview uses a smaller badge with breathing room around it.
+const double _quotedPlayIconSize = 24;
+
 /// Compact WhatsApp-style quoted preview of the video a reply references.
 ///
 /// Reuses the [VideoLinkPreviewCubit] resolve harness (cache → relay fetch) so
@@ -723,10 +734,7 @@ class _QuotedVideoPreview extends ConsumerWidget {
       ),
       child: BlocBuilder<VideoLinkPreviewCubit, VideoLinkPreviewState>(
         builder: (context, state) => switch (state) {
-          VideoLinkPreviewLoading() => _QuotedVideoFrame(
-            isSent: isSent,
-            child: const _QuotedThumbPlaceholder(),
-          ),
+          VideoLinkPreviewLoading() => _QuotedVideoLoading(isSent: isSent),
           VideoLinkPreviewNotFound() => _QuotedVideoUnavailable(isSent: isSent),
           VideoLinkPreviewResolved(:final video) => _QuotedVideoCard(
             video: video,
@@ -746,25 +754,72 @@ class _QuotedVideoFrame extends StatelessWidget {
     required this.isSent,
     required this.child,
     this.onTap,
+    this.semanticLabel,
   });
 
   final bool isSent;
   final Widget child;
   final VoidCallback? onTap;
 
+  /// Screen-reader label for the tappable affordance. Only used when [onTap]
+  /// is non-null (the resolved, openable card).
+  final String? semanticLabel;
+
   @override
   Widget build(BuildContext context) {
     final accent = isSent ? VineTheme.whiteText : VineTheme.primary;
-    final frame = DecoratedBox(
-      decoration: BoxDecoration(
-        color: VineTheme.whiteText.withValues(alpha: isSent ? 0.14 : 0.07),
-        borderRadius: BorderRadius.circular(8),
-        border: Border(left: BorderSide(color: accent, width: 3)),
+    final frame = SizedBox(
+      width: _quotedPreviewWidth,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: VineTheme.whiteText.withValues(alpha: isSent ? 0.14 : 0.07),
+          borderRadius: BorderRadius.circular(8),
+          border: Border(left: BorderSide(color: accent, width: 3)),
+        ),
+        child: Padding(padding: const EdgeInsets.all(6), child: child),
       ),
-      child: Padding(padding: const EdgeInsets.all(6), child: child),
     );
     if (onTap == null) return frame;
-    return GestureDetector(onTap: onTap, child: frame);
+    // Co-locate the button semantics with the tap target so every tappable
+    // frame is announced as a button — callers can't forget to wrap it.
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: GestureDetector(onTap: onTap, child: frame),
+    );
+  }
+}
+
+/// Loading skeleton for the compact quoted preview. Mirrors the resolved
+/// card's thumbnail + two-line label layout so the fixed-width frame reads as
+/// content rather than an empty box while the cited reel resolves.
+class _QuotedVideoLoading extends StatelessWidget {
+  const _QuotedVideoLoading({required this.isSent});
+
+  final bool isSent;
+
+  @override
+  Widget build(BuildContext context) {
+    return _QuotedVideoFrame(
+      isSent: isSent,
+      child: const Row(
+        spacing: 8,
+        children: [
+          _QuotedThumbPlaceholder(),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _QuotedSkeletonBar(widthFactor: 0.85),
+                SizedBox(height: 6),
+                _QuotedSkeletonBar(widthFactor: 0.5),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -780,6 +835,29 @@ class _QuotedThumbPlaceholder extends StatelessWidget {
       decoration: BoxDecoration(
         color: VineTheme.cardBackground,
         borderRadius: BorderRadius.circular(_quotedThumbRadius),
+      ),
+    );
+  }
+}
+
+/// A single rounded skeleton bar for the quoted-preview loading state. The
+/// translucent white fill reads on both the sent and received bubble colors.
+class _QuotedSkeletonBar extends StatelessWidget {
+  const _QuotedSkeletonBar({required this.widthFactor});
+
+  final double widthFactor;
+
+  @override
+  Widget build(BuildContext context) {
+    return FractionallySizedBox(
+      alignment: Alignment.centerLeft,
+      widthFactor: widthFactor,
+      child: Container(
+        height: 10,
+        decoration: BoxDecoration(
+          color: VineTheme.whiteText.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(4),
+        ),
       ),
     );
   }
@@ -817,59 +895,56 @@ class _QuotedVideoCard extends ConsumerWidget {
     final showSecondary =
         hasTitle && authorName != null && authorName.isNotEmpty;
 
-    return Semantics(
-      button: true,
-      label: context.l10n.dmMessageBubbleVideoReplyHint,
-      child: _QuotedVideoFrame(
-        isSent: isSent,
-        onTap: () => context.push(
-          VideoDetailScreen.pathForId(video.id),
-          extra: VideoDetailRouteExtra(
-            initialVideo: video,
-            dmReplyContext: dmReplyContext,
-          ),
+    return _QuotedVideoFrame(
+      isSent: isSent,
+      semanticLabel: context.l10n.dmMessageBubbleVideoReplyHint,
+      onTap: () => context.push(
+        VideoDetailScreen.pathForId(video.id),
+        extra: VideoDetailRouteExtra(
+          initialVideo: video,
+          dmReplyContext: dmReplyContext,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(_quotedThumbRadius),
-              // VideoThumbnailWidget renders an AspectRatio internally, so it
-              // must be externally bounded (like the full _VideoCard's SizedBox)
-              // — its own width/height params only size the inner image.
-              child: SizedBox(
-                width: _quotedThumbWidth,
-                height: _quotedThumbHeight,
-                child: VideoThumbnailWidget(
-                  video: video,
-                  showPlayIcon: true,
-                ),
+      ),
+      child: Row(
+        spacing: 8,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(_quotedThumbRadius),
+            // VideoThumbnailWidget renders an AspectRatio internally, so it
+            // must be externally bounded (like the full _VideoCard's SizedBox)
+            // — its own width/height params only size the inner image.
+            child: SizedBox(
+              width: _quotedThumbWidth,
+              height: _quotedThumbHeight,
+              child: VideoThumbnailWidget(
+                video: video,
+                showPlayIcon: true,
+                playIconSize: _quotedPlayIconSize,
               ),
             ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+          ),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  primaryLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: VineTheme.labelSmallFont(color: primaryColor),
+                ),
+                if (showSecondary)
                   Text(
-                    primaryLabel,
+                    authorName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: VineTheme.labelSmallFont(color: primaryColor),
+                    style: VineTheme.bodySmallFont(color: secondaryColor),
                   ),
-                  if (showSecondary)
-                    Text(
-                      authorName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: VineTheme.bodySmallFont(color: secondaryColor),
-                    ),
-                ],
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -887,15 +962,14 @@ class _QuotedVideoUnavailable extends StatelessWidget {
     return _QuotedVideoFrame(
       isSent: isSent,
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        spacing: 8,
         children: [
           DivineIcon(
             icon: DivineIconName.warningCircle,
             color: color,
             size: 16,
           ),
-          const SizedBox(width: 8),
-          Flexible(
+          Expanded(
             child: Text(
               context.l10n.notificationsVideoUnavailable,
               maxLines: 1,

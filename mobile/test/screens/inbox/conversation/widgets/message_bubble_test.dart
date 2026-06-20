@@ -1222,6 +1222,50 @@ void main() {
               .dy;
           final textCenter = tester.getCenter(find.text('love this one')).dy;
           expect(thumbCenter, lessThan(textCenter));
+
+          // The compact thumbnail uses the smaller play badge so it doesn't
+          // overflow the 40-wide thumb.
+          final thumbWidget = tester.widget<VideoThumbnailWidget>(
+            find.byType(VideoThumbnailWidget),
+          );
+          expect(thumbWidget.playIconSize, 24);
+
+          // The preview is pinned to a fixed width so the bubble doesn't
+          // reflow when the cited reel resolves out of its loading skeleton.
+          expect(
+            find.byWidgetPredicate((w) => w is SizedBox && w.width == 200),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'exposes the resolved quoted preview as a button with the reply hint',
+        (tester) async {
+          when(
+            () => mockVideoEventService.getVideoEventByVineId('abc123'),
+          ).thenReturn(testVideo);
+
+          await tester.pumpWidget(
+            buildWithQuotedReply(
+              message: 'love this one',
+              quotedVideoRef: quotedRef,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // The tappable preview carries button semantics + the reply hint,
+          // co-located on the frame so the tap target is always announced.
+          expect(
+            find.byWidgetPredicate(
+              (w) =>
+                  w is Semantics &&
+                  (w.properties.button ?? false) &&
+                  w.properties.label ==
+                      AppLocalizationsEn().dmMessageBubbleVideoReplyHint,
+            ),
+            findsOneWidget,
+          );
         },
       );
 
@@ -1287,6 +1331,13 @@ void main() {
           expect(find.byType(VideoThumbnailWidget), findsNothing);
           // The reply comment still renders alongside the unavailable chip.
           expect(find.text('still good though'), findsOneWidget);
+
+          // The unavailable chip is pinned to the same fixed width as the
+          // resolved card, so swapping states never reflows the bubble.
+          expect(
+            find.byWidgetPredicate((w) => w is SizedBox && w.width == 200),
+            findsOneWidget,
+          );
         },
       );
 

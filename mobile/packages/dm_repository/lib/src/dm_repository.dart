@@ -1609,6 +1609,18 @@ class DmRepository {
     );
 
     if (citation == null) {
+      // The structured reference couldn't be built (most commonly a regular
+      // kind-22 ref whose source `q` tag omitted the author). Degrading to a
+      // plain message is acceptable, but log it so the lost cross-device /
+      // other-client durability isn't silent.
+      Log.warning(
+        'Shared-video citation could not be built (kind=$videoKind, '
+        'hasAuthor=${videoAuthorPubkey.isNotEmpty}, '
+        'hasDTag=${videoDTag?.isNotEmpty ?? false}, '
+        'hasEventId=${videoEventId?.isNotEmpty ?? false}); sending plain '
+        'message without the durable video reference.',
+        category: LogCategory.system,
+      );
       return sendMessage(
         recipientPubkey: recipientPubkey,
         content: baseContent,
@@ -1653,6 +1665,16 @@ class DmRepository {
     );
 
     if (citation == null) {
+      // See [sendSharedVideo]: log the degradation so a reel reply silently
+      // losing its durable video reference is observable.
+      Log.warning(
+        'Shared-video group citation could not be built (kind=$videoKind, '
+        'hasAuthor=${videoAuthorPubkey.isNotEmpty}, '
+        'hasDTag=${videoDTag?.isNotEmpty ?? false}, '
+        'hasEventId=${videoEventId?.isNotEmpty ?? false}); sending plain '
+        'group message without the durable video reference.',
+        category: LogCategory.system,
+      );
       return sendGroupMessage(
         recipientPubkeys: recipientPubkeys,
         content: baseContent,
@@ -1970,8 +1992,10 @@ class DmRepository {
             // hydrates the same read-time-derived fields (e.g. sharedVideoRef
             // from a NIP-18 q tag) as the happy-path send. Without this the
             // queue-recovery row drops its tags and the sender loses the
-            // shared-video reference locally. Mirrors the receive path, which
-            // persists the full rumor tags.
+            // shared-video reference locally. This intentionally also persists
+            // the rumor's leading recipient `p` tag — matching the receive
+            // path (L1121), not the happy-path 1:1 send which stores only its
+            // own rumorTags; harmless since only the `q` tag is read back.
             tagsJson: rumor.tags.isEmpty ? null : jsonEncode(rumor.tags),
             ownerPubkey: _userPubkey,
           );
