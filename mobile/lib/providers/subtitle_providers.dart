@@ -41,6 +41,10 @@ Future<List<SubtitleCue>> subtitleCues(
   String? textTrackContent,
   String? sha256,
 }) async {
+  if (textTrackContent != null && textTrackContent.isNotEmpty) {
+    return SubtitleService.parseVtt(textTrackContent);
+  }
+
   final refs = textTrackRefs.isNotEmpty
       ? textTrackRefs
       : [
