@@ -81,6 +81,12 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     /// EXC_BAD_ACCESS. Read/written on the main thread only.
     private var isFrameDeliveryEnabled = true
 
+    /// Set once `dispose()` has run. Guards `resumeFrameDelivery()` so a
+    /// foreground notification that races a teardown-driven dispose can never
+    /// re-arm delivery on an output whose texture is already unregistered.
+    /// Read/written on the main thread only.
+    private var isDisposed = false
+
     /// Fired when the force window expires without a frame; caller should
     /// retry the seek with tolerance. Suppressed for retry windows.
     var onSeekStuck: ((CMTime) -> Void)?
@@ -269,6 +275,7 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     /// the background period, so resuming does not flash black. Must be
     /// called on the main thread.
     func resumeFrameDelivery() {
+        guard !isDisposed else { return }
         isFrameDeliveryEnabled = true
         #if os(iOS)
         displayLink?.isPaused = false
@@ -277,6 +284,7 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
 
     /// Cleans up the frame driver and unregisters the texture.
     func dispose() {
+        isDisposed = true
         isFrameDeliveryEnabled = false
         stopFrameDriver()
         itemStatusObservation?.invalidate()

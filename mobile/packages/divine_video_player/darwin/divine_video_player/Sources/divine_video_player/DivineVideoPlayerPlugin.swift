@@ -95,6 +95,25 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
         PlayerRegistry.shared.forAll { $0.onAppForegrounded() }
     }
 
+    /// Called when this plugin's `FlutterEngine` is torn down — including
+    /// the teardown paths the Dart `dispose`/`disposeAll` channel never
+    /// reaches (OOM reclaim of the `FlutterViewController`, `destroyContext`,
+    /// multi-engine teardown). Without this, a `VideoTextureOutput`'s
+    /// `CADisplayLink` (which strongly retains the output) keeps firing
+    /// `textureFrameAvailable` into the freed engine shell.
+    ///
+    /// Scoped to this engine's own players via `disposeOwned(by:)` so that
+    /// the FCM background isolate's engine detaching does not dispose the UI
+    /// engine's live players (`PlayerRegistry.shared` is process-wide).
+    public func detachFromEngine(for registrar: FlutterPluginRegistrar) {
+        DivineVideoPlayerLog.shared.info(
+            "Engine detaching — disposing this engine's players",
+            name: "DivineVideoPlayer.Lifecycle"
+        )
+        PlayerRegistry.shared.disposeOwned(by: self)
+        NotificationCenter.default.removeObserver(self)
+    }
+
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         // Re-claim the shared sink in case another FlutterEngine overwrote it.
         installLogSink()
@@ -141,7 +160,10 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
                 messenger: messenger,
                 playerId: id
             )
-            PlayerRegistry.shared.set(instance, for: id)
+            // Record `self` as the owner: the plugin instance whose global
+            // channel received this `create` is the engine the Dart side is
+            // talking to, so it is the engine whose detach should dispose it.
+            PlayerRegistry.shared.set(instance, for: id, owner: self)
 
             let useTexture = args["useTexture"] as? Bool ?? false
             DivineVideoPlayerLog.shared.info(
@@ -236,21 +258,53 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
 
 /// Global registry so that ``DivineVideoPlayerViewFactory`` can find
 /// instances created during the `create` method call.
+///
+/// `shared` is process-wide and outlives any single `FlutterEngine`. Each
+/// player records the plugin (engine) that created it so a teardown of one
+/// engine can dispose only its own players — see `disposeOwned(by:)`. A
+/// blanket `disposeAll()` on engine detach would otherwise free the UI
+/// engine's live players when the FCM background isolate's engine detaches.
+/// Main-thread only, like all plugin entry points.
 final class PlayerRegistry {
     static let shared = PlayerRegistry()
     private var players: [Int: DivineVideoPlayerInstance] = [:]
+    /// Owning plugin per player id. `ObjectIdentifier` is stable while the
+    /// owning plugin is alive, which it is throughout `detachFromEngine`.
+    private var owners: [Int: ObjectIdentifier] = [:]
     private init() {}
 
     func get(_ id: Int) -> DivineVideoPlayerInstance? { players[id] }
-    func set(_ instance: DivineVideoPlayerInstance, for id: Int) { players[id] = instance }
+    func set(
+        _ instance: DivineVideoPlayerInstance,
+        for id: Int,
+        owner: DivineVideoPlayerPlugin
+    ) {
+        players[id] = instance
+        owners[id] = ObjectIdentifier(owner)
+    }
     @discardableResult
     func remove(_ id: Int) -> DivineVideoPlayerInstance? {
+        owners[id] = nil
         let instance = players.removeValue(forKey: id)
         return instance
     }
     func disposeAll() {
         players.values.forEach { $0.dispose() }
         players.removeAll()
+        owners.removeAll()
+    }
+
+    /// Disposes only the players created by `owner` (one `FlutterEngine`),
+    /// leaving every other engine's players running. Called on engine detach
+    /// so a torn-down engine cannot leave a zombie `CADisplayLink` firing
+    /// `textureFrameAvailable` into its freed shell.
+    func disposeOwned(by owner: DivineVideoPlayerPlugin) {
+        let ownerId = ObjectIdentifier(owner)
+        let ownedIds = owners.compactMap { $0.value == ownerId ? $0.key : nil }
+        for id in ownedIds {
+            players.removeValue(forKey: id)?.dispose()
+            owners[id] = nil
+        }
     }
     func forAll(_ action: (DivineVideoPlayerInstance) -> Void) {
         players.values.forEach(action)
