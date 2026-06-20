@@ -318,6 +318,7 @@ class NotificationRepository {
         : <String, String>{};
     return _funnelcakeApiClient.getNotifications(
       pubkey: _userPubkey,
+      limit: _pageSize,
       cursor: cursor,
       cursorId: cursorId,
       requestUri: Uri.parse(requestUrl),

@@ -656,19 +656,20 @@ void main() {
 
           await repository.getNotifications();
 
-          requestedUri =
-              verify(
-                    () => funnelcakeApiClient.getNotifications(
-                      pubkey: userPubkey,
-                      cursor: any(named: 'cursor'),
-                      requestUri: captureAny(named: 'requestUri'),
-                      authHeaders: any(named: 'authHeaders'),
-                      limit: any(named: 'limit'),
-                    ),
-                  ).captured.single
-                  as Uri;
+          final captured = verify(
+            () => funnelcakeApiClient.getNotifications(
+              pubkey: userPubkey,
+              cursor: any(named: 'cursor'),
+              requestUri: captureAny(named: 'requestUri'),
+              authHeaders: any(named: 'authHeaders'),
+              limit: captureAny(named: 'limit'),
+            ),
+          ).captured;
+          requestedUri = captured.whereType<Uri>().single;
+          final requestedLimit = captured.whereType<int>().single;
 
           expect(requestedUri.toString(), equals(signedUrl));
+          expect(requestedLimit, equals(20));
         },
       );
 
@@ -695,19 +696,20 @@ void main() {
 
           await repository.getNotifications();
 
-          requestedUri =
-              verify(
-                    () => funnelcakeApiClient.getNotifications(
-                      pubkey: userPubkey,
-                      cursor: 'cursor_abc',
-                      requestUri: captureAny(named: 'requestUri'),
-                      authHeaders: any(named: 'authHeaders'),
-                      limit: any(named: 'limit'),
-                    ),
-                  ).captured.single
-                  as Uri;
+          final captured = verify(
+            () => funnelcakeApiClient.getNotifications(
+              pubkey: userPubkey,
+              cursor: 'cursor_abc',
+              requestUri: captureAny(named: 'requestUri'),
+              authHeaders: any(named: 'authHeaders'),
+              limit: captureAny(named: 'limit'),
+            ),
+          ).captured;
+          requestedUri = captured.whereType<Uri>().single;
+          final requestedLimit = captured.whereType<int>().single;
 
           expect(requestedUri.toString(), equals(signedUrl));
+          expect(requestedLimit, equals(20));
         },
       );
     });
