@@ -512,5 +512,199 @@ void main() {
       expect(result, isFalse);
       verifyNever(() => mockVideoEventService.addVideoEvent(any()));
     });
+
+    test(
+      'publishSubtitleEvent signs a 39307 with d=subtitles:<vineId>',
+      () async {
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn(testPubkey);
+
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          final tags = invocation.namedArguments[#tags] as List<List<String>>;
+          return createSignedEvent(tags);
+        });
+
+        when(
+          () => mockNostrClient.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (invocation) async => PublishOutcome(
+            eventId: (invocation.positionalArguments.first as Event).id,
+            acceptedBy: const ['wss://relay.divine.video'],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          ),
+        );
+
+        final ref = await publisher.publishSubtitleEvent(
+          video: existingEvent,
+          vttContent: 'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nhi\n',
+          blossomUrl: 'https://media.divine.video/abc123',
+        );
+
+        expect(ref, '39307:$testPubkey:subtitles:test-vine-id');
+
+        final captured = verify(
+          () => mockAuthService.createAndSignEvent(
+            kind: captureAny(named: 'kind'),
+            content: captureAny(named: 'content'),
+            tags: captureAny(named: 'tags'),
+          ),
+        ).captured;
+        expect(captured[0], equals(39307));
+        final tags = (captured[2] as List).cast<List<String>>();
+        expect(
+          _containsTag(tags, ['d', 'subtitles:test-vine-id']),
+          isTrue,
+          reason: 'Missing d=subtitles:test-vine-id tag',
+        );
+        expect(
+          _containsTag(tags, ['url', 'https://media.divine.video/abc123']),
+          isTrue,
+          reason: 'Missing url tag',
+        );
+        expect(
+          _containsTag(tags, ['m', 'text/vtt']),
+          isTrue,
+          reason: 'Missing m=text/vtt tag',
+        );
+        expect(
+          _containsTag(tags, ['l', 'en']),
+          isTrue,
+          reason: 'Missing default l=en language tag',
+        );
+      },
+    );
+
+    test('republishWithSubtitles emits one text-track tag per ref', () async {
+      late List<List<String>> capturedTags;
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
+        return createSignedEvent(capturedTags);
+      });
+
+      when(
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments.first as Event).id,
+          acceptedBy: const ['wss://relay.divine.video'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
+        ),
+      );
+
+      when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
+
+      await publisher.republishWithSubtitles(
+        existingEvent: existingEvent,
+        textTrackRef: 'https://media.divine.video/abc123',
+        extraTextTrackRefs: ['39307:$testPubkey:subtitles:test-vine-id'],
+      );
+
+      final captured =
+          verify(
+                () => mockAuthService.createAndSignEvent(
+                  kind: any(named: 'kind'),
+                  content: any(named: 'content'),
+                  tags: captureAny(named: 'tags'),
+                ),
+              ).captured.single
+              as List;
+      final tags = captured.cast<List<String>>();
+      final trackTags = tags.where((t) => t.first == 'text-track').toList();
+      expect(trackTags, hasLength(2));
+      expect(trackTags[0][1], equals('https://media.divine.video/abc123'));
+      expect(
+        trackTags[1][1],
+        equals('39307:$testPubkey:subtitles:test-vine-id'),
+      );
+    });
+
+    test('publishSubtitleEvent returns null when vineId is empty', () async {
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
+
+      final videoWithoutVineId = VideoEvent(
+        id: 'd' * 64,
+        pubkey: testPubkey,
+        createdAt: 1700000000,
+        content: 'Test video description',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+        title: 'Test Video',
+      );
+
+      final ref = await publisher.publishSubtitleEvent(
+        video: videoWithoutVineId,
+        vttContent: 'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nhi\n',
+        blossomUrl: 'https://media.divine.video/abc123',
+      );
+
+      expect(ref, isNull);
+      verifyNever(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      );
+    });
+
+    test('publishSubtitleEvent returns null when publish fails', () async {
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((invocation) async {
+        final tags = invocation.namedArguments[#tags] as List<List<String>>;
+        return createSignedEvent(tags);
+      });
+
+      when(
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments.first as Event).id,
+          acceptedBy: const [],
+          rejectedBy: const {
+            'wss://relay.divine.video': 'blocked: event rejected by policy',
+          },
+          noResponseFrom: const [],
+        ),
+      );
+
+      final ref = await publisher.publishSubtitleEvent(
+        video: existingEvent,
+        vttContent: 'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nhi\n',
+        blossomUrl: 'https://media.divine.video/abc123',
+      );
+
+      expect(ref, isNull);
+    });
   });
 }

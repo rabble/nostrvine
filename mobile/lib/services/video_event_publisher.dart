@@ -1582,30 +1582,33 @@ class VideoEventPublisher {
     }
   }
 
-  /// Republish a video event with an added text-track tag for subtitles.
+  /// Republish a video event with added text-track tags for subtitles.
   ///
-  /// Takes the existing video event's original tags, adds a text-track tag
-  /// referencing the subtitle event, and publishes the updated event.
-  /// Returns true if publishing succeeded.
+  /// Strips any existing text-track tags from the original event, then emits
+  /// one tag per ref ([textTrackRef] followed by each entry in
+  /// [extraTextTrackRefs]) for read-time redundancy. Returns true if
+  /// publishing succeeded.
   Future<bool> republishWithSubtitles({
     required VideoEvent existingEvent,
     required String textTrackRef,
+    List<String> extraTextTrackRefs = const [],
     String textTrackLang = 'en',
   }) async {
-    // Start from the original Nostr event tags
+    // Start from the original Nostr event tags, stripping old text-track tags.
     final tags = existingEvent.nostrEventTags
         .where((t) => t.isNotEmpty && t.first != 'text-track')
         .map(List<String>.from)
         .toList();
 
-    // Add the new text-track tag
-    tags.add([
-      'text-track',
-      textTrackRef,
-      'wss://relay.divine.video',
-      'captions',
-      textTrackLang,
-    ]);
+    for (final ref in [textTrackRef, ...extraTextTrackRefs]) {
+      tags.add([
+        'text-track',
+        ref,
+        'wss://relay.divine.video',
+        'captions',
+        textTrackLang,
+      ]);
+    }
 
     // Sign the updated event
     final event = await _authService?.createAndSignEvent(
@@ -1639,6 +1642,54 @@ class VideoEventPublisher {
     }
 
     return true;
+  }
+
+  /// Publishes a Kind 39307 subtitle event for [video] and returns its
+  /// addressable ref `39307:<pubkey>:subtitles:<vineId>`, or `null` on
+  /// failure (not authenticated, no addressable id, sign/publish failed).
+  Future<String?> publishSubtitleEvent({
+    required VideoEvent video,
+    required String vttContent,
+    required String blossomUrl,
+    String lang = 'en',
+  }) async {
+    final pubkey = _authService?.currentPublicKeyHex;
+    final vineId = video.vineId;
+    if (pubkey == null || vineId == null || vineId.isEmpty) return null;
+
+    final dTag = 'subtitles:$vineId';
+    final videoKind = NIP71VideoKinds.getPreferredAddressableKind();
+
+    final event = await _authService?.createAndSignEvent(
+      kind: NIP71VideoKinds.subtitleEventKind,
+      content: vttContent,
+      tags: [
+        ['d', dTag],
+        ['a', '$videoKind:$pubkey:$vineId'],
+        ['url', blossomUrl],
+        ['m', 'text/vtt'],
+        ['l', lang],
+      ],
+    );
+    if (event == null) {
+      Log.error(
+        'Failed to sign subtitle event',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+
+    final ok = await _publishEventToNostr(event);
+    if (!ok) {
+      Log.warning(
+        'Failed to publish subtitle event',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+    return '${NIP71VideoKinds.subtitleEventKind}:$pubkey:$dTag';
   }
 
   /// Check if a URL is a valid HTTP/HTTPS URL (not a local file path)

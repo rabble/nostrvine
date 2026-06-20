@@ -10,6 +10,11 @@ class NIP71VideoKinds {
   static const int addressableNormalVideo = 34235; // Addressable normal videos
   static const int liveVideo = 34237; // Live video streams
 
+  /// Kind 39307 addressable subtitle event. Published separately from the
+  /// video event and referenced via a `text-track` tag as
+  /// `39307:<pubkey>:subtitles:<video-d-tag>`.
+  static const int subtitleEventKind = 39307;
+
   // Repost kinds
   static const int repost = 16; // NIP-18 generic reposts
 
