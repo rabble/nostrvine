@@ -74,6 +74,23 @@ void main() {
         );
       }
     });
+
+    test('iOS Runner does not force-link a SQLCipher framework', () {
+      final pbxproj = File(
+        'ios/Runner.xcodeproj/project.pbxproj',
+      ).readAsStringSync();
+      expect(
+        pbxproj,
+        isNot(contains('SQLCipher')),
+        reason:
+            'SQLite3MultipleCiphers ships via the package:sqlite3 build hook '
+            'as a native asset (sqlite3mc.framework), so the Runner targets '
+            'must not force-link a SQLCipher framework. The retired '
+            'sqlcipher_flutter_libs pod no longer provides one, and an '
+            "OTHER_LDFLAGS '-framework SQLCipher' breaks the build with "
+            "'Framework SQLCipher not found'.",
+      );
+    });
   });
 }
 
