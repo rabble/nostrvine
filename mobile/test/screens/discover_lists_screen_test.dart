@@ -109,6 +109,11 @@ void main() {
       'scrolling to bottom again after finding no new lists should not '
       're-trigger pagination',
       (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
         // Each call gets a fresh StreamController. The stream stays open
         // (no data, no close) so _loadMoreLists relies on its 3-second
         // timeout timer to complete. The timeout fires within FakeAsync,
