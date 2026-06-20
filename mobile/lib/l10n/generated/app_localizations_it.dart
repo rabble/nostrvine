@@ -306,11 +306,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Questo account non è disponibile';
 
   @override
-  String profileErrorPrefix(Object error) {
-    return 'Errore: $error';
-  }
-
-  @override
   String get profileInvalidId => 'ID profilo non valido';
 
   @override
@@ -617,9 +612,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get profileErrorLoadingReposts =>
       'Errore nel caricamento dei video ripubblicati';
-
-  @override
-  String get profileLoadingVideos => 'Caricamento video...';
 
   @override
   String get profileNoVideosTitle => 'Ancora nessun video';

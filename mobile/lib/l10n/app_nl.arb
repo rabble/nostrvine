@@ -122,14 +122,6 @@
     "contentPreferencesSelectAudioInput": "Kies audio-invoer",
     "contentPreferencesUnknownMicrophone": "Onbekende microfoon",
     "profileBlockedAccountNotAvailable": "Dit account is niet beschikbaar",
-    "profileErrorPrefix": "Fout: {error}",
-    "@profileErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileInvalidId": "Ongeldige profiel-ID",
     "profileShareText": "Bekijk {displayName} op Divine!\n\nhttps://divine.video/profile/{npub}",
     "@profileShareText": {
@@ -271,7 +263,6 @@
     "profileRepostsOwnEmpty": "Video's die je repost verschijnen hier",
     "profileRepostsOtherEmpty": "Video's die zij reposten verschijnen hier",
     "profileErrorLoadingReposts": "Fout bij laden van reposts",
-    "profileLoadingVideos": "Video's laden...",
     "profileNoVideosTitle": "Nog geen video's",
     "profileNoVideosOwnSubtitle": "Deel je eerste video om hem hier te zien",
     "profileNoVideosOtherSubtitle": "Deze gebruiker heeft nog geen video's gedeeld",

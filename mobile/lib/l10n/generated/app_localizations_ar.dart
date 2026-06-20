@@ -289,11 +289,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileBlockedAccountNotAvailable => 'هذا الحساب غير متاح';
 
   @override
-  String profileErrorPrefix(Object error) {
-    return 'خطأ: $error';
-  }
-
-  @override
   String get profileInvalidId => 'معرّف الملف الشخصي غير صالح';
 
   @override
@@ -586,9 +581,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get profileErrorLoadingReposts =>
       'خطأ في تحميل الفيديوهات المعاد نشرها';
-
-  @override
-  String get profileLoadingVideos => 'جاري تحميل الفيديوهات...';
 
   @override
   String get profileNoVideosTitle => 'لا توجد فيديوهات بعد';

@@ -122,14 +122,6 @@
     "contentPreferencesSelectAudioInput": "Избери аудио вход",
     "contentPreferencesUnknownMicrophone": "Неизвестен микрофон",
     "profileBlockedAccountNotAvailable": "Този акаунт не е наличен",
-    "profileErrorPrefix": "Грешка: {error}",
-    "@profileErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileInvalidId": "Невалиден ID на профил",
     "profileShareText": "Виж {displayName} в Divine!\n\nhttps://divine.video/profile/{npub}",
     "@profileShareText": {
@@ -289,7 +281,6 @@
     "profileRepostsOwnEmpty": "Видя нещо, което си струва да споделиш? Публикувай го пак и ще се появи тук.",
     "profileRepostsOtherEmpty": "Още не са препубликували нищо. Когато го направят, ще се появи тук.",
     "profileErrorLoadingReposts": "Грешка при зареждане на репостнатите видеа",
-    "profileLoadingVideos": "Видеата се зареждат...",
     "profileNoVideosTitle": "Още няма видеа",
     "profileNoVideosOwnSubtitle": "Сцената е твоя. Започни да публикуваш и видеата ти ще живеят тук.",
     "profileNoVideosOtherSubtitle": "Светът чака. Последвай ги, за да не изпуснеш нищо.",

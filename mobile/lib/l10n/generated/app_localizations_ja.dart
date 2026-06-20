@@ -269,11 +269,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileBlockedAccountNotAvailable => 'このアカウントは見れないよ';
 
   @override
-  String profileErrorPrefix(Object error) {
-    return 'エラー: $error';
-  }
-
-  @override
   String get profileInvalidId => '無効なプロフィール ID';
 
   @override
@@ -560,9 +555,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get profileErrorLoadingReposts => 'リポスト動画の読み込みに失敗';
-
-  @override
-  String get profileLoadingVideos => '動画を読み込み中...';
 
   @override
   String get profileNoVideosTitle => '動画はまだないよ';

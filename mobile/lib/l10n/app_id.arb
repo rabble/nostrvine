@@ -122,14 +122,6 @@
     "contentPreferencesSelectAudioInput": "Pilih Masukan Audio",
     "contentPreferencesUnknownMicrophone": "Mikrofon Tidak Dikenal",
     "profileBlockedAccountNotAvailable": "Akun ini tidak tersedia",
-    "profileErrorPrefix": "Kesalahan: {error}",
-    "@profileErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileInvalidId": "ID profil tidak valid",
     "profileShareText": "Lihat {displayName} di Divine!\n\nhttps://divine.video/profile/{npub}",
     "@profileShareText": {
@@ -271,7 +263,6 @@
     "profileRepostsOwnEmpty": "Video yang kamu repost akan muncul di sini",
     "profileRepostsOtherEmpty": "Video yang mereka repost akan muncul di sini",
     "profileErrorLoadingReposts": "Gagal memuat video yang di-repost",
-    "profileLoadingVideos": "Memuat video...",
     "profileNoVideosTitle": "Belum Ada Video",
     "profileNoVideosOwnSubtitle": "Bagikan video pertamamu untuk melihatnya di sini",
     "profileNoVideosOtherSubtitle": "Pengguna ini belum membagikan video apa pun",

@@ -291,11 +291,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det här kontot är inte tillgängligt';
 
   @override
-  String profileErrorPrefix(Object error) {
-    return 'Fel: $error';
-  }
-
-  @override
   String get profileInvalidId => 'Ogiltigt profil-ID';
 
   @override
@@ -593,9 +588,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get profileErrorLoadingReposts =>
       'Fel vid inläsning av återpublicerade videor';
-
-  @override
-  String get profileLoadingVideos => 'Läser in videor...';
 
   @override
   String get profileNoVideosTitle => 'Inga videor än';

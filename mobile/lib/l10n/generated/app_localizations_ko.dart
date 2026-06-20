@@ -270,11 +270,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileBlockedAccountNotAvailable => '이 계정은 이용할 수 없어요';
 
   @override
-  String profileErrorPrefix(Object error) {
-    return '오류: $error';
-  }
-
-  @override
   String get profileInvalidId => '잘못된 프로필 ID';
 
   @override
@@ -561,9 +556,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get profileErrorLoadingReposts => '리포스트 영상을 불러오지 못했어요';
-
-  @override
-  String get profileLoadingVideos => '영상을 불러오는 중...';
 
   @override
   String get profileNoVideosTitle => '아직 영상 없음';

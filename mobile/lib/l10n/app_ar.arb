@@ -122,14 +122,6 @@
     "contentPreferencesSelectAudioInput": "حدد إدخال الصوت",
     "contentPreferencesUnknownMicrophone": "ميكروفون غير معروف",
     "profileBlockedAccountNotAvailable": "هذا الحساب غير متاح",
-    "profileErrorPrefix": "خطأ: {error}",
-    "@profileErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileInvalidId": "معرّف الملف الشخصي غير صالح",
     "profileShareText": "شاهد {displayName} على Divine!\n\nhttps://divine.video/profile/{npub}",
     "@profileShareText": {
@@ -271,7 +263,6 @@
     "profileRepostsOwnEmpty": "ستظهر هنا الفيديوهات التي تعيد نشرها",
     "profileRepostsOtherEmpty": "ستظهر هنا الفيديوهات التي يعيد نشرها",
     "profileErrorLoadingReposts": "خطأ في تحميل الفيديوهات المعاد نشرها",
-    "profileLoadingVideos": "جاري تحميل الفيديوهات...",
     "profileNoVideosTitle": "لا توجد فيديوهات بعد",
     "profileNoVideosOwnSubtitle": "شارك أول فيديو لك ليظهر هنا",
     "profileNoVideosOtherSubtitle": "لم يشارك هذا المستخدم أي فيديو بعد",

@@ -122,14 +122,6 @@
     "contentPreferencesSelectAudioInput": "Ses Girişi Seç",
     "contentPreferencesUnknownMicrophone": "Bilinmeyen Mikrofon",
     "profileBlockedAccountNotAvailable": "Bu hesap kullanılamıyor",
-    "profileErrorPrefix": "Hata: {error}",
-    "@profileErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileInvalidId": "Geçersiz profil kimliği",
     "profileShareText": "{displayName} adlı kişiye Divine'de göz at!\n\nhttps://divine.video/profile/{npub}",
     "@profileShareText": {
@@ -271,7 +263,6 @@
     "profileRepostsOwnEmpty": "Yeniden paylaştığın videolar burada görünecek",
     "profileRepostsOtherEmpty": "Yeniden paylaştıkları videolar burada görünecek",
     "profileErrorLoadingReposts": "Yeniden paylaşılan videolar yüklenirken hata",
-    "profileLoadingVideos": "Videolar yükleniyor...",
     "profileNoVideosTitle": "Henüz Video Yok",
     "profileNoVideosOwnSubtitle": "İlk videonu paylaş ki burada görelim",
     "profileNoVideosOtherSubtitle": "Bu kullanıcı henüz video paylaşmadı",

@@ -122,14 +122,6 @@
     "contentPreferencesSelectAudioInput": "音声入力を選ぶ",
     "contentPreferencesUnknownMicrophone": "不明なマイク",
     "profileBlockedAccountNotAvailable": "このアカウントは見れないよ",
-    "profileErrorPrefix": "エラー: {error}",
-    "@profileErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileInvalidId": "無効なプロフィール ID",
     "profileShareText": "Divine の {displayName} をチェックしてみて!\n\nhttps://divine.video/profile/{npub}",
     "@profileShareText": {
@@ -271,7 +263,6 @@
     "profileRepostsOwnEmpty": "あなたがリポストした動画がここに出るよ",
     "profileRepostsOtherEmpty": "この人がリポストした動画がここに出るよ",
     "profileErrorLoadingReposts": "リポスト動画の読み込みに失敗",
-    "profileLoadingVideos": "動画を読み込み中...",
     "profileNoVideosTitle": "動画はまだないよ",
     "profileNoVideosOwnSubtitle": "最初の動画を投稿してここに表示しよう",
     "profileNoVideosOtherSubtitle": "このユーザーはまだ動画を投稿してないよ",

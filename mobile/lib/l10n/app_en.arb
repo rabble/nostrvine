@@ -140,14 +140,6 @@
   "contentFiltersWarn": "Warn",
   "contentFiltersFilterOut": "Filter Out",
   "profileBlockedAccountNotAvailable": "This account is not available",
-  "profileErrorPrefix": "Error: {error}",
-  "@profileErrorPrefix": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "profileInvalidId": "Invalid profile ID",
   "profileShareText": "Check out {displayName} on Divine!\n\nhttps://divine.video/profile/{npub}",
   "@profileShareText": {
@@ -342,7 +334,6 @@
   "profileRepostsOwnEmpty": "See something worth sharing? Repost it and it'll appear here.",
   "profileRepostsOtherEmpty": "They haven't passed anything on yet. When they do, it'll show up here.",
   "profileErrorLoadingReposts": "Error loading reposted videos",
-  "profileLoadingVideos": "Loading videos...",
   "profileNoVideosTitle": "No videos yet",
   "profileNoVideosOwnSubtitle": "Your stage is set. Start posting and your videos will live here.",
   "profileNoVideosOtherSubtitle": "The world is waiting. Follow them so you don't miss it.",

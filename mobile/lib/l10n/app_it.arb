@@ -122,14 +122,6 @@
     "contentPreferencesSelectAudioInput": "Seleziona ingresso audio",
     "contentPreferencesUnknownMicrophone": "Microfono sconosciuto",
     "profileBlockedAccountNotAvailable": "Questo account non è disponibile",
-    "profileErrorPrefix": "Errore: {error}",
-    "@profileErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileInvalidId": "ID profilo non valido",
     "profileShareText": "Dai un'occhiata a {displayName} su Divine!\n\nhttps://divine.video/profile/{npub}",
     "@profileShareText": {
@@ -271,7 +263,6 @@
     "profileRepostsOwnEmpty": "I video che ripubblichi appariranno qui",
     "profileRepostsOtherEmpty": "I video che ripubblica appariranno qui",
     "profileErrorLoadingReposts": "Errore nel caricamento dei video ripubblicati",
-    "profileLoadingVideos": "Caricamento video...",
     "profileNoVideosTitle": "Ancora nessun video",
     "profileNoVideosOwnSubtitle": "Condividi il tuo primo video per vederlo qui",
     "profileNoVideosOtherSubtitle": "Questo utente non ha ancora condiviso video",

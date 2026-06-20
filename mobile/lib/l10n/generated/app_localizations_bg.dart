@@ -305,11 +305,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileBlockedAccountNotAvailable => 'Този акаунт не е наличен';
 
   @override
-  String profileErrorPrefix(Object error) {
-    return 'Грешка: $error';
-  }
-
-  @override
   String get profileInvalidId => 'Невалиден ID на профил';
 
   @override
@@ -616,9 +611,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get profileErrorLoadingReposts =>
       'Грешка при зареждане на репостнатите видеа';
-
-  @override
-  String get profileLoadingVideos => 'Видеата се зареждат...';
 
   @override
   String get profileNoVideosTitle => 'Още няма видеа';

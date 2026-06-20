@@ -293,11 +293,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileBlockedAccountNotAvailable => 'ይህ መለያ አይገኝም';
 
   @override
-  String profileErrorPrefix(Object error) {
-    return 'ስህተት፡ $error';
-  }
-
-  @override
   String get profileInvalidId => 'ልክ ያልሆነ የመገለጫ መታወቂያ';
 
   @override
@@ -587,9 +582,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get profileErrorLoadingReposts => 'እንደገና የተለጠፉ ቪዲዮዎችን መጫን ላይ ስህተት';
-
-  @override
-  String get profileLoadingVideos => 'ቪዲዮዎችን በመጫን ላይ...';
 
   @override
   String get profileNoVideosTitle => 'እስካሁን ምንም ቪዲዮዎች የሉም';

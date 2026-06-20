@@ -283,11 +283,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileBlockedAccountNotAvailable => 'Akun ini tidak tersedia';
 
   @override
-  String profileErrorPrefix(Object error) {
-    return 'Kesalahan: $error';
-  }
-
-  @override
   String get profileInvalidId => 'ID profil tidak valid';
 
   @override
@@ -591,9 +586,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get profileErrorLoadingReposts => 'Gagal memuat video yang di-repost';
-
-  @override
-  String get profileLoadingVideos => 'Memuat video...';
 
   @override
   String get profileNoVideosTitle => 'Belum Ada Video';

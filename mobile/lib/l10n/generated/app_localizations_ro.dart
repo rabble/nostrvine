@@ -317,11 +317,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileBlockedAccountNotAvailable => 'Acest cont nu e disponibil';
 
   @override
-  String profileErrorPrefix(Object error) {
-    return 'Eroare: $error';
-  }
-
-  @override
   String get profileInvalidId => 'ID de profil invalid';
 
   @override
@@ -635,9 +630,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get profileErrorLoadingReposts =>
       'Eroare la încărcarea videoclipurilor redistribuite';
-
-  @override
-  String get profileLoadingVideos => 'Se încarcă videoclipurile...';
 
   @override
   String get profileNoVideosTitle => 'Încă niciun videoclip';

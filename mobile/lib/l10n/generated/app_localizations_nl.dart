@@ -303,11 +303,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dit account is niet beschikbaar';
 
   @override
-  String profileErrorPrefix(Object error) {
-    return 'Fout: $error';
-  }
-
-  @override
   String get profileInvalidId => 'Ongeldige profiel-ID';
 
   @override
@@ -609,9 +604,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileErrorLoadingReposts => 'Fout bij laden van reposts';
-
-  @override
-  String get profileLoadingVideos => 'Video\'s laden...';
 
   @override
   String get profileNoVideosTitle => 'Nog geen video\'s';

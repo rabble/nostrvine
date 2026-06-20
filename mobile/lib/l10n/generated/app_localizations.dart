@@ -616,12 +616,6 @@ abstract class AppLocalizations {
   /// **'This account is not available'**
   String get profileBlockedAccountNotAvailable;
 
-  /// No description provided for @profileErrorPrefix.
-  ///
-  /// In en, this message translates to:
-  /// **'Error: {error}'**
-  String profileErrorPrefix(Object error);
-
   /// No description provided for @profileInvalidId.
   ///
   /// In en, this message translates to:
@@ -1101,12 +1095,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error loading reposted videos'**
   String get profileErrorLoadingReposts;
-
-  /// No description provided for @profileLoadingVideos.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading videos...'**
-  String get profileLoadingVideos;
 
   /// No description provided for @profileNoVideosTitle.
   ///

@@ -283,11 +283,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileBlockedAccountNotAvailable => 'Bu hesap kullanılamıyor';
 
   @override
-  String profileErrorPrefix(Object error) {
-    return 'Hata: $error';
-  }
-
-  @override
   String get profileInvalidId => 'Geçersiz profil kimliği';
 
   @override
@@ -590,9 +585,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get profileErrorLoadingReposts =>
       'Yeniden paylaşılan videolar yüklenirken hata';
-
-  @override
-  String get profileLoadingVideos => 'Videolar yükleniyor...';
 
   @override
   String get profileNoVideosTitle => 'Henüz Video Yok';

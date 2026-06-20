@@ -122,14 +122,6 @@
     "contentPreferencesSelectAudioInput": "Välj ljudingång",
     "contentPreferencesUnknownMicrophone": "Okänd mikrofon",
     "profileBlockedAccountNotAvailable": "Det här kontot är inte tillgängligt",
-    "profileErrorPrefix": "Fel: {error}",
-    "@profileErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileInvalidId": "Ogiltigt profil-ID",
     "profileShareText": "Kolla in {displayName} på Divine!\n\nhttps://divine.video/profile/{npub}",
     "@profileShareText": {
@@ -271,7 +263,6 @@
     "profileRepostsOwnEmpty": "Videor du återpublicerar visas här",
     "profileRepostsOtherEmpty": "Videor de återpublicerar visas här",
     "profileErrorLoadingReposts": "Fel vid inläsning av återpublicerade videor",
-    "profileLoadingVideos": "Läser in videor...",
     "profileNoVideosTitle": "Inga videor än",
     "profileNoVideosOwnSubtitle": "Dela din första video för att se den här",
     "profileNoVideosOtherSubtitle": "Den här användaren har inte delat några videor än",

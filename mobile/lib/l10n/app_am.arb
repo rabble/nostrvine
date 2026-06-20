@@ -145,14 +145,6 @@
     "contentFiltersWarn": "አስጠንቅቅ",
     "contentFiltersFilterOut": "አጣራ",
     "profileBlockedAccountNotAvailable": "ይህ መለያ አይገኝም",
-    "profileErrorPrefix": "ስህተት፡ {error}",
-    "@profileErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileInvalidId": "ልክ ያልሆነ የመገለጫ መታወቂያ",
     "profileShareText": "{displayName} በDivine ላይ ይመልከቱ!\n\nhttps://divine.video/profile/{npub}",
     "@profileShareText": {
@@ -312,7 +304,6 @@
     "profileRepostsOwnEmpty": "ማጋራት የሚገባ ነገር አየህ? እንደገና ይለጥፉት እና እዚህ ይታያል።",
     "profileRepostsOtherEmpty": "እስካሁን ምንም አላለፉም። ሲያደርጉ፣ እዚህ ይታያል።",
     "profileErrorLoadingReposts": "እንደገና የተለጠፉ ቪዲዮዎችን መጫን ላይ ስህተት",
-    "profileLoadingVideos": "ቪዲዮዎችን በመጫን ላይ...",
     "profileNoVideosTitle": "እስካሁን ምንም ቪዲዮዎች የሉም",
     "profileNoVideosOwnSubtitle": "መድረክህ ተዘጋጅቷል። መለጠፍ ይጀምሩ እና ቪዲዮዎችዎ እዚህ ይኖራሉ።",
     "profileNoVideosOtherSubtitle": "አለም እየጠበቀች ነው። እንዳያመልጥዎ ይከተሏቸው።",

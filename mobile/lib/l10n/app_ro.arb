@@ -122,14 +122,6 @@
     "contentPreferencesSelectAudioInput": "Alege intrarea audio",
     "contentPreferencesUnknownMicrophone": "Microfon necunoscut",
     "profileBlockedAccountNotAvailable": "Acest cont nu e disponibil",
-    "profileErrorPrefix": "Eroare: {error}",
-    "@profileErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileInvalidId": "ID de profil invalid",
     "profileShareText": "Aruncă o privire la {displayName} pe Divine!\n\nhttps://divine.video/profile/{npub}",
     "@profileShareText": {
@@ -271,7 +263,6 @@
     "profileRepostsOwnEmpty": "Videoclipurile pe care le redistribui vor apărea aici",
     "profileRepostsOtherEmpty": "Videoclipurile pe care le redistribuie vor apărea aici",
     "profileErrorLoadingReposts": "Eroare la încărcarea videoclipurilor redistribuite",
-    "profileLoadingVideos": "Se încarcă videoclipurile...",
     "profileNoVideosTitle": "Încă niciun videoclip",
     "profileNoVideosOwnSubtitle": "Distribuie primul tău videoclip ca să-l vezi aici",
     "profileNoVideosOtherSubtitle": "Acest utilizator încă n-a distribuit niciun videoclip",
