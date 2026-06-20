@@ -10,6 +10,10 @@ class NIP71VideoKinds {
   static const int addressableShortVideo = 34236; // Addressable short videos
   static const int addressableNormalVideo = 34235; // Addressable normal videos
 
+  /// Addressable subtitle/caption event kind referenced by a video's
+  /// `text-track` tag as `39307:<pubkey>:subtitles:<video-d-tag>`.
+  static const int subtitleEventKind = 39307;
+
   // Repost kinds
   static const int repost = 16; // NIP-18 generic reposts
 
