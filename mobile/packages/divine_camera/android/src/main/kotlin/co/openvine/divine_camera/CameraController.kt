@@ -17,6 +17,7 @@ import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.Surface
@@ -1896,8 +1897,14 @@ class CameraController(
         )
     }
 
-    private fun currentTargetRotation(): Int =
-        activity.windowManager.defaultDisplay.rotation
+    @Suppress("DEPRECATION")
+    private fun currentTargetRotation(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            activity.display?.rotation ?: Surface.ROTATION_0
+        } else {
+            activity.windowManager.defaultDisplay.rotation
+        }
+    }
 
     private fun applyPhotoFlashMode() {
         imageCapture?.flashMode = currentFlashMode

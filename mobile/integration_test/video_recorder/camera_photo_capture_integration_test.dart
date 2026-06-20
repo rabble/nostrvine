@@ -50,7 +50,6 @@ void main() {
         onUpdateState: ({forceCameraRebuild}) {},
         onAutoStopped: (_) {},
       );
-      await cameraService.initialize();
     });
 
     tearDown(() async {
@@ -59,6 +58,7 @@ void main() {
 
     patrolTest('captures a single photo and writes a JPEG to disk', ($) async {
       await _grantPermissions($);
+      await cameraService.initialize();
 
       final result = await cameraService.capturePhoto();
 
@@ -72,6 +72,7 @@ void main() {
 
     patrolTest('captures multiple frames in sequence (stop-motion)', ($) async {
       await _grantPermissions($);
+      await cameraService.initialize();
       final tester = $.tester;
 
       final results = <PhotoCaptureResult>[];
@@ -96,6 +97,7 @@ void main() {
       $,
     ) async {
       await _grantPermissions($);
+      await cameraService.initialize();
 
       final dir = await Directory.systemTemp.createTemp('stop_motion_frames');
       try {

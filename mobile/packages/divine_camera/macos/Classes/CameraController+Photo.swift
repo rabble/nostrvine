@@ -71,6 +71,10 @@ extension CameraController {
             let outputURL = outputDir.appendingPathComponent("IMG_\(timestamp).jpg")
 
             do {
+                try FileManager.default.createDirectory(
+                    at: outputDir,
+                    withIntermediateDirectories: true
+                )
                 try data.write(to: outputURL)
                 completion(
                     [
