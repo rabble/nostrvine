@@ -6470,6 +6470,65 @@ void main() {
         expect(result.requests, hasLength(1));
       });
 
+      test(
+        '1:1 with a stale isGroup=true flag still routes a followed peer to '
+        'the followed list (#5374)',
+        () {
+          final conv = makeConversation(
+            id: 'conv1',
+            participantPubkeys: [_validPubkeyA, _validPubkeyB],
+            isGroup: true, // stale/inconsistent flag on a 1:1 row
+          );
+
+          final result = DmRepository.classifyPotentialRequests(
+            [conv],
+            userPubkey: _validPubkeyA,
+            isFollowing: (pk) => pk == _validPubkeyB,
+          );
+
+          expect(result.followed, hasLength(1));
+          expect(result.requests, isEmpty);
+        },
+      );
+
+      test(
+        'conversation with 2+ non-self participants is a request even when '
+        'isGroup is false and a member is followed',
+        () {
+          final conv = makeConversation(
+            id: 'conv1',
+            participantPubkeys: [_validPubkeyA, _validPubkeyB, _validPubkeyC],
+            // isGroup defaults to false — classification must rely on the
+            // participant count, not the flag.
+          );
+
+          final result = DmRepository.classifyPotentialRequests(
+            [conv],
+            userPubkey: _validPubkeyA,
+            isFollowing: (_) => true,
+          );
+
+          expect(result.followed, isEmpty);
+          expect(result.requests, hasLength(1));
+        },
+      );
+
+      test('duplicate peer pubkeys are deduplicated to a 1:1', () {
+        final conv = makeConversation(
+          id: 'conv1',
+          participantPubkeys: [_validPubkeyA, _validPubkeyB, _validPubkeyB],
+        );
+
+        final result = DmRepository.classifyPotentialRequests(
+          [conv],
+          userPubkey: _validPubkeyA,
+          isFollowing: (pk) => pk == _validPubkeyB,
+        );
+
+        expect(result.followed, hasLength(1));
+        expect(result.requests, isEmpty);
+      });
+
       test('empty input returns both lists empty', () {
         final result = DmRepository.classifyPotentialRequests(
           [],

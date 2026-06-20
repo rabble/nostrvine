@@ -100,6 +100,12 @@ const _relayLoopbackHosts = <String>{
   '::1',
 };
 
+/// Compile-time gate for temporary per-conversation classification
+/// diagnostics. Off by default and tree-shaken from release builds; enable
+/// for a targeted repro with `--dart-define=DM_CLASSIFY_DIAGNOSTICS=true`.
+// TODO(realmeylisdev): remove DM classify diagnostics after #5374.
+const _classifyDiagnostics = bool.fromEnvironment('DM_CLASSIFY_DIAGNOSTICS');
+
 bool _isAllowedDmRelayUrl(String url) {
   final uri = Uri.tryParse(url.trim());
   if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return false;
@@ -2745,8 +2751,16 @@ class DmRepository {
   /// Classifies potential request conversations by follow state.
   ///
   /// Conversations where `currentUserHasSent == false` are "potential
-  /// requests". For 1:1 conversations from followed contacts, they go to
-  /// the followed list (Messages tab). Everything else is a true request.
+  /// requests". A 1:1 conversation from a followed contact goes to the
+  /// followed list (Messages tab); everything else is a true request.
+  ///
+  /// 1:1-ness is derived from the deduplicated non-self participant count,
+  /// NOT the denormalized `DmConversation.isGroup` flag. That column is
+  /// written from `participants.length > 2` and overwritten on every
+  /// upsert, so it can drift from a row's real participants — which was
+  /// stranding followed 1:1 peers under "Message requests" (#5374). Groups
+  /// (2+ non-self participants) are always requests here, independent of
+  /// follow state.
   static ({List<DmConversation> followed, List<DmConversation> requests})
   classifyPotentialRequests(
     List<DmConversation> potentialRequests, {
@@ -2757,19 +2771,34 @@ class DmRepository {
     final requests = <DmConversation>[];
 
     for (final conversation in potentialRequests) {
-      final otherPubkeys = conversation.participantPubkeys.where(
-        (pk) => pk != userPubkey,
-      );
+      final otherPubkeys = conversation.participantPubkeys
+          .where((pk) => pk != userPubkey)
+          .toSet();
 
-      // A 1:1 conversation from a followed contact is not a request
-      // even if the user hasn't replied yet. For groups, follow state
-      // is irrelevant per the spec.
-      final isFollowedContact =
-          !conversation.isGroup && otherPubkeys.any(isFollowing);
+      // A 1:1 conversation from a followed contact is not a request even
+      // if the user hasn't replied yet. Derive 1:1-ness from the actual
+      // (deduplicated) non-self participant count rather than the stored
+      // `isGroup` flag, which can drift from the row's real participants and
+      // mis-route followed 1:1 peers to requests (#5374).
+      final isOneToOne = otherPubkeys.length == 1;
+      final isFollowedContact = isOneToOne && otherPubkeys.any(isFollowing);
 
       if (otherPubkeys.isEmpty || isFollowedContact) {
         followed.add(conversation);
       } else {
+        if (_classifyDiagnostics) {
+          final follows = otherPubkeys
+              .map((pk) => '$pk:${isFollowing(pk)}')
+              .join(', ');
+          Log.debug(
+            'classifyPotentialRequests → request: '
+            'conversationId=${conversation.id} '
+            'isGroup=${conversation.isGroup} '
+            'participantCount=${conversation.participantPubkeys.length} '
+            'otherPubkeys=$otherPubkeys follows={$follows}',
+            category: LogCategory.system,
+          );
+        }
         requests.add(conversation);
       }
     }
