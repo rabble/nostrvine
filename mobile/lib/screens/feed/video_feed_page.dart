@@ -226,6 +226,16 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       }
     });
 
+    // Comments/Share bottom sheets pause the current player but keep the
+    // neighbours and disk prefetch warm for instant resume
+    // ([OverlayVisibilityState.shouldRetainPlayer]). Only a real backgrounding
+    // — tab switch, pushed route, or a full-screen page overlay — releases the
+    // off-screen players. Watched (not read) so the flag stays coherent with
+    // the overlay state across rebuilds.
+    final shouldRetainPlayer = ref
+        .watch(overlayVisibilityProvider)
+        .shouldRetainPlayer;
+
     return BlocProvider.value(
       value: _autoAdvanceCubit,
       child: NavRoundedShell(
@@ -340,8 +350,10 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       // The home feed stays mounted across tab switches and
                       // pushed routes (StatefulShellRoute keep-alive), so
                       // release the off-screen neighbour players and pause
-                      // disk prefetch while it is backgrounded.
-                      releaseNeighboursWhenInactive: true,
+                      // disk prefetch while it is backgrounded. Bottom sheets
+                      // (comments/share) only pause the current player — they
+                      // keep neighbours and prefetch warm via shouldRetainPlayer.
+                      releaseNeighboursWhenInactive: !shouldRetainPlayer,
                       hasMore: state.hasMore,
                       isLoadingMore: state.isLoadingMore,
                       trafficSource: ViewTrafficSource.home,

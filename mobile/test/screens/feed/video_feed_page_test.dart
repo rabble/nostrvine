@@ -17,6 +17,7 @@ import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/router/router.dart';
@@ -612,6 +613,18 @@ void main() {
             index;
       }
 
+      void setBottomSheetOpen(WidgetTester tester, {required bool open}) {
+        containerOf(
+          tester,
+        ).read(overlayVisibilityProvider.notifier).setBottomSheetOpen(open);
+      }
+
+      void setPageOpen(WidgetTester tester, {required bool open}) {
+        containerOf(
+          tester,
+        ).read(overlayVisibilityProvider.notifier).setPageOpen(open);
+      }
+
       testWidgets(
         'stays paused while a route covers the shell, even on the home tab',
         (tester) async {
@@ -673,6 +686,49 @@ void main() {
         setBranchIndex(tester, 0); // back to Home
         await tester.pump();
         expect(feedVideos(tester).isActive, isTrue);
+
+        await drainAndDispose(tester);
+      });
+
+      testWidgets(
+        'a comments/share bottom sheet pauses but keeps neighbours warm',
+        (tester) async {
+          await pumpFeed(tester);
+          await tester.pump();
+
+          // Active home feed releases neighbours when it backgrounds.
+          expect(feedVideos(tester).isActive, isTrue);
+          expect(feedVideos(tester).releaseNeighboursWhenInactive, isTrue);
+
+          // A bottom sheet (comments/share) pauses the current player but must
+          // NOT tear down the off-screen neighbours or prefetch.
+          setBottomSheetOpen(tester, open: true);
+          await tester.pump();
+          expect(feedVideos(tester).isActive, isFalse);
+          expect(feedVideos(tester).releaseNeighboursWhenInactive, isFalse);
+
+          // Closing the sheet restores the release-on-background behaviour.
+          setBottomSheetOpen(tester, open: false);
+          await tester.pump();
+          expect(feedVideos(tester).isActive, isTrue);
+          expect(feedVideos(tester).releaseNeighboursWhenInactive, isTrue);
+
+          await drainAndDispose(tester);
+        },
+      );
+
+      testWidgets('a full-screen page overlay still releases neighbours', (
+        tester,
+      ) async {
+        await pumpFeed(tester);
+        await tester.pump();
+
+        // A full-screen page (settings, recorder, dialog) is the heavy case:
+        // pause AND release, unlike a lightweight bottom sheet.
+        setPageOpen(tester, open: true);
+        await tester.pump();
+        expect(feedVideos(tester).isActive, isFalse);
+        expect(feedVideos(tester).releaseNeighboursWhenInactive, isTrue);
 
         await drainAndDispose(tester);
       });
