@@ -2142,7 +2142,7 @@ class CameraController: NSObject {
     private func photoFlashMode(for output: AVCapturePhotoOutput) -> AVCaptureDevice.FlashMode {
         let requestedMode = currentFlashMode
         let supportedModes = output.supportedFlashModes
-        if supportedModes.contains(NSNumber(value: requestedMode.rawValue)) {
+        if supportedModes.contains(requestedMode) {
             return requestedMode
         }
         return .off
