@@ -430,6 +430,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
               authorPubkey: _authorPubkey,
               reason: _selectedReason!,
               details: details,
+              sourceRelay: widget.video?.sourceRelay,
             );
 
       if (mounted) {

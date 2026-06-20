@@ -245,6 +245,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         authorPubkey: widget.video.pubkey,
         reason: ContentFilterReason.other,
         details: 'Suspected AI-generated content',
+        sourceRelay: widget.video.sourceRelay,
       );
 
       if (mounted) {

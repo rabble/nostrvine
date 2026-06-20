@@ -667,6 +667,16 @@ class VideoEvent {
       vineId = event.id; // Use event ID as unique identifier
     }
 
+    if (sourceRelay == null) {
+      for (final source in event.sources) {
+        final trimmed = source.trim();
+        if (trimmed.isNotEmpty) {
+          sourceRelay = trimmed;
+          break;
+        }
+      }
+    }
+
     return VideoEvent(
       id: event.id,
       pubkey: event.pubkey,
@@ -751,8 +761,9 @@ class VideoEvent {
   /// [shareKind] for a safe value.
   final int? eventKind;
 
-  /// A relay hint (`wss://`/`ws://`) where this event was advertised, captured
-  /// from an `r` tag if present. Used as a relay hint when citing the video.
+  /// A relay hint (`wss://`/`ws://`) where this event was advertised or
+  /// received. Prefers an `r` tag when present, then falls back to SDK
+  /// receive-source metadata. Used as a relay hint when citing the video.
   final String? sourceRelay;
 
   // Repost metadata fields

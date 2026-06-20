@@ -14,8 +14,6 @@ import 'package:openvine/services/video_event_service.dart';
 // Mock classes
 class MockNostrService extends Mock implements NostrClient {}
 
-class MockEvent extends Mock implements Event {}
-
 class TestSubscriptionManager extends Mock implements SubscriptionManager {
   TestSubscriptionManager(this.eventStreamController);
   final StreamController<Event> eventStreamController;
@@ -43,6 +41,29 @@ class TestSubscriptionManager extends Mock implements SubscriptionManager {
 
 // Fake classes for setUpAll
 class FakeFilter extends Fake implements Filter {}
+
+Event createVideoEvent({
+  required String id,
+  required String pubkey,
+  required String content,
+  required String videoUrl,
+}) {
+  final event = Event(
+    pubkey,
+    34236,
+    [
+      ['url', videoUrl],
+      ['m', 'video/mp4'],
+    ],
+    content,
+    createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+  );
+  event.id = id;
+  event.sig =
+      'sig_aaaabbbbccccddddeeeeffff1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff11112222333344445555666677778888';
+  event.sources.add('wss://relay.divine.video');
+  return event;
+}
 
 void main() {
   setUpAll(() {
@@ -90,44 +111,20 @@ void main() {
 
     test('force refresh should preserve existing videos, not clear them', () async {
       // Create mock video events with unique IDs
-      final event1 = MockEvent();
-      when(() => event1.id).thenReturn(
-        'video1_aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnoooopppp',
-      );
-      when(() => event1.kind).thenReturn(34236);
-      when(() => event1.pubkey).thenReturn(
-        'author1_aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnoooopppp',
-      );
-      when(() => event1.content).thenReturn('First video');
-      when(
-        () => event1.createdAt,
-      ).thenReturn(DateTime.now().millisecondsSinceEpoch ~/ 1000);
-      when(() => event1.tags).thenReturn([
-        ['url', 'https://example.com/video1.mp4'],
-        ['m', 'video/mp4'],
-      ]);
-      when(() => event1.sig).thenReturn(
-        'sig1_aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzz00001111222233334444',
+      final event1 = createVideoEvent(
+        id: 'video1_aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnoooopppp',
+        pubkey:
+            '1111111111111111111111111111111111111111111111111111111111111111',
+        content: 'First video',
+        videoUrl: 'https://example.com/video1.mp4',
       );
 
-      final event2 = MockEvent();
-      when(() => event2.id).thenReturn(
-        'video2_aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnoooopppp',
-      );
-      when(() => event2.kind).thenReturn(34236);
-      when(() => event2.pubkey).thenReturn(
-        'author2_aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnoooopppp',
-      );
-      when(() => event2.content).thenReturn('Second video');
-      when(
-        () => event2.createdAt,
-      ).thenReturn(DateTime.now().millisecondsSinceEpoch ~/ 1000);
-      when(() => event2.tags).thenReturn([
-        ['url', 'https://example.com/video2.mp4'],
-        ['m', 'video/mp4'],
-      ]);
-      when(() => event2.sig).thenReturn(
-        'sig2_aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzz00001111222233334444',
+      final event2 = createVideoEvent(
+        id: 'video2_aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnoooopppp',
+        pubkey:
+            '2222222222222222222222222222222222222222222222222222222222222222',
+        content: 'Second video',
+        videoUrl: 'https://example.com/video2.mp4',
       );
 
       // Step 1: Initial subscription
@@ -196,24 +193,12 @@ void main() {
 
     test('force refresh should not duplicate existing videos', () async {
       // Create mock video event
-      final event1 = MockEvent();
-      when(() => event1.id).thenReturn(
-        'video1_aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnoooopppp',
-      );
-      when(() => event1.kind).thenReturn(34236);
-      when(() => event1.pubkey).thenReturn(
-        'author1_aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnoooopppp',
-      );
-      when(() => event1.content).thenReturn('Video content');
-      when(
-        () => event1.createdAt,
-      ).thenReturn(DateTime.now().millisecondsSinceEpoch ~/ 1000);
-      when(() => event1.tags).thenReturn([
-        ['url', 'https://example.com/video1.mp4'],
-        ['m', 'video/mp4'],
-      ]);
-      when(() => event1.sig).thenReturn(
-        'sig1_aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnooooppppqqqqrrrrssssttttuuuuvvvvwwwwxxxxyyyyzzzz00001111222233334444',
+      final event1 = createVideoEvent(
+        id: 'video1_aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnoooopppp',
+        pubkey:
+            '1111111111111111111111111111111111111111111111111111111111111111',
+        content: 'Video content',
+        videoUrl: 'https://example.com/video1.mp4',
       );
 
       // Step 1: Initial subscription

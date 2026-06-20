@@ -115,6 +115,44 @@ void main() {
       }
     });
 
+    test('uses received relay source when no relay hint tag exists', () {
+      final nostrEvent =
+          Event(
+              '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+              34236,
+              [
+                ['url', 'https://example.com/source-relay.mp4'],
+              ],
+              'Test video',
+              createdAt: 1757385263,
+            )
+            ..sources.addAll([
+              'wss://relay.staging.dvines.org',
+              'wss://relay.divine.video',
+            ]);
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.sourceRelay, 'wss://relay.staging.dvines.org');
+    });
+
+    test('keeps explicit relay hint over received relay source', () {
+      final nostrEvent = Event(
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        34236,
+        [
+          ['r', 'wss://relay.hint.example'],
+          ['url', 'https://example.com/source-relay.mp4'],
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      )..sources.add('wss://relay.staging.dvines.org');
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.sourceRelay, 'wss://relay.hint.example');
+    });
+
     test('should handle both d tag and vine_id tag for Vine ID', () {
       // Test with 'd' tag
       final eventWithDTag = Event(

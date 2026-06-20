@@ -747,6 +747,88 @@ void main() {
       ).called(1);
     });
 
+    test('publishes report to the source relay when provided', () async {
+      const sourceRelay = 'wss://relay.staging.dvines.org';
+      final reportEvent = Event(
+        testPublicKey,
+        EventKind.report,
+        [],
+        'test',
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
+      reportEvent.id = 'test_id';
+      reportEvent.sig = 'test_sig';
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => reportEvent);
+
+      when(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
+
+      await service.reportContent(
+        eventId: _validEventId('5'),
+        authorPubkey: 'author_source_relay',
+        reason: ContentFilterReason.other,
+        details: 'source relay routing test',
+        sourceRelay: '  $sourceRelay  ',
+      );
+
+      verify(
+        () => mockNostrService.publishEvent(any(), targetRelays: [sourceRelay]),
+      ).called(1);
+    });
+
+    test('falls back to configured relay for invalid source relay', () async {
+      final reportEvent = Event(
+        testPublicKey,
+        EventKind.report,
+        [],
+        'test',
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
+      reportEvent.id = 'test_id';
+      reportEvent.sig = 'test_sig';
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => reportEvent);
+
+      when(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
+
+      await service.reportContent(
+        eventId: _validEventId('6'),
+        authorPubkey: 'author_invalid_relay',
+        reason: ContentFilterReason.other,
+        details: 'invalid relay routing test',
+        sourceRelay: 'https://relay.staging.dvines.org',
+      );
+
+      verify(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: ['wss://relay.divine.video'],
+        ),
+      ).called(1);
+    });
+
     test('places NIP-56 report type as 3rd element of e and p tags', () async {
       List<List<String>>? capturedTags;
 

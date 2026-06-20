@@ -149,6 +149,7 @@ class ContentReportingService {
     required String authorPubkey,
     required ContentFilterReason reason,
     required String details,
+    String? sourceRelay,
     String? additionalContext,
     List<String> hashtags = const [],
     List<String>? nip56EventIds,
@@ -186,7 +187,7 @@ class ContentReportingService {
 
       final sentEvent = await _nostrService.publishEvent(
         reportEvent,
-        targetRelays: [_moderationRelayUrl],
+        targetRelays: _targetRelaysForReport(sourceRelay),
       );
       // Always continue to local save regardless of publish outcome.
       final failureReason = sentEvent.failureReason;
@@ -243,6 +244,21 @@ class ContentReportingService {
       );
       return ReportResult.failure('Failed to submit report: $e');
     }
+  }
+
+  List<String> _targetRelaysForReport(String? sourceRelay) {
+    final relay = _normalizeRelayUrl(sourceRelay);
+    return [relay ?? _moderationRelayUrl];
+  }
+
+  String? _normalizeRelayUrl(String? relayUrl) {
+    final trimmed = relayUrl?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null || uri.host.isEmpty) return null;
+    if (uri.scheme != 'wss' && uri.scheme != 'ws') return null;
+    return trimmed;
   }
 
   /// Report user for harassment or abuse

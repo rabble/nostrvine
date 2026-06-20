@@ -71,6 +71,7 @@ void main() {
         authorPubkey: any(named: 'authorPubkey'),
         reason: any(named: 'reason'),
         details: any(named: 'details'),
+        sourceRelay: any(named: 'sourceRelay'),
         additionalContext: any(named: 'additionalContext'),
         hashtags: any(named: 'hashtags'),
       ),
@@ -380,6 +381,35 @@ void main() {
           authorPubkey: any(named: 'authorPubkey'),
           reason: any(named: 'reason'),
           details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          additionalContext: any(named: 'additionalContext'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('video report forwards the source relay to reportContent', (
+      tester,
+    ) async {
+      const sourceRelay = 'wss://relay.staging.dvines.org';
+      testVideo = testVideo.copyWith(sourceRelay: sourceRelay);
+
+      await setLargeSurface(tester);
+      await openReportDialog(tester);
+
+      await tester.tap(find.text(l10n.reportReasonSpam));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: sourceRelay,
           additionalContext: any(named: 'additionalContext'),
           hashtags: any(named: 'hashtags'),
         ),
@@ -413,6 +443,7 @@ void main() {
             authorPubkey: any(named: 'authorPubkey'),
             reason: any(named: 'reason'),
             details: any(named: 'details'),
+            sourceRelay: any(named: 'sourceRelay'),
             additionalContext: any(named: 'additionalContext'),
             hashtags: any(named: 'hashtags'),
           ),
@@ -448,6 +479,7 @@ void main() {
           authorPubkey: any(named: 'authorPubkey'),
           reason: any(named: 'reason'),
           details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
           additionalContext: any(named: 'additionalContext'),
           hashtags: any(named: 'hashtags'),
         ),
@@ -473,6 +505,7 @@ void main() {
           authorPubkey: any(named: 'authorPubkey'),
           reason: any(named: 'reason'),
           details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
           additionalContext: any(named: 'additionalContext'),
           hashtags: any(named: 'hashtags'),
         ),
@@ -500,6 +533,7 @@ void main() {
             authorPubkey: any(named: 'authorPubkey'),
             reason: any(named: 'reason'),
             details: any(named: 'details'),
+            sourceRelay: any(named: 'sourceRelay'),
             additionalContext: any(named: 'additionalContext'),
             hashtags: any(named: 'hashtags'),
           ),
@@ -560,6 +594,7 @@ void main() {
           authorPubkey: any(named: 'authorPubkey'),
           reason: ContentFilterReason.other,
           details: 'Custom report details',
+          sourceRelay: any(named: 'sourceRelay'),
           additionalContext: any(named: 'additionalContext'),
           hashtags: any(named: 'hashtags'),
         ),
@@ -1213,6 +1248,7 @@ void main() {
             authorPubkey: any(named: 'authorPubkey'),
             reason: any(named: 'reason'),
             details: any(named: 'details'),
+            sourceRelay: any(named: 'sourceRelay'),
             additionalContext: any(named: 'additionalContext'),
             hashtags: any(named: 'hashtags'),
           ),

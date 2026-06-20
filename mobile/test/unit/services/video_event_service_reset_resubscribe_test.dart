@@ -16,8 +16,6 @@ import 'package:openvine/services/video_filter_builder.dart';
 // Mock classes
 class MockNostrService extends Mock implements NostrClient {}
 
-class MockEvent extends Mock implements Event {}
-
 class TestSubscriptionManager extends Mock implements SubscriptionManager {
   TestSubscriptionManager(this.eventStreamController);
   final StreamController<Event> eventStreamController;
@@ -44,6 +42,29 @@ class TestSubscriptionManager extends Mock implements SubscriptionManager {
 
 // Fake classes for setUpAll
 class FakeFilter extends Fake implements Filter {}
+
+Event createVideoEvent({
+  required String id,
+  required String pubkey,
+  required String content,
+  required String videoUrl,
+}) {
+  final event = Event(
+    pubkey,
+    34236,
+    [
+      ['url', videoUrl],
+      ['m', 'video/mp4'],
+    ],
+    content,
+    createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+  );
+  event.id = id;
+  event.sig =
+      'sig_1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff1111222233334444555566667777888899990000aaaabbbbcccc';
+  event.sources.add('wss://relay.divine.video');
+  return event;
+}
 
 void main() {
   setUpAll(() {
@@ -101,24 +122,12 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       // Add a mock video event to the stream
-      final event = MockEvent();
-      when(() => event.id).thenReturn(
-        'aaaa1111bbbb2222cccc3333dddd4444eeee5555ffff6666777788889999aaaa',
-      );
-      when(() => event.kind).thenReturn(34236);
-      when(() => event.pubkey).thenReturn(
-        'pub11111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff',
-      );
-      when(() => event.content).thenReturn('Test video');
-      when(
-        () => event.createdAt,
-      ).thenReturn(DateTime.now().millisecondsSinceEpoch ~/ 1000);
-      when(() => event.tags).thenReturn([
-        ['url', 'https://example.com/video.mp4'],
-        ['m', 'video/mp4'],
-      ]);
-      when(() => event.sig).thenReturn(
-        'sig11111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff',
+      final event = createVideoEvent(
+        id: 'aaaa1111bbbb2222cccc3333dddd4444eeee5555ffff6666777788889999aaaa',
+        pubkey:
+            '3333333333333333333333333333333333333333333333333333333333333333',
+        content: 'Test video',
+        videoUrl: 'https://example.com/video.mp4',
       );
 
       eventStreamController.add(event);
