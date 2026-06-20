@@ -11,6 +11,7 @@ import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/video_metadata_update_service.dart';
 import 'package:openvine/utils/delete_failure_localization.dart';
@@ -43,6 +44,13 @@ class _VideoMetadataEditBottomBarState
   bool _isDeleting = false;
 
   bool get _isBusy => _isUpdating || _isDeleting;
+
+  void _editSubtitles() {
+    context.push(
+      SubtitleEditorScreen.pathFor(widget.video.id),
+      extra: widget.video,
+    );
+  }
 
   Future<void> _updateVideo() async {
     if (_isBusy) return;
@@ -189,25 +197,61 @@ class _VideoMetadataEditBottomBarState
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           spacing: 10,
           children: [
-            Expanded(
-              child: _DeleteButton(
-                onTap: _confirmDelete,
-                isBusy: _isBusy,
-                isDeleting: _isDeleting,
-              ),
+            _EditSubtitlesButton(
+              onTap: _editSubtitles,
+              isBusy: _isBusy,
             ),
-            Expanded(
-              child: _UpdateButton(
-                onTap: _updateVideo,
-                isBusy: _isBusy,
-                isUpdating: _isUpdating,
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              spacing: 10,
+              children: [
+                Expanded(
+                  child: _DeleteButton(
+                    onTap: _confirmDelete,
+                    isBusy: _isBusy,
+                    isDeleting: _isDeleting,
+                  ),
+                ),
+                Expanded(
+                  child: _UpdateButton(
+                    onTap: _updateVideo,
+                    isBusy: _isBusy,
+                    isUpdating: _isUpdating,
+                  ),
+                ),
+              ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-width outlined button to open the subtitle editor.
+class _EditSubtitlesButton extends StatelessWidget {
+  const _EditSubtitlesButton({
+    required this.onTap,
+    required this.isBusy,
+  });
+
+  final VoidCallback onTap;
+  final bool isBusy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      identifier: 'edit_subtitles_button',
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: isBusy ? null : onTap,
+          icon: const DivineIcon(icon: DivineIconName.closedCaptioning),
+          label: Text(context.l10n.videoEditEditSubtitles),
         ),
       ),
     );

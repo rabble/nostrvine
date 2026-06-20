@@ -81,6 +81,7 @@ import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
+import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
 import 'package:openvine/screens/user_list_people_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
@@ -1324,6 +1325,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             videoId: videoId,
             prefetched: prefetched,
           );
+        },
+      ),
+      GoRoute(
+        path: '${SubtitleEditorScreen.path}/:videoId',
+        name: SubtitleEditorScreen.routeName,
+        builder: (ctx, st) {
+          final videoId = st.pathParameters['videoId'];
+          if (videoId == null || videoId.isEmpty) {
+            return RouteErrorScreen(message: ctx.l10n.routeInvalidVideoId);
+          }
+          final prefetched = st.extra as VideoEvent?;
+          if (prefetched == null) {
+            return RouteErrorScreen(message: ctx.l10n.routeInvalidVideoId);
+          }
+          return SubtitleEditorScreen(video: prefetched);
         },
       ),
       GoRoute(
