@@ -1108,6 +1108,13 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     private var wasPlayingBeforePause = false
 
     func onAppBackgrounded() {
+        // Stop the texture frame driver first. A display-link or
+        // AVFoundation-notification frame delivered during the
+        // resign-active → suspend window dereferences a torn-down Flutter
+        // shell and crashes. Unconditional: the driver polls even while the
+        // player is paused, and a paused-player seek/forceRefresh can still
+        // push a frame.
+        textureOutput?.suspendFrameDelivery()
         wasPlayingBeforePause = player?.rate ?? 0 > 0
         if wasPlayingBeforePause {
             player?.pause()
@@ -1117,6 +1124,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     }
 
     func onAppForegrounded() {
+        textureOutput?.resumeFrameDelivery()
         if wasPlayingBeforePause {
             player?.play()
             player?.rate = Float(speed)

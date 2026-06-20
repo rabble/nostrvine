@@ -71,6 +71,16 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     /// thread via `copyPixelBuffer()`.
     private var pixelBufferLock = os_unfair_lock()
 
+    /// Gates every path that calls `registry.textureFrameAvailable`.
+    /// Flipped to `false` while the app is backgrounded (and on
+    /// `dispose`) so the display-link / AVFoundation-notification / preroll
+    /// paths stop pushing frames into the Flutter engine during the
+    /// resign-active → suspend window. Delivering a frame in that window
+    /// dereferences a torn-down `Shell` inside
+    /// `-[FlutterEngine textureFrameAvailable:]` and crashes with
+    /// EXC_BAD_ACCESS. Read/written on the main thread only.
+    private var isFrameDeliveryEnabled = true
+
     /// Fired when the force window expires without a frame; caller should
     /// retry the seek with tolerance. Suppressed for retry windows.
     var onSeekStuck: ((CMTime) -> Void)?
@@ -239,8 +249,35 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         deliverFrame(pixelBuffer)
     }
 
+    // MARK: - App lifecycle
+
+    /// Pauses frame delivery into the Flutter texture while the app is
+    /// backgrounded. The display link is paused so it stops polling, and
+    /// `isFrameDeliveryEnabled` gates the AVFoundation-notification and
+    /// preroll paths too — together they guarantee no `textureFrameAvailable`
+    /// call reaches the engine while it may be tearing down its shell during
+    /// suspension. Must be called on the main thread.
+    func suspendFrameDelivery() {
+        isFrameDeliveryEnabled = false
+        #if os(iOS)
+        displayLink?.isPaused = true
+        #endif
+    }
+
+    /// Re-enables frame delivery when the app returns to the foreground.
+    /// The retained `latestPixelBuffer` keeps the texture populated across
+    /// the background period, so resuming does not flash black. Must be
+    /// called on the main thread.
+    func resumeFrameDelivery() {
+        isFrameDeliveryEnabled = true
+        #if os(iOS)
+        displayLink?.isPaused = false
+        #endif
+    }
+
     /// Cleans up the frame driver and unregisters the texture.
     func dispose() {
+        isFrameDeliveryEnabled = false
         stopFrameDriver()
         itemStatusObservation?.invalidate()
         itemStatusObservation = nil
@@ -304,6 +341,7 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         os_unfair_lock_lock(&pixelBufferLock)
         latestPixelBuffer = pixelBuffer
         os_unfair_lock_unlock(&pixelBufferLock)
+        guard isFrameDeliveryEnabled else { return }
         registry.textureFrameAvailable(textureId)
         if !hasDeliveredFirstFrame {
             hasDeliveredFirstFrame = true
@@ -314,7 +352,8 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     /// Pulls the current frame and pushes it into the Flutter texture.
     /// Driven by `CADisplayLink` on iOS and a `Timer` on macOS.
     private func pullAndDeliverFrame() {
-        guard let output = videoOutput,
+        guard isFrameDeliveryEnabled,
+              let output = videoOutput,
               let player else { return }
 
         let itemTime = player.currentTime()
