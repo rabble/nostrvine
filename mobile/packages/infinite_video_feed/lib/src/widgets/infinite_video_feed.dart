@@ -42,7 +42,7 @@ class InfiniteVideoFeed extends StatefulWidget {
     this.keepPreviousAlive = true,
     this.keepNextAlive = true,
     this.releaseNeighboursWhenInactive = false,
-    this.prefetchCount = 25,
+    this.prefetchCount = 8,
     this.shouldPortraitExpand = true,
     this.maxLoopDuration,
     this.onActiveVideoChanged,

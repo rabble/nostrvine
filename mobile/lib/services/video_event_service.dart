@@ -2276,15 +2276,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         paginationState.markEventSeen(event.id);
       }
 
-      // Checkpoint log for profile subscriptions
-      if (subscriptionType == SubscriptionType.profile) {
-        Log.info(
-          'SVC event: id=${event.id}',
-          name: 'Service',
-          category: LogCategory.video,
-        );
-      }
-
       // Use batched logging for repetitive event logs
       // VideoEventLogBatcher.batchVideoEvent(
       //   eventId: event.id,
@@ -2395,11 +2386,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           );
         }
 
-        Log.verbose(
-          'Direct event tags: ${_formatEventTagsForLog(event.tags)}',
-          name: 'VideoEventService',
-          category: LogCategory.video,
-        );
         try {
           var videoEvent = VideoEvent.fromNostrEvent(event);
 

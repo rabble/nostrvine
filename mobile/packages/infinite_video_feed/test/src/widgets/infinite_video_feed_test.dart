@@ -1746,6 +1746,42 @@ void main() {
     });
 
     group('prefetch', () {
+      testWidgets('default disk prefetch window stays bounded', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install();
+        final videos = List.generate(
+          20,
+          (i) => _makeVideo('v$i', videoUrl: 'https://example.com/v$i.mp4'),
+        );
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: videos,
+                cache: cache,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          // The default window starts after the kept-next controller
+          // (index + 2), so a bounded eight-video window downloads 2..8.
+          verify(
+            () => cache.cacheFileCancellable(any(), key: any(named: 'key')),
+          ).called(7);
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
       testWidgets('prefetchCount > 0 exercises _runPrefetch body', (
         tester,
       ) async {
