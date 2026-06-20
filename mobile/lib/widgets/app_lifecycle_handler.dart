@@ -12,6 +12,7 @@ import 'package:openvine/notifications/services/notification_refresh_coordinator
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/background_activity_manager.dart';
@@ -168,10 +169,19 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
         // Pause all videos and clear visibility state
         // Execute async to prevent blocking scene update
         Future.microtask(visibilityManager.pauseAllVideos);
+        unawaited(
+          ref
+              .read(videoEditorProvider.notifier)
+              .cancelActiveNativeRenderTasks(),
+        );
 
       case AppLifecycleState.detached:
         // App is being terminated
-        break;
+        unawaited(
+          ref
+              .read(videoEditorProvider.notifier)
+              .cancelActiveNativeRenderTasks(),
+        );
     }
   }
 

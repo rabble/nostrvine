@@ -10,10 +10,16 @@ import 'package:models/models.dart' as model;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+import '../mocks/mock_path_provider_platform.dart';
 
 class _ProgressProVideoEditor extends ProVideoEditor {
   final _progressController = StreamController<ProgressModel>.broadcast();
+  final renderStarted = Completer<VideoRenderData>();
+  final renderCompleter = Completer<void>();
+  final cancelCalls = <String>[];
 
   @override
   void initializeStream() {}
@@ -27,6 +33,22 @@ class _ProgressProVideoEditor extends ProVideoEditor {
     return _progressController.stream.where(
       (progress) => progress.id == taskId,
     );
+  }
+
+  @override
+  Future<String> renderVideoToFile(
+    String filePath,
+    VideoRenderData value, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
+    if (!renderStarted.isCompleted) renderStarted.complete(value);
+    await renderCompleter.future;
+    return filePath;
+  }
+
+  @override
+  Future<void> cancel(String taskId) async {
+    cancelCalls.add(taskId);
   }
 
   @override
@@ -62,6 +84,8 @@ DivineVideoClip _createClip(int index) {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('VideoEditorRenderService proof progress allocation', () {
     test('reserves a minimum of 5 percent for proof finalization', () {
       expect(
@@ -102,11 +126,13 @@ void main() {
       originalProVideoEditor = ProVideoEditor.instance;
       proVideoEditor = _ProgressProVideoEditor();
       ProVideoEditor.instance = proVideoEditor;
+      VideoEditorRenderService.resetActiveNativeTaskIdsForTesting();
     });
 
     tearDown(() async {
       VideoEditorRenderService.renderVideoOverride = null;
       NativeProofModeService.proofFileOverride = null;
+      VideoEditorRenderService.resetActiveNativeTaskIdsForTesting();
       await proVideoEditor.dispose();
       ProVideoEditor.instance = originalProVideoEditor;
     });
@@ -122,9 +148,9 @@ void main() {
         };
 
         final progressSubscription =
-            VideoEditorRenderService.compositeProgressStreamById(taskId).listen(
-              (progress) => progressValues.add(progress.progress),
-            );
+            VideoEditorRenderService.compositeProgressStreamById(
+              taskId,
+            ).listen((progress) => progressValues.add(progress.progress));
         addTearDown(progressSubscription.cancel);
 
         VideoEditorRenderService.renderVideoOverride =
@@ -210,6 +236,51 @@ void main() {
           );
         }
         expect(progressValues.last, equals(1.0));
+      },
+    );
+
+    test(
+      'tracks in-flight native render tasks and bulk-cancels them on lifecycle teardown',
+      () async {
+        final originalPathProvider = PathProviderPlatform.instance;
+        final tempDir = Directory.systemTemp.createTempSync(
+          'video-render-lifecycle-test-',
+        );
+        final mockPathProvider = MockPathProviderPlatform()
+          ..setTemporaryPath(tempDir.path)
+          ..setApplicationDocumentsPath(tempDir.path);
+        PathProviderPlatform.instance = mockPathProvider;
+        addTearDown(() {
+          PathProviderPlatform.instance = originalPathProvider;
+          tempDir.deleteSync(recursive: true);
+        });
+
+        final renderFuture = VideoEditorRenderService.cropToAspectRatio(
+          video: EditorVideo.file('${tempDir.path}/source.mp4'),
+          aspectRatio: model.AspectRatio.square,
+        );
+
+        final task = await proVideoEditor.renderStarted.future;
+        expect(task.id, startsWith('crop_'));
+        expect(
+          VideoEditorRenderService.activeNativeTaskIdsForTesting,
+          contains(task.id),
+        );
+        expect(
+          proVideoEditor.cancelCalls,
+          equals([task.id]),
+          reason:
+              'the service cancels a stale task with the same id before render',
+        );
+
+        await VideoEditorRenderService.cancelActiveNativeTasks();
+
+        expect(proVideoEditor.cancelCalls, equals([task.id, task.id]));
+        expect(VideoEditorRenderService.activeNativeTaskIdsForTesting, isEmpty);
+
+        proVideoEditor.renderCompleter.complete();
+        await renderFuture;
+        expect(VideoEditorRenderService.activeNativeTaskIdsForTesting, isEmpty);
       },
     );
   });

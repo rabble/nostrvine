@@ -200,6 +200,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     _stickerBloc.close();
     _clipEditorBloc.close();
     _timelineOverlayBloc.close();
+    unawaited(
+      ref.read(videoEditorProvider.notifier).cancelActiveNativeRenderTasks(),
+    );
     _isLoadingDraft.dispose();
     _bodySizeNotifier.dispose();
     _zoomMatrixNotifier.dispose();

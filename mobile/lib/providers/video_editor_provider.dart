@@ -981,6 +981,14 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     state = state.copyWith(isProcessing: false);
   }
 
+  /// Cancel all known native video editor render work.
+  ///
+  /// Used during app/editor teardown so the widget layer does not need to
+  /// import render services directly.
+  Future<void> cancelActiveNativeRenderTasks() {
+    return VideoEditorRenderService.cancelActiveNativeTasks();
+  }
+
   /// Publish the video to the Nostr network.
   ///
   /// Requires [finalRenderedClip] to be available. Throws [StateError] if

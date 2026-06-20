@@ -239,6 +239,7 @@ class VideoEditorRenderService {
   static const _logName = 'VideoEditorRenderService';
   static final _compositeProgressController =
       StreamController<ProgressModel>.broadcast();
+  static final Set<String> _activeNativeTaskIds = <String>{};
 
   @visibleForTesting
   static double proofModeProgressBudgetForClipCount(int clipCount) {
@@ -259,6 +260,15 @@ class VideoEditorRenderService {
     _compositeProgressController.add(
       ProgressModel(id: taskId, progress: progress.clamp(0.0, 1.0)),
     );
+  }
+
+  @visibleForTesting
+  static Set<String> get activeNativeTaskIdsForTesting =>
+      Set.unmodifiable(_activeNativeTaskIds);
+
+  @visibleForTesting
+  static void resetActiveNativeTaskIdsForTesting() {
+    _activeNativeTaskIds.clear();
   }
 
   @visibleForTesting
@@ -670,6 +680,7 @@ class VideoEditorRenderService {
     );
 
     final task = VideoRenderData(
+      id: 'crop_${DateTime.now().microsecondsSinceEpoch}',
       videoSegments: [VideoSegment(video: video)],
       enableAudio: enableAudio,
       shouldOptimizeForNetworkUse: true,
@@ -1018,15 +1029,20 @@ class VideoEditorRenderService {
     VideoRenderData task,
   ) async {
     await cancelTask(task.id);
+    _activeNativeTaskIds.add(task.id);
     // Surface native renderer diagnostics (encoder fallbacks, bitrate clamps,
     // OOM guards, render errors) into the unified log via
     // ProVideoEditorLogForwarder — the signal set behind #4801. A clean render
     // stays quiet at this level, so it does not flood the capture buffer.
-    await ProVideoEditor.instance.renderVideoToFile(
-      outputPath,
-      task,
-      nativeLogLevel: NativeLogLevel.warning,
-    );
+    try {
+      await ProVideoEditor.instance.renderVideoToFile(
+        outputPath,
+        task,
+        nativeLogLevel: NativeLogLevel.warning,
+      );
+    } finally {
+      _activeNativeTaskIds.remove(task.id);
+    }
   }
 
   static Future<void> cancelTask(String id) async {
@@ -1049,6 +1065,27 @@ class VideoEditorRenderService {
         name: 'VideoEditorNotifier',
         category: .video,
       );
+    } finally {
+      _activeNativeTaskIds.remove(id);
     }
+  }
+
+  /// Cancels native pro_video_editor render tasks started by this service.
+  ///
+  /// This is intentionally best-effort: native tasks may have already completed
+  /// or been cancelled, and the plugin reports that as an error. The important
+  /// lifecycle behavior is that no known task is left running after app/editor
+  /// teardown requests cancellation.
+  static Future<void> cancelActiveNativeTasks() async {
+    final taskIds = List<String>.of(_activeNativeTaskIds);
+    if (taskIds.isEmpty) return;
+
+    Log.info(
+      '⏹️ Cancelling ${taskIds.length} active video editor task(s)',
+      name: _logName,
+      category: .video,
+    );
+
+    await Future.wait<void>(taskIds.map(cancelTask));
   }
 }
