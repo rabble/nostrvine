@@ -195,8 +195,11 @@ class NotificationRepository {
   /// render would then paint and project that entire accumulation before the
   /// first-page refresh trims it — janking the open in proportion to how far
   /// the previous session scrolled. Trimming to [_pageSize] here keeps the
-  /// newest page (so the derived unread badge is unaffected) and lets
-  /// [refresh] replace it with authoritative first-page data on reopen.
+  /// newest page and lets [refresh] replace it with authoritative first-page
+  /// data on reopen. The unread badge, derived from the snapshot, then
+  /// reflects only the newest page's unread rows — the same bound the next
+  /// `refresh()` would impose anyway, so this only brings that bound forward
+  /// to feed-close instead of next-open.
   void resetPaginationDepth() {
     final current = _snapshot.value;
     if (current.items.length > _pageSize) {

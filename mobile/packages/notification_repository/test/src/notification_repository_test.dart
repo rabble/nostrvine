@@ -2407,12 +2407,13 @@ void main() {
       });
 
       test(
-        'resetPaginationDepth collapses the snapshot to the first page',
+        'resetPaginationDepth collapses the snapshot to the newest page',
         () async {
           stubProfiles({});
           // A session that scrolled deep leaves more than a page of items in
-          // the long-lived snapshot. Build a 25-item first page so the trim
-          // back to the 20-item page size is observable.
+          // the long-lived snapshot. Build a 25-item first page with distinct,
+          // descending timestamps (n0 newest) so the newest-first order is
+          // deterministic and the trim back to the page size is observable.
           stubNotifications([
             for (var i = 0; i < 25; i++)
               makeNotification(
@@ -2420,20 +2421,20 @@ void main() {
                 sourcePubkey: 'pub_$i',
                 sourceEventId: 'evt$i',
                 referencedEventId: 'video_$i',
+                createdAt: DateTime(2025).subtract(Duration(minutes: i)),
               ),
           ], hasMore: true);
           await repository.getNotifications();
-          expect(
-            (await repository.watchSnapshot().first).items,
-            hasLength(25),
-          );
+          final before = (await repository.watchSnapshot().first).items;
+          expect(before, hasLength(25));
+          // Contract: trimming keeps the *newest* page — the first 20 rows of
+          // the newest-first snapshot, in order — not an arbitrary 20.
+          final expectedKeptIds = before.take(20).map((n) => n.id).toList();
 
           repository.resetPaginationDepth();
 
-          expect(
-            (await repository.watchSnapshot().first).items,
-            hasLength(20),
-          );
+          final after = (await repository.watchSnapshot().first).items;
+          expect(after.map((n) => n.id).toList(), equals(expectedKeptIds));
         },
       );
     });
