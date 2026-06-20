@@ -40,6 +40,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(_video);
     registerFallbackValue(Uint8List(0));
+    registerFallbackValue(Uri.parse('https://media.divine.video/fallback.vtt'));
     registerFallbackValue(<String>[]);
   });
 
@@ -47,21 +48,46 @@ void main() {
     late _MockBlossom blossom;
     late _MockPublisher publisher;
     late _MockAuth auth;
+    late _MockHttpClient httpClient;
     late SubtitleRepository repo;
 
     setUp(() {
       blossom = _MockBlossom();
       publisher = _MockPublisher();
       auth = _MockAuth();
+      httpClient = _MockHttpClient();
       repo = SubtitleRepository(
         blossomUploadService: blossom,
         videoEventPublisher: publisher,
         authService: auth,
         nostrClient: _MockNostrClient(),
-        httpClient: _MockHttpClient(),
+        httpClient: httpClient,
         pollDelay: (_) async {},
       );
       when(() => auth.currentPublicKeyHex).thenReturn('pk1');
+    });
+
+    test('loadCues falls back to legacy singular textTrackRef', () async {
+      when(() => httpClient.get(any())).thenAnswer(
+        (_) async => http.Response(
+          'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\ncorrected\n',
+          200,
+        ),
+      );
+
+      final cues = await repo.loadCues(
+        VideoEvent(
+          id: 'vid1',
+          pubkey: 'pk1',
+          createdAt: 1,
+          content: '',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(0),
+          textTrackRef: 'https://media.divine.video/fallback.vtt',
+        ),
+      );
+
+      expect(cues, hasLength(1));
+      expect(cues.single.text, equals('corrected'));
     });
 
     test('uploads VTT, publishes 39307, republishes with both refs', () async {

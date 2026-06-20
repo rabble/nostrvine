@@ -79,7 +79,13 @@ class SubtitleEditorView extends StatelessWidget {
             context.pop();
           } else if (state.status == SubtitleEditorStatus.failure) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.subtitleEditorSaveError)),
+              SnackBar(
+                content: Text(
+                  state.cues.isEmpty
+                      ? l10n.subtitleEditorLoadError
+                      : l10n.subtitleEditorSaveError,
+                ),
+              ),
             );
           }
         },

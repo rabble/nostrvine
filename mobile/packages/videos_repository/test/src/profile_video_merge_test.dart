@@ -17,6 +17,8 @@ VideoEvent _video({
   List<String> hashtags = const [],
   List<String> collaboratorPubkeys = const [],
   List<List<String>> nostrEventTags = const [],
+  String? textTrackRef,
+  List<String> textTrackRefs = const [],
   List<String> contentWarningLabels = const [],
   int? originalLikes,
   int? originalComments,
@@ -41,6 +43,8 @@ VideoEvent _video({
     hashtags: hashtags,
     collaboratorPubkeys: collaboratorPubkeys,
     nostrEventTags: nostrEventTags,
+    textTrackRef: textTrackRef,
+    textTrackRefs: textTrackRefs,
     contentWarningLabels: contentWarningLabels,
     originalLikes: originalLikes,
     originalComments: originalComments,
@@ -134,6 +138,37 @@ void main() {
       );
 
       expect(merged.title, equals('new'));
+    });
+
+    test('fills plural text-track refs from the secondary copy', () {
+      final merged = mergeProfileFeedVideos(
+        _video(
+          id: 'rest',
+          pubkey: 'pubkey',
+          createdAt: 2000,
+          vineId: 'video-subtitles',
+        ),
+        _video(
+          id: 'nostr',
+          pubkey: 'pubkey',
+          createdAt: 1000,
+          vineId: 'video-subtitles',
+          textTrackRef: 'https://media.divine.video/subtitle-vtt',
+          textTrackRefs: const [
+            'https://media.divine.video/subtitle-vtt',
+            '39307:pubkey:subtitles:video-subtitles',
+          ],
+        ),
+      );
+
+      expect(
+        merged.textTrackRef,
+        equals('https://media.divine.video/subtitle-vtt'),
+      );
+      expect(merged.textTrackRefs, [
+        'https://media.divine.video/subtitle-vtt',
+        '39307:pubkey:subtitles:video-subtitles',
+      ]);
     });
 
     test('primary fields fall back to secondary when null', () {

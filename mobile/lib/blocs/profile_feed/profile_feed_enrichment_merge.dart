@@ -91,6 +91,9 @@ VideoEvent _mergeEnrichmentIntoCurrent(
         : enriched.collaboratorPubkeys,
     inspiredByVideo: current.inspiredByVideo ?? enriched.inspiredByVideo,
     textTrackRef: current.textTrackRef ?? enriched.textTrackRef,
+    textTrackRefs: current.textTrackRefs.isNotEmpty
+        ? current.textTrackRefs
+        : enriched.textTrackRefs,
     textTrackContent: current.textTrackContent ?? enriched.textTrackContent,
     nostrEventTags: current.nostrEventTags.isNotEmpty
         ? current.nostrEventTags

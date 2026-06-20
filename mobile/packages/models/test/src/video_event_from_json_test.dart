@@ -69,6 +69,10 @@ VideoEvent _fullVideo() => VideoEvent(
   ),
   inspiredByNpub: 'npub1examplenpubvalue',
   textTrackRef: 'https://cdn.divine.video/captions.vtt',
+  textTrackRefs: const [
+    'https://cdn.divine.video/captions.vtt',
+    '39307:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:subtitles:abc123def',
+  ],
   textTrackContent: 'WEBVTT\n\n00:00.000 --> 00:06.000\nHello',
   contentWarningLabels: const ['nudity'],
   moderationLabels: const ['violence'],
@@ -131,6 +135,7 @@ void main() {
       expect(restored.authorAvatar, equals(original.authorAvatar));
       expect(restored.inspiredByNpub, equals(original.inspiredByNpub));
       expect(restored.textTrackRef, equals(original.textTrackRef));
+      expect(restored.textTrackRefs, equals(original.textTrackRefs));
       expect(restored.textTrackContent, equals(original.textTrackContent));
     });
 
@@ -177,6 +182,19 @@ void main() {
       expect(restored.videoUrl, equals(original.videoUrl));
       expect(restored.timestamp, equals(original.timestamp));
       expect(restored.originalLoops, equals(original.originalLoops));
+    });
+
+    test('backfills textTrackRefs from legacy singular textTrackRef', () {
+      final json = _fullVideo().toJson()
+        ..remove('textTrackRefs')
+        ..['textTrackRef'] = 'https://cdn.divine.video/legacy-captions.vtt';
+
+      final restored = VideoEvent.fromJson(json);
+
+      expect(
+        restored.textTrackRefs,
+        equals(['https://cdn.divine.video/legacy-captions.vtt']),
+      );
     });
 
     test('restores a minimal video with null optionals', () {

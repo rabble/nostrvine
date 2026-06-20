@@ -63,7 +63,12 @@ class SubtitleRepository {
       nostrClient: _nostrClient,
       delay: _pollDelay,
       textTrackContent: video.textTrackContent,
-      textTrackRefs: video.textTrackRefs,
+      textTrackRefs: video.textTrackRefs.isNotEmpty
+          ? video.textTrackRefs
+          : [
+              if (video.textTrackRef != null && video.textTrackRef!.isNotEmpty)
+                video.textTrackRef!,
+            ],
       sha256: video.sha256,
     );
   }

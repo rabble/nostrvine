@@ -63,4 +63,21 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'edited');
     verify(() => cubit.updateCueText(0, 'edited')).called(1);
   });
+
+  testWidgets('load failure shows the load error copy', (tester) async {
+    whenListen(
+      cubit,
+      Stream<SubtitleEditorState>.fromIterable(
+        const [SubtitleEditorState(status: SubtitleEditorStatus.failure)],
+      ),
+      initialState: const SubtitleEditorState(),
+    );
+
+    await tester.pumpWidget(pump());
+    await tester.pump();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.subtitleEditorLoadError), findsOneWidget);
+    expect(find.text(l10n.subtitleEditorSaveError), findsNothing);
+  });
 }

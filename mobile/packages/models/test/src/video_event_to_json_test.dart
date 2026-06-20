@@ -75,6 +75,10 @@ VideoEvent _fullVideo() => VideoEvent(
     ['title', 'A short loop'],
   ],
   textTrackRef: 'https://cdn.divine.video/captions.vtt',
+  textTrackRefs: const [
+    'https://cdn.divine.video/captions.vtt',
+    '39307:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:subtitles:abc123def',
+  ],
   textTrackContent: 'WEBVTT\n\n00:00.000 --> 00:06.000\nHello',
   contentWarningLabels: const ['nudity'],
   moderationLabels: const ['ml-noisy-label'],
@@ -136,6 +140,7 @@ const _expectedKeys = <String>{
   'inspiredByVideo',
   'inspiredByNpub',
   'textTrackRef',
+  'textTrackRefs',
   'textTrackContent',
   'contentWarningLabels',
   'moderationLabels',

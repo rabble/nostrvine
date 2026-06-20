@@ -189,5 +189,57 @@ void main() {
       expect(enriched.single.rawTags['title'], equals('Nostr Title Wins'));
       expect(enriched.single.rawTags['views'], equals('7'));
     });
+
+    test(
+      'propagates all Nostr text-track refs into enriched REST videos',
+      () async {
+        const pubkey =
+            'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+        final nostrEvent = Event(
+          pubkey,
+          34236,
+          [
+            ['d', 'video-subtitles'],
+            ['url', 'https://example.com/video-subtitles.mp4'],
+            ['title', 'Captioned'],
+            ['m', 'video/mp4'],
+            [
+              'text-track',
+              'https://media.divine.video/subtitle-vtt',
+              'wss://relay.divine.video',
+              'captions',
+              'en',
+            ],
+            [
+              'text-track',
+              '39307:$pubkey:subtitles:video-subtitles',
+              'wss://relay.divine.video',
+              'captions',
+              'en',
+            ],
+          ],
+          'Nostr content',
+          createdAt: 1704067200,
+        );
+        final restVideo = _restVideo(id: nostrEvent.id);
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [nostrEvent]);
+
+        final enriched = await enrichVideosWithNostrTags([
+          restVideo,
+        ], nostrService: mockNostrClient);
+
+        expect(
+          enriched.single.textTrackRef,
+          equals('https://media.divine.video/subtitle-vtt'),
+        );
+        expect(enriched.single.textTrackRefs, [
+          'https://media.divine.video/subtitle-vtt',
+          '39307:$pubkey:subtitles:video-subtitles',
+        ]);
+      },
+    );
   });
 }

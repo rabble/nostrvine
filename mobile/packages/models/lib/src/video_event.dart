@@ -223,6 +223,8 @@ class VideoEvent {
 
     final createdAt = optInt(json['createdAt']) ?? 0;
     final timestamp = json['timestamp'];
+    final textTrackRef = json['textTrackRef'] as String?;
+    final textTrackRefs = stringList(json['textTrackRefs']);
     return VideoEvent(
       id: json['id'] as String? ?? '',
       pubkey: json['pubkey'] as String? ?? '',
@@ -279,7 +281,12 @@ class VideoEvent {
               json['inspiredByVideo'] as Map<String, dynamic>,
             ),
       inspiredByNpub: json['inspiredByNpub'] as String?,
-      textTrackRef: json['textTrackRef'] as String?,
+      textTrackRef: textTrackRef,
+      textTrackRefs: textTrackRefs.isNotEmpty
+          ? textTrackRefs
+          : [
+              if (textTrackRef != null && textTrackRef.isNotEmpty) textTrackRef,
+            ],
       textTrackContent: json['textTrackContent'] as String?,
       contentWarningLabels: stringList(json['contentWarningLabels']),
       moderationLabels: stringList(json['moderationLabels']),
@@ -1554,6 +1561,7 @@ class VideoEvent {
     'inspiredByVideo': inspiredByVideo?.toJson(),
     'inspiredByNpub': inspiredByNpub,
     'textTrackRef': textTrackRef,
+    'textTrackRefs': textTrackRefs,
     'textTrackContent': textTrackContent,
     'contentWarningLabels': contentWarningLabels,
     'moderationLabels': moderationLabels,
