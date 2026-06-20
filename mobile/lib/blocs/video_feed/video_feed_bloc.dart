@@ -14,6 +14,7 @@ import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/video_feed/home_feed_cache.dart';
 import 'package:openvine/blocs/video_feed/home_feed_resume_manager.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -137,6 +138,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   ) => !emit.isDone && state.source == source;
 
   bool _shouldEnrichSource(VideoFeedSource source) =>
+      // Subscribed-list rows are loaded from locally held event IDs and are
+      // already resolved as full events rather than compact server feed rows.
       source.type != VideoFeedSourceType.subscribedList;
 
   /// Handle feed started event.
@@ -892,7 +895,12 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
             );
           })
           .catchError((Object error, StackTrace stackTrace) {
-            if (!isClosed) addError(error, stackTrace);
+            if (!isClosed) {
+              addError(
+                Reportable(error, context: '_scheduleNostrEnrichment'),
+                stackTrace,
+              );
+            }
           }),
     );
   }
