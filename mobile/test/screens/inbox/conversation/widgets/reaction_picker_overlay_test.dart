@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/reaction_picker_overlay.dart';
@@ -100,6 +101,24 @@ void main() {
 
       expect(find.bySemanticsLabel('Add custom emoji reaction'), findsNothing);
       expect(result?.openFullPicker, isTrue);
+    });
+
+    testWidgets('"+" affordance renders a proportional 18px muted glyph', (
+      tester,
+    ) async {
+      await openOverlay(tester);
+
+      // The "+" sits in a 48px tap target but renders a smaller (18px) muted
+      // glyph so it stays in proportion with the 28px emoji glyphs beside it,
+      // not the oversized default-size icon. Regression guard keeping the
+      // long-press overlay aligned with the in-player reply bar's picker.
+      final plusIcon = tester.widget<DivineIcon>(
+        find.byWidgetPredicate(
+          (w) => w is DivineIcon && w.icon == DivineIconName.plus,
+        ),
+      );
+      expect(plusIcon.size, 18);
+      expect(plusIcon.color, VineTheme.onSurfaceMuted);
     });
 
     testWidgets('omits picker row when showPicker is false', (tester) async {

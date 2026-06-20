@@ -5,6 +5,7 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -823,6 +824,70 @@ void main() {
 
         expect(find.byType(VideoThumbnailWidget), findsOneWidget);
         expect(find.text('My Cool Video'), findsOneWidget);
+      });
+
+      testWidgets('renders the shared-video bubble on a neutral dark frame', (
+        tester,
+      ) async {
+        when(
+          () => mockVideoEventService.getVideoById('abc123'),
+        ).thenReturn(testVideo);
+
+        await tester.pumpWidget(
+          buildWithVideoMessage(message: 'https://divine.video/video/abc123'),
+        );
+        await tester.pumpAndSettle();
+
+        // The shared-video bubble uses VineTheme.neutral10 (#1B1C1C) — the
+        // Figma `part/video thumbnail` share frame — not the bright sent-text
+        // accent, so the thumbnail reads as a media card (isSent is true here).
+        final bubble = tester.widget<Container>(
+          find.ancestor(
+            of: find.byType(VideoThumbnailWidget),
+            matching: find.byWidgetPredicate(
+              (w) => w is Container && w.decoration is BoxDecoration,
+            ),
+          ),
+        );
+        final decoration = bubble.decoration! as BoxDecoration;
+        expect(decoration.color, VineTheme.neutral10);
+        expect(decoration.color, isNot(VineTheme.primaryAccessible));
+      });
+
+      testWidgets('shared-video card matches Figma geometry', (tester) async {
+        when(
+          () => mockVideoEventService.getVideoById('abc123'),
+        ).thenReturn(testVideo);
+
+        await tester.pumpWidget(
+          buildWithVideoMessage(message: 'https://divine.video/video/abc123'),
+        );
+        await tester.pumpAndSettle();
+
+        // Thumbnail clips at 16 px corners (Figma `part/video thumbnail`
+        // radius/16), not the previous 8 px.
+        final clip = tester.widget<ClipRRect>(
+          find.ancestor(
+            of: find.byType(VideoThumbnailWidget),
+            matching: find.byType(ClipRRect),
+          ),
+        );
+        expect(clip.borderRadius, BorderRadius.circular(16));
+
+        // Bubble frame uses 16 px horizontal / 12 px vertical padding
+        // (Figma spacing/16 + spacing/12), matching the text bubbles.
+        final bubble = tester.widget<Container>(
+          find.ancestor(
+            of: find.byType(VideoThumbnailWidget),
+            matching: find.byWidgetPredicate(
+              (w) => w is Container && w.decoration is BoxDecoration,
+            ),
+          ),
+        );
+        expect(
+          bubble.padding,
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        );
       });
 
       testWidgets('drops the nostr: citation line beneath the card', (

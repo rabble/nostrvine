@@ -175,26 +175,34 @@ class _MoreButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 48×48 tap target, but a smaller (32) visible circle + 18px glyph so the
+    // "+" sits in proportion with the bare 28px emoji glyphs beside it
+    // (mirrors the in-player reply bar's picker button).
     return Semantics(
       button: true,
       label: label,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minWidth: 48,
-          minHeight: 48,
-        ),
-        child: Material(
-          color: VineTheme.iconButtonBackground,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            child: const SizedBox(
-              width: 48,
-              height: 48,
-              child: DivineIcon(
-                icon: DivineIconName.plus,
-                color: VineTheme.onSurface,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: const SizedBox(
+          width: 48,
+          height: 48,
+          child: Center(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: VineTheme.iconButtonBackground,
+              ),
+              child: SizedBox(
+                width: 32,
+                height: 32,
+                child: Center(
+                  child: DivineIcon(
+                    icon: DivineIconName.plus,
+                    color: VineTheme.onSurfaceMuted,
+                    size: 18,
+                  ),
+                ),
               ),
             ),
           ),

@@ -56,10 +56,18 @@ const double _videoCardWidth = 248;
 /// Height of the video share card thumbnail.
 const double _videoCardHeight = 350;
 
+/// Corner radius of the video share card thumbnail across all states
+/// (resolved, loading, unavailable). Matches the Figma
+/// `part/video thumbnail` component's radius/16.
+const double _videoCardRadius = 16;
+
 /// A single chat message bubble.
 ///
-/// Sent messages (right-aligned): primaryAccessible background.
-/// Received messages (left-aligned): surfaceContainer background.
+/// Text bubbles — sent (right-aligned): primaryAccessible background;
+/// received (left-aligned): surfaceContainer background. Shared-video
+/// bubbles use a neutral dark frame (neutral10) in both directions so the
+/// thumbnail reads as a media card, matching the Figma
+/// `part/video thumbnail` share bubble.
 ///
 /// Grouping behaviour:
 /// - Only the first message in a group shows a timestamp (inside the bubble,
@@ -202,14 +210,19 @@ class MessageBubble extends StatelessWidget {
                     ? _videoCardWidth + 32
                     : MediaQuery.sizeOf(context).width * 0.75,
               ),
-              // Video bubbles use symmetric 16 px padding so the thumbnail
-              // sits in an even frame; text bubbles keep the tighter
-              // vertical rhythm (12) for compact reading flow.
-              padding: hasVideo
-                  ? const EdgeInsets.all(16)
-                  : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              // Both text and video bubbles use 16 px horizontal / 12 px
+              // vertical padding (Figma spacing/16 + spacing/12) so the
+              // thumbnail and text sit in the same frame rhythm.
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isSent
+                // Shared-video bubbles sit on a neutral dark frame
+                // (neutral10, #1B1C1C) in both directions so the thumbnail
+                // reads as a media card rather than a bright accent pill —
+                // matching the Figma `part/video thumbnail` share bubble.
+                // Text bubbles keep the sent/received accent split.
+                color: hasVideo
+                    ? VineTheme.neutral10
+                    : isSent
                     ? VineTheme.primaryAccessible
                     : VineTheme.surfaceContainer,
                 borderRadius: _borderRadiusFor(effectiveIsLastInGroup),
@@ -554,7 +567,7 @@ class _VideoLinkPreview extends ConsumerWidget {
 
   static Widget _buildLoadingPlaceholder() {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(_videoCardRadius),
       child: Container(
         width: _videoCardWidth,
         height: _videoCardHeight,
@@ -583,7 +596,7 @@ class _VideoUnavailableCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(_videoCardRadius),
       child: Container(
         width: _videoCardWidth,
         height: _videoCardHeight,
@@ -641,7 +654,7 @@ class _VideoCard extends ConsumerWidget {
         ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(_videoCardRadius),
         child: SizedBox(
           width: _videoCardWidth,
           height: _videoCardHeight,
