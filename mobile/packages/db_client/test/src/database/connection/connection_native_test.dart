@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:db_client/db_client.dart' show AppDatabase;
 import 'package:db_client/src/database/connection/connection_native.dart';
 import 'package:drift/drift.dart' show QueryExecutor;
+import 'package:drift/native.dart' show NativeDatabase;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
@@ -567,6 +569,53 @@ void main() {
       expect(
         openEncryptedConnection(rawKeyHex: validKey),
         isA<QueryExecutor>(),
+      );
+    });
+  });
+
+  // The production opens use NativeDatabase.createInBackground (#5391), which
+  // runs the cipher `setup:` on a spawned background isolate. This proves
+  // sqlite3mc resolves there (else applyCipherKey fails closed) and the DB is
+  // genuinely encrypted, exercising the real background-isolate open path the
+  // unit tests above only construct lazily.
+  group('createInBackground encrypted open', () {
+    const validKey =
+        '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+
+    test('opens an encrypted DB with the cipher applied on the background '
+        'isolate and persists a keyed round-trip', () async {
+      final tempRoot = Directory.systemTemp.createTempSync(
+        'db_client_cib_cipher_test_',
+      );
+      addTearDown(() {
+        if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
+      });
+      final dbPath = p.join(tempRoot.path, 'encrypted.db');
+
+      final db = AppDatabase(
+        NativeDatabase.createInBackground(
+          File(dbPath),
+          setup: (rawDb) => applyCipherKey(rawDb, validKey),
+        ),
+      );
+
+      // Forces the background isolate to open, run `setup:` (applyCipherKey)
+      // there, and run drift's onCreate migration. If sqlite3mc did not
+      // resolve on the spawned isolate, applyCipherKey throws StateError and
+      // this fails.
+      final rows = await db
+          .customSelect('SELECT count(*) AS c FROM sqlite_master;')
+          .get();
+      expect(rows.single.read<int>('c'), greaterThanOrEqualTo(0));
+      await db.close();
+
+      // Prove the file is genuinely encrypted by the bg-isolate cipher: a
+      // plaintext open must fail to read its schema.
+      final plaintext = sqlite3.open(dbPath, mode: OpenMode.readOnly);
+      addTearDown(plaintext.close);
+      expect(
+        () => plaintext.select('SELECT count(*) FROM sqlite_master;'),
+        throwsA(isA<SqliteException>()),
       );
     });
   });

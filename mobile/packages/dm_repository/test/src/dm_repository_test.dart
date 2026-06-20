@@ -12,13 +12,100 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart' as nostr_filter;
+import 'package:nostr_sdk/nip44/nip44_v2.dart';
+import 'package:nostr_sdk/signer/isolate_decrypt_signer.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
 
 class _MockOutgoingDmsDao extends Mock implements OutgoingDmsDao {}
+
+/// A local-key signer that can decrypt in an isolate, used to drive the
+/// batched history-drain decrypt path (#5391). Delegates the [NostrSigner]
+/// surface to an inner [LocalNostrSigner] and exposes its raw private key.
+class _IsolateLocalSigner implements IsolateDecryptSigner {
+  _IsolateLocalSigner(this._privateKeyHex)
+    : _inner = LocalNostrSigner(_privateKeyHex);
+
+  final String _privateKeyHex;
+  final LocalNostrSigner _inner;
+
+  @override
+  bool get canDecryptInIsolate => true;
+
+  @override
+  T withPrivateKeyHex<T>(T Function(String hex) operation) =>
+      operation(_privateKeyHex);
+
+  @override
+  Future<String?> getPublicKey() => _inner.getPublicKey();
+
+  @override
+  Future<Event?> signEvent(Event event) => _inner.signEvent(event);
+
+  @override
+  Future<Map<dynamic, dynamic>?> getRelays() => _inner.getRelays();
+
+  @override
+  Future<String?> encrypt(String pubkey, String plaintext) =>
+      _inner.encrypt(pubkey, plaintext);
+
+  @override
+  Future<String?> decrypt(String pubkey, String ciphertext) =>
+      _inner.decrypt(pubkey, ciphertext);
+
+  @override
+  Future<String?> nip44Encrypt(String pubkey, String plaintext) =>
+      _inner.nip44Encrypt(pubkey, plaintext);
+
+  @override
+  Future<String?> nip44Decrypt(String pubkey, String ciphertext) =>
+      _inner.nip44Decrypt(pubkey, ciphertext);
+
+  @override
+  void close() => _inner.close();
+}
+
+/// Builds a real NIP-17 gift wrap for [rumor] addressed to [recipientPubkey],
+/// sealed and signed by [senderPrivateKey]. Mirrors the production
+/// GiftWrapUtil flow so the batched decrypt worker can unwrap it for real.
+Future<Event> _buildGiftWrap({
+  required Event rumor,
+  required String senderPrivateKey,
+  required String recipientPubkey,
+  required int outerCreatedAt,
+}) async {
+  final senderPubkey = getPublicKey(senderPrivateKey);
+  final rumorMap = rumor.toJson()..remove('sig');
+  final sealKey = NIP44V2.shareSecret(senderPrivateKey, recipientPubkey);
+  final sealContent = await NIP44V2.encrypt(jsonEncode(rumorMap), sealKey);
+  final sealEvent = Event(
+    senderPubkey,
+    EventKind.sealEventKind,
+    <List<String>>[],
+    sealContent,
+  )..sign(senderPrivateKey);
+
+  final ephemeralPrivateKey = generatePrivateKey();
+  final ephemeralPubkey = getPublicKey(ephemeralPrivateKey);
+  final wrapKey = NIP44V2.shareSecret(ephemeralPrivateKey, recipientPubkey);
+  final wrapContent = await NIP44V2.encrypt(
+    jsonEncode(sealEvent.toJson()),
+    wrapKey,
+  );
+  return Event(
+    ephemeralPubkey,
+    EventKind.giftWrap,
+    <List<String>>[
+      ['p', recipientPubkey],
+    ],
+    wrapContent,
+    createdAt: outerCreatedAt,
+  )..sign(ephemeralPrivateKey);
+}
 
 class _MockPendingGiftWrapsDao extends Mock implements PendingGiftWrapsDao {}
 
@@ -273,6 +360,7 @@ void main() {
       OutgoingDmsDao? outgoingDmsDao,
       PendingGiftWrapsDao? pendingGiftWrapsDao,
       DmReactionsRepository? reactionsRepository,
+      NostrSigner? signer,
     }) {
       return DmRepository(
         nostrClient: mockNostrClient,
@@ -282,7 +370,7 @@ void main() {
         outgoingDmsDao: outgoingDmsDao,
         pendingGiftWrapsDao: pendingGiftWrapsDao,
         userPubkey: userPubkey ?? _validPubkeyA,
-        signer: LocalNostrSigner(_validPrivateKey),
+        signer: signer ?? LocalNostrSigner(_validPrivateKey),
         rumorDecryptor: rumorDecryptor,
         nip04Decryptor: nip04Decryptor,
         syncState: syncState,
@@ -3127,6 +3215,347 @@ void main() {
             ),
           );
           expect(syncState.markedCompletePubkeys, [_validPubkeyB]);
+        },
+      );
+    });
+
+    // -----------------------------------------------------------------
+    // History-drain batch decryption + throttle (#5391)
+    // -----------------------------------------------------------------
+
+    group('history drain batch decryption (#5391)', () {
+      // A new recipient keypair per test so the real NIP-44 unwrap in the
+      // batched decrypt worker succeeds (the shared _validPubkey* constants
+      // are not a real keypair).
+      late String recipientPriv;
+      late String recipientPub;
+      late String senderPriv;
+      late String senderPub;
+      late Set<String> persistedGiftWrapIds;
+
+      setUp(() {
+        recipientPriv = generatePrivateKey();
+        recipientPub = getPublicKey(recipientPriv);
+        senderPriv = generatePrivateKey();
+        senderPub = getPublicKey(senderPriv);
+        persistedGiftWrapIds = <String>{};
+
+        // Stateful dedup mirroring production: hasGiftWrap reflects what
+        // insertMessage has persisted, so the inclusive `until` boundary
+        // re-request is deduped instead of re-inserted.
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(any()),
+        ).thenAnswer(
+          (inv) async =>
+              persistedGiftWrapIds.contains(inv.positionalArguments[0]),
+        );
+        when(
+          () => mockDirectMessagesDao.hasMatchingMessage(
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockDirectMessagesDao.insertMessage(
+            id: any(named: 'id'),
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+            giftWrapId: any(named: 'giftWrapId'),
+            messageKind: any(named: 'messageKind'),
+            replyToId: any(named: 'replyToId'),
+            subject: any(named: 'subject'),
+            fileType: any(named: 'fileType'),
+            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+            decryptionKey: any(named: 'decryptionKey'),
+            decryptionNonce: any(named: 'decryptionNonce'),
+            fileHash: any(named: 'fileHash'),
+            originalFileHash: any(named: 'originalFileHash'),
+            fileSize: any(named: 'fileSize'),
+            dimensions: any(named: 'dimensions'),
+            blurhash: any(named: 'blurhash'),
+            thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
+          ),
+        ).thenAnswer((inv) async {
+          persistedGiftWrapIds.add(inv.namedArguments[#giftWrapId] as String);
+        });
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockConversationsDao.upsertConversation(
+            id: any(named: 'id'),
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: any(named: 'lastMessageContent'),
+            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+            subject: any(named: 'subject'),
+            isRead: any(named: 'isRead'),
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+          ),
+        ).thenAnswer((_) async {});
+      });
+
+      Event rumorFor(String content, {required int createdAt}) => Event(
+        senderPub,
+        EventKind.privateDirectMessage,
+        <List<String>>[
+          ['p', recipientPub],
+        ],
+        content,
+        createdAt: createdAt,
+      );
+
+      // Returns a queryEvents stub that serves [page] for the gift-wrap drain
+      // filter (p:[self], inclusive `until`) and [] for the NIP-04 recovery
+      // pass (authors:[self]).
+      void stubDrainPage(List<Event> page) {
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((inv) async {
+          final filters =
+              inv.positionalArguments.first as List<nostr_filter.Filter>;
+          final filter = filters.single;
+          if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+            return const <Event>[];
+          }
+          final until = filter.until ?? (1 << 31);
+          return page.where((e) => e.createdAt <= until).toList();
+        });
+      }
+
+      _FakeDmSyncState drainPending() => _FakeDmSyncState()
+        ..oldestOverride = 1700001000
+        ..drainVersionOverride = DmSyncState.currentDrainVersion;
+
+      test(
+        'batches a drain page of real gift wraps and persists each message '
+        'without a per-event decryptor',
+        () async {
+          final wrap1 = await _buildGiftWrap(
+            rumor: rumorFor('batch hello 1', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          final wrap2 = await _buildGiftWrap(
+            rumor: rumorFor('batch hello 2', createdAt: 1700000600),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000001,
+          );
+          stubDrainPage([wrap1, wrap2]);
+
+          final syncState = drainPending();
+          // No rumorDecryptor injected: the only decrypt path available is the
+          // isolate batch, so persisted messages prove the batch decrypted.
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: _IsolateLocalSigner(recipientPriv),
+            syncState: syncState,
+          );
+
+          await repository.backfillHistoryIfNeeded();
+
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: senderPub,
+              content: 'batch hello 1',
+              createdAt: 1700000500,
+              giftWrapId: wrap1.id,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: recipientPub,
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          ).called(1);
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: senderPub,
+              content: 'batch hello 2',
+              createdAt: 1700000600,
+              giftWrapId: wrap2.id,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: recipientPub,
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          ).called(1);
+
+          // Sync boundaries advance on the rumor's real created_at, and dedup
+          // holds across the inclusive-boundary re-request (no triple insert).
+          expect(
+            syncState.recorded.map((r) => r.createdAt),
+            containsAll(<int>[1700000500, 1700000600]),
+          );
+        },
+      );
+
+      test(
+        'an undecryptable wrap falls back to the per-event path and is queued '
+        'for retry while the valid wrap still persists',
+        () async {
+          final valid = await _buildGiftWrap(
+            rumor: rumorFor('real one', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          // A signed kind-1059 whose content is not valid NIP-44 — passes the
+          // signature gate, fails to decrypt. Higher outer created_at than the
+          // valid wrap so the inclusive boundary re-request is the (deduped)
+          // valid wrap, not this one.
+          final garbageKey = generatePrivateKey();
+          final garbage = Event(
+            getPublicKey(garbageKey),
+            EventKind.giftWrap,
+            <List<String>>[
+              ['p', recipientPub],
+            ],
+            'not-a-real-wrap',
+            createdAt: 1700000001,
+          )..sign(garbageKey);
+          stubDrainPage([valid, garbage]);
+
+          final pendingDao = _MockPendingGiftWrapsDao();
+          when(
+            () => pendingDao.recordFailedDecrypt(
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              rawJson: any(named: 'rawJson'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => pendingDao.deletePending(
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {});
+
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: _IsolateLocalSigner(recipientPriv),
+            pendingGiftWrapsDao: pendingDao,
+            // Force the per-event fallback for the garbage wrap to also fail.
+            rumorDecryptor: (_, _) async => null,
+            syncState: drainPending(),
+          );
+
+          await repository.backfillHistoryIfNeeded();
+
+          // The valid wrap persisted via the batch.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: senderPub,
+              content: 'real one',
+              createdAt: 1700000500,
+              giftWrapId: valid.id,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: recipientPub,
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          ).called(1);
+          // The garbage wrap was queued for retry exactly once.
+          verify(
+            () => pendingDao.recordFailedDecrypt(
+              giftWrapId: garbage.id,
+              ownerPubkey: recipientPub,
+              rawJson: any(named: 'rawJson'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'throttled drain processes a page larger than the yield interval and '
+        'still completes',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          // 18 tag-less kind-5 deletions (> drainYieldInterval) flow through
+          // the persist loop with no side effects, exercising the WS3 yield
+          // without crypto cost.
+          final page = [
+            for (var i = 0; i < 18; i++)
+              Event(
+                recipientPub,
+                EventKind.eventDeletion,
+                const <List<String>>[],
+                '',
+                createdAt: 1700000000 + i,
+              ),
+          ];
+          stubDrainPage(page);
+
+          final syncState = drainPending();
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: _IsolateLocalSigner(recipientPriv),
+            syncState: syncState,
+          );
+
+          await repository.backfillHistoryIfNeeded();
+
+          // The loop ran past the yield boundary and reached relay exhaustion.
+          expect(syncState.drainCompleteOverride, isTrue);
         },
       );
     });

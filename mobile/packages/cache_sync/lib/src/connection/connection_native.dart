@@ -20,7 +20,9 @@ QueryExecutor openConnection() {
     final dir = await getApplicationSupportDirectory();
     final file = File(p.join(dir.path, 'openvine', 'cache', 'cache_sync.db'));
     await file.parent.create(recursive: true);
-    return NativeDatabase(file);
+    // Open on a background isolate so cache reads/writes stay off the UI
+    // thread (#5391). This DB is unencrypted, so there is no setup callback.
+    return NativeDatabase.createInBackground(file);
   });
 }
 

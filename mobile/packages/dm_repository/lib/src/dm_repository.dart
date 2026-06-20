@@ -91,6 +91,17 @@ abstract class DmHistoryDrainConfig {
   /// recovers, while a permanently-undecryptable wrap cannot loop forever.
   /// See #5202.
   static const int maxDecryptRetries = 10;
+
+  /// Gift wraps decrypted per [compute] isolate hop on the history-drain
+  /// path: one hop covers this many wraps instead of one spawn per wrap.
+  /// Sub-chunks a [pageSize] page to bound peak isolate memory and the
+  /// off-lock decrypt duration. See #5391.
+  static const int decryptBatchSize = 20;
+
+  /// Events processed between cooperative event-loop yields in the serial
+  /// backfill loops, so a large drain cannot starve frame rendering. See
+  /// #5391.
+  static const int drainYieldInterval = 16;
 }
 
 const _relayLoopbackHosts = <String>{
@@ -485,9 +496,30 @@ class DmRepository {
     );
     if (_disposed || _userPubkey != pubkey) return null;
 
-    for (final event in events) {
+    // Pass 1 (off the _eventLock): batch-decrypt this page's gift wraps in one
+    // isolate hop per chunk for local-key signers, instead of one isolate
+    // spawn per wrap. Remote signers and undecryptable wraps stay out of the
+    // map and fall through to the per-event path in pass 2. See #5391.
+    final preDecrypted = await _batchDecryptGiftWraps(events);
+    // The batch decrypt above can span many events with no inner guard, so
+    // re-check before persisting that the user did not switch / tear down.
+    if (_disposed || _userPubkey != pubkey) return null;
+
+    // Pass 2 (original page order): persist. Pre-decrypted gift wraps skip the
+    // per-event decrypt; everything else (NIP-04, deletions, remote-signer or
+    // failed wraps) routes through the unchanged per-event handler.
+    for (var i = 0; i < events.length; i++) {
       if (_disposed || _userPubkey != pubkey) return null;
-      await _handleIncomingEvent(event);
+      final event = events[i];
+      final rumor = preDecrypted[event.id];
+      if (rumor != null) {
+        await _withEventLock(
+          () => _persistDecryptedGiftWrap(event, rumor),
+        );
+      } else {
+        await _handleIncomingEvent(event);
+      }
+      await _maybeYieldDuringDrain(i);
     }
     return events;
   }
@@ -537,9 +569,10 @@ class DmRepository {
           // user's outgoing NIP-04 (the #5202 failure mode, mirrored here).
           return _nostrClient.connectedRelayCount > 0;
         }
-        for (final event in events) {
+        for (var i = 0; i < events.length; i++) {
           if (_disposed || _userPubkey != pubkey) return false;
-          await _handleIncomingEvent(event);
+          await _handleIncomingEvent(events[i]);
+          await _maybeYieldDuringDrain(i);
         }
         // Step strictly below the oldest event seen so the loop terminates;
         // `until` is inclusive, so a re-requested boundary is absorbed by the
@@ -694,8 +727,9 @@ class DmRepository {
       // inbox open (empty queue) never flickers the progress indicator.
       _beginRecovery();
       began = true;
-      for (final row in pending) {
+      for (var i = 0; i < pending.length; i++) {
         if (_disposed || _userPubkey != pubkey) return;
+        final row = pending[i];
         // Already recovered by the live sub / drain — clear the stale row so
         // it does not linger and re-query on every inbox open.
         if (await _directMessagesDao.hasGiftWrap(row.giftWrapId)) {
@@ -727,6 +761,9 @@ class DmRepository {
         // successful decrypt deletes the pending row inside
         // _handleGiftWrapEvent; a failure increments its attempts.
         await _handleIncomingEvent(giftWrapEvent);
+        // WS3: yield periodically so a large retry queue cannot starve frame
+        // rendering. See #5391.
+        await _maybeYieldDuringDrain(i);
       }
     } on Object catch (e, stackTrace) {
       // Relay/DB/IO failures here are expected (e.g. a transient read-only
@@ -929,13 +966,7 @@ class DmRepository {
   /// Serialized via [_eventLock] so that subscription events never race
   /// into the dedup/insert path concurrently.
   Future<void> _handleIncomingEvent(Event event) async {
-    // Wait for any in-flight event processing to complete.
-    while (_eventLock != null) {
-      await _eventLock;
-    }
-    final completer = Completer<void>();
-    _eventLock = completer.future;
-    try {
+    await _withEventLock(() async {
       if (event.kind == EventKind.eventDeletion) {
         await _handleDeletionEvent(event);
       } else if (event.kind == EventKind.directMessage) {
@@ -943,6 +974,22 @@ class DmRepository {
       } else {
         await _handleGiftWrapEvent(event);
       }
+    });
+  }
+
+  /// Runs [body] under the [_eventLock] so dedup/insert work is serialized,
+  /// whether it comes from the live subscription ([_handleIncomingEvent]) or
+  /// the batched history-drain persist path ([_fetchHistoryPage]). The lock
+  /// guards only persistence; batched decryption runs off-lock. See #5391.
+  Future<void> _withEventLock(Future<void> Function() body) async {
+    // Wait for any in-flight event processing to complete.
+    while (_eventLock != null) {
+      await _eventLock;
+    }
+    final completer = Completer<void>();
+    _eventLock = completer.future;
+    try {
+      await body();
     } finally {
       _eventLock = null;
       completer.complete();
@@ -999,7 +1046,12 @@ class DmRepository {
     }
   }
 
+  /// Single-event gift-wrap entry (live subscription + retry replay): dedup,
+  /// decrypt, then persist. The persist body is shared with the batched
+  /// history-drain path via [_persistDecryptedGiftWrap]. Callers must already
+  /// hold the [_eventLock] (via [_handleIncomingEvent]).
   Future<void> _handleGiftWrapEvent(Event giftWrapEvent) async {
+    final Event? rumorEvent;
     try {
       // Dedup: skip if already processed
       if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) {
@@ -1012,7 +1064,30 @@ class DmRepository {
       final nostr = Nostr(signer, [], _dummyRelay);
       await nostr.refreshPublicKey();
 
-      final rumorEvent = await _decryptRumor(nostr, giftWrapEvent);
+      rumorEvent = await _decryptRumor(nostr, giftWrapEvent);
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'Failed to process gift wrap event: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return;
+    }
+
+    await _persistDecryptedGiftWrap(giftWrapEvent, rumorEvent);
+  }
+
+  /// Persists a single (already-decrypted) gift wrap. [rumorEvent] is the
+  /// decrypted inner rumor, or `null` when decryption failed (the wrap is
+  /// then queued for a later retry). Shared by the single-event path
+  /// ([_handleGiftWrapEvent]) and the batched history-drain path. Callers must
+  /// hold the [_eventLock]. See #5391.
+  Future<void> _persistDecryptedGiftWrap(
+    Event giftWrapEvent,
+    Event? rumorEvent,
+  ) async {
+    try {
       if (rumorEvent == null) {
         // Persist the still-encrypted wrap so a later retry can recover the
         // conversation instead of losing it — flaky remote-signer (Keycast
@@ -1037,37 +1112,41 @@ class DmRepository {
         ownerPubkey: _userPubkey,
       );
 
+      // Bind to a final local so the non-null type promotes inside the
+      // runInTransaction closure below (a nullable parameter would not).
+      final rumor = rumorEvent;
+
       // NIP-17 spec line 14 explicitly permits kind 7 reactions inside
       // the gift-wrap envelope. Reaction deletions are also wrapped by
       // this feature so the remove path preserves DM privacy. Route both
       // before the DM-only kinds gate below. #4633.
-      if (rumorEvent.kind == EventKind.reaction) {
+      if (rumor.kind == EventKind.reaction) {
         await _reactionsRepository?.persistIncoming(
-          rumorEvent: rumorEvent,
+          rumorEvent: rumor,
           giftWrapId: giftWrapEvent.id,
         );
         return;
       }
-      if (rumorEvent.kind == EventKind.eventDeletion) {
+      if (rumor.kind == EventKind.eventDeletion) {
         await _reactionsRepository?.handleIncomingDeletion(
-          rumorEvent: rumorEvent,
+          rumorEvent: rumor,
           giftWrapId: giftWrapEvent.id,
         );
         return;
       }
 
       // Accept kind 14 (text) and kind 15 (file)
-      if (!_supportedDmKinds.contains(rumorEvent.kind)) return;
+      if (!_supportedDmKinds.contains(rumor.kind)) return;
 
       // Extract conversation participants from pubkey + p tags, then
       // resolve against existing conversations to prevent duplicates
       // from non-compliant clients that add extra p-tags.
-      final rawParticipants = _extractParticipants(rumorEvent);
+      final rawParticipants = _extractParticipants(rumor);
       if (rawParticipants.length < 2) return;
 
       final participants = await _resolveConversationParticipants(
         rawParticipants,
-        rumorEvent.pubkey,
+        rumor.pubkey,
       );
 
       // Reject self-conversations (all participants are the same pubkey).
@@ -1080,7 +1159,7 @@ class DmRepository {
       // Extract common tags
       String? replyToId;
       String? subject;
-      for (final tag in rumorEvent.tags) {
+      for (final tag in rumor.tags) {
         if (tag.length >= 2) {
           if (tag[0] == 'e') replyToId = tag[1];
           if (tag[0] == 'subject') subject = tag[1];
@@ -1088,17 +1167,17 @@ class DmRepository {
       }
 
       // Extract file metadata for kind 15
-      final fileMetadata = rumorEvent.kind == EventKind.fileMessage
-          ? _extractFileMetadata(rumorEvent)
+      final fileMetadata = rumor.kind == EventKind.fileMessage
+          ? _extractFileMetadata(rumor)
           : null;
 
       // Cross-protocol dedup: if a NIP-04 copy of this message was
       // processed first (network reordering), skip the duplicate.
       final isDuplicate = await _directMessagesDao.hasMatchingMessage(
         conversationId: conversationId,
-        senderPubkey: rumorEvent.pubkey,
-        content: rumorEvent.content,
-        createdAt: rumorEvent.createdAt,
+        senderPubkey: rumor.pubkey,
+        content: rumor.content,
+        createdAt: rumor.createdAt,
         ownerPubkey: _userPubkey,
       );
       if (isDuplicate) {
@@ -1109,26 +1188,26 @@ class DmRepository {
       // The inner hasGiftWrap re-check guards against TOCTOU races where
       // a poll and subscription event both pass the outer fast-path check.
       final isGroup = participants.length > 2;
-      final isSentByMe = rumorEvent.pubkey == _userPubkey;
-      final previewContent = rumorEvent.kind == EventKind.fileMessage
+      final isSentByMe = rumor.pubkey == _userPubkey;
+      final previewContent = rumor.kind == EventKind.fileMessage
           ? _filePreviewText(fileMetadata?.fileType)
-          : rumorEvent.content;
+          : rumor.content;
 
       await _conversationsDao.runInTransaction(() async {
         // Re-check dedup inside transaction (TOCTOU protection).
         if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) return;
 
         await _directMessagesDao.insertMessage(
-          id: rumorEvent.id,
+          id: rumor.id,
           conversationId: conversationId,
-          senderPubkey: rumorEvent.pubkey,
-          content: rumorEvent.content,
-          createdAt: rumorEvent.createdAt,
+          senderPubkey: rumor.pubkey,
+          content: rumor.content,
+          createdAt: rumor.createdAt,
           giftWrapId: giftWrapEvent.id,
-          messageKind: rumorEvent.kind,
+          messageKind: rumor.kind,
           replyToId: replyToId,
           subject: subject,
-          tagsJson: jsonEncode(rumorEvent.tags),
+          tagsJson: jsonEncode(rumor.tags),
           fileType: fileMetadata?.fileType,
           encryptionAlgorithm: fileMetadata?.encryptionAlgorithm,
           decryptionKey: fileMetadata?.decryptionKey,
@@ -1151,10 +1230,10 @@ class DmRepository {
           id: conversationId,
           participantPubkeys: jsonEncode(participants),
           isGroup: isGroup,
-          createdAt: existing?.createdAt ?? rumorEvent.createdAt,
+          createdAt: existing?.createdAt ?? rumor.createdAt,
           lastMessageContent: previewContent,
-          lastMessageTimestamp: rumorEvent.createdAt,
-          lastMessageSenderPubkey: rumorEvent.pubkey,
+          lastMessageTimestamp: rumor.createdAt,
+          lastMessageSenderPubkey: rumor.pubkey,
           subject: subject,
           isRead: isSentByMe,
           currentUserHasSent:
@@ -1169,11 +1248,11 @@ class DmRepository {
       // window (NIP-17) so it must not be used for boundary tracking.
       await _syncState?.recordSeen(
         _userPubkey,
-        createdAt: rumorEvent.createdAt,
+        createdAt: rumor.createdAt,
       );
 
       Log.debug(
-        'Persisted DM (kind ${rumorEvent.kind}) in conversation '
+        'Persisted DM (kind ${rumor.kind}) in conversation '
         '$conversationId',
         category: LogCategory.system,
       );
@@ -1187,16 +1266,101 @@ class DmRepository {
     }
   }
 
+  /// Decrypts a page's gift wraps in batches for local-key signers, returning
+  /// a `{giftWrapId: rumor}` map of the SUCCESSFUL decrypts only. One
+  /// [compute] isolate hop covers up to [DmHistoryDrainConfig.decryptBatchSize]
+  /// wraps instead of one spawn per wrap (#5391). Wraps that are already
+  /// persisted, fail to decrypt, or belong to a remote signer are absent from
+  /// the map — the caller routes those through the unchanged per-event path
+  /// (which preserves the isolate→main-isolate fallback and failed-decrypt
+  /// bookkeeping). Runs OFF the [_eventLock].
+  Future<Map<String, Event>> _batchDecryptGiftWraps(
+    List<Event> events,
+  ) async {
+    final signer = _signer;
+    if (signer is! IsolateDecryptSigner || !signer.canDecryptInIsolate) {
+      // Remote / test signer: cannot decrypt in an isolate. Per-event path.
+      return const {};
+    }
+
+    // Only wraps not already persisted, to avoid re-decrypting on resume
+    // drains. The in-transaction hasGiftWrap re-check still protects races.
+    final pending = <Event>[];
+    for (final event in events) {
+      if (event.kind != EventKind.giftWrap) continue;
+      if (await _directMessagesDao.hasGiftWrap(event.id)) continue;
+      pending.add(event);
+    }
+    if (pending.isEmpty) return const {};
+
+    final hex = signer.withPrivateKeyHex((k) => k);
+    final decrypted = <String, Event>{};
+    for (
+      var start = 0;
+      start < pending.length;
+      start += DmHistoryDrainConfig.decryptBatchSize
+    ) {
+      if (_disposed) break;
+      final end = start + DmHistoryDrainConfig.decryptBatchSize;
+      final chunk = pending.sublist(
+        start,
+        end < pending.length ? end : pending.length,
+      );
+      try {
+        final results = await compute(
+          decryptGiftWrapBatch,
+          DecryptBatchRequest(
+            events: [for (final event in chunk) event.toJson()],
+            privateKeyHex: hex,
+          ),
+        );
+        for (var i = 0; i < chunk.length; i++) {
+          final result = results[i];
+          if (result.isSuccess) {
+            decrypted[chunk[i].id] = Event.fromJson(result.rumor!);
+          }
+        }
+      } on Object catch (e, stackTrace) {
+        // Whole-chunk isolate failure: leave these wraps out of the map so
+        // they fall back to the per-event decryptor in the caller.
+        Log.error(
+          'Batch gift-wrap decrypt threw: $e',
+          category: LogCategory.system,
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
+      // WS3: yield an event-loop turn between isolate hops so a large
+      // backfill cannot starve frame rendering. See #5391.
+      await _yieldToEventLoop();
+    }
+    return decrypted;
+  }
+
+  /// Cooperative-scheduling yield (NOT UI timing): a zero-duration delay is a
+  /// real event-loop turn that lets frame rendering run between drain steps;
+  /// a microtask (`await null`) would not. dm_repository is a pure-Dart
+  /// package, so SchedulerBinding is unavailable here. See #5391.
+  Future<void> _yieldToEventLoop() => Future<void>.delayed(Duration.zero);
+
+  /// Yields to the event loop every [DmHistoryDrainConfig.drainYieldInterval]
+  /// events in a serial backfill loop ([index] is the 0-based position), so a
+  /// large history drain cannot starve frame rendering. See #5391.
+  Future<void> _maybeYieldDuringDrain(int index) async {
+    if ((index + 1) % DmHistoryDrainConfig.drainYieldInterval == 0) {
+      await _yieldToEventLoop();
+    }
+  }
+
   /// Decrypts a single gift-wrap rumor, routing through a [compute]
   /// isolate for local signers that can safely expose their private key
   /// bytes, and falling back to the injected [_rumorDecryptor] on the
   /// main isolate for remote signers (Amber, Keycast RPC, NIP-46) and
   /// test-injected decryptors.
   ///
-  /// Single-element isolate batches are intentional for v1: the
-  /// subscription pipeline processes gift wraps one at a time, and the
-  /// goal is to keep the expensive NIP-44 crypto off the UI thread.
-  /// Real backlog batching can come later.
+  /// This single-event path serves the live subscription and the retry
+  /// replay; the high-volume history drain instead batches many wraps per
+  /// isolate hop via [_batchDecryptGiftWraps]. See #5391.
   Future<Event?> _decryptRumor(Nostr nostr, Event giftWrapEvent) async {
     final signer = _signer;
     if (signer is IsolateDecryptSigner && signer.canDecryptInIsolate) {
