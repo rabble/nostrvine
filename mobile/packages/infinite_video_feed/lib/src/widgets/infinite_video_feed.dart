@@ -442,6 +442,14 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive != oldWidget.isActive) {
       _setPlaybackActive(widget.isActive);
+    } else if (!widget.isActive &&
+        widget.releaseNeighboursWhenInactive !=
+            oldWidget.releaseNeighboursWhenInactive) {
+      if (widget.releaseNeighboursWhenInactive) {
+        _releaseNeighboursAndPrefetch();
+      } else {
+        unawaited(_onIndexChanged(_currentIndex));
+      }
     }
     _syncCurrentAutoPlayGate(oldWidget);
     if (widget.videos == oldWidget.videos) return;

@@ -650,27 +650,26 @@ void main() {
         },
       );
 
-      testWidgets(
-        'resumes only once the shell is no longer covered',
-        (tester) async {
-          await pumpFeed(tester);
-          await tester.pump();
-          expect(feedVideos(tester).isActive, isTrue);
+      testWidgets('resumes only once the shell is no longer covered', (
+        tester,
+      ) async {
+        await pumpFeed(tester);
+        await tester.pump();
+        expect(feedVideos(tester).isActive, isTrue);
 
-          // Profile pushed over the shell pauses the feed.
-          setObscured(tester, obscured: true);
-          await tester.pump();
-          expect(feedVideos(tester).isActive, isFalse);
+        // Profile pushed over the shell pauses the feed.
+        setObscured(tester, obscured: true);
+        await tester.pump();
+        expect(feedVideos(tester).isActive, isFalse);
 
-          // Profile closed (shell revealed) while home is still the active
-          // branch: the feed resumes.
-          setObscured(tester, obscured: false);
-          await tester.pump();
-          expect(feedVideos(tester).isActive, isTrue);
+        // Profile closed (shell revealed) while home is still the active
+        // branch: the feed resumes.
+        setObscured(tester, obscured: false);
+        await tester.pump();
+        expect(feedVideos(tester).isActive, isTrue);
 
-          await drainAndDispose(tester);
-        },
-      );
+        await drainAndDispose(tester);
+      });
 
       testWidgets('pauses on a non-home tab and resumes back on home', (
         tester,
@@ -732,6 +731,26 @@ void main() {
 
         await drainAndDispose(tester);
       });
+
+      testWidgets(
+        'a full-screen page overlay releases after a bottom sheet paused home',
+        (tester) async {
+          await pumpFeed(tester);
+          await tester.pump();
+
+          setBottomSheetOpen(tester, open: true);
+          await tester.pump();
+          expect(feedVideos(tester).isActive, isFalse);
+          expect(feedVideos(tester).releaseNeighboursWhenInactive, isFalse);
+
+          setPageOpen(tester, open: true);
+          await tester.pump();
+          expect(feedVideos(tester).isActive, isFalse);
+          expect(feedVideos(tester).releaseNeighboursWhenInactive, isTrue);
+
+          await drainAndDispose(tester);
+        },
+      );
     });
   });
 }

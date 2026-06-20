@@ -1916,6 +1916,142 @@ void main() {
         }
       });
 
+      testWidgets('collapses neighbours when release flag turns on while '
+          'already inactive', (tester) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install();
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        final videos = [_makeVideo('cur'), _makeVideo('next')];
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                isActive: false,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          expect(
+            key.currentState!.debugLiveControllerIndices,
+            equals(<int>{0, 1}),
+          );
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                isActive: false,
+                releaseNeighboursWhenInactive: true,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(
+            key.currentState!.debugLiveControllerIndices,
+            equals(<int>{0}),
+          );
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
+      testWidgets('re-expands neighbours when release flag turns off while '
+          'already inactive', (tester) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install();
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        final videos = [_makeVideo('cur'), _makeVideo('next')];
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                releaseNeighboursWhenInactive: true,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                isActive: false,
+                releaseNeighboursWhenInactive: true,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          expect(
+            key.currentState!.debugLiveControllerIndices,
+            equals(<int>{0}),
+          );
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                isActive: false,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(
+            key.currentState!.debugLiveControllerIndices,
+            equals(<int>{0, 1}),
+          );
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
       testWidgets('re-initialises the neighbour controller when reactivated', (
         tester,
       ) async {
