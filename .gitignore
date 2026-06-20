@@ -96,6 +96,7 @@ unlinked_spec.ds
 # macOS
 **/Flutter/ephemeral/
 **/Pods/
+**/*.pbxproj.bak*
 **/macos/Flutter/GeneratedPluginRegistrant.swift
 **/macos/Flutter/ephemeral
 **/xcuserdata/
