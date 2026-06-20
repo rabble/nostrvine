@@ -194,6 +194,7 @@ class VideoEvent {
     this.inspiredByNpub,
     this.nostrEventTags = const [],
     this.textTrackRef,
+    this.textTrackRefs = const [],
     this.textTrackContent,
     this.contentWarningLabels = const [],
     this.moderationLabels = const [],
@@ -334,7 +335,7 @@ class VideoEvent {
     String? audioEventRelay;
     final collaboratorPubkeys = <String>[];
     InspiredByInfo? inspiredByVideo;
-    String? textTrackRef;
+    final textTrackRefsLocal = <String>[];
     final contentWarningLabels = <String>[];
 
     // Parse event tags according to NIP-71
@@ -593,7 +594,7 @@ class VideoEvent {
           // Format: ['text-track', '<coords-or-url>', '<relay>', 'captions',
           //          '<lang>']
           if (tagValue.isNotEmpty) {
-            textTrackRef ??= tagValue;
+            textTrackRefsLocal.add(tagValue);
           }
         default:
           // POSTEL'S LAW: Check if any unknown tag contains a valid video URL
@@ -688,7 +689,10 @@ class VideoEvent {
       nostrEventTags: event.tags
           .map((t) => (t as List).map((e) => e.toString()).toList())
           .toList(),
-      textTrackRef: textTrackRef,
+      textTrackRef: textTrackRefsLocal.isNotEmpty
+          ? textTrackRefsLocal.first
+          : null,
+      textTrackRefs: textTrackRefsLocal,
       contentWarningLabels: contentWarningLabels,
     );
   }
@@ -784,6 +788,10 @@ class VideoEvent {
   /// Addressable coordinates or URL for text-track subtitle reference.
   /// Format: `39307:<pubkey>:subtitles:<video-d-tag>` or HTTP URL.
   final String? textTrackRef;
+
+  /// All `text-track` references in tag order, for read-time fallback.
+  /// `textTrackRef` mirrors the first entry for back-compat.
+  final List<String> textTrackRefs;
 
   /// Embedded VTT content from funnelcake REST API (skips relay fetch).
   final String? textTrackContent;
@@ -1407,6 +1415,7 @@ class VideoEvent {
     String? inspiredByNpub,
     List<List<String>>? nostrEventTags,
     String? textTrackRef,
+    List<String>? textTrackRefs,
     String? textTrackContent,
     List<String>? contentWarningLabels,
     List<String>? moderationLabels,
@@ -1466,6 +1475,7 @@ class VideoEvent {
     inspiredByNpub: inspiredByNpub ?? this.inspiredByNpub,
     nostrEventTags: nostrEventTags ?? this.nostrEventTags,
     textTrackRef: textTrackRef ?? this.textTrackRef,
+    textTrackRefs: textTrackRefs ?? this.textTrackRefs,
     textTrackContent: textTrackContent ?? this.textTrackContent,
     contentWarningLabels: contentWarningLabels ?? this.contentWarningLabels,
     moderationLabels: moderationLabels ?? this.moderationLabels,
