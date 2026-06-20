@@ -63,8 +63,16 @@ abstract class _NotificationRetryConfig {
   static const maxBackoff = Duration(milliseconds: 1500);
 }
 
-/// Number of cached rows hydrated from the DAO on cold start.
-const _hydrationLimit = 50;
+/// Number of notifications loaded per page.
+///
+/// Bounds both the cold-start cache hydration and the first-page REST
+/// fetch. Kept deliberately small: each first-page notification can fan
+/// out to a `getVideoStats` lookup (see `_fetchVideoMetadata`), so a large
+/// page turns every inbox open into a burst of parallel requests that
+/// keeps the stale-while-revalidate progress bar up — and the list
+/// janking — for seconds. Older notifications load on demand via
+/// `loadNextPage` as the user scrolls.
+const _pageSize = 20;
 
 /// Repository for fetching, enriching, grouping, and managing
 /// notifications.
@@ -173,13 +181,29 @@ class NotificationRepository {
   /// this to `false`.
   bool get hasPaginatedBeyondFirstPage => _pagesLoaded > 1;
 
-  /// Releases the current page-depth guard after the feed UI is gone.
+  /// Releases the current page-depth guard after the feed UI is gone, and
+  /// collapses any deep-scrolled accumulation back to the first page.
   ///
   /// While the notifications screen is visible, app-resume refreshes skip
   /// over a paginated snapshot so they do not collapse the list under the
   /// user. Once the feed BLoC closes, no visible list can collapse; resetting
   /// the depth lets out-of-screen liveness refresh the badge again.
+  ///
+  /// The snapshot is long-lived (the repository outlives the feed BLoC), so a
+  /// session that scrolled through several pages would otherwise leave every
+  /// loaded item in the snapshot. The next open's stale-while-revalidate
+  /// render would then paint and project that entire accumulation before the
+  /// first-page refresh trims it — janking the open in proportion to how far
+  /// the previous session scrolled. Trimming to [_pageSize] here keeps the
+  /// newest page (so the derived unread badge is unaffected) and lets
+  /// [refresh] replace it with authoritative first-page data on reopen.
   void resetPaginationDepth() {
+    final current = _snapshot.value;
+    if (current.items.length > _pageSize) {
+      _snapshot.add(
+        current.copyWith(items: current.items.take(_pageSize).toList()),
+      );
+    }
     _pagesLoaded = _snapshot.value.items.isEmpty ? 0 : 1;
   }
 
@@ -281,6 +305,7 @@ class NotificationRepository {
     final requestUrl = _funnelcakeApiClient
         .notificationsUri(
           pubkey: _userPubkey,
+          limit: _pageSize,
           cursor: cursor,
           cursorId: cursorId,
         )
@@ -385,7 +410,7 @@ class NotificationRepository {
     try {
       if (_snapshot.value.items.isNotEmpty) return;
       final rows = await _notificationsDao.getAllNotifications(
-        limit: _hydrationLimit,
+        limit: _pageSize,
       );
       if (rows.isEmpty) return;
       if (_snapshot.value.items.isNotEmpty) return;

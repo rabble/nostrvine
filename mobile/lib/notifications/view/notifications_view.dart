@@ -396,24 +396,31 @@ class _RevalidationBar extends StatelessWidget {
         ? Duration.zero
         : _transitionDuration;
 
-    return ExcludeSemantics(
-      child: AnimatedSwitcher(
-        duration: duration,
-        transitionBuilder: (child, animation) => SizeTransition(
-          sizeFactor: animation,
-          child: FadeTransition(opacity: animation, child: child),
+    // RepaintBoundary isolates the indeterminate progress animation's
+    // per-frame repaint from the cached list it overlays. Without it the
+    // bar's continuous `markNeedsPaint` propagates up to the enclosing
+    // Stack and re-runs the list pane's paint every frame for the entire
+    // refresh — the open-jank reported after stale-while-revalidate landed.
+    return RepaintBoundary(
+      child: ExcludeSemantics(
+        child: AnimatedSwitcher(
+          duration: duration,
+          transitionBuilder: (child, animation) => SizeTransition(
+            sizeFactor: animation,
+            child: FadeTransition(opacity: animation, child: child),
+          ),
+          child: visible
+              ? const SizedBox(
+                  key: ValueKey('revalidation-bar'),
+                  height: _height,
+                  child: LinearProgressIndicator(
+                    minHeight: _height,
+                    color: VineTheme.vineGreen,
+                    backgroundColor: VineTheme.transparent,
+                  ),
+                )
+              : const SizedBox(key: ValueKey('revalidation-bar-hidden')),
         ),
-        child: visible
-            ? const SizedBox(
-                key: ValueKey('revalidation-bar'),
-                height: _height,
-                child: LinearProgressIndicator(
-                  minHeight: _height,
-                  color: VineTheme.vineGreen,
-                  backgroundColor: VineTheme.transparent,
-                ),
-              )
-            : const SizedBox(key: ValueKey('revalidation-bar-hidden')),
       ),
     );
   }

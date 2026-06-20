@@ -241,7 +241,7 @@ void main() {
           '${signedUri.scheme}://${signedUri.host}${signedUri.path}',
           equals('https://api.example.com/api/users/$userPubkey/notifications'),
         );
-        expect(signedUri.queryParameters['limit'], equals('50'));
+        expect(signedUri.queryParameters['limit'], equals('20'));
         expect(signedUri.queryParameters['before'], isNotNull);
         expect(int.tryParse(signedUri.queryParameters['before']!), isNotNull);
         expect(signedMethod, equals('GET'));
@@ -271,7 +271,7 @@ void main() {
           signedUrl,
           equals(
             'https://api.example.com/api/users/$userPubkey/notifications'
-            '?limit=50&before=cursor_abc',
+            '?limit=20&before=cursor_abc',
           ),
         );
       });
@@ -307,7 +307,7 @@ void main() {
             signedUrl,
             equals(
               'https://api.example.com/api/users/$userPubkey/notifications'
-              '?limit=50&before=1700000000'
+              '?limit=20&before=1700000000'
               '&before_id=$stableCursorId',
             ),
           );
@@ -343,7 +343,7 @@ void main() {
           signedUrl,
           equals(
             'https://api.example.com/api/users/$userPubkey/notifications'
-            '?limit=50&before=manual_cursor',
+            '?limit=20&before=manual_cursor',
           ),
         );
       });
@@ -2405,6 +2405,37 @@ void main() {
 
         expect(repository.hasPaginatedBeyondFirstPage, isFalse);
       });
+
+      test(
+        'resetPaginationDepth collapses the snapshot to the first page',
+        () async {
+          stubProfiles({});
+          // A session that scrolled deep leaves more than a page of items in
+          // the long-lived snapshot. Build a 25-item first page so the trim
+          // back to the 20-item page size is observable.
+          stubNotifications([
+            for (var i = 0; i < 25; i++)
+              makeNotification(
+                id: 'n$i',
+                sourcePubkey: 'pub_$i',
+                sourceEventId: 'evt$i',
+                referencedEventId: 'video_$i',
+              ),
+          ], hasMore: true);
+          await repository.getNotifications();
+          expect(
+            (await repository.watchSnapshot().first).items,
+            hasLength(25),
+          );
+
+          repository.resetPaginationDepth();
+
+          expect(
+            (await repository.watchSnapshot().first).items,
+            hasLength(20),
+          );
+        },
+      );
     });
 
     group('markAsRead', () {
