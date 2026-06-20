@@ -188,19 +188,19 @@ enum UsernameValidationError {
   networkError,
 }
 
-/// Status of the in-app verifier WebView launch flow.
+/// Status of the verifier launch flow.
 ///
-/// Used as a one-shot signal — the UI listens for [launchRequested], pushes
-/// the WebView, and dispatches [VerifierWebViewDismissed] on return so the
-/// status flips to [dismissed]. The bloc never navigates itself.
+/// Used as a one-shot signal: the UI listens for [launchRequested], opens the
+/// verifier, and dispatches [VerifierWebViewDismissed] on return so the status
+/// flips to [dismissed]. The bloc never navigates itself.
 enum VerifierStatus {
   /// No launch pending.
   idle,
 
-  /// User tapped "Get verified" — UI should push the WebView.
+  /// User tapped "Get verified" and the UI should open the verifier.
   launchRequested,
 
-  /// WebView was popped — UI should refresh kind 0 to pick up new claims.
+  /// Verifier flow returned and UI should refresh kind 0 for new claims.
   dismissed,
 }
 

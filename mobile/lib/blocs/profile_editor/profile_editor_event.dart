@@ -182,14 +182,14 @@ final class ProfilePictureUrlSet extends ProfileEditorEvent {
   final String url;
 }
 
-/// User tapped the "Get verified" CTA — UI listens for this and pushes the
-/// in-app verifier WebView. The bloc only flips a status; no navigation here.
+/// User tapped the "Get verified" CTA. The UI listens for this and opens the
+/// verifier. The bloc only flips a status; no navigation here.
 final class VerifierLaunchRequested extends ProfileEditorEvent {
   const VerifierLaunchRequested();
 }
 
-/// In-app verifier WebView was popped — UI dispatches this so downstream
-/// consumers (e.g. MyProfileBloc) can refresh kind 0 and pick up new claims.
+/// Verifier flow returned. UI dispatches this so downstream consumers
+/// (e.g. MyProfileBloc) can refresh kind 0 and pick up new claims.
 final class VerifierWebViewDismissed extends ProfileEditorEvent {
   const VerifierWebViewDismissed();
 }

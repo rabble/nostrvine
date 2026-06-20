@@ -18,8 +18,10 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../helpers/test_provider_overrides.dart';
+import '../helpers/url_launcher_test_double.dart';
 
 class _MockProfileEditorBloc
     extends MockBloc<ProfileEditorEvent, ProfileEditorState>
@@ -860,5 +862,74 @@ void main() {
         },
       );
     });
+  });
+
+  group('launchVerifierFlow', () {
+    late UrlLauncherPlatform originalPlatform;
+    late UrlLauncherTestDouble launcher;
+    late _MockProfileEditorBloc editorBloc;
+    late _MockMyProfileBloc myProfileBloc;
+
+    setUp(() {
+      originalPlatform = UrlLauncherPlatform.instance;
+      launcher = UrlLauncherTestDouble();
+      UrlLauncherPlatform.instance = launcher;
+      editorBloc = _MockProfileEditorBloc();
+      myProfileBloc = _MockMyProfileBloc();
+    });
+
+    tearDown(() {
+      UrlLauncherPlatform.instance = originalPlatform;
+    });
+
+    test(
+      'opens the verifyer in the external browser and refreshes profile',
+      () async {
+        await launchVerifierFlow(
+          editorBloc: editorBloc,
+          myProfileBloc: myProfileBloc,
+          isWeb: false,
+        );
+
+        expect(launcher.launched, hasLength(1));
+        expect(launcher.launched.single.url, 'https://verifyer.divine.video/');
+        expect(launcher.launched.single.useExternalApplication, isTrue);
+        verify(
+          () => editorBloc.add(const VerifierWebViewDismissed()),
+        ).called(1);
+        verify(
+          () => myProfileBloc.add(const MyProfileFetchRequested()),
+        ).called(1);
+      },
+    );
+
+    test(
+      'keeps the existing web iframe route and refreshes profile',
+      () async {
+        final pushedRoutes = <({String location, Object? extra})>[];
+
+        await launchVerifierFlow(
+          editorBloc: editorBloc,
+          myProfileBloc: myProfileBloc,
+          isWeb: true,
+          pushVerifierRoute: (location, {extra}) async {
+            pushedRoutes.add((location: location, extra: extra));
+          },
+        );
+
+        expect(launcher.launched, isEmpty);
+        expect(pushedRoutes, hasLength(1));
+        expect(
+          pushedRoutes.single.location,
+          '/apps/bundled-verifyer/web-sandbox',
+        );
+        verify(
+          () => editorBloc.add(const VerifierWebViewDismissed()),
+        ).called(1);
+        verify(
+          () => myProfileBloc.add(const MyProfileFetchRequested()),
+        ).called(1);
+      },
+    );
   });
 }

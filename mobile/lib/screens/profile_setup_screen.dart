@@ -21,10 +21,8 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/screens/apps/web_iframe_sandbox_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
-import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
 import 'package:openvine/widgets/profile/verified_accounts_row.dart';
@@ -477,36 +475,13 @@ class _ProfileSetupScreenViewState
               prev.verifierStatus != curr.verifierStatus &&
               curr.verifierStatus == VerifierStatus.launchRequested,
           listener: (context, state) async {
-            final editorBloc = context.read<ProfileEditorBloc>();
-            final myProfileBloc = context.read<MyProfileBloc>();
-            final verifyer = preloadedNostrApps.firstWhere(
-              (app) => app.slug == 'verifyer',
+            await launchVerifierFlow(
+              editorBloc: context.read<ProfileEditorBloc>(),
+              myProfileBloc: context.read<MyProfileBloc>(),
+              pushVerifierRoute: (location, {extra}) async {
+                await context.push(location, extra: extra);
+              },
             );
-            if (nostrAppsSandboxSupported) {
-              // Native (iOS / Android / macOS): full webview_flutter
-              // sandbox with NIP-07 bridge injection.
-              await context.push(
-                NostrAppSandboxScreen.pathForAppId(verifyer.id),
-                extra: verifyer,
-              );
-            } else if (kIsWeb) {
-              // Flutter web: webview_flutter is unavailable, but we can
-              // host the verifyer in an <iframe> with a postMessage
-              // NIP-07 bridge to Divine's web signer.
-              await context.push(
-                WebIframeSandboxScreen.pathForAppId(verifyer.id),
-                extra: verifyer,
-              );
-            } else {
-              // Last-resort fallback for any future platform without
-              // either capability — open in the system browser.
-              await launchUrl(
-                Uri.parse(verifyer.launchUrl),
-                mode: LaunchMode.externalApplication,
-              );
-            }
-            editorBloc.add(const VerifierWebViewDismissed());
-            myProfileBloc.add(const MyProfileFetchRequested());
           },
         ),
       ],
@@ -1868,6 +1843,44 @@ class _VerifiedAccountsSection extends StatelessWidget {
       ),
     );
   }
+}
+
+typedef VerifierRoutePusher =
+    Future<void> Function(String location, {Object? extra});
+
+/// Opens the Divine verifyer and refreshes the profile when the user returns.
+///
+/// Native in-app WebViews cannot complete the verifyer's login flow because it
+/// leaves `verifyer.divine.video` for `login.divine.video` and OAuth providers.
+/// Those hand-offs need real browser tabs, cookies, and redirects, so native
+/// platforms launch the system browser. Flutter web keeps the existing iframe
+/// signer bridge because it runs in the browser and does not use
+/// `webview_flutter`.
+@visibleForTesting
+Future<void> launchVerifierFlow({
+  required ProfileEditorBloc editorBloc,
+  required MyProfileBloc myProfileBloc,
+  VerifierRoutePusher? pushVerifierRoute,
+  bool isWeb = kIsWeb,
+}) async {
+  final verifyer = preloadedNostrApps.firstWhere(
+    (app) => app.slug == 'verifyer',
+  );
+
+  if (isWeb && pushVerifierRoute != null) {
+    await pushVerifierRoute(
+      WebIframeSandboxScreen.pathForAppId(verifyer.id),
+      extra: verifyer,
+    );
+  } else {
+    await launchUrl(
+      Uri.parse(verifyer.launchUrl),
+      mode: LaunchMode.externalApplication,
+    );
+  }
+
+  editorBloc.add(const VerifierWebViewDismissed());
+  myProfileBloc.add(const MyProfileFetchRequested());
 }
 
 class _GetVerifiedTile extends StatelessWidget {
