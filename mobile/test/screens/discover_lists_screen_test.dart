@@ -60,9 +60,10 @@ void main() {
       mockService = _MockCuratedListService();
 
       // Create enough lists so auto-pagination doesn't kick in
-      // (_minListsBeforeAutoPaginate = 10)
+      // (_minListsBeforeAutoPaginate = 10), and so the list is scrollable
+      // across widget-test viewport differences.
       preloadedLists = List.generate(
-        15,
+        50,
         (i) => _makeList(
           'list_$i',
           createdAt: DateTime(2025).subtract(Duration(hours: i)),
@@ -79,7 +80,10 @@ void main() {
     }) {
       final lists = initialLists ?? preloadedLists;
       final oldest =
-          oldestTimestamp ?? DateTime(2025).subtract(const Duration(hours: 14));
+          oldestTimestamp ??
+          lists
+              .map((list) => list.createdAt)
+              .reduce((a, b) => a.isBefore(b) ? a : b);
 
       return ProviderScope(
         overrides: [
@@ -110,6 +114,11 @@ void main() {
         // timeout timer to complete. The timeout fires within FakeAsync,
         // resolving the Completer and running the finally block.
         final controllers = <StreamController<List<CuratedList>>>[];
+        addTearDown(() async {
+          for (final controller in controllers) {
+            await controller.close();
+          }
+        });
 
         when(
           () => mockService.streamPublicListsFromRelays(
@@ -131,7 +140,11 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsNothing);
 
         // --- First scroll: triggers pagination ---
-        await tester.drag(find.byType(ListView), const Offset(0, -5000));
+        await tester.scrollUntilVisible(
+          find.text('List list_49'),
+          500,
+          scrollable: find.byType(Scrollable),
+        );
 
         // pump() processes microtasks: _loadMoreLists starts, calls mock,
         // listens to stream, awaits completer. Stream stays open.
@@ -156,9 +169,13 @@ void main() {
         // --- Second scroll: should NOT trigger pagination again ---
         // Scroll UP first so the subsequent scroll DOWN actually changes
         // the position and fires the _onScroll listener at the bottom.
-        await tester.drag(find.byType(ListView), const Offset(0, 500));
+        await tester.drag(find.byType(ListView), const Offset(0, 1000));
         await tester.pump();
-        await tester.drag(find.byType(ListView), const Offset(0, -5000));
+        await tester.scrollUntilVisible(
+          find.text('List list_49'),
+          500,
+          scrollable: find.byType(Scrollable),
+        );
         await tester.pump();
         await tester.pump(const Duration(seconds: 4));
         await tester.pump();
