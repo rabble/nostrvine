@@ -133,12 +133,8 @@ class DiskPrefetcher {
       if (isDisposed) return;
 
       if (_generation != generation) {
-        // coverage:ignore-start
-        _log(
-          'Prefetch cycle #$generation aborted (stale)',
-        );
+        _log('Prefetch cycle #$generation aborted (stale)');
         return;
-        // coverage:ignore-end
       }
       if (i < 0 || i >= _cycleVideos.length) continue;
 
