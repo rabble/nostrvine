@@ -1,11 +1,52 @@
 // ABOUTME: Tests for hashtag loading and display in ExploreScreen Trending tab
 // ABOUTME: Verifies hashtags load quickly from JSON and display immediately after loading
 
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 
+void _mockTopHashtagsAsset(String payload) {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMessageHandler('flutter/assets', (ByteData? message) async {
+        if (message == null) return null;
+
+        final assetName = utf8.decode(message.buffer.asUint8List());
+        if (assetName != 'assets/top_1000_hashtags.json') return null;
+
+        final bytes = Uint8List.fromList(utf8.encode(payload));
+        return ByteData.sublistView(bytes);
+      });
+}
+
+void _resetTopHashtagsAssetState() {
+  TopHashtagsService.instance.resetForTesting();
+  rootBundle.clear();
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMessageHandler('flutter/assets', null);
+}
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late String bundledTopHashtagsJson;
+
+  setUpAll(() {
+    bundledTopHashtagsJson = File(
+      'assets/top_1000_hashtags.json',
+    ).readAsStringSync();
+  });
+
   group('TopHashtagsService Performance Tests', () {
+    setUp(() {
+      _resetTopHashtagsAssetState();
+      _mockTopHashtagsAsset(bundledTopHashtagsJson);
+    });
+
+    tearDown(_resetTopHashtagsAssetState);
+
     test('Hashtags load quickly from JSON asset (< 200ms)', () async {
       // Start timing hashtag load
       final startTime = DateTime.now();
