@@ -9698,6 +9698,30 @@ abstract class AppLocalizations {
   /// **'Retrying reaction'**
   String get dmReactionChipRetryAnnouncement;
 
+  /// Title of the bottom sheet listing everyone who reacted to a DM message.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactions'**
+  String get dmReactionsSheetTitle;
+
+  /// Screen-reader label for the combined reaction pill button that opens the who-reacted sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'See who reacted'**
+  String get dmReactionsViewA11yLabel;
+
+  /// Action on the current account's own row in the reactions sheet to remove their reaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get dmReactionRemoveAction;
+
+  /// Action on the current account's own failed reaction row in the reactions sheet to retry publishing.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get dmReactionRetryAction;
+
   /// Label for the Bold formatting action in the DM composer's text-selection context menu. Wraps the selected text with markdown bold markers (e.g. **text**).
   ///
   /// In en, this message translates to:

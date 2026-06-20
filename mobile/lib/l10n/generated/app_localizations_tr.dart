@@ -5489,6 +5489,18 @@ class AppLocalizationsTr extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get dmReactionsSheetTitle => 'Tepkiler';
+
+  @override
+  String get dmReactionsViewA11yLabel => 'Kimlerin tepki verdiğini gör';
+
+  @override
+  String get dmReactionRemoveAction => 'Kaldır';
+
+  @override
+  String get dmReactionRetryAction => 'Yeniden dene';
+
+  @override
   String get dmFormatBold => 'Kalın';
 
   @override

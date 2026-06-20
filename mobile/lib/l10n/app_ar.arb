@@ -1,5 +1,9 @@
 {
     "@@locale": "ar",
+    "dmReactionsSheetTitle": "التفاعلات",
+    "dmReactionsViewA11yLabel": "اعرف من تفاعل",
+    "dmReactionRemoveAction": "إزالة",
+    "dmReactionRetryAction": "إعادة المحاولة",
     "dmMessageBubbleVideoReplyHint": "افتح الفيديو المُشار إليه",
     "commonSomethingWentWrong": "حدث خطأ ما",
     "profileFeedError": "Couldn't load videos.",

@@ -1,5 +1,9 @@
 {
     "@@locale": "pl",
+    "dmReactionsSheetTitle": "Reakcje",
+    "dmReactionsViewA11yLabel": "Zobacz, kto zareagował",
+    "dmReactionRemoveAction": "Usuń",
+    "dmReactionRetryAction": "Spróbuj ponownie",
     "dmMessageBubbleVideoReplyHint": "Otwórz przywołane wideo",
     "commonSomethingWentWrong": "Coś poszło nie tak",
     "profileFeedError": "Couldn't load videos.",

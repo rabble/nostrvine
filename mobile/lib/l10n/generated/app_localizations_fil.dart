@@ -5577,6 +5577,18 @@ class AppLocalizationsFil extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get dmReactionsSheetTitle => 'Mga reaksyon';
+
+  @override
+  String get dmReactionsViewA11yLabel => 'Tingnan kung sino ang nag-react';
+
+  @override
+  String get dmReactionRemoveAction => 'Alisin';
+
+  @override
+  String get dmReactionRetryAction => 'Subukan muli';
+
+  @override
   String get dmFormatBold => 'Makapal';
 
   @override

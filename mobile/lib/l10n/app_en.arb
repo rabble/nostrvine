@@ -3151,6 +3151,22 @@
   "@dmReactionChipRetryAnnouncement": {
     "description": "Live-region announcement on chip retry."
   },
+  "dmReactionsSheetTitle": "Reactions",
+  "@dmReactionsSheetTitle": {
+    "description": "Title of the bottom sheet listing everyone who reacted to a DM message."
+  },
+  "dmReactionsViewA11yLabel": "See who reacted",
+  "@dmReactionsViewA11yLabel": {
+    "description": "Screen-reader label for the combined reaction pill button that opens the who-reacted sheet."
+  },
+  "dmReactionRemoveAction": "Remove",
+  "@dmReactionRemoveAction": {
+    "description": "Action on the current account's own row in the reactions sheet to remove their reaction."
+  },
+  "dmReactionRetryAction": "Retry",
+  "@dmReactionRetryAction": {
+    "description": "Action on the current account's own failed reaction row in the reactions sheet to retry publishing."
+  },
   "dmFormatBold": "Bold",
   "@dmFormatBold": {
     "description": "Label for the Bold formatting action in the DM composer's text-selection context menu. Wraps the selected text with markdown bold markers (e.g. **text**)."

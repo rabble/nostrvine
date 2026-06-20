@@ -5404,6 +5404,18 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get dmReactionsSheetTitle => 'ምላሾች';
+
+  @override
+  String get dmReactionsViewA11yLabel => 'ማን ምላሽ እንደሰጠ ይመልከቱ';
+
+  @override
+  String get dmReactionRemoveAction => 'አስወግድ';
+
+  @override
+  String get dmReactionRetryAction => 'እንደገና ሞክር';
+
+  @override
   String get dmFormatBold => 'ደማቅ';
 
   @override

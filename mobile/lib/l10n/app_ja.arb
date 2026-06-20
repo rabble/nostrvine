@@ -1,5 +1,9 @@
 {
     "@@locale": "ja",
+    "dmReactionsSheetTitle": "リアクション",
+    "dmReactionsViewA11yLabel": "リアクションした人を見る",
+    "dmReactionRemoveAction": "削除",
+    "dmReactionRetryAction": "再試行",
     "dmMessageBubbleVideoReplyHint": "参照先の動画を開く",
     "commonSomethingWentWrong": "問題が発生しました",
     "profileFeedError": "Couldn't load videos.",

@@ -5562,6 +5562,18 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get dmReactionsSheetTitle => 'Реакции';
+
+  @override
+  String get dmReactionsViewA11yLabel => 'Вижте кой реагира';
+
+  @override
+  String get dmReactionRemoveAction => 'Премахни';
+
+  @override
+  String get dmReactionRetryAction => 'Опитай отново';
+
+  @override
   String get dmFormatBold => 'Получер';
 
   @override

@@ -1,5 +1,9 @@
 {
     "@@locale": "sv",
+    "dmReactionsSheetTitle": "Reaktioner",
+    "dmReactionsViewA11yLabel": "Se vilka som reagerat",
+    "dmReactionRemoveAction": "Ta bort",
+    "dmReactionRetryAction": "Försök igen",
     "dmMessageBubbleVideoReplyHint": "Öppna den refererade videon",
     "commonSomethingWentWrong": "Något gick fel",
     "profileFeedError": "Couldn't load videos.",

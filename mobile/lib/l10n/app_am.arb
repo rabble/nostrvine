@@ -1,5 +1,9 @@
 {
     "@@locale": "am",
+    "dmReactionsSheetTitle": "ምላሾች",
+    "dmReactionsViewA11yLabel": "ማን ምላሽ እንደሰጠ ይመልከቱ",
+    "dmReactionRemoveAction": "አስወግድ",
+    "dmReactionRetryAction": "እንደገና ሞክር",
     "dmMessageBubbleVideoReplyHint": "የተጠቀሰውን ቪዲዮ ክፈት",
     "commonSomethingWentWrong": "የሆነ ችግር ተፈጥሯል",
     "profileFeedError": "Couldn't load videos.",

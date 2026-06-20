@@ -5533,6 +5533,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get dmReactionsSheetTitle => 'Reacties';
+
+  @override
+  String get dmReactionsViewA11yLabel => 'Bekijk wie heeft gereageerd';
+
+  @override
+  String get dmReactionRemoveAction => 'Verwijderen';
+
+  @override
+  String get dmReactionRetryAction => 'Opnieuw proberen';
+
+  @override
   String get dmFormatBold => 'Vet';
 
   @override

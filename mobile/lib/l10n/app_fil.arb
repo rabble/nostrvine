@@ -1,5 +1,9 @@
 {
     "@@locale": "fil",
+    "dmReactionsSheetTitle": "Mga reaksyon",
+    "dmReactionsViewA11yLabel": "Tingnan kung sino ang nag-react",
+    "dmReactionRemoveAction": "Alisin",
+    "dmReactionRetryAction": "Subukan muli",
     "dmMessageBubbleVideoReplyHint": "Buksan ang tinukoy na video",
     "commonSomethingWentWrong": "May nangyaring problema",
     "profileFeedError": "Couldn't load videos.",

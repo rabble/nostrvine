@@ -5485,6 +5485,18 @@ class AppLocalizationsId extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get dmReactionsSheetTitle => 'Reaksi';
+
+  @override
+  String get dmReactionsViewA11yLabel => 'Lihat siapa yang bereaksi';
+
+  @override
+  String get dmReactionRemoveAction => 'Hapus';
+
+  @override
+  String get dmReactionRetryAction => 'Coba lagi';
+
+  @override
   String get dmFormatBold => 'Tebal';
 
   @override

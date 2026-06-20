@@ -1,5 +1,9 @@
 {
     "@@locale": "ro",
+    "dmReactionsSheetTitle": "Reacții",
+    "dmReactionsViewA11yLabel": "Vezi cine a reacționat",
+    "dmReactionRemoveAction": "Elimină",
+    "dmReactionRetryAction": "Reîncearcă",
     "dmMessageBubbleVideoReplyHint": "Deschide videoclipul referențiat",
     "commonSomethingWentWrong": "Ceva nu a mers bine",
     "profileFeedError": "Couldn't load videos.",

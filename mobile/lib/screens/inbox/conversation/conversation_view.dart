@@ -498,9 +498,6 @@ class _MessageList extends StatelessWidget {
 
         // participantPubkeys excludes self, so a length > 1 is a group.
         final isGroup = participantPubkeys.length > 1;
-        final isReelShare =
-            message.hasSharedVideo ||
-            tryExtractDivineVideoUrl(message.content) != null;
 
         // Context for the in-player reply/reaction bar when this bubble's
         // shared reel is opened. Carries the reel's structured video ref so a
@@ -547,23 +544,17 @@ class _MessageList extends StatelessWidget {
                 : CrossAxisAlignment.start,
             children: [
               bubble,
-              // Groups show each member's reaction on a shared reel
-              // individually; everything else uses the aggregated chips.
-              if (isGroup && isReelShare)
-                PerPersonReactionsRow(
-                  messageId: message.id,
-                  ownerPubkey: currentPubkey,
-                  isSentByMe: isSent,
-                )
-              else
-                ReactionsRow(
-                  conversationId: message.conversationId,
-                  messageId: message.id,
-                  messageAuthorPubkey: message.senderPubkey,
-                  ownerPubkey: currentPubkey,
-                  isSentByMe: isSent,
-                  otherParticipantName: senderDisplayName,
-                ),
+              // One combined reaction pill (distinct emoji glyphs + reactor
+              // avatars) for both 1:1 and group; tapping it opens the
+              // "who reacted" sheet.
+              ReactionsRow(
+                conversationId: message.conversationId,
+                messageId: message.id,
+                messageAuthorPubkey: message.senderPubkey,
+                ownerPubkey: currentPubkey,
+                isSentByMe: isSent,
+                otherParticipantName: senderDisplayName,
+              ),
             ],
           );
         }

@@ -5308,6 +5308,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get dmReactionsSheetTitle => '반응';
+
+  @override
+  String get dmReactionsViewA11yLabel => '반응한 사람 보기';
+
+  @override
+  String get dmReactionRemoveAction => '삭제';
+
+  @override
+  String get dmReactionRetryAction => '다시 시도';
+
+  @override
   String get dmFormatBold => '굵게';
 
   @override

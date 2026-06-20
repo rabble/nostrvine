@@ -1,5 +1,9 @@
 {
     "@@locale": "ko",
+    "dmReactionsSheetTitle": "반응",
+    "dmReactionsViewA11yLabel": "반응한 사람 보기",
+    "dmReactionRemoveAction": "삭제",
+    "dmReactionRetryAction": "다시 시도",
     "dmMessageBubbleVideoReplyHint": "참조된 동영상 열기",
     "commonSomethingWentWrong": "문제가 생겼어요",
     "profileFeedError": "Couldn't load videos.",

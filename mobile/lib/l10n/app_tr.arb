@@ -1,5 +1,9 @@
 {
     "@@locale": "tr",
+    "dmReactionsSheetTitle": "Tepkiler",
+    "dmReactionsViewA11yLabel": "Kimlerin tepki verdiğini gör",
+    "dmReactionRemoveAction": "Kaldır",
+    "dmReactionRetryAction": "Yeniden dene",
     "dmMessageBubbleVideoReplyHint": "Atıfta bulunulan videoyu aç",
     "commonSomethingWentWrong": "Bir hata oluştu",
     "profileFeedError": "Couldn't load videos.",

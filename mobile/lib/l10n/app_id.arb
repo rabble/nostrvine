@@ -1,5 +1,9 @@
 {
     "@@locale": "id",
+    "dmReactionsSheetTitle": "Reaksi",
+    "dmReactionsViewA11yLabel": "Lihat siapa yang bereaksi",
+    "dmReactionRemoveAction": "Hapus",
+    "dmReactionRetryAction": "Coba lagi",
     "dmMessageBubbleVideoReplyHint": "Buka video yang dirujuk",
     "commonSomethingWentWrong": "Terjadi kesalahan",
     "profileFeedError": "Couldn't load videos.",

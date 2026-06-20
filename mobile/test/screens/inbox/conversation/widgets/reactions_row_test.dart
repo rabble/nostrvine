@@ -1,16 +1,17 @@
-// ABOUTME: Widget tests for ReactionsRow.
-// ABOUTME: Covers chip rendering, semantic labels, and retry/toggle
-// ABOUTME: dispatching through ConversationReactionsCubit.
+// ABOUTME: Widget tests for the combined reaction pill (ReactionsRow).
+// ABOUTME: Covers distinct-glyph rendering, reactor avatars, the
+// ABOUTME: "see who reacted" semantic label, and tap-opens-sheet.
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/reactions_row.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 
 import '../../../../helpers/test_provider_overrides.dart';
 
@@ -19,6 +20,8 @@ class _MockConversationReactionsCubit
     implements ConversationReactionsCubit {}
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
   const ownerPubkey =
       '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
   const otherPubkey =
@@ -32,6 +35,7 @@ void main() {
     required String id,
     required String reactorPubkey,
     required String emoji,
+    int createdAt = 1_700_000_000,
     DmReactionPublishStatus publishStatus = DmReactionPublishStatus.sent,
   }) {
     return DmReaction(
@@ -41,9 +45,15 @@ void main() {
       targetMessageAuthor: otherPubkey,
       reactorPubkey: reactorPubkey,
       emoji: emoji,
-      createdAt: 1_700_000_000,
+      createdAt: createdAt,
       ownerPubkey: ownerPubkey,
       publishStatus: publishStatus,
+    );
+  }
+
+  ConversationReactionsState stateWith(List<DmReaction> reactions) {
+    return ConversationReactionsState(
+      reactionsByMessageId: {messageId: reactions},
     );
   }
 
@@ -68,151 +78,89 @@ void main() {
   group('ReactionsRow', () {
     late _MockConversationReactionsCubit cubit;
 
-    setUpAll(() {
-      registerFallbackValue(
-        const ConversationReactionToggled(
-          conversationId: conversationId,
-          messageId: messageId,
-          messageAuthorPubkey: otherPubkey,
-          emoji: '🔥',
-        ),
-      );
-      registerFallbackValue(
-        const ConversationReactionRetryRequested(
-          rumorId:
-              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
-          messageId: messageId,
-          messageAuthorPubkey: otherPubkey,
-          emoji: '🔥',
-        ),
-      );
-    });
-
     setUp(() {
       cubit = _MockConversationReactionsCubit();
     });
 
-    testWidgets('renders aggregated chips with semantic labels', (
-      tester,
-    ) async {
-      final semantics = tester.ensureSemantics();
-      const state = ConversationReactionsState(
-        reactionsByMessageId: {
-          messageId: [
-            DmReaction(
-              id: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
-              conversationId: conversationId,
-              targetMessageId: messageId,
-              targetMessageAuthor: otherPubkey,
-              reactorPubkey: ownerPubkey,
-              emoji: '🔥',
-              createdAt: 1_700_000_000,
-              ownerPubkey: ownerPubkey,
-              publishStatus: DmReactionPublishStatus.sent,
-            ),
-            DmReaction(
-              id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
-              conversationId: conversationId,
-              targetMessageId: messageId,
-              targetMessageAuthor: otherPubkey,
-              reactorPubkey: otherPubkey,
-              emoji: '😂',
-              createdAt: 1_700_000_001,
-              ownerPubkey: ownerPubkey,
-              publishStatus: DmReactionPublishStatus.received,
-            ),
-          ],
-        },
-      );
+    void primeState(ConversationReactionsState state) {
       when(() => cubit.state).thenReturn(state);
       whenListen(cubit, Stream.value(state), initialState: state);
+    }
+
+    testWidgets('renders one pill with the distinct emoji glyphs', (
+      tester,
+    ) async {
+      primeState(
+        stateWith([
+          makeReaction(id: '1', reactorPubkey: ownerPubkey, emoji: '🔥'),
+          makeReaction(
+            id: '2',
+            reactorPubkey: otherPubkey,
+            emoji: '😂',
+            createdAt: 1_700_000_001,
+            publishStatus: DmReactionPublishStatus.received,
+          ),
+        ]),
+      );
 
       await tester.pumpWidget(buildSubject(cubit));
       await tester.pump();
 
+      // Distinct glyphs both render in the single pill.
       expect(find.text('🔥'), findsOneWidget);
       expect(find.text('😂'), findsOneWidget);
-      final chips = find.byType(ReactionChip);
-      expect(
-        tester.getSemantics(chips.at(0)).label,
-        contains('Your reaction: 🔥'),
+      // One avatar per reactor.
+      expect(find.byType(UserAvatar), findsNWidgets(2));
+    });
+
+    testWidgets('pill exposes the "see who reacted" semantic label', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      primeState(
+        stateWith([
+          makeReaction(id: '1', reactorPubkey: ownerPubkey, emoji: '🔥'),
+        ]),
       );
+
+      await tester.pumpWidget(buildSubject(cubit));
+      await tester.pump();
+
       expect(
-        tester.getSemantics(chips.at(1)).label,
-        contains('Alex reacted with 😂'),
+        find.bySemanticsLabel(l10n.dmReactionsViewA11yLabel),
+        findsOneWidget,
       );
       semantics.dispose();
     });
 
-    testWidgets('tapping failed own chip dispatches retry request', (
-      tester,
-    ) async {
-      const failedId =
-          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
-      const state = ConversationReactionsState(
-        reactionsByMessageId: {
-          messageId: [
-            DmReaction(
-              id: failedId,
-              conversationId: conversationId,
-              targetMessageId: messageId,
-              targetMessageAuthor: otherPubkey,
-              reactorPubkey: ownerPubkey,
-              emoji: '🔥',
-              createdAt: 1_700_000_000,
-              ownerPubkey: ownerPubkey,
-              publishStatus: DmReactionPublishStatus.failed,
-            ),
-          ],
-        },
-      );
-      when(() => cubit.state).thenReturn(state);
-      whenListen(cubit, Stream.value(state), initialState: state);
+    testWidgets('renders nothing when there are no reactions', (tester) async {
+      primeState(stateWith(const []));
 
       await tester.pumpWidget(buildSubject(cubit));
       await tester.pump();
 
-      await tester.tap(find.text('🔥'));
-      await tester.pump();
-
-      verify(
-        () => cubit.add(
-          const ConversationReactionRetryRequested(
-            rumorId: failedId,
-            messageId: messageId,
-            messageAuthorPubkey: otherPubkey,
-            emoji: '🔥',
-          ),
-        ),
-      ).called(1);
+      expect(find.text('🔥'), findsNothing);
+      expect(find.byType(UserAvatar), findsNothing);
     });
 
-    testWidgets('tapping settled chip dispatches toggle event', (tester) async {
-      final state = ConversationReactionsState(
-        reactionsByMessageId: {
-          messageId: [
-            makeReaction(id: '1', reactorPubkey: otherPubkey, emoji: '🔥'),
-          ],
-        },
+    testWidgets('tapping the pill opens the who-reacted sheet', (tester) async {
+      primeState(
+        stateWith([
+          makeReaction(id: '1', reactorPubkey: ownerPubkey, emoji: '🔥'),
+        ]),
       );
-      when(() => cubit.state).thenReturn(state);
-      whenListen(cubit, Stream.value(state), initialState: state);
 
       await tester.pumpWidget(buildSubject(cubit));
       await tester.pump();
-      await tester.tap(find.text('🔥'));
-      await tester.pump();
 
-      verify(
-        () => cubit.add(
-          const ConversationReactionToggled(
-            conversationId: conversationId,
-            messageId: messageId,
-            messageAuthorPubkey: otherPubkey,
-            emoji: '🔥',
-          ),
-        ),
-      ).called(1);
+      // Sheet not open yet.
+      expect(find.text(l10n.dmReactionsSheetTitle), findsNothing);
+
+      await tester.tap(find.text('🔥'));
+      await tester.pumpAndSettle();
+
+      // The sheet (re-providing the same cubit via contentWrapper) is shown.
+      expect(find.text(l10n.dmReactionsSheetTitle), findsOneWidget);
     });
   });
 }

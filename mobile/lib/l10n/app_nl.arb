@@ -1,5 +1,9 @@
 {
     "@@locale": "nl",
+    "dmReactionsSheetTitle": "Reacties",
+    "dmReactionsViewA11yLabel": "Bekijk wie heeft gereageerd",
+    "dmReactionRemoveAction": "Verwijderen",
+    "dmReactionRetryAction": "Opnieuw proberen",
     "dmMessageBubbleVideoReplyHint": "Verwezen video openen",
     "commonSomethingWentWrong": "Er ging iets mis",
     "profileFeedError": "Couldn't load videos.",

@@ -1,5 +1,9 @@
 {
     "@@locale": "bg",
+    "dmReactionsSheetTitle": "Реакции",
+    "dmReactionsViewA11yLabel": "Вижте кой реагира",
+    "dmReactionRemoveAction": "Премахни",
+    "dmReactionRetryAction": "Опитай отново",
     "dmMessageBubbleVideoReplyHint": "Отваряне на посочения видеоклип",
     "commonSomethingWentWrong": "Нещо се обърка",
     "profileFeedError": "Couldn't load videos.",
