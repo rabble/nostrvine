@@ -3715,6 +3715,80 @@ void main() {
           );
         },
       );
+
+      test(
+        'yields the event loop on the remote-signer per-event path so a large '
+        'backfill cannot starve frame rendering',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+
+          // The heaviest #5391 case: a large backfill on the per-event decrypt
+          // path, which the batched fast-path does NOT accelerate. The default
+          // LocalNostrSigner is not an IsolateDecryptSigner, so
+          // _batchDecryptGiftWraps is a no-op and every wrap routes through
+          // _decryptRumor -> the injected per-event decryptor — exactly the
+          // path a remote signer (Keycast NIP-46 / Amber) takes.
+          const wrapCount = 33; // > 2 * drainYieldInterval(16): forces 2 yields
+          final wraps = <Event>[];
+          final rumorByWrapId = <String, Event>{};
+          for (var i = 0; i < wrapCount; i++) {
+            final wrapKey = generatePrivateKey();
+            final wrap = Event(
+              getPublicKey(wrapKey),
+              EventKind.giftWrap,
+              <List<String>>[
+                ['p', recipientPub],
+              ],
+              'wrap-$i',
+              createdAt: 1700000100 + i,
+            )..sign(wrapKey);
+            wraps.add(wrap);
+            rumorByWrapId[wrap.id] = rumorFor(
+              'msg $i',
+              createdAt: 1700000100 + i,
+            );
+          }
+          stubDrainPage(wraps);
+
+          // A periodic timer can ONLY fire when the drain surrenders a real
+          // event-loop turn: mocked-DAO and injected-decryptor work runs on
+          // microtasks, which never let a timer fire — only the WS3
+          // _yieldToEventLoop (Future.delayed(Duration.zero)) does. A rising
+          // tick count sampled across the per-event decrypts therefore proves
+          // the drain handed the event loop back mid-page instead of starving
+          // it in one burst.
+          var ticks = 0;
+          final ticker = Timer.periodic(Duration.zero, (_) => ticks++);
+          addTearDown(ticker.cancel);
+
+          final ticksAtDecrypt = <int>[];
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            rumorDecryptor: (_, wrap) async {
+              ticksAtDecrypt.add(ticks);
+              return rumorByWrapId[wrap.id];
+            },
+            syncState: drainPending(),
+          );
+
+          await repository.backfillHistoryIfNeeded();
+          ticker.cancel();
+
+          // Every unique wrap routed through the per-event decryptor (the
+          // batch path is a no-op for the non-isolate signer; the inclusive
+          // `until` boundary re-request is deduped by hasGiftWrap before
+          // reaching the decryptor).
+          expect(ticksAtDecrypt, hasLength(wrapCount));
+          // The opening events run before the first yield; later events run
+          // only after the drain handed back the event loop at least once.
+          // Remove the WS3 yield and the whole page drains in a single
+          // microtask burst with the heartbeat frozen at 0 — so this strict
+          // increase is the regression guard for "the backfill does not
+          // starve frame rendering" on the path the batching never touches.
+          expect(ticksAtDecrypt.first, 0);
+          expect(ticksAtDecrypt.last, greaterThan(0));
+        },
+      );
     });
 
     // -----------------------------------------------------------------
