@@ -14,6 +14,7 @@ class SelectableLinkifiedText extends ConsumerStatefulWidget {
     this.linkStyle,
     this.mentionStyle,
     this.onUrlTap,
+    this.mentionProfilePubkeys = const [],
   });
 
   final String text;
@@ -21,6 +22,7 @@ class SelectableLinkifiedText extends ConsumerStatefulWidget {
   final TextStyle? linkStyle;
   final TextStyle? mentionStyle;
   final Future<void> Function(String rawUrl)? onUrlTap;
+  final List<String> mentionProfilePubkeys;
 
   @override
   ConsumerState<SelectableLinkifiedText> createState() =>
@@ -61,6 +63,7 @@ class _SelectableLinkifiedTextState
         AppLocalizations,
       )?.clickableTextViewVideoLink,
       profileLabelForHex: _profileDisplayText,
+      profilePubkeyForMention: _profilePubkeyForMention,
       onHashtagTap: (hashtag) => _navigateToHashtagFeed(context, hashtag),
       onProfileTap: (hexPubkey) => _navigateToProfile(context, hexPubkey),
       onVideoTap: (routeReference) => _navigateToVideo(context, routeReference),
@@ -79,6 +82,14 @@ class _SelectableLinkifiedTextState
 
   String _profileDisplayText(String hexPubkey) {
     return LinkifiedTextSupport.profileDisplayText(ref, hexPubkey);
+  }
+
+  String? _profilePubkeyForMention(String username) {
+    return LinkifiedTextSupport.profilePubkeyForMention(
+      ref,
+      username,
+      widget.mentionProfilePubkeys,
+    );
   }
 
   void _navigateToHashtagFeed(BuildContext context, String hashtag) {

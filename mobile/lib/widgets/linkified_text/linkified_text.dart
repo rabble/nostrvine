@@ -17,6 +17,8 @@ class LinkifiedText extends ConsumerStatefulWidget {
     this.overflow,
     this.onVideoStateChange,
     this.onUrlTap,
+    this.mentionProfilePubkeys = const [],
+    this.dismissModalBeforeNavigation = false,
   });
 
   final String text;
@@ -27,6 +29,8 @@ class LinkifiedText extends ConsumerStatefulWidget {
   final TextOverflow? overflow;
   final VoidCallback? onVideoStateChange;
   final Future<void> Function(String rawUrl)? onUrlTap;
+  final List<String> mentionProfilePubkeys;
+  final bool dismissModalBeforeNavigation;
 
   @override
   ConsumerState<LinkifiedText> createState() => _LinkifiedTextState();
@@ -65,6 +69,7 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
         AppLocalizations,
       )?.clickableTextViewVideoLink,
       profileLabelForHex: _profileDisplayText,
+      profilePubkeyForMention: _profilePubkeyForMention,
       onHashtagTap: (hashtag) => _navigateToHashtagFeed(context, hashtag),
       onProfileTap: (hexPubkey) => _navigateToProfile(context, hexPubkey),
       onVideoTap: (routeReference) => _navigateToVideo(context, routeReference),
@@ -94,7 +99,24 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
     return LinkifiedTextSupport.profileDisplayText(ref, hexPubkey);
   }
 
+  String? _profilePubkeyForMention(String username) {
+    return LinkifiedTextSupport.profilePubkeyForMention(
+      ref,
+      username,
+      widget.mentionProfilePubkeys,
+    );
+  }
+
   void _navigateToHashtagFeed(BuildContext context, String hashtag) {
+    if (widget.dismissModalBeforeNavigation) {
+      LinkifiedTextNavigation.navigateToHashtagFeedFromModal(
+        context,
+        hashtag,
+        beforeNavigate: widget.onVideoStateChange,
+      );
+      return;
+    }
+
     LinkifiedTextNavigation.navigateToHashtagFeed(
       context,
       hashtag,
@@ -103,6 +125,15 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
   }
 
   void _navigateToProfile(BuildContext context, String hexPubkey) {
+    if (widget.dismissModalBeforeNavigation) {
+      LinkifiedTextNavigation.navigateToProfileFromModal(
+        context,
+        hexPubkey,
+        beforeNavigate: widget.onVideoStateChange,
+      );
+      return;
+    }
+
     LinkifiedTextNavigation.navigateToProfile(
       context,
       hexPubkey,
@@ -111,6 +142,15 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
   }
 
   void _navigateToVideo(BuildContext context, String routeReference) {
+    if (widget.dismissModalBeforeNavigation) {
+      LinkifiedTextNavigation.navigateToVideoFromModal(
+        context,
+        routeReference,
+        beforeNavigate: widget.onVideoStateChange,
+      );
+      return;
+    }
+
     LinkifiedTextNavigation.navigateToVideo(
       context,
       routeReference,
@@ -119,6 +159,15 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
   }
 
   void _navigateToSearch(BuildContext context, String username) {
+    if (widget.dismissModalBeforeNavigation) {
+      LinkifiedTextNavigation.navigateToSearchFromModal(
+        context,
+        username,
+        beforeNavigate: widget.onVideoStateChange,
+      );
+      return;
+    }
+
     LinkifiedTextNavigation.navigateToSearch(
       context,
       username,

@@ -847,6 +847,28 @@ class VideoEvent {
   /// Compact proof verification summary returned by Funnelcake REST feeds.
   final ProofVerificationSummary? proofSummary;
 
+  /// Generic `p` tags that mark users mentioned by this video.
+  ///
+  /// Collaborator `p` tags are intentionally excluded; those are rendered by
+  /// [collaboratorPubkeys] and have separate confirmation semantics.
+  List<String> get mentionedPubkeys {
+    final seen = <String>{};
+    final pubkeys = <String>[];
+
+    for (final tag in nostrEventTags) {
+      if (tag.length < 4 || tag[0] != 'p') continue;
+      if (tag[3].toLowerCase() != 'mention') continue;
+
+      final pubkey = tag[1].trim().toLowerCase();
+      if (pubkey.isEmpty || pubkey == this.pubkey.toLowerCase()) continue;
+      if (!seen.add(pubkey)) continue;
+
+      pubkeys.add(pubkey);
+    }
+
+    return pubkeys;
+  }
+
   /// Whether this video has any content warnings.
   bool get hasContentWarning => contentWarningLabels.isNotEmpty;
 

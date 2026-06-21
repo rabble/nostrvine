@@ -62,6 +62,7 @@ class VideoDescriptionOverlay extends StatelessWidget {
                     Shadow(offset: Offset(2, 2), blurRadius: 4),
                   ],
                 ),
+                mentionProfilePubkeys: video.mentionedPubkeys,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),

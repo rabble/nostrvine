@@ -472,6 +472,30 @@ void main() {
       expect(videoEvent.collaboratorPubkeys, equals([collabPubkey1]));
     });
 
+    test(
+      'should expose generic mention p-tags separately from collaborators',
+      () {
+        const mentionPubkey =
+            'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+        final nostrEvent = Event(
+          authorPubkey,
+          34236,
+          [
+            ['url', 'https://example.com/video.mp4'],
+            ['p', collabPubkey1, 'wss://relay.divine.video', 'collaborator'],
+            ['p', mentionPubkey, 'wss://relay.divine.video', 'mention'],
+          ],
+          '@shutupphia FOLLOW HER',
+          createdAt: 1757385263,
+        );
+
+        final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+        expect(videoEvent.collaboratorPubkeys, equals([collabPubkey1]));
+        expect(videoEvent.mentionedPubkeys, equals([mentionPubkey]));
+      },
+    );
+
     test('should accept historical capitalized collaborator markers', () {
       final nostrEvent = Event(
         authorPubkey,

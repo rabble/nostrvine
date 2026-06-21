@@ -259,6 +259,19 @@ void main() {
       );
 
       expect(find.text('Who knew?'), findsOneWidget);
+      expect(find.byType(LinkifiedText), findsNWidgets(2));
+    });
+
+    testWidgetsWithSurfaceSize('renders title with clickable rich text', (
+      tester,
+    ) async {
+      final video = _makeVideo(title: '@shutupphia FOLLOW HER');
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: video)),
+      );
+
+      expect(find.text('@shutupphia FOLLOW HER'), findsOneWidget);
       expect(find.byType(LinkifiedText), findsOneWidget);
     });
 

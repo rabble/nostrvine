@@ -126,6 +126,34 @@ void main() {
       );
     });
 
+    test('routes plain mentions to profile when a mention pubkey matches', () {
+      const alicePubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      String? tappedProfile;
+      String? tappedMention;
+
+      final spans = LinkifiedTextSpanBuilder(
+        text: '@alice FOLLOW HER',
+        defaultStyle: defaultStyle,
+        linkStyle: linkStyle,
+        mentionStyle: mentionStyle,
+        profilePubkeyForMention: (username) =>
+            username == 'alice' ? alicePubkey : null,
+        onProfileTap: (hexPubkey) => tappedProfile = hexPubkey,
+        onMentionTap: (username) => tappedMention = username,
+      ).build();
+
+      expect(
+        spans.map((span) => span.text).join(),
+        equals('@alice FOLLOW HER'),
+      );
+
+      spans.tappableSpans.single.tap();
+
+      expect(tappedProfile, equals(alicePubkey));
+      expect(tappedMention, isNull);
+    });
+
     test('routes note1 references to normalized event ids', () {
       const eventId =
           '1111111111111111111111111111111111111111111111111111111111111111';

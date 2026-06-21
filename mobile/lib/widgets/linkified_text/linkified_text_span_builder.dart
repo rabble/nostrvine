@@ -35,6 +35,7 @@ class LinkifiedTextSpanBuilder {
     this.onMentionTap,
     this.onUrlTap,
     this.profileLabelForHex,
+    this.profilePubkeyForMention,
     this.videoLabel,
   });
 
@@ -74,6 +75,10 @@ class LinkifiedTextSpanBuilder {
 
   /// Resolves a profile label for a decoded hex public key.
   final String Function(String hexPubkey)? profileLabelForHex;
+
+  /// Resolves a plain typed @mention to a hex public key when the caller has
+  /// surrounding event metadata that identifies the mentioned user.
+  final String? Function(String username)? profilePubkeyForMention;
 
   /// Display label for video/event references.
   final String? videoLabel;
@@ -208,7 +213,14 @@ class LinkifiedTextSpanBuilder {
     text: '@$username',
     style: mentionStyle ?? linkStyle,
     recognizer: TapGestureRecognizer()
-      ..onTap = () => onMentionTap?.call(username),
+      ..onTap = () {
+        final hexPubkey = profilePubkeyForMention?.call(username);
+        if (hexPubkey != null) {
+          onProfileTap?.call(hexPubkey);
+        } else {
+          onMentionTap?.call(username);
+        }
+      },
   );
 
   bool _hexReferenceLooksLikeProfile(int start) {

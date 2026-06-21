@@ -159,12 +159,22 @@ class _OverviewSection extends StatelessWidget {
     final hasTags = video.categories.isNotEmpty || video.allHashtags.isNotEmpty;
 
     final titleCluster = <Widget>[
-      if (hasTitle) Text(title, style: VineTheme.headlineSmallFont()),
+      if (hasTitle)
+        LinkifiedText(
+          text: title,
+          style: VineTheme.headlineSmallFont(),
+          linkStyle: VineTheme.headlineSmallFont(color: VineTheme.info),
+          mentionStyle: VineTheme.headlineSmallFont(color: VineTheme.info),
+          mentionProfilePubkeys: video.mentionedPubkeys,
+          dismissModalBeforeNavigation: true,
+        ),
       if (hasBadges) MetadataBadgesRow(video: video),
       if (hasDescription)
         LinkifiedText(
           text: description,
           style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+          mentionProfilePubkeys: video.mentionedPubkeys,
+          dismissModalBeforeNavigation: true,
         ),
     ];
 
