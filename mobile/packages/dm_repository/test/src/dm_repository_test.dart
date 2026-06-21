@@ -3558,6 +3558,74 @@ void main() {
           expect(syncState.drainCompleteOverride, isTrue);
         },
       );
+
+      test(
+        'batches a page larger than decryptBatchSize across multiple isolate '
+        'hops and persists every message with its own content',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          // 25 real wraps => 2 hops fed to the same long-lived isolate
+          // (20 + 5 at decryptBatchSize = 20). Distinct content per wrap, so a
+          // chunk-correlation bug would surface as a missing/duplicated entry.
+          const count = 25;
+          final persistedContents = <String>{};
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          ).thenAnswer((inv) async {
+            persistedGiftWrapIds.add(
+              inv.namedArguments[#giftWrapId] as String,
+            );
+            persistedContents.add(inv.namedArguments[#content] as String);
+          });
+
+          final wraps = <Event>[
+            for (var i = 0; i < count; i++)
+              await _buildGiftWrap(
+                rumor: rumorFor('multichunk $i', createdAt: 1700000500 + i),
+                senderPrivateKey: senderPriv,
+                recipientPubkey: recipientPub,
+                outerCreatedAt: 1700000000 + i,
+              ),
+          ];
+          stubDrainPage(wraps);
+
+          final syncState = drainPending();
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: _IsolateLocalSigner(recipientPriv),
+            syncState: syncState,
+          );
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(
+            persistedContents,
+            {for (var i = 0; i < count; i++) 'multichunk $i'},
+          );
+        },
+      );
     });
 
     // -----------------------------------------------------------------

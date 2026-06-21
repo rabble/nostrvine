@@ -11,6 +11,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/src/collaborator_invite_recovery.dart';
+import 'package:dm_repository/src/dm_decrypt_isolate.dart';
 import 'package:dm_repository/src/dm_decryption_worker.dart';
 import 'package:dm_repository/src/dm_reactions_repository.dart';
 import 'package:dm_repository/src/dm_repository_reportable_sites.dart';
@@ -92,10 +93,10 @@ abstract class DmHistoryDrainConfig {
   /// See #5202.
   static const int maxDecryptRetries = 10;
 
-  /// Gift wraps decrypted per [compute] isolate hop on the history-drain
-  /// path: one hop covers this many wraps instead of one spawn per wrap.
-  /// Sub-chunks a [pageSize] page to bound peak isolate memory and the
-  /// off-lock decrypt duration. See #5391.
+  /// Gift wraps decrypted per hop fed to the drain-scoped long-lived decrypt
+  /// isolate on the history-drain path. Sub-chunks a [pageSize] page to bound
+  /// peak isolate memory, the off-lock decrypt duration, and the per-message
+  /// port payload. See #5391.
   static const int decryptBatchSize = 20;
 
   /// Events processed between cooperative event-loop yields in the serial
@@ -222,6 +223,14 @@ class DmRepository {
   Timer? _reconnectTimer;
   late bool _disposed = false;
 
+  /// A single long-lived decrypt isolate, alive only for the duration of a
+  /// history drain. Spawned in [_runHistoryDrain] for local-key signers and
+  /// killed in its `finally`, so a large backfill pays one isolate spawn
+  /// instead of one per chunk and the resident private key is reclaimed when
+  /// the drain ends. `null` outside a drain or for remote/test signers. See
+  /// PR #5405 review / #5391.
+  DmDecryptIsolate? _drainDecryptIsolate;
+
   /// Serializes event processing so concurrent subscription events
   /// never race into the dedup/insert path.
   Future<void>? _eventLock;
@@ -325,6 +334,11 @@ class DmRepository {
     // user can start fresh; the running loops bail on the _userPubkey change.
     _historyDrain = null;
     _pendingDecryptRetry = null;
+    // Kill any drain-scoped decrypt isolate immediately so the outgoing user's
+    // key is not left resident in a worker while the next user signs in. The
+    // bailing drain's `finally` is idempotent if it also runs.
+    _drainDecryptIsolate?.close();
+    _drainDecryptIsolate = null;
     // Abandon the recovery signal for the outgoing user. The bailing loops'
     // _endRecovery() then no-ops (guarded on the zeroed counter).
     if (_activeRecoveryOps > 0) {
@@ -810,6 +824,29 @@ class DmRepository {
 
     _beginRecovery();
     try {
+      // Spawn one drain-scoped decrypt isolate for local-key signers so the
+      // whole backfill pays a single isolate spawn instead of one per chunk
+      // (#5391 review). Remote / test signers leave it null and the batch path
+      // falls through to the unchanged per-event decryptor. Inside the `try`
+      // so the `finally` always reclaims it. See #5391.
+      final drainSigner = _signer;
+      if (drainSigner is IsolateDecryptSigner &&
+          drainSigner.canDecryptInIsolate) {
+        try {
+          _drainDecryptIsolate = await DmDecryptIsolate.spawn(
+            drainSigner.withPrivateKeyHex((k) => k),
+          );
+        } on Object catch (e, stackTrace) {
+          Log.error(
+            'DM decrypt isolate spawn failed; using per-event decrypt: $e',
+            category: LogCategory.system,
+            error: e,
+            stackTrace: stackTrace,
+          );
+          _drainDecryptIsolate = null;
+        }
+      }
+
       // The relay filters `until:` on the OUTER gift-wrap created_at, which
       // NIP-59 randomizes up to 2 days into the past — so the cursor tracks
       // fetched events' outer timestamps, NOT the rumor times recorded in
@@ -934,6 +971,11 @@ class DmRepository {
         );
       }
     } finally {
+      // Kill the drain-scoped decrypt isolate (reclaiming the resident key)
+      // before clearing the recovery flag. Runs on every exit path — page
+      // cap, exhaustion, user-switch / teardown bail, or error. See #5391.
+      _drainDecryptIsolate?.close();
+      _drainDecryptIsolate = null;
       _endRecovery();
     }
   }
@@ -1266,20 +1308,23 @@ class DmRepository {
     }
   }
 
-  /// Decrypts a page's gift wraps in batches for local-key signers, returning
-  /// a `{giftWrapId: rumor}` map of the SUCCESSFUL decrypts only. One
-  /// [compute] isolate hop covers up to [DmHistoryDrainConfig.decryptBatchSize]
-  /// wraps instead of one spawn per wrap (#5391). Wraps that are already
-  /// persisted, fail to decrypt, or belong to a remote signer are absent from
-  /// the map — the caller routes those through the unchanged per-event path
-  /// (which preserves the isolate→main-isolate fallback and failed-decrypt
-  /// bookkeeping). Runs OFF the [_eventLock].
+  /// Decrypts a page's gift wraps in chunks on the drain-scoped long-lived
+  /// decrypt isolate ([_drainDecryptIsolate]), returning a
+  /// `{giftWrapId: rumor}` map of the SUCCESSFUL decrypts only. Each
+  /// `DmHistoryDrainConfig.decryptBatchSize`-wrap chunk is one hop fed to the
+  /// *same* worker over a port, so the whole backfill pays a single isolate
+  /// spawn instead of one per chunk (#5391 review). Wraps that are already
+  /// persisted, fail to decrypt, or belong to a remote signer (the isolate is
+  /// absent) are missing from the map — the caller routes those through the
+  /// unchanged per-event path (which preserves the isolate→main-isolate
+  /// fallback and failed-decrypt bookkeeping). Runs OFF the [_eventLock].
   Future<Map<String, Event>> _batchDecryptGiftWraps(
     List<Event> events,
   ) async {
-    final signer = _signer;
-    if (signer is! IsolateDecryptSigner || !signer.canDecryptInIsolate) {
-      // Remote / test signer: cannot decrypt in an isolate. Per-event path.
+    final isolate = _drainDecryptIsolate;
+    if (isolate == null) {
+      // Remote / test signer, or the drain isolate could not spawn: there is
+      // no batch worker, so route everything through the per-event path.
       return const {};
     }
 
@@ -1293,7 +1338,6 @@ class DmRepository {
     }
     if (pending.isEmpty) return const {};
 
-    final hex = signer.withPrivateKeyHex((k) => k);
     final decrypted = <String, Event>{};
     for (
       var start = 0;
@@ -1307,13 +1351,9 @@ class DmRepository {
         end < pending.length ? end : pending.length,
       );
       try {
-        final results = await compute(
-          decryptGiftWrapBatch,
-          DecryptBatchRequest(
-            events: [for (final event in chunk) event.toJson()],
-            privateKeyHex: hex,
-          ),
-        );
+        final results = await isolate.decryptBatch([
+          for (final event in chunk) event.toJson(),
+        ]);
         for (var i = 0; i < chunk.length; i++) {
           final result = results[i];
           if (result.isSuccess) {
@@ -1359,8 +1399,12 @@ class DmRepository {
   /// test-injected decryptors.
   ///
   /// This single-event path serves the live subscription and the retry
-  /// replay; the high-volume history drain instead batches many wraps per
-  /// isolate hop via [_batchDecryptGiftWraps]. See #5391.
+  /// replay; the high-volume history drain instead batches many wraps per hop
+  /// on a long-lived isolate via [_batchDecryptGiftWraps]. It intentionally
+  /// stays on per-event [compute] (not the long-lived worker): it fires
+  /// sporadically across the whole session, so a persistent worker here would
+  /// hold the private key resident session-long for no spawn-cost win. See
+  /// #5391.
   Future<Event?> _decryptRumor(Nostr nostr, Event giftWrapEvent) async {
     final signer = _signer;
     if (signer is IsolateDecryptSigner && signer.canDecryptInIsolate) {

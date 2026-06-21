@@ -1,4 +1,5 @@
 export 'src/collaborator_invite_recovery.dart';
+export 'src/dm_decrypt_isolate.dart';
 export 'src/dm_decryption_worker.dart';
 export 'src/dm_reactions_repository.dart';
 export 'src/dm_reactions_repository_reportable_sites.dart';
