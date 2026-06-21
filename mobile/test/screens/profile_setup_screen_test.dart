@@ -691,6 +691,52 @@ void main() {
       );
     }
 
+    testWidgets(
+      'refreshes profile on resume after native verifier launch',
+      (tester) async {
+        final originalPlatform = UrlLauncherPlatform.instance;
+        final launcher = UrlLauncherTestDouble();
+        UrlLauncherPlatform.instance = launcher;
+        addTearDown(() {
+          UrlLauncherPlatform.instance = originalPlatform;
+        });
+
+        whenListen(
+          mockEditorBloc,
+          Stream<ProfileEditorState>.fromIterable([
+            const ProfileEditorState(
+              verifierStatus: VerifierStatus.launchRequested,
+            ),
+          ]),
+          initialState: const ProfileEditorState(),
+        );
+
+        await pumpScreen(tester);
+        await tester.pump();
+
+        expect(launcher.launched, hasLength(1));
+        verify(
+          () => mockEditorBloc.add(const VerifierLaunchHandled()),
+        ).called(1);
+        verifyNever(
+          () => mockMyProfileBloc.add(const MyProfileFetchRequested()),
+        );
+
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        await tester.pump();
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump();
+
+        verify(
+          () => mockMyProfileBloc.add(const MyProfileFetchRequested()),
+        ).called(1);
+      },
+    );
+
     group('banner block', () {
       testWidgets(
         'pre-filled hex banner shows color preview',
@@ -883,7 +929,7 @@ void main() {
     });
 
     test(
-      'opens the verifyer in the external browser and refreshes profile',
+      'opens the verifyer in the external browser without immediate refresh',
       () async {
         final launched = await launchVerifierFlow(
           editorBloc: editorBloc,
@@ -896,11 +942,11 @@ void main() {
         expect(launcher.launched.single.url, 'https://verifyer.divine.video/');
         expect(launcher.launched.single.useExternalApplication, isTrue);
         verify(
-          () => editorBloc.add(const VerifierWebViewDismissed()),
+          () => editorBloc.add(const VerifierLaunchHandled()),
         ).called(1);
-        verify(
+        verifyNever(
           () => myProfileBloc.add(const MyProfileFetchRequested()),
-        ).called(1);
+        );
       },
     );
 
@@ -926,7 +972,7 @@ void main() {
           '/apps/bundled-verifyer/web-sandbox',
         );
         verify(
-          () => editorBloc.add(const VerifierWebViewDismissed()),
+          () => editorBloc.add(const VerifierLaunchHandled()),
         ).called(1);
         verify(
           () => myProfileBloc.add(const MyProfileFetchRequested()),
@@ -950,7 +996,7 @@ void main() {
         expect(launcher.launched, hasLength(1));
         expect(launcher.launched.single.url, 'https://verifyer.divine.video/');
         verify(
-          () => editorBloc.add(const VerifierWebViewDismissed()),
+          () => editorBloc.add(const VerifierLaunchHandled()),
         ).called(1);
         verifyNever(
           () => myProfileBloc.add(const MyProfileFetchRequested()),
@@ -976,7 +1022,7 @@ void main() {
         expect(launcher.launched, hasLength(1));
         expect(launcher.launched.single.url, 'https://verifyer.divine.video/');
         verify(
-          () => editorBloc.add(const VerifierWebViewDismissed()),
+          () => editorBloc.add(const VerifierLaunchHandled()),
         ).called(1);
         verifyNever(
           () => myProfileBloc.add(const MyProfileFetchRequested()),

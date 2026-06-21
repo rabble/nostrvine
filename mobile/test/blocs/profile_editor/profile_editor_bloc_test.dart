@@ -3105,7 +3105,7 @@ void main() {
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
-        'flips verifierStatus to dismissed on VerifierWebViewDismissed',
+        'flips verifierStatus to handled on VerifierLaunchHandled',
         build: () => ProfileEditorBloc(
           profileRepository: mockProfileRepository,
           blossomUploadService: mockBlossomUploadService,
@@ -3115,12 +3115,12 @@ void main() {
         seed: () => const ProfileEditorState(
           verifierStatus: VerifierStatus.launchRequested,
         ),
-        act: (bloc) => bloc.add(const VerifierWebViewDismissed()),
+        act: (bloc) => bloc.add(const VerifierLaunchHandled()),
         expect: () => [
           isA<ProfileEditorState>().having(
             (s) => s.verifierStatus,
             'verifierStatus',
-            VerifierStatus.dismissed,
+            VerifierStatus.handled,
           ),
         ],
       );

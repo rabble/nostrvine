@@ -188,10 +188,12 @@ final class VerifierLaunchRequested extends ProfileEditorEvent {
   const VerifierLaunchRequested();
 }
 
-/// Verifier flow returned. UI dispatches this so downstream consumers
-/// (e.g. MyProfileBloc) can refresh kind 0 and pick up new claims.
-final class VerifierWebViewDismissed extends ProfileEditorEvent {
-  const VerifierWebViewDismissed();
+/// UI handled the one-shot verifier launch request.
+///
+/// The UI owns navigation/browser launch and any follow-up profile refresh.
+/// The bloc only resets the launch signal so future taps can emit again.
+final class VerifierLaunchHandled extends ProfileEditorEvent {
+  const VerifierLaunchHandled();
 }
 
 /// Sets the user's existing persisted banner value after profile load.

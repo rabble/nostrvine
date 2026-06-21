@@ -92,7 +92,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     on<ProfileBannerColorSelected>(_onProfileBannerColorSelected);
     on<ProfileBannerCleared>(_onProfileBannerCleared);
     on<VerifierLaunchRequested>(_onVerifierLaunchRequested);
-    on<VerifierWebViewDismissed>(_onVerifierWebViewDismissed);
+    on<VerifierLaunchHandled>(_onVerifierLaunchHandled);
   }
 
   final ProfileRepository _profileRepository;
@@ -1139,10 +1139,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     emit(state.copyWith(verifierStatus: VerifierStatus.launchRequested));
   }
 
-  void _onVerifierWebViewDismissed(
-    VerifierWebViewDismissed event,
+  void _onVerifierLaunchHandled(
+    VerifierLaunchHandled event,
     Emitter<ProfileEditorState> emit,
   ) {
-    emit(state.copyWith(verifierStatus: VerifierStatus.dismissed));
+    emit(state.copyWith(verifierStatus: VerifierStatus.handled));
   }
 }

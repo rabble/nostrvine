@@ -143,19 +143,32 @@ class ProfileSetupScreenView extends ConsumerStatefulWidget {
       _ProfileSetupScreenViewState();
 }
 
-class _ProfileSetupScreenViewState
-    extends ConsumerState<ProfileSetupScreenView> {
+class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
+    with WidgetsBindingObserver {
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
   final _websiteController = TextEditingController();
   final _pictureController = TextEditingController();
   final _nip05Controller = TextEditingController();
   final ImagePicker _picker = ImagePicker();
+  bool _refreshProfileOnResume = false;
 
   static const _kInputBorder = UnderlineInputBorder(
     borderRadius: BorderRadius.zero,
     borderSide: BorderSide(color: VineTheme.neutral10),
   );
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state != AppLifecycleState.resumed || !_refreshProfileOnResume) {
+      return;
+    }
+
+    _refreshProfileOnResume = false;
+    context.read<MyProfileBloc>().add(const MyProfileFetchRequested());
+  }
+
   static const _kHintStyle = TextStyle(color: VineTheme.lightText);
 
   // Focus nodes for tracking field focus state
@@ -179,6 +192,7 @@ class _ProfileSetupScreenViewState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Rebuild when display name changes so save button updates.
     _nameController.addListener(_onFocusChange);
     _websiteFocusNode.addListener(_onFocusChange);
@@ -194,6 +208,7 @@ class _ProfileSetupScreenViewState
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _nameController.removeListener(_onFocusChange);
     _nameController.dispose();
     _bioController.dispose();
@@ -482,6 +497,9 @@ class _ProfileSetupScreenViewState
                 await context.push(location, extra: extra);
               },
             );
+            if (launched && !kIsWeb && mounted) {
+              _refreshProfileOnResume = true;
+            }
             if (!launched && context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -1856,14 +1874,15 @@ class _VerifiedAccountsSection extends StatelessWidget {
 typedef VerifierRoutePusher =
     Future<void> Function(String location, {Object? extra});
 
-/// Opens the Divine verifyer and refreshes the profile after the flow opens.
+/// Opens the Divine verifyer.
 ///
 /// Native in-app WebViews cannot complete the verifyer's login flow because it
 /// leaves `verifyer.divine.video` for `login.divine.video` and OAuth providers.
 /// Those hand-offs need real browser tabs, cookies, and redirects, so native
 /// platforms launch the system browser. Flutter web keeps the existing iframe
 /// signer bridge because it runs in the browser and does not use
-/// `webview_flutter`.
+/// `webview_flutter`. Web refreshes after the iframe route returns; native
+/// refreshes from the screen's app-resume callback.
 @visibleForTesting
 Future<bool> launchVerifierFlow({
   required ProfileEditorBloc editorBloc,
@@ -1889,15 +1908,15 @@ Future<bool> launchVerifierFlow({
         mode: LaunchMode.externalApplication,
       );
     }
-  } catch (error, stackTrace) {
+  } catch (error) {
     UnifiedLogger.warning(
-      'Failed to open Divine verifyer: $error\n$stackTrace',
+      'Failed to open Divine verifyer: $error',
       name: 'ProfileSetupScreen',
     );
   }
 
-  editorBloc.add(const VerifierWebViewDismissed());
-  if (launched) {
+  editorBloc.add(const VerifierLaunchHandled());
+  if (launched && isWeb) {
     myProfileBloc.add(const MyProfileFetchRequested());
   }
   return launched;

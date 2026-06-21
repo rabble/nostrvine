@@ -191,8 +191,8 @@ enum UsernameValidationError {
 /// Status of the verifier launch flow.
 ///
 /// Used as a one-shot signal: the UI listens for [launchRequested], opens the
-/// verifier, and dispatches [VerifierWebViewDismissed] on return so the status
-/// flips to [dismissed]. The bloc never navigates itself.
+/// verifier, and dispatches [VerifierLaunchHandled] after handling the request
+/// so future taps can emit another launch signal. The bloc never navigates.
 enum VerifierStatus {
   /// No launch pending.
   idle,
@@ -200,8 +200,8 @@ enum VerifierStatus {
   /// User tapped "Get verified" and the UI should open the verifier.
   launchRequested,
 
-  /// Verifier flow returned and UI should refresh kind 0 for new claims.
-  dismissed,
+  /// UI has handled the verifier launch request.
+  handled,
 }
 
 /// Whether the profile editor is in divine.video username or external NIP-05
@@ -356,7 +356,7 @@ final class ProfileEditorState extends Equatable {
     return persistedBanner;
   }
 
-  /// One-shot signal driving the in-app verifier WebView launch + dismiss.
+  /// One-shot signal driving verifier launch handling in the UI.
   final VerifierStatus verifierStatus;
 
   /// Whether the username state allows saving the profile (divine.video mode).
