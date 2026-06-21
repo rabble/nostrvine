@@ -1352,6 +1352,187 @@ void main() {
         await repository.stopListening();
       });
 
+      test(
+        'history drain decrypts a remote-signer page with bounded '
+        'parallelism while persisting serially',
+        () async {
+          // Remote signers (Keycast RPC / Amber / NIP-46) cannot use the batch
+          // decrypt isolate, so before this fix every drained wrap was
+          // decrypted one network round trip at a time under the event lock —
+          // a multi-minute drain for a large history. The drain must now keep
+          // up to DmHistoryDrainConfig.remoteDecryptConcurrency decrypts in
+          // flight, while persistence stays serialized under the lock.
+          const wrapCount = 16;
+
+          String hex64(int seed, String tag) =>
+              (tag * 64).substring(0, 62) +
+              seed.toRadixString(16).padLeft(2, '0');
+
+          final wraps = <Event>[
+            for (var i = 0; i < wrapCount; i++)
+              Event.fromJson({
+                'id': hex64(i, 'a'),
+                'pubkey': hex64(i, 'b'),
+                'created_at': 1700000000 - i,
+                'kind': EventKind.giftWrap,
+                'tags': [
+                  ['p', _validPubkeyA],
+                ],
+                'content': 'wrap-$i',
+                'sig': '',
+              }),
+          ];
+
+          // Each wrap decrypts to a distinct rumor (distinct sender → distinct
+          // conversation) so every wrap produces its own persisted message.
+          Event rumorFor(Event wrap) {
+            final i = wraps.indexOf(wrap);
+            return Event.fromJson({
+              'id': hex64(i, 'c'),
+              'pubkey': hex64(i, 'd'),
+              'created_at': 1700000000 - i,
+              'kind': EventKind.privateDirectMessage,
+              'tags': [
+                ['p', _validPubkeyA],
+              ],
+              'content': 'msg-$i',
+              'sig': '',
+            });
+          }
+
+          // The bounded pool launches all its workers up front, so every
+          // concurrent decrypt increments `active` before the first delay
+          // resolves → maxActive is deterministic.
+          var activeDecrypts = 0;
+          var maxActiveDecrypts = 0;
+
+          // Persistence runs under the event lock, so runInTransaction must
+          // never overlap.
+          var activePersists = 0;
+          var maxActivePersists = 0;
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+          stubDaoInserts();
+          // Track persist concurrency on the actual write inside the
+          // transaction. Persists run under the event lock, so a yield here
+          // would expose any overlap — there must be none.
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          ).thenAnswer((_) async {
+            activePersists++;
+            if (activePersists > maxActivePersists) {
+              maxActivePersists = activePersists;
+            }
+            await Future<void>.delayed(Duration.zero);
+            activePersists--;
+          });
+
+          var servedGiftWrapPage = false;
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((inv) async {
+            final filters =
+                inv.positionalArguments.first as List<nostr_filter.Filter>;
+            final filter = filters.single;
+            // Outgoing-NIP-04 recovery pass (authors:[self], no p): nothing.
+            if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+              return const <Event>[];
+            }
+            // One page of wraps, then exhaustion.
+            if (servedGiftWrapPage) return const <Event>[];
+            servedGiftWrapPage = true;
+            return wraps;
+          });
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 1700000000
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(
+            syncState: syncState,
+            rumorDecryptor: (_, wrap) async {
+              activeDecrypts++;
+              if (activeDecrypts > maxActiveDecrypts) {
+                maxActiveDecrypts = activeDecrypts;
+              }
+              await Future<void>.delayed(const Duration(milliseconds: 5));
+              activeDecrypts--;
+              return rumorFor(wrap);
+            },
+          );
+
+          await repository.backfillHistoryIfNeeded();
+
+          // Decryption ran in parallel...
+          expect(
+            maxActiveDecrypts,
+            DmHistoryDrainConfig.remoteDecryptConcurrency,
+            reason:
+                'remote-signer decrypts should run concurrently, not '
+                'one network round trip at a time',
+          );
+          // ...persistence stayed strictly serial...
+          expect(
+            maxActivePersists,
+            1,
+            reason: 'persistence must stay serialized under the event lock',
+          );
+          // ...and every wrap was persisted exactly once.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          ).called(wrapCount);
+        },
+      );
+
       test('successful gift-wrap persist advances sync boundaries', () async {
         const rumorCreatedAt = 1700000500;
         final giftWrap = createGiftWrapEvent();
@@ -3717,18 +3898,20 @@ void main() {
       );
 
       test(
-        'yields the event loop on the remote-signer per-event path so a large '
-        'backfill cannot starve frame rendering',
+        'yields the event loop on the remote-signer bounded-parallel decrypt '
+        'path so a large backfill cannot starve frame rendering',
         () async {
           when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
 
-          // The heaviest #5391 case: a large backfill on the per-event decrypt
-          // path, which the batched fast-path does NOT accelerate. The default
+          // The heaviest #5391 case: a large remote-signer backfill, which the
+          // batched isolate fast-path does NOT accelerate. The default
           // LocalNostrSigner is not an IsolateDecryptSigner, so
-          // _batchDecryptGiftWraps is a no-op and every wrap routes through
-          // _decryptRumor -> the injected per-event decryptor — exactly the
-          // path a remote signer (Keycast NIP-46 / Amber) takes.
-          const wrapCount = 33; // > 2 * drainYieldInterval(16): forces 2 yields
+          // _batchDecryptGiftWraps routes the page through the bounded-parallel
+          // remote decrypt pool (_parallelDecryptGiftWraps) -> _decryptRumor ->
+          // the injected decryptor — exactly the path a remote signer (Keycast
+          // NIP-46 / Amber) takes.
+          // > remoteDecryptConcurrency, so the pool spans several waves.
+          const wrapCount = 33;
           final wraps = <Event>[];
           final rumorByWrapId = <String, Event>{};
           for (var i = 0; i < wrapCount; i++) {
@@ -3774,17 +3957,16 @@ void main() {
           await repository.backfillHistoryIfNeeded();
           ticker.cancel();
 
-          // Every unique wrap routed through the per-event decryptor (the
-          // batch path is a no-op for the non-isolate signer; the inclusive
+          // Every unique wrap routed through the decryptor (the inclusive
           // `until` boundary re-request is deduped by hasGiftWrap before
           // reaching the decryptor).
           expect(ticksAtDecrypt, hasLength(wrapCount));
-          // The opening events run before the first yield; later events run
-          // only after the drain handed back the event loop at least once.
-          // Remove the WS3 yield and the whole page drains in a single
-          // microtask burst with the heartbeat frozen at 0 — so this strict
-          // increase is the regression guard for "the backfill does not
-          // starve frame rendering" on the path the batching never touches.
+          // The opening wave of decrypts runs before the first yield; later
+          // decrypts run only after the pool handed back the event loop at
+          // least once. Remove the per-decrypt yield and the whole page drains
+          // in a single microtask burst with the heartbeat frozen at 0 — so
+          // this strict increase is the regression guard for "the backfill
+          // does not starve frame rendering".
           expect(ticksAtDecrypt.first, 0);
           expect(ticksAtDecrypt.last, greaterThan(0));
         },

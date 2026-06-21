@@ -103,6 +103,19 @@ abstract class DmHistoryDrainConfig {
   /// backfill loops, so a large drain cannot starve frame rendering. See
   /// #5391.
   static const int drainYieldInterval = 16;
+
+  /// Remote-signer (Keycast RPC / Amber / NIP-46) gift-wrap decrypts kept in
+  /// flight at once during the history drain.
+  ///
+  /// Remote signers cannot cross the [compute] isolate boundary, so each wrap
+  /// is decrypted by a network round trip to the signer (~250-400 ms each, two
+  /// per wrap: gift→seal, seal→rumor). Draining a large history one RPC at a
+  /// time serializes those into minutes. A bounded worker pool keeps several in
+  /// flight, collapsing the wall-clock to roughly 1/N. Held under Keycast's
+  /// per-connection DB pool (default 10) so parallel calls don't contend, and
+  /// only *decryption* is parallelized — persistence stays serialized under the
+  /// event lock. Local-key signers are unaffected (they use the batch isolate).
+  static const int remoteDecryptConcurrency = 8;
 }
 
 const _relayLoopbackHosts = <String>{
@@ -1327,9 +1340,13 @@ class DmRepository {
   Future<Map<String, Event>> _batchDecryptGiftWraps(List<Event> events) async {
     final isolate = _drainDecryptIsolate;
     if (isolate == null) {
-      // Remote / test signer, or the drain isolate could not spawn: there is
-      // no batch worker, so route everything through the per-event path.
-      return const {};
+      // Remote signer (Keycast RPC / Amber / NIP-46), or the drain isolate
+      // could not spawn: there is no batch worker. Rather than serialize one
+      // network decrypt at a time on the _eventLock, decrypt this page with a
+      // bounded worker pool OFF the lock — persistence still serializes in the
+      // caller. This is the difference between a multi-minute and a few-second
+      // drain for remote-signer accounts.
+      return _parallelDecryptGiftWraps(events);
     }
 
     // Only wraps not already persisted, to avoid re-decrypting on resume
@@ -1378,6 +1395,92 @@ class DmRepository {
       // backfill cannot starve frame rendering. See #5391.
       await _yieldToEventLoop();
     }
+    return decrypted;
+  }
+
+  /// Decrypts a page's gift wraps for a REMOTE signer (Keycast RPC / Amber /
+  /// NIP-46) using a bounded worker pool, OFF the [_eventLock].
+  ///
+  /// Remote signers cannot cross the [compute] isolate boundary, so each wrap
+  /// is decrypted by a network round trip to the signer. Doing that one wrap at
+  /// a time — the previous behaviour, where every wrap fell through to the
+  /// serial per-event path under the lock — serializes hundreds of ~250-400 ms
+  /// RPCs into a multi-minute drain. Keeping
+  /// [DmHistoryDrainConfig.remoteDecryptConcurrency] decrypts in flight
+  /// collapses the wall-clock to roughly 1/N; the Keycast server does not
+  /// serialize per-token decrypts, so the concurrency is real.
+  ///
+  /// Returns a `{giftWrapId: rumor}` map of the SUCCESSFUL decrypts only, with
+  /// the same contract as [_batchDecryptGiftWraps]: wraps that are already
+  /// persisted, undecryptable, or fail are absent and fall through to the
+  /// per-event path in the caller (which preserves failed-decrypt bookkeeping
+  /// for the retry queue, see #5202). Only *decryption* is parallelized here —
+  /// the caller persists each result serially under the [_eventLock], so
+  /// dedup and transaction integrity are unchanged.
+  Future<Map<String, Event>> _parallelDecryptGiftWraps(
+    List<Event> events,
+  ) async {
+    final signer = _signer;
+    if (signer == null) return const {};
+
+    // Probe the dedup index before paying any network decrypt, so a resume
+    // drain over already-persisted history costs DB reads, not RPCs. The
+    // in-transaction hasGiftWrap re-check in the caller still guards races.
+    final pending = <Event>[];
+    for (final event in events) {
+      if (event.kind != EventKind.giftWrap) continue;
+      if (await _directMessagesDao.hasGiftWrap(event.id)) continue;
+      pending.add(event);
+    }
+    if (pending.isEmpty) return const {};
+    if (_disposed) return const {};
+
+    // One signer handle shared across the pool: the public key is refreshed
+    // once up front and the workers only read it. Each decrypt is independent
+    // (pubkey + ciphertext in, plaintext out), so sharing is safe on a single
+    // isolate.
+    final nostr = Nostr(signer, [], _dummyRelay);
+    await nostr.refreshPublicKey();
+
+    final decrypted = <String, Event>{};
+    var next = 0;
+
+    Future<void> worker() async {
+      while (true) {
+        if (_disposed) return;
+        // Read-then-increment with no await in between, so two workers never
+        // claim the same index on a single isolate.
+        final index = next;
+        if (index >= pending.length) return;
+        next = index + 1;
+        final event = pending[index];
+        try {
+          final rumor = await _decryptRumor(nostr, event);
+          if (rumor != null) decrypted[event.id] = rumor;
+        } on Object catch (e, stackTrace) {
+          // Leave the wrap out of the map so it falls through to the per-event
+          // path, which records the failed decrypt for the retry queue. See
+          // #5202.
+          Log.error(
+            'Parallel gift-wrap decrypt threw for ${event.id}: $e',
+            category: LogCategory.system,
+            error: e,
+            stackTrace: stackTrace,
+          );
+        }
+        // Hand back a real event-loop turn between decrypts so the backfill
+        // cannot starve frame rendering — a real remote RPC await yields
+        // anyway, but a fast/synthetic signer would otherwise drain a whole
+        // page in one microtask burst. See #5391.
+        await _yieldToEventLoop();
+      }
+    }
+
+    final workerCount =
+        pending.length < DmHistoryDrainConfig.remoteDecryptConcurrency
+        ? pending.length
+        : DmHistoryDrainConfig.remoteDecryptConcurrency;
+    await Future.wait([for (var i = 0; i < workerCount; i++) worker()]);
     return decrypted;
   }
 
