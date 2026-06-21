@@ -12,13 +12,21 @@ part 'user_profile_providers.g.dart';
 
 // ignore: specify_nonobvious_property_types
 final userProfileStatsReactiveProvider =
-    StreamProvider.family<ProfileStats?, String>((ref, pubkey) {
+    StreamProvider.family<ProfileStats?, String>((ref, pubkey) async* {
       final repo = ref.watch(profileRepositoryProvider);
       if (repo == null) {
-        return const Stream<ProfileStats?>.empty();
+        return;
       }
 
-      return repo.watchProfileStats(pubkey: pubkey);
+      unawaited(
+        repo
+            .fetchFreshProfile(pubkey: pubkey)
+            .catchError((Object _, StackTrace _) => null),
+      );
+
+      await for (final stats in repo.watchProfileStats(pubkey: pubkey)) {
+        yield stats;
+      }
     });
 
 /// Reactive profile provider backed by Drift's watchProfile stream.
