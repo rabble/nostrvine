@@ -2452,22 +2452,36 @@ class VideosRepository {
     }
 
     final recommendationCursor = cursor ?? until?.toString();
-    final response = recommendationCursor == null
-        ? await _funnelcakeApiClient.getRecommendations(
-            pubkey: effectiveUserPubkey,
-            limit: limit,
-            seed: requestSeed,
-            preferredLanguages: preferredLanguages,
-            viewerCountry: viewerCountry,
-          )
-        : await _funnelcakeApiClient.getRecommendations(
-            pubkey: effectiveUserPubkey,
-            limit: limit,
-            cursor: recommendationCursor,
-            seed: requestSeed,
-            preferredLanguages: preferredLanguages,
-            viewerCountry: viewerCountry,
-          );
+    late final RecommendationsResponse response;
+    try {
+      response = recommendationCursor == null
+          ? await _funnelcakeApiClient.getRecommendations(
+              pubkey: effectiveUserPubkey,
+              limit: limit,
+              seed: requestSeed,
+              preferredLanguages: preferredLanguages,
+              viewerCountry: viewerCountry,
+            )
+          : await _funnelcakeApiClient.getRecommendations(
+              pubkey: effectiveUserPubkey,
+              limit: limit,
+              cursor: recommendationCursor,
+              seed: requestSeed,
+              preferredLanguages: preferredLanguages,
+              viewerCountry: viewerCountry,
+            );
+    } on FunnelcakeException {
+      if (recommendationCursor != null) rethrow;
+      return HomeFeedResult(
+        videos: await getPopularVideos(
+          limit: limit,
+          until: until,
+          skipCache: skipCache,
+          preferredLanguages: preferredLanguages,
+          viewerCountry: viewerCountry,
+        ),
+      );
+    }
     final videos = _transformVideoStats(response.videos);
     if (videos.isEmpty) {
       return HomeFeedResult(
