@@ -1060,6 +1060,8 @@ class VideoEditorRenderService {
   static Future<String> renderNativeVideoToFile(
     String outputPath,
     VideoRenderData task, {
+    // Surface native renderer warnings through ProVideoEditorLogForwarder for
+    // #4801 diagnostics while clean renders stay quiet.
     NativeLogLevel? nativeLogLevel = NativeLogLevel.warning,
   }) async {
     await cancelTask(task.id);
