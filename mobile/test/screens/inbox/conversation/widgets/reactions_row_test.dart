@@ -112,6 +112,46 @@ void main() {
       expect(find.byType(UserAvatar), findsNWidgets(2));
     });
 
+    testWidgets('reactor avatar is vertically centered against the emoji', (
+      tester,
+    ) async {
+      primeState(
+        stateWith([
+          makeReaction(id: '1', reactorPubkey: ownerPubkey, emoji: '🔥'),
+        ]),
+      );
+
+      await tester.pumpWidget(buildSubject(cubit));
+      await tester.pump();
+
+      // The avatar box and the emoji box share a vertical centre. This guards
+      // the avatar-stack centering (a sub-`_size` avatar otherwise pins to the
+      // top edge). Real colour-emoji ink offset is engine-level and not
+      // reproducible with the placeholder test font, so this checks box
+      // alignment, not glyph ink.
+      final emojiCenter = tester.getCenter(find.text('🔥')).dy;
+      final avatarCenter = tester.getCenter(find.byType(UserAvatar)).dy;
+      expect(avatarCenter, closeTo(emojiCenter, 0.5));
+    });
+
+    testWidgets('reactor avatar renders as a circle (no cut border)', (
+      tester,
+    ) async {
+      primeState(
+        stateWith([
+          makeReaction(id: '1', reactorPubkey: ownerPubkey, emoji: '🔥'),
+        ]),
+      );
+
+      await tester.pumpWidget(buildSubject(cubit));
+      await tester.pump();
+
+      // cornerRadius == size / 2 keeps UserAvatar's own border circular, so it
+      // is not sliced into arcs by the surrounding circular outline.
+      final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
+      expect(avatar.cornerRadius, avatar.size / 2);
+    });
+
     testWidgets('pill exposes the "see who reacted" semantic label', (
       tester,
     ) async {

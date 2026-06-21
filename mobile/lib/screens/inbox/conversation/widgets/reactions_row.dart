@@ -158,10 +158,10 @@ class _ReactionPill extends StatelessWidget {
         : VineTheme.outlineVariant;
     final borderRadius = BorderRadius.circular(_height / 2);
 
-    final emojiStyle = VineTheme.bodyLargeFont().copyWith(
-      fontSize: 15,
-      height: 1,
-    );
+    // 🔥 is painted by the platform colour-emoji font (Inter ships no emoji),
+    // so a forced line-height drops the glyph low on Android. Natural leading
+    // lets the Row centre the glyph box — mirrors reaction_picker_overlay.
+    const emojiStyle = TextStyle(fontSize: 15);
     final overflowStyle = VineTheme.labelSmallFont(
       color: VineTheme.onSurface,
     ).copyWith(fontSize: 11, height: 1);
@@ -249,21 +249,29 @@ class _ReactionAvatarStack extends StatelessWidget {
       height: _size,
       child: Stack(
         children: [
+          // top/bottom: 0 + Center vertically centres each circle in the
+          // stack — without it a sub-`_size` avatar pins to the top edge.
           for (var i = 0; i < reactors.length; i++)
             Positioned(
               left: i * _overlap,
-              child: _PillAvatar(
-                pubkey: reactors[i].reactorPubkey,
-                dimmed:
-                    reactors[i].reactorPubkey == ownerPubkey &&
-                    reactors[i].publishStatus ==
-                        DmReactionPublishStatus.pending,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: _PillAvatar(
+                  pubkey: reactors[i].reactorPubkey,
+                  dimmed:
+                      reactors[i].reactorPubkey == ownerPubkey &&
+                      reactors[i].publishStatus ==
+                          DmReactionPublishStatus.pending,
+                ),
               ),
             ),
           if (extraCount > 0)
             Positioned(
               left: reactors.length * _overlap,
-              child: _ExtraReactorsCircle(count: extraCount),
+              top: 0,
+              bottom: 0,
+              child: Center(child: _ExtraReactorsCircle(count: extraCount)),
             ),
         ],
       ),
@@ -277,6 +285,8 @@ class _PillAvatar extends ConsumerWidget {
   final String pubkey;
   final bool dimmed;
 
+  static const double _diameter = 17;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref
@@ -284,17 +294,20 @@ class _PillAvatar extends ConsumerWidget {
         .asData
         ?.value;
 
+    // cornerRadius == diameter / 2 makes UserAvatar a true circle whose own
+    // border is circular too. Clipping the default rounded-square avatar to a
+    // circle would slice that border into arcs (the "cut border" artifact) —
+    // the wrapping white ring hides it here, but the sheet has no ring.
     final avatar = DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: VineTheme.whiteText, width: 1.5),
       ),
-      child: ClipOval(
-        child: UserAvatar(
-          imageUrl: profile?.picture,
-          name: profile?.bestDisplayName,
-          size: 17,
-        ),
+      child: UserAvatar(
+        imageUrl: profile?.picture,
+        name: profile?.bestDisplayName,
+        size: _diameter,
+        cornerRadius: _diameter / 2,
       ),
     );
 

@@ -10,6 +10,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/reactions_detail_sheet.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 
 import '../../../../helpers/test_provider_overrides.dart';
 
@@ -118,6 +119,28 @@ void main() {
       expect(find.text('😂'), findsOneWidget);
       // Own row offers remove; the other participant's row does not.
       expect(find.text(l10n.dmReactionRemoveAction), findsOneWidget);
+    });
+
+    testWidgets('reactor avatar renders as a circle, not a clipped square', (
+      tester,
+    ) async {
+      primeState([
+        makeReaction(id: 'own1', reactorPubkey: ownerPubkey, emoji: '🔥'),
+      ]);
+
+      await open(tester);
+
+      // cornerRadius == size / 2 makes the avatar (and its own border) a true
+      // circle, so no external clip slices the border into arcs.
+      final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
+      expect(avatar.cornerRadius, avatar.size / 2);
+      expect(
+        find.ancestor(
+          of: find.byType(UserAvatar),
+          matching: find.byType(ClipOval),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('tapping own row dispatches a toggle (remove) and closes', (

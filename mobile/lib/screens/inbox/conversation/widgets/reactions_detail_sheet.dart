@@ -127,6 +127,8 @@ class _ReactorRow extends ConsumerWidget {
   final String conversationId;
   final String messageAuthorPubkey;
 
+  static const double _avatarSize = 40;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(
@@ -160,8 +162,14 @@ class _ReactorRow extends ConsumerWidget {
             horizontal: 20,
             vertical: 4,
           ),
-          leading: ClipOval(
-            child: UserAvatar(imageUrl: profile?.picture, name: name, size: 40),
+          // cornerRadius == size / 2 renders a true circle whose border is
+          // also circular. Wrapping the rounded-square UserAvatar in ClipOval
+          // would slice its border into arcs (the "cut border" artifact).
+          leading: UserAvatar(
+            imageUrl: profile?.picture,
+            name: name,
+            size: _avatarSize,
+            cornerRadius: _avatarSize / 2,
           ),
           title: Text(
             name,
@@ -228,10 +236,9 @@ class _Trailing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final emojiText = Text(
-      emoji,
-      style: VineTheme.bodyLargeFont().copyWith(fontSize: 18, height: 1),
-    );
+    // Natural leading — a forced line-height drops the colour-emoji glyph low
+    // on Android (see ReactionsRow emoji styling).
+    final emojiText = Text(emoji, style: const TextStyle(fontSize: 18));
     if (!isOwn) return emojiText;
 
     final Widget action;
