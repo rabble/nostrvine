@@ -242,7 +242,7 @@ class _Trailing extends StatelessWidget {
       action = _ActionLabel(
         text: context.l10n.dmReactionRetryAction,
         color: VineTheme.error,
-        icon: Icons.refresh,
+        icon: DivineIconName.arrowClockwise,
       );
     } else {
       action = _ActionLabel(
@@ -263,7 +263,7 @@ class _ActionLabel extends StatelessWidget {
 
   final String text;
   final Color color;
-  final IconData? icon;
+  final DivineIconName? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -271,7 +271,7 @@ class _ActionLabel extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (icon != null) ...[
-          Icon(icon, size: 14, color: color),
+          DivineIcon(icon: icon!, size: 14, color: color),
           const SizedBox(width: 3),
         ],
         Text(text, style: VineTheme.labelMediumFont(color: color)),

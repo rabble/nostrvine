@@ -213,7 +213,7 @@ class _ReactionPill extends StatelessWidget {
         child: Opacity(
           opacity: isOwnPending ? 0.65 : 1.0,
           child: Material(
-            color: Colors.transparent,
+            type: MaterialType.transparency,
             shape: RoundedRectangleBorder(borderRadius: borderRadius),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
