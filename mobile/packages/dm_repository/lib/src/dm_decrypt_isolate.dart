@@ -25,12 +25,27 @@ import 'package:dm_repository/src/dm_decryption_worker.dart';
 /// drain — [close] (which the drain calls in its `finally`) kills the isolate
 /// and reclaims the key. That window equals the one the main isolate already
 /// holds the extracted hex in today's per-chunk path.
-class DmDecryptIsolate {
-  DmDecryptIsolate._({
-    required Isolate isolate,
-    required ReceivePort responses,
-  }) : _isolate = isolate,
-       _responses = responses;
+/// Minimal worker contract used by the history drain to decrypt batches and
+/// release any resident key material when the drain exits.
+abstract interface class DmDecryptWorker {
+  /// Decrypts [events] and returns one result per input event, in order.
+  Future<List<DecryptedRumorResult>> decryptBatch(
+    List<Map<String, dynamic>> events,
+  );
+
+  /// Releases worker resources and resident key material.
+  void close();
+}
+
+/// Creates a drain-scoped decrypt worker for [privateKeyHex].
+typedef DmDecryptIsolateSpawner =
+    Future<DmDecryptWorker> Function(String privateKeyHex);
+
+/// Production [DmDecryptWorker] backed by a long-lived Dart isolate.
+class DmDecryptIsolate implements DmDecryptWorker {
+  DmDecryptIsolate._({required Isolate isolate, required ReceivePort responses})
+    : _isolate = isolate,
+      _responses = responses;
 
   final Isolate _isolate;
   final ReceivePort _responses;
@@ -55,17 +70,13 @@ class DmDecryptIsolate {
   /// it is sent into the isolate once here and never retained on the main side.
   static Future<DmDecryptIsolate> spawn(String privateKeyHex) async {
     final responses = ReceivePort();
-    final isolate = await Isolate.spawn(
-      _dmDecryptIsolateEntry,
-      (responses.sendPort, privateKeyHex),
-      debugName: 'dm-decrypt-isolate',
-    );
+    final isolate = await Isolate.spawn(_dmDecryptIsolateEntry, (
+      responses.sendPort,
+      privateKeyHex,
+    ), debugName: 'dm-decrypt-isolate');
 
     final ready = Completer<SendPort>();
-    final instance = DmDecryptIsolate._(
-      isolate: isolate,
-      responses: responses,
-    );
+    final instance = DmDecryptIsolate._(isolate: isolate, responses: responses);
     instance._subscription = responses.listen((dynamic message) {
       if (!ready.isCompleted) {
         // First message is the worker's command port (handshake).
@@ -87,6 +98,7 @@ class DmDecryptIsolate {
   /// one [DecryptedRumorResult] per event, in order. Never throws for a
   /// per-event crypto failure (the worker maps those to failure entries);
   /// throws [StateError] only if called after [close].
+  @override
   Future<List<DecryptedRumorResult>> decryptBatch(
     List<Map<String, dynamic>> events,
   ) {
@@ -103,6 +115,7 @@ class DmDecryptIsolate {
   /// Kills the worker (reclaiming the resident private key), stops listening,
   /// and fails any still-pending requests so their awaiters never hang.
   /// Idempotent.
+  @override
   void close() {
     if (_closed) return;
     _closed = true;

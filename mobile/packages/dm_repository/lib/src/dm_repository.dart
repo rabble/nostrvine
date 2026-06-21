@@ -169,6 +169,7 @@ class DmRepository {
     NostrSigner? signer,
     RumorDecryptor? rumorDecryptor,
     Nip04Decryptor? nip04Decryptor,
+    DmDecryptIsolateSpawner? decryptIsolateSpawner,
     DmRepositoryErrorReporter? errorReporter,
     DmReactionsRepository? reactionsRepository,
   }) : _nostrClient = nostrClient,
@@ -182,6 +183,7 @@ class DmRepository {
        _signer = signer,
        _rumorDecryptor = rumorDecryptor ?? GiftWrapUtil.getRumorEvent,
        _nip04Decryptor = nip04Decryptor,
+       _decryptIsolateSpawner = decryptIsolateSpawner ?? DmDecryptIsolate.spawn,
        _errorReporter = errorReporter,
        _reactionsRepository = reactionsRepository;
 
@@ -211,6 +213,7 @@ class DmRepository {
   NostrSigner? _signer;
   RumorDecryptor _rumorDecryptor;
   Nip04Decryptor? _nip04Decryptor;
+  final DmDecryptIsolateSpawner _decryptIsolateSpawner;
   final DmRepositoryErrorReporter? _errorReporter;
 
   /// Optional sibling repository for NIP-25 reactions on DMs. When wired,
@@ -229,7 +232,7 @@ class DmRepository {
   /// instead of one per chunk and the resident private key is reclaimed when
   /// the drain ends. `null` outside a drain or for remote/test signers. See
   /// PR #5405 review / #5391.
-  DmDecryptIsolate? _drainDecryptIsolate;
+  DmDecryptWorker? _drainDecryptIsolate;
 
   /// Serializes event processing so concurrent subscription events
   /// never race into the dedup/insert path.
@@ -527,9 +530,7 @@ class DmRepository {
       final event = events[i];
       final rumor = preDecrypted[event.id];
       if (rumor != null) {
-        await _withEventLock(
-          () => _persistDecryptedGiftWrap(event, rumor),
-        );
+        await _withEventLock(() => _persistDecryptedGiftWrap(event, rumor));
       } else {
         await _handleIncomingEvent(event);
       }
@@ -823,6 +824,7 @@ class DmRepository {
     );
 
     _beginRecovery();
+    DmDecryptWorker? drainDecryptIsolate;
     try {
       // Spawn one drain-scoped decrypt isolate for local-key signers so the
       // whole backfill pays a single isolate spawn instead of one per chunk
@@ -833,9 +835,15 @@ class DmRepository {
       if (drainSigner is IsolateDecryptSigner &&
           drainSigner.canDecryptInIsolate) {
         try {
-          _drainDecryptIsolate = await DmDecryptIsolate.spawn(
+          final spawned = await _decryptIsolateSpawner(
             drainSigner.withPrivateKeyHex((k) => k),
           );
+          if (_disposed || _userPubkey != pubkey) {
+            spawned.close();
+            return;
+          }
+          drainDecryptIsolate = spawned;
+          _drainDecryptIsolate = spawned;
         } on Object catch (e, stackTrace) {
           Log.error(
             'DM decrypt isolate spawn failed; using per-event decrypt: $e',
@@ -843,7 +851,6 @@ class DmRepository {
             error: e,
             stackTrace: stackTrace,
           );
-          _drainDecryptIsolate = null;
         }
       }
 
@@ -974,8 +981,10 @@ class DmRepository {
       // Kill the drain-scoped decrypt isolate (reclaiming the resident key)
       // before clearing the recovery flag. Runs on every exit path — page
       // cap, exhaustion, user-switch / teardown bail, or error. See #5391.
-      _drainDecryptIsolate?.close();
-      _drainDecryptIsolate = null;
+      drainDecryptIsolate?.close();
+      if (identical(_drainDecryptIsolate, drainDecryptIsolate)) {
+        _drainDecryptIsolate = null;
+      }
       _endRecovery();
     }
   }
@@ -1288,10 +1297,7 @@ class DmRepository {
       // Advance sync boundaries using the rumor's REAL created_at. The
       // outer gift wrap randomizes its own created_at within a ~2 day
       // window (NIP-17) so it must not be used for boundary tracking.
-      await _syncState?.recordSeen(
-        _userPubkey,
-        createdAt: rumor.createdAt,
-      );
+      await _syncState?.recordSeen(_userPubkey, createdAt: rumor.createdAt);
 
       Log.debug(
         'Persisted DM (kind ${rumor.kind}) in conversation '
@@ -1318,9 +1324,7 @@ class DmRepository {
   /// absent) are missing from the map — the caller routes those through the
   /// unchanged per-event path (which preserves the isolate→main-isolate
   /// fallback and failed-decrypt bookkeeping). Runs OFF the [_eventLock].
-  Future<Map<String, Event>> _batchDecryptGiftWraps(
-    List<Event> events,
-  ) async {
+  Future<Map<String, Event>> _batchDecryptGiftWraps(List<Event> events) async {
     final isolate = _drainDecryptIsolate;
     if (isolate == null) {
       // Remote / test signer, or the drain isolate could not spawn: there is

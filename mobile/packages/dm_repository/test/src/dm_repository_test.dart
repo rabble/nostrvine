@@ -126,6 +126,20 @@ class _MockNostrSigner extends Mock implements NostrSigner {}
 
 class _FakeEvent extends Fake implements Event {}
 
+class _FakeDmDecryptWorker implements DmDecryptWorker {
+  int closeCount = 0;
+
+  @override
+  Future<List<DecryptedRumorResult>> decryptBatch(
+    List<Map<String, dynamic>> events,
+  ) async => const <DecryptedRumorResult>[];
+
+  @override
+  void close() {
+    closeCount++;
+  }
+}
+
 /// Test double for [DmSyncState] that stores values in memory and captures
 /// [recordSeen] calls for assertions.
 class _FakeDmSyncState implements DmSyncState {
@@ -361,6 +375,7 @@ void main() {
       PendingGiftWrapsDao? pendingGiftWrapsDao,
       DmReactionsRepository? reactionsRepository,
       NostrSigner? signer,
+      DmDecryptIsolateSpawner? decryptIsolateSpawner,
     }) {
       return DmRepository(
         nostrClient: mockNostrClient,
@@ -373,6 +388,7 @@ void main() {
         signer: signer ?? LocalNostrSigner(_validPrivateKey),
         rumorDecryptor: rumorDecryptor,
         nip04Decryptor: nip04Decryptor,
+        decryptIsolateSpawner: decryptIsolateSpawner,
         syncState: syncState,
         reactionsRepository: reactionsRepository,
         errorReporter: (error, stackTrace, {required site}) {
@@ -3344,6 +3360,79 @@ void main() {
       _FakeDmSyncState drainPending() => _FakeDmSyncState()
         ..oldestOverride = 1700001000
         ..drainVersionOverride = DmSyncState.currentDrainVersion;
+
+      test(
+        'stale drain spawn cannot close or clear the next drain worker',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+
+          final firstWorker = _FakeDmDecryptWorker();
+          final secondWorker = _FakeDmDecryptWorker();
+          final firstSpawn = Completer<DmDecryptWorker>();
+          final firstSpawnRequested = Completer<void>();
+          final secondSpawnRequested = Completer<void>();
+          var spawnCount = 0;
+
+          Future<DmDecryptWorker> spawner(String privateKeyHex) {
+            spawnCount++;
+            if (spawnCount == 1) {
+              firstSpawnRequested.complete();
+              return firstSpawn.future;
+            }
+            secondSpawnRequested.complete();
+            return Future<DmDecryptWorker>.value(secondWorker);
+          }
+
+          final secondQueryStarted = Completer<void>();
+          final secondQueryResult = Completer<List<Event>>();
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((inv) async {
+            final filters =
+                inv.positionalArguments.first as List<nostr_filter.Filter>;
+            final filter = filters.single;
+            if (filter.p?.contains(senderPub) ?? false) {
+              secondQueryStarted.complete();
+              return secondQueryResult.future;
+            }
+            return const <Event>[];
+          });
+
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: _IsolateLocalSigner(recipientPriv),
+            syncState: drainPending(),
+            decryptIsolateSpawner: spawner,
+          );
+
+          final firstDrain = repository.backfillHistoryIfNeeded();
+          await firstSpawnRequested.future;
+
+          repository.setCredentials(
+            userPubkey: senderPub,
+            signer: _IsolateLocalSigner(senderPriv),
+            messageService: mockMessageService,
+          );
+          final secondDrain = repository.backfillHistoryIfNeeded();
+          await secondSpawnRequested.future;
+          await secondQueryStarted.future;
+
+          firstSpawn.complete(firstWorker);
+          await firstDrain;
+
+          expect(firstWorker.closeCount, 1);
+          expect(secondWorker.closeCount, 0);
+
+          secondQueryResult.complete(const <Event>[]);
+          await secondDrain;
+
+          expect(secondWorker.closeCount, 1);
+        },
+      );
 
       test(
         'batches a drain page of real gift wraps and persists each message '
