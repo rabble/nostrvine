@@ -201,5 +201,40 @@ void main() {
       // The sheet (re-providing the same cubit via contentWrapper) is shown.
       expect(find.text(l10n.dmReactionsSheetTitle), findsOneWidget);
     });
+
+    testWidgets(
+      'renders the own optimistic pill with NO persisted rows (#5389)',
+      (tester) async {
+        // No persisted reactions; the chip exists only because of the
+        // synchronous optimistic overlay — i.e. before any Drift round-trip.
+        final state = ConversationReactionsState(
+          optimistic: {
+            const ReactionPublishKey(
+              messageId: messageId,
+              emoji: '🔥',
+            ): OptimisticReactionAdded(
+              makeReaction(
+                id: 'optimistic:$messageId:🔥',
+                reactorPubkey: ownerPubkey,
+                emoji: '🔥',
+                publishStatus: DmReactionPublishStatus.pending,
+              ),
+            ),
+          },
+        );
+        when(() => cubit.state).thenReturn(state);
+        whenListen(cubit, Stream.value(state), initialState: state);
+
+        await tester.pumpWidget(buildSubject(cubit));
+        await tester.pump();
+
+        expect(find.text('🔥'), findsOneWidget);
+        expect(find.byType(UserAvatar), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(l10n.dmReactionsViewA11yLabel),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

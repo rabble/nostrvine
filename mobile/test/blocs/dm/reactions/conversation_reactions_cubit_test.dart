@@ -337,5 +337,243 @@ void main() {
         expect(list.first.emoji, '👍');
       },
     );
+
+    group('optimistic chip (#5389)', () {
+      bool ownPending(ConversationReactionsState s, String emoji) => s
+          .reactionsFor(_msgId)
+          .any(
+            (r) =>
+                r.reactorPubkey == _owner &&
+                r.emoji == emoji &&
+                r.publishStatus == DmReactionPublishStatus.pending,
+          );
+
+      blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+        'paints the own chip synchronously, before the publish resolves',
+        build: () {
+          when(
+            () => repo.publish(
+              conversationId: any(named: 'conversationId'),
+              targetMessageId: any(named: 'targetMessageId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              emoji: any(named: 'emoji'),
+            ),
+          ).thenAnswer(
+            (_) async =>
+                const DmReactionPublishResult(success: true, rumorId: 'r-1'),
+          );
+          return ConversationReactionsCubit(
+            reactionsRepository: repo,
+            ownerPubkey: _owner,
+          );
+        },
+        act: (cubit) => cubit.add(
+          const ConversationReactionToggled(
+            conversationId: _convo,
+            messageId: _msgId,
+            messageAuthorPubkey: _peer,
+            emoji: '❤️',
+          ),
+        ),
+        expect: () => [
+          // FIRST emit already carries the chip — no stream tick, no DB wait.
+          isA<ConversationReactionsState>()
+              .having(
+                (s) => ownPending(s, '❤️'),
+                'optimistic chip present',
+                isTrue,
+              )
+              .having(
+                (s) =>
+                    s.pending[const ReactionPublishKey(
+                      messageId: _msgId,
+                      emoji: '❤️',
+                    )],
+                'pending sending',
+                ReactionPublishLocalStatus.sending,
+              ),
+          // After publish: pending cleared, overlay still bridges until a tick.
+          isA<ConversationReactionsState>()
+              .having((s) => s.pending.isEmpty, 'pending cleared', isTrue)
+              .having((s) => ownPending(s, '❤️'), 'chip still present', isTrue),
+        ],
+      );
+
+      blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+        'reconciles the optimistic add when the persisted row arrives (no dupe)',
+        build: () {
+          when(
+            () => repo.publish(
+              conversationId: any(named: 'conversationId'),
+              targetMessageId: any(named: 'targetMessageId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              emoji: any(named: 'emoji'),
+            ),
+          ).thenAnswer(
+            (_) async =>
+                const DmReactionPublishResult(success: true, rumorId: 'r-1'),
+          );
+          return ConversationReactionsCubit(
+            reactionsRepository: repo,
+            ownerPubkey: _owner,
+          );
+        },
+        act: (cubit) async {
+          cubit.add(const ConversationReactionsStarted(conversationId: _convo));
+          await Future<void>.delayed(Duration.zero);
+          cubit.add(
+            const ConversationReactionToggled(
+              conversationId: _convo,
+              messageId: _msgId,
+              messageAuthorPubkey: _peer,
+              emoji: '❤️',
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+          streamController.add([ownReaction('❤️')]);
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (cubit) {
+          expect(cubit.state.optimistic, isEmpty);
+          final chips = cubit.state
+              .reactionsFor(_msgId)
+              .where((r) => r.emoji == '❤️')
+              .toList();
+          expect(chips, hasLength(1));
+          expect(chips.first.publishStatus, DmReactionPublishStatus.sent);
+        },
+      );
+
+      blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+        'toggle-off hides the own chip synchronously',
+        build: () {
+          when(
+            () => repo.removeOwn(
+              rumorId: any(named: 'rumorId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            ),
+          ).thenAnswer((_) async {});
+          return ConversationReactionsCubit(
+            reactionsRepository: repo,
+            ownerPubkey: _owner,
+          );
+        },
+        act: (cubit) async {
+          cubit.add(const ConversationReactionsStarted(conversationId: _convo));
+          await Future<void>.delayed(Duration.zero);
+          streamController.add([ownReaction('❤️')]);
+          await Future<void>.delayed(Duration.zero);
+          cubit.add(
+            const ConversationReactionToggled(
+              conversationId: _convo,
+              messageId: _msgId,
+              messageAuthorPubkey: _peer,
+              emoji: '❤️',
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (cubit) {
+          expect(
+            cubit.state.reactionsFor(_msgId).any((r) => r.isOwn),
+            isFalse,
+          );
+          verify(
+            () => repo.removeOwn(
+              rumorId: 'own-❤️',
+              targetMessageAuthor: _peer,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+        'set with a different emoji optimistically swaps the chip',
+        build: () {
+          when(
+            () => repo.publish(
+              conversationId: any(named: 'conversationId'),
+              targetMessageId: any(named: 'targetMessageId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              emoji: any(named: 'emoji'),
+            ),
+          ).thenAnswer(
+            (_) async =>
+                const DmReactionPublishResult(success: true, rumorId: 'r-new'),
+          );
+          return ConversationReactionsCubit(
+            reactionsRepository: repo,
+            ownerPubkey: _owner,
+          );
+        },
+        act: (cubit) async {
+          cubit.add(const ConversationReactionsStarted(conversationId: _convo));
+          await Future<void>.delayed(Duration.zero);
+          streamController.add([ownReaction('❤️')]);
+          await Future<void>.delayed(Duration.zero);
+          cubit.add(
+            const ConversationReactionSet(
+              conversationId: _convo,
+              messageId: _msgId,
+              messageAuthorPubkey: _peer,
+              emoji: '😂',
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (cubit) {
+          final emojis = cubit.state
+              .reactionsFor(_msgId)
+              .where((r) => r.isOwn)
+              .map((r) => r.emoji)
+              .toSet();
+          expect(emojis, contains('😂'));
+          expect(emojis, isNot(contains('❤️')));
+        },
+      );
+
+      blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+        'drops the optimistic add when the insert never persisted',
+        build: () {
+          when(
+            () => repo.publish(
+              conversationId: any(named: 'conversationId'),
+              targetMessageId: any(named: 'targetMessageId'),
+              targetMessageAuthor: any(named: 'targetMessageAuthor'),
+              emoji: any(named: 'emoji'),
+            ),
+          ).thenAnswer(
+            (_) async => const DmReactionPublishResult(
+              success: false,
+              rumorId: 'r-x',
+              errorMessage: 'Optimistic insert failed',
+            ),
+          );
+          return ConversationReactionsCubit(
+            reactionsRepository: repo,
+            ownerPubkey: _owner,
+          );
+        },
+        act: (cubit) => cubit.add(
+          const ConversationReactionToggled(
+            conversationId: _convo,
+            messageId: _msgId,
+            messageAuthorPubkey: _peer,
+            emoji: '🔥',
+          ),
+        ),
+        verify: (cubit) {
+          expect(cubit.state.optimistic, isEmpty);
+          expect(cubit.state.reactionsFor(_msgId), isEmpty);
+          expect(
+            cubit.state.pending[const ReactionPublishKey(
+              messageId: _msgId,
+              emoji: '🔥',
+            )],
+            ReactionPublishLocalStatus.failed,
+          );
+        },
+      );
+    });
   });
 }
