@@ -102,15 +102,17 @@ void main() {
       String? rumorEventJson,
       String? publishStatus,
       String targetAuthor = _otherPubkey,
+      String targetMessageId = _targetMessageId,
+      int createdAt = 1_700_000_000,
     }) {
       return DmReactionRow(
         id: id,
         conversationId: _conversationId,
-        targetMessageId: _targetMessageId,
+        targetMessageId: targetMessageId,
         targetMessageAuthor: targetAuthor,
         reactorPubkey: reactorPubkey,
         emoji: emoji,
-        createdAt: 1_700_000_000,
+        createdAt: createdAt,
         giftWrapId: giftWrapId,
         ownerPubkey: _ownerPubkey,
         isDeleted: isDeleted,
@@ -178,6 +180,84 @@ void main() {
       expect(reactions.single.id, _reactionRumorId);
       expect(reactions.single.publishStatus, DmReactionPublishStatus.received);
     });
+
+    test(
+      'watchForConversation collapses duplicate live rows for one reactor, '
+      'keeping the most recent',
+      () async {
+        // Cap-at-one violated in storage: the same reactor has three live
+        // rows (a superseding kind-5 deletion never landed). The read layer
+        // must collapse to the latest so the pill shows one avatar/emoji.
+        when(
+          () => mockDao.watchForConversation(
+            conversationId: _conversationId,
+            ownerPubkey: _ownerPubkey,
+          ),
+        ).thenAnswer(
+          // All three are the owner (makeRow's default reactor).
+          (_) => Stream.value([
+            makeRow(id: 'a' * 64, createdAt: 1_700_000_001),
+            makeRow(id: 'b' * 64, emoji: '😮', createdAt: 1_700_000_010),
+            makeRow(id: 'c' * 64, emoji: '😂', createdAt: 1_700_000_020),
+          ]),
+        );
+
+        final repository = createRepository();
+        final reactions = await repository
+            .watchForConversation(_conversationId)
+            .first;
+
+        expect(reactions, hasLength(1));
+        expect(reactions.single.id, 'c' * 64);
+        expect(reactions.single.emoji, '😂');
+      },
+    );
+
+    test(
+      'watchForConversation keeps distinct reactors and distinct messages '
+      'separate',
+      () async {
+        const otherMessageId =
+            'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+        when(
+          () => mockDao.watchForConversation(
+            conversationId: _conversationId,
+            ownerPubkey: _ownerPubkey,
+          ),
+        ).thenAnswer(
+          (_) => Stream.value([
+            // Owner + the other participant on the same message → both kept.
+            makeRow(id: 'a' * 64, createdAt: 1_700_000_001),
+            makeRow(
+              id: 'b' * 64,
+              reactorPubkey: _otherPubkey,
+              emoji: '😂',
+              createdAt: 1_700_000_005,
+            ),
+            // Owner again, but a different message → kept (collapse is keyed
+            // per message, not per reactor alone).
+            makeRow(
+              id: 'd' * 64,
+              emoji: '😮',
+              targetMessageId: otherMessageId,
+              createdAt: 1_700_000_010,
+            ),
+          ]),
+        );
+
+        final repository = createRepository();
+        final reactions = await repository
+            .watchForConversation(_conversationId)
+            .first;
+
+        expect(reactions, hasLength(3));
+        // Ascending createdAt order preserved for the pill's reversed render.
+        expect(
+          reactions.map((r) => r.id).toList(),
+          ['a' * 64, 'b' * 64, 'd' * 64],
+        );
+      },
+    );
 
     test('publish returns failure when repository is uninitialized', () async {
       final repository = createRepository(initialized: false);

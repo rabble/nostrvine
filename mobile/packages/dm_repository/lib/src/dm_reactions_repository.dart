@@ -113,7 +113,9 @@ class DmReactionsRepository {
   }
 
   /// Reactive stream of every live reaction in [conversationId] for the
-  /// current account. Empty list when uninitialized.
+  /// current account, collapsed to at most one reaction per reactor per
+  /// target message (the cap-at-one invariant — see [_collapsePerReactor]).
+  /// Empty list when uninitialized.
   Stream<List<DmReaction>> watchForConversation(String conversationId) {
     if (_userPubkey.isEmpty) {
       return Stream<List<DmReaction>>.value(const <DmReaction>[]);
@@ -123,7 +125,35 @@ class DmReactionsRepository {
           conversationId: conversationId,
           ownerPubkey: _userPubkey,
         )
-        .map((rows) => rows.map(_rowToModel).toList());
+        .map((rows) => _collapsePerReactor(rows.map(_rowToModel).toList()));
+  }
+
+  /// Enforce the cap-at-one invariant at the read boundary: keep at most one
+  /// live reaction per (targetMessageId, reactorPubkey), the most recent by
+  /// `createdAt`.
+  ///
+  /// The DAO can momentarily hold several live rows for one reactor on one
+  /// message — a superseding kind-5 deletion that never arrived (the reactor
+  /// was offline, or a remote client switched emoji without deleting the old
+  /// reaction), or the dual-cubit optimistic-insert race tracked by #5419.
+  /// The render path (pill avatar stack + who-reacted sheet) assumes one row
+  /// per reactor; collapsing here keeps it correct regardless of stored
+  /// duplicates. Returned in ascending `createdAt` order, matching the DAO's
+  /// `ORDER BY created_at ASC` so the pill's "reversed == most-recent-first"
+  /// assumption holds.
+  static List<DmReaction> _collapsePerReactor(List<DmReaction> reactions) {
+    if (reactions.length < 2) return reactions;
+    final latestByReactor = <(String, String), DmReaction>{};
+    for (final reaction in reactions) {
+      final key = (reaction.targetMessageId, reaction.reactorPubkey);
+      final existing = latestByReactor[key];
+      if (existing == null || reaction.createdAt >= existing.createdAt) {
+        latestByReactor[key] = reaction;
+      }
+    }
+    if (latestByReactor.length == reactions.length) return reactions;
+    return latestByReactor.values.toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
   }
 
   /// Publish a new reaction. Performs cap-at-one supersede when the
