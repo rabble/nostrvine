@@ -134,16 +134,17 @@ void main() {
           },
         );
 
-        for (var i = 0; i < 25; i++) {
-          router.handleEvent(videoEvent(2000 + i));
+        final events = List.generate(25, (i) => videoEvent(2000 + i));
+        for (final event in events) {
+          router.handleEvent(event);
         }
 
         await router.drainForTesting();
 
         expect(yieldCount, greaterThanOrEqualTo(2));
-        for (var i = 0; i < 25; i++) {
+        for (final event in events) {
           expect(
-            await db.nostrEventsDao.getEventById(videoEvent(2000 + i).id),
+            await db.nostrEventsDao.getEventById(event.id),
             isNotNull,
           );
         }
