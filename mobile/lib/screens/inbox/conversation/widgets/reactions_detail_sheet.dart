@@ -266,7 +266,8 @@ class _Trailing extends StatelessWidget {
 
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [emojiText, const SizedBox(width: 12), action],
+      spacing: 12,
+      children: [emojiText, action],
     );
   }
 }
@@ -282,11 +283,9 @@ class _ActionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
+      spacing: 3,
       children: [
-        if (icon != null) ...[
-          DivineIcon(icon: icon!, size: 14, color: color),
-          const SizedBox(width: 3),
-        ],
+        if (icon != null) DivineIcon(icon: icon!, size: 14, color: color),
         Text(text, style: VineTheme.labelMediumFont(color: color)),
       ],
     );
