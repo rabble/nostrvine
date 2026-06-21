@@ -86,11 +86,15 @@ void main() {
       whenListen(cubit, Stream.value(state), initialState: state);
     }
 
-    Future<void> open(WidgetTester tester) async {
+    Future<void> open(WidgetTester tester, {bool settle = true}) async {
       await tester.pumpWidget(host(cubit));
       await tester.pump();
       await tester.tap(find.text('open'));
-      await tester.pumpAndSettle();
+      if (settle) {
+        await tester.pumpAndSettle();
+      } else {
+        await tester.pump(const Duration(milliseconds: 500));
+      }
     }
 
     testWidgets('lists each reactor with their emoji and a remove action', (
@@ -169,6 +173,49 @@ void main() {
           ),
         ),
       ).called(1);
+    });
+
+    testWidgets('own pending and failed rows expose state semantics', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      primeState([
+        makeReaction(
+          id: 'own-pending',
+          reactorPubkey: ownerPubkey,
+          emoji: '🔥',
+          publishStatus: DmReactionPublishStatus.pending,
+        ),
+        makeReaction(
+          id: 'own-failed',
+          reactorPubkey: ownerPubkey,
+          emoji: '😂',
+          createdAt: 1_700_000_001,
+          publishStatus: DmReactionPublishStatus.failed,
+        ),
+      ]);
+
+      await open(tester, settle: false);
+
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label ==
+                  l10n.dmReactionChipPendingA11yLabel('🔥'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label == l10n.dmReactionChipFailedA11yLabel,
+        ),
+        findsOneWidget,
+      );
+
+      semantics.dispose();
     });
   });
 }

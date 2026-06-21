@@ -67,7 +67,6 @@ void main() {
             messageId: messageId,
             messageAuthorPubkey: otherPubkey,
             ownerPubkey: ownerPubkey,
-            otherParticipantName: 'Alex',
             isSentByMe: false,
           ),
         ),

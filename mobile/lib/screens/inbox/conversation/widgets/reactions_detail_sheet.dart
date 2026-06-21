@@ -141,7 +141,13 @@ class _ReactorRow extends ConsumerWidget {
     final isPending = reaction.publishStatus == DmReactionPublishStatus.pending;
 
     final label = isOwn
-        ? context.l10n.dmReactionChipOwnA11yLabel(reaction.emoji)
+        ? switch (reaction.publishStatus) {
+            DmReactionPublishStatus.pending =>
+              context.l10n.dmReactionChipPendingA11yLabel(reaction.emoji),
+            DmReactionPublishStatus.failed =>
+              context.l10n.dmReactionChipFailedA11yLabel,
+            _ => context.l10n.dmReactionChipOwnA11yLabel(reaction.emoji),
+          }
         : context.l10n.dmReactionChipOtherA11yLabel(name, reaction.emoji);
 
     return Semantics(

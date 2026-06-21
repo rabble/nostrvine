@@ -553,7 +553,6 @@ class _MessageList extends StatelessWidget {
                 messageAuthorPubkey: message.senderPubkey,
                 ownerPubkey: currentPubkey,
                 isSentByMe: isSent,
-                otherParticipantName: senderDisplayName,
               ),
             ],
           );

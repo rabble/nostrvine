@@ -27,7 +27,6 @@ class ReactionsRow extends StatelessWidget {
     required this.messageAuthorPubkey,
     required this.ownerPubkey,
     required this.isSentByMe,
-    this.otherParticipantName,
     this.blockedPubkeys = const <String>{},
     super.key,
   });
@@ -46,9 +45,6 @@ class ReactionsRow extends StatelessWidget {
 
   /// True if the bubble was sent by the current account.
   final bool isSentByMe;
-
-  /// Display name for the other participant (a11y fallback only).
-  final String? otherParticipantName;
 
   /// Pubkeys whose reactions should be hidden.
   final Set<String> blockedPubkeys;
