@@ -2,13 +2,20 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations_en.dart';
+import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_support.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -37,8 +44,13 @@ class _FakeUrlLauncherPlatform extends UrlLauncherPlatform {
   LinkDelegate? get linkDelegate => null;
 }
 
+class _MockProfileRepository extends Mock implements ProfileRepository {}
+
 const _testHexPubkey =
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+const _mentionedHexPubkey =
+    'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
 
 void main() {
   group('LinkifiedText', () {
@@ -327,6 +339,129 @@ void main() {
 
       expect(fakeUrlLauncherPlatform.launchedUrl, 'https://example.com/docs');
     });
+
+    testWidgets('opens exact profile match for plain mention before search', (
+      tester,
+    ) async {
+      const mention = 'shutupphia';
+      final profile = UserProfile(
+        pubkey: _mentionedHexPubkey,
+        name: mention,
+        displayName: 'Sophia',
+        rawData: const {'name': mention, 'display_name': 'Sophia'},
+        createdAt: DateTime.utc(2026, 6, 21),
+        eventId:
+            'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
+      );
+      final profileRepository = _MockProfileRepository();
+      when(
+        () => profileRepository.searchUsersLocally(
+          query: mention,
+          limit: 10,
+        ),
+      ).thenAnswer((_) async => [profile]);
+      when(
+        () => profileRepository.searchUsers(query: mention, limit: 10),
+      ).thenAnswer((_) async => const []);
+
+      final expectedNpub = NostrKeyUtils.encodePubKey(_mentionedHexPubkey);
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => const Scaffold(
+              body: LinkifiedText(text: '@shutupphia FOLLOW HER.'),
+            ),
+          ),
+          GoRoute(
+            path: OtherProfileScreen.pathWithNpub,
+            builder: (context, state) =>
+                Text('profile:${state.pathParameters['npub']}'),
+          ),
+          GoRoute(
+            path: SearchResultsPage.path,
+            builder: (context, state) =>
+                Text('search:${state.pathParameters['query']}'),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            profileRepositoryProvider.overrideWithValue(profileRepository),
+          ],
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.byType(Text));
+      final textSpan = text.textSpan! as TextSpan;
+      final spans = textSpan.children!.cast<TextSpan>();
+      final mentionSpan = spans.firstWhere((span) => span.text == '@$mention');
+
+      final recognizer = mentionSpan.recognizer! as TapGestureRecognizer;
+      recognizer.onTap!();
+      await tester.pumpAndSettle();
+
+      expect(find.text('profile:$expectedNpub'), findsOneWidget);
+      expect(find.text('search:$mention'), findsNothing);
+      verify(
+        () => profileRepository.searchUsersLocally(
+          query: mention,
+          limit: 10,
+        ),
+      ).called(1);
+      verifyNever(
+        () => profileRepository.searchUsers(query: mention, limit: 10),
+      );
+    });
+
+    test(
+      'resolves remote exact profile match when local cache misses',
+      () async {
+        const mention = 'shutupphia';
+        final profile = UserProfile(
+          pubkey: _mentionedHexPubkey,
+          name: mention,
+          rawData: const {'name': mention},
+          createdAt: DateTime.utc(2026, 6, 21),
+          eventId:
+              'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
+        );
+        final profileRepository = _MockProfileRepository();
+        when(
+          () => profileRepository.searchUsersLocally(
+            query: mention,
+            limit: 10,
+          ),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => profileRepository.searchUsers(query: mention, limit: 10),
+        ).thenAnswer((_) async => [profile]);
+
+        final pubkey =
+            await LinkifiedTextSupport.resolveProfilePubkeyForMention(
+              profileRepository,
+              mention,
+            );
+
+        expect(pubkey, _mentionedHexPubkey);
+        verify(
+          () => profileRepository.searchUsersLocally(
+            query: mention,
+            limit: 10,
+          ),
+        ).called(1);
+        verify(
+          () => profileRepository.searchUsers(query: mention, limit: 10),
+        ).called(1);
+      },
+    );
 
     testWidgets('parses bare npub mentions as tappable profile spans', (
       tester,

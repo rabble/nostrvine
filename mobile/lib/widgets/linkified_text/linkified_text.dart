@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_navigation.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_span_builder.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_support.dart';
@@ -73,7 +76,7 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
       onHashtagTap: (hashtag) => _navigateToHashtagFeed(context, hashtag),
       onProfileTap: (hexPubkey) => _navigateToProfile(context, hexPubkey),
       onVideoTap: (routeReference) => _navigateToVideo(context, routeReference),
-      onMentionTap: (username) => _navigateToSearch(context, username),
+      onMentionTap: (username) => _navigateToMention(context, username),
       onUrlTap: _handleUrlTap,
     ).build();
 
@@ -158,7 +161,22 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
     );
   }
 
-  void _navigateToSearch(BuildContext context, String username) {
+  void _navigateToMention(BuildContext context, String username) {
+    unawaited(_resolveAndNavigateToMention(context, username));
+  }
+
+  Future<void> _resolveAndNavigateToMention(
+    BuildContext context,
+    String username,
+  ) async {
+    final resolvedPubkey = await _resolveMentionPubkey(username);
+    if (!context.mounted) return;
+
+    if (resolvedPubkey != null) {
+      _navigateToProfile(context, resolvedPubkey);
+      return;
+    }
+
     if (widget.dismissModalBeforeNavigation) {
       LinkifiedTextNavigation.navigateToSearchFromModal(
         context,
@@ -172,6 +190,13 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
       context,
       username,
       beforeNavigate: widget.onVideoStateChange,
+    );
+  }
+
+  Future<String?> _resolveMentionPubkey(String username) async {
+    return LinkifiedTextSupport.resolveProfilePubkeyForMention(
+      ref.read(profileRepositoryProvider),
+      username,
     );
   }
 

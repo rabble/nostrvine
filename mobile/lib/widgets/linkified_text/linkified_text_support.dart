@@ -2,6 +2,8 @@ import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 /// Shared helpers for linkified-text renderers.
 final class LinkifiedTextSupport {
@@ -40,12 +42,7 @@ final class LinkifiedTextSupport {
       if (profile == null) continue;
 
       final values = <String?>[
-        profile.name,
-        profile.displayName,
-        profile.divineUsername,
-        profile.shortDisplayNip05,
-        profile.displayNip05,
-        profile.nip05,
+        ..._profileMentionValues(profile),
         pubkey,
       ];
 
@@ -57,6 +54,61 @@ final class LinkifiedTextSupport {
     }
 
     return null;
+  }
+
+  /// Returns the unique exact profile match for a typed mention.
+  ///
+  /// A contains-style search result is not enough to open a profile directly:
+  /// `@ann` should not pick `@annie`. This helper only returns a pubkey when
+  /// exactly one searched profile has a name, NIP-05, hex key, or npub matching
+  /// the typed token after mention normalization.
+  static String? exactProfilePubkeyForMention(
+    String username,
+    Iterable<UserProfile> profiles,
+  ) {
+    final normalizedUsername = _normalizeMentionValue(username);
+    if (normalizedUsername.isEmpty) return null;
+
+    final matches = <String>{};
+    for (final profile in profiles) {
+      final pubkey = _normalizedHexPubkey(profile.pubkey);
+      if (pubkey == null) continue;
+
+      final values = <String?>[
+        ..._profileMentionValues(profile),
+        pubkey,
+        NostrKeyUtils.encodePubKey(pubkey),
+      ];
+
+      final isMatch = values
+          .whereType<String>()
+          .map(_normalizeMentionValue)
+          .any((value) => value == normalizedUsername);
+      if (isMatch) matches.add(pubkey);
+    }
+
+    return matches.length == 1 ? matches.single : null;
+  }
+
+  /// Resolves a typed mention through profile search before search navigation.
+  ///
+  /// Local cache is tried first so cached exact matches open instantly. The
+  /// broader repository search is only used when local cache has no unique
+  /// exact match.
+  static Future<String?> resolveProfilePubkeyForMention(
+    ProfileRepository? profileRepository,
+    String username,
+  ) async {
+    if (profileRepository == null) return null;
+
+    final localPubkey = await _exactMentionSearch(
+      profileRepository,
+      username,
+      localOnly: true,
+    );
+    if (localPubkey != null) return localPubkey;
+
+    return _exactMentionSearch(profileRepository, username);
   }
 
   /// Recursively disposes gesture recognizers owned by inline spans.
@@ -75,5 +127,54 @@ final class LinkifiedTextSupport {
         ? trimmed.substring(1)
         : trimmed;
     return withoutPrefix.replaceAll(RegExp('[^a-z0-9]'), '');
+  }
+
+  static List<String?> _profileMentionValues(UserProfile profile) => [
+    profile.name,
+    profile.displayName,
+    profile.divineUsername,
+    profile.shortDisplayNip05,
+    profile.displayNip05,
+    profile.nip05,
+    _nip05LocalPart(profile.nip05),
+  ];
+
+  static String? _normalizedHexPubkey(String value) {
+    final normalized = value.trim().toLowerCase();
+    return NostrKeyUtils.isValidKey(normalized) ? normalized : null;
+  }
+
+  static String? _nip05LocalPart(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+
+    if (trimmed.startsWith('_@')) {
+      return trimmed.substring(2).split('.').first;
+    }
+    if (trimmed.startsWith('@')) {
+      return trimmed.substring(1).split('.').first;
+    }
+    if (trimmed.contains('@')) {
+      return trimmed.split('@').first;
+    }
+    return null;
+  }
+
+  static Future<String?> _exactMentionSearch(
+    ProfileRepository profileRepository,
+    String username, {
+    bool localOnly = false,
+  }) async {
+    try {
+      final profiles = localOnly
+          ? await profileRepository.searchUsersLocally(
+              query: username,
+              limit: 10,
+            )
+          : await profileRepository.searchUsers(query: username, limit: 10);
+      return exactProfilePubkeyForMention(username, profiles);
+    } on Object {
+      return null;
+    }
   }
 }
