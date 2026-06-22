@@ -17,6 +17,7 @@ import 'package:dm_repository/src/dm_reactions_repository.dart';
 import 'package:dm_repository/src/dm_repository_reportable_sites.dart';
 import 'package:dm_repository/src/dm_shared_video_citation.dart';
 import 'package:dm_repository/src/dm_sync_state.dart';
+import 'package:dm_repository/src/dm_verify_isolate.dart';
 import 'package:dm_repository/src/nip17_message_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
@@ -183,6 +184,7 @@ class DmRepository {
     RumorDecryptor? rumorDecryptor,
     Nip04Decryptor? nip04Decryptor,
     DmDecryptIsolateSpawner? decryptIsolateSpawner,
+    DmVerifyIsolateSpawner? verifyIsolateSpawner,
     DmRepositoryErrorReporter? errorReporter,
     DmReactionsRepository? reactionsRepository,
   }) : _nostrClient = nostrClient,
@@ -197,6 +199,7 @@ class DmRepository {
        _rumorDecryptor = rumorDecryptor ?? GiftWrapUtil.getRumorEvent,
        _nip04Decryptor = nip04Decryptor,
        _decryptIsolateSpawner = decryptIsolateSpawner ?? DmDecryptIsolate.spawn,
+       _verifyIsolateSpawner = verifyIsolateSpawner ?? DmVerifyIsolate.spawn,
        _errorReporter = errorReporter,
        _reactionsRepository = reactionsRepository;
 
@@ -227,6 +230,7 @@ class DmRepository {
   RumorDecryptor _rumorDecryptor;
   Nip04Decryptor? _nip04Decryptor;
   final DmDecryptIsolateSpawner _decryptIsolateSpawner;
+  final DmVerifyIsolateSpawner _verifyIsolateSpawner;
   final DmRepositoryErrorReporter? _errorReporter;
 
   /// Optional sibling repository for NIP-25 reactions on DMs. When wired,
@@ -246,6 +250,15 @@ class DmRepository {
   /// the drain ends. `null` outside a drain or for remote/test signers. See
   /// PR #5405 review / #5391.
   DmDecryptWorker? _drainDecryptIsolate;
+
+  /// A single long-lived, KEY-LESS verify isolate, alive only for the duration
+  /// of a REMOTE-signer history drain. Spawned in [_runHistoryDrain] when there
+  /// is no decrypt isolate (remote signers, whose decrypt stays on the main
+  /// isolate) and killed in its `finally`, so the per-event id + Schnorr
+  /// verification in `GiftWrapUtil.getRumorEvent` runs off the main isolate.
+  /// `null` outside a drain, for local-key signers (they validate inside the
+  /// decrypt isolate), or when the verify isolate could not spawn. See #5424.
+  DmVerifyWorker? _drainVerifyIsolate;
 
   /// Serializes event processing so concurrent subscription events
   /// never race into the dedup/insert path.
@@ -355,6 +368,10 @@ class DmRepository {
     // bailing drain's `finally` is idempotent if it also runs.
     _drainDecryptIsolate?.close();
     _drainDecryptIsolate = null;
+    // Likewise kill any drain-scoped verify isolate (key-less, but still a live
+    // worker). The bailing drain's idempotent `finally` is a no-op if it runs.
+    _drainVerifyIsolate?.close();
+    _drainVerifyIsolate = null;
     // Abandon the recovery signal for the outgoing user. The bailing loops'
     // _endRecovery() then no-ops (guarded on the zeroed counter).
     if (_activeRecoveryOps > 0) {
@@ -838,6 +855,7 @@ class DmRepository {
 
     _beginRecovery();
     DmDecryptWorker? drainDecryptIsolate;
+    DmVerifyWorker? drainVerifyIsolate;
     try {
       // Spawn one drain-scoped decrypt isolate for local-key signers so the
       // whole backfill pays a single isolate spawn instead of one per chunk
@@ -860,6 +878,31 @@ class DmRepository {
         } on Object catch (e, stackTrace) {
           Log.error(
             'DM decrypt isolate spawn failed; using per-event decrypt: $e',
+            category: LogCategory.system,
+            error: e,
+            stackTrace: stackTrace,
+          );
+        }
+      }
+
+      // Remote signers (no decrypt isolate) validate each gift wrap on the main
+      // isolate inside GiftWrapUtil.getRumorEvent. Spawn one key-less verify
+      // isolate for the drain so that id + Schnorr work moves off the main
+      // isolate; local-key signers already validate inside their decrypt
+      // isolate, so they skip this. On spawn failure, leave it null and fall
+      // back to inline main-isolate validation. See #5424.
+      if (drainDecryptIsolate == null) {
+        try {
+          final spawnedVerify = await _verifyIsolateSpawner();
+          if (_disposed || _userPubkey != pubkey) {
+            spawnedVerify.close();
+            return;
+          }
+          drainVerifyIsolate = spawnedVerify;
+          _drainVerifyIsolate = spawnedVerify;
+        } on Object catch (e, stackTrace) {
+          Log.error(
+            'DM verify isolate spawn failed; validating on main isolate: $e',
             category: LogCategory.system,
             error: e,
             stackTrace: stackTrace,
@@ -997,6 +1040,10 @@ class DmRepository {
       drainDecryptIsolate?.close();
       if (identical(_drainDecryptIsolate, drainDecryptIsolate)) {
         _drainDecryptIsolate = null;
+      }
+      drainVerifyIsolate?.close();
+      if (identical(_drainVerifyIsolate, drainVerifyIsolate)) {
+        _drainVerifyIsolate = null;
       }
       _endRecovery();
     }
@@ -1542,6 +1589,22 @@ class DmRepository {
         );
         // Fall through to main-isolate decryptor.
       }
+    }
+    // Remote-signer history drain: when a key-less verify isolate is active,
+    // route the production decryptor's id + Schnorr verification through it so
+    // the CPU-bound work leaves the main isolate. Only
+    // GiftWrapUtil.getRumorEvent accepts a verifier; a test-injected decryptor
+    // is used unchanged. If the isolate is torn down mid-flight (account
+    // switch), verifyPart throws StateError which the parallel-decrypt worker's
+    // catch turns into a fall-through to the per-event retry path. See #5424.
+    final verifyWorker = _drainVerifyIsolate;
+    if (verifyWorker != null &&
+        identical(_rumorDecryptor, GiftWrapUtil.getRumorEvent)) {
+      return GiftWrapUtil.getRumorEvent(
+        nostr,
+        giftWrapEvent,
+        verifyPart: verifyWorker.verifyPart,
+      );
     }
     return _rumorDecryptor(nostr, giftWrapEvent);
   }

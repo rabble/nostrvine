@@ -17,6 +17,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart' as nostr_filter;
 import 'package:nostr_sdk/nip44/nip44_v2.dart';
+import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/signer/isolate_decrypt_signer.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
@@ -107,6 +108,49 @@ Future<Event> _buildGiftWrap({
   )..sign(ephemeralPrivateKey);
 }
 
+/// Like [_buildGiftWrap] but corrupts the seal signature after sealing, so the
+/// outer wrap still verifies while the inner seal fails verification — exactly
+/// the impersonation shape the seal verify exists to reject.
+Future<Event> _buildForgedSealGiftWrap({
+  required Event rumor,
+  required String senderPrivateKey,
+  required String recipientPubkey,
+  required int outerCreatedAt,
+}) async {
+  final senderPubkey = getPublicKey(senderPrivateKey);
+  final rumorMap = rumor.toJson()..remove('sig');
+  final sealKey = NIP44V2.shareSecret(senderPrivateKey, recipientPubkey);
+  final sealContent = await NIP44V2.encrypt(jsonEncode(rumorMap), sealKey);
+  final sealEvent =
+      Event(
+          senderPubkey,
+          EventKind.sealEventKind,
+          const <List<String>>[],
+          sealContent,
+        )
+        ..sign(senderPrivateKey)
+        // Corrupt the seal signature; the id still matches (content
+        // unchanged) so isValid passes but isSigned fails.
+        ..sig = '0' * 128;
+
+  final ephemeralPrivateKey = generatePrivateKey();
+  final ephemeralPubkey = getPublicKey(ephemeralPrivateKey);
+  final wrapKey = NIP44V2.shareSecret(ephemeralPrivateKey, recipientPubkey);
+  final wrapContent = await NIP44V2.encrypt(
+    jsonEncode(sealEvent.toJson()),
+    wrapKey,
+  );
+  return Event(
+    ephemeralPubkey,
+    EventKind.giftWrap,
+    <List<String>>[
+      ['p', recipientPubkey],
+    ],
+    wrapContent,
+    createdAt: outerCreatedAt,
+  )..sign(ephemeralPrivateKey);
+}
+
 class _MockPendingGiftWrapsDao extends Mock implements PendingGiftWrapsDao {}
 
 class _FakeOutgoingDm extends Fake implements OutgoingDm {}
@@ -136,6 +180,32 @@ class _FakeDmDecryptWorker implements DmDecryptWorker {
 
   @override
   void close() {
+    closeCount++;
+  }
+}
+
+/// Test double for [DmVerifyWorker] that runs the real verification inline (no
+/// isolate), records the kinds it verified, and tracks teardown — so drain
+/// tests assert the verify worker was used and closed without spawning a real
+/// isolate. Behaviour-equivalent to the inline main-isolate check, so it does
+/// not change any existing drain test's outcome.
+class _RecordingVerifyWorker implements DmVerifyWorker {
+  final List<int> verifiedKinds = <int>[];
+  int closeCount = 0;
+  bool closed = false;
+
+  @override
+  Future<bool> verifyPart(Event event) async {
+    if (closed) {
+      throw StateError('DmVerifyWorker has been closed');
+    }
+    verifiedKinds.add(event.kind);
+    return verifyGiftWrapPart(event);
+  }
+
+  @override
+  void close() {
+    closed = true;
     closeCount++;
   }
 }
@@ -376,6 +446,7 @@ void main() {
       DmReactionsRepository? reactionsRepository,
       NostrSigner? signer,
       DmDecryptIsolateSpawner? decryptIsolateSpawner,
+      DmVerifyIsolateSpawner? verifyIsolateSpawner,
     }) {
       return DmRepository(
         nostrClient: mockNostrClient,
@@ -389,6 +460,12 @@ void main() {
         rumorDecryptor: rumorDecryptor,
         nip04Decryptor: nip04Decryptor,
         decryptIsolateSpawner: decryptIsolateSpawner,
+        // Default to an inline (no-isolate) verify worker so drain tests never
+        // spawn a real verify isolate; it runs the same check inline, so it is
+        // behaviour-equivalent. Tests that assert verify routing inject their
+        // own recording worker. See #5424.
+        verifyIsolateSpawner:
+            verifyIsolateSpawner ?? () async => _RecordingVerifyWorker(),
         syncState: syncState,
         reactionsRepository: reactionsRepository,
         errorReporter: (error, stackTrace, {required site}) {
@@ -3541,6 +3618,131 @@ void main() {
       _FakeDmSyncState drainPending() => _FakeDmSyncState()
         ..oldestOverride = 1700001000
         ..drainVersionOverride = DmSyncState.currentDrainVersion;
+
+      test(
+        'remote-signer drain verifies gift wraps off the main isolate and '
+        'closes the verify isolate when the drain ends (#5424)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+
+          final wrap = await _buildGiftWrap(
+            rumor: rumorFor('off-isolate verify', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          stubDrainPage([wrap]);
+
+          final verifyWorker = _RecordingVerifyWorker();
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            // A non-isolate signer takes the per-event getRumorEvent path the
+            // verify isolate serves (an IsolateDecryptSigner would instead
+            // validate inside its decrypt isolate).
+            signer: LocalNostrSigner(recipientPriv),
+            syncState: drainPending(),
+            verifyIsolateSpawner: () async => verifyWorker,
+          );
+
+          await repository.backfillHistoryIfNeeded();
+
+          // The wrap decrypted and persisted as a message...
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: senderPub,
+              content: 'off-isolate verify',
+              createdAt: 1700000500,
+              giftWrapId: wrap.id,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: recipientPub,
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          ).called(1);
+
+          // ...with both the outer wrap and the seal verified via the worker
+          // (i.e. off the main isolate), and the worker torn down afterwards.
+          expect(
+            verifyWorker.verifiedKinds,
+            containsAllInOrder(<int>[
+              EventKind.giftWrap,
+              EventKind.sealEventKind,
+            ]),
+          );
+          expect(verifyWorker.closed, isTrue);
+        },
+      );
+
+      test(
+        'remote-signer drain drops a wrap whose seal fails verification '
+        '(#5424)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+
+          final forged = await _buildForgedSealGiftWrap(
+            rumor: rumorFor('should be dropped', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          stubDrainPage([forged]);
+
+          final verifyWorker = _RecordingVerifyWorker();
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: LocalNostrSigner(recipientPriv),
+            syncState: drainPending(),
+            verifyIsolateSpawner: () async => verifyWorker,
+          );
+
+          await repository.backfillHistoryIfNeeded();
+
+          // The seal was verified (off-isolate) and rejected, so the wrap is
+          // never persisted as a message.
+          expect(
+            verifyWorker.verifiedKinds,
+            contains(EventKind.sealEventKind),
+          );
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          );
+        },
+      );
 
       test(
         'stale drain spawn cannot close or clear the next drain worker',

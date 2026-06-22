@@ -8,6 +8,34 @@ import '../event_kind.dart';
 import '../nip44/nip44_v2.dart';
 import '../nostr.dart';
 
+/// Verifies one gift-wrap-layer event's integrity and signature: it recomputes
+/// the event id (sha256, [Event.isValid]) and verifies the Schnorr signature
+/// ([Event.isSigned]). This is the single shared definition of "this gift-wrap
+/// part is well-formed and authentically signed", used by
+/// [GiftWrapUtil.getRumorEvent] (inline and via an injected
+/// [GiftWrapPartVerifier]) and by the off-isolate DM history-drain verifier.
+///
+/// Pure (no I/O, no private key), so it is safe to run inside an isolate.
+bool verifyGiftWrapPart(Event event) => event.isValid && event.isSigned;
+
+/// [verifyGiftWrapPart] over an [Event.toJson] map, so the check can cross an
+/// isolate boundary. Returns `false` for malformed JSON rather than throwing.
+bool verifyGiftWrapPartJson(Map<String, dynamic> eventJson) {
+  try {
+    return verifyGiftWrapPart(Event.fromJson(eventJson));
+  } on Object {
+    return false;
+  }
+}
+
+/// Asynchronously verifies a single gift-wrap-layer [Event]. Injected into
+/// [GiftWrapUtil.getRumorEvent] so the (CPU-bound, pure-Dart) id + Schnorr
+/// verification can be moved off the main isolate on the high-volume remote-
+/// signer history drain — where the decrypt itself must stay on the main
+/// isolate (a remote signer cannot cross a `SendPort`). When omitted,
+/// `getRumorEvent` verifies inline on the calling isolate, unchanged.
+typedef GiftWrapPartVerifier = Future<bool> Function(Event event);
+
 class GiftWrapUtil {
   static final math.Random _secureRandom = math.Random.secure();
 
@@ -20,11 +48,27 @@ class GiftWrapUtil {
   static int _randomizedPastTimestamp(int base) =>
       base - _secureRandom.nextInt(_maxBackdateSeconds);
 
-  static Future<Event?> getRumorEvent(Nostr nostr, Event e) async {
+  /// Unwraps a NIP-17 gift wrap (kind 1059) → seal (kind 13) → rumor and
+  /// returns the inner rumor, or `null` if any layer fails.
+  ///
+  /// The two id + Schnorr verifications (outer wrap and seal) are run via
+  /// [verifyPart] when provided, so a caller can move that CPU-bound work off
+  /// the main isolate (the remote-signer history drain does this). When
+  /// [verifyPart] is `null` they run inline on the calling isolate, unchanged.
+  /// The two `nip44Decrypt` calls always stay on the calling isolate — a remote
+  /// signer's RPC/IPC cannot cross a `SendPort`.
+  static Future<Event?> getRumorEvent(
+    Nostr nostr,
+    Event e, {
+    GiftWrapPartVerifier? verifyPart,
+  }) async {
     // C16/NIP-44: validate the outer gift wrap (kind 1059) signature before
     // decrypting. Defense-in-depth — diVine relays already verify, but an
     // untrusted relay or local cache could serve a forged/tampered wrap.
-    if (!e.isValid || !e.isSigned) {
+    final outerValid = verifyPart != null
+        ? await verifyPart(e)
+        : verifyGiftWrapPart(e);
+    if (!outerValid) {
       log('GiftWrap outer event invalid or unsigned, id: ${e.id}');
       return null;
     }
@@ -37,7 +81,13 @@ class GiftWrapUtil {
     var rumorJson = jsonDecode(rumorText);
     var rumorEvent = Event.fromJson(rumorJson);
 
-    if (!rumorEvent.isValid || !rumorEvent.isSigned) {
+    // C16/NIP-44: validate the seal (kind 13). Unlike the outer wrap, the seal
+    // is NIP-44-encrypted so no relay can ever verify it — this is the sole
+    // cryptographic anchor of sender identity, so it is always enforced.
+    final sealValid = verifyPart != null
+        ? await verifyPart(rumorEvent)
+        : verifyGiftWrapPart(rumorEvent);
+    if (!sealValid) {
       log(
         "GiftWrap rumorEvent sign check result fail, id: ${e.id}, from: ${e.pubkey}",
       );
@@ -55,15 +105,9 @@ class GiftWrapUtil {
     var jsonObj = jsonDecode(sourceText);
     var innerEvent = Event.fromJson(jsonObj);
 
-    // C15/NIP-59: the inner rumor MUST be unsigned. A signed rumor is a
-    // non-compliant (or malicious) peer — its signature is never trusted for
-    // identity (the seal pubkey is authoritative below), but flag it.
-    if (innerEvent.isSigned) {
-      log(
-        'GiftWrap inner rumor is unexpectedly signed (NIP-59 requires '
-        'unsigned), gift wrap id: ${e.id}',
-      );
-    }
+    // The inner rumor is intentionally NOT signature-checked: NIP-59 requires
+    // it to be unsigned, and its claimed authorship is never trusted for
+    // identity — the seal pubkey (authenticated above) is authoritative below.
 
     // NIP-17 sender verification: the seal's pubkey should match the rumor's
     // pubkey. When they differ, the rumor's claimed author is unverified while

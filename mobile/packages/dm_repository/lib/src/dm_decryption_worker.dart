@@ -9,6 +9,7 @@ import 'dart:convert';
 
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/nip44/nip44_v2.dart';
+import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 
 /// Input payload for [decryptGiftWrapBatch].
 ///
@@ -95,7 +96,7 @@ Future<DecryptedRumorResult> _decryptOne(
   // C16/NIP-44: validate the outer gift wrap (kind 1059) signature before
   // decrypting. Defense-in-depth — diVine relays verify on publish, but an
   // untrusted relay or local cache could serve a forged/tampered wrap.
-  if (!giftWrap.isValid || !giftWrap.isSigned) {
+  if (!verifyGiftWrapPart(giftWrap)) {
     return DecryptedRumorResult.failure(
       'gift wrap signature invalid for ${giftWrap.id}',
     );
@@ -123,7 +124,7 @@ Future<DecryptedRumorResult> _decryptOne(
     );
   }
 
-  if (!sealEvent.isValid || !sealEvent.isSigned) {
+  if (!verifyGiftWrapPart(sealEvent)) {
     return DecryptedRumorResult.failure(
       'seal signature invalid for gift wrap ${giftWrap.id}',
     );
