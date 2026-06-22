@@ -659,8 +659,8 @@ void main() {
           },
         );
 
-        test('marks missing immediately when Funnelcake returns '
-            'UserProfileNotPublished', () async {
+        test('falls back to relay when Funnelcake returns '
+            'UserProfileNotPublished (Kind 0 not yet indexed)', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
             () => mockFunnelcakeClient.getUserProfile(testPubkey),
@@ -684,17 +684,13 @@ void main() {
             pubkey: testPubkey,
           );
 
-          expect(result, isNull);
-          expect(repoWithFunnelcake.isConfirmedMissing(testPubkey), isTrue);
-          // Should NOT fall through to relay or indexer
-          verifyNever(() => mockNostrClient.fetchProfile(any()));
-          verifyNever(
-            () => mockNostrClient.queryEvents(
-              any(),
-              tempRelays: any(named: 'tempRelays'),
-              useCache: any(named: 'useCache'),
-            ),
-          );
+          // Funnelcake's "not published" is not authoritative — the real
+          // Kind 0 is on the relay and must still be fetched.
+          expect(result, isNotNull);
+          expect(result!.displayName, equals('Test User'));
+          expect(repoWithFunnelcake.isConfirmedMissing(testPubkey), isFalse);
+          verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+          // Stats from Funnelcake are still cached on the way through.
           verify(
             () => mockProfileStatsDao.upsertStats(
               pubkey: testPubkey,
@@ -705,6 +701,28 @@ void main() {
               totalViews: 99,
             ),
           ).called(1);
+        });
+
+        test('marks missing only when Funnelcake NotPublished and relays '
+            'are empty', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).thenAnswer(
+            (_) async => const UserProfileNotPublished(pubkey: testPubkey),
+          );
+          // Relay has nothing either → genuinely no Kind 0 anywhere.
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => null);
+
+          final result = await repoWithFunnelcake.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNull);
+          expect(repoWithFunnelcake.isConfirmedMissing(testPubkey), isTrue);
+          verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
         });
 
         test('uses rounded loops when unified views are unavailable', () async {
@@ -721,12 +739,8 @@ void main() {
             ),
           );
 
-          final result = await repoWithFunnelcake.fetchFreshProfile(
-            pubkey: testPubkey,
-          );
+          await repoWithFunnelcake.fetchFreshProfile(pubkey: testPubkey);
 
-          expect(result, isNull);
-          expect(repoWithFunnelcake.isConfirmedMissing(testPubkey), isTrue);
           verify(
             () => mockProfileStatsDao.upsertStats(
               pubkey: testPubkey,

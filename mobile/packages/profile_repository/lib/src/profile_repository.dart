@@ -338,11 +338,15 @@ class ProfileRepository {
             }
             return funnelcakeProfile;
           case UserProfileNotPublished():
-            // User exists but has no Kind 0. Cache stats and skip relay
-            // fallback — the profile genuinely does not exist yet.
+            // Funnelcake reports no Kind 0, but this is NOT authoritative:
+            // it returns NotPublished whenever its indexed profile lacks
+            // name/display_name — which includes "knows the user from a
+            // video event but hasn't pulled their Kind 0 yet", common right
+            // after the user posts their first video. Cache the stats it did
+            // return, then fall through to the relay/indexer path where the
+            // real Kind 0 lives. Only the relay-exhausted path below marks
+            // the pubkey confirmed-missing.
             await _cacheProfileStatsFromResult(pubkey, result);
-            _confirmedMissing.add(pubkey);
-            return null;
           case null:
             // 404 — user not found at all; fall through to relay.
             break;
