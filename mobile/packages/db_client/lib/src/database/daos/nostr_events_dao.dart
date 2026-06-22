@@ -267,7 +267,12 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   /// - t: List of hashtags to filter by (searches tags JSON)
   /// - e: List of referenced event IDs (e tags)
   /// - p: List of mentioned pubkeys (p tags)
+  /// - h: List of relay-specific values (h tags)
   /// - d: List of addressable event identifiers (d tags)
+  /// - a: List of addressable event references (a tags)
+  /// - uppercaseE: List of root event IDs (E tags)
+  /// - uppercaseA: List of root addressable event references (A tags)
+  /// - uppercaseK: List of root event kind values (K tags)
   /// - search: Full-text search in content (NIP-50)
   /// - since: Minimum created_at timestamp (Unix seconds)
   /// - until: Maximum created_at timestamp (Unix seconds)
@@ -328,89 +333,15 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
       variables.addAll(authors.map(Variable.withString));
     }
 
-    // Hashtags filter (t tags)
-    final hashtags = filter.t;
-    if (hashtags != null && hashtags.isNotEmpty) {
-      final hashtagConditions = hashtags.map((tag) {
-        final lowerTag = tag.toLowerCase();
-        variables.add(Variable.withString('%"t"%"$lowerTag"%'));
-        return 'tags LIKE ?';
-      }).toList();
-      conditions.add('(${hashtagConditions.join(' OR ')})');
-    }
-
-    // Referenced events filter (e tags)
-    final eTags = filter.e;
-    if (eTags != null && eTags.isNotEmpty) {
-      final eTagConditions = eTags.map((eventId) {
-        variables.add(Variable.withString('%"e"%"$eventId"%'));
-        return 'tags LIKE ?';
-      }).toList();
-      conditions.add('(${eTagConditions.join(' OR ')})');
-    }
-
-    // Referenced addressable events filter (a tags)
-    final aTags = filter.a;
-    if (aTags != null && aTags.isNotEmpty) {
-      final aTagConditions = aTags.map((addressableId) {
-        variables.add(Variable.withString('%"a"%"$addressableId"%'));
-        return 'tags LIKE ?';
-      }).toList();
-      conditions.add('(${aTagConditions.join(' OR ')})');
-    }
-
-    // Mentioned pubkeys filter (p tags)
-    final pTags = filter.p;
-    if (pTags != null && pTags.isNotEmpty) {
-      final pTagConditions = pTags.map((pubkey) {
-        variables.add(Variable.withString('%"p"%"$pubkey"%'));
-        return 'tags LIKE ?';
-      }).toList();
-      conditions.add('(${pTagConditions.join(' OR ')})');
-    }
-
-    // Addressable event identifiers filter (d tags)
-    final dTags = filter.d;
-    if (dTags != null && dTags.isNotEmpty) {
-      final dTagConditions = dTags.map((identifier) {
-        variables.add(Variable.withString('%"d"%"$identifier"%'));
-        return 'tags LIKE ?';
-      }).toList();
-      conditions.add('(${dTagConditions.join(' OR ')})');
-    }
-
-    // Uppercase E tags (NIP-22 root event reference)
-    // Use GLOB for case-sensitive matching (LIKE is case-insensitive in SQLite)
-    final uppercaseETags = filter.uppercaseE;
-    if (uppercaseETags != null && uppercaseETags.isNotEmpty) {
-      final eTagConditions = uppercaseETags.map((eventId) {
-        variables.add(Variable.withString('*"E"*"$eventId"*'));
-        return 'tags GLOB ?';
-      }).toList();
-      conditions.add('(${eTagConditions.join(' OR ')})');
-    }
-
-    // Uppercase A tags (NIP-22 root addressable event reference)
-    // Use GLOB for case-sensitive matching (LIKE is case-insensitive in SQLite)
-    final uppercaseATags = filter.uppercaseA;
-    if (uppercaseATags != null && uppercaseATags.isNotEmpty) {
-      final aTagConditions = uppercaseATags.map((addressableId) {
-        variables.add(Variable.withString('*"A"*"$addressableId"*'));
-        return 'tags GLOB ?';
-      }).toList();
-      conditions.add('(${aTagConditions.join(' OR ')})');
-    }
-
-    // Uppercase K tags (NIP-22 root event kind)
-    // Use GLOB for case-sensitive matching (LIKE is case-insensitive in SQLite)
-    final uppercaseKTags = filter.uppercaseK;
-    if (uppercaseKTags != null && uppercaseKTags.isNotEmpty) {
-      final kTagConditions = uppercaseKTags.map((kind) {
-        variables.add(Variable.withString('*"K"*"$kind"*'));
-        return 'tags GLOB ?';
-      }).toList();
-      conditions.add('(${kTagConditions.join(' OR ')})');
-    }
+    _addExactTagCondition('t', filter.t, conditions, variables);
+    _addExactTagCondition('e', filter.e, conditions, variables);
+    _addExactTagCondition('p', filter.p, conditions, variables);
+    _addExactTagCondition('h', filter.h, conditions, variables);
+    _addExactTagCondition('d', filter.d, conditions, variables);
+    _addExactTagCondition('a', filter.a, conditions, variables);
+    _addExactTagCondition('E', filter.uppercaseE, conditions, variables);
+    _addExactTagCondition('A', filter.uppercaseA, conditions, variables);
+    _addExactTagCondition('K', filter.uppercaseK, conditions, variables);
 
     // Content search filter (NIP-50 style, case insensitive)
     final search = filter.search;
@@ -486,6 +417,31 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
       variables: variables,
       readsFrom: needsMetricsJoin ? {nostrEvents, videoMetrics} : {nostrEvents},
     );
+  }
+
+  void _addExactTagCondition(
+    String tagName,
+    List<String>? values,
+    List<String> conditions,
+    List<Variable> variables,
+  ) {
+    if (values == null || values.isEmpty) return;
+
+    final tagConditions = values.map((value) {
+      variables
+        ..add(Variable.withString(tagName))
+        ..add(Variable.withString(value));
+      return r'''
+        EXISTS (
+          SELECT 1
+          FROM json_each(e.tags) AS tag
+          WHERE json_extract(tag.value, '$[0]') COLLATE BINARY = ?
+            AND json_extract(tag.value, '$[1]') COLLATE BINARY = ?
+        )
+      ''';
+    }).toList();
+
+    conditions.add('(${tagConditions.join(' OR ')})');
   }
 
   /// Get a single event by ID.

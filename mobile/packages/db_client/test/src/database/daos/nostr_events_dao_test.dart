@@ -402,6 +402,29 @@ void main() {
         expect(results.first.id, equals(event1.id));
       });
 
+      test('filters by h tags (relay-specific values)', () async {
+        const relayValue = 'vine.hol.is';
+        final event1 = createEvent(
+          tags: [
+            ['h', relayValue],
+          ],
+          createdAt: 1000,
+        );
+        final event2 = createEvent(
+          tags: [
+            ['h', 'other-relay-value'],
+          ],
+          createdAt: 2000,
+        );
+
+        await dao.upsertEventsBatch([event1, event2]);
+
+        final results = await dao.getEventsByFilter(Filter(h: [relayValue]));
+
+        expect(results.length, equals(1));
+        expect(results.first.id, equals(event1.id));
+      });
+
       test('filters by d tags (addressable event identifiers)', () async {
         const dTagValue = 'my-unique-identifier';
         final event1 = createEvent(
@@ -638,6 +661,114 @@ void main() {
           results.map((e) => e.id).toSet(),
           equals({event1.id, event2.id}),
         );
+      });
+
+      test('tag filters require exact case-sensitive tag names', () async {
+        const eventId = 'root_video_event_id_123';
+        final lowercaseE = createEvent(
+          tags: [
+            ['e', eventId],
+          ],
+          content: 'lowercase e',
+          createdAt: 1000,
+        );
+        final uppercaseE = createEvent(
+          tags: [
+            ['E', eventId],
+          ],
+          content: 'uppercase E',
+          createdAt: 2000,
+        );
+
+        await dao.upsertEventsBatch([lowercaseE, uppercaseE]);
+
+        final lowercaseResults = await dao.getEventsByFilter(
+          Filter(e: [eventId]),
+        );
+        final uppercaseResults = await dao.getEventsByFilter(
+          Filter(uppercaseE: [eventId]),
+        );
+
+        expect(lowercaseResults.map((event) => event.id), [lowercaseE.id]);
+        expect(uppercaseResults.map((event) => event.id), [uppercaseE.id]);
+      });
+
+      test('tag filters only match the second tag element', () async {
+        const eventId = 'referenced_event_123';
+        final matchingEvent = createEvent(
+          tags: [
+            ['e', eventId],
+          ],
+          content: 'matching second element',
+          createdAt: 1000,
+        );
+        final wrongPosition = createEvent(
+          tags: [
+            ['e', 'different_event', eventId],
+          ],
+          content: 'matching value in third element',
+          createdAt: 2000,
+        );
+
+        await dao.upsertEventsBatch([matchingEvent, wrongPosition]);
+
+        final results = await dao.getEventsByFilter(Filter(e: [eventId]));
+
+        expect(results.map((event) => event.id), [matchingEvent.id]);
+      });
+
+      test('tag filters do not match values across serialized JSON', () async {
+        const eventId = 'referenced_event_456';
+        final matchingEvent = createEvent(
+          tags: [
+            ['e', eventId],
+          ],
+          content: 'matching e tag',
+          createdAt: 1000,
+        );
+        final splitAcrossTags = createEvent(
+          tags: [
+            ['e', 'different_event'],
+            ['p', eventId],
+          ],
+          content: 'e tag name and value in separate tags',
+          createdAt: 2000,
+        );
+
+        await dao.upsertEventsBatch([matchingEvent, splitAcrossTags]);
+
+        final results = await dao.getEventsByFilter(Filter(e: [eventId]));
+
+        expect(results.map((event) => event.id), [matchingEvent.id]);
+      });
+
+      test('tag values are matched case-sensitively', () async {
+        final lowercaseTag = createEvent(
+          tags: [
+            ['t', 'flutter'],
+          ],
+          content: 'lowercase hashtag',
+          createdAt: 1000,
+        );
+        final uppercaseTag = createEvent(
+          tags: [
+            ['t', 'Flutter'],
+          ],
+          content: 'uppercase hashtag',
+          createdAt: 2000,
+        );
+
+        await dao.upsertEventsBatch([lowercaseTag, uppercaseTag]);
+
+        final lowercaseResults = await dao.getEventsByFilter(
+          Filter(t: ['flutter']),
+        );
+        final uppercaseResults = await dao.getEventsByFilter(
+          Filter(t: ['Flutter']),
+        );
+
+        expect(lowercaseResults.map((event) => event.id), [lowercaseTag.id]);
+        expect(uppercaseResults.map((event) => event.id), [uppercaseTag.id]);
       });
 
       test(
