@@ -4291,6 +4291,24 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         return null;
       }
 
+      // Guard against a signer returning an event bound to a different
+      // account than the active identity (e.g. a remote signer whose
+      // backend swapped the authorized key). isSigned/isValid only prove
+      // the signature and id are self-consistent for the event's own
+      // pubkey — not that it is the account we intended to sign as. Cheap
+      // string compare; runs for every signer, local or remote.
+      if (signedEvent.pubkey != identity.pubkey) {
+        Log.error(
+          'Event pubkey mismatch! Signer returned a different account. '
+          'eventPubkey=${signedEvent.pubkey}, '
+          'identityPubkey=${identity.pubkey}, '
+          'authSource=${_authSource.name}',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return null;
+      }
+
       // Re-verifying a signature we just produced with our own in-process
       // key only exercises the crypto library and costs a full schnorr
       // verification per event (hot on the feed-scroll signing path). Skip

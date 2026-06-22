@@ -15,6 +15,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,6 +27,8 @@ class _MockUserDataCleanupService extends Mock
     implements UserDataCleanupService {}
 
 class _MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
+
+class _MockNostrSigner extends Mock implements NostrSigner {}
 
 // Two known test keypairs
 const _nsecA =
@@ -64,6 +67,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(SecureKeyContainer.fromNsec(_nsecA));
+    registerFallbackValue(Event('0' * 64, 0, const [], ''));
   });
 
   setUp(() {
@@ -334,6 +338,87 @@ void main() {
               'signInForAccount did not restore it.',
         );
         expect(signedEvent!.pubkey, equals(containerA.publicKeyHex));
+      },
+    );
+  });
+
+  group('#5450: pubkey-mismatch guard', () {
+    test(
+      'createAndSignEvent rejects a signer that returns a validly-signed '
+      'event bound to a different account',
+      () async {
+        final npubA = containerA.npub;
+
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            npubA,
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => containerA);
+
+        String? privateKeyAHex;
+        containerA.withPrivateKey<void>((pk) => privateKeyAHex = pk);
+        when(
+          () => mockKeyStorage.withPrivateKey<Event?>(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((invocation) async {
+          final operation =
+              invocation.positionalArguments[0] as Event? Function(String);
+          return operation(privateKeyAHex!);
+        });
+
+        await _ignoringDiscoveryErrors(
+          () => authService.signInForAccount(
+            containerA.publicKeyHex,
+            AuthenticationSource.automatic,
+          ),
+        );
+        expect(authService.isAuthenticated, isTrue);
+
+        // A self-consistent event for account B: id == hash and the signature
+        // is valid for B's own pubkey. Only the account itself is "wrong".
+        final wrongAccountEvent = Event(
+          containerB.publicKeyHex,
+          EventKind.textNote,
+          [],
+          'wrong account',
+        );
+        containerB.withPrivateKey<void>(wrongAccountEvent.sign);
+        expect(wrongAccountEvent.isSigned, isTrue);
+        expect(wrongAccountEvent.isValid, isTrue);
+        expect(wrongAccountEvent.pubkey, equals(containerB.publicKeyHex));
+
+        // Inject a remote identity whose pubkey is A but whose signer returns
+        // the wrong-account event. signsWithLocalKey is false, so the isSigned
+        // check still runs and passes — proving the new pubkey guard, not
+        // isSigned, is what rejects it.
+        final mockRpc = _MockNostrSigner();
+        when(
+          () => mockRpc.signEvent(any()),
+        ).thenAnswer((_) async => wrongAccountEvent);
+        authService.debugSetIdentity(
+          KeycastNostrIdentity(
+            pubkey: containerA.publicKeyHex,
+            rpcSigner: mockRpc,
+          ),
+        );
+
+        final signedEvent = await authService.createAndSignEvent(
+          kind: EventKind.textNote,
+          content: 'legitimate content',
+        );
+
+        expect(
+          signedEvent,
+          isNull,
+          reason:
+              'createAndSignEvent must reject an event whose pubkey '
+              '(${containerB.publicKeyHex}) differs from the active identity '
+              '(${containerA.publicKeyHex}), even though its signature and '
+              'structure are internally valid.',
+        );
       },
     );
   });
