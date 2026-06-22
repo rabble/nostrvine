@@ -3,11 +3,14 @@
 // ABOUTME: plus the app bar and input bar rendering.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:content_policy/content_policy.dart';
 import 'package:db_client/db_client.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -41,6 +44,9 @@ class _MockConversationReactionsCubit
     implements ConversationReactionsCubit {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 class _MockAuthService extends MockAuthService {
   _MockAuthService(this._pubkey);
@@ -76,6 +82,7 @@ void main() {
     late _MockVideoEventService mockVideoEventService;
     late MockNostrClient mockNostrClient;
     late _MockAuthService mockAuthService;
+    late _MockContentBlocklistRepository mockBlocklist;
 
     setUpAll(() {
       registerFallbackValue(fallbackInvite);
@@ -99,6 +106,11 @@ void main() {
       mockVideoEventService = _MockVideoEventService();
       mockNostrClient = createMockNostrService();
       mockAuthService = _MockAuthService(currentPubkey);
+      mockBlocklist = _MockContentBlocklistRepository();
+      // Default: nobody blocked. Reaction-filtering tests re-stub this.
+      when(
+        () => mockBlocklist.currentState,
+      ).thenReturn(ContentPolicyState.empty());
 
       whenListen(
         mockReactionsCubit,
@@ -146,6 +158,9 @@ void main() {
           fetchUserProfileProvider(
             otherPubkey,
           ).overrideWith((ref) async => otherProfile),
+          // The view now reads the blocklist eagerly in build() to filter
+          // reaction reactors, so every pump needs a stubbed repository.
+          contentBlocklistRepositoryProvider.overrideWithValue(mockBlocklist),
         ],
         home: BlocProvider<ConversationBloc>.value(
           value: mockBloc,
@@ -1229,6 +1244,199 @@ void main() {
           expect(find.byType(EmojiEditor), findsOneWidget);
         },
       );
+    });
+
+    // #5418 — the reaction pill + who-reacted sheet must hide reactions from
+    // blocked/muted accounts. ConversationView builds the effective set
+    // (shouldFilterFromFeeds semantics) from the blocklist and threads it into
+    // every ReactionsRow, reactively via blocklistVersionProvider.
+    group('blocked reaction filtering (#5418)', () {
+      const blockedReactor =
+          '1111111111111111111111111111111111111111111111111111111111111111';
+      const mutedReactor =
+          '2222222222222222222222222222222222222222222222222222222222222222';
+      const visibleReactor =
+          '3333333333333333333333333333333333333333333333333333333333333333';
+      const reactionMessageId =
+          'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+      const reactionConversationId =
+          'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+
+      DmMessage reactedMessage() => DmMessage(
+        id: reactionMessageId,
+        conversationId: reactionConversationId,
+        senderPubkey: otherPubkey,
+        content: 'Hello there!',
+        createdAt: now.millisecondsSinceEpoch ~/ 1000,
+        giftWrapId:
+            'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+      );
+
+      DmReaction reaction({
+        required String id,
+        required String reactor,
+        required String emoji,
+        int createdAt = 1_700_000_000,
+      }) => DmReaction(
+        id: id,
+        conversationId: reactionConversationId,
+        targetMessageId: reactionMessageId,
+        targetMessageAuthor: otherPubkey,
+        reactorPubkey: reactor,
+        emoji: emoji,
+        createdAt: createdAt,
+        ownerPubkey: currentPubkey,
+        publishStatus: DmReactionPublishStatus.received,
+      );
+
+      void primeReactions(List<DmReaction> reactions) {
+        final state = ConversationReactionsState(
+          status: ConversationReactionsStatus.loaded,
+          reactionsByMessageId: {reactionMessageId: reactions},
+        );
+        whenListen(
+          mockReactionsCubit,
+          Stream<ConversationReactionsState>.value(state),
+          initialState: state,
+        );
+      }
+
+      ContentPolicyState policyHiding({
+        Set<String> blocked = const {},
+        Set<String> muted = const {},
+      }) => ContentPolicyState(
+        currentUserPubkey: currentPubkey,
+        mutedPubkeys: muted,
+        blockedPubkeys: blocked,
+        pubkeysBlockingUs: const {},
+        pubkeysMutingUs: const {},
+      );
+
+      Widget loadedWithReactedMessage() => buildSubject(
+        state: ConversationState(
+          status: ConversationStatus.loaded,
+          messages: [reactedMessage()],
+        ),
+      );
+
+      testWidgets('hides reactions from blocked and muted reactors in the '
+          'pill', (tester) async {
+        primeReactions([
+          reaction(id: 'r-own', reactor: currentPubkey, emoji: '🔥'),
+          reaction(
+            id: 'r-vis',
+            reactor: visibleReactor,
+            emoji: '🎉',
+            createdAt: 1_700_000_001,
+          ),
+          reaction(
+            id: 'r-blk',
+            reactor: blockedReactor,
+            emoji: '😂',
+            createdAt: 1_700_000_002,
+          ),
+          reaction(
+            id: 'r-mut',
+            reactor: mutedReactor,
+            emoji: '👍',
+            createdAt: 1_700_000_003,
+          ),
+        ]);
+        when(() => mockBlocklist.currentState).thenReturn(
+          policyHiding(blocked: {blockedReactor}, muted: {mutedReactor}),
+        );
+
+        await tester.pumpWidget(loadedWithReactedMessage());
+        await tester.pump();
+
+        // Owner + unblocked reactor remain; blocked and muted are gone.
+        expect(find.text('🔥'), findsOneWidget);
+        expect(find.text('🎉'), findsOneWidget);
+        expect(find.text('😂'), findsNothing);
+        expect(find.text('👍'), findsNothing);
+      });
+
+      testWidgets('renders no pill when every reactor is blocked', (
+        tester,
+      ) async {
+        primeReactions([
+          reaction(id: 'r-blk', reactor: blockedReactor, emoji: '😂'),
+        ]);
+        when(
+          () => mockBlocklist.currentState,
+        ).thenReturn(policyHiding(blocked: {blockedReactor}));
+
+        await tester.pumpWidget(loadedWithReactedMessage());
+        await tester.pump();
+
+        // The bubble still renders; only its fully-blocked pill collapses.
+        expect(find.byType(MessageBubble), findsOneWidget);
+        expect(find.text('😂'), findsNothing);
+      });
+
+      testWidgets('excludes a blocked reactor from the who-reacted sheet', (
+        tester,
+      ) async {
+        primeReactions([
+          reaction(id: 'r-own', reactor: currentPubkey, emoji: '🔥'),
+          reaction(
+            id: 'r-blk',
+            reactor: blockedReactor,
+            emoji: '😂',
+            createdAt: 1_700_000_002,
+          ),
+        ]);
+        when(
+          () => mockBlocklist.currentState,
+        ).thenReturn(policyHiding(blocked: {blockedReactor}));
+
+        await tester.pumpWidget(loadedWithReactedMessage());
+        await tester.pump();
+
+        await tester.tap(find.text('🔥'));
+        // Avoid pumpAndSettle: the view's async profile providers can schedule
+        // continuous micro-tasks. Pump the bottom-sheet enter animation.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text(l10n.dmReactionsSheetTitle), findsOneWidget);
+        // The blocked reactor's emoji must not appear in the pill or the sheet.
+        expect(find.text('😂'), findsNothing);
+      });
+
+      testWidgets('refilters live when the blocklist changes mid-thread', (
+        tester,
+      ) async {
+        var policy = ContentPolicyState.empty();
+        when(() => mockBlocklist.currentState).thenAnswer((_) => policy);
+        primeReactions([
+          reaction(id: 'r-own', reactor: currentPubkey, emoji: '🔥'),
+          reaction(
+            id: 'r-blk',
+            reactor: blockedReactor,
+            emoji: '😂',
+            createdAt: 1_700_000_002,
+          ),
+        ]);
+
+        await tester.pumpWidget(loadedWithReactedMessage());
+        await tester.pump();
+
+        // Nobody blocked yet: both reactions show.
+        expect(find.text('🔥'), findsOneWidget);
+        expect(find.text('😂'), findsOneWidget);
+
+        // Block the reactor elsewhere → the version bump rebuilds the view.
+        policy = policyHiding(blocked: {blockedReactor});
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ConversationView)),
+        );
+        container.read(blocklistVersionProvider.notifier).increment();
+        await tester.pump();
+
+        expect(find.text('🔥'), findsOneWidget);
+        expect(find.text('😂'), findsNothing);
+      });
     });
   });
 }

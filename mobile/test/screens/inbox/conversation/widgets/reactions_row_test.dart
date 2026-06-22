@@ -57,17 +57,21 @@ void main() {
     );
   }
 
-  Widget buildSubject(_MockConversationReactionsCubit cubit) {
+  Widget buildSubject(
+    _MockConversationReactionsCubit cubit, {
+    Set<String> blockedPubkeys = const <String>{},
+  }) {
     return testMaterialApp(
       home: Scaffold(
         body: BlocProvider<ConversationReactionsCubit>.value(
           value: cubit,
-          child: const ReactionsRow(
+          child: ReactionsRow(
             conversationId: conversationId,
             messageId: messageId,
             messageAuthorPubkey: otherPubkey,
             ownerPubkey: ownerPubkey,
             isSentByMe: false,
+            blockedPubkeys: blockedPubkeys,
           ),
         ),
       ),
@@ -179,6 +183,54 @@ void main() {
       await tester.pump();
 
       expect(find.text('🔥'), findsNothing);
+      expect(find.byType(UserAvatar), findsNothing);
+    });
+
+    testWidgets(
+      'filters reactions from blockedPubkeys out of the pill (#5418)',
+      (
+        tester,
+      ) async {
+        primeState(
+          stateWith([
+            makeReaction(id: '1', reactorPubkey: ownerPubkey, emoji: '🔥'),
+            makeReaction(
+              id: '2',
+              reactorPubkey: otherPubkey,
+              emoji: '😂',
+              createdAt: 1_700_000_001,
+              publishStatus: DmReactionPublishStatus.received,
+            ),
+          ]),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(cubit, blockedPubkeys: const {otherPubkey}),
+        );
+        await tester.pump();
+
+        // The blocked reactor's glyph and avatar are gone; the owner's remain.
+        expect(find.text('🔥'), findsOneWidget);
+        expect(find.text('😂'), findsNothing);
+        expect(find.byType(UserAvatar), findsOneWidget);
+      },
+    );
+
+    testWidgets('renders nothing when every reactor is blocked (#5418)', (
+      tester,
+    ) async {
+      primeState(
+        stateWith([
+          makeReaction(id: '1', reactorPubkey: otherPubkey, emoji: '😂'),
+        ]),
+      );
+
+      await tester.pumpWidget(
+        buildSubject(cubit, blockedPubkeys: const {otherPubkey}),
+      );
+      await tester.pump();
+
+      expect(find.text('😂'), findsNothing);
       expect(find.byType(UserAvatar), findsNothing);
     });
 
