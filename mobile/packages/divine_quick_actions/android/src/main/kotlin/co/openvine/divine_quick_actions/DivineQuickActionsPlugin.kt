@@ -18,11 +18,16 @@ import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
 
 /** DivineQuickActionsPlugin */
-class DivineQuickActionsPlugin :
+class DivineQuickActionsPlugin internal constructor(
+    private val launchCover: CameraLaunchCover,
+) :
     FlutterPlugin,
     MethodCallHandler,
     ActivityAware,
     PluginRegistry.NewIntentListener {
+
+    constructor() : this(WindowCameraLaunchCover())
+
     // The MethodChannel that will the communication between Flutter and native Android
     //
     // This local reference serves to register the plugin with the Flutter Engine and unregister it
@@ -51,6 +56,10 @@ class DivineQuickActionsPlugin :
             "consumeLaunchAction" -> {
                 result.success(pendingLaunchAction)
                 pendingLaunchAction = null
+            }
+            "dismissLaunchCover" -> {
+                launchCover.dismiss()
+                result.success(null)
             }
             else -> result.notImplemented()
         }
@@ -81,8 +90,20 @@ class DivineQuickActionsPlugin :
         val action = QuickActionContract.actionFromIntent(intent) ?: return false
         QuickActionContract.clearShortcutIntent(intent)
         activity?.intent = intent
+        handleLaunchCover(action, activity)
         channel.invokeMethod("onQuickAction", action)
         return true
+    }
+
+    /**
+     * Shows the launch cover for a warm camera activation so the previously
+     * visible route never flashes before Flutter navigates to the recorder.
+     * Dart removes the cover via the `dismissLaunchCover` method once the
+     * recorder frame is rendered.
+     */
+    internal fun handleLaunchCover(action: Map<String, Any>, activity: Activity?) {
+        if (action["type"] != QuickActionContract.TYPE_CAMERA) return
+        activity?.let { launchCover.show(it) }
     }
 
     private fun attachActivity(binding: ActivityPluginBinding) {
@@ -93,10 +114,16 @@ class DivineQuickActionsPlugin :
         if (launchAction != null) {
             pendingLaunchAction = launchAction
             QuickActionContract.clearShortcutIntent(binding.activity.intent)
+            // No cover on cold start: the OS already shows the launch splash
+            // (the same logo a normal app-icon launch shows) until the first
+            // Flutter frame. Covering it would only hide that splash. The cover
+            // is for warm resumes (onNewIntent), where there is no OS splash and
+            // the last route (e.g. the profile) would otherwise flash.
         }
     }
 
     private fun detachActivity() {
+        launchCover.dismiss()
         activityBinding?.removeOnNewIntentListener(this)
         activityBinding = null
         activity = null

@@ -96,6 +96,21 @@ void main() {
     expect(action?.isLaunchAction, isTrue);
   });
 
+  test('dismissLaunchCover invokes the native method', () async {
+    await platform.dismissLaunchCover();
+
+    expect(calls.single.method, 'dismissLaunchCover');
+  });
+
+  test('dismissLaunchCover ignores a missing native implementation', () async {
+    // No handler registered → the channel reports the method as unimplemented;
+    // dismissLaunchCover must swallow that rather than surfacing an error.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
+
+    await expectLater(platform.dismissLaunchCover(), completes);
+  });
+
   test('native callbacks are emitted on the action stream', () async {
     final action = expectLater(
       platform.actionStream,

@@ -15,6 +15,7 @@ class MockDivineQuickActionsPlatform
   DivineQuickActionEvent? launchAction;
   List<DivineQuickAction> actions = const <DivineQuickAction>[];
   bool supported = true;
+  int dismissLaunchCoverCount = 0;
 
   @override
   Stream<DivineQuickActionEvent> get actionStream => _controller.stream;
@@ -42,6 +43,11 @@ class MockDivineQuickActionsPlatform
   Future<bool> setActions(List<DivineQuickAction> actions) async {
     this.actions = actions;
     return supported;
+  }
+
+  @override
+  Future<void> dismissLaunchCover() async {
+    dismissLaunchCoverCount += 1;
   }
 
   void addAction(DivineQuickActionEvent action) {
@@ -103,6 +109,16 @@ void main() {
     expect(launchAction?.isLaunchAction, isTrue);
     expect(received, contains(launchAction));
     expect(await plugin.initialize(), isNull);
+  });
+
+  test('dismissLaunchCover delegates to the platform', () async {
+    final plugin = DivineQuickActions.instance;
+    final fakePlatform = MockDivineQuickActionsPlatform();
+    DivineQuickActionsPlatform.instance = fakePlatform;
+
+    await plugin.dismissLaunchCover();
+
+    expect(fakePlatform.dismissLaunchCoverCount, 1);
   });
 
   test('initialize subscribes to runtime action stream', () async {

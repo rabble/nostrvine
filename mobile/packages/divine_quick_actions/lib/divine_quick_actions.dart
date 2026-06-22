@@ -71,6 +71,15 @@ class DivineQuickActions {
     return _platform.clearActions();
   }
 
+  /// Removes the native launch cover shown during a warm camera activation.
+  ///
+  /// Call once the app has navigated to the camera so the cover is replaced by
+  /// the recorder rather than the route the user left open. No-op on platforms
+  /// that draw no cover.
+  Future<void> dismissLaunchCover() {
+    return _platform.dismissLaunchCover();
+  }
+
   /// Removes the callback installed by [initialize].
   Future<void> dispose() async {
     await _actionSubscription?.cancel();

@@ -127,6 +127,132 @@ void main() {
       expect(navigator.clearSuppressionCount, 1);
     });
 
+    test(
+      'dismisses the launch cover after the camera frame settles on Android',
+      () {
+        final client = _FakeQuickActionsClient();
+        final navigator = _FakeQuickActionsNavigator();
+        void Function()? scheduled;
+        final coordinator = _coordinator(
+          client: client,
+          navigator: navigator,
+          readAuthState: () => AuthState.authenticated,
+          isAndroid: true,
+          scheduleRedirectSuppressionClear: (callback) => scheduled = callback,
+        );
+
+        coordinator.handleAction(
+          const DivineQuickActionEvent(type: quickActionCameraType),
+        );
+
+        // Cover stays up until the post-frame callback confirms navigation.
+        expect(client.dismissLaunchCoverCount, isZero);
+
+        scheduled!();
+
+        expect(client.dismissLaunchCoverCount, 1);
+        expect(navigator.openedRoutes, equals(<String>['camera']));
+      },
+    );
+
+    test('does not dismiss a launch cover off Android', () {
+      final client = _FakeQuickActionsClient();
+      final navigator = _FakeQuickActionsNavigator();
+      void Function()? scheduled;
+      final coordinator = _coordinator(
+        client: client,
+        navigator: navigator,
+        readAuthState: () => AuthState.authenticated,
+        scheduleRedirectSuppressionClear: (callback) => scheduled = callback,
+      );
+
+      coordinator.handleAction(
+        const DivineQuickActionEvent(type: quickActionCameraType),
+      );
+      scheduled!();
+
+      expect(client.dismissLaunchCoverCount, isZero);
+    });
+
+    test(
+      'dismisses the launch cover even when already on the camera route',
+      () {
+        final client = _FakeQuickActionsClient();
+        final navigator = _FakeQuickActionsNavigator()
+          ..currentPath = '/video-recorder';
+        void Function()? scheduled;
+        final coordinator = _coordinator(
+          client: client,
+          navigator: navigator,
+          readAuthState: () => AuthState.authenticated,
+          isAndroid: true,
+          scheduleRedirectSuppressionClear: (callback) => scheduled = callback,
+        );
+
+        coordinator.handleAction(
+          const DivineQuickActionEvent(type: quickActionCameraType),
+        );
+
+        expect(navigator.openedRoutes, isEmpty);
+        expect(navigator.suppressCount, isZero);
+
+        scheduled!();
+
+        // The cover was drawn natively before the action reached Dart, so it
+        // must still be dropped even though no navigation was needed.
+        expect(client.dismissLaunchCoverCount, 1);
+        expect(navigator.clearSuppressionCount, isZero);
+      },
+    );
+
+    test('dismisses the launch cover when ignoring an unauthenticated action '
+        'on Android', () {
+      final client = _FakeQuickActionsClient();
+      final navigator = _FakeQuickActionsNavigator();
+      final coordinator = _coordinator(
+        client: client,
+        navigator: navigator,
+        readAuthState: () => AuthState.unauthenticated,
+        isAndroid: true,
+      );
+
+      coordinator.handleAction(
+        const DivineQuickActionEvent(type: quickActionCameraType),
+      );
+
+      expect(client.dismissLaunchCoverCount, 1);
+      expect(navigator.openedRoutes, isEmpty);
+    });
+
+    test(
+      'dismisses the launch cover when dropping a deferred action on Android',
+      () {
+        final client = _FakeQuickActionsClient();
+        final navigator = _FakeQuickActionsNavigator();
+        var authState = AuthState.checking;
+        final coordinator = _coordinator(
+          client: client,
+          navigator: navigator,
+          readAuthState: () => authState,
+          isAndroid: true,
+        );
+
+        coordinator.handleAction(
+          const DivineQuickActionEvent(
+            type: quickActionCameraType,
+            isLaunchAction: true,
+          ),
+        );
+        expect(client.dismissLaunchCoverCount, isZero);
+
+        authState = AuthState.unauthenticated;
+        coordinator.handleAuthStateChanged(authState);
+
+        expect(client.dismissLaunchCoverCount, 1);
+        expect(navigator.openedRoutes, isEmpty);
+      },
+    );
+
     test('does not reopen camera when already on the camera route', () {
       final client = _FakeQuickActionsClient();
       final navigator = _FakeQuickActionsNavigator()
@@ -198,6 +324,7 @@ Future<void> _flushAsyncWork() async {
 class _FakeQuickActionsClient implements QuickActionsClient {
   bool supported = true;
   int clearCount = 0;
+  int dismissLaunchCoverCount = 0;
   List<DivineQuickAction> actions = const <DivineQuickAction>[];
   void Function(DivineQuickActionEvent action)? onAction;
 
@@ -222,6 +349,11 @@ class _FakeQuickActionsClient implements QuickActionsClient {
   Future<bool> clearActions() async {
     clearCount += 1;
     return true;
+  }
+
+  @override
+  Future<void> dismissLaunchCover() async {
+    dismissLaunchCoverCount += 1;
   }
 
   @override

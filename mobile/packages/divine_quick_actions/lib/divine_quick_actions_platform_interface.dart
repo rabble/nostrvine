@@ -60,4 +60,11 @@ abstract class DivineQuickActionsPlatform extends PlatformInterface {
   Future<DivineQuickActionEvent?> consumeLaunchAction() {
     throw UnimplementedError('consumeLaunchAction() has not been implemented.');
   }
+
+  /// Removes the native launch cover drawn during a warm camera activation.
+  ///
+  /// No-op on platforms that do not draw a cover.
+  Future<void> dismissLaunchCover() {
+    throw UnimplementedError('dismissLaunchCover() has not been implemented.');
+  }
 }

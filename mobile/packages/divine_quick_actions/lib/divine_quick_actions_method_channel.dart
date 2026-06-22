@@ -81,4 +81,13 @@ class MethodChannelDivineQuickActions extends DivineQuickActionsPlatform {
     if (result == null) return null;
     return DivineQuickActionEvent.tryFromMap(result, isLaunchAction: true);
   }
+
+  @override
+  Future<void> dismissLaunchCover() async {
+    try {
+      await methodChannel.invokeMethod<void>('dismissLaunchCover');
+    } on MissingPluginException {
+      // Platform draws no launch cover; nothing to dismiss.
+    }
+  }
 }

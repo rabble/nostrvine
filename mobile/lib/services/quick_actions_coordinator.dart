@@ -34,6 +34,8 @@ abstract interface class QuickActionsClient {
 
   Future<bool> clearActions();
 
+  Future<void> dismissLaunchCover();
+
   Future<void> dispose();
 }
 
@@ -61,6 +63,11 @@ class DivineQuickActionsClient implements QuickActionsClient {
   @override
   Future<bool> clearActions() {
     return _quickActions.clearActions();
+  }
+
+  @override
+  Future<void> dismissLaunchCover() {
+    return _quickActions.dismissLaunchCover();
   }
 
   @override
@@ -231,6 +238,9 @@ class QuickActionsCoordinator {
         name: 'QuickActions',
         category: LogCategory.system,
       );
+      // Reveal the route the user actually needs (e.g. login) instead of
+      // leaving a cold-start cover up until the native safety timeout.
+      _dismissLaunchCover();
       unawaited(_client.clearActions());
       return;
     }
@@ -269,6 +279,9 @@ class QuickActionsCoordinator {
       name: 'QuickActions',
       category: LogCategory.system,
     );
+    // Auth resolved without a session — drop the cold-start cover so the user
+    // lands on the screen they need rather than waiting out the safety timeout.
+    _dismissLaunchCover();
   }
 
   bool _isAuthPending(AuthState authState) {
@@ -295,12 +308,25 @@ class QuickActionsCoordinator {
       name: 'QuickActions',
       category: LogCategory.ui,
     );
-    if (_navigator.currentPath == _cameraPath) return;
+    final alreadyOnCamera = _navigator.currentPath == _cameraPath;
+    if (!alreadyOnCamera) {
+      _navigator.suppressAuthenticatedAuthRouteRedirect();
+      _navigator.openCamera();
+    }
 
-    _navigator.suppressAuthenticatedAuthRouteRedirect();
-    _navigator.openCamera();
-    _scheduleRedirectSuppressionClear(
-      _navigator.clearAuthRouteRedirectSuppression,
-    );
+    // Drop the native launch cover only after the recorder frame has rendered,
+    // so it's replaced by the camera rather than the route the user left open.
+    _scheduleRedirectSuppressionClear(() {
+      if (!alreadyOnCamera) {
+        _navigator.clearAuthRouteRedirectSuppression();
+      }
+      _dismissLaunchCover();
+    });
+  }
+
+  void _dismissLaunchCover() {
+    // The cover is only ever drawn natively on Android warm activations.
+    if (!_isAndroid) return;
+    unawaited(_client.dismissLaunchCover());
   }
 }
