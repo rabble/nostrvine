@@ -100,20 +100,16 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
 
-    // Reactors to hide from the reaction pill + who-reacted sheet: the same
-    // effective block/mute set used app-wide (shouldFilterFromFeeds). Watching
-    // blocklistVersionProvider rebuilds this view — re-passing the set to every
-    // ReactionsRow — on any block/unblock/mute change while the thread is open.
+    // Reactors to hide from the reaction pill + who-reacted sheet: the
+    // repository's canonical feed-hide set (blocked ∪ muted ∪ muted-by ∪
+    // blocked-by), the same union `shouldFilterFromFeeds` enforces app-wide.
+    // Watching blocklistVersionProvider rebuilds this view — re-reading the
+    // set and re-passing it to every ReactionsRow — on any block/unblock/mute
+    // change while the thread is open.
     ref.watch(blocklistVersionProvider);
-    final blocklistPolicy = ref
+    final blockedReactors = ref
         .read(contentBlocklistRepositoryProvider)
-        .currentState;
-    final blockedReactors = <String>{
-      ...blocklistPolicy.blockedPubkeys,
-      ...blocklistPolicy.mutedPubkeys,
-      ...blocklistPolicy.pubkeysMutingUs,
-      ...blocklistPolicy.pubkeysBlockingUs,
-    };
+        .feedHiddenPubkeys;
 
     // Resolve other participant's profile for the app bar + empty state
     final otherPubkey = widget.participantPubkeys.isNotEmpty

@@ -1992,6 +1992,136 @@ void main() {
     });
   });
 
+  group('feedHiddenPubkeys', () {
+    const ourPubkey =
+        '0000000000000000000000000000000000000000000000000000000000000001';
+    const runtimeBlocked =
+        '0000000000000000000000000000000000000000000000000000000000000002';
+    const mutedByUs =
+        '0000000000000000000000000000000000000000000000000000000000000003';
+    const mutualMuter =
+        '0000000000000000000000000000000000000000000000000000000000000004';
+    const blockedByOther =
+        '0000000000000000000000000000000000000000000000000000000000000005';
+    const stranger =
+        '0000000000000000000000000000000000000000000000000000000000000006';
+
+    test('is empty when no hide bucket is populated', () {
+      expect(ContentBlocklistRepository().feedHiddenPubkeys, isEmpty);
+    });
+
+    test(
+      'unions every hide bucket and stays equivalent to shouldFilterFromFeeds',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final prefs = await SharedPreferences.getInstance();
+        final service = ContentBlocklistRepository(prefs: prefs);
+
+        final muteController = StreamController<Event>();
+        final blockController = StreamController<Event>();
+        final mockMuteClient = _MockNostrClient();
+        final mockBlockClient = _MockNostrClient();
+        final mockSigner = _MockBlockListSigner();
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+        // Runtime-block bucket.
+        await service.blockUser(runtimeBlocked, ourPubkey: ourPubkey);
+
+        // Own-mute + mutual-mute buckets, both via the kind 10000 stream.
+        when(
+          () => mockMuteClient.subscribe(any()),
+        ).thenAnswer((_) => muteController.stream);
+        await service.syncMuteListsInBackground(mockMuteClient, ourPubkey);
+        muteController
+          ..add(
+            Event(
+                ourPubkey,
+                10000,
+                [
+                  ['p', mutedByUs],
+                ],
+                '',
+                createdAt: now,
+              )
+              ..id = 'own-mute'
+              ..sig = 'sig',
+          )
+          ..add(
+            Event(
+                mutualMuter,
+                10000,
+                [
+                  ['p', ourPubkey],
+                ],
+                '',
+                createdAt: now,
+              )
+              ..id = 'mutual-mute'
+              ..sig = 'sig',
+          );
+
+        // Blocked-by bucket via the kind 30000 d=block stream.
+        when(
+          () => mockBlockClient.subscribe(any()),
+        ).thenAnswer((_) => blockController.stream);
+        await service.syncBlockListsInBackground(
+          mockBlockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        blockController.add(
+          Event(
+              blockedByOther,
+              30000,
+              [
+                ['d', 'block'],
+                ['p', ourPubkey],
+              ],
+              'Block list',
+              createdAt: now,
+            )
+            ..id = 'blocked-by'
+            ..sig = 'sig',
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        final hidden = service.feedHiddenPubkeys;
+        expect(
+          hidden,
+          containsAll(<String>{
+            runtimeBlocked,
+            mutedByUs,
+            mutualMuter,
+            blockedByOther,
+          }),
+        );
+        expect(hidden, isNot(contains(stranger)));
+
+        // The set and the predicate must agree for every pubkey, so a future
+        // sixth bucket added to one cannot silently diverge from the other.
+        for (final pubkey in <String>{
+          runtimeBlocked,
+          mutedByUs,
+          mutualMuter,
+          blockedByOther,
+          stranger,
+        }) {
+          expect(
+            hidden.contains(pubkey),
+            equals(service.shouldFilterFromFeeds(pubkey)),
+            reason:
+                'feedHiddenPubkeys and shouldFilterFromFeeds '
+                'disagree for $pubkey',
+          );
+        }
+
+        await muteController.close();
+        await blockController.close();
+      },
+    );
+  });
+
   group('ContentBlocklistRepository - Nostr publishing', () {
     late _MockNostrClient mockClient;
     late _MockBlockListSigner mockSigner;

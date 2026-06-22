@@ -609,20 +609,47 @@ class ContentBlocklistRepository {
         _runtimeBlocklist.contains(pubkey);
   }
 
-  /// Check if content should be filtered from feeds
-  ///
-  /// Filters content from:
+  /// The buckets whose union is hidden from feeds, held as live references
+  /// to the underlying sets. Every instance is stable for the repository's
+  /// lifetime — the `const` internal list plus four `final` sets that are
+  /// only ever mutated in place — so both [feedHiddenPubkeys] and
+  /// [shouldFilterFromFeeds] derive from this one list and cannot drift. A
+  /// new hide-bucket is added here exactly once.
+  late final List<Set<String>> _hideBuckets = [
+    _internalBlocklist,
+    _runtimeBlocklist,
+    _mutedPubkeys,
+    _mutualMuteBlocklist,
+    _blockedByOthers,
+  ];
+
+  /// The union of every pubkey hidden from feeds:
   /// - Users we blocked (internal + runtime blocklist)
   /// - Users we muted via our own kind 10000 mute list
   /// - Users who mutually muted us (kind 10000)
   /// - Users who blocked us (kind 30000, d=block) — hides our content
   ///   from their feeds and their content from ours
+  ///
+  /// This is the canonical feed-hide set. UI surfaces that need the
+  /// materialized set — e.g. DM reaction filtering in `conversation_view`
+  /// — read this rather than re-deriving the union by hand, so they stay
+  /// in lockstep with [shouldFilterFromFeeds].
+  Set<String> get feedHiddenPubkeys => {
+    for (final bucket in _hideBuckets) ...bucket,
+  };
+
+  /// Whether [pubkey] is in [feedHiddenPubkeys] and so should be filtered
+  /// from feeds.
+  ///
+  /// Implemented as a short-circuiting, allocation-free membership scan
+  /// rather than `feedHiddenPubkeys.contains(...)` because this is a hot
+  /// path — called per item across ~15 feed surfaces — and materializing
+  /// the union on every call would be wasteful.
   bool shouldFilterFromFeeds(String pubkey) {
-    return _internalBlocklist.contains(pubkey) ||
-        _runtimeBlocklist.contains(pubkey) ||
-        _mutedPubkeys.contains(pubkey) ||
-        _mutualMuteBlocklist.contains(pubkey) ||
-        _blockedByOthers.contains(pubkey);
+    for (var i = 0; i < _hideBuckets.length; i++) {
+      if (_hideBuckets[i].contains(pubkey)) return true;
+    }
+    return false;
   }
 
   /// Check if we muted another user via our own kind 10000 mute list.

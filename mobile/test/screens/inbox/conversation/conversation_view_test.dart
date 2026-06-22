@@ -4,7 +4,6 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
-import 'package:content_policy/content_policy.dart';
 import 'package:db_client/db_client.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -109,8 +108,8 @@ void main() {
       mockBlocklist = _MockContentBlocklistRepository();
       // Default: nobody blocked. Reaction-filtering tests re-stub this.
       when(
-        () => mockBlocklist.currentState,
-      ).thenReturn(ContentPolicyState.empty());
+        () => mockBlocklist.feedHiddenPubkeys,
+      ).thenReturn(const <String>{});
 
       whenListen(
         mockReactionsCubit,
@@ -1301,16 +1300,12 @@ void main() {
         );
       }
 
-      ContentPolicyState policyHiding({
+      // The flat feed-hide set the view now reads from the repository
+      // (`feedHiddenPubkeys`), which is itself the union of these buckets.
+      Set<String> hiddenReactors({
         Set<String> blocked = const {},
         Set<String> muted = const {},
-      }) => ContentPolicyState(
-        currentUserPubkey: currentPubkey,
-        mutedPubkeys: muted,
-        blockedPubkeys: blocked,
-        pubkeysBlockingUs: const {},
-        pubkeysMutingUs: const {},
-      );
+      }) => {...blocked, ...muted};
 
       Widget loadedWithReactedMessage() => buildSubject(
         state: ConversationState(
@@ -1342,8 +1337,8 @@ void main() {
             createdAt: 1_700_000_003,
           ),
         ]);
-        when(() => mockBlocklist.currentState).thenReturn(
-          policyHiding(blocked: {blockedReactor}, muted: {mutedReactor}),
+        when(() => mockBlocklist.feedHiddenPubkeys).thenReturn(
+          hiddenReactors(blocked: {blockedReactor}, muted: {mutedReactor}),
         );
 
         await tester.pumpWidget(loadedWithReactedMessage());
@@ -1363,8 +1358,8 @@ void main() {
           reaction(id: 'r-blk', reactor: blockedReactor, emoji: '😂'),
         ]);
         when(
-          () => mockBlocklist.currentState,
-        ).thenReturn(policyHiding(blocked: {blockedReactor}));
+          () => mockBlocklist.feedHiddenPubkeys,
+        ).thenReturn(hiddenReactors(blocked: {blockedReactor}));
 
         await tester.pumpWidget(loadedWithReactedMessage());
         await tester.pump();
@@ -1387,8 +1382,8 @@ void main() {
           ),
         ]);
         when(
-          () => mockBlocklist.currentState,
-        ).thenReturn(policyHiding(blocked: {blockedReactor}));
+          () => mockBlocklist.feedHiddenPubkeys,
+        ).thenReturn(hiddenReactors(blocked: {blockedReactor}));
 
         await tester.pumpWidget(loadedWithReactedMessage());
         await tester.pump();
@@ -1400,15 +1395,19 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.text(l10n.dmReactionsSheetTitle), findsOneWidget);
-        // The blocked reactor's emoji must not appear in the pill or the sheet.
+        // The owner's reaction now renders twice — the pill glyph plus the
+        // sheet's reactor row — proving the sheet lists reactions; the blocked
+        // reactor's emoji appears in neither, proving the sheet itself filters
+        // it out rather than the absence just reflecting the collapsed pill.
+        expect(find.text('🔥'), findsNWidgets(2));
         expect(find.text('😂'), findsNothing);
       });
 
       testWidgets('refilters live when the blocklist changes mid-thread', (
         tester,
       ) async {
-        var policy = ContentPolicyState.empty();
-        when(() => mockBlocklist.currentState).thenAnswer((_) => policy);
+        var hidden = <String>{};
+        when(() => mockBlocklist.feedHiddenPubkeys).thenAnswer((_) => hidden);
         primeReactions([
           reaction(id: 'r-own', reactor: currentPubkey, emoji: '🔥'),
           reaction(
@@ -1427,7 +1426,7 @@ void main() {
         expect(find.text('😂'), findsOneWidget);
 
         // Block the reactor elsewhere → the version bump rebuilds the view.
-        policy = policyHiding(blocked: {blockedReactor});
+        hidden = hiddenReactors(blocked: {blockedReactor});
         final container = ProviderScope.containerOf(
           tester.element(find.byType(ConversationView)),
         );
