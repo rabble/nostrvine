@@ -47,8 +47,8 @@ enum DivineButtonType {
 /// constraint and the surrounding context can absorb the smaller tap
 /// area.
 enum DivineButtonSize {
-  /// Tiny button: no outer tap-padding, 12px horizontal / 6px vertical
-  /// inner padding, 12.8px border radius (= 32 × 0.4, matches a 32px
+  /// Tiny button: no outer tap-padding, 6px symmetric inner padding,
+  /// 12.8px border radius (= 32 × 0.4, matches a 32px
   /// `UserAvatar`'s rounded square so the button rhymes visually with
   /// the avatar it usually sits next to), 14px `titleSmallFont` text
   /// (Bricolage Grotesque 800 — heavier than the Inter `labelLargeFont`
@@ -58,14 +58,13 @@ enum DivineButtonSize {
   /// height matches whether the button is present or not).
   tiny,
 
-  /// Small button: 4px outer padding, 16px horizontal / 8px vertical
-  /// inner padding, 16px border radius, 16px `titleMediumFont` text,
+  /// Small button: 4px outer padding, 8px symmetric inner padding,
+  /// 16px border radius, 16px `titleMediumFont` text,
   /// 24px icon. Visual height 40px, tap target 48px.
   small,
 
-  /// Base/medium button: 24px horizontal / 12px vertical padding, 20px
-  /// border radius, 16px `titleMediumFont` text, 24px icon. Total
-  /// height 48px.
+  /// Base/medium button: 12px symmetric padding, 20px border radius,
+  /// 16px `titleMediumFont` text, 24px icon. Total height 48px.
   base,
 }
 
@@ -194,30 +193,17 @@ class _DivineButtonContent extends StatelessWidget {
   /// `DivineIconButton`.
   bool get _noLabel => label.isEmpty;
 
-  EdgeInsets get _padding {
-    if (_noLabel) {
-      // Match DivineIconButton padding for icon-only mode.
-      return switch (size) {
-        DivineButtonSize.tiny => const EdgeInsets.all(6),
-        DivineButtonSize.small => const EdgeInsets.all(8),
-        DivineButtonSize.base => const EdgeInsets.all(12),
-      };
-    }
-    return switch (size) {
-      DivineButtonSize.tiny => const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 6,
-      ),
-      DivineButtonSize.small => const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 8,
-      ),
-      DivineButtonSize.base => const EdgeInsets.symmetric(
-        horizontal: 24,
-        vertical: 12,
-      ),
-    };
-  }
+  /// Symmetric inner padding for every size. Labeled and icon-only
+  /// buttons share the same insets: keeping the horizontal padding equal
+  /// to the (smaller) vertical padding gives a label the most horizontal
+  /// room before it ellipsizes, and for small / base it also matches
+  /// `DivineIconButton`, so a label-less [DivineButton] lines up with a
+  /// `DivineIconButton`.
+  EdgeInsets get _padding => switch (size) {
+    DivineButtonSize.tiny => const EdgeInsets.all(6),
+    DivineButtonSize.small => const EdgeInsets.all(8),
+    DivineButtonSize.base => const EdgeInsets.all(12),
+  };
 
   double get _borderRadius => switch (size) {
     // 32 × 0.4 — same factor `UserAvatar` uses for non-tiny avatars, so

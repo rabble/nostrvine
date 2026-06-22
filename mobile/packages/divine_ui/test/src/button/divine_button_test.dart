@@ -448,6 +448,110 @@ void main() {
       );
     });
 
+    group('label inner padding', () {
+      // The content Row's closest Padding ancestor is the button's inner
+      // padding. Anchoring on the Row skips the EdgeInsets.zero Padding
+      // that Ink wraps its child in internally.
+      Padding innerPaddingOf(WidgetTester tester) {
+        return tester.widget<Padding>(
+          find
+              .ancestor(
+                of: find.byType(Row),
+                matching: find.byType(Padding),
+              )
+              .first,
+        );
+      }
+
+      testWidgets('base label uses symmetric 12px inner padding', (
+        tester,
+      ) async {
+        // Symmetric padding keeps the label's full height while giving it
+        // the most horizontal room before the text ellipsizes.
+        await tester.pumpWidget(
+          buildTestWidget(label: 'Save', onPressed: () {}),
+        );
+
+        expect(innerPaddingOf(tester).padding, const EdgeInsets.all(12));
+      });
+
+      testWidgets('small label uses symmetric 8px inner padding', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: 'Save',
+            size: DivineButtonSize.small,
+            onPressed: () {},
+          ),
+        );
+
+        expect(innerPaddingOf(tester).padding, const EdgeInsets.all(8));
+      });
+
+      testWidgets('tiny label uses symmetric 6px inner padding', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: 'Save',
+            size: DivineButtonSize.tiny,
+            onPressed: () {},
+          ),
+        );
+
+        expect(innerPaddingOf(tester).padding, const EdgeInsets.all(6));
+      });
+
+      testWidgets('labeled and icon-only share the same inner padding', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(label: 'Save', onPressed: () {}),
+        );
+        final labeledPadding = innerPaddingOf(tester).padding;
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: '',
+            leadingIcon: DivineIconName.heart,
+            onPressed: () {},
+          ),
+        );
+        final iconOnlyPadding = innerPaddingOf(tester).padding;
+
+        expect(labeledPadding, equals(iconOnlyPadding));
+      });
+
+      testWidgets('long label ellipsizes instead of overflowing', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 120,
+                  child: DivineButton(
+                    label: 'A very long label that will not fit the width',
+                    expanded: true,
+                    onPressed: () {},
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final text = tester.widget<Text>(
+          find.text('A very long label that will not fit the width'),
+        );
+        expect(text.maxLines, equals(1));
+        expect(text.overflow, equals(TextOverflow.ellipsis));
+        expect(tester.takeException(), isNull);
+      });
+    });
+
     group('disabled state', () {
       testWidgets('shows reduced opacity when disabled', (tester) async {
         await tester.pumpWidget(
