@@ -1,12 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
-import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:video_player/video_player.dart';
 
 /// Renders subtitles for a [VideoPlayerController]-backed video.
-class VideoPlayerSubtitleLayer extends ConsumerWidget {
+class VideoPlayerSubtitleLayer extends StatefulWidget {
   const VideoPlayerSubtitleLayer({
     required this.video,
     required this.controller,
@@ -17,22 +17,61 @@ class VideoPlayerSubtitleLayer extends ConsumerWidget {
   final VideoPlayerController controller;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final subtitlesVisible = ref.watch(subtitleVisibilityProvider);
-    if (!subtitlesVisible) return const SizedBox.shrink();
+  State<VideoPlayerSubtitleLayer> createState() =>
+      _VideoPlayerSubtitleLayerState();
+}
 
-    return ValueListenableBuilder<VideoPlayerValue>(
-      valueListenable: controller,
-      builder: (context, value, _) {
-        if (!value.isInitialized) {
-          return const SizedBox.shrink();
-        }
+class _VideoPlayerSubtitleLayerState extends State<VideoPlayerSubtitleLayer> {
+  final _positionController = StreamController<Duration>.broadcast();
+  late bool _isInitialized = widget.controller.value.isInitialized;
 
-        return SubtitleCuePositionPill(
-          video: video,
-          positionMs: value.position.inMilliseconds,
-        );
-      },
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_handleControllerValue);
+  }
+
+  @override
+  void didUpdateWidget(covariant VideoPlayerSubtitleLayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller == widget.controller) return;
+
+    oldWidget.controller.removeListener(_handleControllerValue);
+    _isInitialized = widget.controller.value.isInitialized;
+    widget.controller.addListener(_handleControllerValue);
+    _emitPositionIfReady(widget.controller.value);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_handleControllerValue);
+    _positionController.close();
+    super.dispose();
+  }
+
+  void _handleControllerValue() {
+    final value = widget.controller.value;
+    if (_isInitialized != value.isInitialized) {
+      setState(() {
+        _isInitialized = value.isInitialized;
+      });
+    }
+    _emitPositionIfReady(value);
+  }
+
+  void _emitPositionIfReady(VideoPlayerValue value) {
+    if (!value.isInitialized || _positionController.isClosed) return;
+    _positionController.add(value.position);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isInitialized) return const SizedBox.shrink();
+
+    return SubtitleCueStreamPill(
+      video: widget.video,
+      positionStream: _positionController.stream,
+      initialPosition: widget.controller.value.position,
     );
   }
 }
