@@ -51,6 +51,13 @@ sealed class NostrIdentity implements NostrSigner {
   /// ourselves only exercises the crypto library and costs a full schnorr
   /// verification per event. Structural validation (event id == hash) is
   /// cheap and should still run regardless.
+  ///
+  /// Contract upheld for the caller: when this is true, every event returned
+  /// by [signEvent] carries a signature that needs no external verification.
+  /// [KeycastNostrIdentity] keeps that true even in its rare
+  /// local-sign-fails → RPC fallback by verifying the RPC result before
+  /// returning it, so the flag is a guarantee about the returned event, not
+  /// merely the capability that a local key exists.
   bool get signsWithLocalKey;
 }
 
@@ -153,6 +160,20 @@ class KeycastNostrIdentity extends NostrIdentity
         name: 'KeycastNostrIdentity',
         category: LogCategory.auth,
       );
+      // signsWithLocalKey is true for this identity, so the caller skips its
+      // post-sign verify. This fallback result came from the remote RPC — a
+      // trust boundary — so verify it here to honor that contract; otherwise a
+      // tampered/wrong-key RPC signature would slip through unverified. #5450.
+      final rpcSigned = await _rpcSigner.signEvent(event);
+      if (rpcSigned != null && !rpcSigned.isSigned) {
+        Log.error(
+          'Keycast RPC fallback returned an invalid signature; rejecting',
+          name: 'KeycastNostrIdentity',
+          category: LogCategory.auth,
+        );
+        return null;
+      }
+      return rpcSigned;
     }
     return _rpcSigner.signEvent(event);
   }

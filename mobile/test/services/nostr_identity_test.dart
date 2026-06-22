@@ -143,9 +143,11 @@ void main() {
     });
 
     test(
-      'signEvent falls back to RPC when local signer returns null',
+      'signEvent falls back to RPC when local signer returns null and the '
+      'RPC signature is valid',
       () async {
-        final event = Event(testPublicKey, EventKind.textNote, [], 'test');
+        final event = Event(testPublicKey, EventKind.textNote, [], 'test')
+          ..sign(testPrivateKey);
         final mockLocal = _MockLocalKeySigner();
         when(() => mockLocal.signEvent(any())).thenAnswer((_) async => null);
         when(() => mockRpc.signEvent(any())).thenAnswer((_) async => event);
@@ -159,6 +161,34 @@ void main() {
         final signed = await identity.signEvent(event);
 
         expect(signed, equals(event));
+        verify(() => mockLocal.signEvent(any())).called(1);
+        verify(() => mockRpc.signEvent(any())).called(1);
+      },
+    );
+
+    test(
+      'signEvent rejects an invalid RPC fallback signature (#5450) so a remote '
+      'result cannot bypass verification when signsWithLocalKey is true',
+      () async {
+        // signsWithLocalKey is true (local signer present), so AuthService
+        // skips its post-sign verify. The local sign fails and the RPC
+        // fallback returns an UNSIGNED event — it must be rejected, not
+        // returned, or the remote result would slip through unverified.
+        final unsigned = Event(testPublicKey, EventKind.textNote, [], 'test');
+        final mockLocal = _MockLocalKeySigner();
+        when(() => mockLocal.signEvent(any())).thenAnswer((_) async => null);
+        when(() => mockRpc.signEvent(any())).thenAnswer((_) async => unsigned);
+
+        final identity = KeycastNostrIdentity(
+          pubkey: testPublicKey,
+          rpcSigner: mockRpc,
+          localSigner: mockLocal,
+        );
+
+        expect(identity.signsWithLocalKey, isTrue);
+        final signed = await identity.signEvent(unsigned);
+
+        expect(signed, isNull);
         verify(() => mockLocal.signEvent(any())).called(1);
         verify(() => mockRpc.signEvent(any())).called(1);
       },
