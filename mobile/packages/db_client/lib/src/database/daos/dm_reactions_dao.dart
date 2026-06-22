@@ -9,26 +9,42 @@ part 'dm_reactions_dao.g.dart';
 
 /// DAO for the `dm_message_reactions` table.
 ///
-/// Two write paths:
-/// - **Outgoing**: [insertOptimistic] writes a row with a placeholder id
-///   plus `publishStatus = 'pending'` and the serialized rumor JSON.
-///   Once the publish lands, [swapPlaceholderId] replaces the placeholder
-///   id with the real rumor id, clears the JSON, and marks `'sent'`.
-/// - **Incoming**: [upsertIncoming] writes (or de-dups) a row keyed on
-///   `(id, owner_pubkey)` — the rumor id is stable across the recipient
-///   and self gift-wraps, so a multi-device account that receives both
-///   collapses to one row.
+/// Two write paths, both enforcing the cap-at-one storage invariant (#5419):
+/// at most one live reaction per `(target_message_id, reactor_pubkey,
+/// owner_pubkey)`, backed by the partial unique index
+/// `idx_dm_reactions_unique_live`.
+/// - **Outgoing**: [insertOwnReactionSuperseding] soft-deletes any prior live
+///   reaction by this reactor on the target, then writes a row with a
+///   placeholder id plus `publishStatus = 'pending'` and the serialized rumor
+///   JSON — all in one transaction. Once the publish lands, [swapPlaceholderId]
+///   marks the row `'sent'` and clears the JSON.
+/// - **Incoming**: [upsertIncoming] de-dups on `(id, owner_pubkey)` (the rumor
+///   id is stable across the recipient and self gift-wraps) and collapses a
+///   new-id same-tuple reaction to the most recent, soft-deleting the loser so
+///   the live set stays capped at one.
 @DriftAccessor(tables: [DmMessageReactions])
 class DmReactionsDao extends DatabaseAccessor<AppDatabase>
     with _$DmReactionsDaoMixin {
   DmReactionsDao(super.attachedDatabase);
 
-  /// Insert an optimistic outgoing row before the publish attempt.
+  /// Insert an optimistic outgoing row before the publish attempt, atomically
+  /// superseding any prior LIVE reactions by this reactor on this target.
   ///
-  /// [placeholderId] is a short unique token (e.g. `pending-<uuid>`) used
-  /// while the real rumor id is in flight. Once the publish succeeds,
-  /// call [swapPlaceholderId] to swap to the real id.
-  Future<void> insertOptimistic({
+  /// [placeholderId] is the rumor id used while the publish is in flight; once
+  /// it lands, call [swapPlaceholderId] to mark the row `sent`.
+  ///
+  /// Enforces the cap-at-one storage invariant (#5419) at the write boundary:
+  /// in one transaction it soft-deletes every prior live row for
+  /// `(targetMessageId, reactorPubkey, ownerPubkey)` and then inserts the new
+  /// pending row. The partial unique index `idx_dm_reactions_unique_live` is
+  /// the backstop. The final insert uses [InsertMode.insertOrIgnore] so a
+  /// concurrent second cubit's racing insert is a silent no-op (cap holds, no
+  /// crash) instead of a UNIQUE-constraint throw — the dual-cubit race the
+  /// issue targets.
+  ///
+  /// Returns the ids of the superseded prior live rows so the caller can emit
+  /// NIP-09 kind-5 deletions on the wire (outside this transaction).
+  Future<List<String>> insertOwnReactionSuperseding({
     required String placeholderId,
     required String conversationId,
     required String targetMessageId,
@@ -38,22 +54,44 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
     required int createdAt,
     required String ownerPubkey,
     required String rumorEventJson,
-  }) async {
-    await into(dmMessageReactions).insert(
-      DmMessageReactionsCompanion.insert(
-        id: placeholderId,
-        conversationId: conversationId,
-        targetMessageId: targetMessageId,
-        targetMessageAuthor: targetMessageAuthor,
-        reactorPubkey: reactorPubkey,
-        emoji: emoji,
-        createdAt: createdAt,
-        ownerPubkey: ownerPubkey,
-        giftWrapId: const Value(null),
-        rumorEventJson: Value(rumorEventJson),
-        publishStatus: const Value('pending'),
-      ),
-    );
+  }) {
+    return transaction(() async {
+      final priors =
+          await (select(dmMessageReactions)..where(
+                (t) =>
+                    t.targetMessageId.equals(targetMessageId) &
+                    t.reactorPubkey.equals(reactorPubkey) &
+                    t.ownerPubkey.equals(ownerPubkey) &
+                    t.isDeleted.equals(false),
+              ))
+              .get();
+      final superseded = <String>[];
+      for (final prior in priors) {
+        if (prior.id == placeholderId) continue;
+        await (update(dmMessageReactions)..where(
+              (t) => t.id.equals(prior.id) & t.ownerPubkey.equals(ownerPubkey),
+            ))
+            .write(const DmMessageReactionsCompanion(isDeleted: Value(true)));
+        superseded.add(prior.id);
+      }
+      await into(dmMessageReactions).insert(
+        DmMessageReactionsCompanion.insert(
+          id: placeholderId,
+          conversationId: conversationId,
+          targetMessageId: targetMessageId,
+          targetMessageAuthor: targetMessageAuthor,
+          reactorPubkey: reactorPubkey,
+          emoji: emoji,
+          createdAt: createdAt,
+          ownerPubkey: ownerPubkey,
+          giftWrapId: const Value(null),
+          rumorEventJson: Value(rumorEventJson),
+          publishStatus: const Value('pending'),
+        ),
+        mode: InsertMode.insertOrIgnore,
+      );
+      return superseded;
+    });
   }
 
   /// Swap the placeholder id for the real rumor event id once publish
@@ -127,7 +165,22 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
     )..where((t) => t.id.equals(id) & t.ownerPubkey.equals(ownerPubkey))).go();
   }
 
-  /// Upsert an incoming reaction. Idempotent on `(id, owner_pubkey)`.
+  /// Upsert an incoming reaction, enforcing the cap-at-one storage invariant
+  /// (#5419) at the write boundary.
+  ///
+  /// - **Same rumor id** (recipient + self gift-wrap, or relay replay):
+  ///   resolves on the primary key `(id, owner_pubkey)` and updates the stable
+  ///   fields in place. `is_deleted` is deliberately left untouched so a prior
+  ///   kind-5 removal is not resurrected by a replayed wrap.
+  /// - **New rumor id, same `(target, reactor, owner)` tuple**: keeps the most
+  ///   recent by `(created_at, id)`. If the incoming is newest it supersedes
+  ///   (soft-deletes) the prior live rows and lands live; if an existing live
+  ///   row is newer (out-of-order / replayed delivery) the incoming is recorded
+  ///   as already-deleted so gift-wrap dedup and history are preserved without
+  ///   violating the partial unique index `idx_dm_reactions_unique_live`.
+  ///
+  /// The final insert uses [InsertMode.insertOrIgnore] as a race backstop so a
+  /// concurrent writer can never turn this into a UNIQUE-constraint throw.
   Future<void> upsertIncoming({
     required String id,
     required String conversationId,
@@ -138,39 +191,74 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
     required int createdAt,
     required String giftWrapId,
     required String ownerPubkey,
-  }) async {
-    await into(dmMessageReactions).insertOnConflictUpdate(
-      DmMessageReactionsCompanion.insert(
-        id: id,
-        conversationId: conversationId,
-        targetMessageId: targetMessageId,
-        targetMessageAuthor: targetMessageAuthor,
-        reactorPubkey: reactorPubkey,
-        emoji: emoji,
-        createdAt: createdAt,
-        ownerPubkey: ownerPubkey,
-        giftWrapId: Value(giftWrapId),
-      ),
-    );
-  }
+  }) {
+    return transaction(() async {
+      final existing =
+          await (select(dmMessageReactions)
+                ..where(
+                  (t) => t.id.equals(id) & t.ownerPubkey.equals(ownerPubkey),
+                )
+                ..limit(1))
+              .getSingleOrNull();
+      if (existing != null) {
+        // Same rumor id: update stable fields in place, never `is_deleted`.
+        await into(dmMessageReactions).insertOnConflictUpdate(
+          DmMessageReactionsCompanion.insert(
+            id: id,
+            conversationId: conversationId,
+            targetMessageId: targetMessageId,
+            targetMessageAuthor: targetMessageAuthor,
+            reactorPubkey: reactorPubkey,
+            emoji: emoji,
+            createdAt: createdAt,
+            ownerPubkey: ownerPubkey,
+            giftWrapId: Value(giftWrapId),
+          ),
+        );
+        return;
+      }
 
-  /// Returns the existing live (non-deleted) row by this reactor on the
-  /// given target message, if any. Used by the cap-at-one supersede.
-  Future<DmReactionRow?> getOwnLiveReaction({
-    required String targetMessageId,
-    required String reactorPubkey,
-    required String ownerPubkey,
-  }) async {
-    final query = select(dmMessageReactions)
-      ..where(
-        (t) =>
-            t.targetMessageId.equals(targetMessageId) &
-            t.reactorPubkey.equals(reactorPubkey) &
-            t.ownerPubkey.equals(ownerPubkey) &
-            t.isDeleted.equals(false),
-      )
-      ..limit(1);
-    return query.getSingleOrNull();
+      final liveForTuple =
+          await (select(dmMessageReactions)..where(
+                (t) =>
+                    t.targetMessageId.equals(targetMessageId) &
+                    t.reactorPubkey.equals(reactorPubkey) &
+                    t.ownerPubkey.equals(ownerPubkey) &
+                    t.isDeleted.equals(false),
+              ))
+              .get();
+      final hasNewerLive = liveForTuple.any(
+        (r) =>
+            r.createdAt > createdAt ||
+            (r.createdAt == createdAt && r.id.compareTo(id) > 0),
+      );
+      if (!hasNewerLive) {
+        // Incoming is the newest: supersede every prior live row for the tuple.
+        for (final r in liveForTuple) {
+          await (update(dmMessageReactions)..where(
+                (t) => t.id.equals(r.id) & t.ownerPubkey.equals(ownerPubkey),
+              ))
+              .write(
+                const DmMessageReactionsCompanion(isDeleted: Value(true)),
+              );
+        }
+      }
+      await into(dmMessageReactions).insert(
+        DmMessageReactionsCompanion.insert(
+          id: id,
+          conversationId: conversationId,
+          targetMessageId: targetMessageId,
+          targetMessageAuthor: targetMessageAuthor,
+          reactorPubkey: reactorPubkey,
+          emoji: emoji,
+          createdAt: createdAt,
+          ownerPubkey: ownerPubkey,
+          giftWrapId: Value(giftWrapId),
+          isDeleted: Value(hasNewerLive),
+        ),
+        mode: InsertMode.insertOrIgnore,
+      );
+    });
   }
 
   /// Reactive stream of every live reaction in [conversationId] for the

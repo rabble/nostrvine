@@ -278,13 +278,6 @@ void main() {
       () async {
         final rumor = reactionRumor();
         when(
-          () => mockDao.getOwnLiveReaction(
-            targetMessageId: _targetMessageId,
-            reactorPubkey: _ownerPubkey,
-            ownerPubkey: _ownerPubkey,
-          ),
-        ).thenAnswer((_) async => null);
-        when(
           () => mockMessageService.buildRumor(
             recipientPubkey: _otherPubkey,
             content: '🔥',
@@ -293,7 +286,7 @@ void main() {
           ),
         ).thenReturn(rumor);
         when(
-          () => mockDao.insertOptimistic(
+          () => mockDao.insertOwnReactionSuperseding(
             placeholderId: rumor.id,
             conversationId: _conversationId,
             targetMessageId: _targetMessageId,
@@ -304,7 +297,7 @@ void main() {
             ownerPubkey: _ownerPubkey,
             rumorEventJson: jsonEncode(rumor.toJson()),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => <String>[]);
         when(
           () => mockMessageService.sendRumor(
             rumorEvent: rumor,
@@ -335,7 +328,7 @@ void main() {
 
         expect(result.success, isTrue);
         verify(
-          () => mockDao.insertOptimistic(
+          () => mockDao.insertOwnReactionSuperseding(
             placeholderId: rumor.id,
             conversationId: _conversationId,
             targetMessageId: _targetMessageId,
@@ -357,15 +350,92 @@ void main() {
       },
     );
 
+    test(
+      'publish supersedes a prior reaction and emits a kind-5 deletion for it',
+      () async {
+        const priorReactionId =
+            '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+        final rumor = reactionRumor();
+        final deletionRumor = reactionRumor(
+          id: _giftWrapId,
+          content: '',
+          kind: EventKind.eventDeletion,
+          tags: [
+            ['e', priorReactionId],
+            ['k', EventKind.reaction.toString()],
+          ],
+        );
+        when(
+          () => mockMessageService.buildRumor(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: '🔥',
+            eventKind: EventKind.reaction,
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).thenReturn(rumor);
+        when(
+          () => mockDao.insertOwnReactionSuperseding(
+            placeholderId: any(named: 'placeholderId'),
+            conversationId: any(named: 'conversationId'),
+            targetMessageId: any(named: 'targetMessageId'),
+            targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            reactorPubkey: any(named: 'reactorPubkey'),
+            emoji: any(named: 'emoji'),
+            createdAt: any(named: 'createdAt'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            rumorEventJson: any(named: 'rumorEventJson'),
+          ),
+        ).thenAnswer((_) async => <String>[priorReactionId]);
+        when(
+          () => mockMessageService.buildRumor(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: '',
+            eventKind: EventKind.eventDeletion,
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).thenReturn(deletionRumor);
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => NIP17SendResult.success(
+            rumorEventId: rumor.id,
+            messageEventId: _giftWrapId,
+            recipientPubkey: _otherPubkey,
+          ),
+        );
+        when(
+          () => mockDao.swapPlaceholderId(
+            placeholderId: any(named: 'placeholderId'),
+            realRumorId: any(named: 'realRumorId'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final repository = createRepository();
+        final result = await repository.publish(
+          conversationId: _conversationId,
+          targetMessageId: _targetMessageId,
+          targetMessageAuthor: _otherPubkey,
+          emoji: '🔥',
+        );
+        // _publishKind5Deletion fires via unawaited; let it run.
+        await Future<void>.delayed(Duration.zero);
+
+        expect(result.success, isTrue);
+        verify(
+          () => mockMessageService.sendRumor(
+            rumorEvent: deletionRumor,
+            recipientPubkey: any(named: 'recipientPubkey'),
+          ),
+        ).called(1);
+      },
+    );
+
     test('publish marks failed when send returns failure', () async {
       final rumor = reactionRumor();
-      when(
-        () => mockDao.getOwnLiveReaction(
-          targetMessageId: _targetMessageId,
-          reactorPubkey: _ownerPubkey,
-          ownerPubkey: _ownerPubkey,
-        ),
-      ).thenAnswer((_) async => null);
       when(
         () => mockMessageService.buildRumor(
           recipientPubkey: _otherPubkey,
@@ -375,7 +445,7 @@ void main() {
         ),
       ).thenReturn(rumor);
       when(
-        () => mockDao.insertOptimistic(
+        () => mockDao.insertOwnReactionSuperseding(
           placeholderId: rumor.id,
           conversationId: _conversationId,
           targetMessageId: _targetMessageId,
@@ -386,7 +456,7 @@ void main() {
           ownerPubkey: _ownerPubkey,
           rumorEventJson: jsonEncode(rumor.toJson()),
         ),
-      ).thenAnswer((_) async {});
+      ).thenAnswer((_) async => <String>[]);
       when(
         () => mockMessageService.sendRumor(
           rumorEvent: rumor,
@@ -420,13 +490,6 @@ void main() {
     test('publish reports optimistic insert failures', () async {
       final rumor = reactionRumor();
       when(
-        () => mockDao.getOwnLiveReaction(
-          targetMessageId: _targetMessageId,
-          reactorPubkey: _ownerPubkey,
-          ownerPubkey: _ownerPubkey,
-        ),
-      ).thenAnswer((_) async => null);
-      when(
         () => mockMessageService.buildRumor(
           recipientPubkey: _otherPubkey,
           content: '🔥',
@@ -435,7 +498,7 @@ void main() {
         ),
       ).thenReturn(rumor);
       when(
-        () => mockDao.insertOptimistic(
+        () => mockDao.insertOwnReactionSuperseding(
           placeholderId: any(named: 'placeholderId'),
           conversationId: any(named: 'conversationId'),
           targetMessageId: any(named: 'targetMessageId'),
@@ -807,13 +870,6 @@ void main() {
               ownerPubkey: _ownerPubkey,
             ),
           );
-          when(
-            () => mockDao.getOwnLiveReaction(
-              targetMessageId: _targetMessageId,
-              reactorPubkey: _ownerPubkey,
-              ownerPubkey: _ownerPubkey,
-            ),
-          ).thenAnswer((_) async => null);
           final rumor = reactionRumor();
           when(
             () => mockMessageService.buildRumor(
@@ -824,7 +880,7 @@ void main() {
             ),
           ).thenReturn(rumor);
           when(
-            () => mockDao.insertOptimistic(
+            () => mockDao.insertOwnReactionSuperseding(
               placeholderId: any(named: 'placeholderId'),
               conversationId: any(named: 'conversationId'),
               targetMessageId: any(named: 'targetMessageId'),
@@ -835,7 +891,7 @@ void main() {
               ownerPubkey: any(named: 'ownerPubkey'),
               rumorEventJson: any(named: 'rumorEventJson'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => <String>[]);
           when(
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),

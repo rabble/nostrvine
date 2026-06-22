@@ -5,6 +5,7 @@
 import 'dart:io';
 
 import 'package:db_client/db_client.dart';
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -54,34 +55,129 @@ void main() {
   });
 
   group('DmReactionsDao', () {
-    Future<void> insertPending({
+    Future<List<String>> insertPending({
       String id = _pendingId,
       String ownerPubkey = _ownerA,
       String reactorPubkey = _reactorA,
       String emoji = '🔥',
+      int createdAt = 1_700_000_000,
     }) {
-      return dao.insertOptimistic(
+      return dao.insertOwnReactionSuperseding(
         placeholderId: id,
         conversationId: _conversationId,
         targetMessageId: _targetMessageId,
         targetMessageAuthor: _targetAuthor,
         reactorPubkey: reactorPubkey,
         emoji: emoji,
-        createdAt: 1_700_000_000,
+        createdAt: createdAt,
         ownerPubkey: ownerPubkey,
         rumorEventJson: '{"id":"$id"}',
       );
     }
 
-    test('insertOptimistic stores pending state and rumor json', () async {
-      await insertPending();
+    test(
+      'insertOwnReactionSuperseding stores pending state and rumor json',
+      () async {
+        final superseded = await insertPending();
+        expect(superseded, isEmpty);
 
-      final row = await dao.getById(id: _pendingId, ownerPubkey: _ownerA);
-      expect(row, isNotNull);
-      expect(row!.publishStatus, equals('pending'));
-      expect(row.rumorEventJson, contains(_pendingId));
-      expect(row.giftWrapId, isNull);
-    });
+        final row = await dao.getById(id: _pendingId, ownerPubkey: _ownerA);
+        expect(row, isNotNull);
+        expect(row!.publishStatus, equals('pending'));
+        expect(row.rumorEventJson, contains(_pendingId));
+        expect(row.giftWrapId, isNull);
+      },
+    );
+
+    test(
+      'insertOwnReactionSuperseding soft-deletes the prior live own reaction '
+      'and returns its id',
+      () async {
+        await insertPending();
+        final superseded = await insertPending(
+          id: _sentId,
+          emoji: '😂',
+          createdAt: 1_700_000_010,
+        );
+
+        expect(superseded, equals([_pendingId]));
+        expect(
+          (await dao.getById(id: _pendingId, ownerPubkey: _ownerA))!.isDeleted,
+          isTrue,
+        );
+        final live = await dao
+            .watchForConversation(
+              conversationId: _conversationId,
+              ownerPubkey: _ownerA,
+            )
+            .first;
+        expect(live.map((r) => r.emoji), equals(['😂']));
+      },
+    );
+
+    test(
+      'partial unique index rejects a second live reaction for the same '
+      '(target, reactor, owner) tuple',
+      () async {
+        await insertPending();
+
+        Future<void> insertDuplicateLive() {
+          return database
+              .into(database.dmMessageReactions)
+              .insert(
+                DmMessageReactionsCompanion.insert(
+                  id: _sentId,
+                  conversationId: _conversationId,
+                  targetMessageId: _targetMessageId,
+                  targetMessageAuthor: _targetAuthor,
+                  reactorPubkey: _reactorA,
+                  emoji: '😂',
+                  createdAt: 1_700_000_010,
+                  ownerPubkey: _ownerA,
+                ),
+              );
+        }
+
+        await expectLater(insertDuplicateLive(), throwsA(isA<Exception>()));
+      },
+    );
+
+    test(
+      'partial unique index allows unlimited deleted rows for one tuple',
+      () async {
+        Future<void> insertDeleted(String id) {
+          return database
+              .into(database.dmMessageReactions)
+              .insert(
+                DmMessageReactionsCompanion.insert(
+                  id: id,
+                  conversationId: _conversationId,
+                  targetMessageId: _targetMessageId,
+                  targetMessageAuthor: _targetAuthor,
+                  reactorPubkey: _reactorA,
+                  emoji: '🔥',
+                  createdAt: 1_700_000_000,
+                  ownerPubkey: _ownerA,
+                  isDeleted: const Value(true),
+                ),
+              );
+        }
+
+        await insertPending(); // one live
+        await insertDeleted(_sentId); // deleted dup — allowed
+        await insertDeleted(
+          '4444444444444444444444444444444444444444444444444444444444444444',
+        );
+
+        final live = await dao
+            .watchForConversation(
+              conversationId: _conversationId,
+              ownerPubkey: _ownerA,
+            )
+            .first;
+        expect(live, hasLength(1));
+      },
+    );
 
     test('swapPlaceholderId marks row sent and clears stored rumor', () async {
       await insertPending();
@@ -128,25 +224,25 @@ void main() {
       () async {
         await insertPending(id: _sentId);
 
-        final before = await dao.getOwnLiveReaction(
-          targetMessageId: _targetMessageId,
-          reactorPubkey: _reactorA,
-          ownerPubkey: _ownerA,
-        );
-        expect(before, isNotNull);
+        final before = await dao
+            .watchForConversation(
+              conversationId: _conversationId,
+              ownerPubkey: _ownerA,
+            )
+            .first;
+        expect(before, hasLength(1));
 
         await dao.softDelete(id: _sentId, ownerPubkey: _ownerA);
 
         final row = await dao.getById(id: _sentId, ownerPubkey: _ownerA);
         expect(row!.isDeleted, isTrue);
-        expect(
-          await dao.getOwnLiveReaction(
-            targetMessageId: _targetMessageId,
-            reactorPubkey: _reactorA,
-            ownerPubkey: _ownerA,
-          ),
-          isNull,
-        );
+        final after = await dao
+            .watchForConversation(
+              conversationId: _conversationId,
+              ownerPubkey: _ownerA,
+            )
+            .first;
+        expect(after, isEmpty);
       },
     );
 
@@ -196,6 +292,91 @@ void main() {
       expect(rows, hasLength(1));
       expect(rows.single.id, equals(_sentId));
     });
+
+    Future<void> upsertIncoming({
+      required String id,
+      required int createdAt,
+      String reactorPubkey = _reactorB,
+      String emoji = '😂',
+      String giftWrapId = _giftWrapId,
+    }) {
+      return dao.upsertIncoming(
+        id: id,
+        conversationId: _conversationId,
+        targetMessageId: _targetMessageId,
+        targetMessageAuthor: _targetAuthor,
+        reactorPubkey: reactorPubkey,
+        emoji: emoji,
+        createdAt: createdAt,
+        giftWrapId: giftWrapId,
+        ownerPubkey: _ownerA,
+      );
+    }
+
+    test(
+      'upsertIncoming with a newer rumor id supersedes the older live reaction',
+      () async {
+        await upsertIncoming(
+          id: _sentId,
+          createdAt: 1_700_000_000,
+          emoji: '🔥',
+        );
+        await upsertIncoming(id: _pendingId, createdAt: 1_700_000_010);
+
+        expect(
+          (await dao.getById(id: _sentId, ownerPubkey: _ownerA))!.isDeleted,
+          isTrue,
+        );
+        final live = await dao
+            .watchForConversation(
+              conversationId: _conversationId,
+              ownerPubkey: _ownerA,
+            )
+            .first;
+        expect(live.map((r) => r.id), equals([_pendingId]));
+        expect(live.single.emoji, equals('😂'));
+      },
+    );
+
+    test(
+      'upsertIncoming with an older rumor id is recorded as already-deleted',
+      () async {
+        await upsertIncoming(id: _sentId, createdAt: 1_700_000_010);
+        await upsertIncoming(
+          id: _pendingId,
+          createdAt: 1_700_000_000,
+          emoji: '🔥',
+        );
+
+        // Older reaction is recorded (history + gift-wrap dedup) but deleted.
+        final older = await dao.getById(id: _pendingId, ownerPubkey: _ownerA);
+        expect(older, isNotNull);
+        expect(older!.isDeleted, isTrue);
+        final live = await dao
+            .watchForConversation(
+              conversationId: _conversationId,
+              ownerPubkey: _ownerA,
+            )
+            .first;
+        expect(live.map((r) => r.id), equals([_sentId]));
+      },
+    );
+
+    test(
+      'upsertIncoming re-arrival of a deleted reaction does not resurrect it',
+      () async {
+        await upsertIncoming(id: _sentId, createdAt: 1_700_000_000);
+        await dao.softDelete(id: _sentId, ownerPubkey: _ownerA);
+
+        // Self-wrap / relay replay of the same rumor id arrives again.
+        await upsertIncoming(id: _sentId, createdAt: 1_700_000_000);
+
+        expect(
+          (await dao.getById(id: _sentId, ownerPubkey: _ownerA))!.isDeleted,
+          isTrue,
+        );
+      },
+    );
 
     test('watchForConversation only returns live rows for one owner', () async {
       await insertPending();

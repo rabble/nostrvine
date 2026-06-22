@@ -173,21 +173,6 @@ class DmReactionsRepository {
       );
     }
 
-    final prior = await _reactionsDao.getOwnLiveReaction(
-      targetMessageId: targetMessageId,
-      reactorPubkey: _userPubkey,
-      ownerPubkey: _userPubkey,
-    );
-    if (prior != null) {
-      unawaited(
-        _supersedePrior(
-          priorRow: prior,
-          targetMessageAuthor: targetMessageAuthor,
-          messageService: messageService,
-        ),
-      );
-    }
-
     final additionalTags = <List<String>>[
       ['e', targetMessageId],
       ['p', targetMessageAuthor],
@@ -201,8 +186,12 @@ class DmReactionsRepository {
     );
     final rumorId = rumor.id;
 
+    final List<String> superseded;
     try {
-      await _reactionsDao.insertOptimistic(
+      // Atomic cap-at-one: soft-deletes any prior live own reaction on this
+      // target and inserts the new pending row in one transaction, returning
+      // the superseded ids for the wire-side kind-5 below (#5419).
+      superseded = await _reactionsDao.insertOwnReactionSuperseding(
         placeholderId: rumorId,
         conversationId: conversationId,
         targetMessageId: targetMessageId,
@@ -226,11 +215,25 @@ class DmReactionsRepository {
       );
     }
 
-    try {
-      final recipients = await _resolveWrapRecipients(
-        conversationId: conversationId,
-        targetMessageAuthor: targetMessageAuthor,
+    final recipients = await _resolveWrapRecipients(
+      conversationId: conversationId,
+      targetMessageAuthor: targetMessageAuthor,
+    );
+
+    // Emit a NIP-09 kind-5 deletion on the wire for each superseded prior
+    // reaction. Fire-and-forget and kept OUTSIDE the DAO transaction — a
+    // stalled relay socket must never block the local optimistic write.
+    for (final priorId in superseded) {
+      unawaited(
+        _publishKind5Deletion(
+          reactionEventId: priorId,
+          recipients: recipients,
+          messageService: messageService,
+        ),
       );
+    }
+
+    try {
       final result = await _fanOutRumor(
         messageService: messageService,
         rumor: rumor,
@@ -548,29 +551,6 @@ class DmReactionsRepository {
             '${_publishTimeout.inSeconds}s',
           ),
         );
-  }
-
-  Future<void> _supersedePrior({
-    required DmReactionRow priorRow,
-    required String targetMessageAuthor,
-    required NIP17MessageService messageService,
-  }) async {
-    try {
-      await _reactionsDao.softDelete(id: priorRow.id, ownerPubkey: _userPubkey);
-    } on Object {
-      // Best-effort; the new publish proceeds regardless.
-    }
-    final recipients = await _resolveWrapRecipients(
-      conversationId: priorRow.conversationId,
-      targetMessageAuthor: targetMessageAuthor,
-    );
-    unawaited(
-      _publishKind5Deletion(
-        reactionEventId: priorRow.id,
-        recipients: recipients,
-        messageService: messageService,
-      ),
-    );
   }
 
   /// Resolve the gift-wrap recipient set for a reaction in [conversationId].

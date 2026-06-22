@@ -525,7 +525,8 @@ class AppDatabase extends _$AppDatabase {
       ''');
     }
     // Create indexes unconditionally so the runtime path matches Drift's
-    // m.createAll() output (the schema-parity test pins this).
+    // m.createAll() output (the dm_message_reactions schema-parity test in
+    // app_database_test.dart pins this).
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_dm_reactions_target_live
       ON dm_message_reactions (conversation_id, target_message_id)
@@ -539,6 +540,37 @@ class AppDatabase extends _$AppDatabase {
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_dm_reactions_owner_created
       ON dm_message_reactions (owner_pubkey, created_at)
+    ''');
+
+    // Cap-at-one storage invariant (#5419): at most one LIVE reaction per
+    // (target_message_id, reactor_pubkey, owner_pubkey). The dedup UPDATE
+    // MUST run before CREATE UNIQUE INDEX — SQLite refuses to build a unique
+    // index over rows that already violate it. It soft-deletes every live row
+    // that has a strictly-newer live sibling in its tuple, keeping the single
+    // MAX(created_at, id) row (id tie-break is deterministic and matches the
+    // read-side DmReactionsRepository._collapsePerReactor keep-rule). The
+    // statement is idempotent: once converged (and once the unique index
+    // self-enforces) no row has a newer sibling, so subsequent startups
+    // match nothing.
+    await customStatement('''
+      UPDATE dm_message_reactions
+      SET is_deleted = 1
+      WHERE is_deleted = 0
+        AND EXISTS (
+          SELECT 1 FROM dm_message_reactions AS newer
+          WHERE newer.target_message_id = dm_message_reactions.target_message_id
+            AND newer.reactor_pubkey = dm_message_reactions.reactor_pubkey
+            AND newer.owner_pubkey = dm_message_reactions.owner_pubkey
+            AND newer.is_deleted = 0
+            AND (newer.created_at > dm_message_reactions.created_at
+              OR (newer.created_at = dm_message_reactions.created_at
+                  AND newer.id > dm_message_reactions.id))
+        )
+    ''');
+    await customStatement('''
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_dm_reactions_unique_live
+      ON dm_message_reactions (target_message_id, reactor_pubkey, owner_pubkey)
+      WHERE is_deleted = 0
     ''');
 
     final pendingViewEventsResult = await customSelect(

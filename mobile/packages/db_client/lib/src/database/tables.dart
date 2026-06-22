@@ -879,6 +879,19 @@ class DmMessageReactions extends Table {
       'CREATE INDEX IF NOT EXISTS idx_dm_reactions_owner_created '
           'ON dm_message_reactions (owner_pubkey, created_at)',
     ),
+    // Cap-at-one storage invariant (#5419): at most one LIVE reaction per
+    // (target_message_id, reactor_pubkey, owner_pubkey). Applied at runtime in
+    // app_database._createMissingTables (after a dedup pass); mirrored here for
+    // documentation parity — the getter is not wired through
+    // @DriftDatabase(indexes:), so the runtime customStatement is the source
+    // of truth.
+    Index(
+      'idx_dm_reactions_unique_live',
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_dm_reactions_unique_live '
+          'ON dm_message_reactions '
+          '(target_message_id, reactor_pubkey, owner_pubkey) '
+          'WHERE is_deleted = 0',
+    ),
   ];
 }
 

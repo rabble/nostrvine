@@ -589,6 +589,113 @@ void main() {
         },
       );
 
+      test(
+        'upgrade path — dedups duplicate live reactions before recreating '
+        'the unique index',
+        () async {
+          final target = '1' * 64;
+          // Drop the unique index so pre-index duplicate live rows can be
+          // seeded (simulating a device that pre-dates #5419).
+          await database.customStatement(
+            'DROP INDEX IF EXISTS idx_dm_reactions_unique_live',
+          );
+          await database.customStatement('''
+            INSERT INTO dm_message_reactions
+              (id, conversation_id, target_message_id, target_message_author,
+               reactor_pubkey, emoji, created_at, owner_pubkey, is_deleted)
+            VALUES
+              ('react_old', 'conv', '$target', 'author', '$testPubkey', 'a',
+               100, '$testPubkey', 0),
+              ('react_new', 'conv', '$target', 'author', '$testPubkey', 'b',
+               200, '$testPubkey', 0)
+          ''');
+
+          await database.close();
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+          // Trigger beforeOpen (dedup then CREATE UNIQUE INDEX). If the dedup
+          // pass did not run first, CREATE UNIQUE INDEX would throw here on the
+          // duplicate live rows.
+          final rows = await database
+              .customSelect(
+                'SELECT id, is_deleted FROM dm_message_reactions '
+                'ORDER BY created_at',
+              )
+              .get();
+          expect(rows, hasLength(2));
+          final live = rows
+              .where((r) => r.read<int>('is_deleted') == 0)
+              .toList();
+          expect(live, hasLength(1));
+          expect(live.single.read<String>('id'), equals('react_new'));
+
+          final indexes = await _collectIndexNames(
+            database,
+            'dm_message_reactions',
+          );
+          expect(indexes, contains('idx_dm_reactions_unique_live'));
+
+          // Idempotency: reopening again keeps exactly one live row, no error.
+          await database.close();
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+          final live2 = await database
+              .customSelect(
+                'SELECT id FROM dm_message_reactions WHERE is_deleted = 0',
+              )
+              .get();
+          expect(live2, hasLength(1));
+          expect(live2.single.read<String>('id'), equals('react_new'));
+        },
+      );
+
+      test(
+        'schema parity — dm_message_reactions fresh-install matches runtime '
+        'CREATE-IF-NOT-EXISTS path',
+        () async {
+          final freshColumns = await _collectTableInfo(
+            database,
+            'dm_message_reactions',
+          );
+          final freshIndexes = await _collectIndexNames(
+            database,
+            'dm_message_reactions',
+          );
+
+          expect(
+            freshColumns,
+            isNotEmpty,
+            reason:
+                'precondition: fresh install should have dm_message_reactions',
+          );
+
+          await database.customStatement('DROP TABLE dm_message_reactions');
+          for (final indexName in freshIndexes) {
+            await database.customStatement('DROP INDEX IF EXISTS $indexName');
+          }
+          await database.close();
+
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+          await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='dm_message_reactions'",
+              )
+              .get();
+
+          final recreatedColumns = await _collectTableInfo(
+            database,
+            'dm_message_reactions',
+          );
+          final recreatedIndexes = await _collectIndexNames(
+            database,
+            'dm_message_reactions',
+          );
+
+          expect(recreatedColumns, equals(freshColumns));
+          expect(recreatedIndexes, equals(freshIndexes));
+        },
+      );
+
       test('does not delete non-expired data', () async {
         final eventsDao = database.nostrEventsDao;
         final profileStatsDao = database.profileStatsDao;
