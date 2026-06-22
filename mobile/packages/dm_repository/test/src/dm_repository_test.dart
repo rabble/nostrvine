@@ -3745,6 +3745,65 @@ void main() {
       );
 
       test(
+        'remote-signer drain verifies through a real DmVerifyIsolate '
+        'end-to-end (toJson/SendPort round-trip) (#5424)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+
+          final wrap = await _buildGiftWrap(
+            rumor: rumorFor('real verify isolate', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          stubDrainPage([wrap]);
+
+          // Inject the production spawner so the outer-wrap + seal verification
+          // crosses a real SendPort (event.toJson() out, bool back) on the
+          // actual drain path — the recording worker the other drain tests use
+          // runs inline, so the isolate's port round-trip is otherwise only
+          // covered by dm_verify_isolate_test.dart in isolation. See #5424.
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: LocalNostrSigner(recipientPriv),
+            syncState: drainPending(),
+            verifyIsolateSpawner: DmVerifyIsolate.spawn,
+          );
+
+          await repository.backfillHistoryIfNeeded();
+
+          // The wrap survived the real-isolate verification round-trip (both
+          // the outer wrap and the seal returned true across the port) and
+          // persisted as a message.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: senderPub,
+              content: 'real verify isolate',
+              createdAt: 1700000500,
+              giftWrapId: wrap.id,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: recipientPub,
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'stale drain spawn cannot close or clear the next drain worker',
         () async {
           when(() => mockNostrClient.connectedRelayCount).thenReturn(2);

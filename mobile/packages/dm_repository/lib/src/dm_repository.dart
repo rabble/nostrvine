@@ -1590,13 +1590,19 @@ class DmRepository {
         // Fall through to main-isolate decryptor.
       }
     }
-    // Remote-signer history drain: when a key-less verify isolate is active,
-    // route the production decryptor's id + Schnorr verification through it so
-    // the CPU-bound work leaves the main isolate. Only
+    // When a key-less verify isolate is live (spawned for a remote-signer
+    // history drain), route the production decryptor's id + Schnorr
+    // verification through it so the CPU-bound work leaves the main isolate.
+    // The gate is "verify isolate alive", not "drain batch path only": a
+    // live-subscription wrap arriving mid-drain routes here too, which is
+    // correct (its verify also leaves the main isolate). Only
     // GiftWrapUtil.getRumorEvent accepts a verifier; a test-injected decryptor
     // is used unchanged. If the isolate is torn down mid-flight (account
-    // switch), verifyPart throws StateError which the parallel-decrypt worker's
-    // catch turns into a fall-through to the per-event retry path. See #5424.
+    // switch) verifyPart throws StateError — the parallel-decrypt drain worker
+    // catches it and falls through to the per-event retry queue; the live
+    // _handleGiftWrapEvent path catches it and drops that one wrap, which the
+    // switch re-recovers (drain completion is deferred and the live
+    // subscription re-subscribes on switch-back). See #5424.
     final verifyWorker = _drainVerifyIsolate;
     if (verifyWorker != null &&
         identical(_rumorDecryptor, GiftWrapUtil.getRumorEvent)) {
