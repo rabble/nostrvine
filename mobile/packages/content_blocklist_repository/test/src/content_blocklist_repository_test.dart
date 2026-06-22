@@ -2545,6 +2545,101 @@ void main() {
 
       service.dispose();
     });
+
+    test(
+      'merges the newest kind 10000 event when several exist',
+      () async {
+        const muteD =
+            '00000000000000000000000000000000000000000000000000000000000000dd';
+        when(() => mockClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
+          final kinds = filters.first.kinds ?? const <int>[];
+          if (kinds.contains(30000)) {
+            return [
+              ownBlockEvent([blockA]),
+            ];
+          }
+          if (kinds.contains(10000)) {
+            // Older event first, newer second: the newest one wins so only
+            // its mutes survive into the republished list.
+            return [
+              ownMuteEvent([muteC], createdAt: 1500),
+              ownMuteEvent([muteD], createdAt: 5000),
+            ];
+          }
+          return <Event>[];
+        });
+
+        List<List<String>>? publishedMuteTags;
+        when(
+          () => mockSigner.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          final kind = invocation.namedArguments[#kind] as int;
+          if (kind == 10000) {
+            publishedMuteTags =
+                invocation.namedArguments[#tags] as List<List<String>>?;
+          }
+          return signedMuteList();
+        });
+        when(
+          () => mockClient.publishEvent(any()),
+        ).thenAnswer((_) async => PublishSuccess(event: signedMuteList()));
+
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final publishedPubkeys = publishedMuteTags!
+            .where((tag) => tag.length >= 2 && tag[0] == 'p')
+            .map((tag) => tag[1])
+            .toSet();
+        expect(publishedPubkeys, containsAll(<String>{blockA, muteD}));
+        expect(publishedPubkeys, isNot(contains(muteC)));
+        expect(service.isMutedByUs(muteD), isTrue);
+        expect(service.isMutedByUs(muteC), isFalse);
+
+        service.dispose();
+      },
+    );
+
+    test(
+      'swallows errors and leaves the flag unset on query failure',
+      () async {
+        when(
+          () => mockClient.queryEvents(any()),
+        ).thenThrow(Exception('relay unavailable'));
+
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // The failure is caught; migration retries on the next launch.
+        expect(prefs.getBool(flagKey), isNull);
+        verifyNever(
+          () => mockSigner.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+
+        service.dispose();
+      },
+    );
   });
 
   group('ContentBlocklistRepository - sync edge cases', () {
