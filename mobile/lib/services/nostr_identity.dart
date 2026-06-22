@@ -38,6 +38,20 @@ sealed class NostrIdentity implements NostrSigner {
   /// signers (NIP-46 bunker, NIP-55 Amber, NIP-07 extension) are human-paced —
   /// the user reads a prompt and approves — so they must NOT be timed out.
   bool get signsRemotelyNonInteractive;
+
+  /// Whether this identity produces signatures in-process with a private key
+  /// it holds directly.
+  ///
+  /// True for local key signers, and for Keycast when a matching local key is
+  /// present. False for external/remote signers (NIP-46 bunker, NIP-55 Amber,
+  /// NIP-07 extension), whose returned signature crosses a trust boundary.
+  ///
+  /// A caller that has just signed an event can skip re-verifying the
+  /// signature when this is true: re-verifying a signature we produced
+  /// ourselves only exercises the crypto library and costs a full schnorr
+  /// verification per event. Structural validation (event id == hash) is
+  /// cheap and should still run regardless.
+  bool get signsWithLocalKey;
 }
 
 /// Identity backed by a local [SecureKeyContainer] with a private key.
@@ -63,6 +77,9 @@ class LocalNostrIdentity extends NostrIdentity implements IsolateDecryptSigner {
 
   @override
   bool get signsRemotelyNonInteractive => false;
+
+  @override
+  bool get signsWithLocalKey => true;
 
   @override
   bool get canDecryptInIsolate => _signer.canDecryptInIsolate;
@@ -170,6 +187,9 @@ class KeycastNostrIdentity extends NostrIdentity
   bool get signsRemotelyNonInteractive => _localSigner == null;
 
   @override
+  bool get signsWithLocalKey => _localSigner != null;
+
+  @override
   bool get canDecryptInIsolate => _localSigner?.canDecryptInIsolate ?? false;
 
   @override
@@ -257,6 +277,9 @@ class BunkerNostrIdentity extends NostrIdentity {
   bool get signsRemotelyNonInteractive => false;
 
   @override
+  bool get signsWithLocalKey => false;
+
+  @override
   Future<Map?> getRelays() => _remoteSigner.getRelays();
 
   @override
@@ -308,6 +331,9 @@ class AmberNostrIdentity extends NostrIdentity {
   // human-paced and must not be timed out.
   @override
   bool get signsRemotelyNonInteractive => false;
+
+  @override
+  bool get signsWithLocalKey => false;
 
   @override
   Future<Map?> getRelays() => _amberSigner.getRelays();
@@ -363,6 +389,9 @@ class Nip07NostrIdentity extends NostrIdentity {
   // signing is human-paced and must not be timed out.
   @override
   bool get signsRemotelyNonInteractive => false;
+
+  @override
+  bool get signsWithLocalKey => false;
 
   @override
   Future<Map?> getRelays() => _nip07Signer.getRelays();

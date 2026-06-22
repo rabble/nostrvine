@@ -4291,7 +4291,13 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         return null;
       }
 
-      if (!signedEvent.isSigned) {
+      // Re-verifying a signature we just produced with our own in-process
+      // key only exercises the crypto library and costs a full schnorr
+      // verification per event (hot on the feed-scroll signing path). Skip
+      // it for local signers; remote/external signers cross a trust
+      // boundary, so their returned signature is still verified. The cheap
+      // structural check (isValid: id == hash) below always runs.
+      if (!identity.signsWithLocalKey && !signedEvent.isSigned) {
         Log.error(
           'Event signature validation FAILED! '
           'kind=$kind, eventPubkey=${signedEvent.pubkey}, '
