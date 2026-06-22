@@ -365,14 +365,13 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
           .where((v) => v.videoUrl != null)
           .toList();
 
-      // Deduplicate by event ID. Funnelcake and Nostr can return
-      // overlapping videos when Funnelcake runs out and we fall through
-      // to Nostr. Without dedup, feed-level player dedup can cause a
-      // count mismatch that breaks the pagination trigger.
-      final seenIds = <String>{};
+      // Deduplicate by logical video identity. Addressable videos can be
+      // republished with fresh event IDs, and bare d-tags can collide across
+      // authors, so the key is the full addressable coordinate when present.
+      final seenVideoKeys = <String>{};
       final updatedVideos = <VideoEvent>[];
       for (final video in [...state.videos, ...validNewVideos]) {
-        if (seenIds.add(video.id)) {
+        if (seenVideoKeys.add(video.feedDedupKey)) {
           updatedVideos.add(video);
         }
       }

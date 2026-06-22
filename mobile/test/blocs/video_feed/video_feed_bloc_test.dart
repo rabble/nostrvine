@@ -120,18 +120,25 @@ void main() {
       curatedListRepository: mockCuratedListRepository,
     );
 
-    VideoEvent createTestVideo(String id, {int? createdAt}) {
+    VideoEvent createTestVideo(
+      String id, {
+      int? createdAt,
+      String pubkey =
+          '0000000000000000000000000000000000000000000000000000000000000000',
+      String? vineId,
+    }) {
       final timestamp =
           createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
       return VideoEvent(
         id: id,
-        pubkey: '0' * 64,
+        pubkey: pubkey,
         createdAt: timestamp,
         content: '',
         timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp * 1000),
         title: 'Test Video $id',
         videoUrl: 'https://example.com/$id.mp4',
         thumbnailUrl: 'https://example.com/$id.jpg',
+        vineId: vineId,
       );
     }
 
@@ -1832,6 +1839,125 @@ void main() {
           isA<VideoFeedBlocState>()
               .having((s) => s.isLoadingMore, 'isLoadingMore', false)
               .having((s) => s.hasMore, 'hasMore', false)
+              .having((s) => s.videos.length, 'videos count', 2),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'deduplicates republished following videos by addressable identity',
+        setUp: () {
+          const author =
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn([author]);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResult(
+              videos: [
+                createTestVideo(
+                  'republished-event-id',
+                  pubkey: author,
+                  vineId: 'shared-d-tag',
+                  createdAt: 1999,
+                ),
+                createTestVideo('new-video', createdAt: 1998),
+              ],
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.following,
+          videos: [
+            createTestVideo(
+              'original-event-id',
+              pubkey:
+                  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+              vineId: 'shared-d-tag',
+              createdAt: 2000,
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
+        expect: () => [
+          isA<VideoFeedBlocState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<VideoFeedBlocState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having(
+                (s) => s.videos.map((v) => v.id),
+                'video ids',
+                equals(['original-event-id', 'new-video']),
+              ),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'keeps same d-tag videos from different authors',
+        setUp: () {
+          const authorB =
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn([authorB]);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResult(
+              videos: [
+                createTestVideo(
+                  'author-b-event',
+                  pubkey: authorB,
+                  vineId: 'shared-d-tag',
+                  createdAt: 1999,
+                ),
+              ],
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.following,
+          videos: [
+            createTestVideo(
+              'author-a-event',
+              pubkey:
+                  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+              vineId: 'shared-d-tag',
+              createdAt: 2000,
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
+        expect: () => [
+          isA<VideoFeedBlocState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<VideoFeedBlocState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
               .having((s) => s.videos.length, 'videos count', 2),
         ],
       );

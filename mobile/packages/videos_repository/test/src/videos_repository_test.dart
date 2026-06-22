@@ -2616,6 +2616,98 @@ void main() {
         expect(result.listOnlyVideoIds, isEmpty);
       });
 
+      test(
+        'deduplicates republished addressable video in following and list',
+        () async {
+          final author = 'a' * 64;
+          final followingEvent = _createVideoEventWithDTag(
+            id: 'following-event-id',
+            pubkey: author,
+            dTag: 'shared-d-tag',
+            videoUrl: 'https://example.com/following.mp4',
+            createdAt: 1704067200,
+          );
+          final listEvent = _createVideoEventWithDTag(
+            id: 'republished-event-id',
+            pubkey: author,
+            dTag: 'shared-d-tag',
+            videoUrl: 'https://example.com/list.mp4',
+            createdAt: 1704067300,
+          );
+
+          var callCount = 0;
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) return [followingEvent];
+            return [listEvent];
+          });
+
+          final result = await repository.getHomeFeedVideos(
+            authors: [author],
+            videoRefs: {
+              'list-a': ['34236:$author:shared-d-tag'],
+            },
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.single.id, equals('following-event-id'));
+          expect(
+            result.videoListSources['following-event-id'],
+            contains('list-a'),
+          );
+          expect(result.videoListSources['republished-event-id'], isNull);
+          expect(result.listOnlyVideoIds, isEmpty);
+        },
+      );
+
+      test('keeps same d-tag list videos from different authors', () async {
+        const authorA =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        const authorB =
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+        final videoA = _createVideoEventWithDTag(
+          id: 'author-a-event',
+          pubkey: authorA,
+          dTag: 'shared-d-tag',
+          videoUrl: 'https://example.com/a.mp4',
+          createdAt: 1704067200,
+        );
+        final videoB = _createVideoEventWithDTag(
+          id: 'author-b-event',
+          pubkey: authorB,
+          dTag: 'shared-d-tag',
+          videoUrl: 'https://example.com/b.mp4',
+          createdAt: 1704067300,
+        );
+
+        var callCount = 0;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) return <Event>[];
+          return [videoA, videoB];
+        });
+
+        final result = await repository.getHomeFeedVideos(
+          authors: [authorA],
+          videoRefs: {
+            'list-a': [
+              '34236:$authorA:shared-d-tag',
+              '34236:$authorB:shared-d-tag',
+            ],
+          },
+        );
+
+        expect(
+          result.videos.map((v) => v.id),
+          containsAll(['author-a-event', 'author-b-event']),
+        );
+        expect(result.videos, hasLength(2));
+        expect(
+          result.listOnlyVideoIds,
+          containsAll(['author-a-event', 'author-b-event']),
+        );
+      });
+
       test('builds correct videoListSources for multi-list refs', () async {
         final event = _createVideoEvent(
           id: 'multi-list-video',
@@ -2872,6 +2964,78 @@ void main() {
         expect(result, hasLength(1));
         expect(result.first.vineId, equals('my-vine'));
       });
+
+      test(
+        'keeps addressable refs with same d-tag from different authors',
+        () async {
+          final authorA = 'a' * 64;
+          final authorB = 'b' * 64;
+          final videoA = _createVideoEventWithDTag(
+            id: 'author-a-event',
+            pubkey: authorA,
+            dTag: 'same-d-tag',
+            videoUrl: 'https://example.com/a.mp4',
+            createdAt: 1704067200,
+          );
+          final videoB = _createVideoEventWithDTag(
+            id: 'author-b-event',
+            pubkey: authorB,
+            dTag: 'same-d-tag',
+            videoUrl: 'https://example.com/b.mp4',
+            createdAt: 1704067300,
+          );
+
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [videoA, videoB]);
+
+          final result = await repository.getVideosForList([
+            '34236:$authorA:same-d-tag',
+            '34236:$authorB:same-d-tag',
+          ]);
+
+          expect(
+            result.map((video) => video.id),
+            equals(['author-a-event', 'author-b-event']),
+          );
+        },
+      );
+
+      test(
+        'deduplicates repeated addressable refs with different event ids',
+        () async {
+          final author = 'a' * 64;
+          final firstCopy = _createVideoEventWithDTag(
+            id: 'first-event-id',
+            pubkey: author,
+            dTag: 'same-d-tag',
+            videoUrl: 'https://example.com/first.mp4',
+            createdAt: 1704067200,
+          );
+          final secondCopy = _createVideoEventWithDTag(
+            id: 'second-event-id',
+            pubkey: author,
+            dTag: 'same-d-tag',
+            videoUrl: 'https://example.com/second.mp4',
+            createdAt: 1704067300,
+          );
+
+          var callCount = 0;
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) return [firstCopy];
+            return [secondCopy];
+          });
+
+          final result = await repository.getVideosForList([
+            'first-event-id',
+            '34236:$author:same-d-tag',
+          ]);
+
+          expect(result, hasLength(1));
+          expect(result.single.id, equals('first-event-id'));
+        },
+      );
 
       test('fetches mixed ref types in parallel', () async {
         final eventIdVideo = _createVideoEvent(
@@ -7402,6 +7566,63 @@ void main() {
         expect(result.first.id, equals('shared-id'));
       });
 
+      test(
+        'removes republished addressable duplicates by coordinate',
+        () async {
+          final author = 'a' * 64;
+          final video1 = VideoEvent.fromNostrEvent(
+            _createVideoEventWithDTag(
+              id: 'first-event-id',
+              pubkey: author,
+              dTag: 'same-d-tag',
+              videoUrl: 'https://example.com/first.mp4',
+              createdAt: 1704067200,
+            ),
+          );
+          final video2 = VideoEvent.fromNostrEvent(
+            _createVideoEventWithDTag(
+              id: 'second-event-id',
+              pubkey: author,
+              dTag: 'same-d-tag',
+              videoUrl: 'https://example.com/second.mp4',
+              createdAt: 1704067300,
+            ),
+          );
+
+          final result = repository.deduplicateAndSortVideos([video1, video2]);
+
+          expect(result, hasLength(1));
+        },
+      );
+
+      test(
+        'does not collapse same d-tag videos from different authors',
+        () async {
+          final video1 = VideoEvent.fromNostrEvent(
+            _createVideoEventWithDTag(
+              id: 'author-a-event',
+              pubkey: 'a' * 64,
+              dTag: 'same-d-tag',
+              videoUrl: 'https://example.com/a.mp4',
+              createdAt: 1704067200,
+            ),
+          );
+          final video2 = VideoEvent.fromNostrEvent(
+            _createVideoEventWithDTag(
+              id: 'author-b-event',
+              pubkey: 'b' * 64,
+              dTag: 'same-d-tag',
+              videoUrl: 'https://example.com/b.mp4',
+              createdAt: 1704067300,
+            ),
+          );
+
+          final result = repository.deduplicateAndSortVideos([video1, video2]);
+
+          expect(result, hasLength(2));
+        },
+      );
+
       test('sorts by loops then time', () async {
         final videoHighLoops = VideoEvent.fromNostrEvent(
           _createVideoEvent(
@@ -9724,71 +9945,68 @@ void main() {
         },
       );
 
-      test(
-        'raw addressable routes ignore same-d-tag local cache hits from a '
-        'different author before falling back to relay',
-        () async {
-          const eventId =
-              'd695f6b60119d9521934a691347d9f78'
-              'e8770b56da16bb255ee77ac112b4c1f6';
-          const wrongEventId =
-              'e695f6b60119d9521934a691347d9f78'
-              'e8770b56da16bb255ee77ac112b4c1f6';
-          const author =
-              '4bf0c63fcb93463407af97a5e5ee64fa'
-              '883d107ef9e558472c4eb9aaaefa459d';
-          const wrongAuthor =
-              '5bf0c63fcb93463407af97a5e5ee64fa'
-              '883d107ef9e558472c4eb9aaaefa459d';
-          const dTag = 'cached-shared-dtag';
-          const rawAddressableId = '34236:$author:$dTag';
-          final wrongCachedEvent = _createVideoEventWithDTag(
-            id: wrongEventId,
-            pubkey: wrongAuthor,
-            dTag: dTag,
-            videoUrl: 'https://example.com/wrong.mp4',
-            createdAt: 1739350000,
-          );
-          final relayEvent = _createVideoEventWithDTag(
-            id: eventId,
-            pubkey: author,
-            dTag: dTag,
-            videoUrl: 'https://example.com/correct.mp4',
-            createdAt: 1739350100,
-          );
-          final mockLocalStorage = MockVideoLocalStorage();
+      test('raw addressable routes ignore same-d-tag local cache hits from a '
+          'different author before falling back to relay', () async {
+        const eventId =
+            'd695f6b60119d9521934a691347d9f78'
+            'e8770b56da16bb255ee77ac112b4c1f6';
+        const wrongEventId =
+            'e695f6b60119d9521934a691347d9f78'
+            'e8770b56da16bb255ee77ac112b4c1f6';
+        const author =
+            '4bf0c63fcb93463407af97a5e5ee64fa'
+            '883d107ef9e558472c4eb9aaaefa459d';
+        const wrongAuthor =
+            '5bf0c63fcb93463407af97a5e5ee64fa'
+            '883d107ef9e558472c4eb9aaaefa459d';
+        const dTag = 'cached-shared-dtag';
+        const rawAddressableId = '34236:$author:$dTag';
+        final wrongCachedEvent = _createVideoEventWithDTag(
+          id: wrongEventId,
+          pubkey: wrongAuthor,
+          dTag: dTag,
+          videoUrl: 'https://example.com/wrong.mp4',
+          createdAt: 1739350000,
+        );
+        final relayEvent = _createVideoEventWithDTag(
+          id: eventId,
+          pubkey: author,
+          dTag: dTag,
+          videoUrl: 'https://example.com/correct.mp4',
+          createdAt: 1739350100,
+        );
+        final mockLocalStorage = MockVideoLocalStorage();
 
-          when(
-            () => mockLocalStorage.getEventsByDTag(dTag),
-          ).thenAnswer((_) async => [wrongCachedEvent]);
-          when(
-            () => mockNostrClient.queryEvents(any()),
-          ).thenAnswer((_) async => [relayEvent]);
+        when(
+          () => mockLocalStorage.getEventsByDTag(dTag),
+        ).thenAnswer((_) async => [wrongCachedEvent]);
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [relayEvent]);
 
-          final repo = VideosRepository(
-            nostrClient: mockNostrClient,
-            localStorage: mockLocalStorage,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
 
-          final result = await repo.fetchVideoWithStatsForRouteId(
-            rawAddressableId,
-          );
+        final result = await repo.fetchVideoWithStatsForRouteId(
+          rawAddressableId,
+        );
 
-          expect(result, isNotNull);
-          expect(result!.id, equals(eventId));
-          expect(result.pubkey, equals(author));
-          verify(() => mockLocalStorage.getEventsByDTag(dTag)).called(1);
+        expect(result, isNotNull);
+        expect(result!.id, equals(eventId));
+        expect(result.pubkey, equals(author));
+        verify(() => mockLocalStorage.getEventsByDTag(dTag)).called(1);
 
-          final captured =
-              verify(
-                    () => mockNostrClient.queryEvents(captureAny()),
-                  ).captured.single
-                  as List<Filter>;
-          expect(captured.single.authors, equals([author]));
-          expect(captured.single.d, equals([dTag]));
-        },
-      );
+        final captured =
+            verify(
+                  () => mockNostrClient.queryEvents(captureAny()),
+                ).captured.single
+                as List<Filter>;
+        expect(captured.single.authors, equals([author]));
+        expect(captured.single.d, equals([dTag]));
+      });
 
       test(
         'falls back to relay lookup for stable IDs missing from local cache',
@@ -10750,9 +10968,7 @@ void main() {
             ),
           ).called(2);
           verify(
-            () => mockFunnelcakeClient.getWatchingVideos(
-              limit: 10,
-            ),
+            () => mockFunnelcakeClient.getWatchingVideos(limit: 10),
           ).called(1);
         },
       );

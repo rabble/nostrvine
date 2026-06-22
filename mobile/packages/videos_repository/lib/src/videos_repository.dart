@@ -285,7 +285,7 @@ class VideosRepository {
   }) async {
     var cursor = until;
     final visible = <VideoEvent>[];
-    final seenIds = <String>{};
+    final seenVideoKeys = <String>{};
 
     // Intentionally walk until we have enough visible videos or the upstream
     // feed is exhausted. A hard page cap caused premature EOF on reply-dense
@@ -299,7 +299,11 @@ class VideosRepository {
 
       final videos = _transformVideoStats(response.videos);
       final hydratedVideos = await _hydrateVideosWithBulkStats(videos);
-      _appendUniqueVideos(visible, hydratedVideos, seenIds: seenIds);
+      _appendUniqueVideos(
+        visible,
+        hydratedVideos,
+        seenVideoKeys: seenVideoKeys,
+      );
       if (response.videos.length < limit || !response.hasMore) break;
 
       final nextCursor =
@@ -322,7 +326,7 @@ class VideosRepository {
 
     var cursor = until;
     final visible = <VideoEvent>[];
-    final seenIds = <String>{};
+    final seenVideoKeys = <String>{};
 
     while (visible.length < limit) {
       final filter = Filter(
@@ -339,7 +343,7 @@ class VideosRepository {
       _appendUniqueVideos(
         visible,
         await _hydrateVideosWithBulkStats(videos),
-        seenIds: seenIds,
+        seenVideoKeys: seenVideoKeys,
       );
       if (events.length < limit) break;
 
@@ -446,9 +450,12 @@ class VideosRepository {
     required List<VideoEvent> followingVideos,
     required Map<String, List<String>> videoRefs,
   }) async {
-    // Build set of following video IDs for dedup (case-insensitive)
-    final followingVideoIds = <String>{
-      for (final v in followingVideos) v.id.toLowerCase(),
+    // Build set of following video identities for dedup.
+    final followingVideoKeys = <String>{
+      for (final v in followingVideos) v.feedDedupKey,
+    };
+    final followingVideoIdsByKey = <String, String>{
+      for (final v in followingVideos) v.feedDedupKey: v.id,
     };
 
     // Flatten all refs and separate by type
@@ -487,19 +494,8 @@ class VideosRepository {
       resultIndex++;
     }
     if (uniqueAddressableIds.isNotEmpty) {
-      // getVideosByAddressableIds returns videos in the same order as
-      // the input list (omitting not-found). Build a vineId → ref
-      // reverse lookup to map fetched videos back to their refs.
-      final vineIdToRef = <String, String>{};
-      for (final ref in uniqueAddressableIds) {
-        final parsed = AId.fromString(ref);
-        if (parsed != null) {
-          vineIdToRef[parsed.dTag] = ref;
-        }
-      }
       for (final video in results[resultIndex]) {
-        final dTag = video.vineId ?? '';
-        final ref = vineIdToRef[dTag];
+        final ref = video.addressableId;
         if (ref != null) {
           refToVideo[ref] = video;
         }
@@ -510,23 +506,26 @@ class VideosRepository {
     final videoListSources = <String, Set<String>>{};
     final listOnlyVideoIds = <String>{};
     final listOnlyVideos = <VideoEvent>[];
-    final seenListVideoIds = <String>{};
+    final seenListVideoKeys = <String>{};
 
     for (final entry in videoRefs.entries) {
       final listId = entry.key;
       for (final ref in entry.value) {
         final video = refToVideo[ref];
         if (video == null) continue;
+        final displayedVideoId = followingVideoIdsByKey[video.feedDedupKey];
 
         // Track which lists reference this video
-        videoListSources.putIfAbsent(video.id, () => <String>{}).add(listId);
+        videoListSources
+            .putIfAbsent(displayedVideoId ?? video.id, () => <String>{})
+            .add(listId);
 
         // If not from following, it's list-only
-        if (!followingVideoIds.contains(video.id.toLowerCase())) {
+        if (!followingVideoKeys.contains(video.feedDedupKey)) {
           listOnlyVideoIds.add(video.id);
 
           // Add to merge list (dedup across lists)
-          if (seenListVideoIds.add(video.id.toLowerCase())) {
+          if (seenListVideoKeys.add(video.feedDedupKey)) {
             listOnlyVideos.add(video);
           }
         }
@@ -583,16 +582,8 @@ class VideosRepository {
       resultIndex++;
     }
     if (addressableIds.isNotEmpty) {
-      final vineIdToRef = <String, String>{};
-      for (final ref in addressableIds) {
-        final parsed = AId.fromString(ref);
-        if (parsed != null) {
-          vineIdToRef[parsed.dTag] = ref;
-        }
-      }
       for (final video in results[resultIndex]) {
-        final dTag = video.vineId ?? '';
-        final ref = vineIdToRef[dTag];
+        final ref = video.addressableId;
         if (ref != null) {
           refToVideo[ref] = video;
         }
@@ -600,7 +591,9 @@ class VideosRepository {
     }
 
     // Return in ref order, omitting unresolved refs
-    return [for (final ref in videoRefs) ?refToVideo[ref]];
+    return deduplicateVideosPreservingOrder([
+      for (final ref in videoRefs) ?refToVideo[ref],
+    ]);
   }
 
   /// Fetches videos published by a specific author.
@@ -696,7 +689,7 @@ class VideosRepository {
   }) async {
     var cursor = until;
     final visible = <VideoEvent>[];
-    final seenIds = <String>{};
+    final seenVideoKeys = <String>{};
 
     while (visible.length < limit) {
       final videoStats = await _funnelcakeApiClient!.getRecentVideos(
@@ -705,7 +698,7 @@ class VideosRepository {
       );
 
       final videos = _transformVideoStats(videoStats);
-      _appendUniqueVideos(visible, videos, seenIds: seenIds);
+      _appendUniqueVideos(visible, videos, seenVideoKeys: seenVideoKeys);
 
       if (videoStats.length < limit) break;
 
@@ -723,7 +716,7 @@ class VideosRepository {
   }) async {
     var cursor = until;
     final visible = <VideoEvent>[];
-    final seenIds = <String>{};
+    final seenVideoKeys = <String>{};
 
     while (visible.length < limit) {
       final filter = Filter(kinds: [_videoKind], limit: limit, until: cursor);
@@ -731,7 +724,7 @@ class VideosRepository {
       if (events.isEmpty) break;
 
       final videos = _transformAndFilter(events);
-      _appendUniqueVideos(visible, videos, seenIds: seenIds);
+      _appendUniqueVideos(visible, videos, seenVideoKeys: seenVideoKeys);
       if (events.length < limit) break;
 
       final nextCursor = _cursorBeforeOldestEvent(events);
@@ -790,7 +783,7 @@ class VideosRepository {
       var pageCursor = legacyBeforeCursor == null ? cursor : null;
       var before = legacyBeforeCursor ?? (cursor == null ? until : null);
       final visible = <VideoEvent>[];
-      final seenIds = <String>{};
+      final seenVideoKeys = <String>{};
       String? nextPageCursor;
 
       while (visible.length < limit) {
@@ -825,7 +818,7 @@ class VideosRepository {
           ),
           variant,
         );
-        _appendUniqueVideos(visible, pageVideos, seenIds: seenIds);
+        _appendUniqueVideos(visible, pageVideos, seenVideoKeys: seenVideoKeys);
 
         final fallbackBefore = _cursorBeforeOldestStats(stats);
         final fallbackCursor = fallbackBefore == null
@@ -1444,10 +1437,10 @@ class VideosRepository {
   void _appendUniqueVideos(
     List<VideoEvent> target,
     List<VideoEvent> incoming, {
-    required Set<String> seenIds,
+    required Set<String> seenVideoKeys,
   }) {
     for (final video in incoming) {
-      if (!seenIds.add(video.id)) continue;
+      if (!seenVideoKeys.add(video.feedDedupKey)) continue;
       target.add(video);
     }
   }
@@ -1798,7 +1791,8 @@ class VideosRepository {
     return result;
   }
 
-  /// Deduplicates videos by ID and sorts by popularity (loops then time).
+  /// Deduplicates videos by logical feed identity and sorts by popularity
+  /// (loops then time).
   ///
   /// Use this to combine results from [searchVideosLocally] and
   /// [searchVideosOnRelays] into a single ranked list.
@@ -1806,12 +1800,13 @@ class VideosRepository {
       deduplicateVideosPreservingOrder(videos)
         ..sort(VideoEvent.compareByLoopsThenTime);
 
-  /// Deduplicates videos by ID while preserving the first occurrence order.
+  /// Deduplicates videos by logical feed identity while preserving the first
+  /// occurrence order.
   List<VideoEvent> deduplicateVideosPreservingOrder(List<VideoEvent> videos) {
-    final seenIds = <String>{};
+    final seenVideoKeys = <String>{};
     return videos.where((v) {
-      if (seenIds.contains(v.id)) return false;
-      seenIds.add(v.id);
+      if (seenVideoKeys.contains(v.feedDedupKey)) return false;
+      seenVideoKeys.add(v.feedDedupKey);
       return true;
     }).toList();
   }

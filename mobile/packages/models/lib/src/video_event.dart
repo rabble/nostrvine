@@ -286,9 +286,7 @@ class VideoEvent {
       textTrackRef: textTrackRef,
       textTrackRefs: textTrackRefs.isNotEmpty
           ? textTrackRefs
-          : [
-              if (textTrackRef != null && textTrackRef.isNotEmpty) textTrackRef,
-            ],
+          : [if (textTrackRef != null && textTrackRef.isNotEmpty) textTrackRef],
       textTrackContent: json['textTrackContent'] as String?,
       contentWarningLabels: stringList(json['contentWarningLabels']),
       moderationLabels: stringList(json['moderationLabels']),
@@ -1151,6 +1149,13 @@ class VideoEvent {
           dTag: vineId!,
         ).toAString()
       : null;
+
+  /// Canonical identity for feed/session deduplication.
+  ///
+  /// Addressable short-video events can be republished with a new event id
+  /// while still representing the same logical `kind:pubkey:d-tag` video.
+  /// Falling back to [id] preserves behavior for non-addressable/legacy rows.
+  String get feedDedupKey => (addressableId ?? id).toLowerCase();
 
   /// ProofMode: Check if video has any proof
   bool get hasProofMode {
