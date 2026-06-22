@@ -551,20 +551,26 @@ class __OverlayState extends ConsumerState<_Overlay> {
     final repostsRepository = ref.watch(repostsRepositoryProvider);
     final addressableId = video.addressableId;
 
-    final authService = ref.watch(authServiceProvider);
-    final currentUserPubkey = authService.currentPublicKeyHex;
+    final currentUserPubkey = ref.watch(
+      authServiceProvider.select((service) => service.currentPublicKeyHex),
+    );
     final isOwnVideo =
         currentUserPubkey != null && currentUserPubkey == widget.video.pubkey;
 
-    // Subscribe to Auto state so the items rebuild when the rail is
-    // toggled / suppressed / resumed.
-    final autoState = context.watch<FeedAutoAdvanceCubit>().state;
+    // Subscribe only to the Auto flags this overlay renders — the rail being
+    // toggled (enabled) and suppressed/resumed (isEffectivelyActive) — so
+    // unrelated cubit changes (e.g. pendingPaginationAdvance) don't rebuild
+    // every visible feed item while scrolling.
+    final (autoEnabled, autoEffectivelyActive) = context.select(
+      (FeedAutoAdvanceCubit cubit) =>
+          (cubit.state.enabled, cubit.state.isEffectivelyActive),
+    );
 
     // Gate the rail + runtime on both the feature flag and the
     // user's reduced-motion preference. When Auto is unavailable,
     // force it "off" at the view layer regardless of cubit state.
     final autoAdvanceAvailable = !MediaQuery.disableAnimationsOf(context);
-    final effectiveAutoEnabled = autoAdvanceAvailable && autoState.enabled;
+    final effectiveAutoEnabled = autoAdvanceAvailable && autoEnabled;
 
     final overlayLabels = contentWarningOverlayLabels(
       contentWarningLabels: video.contentWarningLabels,
@@ -575,8 +581,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
       warnLabels: video.warnLabels,
     );
 
-    final effectiveAutoActive =
-        autoAdvanceAvailable && autoState.isEffectivelyActive;
+    final effectiveAutoActive = autoAdvanceAvailable && autoEffectivelyActive;
 
     final playbackStatus = context.select(
       (VideoPlaybackStatusCubit cubit) => cubit.state.statusFor(video.id),
