@@ -169,9 +169,9 @@ class ConversationReactionsCubit
   ///
   /// The synthetic [DmReaction] is overlaid synchronously (same frame as the
   /// tap) so the chip never waits on the local Drift round-trip
-  /// (`insertOptimistic` → watch re-emit, which crosses a background isolate
-  /// and SQLCipher). It is reconciled away in [_onSubscriptionTicked] once the
-  /// persisted row lands (#5389).
+  /// (`insertOwnReactionSuperseding` → watch re-emit, which crosses a
+  /// background isolate and SQLCipher). It is reconciled away in
+  /// [_onSubscriptionTicked] once the persisted row lands (#5389).
   Future<void> _publishReaction({
     required String conversationId,
     required String messageId,

@@ -179,6 +179,105 @@ void main() {
       },
     );
 
+    test(
+      'insertOwnReactionSuperseding resurrects a soft-deleted same-id row so '
+      'a same-second re-react is not silently dropped',
+      () async {
+        // React, remove (soft-delete), then re-react the same emoji within the
+        // same wall-clock second: the rebuilt rumor id is identical, so the
+        // insert collides with the just-deleted row's primary key.
+        await insertPending();
+        await dao.softDelete(id: _pendingId, ownerPubkey: _ownerA);
+        expect(
+          (await dao.getById(id: _pendingId, ownerPubkey: _ownerA))!.isDeleted,
+          isTrue,
+        );
+
+        final superseded = await insertPending();
+
+        expect(superseded, isEmpty);
+        final row = await dao.getById(id: _pendingId, ownerPubkey: _ownerA);
+        expect(row, isNotNull);
+        expect(row!.isDeleted, isFalse);
+        expect(row.publishStatus, equals('pending'));
+        expect(row.rumorEventJson, contains(_pendingId));
+
+        final live = await dao
+            .watchForConversation(
+              conversationId: _conversationId,
+              ownerPubkey: _ownerA,
+            )
+            .first;
+        expect(live.map((r) => r.emoji), equals(['🔥']));
+      },
+    );
+
+    test(
+      'insertOwnReactionSuperseding leaves a still-live same-id row untouched '
+      'so an idempotent double-tap keeps its publish status',
+      () async {
+        await insertPending();
+        await dao.swapPlaceholderId(
+          placeholderId: _pendingId,
+          realRumorId: _pendingId,
+          ownerPubkey: _ownerA,
+        );
+        expect(
+          (await dao.getById(
+            id: _pendingId,
+            ownerPubkey: _ownerA,
+          ))!.publishStatus,
+          equals('sent'),
+        );
+
+        final superseded = await insertPending();
+
+        expect(superseded, isEmpty);
+        // Resurrect is scoped to deleted rows, so the live 'sent' row is not
+        // regressed to 'pending' and its cleared rumor json stays cleared.
+        final row = await dao.getById(id: _pendingId, ownerPubkey: _ownerA);
+        expect(row!.isDeleted, isFalse);
+        expect(row.publishStatus, equals('sent'));
+        expect(row.rumorEventJson, isNull);
+      },
+    );
+
+    test(
+      'insertOwnReactionSuperseding resurrects a deleted same-id row while a '
+      'different-id live sibling exists, staying capped at one live row',
+      () async {
+        // Deleted same-id row (🔥) coexisting with a live different-id row
+        // (😂): re-reacting 🔥 must supersede the sibling BEFORE resurrecting,
+        // or the partial unique index would reject two live rows for the tuple.
+        await insertPending();
+        await dao.softDelete(id: _pendingId, ownerPubkey: _ownerA);
+        await insertPending(
+          id: _sentId,
+          emoji: '😂',
+          createdAt: 1_700_000_010,
+        );
+
+        final superseded = await insertPending();
+
+        expect(superseded, equals([_sentId]));
+        expect(
+          (await dao.getById(id: _pendingId, ownerPubkey: _ownerA))!.isDeleted,
+          isFalse,
+        );
+        expect(
+          (await dao.getById(id: _sentId, ownerPubkey: _ownerA))!.isDeleted,
+          isTrue,
+        );
+        final live = await dao
+            .watchForConversation(
+              conversationId: _conversationId,
+              ownerPubkey: _ownerA,
+            )
+            .first;
+        expect(live.map((r) => r.emoji), equals(['🔥']));
+      },
+    );
+
     test('swapPlaceholderId marks row sent and clears stored rumor', () async {
       await insertPending();
 

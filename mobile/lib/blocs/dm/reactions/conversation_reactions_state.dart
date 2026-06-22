@@ -30,9 +30,9 @@ class ReactionPublishKey extends Equatable {
 
 /// A synchronous, client-side optimistic overlay applied on top of the
 /// persisted reaction rows so the chip paints on the same frame as the tap —
-/// before the local Drift round-trip (`insertOptimistic` → watch re-emit,
-/// which crosses a background isolate + SQLCipher) settles the row. Mirrors
-/// the in-player reel bar's `_optimisticEmoji` (#5389).
+/// before the local Drift round-trip (`insertOwnReactionSuperseding` → watch
+/// re-emit, which crosses a background isolate + SQLCipher) settles the row.
+/// Mirrors the in-player reel bar's `_optimisticEmoji` (#5389).
 ///
 /// Each entry is reconciled away by [ConversationReactionsCubit] the moment
 /// the persisted stream reflects the intent (an `Added` row appears / a

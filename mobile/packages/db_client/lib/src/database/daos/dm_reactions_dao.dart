@@ -42,6 +42,12 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
   /// crash) instead of a UNIQUE-constraint throw — the dual-cubit race the
   /// issue targets.
   ///
+  /// One narrow path bypasses that ignore: re-reacting the same emoji within
+  /// one wall-clock second of removing it rebuilds a byte-identical rumor id,
+  /// which collides with the row just soft-deleted by `removeOwn`. That row is
+  /// resurrected (flipped live, `publishStatus = 'pending'`) rather than
+  /// dropped, so the re-reaction is not silently lost.
+  ///
   /// Returns the ids of the superseded prior live rows so the caller can emit
   /// NIP-09 kind-5 deletions on the wire (outside this transaction).
   Future<List<String>> insertOwnReactionSuperseding({
@@ -74,6 +80,34 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
             .write(const DmMessageReactionsCompanion(isDeleted: Value(true)));
         superseded.add(prior.id);
       }
+
+      // A react → remove → re-react with the SAME emoji inside one wall-clock
+      // second rebuilds an identical rumor id, so [placeholderId] collides
+      // with the row just soft-deleted by `removeOwn`. That row is excluded
+      // from `priors` (live-only), so the [InsertMode.insertOrIgnore] below
+      // would discard this *wanted* re-reaction against the primary key.
+      // Resurrect it instead. Scoped to `is_deleted = 1` so a still-live
+      // same-id row (idempotent double-tap) keeps its publish status and is
+      // left to the no-op insert.
+      final resurrected =
+          await (update(dmMessageReactions)..where(
+                (t) =>
+                    t.id.equals(placeholderId) &
+                    t.ownerPubkey.equals(ownerPubkey) &
+                    t.isDeleted.equals(true),
+              ))
+              .write(
+                DmMessageReactionsCompanion(
+                  isDeleted: const Value(false),
+                  publishStatus: const Value('pending'),
+                  rumorEventJson: Value(rumorEventJson),
+                  giftWrapId: const Value(null),
+                ),
+              );
+      if (resurrected > 0) {
+        return superseded;
+      }
+
       await into(dmMessageReactions).insert(
         DmMessageReactionsCompanion.insert(
           id: placeholderId,

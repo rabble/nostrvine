@@ -547,11 +547,13 @@ class AppDatabase extends _$AppDatabase {
     // MUST run before CREATE UNIQUE INDEX — SQLite refuses to build a unique
     // index over rows that already violate it. It soft-deletes every live row
     // that has a strictly-newer live sibling in its tuple, keeping the single
-    // MAX(created_at, id) row (id tie-break is deterministic and matches the
-    // read-side DmReactionsRepository._collapsePerReactor keep-rule). The
-    // statement is idempotent: once converged (and once the unique index
-    // self-enforces) no row has a newer sibling, so subsequent startups
-    // match nothing.
+    // MAX(created_at, id) row. The created_at half matches the read-side
+    // DmReactionsRepository._collapsePerReactor keep-rule; the id tie-break is
+    // an extra deterministic guard the read side lacks, and only diverges on
+    // equal-created_at distinct ids — impossible once the unique index caps
+    // each tuple to one live row. The statement is idempotent: once converged
+    // (and once the unique index self-enforces) no row has a newer sibling, so
+    // subsequent startups match nothing.
     await customStatement('''
       UPDATE dm_message_reactions
       SET is_deleted = 1
