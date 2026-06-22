@@ -34,6 +34,13 @@ const _activePubkeyPrefsKey = 'blocklist_active_pubkey';
 /// list has completed for an account. Scoped per account as `base.pubkey`.
 const _blockListMigratedPrefsKeyBase = 'block_list_migrated_to_mute_list';
 
+class _MuteListPublishShape {
+  const _MuteListPublishShape({required this.tags, required this.content});
+
+  final List<List<String>> tags;
+  final String content;
+}
+
 /// Service for managing content blocklist
 ///
 /// This service maintains an internal blocklist of npubs whose content
@@ -97,9 +104,14 @@ class ContentBlocklistRepository {
   // excluded from this set (see [_handleOwnMuteListEvent]) so republishing
   // the merged mute list stays idempotent and unblocking actually removes
   // the entry. The newest own kind 10000 event replaces this set wholesale.
-  // Only public 'p' tags are read; NIP-51 encrypted (private) mute entries
-  // are not supported.
+  // Only public 'p' tags are interpreted as authored mutes. Other NIP-51
+  // public mute tags and encrypted private entries are preserved verbatim
+  // from [_latestOwnMuteListEvent] when we republish.
   final Set<String> _mutedPubkeys = <String>{};
+
+  // Full latest own kind-10000 event, retained so republishing Divine blocks
+  // preserves other clients' public t/word/e mutes and encrypted content.
+  Event? _latestOwnMuteListEvent;
 
   // Latest replaceable kind-10000 mute-list event timestamp per author.
   // Prevent stale relay delivery order from resurrecting old mute state.
@@ -240,6 +252,7 @@ class ContentBlocklistRepository {
       _mutedPubkeys.clear();
       _mutualMuteBlocklist.clear();
       _blockedByOthers.clear();
+      _latestOwnMuteListEvent = null;
       _latestMuteListEventCreatedAtByAuthor.clear();
       _latestBlockListEventCreatedAtByAuthor.clear();
       _severedFollowers.clear();
@@ -554,8 +567,9 @@ class ContentBlocklistRepository {
   ///
   /// Kind 10000 is replaceable, so the event must carry the *entire* list.
   /// We publish the union of our blocks ([_runtimeBlocklist]) and the mutes
-  /// authored from other clients ([_mutedPubkeys]) so republishing never
-  /// clobbers a mute set maintained elsewhere.
+  /// authored from other clients ([_mutedPubkeys]) while carrying forward
+  /// other public NIP-51 mute tags and encrypted private list content from
+  /// the latest own kind 10000 event.
   ///
   /// Returns `true` when the event was accepted by at least one relay.
   Future<bool> _publishMuteListToNostr() async {
@@ -581,35 +595,27 @@ class ContentBlocklistRepository {
     }
 
     try {
-      final mutedAuthors = <String>{..._runtimeBlocklist, ..._mutedPubkeys};
-      final tags = <List<String>>[
-        for (final pubkey in mutedAuthors) ['p', pubkey],
-      ];
+      await _refreshLatestOwnMuteList(nostrClient);
+      final publishShape = _buildMuteListPublishShape();
 
       final event = await signer.createAndSignEvent(
         kind: 10000,
-        content: '',
-        tags: tags,
+        content: publishShape.content,
+        tags: publishShape.tags,
       );
 
       if (event == null) return false;
 
-      // Record our own write as the newest seen event so a stale relay
-      // echo of an older own mute list cannot race back and drop the
-      // mutes we just merged in.
-      final ourPubkey = _ourPubkey;
-      if (ourPubkey != null) {
-        final seen = _latestMuteListEventCreatedAtByAuthor[ourPubkey];
-        if (seen == null || event.createdAt > seen) {
-          _latestMuteListEventCreatedAtByAuthor[ourPubkey] = event.createdAt;
-        }
-      }
-
       final sentEvent = await nostrClient.publishEvent(event);
 
       if (sentEvent is PublishSuccess) {
+        // Record our own write as the newest seen event so a stale relay
+        // echo of an older own mute list cannot race back and drop the
+        // mutes we just merged in.
+        _applyOwnMuteListEvent(sentEvent.event);
         Log.info(
-          'Published mute list to Nostr with ${mutedAuthors.length} entries',
+          'Published mute list to Nostr with '
+          '${_runtimeBlocklist.length + _mutedPubkeys.length} pubkey entries',
           name: 'ContentBlocklistRepository',
           category: LogCategory.system,
         );
@@ -632,11 +638,69 @@ class ContentBlocklistRepository {
     }
   }
 
+  Future<void> _refreshLatestOwnMuteList(NostrClient nostrClient) async {
+    final ourPubkey = _ourPubkey;
+    if (ourPubkey == null) return;
+
+    final muteEvents = await nostrClient.queryEvents([
+      Filter(authors: [ourPubkey], kinds: const [10000]),
+    ]);
+
+    var newest = _latestOwnMuteListEvent;
+    for (final event in muteEvents) {
+      if (event.pubkey != ourPubkey) continue;
+      if (newest == null || event.createdAt > newest.createdAt) {
+        newest = event;
+      }
+    }
+
+    if (newest != null && newest != _latestOwnMuteListEvent) {
+      _applyOwnMuteListEvent(newest);
+    }
+  }
+
+  _MuteListPublishShape _buildMuteListPublishShape() {
+    final source = _latestOwnMuteListEvent;
+    final tags = <List<String>>[];
+    final includedPubkeys = <String>{};
+
+    if (source != null) {
+      for (final tag in source.tags) {
+        if (tag.isEmpty || tag[0] != 'p') {
+          tags.add(List<String>.of(tag));
+          continue;
+        }
+
+        if (tag.length < 2) continue;
+        final pubkey = tag[1];
+        if (_mutedPubkeys.contains(pubkey) && includedPubkeys.add(pubkey)) {
+          tags.add(List<String>.of(tag));
+        }
+      }
+    }
+
+    for (final pubkey in _mutedPubkeys) {
+      if (includedPubkeys.add(pubkey)) {
+        tags.add(['p', pubkey]);
+      }
+    }
+
+    for (final pubkey in _runtimeBlocklist) {
+      if (includedPubkeys.add(pubkey)) {
+        tags.add(['p', pubkey]);
+      }
+    }
+
+    return _MuteListPublishShape(tags: tags, content: source?.content ?? '');
+  }
+
   /// Publish our legacy block list to Nostr as kind 30000 with d=block.
   ///
   /// Retained for backward compatibility with older Divine clients that
   /// still read kind 30000. New interop goes through the standard kind
   /// 10000 mute list ([_publishMuteListToNostr]).
+  // TODO(codex): Remove legacy kind 30000 publishing after kind 10000 rollout.
+  // Tracking issue: #5462.
   Future<void> _publishBlockListToNostr() async {
     final signer = _signer;
     final nostrClient = _nostrClient;
@@ -1109,11 +1173,10 @@ class ContentBlocklistRepository {
         }
       }
 
-      // Nothing to migrate (no legacy relay blocks and no local blocks):
-      // record completion so we don't re-query on every launch. No publish
-      // happens here, so there is nothing to clobber.
+      // Nothing to migrate. Leave the flag unset because an empty one-shot
+      // query can also mean a cold relay miss; retrying on a later launch is
+      // safer than permanently skipping a legacy-list migration.
       if (relayBlocks.isEmpty && _runtimeBlocklist.isEmpty) {
-        await prefs.setBool(flagKey, true);
         return;
       }
 
@@ -1130,14 +1193,6 @@ class ContentBlocklistRepository {
           newestMuteList = event;
         }
       }
-      final existingMutes = <String>{};
-      if (newestMuteList != null) {
-        for (final tag in newestMuteList.tags) {
-          if (tag.length >= 2 && tag[0] == 'p' && tag[1] != ourPubkey) {
-            existingMutes.add(tag[1]);
-          }
-        }
-      }
 
       // 3. Fold both lists into our in-memory state without removing
       //    anything. Legacy entries are our blocks; the rest of the relay's
@@ -1145,9 +1200,11 @@ class ContentBlocklistRepository {
       //    the mute set, matching [_handleOwnMuteListEvent]).
       final newlyBlocked = relayBlocks.difference(_runtimeBlocklist);
       _runtimeBlocklist.addAll(relayBlocks);
-      existingMutes.removeAll(_runtimeBlocklist);
-      final newlyMuted = existingMutes.difference(_mutedPubkeys);
-      _mutedPubkeys.addAll(existingMutes);
+      final mutedBeforeMerge = <String>{..._mutedPubkeys};
+      if (newestMuteList != null) {
+        _applyOwnMuteListEvent(newestMuteList, notify: false, persist: false);
+      }
+      final newlyMuted = _mutedPubkeys.difference(mutedBeforeMerge);
       await _saveBlockedUsers();
       await _saveMutedUsers();
 
@@ -1169,9 +1226,7 @@ class ContentBlocklistRepository {
         _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.blocked));
       }
       for (final pubkey in newlyMuted) {
-        _emitChange(
-          BlocklistChange(pubkey: pubkey, op: BlocklistOp.mutedByUs),
-        );
+        _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.mutedByUs));
       }
       if (newlyBlocked.isNotEmpty || newlyMuted.isNotEmpty) {
         _notifyChanged();
@@ -1282,6 +1337,14 @@ class ContentBlocklistRepository {
   /// Our own pubkey is excluded so a malformed self-referential mute list
   /// can never filter the user's own content (#2192).
   void _handleOwnMuteListEvent(Event event) {
+    _applyOwnMuteListEvent(event);
+  }
+
+  void _applyOwnMuteListEvent(
+    Event event, {
+    bool notify = true,
+    bool persist = true,
+  }) {
     final ourPubkey = event.pubkey;
     final createdAt = event.createdAt;
     final latestSeen = _latestMuteListEventCreatedAtByAuthor[ourPubkey];
@@ -1297,6 +1360,7 @@ class ContentBlocklistRepository {
     }
 
     _latestMuteListEventCreatedAtByAuthor[ourPubkey] = createdAt;
+    _latestOwnMuteListEvent = event;
 
     final relayMuted = <String>{};
     for (final tag in event.tags) {
@@ -1318,14 +1382,20 @@ class ContentBlocklistRepository {
     _mutedPubkeys
       ..removeAll(removed)
       ..addAll(added);
-    unawaited(_saveMutedUsers());
-    for (final pubkey in added) {
-      _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.mutedByUs));
+    if (persist) {
+      unawaited(_saveMutedUsers());
     }
-    for (final pubkey in removed) {
-      _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.unmutedByUs));
+    if (notify) {
+      for (final pubkey in added) {
+        _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.mutedByUs));
+      }
+      for (final pubkey in removed) {
+        _emitChange(
+          BlocklistChange(pubkey: pubkey, op: BlocklistOp.unmutedByUs),
+        );
+      }
+      _notifyChanged();
     }
-    _notifyChanged();
 
     Log.info(
       'Synced own mute list: +${added.length} -${removed.length} '

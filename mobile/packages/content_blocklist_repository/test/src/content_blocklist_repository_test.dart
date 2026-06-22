@@ -2093,6 +2093,10 @@ void main() {
         when(
           () => mockBlockClient.subscribe(any()),
         ).thenAnswer((_) => blockController.stream);
+        when(() => mockBlockClient.queryEvents(any())).thenAnswer(
+          (_) async => <Event>[],
+        );
+        when(() => mockSigner.isAuthenticated).thenReturn(false);
         await service.syncBlockListsInBackground(
           mockBlockClient,
           mockSigner,
@@ -2163,18 +2167,32 @@ void main() {
       when(
         () => mockClient.subscribe(any()),
       ).thenAnswer((_) => const Stream.empty());
+      when(() => mockClient.queryEvents(any())).thenAnswer((_) async => []);
     });
 
-    Event buildEvent() {
+    Event buildEvent({
+      int kind = 30000,
+      List<List<String>> tags = const <List<String>>[],
+      String content = 'Block list',
+      int? createdAt,
+    }) {
       return Event(
           ourPubkey,
-          30000,
-          const <List<String>>[],
-          'Block list',
-          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          kind,
+          tags,
+          content,
+          createdAt: createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000,
         )
         ..id = 'test-event-id'
         ..sig = 'signature';
+    }
+
+    Event signedEventFromInvocation(Invocation invocation) {
+      return buildEvent(
+        kind: invocation.namedArguments[#kind] as int,
+        content: invocation.namedArguments[#content] as String,
+        tags: invocation.namedArguments[#tags] as List<List<String>>,
+      );
     }
 
     test('does not publish when signer is not authenticated', () async {
@@ -2199,7 +2217,6 @@ void main() {
     });
 
     test('blocking publishes the kind 10000 mute list with a p tag', () async {
-      final event = buildEvent();
       when(() => mockSigner.isAuthenticated).thenReturn(true);
       when(
         () => mockSigner.createAndSignEvent(
@@ -2207,10 +2224,16 @@ void main() {
           content: any(named: 'content'),
           tags: any(named: 'tags'),
         ),
-      ).thenAnswer((_) async => event);
+      ).thenAnswer(
+        (invocation) async => signedEventFromInvocation(invocation),
+      );
       when(
         () => mockClient.publishEvent(any()),
-      ).thenAnswer((_) async => PublishSuccess(event: event));
+      ).thenAnswer(
+        (invocation) async => PublishSuccess(
+          event: invocation.positionalArguments.first as Event,
+        ),
+      );
 
       final service = ContentBlocklistRepository();
       await service.syncBlockListsInBackground(
@@ -2249,7 +2272,7 @@ void main() {
       expect(blockTags, contains(equals(['d', 'block'])));
       expect(blockTags, contains(equals(['p', 'pubkey1'])));
 
-      verify(() => mockClient.publishEvent(event)).called(2);
+      verify(() => mockClient.publishEvent(any())).called(2);
     });
 
     test('unblocking republishes the kind 10000 mute list without the '
@@ -2261,10 +2284,16 @@ void main() {
           content: any(named: 'content'),
           tags: any(named: 'tags'),
         ),
-      ).thenAnswer((_) async => buildEvent());
+      ).thenAnswer(
+        (invocation) async => signedEventFromInvocation(invocation),
+      );
       when(
         () => mockClient.publishEvent(any()),
-      ).thenAnswer((_) async => PublishSuccess(event: buildEvent()));
+      ).thenAnswer(
+        (invocation) async => PublishSuccess(
+          event: invocation.positionalArguments.first as Event,
+        ),
+      );
 
       final service = ContentBlocklistRepository();
       await service.syncBlockListsInBackground(
@@ -2287,6 +2316,191 @@ void main() {
               as List<List<String>>;
       expect(lastMuteTags, isEmpty);
     });
+
+    test('blocking preserves existing NIP-51 public tags and encrypted '
+        'content', () async {
+      const existingMute =
+          '00000000000000000000000000000000000000000000000000000000000000cc';
+      const blockedPubkey =
+          '00000000000000000000000000000000000000000000000000000000000000dd';
+      final existingEvent = buildEvent(
+        kind: 10000,
+        content: 'encrypted-private-tags',
+        tags: const [
+          ['p', existingMute, 'wss://relay.example'],
+          ['t', 'spoilers'],
+          ['word', 'spoiler'],
+          ['e', 'event-thread-id'],
+        ],
+        createdAt: 1000,
+      );
+      when(() => mockSigner.isAuthenticated).thenReturn(true);
+      when(
+        () => mockClient.queryEvents(any()),
+      ).thenAnswer((_) async => [existingEvent]);
+      when(
+        () => mockSigner.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer(
+        (invocation) async => signedEventFromInvocation(invocation),
+      );
+      when(
+        () => mockClient.publishEvent(any()),
+      ).thenAnswer(
+        (invocation) async => PublishSuccess(
+          event: invocation.positionalArguments.first as Event,
+        ),
+      );
+
+      final service = ContentBlocklistRepository();
+      await service.syncBlockListsInBackground(
+        mockClient,
+        mockSigner,
+        ourPubkey,
+      );
+
+      await service.blockUser(blockedPubkey);
+
+      final capturedMuteCall = verify(
+        () => mockSigner.createAndSignEvent(
+          kind: 10000,
+          content: captureAny(named: 'content'),
+          tags: captureAny(named: 'tags'),
+        ),
+      ).captured;
+      final content = capturedMuteCall[0] as String;
+      final tags = capturedMuteCall[1] as List<List<String>>;
+
+      expect(content, 'encrypted-private-tags');
+      expect(
+        tags,
+        contains(equals(['p', existingMute, 'wss://relay.example'])),
+      );
+      expect(tags, contains(equals(['p', blockedPubkey])));
+      expect(tags, contains(equals(['t', 'spoilers'])));
+      expect(tags, contains(equals(['word', 'spoiler'])));
+      expect(tags, contains(equals(['e', 'event-thread-id'])));
+    });
+
+    test('blocking appends hydrated external p mutes before the latest source '
+        'event is available', () async {
+      const existingMute =
+          '00000000000000000000000000000000000000000000000000000000000000cc';
+      const blockedPubkey =
+          '00000000000000000000000000000000000000000000000000000000000000dd';
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'muted_users_list': jsonEncode([existingMute]),
+      });
+      final prefs = await SharedPreferences.getInstance();
+      when(() => mockSigner.isAuthenticated).thenReturn(true);
+      when(
+        () => mockSigner.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer(
+        (invocation) async => signedEventFromInvocation(invocation),
+      );
+      when(
+        () => mockClient.publishEvent(any()),
+      ).thenAnswer(
+        (invocation) async => PublishSuccess(
+          event: invocation.positionalArguments.first as Event,
+        ),
+      );
+
+      final service = ContentBlocklistRepository(prefs: prefs);
+      await service.syncBlockListsInBackground(
+        mockClient,
+        mockSigner,
+        ourPubkey,
+      );
+
+      await service.blockUser(blockedPubkey);
+
+      final tags =
+          verify(
+                () => mockSigner.createAndSignEvent(
+                  kind: 10000,
+                  content: any(named: 'content'),
+                  tags: captureAny(named: 'tags'),
+                ),
+              ).captured.last
+              as List<List<String>>;
+      expect(tags, contains(equals(['p', existingMute])));
+      expect(tags, contains(equals(['p', blockedPubkey])));
+    });
+
+    test(
+      'unblocking preserves non-p mute-list tags and encrypted content',
+      () async {
+        const blockedPubkey =
+            '00000000000000000000000000000000000000000000000000000000000000dd';
+        final existingEvent = buildEvent(
+          kind: 10000,
+          content: 'encrypted-private-tags',
+          tags: const [
+            ['t', 'spoilers'],
+            ['word', 'spoiler'],
+            ['e', 'event-thread-id'],
+          ],
+          createdAt: 1000,
+        );
+        when(() => mockSigner.isAuthenticated).thenReturn(true);
+        when(
+          () => mockClient.queryEvents(any()),
+        ).thenAnswer((_) async => [existingEvent]);
+        when(
+          () => mockSigner.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (invocation) async => signedEventFromInvocation(invocation),
+        );
+        when(
+          () => mockClient.publishEvent(any()),
+        ).thenAnswer(
+          (invocation) async => PublishSuccess(
+            event: invocation.positionalArguments.first as Event,
+          ),
+        );
+
+        final service = ContentBlocklistRepository();
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+
+        await service.blockUser(blockedPubkey);
+        await service.unblockUser(blockedPubkey);
+
+        final capturedMuteCalls = verify(
+          () => mockSigner.createAndSignEvent(
+            kind: 10000,
+            content: captureAny(named: 'content'),
+            tags: captureAny(named: 'tags'),
+          ),
+        ).captured;
+        final lastContent =
+            capturedMuteCalls[capturedMuteCalls.length - 2] as String;
+        final lastTags =
+            capturedMuteCalls[capturedMuteCalls.length - 1]
+                as List<List<String>>;
+
+        expect(lastContent, 'encrypted-private-tags');
+        expect(lastTags, isNot(contains(equals(['p', blockedPubkey]))));
+        expect(lastTags, contains(equals(['t', 'spoilers'])));
+        expect(lastTags, contains(equals(['word', 'spoiler'])));
+        expect(lastTags, contains(equals(['e', 'event-thread-id'])));
+      },
+    );
 
     test('tolerates publishEvent returning null', () async {
       when(() => mockSigner.isAuthenticated).thenReturn(true);
@@ -2367,23 +2581,38 @@ void main() {
           ..id = 'own-block-event'
           ..sig = 'signature';
 
-    Event ownMuteEvent(List<String> muted, {int createdAt = 2000}) =>
+    Event ownMuteEvent(
+      List<String> muted, {
+      int createdAt = 2000,
+      List<List<String>> extraTags = const <List<String>>[],
+      String content = '',
+    }) =>
         Event(
             ourPubkey,
             10000,
             [
               for (final pk in muted) ['p', pk],
+              ...extraTags,
             ],
-            '',
+            content,
             createdAt: createdAt,
           )
           ..id = 'own-mute-event-$createdAt'
           ..sig = 'signature';
 
-    Event signedMuteList() =>
-        Event(ourPubkey, 10000, const <List<String>>[], '', createdAt: 3000)
-          ..id = 'signed-mute-list'
-          ..sig = 'signature';
+    Event signedMuteList({
+      List<List<String>> tags = const <List<String>>[],
+      String content = '',
+    }) => Event(ourPubkey, 10000, tags, content, createdAt: 3000)
+      ..id = 'signed-mute-list'
+      ..sig = 'signature';
+
+    Event signedMuteListFromInvocation(Invocation invocation) {
+      return signedMuteList(
+        content: invocation.namedArguments[#content] as String,
+        tags: invocation.namedArguments[#tags] as List<List<String>>,
+      );
+    }
 
     setUp(() async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -2430,12 +2659,17 @@ void main() {
           if (kind == 10000) {
             publishedMuteTags =
                 invocation.namedArguments[#tags] as List<List<String>>?;
+            return signedMuteListFromInvocation(invocation);
           }
           return signedMuteList();
         });
         when(
           () => mockClient.publishEvent(any()),
-        ).thenAnswer((_) async => PublishSuccess(event: signedMuteList()));
+        ).thenAnswer(
+          (invocation) async => PublishSuccess(
+            event: invocation.positionalArguments.first as Event,
+          ),
+        );
 
         final service = ContentBlocklistRepository(prefs: prefs);
         await service.syncBlockListsInBackground(
@@ -2464,7 +2698,7 @@ void main() {
     );
 
     test(
-      'records completion without publishing when there is no legacy list',
+      'leaves the flag unset without publishing when there is no legacy list',
       () async {
         when(
           () => mockClient.queryEvents(any()),
@@ -2485,7 +2719,7 @@ void main() {
             tags: any(named: 'tags'),
           ),
         );
-        expect(prefs.getBool(flagKey), isTrue);
+        expect(prefs.getBool(flagKey), isNull);
 
         service.dispose();
       },
@@ -2584,12 +2818,17 @@ void main() {
           if (kind == 10000) {
             publishedMuteTags =
                 invocation.namedArguments[#tags] as List<List<String>>?;
+            return signedMuteListFromInvocation(invocation);
           }
           return signedMuteList();
         });
         when(
           () => mockClient.publishEvent(any()),
-        ).thenAnswer((_) async => PublishSuccess(event: signedMuteList()));
+        ).thenAnswer(
+          (invocation) async => PublishSuccess(
+            event: invocation.positionalArguments.first as Event,
+          ),
+        );
 
         final service = ContentBlocklistRepository(prefs: prefs);
         await service.syncBlockListsInBackground(
@@ -2607,6 +2846,81 @@ void main() {
         expect(publishedPubkeys, isNot(contains(muteC)));
         expect(service.isMutedByUs(muteD), isTrue);
         expect(service.isMutedByUs(muteC), isFalse);
+
+        service.dispose();
+      },
+    );
+
+    test(
+      'migration preserves existing non-p mute tags and encrypted content',
+      () async {
+        when(() => mockClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
+          final kinds = filters.first.kinds ?? const <int>[];
+          if (kinds.contains(30000)) {
+            return [
+              ownBlockEvent([blockA]),
+            ];
+          }
+          if (kinds.contains(10000)) {
+            return [
+              ownMuteEvent(
+                [muteC],
+                content: 'encrypted-private-tags',
+                extraTags: const [
+                  ['t', 'spoilers'],
+                  ['word', 'spoiler'],
+                  ['e', 'event-thread-id'],
+                ],
+              ),
+            ];
+          }
+          return <Event>[];
+        });
+
+        List<List<String>>? publishedMuteTags;
+        String? publishedContent;
+        when(
+          () => mockSigner.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          final kind = invocation.namedArguments[#kind] as int;
+          if (kind == 10000) {
+            publishedContent = invocation.namedArguments[#content] as String;
+            publishedMuteTags =
+                invocation.namedArguments[#tags] as List<List<String>>?;
+            return signedMuteListFromInvocation(invocation);
+          }
+          return signedMuteList();
+        });
+        when(
+          () => mockClient.publishEvent(any()),
+        ).thenAnswer(
+          (invocation) async => PublishSuccess(
+            event: invocation.positionalArguments.first as Event,
+          ),
+        );
+
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(publishedContent, 'encrypted-private-tags');
+        expect(publishedMuteTags, isNotNull);
+        expect(publishedMuteTags, contains(equals(['p', blockA])));
+        expect(publishedMuteTags, contains(equals(['p', muteC])));
+        expect(publishedMuteTags, contains(equals(['t', 'spoilers'])));
+        expect(publishedMuteTags, contains(equals(['word', 'spoiler'])));
+        expect(publishedMuteTags, contains(equals(['e', 'event-thread-id'])));
 
         service.dispose();
       },
