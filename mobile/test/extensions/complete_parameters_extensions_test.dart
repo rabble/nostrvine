@@ -418,7 +418,12 @@ void main() {
 
         // The package's own fromMap can't rebuild a widget layer exported by
         // id without a loader — this is the crash the helper exists to prevent.
-        expect(() => CompleteParameters.fromMap(map), throwsA(anything));
+        // (AssertionError in debug; the same site null-check-crashes in
+        // release, where asserts are stripped.)
+        expect(
+          () => CompleteParameters.fromMap(map),
+          throwsA(isA<AssertionError>()),
+        );
 
         final restored = completeParametersFromDraftMap(map);
 
