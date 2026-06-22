@@ -5,7 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/widgets/video_feed_item/reaction_overlay.dart';
 
 void main() {
-  testWidgets('renders the emoji then fires onComplete', (tester) async {
+  testWidgets('paints on a single CustomPaint then fires onComplete', (
+    tester,
+  ) async {
     var completed = false;
     await tester.pumpWidget(
       MaterialApp(
@@ -19,12 +21,23 @@ void main() {
     );
     await tester.pump();
 
-    // Hero glyph + the floating particles all render the emoji.
-    expect(find.text('❤️'), findsWidgets);
+    // The 6 emoji are now drawn by one CustomPainter, not a Stack of Text.
+    expect(
+      find.descendant(
+        of: find.byType(ReactionOverlay),
+        matching: find.byType(CustomPaint),
+      ),
+      findsWidgets,
+    );
+    expect(completed, isFalse);
+
+    // Mid-animation: opacity/scale are non-zero here, so the painter actually
+    // draws the glyph (at t≈0 and t≈1 they are 0). Still animating.
+    await tester.pump(const Duration(milliseconds: 450));
     expect(completed, isFalse);
 
     // Past the 1100ms animation → completes and notifies.
-    await tester.pump(const Duration(milliseconds: 1200));
+    await tester.pump(const Duration(milliseconds: 800));
     await tester.pumpAndSettle();
     expect(completed, isTrue);
   });
