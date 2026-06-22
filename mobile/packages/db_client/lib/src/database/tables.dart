@@ -1313,7 +1313,8 @@ class ProcessedGiftWraps extends Table {
   IntColumn get processedAt => integer().named('processed_at')();
 
   /// Recipient pubkey this wrap was processed for. Informational only — NOT
-  /// part of the dedup key — used to scope account-cleanup deletes.
+  /// part of the dedup key, and not used to scope deletes: account cleanup
+  /// wipes the whole table via `clearAll()`. Retained for diagnostics.
   TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
 
   @override

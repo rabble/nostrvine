@@ -1291,6 +1291,10 @@ class DmRepository {
 
       // Accept kind 14 (text) and kind 15 (file). Any other kind is terminally
       // unsupported — record it so it is not re-decrypted on every launch.
+      // Note: the ledger survives upgrades, so a future version that adds
+      // support for a new kind will not reprocess wraps already recorded here;
+      // such a kind would need a one-off backfill. Acceptable vs. re-decrypting
+      // every unknown wrap on every launch today. #5452.
       if (!_supportedDmKinds.contains(rumor.kind)) {
         await _recordProcessedWrap(giftWrapEvent.id);
         return;

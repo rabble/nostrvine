@@ -53,9 +53,10 @@ enum DmReactionWrapOutcome {
   /// Safe to record so the wrap is never re-decrypted.
   processed,
 
-  /// The wrap could not be applied yet (signer not ready, or the reaction's
-  /// target message has not synced). Must NOT be recorded so it re-decrypts on
-  /// a later launch once the target exists — preserving eventual consistency.
+  /// The wrap could not be applied yet (signer not ready, the reaction's
+  /// target message has not synced, or a deletion's target reaction has not
+  /// synced). Must NOT be recorded so it re-decrypts on a later launch once the
+  /// target exists — preserving eventual consistency.
   deferred,
 }
 
@@ -516,10 +517,16 @@ class DmReactionsRepository {
   /// This handler is specifically for wrapped deletions emitted by the
   /// reactions feature, which tag the deleted event with `k=7`.
   ///
-  /// Returns [DmReactionWrapOutcome.processed] (terminal) in every case except
-  /// when the signer is not ready yet, so the caller records the deletion wrap
-  /// in the dedup ledger and it is not re-decrypted on the next launch. The
-  /// soft-delete is idempotent, so recording it unconditionally is safe. #5452.
+  /// Returns [DmReactionWrapOutcome.deferred] — leaving the wrap out of the
+  /// dedup ledger so it re-decrypts on a later launch — when the signer is not
+  /// ready, when a targeted reaction row has not synced yet, or on a transient
+  /// soft-delete failure. Gift wraps carry NIP-59 randomized `created_at`, so a
+  /// deletion can drain before the reaction it removes; recording it as
+  /// terminal then would let the reaction insert live afterwards and never be
+  /// soft-deleted. Otherwise returns [DmReactionWrapOutcome.processed]
+  /// (terminal): the deletion applied, the target was already deleted, or the
+  /// deletion is invalid (author mismatch). The soft-delete is idempotent, so
+  /// re-applying on a benign re-decrypt is safe. #5452.
   Future<DmReactionWrapOutcome> handleIncomingDeletion({
     required Event rumorEvent,
     required String giftWrapId,
@@ -532,6 +539,7 @@ class DmReactionsRepository {
       return DmReactionWrapOutcome.processed;
     }
 
+    var outcome = DmReactionWrapOutcome.processed;
     for (final tag in rumorEvent.tags) {
       if (tag.length < 2 || tag[0] != 'e') continue;
       final rumorId = tag[1];
@@ -539,7 +547,17 @@ class DmReactionsRepository {
         id: rumorId,
         ownerPubkey: _userPubkey,
       );
-      if (row == null || row.isDeleted) continue;
+      // Target reaction not synced yet. Defer so the wrap stays unrecorded and
+      // re-decrypts once the reaction lands — otherwise upsertIncoming would
+      // insert it live afterwards and it would never be soft-deleted (the
+      // deletion-before-reaction drain race; NIP-59 randomizes gift-wrap
+      // created_at). Symmetric with persistIncoming's unsynced-target handling.
+      // #5452.
+      if (row == null) {
+        outcome = DmReactionWrapOutcome.deferred;
+        continue;
+      }
+      if (row.isDeleted) continue;
 
       // NIP-09: only the original reaction author may delete their reaction.
       if (row.reactorPubkey != rumorEvent.pubkey) {
@@ -561,9 +579,11 @@ class DmReactionsRepository {
           site: DmReactionsRepositoryReportableSites
               .handleIncomingDeletionSoftDelete,
         );
+        // Transient DAO failure — let it retry rather than cement a skip.
+        outcome = DmReactionWrapOutcome.deferred;
       }
     }
-    return DmReactionWrapOutcome.processed;
+    return outcome;
   }
 
   // -------------------------------------------------------------------------

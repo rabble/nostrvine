@@ -27,7 +27,8 @@ class ProcessedGiftWrapsDao extends DatabaseAccessor<AppDatabase>
 
   /// Records [giftWrapId] as terminally processed (idempotent — a re-delivered
   /// wrap or a concurrent writer never throws). [ownerPubkey] is informational
-  /// only; it scopes account-cleanup, not the dedup key.
+  /// only — not part of the dedup key, and not used to scope deletes (cleanup
+  /// is global via [clearAll]).
   Future<void> record({
     required String giftWrapId,
     String? ownerPubkey,
