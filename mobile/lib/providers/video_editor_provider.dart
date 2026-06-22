@@ -701,19 +701,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       await _draftService
           .saveDraft(getActiveDraft(draftId: draftId))
           .timeout(VideoEditorConstants.draftSaveTimeout);
-
-      // The new draft is now the durable copy, so drop the autosave recovery
-      // point. Best-effort and fire-and-forget: a stalled cleanup must not
-      // wedge the save flow, and removeAutosavedDraft swallows its own errors.
-      unawaited(removeAutosavedDraft());
-
-      Log.info(
-        '✅ Draft saved successfully: $draftId',
-        name: 'VideoEditorNotifier',
-        category: .video,
-      );
-
-      return true;
     } catch (e, stackTrace) {
       Log.error(
         '❌ Failed to save draft: $e',
@@ -730,6 +717,23 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         state = state.copyWith(isSavingDraft: false);
       }
     }
+
+    // Reached only on success; the button is already re-enabled above. Drop the
+    // now-redundant autosave recovery point. Awaited (bounded) rather than
+    // fire-and-forget so a slow delete can't resolve after the next editor
+    // session wrote a fresh autosave and wipe that session's recovery point.
+    await removeAutosavedDraft().timeout(
+      VideoEditorConstants.draftSaveTimeout,
+      onTimeout: () {},
+    );
+
+    Log.info(
+      '✅ Draft saved successfully: $draftId',
+      name: 'VideoEditorNotifier',
+      category: .video,
+    );
+
+    return true;
   }
 
   /// Restore a draft from local storage.

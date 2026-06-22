@@ -1532,5 +1532,45 @@ void main() {
         );
       });
     });
+
+    test('clears isSavingDraft before a slow autosave cleanup completes', () {
+      // The button must re-enable as soon as the save outcome is known, and a
+      // stalled autosave cleanup must not hold it disabled.
+      when(() => mockDraftStorage.saveDraft(any())).thenAnswer((_) async {});
+      when(
+        () => mockDraftStorage.deleteDraft(any()),
+      ).thenAnswer((_) => Completer<void>().future);
+
+      fakeAsync((async) {
+        final notifier = container.read(videoEditorProvider.notifier);
+        bool? result;
+        notifier
+            .saveAsDraft(enforceCreateNewDraft: true)
+            .then((value) => result = value);
+
+        async.flushMicrotasks();
+
+        expect(
+          container.read(videoEditorProvider).isSavingDraft,
+          isFalse,
+          reason: 'the save persisted, so the button is free already',
+        );
+        expect(
+          result,
+          isNull,
+          reason: 'the call is still awaiting the bounded cleanup',
+        );
+
+        async.elapse(
+          VideoEditorConstants.draftSaveTimeout + const Duration(seconds: 1),
+        );
+
+        expect(
+          result,
+          isTrue,
+          reason: 'a stalled cleanup still resolves the save as success',
+        );
+      });
+    });
   });
 }
