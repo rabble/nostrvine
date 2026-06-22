@@ -1533,7 +1533,7 @@ void main() {
       });
     });
 
-    test('keeps the save in flight until the autosave cleanup completes', () {
+    test('does not abandon autosave cleanup after a successful draft save', () {
       // The autosave delete must run to completion: an abandoned delete could
       // later wipe a new session's recovery point. So a stalled cleanup keeps
       // isSavingDraft true and the save unresolved rather than being dropped.
