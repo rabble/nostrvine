@@ -62,7 +62,12 @@ final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
         method: httpMethod,
         payload: body,
       );
-      if (token == null) return <String, String>{};
+      if (token == null) {
+        throw const Nip98AuthException(
+          'Unable to sign notifications request',
+          code: 'token_unavailable',
+        );
+      }
       return {'Authorization': token.authorizationHeader};
     },
   );

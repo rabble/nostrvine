@@ -188,6 +188,9 @@ class _VideoRecorderModeSelectorWheelState
                               ),
                               child: Text(
                                 modes[i].label,
+                                maxLines: 1,
+                                overflow: TextOverflow.visible,
+                                softWrap: false,
                                 textScaler: textScaler,
                               ),
                             ),

@@ -1899,6 +1899,121 @@ void main() {
         },
       );
 
+      test(
+        'cached video placeholders are enriched with actor and video metadata',
+        () async {
+          when(
+            () => notificationsDao.getAllNotifications(
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              NotificationRow(
+                id: 'cached_like_1',
+                type: 'like',
+                fromPubkey: 'actor_pub',
+                timestamp: 1700000000,
+                targetEventId: 'video_evt_1',
+                isRead: false,
+                cachedAt: DateTime(2026),
+              ),
+            ],
+          );
+          stubProfiles({
+            'actor_pub': makeProfile(
+              'actor_pub',
+              displayName: 'Alice',
+              picture: 'https://example.com/alice.jpg',
+            ),
+          });
+          stubVideoStats(
+            'video_evt_1',
+            makeVideoStats(
+              id: 'video_evt_1',
+              title: 'Cached clip',
+              thumbnail: 'https://example.com/thumb.jpg',
+            ),
+          );
+
+          final hydrated = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+          );
+          addTearDown(hydrated.close);
+
+          await expectLater(
+            hydrated.watchSnapshot(),
+            emitsThrough(
+              predicate<NotificationPage>((p) {
+                if (p.items.length != 1) return false;
+                final item = p.items.single;
+                return item is VideoNotification &&
+                    item.actors.single.displayName == 'Alice' &&
+                    item.actors.single.pictureUrl ==
+                        'https://example.com/alice.jpg' &&
+                    item.videoTitle == 'Cached clip' &&
+                    item.videoThumbnailUrl == 'https://example.com/thumb.jpg' &&
+                    item.videoAddressableId ==
+                        '34236:$userPubkey:d_video_evt_1';
+              }, 'cached placeholder is enriched after hydration'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'cached actor placeholders are enriched with profile metadata',
+        () async {
+          when(
+            () => notificationsDao.getAllNotifications(
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              NotificationRow(
+                id: 'cached_follow_1',
+                type: 'follow',
+                fromPubkey: 'follower_pub',
+                timestamp: 1700000000,
+                targetPubkey: 'follower_pub',
+                isRead: false,
+                cachedAt: DateTime(2026),
+              ),
+            ],
+          );
+          stubProfiles({
+            'follower_pub': makeProfile(
+              'follower_pub',
+              displayName: 'Bob',
+              picture: 'https://example.com/bob.jpg',
+            ),
+          });
+
+          final hydrated = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+          );
+          addTearDown(hydrated.close);
+
+          await expectLater(
+            hydrated.watchSnapshot(),
+            emitsThrough(
+              predicate<NotificationPage>((p) {
+                if (p.items.length != 1) return false;
+                final item = p.items.single;
+                return item is ActorNotification &&
+                    item.actor.displayName == 'Bob' &&
+                    item.actor.pictureUrl == 'https://example.com/bob.jpg';
+              }, 'cached actor placeholder is enriched after hydration'),
+            ),
+          );
+        },
+      );
+
       test('cached "comment" row becomes $VideoNotification placeholder '
           'with commentText preserved', () async {
         when(
@@ -2113,10 +2228,7 @@ void main() {
 
           staleGate.completeError(const FunnelcakeException('stale'));
 
-          await expectLater(
-            staleFetch,
-            throwsA(isA<FunnelcakeException>()),
-          );
+          await expectLater(staleFetch, throwsA(isA<FunnelcakeException>()));
           final snapshot = await repository.watchSnapshot().first;
           expect(snapshot.lastRefreshError, isFalse);
           expect(
@@ -2738,6 +2850,38 @@ void main() {
       });
 
       test(
+        'does not call notifications API when auth header creation fails',
+        () async {
+          final authRepo = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+            authHeadersProvider: (url, method, {body}) async {
+              throw const FunnelcakeException('auth unavailable');
+            },
+            hydrateOnStart: false,
+          );
+          addTearDown(authRepo.close);
+
+          await expectLater(
+            authRepo.getNotifications(),
+            throwsA(isA<FunnelcakeException>()),
+          );
+
+          verifyNever(
+            () => funnelcakeApiClient.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              cursor: any(named: 'cursor'),
+              requestUri: any(named: 'requestUri'),
+              authHeaders: any(named: 'authHeaders'),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
+      );
+
+      test(
         'markAllAsRead signs the full mark-read URL and empty body',
         () async {
           // NIP-98 requires the auth event's `u` tag to match the
@@ -3060,10 +3204,7 @@ void main() {
         expect(repository.hasPaginatedBeyondFirstPage, isFalse);
 
         markGate.completeError(const FunnelcakeException('boom'));
-        await expectLater(
-          markFuture,
-          throwsA(isA<FunnelcakeException>()),
-        );
+        await expectLater(markFuture, throwsA(isA<FunnelcakeException>()));
 
         expect(repository.hasPaginatedBeyondFirstPage, isTrue);
       });
@@ -3166,10 +3307,7 @@ void main() {
         expect(repository.hasPaginatedBeyondFirstPage, isFalse);
 
         markGate.completeError(const FunnelcakeException('boom'));
-        await expectLater(
-          markFuture,
-          throwsA(isA<FunnelcakeException>()),
-        );
+        await expectLater(markFuture, throwsA(isA<FunnelcakeException>()));
 
         expect(repository.hasPaginatedBeyondFirstPage, isTrue);
       });
