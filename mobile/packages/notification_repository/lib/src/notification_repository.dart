@@ -1280,11 +1280,12 @@ class NotificationRepository {
     RelayNotification n,
   ) => switch (mapped) {
     NotificationKind.likeComment || NotificationKind.reply =>
-      // Prefer the referenced (parent) event ID. Fall back to the source
-      // event ID (the reply event itself) when the server omits
-      // referenced_event_id — both carry NIP-22 E-tags the resolver can
-      // walk to find the root video.
-      n.referencedEventId?.isNotEmpty == true
+      // Prefer the explicit parent comment ID. Some Funnelcake reply payloads
+      // carry the root video in referenced_event_id and the actual parent
+      // comment in target_comment_id.
+      n.targetCommentId?.isNotEmpty == true
+          ? n.targetCommentId
+          : n.referencedEventId?.isNotEmpty == true
           ? n.referencedEventId
           : (n.sourceEventId.isNotEmpty ? n.sourceEventId : null),
     NotificationKind.mention =>
@@ -1566,9 +1567,11 @@ class NotificationRepository {
     }
 
     final targetCommentId = n.targetCommentId;
+    if (n.isReferencedVideo && targetCommentId == referencedEventId) {
+      return false;
+    }
     return targetCommentId != null &&
         targetCommentId.isNotEmpty &&
-        !n.isReferencedVideo &&
         n.sourceEventId.isNotEmpty &&
         targetCommentId != n.sourceEventId &&
         targetCommentId != rootEventId;
