@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -40,7 +41,6 @@ import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
-import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -355,7 +355,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
           );
 
           final parameters = draft.editorEditingParameters.isNotEmpty
-              ? CompleteParameters.fromMap(draft.editorEditingParameters)
+              ? completeParametersFromDraftMap(draft.editorEditingParameters)
               : null;
 
           final result = await VideoEditorRenderService.renderVideoToClip(

@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart' show StickerData, StickerPackData;
 import 'package:openvine/extensions/complete_parameters_extensions.dart';
+import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 CompleteParameters _makeParams({
@@ -370,6 +373,95 @@ void main() {
         final fullLength = largeImage.toList().toString().length;
         expect(logStr, contains('$fullLength chars'));
       });
+    });
+  });
+
+  group('completeParametersFromDraftMap', () {
+    WidgetLayer buildStickerLayer(StickerData sticker) {
+      return WidgetLayer(
+        width: 120,
+        widget: VideoEditorSticker(
+          sticker: sticker,
+          enableLimitCacheSize: false,
+        ),
+        meta: sticker.toJson(),
+        exportConfigs: WidgetLayerExportConfigs(
+          id: 'sticker-${sticker.description}',
+          meta: sticker.toJson(),
+        ),
+      );
+    }
+
+    // Mirrors how a draft persists editorEditingParameters: the in-memory
+    // CompleteParameters is serialized via toMap() and round-tripped through
+    // JSON into storage.
+    Map<String, dynamic> persistedMapFor(CompleteParameters params) {
+      return json.decode(json.encode(params.toMap())) as Map<String, dynamic>;
+    }
+
+    test(
+      'rehydrates a sticker widget layer instead of throwing the '
+      'widgetLoader assertion',
+      () {
+        const sticker = StickerData.network(
+          'https://stickers.example.com/heart.png',
+          description: 'Red heart',
+          tags: ['heart'],
+          packData: StickerPackData(
+            packId: 'reactions',
+            packName: 'Reactions',
+          ),
+        );
+        final map = persistedMapFor(
+          _makeParams(layers: [buildStickerLayer(sticker)]),
+        );
+
+        // The package's own fromMap can't rebuild a widget layer exported by
+        // id without a loader — this is the crash the helper exists to prevent.
+        expect(() => CompleteParameters.fromMap(map), throwsA(anything));
+
+        final restored = completeParametersFromDraftMap(map);
+
+        expect(restored.layers, hasLength(1));
+        final layer = restored.layers.single;
+        expect(layer, isA<WidgetLayer>());
+        expect((layer as WidgetLayer).widget, isA<VideoEditorSticker>());
+        expect(
+          (layer.widget as VideoEditorSticker).sticker.props,
+          equals(sticker.props),
+        );
+      },
+    );
+
+    test('returns default parameters for an empty map', () {
+      final restored = completeParametersFromDraftMap(const {});
+
+      expect(restored.layers, isEmpty);
+      expect(restored.blur, equals(0.0));
+    });
+
+    test('preserves non-widget parameters alongside rehydrated layers', () {
+      const sticker = StickerData.asset(
+        'assets/stickers/star.svg',
+        description: 'Gold star',
+        tags: ['star'],
+        packData: StickerPackData.fallback,
+      );
+      final map = persistedMapFor(
+        _makeParams(
+          layers: [buildStickerLayer(sticker)],
+          flipX: true,
+          rotateTurns: 2,
+          cropWidth: 720,
+        ),
+      );
+
+      final restored = completeParametersFromDraftMap(map);
+
+      expect(restored.flipX, isTrue);
+      expect(restored.rotateTurns, equals(2));
+      expect(restored.cropWidth, equals(720));
+      expect(restored.layers, hasLength(1));
     });
   });
 }

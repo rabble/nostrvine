@@ -830,7 +830,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       shareReplyToFeed: draft.shareReplyToFeed,
       expiration: VideoMetadataExpiration.fromDuration(draft.expireTime),
       editorStateHistory: draft.editorStateHistory,
-      editorEditingParameters: CompleteParameters.fromMap(
+      editorEditingParameters: completeParametersFromDraftMap(
         draft.editorEditingParameters,
       ),
       collaboratorPubkeys: draft.collaboratorPubkeys,
