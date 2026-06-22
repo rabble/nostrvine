@@ -349,6 +349,16 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
       conditions.add('(${eTagConditions.join(' OR ')})');
     }
 
+    // Referenced addressable events filter (a tags)
+    final aTags = filter.a;
+    if (aTags != null && aTags.isNotEmpty) {
+      final aTagConditions = aTags.map((addressableId) {
+        variables.add(Variable.withString('%"a"%"$addressableId"%'));
+        return 'tags LIKE ?';
+      }).toList();
+      conditions.add('(${aTagConditions.join(' OR ')})');
+    }
+
     // Mentioned pubkeys filter (p tags)
     final pTags = filter.p;
     if (pTags != null && pTags.isNotEmpty) {

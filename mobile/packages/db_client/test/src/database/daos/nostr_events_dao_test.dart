@@ -350,6 +350,33 @@ void main() {
         expect(results.first.id, equals(event1.id));
       });
 
+      test('filters by a tags (referenced addressable events)', () async {
+        const referencedAddress = '34236:author_pubkey_hex:video_d_tag';
+        final event1 = createEvent(
+          kind: 6,
+          tags: [
+            ['a', referencedAddress],
+          ],
+          createdAt: 1000,
+        );
+        final event2 = createEvent(
+          kind: 6,
+          tags: [
+            ['a', '34236:author_pubkey_hex:other_d_tag'],
+          ],
+          createdAt: 2000,
+        );
+
+        await dao.upsertEventsBatch([event1, event2]);
+
+        final results = await dao.getEventsByFilter(
+          Filter(kinds: [6], a: [referencedAddress]),
+        );
+
+        expect(results.length, equals(1));
+        expect(results.first.id, equals(event1.id));
+      });
+
       test('filters by p tags (mentioned pubkeys)', () async {
         const mentionedPubkey = 'mentioned_pubkey_123';
         final event1 = createEvent(
