@@ -11,7 +11,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
-import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
@@ -54,9 +53,6 @@ class InboxPage extends ConsumerWidget {
               followRepository: followRepository,
               contentBlocklistRepository: blocklistRepository,
             )..add(const ConversationListStarted()),
-          ),
-          BlocProvider(
-            create: (_) => DmUnreadCountCubit(dmRepository: dmRepository),
           ),
           // Inbox-scope NotificationBadgeCubit feeds the segmented
           // toggle's notifications count. Mirrors the app-shell-scope

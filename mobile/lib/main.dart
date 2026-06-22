@@ -2398,8 +2398,13 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           dispose: (client) => client.dispose(),
         ),
         BlocProvider(
-          create: (_) =>
-              DmUnreadCountCubit(dmRepository: ref.read(dmRepositoryProvider)),
+          create: (_) => DmUnreadCountCubit(
+            dmRepository: ref.read(dmRepositoryProvider),
+            followRepository: ref.read(followRepositoryProvider),
+            contentBlocklistRepository: ref.read(
+              contentBlocklistRepositoryProvider,
+            ),
+          ),
         ),
         // Notification badge cubit. Keep the provider identity stable so
         // repository readiness/account switches do not remount MaterialApp

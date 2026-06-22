@@ -1,6 +1,6 @@
 // ABOUTME: Widget tests for InboxPage, verifying BLoC setup and route constants.
-// ABOUTME: Ensures InboxPage provides ConversationListBloc, DmUnreadCountCubit,
-// ABOUTME: and MyFollowingBloc to InboxView via MultiBlocProvider.
+// ABOUTME: Ensures InboxPage provides ConversationListBloc and MyFollowingBloc
+// ABOUTME: to InboxView; the unread badge cubit is app-shell-scoped (#4976).
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/app_router.dart';
@@ -32,6 +33,9 @@ class _MockContentBlocklistRepository extends Mock
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
     implements InviteStatusCubit {}
 
+class _MockDmUnreadCountCubit extends MockCubit<int>
+    implements DmUnreadCountCubit {}
+
 void main() {
   const testPubkey =
       'aabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd';
@@ -43,6 +47,7 @@ void main() {
     late _MockContentBlocklistRepository mockBlocklistRepository;
     late MockGoRouter mockGoRouter;
     late _MockInviteStatusCubit mockInviteCubit;
+    late _MockDmUnreadCountCubit mockDmUnreadCountCubit;
 
     setUp(() {
       mockDmRepository = _MockDmRepository();
@@ -51,8 +56,10 @@ void main() {
       mockBlocklistRepository = _MockContentBlocklistRepository();
       mockGoRouter = MockGoRouter();
       mockInviteCubit = _MockInviteStatusCubit();
+      mockDmUnreadCountCubit = _MockDmUnreadCountCubit();
       when(() => mockInviteCubit.state).thenReturn(const InviteStatusState());
       when(mockInviteCubit.load).thenAnswer((_) async {});
+      when(() => mockDmUnreadCountCubit.state).thenReturn(0);
 
       when(
         () => mockDmRepository.watchAcceptedConversations(
@@ -62,9 +69,6 @@ void main() {
       when(
         () => mockDmRepository.watchPotentialRequests(),
       ).thenAnswer((_) => Stream.value(const []));
-      when(
-        () => mockDmRepository.watchUnreadAcceptedCount(),
-      ).thenAnswer((_) => Stream.value(0));
       when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
 
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
@@ -99,8 +103,15 @@ void main() {
         (tester) async {
           await tester.pumpWidget(
             testMaterialApp(
-              home: BlocProvider<InviteStatusCubit>.value(
-                value: mockInviteCubit,
+              home: MultiBlocProvider(
+                providers: [
+                  // App-shell-scoped in production (#4976); provided here so the
+                  // inbox toggle can read it after InboxPage stopped self-scoping.
+                  BlocProvider<DmUnreadCountCubit>.value(
+                    value: mockDmUnreadCountCubit,
+                  ),
+                  BlocProvider<InviteStatusCubit>.value(value: mockInviteCubit),
+                ],
                 child: const InboxPage(),
               ),
               mockAuthService: mockAuthService,
@@ -137,8 +148,15 @@ void main() {
       testWidgets('renders $InboxView', (tester) async {
         await tester.pumpWidget(
           testMaterialApp(
-            home: BlocProvider<InviteStatusCubit>.value(
-              value: mockInviteCubit,
+            home: MultiBlocProvider(
+              providers: [
+                // App-shell-scoped in production (#4976); provided here so the
+                // inbox toggle can read it after InboxPage stopped self-scoping.
+                BlocProvider<DmUnreadCountCubit>.value(
+                  value: mockDmUnreadCountCubit,
+                ),
+                BlocProvider<InviteStatusCubit>.value(value: mockInviteCubit),
+              ],
               child: const InboxPage(),
             ),
             mockAuthService: mockAuthService,
