@@ -590,6 +590,95 @@ void main() {
       );
 
       test(
+        'upgrade path recreates processed_gift_wraps when missing',
+        () async {
+          await database.customStatement('DROP TABLE processed_gift_wraps');
+
+          final droppedCheck = await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='processed_gift_wraps'",
+              )
+              .get();
+          expect(
+            droppedCheck,
+            isEmpty,
+            reason: 'precondition: processed_gift_wraps must be missing',
+          );
+
+          await database.close();
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+          final tableCheck = await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='processed_gift_wraps'",
+              )
+              .get();
+          expect(
+            tableCheck,
+            hasLength(1),
+            reason: 'processed_gift_wraps must be re-created on reopen',
+          );
+
+          final dao = database.processedGiftWrapsDao;
+          await dao.record(
+            giftWrapId: 'upgrade-wrap-id',
+            ownerPubkey: testPubkey,
+          );
+          expect(await dao.hasGiftWrap('upgrade-wrap-id'), isTrue);
+        },
+      );
+
+      test(
+        'schema parity — processed_gift_wraps fresh-install matches runtime '
+        'CREATE-IF-NOT-EXISTS path',
+        () async {
+          final freshColumns = await _collectTableInfo(
+            database,
+            'processed_gift_wraps',
+          );
+          final freshIndexes = await _collectIndexNames(
+            database,
+            'processed_gift_wraps',
+          );
+
+          expect(
+            freshColumns,
+            isNotEmpty,
+            reason:
+                'precondition: fresh install should have processed_gift_wraps',
+          );
+
+          await database.customStatement('DROP TABLE processed_gift_wraps');
+          for (final indexName in freshIndexes) {
+            await database.customStatement('DROP INDEX IF EXISTS $indexName');
+          }
+          await database.close();
+
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+          await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='processed_gift_wraps'",
+              )
+              .get();
+
+          final recreatedColumns = await _collectTableInfo(
+            database,
+            'processed_gift_wraps',
+          );
+          final recreatedIndexes = await _collectIndexNames(
+            database,
+            'processed_gift_wraps',
+          );
+
+          expect(recreatedColumns, equals(freshColumns));
+          expect(recreatedIndexes, equals(freshIndexes));
+        },
+      );
+
+      test(
         'upgrade path — dedups duplicate live reactions before recreating '
         'the unique index',
         () async {

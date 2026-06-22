@@ -361,6 +361,10 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
         // class as direct_messages — wipe them on the same path so they never
         // outlive the account's decrypted DMs. See #5202.
         await db.pendingGiftWrapsDao.clearAll();
+        // Wipe the processed-wrap dedup ledger on the same path: a stale ledger
+        // must never suppress re-population of an account's reactions/deletions
+        // after its DM data is cleared. See #5452.
+        await db.processedGiftWrapsDao.clearAll();
         await db.notificationsDao.clearAll();
         // Clear DM sync cursors so the next login triggers a full re-fetch
         // from relays instead of using stale `since:` boundaries.

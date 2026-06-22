@@ -505,6 +505,7 @@ DmRepository dmRepository(Ref ref) {
     conversationsDao: db.conversationsDao,
     outgoingDmsDao: db.outgoingDmsDao,
     pendingGiftWrapsDao: db.pendingGiftWrapsDao,
+    processedGiftWrapsDao: db.processedGiftWrapsDao,
     syncState: DmSyncState(prefs),
     reactionsRepository: reactionsRepository,
     errorReporter: (error, stackTrace, {required site}) {

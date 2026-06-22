@@ -13609,6 +13609,304 @@ class PendingGiftWrapsCompanion extends UpdateCompanion<PendingGiftWrapRow> {
   }
 }
 
+class $ProcessedGiftWrapsTable extends ProcessedGiftWraps
+    with TableInfo<$ProcessedGiftWrapsTable, ProcessedGiftWrap> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProcessedGiftWrapsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _giftWrapIdMeta = const VerificationMeta(
+    'giftWrapId',
+  );
+  @override
+  late final GeneratedColumn<String> giftWrapId = GeneratedColumn<String>(
+    'gift_wrap_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _processedAtMeta = const VerificationMeta(
+    'processedAt',
+  );
+  @override
+  late final GeneratedColumn<int> processedAt = GeneratedColumn<int>(
+    'processed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ownerPubkeyMeta = const VerificationMeta(
+    'ownerPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
+    'owner_pubkey',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [giftWrapId, processedAt, ownerPubkey];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'processed_gift_wraps';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProcessedGiftWrap> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('gift_wrap_id')) {
+      context.handle(
+        _giftWrapIdMeta,
+        giftWrapId.isAcceptableOrUnknown(
+          data['gift_wrap_id']!,
+          _giftWrapIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_giftWrapIdMeta);
+    }
+    if (data.containsKey('processed_at')) {
+      context.handle(
+        _processedAtMeta,
+        processedAt.isAcceptableOrUnknown(
+          data['processed_at']!,
+          _processedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_processedAtMeta);
+    }
+    if (data.containsKey('owner_pubkey')) {
+      context.handle(
+        _ownerPubkeyMeta,
+        ownerPubkey.isAcceptableOrUnknown(
+          data['owner_pubkey']!,
+          _ownerPubkeyMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {giftWrapId};
+  @override
+  ProcessedGiftWrap map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProcessedGiftWrap(
+      giftWrapId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gift_wrap_id'],
+      )!,
+      processedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}processed_at'],
+      )!,
+      ownerPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_pubkey'],
+      ),
+    );
+  }
+
+  @override
+  $ProcessedGiftWrapsTable createAlias(String alias) {
+    return $ProcessedGiftWrapsTable(attachedDatabase, alias);
+  }
+}
+
+class ProcessedGiftWrap extends DataClass
+    implements Insertable<ProcessedGiftWrap> {
+  /// The kind 1059 gift-wrap event id (outer). Dedup key.
+  ///
+  /// Intentionally NOT scoped by owner: gift-wrap event ids are globally unique
+  /// per the Nostr protocol, so cross-account dedup prevents re-processing the
+  /// same relay event for multiple local accounts — matching
+  /// [DirectMessages.giftWrapId] dedup semantics.
+  final String giftWrapId;
+
+  /// When the wrap was terminally processed (unix seconds). Informational and
+  /// available for any future time-based retention.
+  final int processedAt;
+
+  /// Recipient pubkey this wrap was processed for. Informational only — NOT
+  /// part of the dedup key — used to scope account-cleanup deletes.
+  final String? ownerPubkey;
+  const ProcessedGiftWrap({
+    required this.giftWrapId,
+    required this.processedAt,
+    this.ownerPubkey,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['gift_wrap_id'] = Variable<String>(giftWrapId);
+    map['processed_at'] = Variable<int>(processedAt);
+    if (!nullToAbsent || ownerPubkey != null) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey);
+    }
+    return map;
+  }
+
+  ProcessedGiftWrapsCompanion toCompanion(bool nullToAbsent) {
+    return ProcessedGiftWrapsCompanion(
+      giftWrapId: Value(giftWrapId),
+      processedAt: Value(processedAt),
+      ownerPubkey: ownerPubkey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerPubkey),
+    );
+  }
+
+  factory ProcessedGiftWrap.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProcessedGiftWrap(
+      giftWrapId: serializer.fromJson<String>(json['giftWrapId']),
+      processedAt: serializer.fromJson<int>(json['processedAt']),
+      ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'giftWrapId': serializer.toJson<String>(giftWrapId),
+      'processedAt': serializer.toJson<int>(processedAt),
+      'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
+    };
+  }
+
+  ProcessedGiftWrap copyWith({
+    String? giftWrapId,
+    int? processedAt,
+    Value<String?> ownerPubkey = const Value.absent(),
+  }) => ProcessedGiftWrap(
+    giftWrapId: giftWrapId ?? this.giftWrapId,
+    processedAt: processedAt ?? this.processedAt,
+    ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
+  );
+  ProcessedGiftWrap copyWithCompanion(ProcessedGiftWrapsCompanion data) {
+    return ProcessedGiftWrap(
+      giftWrapId: data.giftWrapId.present
+          ? data.giftWrapId.value
+          : this.giftWrapId,
+      processedAt: data.processedAt.present
+          ? data.processedAt.value
+          : this.processedAt,
+      ownerPubkey: data.ownerPubkey.present
+          ? data.ownerPubkey.value
+          : this.ownerPubkey,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProcessedGiftWrap(')
+          ..write('giftWrapId: $giftWrapId, ')
+          ..write('processedAt: $processedAt, ')
+          ..write('ownerPubkey: $ownerPubkey')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(giftWrapId, processedAt, ownerPubkey);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProcessedGiftWrap &&
+          other.giftWrapId == this.giftWrapId &&
+          other.processedAt == this.processedAt &&
+          other.ownerPubkey == this.ownerPubkey);
+}
+
+class ProcessedGiftWrapsCompanion extends UpdateCompanion<ProcessedGiftWrap> {
+  final Value<String> giftWrapId;
+  final Value<int> processedAt;
+  final Value<String?> ownerPubkey;
+  final Value<int> rowid;
+  const ProcessedGiftWrapsCompanion({
+    this.giftWrapId = const Value.absent(),
+    this.processedAt = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProcessedGiftWrapsCompanion.insert({
+    required String giftWrapId,
+    required int processedAt,
+    this.ownerPubkey = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : giftWrapId = Value(giftWrapId),
+       processedAt = Value(processedAt);
+  static Insertable<ProcessedGiftWrap> custom({
+    Expression<String>? giftWrapId,
+    Expression<int>? processedAt,
+    Expression<String>? ownerPubkey,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (giftWrapId != null) 'gift_wrap_id': giftWrapId,
+      if (processedAt != null) 'processed_at': processedAt,
+      if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProcessedGiftWrapsCompanion copyWith({
+    Value<String>? giftWrapId,
+    Value<int>? processedAt,
+    Value<String?>? ownerPubkey,
+    Value<int>? rowid,
+  }) {
+    return ProcessedGiftWrapsCompanion(
+      giftWrapId: giftWrapId ?? this.giftWrapId,
+      processedAt: processedAt ?? this.processedAt,
+      ownerPubkey: ownerPubkey ?? this.ownerPubkey,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (giftWrapId.present) {
+      map['gift_wrap_id'] = Variable<String>(giftWrapId.value);
+    }
+    if (processedAt.present) {
+      map['processed_at'] = Variable<int>(processedAt.value);
+    }
+    if (ownerPubkey.present) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProcessedGiftWrapsCompanion(')
+          ..write('giftWrapId: $giftWrapId, ')
+          ..write('processedAt: $processedAt, ')
+          ..write('ownerPubkey: $ownerPubkey, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -13639,6 +13937,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PendingGiftWrapsTable pendingGiftWraps = $PendingGiftWrapsTable(
     this,
   );
+  late final $ProcessedGiftWrapsTable processedGiftWraps =
+      $ProcessedGiftWrapsTable(this);
   late final UserProfilesDao userProfilesDao = UserProfilesDao(
     this as AppDatabase,
   );
@@ -13691,6 +13991,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final PendingGiftWrapsDao pendingGiftWrapsDao = PendingGiftWrapsDao(
     this as AppDatabase,
   );
+  late final ProcessedGiftWrapsDao processedGiftWrapsDao =
+      ProcessedGiftWrapsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -13715,6 +14017,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     outgoingDms,
     pendingViewEvents,
     pendingGiftWraps,
+    processedGiftWraps,
   ];
 }
 
@@ -20036,6 +20339,187 @@ typedef $$PendingGiftWrapsTableProcessedTableManager =
       PendingGiftWrapRow,
       PrefetchHooks Function()
     >;
+typedef $$ProcessedGiftWrapsTableCreateCompanionBuilder =
+    ProcessedGiftWrapsCompanion Function({
+      required String giftWrapId,
+      required int processedAt,
+      Value<String?> ownerPubkey,
+      Value<int> rowid,
+    });
+typedef $$ProcessedGiftWrapsTableUpdateCompanionBuilder =
+    ProcessedGiftWrapsCompanion Function({
+      Value<String> giftWrapId,
+      Value<int> processedAt,
+      Value<String?> ownerPubkey,
+      Value<int> rowid,
+    });
+
+class $$ProcessedGiftWrapsTableFilterComposer
+    extends Composer<_$AppDatabase, $ProcessedGiftWrapsTable> {
+  $$ProcessedGiftWrapsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get giftWrapId => $composableBuilder(
+    column: $table.giftWrapId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get processedAt => $composableBuilder(
+    column: $table.processedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProcessedGiftWrapsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProcessedGiftWrapsTable> {
+  $$ProcessedGiftWrapsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get giftWrapId => $composableBuilder(
+    column: $table.giftWrapId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get processedAt => $composableBuilder(
+    column: $table.processedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProcessedGiftWrapsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProcessedGiftWrapsTable> {
+  $$ProcessedGiftWrapsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get giftWrapId => $composableBuilder(
+    column: $table.giftWrapId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get processedAt => $composableBuilder(
+    column: $table.processedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => column,
+  );
+}
+
+class $$ProcessedGiftWrapsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ProcessedGiftWrapsTable,
+          ProcessedGiftWrap,
+          $$ProcessedGiftWrapsTableFilterComposer,
+          $$ProcessedGiftWrapsTableOrderingComposer,
+          $$ProcessedGiftWrapsTableAnnotationComposer,
+          $$ProcessedGiftWrapsTableCreateCompanionBuilder,
+          $$ProcessedGiftWrapsTableUpdateCompanionBuilder,
+          (
+            ProcessedGiftWrap,
+            BaseReferences<
+              _$AppDatabase,
+              $ProcessedGiftWrapsTable,
+              ProcessedGiftWrap
+            >,
+          ),
+          ProcessedGiftWrap,
+          PrefetchHooks Function()
+        > {
+  $$ProcessedGiftWrapsTableTableManager(
+    _$AppDatabase db,
+    $ProcessedGiftWrapsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProcessedGiftWrapsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProcessedGiftWrapsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProcessedGiftWrapsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> giftWrapId = const Value.absent(),
+                Value<int> processedAt = const Value.absent(),
+                Value<String?> ownerPubkey = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProcessedGiftWrapsCompanion(
+                giftWrapId: giftWrapId,
+                processedAt: processedAt,
+                ownerPubkey: ownerPubkey,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String giftWrapId,
+                required int processedAt,
+                Value<String?> ownerPubkey = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProcessedGiftWrapsCompanion.insert(
+                giftWrapId: giftWrapId,
+                processedAt: processedAt,
+                ownerPubkey: ownerPubkey,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProcessedGiftWrapsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ProcessedGiftWrapsTable,
+      ProcessedGiftWrap,
+      $$ProcessedGiftWrapsTableFilterComposer,
+      $$ProcessedGiftWrapsTableOrderingComposer,
+      $$ProcessedGiftWrapsTableAnnotationComposer,
+      $$ProcessedGiftWrapsTableCreateCompanionBuilder,
+      $$ProcessedGiftWrapsTableUpdateCompanionBuilder,
+      (
+        ProcessedGiftWrap,
+        BaseReferences<
+          _$AppDatabase,
+          $ProcessedGiftWrapsTable,
+          ProcessedGiftWrap
+        >,
+      ),
+      ProcessedGiftWrap,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -20078,4 +20562,6 @@ class $AppDatabaseManager {
       $$PendingViewEventsTableTableManager(_db, _db.pendingViewEvents);
   $$PendingGiftWrapsTableTableManager get pendingGiftWraps =>
       $$PendingGiftWrapsTableTableManager(_db, _db.pendingGiftWraps);
+  $$ProcessedGiftWrapsTableTableManager get processedGiftWraps =>
+      $$ProcessedGiftWrapsTableTableManager(_db, _db.processedGiftWraps);
 }

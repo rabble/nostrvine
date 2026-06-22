@@ -36,6 +36,7 @@ const _notificationRetentionDays = 7;
     OutgoingDms,
     PendingViewEvents,
     PendingGiftWraps,
+    ProcessedGiftWraps,
   ],
   daos: [
     UserProfilesDao,
@@ -57,6 +58,7 @@ const _notificationRetentionDays = 7;
     OutgoingDmsDao,
     PendingViewEventsDao,
     PendingGiftWrapsDao,
+    ProcessedGiftWrapsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -638,6 +640,27 @@ class AppDatabase extends _$AppDatabase {
       CREATE INDEX IF NOT EXISTS idx_pending_gift_wraps_owner_attempts
       ON pending_gift_wraps (owner_pubkey, attempts)
     ''');
+
+    // Check if processed_gift_wraps table exists, create if missing.
+    // Added for #5452 (dedup ledger so DM reaction/deletion gift wraps are not
+    // re-decrypted on every launch). Schema version stays at 1 — same runtime
+    // CREATE-IF-NOT-EXISTS pattern as pending_gift_wraps above. No index: the
+    // only access is a primary-key lookup on gift_wrap_id.
+    final processedGiftWrapsResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='processed_gift_wraps'",
+    ).get();
+
+    if (processedGiftWrapsResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE processed_gift_wraps (
+          gift_wrap_id TEXT NOT NULL,
+          processed_at INTEGER NOT NULL,
+          owner_pubkey TEXT,
+          PRIMARY KEY (gift_wrap_id)
+        )
+      ''');
+    }
 
     // Populate new columns from existing JSON data blobs
     await _backfillFilePathColumns();

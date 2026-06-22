@@ -686,11 +686,13 @@ void main() {
     test('persistIncoming validates event shape before upsert', () async {
       final repository = createRepository();
 
-      await repository.persistIncoming(
+      // Malformed content / missing e-tag are permanent drops — terminal, so
+      // the wrap is recorded (processed) and not re-decrypted. #5452.
+      final emptyContentOutcome = await repository.persistIncoming(
         rumorEvent: reactionRumor(content: ''),
         giftWrapId: _giftWrapId,
       );
-      await repository.persistIncoming(
+      final missingTagOutcome = await repository.persistIncoming(
         rumorEvent: reactionRumor(
           tags: [
             ['p', _otherPubkey],
@@ -698,6 +700,9 @@ void main() {
         ),
         giftWrapId: _giftWrapId,
       );
+
+      expect(emptyContentOutcome, DmReactionWrapOutcome.processed);
+      expect(missingTagOutcome, DmReactionWrapOutcome.processed);
 
       verifyNever(
         () => mockDao.upsertIncoming(
@@ -730,11 +735,12 @@ void main() {
       ).thenAnswer((_) async {});
 
       final repository = createRepository();
-      await repository.persistIncoming(
+      final outcome = await repository.persistIncoming(
         rumorEvent: reactionRumor(),
         giftWrapId: _giftWrapId,
       );
 
+      expect(outcome, DmReactionWrapOutcome.processed);
       verify(
         () => mockDao.upsertIncoming(
           id: _reactionRumorId,
@@ -766,11 +772,14 @@ void main() {
       ).thenThrow(StateError('boom'));
 
       final repository = createRepository();
-      await repository.persistIncoming(
+      final outcome = await repository.persistIncoming(
         rumorEvent: reactionRumor(),
         giftWrapId: _giftWrapId,
       );
 
+      // A transient DAO failure must NOT cement a skip — leave it deferred so
+      // the wrap retries on a later launch. #5452.
+      expect(outcome, DmReactionWrapOutcome.deferred);
       expect(
         reporterSites,
         contains(
@@ -778,6 +787,45 @@ void main() {
         ),
       );
     });
+
+    test(
+      'persistIncoming returns deferred when the conversation cannot be '
+      'resolved (target not synced)',
+      () async {
+        // A third-party reaction (neither reactor nor target author is us) with
+        // no synced target message: the conversation cannot be inferred, so the
+        // wrap is left undecided to re-decrypt and land later. #5452.
+        const thirdPubkey =
+            '1111111111111111111111111111111111111111111111111111111111111111';
+        final repository = createRepository();
+
+        final outcome = await repository.persistIncoming(
+          rumorEvent: reactionRumor(
+            reactorPubkey: _otherPubkey,
+            tags: [
+              ['e', _targetMessageId],
+              ['p', thirdPubkey],
+            ],
+          ),
+          giftWrapId: _giftWrapId,
+        );
+
+        expect(outcome, DmReactionWrapOutcome.deferred);
+        verifyNever(
+          () => mockDao.upsertIncoming(
+            id: any(named: 'id'),
+            conversationId: any(named: 'conversationId'),
+            targetMessageId: any(named: 'targetMessageId'),
+            targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            reactorPubkey: any(named: 'reactorPubkey'),
+            emoji: any(named: 'emoji'),
+            createdAt: any(named: 'createdAt'),
+            giftWrapId: any(named: 'giftWrapId'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      },
+    );
 
     test(
       'handleIncomingDeletion soft-deletes matching reaction rows',
@@ -794,7 +842,7 @@ void main() {
         ).thenAnswer((_) async => 1);
 
         final repository = createRepository();
-        await repository.handleIncomingDeletion(
+        final outcome = await repository.handleIncomingDeletion(
           rumorEvent: reactionRumor(
             kind: EventKind.eventDeletion,
             content: '',
@@ -806,6 +854,9 @@ void main() {
           giftWrapId: _giftWrapId,
         );
 
+        // Terminal: the deletion wrap is recorded so it is not re-decrypted on
+        // every launch. #5452.
+        expect(outcome, DmReactionWrapOutcome.processed);
         verify(
           () => mockDao.softDelete(
             id: _reactionRumorId,

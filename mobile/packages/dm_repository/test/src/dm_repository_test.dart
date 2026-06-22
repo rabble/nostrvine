@@ -153,6 +153,26 @@ Future<Event> _buildForgedSealGiftWrap({
 
 class _MockPendingGiftWrapsDao extends Mock implements PendingGiftWrapsDao {}
 
+/// In-memory [ProcessedGiftWrapsDao] backed by a [Set] of gift-wrap ids, so a
+/// repository test can prove a re-delivered wrap is not re-decrypted without a
+/// real Drift database. Mirrors the global (owner-agnostic) dedup contract.
+class _InMemoryProcessedGiftWrapsDao extends Mock
+    implements ProcessedGiftWrapsDao {
+  final Set<String> recorded = <String>{};
+
+  @override
+  Future<bool> hasGiftWrap(String giftWrapId) async =>
+      recorded.contains(giftWrapId);
+
+  @override
+  Future<void> record({
+    required String giftWrapId,
+    String? ownerPubkey,
+  }) async {
+    recorded.add(giftWrapId);
+  }
+}
+
 class _FakeOutgoingDm extends Fake implements OutgoingDm {}
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -443,6 +463,7 @@ void main() {
       DmSyncState? syncState,
       OutgoingDmsDao? outgoingDmsDao,
       PendingGiftWrapsDao? pendingGiftWrapsDao,
+      ProcessedGiftWrapsDao? processedGiftWrapsDao,
       DmReactionsRepository? reactionsRepository,
       NostrSigner? signer,
       DmDecryptIsolateSpawner? decryptIsolateSpawner,
@@ -455,6 +476,7 @@ void main() {
         conversationsDao: mockConversationsDao,
         outgoingDmsDao: outgoingDmsDao,
         pendingGiftWrapsDao: pendingGiftWrapsDao,
+        processedGiftWrapsDao: processedGiftWrapsDao,
         userPubkey: userPubkey ?? _validPubkeyA,
         signer: signer ?? LocalNostrSigner(_validPrivateKey),
         rumorDecryptor: rumorDecryptor,
@@ -8349,7 +8371,7 @@ void main() {
               rumorEvent: any(named: 'rumorEvent'),
               giftWrapId: _giftWrapEventId,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => DmReactionWrapOutcome.processed);
 
           final repository = createRepository(
             reactionsRepository: mockReactionsRepository,
@@ -8402,6 +8424,178 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
             ),
           );
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+    });
+
+    group('receive pipeline - processed-wrap dedup ledger (#5452)', () {
+      Event giftWrap() => Event.fromJson({
+        'id': _giftWrapEventId,
+        'pubkey': _validPubkeyC,
+        'created_at': 1700000100,
+        'kind': EventKind.giftWrap,
+        'tags': [
+          ['p', _validPubkeyA],
+        ],
+        'content': 'wrapped',
+        'sig': '',
+      });
+
+      Event reactionRumor() => Event.fromJson({
+        'id': _rumorEventId,
+        'pubkey': _validPubkeyB,
+        'created_at': 1700000000,
+        'kind': EventKind.reaction,
+        'tags': [
+          ['e', _giftWrapEventId2],
+          ['p', _validPubkeyA],
+        ],
+        'content': '❤️',
+        'sig': '',
+      });
+
+      Event deletionRumor() => Event.fromJson({
+        'id': _rumorEventId,
+        'pubkey': _validPubkeyB,
+        'created_at': 1700000000,
+        'kind': EventKind.eventDeletion,
+        'tags': [
+          ['e', _giftWrapEventId2],
+          ['k', EventKind.reaction.toString()],
+        ],
+        'content': '',
+        'sig': '',
+      });
+
+      late StreamController<Event> controller;
+      late _InMemoryProcessedGiftWrapsDao ledger;
+
+      setUp(() {
+        controller = StreamController<Event>();
+        ledger = _InMemoryProcessedGiftWrapsDao();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+        // Reactions/deletions never leave a directMessages dedup row, so the
+        // message-table check is always false for these wraps.
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+        ).thenAnswer((_) async => false);
+      });
+
+      Future<void> deliverTwice(Event wrap) async {
+        controller.add(wrap);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        controller.add(wrap);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      test(
+        'a re-delivered reaction wrap is decrypted only once (recorded in '
+        'the ledger after the first terminal persist)',
+        () async {
+          when(
+            () => mockReactionsRepository.persistIncoming(
+              rumorEvent: any(named: 'rumorEvent'),
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).thenAnswer((_) async => DmReactionWrapOutcome.processed);
+
+          var decryptCount = 0;
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            reactionsRepository: mockReactionsRepository,
+            rumorDecryptor: (_, _) async {
+              decryptCount++;
+              return reactionRumor();
+            },
+          );
+          await repository.startListening();
+
+          await deliverTwice(giftWrap());
+
+          expect(decryptCount, 1);
+          expect(ledger.recorded, contains(_giftWrapEventId));
+          verify(
+            () => mockReactionsRepository.persistIncoming(
+              rumorEvent: any(named: 'rumorEvent'),
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).called(1);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'a re-delivered deletion wrap is decrypted only once',
+        () async {
+          when(
+            () => mockReactionsRepository.handleIncomingDeletion(
+              rumorEvent: any(named: 'rumorEvent'),
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).thenAnswer((_) async => DmReactionWrapOutcome.processed);
+
+          var decryptCount = 0;
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            reactionsRepository: mockReactionsRepository,
+            rumorDecryptor: (_, _) async {
+              decryptCount++;
+              return deletionRumor();
+            },
+          );
+          await repository.startListening();
+
+          await deliverTwice(giftWrap());
+
+          expect(decryptCount, 1);
+          expect(ledger.recorded, contains(_giftWrapEventId));
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'an unresolved reaction (deferred) is NOT recorded and re-decrypts on '
+        'redelivery — preserving eventual consistency',
+        () async {
+          // conversationId == null in production maps to deferred: the target
+          // message has not synced yet, so the wrap must stay decryptable.
+          when(
+            () => mockReactionsRepository.persistIncoming(
+              rumorEvent: any(named: 'rumorEvent'),
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).thenAnswer((_) async => DmReactionWrapOutcome.deferred);
+
+          var decryptCount = 0;
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            reactionsRepository: mockReactionsRepository,
+            rumorDecryptor: (_, _) async {
+              decryptCount++;
+              return reactionRumor();
+            },
+          );
+          await repository.startListening();
+
+          await deliverTwice(giftWrap());
+
+          expect(decryptCount, 2);
+          expect(ledger.recorded, isNot(contains(_giftWrapEventId)));
 
           await controller.close();
           await repository.stopListening();

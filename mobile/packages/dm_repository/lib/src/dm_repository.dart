@@ -177,6 +177,7 @@ class DmRepository {
     required ConversationsDao conversationsDao,
     OutgoingDmsDao? outgoingDmsDao,
     PendingGiftWrapsDao? pendingGiftWrapsDao,
+    ProcessedGiftWrapsDao? processedGiftWrapsDao,
     DmSyncState? syncState,
     NIP17MessageService? messageService,
     String? userPubkey,
@@ -192,6 +193,7 @@ class DmRepository {
        _conversationsDao = conversationsDao,
        _outgoingDmsDao = outgoingDmsDao,
        _pendingGiftWrapsDao = pendingGiftWrapsDao,
+       _processedGiftWrapsDao = processedGiftWrapsDao,
        _syncState = syncState,
        _messageService = messageService,
        _userPubkey = userPubkey ?? '',
@@ -222,6 +224,15 @@ class DmRepository {
   /// flaky remote-signer (Keycast RPC) decryption. Nullable to keep older
   /// test fixtures working without rewiring. See #5202.
   final PendingGiftWrapsDao? _pendingGiftWrapsDao;
+
+  /// Optional dedup ledger for gift wraps whose decrypted rumor writes no
+  /// `directMessages` row — reactions (kind 7), deletions (kind 5),
+  /// unsupported kinds, cross-protocol duplicates, degenerate participant
+  /// sets. Consulted alongside [DirectMessagesDao.hasGiftWrap] in the
+  /// pre-decrypt dedup so those wraps are not re-decrypted on every launch
+  /// (a serial remote-signer RPC each). Nullable to keep older test fixtures
+  /// working without rewiring. See #5452.
+  final ProcessedGiftWrapsDao? _processedGiftWrapsDao;
 
   final DmSyncState? _syncState;
   NIP17MessageService? _messageService;
@@ -1157,6 +1168,30 @@ class DmRepository {
     }
   }
 
+  /// Pre-decrypt dedup: has this gift wrap already been processed, by either
+  /// path? Text/file messages (kind 14/15) leave a `directMessages` row; the
+  /// outcomes that write no message row (reactions, deletions, unsupported
+  /// kinds, cross-protocol dups, degenerate participants) leave a
+  /// `processed_gift_wraps` ledger row instead. Checking both means a
+  /// re-delivered wrap of any kind is skipped before paying a decrypt. #5452.
+  Future<bool> _alreadyProcessed(String giftWrapId) async {
+    if (await _directMessagesDao.hasGiftWrap(giftWrapId)) return true;
+    final ledger = _processedGiftWrapsDao;
+    if (ledger == null) return false;
+    return ledger.hasGiftWrap(giftWrapId);
+  }
+
+  /// Records a terminally-processed gift wrap in the dedup ledger so it is not
+  /// re-decrypted on a later launch. No-op when the ledger DAO is absent (older
+  /// test fixtures). Recorded AFTER the outcome write so a crash in between
+  /// only ever costs a benign re-decrypt, never a lost reaction/deletion. #5452.
+  Future<void> _recordProcessedWrap(String giftWrapId) async {
+    await _processedGiftWrapsDao?.record(
+      giftWrapId: giftWrapId,
+      ownerPubkey: _userPubkey,
+    );
+  }
+
   /// Single-event gift-wrap entry (live subscription + retry replay): dedup,
   /// decrypt, then persist. The persist body is shared with the batched
   /// history-drain path via [_persistDecryptedGiftWrap]. Callers must already
@@ -1164,8 +1199,8 @@ class DmRepository {
   Future<void> _handleGiftWrapEvent(Event giftWrapEvent) async {
     final Event? rumorEvent;
     try {
-      // Dedup: skip if already processed
-      if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) {
+      // Dedup: skip if already processed (message row or ledger). #5452.
+      if (await _alreadyProcessed(giftWrapEvent.id)) {
         return;
       }
 
@@ -1232,28 +1267,43 @@ class DmRepository {
       // this feature so the remove path preserves DM privacy. Route both
       // before the DM-only kinds gate below. #4633.
       if (rumor.kind == EventKind.reaction) {
-        await _reactionsRepository?.persistIncoming(
+        final outcome = await _reactionsRepository?.persistIncoming(
           rumorEvent: rumor,
           giftWrapId: giftWrapEvent.id,
         );
+        // Record only terminal outcomes: a reaction whose target message has
+        // not synced is left out so it re-decrypts and lands later. #5452.
+        if (outcome == DmReactionWrapOutcome.processed) {
+          await _recordProcessedWrap(giftWrapEvent.id);
+        }
         return;
       }
       if (rumor.kind == EventKind.eventDeletion) {
-        await _reactionsRepository?.handleIncomingDeletion(
+        final outcome = await _reactionsRepository?.handleIncomingDeletion(
           rumorEvent: rumor,
           giftWrapId: giftWrapEvent.id,
         );
+        if (outcome == DmReactionWrapOutcome.processed) {
+          await _recordProcessedWrap(giftWrapEvent.id);
+        }
         return;
       }
 
-      // Accept kind 14 (text) and kind 15 (file)
-      if (!_supportedDmKinds.contains(rumor.kind)) return;
+      // Accept kind 14 (text) and kind 15 (file). Any other kind is terminally
+      // unsupported — record it so it is not re-decrypted on every launch.
+      if (!_supportedDmKinds.contains(rumor.kind)) {
+        await _recordProcessedWrap(giftWrapEvent.id);
+        return;
+      }
 
       // Extract conversation participants from pubkey + p tags, then
       // resolve against existing conversations to prevent duplicates
       // from non-compliant clients that add extra p-tags.
       final rawParticipants = _extractParticipants(rumor);
-      if (rawParticipants.length < 2) return;
+      if (rawParticipants.length < 2) {
+        await _recordProcessedWrap(giftWrapEvent.id);
+        return;
+      }
 
       final participants = await _resolveConversationParticipants(
         rawParticipants,
@@ -1263,7 +1313,10 @@ class DmRepository {
       // Reject self-conversations (all participants are the same pubkey).
       // Defense-in-depth: should not happen after the self-wrap fix above,
       // but guards against any future code path producing degenerate lists.
-      if (participants.toSet().length < 2) return;
+      if (participants.toSet().length < 2) {
+        await _recordProcessedWrap(giftWrapEvent.id);
+        return;
+      }
 
       final conversationId = computeConversationId(participants);
 
@@ -1283,7 +1336,9 @@ class DmRepository {
           : null;
 
       // Cross-protocol dedup: if a NIP-04 copy of this message was
-      // processed first (network reordering), skip the duplicate.
+      // processed first (network reordering), skip the duplicate. Record the
+      // wrap so the skipped NIP-17 copy is not re-decrypted every launch.
+      // #5452.
       final isDuplicate = await _directMessagesDao.hasMatchingMessage(
         conversationId: conversationId,
         senderPubkey: rumor.pubkey,
@@ -1292,6 +1347,7 @@ class DmRepository {
         ownerPubkey: _userPubkey,
       );
       if (isDuplicate) {
+        await _recordProcessedWrap(giftWrapEvent.id);
         return;
       }
 
@@ -1401,7 +1457,7 @@ class DmRepository {
     final pending = <Event>[];
     for (final event in events) {
       if (event.kind != EventKind.giftWrap) continue;
-      if (await _directMessagesDao.hasGiftWrap(event.id)) continue;
+      if (await _alreadyProcessed(event.id)) continue;
       pending.add(event);
     }
     if (pending.isEmpty) return const {};
@@ -1476,7 +1532,7 @@ class DmRepository {
     final pending = <Event>[];
     for (final event in events) {
       if (event.kind != EventKind.giftWrap) continue;
-      if (await _directMessagesDao.hasGiftWrap(event.id)) continue;
+      if (await _alreadyProcessed(event.id)) continue;
       pending.add(event);
     }
     if (pending.isEmpty) return const {};

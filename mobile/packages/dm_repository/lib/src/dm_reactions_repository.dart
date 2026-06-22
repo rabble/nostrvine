@@ -44,6 +44,21 @@ class DmReactionPublishResult {
   final String? errorMessage;
 }
 
+/// Outcome of ingesting an incoming wrapped reaction/deletion rumor, used by
+/// `DmRepository` to decide whether to record the gift wrap in the
+/// processed-wrap dedup ledger (#5452).
+enum DmReactionWrapOutcome {
+  /// The wrap reached a terminal state — persisted, or permanently dropped for
+  /// a reason that will not change (malformed content/tags, no matching row).
+  /// Safe to record so the wrap is never re-decrypted.
+  processed,
+
+  /// The wrap could not be applied yet (signer not ready, or the reaction's
+  /// target message has not synced). Must NOT be recorded so it re-decrypts on
+  /// a later launch once the target exists — preserving eventual consistency.
+  deferred,
+}
+
 /// Repository for DM emoji reactions.
 ///
 /// Public surface:
@@ -420,12 +435,20 @@ class DmReactionsRepository {
 
   /// Persist an incoming kind-7 reaction rumor. Called from
   /// `DmRepository._handleGiftWrapEvent` after rumor extraction.
-  Future<void> persistIncoming({
+  ///
+  /// Returns [DmReactionWrapOutcome.processed] when the wrap reached a terminal
+  /// state (persisted, or permanently dropped for malformed content/tags), and
+  /// [DmReactionWrapOutcome.deferred] when it could not be applied yet (signer
+  /// not ready, or the target message has not synced) so the caller leaves it
+  /// out of the dedup ledger and lets it re-decrypt later. See #5452.
+  Future<DmReactionWrapOutcome> persistIncoming({
     required Event rumorEvent,
     required String giftWrapId,
   }) async {
-    if (_userPubkey.isEmpty) return;
-    if (rumorEvent.kind != EventKind.reaction) return;
+    if (_userPubkey.isEmpty) return DmReactionWrapOutcome.deferred;
+    if (rumorEvent.kind != EventKind.reaction) {
+      return DmReactionWrapOutcome.processed;
+    }
     final content = rumorEvent.content;
     if (content.isEmpty || content.length > _maxReactionContentLength) {
       Log.debug(
@@ -433,7 +456,7 @@ class DmReactionsRepository {
         '(content length: ${content.length})',
         category: LogCategory.system,
       );
-      return;
+      return DmReactionWrapOutcome.processed;
     }
     String? targetMessageId;
     String? targetAuthor;
@@ -452,7 +475,7 @@ class DmReactionsRepository {
         'Dropping reaction rumor ${rumorEvent.id} — missing/invalid e tag',
         category: LogCategory.system,
       );
-      return;
+      return DmReactionWrapOutcome.processed;
     }
     targetAuthor ??= rumorEvent.pubkey;
     final conversationId = await _resolveConversationIdForReaction(
@@ -460,7 +483,9 @@ class DmReactionsRepository {
       targetAuthor: targetAuthor,
       targetMessageId: targetMessageId,
     );
-    if (conversationId == null) return;
+    // Target message not synced yet: leave undecided so a later launch retries
+    // and the reaction lands once the message arrives. See #5452 (D4-terminal).
+    if (conversationId == null) return DmReactionWrapOutcome.deferred;
     try {
       await _reactionsDao.upsertIncoming(
         id: rumorEvent.id,
@@ -473,12 +498,15 @@ class DmReactionsRepository {
         giftWrapId: giftWrapId,
         ownerPubkey: _userPubkey,
       );
+      return DmReactionWrapOutcome.processed;
     } on Object catch (e, st) {
       _errorReporter?.call(
         e,
         st,
         site: DmReactionsRepositoryReportableSites.persistIncomingDaoUpsert,
       );
+      // Transient DAO failure — let it retry rather than cement a skip.
+      return DmReactionWrapOutcome.deferred;
     }
   }
 
@@ -487,13 +515,22 @@ class DmReactionsRepository {
   /// DM message deletions use the top-level kind-5 path in [DmRepository].
   /// This handler is specifically for wrapped deletions emitted by the
   /// reactions feature, which tag the deleted event with `k=7`.
-  Future<void> handleIncomingDeletion({
+  ///
+  /// Returns [DmReactionWrapOutcome.processed] (terminal) in every case except
+  /// when the signer is not ready yet, so the caller records the deletion wrap
+  /// in the dedup ledger and it is not re-decrypted on the next launch. The
+  /// soft-delete is idempotent, so recording it unconditionally is safe. #5452.
+  Future<DmReactionWrapOutcome> handleIncomingDeletion({
     required Event rumorEvent,
     required String giftWrapId,
   }) async {
-    if (_userPubkey.isEmpty) return;
-    if (rumorEvent.kind != EventKind.eventDeletion) return;
-    if (!_targetsReactionKind(rumorEvent.tags)) return;
+    if (_userPubkey.isEmpty) return DmReactionWrapOutcome.deferred;
+    if (rumorEvent.kind != EventKind.eventDeletion) {
+      return DmReactionWrapOutcome.processed;
+    }
+    if (!_targetsReactionKind(rumorEvent.tags)) {
+      return DmReactionWrapOutcome.processed;
+    }
 
     for (final tag in rumorEvent.tags) {
       if (tag.length < 2 || tag[0] != 'e') continue;
@@ -526,6 +563,7 @@ class DmReactionsRepository {
         );
       }
     }
+    return DmReactionWrapOutcome.processed;
   }
 
   // -------------------------------------------------------------------------

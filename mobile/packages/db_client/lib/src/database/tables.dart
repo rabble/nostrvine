@@ -1286,3 +1286,36 @@ class PendingGiftWraps extends Table {
     ),
   ];
 }
+
+/// Ledger of gift-wrap ids that have already been terminally processed, so a
+/// relay re-delivering the same kind-1059 wrap never re-decrypts it.
+///
+/// Text/file messages (kind 14/15) already dedup via
+/// [DirectMessages.giftWrapId]; this table covers the outcomes that write no
+/// message row — reactions (kind 7), reaction/deletion (kind 5), unsupported
+/// kinds, cross-protocol duplicates, and degenerate participant sets — which
+/// otherwise re-decrypted on every launch (a serial remote-signer RPC each).
+/// See #5452.
+class ProcessedGiftWraps extends Table {
+  @override
+  String get tableName => 'processed_gift_wraps';
+
+  /// The kind 1059 gift-wrap event id (outer). Dedup key.
+  ///
+  /// Intentionally NOT scoped by owner: gift-wrap event ids are globally unique
+  /// per the Nostr protocol, so cross-account dedup prevents re-processing the
+  /// same relay event for multiple local accounts — matching
+  /// [DirectMessages.giftWrapId] dedup semantics.
+  TextColumn get giftWrapId => text().named('gift_wrap_id')();
+
+  /// When the wrap was terminally processed (unix seconds). Informational and
+  /// available for any future time-based retention.
+  IntColumn get processedAt => integer().named('processed_at')();
+
+  /// Recipient pubkey this wrap was processed for. Informational only — NOT
+  /// part of the dedup key — used to scope account-cleanup deletes.
+  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+
+  @override
+  Set<Column> get primaryKey => {giftWrapId};
+}
