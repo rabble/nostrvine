@@ -427,21 +427,21 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   ) {
     if (values == null || values.isEmpty) return;
 
-    final tagConditions = values.map((value) {
-      variables
-        ..add(Variable.withString(tagName))
-        ..add(Variable.withString(value));
-      return r'''
-        EXISTS (
-          SELECT 1
-          FROM json_each(e.tags) AS tag
-          WHERE json_extract(tag.value, '$[0]') COLLATE BINARY = ?
-            AND json_extract(tag.value, '$[1]') COLLATE BINARY = ?
-        )
-      ''';
-    }).toList();
+    final placeholders = List.filled(values.length, '?').join(', ');
+    variables
+      ..add(Variable.withString(tagName))
+      ..addAll(values.map(Variable.withString));
 
-    conditions.add('(${tagConditions.join(' OR ')})');
+    conditions.add(
+      '''
+      EXISTS (
+        SELECT 1
+        FROM json_each(e.tags) AS tag
+        WHERE json_extract(tag.value, '\$[0]') COLLATE BINARY = ?
+          AND json_extract(tag.value, '\$[1]') COLLATE BINARY IN ($placeholders)
+      )
+      ''',
+    );
   }
 
   /// Get a single event by ID.

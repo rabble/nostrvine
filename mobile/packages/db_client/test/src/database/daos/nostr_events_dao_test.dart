@@ -325,6 +325,27 @@ void main() {
         expect(results.first.id, equals(event1.id));
       });
 
+      test('filters by multiple hashtags with OR logic', () async {
+        final flutterEvent = createVideoEvent(
+          hashtags: ['flutter'],
+          createdAt: 1000,
+        );
+        final dartEvent = createVideoEvent(hashtags: ['dart'], createdAt: 2000);
+        final rustEvent = createVideoEvent(hashtags: ['rust'], createdAt: 3000);
+
+        await dao.upsertEventsBatch([flutterEvent, dartEvent, rustEvent]);
+
+        final results = await dao.getEventsByFilter(
+          Filter(t: ['flutter', 'dart']),
+        );
+
+        expect(results.length, equals(2));
+        expect(
+          results.map((event) => event.id).toSet(),
+          equals({flutterEvent.id, dartEvent.id}),
+        );
+      });
+
       test('filters by e tags (referenced events)', () async {
         const referencedEventId = 'abc123def456';
         final event1 = createEvent(
