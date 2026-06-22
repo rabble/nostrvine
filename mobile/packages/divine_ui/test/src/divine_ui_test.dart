@@ -236,6 +236,14 @@ void main() {
     });
 
     group('theme', () {
+      test('returns the same instance across accesses', () {
+        // Referential stability keeps MaterialApp's internal AnimatedTheme
+        // from re-running ThemeData.lerp on every rebuild above it. Reverting
+        // `theme` to a getter would break this and reintroduce the lerp
+        // cascade, so pin the identity here.
+        expect(identical(VineTheme.theme, VineTheme.theme), isTrue);
+      });
+
       test('returns ThemeData with dark brightness', () {
         final theme = VineTheme.theme;
 

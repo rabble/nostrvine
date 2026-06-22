@@ -586,7 +586,16 @@ class VineTheme {
   static const Color scrim80 = Color(0xCC000000);
 
   /// The complete theme data for the app.
-  static ThemeData get theme => ThemeData(
+  ///
+  /// Kept as a `static final` (not a getter) so its object identity is
+  /// stable across rebuilds. `MaterialApp` wraps the theme in an internal
+  /// `AnimatedTheme`; a fresh `ThemeData` on every access fails its
+  /// `identical`/`==` check — partly because sub-themes here use
+  /// `WidgetStateProperty.resolveWith(...)` closures that never compare
+  /// equal — and triggers a full `ThemeData.lerp` (TextTheme/Typography
+  /// lerp + `Theme` InheritedWidget rebuild cascade) on every rebuild
+  /// above `MaterialApp`.
+  static final ThemeData theme = ThemeData(
     brightness: Brightness.dark,
     primarySwatch: _createMaterialColor(vineGreen),
     primaryColor: vineGreen,
