@@ -679,9 +679,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   ///
   /// Persists clips and metadata to local storage for later editing.
   /// Returns `true` on success, `false` on failure — including when the write
-  /// exceeds [VideoEditorConstants.draftSaveTimeout]. `isSavingDraft` is always
-  /// cleared before this returns, so a stalled write can never wedge the save
-  /// button for the rest of the editor session.
+  /// exceeds [VideoEditorConstants.draftSaveTimeout].
+  ///
+  /// The write is bounded so a stalled save can't wedge the button. The
+  /// autosave cleanup that follows is deliberately *not* bounded (see the call
+  /// site): it must run to completion, so a stalled cleanup keeps the save in
+  /// flight — and the button disabled — until it lands.
   Future<bool> saveAsDraft({bool enforceCreateNewDraft = false}) async {
     if (state.isSavingDraft) return false;
 
@@ -701,6 +704,20 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       await _draftService
           .saveDraft(getActiveDraft(draftId: draftId))
           .timeout(VideoEditorConstants.draftSaveTimeout);
+
+      // Drop the now-redundant autosave recovery point. This must run to
+      // completion — never timed out or fire-and-forget: the delete targets the
+      // fixed `draft_autosave` id, so an abandoned one that resolved later would
+      // wipe the recovery point of whatever editor session is active by then,
+      // corrupting that session. Blocking here (the button stays disabled until
+      // it lands) is the safe trade-off; only the write above needs a timeout.
+      await removeAutosavedDraft();
+
+      Log.info(
+        '✅ Draft saved successfully: $draftId',
+        name: 'VideoEditorNotifier',
+        category: .video,
+      );
     } catch (e, stackTrace) {
       Log.error(
         '❌ Failed to save draft: $e',
@@ -717,21 +734,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         state = state.copyWith(isSavingDraft: false);
       }
     }
-
-    // Reached only on success; the button is already re-enabled above. Drop the
-    // now-redundant autosave recovery point. Awaited (bounded) rather than
-    // fire-and-forget so a slow delete can't resolve after the next editor
-    // session wrote a fresh autosave and wipe that session's recovery point.
-    await removeAutosavedDraft().timeout(
-      VideoEditorConstants.draftSaveTimeout,
-      onTimeout: () {},
-    );
-
-    Log.info(
-      '✅ Draft saved successfully: $draftId',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
 
     return true;
   }

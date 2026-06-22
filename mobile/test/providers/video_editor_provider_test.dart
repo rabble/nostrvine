@@ -1533,42 +1533,52 @@ void main() {
       });
     });
 
-    test('clears isSavingDraft before a slow autosave cleanup completes', () {
-      // The button must re-enable as soon as the save outcome is known, and a
-      // stalled autosave cleanup must not hold it disabled.
+    test('keeps the save in flight until the autosave cleanup completes', () {
+      // The autosave delete must run to completion: an abandoned delete could
+      // later wipe a new session's recovery point. So a stalled cleanup keeps
+      // isSavingDraft true and the save unresolved rather than being dropped.
       when(() => mockDraftStorage.saveDraft(any())).thenAnswer((_) async {});
-      when(
-        () => mockDraftStorage.deleteDraft(any()),
-      ).thenAnswer((_) => Completer<void>().future);
 
       fakeAsync((async) {
+        // Create the completer inside the fake zone so completing it later is
+        // driven by `async.flushMicrotasks()` rather than the root zone.
+        final cleanup = Completer<void>();
+        when(
+          () => mockDraftStorage.deleteDraft(any()),
+        ).thenAnswer((_) => cleanup.future);
+
         final notifier = container.read(videoEditorProvider.notifier);
         bool? result;
         notifier
             .saveAsDraft(enforceCreateNewDraft: true)
             .then((value) => result = value);
 
+        // Let the write resolve so we are parked on the pending cleanup.
         async.flushMicrotasks();
-
-        expect(
-          container.read(videoEditorProvider).isSavingDraft,
-          isFalse,
-          reason: 'the save persisted, so the button is free already',
+        // Time passing must not abandon the cleanup.
+        async.elapse(
+          VideoEditorConstants.draftSaveTimeout + const Duration(seconds: 5),
         );
+
         expect(
           result,
           isNull,
-          reason: 'the call is still awaiting the bounded cleanup',
+          reason: 'the save stays in flight while the cleanup is pending',
         );
-
-        async.elapse(
-          VideoEditorConstants.draftSaveTimeout + const Duration(seconds: 1),
-        );
-
         expect(
-          result,
+          container.read(videoEditorProvider).isSavingDraft,
           isTrue,
-          reason: 'a stalled cleanup still resolves the save as success',
+          reason: 'the autosave cleanup is not abandoned on a timeout',
+        );
+
+        cleanup.complete();
+        async.flushMicrotasks();
+
+        expect(result, isTrue);
+        expect(
+          container.read(videoEditorProvider).isSavingDraft,
+          isFalse,
+          reason: 'the save resolves once the cleanup lands',
         );
       });
     });
