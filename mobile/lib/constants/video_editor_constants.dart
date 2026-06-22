@@ -48,6 +48,13 @@ class VideoEditorConstants {
   /// guards the first, uncached load before the canvas imports the overlays.
   static const textFontLoadTimeout = Duration(seconds: 3);
 
+  /// Maximum time to wait for a draft write to complete before treating it as
+  /// failed. A draft save is a local DB write that normally finishes in
+  /// milliseconds; bounding it ensures a stalled write surfaces as a failure
+  /// the UI can recover from, instead of leaving the save button wedged for
+  /// the rest of the session.
+  static const draftSaveTimeout = Duration(seconds: 15);
+
   /// Primary accent color used in the video editor UI.
   static const primaryColor = Color(0xFFFFF140);
 
