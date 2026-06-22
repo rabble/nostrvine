@@ -819,24 +819,49 @@ class _FeedItemOverlayActions extends StatelessWidget {
 }
 
 /// Streams player position and renders subtitle text for fullscreen feed.
-class _SubtitleLayer extends StatelessWidget {
+class _SubtitleLayer extends StatefulWidget {
   const _SubtitleLayer({required this.video, required this.controller});
 
   final VideoEvent video;
   final DivineVideoPlayerController controller;
 
   @override
+  State<_SubtitleLayer> createState() => _SubtitleLayerState();
+}
+
+class _SubtitleLayerState extends State<_SubtitleLayer> {
+  late Stream<Duration> _positionStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _positionStream = _createPositionStream(widget.controller);
+  }
+
+  @override
+  void didUpdateWidget(covariant _SubtitleLayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      _positionStream = _createPositionStream(widget.controller);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: SubtitleCueStreamPill(
-        video: video,
-        positionStream: controller.stateStream
-            .map((s) => s.position)
-            .distinct(),
-        initialPosition: controller.state.position,
+        video: widget.video,
+        positionStream: _positionStream,
+        initialPosition: widget.controller.state.position,
       ),
     );
+  }
+
+  Stream<Duration> _createPositionStream(
+    DivineVideoPlayerController controller,
+  ) {
+    return controller.stateStream.map((s) => s.position).distinct();
   }
 }
 

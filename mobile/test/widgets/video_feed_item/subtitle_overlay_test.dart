@@ -28,6 +28,40 @@ Second line
 ''',
 );
 
+class _RebuildingSubtitleHost extends StatefulWidget {
+  const _RebuildingSubtitleHost({
+    required this.video,
+    required this.positions,
+    super.key,
+  });
+
+  final VideoEvent video;
+  final Stream<Duration> positions;
+
+  @override
+  State<_RebuildingSubtitleHost> createState() =>
+      _RebuildingSubtitleHostState();
+}
+
+class _RebuildingSubtitleHostState extends State<_RebuildingSubtitleHost> {
+  Duration initialPosition = const Duration(milliseconds: 500);
+
+  void rebuildAt(Duration position) {
+    setState(() {
+      initialPosition = position;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SubtitleCueStreamPill(
+      video: widget.video,
+      positionStream: widget.positions,
+      initialPosition: initialPosition,
+    );
+  }
+}
+
 void main() {
   testWidgets('does not rebuild the caption pill for ticks within one cue', (
     tester,
@@ -77,5 +111,43 @@ void main() {
     await tester.pump();
 
     expect(find.text('Second line'), findsOneWidget);
+  });
+
+  testWidgets('keeps bridged cue state across parent rebuilds', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final positions = StreamController<Duration>.broadcast();
+    addTearDown(positions.close);
+    final hostKey = GlobalKey<_RebuildingSubtitleHostState>();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: _RebuildingSubtitleHost(
+                key: hostKey,
+                video: _makeVideo(),
+                positions: positions.stream,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    expect(find.text('Hello there'), findsOneWidget);
+
+    positions.add(const Duration(milliseconds: 1050));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Hello there'), findsOneWidget);
+
+    hostKey.currentState!.rebuildAt(const Duration(milliseconds: 1050));
+    await tester.pump();
+
+    expect(find.text('Hello there'), findsOneWidget);
   });
 }

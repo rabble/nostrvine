@@ -9,7 +9,7 @@ import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/services/subtitle_service.dart';
 
 /// Streams playback position into the shared caption pill renderer.
-class SubtitleCueStreamPill extends ConsumerWidget {
+class SubtitleCueStreamPill extends ConsumerStatefulWidget {
   const SubtitleCueStreamPill({
     required this.video,
     required this.positionStream,
@@ -22,21 +22,44 @@ class SubtitleCueStreamPill extends ConsumerWidget {
   final Duration initialPosition;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final visible = ref.watch(subtitleVisibilityProvider);
-    if (!visible || !video.hasSubtitles) return const SizedBox.shrink();
+  ConsumerState<SubtitleCueStreamPill> createState() =>
+      _SubtitleCueStreamPillState();
+}
 
-    final cuesAsync = ref.watch(_subtitleCuesProvider(video));
+class _SubtitleCueStreamPillState extends ConsumerState<SubtitleCueStreamPill> {
+  Stream<_SubtitleCueDisplay>? _displayStream;
+  List<SubtitleCue>? _displayStreamCues;
+  Stream<Duration>? _displayStreamSource;
+  String? _displayStreamVideoId;
+
+  @override
+  void didUpdateWidget(covariant SubtitleCueStreamPill oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.video.id != widget.video.id ||
+        oldWidget.positionStream != widget.positionStream) {
+      _clearDisplayStream();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = ref.watch(subtitleVisibilityProvider);
+    if (!visible || !widget.video.hasSubtitles) {
+      _clearDisplayStream();
+      return const SizedBox.shrink();
+    }
+
+    final cuesAsync = ref.watch(_subtitleCuesProvider(widget.video));
 
     return cuesAsync.when(
       data: (cues) {
-        final initialPositionMs = initialPosition.inMilliseconds;
+        final initialPositionMs = widget.initialPosition.inMilliseconds;
         final initialDisplay = _SubtitleCueDisplayTracker(
           cues,
         ).displayFor(initialPositionMs);
 
         return StreamBuilder<_SubtitleCueDisplay>(
-          stream: _displayStream(cues, initialPositionMs),
+          stream: _displayStreamFor(cues, initialPositionMs),
           initialData: initialDisplay,
           builder: (context, snapshot) {
             final display = snapshot.data ?? const _SubtitleCueDisplay.hidden();
@@ -45,14 +68,43 @@ class SubtitleCueStreamPill extends ConsumerWidget {
           },
         );
       },
-      loading: SizedBox.shrink,
-      error: (_, _) => const SizedBox.shrink(),
+      loading: () {
+        _clearDisplayStream();
+        return const SizedBox.shrink();
+      },
+      error: (_, _) {
+        _clearDisplayStream();
+        return const SizedBox.shrink();
+      },
     );
   }
 
-  Stream<_SubtitleCueDisplay> _displayStream(
+  Stream<_SubtitleCueDisplay> _displayStreamFor(
     List<SubtitleCue> cues,
     int initialPositionMs,
+  ) {
+    final existing = _displayStream;
+    if (existing != null &&
+        identical(_displayStreamCues, cues) &&
+        _displayStreamSource == widget.positionStream &&
+        _displayStreamVideoId == widget.video.id) {
+      return existing;
+    }
+
+    _displayStreamCues = cues;
+    _displayStreamSource = widget.positionStream;
+    _displayStreamVideoId = widget.video.id;
+    return _displayStream = _createDisplayStream(
+      cues,
+      initialPositionMs,
+      widget.positionStream,
+    );
+  }
+
+  Stream<_SubtitleCueDisplay> _createDisplayStream(
+    List<SubtitleCue> cues,
+    int initialPositionMs,
+    Stream<Duration> positionStream,
   ) async* {
     final tracker = _SubtitleCueDisplayTracker(cues);
     var previousDisplay = tracker.displayFor(initialPositionMs);
@@ -64,6 +116,13 @@ class SubtitleCueStreamPill extends ConsumerWidget {
       previousDisplay = display;
       yield display;
     }
+  }
+
+  void _clearDisplayStream() {
+    _displayStream = null;
+    _displayStreamCues = null;
+    _displayStreamSource = null;
+    _displayStreamVideoId = null;
   }
 }
 
