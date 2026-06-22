@@ -240,6 +240,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   ContentFilterService? _contentFilterService;
   ModerationLabelService? _moderationLabelService;
   DivineHostFilterService? _divineHostFilterService;
+  VideoServingPolicy? _videoServingPolicy;
   final SubscriptionManager _subscriptionManager;
 
   // Side-channel observers that fire for every video that flows through the
@@ -469,6 +470,10 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   bool get shouldFilterNonDivineVideos =>
       _divineHostFilterService?.showDivineHostedOnly ?? false;
 
+  void setVideoServingPolicy(VideoServingPolicy videoServingPolicy) {
+    _videoServingPolicy = videoServingPolicy;
+  }
+
   /// Returns true when this video should be hidden — either because its author
   /// is blocked/muted (the viewer blocked them, or they blocked the viewer via
   /// kind-30000 `d=block` / muted via kind-10000), or because the viewer's
@@ -479,6 +484,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// blocklist filter, so the blocklist check lives here at the shared
   /// chokepoint rather than at each call site.
   bool shouldHideVideo(VideoEvent video) {
+    if (!(_videoServingPolicy?.allows(video) ?? true)) {
+      return true;
+    }
     if (_blocklistRepository?.shouldFilterFromFeeds(video.pubkey) ?? false) {
       return true;
     }

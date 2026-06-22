@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show Provider;
 import 'package:http/http.dart' as http;
 import 'package:likes_repository/likes_repository.dart';
+import 'package:openvine/constants/divine_video_serving_policy.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -144,6 +145,7 @@ VideoEventService videoEventService(Ref ref) {
   service.setContentFilterService(ref.watch(contentFilterServiceProvider));
   service.setModerationLabelService(moderationLabelService);
   service.setDivineHostFilterService(divineHostFilterService);
+  service.setVideoServingPolicy(divineVideoServingPolicy);
 
   // Teach the OG Viner badge cache from every video that flows through the
   // service. The cache filters internally (only `isOriginalVine` videos
@@ -397,6 +399,7 @@ VideosRepository videosRepository(Ref ref) {
     localStorage: localStorage,
     blockFilter: createBlockedAuthorFilter(ref),
     contentFilter: (video) =>
+        !divineVideoServingPolicy.allows(video) ||
         nsfwFilter(video) ||
         (divineHostFilterService.showDivineHostedOnly &&
             !video.isFromDivineServer) ||

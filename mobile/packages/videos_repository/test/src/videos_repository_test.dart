@@ -11010,6 +11010,7 @@ void main() {
         List<String> moderationLabels = const [],
         List<String> contentWarningLabels = const [],
         List<String> warnLabels = const [],
+        Map<String, String> rawTags = const {},
       }) {
         return VideoEvent(
           id: id,
@@ -11021,6 +11022,7 @@ void main() {
           moderationLabels: moderationLabels,
           contentWarningLabels: contentWarningLabels,
           warnLabels: warnLabels,
+          rawTags: rawTags,
         );
       }
 
@@ -11101,6 +11103,47 @@ void main() {
 
         expect(result, hasLength(1));
         expect(result.single.warnLabels, isEmpty);
+      });
+
+      test('can enforce baseline serving eligibility as content filter', () {
+        const allowedClassicPubkey =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        const policy = VideoServingPolicy(
+          allowedClassicVinePubkeys: {allowedClassicPubkey},
+        );
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          contentFilter: (video) => !policy.allows(video),
+        );
+
+        final unverified = buildVideo(id: 'plain', pubkey: goodPubkey);
+        final certified = buildVideo(
+          id: 'certified',
+          pubkey: goodPubkey,
+          rawTags: const {'verification': 'verified_web'},
+        );
+        final nonAllowlistedClassic = buildVideo(
+          id: 'classic-other',
+          pubkey: blockedPubkey,
+          rawTags: const {'platform': 'vine'},
+        );
+        final allowlistedClassic = buildVideo(
+          id: 'classic-allowed',
+          pubkey: allowedClassicPubkey,
+          rawTags: const {'platform': 'vine'},
+        );
+
+        final result = repo.applyContentPreferences([
+          unverified,
+          certified,
+          nonAllowlistedClassic,
+          allowlistedClassic,
+        ]);
+
+        expect(
+          result.map((video) => video.id),
+          equals(['certified', 'classic-allowed']),
+        );
       });
     });
 

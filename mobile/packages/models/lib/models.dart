@@ -49,6 +49,7 @@ export 'src/video_editor/sticker_data.dart';
 export 'src/video_event.dart';
 export 'src/video_event_filters.dart';
 export 'src/video_reply_visibility.dart';
+export 'src/video_serving_policy.dart';
 export 'src/video_state.dart';
 export 'src/video_stats.dart';
 export 'src/video_url_resolver.dart';
