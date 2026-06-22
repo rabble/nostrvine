@@ -449,67 +449,140 @@ void main() {
     });
 
     group('label inner padding', () {
-      // The content Row's closest Padding ancestor is the button's inner
-      // padding. Anchoring on the Row skips the EdgeInsets.zero Padding
-      // that Ink wraps its child in internally.
-      Padding innerPaddingOf(WidgetTester tester) {
-        return tester.widget<Padding>(
-          find
-              .ancestor(
-                of: find.byType(Row),
-                matching: find.byType(Padding),
-              )
-              .first,
+      // The inner padding is a render object (_AdaptiveButtonPadding), not a
+      // Padding widget, so measure the resolved inset geometrically: the
+      // content Row's offset within that box is the applied padding.
+      final adaptiveFinder = find.byWidgetPredicate(
+        (w) => w.runtimeType.toString() == '_AdaptiveButtonPadding',
+      );
+
+      EdgeInsets resolvedInnerPadding(WidgetTester tester) {
+        final box = tester.getRect(adaptiveFinder);
+        final content = tester.getRect(
+          find.descendant(of: adaptiveFinder, matching: find.byType(Row)),
+        );
+        return EdgeInsets.fromLTRB(
+          content.left - box.left,
+          content.top - box.top,
+          box.right - content.right,
+          box.bottom - content.bottom,
         );
       }
 
-      testWidgets('base label uses symmetric 12px inner padding', (
+      testWidgets(
+        'base label uses 24px horizontal / 12px vertical inner padding',
+        (tester) async {
+          // A non-expanded labeled button hugs its content, so it keeps the
+          // wider horizontal padding for visual balance.
+          await tester.pumpWidget(
+            buildTestWidget(label: 'Save', onPressed: () {}),
+          );
+
+          expect(
+            resolvedInnerPadding(tester),
+            const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          );
+        },
+      );
+
+      testWidgets(
+        'small label uses 16px horizontal / 8px vertical inner padding',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              label: 'Save',
+              size: DivineButtonSize.small,
+              onPressed: () {},
+            ),
+          );
+
+          expect(
+            resolvedInnerPadding(tester),
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          );
+        },
+      );
+
+      testWidgets(
+        'tiny label uses 12px horizontal / 6px vertical inner padding',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              label: 'Save',
+              size: DivineButtonSize.tiny,
+              onPressed: () {},
+            ),
+          );
+
+          expect(
+            resolvedInnerPadding(tester),
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          );
+        },
+      );
+
+      testWidgets(
+        'expanded label collapses to symmetric inner padding per size',
+        (tester) async {
+          // Expanded buttons are width-constrained by their parent, so the
+          // extra horizontal padding is dropped to give the label the most
+          // room before it ellipsizes.
+          await tester.pumpWidget(
+            buildTestWidget(label: 'Save', expanded: true, onPressed: () {}),
+          );
+          expect(resolvedInnerPadding(tester), const EdgeInsets.all(12));
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              label: 'Save',
+              size: DivineButtonSize.small,
+              expanded: true,
+              onPressed: () {},
+            ),
+          );
+          expect(resolvedInnerPadding(tester), const EdgeInsets.all(8));
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              label: 'Save',
+              size: DivineButtonSize.tiny,
+              expanded: true,
+              onPressed: () {},
+            ),
+          );
+          expect(resolvedInnerPadding(tester), const EdgeInsets.all(6));
+        },
+      );
+
+      testWidgets(
+        'non-expanded label keeps wider horizontal padding than icon-only',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(label: 'Save', onPressed: () {}),
+          );
+          final labeledPadding = resolvedInnerPadding(tester);
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              label: '',
+              leadingIcon: DivineIconName.heart,
+              onPressed: () {},
+            ),
+          );
+          final iconOnlyPadding = resolvedInnerPadding(tester);
+
+          expect(labeledPadding.left, greaterThan(iconOnlyPadding.left));
+          expect(labeledPadding.top, equals(iconOnlyPadding.top));
+        },
+      );
+
+      testWidgets('expanded label matches icon-only inner padding', (
         tester,
       ) async {
-        // Symmetric padding keeps the label's full height while giving it
-        // the most horizontal room before the text ellipsizes.
         await tester.pumpWidget(
-          buildTestWidget(label: 'Save', onPressed: () {}),
+          buildTestWidget(label: 'Save', expanded: true, onPressed: () {}),
         );
-
-        expect(innerPaddingOf(tester).padding, const EdgeInsets.all(12));
-      });
-
-      testWidgets('small label uses symmetric 8px inner padding', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            label: 'Save',
-            size: DivineButtonSize.small,
-            onPressed: () {},
-          ),
-        );
-
-        expect(innerPaddingOf(tester).padding, const EdgeInsets.all(8));
-      });
-
-      testWidgets('tiny label uses symmetric 6px inner padding', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            label: 'Save',
-            size: DivineButtonSize.tiny,
-            onPressed: () {},
-          ),
-        );
-
-        expect(innerPaddingOf(tester).padding, const EdgeInsets.all(6));
-      });
-
-      testWidgets('labeled and icon-only share the same inner padding', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildTestWidget(label: 'Save', onPressed: () {}),
-        );
-        final labeledPadding = innerPaddingOf(tester).padding;
+        final labeledPadding = resolvedInnerPadding(tester);
 
         await tester.pumpWidget(
           buildTestWidget(
@@ -518,10 +591,35 @@ void main() {
             onPressed: () {},
           ),
         );
-        final iconOnlyPadding = innerPaddingOf(tester).padding;
+        final iconOnlyPadding = resolvedInnerPadding(tester);
 
         expect(labeledPadding, equals(iconOnlyPadding));
       });
+
+      testWidgets(
+        'parent-forced tight width collapses to symmetric padding without '
+        'the expanded flag',
+        (tester) async {
+          // Expanded inside a Row hands the button a tight width — it is
+          // stretched even though expanded is false, so it should drop the
+          // wider horizontal padding just like an expanded button.
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Row(
+                  children: [
+                    Expanded(
+                      child: DivineButton(label: 'Save', onPressed: () {}),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+
+          expect(resolvedInnerPadding(tester), const EdgeInsets.all(12));
+        },
+      );
 
       testWidgets('long label ellipsizes instead of overflowing', (
         tester,
@@ -549,6 +647,85 @@ void main() {
         expect(text.maxLines, equals(1));
         expect(text.overflow, equals(TextOverflow.ellipsis));
         expect(tester.takeException(), isNull);
+      });
+
+      testWidgets(
+        'renders inside IntrinsicHeight + stretched Row without errors',
+        (tester) async {
+          // Reproduces the context that throws "LayoutBuilder does not
+          // support returning intrinsic dimensions": an ancestor probes the
+          // button's intrinsic height. The render-object padding answers
+          // intrinsics, so this must not throw.
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: DivineButton(label: 'Save', onPressed: () {}),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          expect(tester.takeException(), isNull);
+          // Stretched by Expanded → tight width → symmetric inset.
+          expect(resolvedInnerPadding(tester), const EdgeInsets.all(12));
+        },
+      );
+
+      testWidgets('updates inner padding when size and expanded change', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(label: 'Save', onPressed: () {}),
+        );
+        expect(
+          resolvedInnerPadding(tester),
+          const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        );
+
+        // base → tiny keeps the same tree position (neither size adds the
+        // small-variant outer padding wrapper), so the render object is
+        // updated in place: every inset field changes and its setters fire.
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: 'Save',
+            size: DivineButtonSize.tiny,
+            expanded: true,
+            onPressed: () {},
+          ),
+        );
+        expect(resolvedInnerPadding(tester), const EdgeInsets.all(6));
+      });
+
+      testWidgets('answers intrinsic and dry-layout queries for both states', (
+        tester,
+      ) async {
+        for (final expanded in [false, true]) {
+          await tester.pumpWidget(
+            buildTestWidget(
+              label: 'Save',
+              expanded: expanded,
+              onPressed: () {},
+            ),
+          );
+          final box = tester.renderObject<RenderBox>(adaptiveFinder);
+
+          expect(box.getMinIntrinsicWidth(double.infinity), greaterThan(0));
+          expect(box.getMaxIntrinsicWidth(double.infinity), greaterThan(0));
+          expect(box.getMinIntrinsicHeight(double.infinity), greaterThan(0));
+          expect(box.getMaxIntrinsicHeight(double.infinity), greaterThan(0));
+          expect(
+            box.getDryLayout(const BoxConstraints(maxWidth: 200)).width,
+            lessThanOrEqualTo(200),
+          );
+        }
       });
     });
 

@@ -2,6 +2,7 @@ import 'package:divine_ui/src/icon/divine_icon.dart';
 import 'package:divine_ui/src/theme/vine_theme.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 /// The visual style type of a [DivineButton].
 enum DivineButtonType {
@@ -47,7 +48,8 @@ enum DivineButtonType {
 /// constraint and the surrounding context can absorb the smaller tap
 /// area.
 enum DivineButtonSize {
-  /// Tiny button: no outer tap-padding, 6px symmetric inner padding,
+  /// Tiny button: no outer tap-padding, 12px horizontal / 6px vertical
+  /// inner padding (6px symmetric when stretched or icon-only),
   /// 12.8px border radius (= 32 × 0.4, matches a 32px
   /// `UserAvatar`'s rounded square so the button rhymes visually with
   /// the avatar it usually sits next to), 14px `titleSmallFont` text
@@ -58,12 +60,14 @@ enum DivineButtonSize {
   /// height matches whether the button is present or not).
   tiny,
 
-  /// Small button: 4px outer padding, 8px symmetric inner padding,
+  /// Small button: 4px outer padding, 16px horizontal / 8px vertical
+  /// inner padding (8px symmetric when stretched or icon-only),
   /// 16px border radius, 16px `titleMediumFont` text,
   /// 24px icon. Visual height 40px, tap target 48px.
   small,
 
-  /// Base/medium button: 12px symmetric padding, 20px border radius,
+  /// Base/medium button: 24px horizontal / 12px vertical inner padding
+  /// (12px symmetric when stretched or icon-only), 20px border radius,
   /// 16px `titleMediumFont` text, 24px icon. Total height 48px.
   base,
 }
@@ -132,6 +136,12 @@ class DivineButton extends StatelessWidget {
   final DivineIconName? trailingIcon;
 
   /// Whether the button should expand to fill available width.
+  ///
+  /// You don't need to set this when the button is already forced wider
+  /// than its content by a parent (e.g. wrapped in `Expanded` inside a
+  /// `Row`): that tight-width case is detected automatically and gets the
+  /// same reduced horizontal padding. Set it for the loose-constraint case
+  /// — e.g. to fill a `Column`'s width — where nothing forces the width.
   final bool expanded;
 
   /// Whether the button is in a loading state.
@@ -193,17 +203,27 @@ class _DivineButtonContent extends StatelessWidget {
   /// `DivineIconButton`.
   bool get _noLabel => label.isEmpty;
 
-  /// Symmetric inner padding for every size. Labeled and icon-only
-  /// buttons share the same insets: keeping the horizontal padding equal
-  /// to the (smaller) vertical padding gives a label the most horizontal
-  /// room before it ellipsizes, and for small / base it also matches
-  /// `DivineIconButton`, so a label-less [DivineButton] lines up with a
-  /// `DivineIconButton`.
-  EdgeInsets get _padding => switch (size) {
-    DivineButtonSize.tiny => const EdgeInsets.all(6),
-    DivineButtonSize.small => const EdgeInsets.all(8),
-    DivineButtonSize.base => const EdgeInsets.all(12),
+  /// Vertical inner padding. Fixed per size — it sets the button height
+  /// (32 / 40 / 48px) and never changes with stretch state.
+  double get _verticalPadding => switch (size) {
+    DivineButtonSize.tiny => 6,
+    DivineButtonSize.small => 8,
+    DivineButtonSize.base => 12,
   };
+
+  /// Horizontal inner padding for a content-hugging button (the wider,
+  /// visually-balanced inset). A stretched button instead uses
+  /// [_verticalPadding] for symmetric insets — see [_AdaptiveButtonPadding].
+  double get _looseHorizontalPadding => switch (size) {
+    DivineButtonSize.tiny => 12,
+    DivineButtonSize.small => 16,
+    DivineButtonSize.base => 24,
+  };
+
+  /// Whether the button always uses the narrower symmetric padding,
+  /// regardless of incoming constraints: icon-only buttons (to match
+  /// `DivineIconButton`) and explicitly [expanded] buttons.
+  bool get _forceTightPadding => _noLabel || expanded;
 
   double get _borderRadius => switch (size) {
     // 32 × 0.4 — same factor `UserAvatar` uses for non-tiny avatars, so
@@ -349,8 +369,10 @@ class _DivineButtonContent extends StatelessWidget {
           highlightColor: _foregroundColor.withValues(alpha: 0.05),
           child: Ink(
             decoration: decoration,
-            child: Padding(
-              padding: _padding,
+            child: _AdaptiveButtonPadding(
+              vertical: _verticalPadding,
+              looseHorizontal: _looseHorizontalPadding,
+              forceTight: _forceTightPadding,
               child: content,
             ),
           ),
@@ -367,6 +389,166 @@ class _DivineButtonContent extends StatelessWidget {
     }
 
     return button;
+  }
+}
+
+/// Padding whose horizontal inset adapts to whether the button is stretched.
+///
+/// A button forced wider than its content by its parent receives a tight
+/// width constraint (`minWidth == maxWidth`) — `Expanded` in a `Row`,
+/// `crossAxisAlignment.stretch`, a fixed-width `SizedBox`. In that case (or
+/// when [forceTight] is set, for icon-only / [DivineButton.expanded] buttons)
+/// the horizontal inset collapses to [vertical] so a long label keeps the
+/// most room before it ellipsizes. Otherwise it uses the wider
+/// [looseHorizontal] for visual balance.
+///
+/// This is a render object rather than a `LayoutBuilder` because a
+/// `LayoutBuilder` throws "does not support returning intrinsic dimensions"
+/// when an ancestor (e.g. `IntrinsicHeight`, a stretched `Row`) probes the
+/// button's intrinsic size — which happens widely across the app.
+class _AdaptiveButtonPadding extends SingleChildRenderObjectWidget {
+  const _AdaptiveButtonPadding({
+    required this.vertical,
+    required this.looseHorizontal,
+    required this.forceTight,
+    required Widget super.child,
+  });
+
+  /// Vertical inset, also used as the horizontal inset when tight.
+  final double vertical;
+
+  /// Horizontal inset when the button hugs its content.
+  final double looseHorizontal;
+
+  /// Forces the tight (symmetric) inset regardless of incoming constraints.
+  final bool forceTight;
+
+  @override
+  _RenderAdaptiveButtonPadding createRenderObject(BuildContext context) {
+    return _RenderAdaptiveButtonPadding(
+      vertical: vertical,
+      looseHorizontal: looseHorizontal,
+      forceTight: forceTight,
+    );
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderAdaptiveButtonPadding renderObject,
+  ) {
+    renderObject
+      ..vertical = vertical
+      ..looseHorizontal = looseHorizontal
+      ..forceTight = forceTight;
+  }
+}
+
+class _RenderAdaptiveButtonPadding extends RenderShiftedBox {
+  _RenderAdaptiveButtonPadding({
+    required double vertical,
+    required double looseHorizontal,
+    required bool forceTight,
+  }) : _vertical = vertical,
+       _looseHorizontal = looseHorizontal,
+       _forceTight = forceTight,
+       super(null);
+
+  double get vertical => _vertical;
+  double _vertical;
+  set vertical(double value) {
+    if (_vertical == value) return;
+    _vertical = value;
+    markNeedsLayout();
+  }
+
+  double get looseHorizontal => _looseHorizontal;
+  double _looseHorizontal;
+  set looseHorizontal(double value) {
+    if (_looseHorizontal == value) return;
+    _looseHorizontal = value;
+    markNeedsLayout();
+  }
+
+  bool get forceTight => _forceTight;
+  bool _forceTight;
+  set forceTight(bool value) {
+    if (_forceTight == value) return;
+    _forceTight = value;
+    markNeedsLayout();
+  }
+
+  /// Horizontal inset used for intrinsic sizing. Intrinsics describe the
+  /// content-hugging width, so they use the loose inset unless the button
+  /// always renders tight.
+  double get _intrinsicHorizontal => forceTight ? vertical : looseHorizontal;
+
+  EdgeInsets _paddingFor(BoxConstraints constraints) {
+    final horizontal = forceTight || constraints.hasTightWidth
+        ? vertical
+        : looseHorizontal;
+    return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
+  }
+
+  @override
+  double computeMinIntrinsicWidth(double height) {
+    final innerHeight = (height - vertical * 2).clamp(0.0, double.infinity);
+    return child!.getMinIntrinsicWidth(innerHeight) + _intrinsicHorizontal * 2;
+  }
+
+  @override
+  double computeMaxIntrinsicWidth(double height) {
+    final innerHeight = (height - vertical * 2).clamp(0.0, double.infinity);
+    return child!.getMaxIntrinsicWidth(innerHeight) + _intrinsicHorizontal * 2;
+  }
+
+  @override
+  double computeMinIntrinsicHeight(double width) {
+    final innerWidth = (width - _intrinsicHorizontal * 2).clamp(
+      0.0,
+      double.infinity,
+    );
+    return child!.getMinIntrinsicHeight(innerWidth) + vertical * 2;
+  }
+
+  @override
+  double computeMaxIntrinsicHeight(double width) {
+    final innerWidth = (width - _intrinsicHorizontal * 2).clamp(
+      0.0,
+      double.infinity,
+    );
+    return child!.getMaxIntrinsicHeight(innerWidth) + vertical * 2;
+  }
+
+  Size _measure(BoxConstraints constraints, {required bool dry}) {
+    final padding = _paddingFor(constraints);
+    final innerConstraints = constraints.deflate(padding);
+    final Size childSize;
+    if (dry) {
+      childSize = child!.getDryLayout(innerConstraints);
+    } else {
+      child!.layout(innerConstraints, parentUsesSize: true);
+      (child!.parentData! as BoxParentData).offset = Offset(
+        padding.left,
+        padding.top,
+      );
+      childSize = child!.size;
+    }
+    return constraints.constrain(
+      Size(
+        childSize.width + padding.horizontal,
+        childSize.height + padding.vertical,
+      ),
+    );
+  }
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) =>
+      _measure(constraints, dry: true);
+
+  @override
+  void performLayout() {
+    size = _measure(constraints, dry: false);
   }
 }
 
