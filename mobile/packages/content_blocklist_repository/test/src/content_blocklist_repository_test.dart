@@ -711,6 +711,35 @@ void main() {
       expect(service.hasMutedUs(mutedPubkey), isFalse);
     });
 
+    test('own kind 10000 echo does not double-count our own blocks as '
+        'mutes', () async {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
+      // We blocked mutedPubkey in-app (no signer wired, so publishing is a
+      // no-op here), then our own kind 10000 echoes back containing both
+      // that block and a mute authored from another client.
+      await service.blockUser(mutedPubkey, ourPubkey: ourPubkey);
+      controller.add(
+        ownMuteListEvent(
+          mutedPubkeys: [mutedPubkey, otherMutedPubkey],
+          createdAt: now,
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Our own block stays tracked as a block, not duplicated into the
+      // mute set — otherwise unblocking could never drop it from the
+      // republished kind 10000 list.
+      expect(service.isBlocked(mutedPubkey), isTrue);
+      expect(service.isMutedByUs(mutedPubkey), isFalse);
+      // The external mute is still recorded.
+      expect(service.isMutedByUs(otherMutedPubkey), isTrue);
+      // Both are filtered from feeds regardless.
+      expect(service.shouldFilterFromFeeds(mutedPubkey), isTrue);
+      expect(service.shouldFilterFromFeeds(otherMutedPubkey), isTrue);
+    });
+
     test('newer own event replaces the muted set (unmute)', () async {
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
@@ -2169,7 +2198,7 @@ void main() {
       );
     });
 
-    test('publishes block list with p tag for each blocked user', () async {
+    test('blocking publishes the kind 10000 mute list with a p tag', () async {
       final event = buildEvent();
       when(() => mockSigner.isAuthenticated).thenReturn(true);
       when(
@@ -2192,7 +2221,23 @@ void main() {
 
       await service.blockUser('pubkey1');
 
-      final tagsList =
+      // The interop fix (#4037): the blocked user lands on the standard
+      // NIP-51 kind 10000 mute list, with no parameterized-list tags.
+      final muteTags =
+          verify(
+                () => mockSigner.createAndSignEvent(
+                  kind: 10000,
+                  content: '',
+                  tags: captureAny(named: 'tags'),
+                ),
+              ).captured.last
+              as List<List<String>>;
+      expect(muteTags, contains(equals(['p', 'pubkey1'])));
+      expect(muteTags, isNot(contains(equals(['d', 'block']))));
+
+      // The legacy kind 30000 block list is still kept in sync for older
+      // Divine clients.
+      final blockTags =
           verify(
                 () => mockSigner.createAndSignEvent(
                   kind: 30000,
@@ -2201,10 +2246,46 @@ void main() {
                 ),
               ).captured.last
               as List<List<String>>;
+      expect(blockTags, contains(equals(['d', 'block'])));
+      expect(blockTags, contains(equals(['p', 'pubkey1'])));
 
-      expect(tagsList, contains(equals(['d', 'block'])));
-      expect(tagsList, contains(equals(['p', 'pubkey1'])));
-      verify(() => mockClient.publishEvent(event)).called(1);
+      verify(() => mockClient.publishEvent(event)).called(2);
+    });
+
+    test('unblocking republishes the kind 10000 mute list without the '
+        'user', () async {
+      when(() => mockSigner.isAuthenticated).thenReturn(true);
+      when(
+        () => mockSigner.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => buildEvent());
+      when(
+        () => mockClient.publishEvent(any()),
+      ).thenAnswer((_) async => PublishSuccess(event: buildEvent()));
+
+      final service = ContentBlocklistRepository();
+      await service.syncBlockListsInBackground(
+        mockClient,
+        mockSigner,
+        ourPubkey,
+      );
+
+      await service.blockUser('pubkey1');
+      await service.unblockUser('pubkey1');
+
+      final lastMuteTags =
+          verify(
+                () => mockSigner.createAndSignEvent(
+                  kind: 10000,
+                  content: '',
+                  tags: captureAny(named: 'tags'),
+                ),
+              ).captured.last
+              as List<List<String>>;
+      expect(lastMuteTags, isEmpty);
     });
 
     test('tolerates publishEvent returning null', () async {
@@ -2254,6 +2335,215 @@ void main() {
       await service.blockUser('pubkey1');
 
       expect(service.isBlocked('pubkey1'), isTrue);
+    });
+  });
+
+  group('ContentBlocklistRepository - legacy block list migration', () {
+    const ourPubkey =
+        '0000000000000000000000000000000000000000000000000000000000000001';
+    const blockA =
+        '00000000000000000000000000000000000000000000000000000000000000aa';
+    const blockB =
+        '00000000000000000000000000000000000000000000000000000000000000bb';
+    const muteC =
+        '00000000000000000000000000000000000000000000000000000000000000cc';
+    const flagKey = 'block_list_migrated_to_mute_list.$ourPubkey';
+
+    late _MockNostrClient mockClient;
+    late _MockBlockListSigner mockSigner;
+    late SharedPreferences prefs;
+
+    Event ownBlockEvent(List<String> blocked) =>
+        Event(
+            ourPubkey,
+            30000,
+            [
+              const ['d', 'block'],
+              for (final pk in blocked) ['p', pk],
+            ],
+            'Block list',
+            createdAt: 1000,
+          )
+          ..id = 'own-block-event'
+          ..sig = 'signature';
+
+    Event ownMuteEvent(List<String> muted, {int createdAt = 2000}) =>
+        Event(
+            ourPubkey,
+            10000,
+            [
+              for (final pk in muted) ['p', pk],
+            ],
+            '',
+            createdAt: createdAt,
+          )
+          ..id = 'own-mute-event-$createdAt'
+          ..sig = 'signature';
+
+    Event signedMuteList() =>
+        Event(ourPubkey, 10000, const <List<String>>[], '', createdAt: 3000)
+          ..id = 'signed-mute-list'
+          ..sig = 'signature';
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      prefs = await SharedPreferences.getInstance();
+      mockClient = _MockNostrClient();
+      mockSigner = _MockBlockListSigner();
+      when(
+        () => mockClient.subscribe(any()),
+      ).thenAnswer((_) => const Stream.empty());
+      when(() => mockSigner.isAuthenticated).thenReturn(true);
+    });
+
+    test(
+      'appends legacy kind 30000 blocks to the existing kind 10000 mute '
+      'list and publishes once',
+      () async {
+        when(() => mockClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
+          final kinds = filters.first.kinds ?? const <int>[];
+          if (kinds.contains(30000)) {
+            return [
+              ownBlockEvent([blockA, blockB]),
+            ];
+          }
+          if (kinds.contains(10000)) {
+            return [
+              ownMuteEvent([muteC]),
+            ];
+          }
+          return <Event>[];
+        });
+
+        List<List<String>>? publishedMuteTags;
+        when(
+          () => mockSigner.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          final kind = invocation.namedArguments[#kind] as int;
+          if (kind == 10000) {
+            publishedMuteTags =
+                invocation.namedArguments[#tags] as List<List<String>>?;
+          }
+          return signedMuteList();
+        });
+        when(
+          () => mockClient.publishEvent(any()),
+        ).thenAnswer((_) async => PublishSuccess(event: signedMuteList()));
+
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // The republished kind 10000 list carries the legacy blocks AND the
+        // mute that already lived on the existing kind 10000 list.
+        expect(publishedMuteTags, isNotNull);
+        final publishedPubkeys = publishedMuteTags!
+            .where((tag) => tag.length >= 2 && tag[0] == 'p')
+            .map((tag) => tag[1])
+            .toSet();
+        expect(publishedPubkeys, containsAll(<String>{blockA, blockB, muteC}));
+
+        expect(service.isBlocked(blockA), isTrue);
+        expect(service.isBlocked(blockB), isTrue);
+        expect(service.isMutedByUs(muteC), isTrue);
+        expect(prefs.getBool(flagKey), isTrue);
+
+        service.dispose();
+      },
+    );
+
+    test(
+      'records completion without publishing when there is no legacy list',
+      () async {
+        when(
+          () => mockClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
+
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verifyNever(
+          () => mockSigner.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+        expect(prefs.getBool(flagKey), isTrue);
+
+        service.dispose();
+      },
+    );
+
+    test('does not run again once the migration flag is set', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{flagKey: true});
+      prefs = await SharedPreferences.getInstance();
+
+      final service = ContentBlocklistRepository(prefs: prefs);
+      await service.syncBlockListsInBackground(
+        mockClient,
+        mockSigner,
+        ourPubkey,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      verifyNever(() => mockClient.queryEvents(any()));
+
+      service.dispose();
+    });
+
+    test('keeps the flag unset when the republish is rejected', () async {
+      when(() => mockClient.queryEvents(any())).thenAnswer((invocation) async {
+        final filters = invocation.positionalArguments[0] as List<Filter>;
+        final kinds = filters.first.kinds ?? const <int>[];
+        if (kinds.contains(30000)) {
+          return [
+            ownBlockEvent([blockA]),
+          ];
+        }
+        return <Event>[];
+      });
+      when(
+        () => mockSigner.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => signedMuteList());
+      when(
+        () => mockClient.publishEvent(any()),
+      ).thenAnswer((_) async => const PublishFailed());
+
+      final service = ContentBlocklistRepository(prefs: prefs);
+      await service.syncBlockListsInBackground(
+        mockClient,
+        mockSigner,
+        ourPubkey,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Migration retries next launch, but the block is real and already
+      // applied locally.
+      expect(prefs.getBool(flagKey), isNull);
+      expect(service.isBlocked(blockA), isTrue);
+
+      service.dispose();
     });
   });
 

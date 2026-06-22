@@ -1,7 +1,8 @@
 import 'package:nostr_sdk/event.dart';
 
 /// Minimal signer interface required by `ContentBlocklistRepository` for
-/// publishing block-list events to Nostr (kind 30000, d=block).
+/// publishing the user's mute/block lists to Nostr — the standard NIP-51
+/// kind 10000 mute list and the legacy kind 30000 (d=block) list.
 ///
 /// In production this is implemented by the app-level `AuthService`. The
 /// interface is kept intentionally narrow so the package has no dependency

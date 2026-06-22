@@ -3,7 +3,8 @@ import 'package:content_policy/src/policy_decision.dart';
 import 'package:content_policy/src/policy_input.dart';
 import 'package:content_policy/src/policy_rule.dart';
 
-/// Blocks content from authors the user blocked via kind 30000 d=block.
+/// Blocks content from authors the user blocked in-app (published onto
+/// their kind 10000 mute list, plus the legacy kind 30000 d=block list).
 class PubkeyBlockRule implements PolicyRule {
   /// Creates a [PubkeyBlockRule].
   const PubkeyBlockRule();

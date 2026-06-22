@@ -32,7 +32,8 @@ class ContentPolicyState {
   /// Authors the user muted via their own kind 10000 event.
   final Set<String> mutedPubkeys;
 
-  /// Authors the user blocked via their own kind 30000 d=block event.
+  /// Authors the user blocked in-app, published onto their own kind 10000
+  /// mute list (and the legacy kind 30000 d=block event).
   final Set<String> blockedPubkeys;
 
   /// Authors whose kind 30000 d=block event names the current user.

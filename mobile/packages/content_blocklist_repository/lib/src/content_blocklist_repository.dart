@@ -1,6 +1,6 @@
 // ABOUTME: Content blocklist service for filtering unwanted content from feeds
 // ABOUTME: Tracks our blocks, our kind-10000 mutes, and mutual block/mute state
-// ABOUTME: Persists to SharedPreferences and publishes kind 30000
+// ABOUTME: Persists to SharedPreferences and publishes the kind 10000 mute list
 
 import 'dart:async';
 import 'dart:convert';
@@ -29,6 +29,11 @@ const _severedFollowersPrefsKey = 'severed_followers_list';
 /// construction hydrates the right account before auth resolves.
 const _activePubkeyPrefsKey = 'blocklist_active_pubkey';
 
+/// SharedPreferences key prefix recording that the one-time migration of a
+/// legacy kind 30000 (d=block) block list into the standard kind 10000 mute
+/// list has completed for an account. Scoped per account as `base.pubkey`.
+const _blockListMigratedPrefsKeyBase = 'block_list_migrated_to_mute_list';
+
 /// Service for managing content blocklist
 ///
 /// This service maintains an internal blocklist of npubs whose content
@@ -37,7 +42,10 @@ const _activePubkeyPrefsKey = 'blocklist_active_pubkey';
 /// follow them.
 ///
 /// Blocks are persisted to SharedPreferences for survival across restarts,
-/// and published to Nostr as kind 30000 events (d=block) for cross-device sync.
+/// and published to Nostr as the standard NIP-51 kind 10000 mute list so
+/// they interoperate with other clients (Amethyst, Damus, etc.) and the
+/// Divine backend (#4037). A legacy kind 30000 (d=block) event is also
+/// kept in sync for backward compatibility with older Divine clients.
 class ContentBlocklistRepository {
   /// Creates a [ContentBlocklistRepository].
   ///
@@ -84,11 +92,13 @@ class ContentBlocklistRepository {
   // Mutual mute blocklist (populated from kind 10000 events)
   final Set<String> _mutualMuteBlocklist = <String>{};
 
-  // Authors we muted via our own kind 10000 mute list. Read-only mirror of
-  // relay state: this app has no mute-authoring UI, so the newest own
-  // kind 10000 event (published from any Nostr client) replaces this set
-  // wholesale. Only public 'p' tags are read; NIP-51 encrypted (private)
-  // mute entries are not supported.
+  // Authors muted on our own kind 10000 mute list from *other* clients.
+  // Our own in-app blocks live in [_runtimeBlocklist] and are deliberately
+  // excluded from this set (see [_handleOwnMuteListEvent]) so republishing
+  // the merged mute list stays idempotent and unblocking actually removes
+  // the entry. The newest own kind 10000 event replaces this set wholesale.
+  // Only public 'p' tags are read; NIP-51 encrypted (private) mute entries
+  // are not supported.
   final Set<String> _mutedPubkeys = <String>{};
 
   // Latest replaceable kind-10000 mute-list event timestamp per author.
@@ -536,7 +546,97 @@ class ContentBlocklistRepository {
     }
   }
 
-  /// Publish our block list to Nostr as kind 30000 with d=block
+  /// Publish our mute list to Nostr as a NIP-51 kind 10000 event.
+  ///
+  /// Blocking a user adds them to the user's standard Nostr mute list so
+  /// the block interoperates with other clients (Amethyst, Damus, etc.)
+  /// and the Divine backend, all of which key off kind 10000 (#4037).
+  ///
+  /// Kind 10000 is replaceable, so the event must carry the *entire* list.
+  /// We publish the union of our blocks ([_runtimeBlocklist]) and the mutes
+  /// authored from other clients ([_mutedPubkeys]) so republishing never
+  /// clobbers a mute set maintained elsewhere.
+  ///
+  /// Returns `true` when the event was accepted by at least one relay.
+  Future<bool> _publishMuteListToNostr() async {
+    final signer = _signer;
+    final nostrClient = _nostrClient;
+
+    if (signer == null || nostrClient == null) {
+      Log.debug(
+        'Cannot publish mute list - Nostr services not yet injected',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+
+    if (!signer.isAuthenticated) {
+      Log.warning(
+        'Cannot publish mute list - user not authenticated',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+
+    try {
+      final mutedAuthors = <String>{..._runtimeBlocklist, ..._mutedPubkeys};
+      final tags = <List<String>>[
+        for (final pubkey in mutedAuthors) ['p', pubkey],
+      ];
+
+      final event = await signer.createAndSignEvent(
+        kind: 10000,
+        content: '',
+        tags: tags,
+      );
+
+      if (event == null) return false;
+
+      // Record our own write as the newest seen event so a stale relay
+      // echo of an older own mute list cannot race back and drop the
+      // mutes we just merged in.
+      final ourPubkey = _ourPubkey;
+      if (ourPubkey != null) {
+        final seen = _latestMuteListEventCreatedAtByAuthor[ourPubkey];
+        if (seen == null || event.createdAt > seen) {
+          _latestMuteListEventCreatedAtByAuthor[ourPubkey] = event.createdAt;
+        }
+      }
+
+      final sentEvent = await nostrClient.publishEvent(event);
+
+      if (sentEvent is PublishSuccess) {
+        Log.info(
+          'Published mute list to Nostr with ${mutedAuthors.length} entries',
+          name: 'ContentBlocklistRepository',
+          category: LogCategory.system,
+        );
+        return true;
+      }
+
+      Log.warning(
+        'Failed to publish mute list event to relays',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+      return false;
+    } on Object catch (e) {
+      Log.error(
+        'Error publishing mute list to Nostr: $e',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+  }
+
+  /// Publish our legacy block list to Nostr as kind 30000 with d=block.
+  ///
+  /// Retained for backward compatibility with older Divine clients that
+  /// still read kind 30000. New interop goes through the standard kind
+  /// 10000 mute list ([_publishMuteListToNostr]).
   Future<void> _publishBlockListToNostr() async {
     final signer = _signer;
     final nostrClient = _nostrClient;
@@ -673,7 +773,8 @@ class ContentBlocklistRepository {
 
   /// Add a public key to the runtime blocklist
   ///
-  /// Persists to SharedPreferences and publishes to Nostr (kind 30000).
+  /// Persists to SharedPreferences and publishes the user's kind 10000 mute
+  /// list (plus the legacy kind 30000 block list for older Divine clients).
   /// Awaits the local write so the block survives an immediate app kill.
   /// If [ourPubkey] is provided, it will be used to prevent self-blocking.
   /// Otherwise falls back to [_ourPubkey] set during
@@ -695,6 +796,7 @@ class ContentBlocklistRepository {
       await _saveBlockedUsers();
       _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.blocked));
       _notifyChanged();
+      await _publishMuteListToNostr();
       await _publishBlockListToNostr();
 
       Log.debug(
@@ -714,7 +816,8 @@ class ContentBlocklistRepository {
 
   /// Remove a public key from the runtime blocklist
   ///
-  /// Persists to SharedPreferences and publishes updated list to Nostr.
+  /// Persists to SharedPreferences and republishes the updated kind 10000
+  /// mute list (plus the legacy kind 30000 block list) to Nostr.
   /// Awaits the local write so the change survives an immediate app kill.
   /// Note: Cannot remove users from internal blocklist.
   Future<void> unblockUser(String pubkey) async {
@@ -723,6 +826,7 @@ class ContentBlocklistRepository {
       await _saveBlockedUsers();
       _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.unblocked));
       _notifyChanged();
+      await _publishMuteListToNostr();
       await _publishBlockListToNostr();
 
       Log.info(
@@ -939,6 +1043,14 @@ class ContentBlocklistRepository {
 
       _blockListSyncStarted = true;
 
+      // One-time migration (#4037): fold any legacy kind 30000 block list
+      // into the standard kind 10000 mute list so pre-existing blocks
+      // finally interoperate with other clients. Fire-and-forget so it
+      // never blocks startup; guarded by a per-account persisted flag.
+      unawaited(
+        _migrateLegacyBlockListToMuteList(nostrService, signer, ourPubkey),
+      );
+
       Log.info(
         'Block list subscription created (includes own block list restore)',
         name: 'ContentBlocklistRepository',
@@ -947,6 +1059,133 @@ class ContentBlocklistRepository {
     } on Object catch (e) {
       Log.error(
         'Failed to start block list sync: $e',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// One-time migration of a legacy kind 30000 (d=block) block list into the
+  /// standard NIP-51 kind 10000 mute list (#4037).
+  ///
+  /// Older app versions only published blocks to a non-standard kind 30000
+  /// list that no other client honoured. This appends those entries to the
+  /// user's existing kind 10000 mute list and republishes it once, so
+  /// pre-existing blocks finally propagate — without dropping any mutes set
+  /// on other clients (the existing list is fetched and merged, never
+  /// replaced blindly).
+  ///
+  /// Guarded by a per-account SharedPreferences flag so it runs at most once
+  /// per account. The flag is only set after the republish is accepted, so a
+  /// failed publish retries on the next launch. Requires persistence; it is a
+  /// no-op without prefs (the one-time guarantee can't be tracked otherwise).
+  Future<void> _migrateLegacyBlockListToMuteList(
+    NostrClient nostrClient,
+    BlockListSigner signer,
+    String ourPubkey,
+  ) async {
+    final prefs = _prefs;
+    if (prefs == null) return;
+    final flagKey = '$_blockListMigratedPrefsKeyBase.$ourPubkey';
+    if (prefs.getBool(flagKey) ?? false) return;
+    if (!signer.isAuthenticated) return;
+
+    try {
+      // 1. Read the legacy kind 30000 d=block list from cache + relays.
+      final relayBlocks = <String>{};
+      final blockEvents = await nostrClient.queryEvents([
+        Filter(authors: [ourPubkey], kinds: const [30000]),
+      ]);
+      for (final event in blockEvents) {
+        if (event.pubkey != ourPubkey) continue;
+        final hasBlockDTag = event.tags.any(
+          (tag) => tag.length >= 2 && tag[0] == 'd' && tag[1] == 'block',
+        );
+        if (!hasBlockDTag) continue;
+        for (final tag in event.tags) {
+          if (tag.length >= 2 && tag[0] == 'p' && tag[1] != ourPubkey) {
+            relayBlocks.add(tag[1]);
+          }
+        }
+      }
+
+      // Nothing to migrate (no legacy relay blocks and no local blocks):
+      // record completion so we don't re-query on every launch. No publish
+      // happens here, so there is nothing to clobber.
+      if (relayBlocks.isEmpty && _runtimeBlocklist.isEmpty) {
+        await prefs.setBool(flagKey, true);
+        return;
+      }
+
+      // 2. Read the existing kind 10000 mute list (newest replaceable wins)
+      //    so the merge never drops mutes authored on other clients.
+      final muteEvents = await nostrClient.queryEvents([
+        Filter(authors: [ourPubkey], kinds: const [10000]),
+      ]);
+      Event? newestMuteList;
+      for (final event in muteEvents) {
+        if (event.pubkey != ourPubkey) continue;
+        if (newestMuteList == null ||
+            event.createdAt > newestMuteList.createdAt) {
+          newestMuteList = event;
+        }
+      }
+      final existingMutes = <String>{};
+      if (newestMuteList != null) {
+        for (final tag in newestMuteList.tags) {
+          if (tag.length >= 2 && tag[0] == 'p' && tag[1] != ourPubkey) {
+            existingMutes.add(tag[1]);
+          }
+        }
+      }
+
+      // 3. Fold both lists into our in-memory state without removing
+      //    anything. Legacy entries are our blocks; the rest of the relay's
+      //    mute list is preserved as mutes (our own blocks are kept out of
+      //    the mute set, matching [_handleOwnMuteListEvent]).
+      final newlyBlocked = relayBlocks.difference(_runtimeBlocklist);
+      _runtimeBlocklist.addAll(relayBlocks);
+      existingMutes.removeAll(_runtimeBlocklist);
+      final newlyMuted = existingMutes.difference(_mutedPubkeys);
+      _mutedPubkeys.addAll(existingMutes);
+      await _saveBlockedUsers();
+      await _saveMutedUsers();
+
+      // 4. Republish the unified kind 10000 mute list. Only record the
+      //    migration as done once the relay accepts it, so a failure retries.
+      final published = await _publishMuteListToNostr();
+      if (!published) {
+        Log.warning(
+          'Legacy block-list migration publish failed; retrying next launch',
+          name: 'ContentBlocklistRepository',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      await prefs.setBool(flagKey, true);
+
+      for (final pubkey in newlyBlocked) {
+        _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.blocked));
+      }
+      for (final pubkey in newlyMuted) {
+        _emitChange(
+          BlocklistChange(pubkey: pubkey, op: BlocklistOp.mutedByUs),
+        );
+      }
+      if (newlyBlocked.isNotEmpty || newlyMuted.isNotEmpty) {
+        _notifyChanged();
+      }
+
+      Log.info(
+        'Migrated legacy block list into the kind 10000 mute list '
+        '(${_runtimeBlocklist.length} blocks, ${_mutedPubkeys.length} mutes)',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+    } on Object catch (e) {
+      Log.error(
+        'Failed to migrate legacy block list to mute list: $e',
         name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
@@ -1031,10 +1270,15 @@ class ContentBlocklistRepository {
 
   /// Replace our muted-authors set from our latest kind 10000 event.
   ///
-  /// Kind 10000 is replaceable and this app never authors mutes, so the
-  /// newest own event is the complete list and replaces [_mutedPubkeys]
-  /// wholesale — unlike [_handleOwnBlockListEvent], which merges to
-  /// protect locally-authored blocks that may not have reached relays.
+  /// Kind 10000 is replaceable, so the newest own event is the complete
+  /// list and replaces [_mutedPubkeys] wholesale — unlike
+  /// [_handleOwnBlockListEvent], which merges to protect locally-authored
+  /// blocks that may not have reached relays.
+  ///
+  /// Our own in-app blocks ([_runtimeBlocklist]) are excluded: this app now
+  /// publishes them onto the same kind 10000 list, so an entry that we
+  /// blocked must be tracked as a block (not duplicated into the mute set),
+  /// otherwise unblocking could never drop it from the republished list.
   /// Our own pubkey is excluded so a malformed self-referential mute list
   /// can never filter the user's own content (#2192).
   void _handleOwnMuteListEvent(Event event) {
@@ -1063,6 +1307,9 @@ class ContentBlocklistRepository {
         relayMuted.add(tag[1]);
       }
     }
+    // Entries we blocked in-app are republished onto this same list; keep
+    // them out of the mute set so they stay tracked as blocks only.
+    relayMuted.removeAll(_runtimeBlocklist);
 
     final added = relayMuted.difference(_mutedPubkeys);
     final removed = _mutedPubkeys.difference(relayMuted);
