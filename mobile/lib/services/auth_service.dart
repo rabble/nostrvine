@@ -23,6 +23,7 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/local_key_signer.dart';
@@ -81,6 +82,32 @@ enum AuthState {
 
   /// Authentication is in progress (generating/importing keys)
   authenticating,
+}
+
+/// Thrown when a signer returns an event whose author public key does not
+/// match the active identity.
+///
+/// A signing-layer invariant violation: a signer must never produce an event
+/// for a different account than the one that requested signing. Reported to
+/// Crashlytics via [Reportable] (YES on the error-handling matrix), and the
+/// caller fails the publish closed. Carries hex pubkeys only (no npub/nsec),
+/// so it is safe for the [Reportable] sanitizer.
+class EventSignerAccountMismatchException implements Exception {
+  const EventSignerAccountMismatchException({
+    required this.expectedPubkey,
+    required this.actualPubkey,
+  });
+
+  /// The active identity's public key (hex) the event was created with.
+  final String expectedPubkey;
+
+  /// The public key (hex) the signer returned on the signed event.
+  final String actualPubkey;
+
+  @override
+  String toString() =>
+      'EventSignerAccountMismatchException: signer returned an event for '
+      '$actualPubkey but the active identity is $expectedPubkey';
 }
 
 /// Result of authentication operations
@@ -4296,17 +4323,15 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // backend swapped the authorized key). isSigned/isValid only prove
       // the signature and id are self-consistent for the event's own
       // pubkey — not that it is the account we intended to sign as. Cheap
-      // string compare; runs for every signer, local or remote.
+      // string compare; runs for every signer, local or remote. Throwing
+      // (rather than returning null) keeps this off the frozen sentinel
+      // ceiling and surfaces the invariant violation via Reportable in the
+      // catch below. #5450.
       if (signedEvent.pubkey != identity.pubkey) {
-        Log.error(
-          'Event pubkey mismatch! Signer returned a different account. '
-          'eventPubkey=${signedEvent.pubkey}, '
-          'identityPubkey=${identity.pubkey}, '
-          'authSource=${_authSource.name}',
-          name: 'AuthService',
-          category: LogCategory.auth,
+        throw EventSignerAccountMismatchException(
+          expectedPubkey: identity.pubkey,
+          actualPubkey: signedEvent.pubkey,
         );
-        return null;
       }
 
       // Re-verifying a signature we just produced with our own in-process
@@ -4344,12 +4369,24 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       );
 
       return signedEvent;
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'Failed to create or sign event: $e',
         name: 'AuthService',
         category: LogCategory.auth,
       );
+      // An event signed for a different account is an invariant violation
+      // (YES on the Reportable matrix), not an expected domain/network
+      // failure — surface it to Crashlytics. Other errors keep the existing
+      // log-only behavior to avoid flooding the dashboard.
+      if (e is EventSignerAccountMismatchException) {
+        _reportAuthError(
+          Reportable(e, context: 'createAndSignEvent'),
+          stackTrace,
+          reason: 'Signer returned an event for a different account',
+          logMessage: 'Signer account mismatch during createAndSignEvent',
+        );
+      }
       return null;
     }
   }

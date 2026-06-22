@@ -421,5 +421,22 @@ void main() {
         );
       },
     );
+
+    test(
+      'EventSignerAccountMismatchException.toString carries hex pubkeys and '
+      'no npub/nsec identifiers',
+      () {
+        final exception = EventSignerAccountMismatchException(
+          expectedPubkey: containerA.publicKeyHex,
+          actualPubkey: containerB.publicKeyHex,
+        );
+
+        final text = exception.toString();
+        expect(text, contains(containerA.publicKeyHex));
+        expect(text, contains(containerB.publicKeyHex));
+        expect(text, isNot(contains('npub1')));
+        expect(text, isNot(contains('nsec1')));
+      },
+    );
   });
 }
