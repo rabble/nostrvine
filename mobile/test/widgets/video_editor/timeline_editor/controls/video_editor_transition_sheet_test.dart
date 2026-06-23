@@ -75,14 +75,16 @@ void main() {
       expect(find.text(l10n.videoEditorTransitionWipe), findsOneWidget);
     });
 
-    testWidgets('reveals duration + curve only once a transition is picked', (
+    testWidgets('shows duration + curve even for a hard cut (none)', (
       tester,
     ) async {
       await openPicker(tester);
 
-      // "None" is selected initially → no duration/curve controls.
-      expect(find.text(l10n.videoEditorTransitionDuration), findsNothing);
+      // "None" is selected initially — duration and curve are still shown.
+      expect(find.text(l10n.videoEditorTransitionDuration), findsOneWidget);
+      expect(find.text(l10n.videoEditorTransitionCurve), findsOneWidget);
 
+      // Picking a transition keeps them visible.
       await tester.tap(find.text(l10n.videoEditorTransitionDissolve));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));

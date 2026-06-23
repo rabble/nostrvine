@@ -216,7 +216,6 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final showControls = _type != null;
     final fromPath = context.select(
       (TransitionBoundaryCubit c) => c.state.fromFramePath,
     );
@@ -260,93 +259,91 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
             child: AnimatedSize(
               duration: const Duration(milliseconds: 200),
               alignment: .topCenter,
-              child: showControls
-                  ? Column(
-                      crossAxisAlignment: .stretch,
+              child: Column(
+                crossAxisAlignment: .stretch,
+                children: [
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: .spaceBetween,
+                    children: [
+                      _SectionLabel(l10n.videoEditorTransitionDuration),
+                      Text(
+                        _durationLabel(_duration),
+                        style: VineTheme.labelSmallFont(
+                          color: VineTheme.lightText,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (widget.maxDurationMs > _minDurationMs) ...[
+                    const SizedBox(height: 8),
+                    DivineSlider(
+                      value: _duration.inMilliseconds.toDouble(),
+                      min: _minDurationMs.toDouble(),
+                      max: widget.maxDurationMs.toDouble(),
+                      divisions:
+                          ((widget.maxDurationMs - _minDurationMs) ~/
+                                  _durationStepMs)
+                              .clamp(1, 1 << 20),
+                      onChanged: (value) => setState(
+                        () => _duration = Duration(
+                          milliseconds: value.round(),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  _SectionLabel(l10n.videoEditorTransitionCurve),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final curve in _curveOptions)
+                        _PickerChip(
+                          selected: curve == _curve,
+                          onTap: () => setState(() => _curve = curve),
+                          child: SizedBox(
+                            width: 28,
+                            height: 18,
+                            child: CustomPaint(
+                              painter: _CurveGlyphPainter(
+                                curve: _flutterCurve(curve),
+                                color: curve == _curve
+                                    ? VineTheme.primary
+                                    : VineTheme.secondaryText,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (_directionalTypes.contains(_type)) ...[
+                    const SizedBox(height: 16),
+                    _SectionLabel(l10n.videoEditorTransitionDirection),
+                    const SizedBox(height: 8),
+                    Row(
+                      spacing: 8,
                       children: [
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: .spaceBetween,
-                          children: [
-                            _SectionLabel(l10n.videoEditorTransitionDuration),
-                            Text(
-                              _durationLabel(_duration),
-                              style: VineTheme.labelSmallFont(
-                                color: VineTheme.lightText,
-                              ),
+                        for (final direction in _directionOptions)
+                          _PickerChip(
+                            selected: direction == _direction,
+                            onTap: () => setState(
+                              () => _direction = direction,
                             ),
-                          ],
-                        ),
-                        if (widget.maxDurationMs > _minDurationMs) ...[
-                          const SizedBox(height: 8),
-                          DivineSlider(
-                            value: _duration.inMilliseconds.toDouble(),
-                            min: _minDurationMs.toDouble(),
-                            max: widget.maxDurationMs.toDouble(),
-                            divisions:
-                                ((widget.maxDurationMs - _minDurationMs) ~/
-                                        _durationStepMs)
-                                    .clamp(1, 1 << 20),
-                            onChanged: (value) => setState(
-                              () => _duration = Duration(
-                                milliseconds: value.round(),
-                              ),
+                            child: DivineIcon(
+                              icon: _directionIcon(direction),
+                              size: 18,
+                              color: direction == _direction
+                                  ? VineTheme.primary
+                                  : VineTheme.secondaryText,
                             ),
                           ),
-                        ],
-                        const SizedBox(height: 16),
-                        _SectionLabel(l10n.videoEditorTransitionCurve),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final curve in _curveOptions)
-                              _PickerChip(
-                                selected: curve == _curve,
-                                onTap: () => setState(() => _curve = curve),
-                                child: SizedBox(
-                                  width: 28,
-                                  height: 18,
-                                  child: CustomPaint(
-                                    painter: _CurveGlyphPainter(
-                                      curve: _flutterCurve(curve),
-                                      color: curve == _curve
-                                          ? VineTheme.primary
-                                          : VineTheme.secondaryText,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        if (_directionalTypes.contains(_type)) ...[
-                          const SizedBox(height: 16),
-                          _SectionLabel(l10n.videoEditorTransitionDirection),
-                          const SizedBox(height: 8),
-                          Row(
-                            spacing: 8,
-                            children: [
-                              for (final direction in _directionOptions)
-                                _PickerChip(
-                                  selected: direction == _direction,
-                                  onTap: () => setState(
-                                    () => _direction = direction,
-                                  ),
-                                  child: DivineIcon(
-                                    icon: _directionIcon(direction),
-                                    size: 18,
-                                    color: direction == _direction
-                                        ? VineTheme.primary
-                                        : VineTheme.secondaryText,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
                       ],
-                    )
-                  : const SizedBox.shrink(),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 20),
