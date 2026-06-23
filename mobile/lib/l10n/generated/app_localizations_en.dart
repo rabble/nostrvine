@@ -7973,6 +7973,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorSpeedSheetTitle => 'Clip Speed';
 
   @override
+  String get videoEditorTransitionSheetTitle => 'Transition';
+
+  @override
+  String get videoEditorTransitionNone => 'None';
+
+  @override
+  String get videoEditorTransitionDissolve => 'Dissolve';
+
+  @override
+  String get videoEditorTransitionFadeToBlack => 'Fade to black';
+
+  @override
+  String get videoEditorTransitionFadeToWhite => 'Fade to white';
+
+  @override
+  String get videoEditorTransitionSlide => 'Slide';
+
+  @override
+  String get videoEditorTransitionPush => 'Push';
+
+  @override
+  String get videoEditorTransitionWipe => 'Wipe';
+
+  @override
+  String get videoEditorTransitionButtonSemanticLabel => 'Edit transition';
+
+  @override
+  String get videoEditorTransitionDuration => 'Duration';
+
+  @override
+  String get videoEditorTransitionCurve => 'Curve';
+
+  @override
+  String get videoEditorTransitionDirection => 'Direction';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Finish timeline editing';
 

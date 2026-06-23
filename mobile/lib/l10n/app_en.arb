@@ -4590,6 +4590,54 @@
   "@videoEditorSpeedSheetTitle": {
     "description": "Title of the bottom sheet for adjusting clip playback speed."
   },
+  "videoEditorTransitionSheetTitle": "Transition",
+  "@videoEditorTransitionSheetTitle": {
+    "description": "Title of the bottom sheet for choosing the transition between two adjacent clips."
+  },
+  "videoEditorTransitionNone": "None",
+  "@videoEditorTransitionNone": {
+    "description": "Transition option for a hard cut between clips (no transition)."
+  },
+  "videoEditorTransitionDissolve": "Dissolve",
+  "@videoEditorTransitionDissolve": {
+    "description": "Transition option that cross-dissolves one clip into the next."
+  },
+  "videoEditorTransitionFadeToBlack": "Fade to black",
+  "@videoEditorTransitionFadeToBlack": {
+    "description": "Transition option that dips through black between clips."
+  },
+  "videoEditorTransitionFadeToWhite": "Fade to white",
+  "@videoEditorTransitionFadeToWhite": {
+    "description": "Transition option that dips through white between clips."
+  },
+  "videoEditorTransitionSlide": "Slide",
+  "@videoEditorTransitionSlide": {
+    "description": "Transition option where the next clip slides in over the current one."
+  },
+  "videoEditorTransitionPush": "Push",
+  "@videoEditorTransitionPush": {
+    "description": "Transition option where the next clip pushes the current one out of frame."
+  },
+  "videoEditorTransitionWipe": "Wipe",
+  "@videoEditorTransitionWipe": {
+    "description": "Transition option where the next clip is progressively revealed over the current one."
+  },
+  "videoEditorTransitionButtonSemanticLabel": "Edit transition",
+  "@videoEditorTransitionButtonSemanticLabel": {
+    "description": "Accessibility label for the button between two clips that opens the transition picker."
+  },
+  "videoEditorTransitionDuration": "Duration",
+  "@videoEditorTransitionDuration": {
+    "description": "Section label above the transition duration presets in the transition picker."
+  },
+  "videoEditorTransitionCurve": "Curve",
+  "@videoEditorTransitionCurve": {
+    "description": "Section label above the transition easing-curve options in the transition picker."
+  },
+  "videoEditorTransitionDirection": "Direction",
+  "@videoEditorTransitionDirection": {
+    "description": "Section label above the slide/push/wipe direction options in the transition picker."
+  },
   "videoEditorFinishTimelineEditingSemanticLabel": "Finish timeline editing",
   "videoEditorAudioPlayPreviewSemanticLabel": "Play preview",
   "videoEditorAudioPausePreviewSemanticLabel": "Pause preview",

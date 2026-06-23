@@ -8017,6 +8017,42 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorSpeedSheetTitle => 'Clipsnelheid';
 
   @override
+  String get videoEditorTransitionSheetTitle => 'Overgang';
+
+  @override
+  String get videoEditorTransitionNone => 'Geen';
+
+  @override
+  String get videoEditorTransitionDissolve => 'Vervloeien';
+
+  @override
+  String get videoEditorTransitionFadeToBlack => 'Vervagen naar zwart';
+
+  @override
+  String get videoEditorTransitionFadeToWhite => 'Vervagen naar wit';
+
+  @override
+  String get videoEditorTransitionSlide => 'Schuiven';
+
+  @override
+  String get videoEditorTransitionPush => 'Duwen';
+
+  @override
+  String get videoEditorTransitionWipe => 'Vegen';
+
+  @override
+  String get videoEditorTransitionButtonSemanticLabel => 'Overgang bewerken';
+
+  @override
+  String get videoEditorTransitionDuration => 'Duur';
+
+  @override
+  String get videoEditorTransitionCurve => 'Curve';
+
+  @override
+  String get videoEditorTransitionDirection => 'Richting';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Bewerken van tijdlijn voltooien';
 

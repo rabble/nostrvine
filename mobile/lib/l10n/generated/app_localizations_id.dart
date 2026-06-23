@@ -7955,6 +7955,42 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorSpeedSheetTitle => 'Kecepatan Klip';
 
   @override
+  String get videoEditorTransitionSheetTitle => 'Transisi';
+
+  @override
+  String get videoEditorTransitionNone => 'Tidak ada';
+
+  @override
+  String get videoEditorTransitionDissolve => 'Larut';
+
+  @override
+  String get videoEditorTransitionFadeToBlack => 'Pudar ke hitam';
+
+  @override
+  String get videoEditorTransitionFadeToWhite => 'Pudar ke putih';
+
+  @override
+  String get videoEditorTransitionSlide => 'Geser';
+
+  @override
+  String get videoEditorTransitionPush => 'Dorong';
+
+  @override
+  String get videoEditorTransitionWipe => 'Sapu';
+
+  @override
+  String get videoEditorTransitionButtonSemanticLabel => 'Edit transisi';
+
+  @override
+  String get videoEditorTransitionDuration => 'Durasi';
+
+  @override
+  String get videoEditorTransitionCurve => 'Kurva';
+
+  @override
+  String get videoEditorTransitionDirection => 'Arah';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Selesai mengedit timeline';
 

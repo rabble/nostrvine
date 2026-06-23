@@ -33,6 +33,7 @@ class DivineVideoClip {
     this.reversedVideoPath,
     this.proofManifestJson,
     this.deletedAt,
+    this.transition,
   }) : _thumbnailTimestamp = thumbnailTimestamp,
        _originalAspectRatio = originalAspectRatio;
 
@@ -89,6 +90,13 @@ class DivineVideoClip {
   /// active clips. Sourced from the Drift `clips.deleted_at` column and
   /// only populated when the clip is loaded via the trash-bin path.
   final DateTime? deletedAt;
+
+  /// How this clip transitions into the **next** clip on the timeline
+  /// (dissolve, fade-to-black, slide, …), or `null` for a hard cut.
+  ///
+  /// Ignored on the last clip (there is no following clip). Drives both the
+  /// live editor preview and the final rendered composition.
+  final ClipTransition? transition;
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
 
@@ -168,6 +176,8 @@ class DivineVideoClip {
     String? proofManifestJson,
     bool clearProofManifestJson = false,
     DateTime? deletedAt,
+    ClipTransition? transition,
+    bool clearTransition = false,
   }) {
     final isNewLogicalClip = id != null && id != this.id;
 
@@ -207,6 +217,7 @@ class DivineVideoClip {
           ? null
           : (proofManifestJson ?? this.proofManifestJson),
       deletedAt: deletedAt ?? this.deletedAt,
+      transition: clearTransition ? null : (transition ?? this.transition),
     );
   }
 
@@ -240,6 +251,7 @@ class DivineVideoClip {
       if (reversedVideoPath != null)
         'reversedVideoPath': p.basename(reversedVideoPath!),
       if (proofManifestJson != null) 'proofManifestJson': proofManifestJson,
+      if (transition != null) 'transition': transition!.toMap(),
     };
   }
 
@@ -305,6 +317,11 @@ class DivineVideoClip {
         useOriginalPath: useOriginalPath,
       ),
       proofManifestJson: json['proofManifestJson'] as String?,
+      transition: json['transition'] != null
+          ? ClipTransition.fromMap(
+              (json['transition'] as Map).cast<String, dynamic>(),
+            )
+          : null,
     );
   }
 

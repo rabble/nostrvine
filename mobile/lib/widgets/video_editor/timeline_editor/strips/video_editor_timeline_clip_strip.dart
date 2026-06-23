@@ -14,6 +14,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_transition_sheet.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_trim_handles.dart';
 
 part 'video_editor_timeline_clip_strip_tiles.dart';
@@ -642,6 +643,16 @@ class _VideoEditorTimelineClipStripState
                     dragFingerRatio: _dragFingerRatio,
                     pixelsPerSecond: widget.pixelsPerSecond,
                   ),
+
+                /// Transition buttons on each internal clip boundary. Hidden
+                /// during reorder/trim/volume/multi-select so they never
+                /// overlap those interactions.
+                if (!shouldAnimate &&
+                    widget.trimmingClipId == null &&
+                    !isVolumeEditMode &&
+                    !widget.isMultiSelectMode &&
+                    _orderedClips.length >= 2)
+                  _TransitionButtonsLayer(clips: _orderedClips, layout: layout),
               ],
             ),
           ),
@@ -856,4 +867,108 @@ class _DraggedClipPosition extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Positions a [_TransitionButton] over every internal clip boundary, centred
+/// on the gap between adjacent clips (TikTok-style).
+class _TransitionButtonsLayer extends StatelessWidget {
+  const _TransitionButtonsLayer({required this.clips, required this.layout});
+
+  final List<DivineVideoClip> clips;
+  final ({List<double> widths, List<double> offsets, double totalWidth}) layout;
+
+  static const double _size = 26;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        for (int i = 0; i < clips.length - 1; i++)
+          Positioned(
+            left:
+                layout.offsets[i] +
+                layout.widths[i] +
+                TimelineConstants.clipGap / 2 -
+                _size / 2,
+            top: (TimelineConstants.thumbnailStripHeight - _size) / 2,
+            width: _size,
+            height: _size,
+            child: _TransitionButton(
+              hasTransition: clips[i].transition != null,
+              onTap: () => editClipTransition(context, i),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _TransitionButton extends StatelessWidget {
+  const _TransitionButton({required this.hasTransition, required this.onTap});
+
+  final bool hasTransition;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = hasTransition
+        ? VineTheme.primary
+        : VineTheme.secondaryText;
+    return Semantics(
+      button: true,
+      label: context.l10n.videoEditorTransitionButtonSemanticLabel,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: VineTheme.surfaceBackground,
+            shape: BoxShape.circle,
+            border: Border.all(color: foreground, width: 1.5),
+          ),
+          child: Center(
+            child: CustomPaint(
+              size: const Size(10, 10),
+              painter: _TransitionGlyphPainter(color: foreground),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Paints the universal "transition" bowtie glyph — two triangles meeting at
+/// the centre.
+class _TransitionGlyphPainter extends CustomPainter {
+  const _TransitionGlyphPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    final w = size.width;
+    final h = size.height;
+    final left = Path()
+      ..moveTo(0, 0)
+      ..lineTo(w / 2, h / 2)
+      ..lineTo(0, h)
+      ..close();
+    final right = Path()
+      ..moveTo(w, 0)
+      ..lineTo(w / 2, h / 2)
+      ..lineTo(w, h)
+      ..close();
+    canvas
+      ..drawPath(left, paint)
+      ..drawPath(right, paint);
+  }
+
+  @override
+  bool shouldRepaint(_TransitionGlyphPainter oldDelegate) =>
+      oldDelegate.color != color;
 }

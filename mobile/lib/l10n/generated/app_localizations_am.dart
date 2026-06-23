@@ -7837,6 +7837,42 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorSpeedSheetTitle => 'የክሊፕ ፍጥነት';
 
   @override
+  String get videoEditorTransitionSheetTitle => 'ሽግግር';
+
+  @override
+  String get videoEditorTransitionNone => 'ምንም';
+
+  @override
+  String get videoEditorTransitionDissolve => 'መሟሟት';
+
+  @override
+  String get videoEditorTransitionFadeToBlack => 'ወደ ጥቁር መደብዘዝ';
+
+  @override
+  String get videoEditorTransitionFadeToWhite => 'ወደ ነጭ መደብዘዝ';
+
+  @override
+  String get videoEditorTransitionSlide => 'ማንሸራተት';
+
+  @override
+  String get videoEditorTransitionPush => 'መግፋት';
+
+  @override
+  String get videoEditorTransitionWipe => 'ማበስ';
+
+  @override
+  String get videoEditorTransitionButtonSemanticLabel => 'ሽግግርን አርትዕ';
+
+  @override
+  String get videoEditorTransitionDuration => 'ቆይታ';
+
+  @override
+  String get videoEditorTransitionCurve => 'ኩርባ';
+
+  @override
+  String get videoEditorTransitionDirection => 'አቅጣጫ';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'የጊዜ መስመር አርትዖትን ጨርስ';
 

@@ -8067,6 +8067,43 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorSpeedSheetTitle => 'Bilis ng Clip';
 
   @override
+  String get videoEditorTransitionSheetTitle => 'Transisyon';
+
+  @override
+  String get videoEditorTransitionNone => 'Wala';
+
+  @override
+  String get videoEditorTransitionDissolve => 'Dissolve';
+
+  @override
+  String get videoEditorTransitionFadeToBlack => 'Pagkupas sa itim';
+
+  @override
+  String get videoEditorTransitionFadeToWhite => 'Pagkupas sa puti';
+
+  @override
+  String get videoEditorTransitionSlide => 'Pag-slide';
+
+  @override
+  String get videoEditorTransitionPush => 'Pagtulak';
+
+  @override
+  String get videoEditorTransitionWipe => 'Pagpunas';
+
+  @override
+  String get videoEditorTransitionButtonSemanticLabel =>
+      'I-edit ang transisyon';
+
+  @override
+  String get videoEditorTransitionDuration => 'Tagal';
+
+  @override
+  String get videoEditorTransitionCurve => 'Kurba';
+
+  @override
+  String get videoEditorTransitionDirection => 'Direksyon';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Tapusin ang pag-edit ng timeline';
 

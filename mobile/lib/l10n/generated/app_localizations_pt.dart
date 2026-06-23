@@ -8026,6 +8026,42 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorSpeedSheetTitle => 'Velocidade do clipe';
 
   @override
+  String get videoEditorTransitionSheetTitle => 'Transição';
+
+  @override
+  String get videoEditorTransitionNone => 'Nenhuma';
+
+  @override
+  String get videoEditorTransitionDissolve => 'Dissolução';
+
+  @override
+  String get videoEditorTransitionFadeToBlack => 'Esmaecer para preto';
+
+  @override
+  String get videoEditorTransitionFadeToWhite => 'Esmaecer para branco';
+
+  @override
+  String get videoEditorTransitionSlide => 'Deslizar';
+
+  @override
+  String get videoEditorTransitionPush => 'Empurrar';
+
+  @override
+  String get videoEditorTransitionWipe => 'Varredura';
+
+  @override
+  String get videoEditorTransitionButtonSemanticLabel => 'Editar transição';
+
+  @override
+  String get videoEditorTransitionDuration => 'Duração';
+
+  @override
+  String get videoEditorTransitionCurve => 'Curva';
+
+  @override
+  String get videoEditorTransitionDirection => 'Direção';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Finalizar edição da linha do tempo';
 

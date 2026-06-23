@@ -8149,6 +8149,42 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorSpeedSheetTitle => 'Viteza clipului';
 
   @override
+  String get videoEditorTransitionSheetTitle => 'Tranziție';
+
+  @override
+  String get videoEditorTransitionNone => 'Niciuna';
+
+  @override
+  String get videoEditorTransitionDissolve => 'Disolvare';
+
+  @override
+  String get videoEditorTransitionFadeToBlack => 'Estompare spre negru';
+
+  @override
+  String get videoEditorTransitionFadeToWhite => 'Estompare spre alb';
+
+  @override
+  String get videoEditorTransitionSlide => 'Glisare';
+
+  @override
+  String get videoEditorTransitionPush => 'Împingere';
+
+  @override
+  String get videoEditorTransitionWipe => 'Ștergere';
+
+  @override
+  String get videoEditorTransitionButtonSemanticLabel => 'Editează tranziția';
+
+  @override
+  String get videoEditorTransitionDuration => 'Durată';
+
+  @override
+  String get videoEditorTransitionCurve => 'Curbă';
+
+  @override
+  String get videoEditorTransitionDirection => 'Direcție';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Finalizează editarea cronologiei';
 

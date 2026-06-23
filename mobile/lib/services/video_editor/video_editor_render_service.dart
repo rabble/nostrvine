@@ -712,6 +712,12 @@ class VideoEditorRenderService {
     // Analyze all clips first to determine the optimal rendering strategy
     final clipAnalysis = await _analyzeClips(clips, aspectRatio);
 
+    // A transition overlaps the tail of its clip and the head of the next, so
+    // clamp it to a duration both clips can sustain. Without this the native
+    // render fails on a transition longer than a (possibly later-trimmed) clip,
+    // even though the lightweight seam preview clamps independently.
+    final clampedTransitions = _clampTransitions(clips);
+
     // If all clips have the same crop params, use global transform (most efficient)
     if (clipAnalysis.allSameCropParams) {
       Log.debug(
@@ -728,6 +734,7 @@ class VideoEditorRenderService {
                 endTime: c.trimStart + c.trimmedDuration,
                 volume: c.volume,
                 playbackSpeed: c.playbackSpeed,
+                transition: clampedTransitions[c.id],
               ),
             )
             .toList(),
@@ -772,6 +779,7 @@ class VideoEditorRenderService {
             endTime: entry.clip.trimStart + entry.clip.trimmedDuration,
             volume: entry.clip.volume,
             playbackSpeed: entry.clip.playbackSpeed,
+            transition: clampedTransitions[entry.clip.id],
           ),
         );
       } else {
@@ -784,7 +792,10 @@ class VideoEditorRenderService {
         );
         tempFilePaths.add(normalizedPath);
         segments.add(
-          VideoSegment(video: EditorVideo.file(File(normalizedPath))),
+          VideoSegment(
+            video: EditorVideo.file(File(normalizedPath)),
+            transition: clampedTransitions[entry.clip.id],
+          ),
         );
       }
     }
@@ -793,6 +804,52 @@ class VideoEditorRenderService {
       segments: segments,
       tempFilePaths: tempFilePaths,
     );
+  }
+
+  /// Maps each clip id to its outgoing transition, clamped to a duration both
+  /// the clip and its successor can sustain. Returns `null` for the last clip
+  /// (no following boundary) and whenever there is no room for a transition.
+  ///
+  /// Keyed by clip id rather than index so it stays correct even if the render
+  /// pipeline reorders clips.
+  static Map<String, ClipTransition?> _clampTransitions(
+    List<DivineVideoClip> clips,
+  ) {
+    final clamped = <String, ClipTransition?>{};
+    for (var i = 0; i < clips.length; i++) {
+      final maxDuration = i + 1 < clips.length
+          ? _maxTransitionDuration(
+              clips[i].playbackDuration,
+              clips[i + 1].playbackDuration,
+            )
+          : Duration.zero;
+      clamped[clips[i].id] = _clampTransition(clips[i].transition, maxDuration);
+    }
+    return clamped;
+  }
+
+  /// The longest a boundary transition may last: half the shorter adjacent
+  /// clip. A transition overlaps both clips, so it must leave solo (non-blended)
+  /// content on each side — a transition as long as the whole clip leaves none,
+  /// producing a degenerate segment the native render fails on.
+  static Duration _maxTransitionDuration(Duration a, Duration b) {
+    final shorter = a < b ? a : b;
+    return Duration(microseconds: shorter.inMicroseconds ~/ 2);
+  }
+
+  static ClipTransition? _clampTransition(
+    ClipTransition? transition,
+    Duration maxDuration,
+  ) {
+    if (transition == null || maxDuration <= Duration.zero) return null;
+    if (transition.duration <= maxDuration) return transition;
+    Log.debug(
+      '✂️ Clamping transition ${transition.duration.inMilliseconds}ms '
+      'to ${maxDuration.inMilliseconds}ms (clip too short)',
+      name: _logName,
+      category: .video,
+    );
+    return transition.copyWith(duration: maxDuration);
   }
 
   /// Analyzes all clips to determine their crop parameters.

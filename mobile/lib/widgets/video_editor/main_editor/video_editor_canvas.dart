@@ -27,7 +27,9 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
+import 'package:openvine/services/video_editor/transition_seam_render_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_feed_preview_overlay.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -233,6 +235,14 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     }
   }
 
+  /// Renders and caches transition seams so the preview can splice them in
+  /// between the trimmed neighbour clips (instead of compositing live).
+  final _seamService = TransitionSeamRenderService();
+
+  /// Number of transition seams currently rendering. Drives the preview's
+  /// "rendering transition" overlay so the wait isn't silent.
+  final _pendingSeamRenders = ValueNotifier<int>(0);
+
   @override
   void dispose() {
     Log.info(
@@ -243,8 +253,60 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     _videoPlayerSubscription?.cancel();
     _videoPlayer?.dispose();
     _isPlayerReadyNotifier.dispose();
+    _seamService.clear();
+    _pendingSeamRenders.dispose();
     super.dispose();
   }
+
+  /// Renders any not-yet-cached transition seam and re-syncs the player when it
+  /// finishes, so the seam splices into the preview. Idempotent — cached seams
+  /// are skipped, so it is safe to call on every clip change.
+  void _ensureSeamsRendered(List<DivineVideoClip> clips) {
+    for (var i = 0; i < clips.length - 1; i++) {
+      final transition = clips[i].transition;
+      if (transition == null) continue;
+      if (_seamService.cached(clips[i], clips[i + 1], transition) != null) {
+        continue;
+      }
+      _pendingSeamRenders.value++;
+      _seamService
+          .render(clipA: clips[i], clipB: clips[i + 1], transition: transition)
+          .then((seam) {
+            if (!mounted) return;
+            _pendingSeamRenders.value--;
+            if (seam != null) _resyncPlayerClips();
+          });
+    }
+  }
+
+  /// Reloads the player with the current clips, splicing in rendered seams,
+  /// preserving the current playback position.
+  void _resyncPlayerClips() {
+    if (!_isPlayerInitialized) return;
+    final clips = ref.read(clipManagerProvider).clips;
+    if (clips.isEmpty) return;
+    final currentPosition = context
+        .read<VideoEditorMainBloc>()
+        .state
+        .currentPosition;
+    _videoPlayer?.setClips([
+      ...buildSeamAwarePlayerClips(clips, _seamService),
+    ], startPosition: _timelineToPlayer(currentPosition));
+  }
+
+  /// Converts a player (composite) position into editor-timeline space. The
+  /// player plays trimmed clip bodies with spliced seams (a shorter timeline);
+  /// the editor draws clips at full length. A no-op when no seam is spliced.
+  Duration _playerToTimeline(Duration playerPosition) => SeamTimeline(
+    ref.read(clipManagerProvider).clips,
+    _seamService,
+  ).compositeToTimeline(playerPosition);
+
+  /// Converts an editor-timeline position into player (composite) space.
+  Duration _timelineToPlayer(Duration timelinePosition) => SeamTimeline(
+    ref.read(clipManagerProvider).clips,
+    _seamService,
+  ).timelineToComposite(timelinePosition);
 
   /// Extracts playable file paths from the current clip state.
   List<String> get _clipPaths => ref
@@ -355,7 +417,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     _isSeeking = true;
     final epoch = _seekEpoch;
     try {
-      await _videoPlayer?.seekTo(position);
+      await _videoPlayer?.seekTo(_timelineToPlayer(position));
       if (_seekEpoch != epoch) {
         _pendingSeekPosition = null;
         return;
@@ -369,7 +431,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           _pendingSeekPosition = null;
           break;
         }
-        await _videoPlayer?.seekTo(pending);
+        await _videoPlayer?.seekTo(_timelineToPlayer(pending));
       }
     } finally {
       // Only reset under the current epoch; a composition swap takes over ownership.
@@ -393,20 +455,22 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       bloc.add(VideoEditorPlaybackChanged(isPlaying: isPlaying));
     }
 
+    final timelinePosition = _playerToTimeline(playerState.position);
     if (!_isTrimmingLayer &&
         !_isTrimmingClip &&
         !_isDraggingLayer &&
         !_isSeeking &&
         _pendingSeekPosition == null &&
-        playerState.position != _lastReportedPosition) {
-      _lastReportedPosition = playerState.position;
-      bloc.add(VideoEditorPositionChanged(playerState.position));
-      _proVideoController.setPlayTime(playerState.position);
+        timelinePosition != _lastReportedPosition) {
+      _lastReportedPosition = timelinePosition;
+      bloc.add(VideoEditorPositionChanged(timelinePosition));
+      _proVideoController.setPlayTime(timelinePosition);
     }
 
-    if (playerState.duration != _lastReportedDuration) {
-      _lastReportedDuration = playerState.duration;
-      bloc.add(VideoEditorDurationChanged(playerState.duration));
+    final timelineDuration = _playerToTimeline(playerState.duration);
+    if (timelineDuration != _lastReportedDuration) {
+      _lastReportedDuration = timelineDuration;
+      bloc.add(VideoEditorDurationChanged(timelineDuration));
     }
   }
 
@@ -430,16 +494,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         .state
         .currentPosition;
     _videoPlayer?.setClips([
-      for (final clip in clips)
-        if (clip.video.file?.path case final path?)
-          VideoClip(
-            uri: path,
-            start: clip.trimStart,
-            end: clip.duration - clip.trimEnd,
-            volume: clip.volume,
-            playbackSpeed: clip.playbackSpeed ?? 1.0,
-          ),
-    ], startPosition: currentPosition);
+      ...buildSeamAwarePlayerClips(clips, _seamService),
+    ], startPosition: _timelineToPlayer(currentPosition));
+    _ensureSeamsRendered(clips);
   }
 
   /// Creates the [ProVideoController] (only once, not tied to a file).
@@ -456,12 +513,33 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                   );
                   if (clip == null) return const SizedBox.shrink();
 
-                  return VideoEditorPlayer(
-                    controller: _videoPlayer,
-                    targetAspectRatio: clip.targetAspectRatio,
-                    originalAspectRatio: clip.originalAspectRatio,
-                    bodySize: widget.bodySize,
-                    renderSize: widget.renderSize,
+                  return Stack(
+                    fit: StackFit.passthrough,
+                    children: [
+                      VideoEditorPlayer(
+                        controller: _videoPlayer,
+                        targetAspectRatio: clip.targetAspectRatio,
+                        originalAspectRatio: clip.originalAspectRatio,
+                        bodySize: widget.bodySize,
+                        renderSize: widget.renderSize,
+                      ),
+                      Positioned.fill(
+                        child: ValueListenableBuilder<int>(
+                          valueListenable: _pendingSeamRenders,
+                          builder: (_, count, _) => AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            child: count == 0
+                                ? const SizedBox.shrink()
+                                : const ColoredBox(
+                                    color: Color.fromARGB(140, 0, 0, 0),
+                                    child: Center(
+                                      child: BrandedLoadingIndicator(size: 44),
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
                   );
                 },
               );
@@ -502,23 +580,16 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     if (!mounted) return;
     await _videoPlayer!.setClips(
       [
-        for (final clip in clips)
-          if (clip.video.file?.path case final path?)
-            VideoClip(
-              uri: path,
-              start: clip.trimStart,
-              end: clip.duration - clip.trimEnd,
-              volume: clip.volume,
-              playbackSpeed: clip.playbackSpeed ?? 1.0,
-            ),
+        ...buildSeamAwarePlayerClips(clips, _seamService),
       ],
       startPosition: startPosition != null && startPosition > Duration.zero
-          ? startPosition
+          ? _timelineToPlayer(startPosition)
           : null,
     );
     if (!mounted) return;
 
     if (clips.isEmpty) return;
+    _ensureSeamsRendered(clips);
     await _videoPlayer!.setLooping(looping: true);
     if (!mounted) return;
 
@@ -721,7 +792,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           a.trimStart != b.trimStart ||
           a.trimEnd != b.trimEnd ||
           a.volume != b.volume ||
-          a.playbackSpeed != b.playbackSpeed) {
+          a.playbackSpeed != b.playbackSpeed ||
+          a.transition != b.transition) {
         return true;
       }
     }
@@ -876,16 +948,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             .currentPosition;
 
         _videoPlayer?.setClips([
-          for (final clip in clips)
-            if (clip.video.file?.path case final path?)
-              VideoClip(
-                uri: path,
-                start: clip.trimStart,
-                end: clip.duration - clip.trimEnd,
-                volume: clip.volume,
-                playbackSpeed: clip.playbackSpeed ?? 1.0,
-              ),
-        ], startPosition: currentPosition);
+          ...buildSeamAwarePlayerClips(clips, _seamService),
+        ], startPosition: _timelineToPlayer(currentPosition));
+        _ensureSeamsRendered(clips);
       },
     );
 
@@ -905,16 +970,33 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             .currentPosition;
 
         _videoPlayer?.setClips([
-          for (final clip in clips)
-            if (clip.video.file?.path case final path?)
-              VideoClip(
-                uri: path,
-                start: clip.trimStart,
-                end: clip.duration - clip.trimEnd,
-                volume: clip.volume,
-                playbackSpeed: clip.playbackSpeed ?? 1.0,
-              ),
-        ], startPosition: currentPosition);
+          ...buildSeamAwarePlayerClips(clips, _seamService),
+        ], startPosition: _timelineToPlayer(currentPosition));
+        _ensureSeamsRendered(clips);
+      },
+    );
+
+    // Rebuild the native composition when any clip's transition changes so the
+    // preview reflects the chosen dissolve/fade/slide. ClipTransition overrides
+    // `==`, so the Object? element comparison detects real changes.
+    ref.listen<List<Object?>>(
+      clipManagerProvider.select(
+        (s) => s.clips.map((c) => c.transition).toList(),
+      ),
+      (previous, current) {
+        if (listEquals(previous, current)) return;
+
+        final clips = ref.read(clipManagerProvider).clips;
+        if (clips.isEmpty || !_isPlayerInitialized) return;
+        final currentPosition = context
+            .read<VideoEditorMainBloc>()
+            .state
+            .currentPosition;
+
+        _videoPlayer?.setClips([
+          ...buildSeamAwarePlayerClips(clips, _seamService),
+        ], startPosition: _timelineToPlayer(currentPosition));
+        _ensureSeamsRendered(clips);
       },
     );
 
@@ -1139,16 +1221,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
             try {
               await _videoPlayer?.setClips([
-                for (final clip in state.clips)
-                  if (clip.video.file?.path case final path?)
-                    VideoClip(
-                      uri: path,
-                      start: clip.trimStart,
-                      end: clip.duration - clip.trimEnd,
-                      volume: clip.volume,
-                      playbackSpeed: clip.playbackSpeed ?? 1.0,
-                    ),
-              ], startPosition: currentPosition);
+                ...buildSeamAwarePlayerClips(state.clips, _seamService),
+              ], startPosition: _timelineToPlayer(currentPosition));
 
               if (!mounted) return;
               _lastReportedPosition = currentPosition;
@@ -1208,16 +1282,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
             try {
               await _videoPlayer?.setClips([
-                for (final clip in state.clips)
-                  if (clip.video.file?.path case final path?)
-                    VideoClip(
-                      uri: path,
-                      start: clip.trimStart,
-                      end: clip.duration - clip.trimEnd,
-                      volume: clip.volume,
-                      playbackSpeed: clip.playbackSpeed ?? 1.0,
-                    ),
-              ], startPosition: startPosition);
+                ...buildSeamAwarePlayerClips(state.clips, _seamService),
+              ], startPosition: _timelineToPlayer(startPosition));
               if (mounted) {
                 VideoEditorCanvas.syncPositionAfterTrimRelease(
                   mainBloc: bloc,

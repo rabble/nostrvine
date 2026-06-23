@@ -7912,6 +7912,42 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorSpeedSheetTitle => 'سرعة المقطع';
 
   @override
+  String get videoEditorTransitionSheetTitle => 'انتقال';
+
+  @override
+  String get videoEditorTransitionNone => 'بلا';
+
+  @override
+  String get videoEditorTransitionDissolve => 'إذابة';
+
+  @override
+  String get videoEditorTransitionFadeToBlack => 'تلاشٍ إلى الأسود';
+
+  @override
+  String get videoEditorTransitionFadeToWhite => 'تلاشٍ إلى الأبيض';
+
+  @override
+  String get videoEditorTransitionSlide => 'انزلاق';
+
+  @override
+  String get videoEditorTransitionPush => 'دفع';
+
+  @override
+  String get videoEditorTransitionWipe => 'مسح';
+
+  @override
+  String get videoEditorTransitionButtonSemanticLabel => 'تعديل الانتقال';
+
+  @override
+  String get videoEditorTransitionDuration => 'المدة';
+
+  @override
+  String get videoEditorTransitionCurve => 'المنحنى';
+
+  @override
+  String get videoEditorTransitionDirection => 'الاتجاه';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'إنهاء تحرير الجدول الزمني';
 

@@ -7985,6 +7985,42 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorSpeedSheetTitle => 'Klipphastighet';
 
   @override
+  String get videoEditorTransitionSheetTitle => 'Övergång';
+
+  @override
+  String get videoEditorTransitionNone => 'Ingen';
+
+  @override
+  String get videoEditorTransitionDissolve => 'Övertoning';
+
+  @override
+  String get videoEditorTransitionFadeToBlack => 'Tona till svart';
+
+  @override
+  String get videoEditorTransitionFadeToWhite => 'Tona till vitt';
+
+  @override
+  String get videoEditorTransitionSlide => 'Glidning';
+
+  @override
+  String get videoEditorTransitionPush => 'Putta';
+
+  @override
+  String get videoEditorTransitionWipe => 'Svep';
+
+  @override
+  String get videoEditorTransitionButtonSemanticLabel => 'Redigera övergång';
+
+  @override
+  String get videoEditorTransitionDuration => 'Längd';
+
+  @override
+  String get videoEditorTransitionCurve => 'Kurva';
+
+  @override
+  String get videoEditorTransitionDirection => 'Riktning';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Avsluta redigering av tidslinje';
 
