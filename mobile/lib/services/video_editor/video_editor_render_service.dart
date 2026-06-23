@@ -817,24 +817,36 @@ class VideoEditorRenderService {
   ) {
     final clamped = <String, ClipTransition?>{};
     for (var i = 0; i < clips.length; i++) {
-      final maxDuration = i + 1 < clips.length
+      final transition = clips[i].transition;
+      final maxDuration = (i + 1 < clips.length && transition != null)
           ? _maxTransitionDuration(
               clips[i].playbackDuration,
               clips[i + 1].playbackDuration,
+              transition.type,
             )
           : Duration.zero;
-      clamped[clips[i].id] = _clampTransition(clips[i].transition, maxDuration);
+      clamped[clips[i].id] = _clampTransition(transition, maxDuration);
     }
     return clamped;
   }
 
-  /// The longest a boundary transition may last: half the shorter adjacent
-  /// clip. A transition overlaps both clips, so it must leave solo (non-blended)
-  /// content on each side — a transition as long as the whole clip leaves none,
-  /// producing a degenerate segment the native render fails on.
-  static Duration _maxTransitionDuration(Duration a, Duration b) {
+  /// The longest a boundary transition may last. An overlap
+  /// (dissolve/slide/push/wipe) blends both clips at once and must leave solo
+  /// (non-blended) content on each side, so it caps at half the shorter clip; a
+  /// dip (fadeToBlack/White) fades out then in (sequential), so it can run up to
+  /// twice the shorter clip. These match the seam preview's faithful range.
+  static Duration _maxTransitionDuration(
+    Duration a,
+    Duration b,
+    ClipTransitionType type,
+  ) {
     final shorter = a < b ? a : b;
-    return Duration(microseconds: shorter.inMicroseconds ~/ 2);
+    final isDip =
+        type == ClipTransitionType.fadeToBlack ||
+        type == ClipTransitionType.fadeToWhite;
+    return isDip
+        ? shorter * 2
+        : Duration(microseconds: shorter.inMicroseconds ~/ 2);
   }
 
   static ClipTransition? _clampTransition(

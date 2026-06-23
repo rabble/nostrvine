@@ -26,7 +26,8 @@ void main() {
     Future<void> openPicker(
       WidgetTester tester, {
       editor.ClipTransition? initial,
-      int maxDurationMs = 2000,
+      int overlapMaxMs = 2000,
+      int dipMaxMs = 2000,
     }) async {
       result = null;
       returned = false;
@@ -46,7 +47,8 @@ void main() {
                             child: Scaffold(
                               body: TransitionPickerView(
                                 initial: initial,
-                                maxDurationMs: maxDurationMs,
+                                overlapMaxMs: overlapMaxMs,
+                                dipMaxMs: dipMaxMs,
                               ),
                             ),
                           ),
@@ -146,7 +148,7 @@ void main() {
     ) async {
       await openPicker(
         tester,
-        maxDurationMs: 500,
+        overlapMaxMs: 500,
         initial: const editor.ClipTransition(
           type: editor.ClipTransitionType.dissolve,
           duration: Duration(milliseconds: 1200),
@@ -161,6 +163,50 @@ void main() {
         result?.transition?.duration,
         const Duration(milliseconds: 500),
       );
+    });
+
+    testWidgets('a dip keeps a duration above the overlap ceiling', (
+      tester,
+    ) async {
+      await openPicker(
+        tester,
+        overlapMaxMs: 300,
+        dipMaxMs: 1000,
+        initial: const editor.ClipTransition(
+          type: editor.ClipTransitionType.fadeToBlack,
+          duration: Duration(milliseconds: 900),
+        ),
+      );
+
+      await tester.tap(find.text(l10n.videoEditorDoneLabel));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(result?.transition?.type, editor.ClipTransitionType.fadeToBlack);
+      expect(result?.transition?.duration, const Duration(milliseconds: 900));
+    });
+
+    testWidgets('switching a dip to an overlap re-clamps to the overlap '
+        'ceiling', (tester) async {
+      await openPicker(
+        tester,
+        overlapMaxMs: 300,
+        dipMaxMs: 1000,
+        initial: const editor.ClipTransition(
+          type: editor.ClipTransitionType.fadeToBlack,
+          duration: Duration(milliseconds: 900),
+        ),
+      );
+
+      await tester.tap(find.text(l10n.videoEditorTransitionDissolve));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.tap(find.text(l10n.videoEditorDoneLabel));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(result?.transition?.type, editor.ClipTransitionType.dissolve);
+      expect(result?.transition?.duration, const Duration(milliseconds: 300));
     });
 
     testWidgets('returns null (hard cut) when None is confirmed', (

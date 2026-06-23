@@ -95,7 +95,10 @@ Future<void> editClipTransition(
         toPlaceholder: nextClip.thumbnailPath,
       ),
       child: TransitionPickerView(
-        maxDurationMs: _maxTransitionDurationMs(clip, nextClip),
+        // Overlaps blend both clips at once (half the shorter clip); dips fade
+        // out then in, so they can run up to twice it.
+        overlapMaxMs: _snapDurationMs(_boundaryShorterMs(clip, nextClip) ~/ 2),
+        dipMaxMs: _snapDurationMs(_boundaryShorterMs(clip, nextClip) * 2),
         initial: clip.transition,
       ),
     ),
@@ -120,23 +123,23 @@ Future<void> editClipTransition(
   editor.setClipState(newClips);
 }
 
-/// Largest transition duration (ms) the boundary between [a] and [b] can hold.
-/// A transition overlaps both clips and must leave solo (non-blended) content
-/// on each side, so it's capped at half the shorter clip — a transition as long
-/// as the whole clip leaves none and the native render fails on it. The result
-/// is clamped into the slider's own `[_minDurationMs, _maxDurationMs]` range;
-/// the render path applies the same cap as a safety net.
-int _maxTransitionDurationMs(DivineVideoClip a, DivineVideoClip b) {
+/// The shorter of the two adjacent clips' playback durations, in ms — the basis
+/// for how long a transition at this boundary may run.
+int _boundaryShorterMs(DivineVideoClip a, DivineVideoClip b) {
   final shorter = a.playbackDuration < b.playbackDuration
       ? a.playbackDuration
       : b.playbackDuration;
-  final half = shorter.inMilliseconds ~/ 2;
-  // Snap down to the slider's step grid (a multiple of [_durationStepMs], like
-  // [_minDurationMs]) so every division lands on a clean 0.01s value — an
-  // off-grid max makes the slider interpolate ugly intermediate steps.
-  final snapped = (half ~/ _durationStepMs) * _durationStepMs;
-  return snapped.clamp(_minDurationMs, _maxDurationMs);
+  return shorter.inMilliseconds;
 }
+
+/// Snaps [ms] down to the slider's step grid and into its valid range, so every
+/// division lands on a clean 0.01s value (an off-grid max makes the slider
+/// interpolate ugly intermediate steps).
+int _snapDurationMs(int ms) =>
+    ((ms ~/ _durationStepMs) * _durationStepMs).clamp(
+      _minDurationMs,
+      _maxDurationMs,
+    );
 
 /// Stateful picker body: a row of looped transition previews plus duration and
 /// curve controls. Pops `(transition:)` on confirm.
@@ -144,14 +147,19 @@ int _maxTransitionDurationMs(DivineVideoClip a, DivineVideoClip b) {
 class TransitionPickerView extends StatefulWidget {
   const TransitionPickerView({
     required this.initial,
-    this.maxDurationMs = _maxDurationMs,
+    this.overlapMaxMs = _maxDurationMs,
+    this.dipMaxMs = _maxDurationMs,
     super.key,
   });
 
-  /// Upper bound for the duration slider: the transition can't outlast either
-  /// adjacent clip, so this caps it to the boundary's capacity (the render path
-  /// clamps as the final safety net). Defaults to [_maxDurationMs] in tests.
-  final int maxDurationMs;
+  /// Duration-slider ceilings for the two transition families. An overlap
+  /// (dissolve/slide/push/wipe) blends both clips at once, so it's capped at
+  /// half the shorter clip; a dip (fadeToBlack/White) fades out then in, so it
+  /// can run up to twice the shorter clip. Both are what the seam preview can
+  /// show faithfully; the render path clamps to the same values as a safety
+  /// net. Default to [_maxDurationMs] in tests.
+  final int overlapMaxMs;
+  final int dipMaxMs;
 
   final ClipTransition? initial;
 
@@ -177,6 +185,16 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
     ClipTransitionType.wipe,
   ];
 
+  /// Dip transitions fade out then in (no simultaneous blend), so they may run
+  /// up to twice the shorter clip; overlaps blend both at once and cap at half.
+  bool _isDip(ClipTransitionType? type) =>
+      type == ClipTransitionType.fadeToBlack ||
+      type == ClipTransitionType.fadeToWhite;
+
+  /// The duration-slider ceiling for the currently selected type.
+  int get _currentMaxMs =>
+      _isDip(_type) ? widget.dipMaxMs : widget.overlapMaxMs;
+
   @override
   void initState() {
     super.initState();
@@ -185,7 +203,7 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
     _duration = Duration(
       milliseconds: (initial?.duration ?? _duration).inMilliseconds.clamp(
         _minDurationMs,
-        widget.maxDurationMs,
+        _currentMaxMs,
       ),
     );
     _curve = initial?.curve ?? _curve;
@@ -249,7 +267,18 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
                   durationMs: _duration.inMilliseconds,
                   fromThumbnailPath: fromPath,
                   toThumbnailPath: toPath,
-                  onTap: () => setState(() => _type = type),
+                  onTap: () => setState(() {
+                    _type = type;
+                    // The ceiling depends on the type (overlap vs dip); re-clamp
+                    // so a dip's longer pick doesn't survive a switch to an
+                    // overlap.
+                    _duration = Duration(
+                      milliseconds: _duration.inMilliseconds.clamp(
+                        _minDurationMs,
+                        _currentMaxMs,
+                      ),
+                    );
+                  }),
                 );
               },
             ),
@@ -275,15 +304,14 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
                       ),
                     ],
                   ),
-                  if (widget.maxDurationMs > _minDurationMs) ...[
+                  if (_currentMaxMs > _minDurationMs) ...[
                     const SizedBox(height: 8),
                     DivineSlider(
                       value: _duration.inMilliseconds.toDouble(),
                       min: _minDurationMs.toDouble(),
-                      max: widget.maxDurationMs.toDouble(),
+                      max: _currentMaxMs.toDouble(),
                       divisions:
-                          ((widget.maxDurationMs - _minDurationMs) ~/
-                                  _durationStepMs)
+                          ((_currentMaxMs - _minDurationMs) ~/ _durationStepMs)
                               .clamp(1, 1 << 20),
                       onChanged: (value) => setState(
                         () => _duration = Duration(
