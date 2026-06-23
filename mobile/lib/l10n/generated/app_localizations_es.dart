@@ -7736,6 +7736,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Cinematográfica ampliada';
 
   @override
+  String get videoRecorderStabilizationModePreviewOptimized =>
+      'Optimizada para vista previa';
+
+  @override
+  String get videoRecorderStabilizationModeLowLatency => 'Baja latencia';
+
+  @override
   String get videoRecorderStabilizationModeAuto => 'Automática';
 
   @override

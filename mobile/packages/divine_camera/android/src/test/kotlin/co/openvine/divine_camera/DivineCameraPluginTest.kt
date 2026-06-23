@@ -175,6 +175,10 @@ internal class VideoStabilizationTest {
         assertTrue(
             CameraController.isCanonicalStabilizationMode("cinematicExtended")
         )
+        assertTrue(
+            CameraController.isCanonicalStabilizationMode("previewOptimized")
+        )
+        assertTrue(CameraController.isCanonicalStabilizationMode("lowLatency"))
         assertTrue(CameraController.isCanonicalStabilizationMode("auto"))
         assertFalse(CameraController.isCanonicalStabilizationMode("bogus"))
     }

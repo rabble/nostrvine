@@ -17,6 +17,14 @@ void main() {
         DivineVideoStabilizationMode.cinematicExtended.toNativeString(),
         'cinematicExtended',
       );
+      expect(
+        DivineVideoStabilizationMode.previewOptimized.toNativeString(),
+        'previewOptimized',
+      );
+      expect(
+        DivineVideoStabilizationMode.lowLatency.toNativeString(),
+        'lowLatency',
+      );
       expect(DivineVideoStabilizationMode.auto.toNativeString(), 'auto');
     });
 
@@ -36,6 +44,14 @@ void main() {
       expect(
         DivineVideoStabilizationMode.fromNativeString('cinematicExtended'),
         DivineVideoStabilizationMode.cinematicExtended,
+      );
+      expect(
+        DivineVideoStabilizationMode.fromNativeString('previewOptimized'),
+        DivineVideoStabilizationMode.previewOptimized,
+      );
+      expect(
+        DivineVideoStabilizationMode.fromNativeString('lowLatency'),
+        DivineVideoStabilizationMode.lowLatency,
       );
       expect(
         DivineVideoStabilizationMode.fromNativeString('auto'),

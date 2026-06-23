@@ -7834,6 +7834,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Cinematică extinsă';
 
   @override
+  String get videoRecorderStabilizationModePreviewOptimized =>
+      'Optimizată pentru previzualizare';
+
+  @override
+  String get videoRecorderStabilizationModeLowLatency => 'Latență redusă';
+
+  @override
   String get videoRecorderStabilizationModeAuto => 'Automată';
 
   @override

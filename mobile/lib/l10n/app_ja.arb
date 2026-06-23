@@ -2982,6 +2982,8 @@
     "videoRecorderStabilizationModeStandard": "標準",
     "videoRecorderStabilizationModeCinematic": "シネマティック",
     "videoRecorderStabilizationModeCinematicExtended": "シネマティック拡張",
+    "videoRecorderStabilizationModePreviewOptimized": "プレビュー最適化",
+    "videoRecorderStabilizationModeLowLatency": "低遅延",
     "videoRecorderStabilizationModeAuto": "自動",
     "videoRecorderToggleFlashLabel": "フラッシュを切り替え",
     "videoRecorderToggleGhostFrameLabel": "ゴーストフレームを切り替え",

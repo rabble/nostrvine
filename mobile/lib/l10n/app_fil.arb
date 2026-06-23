@@ -1668,6 +1668,8 @@
     "videoRecorderStabilizationModeStandard": "Standard",
     "videoRecorderStabilizationModeCinematic": "Cinematic",
     "videoRecorderStabilizationModeCinematicExtended": "Cinematic Extended",
+    "videoRecorderStabilizationModePreviewOptimized": "Optimized para sa Preview",
+    "videoRecorderStabilizationModeLowLatency": "Low Latency",
     "videoRecorderStabilizationModeAuto": "Auto",
     "videoRecorderLibraryEmptyLabel": "Clip library, walang clip",
     "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Buksan ang clip library, 1 clip} other{Buksan ang clip library, {clipCount} clip}}",

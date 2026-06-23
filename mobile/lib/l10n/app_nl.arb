@@ -2723,6 +2723,8 @@
     "videoRecorderStabilizationModeStandard": "Standaard",
     "videoRecorderStabilizationModeCinematic": "Cinematisch",
     "videoRecorderStabilizationModeCinematicExtended": "Cinematisch uitgebreid",
+    "videoRecorderStabilizationModePreviewOptimized": "Voorbeeld-geoptimaliseerd",
+    "videoRecorderStabilizationModeLowLatency": "Lage latentie",
     "videoRecorderStabilizationModeAuto": "Automatisch",
     "videoRecorderLibraryEmptyLabel": "Clipbibliotheek, geen clips",
     "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Clipbibliotheek openen, 1 clip} other{Clipbibliotheek openen, {clipCount} clips}}",

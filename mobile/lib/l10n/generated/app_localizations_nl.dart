@@ -7705,6 +7705,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Cinematisch uitgebreid';
 
   @override
+  String get videoRecorderStabilizationModePreviewOptimized =>
+      'Voorbeeld-geoptimaliseerd';
+
+  @override
+  String get videoRecorderStabilizationModeLowLatency => 'Lage latentie';
+
+  @override
   String get videoRecorderStabilizationModeAuto => 'Automatisch';
 
   @override

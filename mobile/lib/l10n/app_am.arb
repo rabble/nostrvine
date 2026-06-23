@@ -3283,6 +3283,8 @@
     "videoRecorderStabilizationModeStandard": "መደበኛ",
     "videoRecorderStabilizationModeCinematic": "ሲኒማቲክ",
     "videoRecorderStabilizationModeCinematicExtended": "የተራዘመ ሲኒማቲክ",
+    "videoRecorderStabilizationModePreviewOptimized": "ለቅድመ-እይታ የተመቻቸ",
+    "videoRecorderStabilizationModeLowLatency": "ዝቅተኛ መዘግየት",
     "videoRecorderStabilizationModeAuto": "ራስ-ሰር",
     "videoRecorderLibraryEmptyLabel": "ክሊፕ ቤተ-መጽሐፍት፣ ምንም ቅንጥቦች የሉም",
     "videoRecorderLibraryOpenLabel": "{clipCount, plural, =1{የክሊፕ ቤተ-መዝገብ ክፈት፣ 1 ክሊፕ} other{የክሊፕ ቤተ-መዝገብ ክፈት፣ {clipCount} ክሊፖች}}",

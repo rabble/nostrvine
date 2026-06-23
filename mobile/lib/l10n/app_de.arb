@@ -2723,6 +2723,8 @@
     "videoRecorderStabilizationModeStandard": "Standard",
     "videoRecorderStabilizationModeCinematic": "Cinematic",
     "videoRecorderStabilizationModeCinematicExtended": "Cinematic erweitert",
+    "videoRecorderStabilizationModePreviewOptimized": "Vorschau-optimiert",
+    "videoRecorderStabilizationModeLowLatency": "Niedrige Latenz",
     "videoRecorderStabilizationModeAuto": "Auto",
     "videoRecorderLibraryEmptyLabel": "Clip-Mediathek, keine Clips",
     "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Clip-Mediathek öffnen, 1 Clip} other{Clip-Mediathek öffnen, {clipCount} Clips}}",

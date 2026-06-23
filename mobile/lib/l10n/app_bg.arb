@@ -2973,6 +2973,8 @@
     "videoRecorderStabilizationModeStandard": "Стандартна",
     "videoRecorderStabilizationModeCinematic": "Кинематографична",
     "videoRecorderStabilizationModeCinematicExtended": "Кинематографична разширена",
+    "videoRecorderStabilizationModePreviewOptimized": "Оптимизирана за преглед",
+    "videoRecorderStabilizationModeLowLatency": "Ниска латентност",
     "videoRecorderStabilizationModeAuto": "Авто",
     "videoRecorderLibraryEmptyLabel": "Библиотека с клипове, няма клипове",
     "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Отвори библиотеката с клипове, 1 клип} other{Отвори библиотеката с клипове, {clipCount} клипа}}",

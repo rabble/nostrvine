@@ -2306,6 +2306,8 @@
     "videoRecorderStabilizationModeStandard": "표준",
     "videoRecorderStabilizationModeCinematic": "시네마틱",
     "videoRecorderStabilizationModeCinematicExtended": "시네마틱 확장",
+    "videoRecorderStabilizationModePreviewOptimized": "미리보기 최적화",
+    "videoRecorderStabilizationModeLowLatency": "낮은 지연 시간",
     "videoRecorderStabilizationModeAuto": "자동",
     "videoRecorderToggleFlashLabel": "플래시 전환",
     "videoRecorderToggleGhostFrameLabel": "고스트 프레임 전환",

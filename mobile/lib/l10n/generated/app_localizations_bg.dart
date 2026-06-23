@@ -7739,6 +7739,13 @@ class AppLocalizationsBg extends AppLocalizations {
       'Кинематографична разширена';
 
   @override
+  String get videoRecorderStabilizationModePreviewOptimized =>
+      'Оптимизирана за преглед';
+
+  @override
+  String get videoRecorderStabilizationModeLowLatency => 'Ниска латентност';
+
+  @override
   String get videoRecorderStabilizationModeAuto => 'Авто';
 
   @override

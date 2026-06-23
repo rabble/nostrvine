@@ -1634,6 +1634,16 @@ class CameraController: NSObject {
                 return .cinematicExtended
             }
             return .cinematic
+        case "previewOptimized":
+            if #available(iOS 17.0, *) {
+                return .previewOptimized
+            }
+            return nil
+        case "lowLatency":
+            if #available(iOS 26.0, *) {
+                return .lowLatency
+            }
+            return nil
         case "auto":
             return .auto
         default:
@@ -1656,6 +1666,12 @@ class CameraController: NSObject {
         case .auto:
             return "auto"
         default:
+            if #available(iOS 26.0, *), mode == .lowLatency {
+                return "lowLatency"
+            }
+            if #available(iOS 17.0, *), mode == .previewOptimized {
+                return "previewOptimized"
+            }
             if #available(iOS 13.0, *), mode == .cinematicExtended {
                 return "cinematicExtended"
             }
@@ -1738,13 +1754,30 @@ class CameraController: NSObject {
         if #available(iOS 13.0, *) {
             candidates.append((.cinematicExtended, "cinematicExtended"))
         }
-        for (mode, name) in candidates
-        where format.isVideoStabilizationModeSupported(mode) {
-            modes.append(name)
+        // previewOptimized is a low-latency tier; the system only engages it
+        // on connections backed by a preview layer or preview-sized data
+        // output, so the format probe may surface it while the active video
+        // connection falls back to a nearby mode at apply time.
+        if #available(iOS 17.0, *) {
+            candidates.append((.previewOptimized, "previewOptimized"))
+        }
+        if #available(iOS 26.0, *) {
+            candidates.append((.lowLatency, "lowLatency"))
+        }
+        var probed: [String] = []
+        for (mode, name) in candidates {
+            let supported = format.isVideoStabilizationModeSupported(mode)
+            probed.append("\(name)=\(supported)")
+            if supported { modes.append(name) }
         }
         if modes.count > 1 {
             modes.append("auto")
         }
+        DivineCameraLog.shared.debug(
+            "Available stabilization modes: [\(modes.joined(separator: ", "))] "
+                + "(probed \(probed.joined(separator: ", ")))",
+            name: "DivineCamera.Stabilization"
+        )
         return modes
     }
 

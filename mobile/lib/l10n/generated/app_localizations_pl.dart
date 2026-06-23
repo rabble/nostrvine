@@ -7821,6 +7821,13 @@ class AppLocalizationsPl extends AppLocalizations {
       'Filmowa rozszerzona';
 
   @override
+  String get videoRecorderStabilizationModePreviewOptimized =>
+      'Zoptymalizowana pod podgląd';
+
+  @override
+  String get videoRecorderStabilizationModeLowLatency => 'Niskie opóźnienie';
+
+  @override
   String get videoRecorderStabilizationModeAuto => 'Automatyczna';
 
   @override

@@ -205,6 +205,8 @@ class CameraController(
         const val STABILIZATION_STANDARD = "standard"
         const val STABILIZATION_CINEMATIC = "cinematic"
         const val STABILIZATION_CINEMATIC_EXTENDED = "cinematicExtended"
+        const val STABILIZATION_PREVIEW_OPTIMIZED = "previewOptimized"
+        const val STABILIZATION_LOW_LATENCY = "lowLatency"
         const val STABILIZATION_AUTO = "auto"
 
         private val CANONICAL_STABILIZATION_MODES = setOf(
@@ -212,6 +214,8 @@ class CameraController(
             STABILIZATION_STANDARD,
             STABILIZATION_CINEMATIC,
             STABILIZATION_CINEMATIC_EXTENDED,
+            STABILIZATION_PREVIEW_OPTIMIZED,
+            STABILIZATION_LOW_LATENCY,
             STABILIZATION_AUTO,
         )
 
@@ -238,8 +242,9 @@ class CameraController(
          * `CONTROL_VIDEO_STABILIZATION_MODE_ON`, basic) and "cinematic"
          * ([previewStabilizationSupported] → `PREVIEW_STABILIZATION`, strong,
          * preview AND recording). The finer iOS tiers (`cinematicExtended`,
-         * `auto`) would map to the identical underlying mode, so they're omitted
-         * here to avoid duplicate-looking menu entries.
+         * `previewOptimized`, `lowLatency`, `auto`) would map to the identical
+         * underlying mode, so they're omitted here to avoid duplicate-looking
+         * menu entries.
          */
         fun buildStabilizationModeList(
             onSupported: Boolean,
@@ -750,6 +755,8 @@ class CameraController(
             STABILIZATION_STANDARD -> if (onSupported) on else off
             STABILIZATION_CINEMATIC,
             STABILIZATION_CINEMATIC_EXTENDED,
+            STABILIZATION_PREVIEW_OPTIMIZED,
+            STABILIZATION_LOW_LATENCY,
             STABILIZATION_AUTO -> when {
                 previewSupported -> preview
                 onSupported -> on

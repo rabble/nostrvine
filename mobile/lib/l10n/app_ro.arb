@@ -2723,6 +2723,8 @@
     "videoRecorderStabilizationModeStandard": "Standard",
     "videoRecorderStabilizationModeCinematic": "Cinematică",
     "videoRecorderStabilizationModeCinematicExtended": "Cinematică extinsă",
+    "videoRecorderStabilizationModePreviewOptimized": "Optimizată pentru previzualizare",
+    "videoRecorderStabilizationModeLowLatency": "Latență redusă",
     "videoRecorderStabilizationModeAuto": "Automată",
     "videoRecorderLibraryEmptyLabel": "Bibliotecă de clipuri, fără clipuri",
     "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Deschide biblioteca de clipuri, 1 clip} other{Deschide biblioteca de clipuri, {clipCount} clipuri}}",

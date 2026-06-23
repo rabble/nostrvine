@@ -4407,6 +4407,8 @@
   "videoRecorderStabilizationModeStandard": "Standard",
   "videoRecorderStabilizationModeCinematic": "Cinematic",
   "videoRecorderStabilizationModeCinematicExtended": "Cinematic Extended",
+  "videoRecorderStabilizationModePreviewOptimized": "Preview Optimized",
+  "videoRecorderStabilizationModeLowLatency": "Low Latency",
   "videoRecorderStabilizationModeAuto": "Auto",
   "videoRecorderLibraryEmptyLabel": "Clip library, no clips",
   "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Open clip library, 1 clip} other{Open clip library, {clipCount} clips}}",

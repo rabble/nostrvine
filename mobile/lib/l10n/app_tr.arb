@@ -2989,6 +2989,8 @@
     "videoRecorderStabilizationModeStandard": "Standart",
     "videoRecorderStabilizationModeCinematic": "Sinematik",
     "videoRecorderStabilizationModeCinematicExtended": "Sinematik Genişletilmiş",
+    "videoRecorderStabilizationModePreviewOptimized": "Önizleme için optimize",
+    "videoRecorderStabilizationModeLowLatency": "Düşük gecikme",
     "videoRecorderStabilizationModeAuto": "Otomatik",
     "videoRecorderToggleFlashLabel": "Flaşı değiştir",
     "videoRecorderToggleGhostFrameLabel": "Hayalet kareyi değiştir",

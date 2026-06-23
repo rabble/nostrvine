@@ -7676,6 +7676,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Filmisk utökad';
 
   @override
+  String get videoRecorderStabilizationModePreviewOptimized =>
+      'Förhandsoptimerad';
+
+  @override
+  String get videoRecorderStabilizationModeLowLatency => 'Låg latens';
+
+  @override
   String get videoRecorderStabilizationModeAuto => 'Auto';
 
   @override

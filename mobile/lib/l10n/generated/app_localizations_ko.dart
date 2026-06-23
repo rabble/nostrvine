@@ -7425,6 +7425,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoRecorderStabilizationModeCinematicExtended => '시네마틱 확장';
 
   @override
+  String get videoRecorderStabilizationModePreviewOptimized => '미리보기 최적화';
+
+  @override
+  String get videoRecorderStabilizationModeLowLatency => '낮은 지연 시간';
+
+  @override
   String get videoRecorderStabilizationModeAuto => '자동';
 
   @override

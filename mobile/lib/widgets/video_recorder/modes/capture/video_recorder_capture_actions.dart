@@ -150,6 +150,8 @@ String _stabilizationModeLabel(
     .standard => l10n.videoRecorderStabilizationModeStandard,
     .cinematic => l10n.videoRecorderStabilizationModeCinematic,
     .cinematicExtended => l10n.videoRecorderStabilizationModeCinematicExtended,
+    .previewOptimized => l10n.videoRecorderStabilizationModePreviewOptimized,
+    .lowLatency => l10n.videoRecorderStabilizationModeLowLatency,
     .auto => l10n.videoRecorderStabilizationModeAuto,
   };
 }

@@ -7645,6 +7645,13 @@ class AppLocalizationsTr extends AppLocalizations {
       'Sinematik Genişletilmiş';
 
   @override
+  String get videoRecorderStabilizationModePreviewOptimized =>
+      'Önizleme için optimize';
+
+  @override
+  String get videoRecorderStabilizationModeLowLatency => 'Düşük gecikme';
+
+  @override
   String get videoRecorderStabilizationModeAuto => 'Otomatik';
 
   @override

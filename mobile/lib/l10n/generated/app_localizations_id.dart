@@ -7645,6 +7645,13 @@ class AppLocalizationsId extends AppLocalizations {
       'Sinematik Diperluas';
 
   @override
+  String get videoRecorderStabilizationModePreviewOptimized =>
+      'Dioptimalkan untuk pratinjau';
+
+  @override
+  String get videoRecorderStabilizationModeLowLatency => 'Latensi rendah';
+
+  @override
   String get videoRecorderStabilizationModeAuto => 'Otomatis';
 
   @override

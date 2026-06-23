@@ -7403,6 +7403,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoRecorderStabilizationModeCinematicExtended => 'シネマティック拡張';
 
   @override
+  String get videoRecorderStabilizationModePreviewOptimized => 'プレビュー最適化';
+
+  @override
+  String get videoRecorderStabilizationModeLowLatency => '低遅延';
+
+  @override
   String get videoRecorderStabilizationModeAuto => '自動';
 
   @override

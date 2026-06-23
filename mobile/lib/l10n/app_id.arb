@@ -2989,6 +2989,8 @@
     "videoRecorderStabilizationModeStandard": "Standar",
     "videoRecorderStabilizationModeCinematic": "Sinematik",
     "videoRecorderStabilizationModeCinematicExtended": "Sinematik Diperluas",
+    "videoRecorderStabilizationModePreviewOptimized": "Dioptimalkan untuk pratinjau",
+    "videoRecorderStabilizationModeLowLatency": "Latensi rendah",
     "videoRecorderStabilizationModeAuto": "Otomatis",
     "videoRecorderToggleFlashLabel": "Ganti flash",
     "videoRecorderToggleGhostFrameLabel": "Ganti frame hantu",

@@ -7538,6 +7538,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoRecorderStabilizationModeCinematicExtended => 'የተራዘመ ሲኒማቲክ';
 
   @override
+  String get videoRecorderStabilizationModePreviewOptimized => 'ለቅድመ-እይታ የተመቻቸ';
+
+  @override
+  String get videoRecorderStabilizationModeLowLatency => 'ዝቅተኛ መዘግየት';
+
+  @override
   String get videoRecorderStabilizationModeAuto => 'ራስ-ሰር';
 
   @override

@@ -2723,6 +2723,8 @@
     "videoRecorderStabilizationModeStandard": "Standard",
     "videoRecorderStabilizationModeCinematic": "Filmisk",
     "videoRecorderStabilizationModeCinematicExtended": "Filmisk utökad",
+    "videoRecorderStabilizationModePreviewOptimized": "Förhandsoptimerad",
+    "videoRecorderStabilizationModeLowLatency": "Låg latens",
     "videoRecorderStabilizationModeAuto": "Auto",
     "videoRecorderLibraryEmptyLabel": "Klippbibliotek, inga klipp",
     "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Öppna klippbibliotek, 1 klipp} other{Öppna klippbibliotek, {clipCount} klipp}}",

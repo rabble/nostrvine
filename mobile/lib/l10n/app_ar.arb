@@ -2982,6 +2982,8 @@
     "videoRecorderStabilizationModeStandard": "قياسي",
     "videoRecorderStabilizationModeCinematic": "سينمائي",
     "videoRecorderStabilizationModeCinematicExtended": "سينمائي موسّع",
+    "videoRecorderStabilizationModePreviewOptimized": "محسّن للمعاينة",
+    "videoRecorderStabilizationModeLowLatency": "زمن استجابة منخفض",
     "videoRecorderStabilizationModeAuto": "تلقائي",
     "videoRecorderToggleFlashLabel": "تبديل الفلاش",
     "videoRecorderToggleGhostFrameLabel": "تبديل الإطار الشبحي",

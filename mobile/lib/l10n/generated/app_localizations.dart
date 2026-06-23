@@ -13358,6 +13358,18 @@ abstract class AppLocalizations {
   /// **'Cinematic Extended'**
   String get videoRecorderStabilizationModeCinematicExtended;
 
+  /// No description provided for @videoRecorderStabilizationModePreviewOptimized.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview Optimized'**
+  String get videoRecorderStabilizationModePreviewOptimized;
+
+  /// No description provided for @videoRecorderStabilizationModeLowLatency.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Latency'**
+  String get videoRecorderStabilizationModeLowLatency;
+
   /// No description provided for @videoRecorderStabilizationModeAuto.
   ///
   /// In en, this message translates to:

@@ -19,6 +19,19 @@ enum DivineVideoStabilizationMode {
   /// The strongest cinematic stabilization tier available.
   cinematicExtended,
 
+  /// Low-latency, low-power stabilization tuned for the preview path.
+  ///
+  /// iOS 17+ only (`AVCaptureVideoStabilizationMode.previewOptimized`); other
+  /// platforms never report it.
+  previewOptimized,
+
+  /// Stabilization that adds no latency to the capture pipeline, at the cost
+  /// of a reduced field of view.
+  ///
+  /// iOS 26+ only (`AVCaptureVideoStabilizationMode.lowLatency`); other
+  /// platforms never report it.
+  lowLatency,
+
   /// Let the platform pick the best supported mode automatically.
   auto;
 
@@ -33,6 +46,10 @@ enum DivineVideoStabilizationMode {
         return 'cinematic';
       case DivineVideoStabilizationMode.cinematicExtended:
         return 'cinematicExtended';
+      case DivineVideoStabilizationMode.previewOptimized:
+        return 'previewOptimized';
+      case DivineVideoStabilizationMode.lowLatency:
+        return 'lowLatency';
       case DivineVideoStabilizationMode.auto:
         return 'auto';
     }
@@ -48,6 +65,10 @@ enum DivineVideoStabilizationMode {
         return DivineVideoStabilizationMode.cinematic;
       case 'cinematicExtended':
         return DivineVideoStabilizationMode.cinematicExtended;
+      case 'previewOptimized':
+        return DivineVideoStabilizationMode.previewOptimized;
+      case 'lowLatency':
+        return DivineVideoStabilizationMode.lowLatency;
       case 'auto':
         return DivineVideoStabilizationMode.auto;
       case 'off':

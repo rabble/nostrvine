@@ -7607,6 +7607,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoRecorderStabilizationModeCinematicExtended => 'سينمائي موسّع';
 
   @override
+  String get videoRecorderStabilizationModePreviewOptimized => 'محسّن للمعاينة';
+
+  @override
+  String get videoRecorderStabilizationModeLowLatency => 'زمن استجابة منخفض';
+
+  @override
   String get videoRecorderStabilizationModeAuto => 'تلقائي';
 
   @override
