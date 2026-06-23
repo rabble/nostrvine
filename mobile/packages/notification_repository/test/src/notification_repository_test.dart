@@ -87,6 +87,10 @@ void main() {
     when(
       () => funnelcakeApiClient.getVideoStats(any()),
     ).thenThrow(const FunnelcakeException('no stats'));
+    when(
+      () =>
+          profileRepository.fetchBatchProfiles(pubkeys: any(named: 'pubkeys')),
+    ).thenAnswer((_) async => <String, UserProfile>{});
     // Default DAO stubs cover the new hydrate / write-through paths so
     // existing tests don't need to know about them. Tests exercising the
     // cache override these explicitly.
@@ -116,6 +120,8 @@ void main() {
     String? targetCommentId,
     String? content,
     bool isReferencedVideo = true,
+    String? referencedVideoTitle,
+    String? referencedVideoThumbnail,
   }) {
     return RelayNotification(
       id: id,
@@ -131,6 +137,8 @@ void main() {
       targetCommentId: targetCommentId,
       content: content,
       isReferencedVideo: isReferencedVideo,
+      referencedVideoTitle: referencedVideoTitle,
+      referencedVideoThumbnail: referencedVideoThumbnail,
     );
   }
 
@@ -2011,6 +2019,189 @@ void main() {
               }, 'cached actor placeholder is enriched after hydration'),
             ),
           );
+        },
+      );
+
+      test(
+        'cached enrichment does not overwrite a completed refresh snapshot',
+        () async {
+          final pendingProfiles = Completer<Map<String, UserProfile>>();
+          var profileFetchCount = 0;
+          when(
+            () => profileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer((_) {
+            profileFetchCount++;
+            if (profileFetchCount == 1) {
+              return pendingProfiles.future;
+            }
+            return Future.value({
+              'actor_pub': makeProfile('actor_pub', displayName: 'Alice'),
+              'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+            });
+          });
+          when(
+            () => notificationsDao.getAllNotifications(
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              NotificationRow(
+                id: 'cached_like_1',
+                type: 'like',
+                fromPubkey: 'actor_pub',
+                timestamp: 1700000000,
+                targetEventId: 'video_evt_1',
+                isRead: false,
+                cachedAt: DateTime(2026),
+              ),
+            ],
+          );
+
+          final hydrated = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+          );
+          addTearDown(hydrated.close);
+
+          await expectLater(
+            hydrated.watchSnapshot(),
+            emitsThrough(
+              predicate<NotificationPage>((p) {
+                if (p.items.length != 1) return false;
+                final item = p.items.single;
+                return item is VideoNotification && item.id == 'cached_like_1';
+              }, 'snapshot contains cached placeholder'),
+            ),
+          );
+
+          stubNotifications([
+            makeNotification(
+              id: 'older_server_notification',
+              sourcePubkey: 'actor_pub',
+              sourceEventId: 'older_source_event',
+              referencedEventId: 'video_evt_1',
+              createdAt: DateTime(2025),
+              referencedVideoTitle: 'Server title',
+              referencedVideoThumbnail: 'https://example.com/server.jpg',
+            ),
+            makeNotification(
+              id: 'cached_like_1',
+              sourcePubkey: 'pubkey_bob',
+              sourceEventId: 'newer_source_event',
+              referencedEventId: 'video_evt_1',
+              createdAt: DateTime(2025, 1, 2),
+              referencedVideoTitle: 'Server title',
+              referencedVideoThumbnail: 'https://example.com/server.jpg',
+            ),
+          ], unreadCount: 2);
+
+          await hydrated.refresh();
+          pendingProfiles.complete({
+            'actor_pub': makeProfile('actor_pub', displayName: 'Alice'),
+          });
+          await Future<void>.delayed(Duration.zero);
+
+          final item =
+              (await hydrated.watchSnapshot().first).items.single
+                  as VideoNotification;
+          expect(item.id, equals('cached_like_1'));
+          expect(item.actors.map((a) => a.pubkey), [
+            'pubkey_bob',
+            'actor_pub',
+          ]);
+          expect(item.totalCount, equals(2));
+          expect(item.videoTitle, equals('Server title'));
+          expect(
+            item.videoThumbnailUrl,
+            equals('https://example.com/server.jpg'),
+          );
+          expect(item.sourceEventIds, [
+            'newer_source_event',
+            'older_source_event',
+          ]);
+          expect(item.notificationIds, [
+            'cached_like_1',
+            'older_server_notification',
+          ]);
+          expect(item.isRead, isFalse);
+        },
+      );
+
+      test(
+        'cached enrichment preserves an interim markAsRead update',
+        () async {
+          final pendingProfiles = Completer<Map<String, UserProfile>>();
+          when(
+            () => profileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer((_) => pendingProfiles.future);
+          when(
+            () => notificationsDao.getAllNotifications(
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              NotificationRow(
+                id: 'cached_like_1',
+                type: 'like',
+                fromPubkey: 'actor_pub',
+                timestamp: 1700000000,
+                targetEventId: 'video_evt_1',
+                isRead: false,
+                cachedAt: DateTime(2026),
+              ),
+            ],
+          );
+          when(
+            () => funnelcakeApiClient.markNotificationsRead(
+              pubkey: any(named: 'pubkey'),
+              notificationIds: any(named: 'notificationIds'),
+              authHeaders: any(named: 'authHeaders'),
+            ),
+          ).thenAnswer(
+            (_) async => const MarkReadResponse(success: true, markedCount: 1),
+          );
+          when(
+            () => notificationsDao.markAsRead(any()),
+          ).thenAnswer((_) async => true);
+
+          final hydrated = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+          );
+          addTearDown(hydrated.close);
+
+          await expectLater(
+            hydrated.watchSnapshot(),
+            emitsThrough(
+              predicate<NotificationPage>((p) {
+                if (p.items.length != 1) return false;
+                final item = p.items.single;
+                return item is VideoNotification &&
+                    item.id == 'cached_like_1' &&
+                    !item.isRead;
+              }, 'snapshot contains unread cached placeholder'),
+            ),
+          );
+
+          await hydrated.markAsRead(['cached_like_1']);
+          pendingProfiles.complete({
+            'actor_pub': makeProfile('actor_pub', displayName: 'Alice'),
+          });
+          await Future<void>.delayed(Duration.zero);
+
+          final item =
+              (await hydrated.watchSnapshot().first).items.single
+                  as VideoNotification;
+          expect(item.isRead, isTrue);
+          expect(item.actors.single.displayName, equals('Alice'));
         },
       );
 
