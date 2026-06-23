@@ -3332,6 +3332,55 @@ class DmRepository {
     return (followed: followed, requests: requests);
   }
 
+  /// Decides whether an `is_group` conversation row is actually a 1:1 that was
+  /// stored with spurious extra participant(s), and returns the single real
+  /// peer to collapse it onto — or `null` to leave the row untouched.
+  ///
+  /// Legacy rows created before [_resolveConversationParticipants] existed
+  /// (the 2026-03 → 2026-04 window) stored the raw `p`-tag set of inbound
+  /// rumors, so a non-compliant client that added an extra `p` tag to a 1:1
+  /// produced a 3-distinct-participant `is_group=true` row that
+  /// [classifyPotentialRequests] then strands under "Message requests"
+  /// regardless of follow state (#5374). [_resolveConversationParticipants]
+  /// stops minting such rows going forward but does not repair existing ones.
+  ///
+  /// The signal is the set of **actual message senders**, never the stored
+  /// participant list: the spurious pubkey only ever appears as an extra `p`
+  /// tag, never as a message author, so a logical 1:1 has exactly one non-self
+  /// sender while a genuine group has two or more. The rumor `p` tags are
+  /// deliberately ignored — they are the source of the inflation. Returns
+  /// `null` for genuine groups (≥2 distinct senders), self-initiated groups
+  /// (no inbound sender), already-1:1 rows, and any inconsistent row.
+  @visibleForTesting
+  static String? spuriousGroupPeer({
+    required List<String> participantPubkeys,
+    required Set<String> messageSenderPubkeys,
+    required String userPubkey,
+  }) {
+    final nonSelfParticipants = participantPubkeys
+        .where((pk) => pk != userPubkey)
+        .toSet();
+    // Only inflated rows (≥2 stored non-self participants) are candidates; a
+    // real 1:1 already has a single non-self participant and is handled by the
+    // participant-count classifier.
+    if (nonSelfParticipants.length < 2) return null;
+
+    final nonSelfSenders = messageSenderPubkeys
+        .where((pk) => pk != userPubkey)
+        .toSet();
+    // Exactly one peer ever spoke ⇒ a 1:1 inflated with extra p-tags. Zero
+    // senders (self-initiated group) or two-plus senders (genuine group) are
+    // left untouched.
+    if (nonSelfSenders.length != 1) return null;
+
+    final peer = nonSelfSenders.first;
+    // The speaker must be one of the stored participants; otherwise the row is
+    // inconsistent and unsafe to rewrite.
+    if (!nonSelfParticipants.contains(peer)) return null;
+
+    return peer;
+  }
+
   /// Merges accepted conversations with followed-but-unreplied ones
   /// and sorts by timestamp descending.
   static List<DmConversation> mergeAndSort(
@@ -3578,6 +3627,100 @@ class DmRepository {
     }
   }
 
+  /// Collapses legacy inflated 1:1 conversation rows back to their canonical
+  /// 1:1 form so they stop being treated as groups and stranded under
+  /// "Message requests" (#5374).
+  ///
+  /// A row is collapsed only when its actual message senders prove it is a
+  /// 1:1 (see [spuriousGroupPeer]); genuine groups, self-initiated groups,
+  /// and ambiguous rows are left untouched. Mirrors
+  /// [_mergeDuplicateConversations]'s reassign/delete/create-if-missing flow.
+  ///
+  /// Idempotent — safe to call on every init. Becomes a no-op once all
+  /// inflated rows are collapsed. Deleting the inflated row also breaks the
+  /// re-perpetuation in [_resolveConversationParticipants]: a later inbound
+  /// message for the same peer no longer matches the deleted `existingFull`
+  /// row and is routed to the canonical 1:1 instead.
+  Future<void> _backfillCollapseInflatedOneToOneConversations() async {
+    try {
+      final allConversations = await _conversationsDao.getAllConversations(
+        ownerPubkey: _ownerPubkey,
+      );
+
+      for (final conv in allConversations) {
+        if (!conv.isGroup) continue;
+
+        final participants = (jsonDecode(conv.participantPubkeys) as List)
+            .cast<String>();
+        final messages = await _directMessagesDao.getMessagesForConversation(
+          conv.id,
+          ownerPubkey: _ownerPubkey,
+        );
+        final senders = messages.map((m) => m.senderPubkey).toSet();
+
+        final peer = spuriousGroupPeer(
+          participantPubkeys: participants,
+          messageSenderPubkeys: senders,
+          userPubkey: _userPubkey,
+        );
+        if (peer == null) continue;
+
+        final canonicalParticipants = [_userPubkey, peer]..sort();
+        final canonicalId = computeConversationId(canonicalParticipants);
+        if (canonicalId == conv.id) continue;
+
+        final existingCanonical = await _conversationsDao.getConversation(
+          canonicalId,
+          ownerPubkey: _ownerPubkey,
+        );
+
+        await _conversationsDao.runInTransaction(() async {
+          await _directMessagesDao.reassignConversation(
+            fromConversationId: conv.id,
+            toConversationId: canonicalId,
+            ownerPubkey: _userPubkey,
+          );
+          await _conversationsDao.deleteConversation(
+            conv.id,
+            ownerPubkey: _ownerPubkey,
+          );
+
+          // If the canonical 1:1 row didn't exist, create it from the
+          // inflated row's metadata (preserving currentUserHasSent).
+          if (existingCanonical == null) {
+            await _conversationsDao.upsertConversation(
+              id: canonicalId,
+              participantPubkeys: jsonEncode(canonicalParticipants),
+              isGroup: false,
+              createdAt: conv.createdAt,
+              lastMessageContent: conv.lastMessageContent,
+              lastMessageTimestamp: conv.lastMessageTimestamp,
+              lastMessageSenderPubkey: conv.lastMessageSenderPubkey,
+              currentUserHasSent: conv.currentUserHasSent,
+              ownerPubkey: conv.ownerPubkey,
+              dmProtocol: conv.dmProtocol,
+            );
+          }
+        });
+
+        // Refresh preview from the actual (reassigned) messages.
+        await _refreshConversationPreview(canonicalId);
+
+        Log.info(
+          'Collapsed inflated 1:1 conversation to canonical form (#5374)',
+          category: LogCategory.system,
+        );
+      }
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'Failed to collapse inflated 1:1 conversations: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   /// Removes phantom self-conversations created by the self-wrap bug where
   /// `_resolveConversationParticipants` produced `[self, self]`.
   ///
@@ -3622,6 +3765,7 @@ class DmRepository {
   Future<void> _runPostAuthMaintenance() async {
     await _mergeDuplicateConversations();
     await _cleanupSelfConversations();
+    await _backfillCollapseInflatedOneToOneConversations();
     await _backfillCurrentUserHasSent();
     await _backfillConversationPreviews();
   }

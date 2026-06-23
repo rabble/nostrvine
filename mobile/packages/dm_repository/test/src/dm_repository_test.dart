@@ -2553,6 +2553,209 @@ void main() {
         ).called(1);
       });
 
+      test(
+        'setCredentials collapses an inflated 1:1 group row to canonical 1:1 '
+        '(#5374)',
+        () async {
+          final inflated = [_validPubkeyA, _validPubkeyB, _validPubkeyC]
+            ..sort();
+          final inflatedId = DmRepository.computeConversationId(inflated);
+          final canonical = [_validPubkeyA, _validPubkeyB]..sort();
+          final canonicalId = DmRepository.computeConversationId(canonical);
+
+          when(
+            () => mockConversationsDao.getAllConversations(
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              ConversationRow(
+                id: inflatedId,
+                participantPubkeys: jsonEncode(inflated),
+                isGroup: true,
+                isRead: true,
+                currentUserHasSent: false,
+                createdAt: 1700000000,
+              ),
+            ],
+          );
+          // Only B ever spoke ⇒ a 1:1 inflated with the spurious C p-tag.
+          when(
+            () => mockDirectMessagesDao.getMessagesForConversation(
+              any(),
+              limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              DirectMessageRow(
+                id: 'm1',
+                conversationId: inflatedId,
+                senderPubkey: _validPubkeyB,
+                content: 'hi',
+                createdAt: 1700000000,
+                giftWrapId: 'g1',
+                messageKind: 14,
+                isDeleted: false,
+              ),
+            ],
+          );
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockDirectMessagesDao.reassignConversation(
+              fromConversationId: any(named: 'fromConversationId'),
+              toConversationId: any(named: 'toConversationId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => 1);
+          when(
+            () => mockConversationsDao.deleteConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => 1);
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+
+          DmRepository(
+            nostrClient: mockNostrClient,
+            directMessagesDao: mockDirectMessagesDao,
+            conversationsDao: mockConversationsDao,
+          ).setCredentials(
+            userPubkey: _validPubkeyA,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
+
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => mockDirectMessagesDao.reassignConversation(
+              fromConversationId: inflatedId,
+              toConversationId: canonicalId,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).called(1);
+          verify(
+            () => mockConversationsDao.deleteConversation(
+              inflatedId,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).called(1);
+        },
+      );
+
+      test('setCredentials does not collapse a genuine group row', () async {
+        final group = [_validPubkeyA, _validPubkeyB, _validPubkeyC]..sort();
+        final groupId = DmRepository.computeConversationId(group);
+
+        when(
+          () => mockConversationsDao.getAllConversations(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            ConversationRow(
+              id: groupId,
+              participantPubkeys: jsonEncode(group),
+              isGroup: true,
+              isRead: true,
+              currentUserHasSent: false,
+              createdAt: 1700000000,
+            ),
+          ],
+        );
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+        // Two distinct peers spoke ⇒ a genuine group, must be left untouched.
+        when(
+          () => mockDirectMessagesDao.getMessagesForConversation(
+            any(),
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            DirectMessageRow(
+              id: 'm1',
+              conversationId: groupId,
+              senderPubkey: _validPubkeyB,
+              content: 'hi',
+              createdAt: 1700000000,
+              giftWrapId: 'g1',
+              messageKind: 14,
+              isDeleted: false,
+            ),
+            DirectMessageRow(
+              id: 'm2',
+              conversationId: groupId,
+              senderPubkey: _validPubkeyC,
+              content: 'yo',
+              createdAt: 1700000001,
+              giftWrapId: 'g2',
+              messageKind: 14,
+              isDeleted: false,
+            ),
+          ],
+        );
+        when(
+          () => mockDirectMessagesDao.reassignConversation(
+            fromConversationId: any(named: 'fromConversationId'),
+            toConversationId: any(named: 'toConversationId'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => mockConversationsDao.deleteConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => 0);
+
+        DmRepository(
+          nostrClient: mockNostrClient,
+          directMessagesDao: mockDirectMessagesDao,
+          conversationsDao: mockConversationsDao,
+        ).setCredentials(
+          userPubkey: _validPubkeyA,
+          signer: LocalNostrSigner(_validPrivateKey),
+          messageService: mockMessageService,
+        );
+
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(
+          () => mockDirectMessagesDao.reassignConversation(
+            fromConversationId: any(named: 'fromConversationId'),
+            toConversationId: any(named: 'toConversationId'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      });
+
       test('startListening does not poll the relay', () async {
         // Regression guard: the 10s gift-wrap poll timer was removed
         // because it re-fetched the last 20 events forever on the UI
@@ -7663,6 +7866,86 @@ void main() {
 
         expect(result.followed, isEmpty);
         expect(result.requests, isEmpty);
+      });
+    });
+
+    group('spuriousGroupPeer', () {
+      test('returns the sole speaker for an inflated 1:1 (one sender)', () {
+        // [self, B, C] stored as a group, but only B ever spoke ⇒ B was the
+        // real 1:1 peer and C is a spurious extra p-tag (#5374).
+        final peer = DmRepository.spuriousGroupPeer(
+          participantPubkeys: [_validPubkeyA, _validPubkeyB, _validPubkeyC],
+          messageSenderPubkeys: {_validPubkeyB},
+          userPubkey: _validPubkeyA,
+        );
+        expect(peer, equals(_validPubkeyB));
+      });
+
+      test('ignores self among the senders', () {
+        // The user replied, so self is also a sender; only B is non-self.
+        final peer = DmRepository.spuriousGroupPeer(
+          participantPubkeys: [_validPubkeyA, _validPubkeyB, _validPubkeyC],
+          messageSenderPubkeys: {_validPubkeyA, _validPubkeyB},
+          userPubkey: _validPubkeyA,
+        );
+        expect(peer, equals(_validPubkeyB));
+      });
+
+      test('returns null for a genuine group (two distinct senders)', () {
+        final peer = DmRepository.spuriousGroupPeer(
+          participantPubkeys: [_validPubkeyA, _validPubkeyB, _validPubkeyC],
+          messageSenderPubkeys: {_validPubkeyB, _validPubkeyC},
+          userPubkey: _validPubkeyA,
+        );
+        expect(peer, isNull);
+      });
+
+      test('returns null for a self-initiated group (no inbound sender)', () {
+        final peer = DmRepository.spuriousGroupPeer(
+          participantPubkeys: [_validPubkeyA, _validPubkeyB, _validPubkeyC],
+          messageSenderPubkeys: {_validPubkeyA},
+          userPubkey: _validPubkeyA,
+        );
+        expect(peer, isNull);
+      });
+
+      test('returns null when there are no messages', () {
+        final peer = DmRepository.spuriousGroupPeer(
+          participantPubkeys: [_validPubkeyA, _validPubkeyB, _validPubkeyC],
+          messageSenderPubkeys: const {},
+          userPubkey: _validPubkeyA,
+        );
+        expect(peer, isNull);
+      });
+
+      test(
+        'returns null for an already-1:1 row (one non-self peer)',
+        () {
+          final peer = DmRepository.spuriousGroupPeer(
+            participantPubkeys: [_validPubkeyA, _validPubkeyB],
+            messageSenderPubkeys: {_validPubkeyB},
+            userPubkey: _validPubkeyA,
+          );
+          expect(peer, isNull);
+        },
+      );
+
+      test('returns null when the sole sender is not a participant', () {
+        final peer = DmRepository.spuriousGroupPeer(
+          participantPubkeys: [_validPubkeyA, _validPubkeyB, _validPubkeyC],
+          messageSenderPubkeys: {_validPubkeyD},
+          userPubkey: _validPubkeyA,
+        );
+        expect(peer, isNull);
+      });
+
+      test('returns null for empty participants', () {
+        final peer = DmRepository.spuriousGroupPeer(
+          participantPubkeys: const [],
+          messageSenderPubkeys: {_validPubkeyB},
+          userPubkey: _validPubkeyA,
+        );
+        expect(peer, isNull);
       });
     });
 
