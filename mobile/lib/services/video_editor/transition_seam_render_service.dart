@@ -153,11 +153,14 @@ class TransitionSeamRenderService {
   /// The source-time span consumed from each side, the actual blend (overlap
   /// or dip) duration, and the transition to apply when rendering the seam.
   ///
-  /// The span is clamped to half of the shorter clip so a transition can never
-  /// be longer than the clip — a 200ms clip with a 500ms dissolve shrinks the
-  /// whole transition proportionally rather than overrunning. For overlaps the
-  /// blend is always half the consumed span, guaranteeing a solo lead-in/out on
-  /// each side (a segment equal to the blend degenerates into a hard cut).
+  /// The span is clamped to the shorter clip so a transition can never run past
+  /// a clip — a 200ms clip with a 500ms dissolve shrinks the whole transition
+  /// proportionally rather than overrunning. Consuming the *whole* shorter clip
+  /// (rather than only half) lets the seam faithfully preview an overlap up to
+  /// half the shorter clip — matching the picker's ceiling — instead of capping
+  /// the visible blend at a quarter of it. For overlaps the blend is always
+  /// half the consumed span, guaranteeing a solo lead-in/out on each side (a
+  /// segment equal to the blend degenerates into a hard cut).
   @visibleForTesting
   ({Duration consumed, Duration blend, ClipTransition seamTransition})
   computeSeamSpans(
@@ -165,10 +168,7 @@ class TransitionSeamRenderService {
     DivineVideoClip clipB,
     ClipTransition transition,
   ) {
-    final maxSpan = _min(
-      _half(clipA.trimmedDuration),
-      _half(clipB.trimmedDuration),
-    );
+    final maxSpan = _min(clipA.trimmedDuration, clipB.trimmedDuration);
     if (_isOverlap(transition.type)) {
       final consumed = _min(transition.duration * 2, maxSpan);
       final blend = _half(consumed);

@@ -108,16 +108,16 @@ void main() {
     });
 
     test('overlap shrinks proportionally on a clip shorter than the '
-        'transition, never exceeding half the clip', () {
+        'transition, never exceeding the shorter clip', () {
       final spans = service.computeSeamSpans(
         sized('a', const Duration(milliseconds: 200)),
         sized('b', const Duration(seconds: 3)),
         dissolve, // 500ms, longer than the 200ms clip
       );
 
-      // Clamped to half the 200ms clip; still blends (blend < consumed).
-      expect(spans.consumed, equals(const Duration(milliseconds: 100)));
-      expect(spans.blend, equals(const Duration(milliseconds: 50)));
+      // Clamped to the whole 200ms clip; still blends (blend < consumed).
+      expect(spans.consumed, equals(const Duration(milliseconds: 200)));
+      expect(spans.blend, equals(const Duration(milliseconds: 100)));
       expect(spans.blend, lessThan(spans.consumed));
     });
 
@@ -139,9 +139,10 @@ void main() {
         sized('b', const Duration(milliseconds: 200)),
         fadeToBlack,
       );
-      // 100ms/side → dip clamped to the 200ms span, not the 500ms request.
-      expect(short.consumed, equals(const Duration(milliseconds: 100)));
-      expect(short.blend, equals(const Duration(milliseconds: 200)));
+      // 200ms/side available → dip clamped to 2× the span, not the 500ms
+      // request.
+      expect(short.consumed, equals(const Duration(milliseconds: 200)));
+      expect(short.blend, equals(const Duration(milliseconds: 400)));
     });
   });
 
