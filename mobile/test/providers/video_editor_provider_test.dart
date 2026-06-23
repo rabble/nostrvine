@@ -2,6 +2,9 @@
 // ABOUTME: Tests all EditorNotifier methods and state transitions using ProviderContainer
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:characters/characters.dart';
 import 'package:fake_async/fake_async.dart';
@@ -20,6 +23,9 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
+import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
+import 'package:pro_image_editor/pro_image_editor.dart'
+    show CompleteParameters, WidgetLayer, WidgetLayerExportConfigs;
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -1369,6 +1375,96 @@ void main() {
               'independently of finalRenderedClip (#5181)',
         );
       });
+
+      test(
+        'restores a draft whose editorEditingParameters contain a sticker '
+        'widget layer without crashing on the widgetLoader assertion',
+        () async {
+          const sticker = StickerData.network(
+            'https://stickers.example.com/heart.png',
+            description: 'Red heart',
+            tags: ['heart'],
+            packData: StickerPackData(
+              packId: 'reactions',
+              packName: 'Reactions',
+            ),
+          );
+          final stickerLayer = WidgetLayer(
+            width: 120,
+            widget: const VideoEditorSticker(
+              sticker: sticker,
+              enableLimitCacheSize: false,
+            ),
+            meta: sticker.toJson(),
+            exportConfigs: WidgetLayerExportConfigs(
+              id: 'sticker-${sticker.description}',
+              meta: sticker.toJson(),
+            ),
+          );
+          final params = CompleteParameters(
+            blur: 0,
+            originalImageSize: const Size(1080, 1920),
+            temporaryDecodedImageSize: const Size(1080, 1920),
+            bodySize: const Size(400, 800),
+            editorSize: const Size(400, 800),
+            matrixFilterList: const [],
+            matrixTuneAdjustmentsList: const [],
+            startTime: null,
+            endTime: null,
+            cropWidth: null,
+            cropHeight: null,
+            rotateTurns: 0,
+            cropX: null,
+            cropY: null,
+            flipX: false,
+            flipY: false,
+            image: Uint8List(0),
+            isTransformed: false,
+            layers: [stickerLayer],
+          );
+
+          // Mirror how a draft persists editorEditingParameters: the in-memory
+          // CompleteParameters is serialized via toMap() and round-tripped
+          // through JSON into storage.
+          final persistedParameters =
+              json.decode(json.encode(params.toMap())) as Map<String, dynamic>;
+
+          final draft = DivineVideoDraft.create(
+            id: 'draft-1',
+            clips: [
+              DivineVideoClip(
+                id: 'c1',
+                video: EditorVideo.file('/docs/clip.mp4'),
+                duration: const Duration(seconds: 3),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+              ),
+            ],
+            title: 'Title',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+            editorEditingParameters: persistedParameters,
+          );
+          when(
+            () => mockDraftStorage.getDraftById('draft-1'),
+          ).thenAnswer((_) async => draft);
+
+          // restoreDraft rehydrates editorEditingParameters via
+          // completeParametersFromDraftMap, which threads
+          // videoEditorStickerWidgetLoader so the exported-by-id sticker layer
+          // rebuilds into a VideoEditorSticker. Reverting that call site to a
+          // bare CompleteParameters.fromMap would throw the widgetLoader
+          // assertion here, surfacing as a thrown restore rather than a green
+          // test (#5474).
+          final result = await container
+              .read(videoEditorProvider.notifier)
+              .restoreDraft('draft-1');
+
+          expect(result, isTrue);
+        },
+      );
     });
   });
 
