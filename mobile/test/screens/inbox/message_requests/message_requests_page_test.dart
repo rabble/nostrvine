@@ -55,6 +55,11 @@ void main() {
         () => mockDmRepository.isHistoryRecoveryComplete,
       ).thenReturn(true);
       when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
+      // Identity stream (#5374): ConversationListBloc subscribes to it via
+      // `.startWith(userPubkey)`; an empty stream suffices for the seed.
+      when(
+        () => mockDmRepository.userPubkeyStream,
+      ).thenAnswer((_) => const Stream<String>.empty());
       when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
       when(() => mockDmRepository.stopListening()).thenAnswer((_) async {});
       when(
