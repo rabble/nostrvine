@@ -81,21 +81,34 @@ class ConversationListBloc
     // Combining ensures requests are never truncated by pagination
     // and follow-list changes are handled automatically.
     await emit.forEach(
-      Rx.combineLatest4(
+      Rx.combineLatest5(
         _dmRepository.watchAcceptedConversations(limit: state.currentLimit),
         _dmRepository.watchPotentialRequests(),
         _followRepository.followingStream.startWith(const []),
         _dmRepository.historyRecoveryStream.startWith(
           _dmRepository.isRecoveringHistory,
         ),
-        (accepted, potentialRequests, _, isRestoring) => (
+        // Stream 5: the user's pubkey. The DAO streams emit cached rows before
+        // `setCredentials` populates it at cold start, so classifying with the
+        // empty pre-auth pubkey would misroute every 1:1. This re-fires the
+        // handler once the real identity arrives. See #5374.
+        _dmRepository.userPubkeyStream.startWith(_dmRepository.userPubkey),
+        (accepted, potentialRequests, _, isRestoring, userPubkey) => (
           accepted: accepted,
           potentialRequests: potentialRequests,
           isRestoring: isRestoring,
+          userPubkey: userPubkey,
         ),
       ),
       onData: (data) {
-        final userPubkey = _dmRepository.userPubkey;
+        // Until credentials are set, the pubkey is empty and self cannot be
+        // filtered out of a conversation's participants — classifying now would
+        // make every 1:1 look like a group and land in Message requests. Hold
+        // the current (loading) state; stream 5 re-fires this once the real
+        // identity is available. See #5374.
+        final userPubkey = data.userPubkey;
+        if (userPubkey.isEmpty) return state;
+
         final split = DmRepository.classifyPotentialRequests(
           data.potentialRequests,
           userPubkey: userPubkey,

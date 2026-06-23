@@ -125,6 +125,9 @@ _buildDm() {
   final accepted = StreamController<List<DmConversation>>.broadcast();
   final potential = StreamController<List<DmConversation>>.broadcast();
   when(() => dm.userPubkey).thenReturn(_me);
+  when(
+    () => dm.userPubkeyStream,
+  ).thenAnswer((_) => const Stream<String>.empty());
   when(dm.watchAcceptedConversations).thenAnswer((_) => accepted.stream);
   when(dm.watchPotentialRequests).thenAnswer((_) => potential.stream);
   return (dm: dm, accepted: accepted, potential: potential);

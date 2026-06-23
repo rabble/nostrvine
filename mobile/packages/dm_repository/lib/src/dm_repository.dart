@@ -300,6 +300,16 @@ class DmRepository {
   final StreamController<bool> _recoveryStateController =
       StreamController<bool>.broadcast();
 
+  /// Broadcasts the user's pubkey whenever credentials change.
+  ///
+  /// Consumers that classify rows by identity (e.g. the conversation-list
+  /// "Message requests" split) must re-run when this fires, otherwise a cold
+  /// start can classify with the pre-auth empty pubkey — which fails to filter
+  /// self out of a conversation's participants, making every 1:1 look like a
+  /// group and land in Message Requests. See #5374.
+  final StreamController<String> _userPubkeyController =
+      StreamController<String>.broadcast();
+
   /// User-scoped subscription ID to prevent collision when the provider
   /// rebuilds during auth transitions (old unsubscribe won't kill new sub).
   String _subscriptionId = 'dm_inbox';
@@ -354,6 +364,13 @@ class DmRepository {
     _messageService = messageService;
     if (rumorDecryptor != null) _rumorDecryptor = rumorDecryptor;
     if (nip04Decryptor != null) _nip04Decryptor = nip04Decryptor;
+
+    // Notify identity-scoped consumers (e.g. the conversation-list classifier)
+    // so a cold-start subscription that first ran with the empty pre-auth
+    // pubkey re-classifies with the real identity. See #5374.
+    if (!_userPubkeyController.isClosed) {
+      _userPubkeyController.add(userPubkey);
+    }
 
     // Run post-auth maintenance sequentially so each step operates on the
     // final state of the previous one (e.g. backfill runs after merge).
@@ -3691,6 +3708,13 @@ class DmRepository {
   ///
   /// Returns an empty string if the repository has not been initialized.
   String get userPubkey => _userPubkey;
+
+  /// Emits the user's pubkey each time credentials are set (see
+  /// [setCredentials]). Seed a listener with the current [userPubkey] via
+  /// `userPubkeyStream.startWith(repo.userPubkey)` so it has a value before the
+  /// first credential change. Drives re-classification of identity-scoped
+  /// streams on cold-start auth. See #5374.
+  Stream<String> get userPubkeyStream => _userPubkeyController.stream;
 
   void _assertInitialized() {
     if (!isInitialized) {

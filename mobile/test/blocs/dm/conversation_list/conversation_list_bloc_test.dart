@@ -75,6 +75,11 @@ void _stubStreams(
   when(
     () => repo.historyRecoveryStream,
   ).thenAnswer((_) => recoveryStream ?? const Stream<bool>.empty());
+  // Identity stream (#5374): seeded via `.startWith(userPubkey)` in the bloc.
+  when(() => repo.userPubkey).thenReturn(_testPubkey1);
+  when(
+    () => repo.userPubkeyStream,
+  ).thenAnswer((_) => const Stream<String>.empty());
 }
 
 void main() {
@@ -92,6 +97,11 @@ void main() {
         () => mockFollowRepository.followingStream,
       ).thenAnswer((_) => const Stream<List<String>>.empty());
       when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+      // Identity stream (#5374): seeded via `.startWith(userPubkey)` in the
+      // bloc, so an empty stream is enough for the steady-state value to flow.
+      when(
+        () => mockDmRepository.userPubkeyStream,
+      ).thenAnswer((_) => const Stream<String>.empty());
       // Recovery-aware request gate (#5304): default to "recovery complete"
       // so existing split assertions hold; gate tests override to false.
       when(
@@ -1005,6 +1015,76 @@ void main() {
         );
       });
     });
+
+    // -----------------------------------------------------------------
+    // Identity race (#5374)
+    // -----------------------------------------------------------------
+
+    group('identity race (#5374)', () {
+      blocTest<ConversationListBloc, ConversationListState>(
+        'stays loading and does not classify while userPubkey is empty',
+        setUp: () {
+          _stubStreams(
+            mockDmRepository,
+            potentialRequests: [_createConversation(id: 'c1')],
+          );
+          // Cold start: credentials not set yet and the identity stream never
+          // delivers a real pubkey, so classification must be held back.
+          when(() => mockDmRepository.userPubkey).thenReturn('');
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ConversationListStarted()),
+        // Only the loading emit — the empty-pubkey guard prevents a
+        // misclassified "requests" emission (which would leave self in
+        // otherPubkeys, making the 1:1 look like a group).
+        expect: () => [
+          isA<ConversationListState>().having(
+            (s) => s.status,
+            'status',
+            ConversationListStatus.loading,
+          ),
+        ],
+      );
+
+      blocTest<ConversationListBloc, ConversationListState>(
+        'routes a followed 1:1 peer to the inbox once userPubkey arrives, '
+        'not to requests',
+        setUp: () {
+          _stubStreams(
+            mockDmRepository,
+            potentialRequests: [
+              _createConversation(
+                id: 'c1',
+                participantPubkeys: const [_testPubkey1, _testPubkey2],
+              ),
+            ],
+          );
+          // Empty at first; the identity stream then delivers the real pubkey,
+          // mirroring the cold-start race the #5374 diagnostics captured.
+          when(() => mockDmRepository.userPubkey).thenReturn('');
+          when(
+            () => mockDmRepository.userPubkeyStream,
+          ).thenAnswer((_) => Stream.value(_testPubkey1));
+          when(
+            () => mockFollowRepository.isFollowing(_testPubkey2),
+          ).thenReturn(true);
+          when(
+            () => mockFollowRepository.isFollowing(_testPubkey1),
+          ).thenReturn(false);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ConversationListStarted()),
+        verify: (bloc) {
+          // Self (_testPubkey1) is filtered, leaving the single followed peer
+          // _testPubkey2 → inbox. Before the fix the empty pubkey left self in
+          // otherPubkeys (count 2 → treated as a group) → misrouted to
+          // requests.
+          expect(bloc.state.requestConversations, isEmpty);
+          expect(bloc.state.conversations, hasLength(1));
+          expect(bloc.state.conversations.single.id, equals('c1'));
+        },
+      );
+    });
   });
 
   group('$ConversationListState', () {
@@ -1192,7 +1272,6 @@ void main() {
     });
   });
 
-  // -------------------------------------------------------------------
   // Subscription lifecycle (#2931)
   // -------------------------------------------------------------------
 

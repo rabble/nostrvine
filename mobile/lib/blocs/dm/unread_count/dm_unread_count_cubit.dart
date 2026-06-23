@@ -104,20 +104,27 @@ class DmUnreadCountCubit extends Cubit<int> {
               .startWith(null);
 
     _subscription =
-        Rx.combineLatest4<
+        Rx.combineLatest5<
               List<DmConversation>,
               List<DmConversation>,
               List<String>,
               Object?,
+              String,
               int
             >(
               dmRepository.watchAcceptedConversations(),
               dmRepository.watchPotentialRequests(),
               followRepository.followingStream.startWith(const <String>[]),
               blocklistTicks,
-              (accepted, potentialRequests, _, _) => _countUnread(
+              // Identity stream (#5374): the DAO streams emit cached rows before
+              // setCredentials populates the pubkey at cold start; without it
+              // _countUnread classifies with the empty pubkey and undercounts
+              // followed-but-unreplied 1:1s. Re-fires once the identity lands.
+              dmRepository.userPubkeyStream.startWith(dmRepository.userPubkey),
+              (accepted, potentialRequests, _, _, userPubkey) => _countUnread(
                 accepted: accepted,
                 potentialRequests: potentialRequests,
+                userPubkey: userPubkey,
               ),
             )
             .listen(
@@ -138,12 +145,18 @@ class DmUnreadCountCubit extends Cubit<int> {
   int _countUnread({
     required List<DmConversation> accepted,
     required List<DmConversation> potentialRequests,
+    required String userPubkey,
   }) {
     final dmRepository = _dmRepository;
     final followRepository = _followRepository;
     if (dmRepository == null || followRepository == null) return 0;
 
-    final userPubkey = dmRepository.userPubkey;
+    // Until credentials are set the pubkey is empty and self cannot be filtered
+    // from a conversation's participants — classifying now drops every followed
+    // 1:1 from the count. Keep the current count; the identity stream re-fires
+    // this once the real pubkey arrives. See #5374.
+    if (userPubkey.isEmpty) return state;
+
     final split = DmRepository.classifyPotentialRequests(
       potentialRequests,
       userPubkey: userPubkey,

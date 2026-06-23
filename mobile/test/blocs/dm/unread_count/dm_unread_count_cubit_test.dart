@@ -76,6 +76,11 @@ void main() {
       followed = <String>{};
 
       when(() => dmRepository.userPubkey).thenReturn(_me);
+      // Identity stream (#5374): seeded via `.startWith(userPubkey)` in the
+      // cubit, so an empty stream suffices for the steady-state value to flow.
+      when(
+        () => dmRepository.userPubkeyStream,
+      ).thenAnswer((_) => const Stream<String>.empty());
       // No-arg stub: this matches only a call WITHOUT a limit, locking in that
       // the badge counts the full (unpaginated) accepted set, not a page.
       when(
@@ -139,6 +144,38 @@ void main() {
         ]);
         await _settle();
 
+        expect(cubit.state, equals(1));
+      },
+    );
+
+    test(
+      'holds the count while userPubkey is empty, then counts the followed '
+      '1:1 once the identity arrives (#5374)',
+      () async {
+        followed.add(_alice);
+        // Cold start: empty pubkey until the identity stream delivers it.
+        when(() => dmRepository.userPubkey).thenReturn('');
+        final pubkeyController = StreamController<String>();
+        addTearDown(pubkeyController.close);
+        when(
+          () => dmRepository.userPubkeyStream,
+        ).thenAnswer((_) => pubkeyController.stream);
+
+        final cubit = buildCubit();
+        addTearDown(cubit.close);
+
+        acceptedController.add(const []);
+        potentialController.add([
+          _convo('c1', peer: _alice, isRead: false, currentUserHasSent: false),
+        ]);
+        await _settle();
+        // Empty pubkey: self cannot be filtered, so the guard holds the count
+        // instead of misclassifying the 1:1 as a group and dropping it.
+        expect(cubit.state, equals(0));
+
+        pubkeyController.add(_me);
+        await _settle();
+        // Identity arrived → the followed-but-unreplied 1:1 is counted.
         expect(cubit.state, equals(1));
       },
     );
@@ -351,6 +388,9 @@ void main() {
           await followingController2.close();
         });
         when(() => dmRepository2.userPubkey).thenReturn(_me);
+        when(
+          () => dmRepository2.userPubkeyStream,
+        ).thenAnswer((_) => const Stream<String>.empty());
         when(
           dmRepository2.watchAcceptedConversations,
         ).thenAnswer((_) => acceptedController2.stream);
