@@ -324,6 +324,67 @@ void main() {
       });
     });
 
+    test(
+      'setRepositories re-points the count at fresh repositories and stops '
+      'counting against the stale ones (app-shell auth-ready rebuild, #4976)',
+      () async {
+        final cubit = buildCubit();
+        addTearDown(cubit.close);
+
+        // Pre-auth repository emits one unread accepted conversation.
+        acceptedController.add([
+          _convo('c9', peer: _bob, isRead: false, currentUserHasSent: true),
+        ]);
+        potentialController.add(const []);
+        await _settle();
+        expect(cubit.state, equals(1));
+
+        // Auth becomes ready: the providers rebuild into fresh instances.
+        final dmRepository2 = _MockDmRepository();
+        final followRepository2 = _MockFollowRepository();
+        final acceptedController2 = StreamController<List<DmConversation>>();
+        final potentialController2 = StreamController<List<DmConversation>>();
+        final followingController2 = StreamController<List<String>>();
+        addTearDown(() async {
+          await acceptedController2.close();
+          await potentialController2.close();
+          await followingController2.close();
+        });
+        when(() => dmRepository2.userPubkey).thenReturn(_me);
+        when(
+          dmRepository2.watchAcceptedConversations,
+        ).thenAnswer((_) => acceptedController2.stream);
+        when(
+          dmRepository2.watchPotentialRequests,
+        ).thenAnswer((_) => potentialController2.stream);
+        when(
+          () => followRepository2.followingStream,
+        ).thenAnswer((_) => followingController2.stream);
+        when(
+          () => followRepository2.isFollowing(any()),
+        ).thenReturn(false);
+
+        cubit.setRepositories(
+          dmRepository: dmRepository2,
+          followRepository: followRepository2,
+        );
+
+        // The fresh repository drives the count.
+        acceptedController2.add([
+          _convo('c10', peer: _bob, isRead: false, currentUserHasSent: true),
+          _convo('c11', peer: _carol, isRead: false, currentUserHasSent: true),
+        ]);
+        potentialController2.add(const []);
+        await _settle();
+        expect(cubit.state, equals(2));
+
+        // The stale repository must no longer affect the badge.
+        acceptedController.add(const []);
+        await _settle();
+        expect(cubit.state, equals(2));
+      },
+    );
+
     test('cancels subscription on close', () async {
       final cubit = buildCubit();
       await cubit.close();

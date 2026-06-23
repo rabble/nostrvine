@@ -2416,7 +2416,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           ),
         ),
       ],
-      child: _NotificationBadgeRepositorySync(
+      child: _InboxBadgeRepositorySync(
         child: MultiBlocProvider(
           providers: [
             BlocProvider(
@@ -2546,8 +2546,18 @@ class _DivineAppState extends ConsumerState<DivineApp> {
   }
 }
 
-class _NotificationBadgeRepositorySync extends ConsumerWidget {
-  const _NotificationBadgeRepositorySync({required this.child});
+/// Re-points the app-shell badge cubits at fresh repository instances when
+/// their providers rebuild (Nostr/auth becomes ready, account switch).
+///
+/// Both [NotificationBadgeCubit] and [DmUnreadCountCubit] are provided once
+/// above MaterialApp via `ref.read`, so without this they keep their captured
+/// pre-auth repositories and silently undercount. The DM repositories
+/// (`dmRepositoryProvider` / `followRepositoryProvider` /
+/// `contentBlocklistRepositoryProvider`) all `ref.watch(nostrServiceProvider)`
+/// and so rebuild on auth-ready. Swapping only the cubit subscriptions avoids
+/// remounting MaterialApp/AppShell.
+class _InboxBadgeRepositorySync extends ConsumerWidget {
+  const _InboxBadgeRepositorySync({required this.child});
 
   final Widget child;
 
@@ -2556,6 +2566,22 @@ class _NotificationBadgeRepositorySync extends ConsumerWidget {
     ref.listen(notificationRepositoryProvider, (_, repository) {
       context.read<NotificationBadgeCubit>().setRepository(repository);
     });
+
+    void syncDmUnread() {
+      context.read<DmUnreadCountCubit>().setRepositories(
+        dmRepository: ref.read(dmRepositoryProvider),
+        followRepository: ref.read(followRepositoryProvider),
+        contentBlocklistRepository: ref.read(
+          contentBlocklistRepositoryProvider,
+        ),
+      );
+    }
+
+    ref
+      ..listen(dmRepositoryProvider, (_, _) => syncDmUnread())
+      ..listen(followRepositoryProvider, (_, _) => syncDmUnread())
+      ..listen(contentBlocklistRepositoryProvider, (_, _) => syncDmUnread());
+
     return child;
   }
 }

@@ -1,6 +1,6 @@
 // ABOUTME: Inbox page that provides BLoC dependencies for the inbox view.
-// ABOUTME: Sets up ConversationListBloc, DmUnreadCountCubit, and
-// ABOUTME: MyFollowingBloc from Riverpod providers. The DmRepository
+// ABOUTME: Sets up ConversationListBloc and MyFollowingBloc from Riverpod
+// ABOUTME: providers. The DmRepository
 // ABOUTME: gift-wrap subscription is auth-session-scoped via
 // ABOUTME: dmRepositoryProvider, not driven by this screen's lifecycle.
 
@@ -20,8 +20,8 @@ import 'package:openvine/screens/inbox/inbox_view.dart';
 
 /// Inbox page (DM conversation list + notifications).
 ///
-/// Provides [ConversationListBloc], [DmUnreadCountCubit], and
-/// [MyFollowingBloc] to the widget tree. The gift-wrap subscription that
+/// Provides [ConversationListBloc] and [MyFollowingBloc] to the widget
+/// tree. The gift-wrap subscription that
 /// powers DM ingestion is owned by `dmRepositoryProvider` for the entire
 /// authenticated session — this screen does NOT start or stop it (#2931).
 class InboxPage extends ConsumerWidget {

@@ -32,25 +32,74 @@ import 'package:rxdart/rxdart.dart';
 /// * **Recovery hold-back (#5304)** — that only delays the *requests* bucket,
 ///   which never feeds this count.
 ///
+/// The app-shell provides this cubit once via `ref.read`, but
+/// `dmRepositoryProvider` / `followRepositoryProvider` /
+/// `contentBlocklistRepositoryProvider` all `ref.watch(nostrServiceProvider)`
+/// and so rebuild into fresh instances when Nostr/auth becomes ready or the
+/// account switches. A cubit that captured the pre-auth instances would keep
+/// counting against an empty `userPubkey` and a stale stream — diverging from
+/// the inbox list, which is built later from the live repositories. Call
+/// [setRepositories] whenever any of the three provider identities changes so
+/// only this cubit's subscription is swapped (no MaterialApp/AppShell
+/// remount). Mirrors [NotificationBadgeCubit.setRepository].
+///
 /// Used by the bottom-nav badge and the inbox segmented toggle.
 class DmUnreadCountCubit extends Cubit<int> {
   DmUnreadCountCubit({
     required DmRepository dmRepository,
     required FollowRepository followRepository,
     ContentBlocklistRepository? contentBlocklistRepository,
-  }) : _dmRepository = dmRepository,
-       _followRepository = followRepository,
-       _blocklistRepository = contentBlocklistRepository,
-       super(0) {
-    // Recompute the count whenever the accepted conversations, the potential
-    // requests, the following list, or the blocklist change. The blocklist tick
-    // value is unused — `filterBlockedConversations` reads live block state; the
-    // tick only forces a re-filter on block/unblock/mute. Drift / stream IO
-    // errors are expected and NOT Reportable per .claude/rules/error_handling.md;
-    // the `addError` tear-off keeps them in the unified log.
-    final blocklistTicks = _blocklistRepository == null
+  }) : super(0) {
+    setRepositories(
+      dmRepository: dmRepository,
+      followRepository: followRepository,
+      contentBlocklistRepository: contentBlocklistRepository,
+    );
+  }
+
+  DmRepository? _dmRepository;
+  FollowRepository? _followRepository;
+  ContentBlocklistRepository? _blocklistRepository;
+  StreamSubscription<int>? _subscription;
+  int _subscriptionGeneration = 0;
+
+  /// Re-point the count at fresh repository instances and re-subscribe.
+  ///
+  /// No-op when all three identities are unchanged, so redundant
+  /// provider-listener fires are cheap. The generation guard discards any
+  /// late emission from the cancelled subscription so a swap can never
+  /// regress the badge to a stale count.
+  void setRepositories({
+    required DmRepository dmRepository,
+    required FollowRepository followRepository,
+    ContentBlocklistRepository? contentBlocklistRepository,
+  }) {
+    if (identical(_dmRepository, dmRepository) &&
+        identical(_followRepository, followRepository) &&
+        identical(_blocklistRepository, contentBlocklistRepository)) {
+      return;
+    }
+
+    _dmRepository = dmRepository;
+    _followRepository = followRepository;
+    _blocklistRepository = contentBlocklistRepository;
+
+    final generation = ++_subscriptionGeneration;
+    final oldSubscription = _subscription;
+    _subscription = null;
+    if (oldSubscription != null) {
+      unawaited(oldSubscription.cancel());
+    }
+
+    // Recompute whenever the accepted conversations, the potential requests,
+    // the following list, or the blocklist change. The blocklist tick value is
+    // unused — `filterBlockedConversations` reads live block state; the tick
+    // only forces a re-filter on block/unblock/mute. Drift / stream IO errors
+    // are expected and NOT Reportable per .claude/rules/error_handling.md; the
+    // `addError` tear-off keeps them in the unified log.
+    final blocklistTicks = contentBlocklistRepository == null
         ? Stream<Object?>.value(null)
-        : _blocklistRepository.stateStream
+        : contentBlocklistRepository.stateStream
               .map<Object?>((_) => null)
               .startWith(null);
 
@@ -62,22 +111,26 @@ class DmUnreadCountCubit extends Cubit<int> {
               Object?,
               int
             >(
-              _dmRepository.watchAcceptedConversations(),
-              _dmRepository.watchPotentialRequests(),
-              _followRepository.followingStream.startWith(const <String>[]),
+              dmRepository.watchAcceptedConversations(),
+              dmRepository.watchPotentialRequests(),
+              followRepository.followingStream.startWith(const <String>[]),
               blocklistTicks,
               (accepted, potentialRequests, _, _) => _countUnread(
                 accepted: accepted,
                 potentialRequests: potentialRequests,
               ),
             )
-            .listen(emit, onError: addError);
+            .listen(
+              (count) {
+                if (_subscriptionGeneration == generation) emit(count);
+              },
+              onError: (Object error, StackTrace stackTrace) {
+                if (_subscriptionGeneration == generation) {
+                  addError(error, stackTrace);
+                }
+              },
+            );
   }
-
-  final DmRepository _dmRepository;
-  final FollowRepository _followRepository;
-  final ContentBlocklistRepository? _blocklistRepository;
-  StreamSubscription<int>? _subscription;
 
   /// Composes the visible Messages list (accepted ∪ followed-but-unreplied,
   /// blocklist-filtered) and counts the unread ones — the same set the inbox
@@ -86,11 +139,15 @@ class DmUnreadCountCubit extends Cubit<int> {
     required List<DmConversation> accepted,
     required List<DmConversation> potentialRequests,
   }) {
-    final userPubkey = _dmRepository.userPubkey;
+    final dmRepository = _dmRepository;
+    final followRepository = _followRepository;
+    if (dmRepository == null || followRepository == null) return 0;
+
+    final userPubkey = dmRepository.userPubkey;
     final split = DmRepository.classifyPotentialRequests(
       potentialRequests,
       userPubkey: userPubkey,
-      isFollowing: _followRepository.isFollowing,
+      isFollowing: followRepository.isFollowing,
     );
     final inbox = DmRepository.mergeAndSort(accepted, split.followed);
     final visible =
@@ -104,6 +161,7 @@ class DmUnreadCountCubit extends Cubit<int> {
 
   @override
   Future<void> close() async {
+    _subscriptionGeneration += 1;
     await _subscription?.cancel();
     await super.close();
   }
