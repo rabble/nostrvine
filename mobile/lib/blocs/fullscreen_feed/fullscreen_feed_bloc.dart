@@ -44,6 +44,16 @@ typedef OnVideoConfirmedUnavailable = void Function(String videoId);
 /// across mutations.
 typedef BlockAuthorFilter = bool Function(String pubkey);
 
+/// Returns `true` when [videoId] has been confirmed unavailable (a persisted
+/// hard 404). Injected so the BLoC stays free of concrete service
+/// dependencies — the launching `ConsumerWidget` resolves it from
+/// `BrokenVideoTracker.isVideoBroken`. The bound method reads live tracker
+/// state on every call, so newly-confirmed-missing videos are filtered from
+/// subsequent source re-pushes. This lets static sources (liked, saved,
+/// reposts, collabs, curated lists) drop videos that 404'd in a *previous*
+/// session, not just the live ones removed via [OnRemoveVideo]. See #5237.
+typedef UnavailableVideoFilter = bool Function(String videoId);
+
 /// Maximum number of concurrent background cache downloads.
 ///
 /// Limiting to 1 prevents background caching from competing with the
@@ -87,6 +97,7 @@ class FullscreenFeedBloc
     OnVideoConfirmedUnavailable? onVideoConfirmedUnavailable,
     MediaAvailabilityChecker? availabilityChecker,
     BlockAuthorFilter? blockFilter,
+    UnavailableVideoFilter? unavailableFilter,
   }) : _videosStream = videosStream,
        _initialVideoId = initialVideoId,
        _initialStableId = initialStableId,
@@ -100,6 +111,7 @@ class FullscreenFeedBloc
        _availabilityChecker =
            availabilityChecker ?? const MediaAvailabilityChecker(),
        _blockFilter = blockFilter,
+       _unavailableFilter = unavailableFilter,
        super(FullscreenFeedState(currentIndex: initialIndex)) {
     on<FullscreenFeedStarted>(_onStarted);
     on<FullscreenFeedHasMoreChanged>(_onHasMoreChanged);
@@ -137,6 +149,7 @@ class FullscreenFeedBloc
   final OnVideoConfirmedUnavailable? _onVideoConfirmedUnavailable;
   final MediaAvailabilityChecker _availabilityChecker;
   final BlockAuthorFilter? _blockFilter;
+  final UnavailableVideoFilter? _unavailableFilter;
   StreamSubscription<bool>? _hasMoreSubscription;
   StreamSubscription<String>? _removedIdsSubscription;
 
@@ -201,7 +214,7 @@ class FullscreenFeedBloc
         // (e.g. the liked-videos like-change subscription / load-more, which
         // never re-filter) can't re-introduce an author who is blocked under
         // the current blocklist. Idempotent for sources that already filter.
-        final videos = _applyBlockFilter(incoming);
+        final videos = _applyUnavailableFilter(_applyBlockFilter(incoming));
 
         Log.debug(
           'FullscreenFeedBloc: Videos updated, count=${videos.length}',
@@ -618,6 +631,17 @@ class FullscreenFeedBloc
     final blockFilter = _blockFilter;
     if (blockFilter == null) return videos;
     return videos.where((v) => !blockFilter(v.pubkey)).toList();
+  }
+
+  /// Returns [videos] with videos confirmed unavailable (persisted hard 404)
+  /// removed, or the same list unchanged when no [UnavailableVideoFilter] was
+  /// injected. Applied at the stream boundary so static sources (liked, saved,
+  /// reposts, collabs, curated lists) drop videos that 404'd in a previous
+  /// session, which their by-id repositories don't filter. See #5237.
+  List<VideoEvent> _applyUnavailableFilter(List<VideoEvent> videos) {
+    final unavailableFilter = _unavailableFilter;
+    if (unavailableFilter == null) return videos;
+    return videos.where((v) => !unavailableFilter(v.id)).toList();
   }
 
   /// Handle a broad blocklist change (`blocklistVersionProvider` bumped).

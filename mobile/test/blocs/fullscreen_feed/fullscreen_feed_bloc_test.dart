@@ -81,6 +81,7 @@ void main() {
       OnVideoConfirmedUnavailable? onVideoConfirmedUnavailable,
       MediaAvailabilityChecker? availabilityChecker,
       BlockAuthorFilter? blockFilter,
+      UnavailableVideoFilter? unavailableFilter,
     }) => FullscreenFeedBloc(
       videosStream: videosController.stream,
       initialIndex: initialIndex,
@@ -94,6 +95,7 @@ void main() {
       onVideoConfirmedUnavailable: onVideoConfirmedUnavailable,
       availabilityChecker: availabilityChecker,
       blockFilter: blockFilter,
+      unavailableFilter: unavailableFilter,
     );
 
     test('initial state has correct values', () {
@@ -1281,6 +1283,65 @@ void main() {
             ),
           ).called(1);
         },
+      );
+    });
+
+    group('unavailableFilter (persisted 404)', () {
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'filters known-unavailable videos from incoming stream lists',
+        build: () => createBloc(unavailableFilter: (id) => id == 'broken'),
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([
+            createTestVideo('a'),
+            createTestVideo('broken'),
+            createTestVideo('c'),
+          ]);
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.videos.map((v) => v.id).toList(),
+            'video ids',
+            ['a', 'c'],
+          ),
+        ],
+      );
+
+      // Static sources (liked / saved / reposts / curated lists) re-emit
+      // unfiltered by-id lists, so a known-unavailable video must stay out
+      // across a re-push — the gap this filter closes for #5237.
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'keeps known-unavailable videos out across a source re-push',
+        build: () => createBloc(unavailableFilter: (id) => id == 'broken'),
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([
+            createTestVideo('a'),
+            createTestVideo('broken'),
+          ]);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([
+            createTestVideo('a'),
+            createTestVideo('broken'),
+            createTestVideo('c'),
+          ]);
+        },
+        wait: const Duration(milliseconds: 150),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.videos.map((v) => v.id).toList(),
+            'video ids',
+            ['a'],
+          ),
+          isA<FullscreenFeedState>().having(
+            (s) => s.videos.map((v) => v.id).toList(),
+            'video ids',
+            ['a', 'c'],
+          ),
+        ],
       );
     });
 

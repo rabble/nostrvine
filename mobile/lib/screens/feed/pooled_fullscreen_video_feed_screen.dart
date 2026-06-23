@@ -232,6 +232,19 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
       );
     }
 
+    // Filter videos confirmed unavailable (persisted hard 404) out of the
+    // fullscreen list at the stream boundary. This covers static / by-id
+    // sources (liked, saved, reposts, collabs, curated lists) whose
+    // repositories don't run the central feed filters, so a video that 404'd
+    // in a previous session won't reappear when opened fullscreen. The
+    // predicate reads live tracker state on each call; before the tracker's
+    // async init completes it filters nothing (matching grid behaviour). See
+    // #5237.
+    final brokenTracker = ref
+        .watch(brokenVideoTrackerProvider)
+        .maybeWhen(data: (tracker) => tracker, orElse: () => null);
+    final unavailableFilter = brokenTracker?.isVideoBroken;
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -247,6 +260,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
             mediaCache: mediaCache,
             blossomAuthService: blossomAuthService,
             blockFilter: blockFilter,
+            unavailableFilter: unavailableFilter,
           )..add(const FullscreenFeedStarted()),
         ),
         BlocProvider(create: (_) => VideoPlaybackStatusCubit()),
