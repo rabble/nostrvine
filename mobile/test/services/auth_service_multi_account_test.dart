@@ -1129,27 +1129,43 @@ void main() {
     );
 
     test(
-      'falls back to _checkExistingAuth when identity keys not found',
+      'throws AccountRestoreFailedException when identity keys not found '
+      'and _checkExistingAuth cannot authenticate',
       () async {
         final pubkeyHex = testKeyContainer.publicKeyHex;
 
-        // Return null for identity key lookup
+        // Return null for identity key lookup, and ensure the
+        // _checkExistingAuth fallback also finds no usable keys so the
+        // service resolves to unauthenticated rather than authenticated.
         when(
           () => mockKeyStorage.getIdentityKeyContainer(
             any(),
             biometricPrompt: any(named: 'biometricPrompt'),
           ),
         ).thenAnswer((_) async => null);
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
 
-        await _ignoringDiscoveryErrors(
-          () => authService.signInForAccount(
-            pubkeyHex,
-            AuthenticationSource.automatic,
+        await expectLater(
+          _ignoringDiscoveryErrors(
+            () => authService.signInForAccount(
+              pubkeyHex,
+              AuthenticationSource.automatic,
+            ),
+          ),
+          throwsA(
+            isA<AccountRestoreFailedException>()
+                .having((e) => e.pubkeyHex, 'pubkeyHex', pubkeyHex)
+                .having(
+                  (e) => e.resolvedState,
+                  'resolvedState',
+                  AuthState.unauthenticated,
+                ),
           ),
         );
 
-        // _checkExistingAuth should fall back to the unauthenticated flow
+        // The fallback path was exercised before the guard threw.
         verify(() => mockKeyStorage.hasKeys()).called(1);
+        expect(authService.authState, equals(AuthState.unauthenticated));
       },
     );
 

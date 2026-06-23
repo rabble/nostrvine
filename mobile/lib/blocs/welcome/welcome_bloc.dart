@@ -252,6 +252,29 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       await _authService.acceptTerms();
       emit(state.copyWith(status: WelcomeStatus.navigatingToLoginOptions));
       emit(state.copyWith(status: WelcomeStatus.loaded));
+    } on AccountRestoreFailedException catch (e, stackTrace) {
+      // The account's credentials could not be restored (e.g. missing local
+      // identity keys, or session setup failed). Previously this returned
+      // silently and the user was pinned to /welcome with no feedback — the
+      // login loop in #5195. Route to the full login flow so the user can
+      // re-import their key or pick another account.
+      Log.warning(
+        'WelcomeBloc: restore failed for ${account.pubkeyHex} '
+        '(${e.resolvedState}) — redirecting to login options',
+        name: 'WelcomeBloc',
+        category: LogCategory.auth,
+      );
+      // Recoverable auth-flow failure — matrix-NO (Auth/session row).
+      addError(e, stackTrace);
+      emit(
+        state.copyWith(
+          status: WelcomeStatus.sessionExpired,
+          clearSigningIn: true,
+        ),
+      );
+      await _authService.acceptTerms();
+      emit(state.copyWith(status: WelcomeStatus.navigatingToLoginOptions));
+      emit(state.copyWith(status: WelcomeStatus.loaded));
     } catch (e, stackTrace) {
       Log.error(
         'WelcomeBloc: failed to log back in as ${account.pubkeyHex}: $e',

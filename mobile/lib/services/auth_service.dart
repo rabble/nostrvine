@@ -110,6 +110,31 @@ class EventSignerAccountMismatchException implements Exception {
       '$actualPubkey but the active identity is $expectedPubkey';
 }
 
+/// Thrown by [AuthService.signInForAccount] when a returning-user sign-in
+/// resolves WITHOUT reaching [AuthState.authenticated] — for example when an
+/// `importedKeys`/`automatic` account's identity keys are missing from secure
+/// storage, or when [AuthService] lands in [AuthState.awaitingTosAcceptance]
+/// after an internal session-setup failure.
+///
+/// Previously these paths returned normally, leaving the caller (WelcomeBloc)
+/// believing the sign-in succeeded while the router kept the user pinned to
+/// `/welcome` — an invisible login loop. Throwing lets the caller route the
+/// user to the full login flow instead. See #5195.
+class AccountRestoreFailedException implements Exception {
+  const AccountRestoreFailedException(this.pubkeyHex, this.resolvedState);
+
+  /// The account (hex pubkey) whose restore was attempted.
+  final String pubkeyHex;
+
+  /// The non-authenticated [AuthState] the service resolved to.
+  final AuthState resolvedState;
+
+  @override
+  String toString() =>
+      'AccountRestoreFailedException: sign-in for $pubkeyHex resolved to '
+      '$resolvedState instead of authenticated';
+}
+
 /// Result of authentication operations
 class AuthResult {
   const AuthResult({
@@ -2296,6 +2321,26 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           category: LogCategory.auth,
         );
         throw Exception('Cannot sign in with auth source "none"');
+    }
+
+    // Guard against silent restore failures. Several branches above can
+    // resolve normally WITHOUT reaching `authenticated`:
+    //   - importedKeys/automatic whose identity keys are missing fall back to
+    //     `_checkExistingAuth`, which sets `unauthenticated` and returns.
+    //   - `_setupUserSession` swallows internal failures into
+    //     `awaitingTosAcceptance`.
+    // Both previously left the caller believing the sign-in succeeded while
+    // the router kept the user on `/welcome` (an invisible loop). Surface the
+    // failure so the caller can route to the full login flow instead. See
+    // #5195.
+    if (_authState != AuthState.authenticated) {
+      Log.warning(
+        'signInForAccount: resolved to $_authState (not authenticated) for '
+        '$pubkeyHex — surfacing AccountRestoreFailedException',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      throw AccountRestoreFailedException(pubkeyHex, _authState);
     }
   }
 

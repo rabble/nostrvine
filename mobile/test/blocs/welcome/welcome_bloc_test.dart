@@ -449,6 +449,50 @@ void main() {
         },
         errors: () => [isA<SessionExpiredException>()],
       );
+
+      blocTest<WelcomeBloc, WelcomeState>(
+        'navigates to login options on $AccountRestoreFailedException '
+        '(missing keys) instead of looping silently',
+        setUp: () {
+          when(
+            () => mockAuthService.signInForAccount(any(), any()),
+          ).thenThrow(
+            const AccountRestoreFailedException(
+              _testPubkeyHex,
+              AuthState.unauthenticated,
+            ),
+          );
+        },
+        build: buildBloc,
+        seed: () => const WelcomeState(
+          status: WelcomeStatus.loaded,
+          previousAccounts: [_testPreviousAccount],
+        ),
+        act: (bloc) => bloc.add(const WelcomeLogBackInRequested()),
+        expect: () => [
+          const WelcomeState(
+            status: WelcomeStatus.accepting,
+            previousAccounts: [_testPreviousAccount],
+            signingInPubkeyHex: _testPubkeyHex,
+          ),
+          const WelcomeState(
+            status: WelcomeStatus.sessionExpired,
+            previousAccounts: [_testPreviousAccount],
+          ),
+          const WelcomeState(
+            status: WelcomeStatus.navigatingToLoginOptions,
+            previousAccounts: [_testPreviousAccount],
+          ),
+          const WelcomeState(
+            status: WelcomeStatus.loaded,
+            previousAccounts: [_testPreviousAccount],
+          ),
+        ],
+        verify: (_) {
+          verify(() => mockAuthService.acceptTerms()).called(1);
+        },
+        errors: () => [isA<AccountRestoreFailedException>()],
+      );
     });
 
     group('$WelcomeCancelSwitchRequested', () {
