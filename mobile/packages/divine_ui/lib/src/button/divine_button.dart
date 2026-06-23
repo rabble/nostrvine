@@ -547,6 +547,24 @@ class _RenderAdaptiveButtonPadding extends RenderShiftedBox {
       _measure(constraints, dry: true);
 
   @override
+  double? computeDryBaseline(
+    BoxConstraints constraints,
+    TextBaseline baseline,
+  ) {
+    // RenderShiftedBox's inherited version omits the top inset; mirror
+    // RenderPadding by shifting the child's dry baseline down by padding.top,
+    // matching the non-dry path (which reads parentData.offset.dy).
+    final child = this.child;
+    if (child == null) return null;
+    final padding = _paddingFor(constraints);
+    final childBaseline = child.getDryBaseline(
+      constraints.deflate(padding),
+      baseline,
+    );
+    return childBaseline == null ? null : childBaseline + padding.top;
+  }
+
+  @override
   void performLayout() {
     size = _measure(constraints, dry: false);
   }

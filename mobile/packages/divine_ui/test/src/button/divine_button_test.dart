@@ -727,6 +727,38 @@ void main() {
           );
         }
       });
+
+      testWidgets('dry baseline includes the top inset', (tester) async {
+        // RenderShiftedBox's inherited computeDryBaseline omits padding.top,
+        // so a missing override would report the parent baseline equal to the
+        // child's instead of one inset lower. Assert the inset is added.
+        await tester.pumpWidget(
+          buildTestWidget(label: 'Save', onPressed: () {}),
+        );
+        final box = tester.renderObject<RenderBox>(adaptiveFinder);
+        final child = tester.renderObject<RenderBox>(
+          find.descendant(of: adaptiveFinder, matching: find.byType(Row)),
+        );
+
+        const constraints = BoxConstraints(maxWidth: 400);
+        // Loose width on the base size resolves to the 24/12 inset.
+        const padding = EdgeInsets.symmetric(horizontal: 24, vertical: 12);
+        final parentBaseline = box.getDryBaseline(
+          constraints,
+          TextBaseline.alphabetic,
+        );
+        final childBaseline = child.getDryBaseline(
+          constraints.deflate(padding),
+          TextBaseline.alphabetic,
+        );
+
+        expect(parentBaseline, isNotNull);
+        expect(childBaseline, isNotNull);
+        expect(
+          parentBaseline,
+          moreOrLessEquals(childBaseline! + padding.top, epsilon: 0.5),
+        );
+      });
     });
 
     group('disabled state', () {
