@@ -1679,6 +1679,15 @@ class CameraController: NSObject {
         }
     }
 
+    private static func isPreviewOptimized(
+        _ mode: AVCaptureVideoStabilizationMode
+    ) -> Bool {
+        if #available(iOS 17.0, *) {
+            return mode == .previewOptimized
+        }
+        return false
+    }
+
     /// Sets the requested video stabilization mode and applies it to the
     /// active video connection. Returns true if the mode was applied.
     func setVideoStabilizationMode(_ mode: String) -> Bool {
@@ -1689,8 +1698,13 @@ class CameraController: NSObject {
             )
             return false
         }
+        let previous = requestedStabilizationMode
         requestedStabilizationMode = parsed
-        return applyVideoStabilization()
+        let applied = applyVideoStabilization()
+        if !applied {
+            requestedStabilizationMode = previous
+        }
+        return applied
     }
 
     /// Applies `requestedStabilizationMode` to the video connection. The
@@ -1710,6 +1724,15 @@ class CameraController: NSObject {
                 )
             }
             return requestedStabilizationMode == .off
+        }
+        if Self.isPreviewOptimized(requestedStabilizationMode) {
+            DivineCameraLog.shared.warning(
+                "Preview optimized stabilization requires a preview layer or "
+                    + "preview-sized AVCaptureVideoDataOutput; the recorder "
+                    + "uses a full-resolution data output",
+                name: "DivineCamera.Stabilization"
+            )
+            return false
         }
         // .auto lets AVFoundation pick a supported mode; for explicit modes
         // verify the active format actually supports the request.
@@ -1754,13 +1777,10 @@ class CameraController: NSObject {
         if #available(iOS 13.0, *) {
             candidates.append((.cinematicExtended, "cinematicExtended"))
         }
-        // previewOptimized is a low-latency tier; the system only engages it
-        // on connections backed by a preview layer or preview-sized data
-        // output, so the format probe may surface it while the active video
-        // connection falls back to a nearby mode at apply time.
-        if #available(iOS 17.0, *) {
-            candidates.append((.previewOptimized, "previewOptimized"))
-        }
+        // previewOptimized is intentionally omitted for this recorder. Apple
+        // only supports it on connections with a preview layer or preview-sized
+        // AVCaptureVideoDataOutput, while this controller records from the
+        // full-resolution data output that backs the Flutter texture.
         if #available(iOS 26.0, *) {
             candidates.append((.lowLatency, "lowLatency"))
         }
