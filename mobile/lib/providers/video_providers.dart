@@ -145,6 +145,26 @@ VideoEventService videoEventService(Ref ref) {
   service.setModerationLabelService(moderationLabelService);
   service.setDivineHostFilterService(divineHostFilterService);
 
+  // Attach the broken-video tracker (async init) so videos confirmed
+  // unavailable (hard 404) stay filtered out of every list surface across
+  // restarts. Fire-and-forget: the tracker hydrates from SharedPreferences and
+  // is safe to attach once ready. See #5237.
+  unawaited(
+    ref
+        .read(brokenVideoTrackerProvider.future)
+        .then(service.setBrokenVideoTracker)
+        .catchError((Object error, StackTrace stackTrace) {
+          Log.error(
+            'Failed to attach broken video tracker to VideoEventService: '
+            '$error',
+            name: 'VideoEventService',
+            category: LogCategory.system,
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }),
+  );
+
   // Teach the OG Viner badge cache from every video that flows through the
   // service. The cache filters internally (only `isOriginalVine` videos
   // contribute pubkeys), so it's safe to feed it every batch — popular,

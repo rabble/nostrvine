@@ -34,6 +34,7 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/content_label.dart';
+import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -240,6 +241,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   ContentFilterService? _contentFilterService;
   ModerationLabelService? _moderationLabelService;
   DivineHostFilterService? _divineHostFilterService;
+  BrokenVideoTracker? _brokenVideoTracker;
   final SubscriptionManager _subscriptionManager;
 
   // Side-channel observers that fire for every video that flows through the
@@ -466,6 +468,19 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     );
   }
 
+  /// Set the broken-video tracker used to filter videos confirmed unavailable
+  /// (hard 404). Marked entries are persisted by the tracker, so this keeps
+  /// videos that 404'd in the fullscreen player out of every list surface
+  /// (home, profile, hashtag, grids) across app restarts. See #5237.
+  void setBrokenVideoTracker(BrokenVideoTracker tracker) {
+    _brokenVideoTracker = tracker;
+    Log.debug(
+      'Broken video tracker attached to VideoEventService',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+  }
+
   bool get shouldFilterNonDivineVideos =>
       _divineHostFilterService?.showDivineHostedOnly ?? false;
 
@@ -614,8 +629,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// noisy and would otherwise block autoplay on ordinary videos.
   List<VideoEvent> filterVideoList(List<VideoEvent> videos) {
     final service = _contentFilterService;
+    final tracker = _brokenVideoTracker;
     final baseVideos = videos
-        .where((video) => !shouldHideVideo(video))
+        .where(
+          (video) =>
+              !shouldHideVideo(video) &&
+              !(tracker?.isVideoBroken(video.id) ?? false),
+        )
         .toList();
     if (service == null) {
       _notifyVideoObservers(baseVideos);
@@ -4305,6 +4325,18 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         category: LogCategory.video,
       );
       return; // Don't resurrect deleted videos
+    }
+
+    // Filter out videos confirmed unavailable (hard 404) so they don't
+    // resurface on any list surface after being skipped in the player. See
+    // #5237.
+    if (_brokenVideoTracker?.isVideoBroken(videoEvent.id) == true) {
+      Log.debug(
+        'Filtering out unavailable (404) video ${videoEvent.id} from $subscriptionType feed',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+      return;
     }
 
     // NIP-40: Filter out expired events

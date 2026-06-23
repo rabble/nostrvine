@@ -27,6 +27,15 @@ part 'fullscreen_feed_state.dart';
 /// services (matches the existing [FullscreenFeedBloc.onLoadMore] pattern).
 typedef OnRemoveVideo = void Function(String videoId);
 
+/// Callback invoked by [FullscreenFeedBloc] when a video has been confirmed
+/// unavailable (a hard 404 verified via [MediaAvailabilityChecker]).
+///
+/// Unlike [OnRemoveVideo] — which only drops the id from in-memory caches for
+/// the current session — this persists the id so the video stays filtered out
+/// of every list surface across app restarts. A callback keeps the BLoC free
+/// of direct dependencies on concrete services.
+typedef OnVideoConfirmedUnavailable = void Function(String videoId);
+
 /// Returns `true` when [pubkey]'s content must be hidden (blocked / muted /
 /// blocked-us / muted-us). Injected so the BLoC stays free of Riverpod and
 /// repository dependencies — the launching `ConsumerWidget` resolves it from
@@ -75,6 +84,7 @@ class FullscreenFeedBloc
     VoidCallback? onLoadMore,
     BlossomAuthService? blossomAuthService,
     OnRemoveVideo? onRemoveVideo,
+    OnVideoConfirmedUnavailable? onVideoConfirmedUnavailable,
     MediaAvailabilityChecker? availabilityChecker,
     BlockAuthorFilter? blockFilter,
   }) : _videosStream = videosStream,
@@ -86,6 +96,7 @@ class FullscreenFeedBloc
        _mediaCache = mediaCache,
        _blossomAuthService = blossomAuthService,
        _onRemoveVideo = onRemoveVideo,
+       _onVideoConfirmedUnavailable = onVideoConfirmedUnavailable,
        _availabilityChecker =
            availabilityChecker ?? const MediaAvailabilityChecker(),
        _blockFilter = blockFilter,
@@ -123,6 +134,7 @@ class FullscreenFeedBloc
   final MediaCacheManager? _mediaCache;
   final BlossomAuthService? _blossomAuthService;
   final OnRemoveVideo? _onRemoveVideo;
+  final OnVideoConfirmedUnavailable? _onVideoConfirmedUnavailable;
   final MediaAvailabilityChecker _availabilityChecker;
   final BlockAuthorFilter? _blockFilter;
   StreamSubscription<bool>? _hasMoreSubscription;
@@ -509,6 +521,12 @@ class FullscreenFeedBloc
     // Re-check dedupe in case another handler inserted the same id while
     // our HEAD was in flight.
     if (state.removedVideoIds.contains(videoId)) return;
+
+    // Persist the confirmed 404 first so the video stays filtered out of
+    // every list surface (feed, profile, hashtag, grids) across restarts —
+    // not just dropped from this session's in-memory caches via
+    // [_onRemoveVideo].
+    _onVideoConfirmedUnavailable?.call(videoId);
 
     _onRemoveVideo?.call(videoId);
 
