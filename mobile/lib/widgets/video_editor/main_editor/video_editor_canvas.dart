@@ -289,9 +289,49 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         .read<VideoEditorMainBloc>()
         .state
         .currentPosition;
-    _videoPlayer?.setClips([
-      ...buildSeamAwarePlayerClips(clips, _seamService),
-    ], startPosition: _timelineToPlayer(currentPosition));
+    unawaited(
+      _swapComposition(clips, timelineStartPosition: currentPosition),
+    );
+  }
+
+  /// Reloads the player composition while suppressing the stale position
+  /// reports the outgoing composition emits mid-swap. Without this guard those
+  /// reports — positions in the *old* composite — get mapped through the *new*
+  /// seam timeline and yank the playhead to a wrong spot (e.g. 3s jumps to 5s
+  /// right after a transition seam finishes rendering).
+  ///
+  /// Mirrors the reverse / trim-release swap guard: bumps [_seekEpoch] to
+  /// discard in-flight seeks from the previous composition, holds [_isSeeking]
+  /// across the reload so [_onPlayerStateChanged] skips emission, then pins
+  /// [_lastReportedPosition] to the restored position before releasing
+  /// ownership (only if no newer swap took over).
+  Future<void> _swapComposition(
+    List<DivineVideoClip> clips, {
+    required Duration timelineStartPosition,
+  }) async {
+    _seekEpoch++;
+    _pendingSeekPosition = null;
+    _isSeeking = true;
+    final ownerEpoch = _seekEpoch;
+    try {
+      await _videoPlayer?.setClips([
+        ...buildSeamAwarePlayerClips(clips, _seamService),
+      ], startPosition: _timelineToPlayer(timelineStartPosition));
+      if (mounted) {
+        _lastReportedPosition = timelineStartPosition;
+        _proVideoController.setPlayTime(timelineStartPosition);
+      }
+    } catch (e, s) {
+      Log.error(
+        'setClips failed on composition swap: $e',
+        name: 'VideoEditorCanvas',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: s,
+      );
+    } finally {
+      if (_seekEpoch == ownerEpoch) _isSeeking = false;
+    }
   }
 
   /// Converts a player (composite) position into editor-timeline space. The
@@ -993,9 +1033,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             .state
             .currentPosition;
 
-        _videoPlayer?.setClips([
-          ...buildSeamAwarePlayerClips(clips, _seamService),
-        ], startPosition: _timelineToPlayer(currentPosition));
+        unawaited(
+          _swapComposition(clips, timelineStartPosition: currentPosition),
+        );
         _ensureSeamsRendered(clips);
       },
     );
