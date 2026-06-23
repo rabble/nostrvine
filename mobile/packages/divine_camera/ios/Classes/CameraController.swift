@@ -1781,6 +1781,29 @@ class CameraController: NSObject {
         return modes
     }
 
+    /// The stabilization mode to surface in the camera state.
+    ///
+    /// For explicit modes we report the connection's actual
+    /// `activeVideoStabilizationMode`, not the requested one, so a silent
+    /// system fallback is reflected honestly — e.g. `previewOptimized`
+    /// requested on the recorder's full-resolution data output resolves to a
+    /// nearby mode. `auto` is reported verbatim because it expresses intent
+    /// ("let the system pick") rather than a concrete target, and an idle
+    /// session falls back to the requested value to avoid surfacing a
+    /// transient `.off` before the connection has configured.
+    private func reportedStabilizationString() -> String {
+        guard requestedStabilizationMode != .auto,
+            captureSession?.isRunning == true,
+            let connection = videoOutput?.connection(with: .video),
+            connection.isVideoStabilizationSupported
+        else {
+            return Self.stabilizationString(from: requestedStabilizationMode)
+        }
+        return Self.stabilizationString(
+            from: connection.activeVideoStabilizationMode
+        )
+    }
+
     /// Starts video recording using AVAssetWriter.
     /// - Parameters:
     ///   - maxDurationMs: Optional maximum duration in milliseconds. Recording stops automatically when reached.
@@ -2143,9 +2166,7 @@ class CameraController: NSObject {
             "textureId": textureId,
             "availableLenses": getAvailableLenses(),
             "currentLensMetadata": getCurrentLensMetadata() as Any,
-            "videoStabilizationMode": Self.stabilizationString(
-                from: requestedStabilizationMode
-            ),
+            "videoStabilizationMode": reportedStabilizationString(),
             "availableVideoStabilizationModes": availableStabilizationModes,
             // Mirror Android: "supported" means the active format offers at
             // least one mode beyond "off", so the UI affordance matches the
