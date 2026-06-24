@@ -19,6 +19,28 @@ enum FullscreenFeedStatus {
   failure,
 }
 
+/// A just-committed feed-tuning swipe, surfaced for the UI's Undo snackbar.
+final class FullscreenFeedTuningAction extends Equatable {
+  const FullscreenFeedTuningAction({
+    required this.videoId,
+    required this.direction,
+    this.publishedEventId,
+  });
+
+  /// Event ID of the swiped video.
+  final String videoId;
+
+  /// The direction that was published.
+  final FeedTuningDirection direction;
+
+  /// Published feed-tuning event id, or `null` when nothing was published
+  /// (no signer). Undo is only possible when this is non-null.
+  final String? publishedEventId;
+
+  @override
+  List<Object?> get props => [videoId, direction, publishedEventId];
+}
+
 /// State for the FullscreenFeedBloc.
 final class FullscreenFeedState extends Equatable {
   const FullscreenFeedState({
@@ -31,6 +53,7 @@ final class FullscreenFeedState extends Equatable {
     this.pendingSkipTarget,
     this.initialTargetResolved = false,
     this.userChangedIndex = false,
+    this.lastTuningAction,
   });
 
   /// The current status.
@@ -67,6 +90,11 @@ final class FullscreenFeedState extends Equatable {
 
   /// Whether the user has manually moved the feed cursor since launch.
   final bool userChangedIndex;
+
+  /// The most recently committed feed-tuning swipe, for the UI's Undo
+  /// snackbar. `null` until the user tunes a video. A `BlocListener` reacts to
+  /// changes here; it is never cleared (latest-wins, change-only semantics).
+  final FullscreenFeedTuningAction? lastTuningAction;
 
   /// The current video, if available.
   VideoEvent? get currentVideo =>
@@ -105,6 +133,7 @@ final class FullscreenFeedState extends Equatable {
     int? pendingSkipTarget,
     bool? initialTargetResolved,
     bool? userChangedIndex,
+    FullscreenFeedTuningAction? lastTuningAction,
     bool clearPendingSkipTarget = false,
   }) {
     return FullscreenFeedState(
@@ -120,6 +149,7 @@ final class FullscreenFeedState extends Equatable {
       initialTargetResolved:
           initialTargetResolved ?? this.initialTargetResolved,
       userChangedIndex: userChangedIndex ?? this.userChangedIndex,
+      lastTuningAction: lastTuningAction ?? this.lastTuningAction,
     );
   }
 
@@ -135,5 +165,6 @@ final class FullscreenFeedState extends Equatable {
     pendingSkipTarget,
     initialTargetResolved,
     userChangedIndex,
+    lastTuningAction,
   ];
 }

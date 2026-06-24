@@ -9,6 +9,7 @@ import 'dart:ui' show VoidCallback;
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
+import 'package:feed_tuning_repository/feed_tuning_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart' hide LogCategory;
@@ -98,6 +99,7 @@ class FullscreenFeedBloc
     MediaAvailabilityChecker? availabilityChecker,
     BlockAuthorFilter? blockFilter,
     UnavailableVideoFilter? unavailableFilter,
+    FeedTuningRepository? feedTuningRepository,
   }) : _videosStream = videosStream,
        _initialVideoId = initialVideoId,
        _initialStableId = initialStableId,
@@ -112,6 +114,7 @@ class FullscreenFeedBloc
            availabilityChecker ?? const MediaAvailabilityChecker(),
        _blockFilter = blockFilter,
        _unavailableFilter = unavailableFilter,
+       _feedTuningRepository = feedTuningRepository,
        super(FullscreenFeedState(currentIndex: initialIndex)) {
     on<FullscreenFeedStarted>(_onStarted);
     on<FullscreenFeedHasMoreChanged>(_onHasMoreChanged);
@@ -135,6 +138,8 @@ class FullscreenFeedBloc
       _onBlocklistChanged,
       transformer: sequential(),
     );
+    on<FullscreenFeedTuningSwipeCommitted>(_onTuningSwipeCommitted);
+    on<FullscreenFeedTuningUndoRequested>(_onTuningUndoRequested);
   }
 
   final Stream<List<VideoEvent>> _videosStream;
@@ -150,6 +155,7 @@ class FullscreenFeedBloc
   final MediaAvailabilityChecker _availabilityChecker;
   final BlockAuthorFilter? _blockFilter;
   final UnavailableVideoFilter? _unavailableFilter;
+  final FeedTuningRepository? _feedTuningRepository;
   StreamSubscription<bool>? _hasMoreSubscription;
   StreamSubscription<String>? _removedIdsSubscription;
 
@@ -158,6 +164,48 @@ class FullscreenFeedBloc
 
   /// Number of downloads currently in progress.
   int _activeCacheDownloads = 0;
+
+  /// Publish a feed-tuning signal for the swiped video and record it for the
+  /// UI's Undo snackbar. Does not mutate the video list — the UI pages forward.
+  Future<void> _onTuningSwipeCommitted(
+    FullscreenFeedTuningSwipeCommitted event,
+    Emitter<FullscreenFeedState> emit,
+  ) async {
+    final repository = _feedTuningRepository;
+    if (repository == null) return;
+
+    VideoEvent? target;
+    for (final video in state.videos) {
+      if (video.id == event.videoId) {
+        target = video;
+        break;
+      }
+    }
+    if (target == null) return;
+
+    final publishedEventId = await repository.tune(
+      video: target,
+      direction: event.direction,
+    );
+
+    emit(
+      state.copyWith(
+        lastTuningAction: FullscreenFeedTuningAction(
+          videoId: event.videoId,
+          direction: event.direction,
+          publishedEventId: publishedEventId,
+        ),
+      ),
+    );
+  }
+
+  /// Retract a previously-published feed-tuning signal.
+  Future<void> _onTuningUndoRequested(
+    FullscreenFeedTuningUndoRequested event,
+    Emitter<FullscreenFeedState> emit,
+  ) async {
+    await _feedTuningRepository?.undo(event.feedTuningEventId);
+  }
 
   /// Handle feed started - subscribe to the videos stream using emit.forEach.
   ///

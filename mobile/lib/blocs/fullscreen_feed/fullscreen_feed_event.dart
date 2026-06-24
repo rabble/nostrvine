@@ -132,3 +132,37 @@ final class FullscreenFeedBlocklistChanged extends FullscreenFeedEvent {
   @override
   List<Object?> get props => [];
 }
+
+/// Dispatched when the user commits a feed-tuning swipe on [videoId]
+/// ("more"/"less like this").
+///
+/// The BLoC publishes the signal via the injected `FeedTuningRepository` and
+/// records the result in [FullscreenFeedState.lastTuningAction]. It does NOT
+/// mutate the video list — advancing the feed is the UI's job (page forward).
+final class FullscreenFeedTuningSwipeCommitted extends FullscreenFeedEvent {
+  const FullscreenFeedTuningSwipeCommitted({
+    required this.videoId,
+    required this.direction,
+  });
+
+  /// Event ID of the swiped video.
+  final String videoId;
+
+  /// Swipe direction — more or less like this.
+  final FeedTuningDirection direction;
+
+  @override
+  List<Object?> get props => [videoId, direction];
+}
+
+/// Dispatched when the user taps Undo on a just-published tuning signal. The
+/// BLoC retracts it via a NIP-09 deletion.
+final class FullscreenFeedTuningUndoRequested extends FullscreenFeedEvent {
+  const FullscreenFeedTuningUndoRequested(this.feedTuningEventId);
+
+  /// Event ID of the feed-tuning event to retract.
+  final String feedTuningEventId;
+
+  @override
+  List<Object?> get props => [feedTuningEventId];
+}

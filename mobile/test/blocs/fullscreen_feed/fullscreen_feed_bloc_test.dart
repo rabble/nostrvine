@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
+import 'package:feed_tuning_repository/feed_tuning_repository.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -25,7 +26,22 @@ class MockBlossomAuthService extends Mock implements BlossomAuthService {}
 
 class MockFile extends Mock implements File {}
 
+class MockFeedTuningRepository extends Mock implements FeedTuningRepository {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(
+      VideoEvent(
+        id: 'fallback',
+        pubkey: '0' * 64,
+        createdAt: 0,
+        content: '',
+        timestamp: DateTime(2020),
+      ),
+    );
+    registerFallbackValue(FeedTuningDirection.more);
+  });
+
   group('FullscreenFeedBloc', () {
     late StreamController<List<VideoEvent>> videosController;
     late StreamController<bool> hasMoreController;
@@ -82,6 +98,7 @@ void main() {
       MediaAvailabilityChecker? availabilityChecker,
       BlockAuthorFilter? blockFilter,
       UnavailableVideoFilter? unavailableFilter,
+      FeedTuningRepository? feedTuningRepository,
     }) => FullscreenFeedBloc(
       videosStream: videosController.stream,
       initialIndex: initialIndex,
@@ -96,6 +113,7 @@ void main() {
       availabilityChecker: availabilityChecker,
       blockFilter: blockFilter,
       unavailableFilter: unavailableFilter,
+      feedTuningRepository: feedTuningRepository,
     );
 
     test('initial state has correct values', () {
@@ -224,7 +242,105 @@ void main() {
           null,
           false,
           false,
+          null,
         ]);
+      });
+
+      group('feed tuning', () {
+        late MockFeedTuningRepository tuningRepository;
+
+        setUp(() {
+          tuningRepository = MockFeedTuningRepository();
+          when(
+            () => tuningRepository.tune(
+              video: any(named: 'video'),
+              direction: any(named: 'direction'),
+            ),
+          ).thenAnswer((_) async => 'published-id');
+          when(() => tuningRepository.undo(any())).thenAnswer((_) async {});
+        });
+
+        blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+          'publishes the swiped video and records the action without removal',
+          build: () => createBloc(feedTuningRepository: tuningRepository),
+          act: (bloc) async {
+            bloc.add(const FullscreenFeedStarted());
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            videosController.add([
+              createTestVideo('video1'),
+              createTestVideo('video2'),
+            ]);
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            bloc.add(
+              const FullscreenFeedTuningSwipeCommitted(
+                videoId: 'video1',
+                direction: FeedTuningDirection.less,
+              ),
+            );
+          },
+          wait: const Duration(milliseconds: 100),
+          verify: (bloc) {
+            final captured = verify(
+              () => tuningRepository.tune(
+                video: captureAny(named: 'video'),
+                direction: FeedTuningDirection.less,
+              ),
+            ).captured;
+            expect((captured.single as VideoEvent).id, 'video1');
+            expect(bloc.state.lastTuningAction?.videoId, 'video1');
+            expect(
+              bloc.state.lastTuningAction?.direction,
+              FeedTuningDirection.less,
+            );
+            expect(
+              bloc.state.lastTuningAction?.publishedEventId,
+              'published-id',
+            );
+            expect(bloc.state.removedVideoIds, isEmpty);
+          },
+        );
+
+        blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+          'is a no-op when the swiped video is not in the feed',
+          build: () => createBloc(feedTuningRepository: tuningRepository),
+          act: (bloc) async {
+            bloc.add(const FullscreenFeedStarted());
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            videosController.add([createTestVideo('video1')]);
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            bloc.add(
+              const FullscreenFeedTuningSwipeCommitted(
+                videoId: 'missing',
+                direction: FeedTuningDirection.more,
+              ),
+            );
+          },
+          wait: const Duration(milliseconds: 100),
+          verify: (bloc) {
+            verifyNever(
+              () => tuningRepository.tune(
+                video: any(named: 'video'),
+                direction: any(named: 'direction'),
+              ),
+            );
+            expect(bloc.state.lastTuningAction, isNull);
+          },
+        );
+
+        blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+          'retracts the signal via the repository on undo',
+          build: () => createBloc(feedTuningRepository: tuningRepository),
+          act: (bloc) async {
+            bloc.add(
+              const FullscreenFeedTuningUndoRequested('tuning-event-id'),
+            );
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+          },
+          wait: const Duration(milliseconds: 100),
+          verify: (_) {
+            verify(() => tuningRepository.undo('tuning-event-id')).called(1);
+          },
+        );
       });
 
       test('videoUpdateSignature changes when loop metadata changes', () {

@@ -195,6 +195,9 @@ dependencies:
   # Feed Repository - ViewSource-resolved, lifecycle-stable video feeds (#3383)
   feed_repository:
 
+  # Feed Tuning Repository - publishes swipe "more/less like this" signals
+  feed_tuning_repository:
+
   # Curated List Repository - NIP-51 kind 30005 curated video lists
   curated_list_repository:
 
