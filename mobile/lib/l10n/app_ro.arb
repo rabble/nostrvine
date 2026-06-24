@@ -2827,7 +2827,7 @@
     "videoEditorTransitionButtonSemanticLabel": "Editează tranziția",
     "videoEditorTransitionDuration": "Durată",
     "videoEditorTransitionCurve": "Curbă",
-  "videoEditorTransitionDirection": "Direcție",
+    "videoEditorTransitionDirection": "Direcție",
     "videoEditorFinishTimelineEditingSemanticLabel": "Finalizează editarea cronologiei",
     "videoEditorAudioPlayPreviewSemanticLabel": "Redă previzualizarea",
     "videoEditorAudioPausePreviewSemanticLabel": "Pune previzualizarea pe pauză",

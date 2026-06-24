@@ -268,6 +268,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       if (_seamService.cached(clips[i], clips[i + 1], transition) != null) {
         continue;
       }
+      // Already counted by an earlier pass whose render is still in flight —
+      // skip so the pending counter (and overlay) is not double-incremented.
+      if (_seamService.isRendering(clips[i], clips[i + 1], transition)) {
+        continue;
+      }
       _pendingSeamRenders.value++;
       _seamService
           .render(clipA: clips[i], clipB: clips[i + 1], transition: transition)
@@ -334,19 +339,40 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     }
   }
 
+  /// Memoized [SeamTimeline] for the current clips + seam-cache state, so the
+  /// per-tick position mappings don't rebuild it on every player update.
+  SeamTimeline? _cachedSeamTimeline;
+  int? _cachedSeamTimelineClipsHash;
+  int? _cachedSeamTimelineVersion;
+
+  /// Returns the current [SeamTimeline], rebuilding only when the clips change
+  /// identity or the seam cache mutates ([TransitionSeamRenderService.version]).
+  SeamTimeline get _seamTimeline {
+    final clips = ref.read(clipManagerProvider).clips;
+    final clipsHash = Object.hashAll(clips);
+    final version = _seamService.version;
+    final cached = _cachedSeamTimeline;
+    if (cached != null &&
+        _cachedSeamTimelineClipsHash == clipsHash &&
+        _cachedSeamTimelineVersion == version) {
+      return cached;
+    }
+    final timeline = SeamTimeline(clips, _seamService);
+    _cachedSeamTimeline = timeline;
+    _cachedSeamTimelineClipsHash = clipsHash;
+    _cachedSeamTimelineVersion = version;
+    return timeline;
+  }
+
   /// Converts a player (composite) position into editor-timeline space. The
   /// player plays trimmed clip bodies with spliced seams (a shorter timeline);
   /// the editor draws clips at full length. A no-op when no seam is spliced.
-  Duration _playerToTimeline(Duration playerPosition) => SeamTimeline(
-    ref.read(clipManagerProvider).clips,
-    _seamService,
-  ).compositeToTimeline(playerPosition);
+  Duration _playerToTimeline(Duration playerPosition) =>
+      _seamTimeline.compositeToTimeline(playerPosition);
 
   /// Converts an editor-timeline position into player (composite) space.
-  Duration _timelineToPlayer(Duration timelinePosition) => SeamTimeline(
-    ref.read(clipManagerProvider).clips,
-    _seamService,
-  ).timelineToComposite(timelinePosition);
+  Duration _timelineToPlayer(Duration timelinePosition) =>
+      _seamTimeline.timelineToComposite(timelinePosition);
 
   /// Extracts playable file paths from the current clip state.
   List<String> get _clipPaths => ref

@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -54,10 +56,13 @@ class TransitionBoundaryCubit extends Cubit<TransitionBoundaryState> {
   /// ([tail] = true, at `duration - trimEnd`) or its first visible frame
   /// ([tail] = false, at `trimStart`).
   ///
-  /// The frame is copied to a deterministic path keyed by clip identity + trim +
-  /// side. That path doubles as the cache (re-extraction is skipped when it
-  /// already exists) and keeps the two boundary extractions from colliding on
-  /// [VideoThumbnailService]'s timestamp-named output file.
+  /// The frame is copied to a deterministic path keyed by clip identity + the
+  /// resolved video file + trim + side. That path doubles as the cache
+  /// (re-extraction is skipped when it already exists) and keeps the two
+  /// boundary extractions from colliding on [VideoThumbnailService]'s
+  /// timestamp-named output file. The video path is part of the key because
+  /// reversing a clip swaps in a physically-reversed file while leaving the
+  /// trims symmetric — without it the picker would show a stale forward frame.
   ///
   /// Returns `null` (so the caller keeps its placeholder) when the video path is
   /// unavailable or extraction fails.
@@ -70,6 +75,10 @@ class TransitionBoundaryCubit extends Cubit<TransitionBoundaryState> {
       if (videoPath.isEmpty) return null;
 
       final side = tail ? 'tail' : 'head';
+      final pathHash = sha256
+          .convert(utf8.encode(videoPath))
+          .toString()
+          .substring(0, 16);
       final dir = Directory(
         p.join(
           (await getApplicationDocumentsDirectory()).path,
@@ -78,7 +87,7 @@ class TransitionBoundaryCubit extends Cubit<TransitionBoundaryState> {
       );
       final destPath = p.join(
         dir.path,
-        '${clip.id}_${clip.trimStart.inMicroseconds}_'
+        '${clip.id}_${pathHash}_${clip.trimStart.inMicroseconds}_'
         '${clip.trimEnd.inMicroseconds}_$side.jpg',
       );
       if (File(destPath).existsSync()) return destPath;

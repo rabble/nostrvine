@@ -2827,7 +2827,7 @@
     "videoEditorTransitionButtonSemanticLabel": "Modifier la transition",
     "videoEditorTransitionDuration": "Durée",
     "videoEditorTransitionCurve": "Courbe",
-  "videoEditorTransitionDirection": "Direction",
+    "videoEditorTransitionDirection": "Direction",
     "videoEditorFinishTimelineEditingSemanticLabel": "Terminer l'édition de la timeline",
     "videoEditorAudioPlayPreviewSemanticLabel": "Lire l'aperçu",
     "videoEditorAudioPausePreviewSemanticLabel": "Mettre l'aperçu en pause",

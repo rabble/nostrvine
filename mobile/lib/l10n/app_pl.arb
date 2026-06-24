@@ -2827,7 +2827,7 @@
     "videoEditorTransitionButtonSemanticLabel": "Edytuj przejście",
     "videoEditorTransitionDuration": "Czas trwania",
     "videoEditorTransitionCurve": "Krzywa",
-  "videoEditorTransitionDirection": "Kierunek",
+    "videoEditorTransitionDirection": "Kierunek",
     "videoEditorFinishTimelineEditingSemanticLabel": "Zakończ edycję osi czasu",
     "videoEditorAudioPlayPreviewSemanticLabel": "Odtwórz podgląd",
     "videoEditorAudioPausePreviewSemanticLabel": "Wstrzymaj podgląd",

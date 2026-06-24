@@ -348,4 +348,114 @@ void main() {
       expect(VideoEditorRenderService.activeNativeTaskIdsForTesting, isEmpty);
     });
   });
+
+  group('VideoEditorRenderService.clampTransitions', () {
+    DivineVideoClip clip(
+      String id,
+      Duration duration, {
+      ClipTransition? transition,
+      double? playbackSpeed,
+    }) => DivineVideoClip(
+      id: id,
+      video: EditorVideo.file('${Directory.systemTemp.path}/$id.mp4'),
+      duration: duration,
+      recordedAt: DateTime(2026),
+      targetAspectRatio: model.AspectRatio.vertical,
+      originalAspectRatio: 9 / 16,
+      transition: transition,
+      playbackSpeed: playbackSpeed,
+    );
+
+    const dissolve = ClipTransition(type: ClipTransitionType.dissolve);
+    const fadeToBlack = ClipTransition(type: ClipTransitionType.fadeToBlack);
+
+    test('drops the transition on the last clip (no following boundary)', () {
+      final clips = [
+        clip('a', const Duration(seconds: 2)),
+        clip('b', const Duration(seconds: 2), transition: dissolve),
+      ];
+
+      expect(VideoEditorRenderService.clampTransitions(clips)['b'], isNull);
+    });
+
+    test('returns null for a clip with no transition', () {
+      final clips = [
+        clip('a', const Duration(seconds: 2)),
+        clip('b', const Duration(seconds: 2)),
+      ];
+
+      expect(VideoEditorRenderService.clampTransitions(clips)['a'], isNull);
+    });
+
+    test('passes an in-bounds overlap through unchanged', () {
+      // Two 2s clips → overlap ceiling is half the shorter clip = 1s. 800ms is
+      // within bounds.
+      final eightHundred = dissolve.copyWith(
+        duration: const Duration(milliseconds: 800),
+      );
+      final clips = [
+        clip('a', const Duration(seconds: 2), transition: eightHundred),
+        clip('b', const Duration(seconds: 2)),
+      ];
+
+      expect(
+        VideoEditorRenderService.clampTransitions(clips)['a'],
+        equals(eightHundred),
+      );
+    });
+
+    test('clamps an overlap longer than half the shorter clip', () {
+      final tooLong = dissolve.copyWith(
+        duration: const Duration(milliseconds: 1500),
+      );
+      final clips = [
+        clip('a', const Duration(seconds: 2), transition: tooLong),
+        clip('b', const Duration(seconds: 2)),
+      ];
+
+      // Half the shorter (2s) clip = 1s.
+      expect(
+        VideoEditorRenderService.clampTransitions(clips)['a']?.duration,
+        equals(const Duration(seconds: 1)),
+      );
+    });
+
+    test('lets a dip run up to twice the shorter clip', () {
+      // Dips fade out then in (sequential), so a 1500ms dip on 2s clips
+      // (ceiling 4s) is left unchanged where the same overlap would be clamped.
+      final dip = fadeToBlack.copyWith(
+        duration: const Duration(milliseconds: 1500),
+      );
+      final clips = [
+        clip('a', const Duration(seconds: 2), transition: dip),
+        clip('b', const Duration(seconds: 2)),
+      ];
+
+      expect(
+        VideoEditorRenderService.clampTransitions(clips)['a']?.duration,
+        equals(const Duration(milliseconds: 1500)),
+      );
+    });
+
+    test('clamps on playbackDuration for speed-changed clips', () {
+      // A 2× clip of 4s source occupies 2s of playback → overlap ceiling 1s.
+      final tooLong = dissolve.copyWith(
+        duration: const Duration(milliseconds: 1500),
+      );
+      final clips = [
+        clip(
+          'a',
+          const Duration(seconds: 4),
+          transition: tooLong,
+          playbackSpeed: 2,
+        ),
+        clip('b', const Duration(seconds: 4), playbackSpeed: 2),
+      ];
+
+      expect(
+        VideoEditorRenderService.clampTransitions(clips)['a']?.duration,
+        equals(const Duration(seconds: 1)),
+      );
+    });
+  });
 }

@@ -2137,7 +2137,7 @@
     "videoEditorTransitionButtonSemanticLabel": "전환 편집",
     "videoEditorTransitionDuration": "길이",
     "videoEditorTransitionCurve": "커브",
-  "videoEditorTransitionDirection": "방향",
+    "videoEditorTransitionDirection": "방향",
     "videoEditorStickersDivineOriginals": "Divine 오리지널",
     "videoEditorStickerSearchHint": "스티커 검색...",
     "videoEditorTextAlignmentSemanticLabel": "텍스트 정렬",

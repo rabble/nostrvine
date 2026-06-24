@@ -2827,7 +2827,7 @@
     "videoEditorTransitionButtonSemanticLabel": "Overgang bewerken",
     "videoEditorTransitionDuration": "Duur",
     "videoEditorTransitionCurve": "Curve",
-  "videoEditorTransitionDirection": "Richting",
+    "videoEditorTransitionDirection": "Richting",
     "videoEditorFinishTimelineEditingSemanticLabel": "Bewerken van tijdlijn voltooien",
     "videoEditorAudioPlayPreviewSemanticLabel": "Voorbeeld afspelen",
     "videoEditorAudioPausePreviewSemanticLabel": "Voorbeeld pauzeren",

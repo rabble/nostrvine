@@ -127,6 +127,19 @@ class DivineVideoClip {
     );
   }
 
+  /// Inverse of [sourceDurationToPlaybackDuration]: converts a wall-clock
+  /// (playback) duration into the span of this clip's source media it covers
+  /// once [playbackSpeed] is applied.
+  ///
+  /// A 1 s wall-clock span on a 2× clip maps to 2 s of source media.
+  Duration playbackDurationToSourceDuration(Duration playbackDuration) {
+    final speed = playbackSpeed ?? 1.0;
+    if (speed <= 0 || speed == 1.0) return playbackDuration;
+    return Duration(
+      microseconds: (playbackDuration.inMicroseconds * speed).round(),
+    );
+  }
+
   /// [playbackDuration] expressed as fractional seconds.
   double get playbackDurationInSeconds =>
       playbackDuration.inMilliseconds / 1000.0;

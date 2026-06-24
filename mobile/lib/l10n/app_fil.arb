@@ -1758,7 +1758,7 @@
     "videoEditorTransitionButtonSemanticLabel": "I-edit ang transisyon",
     "videoEditorTransitionDuration": "Tagal",
     "videoEditorTransitionCurve": "Kurba",
-  "videoEditorTransitionDirection": "Direksyon",
+    "videoEditorTransitionDirection": "Direksyon",
     "videoEditorFinishTimelineEditingSemanticLabel": "Tapusin ang pag-edit ng timeline",
     "videoEditorAudioPlayPreviewSemanticLabel": "I-play ang preview",
     "videoEditorAudioPausePreviewSemanticLabel": "I-pause ang preview",

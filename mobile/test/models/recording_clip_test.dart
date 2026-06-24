@@ -129,6 +129,53 @@ void main() {
         );
       });
 
+      test('playbackDurationToSourceDuration inverts the speed mapping', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime(2025),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          playbackSpeed: 2.0,
+        );
+
+        // 1.5s of wall-clock maps back to 3s of source on a 2× clip.
+        expect(
+          clip.playbackDurationToSourceDuration(
+            const Duration(milliseconds: 1500),
+          ),
+          equals(const Duration(seconds: 3)),
+        );
+        // Round-trips with the forward conversion.
+        expect(
+          clip.playbackDurationToSourceDuration(
+            clip.sourceDurationToPlaybackDuration(const Duration(seconds: 3)),
+          ),
+          equals(const Duration(seconds: 3)),
+        );
+      });
+
+      test('duration conversions are the identity at normal speed', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime(2025),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        expect(
+          clip.playbackDurationToSourceDuration(const Duration(seconds: 3)),
+          equals(const Duration(seconds: 3)),
+        );
+        expect(
+          clip.sourceDurationToPlaybackDuration(const Duration(seconds: 3)),
+          equals(const Duration(seconds: 3)),
+        );
+      });
+
       test('copyWith preserves trim values', () {
         final clip = DivineVideoClip(
           id: 'clip_001',

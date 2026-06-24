@@ -2813,7 +2813,7 @@
     "videoEditorTransitionButtonSemanticLabel": "トランジションを編集",
     "videoEditorTransitionDuration": "長さ",
     "videoEditorTransitionCurve": "カーブ",
-  "videoEditorTransitionDirection": "方向",
+    "videoEditorTransitionDirection": "方向",
     "videoEditorStickersDivineOriginals": "Divine オリジナル",
     "videoEditorStickerSearchHint": "ステッカーを検索...",
     "videoEditorTextAlignmentSemanticLabel": "テキストの配置",

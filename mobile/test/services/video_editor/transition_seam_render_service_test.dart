@@ -82,13 +82,18 @@ void main() {
   });
 
   group('computeSeamSpans', () {
-    DivineVideoClip sized(String id, Duration duration) => DivineVideoClip(
+    DivineVideoClip sized(
+      String id,
+      Duration duration, {
+      double? playbackSpeed,
+    }) => DivineVideoClip(
       id: id,
       video: editor.EditorVideo.file(File('/tmp/$id.mp4')),
       duration: duration,
       recordedAt: DateTime(2024),
       targetAspectRatio: model.AspectRatio.square,
       originalAspectRatio: 1,
+      playbackSpeed: playbackSpeed,
     );
 
     final service = TransitionSeamRenderService();
@@ -143,6 +148,23 @@ void main() {
       // request.
       expect(short.consumed, equals(const Duration(milliseconds: 200)));
       expect(short.blend, equals(const Duration(milliseconds: 400)));
+    });
+
+    test('clamps on playbackDuration, not source, for speed-changed clips', () {
+      // 4× clips of 2s source each occupy only 500ms of wall-clock time, so the
+      // overlap must clamp to that playback span (consumed 500ms, blend 250ms)
+      // — not the 2s source span the trimmed-duration basis would have used
+      // (which would have allowed the full 1000ms consumed / 500ms blend).
+      final spans = service.computeSeamSpans(
+        sized('a', const Duration(seconds: 2), playbackSpeed: 4),
+        sized('b', const Duration(seconds: 2), playbackSpeed: 4),
+        dissolve, // 500ms
+      );
+
+      expect(spans.consumed, equals(const Duration(milliseconds: 500)));
+      expect(spans.blend, equals(const Duration(milliseconds: 250)));
+      expect(spans.blend, lessThan(spans.consumed));
+      expect(spans.seamTransition.duration, equals(spans.blend));
     });
   });
 

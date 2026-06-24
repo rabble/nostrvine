@@ -3077,7 +3077,7 @@
     "videoEditorTransitionButtonSemanticLabel": "Редактиране на преход",
     "videoEditorTransitionDuration": "Продължителност",
     "videoEditorTransitionCurve": "Крива",
-  "videoEditorTransitionDirection": "Посока",
+    "videoEditorTransitionDirection": "Посока",
     "videoEditorFinishTimelineEditingSemanticLabel": "Завършете редактирането на времевата линия",
     "videoEditorAudioPlayPreviewSemanticLabel": "Пусни предварителен преглед",
     "videoEditorAudioPausePreviewSemanticLabel": "Пауза на прегледа",

@@ -716,7 +716,7 @@ class VideoEditorRenderService {
     // clamp it to a duration both clips can sustain. Without this the native
     // render fails on a transition longer than a (possibly later-trimmed) clip,
     // even though the lightweight seam preview clamps independently.
-    final clampedTransitions = _clampTransitions(clips);
+    final clampedTransitions = clampTransitions(clips);
 
     // If all clips have the same crop params, use global transform (most efficient)
     if (clipAnalysis.allSameCropParams) {
@@ -812,7 +812,8 @@ class VideoEditorRenderService {
   ///
   /// Keyed by clip id rather than index so it stays correct even if the render
   /// pipeline reorders clips.
-  static Map<String, ClipTransition?> _clampTransitions(
+  @visibleForTesting
+  static Map<String, ClipTransition?> clampTransitions(
     List<DivineVideoClip> clips,
   ) {
     final clamped = <String, ClipTransition?>{};

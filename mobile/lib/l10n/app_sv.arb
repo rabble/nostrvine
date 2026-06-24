@@ -2827,7 +2827,7 @@
     "videoEditorTransitionButtonSemanticLabel": "Redigera övergång",
     "videoEditorTransitionDuration": "Längd",
     "videoEditorTransitionCurve": "Kurva",
-  "videoEditorTransitionDirection": "Riktning",
+    "videoEditorTransitionDirection": "Riktning",
     "videoEditorFinishTimelineEditingSemanticLabel": "Avsluta redigering av tidslinje",
     "videoEditorAudioPlayPreviewSemanticLabel": "Spela förhandsvisning",
     "videoEditorAudioPausePreviewSemanticLabel": "Pausa förhandsvisning",

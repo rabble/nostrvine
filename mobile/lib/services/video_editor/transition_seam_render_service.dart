@@ -51,6 +51,21 @@ class TransitionSeamRenderService {
   final _cache = <String, TransitionSeam>{};
   final _inFlight = <String, Future<TransitionSeam?>>{};
 
+  /// Monotonic counter bumped on every cache mutation. Lets consumers (e.g. the
+  /// editor canvas) cheaply detect when a [SeamTimeline] needs rebuilding
+  /// without diffing the cache contents.
+  int _version = 0;
+  int get version => _version;
+
+  /// True while a seam for this transition is being rendered (cache miss with a
+  /// render in flight). Used to avoid double-counting concurrent render
+  /// requests for the same boundary.
+  bool isRendering(
+    DivineVideoClip clipA,
+    DivineVideoClip clipB,
+    ClipTransition transition,
+  ) => _inFlight.containsKey(_key(clipA, clipB, transition));
+
   /// Returns the already-rendered seam for this transition, or `null` if it is
   /// not rendered yet. Pure cache lookup — never triggers a render.
   TransitionSeam? cached(
@@ -87,6 +102,12 @@ class TransitionSeamRenderService {
       );
       if (consumed <= Duration.zero) return null;
 
+      // `consumed` is wall-clock (playback) time; convert it into each clip's
+      // own source media time for trimming, honouring per-clip playbackSpeed
+      // (clip A and clip B may run at different speeds).
+      final tailConsumed = clipA.playbackDurationToSourceDuration(consumed);
+      final headConsumed = clipB.playbackDurationToSourceDuration(consumed);
+
       // Persisted seam from a previous session — reuse it without re-rendering.
       final persistentPath = await _persistentSeamPath(key);
       if (File(persistentPath).existsSync()) {
@@ -96,15 +117,16 @@ class TransitionSeamRenderService {
         final seam = TransitionSeam(
           path: persistentPath,
           duration: metadata.duration,
-          tailConsumed: consumed,
-          headConsumed: consumed,
+          tailConsumed: tailConsumed,
+          headConsumed: headConsumed,
         );
         _cache[key] = seam;
+        _version++;
         return seam;
       }
 
-      final tailClip = _tailClip(clipA, consumed, seamTransition);
-      final headClip = _headClip(clipB, consumed);
+      final tailClip = _tailClip(clipA, tailConsumed, seamTransition);
+      final headClip = _headClip(clipB, headConsumed);
 
       final outputPath = await VideoEditorRenderService.renderVideo(
         clips: [tailClip, headClip],
@@ -131,10 +153,11 @@ class TransitionSeamRenderService {
       final seam = TransitionSeam(
         path: persistentPath,
         duration: metadata.duration,
-        tailConsumed: consumed,
-        headConsumed: consumed,
+        tailConsumed: tailConsumed,
+        headConsumed: headConsumed,
       );
       _cache[key] = seam;
+      _version++;
       return seam;
     } catch (e, stackTrace) {
       Log.error(
@@ -150,8 +173,12 @@ class TransitionSeamRenderService {
     }
   }
 
-  /// The source-time span consumed from each side, the actual blend (overlap
-  /// or dip) duration, and the transition to apply when rendering the seam.
+  /// The wall-clock (playback) span consumed from each side, the actual blend
+  /// (overlap or dip) duration, and the transition to apply when rendering the
+  /// seam. Everything here is in playback time so the math lines up with the
+  /// picker ceiling and the export-side clamp (both keyed on
+  /// [DivineVideoClip.playbackDuration]); `_render` converts [consumed] back
+  /// into each clip's own source time for trimming.
   ///
   /// The span is clamped to the shorter clip so a transition can never run past
   /// a clip — a 200ms clip with a 500ms dissolve shrinks the whole transition
@@ -168,7 +195,7 @@ class TransitionSeamRenderService {
     DivineVideoClip clipB,
     ClipTransition transition,
   ) {
-    final maxSpan = _min(clipA.trimmedDuration, clipB.trimmedDuration);
+    final maxSpan = _min(clipA.playbackDuration, clipB.playbackDuration);
     if (_isOverlap(transition.type)) {
       final consumed = _min(transition.duration * 2, maxSpan);
       final blend = _half(consumed);
@@ -251,7 +278,10 @@ class TransitionSeamRenderService {
 
   /// Drops the in-memory cache (e.g. when the editor closes). On-disk seams
   /// stay for the next session.
-  void clear() => _cache.clear();
+  void clear() {
+    _cache.clear();
+    _version++;
+  }
 
   /// Seeds the cache directly so [buildSeamAwarePlayerClips] can be exercised
   /// without running the native render pipeline.
@@ -261,7 +291,10 @@ class TransitionSeamRenderService {
     DivineVideoClip clipB,
     ClipTransition transition,
     TransitionSeam seam,
-  ) => _cache[_key(clipA, clipB, transition)] = seam;
+  ) {
+    _cache[_key(clipA, clipB, transition)] = seam;
+    _version++;
+  }
 }
 
 /// Maps positions between the preview player's composite timeline (trimmed clip

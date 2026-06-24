@@ -3387,7 +3387,7 @@
     "videoEditorTransitionButtonSemanticLabel": "ሽግግርን አርትዕ",
     "videoEditorTransitionDuration": "ቆይታ",
     "videoEditorTransitionCurve": "ኩርባ",
-  "videoEditorTransitionDirection": "አቅጣጫ",
+    "videoEditorTransitionDirection": "አቅጣጫ",
     "videoEditorFinishTimelineEditingSemanticLabel": "የጊዜ መስመር አርትዖትን ጨርስ",
     "videoEditorAudioPlayPreviewSemanticLabel": "ቅድመ እይታን አጫውት።",
     "videoEditorAudioPausePreviewSemanticLabel": "ቅድመ እይታን ባለበት አቁም",
