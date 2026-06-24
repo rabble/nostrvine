@@ -8,8 +8,10 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../helpers/go_router.dart';
+import '../../helpers/url_launcher_test_double.dart';
 
 class _MockNostrAppDirectoryService extends Mock
     implements NostrAppDirectoryService {}
@@ -120,6 +122,43 @@ void main() {
       ).called(1);
     });
 
+    testWidgets(
+      'tapping the verifyer opens the system browser, not the sandbox',
+      (tester) async {
+        final originalPlatform = UrlLauncherPlatform.instance;
+        final launcher = UrlLauncherTestDouble();
+        UrlLauncherPlatform.instance = launcher;
+        addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
+
+        final mockGoRouter = MockGoRouter();
+        when(
+          () => mockGoRouter.push(any(), extra: any(named: 'extra')),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDirectoryService.fetchApprovedApps(),
+        ).thenAnswer((_) async => [_verifyerFixture()]);
+
+        await tester.pumpWidget(buildSubject(goRouter: mockGoRouter));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Divine Verifyer'));
+        await tester.pumpAndSettle();
+
+        expect(launcher.launched, hasLength(1));
+        expect(
+          launcher.launched.single.url,
+          'https://verifyer.divine.video/',
+        );
+        expect(launcher.launched.single.useExternalApplication, isTrue);
+        verifyNever(
+          () => mockGoRouter.push(
+            NostrAppSandboxScreen.pathForAppId('bundled-verifyer'),
+            extra: any(named: 'extra'),
+          ),
+        );
+      },
+    );
+
     testWidgets('shows an empty state when there are no approved apps', (
       tester,
     ) async {
@@ -135,6 +174,26 @@ void main() {
       expect(find.text(l10n.appsDirectoryEmptySubtitle), findsOneWidget);
     });
   });
+}
+
+NostrAppDirectoryEntry _verifyerFixture() {
+  return const NostrAppDirectoryEntry(
+    id: 'bundled-verifyer',
+    slug: 'verifyer',
+    name: 'Divine Verifyer',
+    tagline: 'Link your social accounts.',
+    description: 'Verify ownership of external accounts.',
+    iconUrl: 'https://verifyer.divine.video/favicon.ico',
+    launchUrl: 'https://verifyer.divine.video/',
+    allowedOrigins: ['https://verifyer.divine.video'],
+    allowedMethods: ['getPublicKey', 'signEvent'],
+    allowedSignEventKinds: [0],
+    promptRequiredFor: [],
+    status: 'approved',
+    sortOrder: 16,
+    createdAt: null,
+    updatedAt: null,
+  );
 }
 
 NostrAppDirectoryEntry _fixture() {

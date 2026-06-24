@@ -10,7 +10,7 @@ import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/blocs/app_detail/app_detail_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:openvine/screens/apps/nostr_app_launch_mode.dart';
 
 /// Displays detailed information about a single approved
 /// third-party integration.
@@ -151,12 +151,7 @@ class _AppDetailContent extends StatelessWidget {
                     const SizedBox(height: 8),
                     DivineButton(
                       label: context.l10n.appsDetailOpenButton,
-                      onPressed: () {
-                        context.push(
-                          NostrAppSandboxScreen.pathForAppId(app.id),
-                          extra: app,
-                        );
-                      },
+                      onPressed: () => launchNostrApp(context, app),
                     ),
                   ],
                 ),

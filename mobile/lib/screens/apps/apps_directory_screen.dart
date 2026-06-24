@@ -10,7 +10,7 @@ import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/blocs/apps_directory/apps_directory_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:openvine/screens/apps/nostr_app_launch_mode.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 
 /// Displays the directory of approved third-party apps.
@@ -91,10 +91,7 @@ class _AppsDirectoryContent extends StatelessWidget {
                       final app = state.apps[index - 1];
                       return _AppsDirectoryRow(
                         app: app,
-                        onTap: () => context.push(
-                          NostrAppSandboxScreen.pathForAppId(app.id),
-                          extra: app,
-                        ),
+                        onTap: () => launchNostrApp(context, app),
                       );
                     },
                   ),
