@@ -1,5 +1,5 @@
 // ABOUTME: Public surface for the verifier_client package.
-// ABOUTME: HTTP client over https://verifyer.divine.video.
+// ABOUTME: HTTP client over https://verifier.divine.video.
 
 export 'src/exceptions.dart';
 export 'src/models/identity_claim.dart';

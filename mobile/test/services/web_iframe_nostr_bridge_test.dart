@@ -13,7 +13,7 @@ class _MockWebSigner extends Mock implements WebSigner {}
 
 void main() {
   group(WebIframeNostrBridge, () {
-    const allowedOrigin = 'https://verifyer.divine.video';
+    const allowedOrigin = 'https://verifier.divine.video';
     const fakePubkey =
         'aaaa11111111111111111111111111111111111111111111111111111111aaaa';
 
@@ -27,12 +27,12 @@ void main() {
       auth = _MockWebAuthService();
       signer = _MockWebSigner();
       app = const NostrAppDirectoryEntry(
-        id: 'verifyer',
-        slug: 'verifyer',
-        name: 'Verifyer',
+        id: 'verifier',
+        slug: 'verifier',
+        name: 'Verifier',
         tagline: 'tagline',
         description: 'description',
-        iconUrl: 'https://verifyer.divine.video/favicon.ico',
+        iconUrl: 'https://verifier.divine.video/favicon.ico',
         launchUrl: '$allowedOrigin/',
         allowedOrigins: [allowedOrigin],
         allowedMethods: ['getPublicKey', 'getRelays', 'signEvent'],

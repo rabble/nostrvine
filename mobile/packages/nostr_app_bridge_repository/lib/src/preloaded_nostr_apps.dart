@@ -216,15 +216,15 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     sortOrder: 15,
   ),
   _buildPreloadedApp(
-    id: 'bundled-verifyer',
-    slug: 'verifyer',
-    name: 'Divine Verifyer',
+    id: 'bundled-verifier',
+    slug: 'verifier',
+    name: 'Divine Verifier',
     tagline: 'Link your social accounts so people know it is really you.',
     description:
         'A first-party Divine Nostr app for verifying ownership of '
         'external accounts (GitHub, Twitter, Bluesky, etc.) and '
         'attaching them to your profile via NIP-39 i tags.',
-    launchUrl: 'https://verifyer.divine.video/',
+    launchUrl: 'https://verifier.divine.video/',
     allowedMethods: const [
       'getPublicKey',
       'getRelays',

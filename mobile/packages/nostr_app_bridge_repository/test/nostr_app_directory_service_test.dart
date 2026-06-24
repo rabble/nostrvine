@@ -395,7 +395,7 @@ const List<String> _starterSlugs = [
   'jumble',
   'divine-space',
   'badges',
-  'verifyer',
+  'verifier',
 ];
 
 void _expectBundledApp({

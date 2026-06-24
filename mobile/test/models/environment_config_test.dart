@@ -221,7 +221,7 @@ void main() {
         const config = EnvironmentConfig(
           environment: AppEnvironment.production,
         );
-        expect(config.verifierBaseUrl, equals('https://verifyer.divine.video'));
+        expect(config.verifierBaseUrl, equals('https://verifier.divine.video'));
       });
 
       test('is the same across environments (no local stub)', () {
@@ -229,7 +229,7 @@ void main() {
           final config = EnvironmentConfig(environment: env);
           expect(
             config.verifierBaseUrl,
-            equals('https://verifyer.divine.video'),
+            equals('https://verifier.divine.video'),
           );
         }
       });

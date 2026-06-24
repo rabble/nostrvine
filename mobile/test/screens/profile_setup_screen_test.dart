@@ -929,7 +929,7 @@ void main() {
     });
 
     test(
-      'opens the verifyer in the external browser without immediate refresh',
+      'opens the verifier in the external browser without immediate refresh',
       () async {
         final launched = await launchVerifierFlow(
           editorBloc: editorBloc,
@@ -939,7 +939,7 @@ void main() {
 
         expect(launched, isTrue);
         expect(launcher.launched, hasLength(1));
-        expect(launcher.launched.single.url, 'https://verifyer.divine.video/');
+        expect(launcher.launched.single.url, 'https://verifier.divine.video/');
         expect(launcher.launched.single.useExternalApplication, isTrue);
         verify(
           () => editorBloc.add(const VerifierLaunchHandled()),
@@ -969,7 +969,7 @@ void main() {
         expect(pushedRoutes, hasLength(1));
         expect(
           pushedRoutes.single.location,
-          '/apps/bundled-verifyer/web-sandbox',
+          '/apps/bundled-verifier/web-sandbox',
         );
         verify(
           () => editorBloc.add(const VerifierLaunchHandled()),
@@ -994,7 +994,7 @@ void main() {
 
         expect(launched, isFalse);
         expect(launcher.launched, hasLength(1));
-        expect(launcher.launched.single.url, 'https://verifyer.divine.video/');
+        expect(launcher.launched.single.url, 'https://verifier.divine.video/');
         verify(
           () => editorBloc.add(const VerifierLaunchHandled()),
         ).called(1);
@@ -1020,7 +1020,7 @@ void main() {
 
         expect(launched, isFalse);
         expect(launcher.launched, hasLength(1));
-        expect(launcher.launched.single.url, 'https://verifyer.divine.video/');
+        expect(launcher.launched.single.url, 'https://verifier.divine.video/');
         verify(
           () => editorBloc.add(const VerifierLaunchHandled()),
         ).called(1);

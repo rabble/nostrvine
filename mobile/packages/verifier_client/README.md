@@ -1,7 +1,7 @@
 # verifier_client
 
 HTTP client for the Divine identity verification service at
-`https://verifyer.divine.video`.
+`https://verifier.divine.video`.
 
 This is a thin Dart client. It has no Nostr knowledge and no BLoC knowledge —
 upper layers (`profile_repository`'s `IdentityClaimsRepository`, the profile

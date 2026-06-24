@@ -2627,11 +2627,11 @@
     },
     "profileEditGetVerifiedCta": "인증 받기",
     "@profileEditGetVerifiedCta": {
-        "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
+        "description": "Primary CTA tile on edit profile that opens the verifier integrated-app sandbox."
     },
     "profileEditGetVerifiedSubtitle": "소셜 미디어 계정을 연결해서 진짜 너인 걸 알려줘.",
     "@profileEditGetVerifiedSubtitle": {
-        "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
+        "description": "Subtitle under the Get verified tile, harmonized with verifier.divine.video landing copy."
     },
     "soundUntitled": "제목 없는 사운드",
     "soundStopPreview": "미리 듣기 중지",

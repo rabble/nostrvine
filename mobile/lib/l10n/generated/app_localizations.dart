@@ -15666,13 +15666,13 @@ abstract class AppLocalizations {
   /// **'Verified accounts'**
   String get profileEditVerifiedAccountsTitle;
 
-  /// Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox.
+  /// Primary CTA tile on edit profile that opens the verifier integrated-app sandbox.
   ///
   /// In en, this message translates to:
   /// **'Get verified'**
   String get profileEditGetVerifiedCta;
 
-  /// Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy.
+  /// Subtitle under the Get verified tile, harmonized with verifier.divine.video landing copy.
   ///
   /// In en, this message translates to:
   /// **'Link your social media accounts so people know it\'s really you.'**

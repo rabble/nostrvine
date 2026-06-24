@@ -123,7 +123,7 @@ void main() {
     });
 
     testWidgets(
-      'tapping the verifyer opens the system browser, not the sandbox',
+      'tapping the verifier opens the system browser, not the sandbox',
       (tester) async {
         final originalPlatform = UrlLauncherPlatform.instance;
         final launcher = UrlLauncherTestDouble();
@@ -136,23 +136,23 @@ void main() {
         ).thenAnswer((_) async => null);
         when(
           () => mockDirectoryService.fetchApprovedApps(),
-        ).thenAnswer((_) async => [_verifyerFixture()]);
+        ).thenAnswer((_) async => [_verifierFixture()]);
 
         await tester.pumpWidget(buildSubject(goRouter: mockGoRouter));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Divine Verifyer'));
+        await tester.tap(find.text('Divine Verifier'));
         await tester.pumpAndSettle();
 
         expect(launcher.launched, hasLength(1));
         expect(
           launcher.launched.single.url,
-          'https://verifyer.divine.video/',
+          'https://verifier.divine.video/',
         );
         expect(launcher.launched.single.useExternalApplication, isTrue);
         verifyNever(
           () => mockGoRouter.push(
-            NostrAppSandboxScreen.pathForAppId('bundled-verifyer'),
+            NostrAppSandboxScreen.pathForAppId('bundled-verifier'),
             extra: any(named: 'extra'),
           ),
         );
@@ -176,16 +176,16 @@ void main() {
   });
 }
 
-NostrAppDirectoryEntry _verifyerFixture() {
+NostrAppDirectoryEntry _verifierFixture() {
   return const NostrAppDirectoryEntry(
-    id: 'bundled-verifyer',
-    slug: 'verifyer',
-    name: 'Divine Verifyer',
+    id: 'bundled-verifier',
+    slug: 'verifier',
+    name: 'Divine Verifier',
     tagline: 'Link your social accounts.',
     description: 'Verify ownership of external accounts.',
-    iconUrl: 'https://verifyer.divine.video/favicon.ico',
-    launchUrl: 'https://verifyer.divine.video/',
-    allowedOrigins: ['https://verifyer.divine.video'],
+    iconUrl: 'https://verifier.divine.video/favicon.ico',
+    launchUrl: 'https://verifier.divine.video/',
+    allowedOrigins: ['https://verifier.divine.video'],
     allowedMethods: ['getPublicKey', 'signEvent'],
     allowedSignEventKinds: [0],
     promptRequiredFor: [],

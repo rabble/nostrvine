@@ -3434,11 +3434,11 @@
     },
     "profileEditGetVerifiedCta": "Потвърди се",
     "@profileEditGetVerifiedCta": {
-        "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
+        "description": "Primary CTA tile on edit profile that opens the verifier integrated-app sandbox."
     },
     "profileEditGetVerifiedSubtitle": "Свържи социалните си мрежи, за да знаят хората, че това си наистина ти.",
     "@profileEditGetVerifiedSubtitle": {
-        "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
+        "description": "Subtitle under the Get verified tile, harmonized with verifier.divine.video landing copy."
     },
     "soundUntitled": "Звук без заглавие",
     "soundStopPreview": "Спри прегледа",

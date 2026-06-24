@@ -1,5 +1,5 @@
 name: verifier_client
-description: HTTP client for the Divine identity verification service (verifyer.divine.video).
+description: HTTP client for the Divine identity verification service (verifier.divine.video).
 version: 0.1.0+1
 publish_to: none
 

@@ -97,7 +97,7 @@ String _platformUrl(IdentityClaim claim) {
     case 'discord':
     case 'telegram':
     default:
-      return 'https://verifyer.divine.video/u'
+      return 'https://verifier.divine.video/u'
           '?platform=${claim.platform}'
           '&identity=${Uri.encodeComponent(claim.identity)}';
   }

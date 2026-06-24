@@ -3303,11 +3303,11 @@
     },
     "profileEditGetVerifiedCta": "Verifiera dig",
     "@profileEditGetVerifiedCta": {
-        "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
+        "description": "Primary CTA tile on edit profile that opens the verifier integrated-app sandbox."
     },
     "profileEditGetVerifiedSubtitle": "Koppla dina sociala medier-konton så folk vet att det är du.",
     "@profileEditGetVerifiedSubtitle": {
-        "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
+        "description": "Subtitle under the Get verified tile, harmonized with verifier.divine.video landing copy."
     },
     "soundUntitled": "Namnlöst ljud",
     "soundStopPreview": "Stoppa förhandsvisning",

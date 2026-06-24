@@ -1,5 +1,5 @@
 // ABOUTME: Flutter web iframe screen that hosts a first-party Divine integrated
-// ABOUTME: app (verifyer.divine.video, badges.divine.video) inline. The embedded
+// ABOUTME: app (verifier.divine.video, badges.divine.video) inline. The embedded
 // ABOUTME: app's window.nostr is proxied to Divine's WebSigner via postMessage,
 // ABOUTME: so users don't have to log in twice.
 

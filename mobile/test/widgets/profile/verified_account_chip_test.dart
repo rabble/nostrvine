@@ -84,7 +84,7 @@ void main() {
       await tester.tap(find.byType(InkWell));
       await tester.pumpAndSettle();
       expect(launched, isNotNull);
-      expect(launched!.host, equals('verifyer.divine.video'));
+      expect(launched!.host, equals('verifier.divine.video'));
       expect(launched!.queryParameters['platform'], equals('mastodon'));
       expect(
         launched!.queryParameters['identity'],

@@ -27,10 +27,10 @@ NostrAppDirectoryEntry _entry({
 
 void main() {
   group('appRequiresSystemBrowser', () {
-    test('returns true for the verifyer app (cross-origin OAuth)', () {
+    test('returns true for the verifier app (cross-origin OAuth)', () {
       final app = _entry(
-        slug: 'verifyer',
-        launchUrl: 'https://verifyer.divine.video/',
+        slug: 'verifier',
+        launchUrl: 'https://verifier.divine.video/',
       );
       expect(appRequiresSystemBrowser(app), isTrue);
     });

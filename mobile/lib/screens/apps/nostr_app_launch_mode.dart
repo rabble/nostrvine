@@ -12,15 +12,15 @@ import 'package:url_launcher/url_launcher.dart';
 /// Slugs of first-party apps that perform cross-origin login / OAuth
 /// hand-offs and therefore cannot run inside the locked-down in-app
 /// WebView sandbox — its origin allowlist blocks those navigations
-/// (the verifyer dead-ends at `login.divine.video` and the OAuth
+/// (the verifier dead-ends at `login.divine.video` and the OAuth
 /// providers). These open in the system browser instead.
 ///
 /// Keyed by slug because the directory merges remote/cached entries over
 /// preloaded ones by slug (see
 /// `NostrAppDirectoryService._mergeWithPreloadedApps`), so the slug is the
 /// identity that survives a remote override — a server-sent flag on the
-/// preloaded entry would not. If the verifyer slug changes, update this set.
-const Set<String> kSystemBrowserAppSlugs = {'verifyer'};
+/// preloaded entry would not. If the verifier slug changes, update this set.
+const Set<String> kSystemBrowserAppSlugs = {'verifier'};
 
 /// Whether [app] must be opened in the system browser rather than the
 /// in-app sandbox.

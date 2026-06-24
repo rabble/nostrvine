@@ -3303,11 +3303,11 @@
     },
     "profileEditGetVerifiedCta": "وثّق حسابك",
     "@profileEditGetVerifiedCta": {
-        "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
+        "description": "Primary CTA tile on edit profile that opens the verifier integrated-app sandbox."
     },
     "profileEditGetVerifiedSubtitle": "اربط حساباتك على وسائل التواصل ليعرف الناس أنّك أنت فعلًا.",
     "@profileEditGetVerifiedSubtitle": {
-        "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
+        "description": "Subtitle under the Get verified tile, harmonized with verifier.divine.video landing copy."
     },
     "soundUntitled": "صوت بلا عنوان",
     "soundStopPreview": "إيقاف المعاينة",

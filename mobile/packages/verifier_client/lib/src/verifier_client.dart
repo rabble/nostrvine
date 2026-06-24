@@ -1,4 +1,4 @@
-// ABOUTME: VerifierClient — HTTP client over verifyer.divine.video.
+// ABOUTME: VerifierClient — HTTP client over verifier.divine.video.
 // ABOUTME: Stateless: every call hits the network; server owns freshness.
 
 import 'dart:async';
@@ -11,7 +11,7 @@ import 'package:verifier_client/src/exceptions.dart';
 import 'package:verifier_client/src/models/identity_claim.dart';
 import 'package:verifier_client/src/models/verification_result.dart';
 
-/// HTTP client for `https://verifyer.divine.video`.
+/// HTTP client for `https://verifier.divine.video`.
 ///
 /// Stateless: every call hits the network. The verifier owns freshness via
 /// Cloudflare KV; intentionally no client-side cache, no retry, no rechecking.

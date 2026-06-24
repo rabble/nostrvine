@@ -31,7 +31,7 @@ class _EmbedRequest {
 /// Listens for `divine:nostr.request` messages from a single child iframe of
 /// a known origin and routes them through a [WebSigner] from
 /// [WebAuthService]. Construct with [allowedParentOrigin] set to the
-/// iframe's origin (e.g. `https://verifyer.divine.video`); only messages
+/// iframe's origin (e.g. `https://verifier.divine.video`); only messages
 /// whose `event.origin` matches that string are honored.
 ///
 /// Lifecycle: call [start] when the iframe mounts and [stop] before it

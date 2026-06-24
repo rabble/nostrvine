@@ -1874,10 +1874,10 @@ class _VerifiedAccountsSection extends StatelessWidget {
 typedef VerifierRoutePusher =
     Future<void> Function(String location, {Object? extra});
 
-/// Opens the Divine verifyer.
+/// Opens the Divine verifier.
 ///
-/// Native in-app WebViews cannot complete the verifyer's login flow because it
-/// leaves `verifyer.divine.video` for `login.divine.video` and OAuth providers.
+/// Native in-app WebViews cannot complete the verifier's login flow because it
+/// leaves `verifier.divine.video` for `login.divine.video` and OAuth providers.
 /// Those hand-offs need real browser tabs, cookies, and redirects, so native
 /// platforms launch the system browser. Flutter web keeps the existing iframe
 /// signer bridge because it runs in the browser and does not use
@@ -1890,27 +1890,27 @@ Future<bool> launchVerifierFlow({
   VerifierRoutePusher? pushVerifierRoute,
   bool isWeb = kIsWeb,
 }) async {
-  final verifyer = preloadedNostrApps.firstWhere(
-    (app) => app.slug == 'verifyer',
+  final verifier = preloadedNostrApps.firstWhere(
+    (app) => app.slug == 'verifier',
   );
 
   var launched = false;
   try {
     if (isWeb && pushVerifierRoute != null) {
       await pushVerifierRoute(
-        WebIframeSandboxScreen.pathForAppId(verifyer.id),
-        extra: verifyer,
+        WebIframeSandboxScreen.pathForAppId(verifier.id),
+        extra: verifier,
       );
       launched = true;
     } else {
       launched = await launchUrl(
-        Uri.parse(verifyer.launchUrl),
+        Uri.parse(verifier.launchUrl),
         mode: LaunchMode.externalApplication,
       );
     }
   } catch (error) {
     UnifiedLogger.warning(
-      'Failed to open Divine verifyer: $error',
+      'Failed to open Divine verifier: $error',
       name: 'ProfileSetupScreen',
     );
   }
