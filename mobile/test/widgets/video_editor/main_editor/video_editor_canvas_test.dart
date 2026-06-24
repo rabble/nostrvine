@@ -201,6 +201,58 @@ void main() {
       );
     });
   });
+
+  group('interpolatePlayheadPosition', () {
+    const maxDuration = Duration(seconds: 10);
+
+    test('advances from the anchor by the elapsed wall-clock at 1x', () {
+      expect(
+        interpolatePlayheadPosition(
+          anchor: const Duration(seconds: 2),
+          elapsed: const Duration(milliseconds: 100),
+          speed: 1,
+          maxDuration: maxDuration,
+        ),
+        const Duration(milliseconds: 2100),
+      );
+    });
+
+    test('scales the elapsed by the playback speed', () {
+      expect(
+        interpolatePlayheadPosition(
+          anchor: const Duration(seconds: 1),
+          elapsed: const Duration(milliseconds: 200),
+          speed: 2,
+          maxDuration: maxDuration,
+        ),
+        const Duration(milliseconds: 1400),
+      );
+    });
+
+    test('clamps to the max duration past the end', () {
+      expect(
+        interpolatePlayheadPosition(
+          anchor: const Duration(seconds: 9, milliseconds: 950),
+          elapsed: const Duration(milliseconds: 200),
+          speed: 1,
+          maxDuration: maxDuration,
+        ),
+        maxDuration,
+      );
+    });
+
+    test('never returns a negative position', () {
+      expect(
+        interpolatePlayheadPosition(
+          anchor: Duration.zero,
+          elapsed: const Duration(milliseconds: 100),
+          speed: -1,
+          maxDuration: maxDuration,
+        ),
+        Duration.zero,
+      );
+    });
+  });
 }
 
 DivineVideoClip _createClip({required String id}) {

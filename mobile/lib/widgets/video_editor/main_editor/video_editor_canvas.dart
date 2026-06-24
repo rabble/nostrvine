@@ -9,6 +9,7 @@ import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/foundation.dart' show kReleaseMode, listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' hide Layer;
+import 'package:flutter/scheduler.dart' show Ticker;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -139,7 +140,8 @@ class _VideoEditor extends ConsumerStatefulWidget {
   ConsumerState<_VideoEditor> createState() => _VideoEditorState();
 }
 
-class _VideoEditorState extends ConsumerState<_VideoEditor> {
+class _VideoEditorState extends ConsumerState<_VideoEditor>
+    with SingleTickerProviderStateMixin {
   late final ProVideoController _proVideoController;
   final _isPlayerReadyNotifier = ValueNotifier<bool>(false);
   DivineVideoPlayerController? _videoPlayer;
@@ -158,6 +160,28 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
   /// Tracks last playback state to detect changes.
   bool _lastIsPlaying = false;
+
+  /// Drives the layer-overlay play time at display refresh rate during
+  /// playback. The native player reports position only ~5×/s
+  /// (`addPeriodicTimeObserver`, 0.2 s), and the overlay's enter/leave
+  /// animations are driven solely by [ProVideoController.setPlayTime] — so at
+  /// the raw report rate they visibly step. This ticker interpolates the play
+  /// time between reports; each report re-anchors it (and corrects drift) in
+  /// [_onPlayerStateChanged]. It runs only while playing and never while a
+  /// seek / trim / drag owns the play time.
+  Ticker? _playheadTicker;
+
+  /// Composite (player-space) position captured at the last anchor.
+  Duration _playheadAnchorPlayer = Duration.zero;
+
+  /// Player playback-speed multiplier captured at the last anchor.
+  double _playheadAnchorSpeed = 1;
+
+  /// Wall-clock elapsed since the last anchor, used to interpolate forward.
+  final _playheadStopwatch = Stopwatch();
+
+  /// Composite (player-space) duration, kept fresh to clamp interpolation.
+  Duration _lastPlayerDuration = Duration.zero;
 
   /// Last position dispatched to BLoC — avoids flooding with duplicates.
   Duration _lastReportedPosition = Duration.zero;
@@ -250,6 +274,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       name: 'VideoEditorCanvas',
       category: LogCategory.video,
     );
+    _playheadTicker?.dispose();
     _videoPlayerSubscription?.cancel();
     _videoPlayer?.dispose();
     _isPlayerReadyNotifier.dispose();
@@ -477,6 +502,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   }) async {
     if (!_isPlayerReadyNotifier.value || !_isPlayerInitialized) return;
 
+    // A scrub owns the play time now; stop the playback interpolator so it
+    // can't overwrite the seek target before the next player report stops it.
+    _setPlayheadTickerActive(false);
     _proVideoController.setPlayTime(playTimePosition ?? position);
 
     if (_isSeeking) {
@@ -525,16 +553,32 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       bloc.add(VideoEditorPlaybackChanged(isPlaying: isPlaying));
     }
 
-    final timelinePosition = _playerToTimeline(playerState.position);
-    if (!_isTrimmingLayer &&
+    _lastPlayerDuration = playerState.duration;
+
+    // The play time may only be driven by playback while no seek / trim / drag
+    // gesture owns it (those paths call setPlayTime directly).
+    final canDrivePlayTime =
+        !_isTrimmingLayer &&
         !_isTrimmingClip &&
         !_isDraggingLayer &&
         !_isSeeking &&
-        _pendingSeekPosition == null &&
-        timelinePosition != _lastReportedPosition) {
+        _pendingSeekPosition == null;
+
+    final timelinePosition = _playerToTimeline(playerState.position);
+    if (canDrivePlayTime && timelinePosition != _lastReportedPosition) {
       _lastReportedPosition = timelinePosition;
       bloc.add(VideoEditorPositionChanged(timelinePosition));
       _proVideoController.setPlayTime(timelinePosition);
+    }
+
+    // Smoothly interpolate the layer overlay between the coarse native reports
+    // while playing; re-anchor on every report to correct drift. Stop the
+    // moment playback ends or a gesture takes over the play time.
+    if (isPlaying && canDrivePlayTime) {
+      _anchorPlayhead(playerState);
+      _setPlayheadTickerActive(true);
+    } else {
+      _setPlayheadTickerActive(false);
     }
 
     final timelineDuration = _playerToTimeline(playerState.duration);
@@ -542,6 +586,41 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       _lastReportedDuration = timelineDuration;
       bloc.add(VideoEditorDurationChanged(timelineDuration));
     }
+  }
+
+  /// Captures the authoritative player position/speed as the interpolation
+  /// anchor and restarts the wall-clock used to advance from it.
+  void _anchorPlayhead(DivineVideoPlayerState playerState) {
+    _playheadAnchorPlayer = playerState.position;
+    _playheadAnchorSpeed = playerState.playbackSpeed > 0
+        ? playerState.playbackSpeed
+        : 1;
+    _playheadStopwatch
+      ..reset()
+      ..start();
+  }
+
+  void _setPlayheadTickerActive(bool active) {
+    if (active) {
+      final ticker = _playheadTicker ??= createTicker(_onPlayheadTick);
+      if (!ticker.isActive) ticker.start();
+    } else {
+      _playheadStopwatch.stop();
+      if (_playheadTicker?.isActive ?? false) _playheadTicker!.stop();
+    }
+  }
+
+  /// Advances the overlay play time from the anchor by the wall-clock elapsed
+  /// (scaled by playback speed), mapped back into editor-timeline space.
+  void _onPlayheadTick(Duration _) {
+    if (!mounted) return;
+    final position = interpolatePlayheadPosition(
+      anchor: _playheadAnchorPlayer,
+      elapsed: _playheadStopwatch.elapsed,
+      speed: _playheadAnchorSpeed,
+      maxDuration: _lastPlayerDuration,
+    );
+    _proVideoController.setPlayTime(_playerToTimeline(position));
   }
 
   /// Called when clip paths change. Updates the player with the new clips
@@ -2147,4 +2226,24 @@ class _RenderHitTestExpander extends RenderProxyBox {
     );
     return c.hitTest(result, position: Offset(clampedDx, clampedDy));
   }
+}
+
+/// Interpolates a composite playback position forward from [anchor] by the
+/// wall-clock [elapsed] since the anchor was captured, scaled by playback
+/// [speed], and clamped to `[Duration.zero, maxDuration]`.
+///
+/// Drives the layer overlay's play time at display refresh rate between the
+/// native player's coarse (~5 Hz) position reports so enter/leave animations
+/// animate smoothly during playback instead of stepping.
+@visibleForTesting
+Duration interpolatePlayheadPosition({
+  required Duration anchor,
+  required Duration elapsed,
+  required double speed,
+  required Duration maxDuration,
+}) {
+  final raw = anchor + elapsed * speed;
+  if (raw < Duration.zero) return Duration.zero;
+  if (raw > maxDuration) return maxDuration;
+  return raw;
 }
