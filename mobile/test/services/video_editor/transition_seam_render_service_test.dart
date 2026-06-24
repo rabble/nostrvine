@@ -193,6 +193,54 @@ void main() {
       expect(service.cached(forward, clipB, dissolve), isNotNull);
       expect(service.cached(reversed, clipB, dissolve), isNull);
     });
+
+    test('changing a clip volume invalidates the seam', () {
+      // Volume is baked into the rendered seam audio, so a mute (or any volume
+      // change) after caching must miss the cache and re-render.
+      final fullVolume = clip('a', transition: dissolve);
+      final muted = fullVolume.copyWith(volume: 0);
+      final clipB = clip('b');
+      final service = TransitionSeamRenderService()
+        ..cacheSeamForTest(
+          fullVolume,
+          clipB,
+          dissolve,
+          const TransitionSeam(
+            path: '/tmp/seam.mp4',
+            duration: Duration(milliseconds: 1500),
+            tailConsumed: Duration(milliseconds: 1000),
+            headConsumed: Duration(milliseconds: 1000),
+          ),
+        );
+
+      expect(service.cached(fullVolume, clipB, dissolve), isNotNull);
+      expect(service.cached(muted, clipB, dissolve), isNull);
+    });
+
+    test('changing the target aspect ratio invalidates the seam', () {
+      // The seam is rendered (and cropped) to the clip's target aspect ratio,
+      // so switching it must re-render rather than reuse the old crop.
+      final square = clip('a', transition: dissolve);
+      final vertical = square.copyWith(
+        targetAspectRatio: model.AspectRatio.vertical,
+      );
+      final clipB = clip('b');
+      final service = TransitionSeamRenderService()
+        ..cacheSeamForTest(
+          square,
+          clipB,
+          dissolve,
+          const TransitionSeam(
+            path: '/tmp/seam.mp4',
+            duration: Duration(milliseconds: 1500),
+            tailConsumed: Duration(milliseconds: 1000),
+            headConsumed: Duration(milliseconds: 1000),
+          ),
+        );
+
+      expect(service.cached(square, clipB, dissolve), isNotNull);
+      expect(service.cached(vertical, clipB, dissolve), isNull);
+    });
   });
 
   group('SeamTimeline', () {

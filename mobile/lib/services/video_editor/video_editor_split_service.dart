@@ -79,15 +79,19 @@ class VideoEditorSplitService {
     final endClipId = '${timestampMs}_end';
 
     // Start clip: keeps the original trimStart, no trimEnd needed
-    // (the split point is the new end).
+    // (the split point is the new end). The split point is a hard cut, so the
+    // start half drops the source clip's outgoing transition — only the end
+    // half inherits it (it now owns the boundary into the following clip).
     final startClip = sourceClip.copyWith(
       id: startClipId,
       duration: absoluteSplitPos,
       trimEnd: Duration.zero,
       processingCompleter: Completer<bool>(),
+      clearTransition: true,
     );
     // End clip preview: while rendering, this still points at the original
-    // source video, so keep source-time trimStart at the split point.
+    // source video, so keep source-time trimStart at the split point. It keeps
+    // the source clip's transition into the next clip.
     final previewEndClip = sourceClip.copyWith(
       id: endClipId,
       duration: sourceClip.duration,

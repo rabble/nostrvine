@@ -475,6 +475,39 @@ void main() {
         );
       });
 
+      test('start half drops the transition; end half keeps it', () async {
+        const dissolve = ClipTransition(type: ClipTransitionType.dissolve);
+        // Source clip A → B carries the dissolve into the next clip.
+        final clip = DivineVideoClip(
+          id: 'test-clip',
+          video: EditorVideo.file('/test/video.mp4'),
+          duration: const Duration(seconds: 5),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
+          transition: dissolve,
+        );
+
+        DivineVideoClip? capturedStartClip;
+        DivineVideoClip? capturedEndClip;
+
+        await VideoEditorSplitService.splitClip(
+          sourceClip: clip,
+          splitPosition: const Duration(seconds: 2),
+          onClipsCreated: (start, end) {
+            capturedStartClip = start;
+            capturedEndClip = end;
+          },
+          onThumbnailExtracted: null,
+          onClipRendered: null,
+        );
+
+        // The split point (A1 → A2) is a hard cut.
+        expect(capturedStartClip!.transition, isNull);
+        // A2 → B keeps the original boundary.
+        expect(capturedEndClip!.transition, equals(dissolve));
+      });
+
       test('reports rendered end clip with trimStart reset to zero', () async {
         final clip = DivineVideoClip(
           id: 'trimmed-clip',

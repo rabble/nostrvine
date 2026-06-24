@@ -246,10 +246,13 @@ class TransitionSeamRenderService {
     // to the physically-reversed file (and any crop/transform re-render swaps
     // it too), so this invalidates the seam even when the trims are symmetric
     // (e.g. an untrimmed clip, where reverse leaves trimStart == trimEnd).
+    // `volume` and `targetAspectRatio` are baked into the rendered seam (audio
+    // gain and crop), so changing either after caching must re-render — without
+    // them a mute/crop change would keep playing the stale seam.
     String clipKey(DivineVideoClip c) =>
         '${c.id}:${c.video.file?.path}:'
         '${c.trimStart.inMicroseconds}:${c.trimEnd.inMicroseconds}:'
-        '${c.playbackSpeed ?? 1.0}';
+        '${c.playbackSpeed ?? 1.0}:${c.volume}:${c.targetAspectRatio.name}';
     final t =
         '${transition.type.name}:${transition.duration.inMicroseconds}:'
         '${transition.curve.name}:${transition.direction.name}';
