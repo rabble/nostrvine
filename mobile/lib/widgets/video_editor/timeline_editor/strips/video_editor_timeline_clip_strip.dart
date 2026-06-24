@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -647,7 +648,15 @@ class _VideoEditorTimelineClipStripState
                 /// Transition buttons on each internal clip boundary. Hidden
                 /// during reorder/trim/volume/multi-select so they never
                 /// overlap those interactions.
-                if (!shouldAnimate &&
+                ///
+                /// Temporarily restricted to debug builds: clip transitions
+                /// currently mishandle audio when adjacent clips overlap, so
+                /// the entry point stays out of release builds until that is
+                /// fixed.
+                // TODO(#5497): Remove the kDebugMode guard once overlapping
+                // clip transitions handle audio correctly.
+                if (kDebugMode &&
+                    !shouldAnimate &&
                     widget.trimmingClipId == null &&
                     !isVolumeEditMode &&
                     !widget.isMultiSelectMode &&
