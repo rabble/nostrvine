@@ -166,6 +166,41 @@ void main() {
       expect(spans.blend, lessThan(spans.consumed));
       expect(spans.seamTransition.duration, equals(spans.blend));
     });
+
+    test('caps a shared clip so its head + tail fit its length (#5487)', () {
+      final long = sized('a', const Duration(seconds: 1));
+      final short = sized('b', const Duration(seconds: 1));
+
+      // Unshared, each boundary consumes the whole 1s clip.
+      expect(
+        service.computeSeamSpans(long, short, dissolve).consumed,
+        equals(const Duration(seconds: 1)),
+      );
+
+      // B sits on two boundaries: the right side of A->B (clipBHasOutgoing) and
+      // the left side of B->C (clipAHasIncoming). Each side is capped to half of
+      // B so head + tail == B's length, while the 500ms blend is preserved.
+      final ab = service.computeSeamSpans(
+        long,
+        short,
+        dissolve,
+        clipBHasOutgoing: true,
+      );
+      final bc = service.computeSeamSpans(
+        short,
+        long,
+        dissolve,
+        clipAHasIncoming: true,
+      );
+      expect(ab.consumed, equals(const Duration(milliseconds: 500)));
+      expect(bc.consumed, equals(const Duration(milliseconds: 500)));
+      expect(
+        ab.consumed + bc.consumed,
+        lessThanOrEqualTo(const Duration(seconds: 1)),
+      );
+      expect(ab.blend, equals(const Duration(milliseconds: 500)));
+      expect(bc.blend, equals(const Duration(milliseconds: 500)));
+    });
   });
 
   group('cached', () {
@@ -359,9 +394,24 @@ void main() {
         tailConsumed: Duration(milliseconds: 600),
         headConsumed: Duration(milliseconds: 600),
       );
+      // Seed with the same neighbour-sharing flags SeamTimeline derives: B is
+      // the right side of A->B (has an outgoing seam) and the left side of
+      // B->C (has an incoming seam).
       final service = TransitionSeamRenderService()
-        ..cacheSeamForTest(clipA, clipB, dissolve, seamSpan)
-        ..cacheSeamForTest(clipB, clipC, dissolve, seamSpan);
+        ..cacheSeamForTest(
+          clipA,
+          clipB,
+          dissolve,
+          seamSpan,
+          clipBHasOutgoing: true,
+        )
+        ..cacheSeamForTest(
+          clipB,
+          clipC,
+          dissolve,
+          seamSpan,
+          clipAHasIncoming: true,
+        );
       final timeline = SeamTimeline([clipA, clipB, clipC], service);
 
       // Sweep the whole composite axis; the mapped editor position must never
@@ -386,6 +436,72 @@ void main() {
           timeline.compositeToTimeline(const Duration(milliseconds: 5299)),
         ),
       );
+    });
+
+    test('preview length matches the export for back-to-back overlaps on a '
+        'short clip (#5487)', () {
+      DivineVideoClip sized(
+        String id,
+        Duration duration, {
+        editor.ClipTransition? transition,
+      }) => DivineVideoClip(
+        id: id,
+        video: editor.EditorVideo.file(File('/tmp/$id.mp4')),
+        duration: duration,
+        recordedAt: DateTime(2024),
+        targetAspectRatio: model.AspectRatio.square,
+        originalAspectRatio: 1,
+        transition: transition,
+      );
+
+      // Three 1s clips, 500ms dissolve on A->B and B->C. The native export is
+      // 3000 - 500 - 500 = 2000ms, with B fully consumed by the two overlaps.
+      final clipA = sized(
+        'a',
+        const Duration(seconds: 1),
+        transition: dissolve,
+      );
+      final clipB = sized(
+        'b',
+        const Duration(seconds: 1),
+        transition: dissolve,
+      );
+      final clipC = sized('c', const Duration(seconds: 1));
+
+      // Boundary-aware seams consume 500ms/side (half of the shared B), so each
+      // seam duration is 2*500 - 500 = 500ms.
+      const seam = TransitionSeam(
+        path: '/tmp/seam.mp4',
+        duration: Duration(milliseconds: 500),
+        tailConsumed: Duration(milliseconds: 500),
+        headConsumed: Duration(milliseconds: 500),
+      );
+      final service = TransitionSeamRenderService()
+        ..cacheSeamForTest(clipA, clipB, dissolve, seam, clipBHasOutgoing: true)
+        ..cacheSeamForTest(
+          clipB,
+          clipC,
+          dissolve,
+          seam,
+          clipAHasIncoming: true,
+        );
+
+      // The full 3000ms editor timeline maps to a 2000ms composite — matching
+      // the export, not the 3000ms the old per-boundary budgeting produced.
+      final timeline = SeamTimeline([clipA, clipB, clipC], service);
+      expect(
+        timeline.timelineToComposite(const Duration(seconds: 3)),
+        equals(const Duration(seconds: 2)),
+      );
+
+      // B is never played as a standalone body: only A's head, the two seams,
+      // and C's tail appear — no duplicated B frames.
+      final players = buildSeamAwarePlayerClips([clipA, clipB, clipC], service);
+      expect(players, hasLength(4));
+      expect(players[0].uri, equals('/tmp/a.mp4'));
+      expect(players[1].uri, equals('/tmp/seam.mp4'));
+      expect(players[2].uri, equals('/tmp/seam.mp4'));
+      expect(players[3].uri, equals('/tmp/c.mp4'));
     });
   });
 }

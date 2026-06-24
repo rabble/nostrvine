@@ -265,17 +265,37 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     for (var i = 0; i < clips.length - 1; i++) {
       final transition = clips[i].transition;
       if (transition == null) continue;
-      if (_seamService.cached(clips[i], clips[i + 1], transition) != null) {
+      final sharing = seamBoundarySharing(clips, i);
+      if (_seamService.cached(
+            clips[i],
+            clips[i + 1],
+            transition,
+            clipAHasIncoming: sharing.leftHasIncoming,
+            clipBHasOutgoing: sharing.rightHasOutgoing,
+          ) !=
+          null) {
         continue;
       }
       // Already counted by an earlier pass whose render is still in flight —
       // skip so the pending counter (and overlay) is not double-incremented.
-      if (_seamService.isRendering(clips[i], clips[i + 1], transition)) {
+      if (_seamService.isRendering(
+        clips[i],
+        clips[i + 1],
+        transition,
+        clipAHasIncoming: sharing.leftHasIncoming,
+        clipBHasOutgoing: sharing.rightHasOutgoing,
+      )) {
         continue;
       }
       _pendingSeamRenders.value++;
       _seamService
-          .render(clipA: clips[i], clipB: clips[i + 1], transition: transition)
+          .render(
+            clipA: clips[i],
+            clipB: clips[i + 1],
+            transition: transition,
+            clipAHasIncoming: sharing.leftHasIncoming,
+            clipBHasOutgoing: sharing.rightHasOutgoing,
+          )
           .then((seam) {
             if (!mounted) return;
             _pendingSeamRenders.value--;

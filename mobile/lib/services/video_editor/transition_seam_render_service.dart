@@ -63,42 +63,87 @@ class TransitionSeamRenderService {
   bool isRendering(
     DivineVideoClip clipA,
     DivineVideoClip clipB,
-    ClipTransition transition,
-  ) => _inFlight.containsKey(_key(clipA, clipB, transition));
+    ClipTransition transition, {
+    bool clipAHasIncoming = false,
+    bool clipBHasOutgoing = false,
+  }) => _inFlight.containsKey(
+    _key(
+      clipA,
+      clipB,
+      transition,
+      clipAHasIncoming: clipAHasIncoming,
+      clipBHasOutgoing: clipBHasOutgoing,
+    ),
+  );
 
   /// Returns the already-rendered seam for this transition, or `null` if it is
   /// not rendered yet. Pure cache lookup — never triggers a render.
+  ///
+  /// [clipAHasIncoming] / [clipBHasOutgoing] describe whether each clip also
+  /// participates in a *neighbouring* boundary; they bound the per-clip seam
+  /// consumption (see [computeSeamSpans]) and so are part of the cache key —
+  /// callers must pass the same values used when the seam was rendered.
   TransitionSeam? cached(
     DivineVideoClip clipA,
     DivineVideoClip clipB,
-    ClipTransition transition,
-  ) => _cache[_key(clipA, clipB, transition)];
+    ClipTransition transition, {
+    bool clipAHasIncoming = false,
+    bool clipBHasOutgoing = false,
+  }) =>
+      _cache[_key(
+        clipA,
+        clipB,
+        transition,
+        clipAHasIncoming: clipAHasIncoming,
+        clipBHasOutgoing: clipBHasOutgoing,
+      )];
 
   /// Renders (or returns the cached / in-flight) seam for the transition out of
   /// [clipA] into [clipB]. Returns `null` on failure or when either clip is too
   /// short to contribute.
+  ///
+  /// See [cached] for [clipAHasIncoming] / [clipBHasOutgoing].
   Future<TransitionSeam?> render({
     required DivineVideoClip clipA,
     required DivineVideoClip clipB,
     required ClipTransition transition,
+    bool clipAHasIncoming = false,
+    bool clipBHasOutgoing = false,
   }) {
-    final key = _key(clipA, clipB, transition);
+    final key = _key(
+      clipA,
+      clipB,
+      transition,
+      clipAHasIncoming: clipAHasIncoming,
+      clipBHasOutgoing: clipBHasOutgoing,
+    );
     final cached = _cache[key];
     if (cached != null) return Future.value(cached);
-    return _inFlight[key] ??= _render(clipA, clipB, transition, key);
+    return _inFlight[key] ??= _render(
+      clipA,
+      clipB,
+      transition,
+      key,
+      clipAHasIncoming: clipAHasIncoming,
+      clipBHasOutgoing: clipBHasOutgoing,
+    );
   }
 
   Future<TransitionSeam?> _render(
     DivineVideoClip clipA,
     DivineVideoClip clipB,
     ClipTransition transition,
-    String key,
-  ) async {
+    String key, {
+    required bool clipAHasIncoming,
+    required bool clipBHasOutgoing,
+  }) async {
     try {
       final (:consumed, :blend, :seamTransition) = computeSeamSpans(
         clipA,
         clipB,
         transition,
+        clipAHasIncoming: clipAHasIncoming,
+        clipBHasOutgoing: clipBHasOutgoing,
       );
       if (consumed <= Duration.zero) return null;
 
@@ -252,24 +297,44 @@ class TransitionSeamRenderService {
   /// the visible blend at a quarter of it. For overlaps the blend is always
   /// half the consumed span, guaranteeing a solo lead-in/out on each side (a
   /// segment equal to the blend degenerates into a hard cut).
+  ///
+  /// A clip that sits on *two* boundaries must share its body between both
+  /// seams. [clipAHasIncoming] / [clipBHasOutgoing] say whether each clip also
+  /// feeds a neighbouring seam; when so, that clip's contribution here is capped
+  /// at half its length, so its head + tail consumption can't exceed the clip
+  /// (mirroring the export's per-boundary "half the shorter clip" clamp). This
+  /// drops the solo lead-in/out first — the blend itself always fits, since each
+  /// boundary's blend is ≤ half the clip — so an over-consumed short clip no
+  /// longer gets played twice or stretches the preview past the export length.
   @visibleForTesting
   ({Duration consumed, Duration blend, ClipTransition seamTransition})
   computeSeamSpans(
     DivineVideoClip clipA,
     DivineVideoClip clipB,
-    ClipTransition transition,
-  ) {
+    ClipTransition transition, {
+    bool clipAHasIncoming = false,
+    bool clipBHasOutgoing = false,
+  }) {
     final maxSpan = _min(clipA.playbackDuration, clipB.playbackDuration);
+    final availA = clipAHasIncoming
+        ? _half(clipA.playbackDuration)
+        : clipA.playbackDuration;
+    final availB = clipBHasOutgoing
+        ? _half(clipB.playbackDuration)
+        : clipB.playbackDuration;
+    final budget = _min(availA, availB);
     if (_isOverlap(transition.type)) {
-      final consumed = _min(transition.duration * 2, maxSpan);
-      final blend = _half(consumed);
+      // blend stays the faithful overlap; only the solo padding (the gap
+      // between `blend` and `consumed`) is given up when the budget is tight.
+      final blend = _half(_min(transition.duration * 2, maxSpan));
+      final consumed = _min(_min(transition.duration * 2, maxSpan), budget);
       return (
         consumed: consumed,
         blend: blend,
         seamTransition: transition.copyWith(duration: blend),
       );
     }
-    final consumed = _min(_half(transition.duration), maxSpan);
+    final consumed = _min(_min(_half(transition.duration), maxSpan), budget);
     final dip = _min(transition.duration, consumed * 2);
     return (
       consumed: consumed,
@@ -306,13 +371,15 @@ class TransitionSeamRenderService {
   /// rendered by an older algorithm under `transition_seams/` are no longer
   /// key-matched and get re-rendered after an app upgrade instead of replayed
   /// stale (the keyed files live in the documents dir and survive upgrades).
-  static const _seamCacheVersion = 1;
+  static const _seamCacheVersion = 2;
 
   String _key(
     DivineVideoClip clipA,
     DivineVideoClip clipB,
-    ClipTransition transition,
-  ) {
+    ClipTransition transition, {
+    required bool clipAHasIncoming,
+    required bool clipBHasOutgoing,
+  }) {
     // The played file path is part of the key: reversing a clip swaps `video`
     // to the physically-reversed file (and any crop/transform re-render swaps
     // it too), so this invalidates the seam even when the trims are symmetric
@@ -329,7 +396,12 @@ class TransitionSeamRenderService {
     final t =
         '${transition.type.name}:${transition.duration.inMicroseconds}:'
         '${transition.curve.name}:${transition.direction.name}';
-    return 'v$_seamCacheVersion|${clipKey(clipA)}|${clipKey(clipB)}|$t';
+    // The neighbour-sharing flags change how much of each clip the seam
+    // consumes, so two boundaries with the same clip pair but different
+    // neighbours must not collide on one cached seam.
+    final neighbours = '$clipAHasIncoming:$clipBHasOutgoing';
+    return 'v$_seamCacheVersion|${clipKey(clipA)}|${clipKey(clipB)}|$t'
+        '|$neighbours';
   }
 
   bool _isOverlap(ClipTransitionType type) =>
@@ -366,9 +438,18 @@ class TransitionSeamRenderService {
     DivineVideoClip clipA,
     DivineVideoClip clipB,
     ClipTransition transition,
-    TransitionSeam seam,
-  ) {
-    _cache[_key(clipA, clipB, transition)] = seam;
+    TransitionSeam seam, {
+    bool clipAHasIncoming = false,
+    bool clipBHasOutgoing = false,
+  }) {
+    _cache[_key(
+          clipA,
+          clipB,
+          transition,
+          clipAHasIncoming: clipAHasIncoming,
+          clipBHasOutgoing: clipBHasOutgoing,
+        )] =
+        seam;
     _version++;
   }
 }
@@ -397,7 +478,14 @@ class SeamTimeline {
       var headPb = Duration.zero;
       final prevTransition = i > 0 ? clips[i - 1].transition : null;
       if (prevTransition != null) {
-        final seam = seams.cached(clips[i - 1], clip, prevTransition);
+        final sharing = seamBoundarySharing(clips, i - 1);
+        final seam = seams.cached(
+          clips[i - 1],
+          clip,
+          prevTransition,
+          clipAHasIncoming: sharing.leftHasIncoming,
+          clipBHasOutgoing: sharing.rightHasOutgoing,
+        );
         if (seam != null) {
           headPb = clip.sourceDurationToPlaybackDuration(seam.headConsumed);
         }
@@ -407,7 +495,14 @@ class SeamTimeline {
       var tailPb = Duration.zero;
       final transition = clip.transition;
       if (i + 1 < clips.length && transition != null) {
-        outgoing = seams.cached(clip, clips[i + 1], transition);
+        final sharing = seamBoundarySharing(clips, i);
+        outgoing = seams.cached(
+          clip,
+          clips[i + 1],
+          transition,
+          clipAHasIncoming: sharing.leftHasIncoming,
+          clipBHasOutgoing: sharing.rightHasOutgoing,
+        );
         if (outgoing != null) {
           tailPb = clip.sourceDurationToPlaybackDuration(outgoing.tailConsumed);
         }
@@ -512,6 +607,19 @@ class _Segment {
 
 Duration _maxDur(Duration a, Duration b) => a > b ? a : b;
 
+/// Whether each side of the boundary between clips [i] and `i + 1` also feeds a
+/// *neighbouring* seam, so that side must share its body across two boundaries.
+/// Drives the per-clip consumption cap in
+/// [TransitionSeamRenderService.computeSeamSpans] and is part of the seam cache
+/// key — callers must derive it the same way on render and on lookup.
+({bool leftHasIncoming, bool rightHasOutgoing}) seamBoundarySharing(
+  List<DivineVideoClip> clips,
+  int i,
+) => (
+  leftHasIncoming: i > 0 && clips[i - 1].transition != null,
+  rightHasOutgoing: i + 2 < clips.length && clips[i + 1].transition != null,
+);
+
 /// Builds the preview player's clip list for [clips], splicing in any
 /// already-rendered transition seams. Each clip plays only its body (minus the
 /// tail/head consumed by adjacent rendered seams), with the seam clip inserted
@@ -528,8 +636,17 @@ List<player.VideoClip> buildSeamAwarePlayerClips(
     var headConsumed = Duration.zero;
     final prevTransition = i > 0 ? clips[i - 1].transition : null;
     if (prevTransition != null) {
+      final sharing = seamBoundarySharing(clips, i - 1);
       headConsumed =
-          seams.cached(clips[i - 1], clip, prevTransition)?.headConsumed ??
+          seams
+              .cached(
+                clips[i - 1],
+                clip,
+                prevTransition,
+                clipAHasIncoming: sharing.leftHasIncoming,
+                clipBHasOutgoing: sharing.rightHasOutgoing,
+              )
+              ?.headConsumed ??
           Duration.zero;
     }
 
@@ -537,7 +654,14 @@ List<player.VideoClip> buildSeamAwarePlayerClips(
     var tailConsumed = Duration.zero;
     final transition = clip.transition;
     if (i + 1 < clips.length && transition != null) {
-      outgoingSeam = seams.cached(clip, clips[i + 1], transition);
+      final sharing = seamBoundarySharing(clips, i);
+      outgoingSeam = seams.cached(
+        clip,
+        clips[i + 1],
+        transition,
+        clipAHasIncoming: sharing.leftHasIncoming,
+        clipBHasOutgoing: sharing.rightHasOutgoing,
+      );
       tailConsumed = outgoingSeam?.tailConsumed ?? Duration.zero;
     }
 
