@@ -228,6 +228,14 @@ void main() {
 
         expect(uploadManager.isRetriableError(error), isTrue);
       });
+
+      test('retries Blossom auth creation failures without HTTP status', () {
+        const error = BlossomUploadFailureException(
+          'Failed to create Blossom authentication',
+        );
+
+        expect(uploadManager.isRetriableError(error), isTrue);
+      });
     });
 
     group('generic exceptions (string matching fallback)', () {

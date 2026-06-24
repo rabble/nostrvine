@@ -1286,6 +1286,10 @@ class UploadManager {
       return false;
     }
 
+    if (errorStr.contains('failed to create blossom authentication')) {
+      return true;
+    }
+
     // Network and timeout errors are retriable
     if (errorStr.contains('timeout') ||
         errorStr.contains('cannot connect') ||
