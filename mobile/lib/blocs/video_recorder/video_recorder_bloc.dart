@@ -795,7 +795,8 @@ class VideoRecorderBloc
       // Anything thrown between setting isStoppingRecording=true and clearing
       // it below would strand the recorder: the flag stays true and every
       // future stop bails at the top of this handler, so the recording could
-      // never be stopped again. Reset to idle so the user can recover.
+      // never be stopped again. Run best-effort cleanup so the user can
+      // recover.
       Log.error(
         '⚠️ Failed to stop recording cleanly - resetting recorder state',
         name: 'VideoRecorderBloc',
@@ -804,7 +805,19 @@ class VideoRecorderBloc
         stackTrace: stackTrace,
       );
       addError(e, stackTrace);
-      _readClipManager().resetRecording();
+      // A throw at _cameraService.stopRecording() skips the clip-manager and
+      // wakelock teardown above. stopRecording() cancels the periodic 60fps
+      // duration timer and stops the stopwatch (resetRecording alone would
+      // leave that timer running); the wakelock release is retried under its
+      // own guard so a wakelock failure can't block state recovery.
+      _readClipManager()
+        ..stopRecording()
+        ..resetRecording();
+      try {
+        await WakelockPlus.disable();
+      } catch (_) {
+        // Best-effort: ignore a secondary wakelock failure during recovery.
+      }
       emit(
         state.copyWith(
           recordingState: VideoRecorderState.idle,

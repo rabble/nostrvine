@@ -755,6 +755,9 @@ void main() {
         verify: (bloc) {
           expect(bloc.state.isStoppingRecording, isFalse);
           expect(bloc.state.recordingState, VideoRecorderState.idle);
+          // stopRecording() must run on the recovery path too — it cancels the
+          // periodic duration timer that resetRecording() leaves running.
+          verify(() => clipManager.stopRecording()).called(1);
           verify(() => clipManager.resetRecording()).called(1);
         },
       );
