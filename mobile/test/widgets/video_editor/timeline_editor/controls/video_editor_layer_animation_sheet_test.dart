@@ -16,8 +16,8 @@ void main() {
 
     Future<void> openPicker(
       WidgetTester tester, {
-      editor.LayerAnimation? initialEnter,
-      editor.LayerAnimation? initialLeave,
+      List<editor.LayerAnimation> initialEnter = const [],
+      List<editor.LayerAnimation> initialLeave = const [],
     }) async {
       result = null;
       returned = false;
@@ -98,8 +98,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       expect(returned, isTrue);
-      expect(result?.enter, isNull);
-      expect(result?.leave, isNull);
+      expect(result?.enter, isEmpty);
+      expect(result?.leave, isEmpty);
     });
 
     testWidgets('builds an enter animation for the chosen type', (
@@ -114,19 +114,21 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      expect(result?.enter?.type, editor.LayerAnimationType.fade);
-      expect(result?.enter?.phase, editor.AnimationPhase.animateIn);
-      expect(result?.leave, isNull);
+      expect(result?.enter.single.type, editor.LayerAnimationType.fade);
+      expect(result?.enter.single.phase, editor.AnimationPhase.animateIn);
+      expect(result?.leave, isEmpty);
     });
 
     testWidgets('edits the leave phase independently of enter', (tester) async {
       await openPicker(
         tester,
-        initialEnter: const editor.LayerAnimation(
-          type: editor.LayerAnimationType.fade,
-          phase: editor.AnimationPhase.animateIn,
-          duration: Duration(milliseconds: 400),
-        ),
+        initialEnter: const [
+          editor.LayerAnimation(
+            type: editor.LayerAnimationType.fade,
+            phase: editor.AnimationPhase.animateIn,
+            duration: Duration(milliseconds: 400),
+          ),
+        ],
       );
 
       await tester.tap(find.text(l10n.videoEditorLayerAnimationLeave));
@@ -138,9 +140,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      expect(result?.enter?.type, editor.LayerAnimationType.fade);
-      expect(result?.leave?.type, editor.LayerAnimationType.scale);
-      expect(result?.leave?.phase, editor.AnimationPhase.animateOut);
+      expect(result?.enter.single.type, editor.LayerAnimationType.fade);
+      expect(result?.leave.single.type, editor.LayerAnimationType.scale);
+      expect(result?.leave.single.phase, editor.AnimationPhase.animateOut);
     });
 
     testWidgets('shows direction options only for slide', (tester) async {
@@ -188,13 +190,106 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      expect(result?.enter?.type, editor.LayerAnimationType.slide);
-      expect(result?.enter?.slideDirection, editor.SlideDirection.top);
+      expect(result?.enter.single.type, editor.LayerAnimationType.slide);
+      expect(result?.enter.single.slideDirection, editor.SlideDirection.top);
+    });
+
+    testWidgets('combines fade and slide into one phase', (tester) async {
+      await openPicker(tester);
+
+      await tester.tap(find.text(l10n.videoEditorLayerAnimationFade));
+      await tester.pump();
+      await tester.tap(find.text(l10n.videoEditorTransitionSlide));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.tap(find.text(l10n.videoEditorDoneLabel));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(
+        result?.enter.map((a) => a.type),
+        containsAll(<editor.LayerAnimationType>[
+          editor.LayerAnimationType.fade,
+          editor.LayerAnimationType.slide,
+        ]),
+      );
+      expect(result?.enter, hasLength(2));
+      expect(
+        result?.enter.every((a) => a.phase == editor.AnimationPhase.animateIn),
+        isTrue,
+      );
+      expect(result?.leave, isEmpty);
+    });
+
+    testWidgets('toggling a selected type removes it', (tester) async {
+      await openPicker(tester);
+
+      await tester.tap(find.text(l10n.videoEditorLayerAnimationFade));
+      await tester.pump();
+      await tester.tap(find.text(l10n.videoEditorLayerAnimationFade));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.tap(find.text(l10n.videoEditorDoneLabel));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(result?.enter, isEmpty);
+    });
+  });
+
+  group('resolveLayerEndTime', () {
+    const windowEnd = Duration(seconds: 5);
+
+    test('anchors an untrimmed layer to the window end for a leave '
+        'animation', () {
+      expect(
+        resolveLayerEndTime(
+          currentEndTime: null,
+          windowEndTime: windowEnd,
+          hasLeaveAnimation: true,
+        ),
+        windowEnd,
+      );
+    });
+
+    test('keeps an explicit trim end for a leave animation', () {
+      const trimEnd = Duration(seconds: 2);
+      expect(
+        resolveLayerEndTime(
+          currentEndTime: trimEnd,
+          windowEndTime: windowEnd,
+          hasLeaveAnimation: true,
+        ),
+        trimEnd,
+      );
+    });
+
+    test('leaves an untrimmed layer untrimmed without a leave animation', () {
+      expect(
+        resolveLayerEndTime(
+          currentEndTime: null,
+          windowEndTime: windowEnd,
+          hasLeaveAnimation: false,
+        ),
+        isNull,
+      );
+    });
+
+    test('preserves an explicit trim end without a leave animation', () {
+      const trimEnd = Duration(seconds: 3);
+      expect(
+        resolveLayerEndTime(
+          currentEndTime: trimEnd,
+          windowEndTime: windowEnd,
+          hasLeaveAnimation: false,
+        ),
+        trimEnd,
+      );
     });
   });
 }
 
 typedef _LayerAnimationResult = ({
-  editor.LayerAnimation? enter,
-  editor.LayerAnimation? leave,
+  List<editor.LayerAnimation> enter,
+  List<editor.LayerAnimation> leave,
 });

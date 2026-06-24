@@ -33,8 +33,26 @@ void main() {
     test('exposes the enter and leave animations by phase', () {
       final layer = Layer(animations: toLayerAnimations([leave, enter]));
 
-      expect(layer.divineEnterAnimation, equals(enter));
-      expect(layer.divineLeaveAnimation, equals(leave));
+      expect(layer.divineEnterAnimations, equals([enter]));
+      expect(layer.divineLeaveAnimations, equals([leave]));
+    });
+
+    test('exposes every animation of a phase when several are combined', () {
+      const slideIn = editor.LayerAnimation(
+        type: editor.LayerAnimationType.slide,
+        phase: editor.AnimationPhase.animateIn,
+        duration: Duration(milliseconds: 400),
+        slideDirection: editor.SlideDirection.left,
+      );
+      const fadeIn = editor.LayerAnimation(
+        type: editor.LayerAnimationType.fade,
+        phase: editor.AnimationPhase.animateIn,
+        duration: Duration(milliseconds: 400),
+      );
+      final layer = Layer(animations: toLayerAnimations([fadeIn, slideIn]));
+
+      expect(layer.divineEnterAnimations, equals([fadeIn, slideIn]));
+      expect(layer.divineLeaveAnimations, isEmpty);
     });
 
     test('preserves scale-from across the conversion', () {

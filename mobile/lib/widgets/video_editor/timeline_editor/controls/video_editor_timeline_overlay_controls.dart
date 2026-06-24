@@ -63,7 +63,11 @@ class _LayerOverlayControls extends StatelessWidget {
       onSplit: () => _splitLayer(context: context, layer: layer),
       onAnimate: layer == null
           ? null
-          : () => editLayerAnimation(context, layer),
+          : () => editLayerAnimation(
+              context,
+              layer,
+              windowEndTime: item.endTime,
+            ),
       onDone: () => TimelineOverlayControls._deselect(context),
     );
   }

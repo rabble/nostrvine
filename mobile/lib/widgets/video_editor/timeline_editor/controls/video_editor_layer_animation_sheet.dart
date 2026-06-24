@@ -48,7 +48,15 @@ const _slideDirections = <SlideDirection>[
 /// editable in the sheet and stored on [Layer.animations], which pro_image_editor
 /// uses to drive the in-editor timeline preview and which the export maps to
 /// pro_video_editor.
-Future<void> editLayerAnimation(BuildContext context, Layer layer) async {
+///
+/// [windowEndTime] is the layer's visible end on the timeline (its trim end, or
+/// the full video duration when untrimmed). It anchors the leave animation —
+/// see [resolveLayerEndTime].
+Future<void> editLayerAnimation(
+  BuildContext context,
+  Layer layer, {
+  required Duration windowEndTime,
+}) async {
   final scope = VideoEditorScope.of(context);
   final editor = scope.editor;
   if (editor == null) return;
@@ -63,8 +71,8 @@ Future<void> editLayerAnimation(BuildContext context, Layer layer) async {
       style: VineTheme.titleMediumFont(),
     ),
     body: LayerAnimationPickerView(
-      initialEnter: layer.divineEnterAnimation,
-      initialLeave: layer.divineLeaveAnimation,
+      initialEnter: layer.divineEnterAnimations,
+      initialLeave: layer.divineLeaveAnimations,
     ),
   );
 
@@ -74,29 +82,58 @@ Future<void> editLayerAnimation(BuildContext context, Layer layer) async {
   final index = layers.indexWhere((l) => l.id == layer.id);
   if (index < 0) return;
 
-  final animations = <LayerAnimation>[
-    if (result.enter != null) result.enter!,
-    if (result.leave != null) result.leave!,
-  ];
+  final animations = <LayerAnimation>[...result.enter, ...result.leave];
+
+  final endTime = resolveLayerEndTime(
+    currentEndTime: layer.endTime,
+    windowEndTime: windowEndTime,
+    hasLeaveAnimation: result.leave.isNotEmpty,
+  );
 
   // Drive the layer entirely from the typed animations; clear the legacy fade
   // fields / custom builder so [Layer.effectiveAnimations] can't fall back to a
   // stale fade when the animations list is empty.
-  layers[index] = layer.copyWith(animations: toLayerAnimations(animations))
-    ..enterDuration = null
-    ..exitDuration = null
-    ..enterCurve = null
-    ..exitCurve = null
-    ..transitionBuilder = null;
+  layers[index] =
+      layer.copyWith(
+          animations: toLayerAnimations(animations),
+          endTime: endTime,
+        )
+        ..enterDuration = null
+        ..exitDuration = null
+        ..enterCurve = null
+        ..exitCurve = null
+        ..transitionBuilder = null;
 
   editor.addHistory(layers: layers);
 }
 
-/// The picker's result: the chosen enter and/or leave animation (`null` =
-/// none for that phase).
+/// Resolves the [Layer.endTime] needed for a leave (animateOut) animation to
+/// have a window to play in.
+///
+/// The leave phase renders only when the layer has a non-null `endTime` — both
+/// the in-editor preview ([Layer.animations] timeline visibility) and the
+/// native export skip the animateOut branch when `endTime` is null. An
+/// untrimmed layer carries `null`, so when [hasLeaveAnimation] is true the end
+/// is anchored to [windowEndTime] (the layer's visible end on the timeline,
+/// which is the full video duration when untrimmed). Without a leave animation
+/// the existing [currentEndTime] is preserved unchanged so we never silently
+/// trim a layer the user didn't trim.
+@visibleForTesting
+Duration? resolveLayerEndTime({
+  required Duration? currentEndTime,
+  required Duration windowEndTime,
+  required bool hasLeaveAnimation,
+}) {
+  if (!hasLeaveAnimation) return currentEndTime;
+  return currentEndTime ?? windowEndTime;
+}
+
+/// The picker's result: the chosen enter and leave animations. A phase can
+/// carry several composed effects (e.g. fade + slide); an empty list means no
+/// animation for that phase.
 typedef _LayerAnimationResult = ({
-  LayerAnimation? enter,
-  LayerAnimation? leave,
+  List<LayerAnimation> enter,
+  List<LayerAnimation> leave,
 });
 
 /// Stateful picker body. Edits the enter and leave animations independently via
@@ -110,8 +147,8 @@ class LayerAnimationPickerView extends StatefulWidget {
     super.key,
   });
 
-  final LayerAnimation? initialEnter;
-  final LayerAnimation? initialLeave;
+  final List<LayerAnimation> initialEnter;
+  final List<LayerAnimation> initialLeave;
   final int maxDurationMs;
 
   @override
@@ -127,8 +164,17 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
   late _PhaseConfig _enter;
   late _PhaseConfig _leave;
 
+  /// Tiles shown in the type row. `null` is the "None" tile (clears the phase).
   static const _typeOptions = <LayerAnimationType?>[
     null,
+    LayerAnimationType.fade,
+    LayerAnimationType.slide,
+    LayerAnimationType.scale,
+  ];
+
+  /// Stable order in which selected effects are emitted so composition
+  /// (fade → slide → scale) is deterministic.
+  static const _composableTypes = <LayerAnimationType>[
     LayerAnimationType.fade,
     LayerAnimationType.slide,
     LayerAnimationType.scale,
@@ -137,8 +183,8 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
   @override
   void initState() {
     super.initState();
-    _enter = _PhaseConfig.fromAnimation(widget.initialEnter);
-    _leave = _PhaseConfig.fromAnimation(widget.initialLeave);
+    _enter = _PhaseConfig.fromAnimations(widget.initialEnter);
+    _leave = _PhaseConfig.fromAnimations(widget.initialLeave);
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: _loopMs),
@@ -166,20 +212,20 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
 
   int get _maxMs => widget.maxDurationMs;
 
-  LayerAnimation? _build(_PhaseConfig config, AnimationPhase phase) {
-    final type = config.type;
-    if (type == null) return null;
-    return LayerAnimation(
-      type: type,
-      phase: phase,
-      duration: config.duration,
-      curve: config.curve,
-      slideDirection: type == LayerAnimationType.slide
-          ? config.direction
-          : null,
-      scaleFrom: type == LayerAnimationType.scale ? config.scaleFrom : null,
-    );
-  }
+  List<LayerAnimation> _build(_PhaseConfig config, AnimationPhase phase) => [
+    for (final type in _composableTypes)
+      if (config.types.contains(type))
+        LayerAnimation(
+          type: type,
+          phase: phase,
+          duration: config.duration,
+          curve: config.curve,
+          slideDirection: type == LayerAnimationType.slide
+              ? config.direction
+              : null,
+          scaleFrom: type == LayerAnimationType.scale ? config.scaleFrom : null,
+        ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -212,14 +258,16 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
                 return _LayerTypeTile(
                   type: type,
                   label: _typeLabel(l10n, type),
-                  selected: type == active.type,
+                  selected: type == null
+                      ? active.types.isEmpty
+                      : active.types.contains(type),
                   controller: _controller,
                   phase: _phase,
                   direction: active.direction,
                   scaleFrom: active.scaleFrom,
                   curve: active.curve,
                   durationMs: active.duration.inMilliseconds,
-                  onTap: () => _updateActive((c) => c.copyWith(type: type)),
+                  onTap: () => _updateActive((c) => c.toggled(type)),
                 );
               },
             ),
@@ -229,9 +277,10 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
             child: AnimatedSize(
               duration: const Duration(milliseconds: 200),
               alignment: .topCenter,
-              // Duration + curve stay visible for every type (incl. None) so the
-              // values persist when switching type; direction/scale-from are
-              // type-specific and appear only for slide/scale.
+              // Duration + curve are shared by all effects in the phase and stay
+              // visible even for None so the values persist while toggling
+              // types; direction/scale-from are type-specific and appear only
+              // when slide/scale is selected.
               child: Column(
                 crossAxisAlignment: .stretch,
                 children: [
@@ -271,7 +320,7 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
                     onChanged: (curve) =>
                         _updateActive((c) => c.copyWith(curve: curve)),
                   ),
-                  if (active.type == LayerAnimationType.slide) ...[
+                  if (active.types.contains(LayerAnimationType.slide)) ...[
                     const SizedBox(height: 16),
                     SectionLabel(l10n.videoEditorTransitionDirection),
                     const SizedBox(height: 8),
@@ -299,7 +348,7 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
                       ],
                     ),
                   ],
-                  if (active.type == LayerAnimationType.scale) ...[
+                  if (active.types.contains(LayerAnimationType.scale)) ...[
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: .spaceBetween,
@@ -356,41 +405,72 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
 }
 
 /// Per-phase editable animation config.
+///
+/// [types] is the set of effects active for the phase — a phase can combine
+/// several (e.g. fade + slide). [duration] and [curve] are shared by every
+/// effect; [direction] and [scaleFrom] apply only when slide / scale is in
+/// [types].
 class _PhaseConfig {
   const _PhaseConfig({
-    required this.type,
+    required this.types,
     required this.duration,
     required this.curve,
     required this.direction,
     required this.scaleFrom,
   });
 
-  factory _PhaseConfig.fromAnimation(LayerAnimation? animation) => _PhaseConfig(
-    type: animation?.type,
-    duration: animation?.duration ?? _defaultDuration,
-    curve: animation?.curve ?? AnimationCurve.easeOut,
-    direction: animation?.slideDirection ?? SlideDirection.left,
-    scaleFrom: animation?.scaleFrom ?? 0.0,
-  );
+  /// Rebuilds the config from a phase's existing animations. [duration] and
+  /// [curve] come from the first animation; [direction] / [scaleFrom] from the
+  /// first slide / scale animation. (The picker edits these as shared values,
+  /// so per-effect differences set externally collapse on edit.)
+  factory _PhaseConfig.fromAnimations(List<LayerAnimation> animations) {
+    final types = <LayerAnimationType>{};
+    Duration? duration;
+    AnimationCurve? curve;
+    SlideDirection? direction;
+    double? scaleFrom;
+    for (final animation in animations) {
+      types.add(animation.type);
+      duration ??= animation.duration;
+      curve ??= animation.curve;
+      if (animation.type == LayerAnimationType.slide) {
+        direction ??= animation.slideDirection;
+      }
+      if (animation.type == LayerAnimationType.scale) {
+        scaleFrom ??= animation.scaleFrom;
+      }
+    }
+    return _PhaseConfig(
+      types: types,
+      duration: duration ?? _defaultDuration,
+      curve: curve ?? AnimationCurve.easeOut,
+      direction: direction ?? SlideDirection.left,
+      scaleFrom: scaleFrom ?? 0.0,
+    );
+  }
 
-  final LayerAnimationType? type;
+  final Set<LayerAnimationType> types;
   final Duration duration;
   final AnimationCurve curve;
   final SlideDirection direction;
   final double scaleFrom;
 
-  /// Sentinel marking "argument not supplied" so [copyWith] can tell a missing
-  /// [type] from an explicit `null` (None).
-  static const Object _unset = Object();
+  /// Adds or removes [type] from [types]; a `null` [type] clears the set (None).
+  _PhaseConfig toggled(LayerAnimationType? type) {
+    if (type == null) return copyWith(types: const {});
+    final next = Set<LayerAnimationType>.from(types);
+    if (!next.add(type)) next.remove(type);
+    return copyWith(types: next);
+  }
 
   _PhaseConfig copyWith({
-    Object? type = _unset,
+    Set<LayerAnimationType>? types,
     Duration? duration,
     AnimationCurve? curve,
     SlideDirection? direction,
     double? scaleFrom,
   }) => _PhaseConfig(
-    type: identical(type, _unset) ? this.type : type as LayerAnimationType?,
+    types: types ?? this.types,
     duration: duration ?? this.duration,
     curve: curve ?? this.curve,
     direction: direction ?? this.direction,

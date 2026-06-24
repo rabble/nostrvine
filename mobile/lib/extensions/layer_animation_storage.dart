@@ -14,21 +14,20 @@ extension LayerAnimationStorage on Layer {
   List<pve.LayerAnimation> get divineAnimations =>
       animations.map((a) => pve.LayerAnimation.fromMap(a.toMap())).toList();
 
-  /// The first [pve.AnimationPhase.animateIn] animation, or `null`.
-  pve.LayerAnimation? get divineEnterAnimation {
-    for (final animation in divineAnimations) {
-      if (animation.phase == pve.AnimationPhase.animateIn) return animation;
-    }
-    return null;
-  }
+  /// All [pve.AnimationPhase.animateIn] animations. A layer can combine several
+  /// per phase (e.g. a fade and a slide), which the renderers compose. Empty
+  /// when the layer has no enter animation.
+  List<pve.LayerAnimation> get divineEnterAnimations => [
+    for (final animation in divineAnimations)
+      if (animation.phase == pve.AnimationPhase.animateIn) animation,
+  ];
 
-  /// The first [pve.AnimationPhase.animateOut] animation, or `null`.
-  pve.LayerAnimation? get divineLeaveAnimation {
-    for (final animation in divineAnimations) {
-      if (animation.phase == pve.AnimationPhase.animateOut) return animation;
-    }
-    return null;
-  }
+  /// All [pve.AnimationPhase.animateOut] animations. Empty when the layer has
+  /// no leave animation.
+  List<pve.LayerAnimation> get divineLeaveAnimations => [
+    for (final animation in divineAnimations)
+      if (animation.phase == pve.AnimationPhase.animateOut) animation,
+  ];
 }
 
 /// Converts the picker's pro_video_editor animations into pro_image_editor
