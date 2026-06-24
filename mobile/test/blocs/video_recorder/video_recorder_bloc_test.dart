@@ -711,6 +711,55 @@ void main() {
       );
     });
 
+    group('RecordingStopRequested → failure recovery', () {
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'resets to idle when the native stop throws, so isStoppingRecording '
+        'is never latched true and future stops are not permanently blocked',
+        setUp: () {
+          when(
+            () => cameraService.stopRecording(),
+          ).thenThrow(Exception('native stop failed'));
+        },
+        build: () => buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(
+              recordingState: VideoRecorderState.recording,
+            ),
+          ),
+        act: (bloc) => bloc.add(const VideoRecorderRecordingStopRequested()),
+        errors: () => [isA<Exception>()],
+        expect: () => [
+          isA<VideoRecorderBlocState>()
+              .having(
+                (s) => s.isStoppingRecording,
+                'isStoppingRecording',
+                isTrue,
+              )
+              .having(
+                (s) => s.recordingState,
+                'recordingState',
+                VideoRecorderState.recording,
+              ),
+          isA<VideoRecorderBlocState>()
+              .having(
+                (s) => s.isStoppingRecording,
+                'isStoppingRecording',
+                isFalse,
+              )
+              .having(
+                (s) => s.recordingState,
+                'recordingState',
+                VideoRecorderState.idle,
+              ),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.isStoppingRecording, isFalse);
+          expect(bloc.state.recordingState, VideoRecorderState.idle);
+          verify(() => clipManager.resetRecording()).called(1);
+        },
+      );
+    });
+
     group('sequential() transformer contract', () {
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'queued RecordingStartRequested events process FIFO, not '

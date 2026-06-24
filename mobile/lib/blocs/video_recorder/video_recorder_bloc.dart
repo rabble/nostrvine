@@ -782,13 +782,37 @@ class VideoRecorderBloc
 
     unawaited(HapticService.recordingFeedback());
 
-    await _stopSoundPlayback();
-
-    final videoResult = event.result ?? await _cameraService.stopRecording();
-
-    await WakelockPlus.disable();
-    final clipManager = _readClipManager()..stopRecording();
-    final remainingDuration = clipManager.remainingDuration;
+    final EditorVideo? videoResult;
+    final ClipManagerNotifier clipManager;
+    final Duration remainingDuration;
+    try {
+      await _stopSoundPlayback();
+      videoResult = event.result ?? await _cameraService.stopRecording();
+      await WakelockPlus.disable();
+      clipManager = _readClipManager()..stopRecording();
+      remainingDuration = clipManager.remainingDuration;
+    } catch (e, stackTrace) {
+      // Anything thrown between setting isStoppingRecording=true and clearing
+      // it below would strand the recorder: the flag stays true and every
+      // future stop bails at the top of this handler, so the recording could
+      // never be stopped again. Reset to idle so the user can recover.
+      Log.error(
+        '⚠️ Failed to stop recording cleanly - resetting recorder state',
+        name: 'VideoRecorderBloc',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      addError(e, stackTrace);
+      _readClipManager().resetRecording();
+      emit(
+        state.copyWith(
+          recordingState: VideoRecorderState.idle,
+          isStoppingRecording: false,
+        ),
+      );
+      return;
+    }
 
     emit(
       state.copyWith(
