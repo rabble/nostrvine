@@ -106,6 +106,84 @@ void main() {
     });
   });
 
+  group('gesture arena vs. vertical paging', () {
+    testWidgets('horizontal swipe tunes WITHOUT changing the page', (
+      tester,
+    ) async {
+      final tuned = <FeedTuningDirection>[];
+      final controller = PageController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: FeedTuningSwipeOverlay(
+              onTuned: tuned.add,
+              child: PageView(
+                controller: controller,
+                scrollDirection: Axis.vertical,
+                children: const [
+                  SizedBox.expand(child: Center(child: Text('page-0'))),
+                  SizedBox.expand(child: Center(child: Text('page-1'))),
+                  SizedBox.expand(child: Center(child: Text('page-2'))),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.fling(
+        find.byType(FeedTuningSwipeOverlay),
+        const Offset(-300, 0),
+        1000,
+      );
+      await tester.pumpAndSettle();
+
+      expect(tuned, [FeedTuningDirection.less]);
+      expect(controller.page, 0); // vertical pager untouched
+    });
+
+    testWidgets('vertical swipe pages WITHOUT tuning', (tester) async {
+      final tuned = <FeedTuningDirection>[];
+      final controller = PageController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: FeedTuningSwipeOverlay(
+              onTuned: tuned.add,
+              child: PageView(
+                controller: controller,
+                scrollDirection: Axis.vertical,
+                children: const [
+                  SizedBox.expand(child: Center(child: Text('page-0'))),
+                  SizedBox.expand(child: Center(child: Text('page-1'))),
+                  SizedBox.expand(child: Center(child: Text('page-2'))),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.fling(
+        find.byType(FeedTuningSwipeOverlay),
+        const Offset(0, -600),
+        1500,
+      );
+      await tester.pumpAndSettle();
+
+      expect(tuned, isEmpty);
+      expect(controller.page, 1); // advanced one page
+    });
+  });
+
   group(FeedTuningSwipeGate, () {
     testWidgets('wraps the child with the overlay when enabled', (
       tester,
