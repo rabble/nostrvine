@@ -544,6 +544,11 @@ DmRepository dmRepository(Ref ref) {
       // session. Bounded by `since: newestSyncedAt - 2d` and isolate
       // decrypt so cold start stays cheap regardless of lifetime DM count.
       unawaited(repository.startListening());
+      // Self-advertise the user's NIP-17 kind-10050 DM inbox relay list once
+      // per (device, pubkey) when absent, so compliant senders deliver where
+      // divine reads. Flag-on-OK, so it no-ops + retries until the relay
+      // accepts the kind — never blocks login. See #4974.
+      unawaited(repository.ensureDmRelayListPublished());
     }
   }
 

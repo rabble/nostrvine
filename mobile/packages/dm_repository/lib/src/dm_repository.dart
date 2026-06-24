@@ -136,6 +136,14 @@ const _relayLoopbackHosts = <String>{
 const bool _classifyDiagnostics =
     bool.fromEnvironment('DM_CLASSIFY_DIAGNOSTICS') && !kReleaseMode;
 
+/// Caps how long `ensureDmRelayListPublished` waits for the
+/// signer when self-publishing the user's kind-10050 DM inbox relay list.
+/// A hung remote signer (Keycast RPC) must not block login; on timeout the
+/// publish is abandoned with the persistence flag left unset so the next
+/// login retries. Mirrors AuthService's kind-10002 bootstrap discipline.
+/// See #4974.
+const Duration _dmRelayListSignTimeout = Duration(seconds: 10);
+
 bool _isAllowedDmRelayUrl(String url) {
   final uri = Uri.tryParse(url.trim());
   if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return false;
@@ -253,6 +261,21 @@ class DmRepository {
   StreamSubscription<Event>? _giftWrapSubscription;
   Timer? _reconnectTimer;
   late bool _disposed = false;
+
+  /// Guards against a double-subscribe race: [startListening] now awaits the
+  /// user's own kind-10050 resolution before opening the live subscription,
+  /// so a concurrent call could otherwise slip past the
+  /// `_giftWrapSubscription == null` check during that await. See #4974.
+  bool _subscribing = false;
+
+  /// Memoized resolution of the CURRENT user's own kind-10050 DM inbox
+  /// relays (#4974 RC2). Resolved at most once per session and shared by the
+  /// live subscription and the history drain; `null` until first requested.
+  /// Cleared in [_resetState] so it never leaks across an account switch and
+  /// is re-resolved for the new `_userPubkey`. The resolved value may itself
+  /// be `null` (user has no kind-10050 → fall back to the default pool),
+  /// which is cached too so reconnects do not re-query.
+  Future<List<String>?>? _ownInboxRelaysFuture;
 
   /// A single long-lived decrypt isolate, alive only for the duration of a
   /// history drain. Spawned in [_runHistoryDrain] for local-key signers and
@@ -412,6 +435,9 @@ class DmRepository {
     _reconnectTimer = null;
     unawaited(_giftWrapSubscription?.cancel());
     _giftWrapSubscription = null;
+    // Drop the outgoing user's resolved own-inbox relays so the next user
+    // re-resolves their own kind-10050 (never reuses a stale set). #4974.
+    _ownInboxRelaysFuture = null;
     final subId = _subscriptionId;
     try {
       unawaited(_nostrClient.unsubscribe(subId));
@@ -467,7 +493,7 @@ class DmRepository {
     // fresh subscription we're about to establish.
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
-    if (_giftWrapSubscription != null || !isInitialized) return;
+    if (_giftWrapSubscription != null || _subscribing || !isInitialized) return;
 
     // Count-based windowing: first open fetches a bounded backlog
     // (limit:50), later opens fetch only recent events via a `since:`
@@ -496,47 +522,83 @@ class DmRepository {
       category: LogCategory.system,
     );
 
-    _subscriptionId = 'dm_inbox_$_userPubkey';
-    final stream = _nostrClient.subscribe([
-      filter,
-    ], subscriptionId: _subscriptionId);
+    // Resolve the user's OWN kind-10050 inbox relays and target the live
+    // subscription at them — as BOTH tempRelays (to add connections outside
+    // the default pool) AND targetRelays — so gift wraps a NIP-17 sender
+    // delivered to relays outside divine's default pool are read. A `null`
+    // result (no kind-10050 / resolve failure) preserves the prior
+    // default-pool behavior. Memoized per session, so the up-to-5s resolve
+    // only delays the FIRST open. _subscribing guards the await window
+    // against a concurrent startListening opening a duplicate subscription.
+    // See #4974.
+    _subscribing = true;
+    try {
+      final ownInbox = await _resolveOwnInboxRelays();
+      // A teardown (stopListening / account switch) or a competing call may
+      // have run during the await — bail rather than open a stale or
+      // duplicate subscription.
+      if (_disposed || !isInitialized || _giftWrapSubscription != null) {
+        return;
+      }
 
-    _giftWrapSubscription = stream.listen(
-      _handleIncomingEvent,
-      onError: (Object error) {
-        Log.error(
-          'DM subscription error: $error',
-          category: LogCategory.system,
-        );
-        // Cancel the failed subscription so its onDone callback never fires
-        // after a later stopListening() call (which leaves _disposed false).
-        // Without this, the orphaned subscription's onDone would schedule a
-        // reconnect timer that leaks past the current lifecycle.
-        unawaited(_giftWrapSubscription?.cancel());
-        _giftWrapSubscription = null;
-        if (!_disposed) {
-          _scheduleReconnect();
-        }
-      },
-      onDone: () {
-        // Stream closed (relay disconnect, NostrClient rebuild, etc.)
-        // Clear the subscription so startListening() can re-subscribe.
-        _giftWrapSubscription = null;
-        if (!_disposed) {
-          Log.info(
-            'DM subscription stream closed, re-subscribing '
-            'in ${_reconnectDelay.inSeconds}s',
+      _subscriptionId = 'dm_inbox_$_userPubkey';
+      final stream = _nostrClient.subscribe(
+        [filter],
+        subscriptionId: _subscriptionId,
+        tempRelays: ownInbox,
+        targetRelays: ownInbox,
+      );
+
+      _giftWrapSubscription = stream.listen(
+        _handleIncomingEvent,
+        onError: (Object error) {
+          Log.error(
+            'DM subscription error: $error',
             category: LogCategory.system,
           );
-          _scheduleReconnect();
-        }
-      },
-    );
+          // Cancel the failed subscription so its onDone callback never fires
+          // after a later stopListening() call (which leaves _disposed false).
+          // Without this, the orphaned subscription's onDone would schedule a
+          // reconnect timer that leaks past the current lifecycle.
+          unawaited(_giftWrapSubscription?.cancel());
+          _giftWrapSubscription = null;
+          if (!_disposed) {
+            _scheduleReconnect();
+          }
+        },
+        onDone: () {
+          // Stream closed (relay disconnect, NostrClient rebuild, etc.)
+          // Clear the subscription so startListening() can re-subscribe.
+          _giftWrapSubscription = null;
+          if (!_disposed) {
+            Log.info(
+              'DM subscription stream closed, re-subscribing '
+              'in ${_reconnectDelay.inSeconds}s',
+              category: LogCategory.system,
+            );
+            _scheduleReconnect();
+          }
+        },
+      );
+    } finally {
+      _subscribing = false;
+    }
 
     // No poll timer: the live WebSocket subscription is the sole event
     // source for the entire authenticated session. Poller was removed
     // because it re-fetched duplicate events every 10s forever on the UI
     // isolate. See docs/plans/2026-04-05-dm-scaling-fix-design.md and #2931.
+  }
+
+  /// Resolves and memoizes the CURRENT user's own kind-10050 DM inbox
+  /// relays for the session (#4974 RC2).
+  ///
+  /// Shared by the live subscription and the history drain so the relay is
+  /// queried at most once per session; the result (which may be `null` when
+  /// the user has no kind-10050) is cached so reconnects and drain pages do
+  /// not re-query. [_resetState] clears the memo on account switch.
+  Future<List<String>?> _resolveOwnInboxRelays() {
+    return _ownInboxRelaysFuture ??= resolveDmInboxRelays(_userPubkey);
   }
 
   /// Fetches a single older page of DM events (gift wraps, NIP-04,
@@ -552,6 +614,7 @@ class DmRepository {
     required int limit,
     required String subscriptionId,
     required String pubkey,
+    List<String>? tempRelays,
   }) async {
     final filter = nostr_filter.Filter(
       kinds: [
@@ -564,10 +627,15 @@ class DmRepository {
       limit: limit,
     );
 
+    // Target the user's OWN kind-10050 inbox relays (in addition to the
+    // default pool) so the #4953/#4973 history drain reads gift wraps a
+    // sender delivered outside the default pool. `null` keeps the prior
+    // default-pool-only behavior. See #4974.
     final events = await _nostrClient.queryEvents(
       [filter],
       subscriptionId: subscriptionId,
       useCache: false,
+      tempRelays: tempRelays,
     );
     if (_disposed || _userPubkey != pubkey) return null;
 
@@ -950,6 +1018,13 @@ class DmRepository {
           syncState.oldestSyncedAt(pubkey) ??
           DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
+      // Resolve the user's OWN kind-10050 inbox relays once for the whole
+      // drain (memoized, shared with the live subscription) and target every
+      // page at them so the backfill reads gift wraps delivered outside the
+      // default pool. `null` keeps default-pool-only behavior. See #4974.
+      final ownInbox = await _resolveOwnInboxRelays();
+      if (_disposed || _userPubkey != pubkey) return;
+
       var reachedEnd = false;
       var pagesRun = 0;
       var totalEvents = 0;
@@ -961,6 +1036,7 @@ class DmRepository {
           limit: DmHistoryDrainConfig.pageSize,
           subscriptionId: 'dm_drain_${pubkey}_$page',
           pubkey: pubkey,
+          tempRelays: ownInbox,
         );
         if (events == null) return;
         pagesRun++;
@@ -1838,10 +1914,15 @@ class DmRepository {
       if (events.isEmpty) return null;
       // Newest wins for a replaceable event served from multiple relays.
       events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      // Accept both `relay` (the kind-10050 spec tag) and `r` tags. The
+      // whole point of #4974 is reading a 10050 a user advertised from
+      // ANOTHER client, and some clients write `r` tags; within a
+      // kind-10050 event both unambiguously denote DM inbox relays. Matches
+      // divine-web's resolveDmReadRelays.
       final relays = <String>{
         for (final tag in events.first.tags)
           if (tag.length >= 2 &&
-              tag[0] == 'relay' &&
+              (tag[0] == 'relay' || tag[0] == 'r') &&
               tag[1].isNotEmpty &&
               _isAllowedDmRelayUrl(tag[1]))
             tag[1],
@@ -1853,6 +1934,97 @@ class DmRepository {
         category: LogCategory.system,
       );
       return null;
+    }
+  }
+
+  /// Publishes a minimal NIP-17 kind-10050 DM inbox relay list for the
+  /// current user when they don't already advertise one, so compliant
+  /// senders deliver gift-wrapped DMs to the relay where divine receives
+  /// them (#4974 RC3).
+  ///
+  /// Publish-when-absent: a kind-10050 the user advertised from any client
+  /// is left untouched — divine reads it on the receive side (RC2) rather
+  /// than risk overwriting a richer list. Idempotent per (device, pubkey)
+  /// via `DmSyncState.dmRelayListPublished`, with the flag set ONLY on a
+  /// confirmed relay `OK`. So a relay that rejects kind-10050 (e.g. the kind
+  /// is not yet in its allowed-kinds) or a slow/failed signer simply leaves
+  /// the flag unset and the next login retries — the publish never blocks
+  /// login and self-heals once the backend accepts the kind.
+  ///
+  /// No-op when uninitialized, when no signer / sync state is wired, or when
+  /// the advertised relay URL is not a valid `wss://` relay.
+  Future<void> ensureDmRelayListPublished() async {
+    if (!isInitialized) return;
+    final syncState = _syncState;
+    final signer = _signer;
+    if (syncState == null || signer == null) return;
+    final pubkey = _userPubkey;
+    try {
+      if (syncState.dmRelayListPublished(pubkey)) return;
+
+      // Never overwrite a kind-10050 the user advertised from another
+      // client — it may list inbox relays divine doesn't know. Record the
+      // flag so we stop re-checking every login.
+      final existing = await resolveDmInboxRelays(pubkey);
+      if (_disposed || _userPubkey != pubkey) return;
+      if (existing != null) {
+        await syncState.markDmRelayListPublished(pubkey);
+        return;
+      }
+
+      final relayUrl = _nostrClient.primaryRelay;
+      if (!_isAllowedDmRelayUrl(relayUrl)) return;
+
+      final unsigned = Event(
+        pubkey,
+        EventKind.dmRelaysList,
+        <List<String>>[
+          <String>['relay', relayUrl],
+        ],
+        '',
+      );
+
+      final Event? signed;
+      try {
+        signed = await signer
+            .signEvent(unsigned)
+            .timeout(_dmRelayListSignTimeout);
+      } on TimeoutException {
+        Log.warning(
+          'kind-10050 publish: signer timed out after '
+          '${_dmRelayListSignTimeout.inSeconds}s — will retry next login',
+          category: LogCategory.system,
+        );
+        return;
+      }
+      if (signed == null || signed.sig.isEmpty) return;
+      if (_disposed || _userPubkey != pubkey) return;
+
+      final outcome = await _nostrClient.publishEventAwaitOk(
+        signed,
+        targetRelays: <String>[relayUrl],
+      );
+      if (_disposed || _userPubkey != pubkey) return;
+      if (outcome.acceptedBy.isEmpty) {
+        Log.warning(
+          'kind-10050 publish: no relay accepted — will retry next login',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      await syncState.markDmRelayListPublished(pubkey);
+      Log.info(
+        'Published kind-10050 DM inbox relay list for $pubkey -> $relayUrl',
+        category: LogCategory.system,
+      );
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'kind-10050 publish failed: $e — will retry next login',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 

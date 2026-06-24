@@ -25,6 +25,7 @@ class DmSyncState {
   static const _drainCompletePrefix = 'dm.historyDrainComplete.';
   static const _drainCursorPrefix = 'dm.historyDrainCursor.';
   static const _drainVersionPrefix = 'dm.historyDrainVersion.';
+  static const _dmRelayListPublishedPrefix = 'dm.dmRelayListPublished.';
 
   /// Current history-drain logic version. Installs whose persisted
   /// [drainVersion] is below this re-run the drain once, even if
@@ -134,6 +135,23 @@ class DmSyncState {
   /// from it.
   Future<void> setHistoryDrainCursor(String pubkey, int cursor) async {
     await _prefs.setInt('$_drainCursorPrefix$pubkey', cursor);
+  }
+
+  /// Whether a NIP-17 kind-10050 DM inbox relay list has been published for
+  /// [pubkey] from this device.
+  ///
+  /// Gates #4974's publish-on-login so it runs at most once per
+  /// (device, pubkey). Set only on a confirmed relay `OK` (see
+  /// [markDmRelayListPublished]); a reinstall wipes SharedPreferences and a
+  /// fresh install should re-advertise, so this correctly reads `false`
+  /// again then.
+  bool dmRelayListPublished(String pubkey) =>
+      _prefs.getBool('$_dmRelayListPublishedPrefix$pubkey') ?? false;
+
+  /// Records that a kind-10050 DM inbox relay list has been published for
+  /// [pubkey] (or that one already exists). See [dmRelayListPublished].
+  Future<void> markDmRelayListPublished(String pubkey) async {
+    await _prefs.setBool('$_dmRelayListPublishedPrefix$pubkey', true);
   }
 
   /// Removes all sync state for [pubkey]. Called on account switch.

@@ -283,5 +283,19 @@ void main() {
         expect(state.drainVersion(pkB), equals(0));
       });
     });
+
+    group('dmRelayListPublished (#4974)', () {
+      test('defaults to false and flips to true after marking', () async {
+        expect(state.dmRelayListPublished(pkA), isFalse);
+        await state.markDmRelayListPublished(pkA);
+        expect(state.dmRelayListPublished(pkA), isTrue);
+      });
+
+      test('is per-pubkey — marking one does not affect another', () async {
+        await state.markDmRelayListPublished(pkA);
+        expect(state.dmRelayListPublished(pkA), isTrue);
+        expect(state.dmRelayListPublished(pkB), isFalse);
+      });
+    });
   });
 }
