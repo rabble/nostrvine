@@ -788,11 +788,19 @@ class VideoRecorderBloc
     try {
       await _stopSoundPlayback();
       videoResult = event.result ?? await _cameraService.stopRecording();
-      await WakelockPlus.disable();
+      // Best-effort: a wakelock teardown failure must not abort the stop and
+      // discard an already-captured clip (videoResult is assigned above), so
+      // it is swallowed rather than thrown into the recovery catch.
+      await _disableWakelockSafely();
       clipManager = _readClipManager()..stopRecording();
       remainingDuration = clipManager.remainingDuration;
     } catch (e, stackTrace) {
-      // Anything thrown between setting isStoppingRecording=true and clearing
+      // Defense-in-depth recovery. Neither production CameraService throws
+      // from stopRecording() (both catch internally and return null),
+      // _stopSoundPlayback() swallows its own errors, and the wakelock
+      // teardown is guarded above — so this is only reached if that
+      // camera/audio/clip-manager contract is violated. If it ever is,
+      // anything thrown between setting isStoppingRecording=true and clearing
       // it below would strand the recorder: the flag stays true and every
       // future stop bails at the top of this handler, so the recording could
       // never be stopped again. Run best-effort cleanup so the user can
@@ -805,19 +813,12 @@ class VideoRecorderBloc
         stackTrace: stackTrace,
       );
       addError(e, stackTrace);
-      // A throw at _cameraService.stopRecording() skips the clip-manager and
-      // wakelock teardown above. stopRecording() cancels the periodic 60fps
-      // duration timer and stops the stopwatch (resetRecording alone would
-      // leave that timer running); the wakelock release is retried under its
-      // own guard so a wakelock failure can't block state recovery.
+      // stopRecording() cancels the periodic 60fps duration timer and stops
+      // the stopwatch (resetRecording alone would leave that timer running).
       _readClipManager()
         ..stopRecording()
         ..resetRecording();
-      try {
-        await WakelockPlus.disable();
-      } catch (_) {
-        // Best-effort: ignore a secondary wakelock failure during recovery.
-      }
+      await _disableWakelockSafely();
       emit(
         state.copyWith(
           recordingState: VideoRecorderState.idle,
@@ -1460,6 +1461,23 @@ class VideoRecorderBloc
     } catch (e) {
       Log.warning(
         'Failed to stop sound playback: $e',
+        name: 'VideoRecorderBloc',
+        category: LogCategory.video,
+      );
+    }
+  }
+
+  /// Releases the wakelock without letting a failure abort the caller.
+  ///
+  /// Wakelock teardown is best-effort: a failure only means the screen stays
+  /// awake. It must never strand the recorder state or discard a captured
+  /// clip, so the error is logged and swallowed.
+  Future<void> _disableWakelockSafely() async {
+    try {
+      await WakelockPlus.disable();
+    } catch (e) {
+      Log.warning(
+        'Failed to disable wakelock: $e',
         name: 'VideoRecorderBloc',
         category: LogCategory.video,
       );

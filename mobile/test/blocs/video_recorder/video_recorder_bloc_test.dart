@@ -38,6 +38,19 @@ class _FakeWakelockPlatform extends WakelockPlusPlatformInterface {
   Future<bool> get enabled async => false;
 }
 
+/// Throws when the wakelock is disabled (`WakelockPlus.disable()` →
+/// `toggle(enable: false)`) so the best-effort teardown path can be
+/// exercised. Enabling stays a no-op so a recording can still start.
+class _ThrowingWakelockDisablePlatform extends WakelockPlusPlatformInterface {
+  @override
+  Future<void> toggle({required bool enable}) async {
+    if (!enable) throw Exception('wakelock disable failed');
+  }
+
+  @override
+  Future<bool> get enabled async => false;
+}
+
 void main() {
   late _MockCameraService cameraService;
   late _MockClipManager clipManager;
@@ -759,6 +772,100 @@ void main() {
           // periodic duration timer that resetRecording() leaves running.
           verify(() => clipManager.stopRecording()).called(1);
           verify(() => clipManager.resetRecording()).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'a wakelock disable failure is swallowed (best-effort) — the stop '
+        'still completes, no error is surfaced, and the recorder is not '
+        'driven into the recovery path',
+        setUp: () {
+          wakelockPlusPlatformInstance = _ThrowingWakelockDisablePlatform();
+          when(
+            () => cameraService.stopRecording(),
+          ).thenAnswer((_) async => null);
+        },
+        tearDown: () {
+          wakelockPlusPlatformInstance = _FakeWakelockPlatform();
+        },
+        build: () => buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(
+              recordingState: VideoRecorderState.recording,
+            ),
+          ),
+        act: (bloc) => bloc.add(const VideoRecorderRecordingStopRequested()),
+        // No error reaches addError: the wakelock failure is logged and
+        // swallowed by _disableWakelockSafely, never the recovery catch.
+        errors: () => const <Object>[],
+        verify: (bloc) {
+          expect(bloc.state.isStoppingRecording, isFalse);
+          expect(bloc.state.recordingState, VideoRecorderState.idle);
+          // The duration timer is still cancelled even though wakelock threw.
+          verify(() => clipManager.stopRecording()).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'on a clean stop, clipManager.stopRecording() is called so the '
+        'periodic duration timer is cancelled on the normal path',
+        setUp: () {
+          when(
+            () => cameraService.stopRecording(),
+          ).thenAnswer((_) async => null);
+        },
+        build: () => buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(
+              recordingState: VideoRecorderState.recording,
+            ),
+          ),
+        act: (bloc) => bloc.add(const VideoRecorderRecordingStopRequested()),
+        errors: () => const <Object>[],
+        verify: (bloc) {
+          expect(bloc.state.isStoppingRecording, isFalse);
+          expect(bloc.state.recordingState, VideoRecorderState.idle);
+          verify(() => clipManager.stopRecording()).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'a new stop is honored after a recovery — isStoppingRecording is '
+        'cleared, not latched, so the recorder is not permanently blocked',
+        setUp: () {
+          var calls = 0;
+          when(() => cameraService.stopRecording()).thenAnswer((_) async {
+            calls++;
+            if (calls == 1) throw Exception('native stop failed');
+            return null;
+          });
+        },
+        build: () => buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(
+              recordingState: VideoRecorderState.recording,
+            ),
+          ),
+        act: (bloc) async {
+          bloc.add(const VideoRecorderRecordingStopRequested());
+          await Future<void>.delayed(Duration.zero);
+          // Re-arm to recording; the second stop must reach the native call
+          // rather than bail on a latched isStoppingRecording guard.
+          bloc.emit(
+            const VideoRecorderBlocState(
+              recordingState: VideoRecorderState.recording,
+            ),
+          );
+          bloc.add(const VideoRecorderRecordingStopRequested());
+        },
+        errors: () => [isA<Exception>()],
+        verify: (bloc) {
+          // Both stops reached the native call — the first recovered without
+          // latching isStoppingRecording=true (which would have bailed the
+          // second at the top of the handler).
+          verify(() => cameraService.stopRecording()).called(2);
+          expect(bloc.state.isStoppingRecording, isFalse);
+          expect(bloc.state.recordingState, VideoRecorderState.idle);
         },
       );
     });
