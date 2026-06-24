@@ -8,6 +8,11 @@ import 'package:pro_video_editor/pro_video_editor.dart' as pve;
 /// `toMap` keys), so a map round-trip converts losslessly between them. This is
 /// the single boundary where pro_image_editor's [LayerAnimation] (used for
 /// editing + the in-editor preview) becomes pro_video_editor's (used at export).
+///
+/// The round-trip relies on that schema parity; a future bump of either package
+/// that changes its `toMap` keys or enum names would break it silently, so it is
+/// guarded by the round-trip unit test in `layer_animation_storage_test.dart` —
+/// re-run that test when bumping either dependency.
 extension LayerAnimationStorage on Layer {
   /// This layer's enter/leave animations as pro_video_editor models, for the
   /// export pipeline. Empty when the layer has no animations.
@@ -31,6 +36,10 @@ extension LayerAnimationStorage on Layer {
 }
 
 /// Converts the picker's pro_video_editor animations into pro_image_editor
-/// [LayerAnimation]s for assignment to [Layer.animations].
-List<LayerAnimation> toLayerAnimations(List<pve.LayerAnimation> animations) =>
-    animations.map((a) => LayerAnimation.fromMap(a.toMap())).toList();
+/// [LayerAnimation]s for assignment to [Layer.animations] — the inverse of
+/// [LayerAnimationStorage.divineAnimations].
+extension DivineLayerAnimationList on List<pve.LayerAnimation> {
+  /// This list as pro_image_editor [LayerAnimation]s for [Layer.animations].
+  List<LayerAnimation> toLayerAnimations() =>
+      map((a) => LayerAnimation.fromMap(a.toMap())).toList();
+}

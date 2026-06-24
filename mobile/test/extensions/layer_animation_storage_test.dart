@@ -21,7 +21,7 @@ void main() {
 
   group('LayerAnimationStorage', () {
     test('round-trips animations through Layer.animations', () {
-      final layer = Layer(animations: toLayerAnimations([enter, leave]));
+      final layer = Layer(animations: [enter, leave].toLayerAnimations());
 
       expect(layer.divineAnimations, equals([enter, leave]));
     });
@@ -31,7 +31,7 @@ void main() {
     });
 
     test('exposes the enter and leave animations by phase', () {
-      final layer = Layer(animations: toLayerAnimations([leave, enter]));
+      final layer = Layer(animations: [leave, enter].toLayerAnimations());
 
       expect(layer.divineEnterAnimations, equals([enter]));
       expect(layer.divineLeaveAnimations, equals([leave]));
@@ -49,7 +49,7 @@ void main() {
         phase: editor.AnimationPhase.animateIn,
         duration: Duration(milliseconds: 400),
       );
-      final layer = Layer(animations: toLayerAnimations([fadeIn, slideIn]));
+      final layer = Layer(animations: [fadeIn, slideIn].toLayerAnimations());
 
       expect(layer.divineEnterAnimations, equals([fadeIn, slideIn]));
       expect(layer.divineLeaveAnimations, isEmpty);
@@ -62,13 +62,15 @@ void main() {
         duration: Duration(milliseconds: 500),
         scaleFrom: 0.5,
       );
-      final layer = Layer(animations: toLayerAnimations([scaleIn]));
+      final layer = Layer(animations: [scaleIn].toLayerAnimations());
 
       expect(layer.divineAnimations.single.scaleFrom, equals(0.5));
     });
 
     test('empty input clears to no animations', () {
-      final layer = Layer(animations: toLayerAnimations(const []));
+      final layer = Layer(
+        animations: const <editor.LayerAnimation>[].toLayerAnimations(),
+      );
 
       expect(layer.divineAnimations, isEmpty);
     });

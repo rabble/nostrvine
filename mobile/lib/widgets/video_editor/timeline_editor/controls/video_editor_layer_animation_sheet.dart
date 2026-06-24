@@ -95,7 +95,7 @@ Future<void> editLayerAnimation(
   // stale fade when the animations list is empty.
   layers[index] =
       layer.copyWith(
-          animations: toLayerAnimations(animations),
+          animations: animations.toLayerAnimations(),
           endTime: endTime,
         )
         ..enterDuration = null
