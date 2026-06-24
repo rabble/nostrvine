@@ -13982,6 +13982,12 @@ abstract class AppLocalizations {
   /// **'Duration'**
   String get videoEditorTransitionDuration;
 
+  /// Hint shown below the transition duration slider when the maximum length is reduced because an adjacent clip already has a transition that uses part of the shared clip.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortened to avoid overlapping the neighbouring transition.'**
+  String get videoEditorTransitionDurationLimitedHint;
+
   /// Section label above the transition easing-curve options in the transition picker.
   ///
   /// In en, this message translates to:

@@ -457,5 +457,93 @@ void main() {
         equals(const Duration(seconds: 1)),
       );
     });
+
+    test('splits a shared middle clip between two over-consuming dips', () {
+      // 3×1s clips with 2s dips on both boundaries. Each dip alone would consume
+      // the whole 1s middle clip; together they must not overlap, so each is
+      // clamped to 1s (0.5s consumed per side → head + tail exactly fills the
+      // middle clip). This is what fixes the "both halves the same color" bug.
+      final dip2s = fadeToBlack.copyWith(duration: const Duration(seconds: 2));
+      final clips = [
+        clip('a', const Duration(seconds: 1), transition: dip2s),
+        clip('b', const Duration(seconds: 1), transition: dip2s),
+        clip('c', const Duration(seconds: 1)),
+      ];
+
+      final clamped = VideoEditorRenderService.clampTransitions(clips);
+      expect(clamped['a']?.duration, equals(const Duration(seconds: 1)));
+      expect(clamped['b']?.duration, equals(const Duration(seconds: 1)));
+      expect(clamped['c'], isNull);
+    });
+
+    test('splits a shared middle clip between two over-consuming overlaps', () {
+      // 3×1s clips with a dissolve at the overlap ceiling (500ms) on both
+      // boundaries. Each alone would consume the whole 1s middle clip, leaving
+      // no solo body — and the native overlap (planOverlap) then falls back to
+      // a hard cut, dropping the transition. Clamped, they split the clip: each
+      // becomes 250ms so the middle keeps 500ms of solo body for both blends.
+      final overlap500 = dissolve.copyWith(
+        duration: const Duration(milliseconds: 500),
+      );
+      final clips = [
+        clip('a', const Duration(seconds: 1), transition: overlap500),
+        clip('b', const Duration(seconds: 1), transition: overlap500),
+        clip('c', const Duration(seconds: 1)),
+      ];
+
+      final clamped = VideoEditorRenderService.clampTransitions(clips);
+      expect(
+        clamped['a']?.duration,
+        equals(const Duration(milliseconds: 250)),
+      );
+      expect(
+        clamped['b']?.duration,
+        equals(const Duration(milliseconds: 250)),
+      );
+    });
+
+    test('does not reduce a single dip even when the middle clip is short', () {
+      // Only the first boundary has a transition, so the 1s middle clip is
+      // consumed from one side only — the dip keeps its full (in-bounds) length.
+      final dip1s = fadeToBlack.copyWith(duration: const Duration(seconds: 1));
+      final clips = [
+        clip('a', const Duration(seconds: 1), transition: dip1s),
+        clip('b', const Duration(seconds: 1)),
+        clip('c', const Duration(seconds: 1)),
+      ];
+
+      final clamped = VideoEditorRenderService.clampTransitions(clips);
+      expect(clamped['a']?.duration, equals(const Duration(seconds: 1)));
+    });
+
+    test(
+      'scales the two boundaries by their demand on an over-consumed clip',
+      () {
+        // The middle clip (1s) is over-consumed: its incoming dip wants 1s/side
+        // (2s dip) and its outgoing overlap wants 1s/side (500ms dissolve). They
+        // share the 1s budget proportionally to their equal demand → 0.5s each,
+        // so neither side over-runs and the clip is split between them.
+        final dip2s = fadeToBlack.copyWith(
+          duration: const Duration(seconds: 2),
+        );
+        final overlap500 = dissolve.copyWith(
+          duration: const Duration(milliseconds: 500),
+        );
+        final clips = [
+          clip('a', const Duration(seconds: 1), transition: dip2s),
+          clip('b', const Duration(seconds: 1), transition: overlap500),
+          clip('c', const Duration(seconds: 1)),
+        ];
+
+        final clamped = VideoEditorRenderService.clampTransitions(clips);
+        // Dip: 0.5s consumed → duration 1s. Overlap: 0.5s consumed → duration
+        // 250ms.
+        expect(clamped['a']?.duration, equals(const Duration(seconds: 1)));
+        expect(
+          clamped['b']?.duration,
+          equals(const Duration(milliseconds: 250)),
+        );
+      },
+    );
   });
 }

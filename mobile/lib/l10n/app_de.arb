@@ -2828,6 +2828,7 @@
     "videoEditorTransitionWipe": "Wischen",
     "videoEditorTransitionButtonSemanticLabel": "Übergang bearbeiten",
     "videoEditorTransitionDuration": "Dauer",
+    "videoEditorTransitionDurationLimitedHint": "Gekürzt, damit sie sich nicht mit dem benachbarten Übergang überlappt.",
     "videoEditorTransitionCurve": "Kurve",
     "videoEditorTransitionDirection": "Richtung",
     "videoEditorTransitionDirectionLeft": "Links",

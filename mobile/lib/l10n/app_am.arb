@@ -3388,6 +3388,7 @@
     "videoEditorTransitionWipe": "ማበስ",
     "videoEditorTransitionButtonSemanticLabel": "ሽግግርን አርትዕ",
     "videoEditorTransitionDuration": "ቆይታ",
+    "videoEditorTransitionDurationLimitedHint": "በአጎራባች ሽግግር ላይ እንዳይደራረብ ተቀንሷል።",
     "videoEditorTransitionCurve": "ኩርባ",
     "videoEditorTransitionDirection": "አቅጣጫ",
     "videoEditorTransitionDirectionLeft": "ግራ",

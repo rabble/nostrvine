@@ -9,6 +9,7 @@ import 'package:divine_video_player/divine_video_player.dart' as player;
 import 'package:flutter/foundation.dart';
 import 'package:openvine/extensions/divine_video_clip_player_mapping.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/services/video_editor/transition_geometry.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart'
@@ -47,6 +48,11 @@ class TransitionSeam {
 /// Renders and caches transition seams. Cache keys include the clip pair,
 /// their trims/speed and the transition, so a trim change (or reorder, which
 /// changes adjacency) naturally misses the cache and re-renders.
+///
+/// The transition passed in is the **clamped** transition (see
+/// [VideoEditorRenderService.clampTransitions]) — the render-time duration that
+/// guarantees no clip is consumed by transitions on both sides at once, so the
+/// preview matches the export and a middle clip is never replayed.
 class TransitionSeamRenderService {
   final _cache = <String, TransitionSeam>{};
   final _inFlight = <String, Future<TransitionSeam?>>{};
@@ -240,18 +246,14 @@ class TransitionSeamRenderService {
   /// The wall-clock (playback) span consumed from each side, the actual blend
   /// (overlap or dip) duration, and the transition to apply when rendering the
   /// seam. Everything here is in playback time so the math lines up with the
-  /// picker ceiling and the export-side clamp (both keyed on
-  /// [DivineVideoClip.playbackDuration]); `_render` converts [consumed] back
-  /// into each clip's own source time for trimming.
+  /// picker ceiling and the export-side clamp (all keyed on
+  /// [DivineVideoClip.playbackDuration] via [transitionConsumedPerSide]);
+  /// `_render` converts [consumed] back into each clip's own source time for
+  /// trimming.
   ///
-  /// The span is clamped to the shorter clip so a transition can never run past
-  /// a clip — a 200ms clip with a 500ms dissolve shrinks the whole transition
-  /// proportionally rather than overrunning. Consuming the *whole* shorter clip
-  /// (rather than only half) lets the seam faithfully preview an overlap up to
-  /// half the shorter clip — matching the picker's ceiling — instead of capping
-  /// the visible blend at a quarter of it. For overlaps the blend is always
-  /// half the consumed span, guaranteeing a solo lead-in/out on each side (a
-  /// segment equal to the blend degenerates into a hard cut).
+  /// For overlaps the blend is always half the consumed span, guaranteeing a
+  /// solo lead-in/out on each side (a segment equal to the blend degenerates
+  /// into a hard cut).
   @visibleForTesting
   ({Duration consumed, Duration blend, ClipTransition seamTransition})
   computeSeamSpans(
@@ -259,9 +261,12 @@ class TransitionSeamRenderService {
     DivineVideoClip clipB,
     ClipTransition transition,
   ) {
-    final maxSpan = _min(clipA.playbackDuration, clipB.playbackDuration);
+    final consumed = transitionConsumedPerSide(
+      clipA.playbackDuration,
+      clipB.playbackDuration,
+      transition,
+    );
     if (_isOverlap(transition.type)) {
-      final consumed = _min(transition.duration * 2, maxSpan);
       final blend = _half(consumed);
       return (
         consumed: consumed,
@@ -269,7 +274,6 @@ class TransitionSeamRenderService {
         seamTransition: transition.copyWith(duration: blend),
       );
     }
-    final consumed = _min(_half(transition.duration), maxSpan);
     final dip = _min(transition.duration, consumed * 2);
     return (
       consumed: consumed,
@@ -302,11 +306,14 @@ class TransitionSeamRenderService {
   }
 
   /// Bumped whenever the seam-composition math ([computeSeamSpans] /
-  /// [_tailClip] / [_headClip]) changes. It prefixes [_key], so persisted seams
-  /// rendered by an older algorithm under `transition_seams/` are no longer
-  /// key-matched and get re-rendered after an app upgrade instead of replayed
-  /// stale (the keyed files live in the documents dir and survive upgrades).
-  static const _seamCacheVersion = 1;
+  /// [_tailClip] / [_headClip]) or the transition that reaches the seam changes.
+  /// It prefixes [_key], so persisted seams rendered by an older algorithm under
+  /// `transition_seams/` are no longer key-matched and get re-rendered after an
+  /// app upgrade instead of replayed stale (the keyed files live in the
+  /// documents dir and survive upgrades).
+  ///
+  /// v4: seams now render the no-overlap-clamped transition, not the raw one.
+  static const _seamCacheVersion = 4;
 
   String _key(
     DivineVideoClip clipA,
@@ -380,22 +387,19 @@ class TransitionSeamRenderService {
 /// with the editor playhead. Identity when no seam is spliced.
 class SeamTimeline {
   SeamTimeline(List<DivineVideoClip> clips, TransitionSeamRenderService seams) {
+    final clamped = VideoEditorRenderService.clampTransitions(clips);
     var composite = Duration.zero;
     var editor = Duration.zero; // start of the current clip on the editor line
-    // Last editor position handed to a segment. A short middle clip consumed by
-    // seams on *both* boundaries would otherwise let the incoming seam claim an
-    // editor range that starts before the outgoing seam ended (the two ranges
-    // both reach into the tiny clip), making the editor axis non-monotonic and
-    // jerking the preview playhead backward at the junction. Clamping each
-    // segment's editor extent to this cursor keeps the axis non-decreasing; it
-    // is a no-op whenever clips aren't over-consumed.
+    // Last editor position handed to a segment. Clamping each segment's editor
+    // extent to this cursor keeps the axis non-decreasing; it is a no-op
+    // whenever clips aren't over-consumed (which the clamp also prevents).
     var editorCursor = Duration.zero;
     for (var i = 0; i < clips.length; i++) {
       final clip = clips[i];
       final clipDuration = clip.playbackDuration;
 
       var headPb = Duration.zero;
-      final prevTransition = i > 0 ? clips[i - 1].transition : null;
+      final prevTransition = i > 0 ? clamped[clips[i - 1].id] : null;
       if (prevTransition != null) {
         final seam = seams.cached(clips[i - 1], clip, prevTransition);
         if (seam != null) {
@@ -405,7 +409,7 @@ class SeamTimeline {
 
       TransitionSeam? outgoing;
       var tailPb = Duration.zero;
-      final transition = clip.transition;
+      final transition = clamped[clip.id];
       if (i + 1 < clips.length && transition != null) {
         outgoing = seams.cached(clip, clips[i + 1], transition);
         if (outgoing != null) {
@@ -517,16 +521,21 @@ Duration _maxDur(Duration a, Duration b) => a > b ? a : b;
 /// tail/head consumed by adjacent rendered seams), with the seam clip inserted
 /// between neighbours. Transitions whose seam is not rendered yet simply play
 /// as a hard cut until the seam arrives.
+///
+/// Transitions are taken from [VideoEditorRenderService.clampTransitions] so the
+/// preview consumes exactly what the export will, and a clip touched by
+/// transitions on both sides is split between them rather than replayed.
 List<player.VideoClip> buildSeamAwarePlayerClips(
   List<DivineVideoClip> clips,
   TransitionSeamRenderService seams,
 ) {
+  final clamped = VideoEditorRenderService.clampTransitions(clips);
   final result = <player.VideoClip>[];
   for (var i = 0; i < clips.length; i++) {
     final clip = clips[i];
 
     var headConsumed = Duration.zero;
-    final prevTransition = i > 0 ? clips[i - 1].transition : null;
+    final prevTransition = i > 0 ? clamped[clips[i - 1].id] : null;
     if (prevTransition != null) {
       headConsumed =
           seams.cached(clips[i - 1], clip, prevTransition)?.headConsumed ??
@@ -535,7 +544,7 @@ List<player.VideoClip> buildSeamAwarePlayerClips(
 
     TransitionSeam? outgoingSeam;
     var tailConsumed = Duration.zero;
-    final transition = clip.transition;
+    final transition = clamped[clip.id];
     if (i + 1 < clips.length && transition != null) {
       outgoingSeam = seams.cached(clip, clips[i + 1], transition);
       tailConsumed = outgoingSeam?.tailConsumed ?? Duration.zero;

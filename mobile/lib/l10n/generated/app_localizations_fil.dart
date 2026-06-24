@@ -8105,6 +8105,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorTransitionDuration => 'Tagal';
 
   @override
+  String get videoEditorTransitionDurationLimitedHint =>
+      'Pinaikli para hindi mag-overlap sa katabing transition.';
+
+  @override
   String get videoEditorTransitionCurve => 'Kurba';
 
   @override

@@ -2828,6 +2828,7 @@
     "videoEditorTransitionWipe": "Balayage",
     "videoEditorTransitionButtonSemanticLabel": "Modifier la transition",
     "videoEditorTransitionDuration": "Durée",
+    "videoEditorTransitionDurationLimitedHint": "Raccourcie pour ne pas chevaucher la transition voisine.",
     "videoEditorTransitionCurve": "Courbe",
     "videoEditorTransitionDirection": "Direction",
     "videoEditorTransitionDirectionLeft": "Gauche",

@@ -8022,6 +8022,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorTransitionDuration => 'Längd';
 
   @override
+  String get videoEditorTransitionDurationLimitedHint =>
+      'Förkortad så att den inte överlappar den intilliggande övergången.';
+
+  @override
   String get videoEditorTransitionCurve => 'Kurva';
 
   @override

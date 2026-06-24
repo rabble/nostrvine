@@ -14,6 +14,7 @@ import 'package:openvine/extensions/layer_animation_storage.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
+import 'package:openvine/services/video_editor/transition_geometry.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -807,63 +808,90 @@ class VideoEditorRenderService {
     );
   }
 
-  /// Maps each clip id to its outgoing transition, clamped to a duration both
-  /// the clip and its successor can sustain. Returns `null` for the last clip
-  /// (no following boundary) and whenever there is no room for a transition.
+  /// Maps each clip id to its outgoing transition, clamped so that **no clip is
+  /// consumed by transitions on both sides at once**. A clip's head (consumed by
+  /// the incoming boundary) plus its tail (consumed by the outgoing boundary)
+  /// can never exceed its playback length — the native compositor cannot render
+  /// two fully-overlapping dips of different colors, so overlap is prevented
+  /// rather than blended.
   ///
-  /// Keyed by clip id rather than index so it stays correct even if the render
-  /// pipeline reorders clips.
-  @visibleForTesting
+  /// When the requested transitions would over-consume a shared clip, both
+  /// boundaries touching it are scaled down proportionally to their demand, so
+  /// each keeps a fair share and the clip is split between them (e.g. two 2s
+  /// dips on a 1s middle clip each render as 1s, the first half fading one way
+  /// and the second half the other). A single transition on a clip is never
+  /// reduced.
+  ///
+  /// Returns `null` for the last clip (no following boundary) and whenever there
+  /// is no room for a transition. Keyed by clip id rather than index so it stays
+  /// correct even if the render pipeline reorders clips.
   static Map<String, ClipTransition?> clampTransitions(
     List<DivineVideoClip> clips,
   ) {
-    final clamped = <String, ClipTransition?>{};
-    for (var i = 0; i < clips.length; i++) {
+    final n = clips.length;
+
+    // Per-boundary requested per-side consumption. demand[i] is the boundary
+    // between clip i and clip i+1 (clip i's outgoing transition).
+    final demand = List<Duration>.filled(n, Duration.zero);
+    for (var i = 0; i < n - 1; i++) {
       final transition = clips[i].transition;
-      final maxDuration = (i + 1 < clips.length && transition != null)
-          ? _maxTransitionDuration(
-              clips[i].playbackDuration,
-              clips[i + 1].playbackDuration,
-              transition.type,
-            )
-          : Duration.zero;
-      clamped[clips[i].id] = _clampTransition(transition, maxDuration);
+      if (transition != null) {
+        demand[i] = transitionConsumedPerSide(
+          clips[i].playbackDuration,
+          clips[i + 1].playbackDuration,
+          transition,
+        );
+      }
+    }
+
+    // Per-clip scale so the head + tail consumption fits the clip's playback
+    // length. A clip touched by only one transition (or none) keeps scale 1.
+    final scale = List<double>.filled(n, 1);
+    for (var i = 0; i < n; i++) {
+      final head = i > 0 ? demand[i - 1] : Duration.zero;
+      final tail = i < n - 1 ? demand[i] : Duration.zero;
+      final total = head + tail;
+      final playback = clips[i].playbackDuration;
+      if (total > playback && total > Duration.zero) {
+        scale[i] = playback.inMicroseconds / total.inMicroseconds;
+      }
+    }
+
+    // Each boundary is bounded by the tighter scale of the two clips it touches,
+    // so neither clip is over-consumed.
+    final clamped = <String, ClipTransition?>{};
+    for (var i = 0; i < n; i++) {
+      final transition = clips[i].transition;
+      if (i >= n - 1 || transition == null || demand[i] <= Duration.zero) {
+        clamped[clips[i].id] = null;
+        continue;
+      }
+      final s = scale[i] < scale[i + 1] ? scale[i] : scale[i + 1];
+      final finalConsumed = Duration(
+        microseconds: (demand[i].inMicroseconds * s).round(),
+      );
+      if (finalConsumed <= Duration.zero) {
+        clamped[clips[i].id] = null;
+        continue;
+      }
+      final clampedDuration = transitionDurationForConsumed(
+        finalConsumed,
+        transition.type,
+      );
+      if (clampedDuration < transition.duration) {
+        Log.debug(
+          '✂️ Clamping transition ${transition.duration.inMilliseconds}ms '
+          'to ${clampedDuration.inMilliseconds}ms (avoids overlap on a '
+          'shared clip)',
+          name: _logName,
+          category: .video,
+        );
+        clamped[clips[i].id] = transition.copyWith(duration: clampedDuration);
+      } else {
+        clamped[clips[i].id] = transition;
+      }
     }
     return clamped;
-  }
-
-  /// The longest a boundary transition may last. An overlap
-  /// (dissolve/slide/push/wipe) blends both clips at once and must leave solo
-  /// (non-blended) content on each side, so it caps at half the shorter clip; a
-  /// dip (fadeToBlack/White) fades out then in (sequential), so it can run up to
-  /// twice the shorter clip. These match the seam preview's faithful range.
-  static Duration _maxTransitionDuration(
-    Duration a,
-    Duration b,
-    ClipTransitionType type,
-  ) {
-    final shorter = a < b ? a : b;
-    final isDip =
-        type == ClipTransitionType.fadeToBlack ||
-        type == ClipTransitionType.fadeToWhite;
-    return isDip
-        ? shorter * 2
-        : Duration(microseconds: shorter.inMicroseconds ~/ 2);
-  }
-
-  static ClipTransition? _clampTransition(
-    ClipTransition? transition,
-    Duration maxDuration,
-  ) {
-    if (transition == null || maxDuration <= Duration.zero) return null;
-    if (transition.duration <= maxDuration) return transition;
-    Log.debug(
-      '✂️ Clamping transition ${transition.duration.inMilliseconds}ms '
-      'to ${maxDuration.inMilliseconds}ms (clip too short)',
-      name: _logName,
-      category: .video,
-    );
-    return transition.copyWith(duration: maxDuration);
   }
 
   /// Analyzes all clips to determine their crop parameters.

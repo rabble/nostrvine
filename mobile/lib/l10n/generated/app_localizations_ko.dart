@@ -7756,6 +7756,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorTransitionDuration => '길이';
 
   @override
+  String get videoEditorTransitionDurationLimitedHint =>
+      '인접한 전환과 겹치지 않도록 길이가 제한되었습니다.';
+
+  @override
   String get videoEditorTransitionCurve => '커브';
 
   @override

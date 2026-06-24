@@ -2836,6 +2836,7 @@
     "videoEditorTransitionWipe": "Barrido",
     "videoEditorTransitionButtonSemanticLabel": "Editar transición",
     "videoEditorTransitionDuration": "Duración",
+    "videoEditorTransitionDurationLimitedHint": "Acortada para no superponerse con la transición adyacente.",
     "videoEditorTransitionCurve": "Curva",
     "videoEditorTransitionDirection": "Dirección",
     "videoEditorTransitionDirectionLeft": "Izquierda",

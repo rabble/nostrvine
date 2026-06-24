@@ -8010,6 +8010,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorTransitionDuration => 'Duration';
 
   @override
+  String get videoEditorTransitionDurationLimitedHint =>
+      'Shortened to avoid overlapping the neighbouring transition.';
+
+  @override
   String get videoEditorTransitionCurve => 'Curve';
 
   @override

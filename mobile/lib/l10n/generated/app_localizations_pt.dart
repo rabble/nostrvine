@@ -8063,6 +8063,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorTransitionDuration => 'Duração';
 
   @override
+  String get videoEditorTransitionDurationLimitedHint =>
+      'Encurtada para não se sobrepor à transição adjacente.';
+
+  @override
   String get videoEditorTransitionCurve => 'Curva';
 
   @override

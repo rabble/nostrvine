@@ -2812,6 +2812,7 @@
     "videoEditorTransitionWipe": "ワイプ",
     "videoEditorTransitionButtonSemanticLabel": "トランジションを編集",
     "videoEditorTransitionDuration": "長さ",
+    "videoEditorTransitionDurationLimitedHint": "隣接するトランジションと重ならないように短縮されました。",
     "videoEditorTransitionCurve": "カーブ",
     "videoEditorTransitionDirection": "方向",
     "videoEditorTransitionDirectionLeft": "左",

@@ -7732,6 +7732,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorTransitionDuration => '長さ';
 
   @override
+  String get videoEditorTransitionDurationLimitedHint =>
+      '隣接するトランジションと重ならないように短縮されました。';
+
+  @override
   String get videoEditorTransitionCurve => 'カーブ';
 
   @override

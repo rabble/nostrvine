@@ -2819,6 +2819,7 @@
     "videoEditorTransitionWipe": "Silme",
     "videoEditorTransitionButtonSemanticLabel": "Geçişi düzenle",
     "videoEditorTransitionDuration": "Süre",
+    "videoEditorTransitionDurationLimitedHint": "Komşu geçişle çakışmaması için kısaltıldı.",
     "videoEditorTransitionCurve": "Eğri",
     "videoEditorTransitionDirection": "Yön",
     "videoEditorTransitionDirectionLeft": "Sol",

@@ -7948,6 +7948,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorTransitionDuration => 'المدة';
 
   @override
+  String get videoEditorTransitionDurationLimitedHint =>
+      'تم تقصيرها لتجنّب التداخل مع الانتقال المجاور.';
+
+  @override
   String get videoEditorTransitionCurve => 'المنحنى';
 
   @override

@@ -8090,6 +8090,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorTransitionDuration => 'Продължителност';
 
   @override
+  String get videoEditorTransitionDurationLimitedHint =>
+      'Съкратено, за да не се припокрива със съседния преход.';
+
+  @override
   String get videoEditorTransitionCurve => 'Крива';
 
   @override

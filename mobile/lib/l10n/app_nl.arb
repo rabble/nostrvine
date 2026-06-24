@@ -2828,6 +2828,7 @@
     "videoEditorTransitionWipe": "Vegen",
     "videoEditorTransitionButtonSemanticLabel": "Overgang bewerken",
     "videoEditorTransitionDuration": "Duur",
+    "videoEditorTransitionDurationLimitedHint": "Ingekort zodat deze niet overlapt met de aangrenzende overgang.",
     "videoEditorTransitionCurve": "Curve",
     "videoEditorTransitionDirection": "Richting",
     "videoEditorTransitionDirectionLeft": "Links",

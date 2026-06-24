@@ -2828,6 +2828,7 @@
     "videoEditorTransitionWipe": "Tendina",
     "videoEditorTransitionButtonSemanticLabel": "Modifica transizione",
     "videoEditorTransitionDuration": "Durata",
+    "videoEditorTransitionDurationLimitedHint": "Ridotta per non sovrapporsi alla transizione adiacente.",
     "videoEditorTransitionCurve": "Curva",
     "videoEditorTransitionDirection": "Direzione",
     "videoEditorTransitionDirectionLeft": "Sinistra",

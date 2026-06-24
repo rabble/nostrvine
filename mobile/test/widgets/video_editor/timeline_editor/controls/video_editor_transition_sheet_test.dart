@@ -28,6 +28,7 @@ void main() {
       editor.ClipTransition? initial,
       int overlapMaxMs = 2000,
       int dipMaxMs = 2000,
+      bool limitedByNeighbor = false,
     }) async {
       result = null;
       returned = false;
@@ -49,6 +50,7 @@ void main() {
                                 initial: initial,
                                 overlapMaxMs: overlapMaxMs,
                                 dipMaxMs: dipMaxMs,
+                                limitedByNeighbor: limitedByNeighbor,
                               ),
                             ),
                           ),
@@ -75,6 +77,41 @@ void main() {
       expect(find.text(l10n.videoEditorTransitionDissolve), findsOneWidget);
       expect(find.text(l10n.videoEditorTransitionFadeToBlack), findsOneWidget);
       expect(find.text(l10n.videoEditorTransitionWipe), findsOneWidget);
+    });
+
+    testWidgets('shows the neighbor-limit hint once a transition is picked '
+        'when the boundary is limited', (tester) async {
+      await openPicker(tester, limitedByNeighbor: true);
+
+      // "None" is selected initially — no transition, so no hint yet.
+      expect(
+        find.text(l10n.videoEditorTransitionDurationLimitedHint),
+        findsNothing,
+      );
+
+      await tester.tap(find.text(l10n.videoEditorTransitionDissolve));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(
+        find.text(l10n.videoEditorTransitionDurationLimitedHint),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('hides the neighbor-limit hint when not limited', (
+      tester,
+    ) async {
+      await openPicker(tester);
+
+      await tester.tap(find.text(l10n.videoEditorTransitionDissolve));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(
+        find.text(l10n.videoEditorTransitionDurationLimitedHint),
+        findsNothing,
+      );
     });
 
     testWidgets('shows duration + curve even for a hard cut (none)', (

@@ -2828,6 +2828,7 @@
     "videoEditorTransitionWipe": "Ștergere",
     "videoEditorTransitionButtonSemanticLabel": "Editează tranziția",
     "videoEditorTransitionDuration": "Durată",
+    "videoEditorTransitionDurationLimitedHint": "Scurtată pentru a nu se suprapune cu tranziția alăturată.",
     "videoEditorTransitionCurve": "Curbă",
     "videoEditorTransitionDirection": "Direcție",
     "videoEditorTransitionDirectionLeft": "Stânga",

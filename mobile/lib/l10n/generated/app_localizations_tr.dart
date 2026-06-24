@@ -7987,6 +7987,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorTransitionDuration => 'Süre';
 
   @override
+  String get videoEditorTransitionDurationLimitedHint =>
+      'Komşu geçişle çakışmaması için kısaltıldı.';
+
+  @override
   String get videoEditorTransitionCurve => 'Eğri';
 
   @override

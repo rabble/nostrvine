@@ -8169,6 +8169,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorTransitionDuration => 'Czas trwania';
 
   @override
+  String get videoEditorTransitionDurationLimitedHint =>
+      'Skrócono, aby nie nakładała się na sąsiednie przejście.';
+
+  @override
   String get videoEditorTransitionCurve => 'Krzywa';
 
   @override

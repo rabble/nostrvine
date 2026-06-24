@@ -2828,6 +2828,7 @@
     "videoEditorTransitionWipe": "Svep",
     "videoEditorTransitionButtonSemanticLabel": "Redigera övergång",
     "videoEditorTransitionDuration": "Längd",
+    "videoEditorTransitionDurationLimitedHint": "Förkortad så att den inte överlappar den intilliggande övergången.",
     "videoEditorTransitionCurve": "Kurva",
     "videoEditorTransitionDirection": "Riktning",
     "videoEditorTransitionDirectionLeft": "Vänster",

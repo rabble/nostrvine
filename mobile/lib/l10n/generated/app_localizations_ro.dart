@@ -8186,6 +8186,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorTransitionDuration => 'Durată';
 
   @override
+  String get videoEditorTransitionDurationLimitedHint =>
+      'Scurtată pentru a nu se suprapune cu tranziția alăturată.';
+
+  @override
   String get videoEditorTransitionCurve => 'Curbă';
 
   @override

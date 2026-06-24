@@ -11,6 +11,7 @@ import 'package:openvine/blocs/video_editor/transition_boundary/transition_bound
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/services/video_editor/transition_geometry.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/animation_picker_components.dart';
 import 'package:pro_video_editor/pro_video_editor.dart'
@@ -71,6 +72,11 @@ Future<void> editClipTransition(
   final nextClip = state.clips[leftClipIndex + 1];
   final editor = VideoEditorScope.of(context).requireEditor;
 
+  final boundaryShorter = clip.playbackDuration < nextClip.playbackDuration
+      ? clip.playbackDuration
+      : nextClip.playbackDuration;
+  final roomPerSide = _roomPerSide(state.clips, leftClipIndex);
+
   final result = await VineBottomSheet.show<({ClipTransition? transition})>(
     context: context,
     expanded: false,
@@ -92,10 +98,24 @@ Future<void> editClipTransition(
         toPlaceholder: nextClip.thumbnailPath,
       ),
       child: TransitionPickerView(
-        // Overlaps blend both clips at once (half the shorter clip); dips fade
-        // out then in, so they can run up to twice it.
-        overlapMaxMs: _snapDurationMs(_boundaryShorterMs(clip, nextClip) ~/ 2),
-        dipMaxMs: _snapDurationMs(_boundaryShorterMs(clip, nextClip) * 2),
+        // The per-side room a transition at this boundary may use, after the
+        // adjacent clips' own transitions. Overlaps blend both clips at once
+        // (so cap at half the room); dips fade out then in (so up to twice it).
+        // This keeps two transitions from over-consuming a shared clip — which
+        // the native compositor can't render — so they split it instead.
+        overlapMaxMs: _snapDurationMs(
+          transitionDurationForConsumed(
+            roomPerSide,
+            ClipTransitionType.dissolve,
+          ).inMilliseconds,
+        ),
+        dipMaxMs: _snapDurationMs(
+          transitionDurationForConsumed(
+            roomPerSide,
+            ClipTransitionType.fadeToBlack,
+          ).inMilliseconds,
+        ),
+        limitedByNeighbor: roomPerSide < boundaryShorter,
         initial: clip.transition,
       ),
     ),
@@ -120,13 +140,43 @@ Future<void> editClipTransition(
   editor.setClipState(newClips);
 }
 
-/// The shorter of the two adjacent clips' playback durations, in ms — the basis
-/// for how long a transition at this boundary may run.
-int _boundaryShorterMs(DivineVideoClip a, DivineVideoClip b) {
-  final shorter = a.playbackDuration < b.playbackDuration
-      ? a.playbackDuration
-      : b.playbackDuration;
-  return shorter.inMilliseconds;
+/// The per-side playback room a transition at the boundary after
+/// [leftClipIndex] may consume, after the adjacent clips' own transitions have
+/// taken their share. The left clip's tail must also leave room for its
+/// incoming transition; the right clip's head for its outgoing one — so a clip
+/// is never consumed by transitions on both sides at once (which the native
+/// compositor can't render). With no neighbouring transitions this is just the
+/// shorter of the two clips.
+Duration _roomPerSide(List<DivineVideoClip> clips, int leftClipIndex) {
+  final clip = clips[leftClipIndex];
+  final nextClip = clips[leftClipIndex + 1];
+  final prevClip = leftClipIndex > 0 ? clips[leftClipIndex - 1] : null;
+  final afterNextClip = leftClipIndex + 2 < clips.length
+      ? clips[leftClipIndex + 2]
+      : null;
+
+  var clipTailRoom = clip.playbackDuration;
+  final prevTransition = prevClip?.transition;
+  if (prevClip != null && prevTransition != null) {
+    clipTailRoom -= transitionConsumedPerSide(
+      prevClip.playbackDuration,
+      clip.playbackDuration,
+      prevTransition,
+    );
+  }
+
+  var nextHeadRoom = nextClip.playbackDuration;
+  final nextTransition = nextClip.transition;
+  if (afterNextClip != null && nextTransition != null) {
+    nextHeadRoom -= transitionConsumedPerSide(
+      nextClip.playbackDuration,
+      afterNextClip.playbackDuration,
+      nextTransition,
+    );
+  }
+
+  final room = clipTailRoom < nextHeadRoom ? clipTailRoom : nextHeadRoom;
+  return room.isNegative ? Duration.zero : room;
 }
 
 /// Snaps [ms] down to the slider's step grid and into its valid range, so every
@@ -146,17 +196,24 @@ class TransitionPickerView extends StatefulWidget {
     required this.initial,
     this.overlapMaxMs = _maxDurationMs,
     this.dipMaxMs = _maxDurationMs,
+    this.limitedByNeighbor = false,
     super.key,
   });
 
   /// Duration-slider ceilings for the two transition families. An overlap
   /// (dissolve/slide/push/wipe) blends both clips at once, so it's capped at
-  /// half the shorter clip; a dip (fadeToBlack/White) fades out then in, so it
-  /// can run up to twice the shorter clip. Both are what the seam preview can
-  /// show faithfully; the render path clamps to the same values as a safety
-  /// net. Default to [_maxDurationMs] in tests.
+  /// half the available per-side room; a dip (fadeToBlack/White) fades out then
+  /// in, so it can run up to twice it. The room already excludes what the
+  /// adjacent clips' own transitions consume, so two transitions never overlap
+  /// on a shared clip. The render path clamps to the same budget. Default to
+  /// [_maxDurationMs] in tests.
   final int overlapMaxMs;
   final int dipMaxMs;
+
+  /// Whether the ceilings above were reduced because an adjacent clip already
+  /// has a transition that uses part of the shared clip. Drives the hint shown
+  /// under the duration slider.
+  final bool limitedByNeighbor;
 
   final ClipTransition? initial;
 
@@ -314,6 +371,15 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
                         () => _duration = Duration(
                           milliseconds: value.round(),
                         ),
+                      ),
+                    ),
+                  ],
+                  if (widget.limitedByNeighbor && _type != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      l10n.videoEditorTransitionDurationLimitedHint,
+                      style: VineTheme.labelSmallFont(
+                        color: VineTheme.secondaryText,
                       ),
                     ),
                   ],

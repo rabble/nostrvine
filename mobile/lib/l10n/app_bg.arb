@@ -3078,6 +3078,7 @@
     "videoEditorTransitionWipe": "Избърсване",
     "videoEditorTransitionButtonSemanticLabel": "Редактиране на преход",
     "videoEditorTransitionDuration": "Продължителност",
+    "videoEditorTransitionDurationLimitedHint": "Съкратено, за да не се припокрива със съседния преход.",
     "videoEditorTransitionCurve": "Крива",
     "videoEditorTransitionDirection": "Посока",
     "videoEditorTransitionDirectionLeft": "Ляво",

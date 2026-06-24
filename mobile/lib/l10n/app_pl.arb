@@ -2828,6 +2828,7 @@
     "videoEditorTransitionWipe": "Wycieranie",
     "videoEditorTransitionButtonSemanticLabel": "Edytuj przejście",
     "videoEditorTransitionDuration": "Czas trwania",
+    "videoEditorTransitionDurationLimitedHint": "Skrócono, aby nie nakładała się na sąsiednie przejście.",
     "videoEditorTransitionCurve": "Krzywa",
     "videoEditorTransitionDirection": "Kierunek",
     "videoEditorTransitionDirectionLeft": "Lewo",

@@ -7992,6 +7992,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorTransitionDuration => 'Durasi';
 
   @override
+  String get videoEditorTransitionDurationLimitedHint =>
+      'Dipendekkan agar tidak tumpang tindih dengan transisi di sebelahnya.';
+
+  @override
   String get videoEditorTransitionCurve => 'Kurva';
 
   @override

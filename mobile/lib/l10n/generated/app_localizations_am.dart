@@ -7873,6 +7873,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorTransitionDuration => 'ቆይታ';
 
   @override
+  String get videoEditorTransitionDurationLimitedHint =>
+      'በአጎራባች ሽግግር ላይ እንዳይደራረብ ተቀንሷል።';
+
+  @override
   String get videoEditorTransitionCurve => 'ኩርባ';
 
   @override

@@ -1759,6 +1759,7 @@
     "videoEditorTransitionWipe": "Pagpunas",
     "videoEditorTransitionButtonSemanticLabel": "I-edit ang transisyon",
     "videoEditorTransitionDuration": "Tagal",
+    "videoEditorTransitionDurationLimitedHint": "Pinaikli para hindi mag-overlap sa katabing transition.",
     "videoEditorTransitionCurve": "Kurba",
     "videoEditorTransitionDirection": "Direksyon",
     "videoEditorTransitionDirectionLeft": "Kaliwa",
