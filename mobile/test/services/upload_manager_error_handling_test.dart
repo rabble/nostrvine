@@ -507,6 +507,45 @@ void main() {
       });
     });
 
+    group('BlossomUploadFailureException with failureReason', () {
+      test(
+        'returns NETWORK_ERROR for authUnavailable (signer briefly '
+        'unreachable, no statusCode)',
+        () async {
+          // Without the typed reason this null-statusCode failure fell through
+          // to the generic UNKNOWN bucket; classify it as a connectivity issue
+          // to match the network-framed copy the user sees.
+          const error = BlossomUploadFailureException(
+            'Failed to create Blossom authentication',
+            failureReason: BlossomUploadFailureReason.authUnavailable,
+          );
+
+          expect(
+            await uploadManager.categorizeError(error),
+            equals('NETWORK_ERROR'),
+          );
+        },
+      );
+
+      test(
+        'still classifies a network reason via its message (DNS not shortcut)',
+        () async {
+          // Only authUnavailable is shortcut on the reason; a network reason
+          // keeps flowing through string matching so DNS_ERROR vs NETWORK_ERROR
+          // stays distinguishable.
+          const error = BlossomUploadFailureException(
+            'Failed host lookup: blossom.divine.video',
+            failureReason: BlossomUploadFailureReason.network,
+          );
+
+          expect(
+            await uploadManager.categorizeError(error),
+            equals('DNS_ERROR'),
+          );
+        },
+      );
+    });
+
     group('no internet', () {
       test('returns NO_INTERNET when connectivity is none', () async {
         mockConnectivity('none');

@@ -1409,8 +1409,16 @@ class UploadManager {
       return 'NO_INTERNET';
     }
 
-    // Use structured status code when available
+    // Use structured classification when available.
     if (error is BlossomUploadFailureException) {
+      // A failure to *produce* the signed auth header (the signer was briefly
+      // unreachable) is a connectivity problem, not a server rejection. It
+      // carries no HTTP status, so classify it on the typed reason and surface
+      // the retry-friendly network copy instead of the generic UNKNOWN message.
+      if (error.failureReason == BlossomUploadFailureReason.authUnavailable) {
+        return 'NETWORK_ERROR';
+      }
+
       final code = error.statusCode;
       if (code != null) {
         if (code == 408) return 'TIMEOUT';
