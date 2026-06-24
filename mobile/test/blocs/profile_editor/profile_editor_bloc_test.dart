@@ -2650,6 +2650,39 @@ void main() {
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'maps authUnavailable failureReason to AvatarUploadError.network',
+        setUp: () {
+          when(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: false,
+              errorMessage: 'Failed to create Blossom authentication',
+              failureReason: BlossomUploadFailureReason.authUnavailable,
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ProfilePictureUploadRequested(pubkey: testPubkey, bytes: testBytes),
+        ),
+        skip: 1,
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.avatarUploadError,
+            'avatarUploadError',
+            AvatarUploadError.network,
+          ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
         'maps fileTooLarge failureReason to AvatarUploadError.fileTooLarge',
         setUp: () {
           when(

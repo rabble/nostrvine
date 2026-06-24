@@ -2196,6 +2196,77 @@ void main() {
           equals(BlossomUploadFailureReason.unknown),
         );
       });
+
+      test(
+        'returns authUnavailable (not auth) when the signer cannot produce '
+        'the auth header',
+        () async {
+          // Authenticated, but the remote signer is briefly unreachable so
+          // createAndSignEvent yields null. This is transient — it must NOT
+          // be classified as a permanent `auth` rejection.
+          when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthProvider.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          final service = BlossomUploadService(authProvider: mockAuthProvider);
+
+          final result = await service.uploadSubtitleVtt(
+            bytes: Uint8List.fromList(utf8.encode('WEBVTT\n')),
+          );
+
+          expect(result.success, isFalse);
+          expect(
+            result.failureReason,
+            equals(BlossomUploadFailureReason.authUnavailable),
+          );
+        },
+      );
+
+      test('returns auth when the server rejects the PUT with 403', () async {
+        final mockDio = _MockDio();
+        final mockResponse = _MockResponse();
+        when(() => mockResponse.statusCode).thenReturn(403);
+        when(() => mockResponse.headers).thenReturn(Headers());
+        when(() => mockResponse.data).thenReturn(<String, dynamic>{
+          'message': 'forbidden',
+        });
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => _signedEvent(_testPublicKey, 24242, const [], ''),
+        );
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((_) async => mockResponse);
+
+        final service = BlossomUploadService(
+          authProvider: mockAuthProvider,
+          dio: mockDio,
+        );
+
+        final result = await service.uploadSubtitleVtt(
+          bytes: Uint8List.fromList(utf8.encode('WEBVTT\n')),
+        );
+
+        expect(result.success, isFalse);
+        expect(result.statusCode, equals(403));
+        expect(result.failureReason, equals(BlossomUploadFailureReason.auth));
+      });
     });
 
     group('Model classes', () {
@@ -2254,6 +2325,23 @@ void main() {
           );
           expect(exception.toString(), equals('upload failed'));
           expect(exception.statusCode, equals(500));
+        });
+
+        test('carries failureReason when provided', () {
+          const exception = BlossomResumableUploadException(
+            'Failed to create Blossom authentication for resumable upload init',
+            failureReason: BlossomUploadFailureReason.authUnavailable,
+          );
+          expect(
+            exception.failureReason,
+            equals(BlossomUploadFailureReason.authUnavailable),
+          );
+          expect(exception.statusCode, isNull);
+        });
+
+        test('failureReason defaults to null', () {
+          const exception = BlossomResumableUploadException('upload failed');
+          expect(exception.failureReason, isNull);
         });
       });
 
@@ -2776,6 +2864,9 @@ void main() {
         service = BlossomUploadService(
           authProvider: mockAuthProvider,
           dio: mockDio,
+          // authUnavailable is transient, so the un-signable case below
+          // retries; skip the backoff so the test stays fast.
+          sleep: (_) async {},
         );
       });
 
@@ -2825,8 +2916,12 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        // Auth-header build failure (unsigned event) classifies as auth.
-        expect(result.failureReason, equals(BlossomUploadFailureReason.auth));
+        // Auth-header build failure (signer unreachable) is transient and
+        // classifies as authUnavailable, NOT a permanent `auth` rejection.
+        expect(
+          result.failureReason,
+          equals(BlossomUploadFailureReason.authUnavailable),
+        );
 
         await tempDir.delete(recursive: true);
       });

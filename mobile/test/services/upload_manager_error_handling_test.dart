@@ -238,6 +238,52 @@ void main() {
       });
     });
 
+    group('BlossomUploadFailureException with failureReason', () {
+      test(
+        'returns true for authUnavailable (signer briefly unreachable)',
+        () {
+          // The regression this fixes: a momentary signer DNS blip leaves
+          // the auth header un-creatable. statusCode is null, so without the
+          // typed reason the old "Failed to create Blossom authentication"
+          // string matched contains('auth') and killed the retry forever.
+          const error = BlossomUploadFailureException(
+            'Failed to create Blossom authentication',
+            failureReason: BlossomUploadFailureReason.authUnavailable,
+          );
+
+          expect(uploadManager.isRetriableError(error), isTrue);
+        },
+      );
+
+      test('returns true for network reason', () {
+        const error = BlossomUploadFailureException(
+          'Cannot connect to Blossom server',
+          failureReason: BlossomUploadFailureReason.network,
+        );
+
+        expect(uploadManager.isRetriableError(error), isTrue);
+      });
+
+      test('returns false for a permanent auth rejection (no statusCode)', () {
+        // The "not authenticated" path: the user genuinely has no signer.
+        const error = BlossomUploadFailureException(
+          'User not authenticated - please sign in to upload',
+          failureReason: BlossomUploadFailureReason.auth,
+        );
+
+        expect(uploadManager.isRetriableError(error), isFalse);
+      });
+
+      test('returns false for fileTooLarge reason', () {
+        const error = BlossomUploadFailureException(
+          'Server error (413)',
+          failureReason: BlossomUploadFailureReason.fileTooLarge,
+        );
+
+        expect(uploadManager.isRetriableError(error), isFalse);
+      });
+    });
+
     group('generic exceptions (string matching fallback)', () {
       test('returns true for timeout errors', () {
         expect(
@@ -274,12 +320,20 @@ void main() {
         );
       });
 
-      test('returns false for auth errors', () {
-        expect(
-          uploadManager.isRetriableError(Exception('Authentication failed')),
-          isFalse,
-        );
-      });
+      test(
+        'returns true for a bare auth string with no structured classification',
+        () {
+          // The substring "auth" no longer gates retries: a permanent
+          // rejection now arrives as a 401/403 statusCode or a typed
+          // failureReason (see the structured group below). A bare string
+          // is ambiguous, so it falls through to retriable-by-default —
+          // biasing toward retry rather than permanently killing the upload.
+          expect(
+            uploadManager.isRetriableError(Exception('Authentication failed')),
+            isTrue,
+          );
+        },
+      );
 
       test('returns false for permission errors', () {
         expect(

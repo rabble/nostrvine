@@ -29,10 +29,19 @@ enum BlossomUploadFailureReason {
   /// connectivity loss. Caller may show "check your connection".
   network,
 
-  /// Authentication failure: HTTP 401 / 403, or the service was unable
-  /// to produce a signed Blossom auth header. Caller may prompt the
-  /// user to sign in again.
+  /// Server-side authentication rejection: HTTP 401 / 403. Permanent —
+  /// retrying the same request will be rejected again. Caller may prompt
+  /// the user to sign in again. Does NOT cover a failure to *produce* the
+  /// auth header — that is the transient [authUnavailable] below.
   auth,
+
+  /// The service could not *produce* a signed Blossom auth header before
+  /// the request was sent, because the remote signer (or the network path
+  /// to it — e.g. a momentary `Failed host lookup` for the signer host)
+  /// was briefly unreachable. Transient: once connectivity returns the
+  /// same upload succeeds, so the caller should retry. Distinct from
+  /// [auth], which is a permanent server-side rejection.
+  authUnavailable,
 
   /// Server rejected the upload because the file exceeds size limits
   /// (HTTP 413 "payload too large"). Caller may suggest a smaller file.
@@ -200,13 +209,24 @@ class BlossomHealthCheckResult {
 /// Exception thrown when a resumable upload operation fails.
 class BlossomResumableUploadException implements Exception {
   /// Creates a [BlossomResumableUploadException].
-  const BlossomResumableUploadException(this.message, {this.statusCode});
+  const BlossomResumableUploadException(
+    this.message, {
+    this.statusCode,
+    this.failureReason,
+  });
 
   /// The error message.
   final String message;
 
   /// HTTP status code, if applicable.
   final int? statusCode;
+
+  /// Typed classification when the throw site already knows it — e.g. an
+  /// auth-header-creation failure sets
+  /// [BlossomUploadFailureReason.authUnavailable] so the boundary can tell
+  /// it apart from a missing-field/malformed-response throw. `null` lets
+  /// the classifier fall back to [statusCode].
+  final BlossomUploadFailureReason? failureReason;
 
   @override
   String toString() => message;
@@ -613,9 +633,11 @@ class BlossomUploadService {
   ///   * [BlossomResumableUploadException] with a retriable status code —
   ///     thrown when chunk PUT exhausts its internal retry budget on a 5xx
   ///     and the resumable session bubbles up. An outer retry rebuilds the
-  ///     session via `_initResumableUpload`. 404/410 (session expired) and
-  ///     null statusCode (auth or malformed-response) are intentionally not
-  ///     transient.
+  ///     session via `_initResumableUpload`. It is also transient when the
+  ///     throw tagged itself [BlossomUploadFailureReason.authUnavailable]
+  ///     (the signer was briefly unreachable while building the auth
+  ///     header). 404/410 (session expired) and an otherwise null
+  ///     statusCode (malformed-response) are intentionally not transient.
   bool _isTransientUploadError(Object error) {
     if (error is DioException) {
       final statusCode = error.response?.statusCode;
@@ -632,6 +654,9 @@ class BlossomUploadService {
       };
     }
     if (error is BlossomResumableUploadException) {
+      if (error.failureReason == BlossomUploadFailureReason.authUnavailable) {
+        return true;
+      }
       final statusCode = error.statusCode;
       return statusCode != null &&
           _retriableUploadStatusCodes.contains(statusCode);
@@ -646,12 +671,12 @@ class BlossomUploadService {
   ///
   ///   * [DioException] — delegated to
   ///     [BlossomUploadFailureReason.fromDioException].
-  ///   * [BlossomResumableUploadException] — classified by its
-  ///     `statusCode` when present. Throws without a status (auth-header
-  ///     build failure, malformed init response) fall through to
-  ///     [BlossomUploadFailureReason.unknown] — the boundary can't tell
-  ///     them apart from the typed exception alone, and surfacing
-  ///     "authentication error" for a missing init field would mislead.
+  ///   * [BlossomResumableUploadException] — its own `failureReason` wins
+  ///     when set (an auth-header build failure tags itself
+  ///     [BlossomUploadFailureReason.authUnavailable]); otherwise it is
+  ///     classified by `statusCode`. A throw with neither (e.g. a
+  ///     malformed init response) falls through to
+  ///     [BlossomUploadFailureReason.unknown].
   ///
   /// Anything else falls through to [BlossomUploadFailureReason.unknown].
   static BlossomUploadFailureReason _classifyUploadException(Object error) {
@@ -659,7 +684,8 @@ class BlossomUploadService {
       return BlossomUploadFailureReason.fromDioException(error);
     }
     if (error is BlossomResumableUploadException) {
-      return BlossomUploadFailureReason.fromStatusCode(error.statusCode) ??
+      return error.failureReason ??
+          BlossomUploadFailureReason.fromStatusCode(error.statusCode) ??
           BlossomUploadFailureReason.unknown;
     }
     return BlossomUploadFailureReason.unknown;
@@ -676,10 +702,16 @@ class BlossomUploadService {
   ///   * `isTransientNetworkFailure` is `true` — set by [_uploadToServer]
   ///     when it caught a [DioException] of type connection / send /
   ///     receive timeout or connection error and converted it to a result
-  ///     (these have no HTTP status to classify on).
+  ///     (these have no HTTP status to classify on), or
+  ///   * `failureReason` is [BlossomUploadFailureReason.authUnavailable] —
+  ///     the signer was briefly unreachable while building the auth header
+  ///     ([_uploadToServer] returns this instead of throwing).
   bool _isTransientUploadResult(BlossomUploadResult result) {
     if (result.success) return false;
     if (result.isTransientNetworkFailure) return true;
+    if (result.failureReason == BlossomUploadFailureReason.authUnavailable) {
+      return true;
+    }
     final statusCode = result.statusCode;
     return statusCode != null &&
         _retriableUploadStatusCodes.contains(statusCode);
@@ -969,6 +1001,7 @@ class BlossomUploadService {
     if (authHeader == null) {
       throw const BlossomResumableUploadException(
         'Failed to create Blossom authentication for resumable upload init',
+        failureReason: BlossomUploadFailureReason.authUnavailable,
       );
     }
 
@@ -1249,6 +1282,7 @@ class BlossomUploadService {
       throw const BlossomResumableUploadException(
         'Failed to create Blossom authentication for '
         'resumable upload completion',
+        failureReason: BlossomUploadFailureReason.authUnavailable,
       );
     }
 
@@ -1462,7 +1496,7 @@ class BlossomUploadService {
         return const BlossomUploadResult(
           success: false,
           errorMessage: 'Failed to create Blossom authentication',
-          failureReason: BlossomUploadFailureReason.auth,
+          failureReason: BlossomUploadFailureReason.authUnavailable,
         );
       }
 

@@ -39,14 +39,23 @@ String _getPlatformName() {
 
 /// Exception thrown when a [BlossomUploadResult] indicates failure.
 ///
-/// Carries the HTTP [statusCode] so that [categorizeError] and
-/// [isRetriableError] can branch on it directly instead of parsing
-/// error-message strings.
+/// Carries the HTTP [statusCode] and the typed [failureReason] so that
+/// [categorizeError] and [isRetriableError] can branch on them directly
+/// instead of parsing error-message strings. The [failureReason]
+/// distinguishes a transient inability to *produce* a signed auth header
+/// ([BlossomUploadFailureReason.authUnavailable]) from a permanent
+/// server-side auth rejection ([BlossomUploadFailureReason.auth]) — a
+/// distinction the bare error string cannot carry.
 class BlossomUploadFailureException implements Exception {
-  const BlossomUploadFailureException(this.message, {this.statusCode});
+  const BlossomUploadFailureException(
+    this.message, {
+    this.statusCode,
+    this.failureReason,
+  });
 
   final String message;
   final int? statusCode;
+  final BlossomUploadFailureReason? failureReason;
 
   @override
   String toString() => message;
@@ -1121,6 +1130,7 @@ class UploadManager {
       throw BlossomUploadFailureException(
         (result.errorMessage as String?) ?? 'Upload failed with unknown error',
         statusCode: result.statusCode as int?,
+        failureReason: result.failureReason as BlossomUploadFailureReason?,
       );
     }
   }
@@ -1258,8 +1268,22 @@ class UploadManager {
       return false;
     }
 
-    // Use structured status code when available
+    // Use structured classification when available.
     if (error is BlossomUploadFailureException) {
+      // A transient inability to *produce* a signed auth header (the remote
+      // signer or its network path was briefly unreachable) is retriable —
+      // distinct from a permanent 401/403 rejection handled below. This is
+      // the fix for uploads that died on a momentary signer DNS blip.
+      final reason = error.failureReason;
+      if (reason == BlossomUploadFailureReason.authUnavailable ||
+          reason == BlossomUploadFailureReason.network) {
+        return true;
+      }
+      if (reason == BlossomUploadFailureReason.auth ||
+          reason == BlossomUploadFailureReason.fileTooLarge) {
+        return false;
+      }
+
       final code = error.statusCode;
       if (code != null) {
         // 408 request timeout — retriable
@@ -1305,10 +1329,12 @@ class UploadManager {
       return false;
     }
 
-    // Authentication / permission errors are not retriable
-    if (errorStr.contains('auth') ||
-        errorStr.contains('permission') ||
-        errorStr.contains('cancelled')) {
+    // Permission and cancellation failures are permanent. Authentication is
+    // classified structurally above (failureReason / 401-403 statusCode): a
+    // failed auth-header *creation* is transient while a server *rejection*
+    // is not, and the bare substring 'auth' cannot tell them apart — so it
+    // no longer gates retries here.
+    if (errorStr.contains('permission') || errorStr.contains('cancelled')) {
       return false;
     }
 

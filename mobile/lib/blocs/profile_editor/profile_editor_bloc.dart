@@ -200,6 +200,9 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   ) {
     return switch (failureReason ?? BlossomUploadFailureReason.unknown) {
       BlossomUploadFailureReason.network => AvatarUploadError.network,
+      // Signer briefly unreachable while building the auth header — a
+      // connectivity problem from the user's view, so reuse the network copy.
+      BlossomUploadFailureReason.authUnavailable => AvatarUploadError.network,
       BlossomUploadFailureReason.auth => AvatarUploadError.auth,
       BlossomUploadFailureReason.fileTooLarge => AvatarUploadError.fileTooLarge,
       BlossomUploadFailureReason.server => AvatarUploadError.server,
@@ -364,6 +367,9 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   ) {
     return switch (failureReason ?? BlossomUploadFailureReason.unknown) {
       BlossomUploadFailureReason.network => BannerUploadError.network,
+      // Signer briefly unreachable while building the auth header — a
+      // connectivity problem from the user's view, so reuse the network copy.
+      BlossomUploadFailureReason.authUnavailable => BannerUploadError.network,
       BlossomUploadFailureReason.auth => BannerUploadError.auth,
       BlossomUploadFailureReason.fileTooLarge => BannerUploadError.fileTooLarge,
       BlossomUploadFailureReason.server => BannerUploadError.server,
