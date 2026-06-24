@@ -9,7 +9,7 @@ import 'package:openvine/extensions/layer_animation_storage.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/animation_picker_components.dart';
-import 'package:pro_image_editor/core/models/layers/layer.dart';
+import 'package:pro_image_editor/core/models/layers/layer.dart' show Layer;
 import 'package:pro_video_editor/pro_video_editor.dart'
     show
         AnimationCurve,
@@ -45,9 +45,9 @@ const _slideDirections = <SlideDirection>[
 /// that layer through the editor history.
 ///
 /// A layer carries up to one enter animation and one leave animation; both are
-/// editable in the sheet and stored via [metaWithLayerAnimations] (plus the
-/// native fade fields + a [Layer.transitionBuilder] so the in-editor timeline
-/// previews them).
+/// editable in the sheet and stored on [Layer.animations], which pro_image_editor
+/// uses to drive the in-editor timeline preview and which the export maps to
+/// pro_video_editor.
 Future<void> editLayerAnimation(BuildContext context, Layer layer) async {
   final scope = VideoEditorScope.of(context);
   final editor = scope.editor;
@@ -79,20 +79,15 @@ Future<void> editLayerAnimation(BuildContext context, Layer layer) async {
     if (result.leave != null) result.leave!,
   ];
 
-  layers[index] = layer.copyWith()
-    ..meta = metaWithLayerAnimations(layer.meta, animations)
-    ..enterDuration = result.enter?.duration
-    ..exitDuration = result.leave?.duration
-    ..enterCurve = result.enter == null
-        ? null
-        : flutterCurveFor(result.enter!.curve)
-    ..exitCurve = result.leave == null
-        ? null
-        : flutterCurveFor(result.leave!.curve)
-    ..transitionBuilder = buildLayerTransitionBuilder(
-      enter: result.enter,
-      leave: result.leave,
-    );
+  // Drive the layer entirely from the typed animations; clear the legacy fade
+  // fields / custom builder so [Layer.effectiveAnimations] can't fall back to a
+  // stale fade when the animations list is empty.
+  layers[index] = layer.copyWith(animations: toLayerAnimations(animations))
+    ..enterDuration = null
+    ..exitDuration = null
+    ..enterCurve = null
+    ..exitCurve = null
+    ..transitionBuilder = null;
 
   editor.addHistory(layers: layers);
 }
@@ -103,54 +98,6 @@ typedef _LayerAnimationResult = ({
   LayerAnimation? enter,
   LayerAnimation? leave,
 });
-
-/// Builds a per-layer timeline transition builder that renders [enter]/[leave]
-/// in the editor preview.
-///
-/// pro_image_editor drives a single `animation` (0→1 entering, 1→0 leaving)
-/// through one builder, so a differing enter vs leave type can't both be shown
-/// faithfully here — the [enter] spec (falling back to [leave]) drives the
-/// visual. The export path applies each phase exactly; full per-phase preview
-/// arrives with the typed `Layer.animations` package API. Returns `null` when
-/// there is nothing to animate (default fade builder is used).
-Widget Function(Widget, Animation<double>)? buildLayerTransitionBuilder({
-  required LayerAnimation? enter,
-  required LayerAnimation? leave,
-}) {
-  final spec = enter ?? leave;
-  if (spec == null) return null;
-  final curve = flutterCurveFor(spec.curve);
-  return (child, animation) {
-    final t = curve.transform(animation.value.clamp(0.0, 1.0));
-    return switch (spec.type) {
-      LayerAnimationType.fade => Opacity(
-        opacity: t.clamp(0.0, 1.0),
-        child: child,
-      ),
-      LayerAnimationType.scale => Transform.scale(
-        scale: lerpDouble(spec.scaleFrom ?? 0.0, 1.0, t) ?? 1.0,
-        child: child,
-      ),
-      LayerAnimationType.slide => Transform.translate(
-        offset: _slideOffset(spec.slideDirection ?? SlideDirection.left, 1 - t),
-        child: child,
-      ),
-    };
-  };
-}
-
-/// Offset for a slide at [away] (0 = in place, 1 = fully off in [direction]).
-/// Uses a fixed reach since the layer's own size isn't known in the builder;
-/// the native export computes the exact travel.
-Offset _slideOffset(SlideDirection direction, double away) {
-  const reach = 160.0;
-  return switch (direction) {
-    SlideDirection.left => Offset(-away * reach, 0),
-    SlideDirection.right => Offset(away * reach, 0),
-    SlideDirection.top => Offset(0, -away * reach),
-    SlideDirection.bottom => Offset(0, away * reach),
-  };
-}
 
 /// Stateful picker body. Edits the enter and leave animations independently via
 /// an Enter|Leave toggle; pops a [_LayerAnimationResult] on confirm.
