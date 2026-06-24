@@ -280,17 +280,17 @@ void main() {
   });
 
   group('resolveLayerEndTime', () {
-    const windowEnd = Duration(seconds: 5);
+    const total = Duration(seconds: 5);
 
     test('anchors an untrimmed layer to the window end for a leave '
         'animation', () {
       expect(
         resolveLayerEndTime(
           currentEndTime: null,
-          windowEndTime: windowEnd,
+          totalDuration: total,
           hasLeaveAnimation: true,
         ),
-        windowEnd,
+        total,
       );
     });
 
@@ -299,7 +299,7 @@ void main() {
       expect(
         resolveLayerEndTime(
           currentEndTime: trimEnd,
-          windowEndTime: windowEnd,
+          totalDuration: total,
           hasLeaveAnimation: true,
         ),
         trimEnd,
@@ -310,7 +310,7 @@ void main() {
       expect(
         resolveLayerEndTime(
           currentEndTime: null,
-          windowEndTime: windowEnd,
+          totalDuration: total,
           hasLeaveAnimation: false,
         ),
         isNull,
@@ -322,7 +322,7 @@ void main() {
       expect(
         resolveLayerEndTime(
           currentEndTime: trimEnd,
-          windowEndTime: windowEnd,
+          totalDuration: total,
           hasLeaveAnimation: false,
         ),
         trimEnd,
@@ -334,8 +334,8 @@ void main() {
       // removing the leave must not leave the layer pinned (untrimmed again).
       expect(
         resolveLayerEndTime(
-          currentEndTime: windowEnd,
-          windowEndTime: windowEnd,
+          currentEndTime: total,
+          totalDuration: total,
           hasLeaveAnimation: false,
         ),
         isNull,
@@ -347,7 +347,7 @@ void main() {
       expect(
         resolveLayerEndTime(
           currentEndTime: const Duration(seconds: 8),
-          windowEndTime: windowEnd,
+          totalDuration: total,
           hasLeaveAnimation: false,
         ),
         isNull,
@@ -358,16 +358,16 @@ void main() {
       expect(
         resolveLayerEndTime(
           currentEndTime: const Duration(seconds: 8),
-          windowEndTime: windowEnd,
+          totalDuration: total,
           hasLeaveAnimation: true,
         ),
-        windowEnd,
+        total,
       );
     });
   });
 
   group('editLayerAnimation', () {
-    const windowEnd = Duration(seconds: 5);
+    const total = Duration(seconds: 5);
     const leaveFade = editor.LayerAnimation(
       type: editor.LayerAnimationType.fade,
       phase: editor.AnimationPhase.animateOut,
@@ -412,7 +412,7 @@ void main() {
                   onPressed: () => editLayerAnimation(
                     context,
                     layer,
-                    windowEndTime: windowEnd,
+                    totalDuration: total,
                   ),
                   child: const Text('open'),
                 ),
@@ -452,7 +452,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
       await tapDone(tester);
 
-      expect(capturedLayers().single.endTime, equals(windowEnd));
+      expect(capturedLayers().single.endTime, equals(total));
     });
 
     testWidgets('clears endTime to null when the leave is removed', (
@@ -462,7 +462,7 @@ void main() {
       // animation; removing the leave must drop the stale end back to null so
       // copyWith's `endTime ?? this.endTime` can't keep it pinned.
       final layer = Layer(id: 'l1', animations: [leaveFade].toLayerAnimations())
-        ..endTime = windowEnd;
+        ..endTime = total;
       await openEditor(tester, layer);
 
       await tester.tap(find.text(l10n.videoEditorLayerAnimationLeave));
@@ -473,6 +473,27 @@ void main() {
       await tapDone(tester);
 
       expect(capturedLayers().single.endTime, isNull);
+    });
+
+    testWidgets('preserves a genuine trim when only an enter is added', (
+      tester,
+    ) async {
+      // A layer trimmed to 2s (< total) gets an enter-only animation. Because
+      // totalDuration is the true video length (not the layer's own end), the
+      // 2s trim reads as a real trim and survives — it isn't mistaken for a
+      // stale full-length anchor and dropped.
+      final layer = Layer(id: 'l1')..endTime = const Duration(seconds: 2);
+      await openEditor(tester, layer);
+
+      await tester.tap(find.text(l10n.videoEditorLayerAnimationFade));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      await tapDone(tester);
+
+      expect(
+        capturedLayers().single.endTime,
+        equals(const Duration(seconds: 2)),
+      );
     });
   });
 }

@@ -49,13 +49,15 @@ const _slideDirections = <SlideDirection>[
 /// uses to drive the in-editor timeline preview and which the export maps to
 /// pro_video_editor.
 ///
-/// [windowEndTime] is the layer's visible end on the timeline (its trim end, or
-/// the full video duration when untrimmed). It anchors the leave animation —
-/// see [resolveLayerEndTime].
+/// [totalDuration] is the true total video duration — independent of the
+/// layer's own [Layer.endTime]. It both anchors the leave animation and lets
+/// [resolveLayerEndTime] tell a genuine trim from a stale full-length anchor.
+/// It must NOT be the layer's clamped timeline end (which equals its
+/// [Layer.endTime]), or every trim reads as full-length and gets dropped.
 Future<void> editLayerAnimation(
   BuildContext context,
   Layer layer, {
-  required Duration windowEndTime,
+  required Duration totalDuration,
 }) async {
   final scope = VideoEditorScope.of(context);
   final editor = scope.editor;
@@ -99,7 +101,7 @@ Future<void> editLayerAnimation(
 
   final endTime = resolveLayerEndTime(
     currentEndTime: layer.endTime,
-    windowEndTime: windowEndTime,
+    totalDuration: totalDuration,
     hasLeaveAnimation: result.leave.isNotEmpty,
   );
 
@@ -128,28 +130,32 @@ Future<void> editLayerAnimation(
 /// the in-editor preview ([Layer.animations] timeline visibility) and the
 /// native export skip the animateOut branch when `endTime` is null.
 ///
-/// Only a *real trim* — an end strictly inside the visible window — is treated
-/// as user intent worth preserving. An end at or after [windowEndTime] is not a
-/// trim: it's either a stale anchor a previously-set (now-removed) leave
-/// animation left behind, or a no-op full-length end. Treating it as `null`
-/// keeps an untrimmed layer untrimmed, so it follows later window changes
-/// (e.g. the video being extended) instead of staying pinned to a stale end.
+/// Only a *real trim* — an end strictly inside the video — is treated as user
+/// intent worth preserving. An end at or after [totalDuration] is not a trim:
+/// it's either a stale anchor a previously-set (now-removed) leave animation
+/// left behind, or a no-op full-length end. Treating it as `null` keeps an
+/// untrimmed layer untrimmed, so it follows later duration changes (e.g. the
+/// video being extended) instead of staying pinned to a stale end.
+///
+/// [totalDuration] must be the true total video duration, independent of the
+/// layer's own [Layer.endTime]. Passing the layer's clamped timeline end (which
+/// equals its [Layer.endTime]) would make `currentEndTime < totalDuration` false
+/// for every trim, so genuine trims would read as full-length and be dropped.
 ///
 /// With [hasLeaveAnimation] true the end is anchored to that trim, or to
-/// [windowEndTime] (the layer's visible end on the timeline, which is the full
-/// video duration when untrimmed) when there is no real trim — never beyond the
-/// visible window. Without a leave animation a real trim is preserved and
-/// everything else collapses to `null`.
+/// [totalDuration] when there is no real trim — never beyond the video. Without
+/// a leave animation a real trim is preserved and everything else collapses to
+/// `null`.
 @visibleForTesting
 Duration? resolveLayerEndTime({
   required Duration? currentEndTime,
-  required Duration windowEndTime,
+  required Duration totalDuration,
   required bool hasLeaveAnimation,
 }) {
-  final trim = currentEndTime != null && currentEndTime < windowEndTime
+  final trim = currentEndTime != null && currentEndTime < totalDuration
       ? currentEndTime
       : null;
-  if (hasLeaveAnimation) return trim ?? windowEndTime;
+  if (hasLeaveAnimation) return trim ?? totalDuration;
   return trim;
 }
 

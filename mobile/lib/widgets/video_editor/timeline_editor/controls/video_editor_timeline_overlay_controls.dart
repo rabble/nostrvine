@@ -66,7 +66,13 @@ class _LayerOverlayControls extends StatelessWidget {
           : () => editLayerAnimation(
               context,
               layer,
-              windowEndTime: item.endTime,
+              // The true total video duration, not item.endTime (which is the
+              // layer's own clamped end) — resolveLayerEndTime needs an
+              // independent signal to tell a genuine trim from a stale anchor.
+              totalDuration: context
+                  .read<VideoEditorMainBloc>()
+                  .state
+                  .totalDuration,
             ),
       onDone: () => TimelineOverlayControls._deselect(context),
     );
