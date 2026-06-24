@@ -412,8 +412,10 @@ class _TransitionTile extends StatelessWidget {
         VineTheme.surfaceContainerHigh,
       ],
     );
-    // Merge the button node and the visible label into one semantics node so
-    // screen readers announce the label once, not twice.
+    // Merge the explicit button node with the GestureDetector's tap action into
+    // one node, and exclude the visible Text below from semantics so its label
+    // isn't concatenated onto the explicit one — otherwise the screen reader
+    // announces "label\nlabel".
     return MergeSemantics(
       child: Semantics(
         button: true,
@@ -455,10 +457,12 @@ class _TransitionTile extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
-                label,
-                style: VineTheme.labelSmallFont(
-                  color: selected ? VineTheme.primary : VineTheme.lightText,
+              ExcludeSemantics(
+                child: Text(
+                  label,
+                  style: VineTheme.labelSmallFont(
+                    color: selected ? VineTheme.primary : VineTheme.lightText,
+                  ),
                 ),
               ),
             ],

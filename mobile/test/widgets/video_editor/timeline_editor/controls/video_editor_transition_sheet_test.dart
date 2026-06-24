@@ -312,5 +312,22 @@ void main() {
         editor.ClipTransitionDirection.up,
       );
     });
+
+    testWidgets('a transition tile announces its label once, not twice', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await openPicker(tester);
+
+      // The tile keeps an explicit Semantics(label:) and a visible Text(label).
+      // The text is excluded from semantics so the merged node reads the label
+      // once — "Dissolve", not "Dissolve\nDissolve".
+      final node = tester.getSemantics(
+        find.text(l10n.videoEditorTransitionDissolve),
+      );
+      expect(node.label, l10n.videoEditorTransitionDissolve);
+
+      handle.dispose();
+    });
   });
 }

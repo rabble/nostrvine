@@ -277,6 +277,23 @@ void main() {
         ]),
       );
     });
+
+    testWidgets('a type tile announces its label once, not twice', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await openPicker(tester);
+
+      // The tile keeps an explicit Semantics(label:) and a visible Text(label).
+      // The text is excluded from semantics so the merged node reads the label
+      // once — "Fade", not "Fade\nFade".
+      final node = tester.getSemantics(
+        find.text(l10n.videoEditorLayerAnimationFade),
+      );
+      expect(node.label, l10n.videoEditorLayerAnimationFade);
+
+      handle.dispose();
+    });
   });
 
   group('resolveLayerEndTime', () {
