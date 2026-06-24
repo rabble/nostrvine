@@ -322,7 +322,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       await _videoPlayer?.setClips([
         ...buildSeamAwarePlayerClips(clips, _seamService),
       ], startPosition: _timelineToPlayer(timelineStartPosition));
-      if (mounted) {
+      // Only pin the restored position if no newer swap took over during the
+      // await — matching the epoch-guarded [_isSeeking] release below. Without
+      // this a stale swap would write its old composite position over the one a
+      // newer swap (e.g. a trim-start) already set.
+      if (mounted && _seekEpoch == ownerEpoch) {
         _lastReportedPosition = timelineStartPosition;
         _proVideoController.setPlayTime(timelineStartPosition);
       }

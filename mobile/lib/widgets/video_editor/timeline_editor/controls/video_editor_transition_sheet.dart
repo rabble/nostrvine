@@ -705,9 +705,10 @@ class _PickerChip extends StatelessWidget {
         onTap: onTap,
         behavior: .opaque,
         child: ConstrainedBox(
-          // 48dp min keeps the tap target at the accessibility floor; the
-          // horizontal padding already takes the width past 48dp.
-          constraints: const BoxConstraints(minHeight: 48),
+          // 48dp min keeps the tap target at the accessibility floor on both
+          // axes: the wider curve glyphs already clear 48dp via padding, but
+          // the 18dp direction icons (18+14+14 = 46dp) need the minWidth.
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: selected

@@ -69,5 +69,31 @@ void main() {
         equals(dissolve),
       );
     });
+
+    test('drops an unparseable transition instead of aborting the load', () {
+      final json = clip(
+        transition: const editor.ClipTransition(
+          type: editor.ClipTransitionType.dissolve,
+        ),
+      ).toJson();
+      // Simulate a forward-incompatible / corrupt draft: an enum name this
+      // build can't resolve. fromMap resolves via `byName`, which throws —
+      // the load must degrade to a hard cut, not blow up the whole draft.
+      json['transition'] = <String, dynamic>{
+        ...(json['transition'] as Map).cast<String, dynamic>(),
+        'type': 'someFutureTransitionType',
+      };
+
+      late DivineVideoClip restored;
+      expect(
+        () => restored = DivineVideoClip.fromJson(
+          json,
+          '/docs',
+          useOriginalPath: true,
+        ),
+        returnsNormally,
+      );
+      expect(restored.transition, isNull);
+    });
   });
 }

@@ -9,6 +9,7 @@ import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class DivineVideoClip {
   DivineVideoClip({
@@ -330,12 +331,30 @@ class DivineVideoClip {
         useOriginalPath: useOriginalPath,
       ),
       proofManifestJson: json['proofManifestJson'] as String?,
-      transition: json['transition'] != null
-          ? ClipTransition.fromMap(
-              (json['transition'] as Map).cast<String, dynamic>(),
-            )
-          : null,
+      transition: _transitionFromJson(json['transition']),
     );
+  }
+
+  /// Parses a persisted [ClipTransition], degrading to `null` (a hard cut) when
+  /// the stored type/curve/direction names can't be resolved — e.g. a
+  /// forward-incompatible draft written by a newer build, or partial
+  /// corruption. `ClipTransition.fromMap` resolves enums via `byName`, which
+  /// throws on an unknown name; since a draft deserializes every clip through
+  /// `fromJson`, an unguarded throw here would abort the *whole* draft load.
+  /// Mirrors the `targetAspectRatio` `orElse` fallback above.
+  static ClipTransition? _transitionFromJson(Object? raw) {
+    if (raw is! Map) return null;
+    try {
+      return ClipTransition.fromMap(raw.cast<String, dynamic>());
+    } catch (error, stackTrace) {
+      Log.error(
+        'Dropping unparseable clip transition; falling back to a hard cut',
+        name: 'DivineVideoClip',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
   }
 
   @override

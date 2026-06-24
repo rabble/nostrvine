@@ -109,36 +109,52 @@ class TransitionSeamRenderService {
       final headConsumed = clipB.playbackDurationToSourceDuration(consumed);
 
       // Persisted seam from a previous session — reuse it without re-rendering.
+      // A file truncated by a kill mid-write (see the temp-then-rename publish
+      // below) is detected and deleted here so the boundary re-renders instead
+      // of resolving to the same corrupt file — a stuck hard cut — forever.
       final persistentPath = await _persistentSeamPath(key);
       if (File(persistentPath).existsSync()) {
-        final metadata = await ProVideoEditor.instance.getMetadata(
-          EditorVideo.file(persistentPath),
-        );
-        final seam = TransitionSeam(
-          path: persistentPath,
-          duration: metadata.duration,
+        final seam = await _seamFromPersistedFile(
+          persistentPath,
           tailConsumed: tailConsumed,
           headConsumed: headConsumed,
         );
-        _cache[key] = seam;
-        _version++;
-        return seam;
+        if (seam != null) {
+          _cache[key] = seam;
+          _version++;
+          return seam;
+        }
       }
 
       final tailClip = _tailClip(clipA, tailConsumed, seamTransition);
       final headClip = _headClip(clipB, headConsumed);
 
+      // Leaving the default 6.3s export cap in place never truncates a seam:
+      // `consumed` is bounded by the shorter adjacent clip, and two adjacent
+      // clips sum to ≤ the 6.3s timeline cap (clip_manager trims to the
+      // remaining budget), so the shorter clip is ≤ ~3.15s. Even a hard-cut
+      // fallback seam (consumed×2) therefore stays ≤ 6.3s.
       final outputPath = await VideoEditorRenderService.renderVideo(
         clips: [tailClip, headClip],
         aspectRatio: clipA.targetAspectRatio,
       );
       if (outputPath == null) return null;
-      // Copy into the keyed seam cache so it survives an editor reload.
-      await File(outputPath).copy(persistentPath);
+      // Publish atomically: outputPath is on the temp filesystem, so it can't
+      // be renamed straight to the documents dir (cross-device rename fails).
+      // Copy it next to the target, then rename within the documents dir —
+      // a same-filesystem rename is atomic, so a crash mid-copy can't leave a
+      // truncated file at the deterministic path (only a stray `.tmp`).
+      final tempPath = '$persistentPath.tmp';
+      await File(outputPath).copy(tempPath);
+      await File(tempPath).rename(persistentPath);
 
       final metadata = await ProVideoEditor.instance.getMetadata(
         EditorVideo.file(persistentPath),
       );
+      if (metadata.duration <= Duration.zero) {
+        await _deleteQuietly(persistentPath);
+        return null;
+      }
       // A blended overlap seam is shorter than a hard-cut concatenation
       // (consumed×2). If output ≈ consumed×2 the overlap fell back to a cut.
       Log.info(
@@ -170,6 +186,54 @@ class TransitionSeamRenderService {
       return null;
     } finally {
       _inFlight.remove(key);
+    }
+  }
+
+  /// Loads a previously-rendered seam from [path], or `null` (deleting the
+  /// file) when it can't be read or has no duration — e.g. a truncated file
+  /// left by a kill mid-write in a prior session. Deleting lets the caller
+  /// re-render instead of resolving to the same corrupt file forever.
+  Future<TransitionSeam?> _seamFromPersistedFile(
+    String path, {
+    required Duration tailConsumed,
+    required Duration headConsumed,
+  }) async {
+    try {
+      final metadata = await ProVideoEditor.instance.getMetadata(
+        EditorVideo.file(path),
+      );
+      if (metadata.duration <= Duration.zero) {
+        await _deleteQuietly(path);
+        return null;
+      }
+      return TransitionSeam(
+        path: path,
+        duration: metadata.duration,
+        tailConsumed: tailConsumed,
+        headConsumed: headConsumed,
+      );
+    } catch (e, stackTrace) {
+      Log.warning(
+        'Dropping unreadable persisted seam at $path',
+        name: 'TransitionSeamRenderService',
+        category: .video,
+      );
+      Log.debug(
+        'Persisted seam read failed: $e\n$stackTrace',
+        name: 'TransitionSeamRenderService',
+        category: .video,
+      );
+      await _deleteQuietly(path);
+      return null;
+    }
+  }
+
+  Future<void> _deleteQuietly(String path) async {
+    try {
+      final file = File(path);
+      if (file.existsSync()) await file.delete();
+    } catch (_) {
+      // Best-effort cleanup; a failed delete just re-renders next time.
     }
   }
 
@@ -309,6 +373,14 @@ class SeamTimeline {
   SeamTimeline(List<DivineVideoClip> clips, TransitionSeamRenderService seams) {
     var composite = Duration.zero;
     var editor = Duration.zero; // start of the current clip on the editor line
+    // Last editor position handed to a segment. A short middle clip consumed by
+    // seams on *both* boundaries would otherwise let the incoming seam claim an
+    // editor range that starts before the outgoing seam ended (the two ranges
+    // both reach into the tiny clip), making the editor axis non-monotonic and
+    // jerking the preview playhead backward at the junction. Clamping each
+    // segment's editor extent to this cursor keeps the axis non-decreasing; it
+    // is a no-op whenever clips aren't over-consumed.
+    var editorCursor = Duration.zero;
     for (var i = 0; i < clips.length; i++) {
       final clip = clips[i];
       final clipDuration = clip.playbackDuration;
@@ -336,15 +408,18 @@ class SeamTimeline {
       final bodyEditorEnd = editor + clipDuration - tailPb;
       if (bodyEditorEnd > bodyEditorStart) {
         final bodyComposite = bodyEditorEnd - bodyEditorStart;
+        final editorStart = _maxDur(bodyEditorStart, editorCursor);
+        final editorEnd = _maxDur(bodyEditorEnd, editorStart);
         _segments.add(
           _Segment(
             composite,
             composite + bodyComposite,
-            bodyEditorStart,
-            bodyEditorEnd,
+            editorStart,
+            editorEnd,
           ),
         );
         composite += bodyComposite;
+        editorCursor = editorEnd;
       }
 
       if (outgoing != null) {
@@ -352,15 +427,18 @@ class SeamTimeline {
         final nextHeadPb = clips[i + 1].sourceDurationToPlaybackDuration(
           outgoing.headConsumed,
         );
+        final editorStart = _maxDur(boundary - tailPb, editorCursor);
+        final editorEnd = _maxDur(boundary + nextHeadPb, editorStart);
         _segments.add(
           _Segment(
             composite,
             composite + outgoing.duration,
-            boundary - tailPb,
-            boundary + nextHeadPb,
+            editorStart,
+            editorEnd,
           ),
         );
         composite += outgoing.duration;
+        editorCursor = editorEnd;
       }
 
       editor += clipDuration;
@@ -422,6 +500,8 @@ class _Segment {
   Duration get compositeDuration => compositeEnd - compositeStart;
   Duration get editorDuration => editorEnd - editorStart;
 }
+
+Duration _maxDur(Duration a, Duration b) => a > b ? a : b;
 
 /// Builds the preview player's clip list for [clips], splicing in any
 /// already-rendered transition seams. Each clip plays only its body (minus the

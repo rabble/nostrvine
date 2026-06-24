@@ -297,5 +297,71 @@ void main() {
         equals(const Duration(milliseconds: 2750)),
       );
     });
+
+    test('keeps the editor axis monotonic when a short middle clip is fully '
+        'consumed by seams on both boundaries', () {
+      DivineVideoClip sized(
+        String id,
+        Duration duration, {
+        editor.ClipTransition? transition,
+      }) => DivineVideoClip(
+        id: id,
+        video: editor.EditorVideo.file(File('/tmp/$id.mp4')),
+        duration: duration,
+        recordedAt: DateTime(2024),
+        targetAspectRatio: model.AspectRatio.square,
+        originalAspectRatio: 1,
+        transition: transition,
+      );
+
+      // A=5s, B=600ms, C=5s, dissolve on A->B and B->C. The 600ms clip B is
+      // fully consumed from both sides, so its editor span is claimed by both
+      // seams — the case that used to push the editor axis backward.
+      final clipA = sized(
+        'a',
+        const Duration(seconds: 5),
+        transition: dissolve,
+      );
+      final clipB = sized(
+        'b',
+        const Duration(milliseconds: 600),
+        transition: dissolve,
+      );
+      final clipC = sized('c', const Duration(seconds: 5));
+
+      const seamSpan = TransitionSeam(
+        path: '/tmp/seam.mp4',
+        duration: Duration(milliseconds: 900),
+        tailConsumed: Duration(milliseconds: 600),
+        headConsumed: Duration(milliseconds: 600),
+      );
+      final service = TransitionSeamRenderService()
+        ..cacheSeamForTest(clipA, clipB, dissolve, seamSpan)
+        ..cacheSeamForTest(clipB, clipC, dissolve, seamSpan);
+      final timeline = SeamTimeline([clipA, clipB, clipC], service);
+
+      // Sweep the whole composite axis; the mapped editor position must never
+      // go backward.
+      var previous = Duration.zero;
+      for (var ms = 0; ms <= 15000; ms += 50) {
+        final mapped = timeline.compositeToTimeline(Duration(milliseconds: ms));
+        expect(
+          mapped,
+          greaterThanOrEqualTo(previous),
+          reason: 'editor axis went backward at composite ${ms}ms',
+        );
+        previous = mapped;
+      }
+
+      // Pin the regression directly: the A->B and B->C seams meet around
+      // composite 5300ms; the playhead jumped ~600ms back across that junction
+      // before the fix.
+      expect(
+        timeline.compositeToTimeline(const Duration(milliseconds: 5301)),
+        greaterThanOrEqualTo(
+          timeline.compositeToTimeline(const Duration(milliseconds: 5299)),
+        ),
+      );
+    });
   });
 }
