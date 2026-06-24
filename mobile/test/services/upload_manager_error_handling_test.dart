@@ -228,32 +228,21 @@ void main() {
 
         expect(uploadManager.isRetriableError(error), isTrue);
       });
+    });
 
-      test('retries Blossom auth creation failures without HTTP status', () {
+    group('BlossomUploadFailureException with failureReason', () {
+      test('returns true for authUnavailable (signer briefly unreachable)', () {
+        // The regression this fixes: a momentary signer DNS blip leaves
+        // the auth header un-creatable. statusCode is null, so without the
+        // typed reason the old "Failed to create Blossom authentication"
+        // string matched contains('auth') and killed the retry forever.
         const error = BlossomUploadFailureException(
           'Failed to create Blossom authentication',
+          failureReason: BlossomUploadFailureReason.authUnavailable,
         );
 
         expect(uploadManager.isRetriableError(error), isTrue);
       });
-    });
-
-    group('BlossomUploadFailureException with failureReason', () {
-      test(
-        'returns true for authUnavailable (signer briefly unreachable)',
-        () {
-          // The regression this fixes: a momentary signer DNS blip leaves
-          // the auth header un-creatable. statusCode is null, so without the
-          // typed reason the old "Failed to create Blossom authentication"
-          // string matched contains('auth') and killed the retry forever.
-          const error = BlossomUploadFailureException(
-            'Failed to create Blossom authentication',
-            failureReason: BlossomUploadFailureReason.authUnavailable,
-          );
-
-          expect(uploadManager.isRetriableError(error), isTrue);
-        },
-      );
 
       test('returns true for network reason', () {
         const error = BlossomUploadFailureException(
@@ -508,24 +497,21 @@ void main() {
     });
 
     group('BlossomUploadFailureException with failureReason', () {
-      test(
-        'returns NETWORK_ERROR for authUnavailable (signer briefly '
-        'unreachable, no statusCode)',
-        () async {
-          // Without the typed reason this null-statusCode failure fell through
-          // to the generic UNKNOWN bucket; classify it as a connectivity issue
-          // to match the network-framed copy the user sees.
-          const error = BlossomUploadFailureException(
-            'Failed to create Blossom authentication',
-            failureReason: BlossomUploadFailureReason.authUnavailable,
-          );
+      test('returns NETWORK_ERROR for authUnavailable (signer briefly '
+          'unreachable, no statusCode)', () async {
+        // Without the typed reason this null-statusCode failure fell through
+        // to the generic UNKNOWN bucket; classify it as a connectivity issue
+        // to match the network-framed copy the user sees.
+        const error = BlossomUploadFailureException(
+          'Failed to create Blossom authentication',
+          failureReason: BlossomUploadFailureReason.authUnavailable,
+        );
 
-          expect(
-            await uploadManager.categorizeError(error),
-            equals('NETWORK_ERROR'),
-          );
-        },
-      );
+        expect(
+          await uploadManager.categorizeError(error),
+          equals('NETWORK_ERROR'),
+        );
+      });
 
       test(
         'still classifies a network reason via its message (DNS not shortcut)',
