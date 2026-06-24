@@ -39,5 +39,12 @@ void main() {
       final app = _entry(slug: 'primal', launchUrl: 'https://primal.net/');
       expect(appRequiresSystemBrowser(app), isFalse);
     });
+
+    test('matches the real preloaded verifier app (guards slug drift)', () {
+      final verifier = preloadedNostrApps.firstWhere(
+        (app) => app.id == 'bundled-verifier',
+      );
+      expect(appRequiresSystemBrowser(verifier), isTrue);
+    });
   });
 }

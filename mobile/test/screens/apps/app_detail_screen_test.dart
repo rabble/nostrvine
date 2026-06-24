@@ -140,12 +140,7 @@ void main() {
           'https://verifier.divine.video/',
         );
         expect(launcher.launched.single.useExternalApplication, isTrue);
-        verifyNever(
-          () => mockGoRouter.push(
-            NostrAppSandboxScreen.pathForAppId('bundled-verifier'),
-            extra: any(named: 'extra'),
-          ),
-        );
+        verifyNever(() => mockGoRouter.push(any(), extra: any(named: 'extra')));
       },
     );
   });

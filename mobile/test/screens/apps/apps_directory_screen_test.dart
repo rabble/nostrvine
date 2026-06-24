@@ -150,11 +150,36 @@ void main() {
           'https://verifier.divine.video/',
         );
         expect(launcher.launched.single.useExternalApplication, isTrue);
-        verifyNever(
-          () => mockGoRouter.push(
-            NostrAppSandboxScreen.pathForAppId('bundled-verifier'),
-            extra: any(named: 'extra'),
+        verifyNever(() => mockGoRouter.push(any(), extra: any(named: 'extra')));
+      },
+    );
+
+    testWidgets(
+      'shows an error snackbar when the verifier browser launch throws',
+      (tester) async {
+        final originalPlatform = UrlLauncherPlatform.instance;
+        final launcher = UrlLauncherTestDouble(launchError: Exception('boom'));
+        UrlLauncherPlatform.instance = launcher;
+        addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
+
+        when(
+          () => mockDirectoryService.fetchApprovedApps(),
+        ).thenAnswer((_) async => [_verifierFixture()]);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Divine Verifier'));
+        await tester.pumpAndSettle();
+
+        expect(launcher.launched, hasLength(1));
+        expect(
+          find.text(
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).relaySettingsCouldNotOpenBrowser,
           ),
+          findsOneWidget,
         );
       },
     );

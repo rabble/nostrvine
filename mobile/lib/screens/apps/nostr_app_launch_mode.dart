@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Slugs of first-party apps that perform cross-origin login / OAuth
@@ -32,7 +33,12 @@ bool appRequiresSystemBrowser(NostrAppDirectoryEntry app) =>
 /// Apps that need cross-origin login/OAuth ([appRequiresSystemBrowser])
 /// launch in the system browser, where cookies and provider redirects
 /// work; everything else opens in the in-app sandbox. Shows a snackbar
-/// when a system-browser launch fails.
+/// when a system-browser launch fails or throws.
+///
+/// The directory entry points that call this are native-only — the Apps
+/// Directory renders an unsupported message on web (`supportsNostrAppsSandbox`)
+/// — so the system-browser branch always runs on a device, where
+/// `LaunchMode.externalApplication` is correct.
 Future<void> launchNostrApp(
   BuildContext context,
   NostrAppDirectoryEntry app,
@@ -47,10 +53,18 @@ Future<void> launchNostrApp(
 
   final messenger = ScaffoldMessenger.of(context);
   final errorText = context.l10n.relaySettingsCouldNotOpenBrowser;
-  final launched = await launchUrl(
-    Uri.parse(app.launchUrl),
-    mode: LaunchMode.externalApplication,
-  );
+  var launched = false;
+  try {
+    launched = await launchUrl(
+      Uri.parse(app.launchUrl),
+      mode: LaunchMode.externalApplication,
+    );
+  } catch (error) {
+    UnifiedLogger.warning(
+      'Failed to open ${app.name}: $error',
+      name: 'launchNostrApp',
+    );
+  }
   if (!launched) {
     messenger.showSnackBar(
       SnackBar(content: Text(errorText), backgroundColor: VineTheme.error),
