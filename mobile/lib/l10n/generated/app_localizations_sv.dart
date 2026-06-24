@@ -8045,6 +8045,28 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get videoEditorLayerAnimationLabel => 'Animering';
+
+  @override
+  String get videoEditorLayerAnimationButtonSemanticLabel =>
+      'Redigera lageranimering';
+
+  @override
+  String get videoEditorLayerAnimationEnter => 'In';
+
+  @override
+  String get videoEditorLayerAnimationLeave => 'Ut';
+
+  @override
+  String get videoEditorLayerAnimationFade => 'Toning';
+
+  @override
+  String get videoEditorLayerAnimationScale => 'Skala';
+
+  @override
+  String get videoEditorLayerAnimationScaleFrom => 'Skala från';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Avsluta redigering av tidslinje';
 

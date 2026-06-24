@@ -8015,6 +8015,28 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get videoEditorLayerAnimationLabel => 'Animasi';
+
+  @override
+  String get videoEditorLayerAnimationButtonSemanticLabel =>
+      'Edit animasi lapisan';
+
+  @override
+  String get videoEditorLayerAnimationEnter => 'Masuk';
+
+  @override
+  String get videoEditorLayerAnimationLeave => 'Keluar';
+
+  @override
+  String get videoEditorLayerAnimationFade => 'Pudar';
+
+  @override
+  String get videoEditorLayerAnimationScale => 'Skala';
+
+  @override
+  String get videoEditorLayerAnimationScaleFrom => 'Skala dari';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Selesai mengedit timeline';
 

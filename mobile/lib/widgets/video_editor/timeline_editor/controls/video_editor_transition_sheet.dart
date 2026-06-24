@@ -2,7 +2,6 @@
 // ABOUTME: Shows looped previews on the real neighbour frames + duration/curve.
 
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +12,7 @@ import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/animation_picker_components.dart';
 import 'package:pro_video_editor/pro_video_editor.dart'
     show
         AnimationCurve,
@@ -27,9 +27,6 @@ import 'package:pro_video_editor/pro_video_editor.dart'
 const _minDurationMs = 10;
 const _maxDurationMs = 2000;
 const _durationStepMs = 10;
-
-/// Every easing curve pro_video_editor supports, shown as drawn glyphs.
-const List<AnimationCurve> _curveOptions = AnimationCurve.values;
 
 /// Directions offered for direction-aware transitions (slide/push/wipe).
 const _directionOptions = <ClipTransitionDirection>[
@@ -295,7 +292,7 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
                   Row(
                     mainAxisAlignment: .spaceBetween,
                     children: [
-                      _SectionLabel(l10n.videoEditorTransitionDuration),
+                      SectionLabel(l10n.videoEditorTransitionDuration),
                       Text(
                         _durationLabel(_duration),
                         style: VineTheme.labelSmallFont(
@@ -321,45 +318,21 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
                     ),
                   ],
                   const SizedBox(height: 16),
-                  _SectionLabel(l10n.videoEditorTransitionCurve),
+                  SectionLabel(l10n.videoEditorTransitionCurve),
                   const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (var i = 0; i < _curveOptions.length; i++)
-                        _PickerChip(
-                          selected: _curveOptions[i] == _curve,
-                          onTap: () =>
-                              setState(() => _curve = _curveOptions[i]),
-                          semanticLabel: l10n
-                              .videoEditorTransitionCurveOptionSemanticLabel(
-                                i + 1,
-                              ),
-                          child: SizedBox(
-                            width: 28,
-                            height: 18,
-                            child: CustomPaint(
-                              painter: _CurveGlyphPainter(
-                                curve: _flutterCurve(_curveOptions[i]),
-                                color: _curveOptions[i] == _curve
-                                    ? VineTheme.primary
-                                    : VineTheme.secondaryText,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
+                  CurvePickerRow(
+                    selected: _curve,
+                    onChanged: (curve) => setState(() => _curve = curve),
                   ),
                   if (_directionalTypes.contains(_type)) ...[
                     const SizedBox(height: 16),
-                    _SectionLabel(l10n.videoEditorTransitionDirection),
+                    SectionLabel(l10n.videoEditorTransitionDirection),
                     const SizedBox(height: 8),
                     Row(
                       spacing: 8,
                       children: [
                         for (final direction in _directionOptions)
-                          _PickerChip(
+                          AnimationPickerChip(
                             selected: direction == _direction,
                             onTap: () => setState(
                               () => _direction = direction,
@@ -394,18 +367,6 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
       ),
     );
   }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Text(
-    text,
-    style: VineTheme.labelSmallFont(color: VineTheme.secondaryText),
-  );
 }
 
 /// One transition option: a looped preview over the real neighbour frames with
@@ -480,7 +441,7 @@ class _TransitionTile extends StatelessWidget {
                       builder: (context, _) => _TransitionEffect(
                         type: type,
                         direction: direction,
-                        progress: _flutterCurve(curve).transform(
+                        progress: flutterCurveFor(curve).transform(
                           _holdProgress(controller.value, durationMs),
                         ),
                         from: fromFrame,
@@ -679,103 +640,6 @@ class _PreviewFrame extends StatelessWidget {
   }
 }
 
-/// Selectable pill used for curve and direction options. The glyph/icon it
-/// holds carries no text, so [semanticLabel] names the option for screen
-/// readers and [selected] is surfaced as the semantic selected state.
-class _PickerChip extends StatelessWidget {
-  const _PickerChip({
-    required this.selected,
-    required this.onTap,
-    required this.semanticLabel,
-    required this.child,
-  });
-
-  final bool selected;
-  final VoidCallback onTap;
-  final String semanticLabel;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: semanticLabel,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: .opaque,
-        child: ConstrainedBox(
-          // 48dp min keeps the tap target at the accessibility floor on both
-          // axes: the wider curve glyphs already clear 48dp via padding, but
-          // the 18dp direction icons (18+14+14 = 46dp) need the minWidth.
-          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: selected
-                  ? VineTheme.primary.withValues(alpha: 0.18)
-                  : VineTheme.lightText.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: selected ? VineTheme.primary : Colors.transparent,
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              child: Center(widthFactor: 1, child: child),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Draws the shape of an easing [curve] so it needs no localized label.
-class _CurveGlyphPainter extends CustomPainter {
-  _CurveGlyphPainter({required this.curve, required this.color});
-
-  final Curve curve;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round;
-
-    const steps = 24;
-    final samples = <double>[
-      for (var i = 0; i <= steps; i++) curve.transform(i / steps),
-    ];
-    // Normalize each curve into the glyph box so overshooting curves
-    // (bounce/elastic) stay visible instead of clipping at the edges.
-    final minY = samples.reduce(math.min);
-    final maxY = samples.reduce(math.max);
-    final span = (maxY - minY).abs() < 1e-3 ? 1.0 : maxY - minY;
-    const inset = 2.0;
-    final drawHeight = size.height - inset * 2;
-
-    final path = Path();
-    for (var i = 0; i <= steps; i++) {
-      final x = (i / steps) * size.width;
-      final norm = (samples[i] - minY) / span;
-      final y = inset + (1 - norm) * drawHeight;
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(_CurveGlyphPainter old) =>
-      old.curve != curve || old.color != color;
-}
-
 /// Maps the controller's loop position (0..1) to a held 0..1 transition ramp.
 ///
 /// The middle `durationMs` slice of the [_loopMs] loop is the transition; the
@@ -790,22 +654,6 @@ double _holdProgress(double value, int durationMs) {
   if (value >= end) return 1;
   return (value - start) / (end - start);
 }
-
-Curve _flutterCurve(AnimationCurve curve) => switch (curve) {
-  AnimationCurve.linear => Curves.linear,
-  AnimationCurve.easeIn => Curves.easeIn,
-  AnimationCurve.easeOut => Curves.easeOut,
-  AnimationCurve.easeInOut => Curves.easeInOut,
-  AnimationCurve.easeInCubic => Curves.easeInCubic,
-  AnimationCurve.easeOutCubic => Curves.easeOutCubic,
-  AnimationCurve.easeInOutCubic => Curves.easeInOutCubic,
-  AnimationCurve.bounceIn => Curves.bounceIn,
-  AnimationCurve.bounceOut => Curves.bounceOut,
-  AnimationCurve.bounceInOut => Curves.bounceInOut,
-  AnimationCurve.elasticIn => Curves.elasticIn,
-  AnimationCurve.elasticOut => Curves.elasticOut,
-  AnimationCurve.elasticInOut => Curves.elasticInOut,
-};
 
 String _directionLabel(
   AppLocalizations l10n,

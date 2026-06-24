@@ -8192,6 +8192,28 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String get videoEditorLayerAnimationLabel => 'Animacja';
+
+  @override
+  String get videoEditorLayerAnimationButtonSemanticLabel =>
+      'Edytuj animację warstwy';
+
+  @override
+  String get videoEditorLayerAnimationEnter => 'Wejście';
+
+  @override
+  String get videoEditorLayerAnimationLeave => 'Wyjście';
+
+  @override
+  String get videoEditorLayerAnimationFade => 'Zanikanie';
+
+  @override
+  String get videoEditorLayerAnimationScale => 'Skala';
+
+  @override
+  String get videoEditorLayerAnimationScaleFrom => 'Skaluj od';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Zakończ edycję osi czasu';
 

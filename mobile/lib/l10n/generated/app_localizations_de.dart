@@ -8128,6 +8128,28 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get videoEditorLayerAnimationLabel => 'Animation';
+
+  @override
+  String get videoEditorLayerAnimationButtonSemanticLabel =>
+      'Ebenen-Animation bearbeiten';
+
+  @override
+  String get videoEditorLayerAnimationEnter => 'Eingang';
+
+  @override
+  String get videoEditorLayerAnimationLeave => 'Ausgang';
+
+  @override
+  String get videoEditorLayerAnimationFade => 'Überblenden';
+
+  @override
+  String get videoEditorLayerAnimationScale => 'Skalieren';
+
+  @override
+  String get videoEditorLayerAnimationScaleFrom => 'Skalieren von';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Timeline-Bearbeitung abschließen';
 

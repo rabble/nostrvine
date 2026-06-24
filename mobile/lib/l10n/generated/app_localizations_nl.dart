@@ -8077,6 +8077,28 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get videoEditorLayerAnimationLabel => 'Animatie';
+
+  @override
+  String get videoEditorLayerAnimationButtonSemanticLabel =>
+      'Laaganimatie bewerken';
+
+  @override
+  String get videoEditorLayerAnimationEnter => 'Ingang';
+
+  @override
+  String get videoEditorLayerAnimationLeave => 'Uitgang';
+
+  @override
+  String get videoEditorLayerAnimationFade => 'Vervagen';
+
+  @override
+  String get videoEditorLayerAnimationScale => 'Schaal';
+
+  @override
+  String get videoEditorLayerAnimationScaleFrom => 'Schalen vanaf';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Bewerken van tijdlijn voltooien';
 

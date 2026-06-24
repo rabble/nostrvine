@@ -14024,6 +14024,48 @@ abstract class AppLocalizations {
   /// **'Easing curve {number}'**
   String videoEditorTransitionCurveOptionSemanticLabel(int number);
 
+  /// Label for the control that opens the enter/leave animation picker for a text/sticker/drawing layer, and the picker's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Animation'**
+  String get videoEditorLayerAnimationLabel;
+
+  /// Accessibility label for the button that opens the layer enter/leave animation picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit layer animation'**
+  String get videoEditorLayerAnimationButtonSemanticLabel;
+
+  /// Tab/segment label for the animation a layer plays when it appears.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter'**
+  String get videoEditorLayerAnimationEnter;
+
+  /// Tab/segment label for the animation a layer plays when it disappears.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get videoEditorLayerAnimationLeave;
+
+  /// Layer animation type that fades the layer's opacity in or out.
+  ///
+  /// In en, this message translates to:
+  /// **'Fade'**
+  String get videoEditorLayerAnimationFade;
+
+  /// Layer animation type that scales the layer from a smaller size up to full size (or back).
+  ///
+  /// In en, this message translates to:
+  /// **'Scale'**
+  String get videoEditorLayerAnimationScale;
+
+  /// Section label above the slider that sets the starting size for a scale animation (0% to 100%).
+  ///
+  /// In en, this message translates to:
+  /// **'Scale from'**
+  String get videoEditorLayerAnimationScaleFrom;
+
   /// No description provided for @videoEditorFinishTimelineEditingSemanticLabel.
   ///
   /// In en, this message translates to:

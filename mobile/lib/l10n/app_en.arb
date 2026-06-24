@@ -4663,6 +4663,34 @@
       "number": { "type": "int" }
     }
   },
+  "videoEditorLayerAnimationLabel": "Animation",
+  "@videoEditorLayerAnimationLabel": {
+    "description": "Label for the control that opens the enter/leave animation picker for a text/sticker/drawing layer, and the picker's title."
+  },
+  "videoEditorLayerAnimationButtonSemanticLabel": "Edit layer animation",
+  "@videoEditorLayerAnimationButtonSemanticLabel": {
+    "description": "Accessibility label for the button that opens the layer enter/leave animation picker."
+  },
+  "videoEditorLayerAnimationEnter": "Enter",
+  "@videoEditorLayerAnimationEnter": {
+    "description": "Tab/segment label for the animation a layer plays when it appears."
+  },
+  "videoEditorLayerAnimationLeave": "Leave",
+  "@videoEditorLayerAnimationLeave": {
+    "description": "Tab/segment label for the animation a layer plays when it disappears."
+  },
+  "videoEditorLayerAnimationFade": "Fade",
+  "@videoEditorLayerAnimationFade": {
+    "description": "Layer animation type that fades the layer's opacity in or out."
+  },
+  "videoEditorLayerAnimationScale": "Scale",
+  "@videoEditorLayerAnimationScale": {
+    "description": "Layer animation type that scales the layer from a smaller size up to full size (or back)."
+  },
+  "videoEditorLayerAnimationScaleFrom": "Scale from",
+  "@videoEditorLayerAnimationScaleFrom": {
+    "description": "Section label above the slider that sets the starting size for a scale animation (0% to 100%)."
+  },
   "videoEditorFinishTimelineEditingSemanticLabel": "Finish timeline editing",
   "videoEditorAudioPlayPreviewSemanticLabel": "Play preview",
   "videoEditorAudioPausePreviewSemanticLabel": "Pause preview",

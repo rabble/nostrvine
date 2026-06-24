@@ -7779,6 +7779,27 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get videoEditorLayerAnimationLabel => '애니메이션';
+
+  @override
+  String get videoEditorLayerAnimationButtonSemanticLabel => '레이어 애니메이션 편집';
+
+  @override
+  String get videoEditorLayerAnimationEnter => '등장';
+
+  @override
+  String get videoEditorLayerAnimationLeave => '퇴장';
+
+  @override
+  String get videoEditorLayerAnimationFade => '페이드';
+
+  @override
+  String get videoEditorLayerAnimationScale => '크기';
+
+  @override
+  String get videoEditorLayerAnimationScaleFrom => '시작 크기';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel => '타임라인 편집 완료';
 
   @override

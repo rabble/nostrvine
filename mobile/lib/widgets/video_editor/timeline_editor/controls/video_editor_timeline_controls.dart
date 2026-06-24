@@ -10,6 +10,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
     this.onEdit,
     this.onDuplicated,
     this.onSplit,
+    this.onAnimate,
     this.onSpeed,
     this.onTransform,
     this.onReversed,
@@ -24,6 +25,9 @@ class VideoEditorTimelineControls extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDuplicated;
   final VoidCallback? onSplit;
+
+  /// Opens the layer enter/leave animation picker. Layer overlays only.
+  final VoidCallback? onAnimate;
   final VoidCallback? onSpeed;
   final VoidCallback? onTransform;
   final VoidCallback? onReversed;
@@ -94,6 +98,15 @@ class VideoEditorTimelineControls extends StatelessWidget {
                           .l10n
                           .videoEditorSplitSelectedClipSemanticLabel,
                       onPressed: onSplit,
+                    ),
+                  if (onAnimate != null)
+                    _ControlButton(
+                      icon: .sparkle,
+                      label: context.l10n.videoEditorLayerAnimationLabel,
+                      semanticLabel: context
+                          .l10n
+                          .videoEditorLayerAnimationButtonSemanticLabel,
+                      onPressed: onAnimate,
                     ),
                   if (onSpeed != null)
                     _ControlButton(

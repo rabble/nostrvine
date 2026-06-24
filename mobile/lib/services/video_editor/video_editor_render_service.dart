@@ -10,6 +10,7 @@ import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/extensions/complete_parameters_extensions.dart';
+import 'package:openvine/extensions/layer_animation_storage.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
@@ -1016,6 +1017,7 @@ class VideoEditorRenderService {
                       item.logicalSize.width * scale,
                       item.logicalSize.height * scale,
                     ),
+                    animations: item.layer.divineAnimations,
                   ),
               ];
             }()

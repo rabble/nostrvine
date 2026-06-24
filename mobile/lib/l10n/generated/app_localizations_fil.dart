@@ -8128,6 +8128,28 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get videoEditorLayerAnimationLabel => 'Animation';
+
+  @override
+  String get videoEditorLayerAnimationButtonSemanticLabel =>
+      'I-edit ang animation ng layer';
+
+  @override
+  String get videoEditorLayerAnimationEnter => 'Pasok';
+
+  @override
+  String get videoEditorLayerAnimationLeave => 'Labas';
+
+  @override
+  String get videoEditorLayerAnimationFade => 'Fade';
+
+  @override
+  String get videoEditorLayerAnimationScale => 'Scale';
+
+  @override
+  String get videoEditorLayerAnimationScaleFrom => 'Scale mula sa';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Tapusin ang pag-edit ng timeline';
 

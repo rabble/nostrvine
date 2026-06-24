@@ -7896,6 +7896,27 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get videoEditorLayerAnimationLabel => 'እነማ';
+
+  @override
+  String get videoEditorLayerAnimationButtonSemanticLabel => 'የንብርብር እነማ አርትዕ';
+
+  @override
+  String get videoEditorLayerAnimationEnter => 'መግቢያ';
+
+  @override
+  String get videoEditorLayerAnimationLeave => 'መውጫ';
+
+  @override
+  String get videoEditorLayerAnimationFade => 'ፌድ';
+
+  @override
+  String get videoEditorLayerAnimationScale => 'መጠን';
+
+  @override
+  String get videoEditorLayerAnimationScaleFrom => 'ከመጠን';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'የጊዜ መስመር አርትዖትን ጨርስ';
 

@@ -8113,6 +8113,28 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String get videoEditorLayerAnimationLabel => 'Анимация';
+
+  @override
+  String get videoEditorLayerAnimationButtonSemanticLabel =>
+      'Редактиране на анимация на слоя';
+
+  @override
+  String get videoEditorLayerAnimationEnter => 'Вход';
+
+  @override
+  String get videoEditorLayerAnimationLeave => 'Изход';
+
+  @override
+  String get videoEditorLayerAnimationFade => 'Избледняване';
+
+  @override
+  String get videoEditorLayerAnimationScale => 'Мащаб';
+
+  @override
+  String get videoEditorLayerAnimationScaleFrom => 'Мащаб от';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Завършете редактирането на времевата линия';
 

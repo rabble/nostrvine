@@ -8010,6 +8010,28 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get videoEditorLayerAnimationLabel => 'Animasyon';
+
+  @override
+  String get videoEditorLayerAnimationButtonSemanticLabel =>
+      'Katman animasyonunu düzenle';
+
+  @override
+  String get videoEditorLayerAnimationEnter => 'Giriş';
+
+  @override
+  String get videoEditorLayerAnimationLeave => 'Çıkış';
+
+  @override
+  String get videoEditorLayerAnimationFade => 'Solma';
+
+  @override
+  String get videoEditorLayerAnimationScale => 'Ölçek';
+
+  @override
+  String get videoEditorLayerAnimationScaleFrom => 'Ölçek başlangıcı';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Zaman çizelgesi düzenlemeyi bitir';
 

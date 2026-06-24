@@ -7755,6 +7755,27 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get videoEditorLayerAnimationLabel => 'アニメーション';
+
+  @override
+  String get videoEditorLayerAnimationButtonSemanticLabel => 'レイヤーアニメーションを編集';
+
+  @override
+  String get videoEditorLayerAnimationEnter => 'イン';
+
+  @override
+  String get videoEditorLayerAnimationLeave => 'アウト';
+
+  @override
+  String get videoEditorLayerAnimationFade => 'フェード';
+
+  @override
+  String get videoEditorLayerAnimationScale => 'スケール';
+
+  @override
+  String get videoEditorLayerAnimationScaleFrom => '開始スケール';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel => 'タイムライン編集を終了';
 
   @override

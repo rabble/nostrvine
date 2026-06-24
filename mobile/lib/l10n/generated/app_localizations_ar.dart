@@ -7971,6 +7971,28 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get videoEditorLayerAnimationLabel => 'الرسوم المتحركة';
+
+  @override
+  String get videoEditorLayerAnimationButtonSemanticLabel =>
+      'تحرير حركة الطبقة';
+
+  @override
+  String get videoEditorLayerAnimationEnter => 'دخول';
+
+  @override
+  String get videoEditorLayerAnimationLeave => 'خروج';
+
+  @override
+  String get videoEditorLayerAnimationFade => 'تلاشٍ';
+
+  @override
+  String get videoEditorLayerAnimationScale => 'تحجيم';
+
+  @override
+  String get videoEditorLayerAnimationScaleFrom => 'التحجيم من';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'إنهاء تحرير الجدول الزمني';
 

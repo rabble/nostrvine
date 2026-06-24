@@ -9,6 +9,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_layer_animation_sheet.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
 import 'package:pro_image_editor/core/models/layers/layer.dart';
 import 'package:pro_image_editor/features/filter_editor/types/filter_state.dart';
@@ -60,6 +61,9 @@ class _LayerOverlayControls extends StatelessWidget {
           : null,
       onDuplicated: () => _duplicateLayer(context: context, layer: layer),
       onSplit: () => _splitLayer(context: context, layer: layer),
+      onAnimate: layer == null
+          ? null
+          : () => editLayerAnimation(context, layer),
       onDone: () => TimelineOverlayControls._deselect(context),
     );
   }

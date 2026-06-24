@@ -8209,6 +8209,28 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get videoEditorLayerAnimationLabel => 'Animație';
+
+  @override
+  String get videoEditorLayerAnimationButtonSemanticLabel =>
+      'Editează animația stratului';
+
+  @override
+  String get videoEditorLayerAnimationEnter => 'Intrare';
+
+  @override
+  String get videoEditorLayerAnimationLeave => 'Ieșire';
+
+  @override
+  String get videoEditorLayerAnimationFade => 'Estompare';
+
+  @override
+  String get videoEditorLayerAnimationScale => 'Scalare';
+
+  @override
+  String get videoEditorLayerAnimationScaleFrom => 'Scalare de la';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Finalizează editarea cronologiei';
 
