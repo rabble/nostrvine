@@ -412,53 +412,57 @@ class _TransitionTile extends StatelessWidget {
         VineTheme.surfaceContainerHigh,
       ],
     );
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: label,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: .opaque,
-        child: Column(
-          spacing: 6,
-          mainAxisSize: .min,
-          children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: selected ? VineTheme.primary : Colors.transparent,
-                  width: 2,
+    // Merge the button node and the visible label into one semantics node so
+    // screen readers announce the label once, not twice.
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: .opaque,
+          child: Column(
+            spacing: 6,
+            mainAxisSize: .min,
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: selected ? VineTheme.primary : Colors.transparent,
+                    width: 2,
+                  ),
                 ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(7),
-                  child: ExcludeSemantics(
-                    child: AnimatedBuilder(
-                      animation: controller,
-                      builder: (context, _) => _TransitionEffect(
-                        type: type,
-                        direction: direction,
-                        progress: flutterCurveFor(curve).transform(
-                          _holdProgress(controller.value, durationMs),
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(7),
+                    child: ExcludeSemantics(
+                      child: AnimatedBuilder(
+                        animation: controller,
+                        builder: (context, _) => _TransitionEffect(
+                          type: type,
+                          direction: direction,
+                          progress: flutterCurveFor(curve).transform(
+                            _holdProgress(controller.value, durationMs),
+                          ),
+                          from: fromFrame,
+                          to: toFrame,
                         ),
-                        from: fromFrame,
-                        to: toFrame,
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-            Text(
-              label,
-              style: VineTheme.labelSmallFont(
-                color: selected ? VineTheme.primary : VineTheme.lightText,
+              Text(
+                label,
+                style: VineTheme.labelSmallFont(
+                  color: selected ? VineTheme.primary : VineTheme.lightText,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

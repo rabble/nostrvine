@@ -16,8 +16,14 @@ import 'package:pro_video_editor/pro_video_editor.dart' as pve;
 extension LayerAnimationStorage on Layer {
   /// This layer's enter/leave animations as pro_video_editor models, for the
   /// export pipeline. Empty when the layer has no animations.
-  List<pve.LayerAnimation> get divineAnimations =>
-      animations.map((a) => pve.LayerAnimation.fromMap(a.toMap())).toList();
+  ///
+  /// Reads [Layer.effectiveAnimations] (not the raw [Layer.animations]) so a
+  /// layer that only carries the legacy `enterDuration` / `exitDuration` fade
+  /// fields still exports the fade pro_image_editor synthesizes for the preview
+  /// — keeping export and preview correct-by-construction.
+  List<pve.LayerAnimation> get divineAnimations => effectiveAnimations
+      .map((a) => pve.LayerAnimation.fromMap(a.toMap()))
+      .toList();
 
   /// All [pve.AnimationPhase.animateIn] animations. A layer can combine several
   /// per phase (e.g. a fade and a slide), which the renderers compose. Empty

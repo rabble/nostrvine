@@ -415,6 +415,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   void _onPlaybackRestartRequested() {
     if (!_isPlayerReadyNotifier.value || !_isPlayerInitialized) return;
 
+    // Stop the interpolator on the user action so it can't advance the play
+    // time from the stale anchor before the next native report re-anchors it;
+    // the report with isPlaying == true restarts it.
+    _setPlayheadTickerActive(false);
     _videoPlayer?.seekTo(Duration.zero);
     _videoPlayer?.play();
   }
@@ -425,6 +429,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
 
     final isPlaying = _videoPlayer?.state.isPlaying ?? false;
     if (isPlaying) {
+      // Stop the interpolator on pause so it doesn't keep advancing the play
+      // time for up to one report interval before the next report stops it.
+      _setPlayheadTickerActive(false);
       _videoPlayer?.pause();
     } else {
       _videoPlayer?.play();
@@ -436,6 +443,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     if (!_isPlayerReadyNotifier.value || !_isPlayerInitialized) return;
 
     if (isPaused) {
+      // Stop the interpolator on pause so it doesn't keep advancing the play
+      // time for up to one report interval before the next report stops it.
+      _setPlayheadTickerActive(false);
       _videoPlayer?.pause();
     } else {
       _videoPlayer?.play();

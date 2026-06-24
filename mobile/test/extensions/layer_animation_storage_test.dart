@@ -74,5 +74,68 @@ void main() {
 
       expect(layer.divineAnimations, isEmpty);
     });
+
+    // pro_video_editor's fromMap is strict (`values.byName` throws on an
+    // unknown name), so a future dependency bump that renamed any unexercised
+    // enum value would throw at export time. Iterating every value turns the
+    // schema-parity guarantee into something these tests enforce.
+    test('round-trips every animation curve', () {
+      for (final curve in editor.AnimationCurve.values) {
+        final animation = editor.LayerAnimation(
+          type: editor.LayerAnimationType.fade,
+          phase: editor.AnimationPhase.animateIn,
+          duration: const Duration(milliseconds: 400),
+          curve: curve,
+        );
+        final layer = Layer(animations: [animation].toLayerAnimations());
+
+        expect(
+          layer.divineAnimations.single,
+          equals(animation),
+          reason: '$curve',
+        );
+      }
+    });
+
+    test('round-trips every slide direction', () {
+      for (final direction in editor.SlideDirection.values) {
+        final animation = editor.LayerAnimation(
+          type: editor.LayerAnimationType.slide,
+          phase: editor.AnimationPhase.animateIn,
+          duration: const Duration(milliseconds: 400),
+          slideDirection: direction,
+        );
+        final layer = Layer(animations: [animation].toLayerAnimations());
+
+        expect(
+          layer.divineAnimations.single,
+          equals(animation),
+          reason: '$direction',
+        );
+      }
+    });
+
+    test('round-trips every type and phase', () {
+      for (final type in editor.LayerAnimationType.values) {
+        for (final phase in editor.AnimationPhase.values) {
+          final animation = editor.LayerAnimation(
+            type: type,
+            phase: phase,
+            duration: const Duration(milliseconds: 250),
+            slideDirection: type == editor.LayerAnimationType.slide
+                ? editor.SlideDirection.top
+                : null,
+            scaleFrom: type == editor.LayerAnimationType.scale ? 0.25 : null,
+          );
+          final layer = Layer(animations: [animation].toLayerAnimations());
+
+          expect(
+            layer.divineAnimations.single,
+            equals(animation),
+            reason: '$type / $phase',
+          );
+        }
+      }
+    });
   });
 }

@@ -3,9 +3,20 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/extensions/layer_animation_storage.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_layer_animation_sheet.dart';
+import 'package:pro_image_editor/pro_image_editor.dart'
+    show Layer, ProImageEditorState;
 import 'package:pro_video_editor/pro_video_editor.dart' as editor;
+
+class _MockProImageEditorState extends Mock implements ProImageEditorState {
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) =>
+      '_MockProImageEditorState';
+}
 
 void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
@@ -352,6 +363,116 @@ void main() {
         ),
         windowEnd,
       );
+    });
+  });
+
+  group('editLayerAnimation', () {
+    const windowEnd = Duration(seconds: 5);
+    const leaveFade = editor.LayerAnimation(
+      type: editor.LayerAnimationType.fade,
+      phase: editor.AnimationPhase.animateOut,
+      duration: Duration(milliseconds: 300),
+    );
+
+    late _MockProImageEditorState mockEditor;
+
+    setUp(() {
+      mockEditor = _MockProImageEditorState();
+      when(
+        () => mockEditor.addHistory(layers: any(named: 'layers')),
+      ).thenAnswer((_) {});
+    });
+
+    Future<void> openEditor(WidgetTester tester, Layer layer) async {
+      when(() => mockEditor.activeLayers).thenReturn([layer]);
+      tester.view.physicalSize = const Size(500, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: VideoEditorScope(
+            editorKey: GlobalKey(),
+            removeAreaKey: GlobalKey(),
+            originalClipAspectRatio: 9 / 16,
+            bodySizeNotifier: ValueNotifier(const Size(400, 600)),
+            zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
+            fromLibrary: false,
+            onOpenCamera: () {},
+            onOpenClipsEditor: () {},
+            onAddStickers: () {},
+            onAddEditTextLayer: ([layer]) async => null,
+            onOpenMusicLibrary: () {},
+            editorOverride: mockEditor,
+            child: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => editLayerAnimation(
+                    context,
+                    layer,
+                    windowEndTime: windowEnd,
+                  ),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      // The preview loops forever, so never pumpAndSettle — advance manually.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+    }
+
+    Future<void> tapDone(WidgetTester tester) async {
+      await tester.tap(find.text(l10n.videoEditorDoneLabel));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+    }
+
+    List<Layer> capturedLayers() {
+      final result = verify(
+        () => mockEditor.addHistory(layers: captureAny(named: 'layers')),
+      )..called(1);
+      return result.captured.single as List<Layer>;
+    }
+
+    testWidgets('anchors endTime to the window when a leave is added', (
+      tester,
+    ) async {
+      await openEditor(tester, Layer(id: 'l1'));
+
+      await tester.tap(find.text(l10n.videoEditorLayerAnimationLeave));
+      await tester.pump();
+      await tester.tap(find.text(l10n.videoEditorLayerAnimationFade));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      await tapDone(tester);
+
+      expect(capturedLayers().single.endTime, equals(windowEnd));
+    });
+
+    testWidgets('clears endTime to null when the leave is removed', (
+      tester,
+    ) async {
+      // Untrimmed layer previously anchored to the window for a leave
+      // animation; removing the leave must drop the stale end back to null so
+      // copyWith's `endTime ?? this.endTime` can't keep it pinned.
+      final layer = Layer(id: 'l1', animations: [leaveFade].toLayerAnimations())
+        ..endTime = windowEnd;
+      await openEditor(tester, layer);
+
+      await tester.tap(find.text(l10n.videoEditorLayerAnimationLeave));
+      await tester.pump();
+      await tester.tap(find.text(l10n.videoEditorTransitionNone));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      await tapDone(tester);
+
+      expect(capturedLayers().single.endTime, isNull);
     });
   });
 }

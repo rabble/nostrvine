@@ -82,7 +82,20 @@ Future<void> editLayerAnimation(
   final index = layers.indexWhere((l) => l.id == layer.id);
   if (index < 0) return;
 
-  final animations = <LayerAnimation>[...result.enter, ...result.leave];
+  // Carry through any animations the picker doesn't model — phases other than
+  // enter/leave (e.g. animateInOut) — so editing one phase can't silently drop
+  // them.
+  final preserved = [
+    for (final animation in layer.divineAnimations)
+      if (animation.phase != AnimationPhase.animateIn &&
+          animation.phase != AnimationPhase.animateOut)
+        animation,
+  ];
+  final animations = <LayerAnimation>[
+    ...result.enter,
+    ...result.leave,
+    ...preserved,
+  ];
 
   final endTime = resolveLayerEndTime(
     currentEndTime: layer.endTime,
@@ -93,16 +106,17 @@ Future<void> editLayerAnimation(
   // Drive the layer entirely from the typed animations; clear the legacy fade
   // fields / custom builder so [Layer.effectiveAnimations] can't fall back to a
   // stale fade when the animations list is empty.
-  layers[index] =
-      layer.copyWith(
-          animations: animations.toLayerAnimations(),
-          endTime: endTime,
-        )
-        ..enterDuration = null
-        ..exitDuration = null
-        ..enterCurve = null
-        ..exitCurve = null
-        ..transitionBuilder = null;
+  //
+  // endTime is set via the mutable field rather than copyWith: Layer.copyWith
+  // resolves it as `endTime ?? this.endTime`, so it can't clear a stale end
+  // back to null — which resolveLayerEndTime returns to un-anchor a layer.
+  layers[index] = layer.copyWith(animations: animations.toLayerAnimations())
+    ..endTime = endTime
+    ..enterDuration = null
+    ..exitDuration = null
+    ..enterCurve = null
+    ..exitCurve = null
+    ..transitionBuilder = null;
 
   editor.addHistory(layers: layers);
 }
@@ -616,53 +630,57 @@ class _LayerTypeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: label,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: .opaque,
-        child: Column(
-          spacing: 6,
-          mainAxisSize: .min,
-          children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: selected ? VineTheme.primary : Colors.transparent,
-                  width: 2,
+    // Merge the button node and the visible label into one semantics node so
+    // screen readers announce the label once, not twice.
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: .opaque,
+          child: Column(
+            spacing: 6,
+            mainAxisSize: .min,
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: selected ? VineTheme.primary : Colors.transparent,
+                    width: 2,
+                  ),
                 ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(7),
-                  child: ExcludeSemantics(
-                    child: AnimatedBuilder(
-                      animation: controller,
-                      builder: (context, _) => _LayerEffect(
-                        type: type,
-                        phase: phase,
-                        direction: direction,
-                        scaleFrom: scaleFrom,
-                        progress: flutterCurveFor(curve).transform(
-                          _holdProgress(controller.value, durationMs),
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(7),
+                    child: ExcludeSemantics(
+                      child: AnimatedBuilder(
+                        animation: controller,
+                        builder: (context, _) => _LayerEffect(
+                          type: type,
+                          phase: phase,
+                          direction: direction,
+                          scaleFrom: scaleFrom,
+                          progress: flutterCurveFor(curve).transform(
+                            _holdProgress(controller.value, durationMs),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-            Text(
-              label,
-              style: VineTheme.labelSmallFont(
-                color: selected ? VineTheme.primary : VineTheme.lightText,
+              Text(
+                label,
+                style: VineTheme.labelSmallFont(
+                  color: selected ? VineTheme.primary : VineTheme.lightText,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
