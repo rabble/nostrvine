@@ -544,6 +544,139 @@ void main() {
       });
     });
 
+    group('isRead conflict semantics', () {
+      test(
+        'older backfill wrap does not re-mark a read conversation unread',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["a","b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'Newer received',
+            lastMessageTimestamp: 1700000200,
+            lastMessageSenderPubkey: 'b',
+            isRead: false,
+          );
+          await dao.markAsRead('conv_1');
+
+          // A delayed older received wrap arrives during backfill.
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["a","b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'Older backfill',
+            lastMessageTimestamp: 1700000100,
+            lastMessageSenderPubkey: 'b',
+            isRead: false,
+          );
+
+          final result = await dao.getConversation('conv_1');
+          expect(result!.isRead, isTrue);
+        },
+      );
+
+      test(
+        'forceUpdateLastMessage refresh preserves unread read state',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["a","b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'Unread received',
+            lastMessageTimestamp: 1700000200,
+            lastMessageSenderPubkey: 'b',
+            isRead: false,
+          );
+
+          // Deletion preview refresh: older replacement, isRead defaults true.
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["a","b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'Remaining older message',
+            lastMessageTimestamp: 1700000100,
+            lastMessageSenderPubkey: 'a',
+            forceUpdateLastMessage: true,
+          );
+
+          final result = await dao.getConversation('conv_1');
+          // Preview force-updates...
+          expect(result!.lastMessageContent, equals('Remaining older message'));
+          expect(result.lastMessageTimestamp, equals(1700000100));
+          // ...but read state is untouched.
+          expect(result.isRead, isFalse);
+        },
+      );
+
+      test(
+        're-ingesting the latest wrap (equal timestamp) preserves read state',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["a","b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'Received',
+            lastMessageTimestamp: 1700000200,
+            lastMessageSenderPubkey: 'b',
+            isRead: false,
+          );
+          await dao.markAsRead('conv_1');
+
+          // Reconcile / re-drain replays the same wrap (equal timestamp).
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["a","b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'Received',
+            lastMessageTimestamp: 1700000200,
+            lastMessageSenderPubkey: 'b',
+            isRead: false,
+          );
+
+          final result = await dao.getConversation('conv_1');
+          expect(result!.isRead, isTrue);
+        },
+      );
+
+      test(
+        'a genuinely newer received message marks a read conversation unread',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["a","b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'First',
+            lastMessageTimestamp: 1700000100,
+            lastMessageSenderPubkey: 'b',
+            isRead: false,
+          );
+          await dao.markAsRead('conv_1');
+
+          // New received message — strictly newer.
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["a","b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'Second',
+            lastMessageTimestamp: 1700000200,
+            lastMessageSenderPubkey: 'b',
+            isRead: false,
+          );
+
+          final result = await dao.getConversation('conv_1');
+          expect(result!.isRead, isFalse);
+        },
+      );
+    });
+
     group('getUnreadCount', () {
       test('returns count of unread conversations', () async {
         await dao.upsertConversation(

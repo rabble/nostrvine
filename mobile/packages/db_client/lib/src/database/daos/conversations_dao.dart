@@ -41,7 +41,12 @@ END
   ///
   /// On conflict the following update semantics apply in **both** branches:
   ///
-  /// * `participantPubkeys`, `isGroup`, `isRead` — always overwritten.
+  /// * `participantPubkeys`, `isGroup` — always overwritten.
+  /// * `isRead` — updated only when the incoming event becomes the stored
+  ///   latest message (strictly newer [lastMessageTimestamp]); otherwise
+  ///   preserved. Notably NOT written under [forceUpdateLastMessage]: a
+  ///   deletion preview refresh must not change read state. Flip read
+  ///   state explicitly via [markAsRead] / [markMultipleAsRead].
   /// * `subject`, `ownerPubkey`, `dmProtocol` — updated only when the
   ///   incoming value is non-null; existing non-null value is preserved.
   /// * `currentUserHasSent` — one-way ratchet: once `true` it is never
@@ -107,7 +112,10 @@ END
           // Always updated.
           participantPubkeys: excl.participantPubkeys,
           isGroup: excl.isGroup,
-          isRead: excl.isRead,
+          // Read state only follows the latest message: gated on
+          // incomingIsNewer (not previewCondition) so a deletion
+          // force-refresh updates the preview without marking read.
+          isRead: excl.isRead.iif(incomingIsNewer, old.isRead),
           // Preserve existing non-null value; only update when incoming
           // value is non-null.
           subject: coalesce([excl.subject, old.subject]),
