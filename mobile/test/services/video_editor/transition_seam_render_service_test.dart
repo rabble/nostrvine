@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_editor/transition_seam_render_service.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' as editor;
 
 void main() {
@@ -322,8 +323,8 @@ void main() {
       );
     });
 
-    test('keeps the editor axis monotonic when a short middle clip is fully '
-        'consumed by seams on both boundaries', () {
+    test('splits a short middle clip between two clamped overlaps instead of '
+        'replaying it, keeping the editor axis monotonic (#5487)', () {
       DivineVideoClip sized(
         String id,
         Duration duration, {
@@ -338,9 +339,11 @@ void main() {
         transition: transition,
       );
 
-      // A=5s, B=600ms, C=5s, dissolve on A->B and B->C. The 600ms clip B is
-      // fully consumed from both sides, so its editor span is claimed by both
-      // seams — the case that used to push the editor axis backward.
+      // A=5s, B=600ms, C=5s, 500ms dissolve on A->B and B->C. Unclamped, each
+      // dissolve would consume the whole 600ms clip B, so the preview replayed
+      // B in both seams (different frames + length than the export — #5487). The
+      // clamp shrinks both dissolves so B's head + tail consumption fits exactly
+      // (300ms each), splitting B between the two seams — played once.
       final clipA = sized(
         'a',
         const Duration(seconds: 5),
@@ -352,20 +355,49 @@ void main() {
         transition: dissolve,
       );
       final clipC = sized('c', const Duration(seconds: 5));
+      final clips = [clipA, clipB, clipC];
 
-      const seamSpan = TransitionSeam(
-        path: '/tmp/seam.mp4',
-        duration: Duration(milliseconds: 900),
-        tailConsumed: Duration(milliseconds: 600),
-        headConsumed: Duration(milliseconds: 600),
-      );
+      // The seams are keyed by the clamped transition — what the canvas renders
+      // and the preview plan looks up.
+      final clamped = VideoEditorRenderService.clampTransitions(clips);
       final service = TransitionSeamRenderService()
-        ..cacheSeamForTest(clipA, clipB, dissolve, seamSpan)
-        ..cacheSeamForTest(clipB, clipC, dissolve, seamSpan);
-      final timeline = SeamTimeline([clipA, clipB, clipC], service);
+        ..cacheSeamForTest(
+          clipA,
+          clipB,
+          clamped[clipA.id]!,
+          const TransitionSeam(
+            path: '/tmp/seamAB.mp4',
+            duration: Duration(milliseconds: 450),
+            tailConsumed: Duration(milliseconds: 300),
+            headConsumed: Duration(milliseconds: 300),
+          ),
+        )
+        ..cacheSeamForTest(
+          clipB,
+          clipC,
+          clamped[clipB.id]!,
+          const TransitionSeam(
+            path: '/tmp/seamBC.mp4',
+            duration: Duration(milliseconds: 450),
+            tailConsumed: Duration(milliseconds: 300),
+            headConsumed: Duration(milliseconds: 300),
+          ),
+        );
+
+      // B is split into the two seams: A body, both seams, C body — B never
+      // plays as its own body and is never replayed.
+      final players = buildSeamAwarePlayerClips(clips, service);
+      expect(players.map((c) => c.uri), [
+        '/tmp/a.mp4',
+        '/tmp/seamAB.mp4',
+        '/tmp/seamBC.mp4',
+        '/tmp/c.mp4',
+      ]);
+      expect(players.where((c) => c.uri == '/tmp/b.mp4'), isEmpty);
 
       // Sweep the whole composite axis; the mapped editor position must never
       // go backward.
+      final timeline = SeamTimeline(clips, service);
       var previous = Duration.zero;
       for (var ms = 0; ms <= 15000; ms += 50) {
         final mapped = timeline.compositeToTimeline(Duration(milliseconds: ms));
@@ -376,16 +408,6 @@ void main() {
         );
         previous = mapped;
       }
-
-      // Pin the regression directly: the A->B and B->C seams meet around
-      // composite 5300ms; the playhead jumped ~600ms back across that junction
-      // before the fix.
-      expect(
-        timeline.compositeToTimeline(const Duration(milliseconds: 5301)),
-        greaterThanOrEqualTo(
-          timeline.compositeToTimeline(const Duration(milliseconds: 5299)),
-        ),
-      );
     });
   });
 }
