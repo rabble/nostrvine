@@ -130,6 +130,24 @@ abstract class AppLocalizations {
     Locale('tr'),
   ];
 
+  /// Indicator and snackbar text when the user swipes right to get more videos like the current one.
+  ///
+  /// In en, this message translates to:
+  /// **'More like this'**
+  String get feedTuningMoreLabel;
+
+  /// Indicator and snackbar text when the user swipes left to get fewer videos like the current one.
+  ///
+  /// In en, this message translates to:
+  /// **'Less like this'**
+  String get feedTuningLessLabel;
+
+  /// Snackbar action that retracts a just-published feed-tuning swipe.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get feedTuningUndo;
+
   /// Accessibility label for the compact quoted-video preview shown above a DM reply that references a shared video; activating it opens that video.
   ///
   /// In en, this message translates to:

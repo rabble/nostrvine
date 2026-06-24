@@ -735,6 +735,80 @@ final class DmReactionsRepositoryProvider
 String _$dmReactionsRepositoryHash() =>
     r'6cb1c9a4cfd154236685a01aae4f87473cffdb7d';
 
+/// Provider for [FeedTuningRepository] — publishes swipe "more/less like this"
+/// feed-tuning signals.
+///
+/// Watches only [nostrServiceProvider] (a stable, keepAlive client). The
+/// repository reads `publicKey` live at publish time, so it stays correct
+/// across auth/signer changes without rebuilding — no `ValueKey` guard is
+/// needed at the consumer (rule exception: genuinely stable + reads live
+/// state).
+
+@ProviderFor(feedTuningRepository)
+final feedTuningRepositoryProvider = FeedTuningRepositoryProvider._();
+
+/// Provider for [FeedTuningRepository] — publishes swipe "more/less like this"
+/// feed-tuning signals.
+///
+/// Watches only [nostrServiceProvider] (a stable, keepAlive client). The
+/// repository reads `publicKey` live at publish time, so it stays correct
+/// across auth/signer changes without rebuilding — no `ValueKey` guard is
+/// needed at the consumer (rule exception: genuinely stable + reads live
+/// state).
+
+final class FeedTuningRepositoryProvider
+    extends
+        $FunctionalProvider<
+          FeedTuningRepository,
+          FeedTuningRepository,
+          FeedTuningRepository
+        >
+    with $Provider<FeedTuningRepository> {
+  /// Provider for [FeedTuningRepository] — publishes swipe "more/less like this"
+  /// feed-tuning signals.
+  ///
+  /// Watches only [nostrServiceProvider] (a stable, keepAlive client). The
+  /// repository reads `publicKey` live at publish time, so it stays correct
+  /// across auth/signer changes without rebuilding — no `ValueKey` guard is
+  /// needed at the consumer (rule exception: genuinely stable + reads live
+  /// state).
+  FeedTuningRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'feedTuningRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$feedTuningRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<FeedTuningRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  FeedTuningRepository create(Ref ref) {
+    return feedTuningRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(FeedTuningRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<FeedTuningRepository>(value),
+    );
+  }
+}
+
+String _$feedTuningRepositoryHash() =>
+    r'01bfa8cd85f2ee092123e2826e4d6b356d64470f';
+
 @ProviderFor(dmRepository)
 final dmRepositoryProvider = DmRepositoryProvider._();
 

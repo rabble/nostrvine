@@ -9,6 +9,15 @@ class AppLocalizationsKo extends AppLocalizations {
   AppLocalizationsKo([String locale = 'ko']) : super(locale);
 
   @override
+  String get feedTuningMoreLabel => 'More like this';
+
+  @override
+  String get feedTuningLessLabel => 'Less like this';
+
+  @override
+  String get feedTuningUndo => 'Undo';
+
+  @override
   String get dmMessageBubbleVideoReplyHint => '참조된 동영상 열기';
 
   @override

@@ -9,6 +9,15 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get feedTuningMoreLabel => 'More like this';
+
+  @override
+  String get feedTuningLessLabel => 'Less like this';
+
+  @override
+  String get feedTuningUndo => 'Undo';
+
+  @override
   String get dmMessageBubbleVideoReplyHint => 'Open the referenced video';
 
   @override

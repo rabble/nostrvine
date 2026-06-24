@@ -11,6 +11,7 @@ import 'package:content_policy/content_policy.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:curation_repository/curation_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
+import 'package:feed_tuning_repository/feed_tuning_repository.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -492,6 +493,30 @@ DmReactionsRepository dmReactionsRepository(Ref ref) {
     ),
   );
   return repository;
+}
+
+/// Provider for [FeedTuningRepository] — publishes swipe "more/less like this"
+/// feed-tuning signals.
+///
+/// Watches only [nostrServiceProvider] (a stable, keepAlive client). The
+/// repository reads `publicKey` live at publish time, so it stays correct
+/// across auth/signer changes without rebuilding — no `ValueKey` guard is
+/// needed at the consumer (rule exception: genuinely stable + reads live
+/// state).
+@Riverpod(keepAlive: true)
+FeedTuningRepository feedTuningRepository(Ref ref) {
+  return FeedTuningRepository(
+    nostrClient: ref.watch(nostrServiceProvider),
+    errorReporter: (error, stackTrace, {required site}) {
+      unawaited(
+        CrashReportingService.instance.recordError(
+          error,
+          stackTrace,
+          reason: 'FeedTuningRepository.$site',
+        ),
+      );
+    },
+  );
 }
 
 @Riverpod(keepAlive: true)

@@ -9,6 +9,15 @@ class AppLocalizationsJa extends AppLocalizations {
   AppLocalizationsJa([String locale = 'ja']) : super(locale);
 
   @override
+  String get feedTuningMoreLabel => 'More like this';
+
+  @override
+  String get feedTuningLessLabel => 'Less like this';
+
+  @override
+  String get feedTuningUndo => 'Undo';
+
+  @override
   String get dmMessageBubbleVideoReplyHint => '参照先の動画を開く';
 
   @override

@@ -9,6 +9,15 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
+  String get feedTuningMoreLabel => 'More like this';
+
+  @override
+  String get feedTuningLessLabel => 'Less like this';
+
+  @override
+  String get feedTuningUndo => 'Undo';
+
+  @override
   String get dmMessageBubbleVideoReplyHint => 'افتح الفيديو المُشار إليه';
 
   @override

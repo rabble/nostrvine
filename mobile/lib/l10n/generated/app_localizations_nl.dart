@@ -9,6 +9,15 @@ class AppLocalizationsNl extends AppLocalizations {
   AppLocalizationsNl([String locale = 'nl']) : super(locale);
 
   @override
+  String get feedTuningMoreLabel => 'More like this';
+
+  @override
+  String get feedTuningLessLabel => 'Less like this';
+
+  @override
+  String get feedTuningUndo => 'Undo';
+
+  @override
   String get dmMessageBubbleVideoReplyHint => 'Verwezen video openen';
 
   @override

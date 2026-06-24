@@ -814,6 +814,11 @@ const _knownUntranslatedDebt = {
   'subtitleEditorSaveError',
   'subtitleEditorRetry',
   'subtitleEditorCueHint',
+  // Added by the swipe-to-tune feed feature. Existing locales fall back to
+  // English until the next translation pass.
+  'feedTuningMoreLabel',
+  'feedTuningLessLabel',
+  'feedTuningUndo',
 };
 
 Map<String, Object?> _readArb(File file) {

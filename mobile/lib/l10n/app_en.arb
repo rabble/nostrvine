@@ -1,5 +1,17 @@
 {
   "@@locale": "en",
+  "feedTuningMoreLabel": "More like this",
+  "@feedTuningMoreLabel": {
+    "description": "Indicator and snackbar text when the user swipes right to get more videos like the current one."
+  },
+  "feedTuningLessLabel": "Less like this",
+  "@feedTuningLessLabel": {
+    "description": "Indicator and snackbar text when the user swipes left to get fewer videos like the current one."
+  },
+  "feedTuningUndo": "Undo",
+  "@feedTuningUndo": {
+    "description": "Snackbar action that retracts a just-published feed-tuning swipe."
+  },
   "dmMessageBubbleVideoReplyHint": "Open the referenced video",
   "@dmMessageBubbleVideoReplyHint": {
     "description": "Accessibility label for the compact quoted-video preview shown above a DM reply that references a shared video; activating it opens that video."

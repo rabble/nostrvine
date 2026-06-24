@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
+import 'package:feed_tuning_repository/feed_tuning_repository.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,6 +29,7 @@ import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/feed_tuning/feed_tuning_swipe_overlay.dart';
 import 'package:openvine/widgets/nav_rounded_shell.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/inline_comment_composer_bar.dart';
@@ -249,6 +251,11 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
           orElse: () => false,
         );
 
+    // Stable, keepAlive repository; reads `publicKey` live at publish time, so
+    // capturing it once in `create:` stays correct across auth changes (no
+    // ValueKey guard needed — see feedTuningRepositoryProvider).
+    final feedTuningRepository = ref.watch(feedTuningRepositoryProvider);
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -265,6 +272,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
             blossomAuthService: blossomAuthService,
             blockFilter: blockFilter,
             unavailableFilter: unavailableFilter,
+            feedTuningRepository: feedTuningRepository,
           )..add(const FullscreenFeedStarted()),
         ),
         BlocProvider(create: (_) => VideoPlaybackStatusCubit()),
@@ -448,6 +456,57 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     );
   }
 
+  /// Publish a feed-tuning signal for the active video and page forward.
+  void _onTuned(FeedTuningDirection direction) {
+    final bloc = context.read<FullscreenFeedBloc>();
+    final video = bloc.state.currentVideo;
+    if (video == null) return;
+    bloc.add(
+      FullscreenFeedTuningSwipeCommitted(
+        videoId: video.id,
+        direction: direction,
+      ),
+    );
+    final nextIndex = bloc.state.currentIndex + 1;
+    if (nextIndex < bloc.state.videos.length) {
+      _animateToPage(nextIndex);
+    }
+  }
+
+  void _showTuningSnackbar(FullscreenFeedTuningAction action) {
+    final l10n = context.l10n;
+    final label = action.direction == FeedTuningDirection.more
+        ? l10n.feedTuningMoreLabel
+        : l10n.feedTuningLessLabel;
+    final eventId = action.publishedEventId;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text(label),
+          action: eventId == null
+              ? null
+              : SnackBarAction(
+                  label: l10n.feedTuningUndo,
+                  onPressed: () => _undoTuning(eventId, action.videoId),
+                ),
+        ),
+      );
+  }
+
+  void _undoTuning(String feedTuningEventId, String videoId) {
+    final bloc = context.read<FullscreenFeedBloc>()
+      ..add(FullscreenFeedTuningUndoRequested(feedTuningEventId));
+    final videos = bloc.state.videos;
+    for (var i = 0; i < videos.length; i++) {
+      if (videos[i].id == videoId) {
+        _animateToPage(i);
+        return;
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Refilter the open feed when the blocklist changes broadly (block / mute
@@ -530,6 +589,16 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   curr.status == FullscreenFeedStatus.emptyAfterRemoval,
               listener: (context, _) {
                 unawaited(Navigator.of(context).maybePop());
+              },
+            ),
+            // Show an Undo snackbar after a feed-tuning swipe commits.
+            BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+              listenWhen: (prev, curr) =>
+                  prev.lastTuningAction != curr.lastTuningAction &&
+                  curr.lastTuningAction != null,
+              listener: (context, state) {
+                final action = state.lastTuningAction;
+                if (action != null) _showTuningSnackbar(action);
               },
             ),
           ],
@@ -691,39 +760,48 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                           // rounded cutouts seam continuously into the bar.
                           child: Stack(
                             children: [
-                              VideoTapShield(
-                                child: _MaybeRoundFeedBottom(
-                                  roundCorners: showCommentBar,
-                                  child: MediaQuery.removePadding(
-                                    context: context,
-                                    removeBottom: true,
-                                    child: FeedVideos(
-                                      key: _feedVideosKey,
-                                      // Pause the reel while the DM reply composer
-                                      // is focused so it doesn't play under the
-                                      // keyboard.
-                                      isActive: !_replyComposerFocused,
-                                      videos: state.videos,
-                                      contextTitle: widget.contextTitle,
-                                      currentIndex: state.currentIndex,
-                                      hasMore: state.canLoadMore,
-                                      isLoadingMore: state.isLoadingMore,
-                                      trafficSource: widget.trafficSource,
-                                      sourceDetail: widget.sourceDetail,
-                                      onActiveVideoChanged: (video, index) {
-                                        _resumeAutoAdvanceAfterSwipe();
-                                        FeedPerformanceTracker()
-                                            .startVideoSwipeTracking(video.id);
-                                        context.read<FullscreenFeedBloc>().add(
-                                          FullscreenFeedIndexChanged(index),
-                                        );
-                                        widget.onPageChanged?.call(index);
-                                      },
-                                      onNearEnd: () {
-                                        if (state.canLoadMore) {
-                                          _triggerLoadMore();
-                                        }
-                                      },
+                              FeedTuningSwipeOverlay(
+                                onTuned: _onTuned,
+                                child: VideoTapShield(
+                                  child: _MaybeRoundFeedBottom(
+                                    roundCorners: showCommentBar,
+                                    child: MediaQuery.removePadding(
+                                      context: context,
+                                      removeBottom: true,
+                                      child: FeedVideos(
+                                        key: _feedVideosKey,
+                                        // Pause the reel while the DM reply composer
+                                        // is focused so it doesn't play under the
+                                        // keyboard.
+                                        isActive: !_replyComposerFocused,
+                                        videos: state.videos,
+                                        contextTitle: widget.contextTitle,
+                                        currentIndex: state.currentIndex,
+                                        hasMore: state.canLoadMore,
+                                        isLoadingMore: state.isLoadingMore,
+                                        trafficSource: widget.trafficSource,
+                                        sourceDetail: widget.sourceDetail,
+                                        onActiveVideoChanged: (video, index) {
+                                          _resumeAutoAdvanceAfterSwipe();
+                                          FeedPerformanceTracker()
+                                              .startVideoSwipeTracking(
+                                                video.id,
+                                              );
+                                          context
+                                              .read<FullscreenFeedBloc>()
+                                              .add(
+                                                FullscreenFeedIndexChanged(
+                                                  index,
+                                                ),
+                                              );
+                                          widget.onPageChanged?.call(index);
+                                        },
+                                        onNearEnd: () {
+                                          if (state.canLoadMore) {
+                                            _triggerLoadMore();
+                                          }
+                                        },
+                                      ),
                                     ),
                                   ),
                                 ),
