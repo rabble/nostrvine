@@ -112,20 +112,31 @@ Future<void> editLayerAnimation(
 ///
 /// The leave phase renders only when the layer has a non-null `endTime` — both
 /// the in-editor preview ([Layer.animations] timeline visibility) and the
-/// native export skip the animateOut branch when `endTime` is null. An
-/// untrimmed layer carries `null`, so when [hasLeaveAnimation] is true the end
-/// is anchored to [windowEndTime] (the layer's visible end on the timeline,
-/// which is the full video duration when untrimmed). Without a leave animation
-/// the existing [currentEndTime] is preserved unchanged so we never silently
-/// trim a layer the user didn't trim.
+/// native export skip the animateOut branch when `endTime` is null.
+///
+/// Only a *real trim* — an end strictly inside the visible window — is treated
+/// as user intent worth preserving. An end at or after [windowEndTime] is not a
+/// trim: it's either a stale anchor a previously-set (now-removed) leave
+/// animation left behind, or a no-op full-length end. Treating it as `null`
+/// keeps an untrimmed layer untrimmed, so it follows later window changes
+/// (e.g. the video being extended) instead of staying pinned to a stale end.
+///
+/// With [hasLeaveAnimation] true the end is anchored to that trim, or to
+/// [windowEndTime] (the layer's visible end on the timeline, which is the full
+/// video duration when untrimmed) when there is no real trim — never beyond the
+/// visible window. Without a leave animation a real trim is preserved and
+/// everything else collapses to `null`.
 @visibleForTesting
 Duration? resolveLayerEndTime({
   required Duration? currentEndTime,
   required Duration windowEndTime,
   required bool hasLeaveAnimation,
 }) {
-  if (!hasLeaveAnimation) return currentEndTime;
-  return currentEndTime ?? windowEndTime;
+  final trim = currentEndTime != null && currentEndTime < windowEndTime
+      ? currentEndTime
+      : null;
+  if (hasLeaveAnimation) return trim ?? windowEndTime;
+  return trim;
 }
 
 /// The picker's result: the chosen enter and leave animations. A phase can
@@ -237,148 +248,165 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
         mainAxisSize: .min,
         crossAxisAlignment: .stretch,
         children: [
-          const SizedBox(height: 8),
-          Padding(
-            padding: const .symmetric(horizontal: 16),
-            child: _PhaseToggle(
-              phase: _phase,
-              onChanged: (phase) => setState(() => _phase = phase),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: _previewHeight + 40,
-            child: ListView.separated(
-              scrollDirection: .horizontal,
-              padding: const .fromSTEB(16, 4, 16, 4),
-              itemCount: _typeOptions.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 12),
-              itemBuilder: (context, index) {
-                final type = _typeOptions[index];
-                return _LayerTypeTile(
-                  type: type,
-                  label: _typeLabel(l10n, type),
-                  selected: type == null
-                      ? active.types.isEmpty
-                      : active.types.contains(type),
-                  controller: _controller,
-                  phase: _phase,
-                  direction: active.direction,
-                  scaleFrom: active.scaleFrom,
-                  curve: active.curve,
-                  durationMs: active.duration.inMilliseconds,
-                  onTap: () => _updateActive((c) => c.toggled(type)),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const .symmetric(horizontal: 16),
-            child: AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              alignment: .topCenter,
-              // Duration + curve are shared by all effects in the phase and stay
-              // visible even for None so the values persist while toggling
-              // types; direction/scale-from are type-specific and appear only
-              // when slide/scale is selected.
+          // Controls scroll so the pinned Done button below stays reachable
+          // when slide + scale are both selected on a short viewport.
+          Flexible(
+            child: SingleChildScrollView(
               child: Column(
+                mainAxisSize: .min,
                 crossAxisAlignment: .stretch,
                 children: [
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: .spaceBetween,
-                    children: [
-                      SectionLabel(l10n.videoEditorTransitionDuration),
-                      Text(
-                        _durationLabel(active.duration),
-                        style: VineTheme.labelSmallFont(
-                          color: VineTheme.lightText,
-                        ),
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 8),
-                  DivineSlider(
-                    value: active.duration.inMilliseconds
-                        .clamp(_minDurationMs, _maxMs)
-                        .toDouble(),
-                    min: _minDurationMs.toDouble(),
-                    max: _maxMs.toDouble(),
-                    divisions: ((_maxMs - _minDurationMs) ~/ _durationStepMs)
-                        .clamp(1, 1 << 20),
-                    onChanged: (value) => _updateActive(
-                      (c) => c.copyWith(
-                        duration: Duration(milliseconds: value.round()),
-                      ),
+                  Padding(
+                    padding: const .symmetric(horizontal: 16),
+                    child: _PhaseToggle(
+                      phase: _phase,
+                      onChanged: (phase) => setState(() => _phase = phase),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  SectionLabel(l10n.videoEditorTransitionCurve),
-                  const SizedBox(height: 8),
-                  CurvePickerRow(
-                    selected: active.curve,
-                    onChanged: (curve) =>
-                        _updateActive((c) => c.copyWith(curve: curve)),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: _previewHeight + 40,
+                    child: ListView.separated(
+                      scrollDirection: .horizontal,
+                      padding: const .fromSTEB(16, 4, 16, 4),
+                      itemCount: _typeOptions.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 12),
+                      itemBuilder: (context, index) {
+                        final type = _typeOptions[index];
+                        return _LayerTypeTile(
+                          type: type,
+                          label: _typeLabel(l10n, type),
+                          selected: type == null
+                              ? active.types.isEmpty
+                              : active.types.contains(type),
+                          controller: _controller,
+                          phase: _phase,
+                          direction: active.direction,
+                          scaleFrom: active.scaleFrom,
+                          curve: active.curve,
+                          durationMs: active.duration.inMilliseconds,
+                          onTap: () => _updateActive((c) => c.toggled(type)),
+                        );
+                      },
+                    ),
                   ),
-                  if (active.types.contains(LayerAnimationType.slide)) ...[
-                    const SizedBox(height: 16),
-                    SectionLabel(l10n.videoEditorTransitionDirection),
-                    const SizedBox(height: 8),
-                    Row(
-                      spacing: 8,
-                      children: [
-                        for (final direction in _slideDirections)
-                          AnimationPickerChip(
-                            selected: direction == active.direction,
-                            onTap: () => _updateActive(
-                              (c) => c.copyWith(direction: direction),
-                            ),
-                            semanticLabel: _directionLabel(
-                              l10n,
-                              direction,
-                            ),
-                            child: DivineIcon(
-                              icon: _directionIcon(direction),
-                              size: 18,
-                              color: direction == active.direction
-                                  ? VineTheme.primary
-                                  : VineTheme.secondaryText,
+                  Padding(
+                    padding: const .symmetric(horizontal: 16),
+                    child: AnimatedSize(
+                      duration: const Duration(milliseconds: 200),
+                      alignment: .topCenter,
+                      // Duration + curve are shared by all effects in the phase and stay
+                      // visible even for None so the values persist while toggling
+                      // types; direction/scale-from are type-specific and appear only
+                      // when slide/scale is selected.
+                      child: Column(
+                        crossAxisAlignment: .stretch,
+                        children: [
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: .spaceBetween,
+                            children: [
+                              SectionLabel(l10n.videoEditorTransitionDuration),
+                              Text(
+                                _durationLabel(active.duration),
+                                style: VineTheme.labelSmallFont(
+                                  color: VineTheme.lightText,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          DivineSlider(
+                            value: active.duration.inMilliseconds
+                                .clamp(_minDurationMs, _maxMs)
+                                .toDouble(),
+                            min: _minDurationMs.toDouble(),
+                            max: _maxMs.toDouble(),
+                            divisions:
+                                ((_maxMs - _minDurationMs) ~/ _durationStepMs)
+                                    .clamp(1, 1 << 20),
+                            onChanged: (value) => _updateActive(
+                              (c) => c.copyWith(
+                                duration: Duration(milliseconds: value.round()),
+                              ),
                             ),
                           ),
-                      ],
-                    ),
-                  ],
-                  if (active.types.contains(LayerAnimationType.scale)) ...[
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: .spaceBetween,
-                      children: [
-                        SectionLabel(
-                          l10n.videoEditorLayerAnimationScaleFrom,
-                        ),
-                        Text(
-                          '${(active.scaleFrom * 100).round()}%',
-                          style: VineTheme.labelSmallFont(
-                            color: VineTheme.lightText,
+                          const SizedBox(height: 16),
+                          SectionLabel(l10n.videoEditorTransitionCurve),
+                          const SizedBox(height: 8),
+                          CurvePickerRow(
+                            selected: active.curve,
+                            onChanged: (curve) =>
+                                _updateActive((c) => c.copyWith(curve: curve)),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    DivineSlider(
-                      value: (active.scaleFrom * 100).clamp(0, 100),
-                      max: 100,
-                      divisions: 20,
-                      onChanged: (value) => _updateActive(
-                        (c) => c.copyWith(scaleFrom: value / 100),
+                          if (active.types.contains(
+                            LayerAnimationType.slide,
+                          )) ...[
+                            const SizedBox(height: 16),
+                            SectionLabel(l10n.videoEditorTransitionDirection),
+                            const SizedBox(height: 8),
+                            Row(
+                              spacing: 8,
+                              children: [
+                                for (final direction in _slideDirections)
+                                  AnimationPickerChip(
+                                    selected: direction == active.direction,
+                                    onTap: () => _updateActive(
+                                      (c) => c.copyWith(direction: direction),
+                                    ),
+                                    semanticLabel: _directionLabel(
+                                      l10n,
+                                      direction,
+                                    ),
+                                    child: DivineIcon(
+                                      icon: _directionIcon(direction),
+                                      size: 18,
+                                      color: direction == active.direction
+                                          ? VineTheme.primary
+                                          : VineTheme.secondaryText,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                          if (active.types.contains(
+                            LayerAnimationType.scale,
+                          )) ...[
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: .spaceBetween,
+                              children: [
+                                SectionLabel(
+                                  l10n.videoEditorLayerAnimationScaleFrom,
+                                ),
+                                Text(
+                                  '${(active.scaleFrom * 100).round()}%',
+                                  style: VineTheme.labelSmallFont(
+                                    color: VineTheme.lightText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            DivineSlider(
+                              value: (active.scaleFrom * 100).clamp(0, 100),
+                              max: 100,
+                              divisions: 20,
+                              onChanged: (value) => _updateActive(
+                                (c) => c.copyWith(scaleFrom: value / 100),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                  ],
+                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 20),
           Padding(
             padding: const .symmetric(horizontal: 16),
             child: DivineButton(
@@ -533,7 +561,9 @@ class _PhaseSegment extends StatelessWidget {
           onTap: onTap,
           behavior: HitTestBehavior.opaque,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 44),
+            constraints: const BoxConstraints(
+              minHeight: kMinInteractiveDimension,
+            ),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: selected

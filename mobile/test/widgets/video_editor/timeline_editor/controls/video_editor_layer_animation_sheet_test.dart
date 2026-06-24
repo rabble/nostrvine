@@ -18,12 +18,14 @@ void main() {
       WidgetTester tester, {
       List<editor.LayerAnimation> initialEnter = const [],
       List<editor.LayerAnimation> initialLeave = const [],
+      double viewHeight = 1600,
     }) async {
       result = null;
       returned = false;
-      // Tall viewport so the full picker (type tiles + curve wrap + direction
-      // row + Done) fits without the Done button overflowing offscreen.
-      tester.view.physicalSize = const Size(500, 1600);
+      // Tall viewport by default so the full picker (type tiles + curve wrap +
+      // direction row + Done) fits without scrolling; individual tests shrink
+      // it to exercise the scroll/pinned-Done behaviour.
+      tester.view.physicalSize = Size(500, viewHeight);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -235,6 +237,35 @@ void main() {
 
       expect(result?.enter, isEmpty);
     });
+
+    testWidgets('keeps Done reachable on a short viewport with slide + scale', (
+      tester,
+    ) async {
+      // Short enough that the tallest combination (slide + scale shows both the
+      // direction and scale-from rows) overflows the body and must scroll.
+      await openPicker(tester, viewHeight: 620);
+
+      await tester.tap(find.text(l10n.videoEditorTransitionSlide));
+      await tester.pump();
+      await tester.tap(find.text(l10n.videoEditorLayerAnimationScale));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      // Done is pinned below the scrollable controls, so it stays hittable even
+      // though the controls overflow the viewport.
+      await tester.tap(find.text(l10n.videoEditorDoneLabel));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(returned, isTrue);
+      expect(
+        result?.enter.map((a) => a.type),
+        containsAll(<editor.LayerAnimationType>[
+          editor.LayerAnimationType.slide,
+          editor.LayerAnimationType.scale,
+        ]),
+      );
+    });
   });
 
   group('resolveLayerEndTime', () {
@@ -284,6 +315,42 @@ void main() {
           hasLeaveAnimation: false,
         ),
         trimEnd,
+      );
+    });
+
+    test('drops a full-length end when the leave animation is removed', () {
+      // The end was previously anchored to the window for a leave animation;
+      // removing the leave must not leave the layer pinned (untrimmed again).
+      expect(
+        resolveLayerEndTime(
+          currentEndTime: windowEnd,
+          windowEndTime: windowEnd,
+          hasLeaveAnimation: false,
+        ),
+        isNull,
+      );
+    });
+
+    test('drops a stale end past the window without a leave animation', () {
+      // e.g. the video was shortened after the end was anchored.
+      expect(
+        resolveLayerEndTime(
+          currentEndTime: const Duration(seconds: 8),
+          windowEndTime: windowEnd,
+          hasLeaveAnimation: false,
+        ),
+        isNull,
+      );
+    });
+
+    test('clamps a stale end past the window to the window for a leave', () {
+      expect(
+        resolveLayerEndTime(
+          currentEndTime: const Duration(seconds: 8),
+          windowEndTime: windowEnd,
+          hasLeaveAnimation: true,
+        ),
+        windowEnd,
       );
     });
   });
