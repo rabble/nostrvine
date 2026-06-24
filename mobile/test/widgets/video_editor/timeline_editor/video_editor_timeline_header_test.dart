@@ -277,6 +277,28 @@ void main() {
         // totalDuration = 8s → "08:00"
         expect(find.textContaining('08:00'), findsOneWidget);
       });
+
+      testWidgets('shows the rendered output duration, not the editor sum, '
+          'for an overlap transition', (tester) async {
+        final clips = [
+          _createTestClip(id: 'a').copyWith(
+            // ClipTransition defaults to a 500ms duration.
+            transition: const ClipTransition(
+              type: ClipTransitionType.dissolve,
+            ),
+          ),
+          _createTestClip(id: 'b'),
+        ];
+
+        await tester.pumpWidget(
+          buildWidget(clipState: ClipEditorState(clips: clips)),
+        );
+
+        // The editor timeline sums to 4s, but a 500ms dissolve blends both
+        // clips, so the rendered output is 3.5s — that's what the header shows.
+        expect(find.textContaining('03:50'), findsOneWidget);
+        expect(find.textContaining('04:00'), findsNothing);
+      });
     });
 
     group('volume mode', () {

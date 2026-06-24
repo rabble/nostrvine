@@ -546,4 +546,127 @@ void main() {
       },
     );
   });
+
+  group('VideoEditorRenderService output timeline', () {
+    DivineVideoClip clip(
+      String id,
+      Duration duration, {
+      ClipTransition? transition,
+    }) => DivineVideoClip(
+      id: id,
+      video: EditorVideo.file('${Directory.systemTemp.path}/$id.mp4'),
+      duration: duration,
+      recordedAt: DateTime(2026),
+      targetAspectRatio: model.AspectRatio.vertical,
+      originalAspectRatio: 9 / 16,
+      transition: transition,
+    );
+
+    const dissolve = ClipTransition(type: ClipTransitionType.dissolve);
+    const fadeToBlack = ClipTransition(type: ClipTransitionType.fadeToBlack);
+
+    group('renderedOutputDuration', () {
+      test('subtracts the blend of an overlap from the total', () {
+        // 2×1s with a 500ms dissolve → the blend removes 500ms → 1.5s.
+        final overlap500 = dissolve.copyWith(
+          duration: const Duration(milliseconds: 500),
+        );
+        final clips = [
+          clip('a', const Duration(seconds: 1), transition: overlap500),
+          clip('b', const Duration(seconds: 1)),
+        ];
+
+        expect(
+          VideoEditorRenderService.renderedOutputDuration(clips),
+          equals(const Duration(milliseconds: 1500)),
+        );
+      });
+
+      test('leaves the total unchanged for dips', () {
+        // Dips fade out then in without overlapping, so the timeline length is
+        // unchanged: 3×1s with two dips stays 3s.
+        final dip = fadeToBlack.copyWith(duration: const Duration(seconds: 1));
+        final clips = [
+          clip('a', const Duration(seconds: 1), transition: dip),
+          clip('b', const Duration(seconds: 1), transition: dip),
+          clip('c', const Duration(seconds: 1)),
+        ];
+
+        expect(
+          VideoEditorRenderService.renderedOutputDuration(clips),
+          equals(const Duration(seconds: 3)),
+        );
+      });
+
+      test('equals the sum when there are no transitions', () {
+        final clips = [
+          clip('a', const Duration(seconds: 1)),
+          clip('b', const Duration(milliseconds: 500)),
+        ];
+
+        expect(
+          VideoEditorRenderService.renderedOutputDuration(clips),
+          equals(const Duration(milliseconds: 1500)),
+        );
+      });
+    });
+
+    group('editorToOutputPosition', () {
+      // 2×1s with a 500ms dissolve: editor axis 0..2s, output axis 0..1.5s.
+      // The blend covers editor [0.5s, 1.5s] (2×500ms) → 500ms of output.
+      final overlap500 = dissolve.copyWith(
+        duration: const Duration(milliseconds: 500),
+      );
+      final clips = [
+        clip('a', const Duration(seconds: 1), transition: overlap500),
+        clip('b', const Duration(seconds: 1)),
+      ];
+
+      test('is the identity before the blend region', () {
+        expect(
+          VideoEditorRenderService.editorToOutputPosition(
+            clips,
+            const Duration(milliseconds: 250),
+          ),
+          equals(const Duration(milliseconds: 250)),
+        );
+      });
+
+      test('compresses 2:1 inside the blend region', () {
+        // Boundary at editor 1s is the blend midpoint → output 0.75s.
+        expect(
+          VideoEditorRenderService.editorToOutputPosition(
+            clips,
+            const Duration(seconds: 1),
+          ),
+          equals(const Duration(milliseconds: 750)),
+        );
+      });
+
+      test('maps the editor end onto the output end', () {
+        expect(
+          VideoEditorRenderService.editorToOutputPosition(
+            clips,
+            const Duration(seconds: 2),
+          ),
+          equals(const Duration(milliseconds: 1500)),
+        );
+      });
+
+      test('is the identity when no transition shortens the timeline', () {
+        final plain = [
+          clip('a', const Duration(seconds: 1)),
+          clip('b', const Duration(seconds: 1)),
+        ];
+
+        expect(
+          VideoEditorRenderService.editorToOutputPosition(
+            plain,
+            const Duration(milliseconds: 1500),
+          ),
+          equals(const Duration(milliseconds: 1500)),
+        );
+      });
+    });
+  });
 }

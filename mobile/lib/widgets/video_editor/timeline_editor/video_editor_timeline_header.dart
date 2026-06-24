@@ -6,6 +6,7 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_volume_mute_toggle.dart';
 import 'package:time_formatter/time_formatter.dart';
@@ -161,18 +162,28 @@ class _TimeDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalDuration = context.select(
-      (ClipEditorBloc b) => b.state.totalDuration,
+    // The editor timeline draws clips at full length, but an overlap transition
+    // (dissolve/slide/push/wipe) blends two clips so the rendered output is
+    // shorter. Show the output length — and the playhead mapped onto it — so the
+    // header reflects the final video, not the editing space. The timeline
+    // layout itself stays on the editor axis.
+    final clips = context.select((ClipEditorBloc b) => b.state.clips);
+    final outputDuration = VideoEditorRenderService.renderedOutputDuration(
+      clips,
     );
 
     return ValueListenableBuilder<Duration>(
       valueListenable: playheadPosition,
       builder: (context, position, _) {
+        final outputPosition = VideoEditorRenderService.editorToOutputPosition(
+          clips,
+          position,
+        );
         final isOver =
-            position.inMilliseconds >
+            outputPosition.inMilliseconds >
             VideoEditorConstants.maxDuration.inMilliseconds;
         final positionText = TextSpan(
-          text: TimeFormatter.formatCompactDuration(position),
+          text: TimeFormatter.formatCompactDuration(outputPosition),
           style: isOver
               ? _timeStyle.copyWith(color: VineTheme.warning)
               : _timeStyle,
@@ -183,7 +194,7 @@ class _TimeDisplay extends StatelessWidget {
               positionText,
               TextSpan(text: ' / ', style: _timeStyle),
               TextSpan(
-                text: TimeFormatter.formatCompactDuration(totalDuration),
+                text: TimeFormatter.formatCompactDuration(outputDuration),
                 style: _timeStyle,
               ),
             ],
