@@ -113,6 +113,37 @@ class _FeedTuningSwipeOverlayState extends State<FeedTuningSwipeOverlay> {
   }
 }
 
+/// Gates [FeedTuningSwipeOverlay] behind a feature flag.
+///
+/// When [enabled] is false the [child] is returned untouched — no gesture, no
+/// indicator, no overlay — so the feed behaves exactly as before. The screen
+/// drives [enabled] from `isFeatureEnabledProvider(FeatureFlag.feedTuning)`,
+/// which is off by default until the relay and recommendation backend ship.
+class FeedTuningSwipeGate extends StatelessWidget {
+  /// Creates a feature-gated swipe-to-tune wrapper around [child].
+  const FeedTuningSwipeGate({
+    required this.enabled,
+    required this.onTuned,
+    required this.child,
+    super.key,
+  });
+
+  /// Whether the swipe-to-tune gesture is active.
+  final bool enabled;
+
+  /// Called when a swipe commits past the threshold.
+  final ValueChanged<FeedTuningDirection> onTuned;
+
+  /// The feed content the gesture wraps when [enabled].
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) return child;
+    return FeedTuningSwipeOverlay(onTuned: onTuned, child: child);
+  }
+}
+
 class _TuningIndicator extends StatelessWidget {
   const _TuningIndicator({required this.direction, required this.progress});
 

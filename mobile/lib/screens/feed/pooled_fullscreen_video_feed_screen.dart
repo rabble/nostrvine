@@ -18,6 +18,8 @@ import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/inline_comment_composer/inline_comment_composer_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/app_router.dart';
@@ -533,6 +535,12 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     // identity (see `rules/state_management.md`).
     final commentsRepository = ref.watch(commentsRepositoryProvider);
 
+    // Swipe-to-tune is off by default; flip the flag on once the relay
+    // allow-lists the kind and the recommendation backend ships.
+    final feedTuningEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.feedTuning),
+    );
+
     return BlocProvider<InlineCommentComposerCubit>(
       key: ValueKey(commentsRepository),
       create: (_) =>
@@ -760,7 +768,8 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                           // rounded cutouts seam continuously into the bar.
                           child: Stack(
                             children: [
-                              FeedTuningSwipeOverlay(
+                              FeedTuningSwipeGate(
+                                enabled: feedTuningEnabled,
                                 onTuned: _onTuned,
                                 child: VideoTapShield(
                                   child: _MaybeRoundFeedBottom(

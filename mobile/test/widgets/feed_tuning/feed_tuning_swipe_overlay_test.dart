@@ -105,4 +105,46 @@ void main() {
       handle.dispose();
     });
   });
+
+  group(FeedTuningSwipeGate, () {
+    testWidgets('wraps the child with the overlay when enabled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: FeedTuningSwipeGate(
+              enabled: true,
+              onTuned: (_) {},
+              child: const SizedBox(width: 100, height: 100),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(FeedTuningSwipeOverlay), findsOneWidget);
+    });
+
+    testWidgets('renders only the child when disabled', (tester) async {
+      const childKey = Key('feed-child');
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FeedTuningSwipeGate(
+              enabled: false,
+              onTuned: _noop,
+              child: SizedBox(key: childKey, width: 100, height: 100),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(FeedTuningSwipeOverlay), findsNothing);
+      expect(find.byKey(childKey), findsOneWidget);
+    });
+  });
 }
+
+void _noop(FeedTuningDirection _) {}

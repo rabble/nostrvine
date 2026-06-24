@@ -54,6 +54,12 @@ enum FeatureFlag {
         'compliant senders deliver where divine reads. Keep off until the '
         'backend relay accepts kind-10050.',
   ),
+  feedTuning(
+    'Feed Tuning Swipes',
+    'Swipe left/right on the fullscreen feed to send "less/more like this" '
+        'signals that personalize recommendations. Off by default until the '
+        'relay and recommendation backend are ready.',
+  ),
   ;
 
   const FeatureFlag(
