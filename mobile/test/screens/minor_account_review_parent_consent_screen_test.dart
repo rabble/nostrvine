@@ -8,6 +8,7 @@ void main() {
     testWidgets('opens support email with prepared subject and body', (
       tester,
     ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
       String? sentToEmail;
       String? sentSubject;
       String? sentBody;
@@ -33,18 +34,19 @@ void main() {
 
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text('Email Divine support'),
+        find.text(l10n.minorAccountReviewParentConsentEmailCta),
         200,
         scrollable: find.byType(Scrollable),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Email Divine support'));
+      await tester.tap(find.text(l10n.minorAccountReviewParentConsentEmailCta));
       await tester.pumpAndSettle();
 
       expect(sentToEmail, 'support@divine.video');
-      expect(sentSubject, '13-15 account review help');
-      expect(sentBody, contains('I have attached a short private video'));
-      expect(sentBody, contains('Country/ies of residence:'));
+      expect(sentSubject, l10n.minorAccountReviewParentConsentEmailSubject);
+      expect(sentBody, l10n.minorAccountReviewParentConsentEmailBody);
+      expect(sentSubject, contains('Divine Greenlight'));
+      expect(sentBody, contains('Divine Greenlight'));
     });
   });
 }

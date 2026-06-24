@@ -189,16 +189,15 @@ void main() {
       });
 
       testWidgets(
-        'renders min-age notice, under-16 link, and terms above the auth buttons',
+        'renders Greenlight label, under-16 link, and terms above the auth buttons',
         (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
           await tester.binding.setSurfaceSize(const Size(800, 1200));
           addTearDown(() => tester.binding.setSurfaceSize(null));
           await tester.pumpWidget(createTestWidget());
           await tester.pumpAndSettle();
 
-          final minAgeNotice = find.text(
-            'Divine accounts are for ages 16 and up.',
-          );
+          final greenlightLabel = find.text(l10n.authMinAgeNotice);
           final under16Link = find.byWidgetPredicate((widget) {
             if (widget is RichText) {
               final text = widget.text.toPlainText();
@@ -228,19 +227,19 @@ void main() {
             'Sign in with an existing account',
           );
 
-          expect(minAgeNotice, findsOneWidget);
+          expect(greenlightLabel, findsOneWidget);
           expect(under16Link, findsOneWidget);
           expect(termsNotice, findsOneWidget);
           expect(createButton, findsOneWidget);
           expect(loginButton, findsOneWidget);
 
-          final minAgeTop = tester.getTopLeft(minAgeNotice).dy;
+          final greenlightTop = tester.getTopLeft(greenlightLabel).dy;
           final under16Top = tester.getTopLeft(under16Link).dy;
           final termsTop = tester.getTopLeft(termsNotice).dy;
           final createTop = tester.getTopLeft(createButton).dy;
           final loginTop = tester.getTopLeft(loginButton).dy;
 
-          expect(under16Top, greaterThan(minAgeTop));
+          expect(under16Top, greaterThan(greenlightTop));
           expect(termsTop, greaterThan(under16Top));
           expect(createTop, greaterThan(termsTop));
           expect(loginTop, greaterThan(createTop));

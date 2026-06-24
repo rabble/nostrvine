@@ -15231,13 +15231,13 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewParentConsentEmailSubject.
   ///
   /// In en, this message translates to:
-  /// **'13-15 account review help'**
+  /// **'Divine Greenlight review help (ages 13-15)'**
   String get minorAccountReviewParentConsentEmailSubject;
 
   /// No description provided for @minorAccountReviewParentConsentEmailBody.
   ///
   /// In en, this message translates to:
-  /// **'Hi Divine support,\n\nI am contacting Divine about an account for a teen who is 13 to 15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nCountry/ies of residence:\n\nHelpful context:\n\nThanks.'**
+  /// **'Hi Divine support,\n\nI am contacting Divine about Divine Greenlight for a teen who is 13-15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nCountry/ies of residence:\n\nHelpful context:\n\nThanks.'**
   String get minorAccountReviewParentConsentEmailBody;
 
   /// No description provided for @minorAccountReviewParentSupportInstructions.
@@ -15636,10 +15636,10 @@ abstract class AppLocalizations {
   /// **'Add \"#{tag}\"'**
   String videoMetadataTagsPickerAddTag(String tag);
 
-  /// Welcome-screen notice above the sign-in / create-account buttons explaining the minimum age for self-signup.
+  /// Welcome-screen Divine Greenlight label above the sign-in / create-account buttons.
   ///
   /// In en, this message translates to:
-  /// **'Divine accounts are for ages 16 and up.'**
+  /// **'Divine Greenlight'**
   String get authMinAgeNotice;
 
   /// Lead-in white text rendered on the welcome screen immediately before the green 'Here are your choices.' link.

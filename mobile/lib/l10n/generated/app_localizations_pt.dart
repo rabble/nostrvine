@@ -8815,11 +8815,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentEmailSubject =>
-      '13-15 account review help';
+      'Divine Greenlight review help (ages 13-15)';
 
   @override
   String get minorAccountReviewParentConsentEmailBody =>
-      'Hi Divine support,\n\nI am contacting Divine about an account for a teen who is 13 to 15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nCountry/ies of residence:\n\nHelpful context:\n\nThanks.';
+      'Hi Divine support,\n\nI am contacting Divine about Divine Greenlight for a teen who is 13-15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nCountry/ies of residence:\n\nHelpful context:\n\nThanks.';
 
   @override
   String get minorAccountReviewParentSupportInstructions =>
@@ -9062,7 +9062,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get authMinAgeNotice => 'Divine accounts are for ages 16 and up.';
+  String get authMinAgeNotice => 'Divine Greenlight';
 
   @override
   String get authUnder16Prefix => 'Not 16 yet? That\'s OK. ';
