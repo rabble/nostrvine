@@ -135,6 +135,39 @@ void main() {
       },
     );
 
+    testWidgets(
+      'press-down mode stops a recording started by another source',
+      (tester) async {
+        var started = 0;
+        var stopped = 0;
+        await pumpHost(
+          tester,
+          isRecording: true,
+          startsRecordingOnPressDown: true,
+          onTapToggle: () {},
+          onLongPressStartRecording: () => started++,
+          onLongPressStopRecording: () => stopped++,
+        );
+
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(ShutterGestureDetector)),
+        );
+        await tester.pump();
+
+        expect(started, equals(0), reason: 'must not start a second recording');
+        expect(stopped, equals(1), reason: 'press-down must stop it');
+
+        await gesture.up();
+        await tester.pumpAndSettle();
+
+        expect(
+          stopped,
+          equals(1),
+          reason: 'release must not stop again after a press-down stop',
+        );
+      },
+    );
+
     testWidgets('release stops only once after a long-press start', (
       tester,
     ) async {

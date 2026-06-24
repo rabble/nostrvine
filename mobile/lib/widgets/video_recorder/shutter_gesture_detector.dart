@@ -8,6 +8,9 @@ import 'package:flutter/widgets.dart';
 ///   must route through this widget.
 /// - A tap-started recording must never be stopped by an incidental
 ///   long-press release.
+/// - In press-down mode, a press on an already-active recording (started by
+///   any other source — volume key, BLE remote, toggle, or a dropped release)
+///   must still stop it, so the button is never a dead control.
 ///
 /// This encodes the issue #4409 regression guard once so new shutter surfaces
 /// inherit the same behavior by default instead of reimplementing it.
@@ -52,7 +55,16 @@ class _ShutterGestureDetectorState extends State<ShutterGestureDetector> {
   }
 
   void _handleTapDown(TapDownDetails _) {
-    if (widget.isRecording) return;
+    if (widget.isRecording) {
+      // A fresh press-down while recording is already active means this
+      // gesture didn't start it (volume key, BLE remote, toggle, or a release
+      // event that never arrived). Without stopping here the press-down button
+      // is a dead control: _handlePressEnd bails on !_startedByPressDown and
+      // tap / long-press handlers are disabled in press-down mode.
+      _startedByPressDown = false;
+      widget.onLongPressStopRecording();
+      return;
+    }
     _startedByPressDown = true;
     widget.onLongPressStartRecording();
   }
