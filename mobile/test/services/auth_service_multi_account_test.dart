@@ -31,6 +31,8 @@ class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
 // Test nsec from a known keypair (same one used in other auth_service tests)
 const _testNsec =
     'nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k0t9af8935ke9laqsnlfe5';
+const _otherNsec =
+    'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl';
 
 /// Runs [body] while silencing unhandled async errors from `_performDiscovery`.
 ///
@@ -1130,13 +1132,13 @@ void main() {
 
     test(
       'throws AccountRestoreFailedException when identity keys not found '
-      'and _checkExistingAuth cannot authenticate',
+      'and no primary keys can authenticate',
       () async {
         final pubkeyHex = testKeyContainer.publicKeyHex;
 
-        // Return null for identity key lookup, and ensure the
-        // _checkExistingAuth fallback also finds no usable keys so the
-        // service resolves to unauthenticated rather than authenticated.
+        // Return null for identity key lookup, and ensure no same-account
+        // PRIMARY fallback exists so the service resolves to unauthenticated
+        // rather than silently succeeding.
         when(
           () => mockKeyStorage.getIdentityKeyContainer(
             any(),
@@ -1163,9 +1165,62 @@ void main() {
           ),
         );
 
-        // The fallback path was exercised before the guard threw.
+        // The same-account fallback path was exercised before the guard threw.
         verify(() => mockKeyStorage.hasKeys()).called(1);
         expect(authService.authState, equals(AuthState.unauthenticated));
+      },
+    );
+
+    test(
+      'throws AccountRestoreFailedException when missing identity keys would '
+      'otherwise fall back to a different primary account',
+      () async {
+        final requestedPubkeyHex = testKeyContainer.publicKeyHex;
+        final primaryKeyContainer = SecureKeyContainer.fromNsec(_otherNsec);
+
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => true);
+        when(
+          () => mockKeyStorage.getKeyContainer(),
+        ).thenAnswer((_) async => primaryKeyContainer);
+
+        await expectLater(
+          _ignoringDiscoveryErrors(
+            () => authService.signInForAccount(
+              requestedPubkeyHex,
+              AuthenticationSource.automatic,
+            ),
+          ),
+          throwsA(
+            isA<AccountRestoreFailedException>()
+                .having((e) => e.pubkeyHex, 'pubkeyHex', requestedPubkeyHex)
+                .having(
+                  (e) => e.resolvedState,
+                  'resolvedState',
+                  AuthState.unauthenticated,
+                )
+                .having(
+                  (e) => e.resolvedPubkeyHex,
+                  'resolvedPubkeyHex',
+                  isNull,
+                ),
+          ),
+        );
+
+        expect(authService.authState, equals(AuthState.unauthenticated));
+        expect(authService.currentPublicKeyHex, isNull);
+        verify(() => mockKeyStorage.getKeyContainer()).called(1);
+        verifyNever(
+          () => mockKeyStorage.switchToIdentity(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        );
       },
     );
 

@@ -240,41 +240,25 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         name: 'WelcomeBloc',
         category: LogCategory.auth,
       );
-      // Session expiry — matrix-NO (Auth/session row). Raw addError.
-      addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          status: WelcomeStatus.sessionExpired,
-          clearSigningIn: true,
-        ),
+      await _recoverToLoginOptions(
+        emit,
+        e,
+        stackTrace,
+        emitSessionExpiredStatus: true,
       );
-      // Session cannot be restored silently — redirect to full login flow.
-      await _authService.acceptTerms();
-      emit(state.copyWith(status: WelcomeStatus.navigatingToLoginOptions));
-      emit(state.copyWith(status: WelcomeStatus.loaded));
     } on AccountRestoreFailedException catch (e, stackTrace) {
-      // The account's credentials could not be restored (e.g. missing local
-      // identity keys, or session setup failed). Previously this returned
-      // silently and the user was pinned to /welcome with no feedback — the
-      // login loop in #5195. Route to the full login flow so the user can
-      // re-import their key or pick another account.
       Log.warning(
         'WelcomeBloc: restore failed for ${account.pubkeyHex} '
         '(${e.resolvedState}) — redirecting to login options',
         name: 'WelcomeBloc',
         category: LogCategory.auth,
       );
-      // Recoverable auth-flow failure — matrix-NO (Auth/session row).
-      addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          status: WelcomeStatus.sessionExpired,
-          clearSigningIn: true,
-        ),
+      await _recoverToLoginOptions(
+        emit,
+        e,
+        stackTrace,
+        emitSessionExpiredStatus: true,
       );
-      await _authService.acceptTerms();
-      emit(state.copyWith(status: WelcomeStatus.navigatingToLoginOptions));
-      emit(state.copyWith(status: WelcomeStatus.loaded));
     } catch (e, stackTrace) {
       Log.error(
         'WelcomeBloc: failed to log back in as ${account.pubkeyHex}: $e',
@@ -287,6 +271,32 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       addError(e, stackTrace);
       emit(state.copyWith(status: WelcomeStatus.error, clearSigningIn: true));
     }
+  }
+
+  Future<void> _recoverToLoginOptions(
+    Emitter<WelcomeState> emit,
+    Object error,
+    StackTrace stackTrace, {
+    required bool emitSessionExpiredStatus,
+  }) async {
+    // Recoverable auth-flow failure — matrix-NO (Auth/session row).
+    addError(error, stackTrace);
+    if (emitSessionExpiredStatus) {
+      emit(
+        state.copyWith(
+          status: WelcomeStatus.sessionExpired,
+          clearSigningIn: true,
+        ),
+      );
+    }
+    await _authService.acceptTerms();
+    emit(
+      state.copyWith(
+        status: WelcomeStatus.navigatingToLoginOptions,
+        clearSigningIn: true,
+      ),
+    );
+    emit(state.copyWith(status: WelcomeStatus.loaded));
   }
 
   /// Cancels an account switch and restores the previous (most-recently-used)
@@ -319,16 +329,26 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         previous.authSource,
       );
     } on SessionExpiredException catch (e, stackTrace) {
-      // Session expiry — matrix-NO (Auth/session row). Raw addError.
-      addError(e, stackTrace);
-      await _authService.acceptTerms();
-      emit(
-        state.copyWith(
-          status: WelcomeStatus.navigatingToLoginOptions,
-          clearSigningIn: true,
-        ),
+      await _recoverToLoginOptions(
+        emit,
+        e,
+        stackTrace,
+        emitSessionExpiredStatus: false,
       );
-      emit(state.copyWith(status: WelcomeStatus.loaded));
+    } on AccountRestoreFailedException catch (e, stackTrace) {
+      Log.warning(
+        'WelcomeBloc: restore failed while cancelling account switch for '
+        '${previous.pubkeyHex} (${e.resolvedState}) — redirecting to '
+        'login options',
+        name: 'WelcomeBloc',
+        category: LogCategory.auth,
+      );
+      await _recoverToLoginOptions(
+        emit,
+        e,
+        stackTrace,
+        emitSessionExpiredStatus: false,
+      );
     } catch (e, stackTrace) {
       // Same auth/network/IO failure surface as `_onLogBackIn` —
       // matrix-NO. YES-narrowing deferred per #4592.
