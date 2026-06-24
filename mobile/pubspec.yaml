@@ -44,6 +44,7 @@ workspace:
   - packages/dm_repository
   - packages/divine_video_player
   - packages/feed_repository
+  - packages/feed_tuning_repository
   - packages/infinite_video_feed
   - packages/follow_repository
   - packages/funnelcake_api_client

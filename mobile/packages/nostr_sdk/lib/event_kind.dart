@@ -142,6 +142,15 @@ class EventKind {
 
   static const int groupMembers = 39002;
 
+  /// Divine "feed-tuning" signal — a private feed-shaping swipe ("more"/"less"
+  /// like this), published as an append-only regular event and consumed by
+  /// funnelcake/Gorse to personalize recommendations. Not a NIP-25 reaction and
+  /// not a moderation signal.
+  ///
+  /// The number is owned jointly with the backend: it must match the kind the
+  /// funnelcake ingestion reserves and that the divine relay allow-lists.
+  static const int feedTuning = 4242;
+
   // ---------------------------------------------------------------------------
   // NIP-01 Replaceable Event Helpers
   // ---------------------------------------------------------------------------
