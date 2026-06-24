@@ -217,6 +217,30 @@ void main() {
       expect(service.cached(muted, clipB, dissolve), isNull);
     });
 
+    test('changing a clip duration invalidates the seam', () {
+      // `duration` can be trimmed independently of the file (clip_manager caps
+      // a clip on add) and `_tailClip`/`_headClip` read it, so it must be part
+      // of the key.
+      final original = clip('a', transition: dissolve);
+      final longer = original.copyWith(duration: const Duration(seconds: 4));
+      final clipB = clip('b');
+      final service = TransitionSeamRenderService()
+        ..cacheSeamForTest(
+          original,
+          clipB,
+          dissolve,
+          const TransitionSeam(
+            path: '/tmp/seam.mp4',
+            duration: Duration(milliseconds: 1500),
+            tailConsumed: Duration(milliseconds: 1000),
+            headConsumed: Duration(milliseconds: 1000),
+          ),
+        );
+
+      expect(service.cached(original, clipB, dissolve), isNotNull);
+      expect(service.cached(longer, clipB, dissolve), isNull);
+    });
+
     test('changing the target aspect ratio invalidates the seam', () {
       // The seam is rendered (and cropped) to the clip's target aspect ratio,
       // so switching it must re-render rather than reuse the old crop.

@@ -31,6 +31,42 @@ void main() {
       expect(cubit.state.fromFramePath, equals('ghost.jpg'));
       expect(cubit.state.toFramePath, equals('thumb.jpg'));
     });
+
+    test(
+      'swaps in the freshly-extracted boundary frames as they resolve',
+      () async {
+        final cubit = TransitionBoundaryCubit(
+          fromClip: clip(),
+          toClip: clip(),
+          fromPlaceholder: 'ghost.jpg',
+          toPlaceholder: 'thumb.jpg',
+          frameExtractor: (c, {required tail}) async =>
+              tail ? 'from_exact.jpg' : 'to_exact.jpg',
+        );
+        addTearDown(cubit.close);
+
+        await pumpEventQueue();
+
+        expect(cubit.state.fromFramePath, equals('from_exact.jpg'));
+        expect(cubit.state.toFramePath, equals('to_exact.jpg'));
+      },
+    );
+
+    test('keeps the placeholder frames when extraction returns null', () async {
+      final cubit = TransitionBoundaryCubit(
+        fromClip: clip(),
+        toClip: clip(),
+        fromPlaceholder: 'ghost.jpg',
+        toPlaceholder: 'thumb.jpg',
+        frameExtractor: (c, {required tail}) async => null,
+      );
+      addTearDown(cubit.close);
+
+      await pumpEventQueue();
+
+      expect(cubit.state.fromFramePath, equals('ghost.jpg'));
+      expect(cubit.state.toFramePath, equals('thumb.jpg'));
+    });
   });
 
   group(TransitionBoundaryState, () {

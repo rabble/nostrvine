@@ -301,6 +301,13 @@ class TransitionSeamRenderService {
     );
   }
 
+  /// Bumped whenever the seam-composition math ([computeSeamSpans] /
+  /// [_tailClip] / [_headClip]) changes. It prefixes [_key], so persisted seams
+  /// rendered by an older algorithm under `transition_seams/` are no longer
+  /// key-matched and get re-rendered after an app upgrade instead of replayed
+  /// stale (the keyed files live in the documents dir and survive upgrades).
+  static const _seamCacheVersion = 1;
+
   String _key(
     DivineVideoClip clipA,
     DivineVideoClip clipB,
@@ -312,15 +319,17 @@ class TransitionSeamRenderService {
     // (e.g. an untrimmed clip, where reverse leaves trimStart == trimEnd).
     // `volume` and `targetAspectRatio` are baked into the rendered seam (audio
     // gain and crop), so changing either after caching must re-render — without
-    // them a mute/crop change would keep playing the stale seam.
+    // them a mute/crop change would keep playing the stale seam. `duration` is
+    // included because `_tailClip`/`_headClip` read it and it can be trimmed
+    // independently of the file (clip_manager caps a clip on add).
     String clipKey(DivineVideoClip c) =>
-        '${c.id}:${c.video.file?.path}:'
+        '${c.id}:${c.video.file?.path}:${c.duration.inMicroseconds}:'
         '${c.trimStart.inMicroseconds}:${c.trimEnd.inMicroseconds}:'
         '${c.playbackSpeed ?? 1.0}:${c.volume}:${c.targetAspectRatio.name}';
     final t =
         '${transition.type.name}:${transition.duration.inMicroseconds}:'
         '${transition.curve.name}:${transition.direction.name}';
-    return '${clipKey(clipA)}|${clipKey(clipB)}|$t';
+    return 'v$_seamCacheVersion|${clipKey(clipA)}|${clipKey(clipB)}|$t';
   }
 
   bool _isOverlap(ClipTransitionType type) =>

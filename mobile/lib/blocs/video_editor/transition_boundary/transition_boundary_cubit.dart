@@ -15,6 +15,13 @@ part 'transition_boundary_state.dart';
 /// than just past the last visible one.
 const _boundaryFrameEpsilon = Duration(milliseconds: 50);
 
+/// Extracts the exact boundary frame for [clip]'s tail or head, returning its
+/// path or `null` when it can't be produced. Injectable so the emit-on-extract
+/// and keep-placeholder-on-null paths can be tested without the real thumbnail
+/// pipeline / file system.
+typedef BoundaryFrameExtractor =
+    Future<String?> Function(DivineVideoClip clip, {required bool tail});
+
 /// Resolves the two frames a transition preview shows either side of the
 /// boundary: the outgoing clip's last visible frame and the incoming clip's
 /// first.
@@ -29,7 +36,9 @@ class TransitionBoundaryCubit extends Cubit<TransitionBoundaryState> {
     required DivineVideoClip toClip,
     String? fromPlaceholder,
     String? toPlaceholder,
-  }) : super(
+    BoundaryFrameExtractor? frameExtractor,
+  }) : _frameExtractor = frameExtractor ?? _extractBoundaryFrame,
+       super(
          TransitionBoundaryState(
            fromFramePath: fromPlaceholder,
            toFramePath: toPlaceholder,
@@ -38,15 +47,19 @@ class TransitionBoundaryCubit extends Cubit<TransitionBoundaryState> {
     _resolve(fromClip, toClip);
   }
 
+  /// Produces the exact boundary frames. Defaults to [_extractBoundaryFrame];
+  /// tests inject a fake to drive [_resolve] without the thumbnail pipeline.
+  final BoundaryFrameExtractor _frameExtractor;
+
   Future<void> _resolve(
     DivineVideoClip fromClip,
     DivineVideoClip toClip,
   ) async {
-    final from = await _extractBoundaryFrame(fromClip, tail: true);
+    final from = await _frameExtractor(fromClip, tail: true);
     if (!isClosed && from != null) {
       emit(state.copyWith(fromFramePath: from));
     }
-    final to = await _extractBoundaryFrame(toClip, tail: false);
+    final to = await _frameExtractor(toClip, tail: false);
     if (!isClosed && to != null) {
       emit(state.copyWith(toFramePath: to));
     }
