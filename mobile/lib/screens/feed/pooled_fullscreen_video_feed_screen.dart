@@ -236,14 +236,18 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
     // fullscreen list at the stream boundary. This covers static / by-id
     // sources (liked, saved, reposts, collabs, curated lists) whose
     // repositories don't run the central feed filters, so a video that 404'd
-    // in a previous session won't reappear when opened fullscreen. The
-    // predicate reads live tracker state on each call; before the tracker's
-    // async init completes it filters nothing (matching grid behaviour). See
-    // #5237.
-    final brokenTracker = ref
-        .watch(brokenVideoTrackerProvider)
-        .maybeWhen(data: (tracker) => tracker, orElse: () => null);
-    final unavailableFilter = brokenTracker?.isVideoBroken;
+    // in a previous session won't reappear when opened fullscreen. Reads live
+    // tracker state on every call via the provider (rather than capturing a
+    // snapshot in `create:`, which would stay `null` if the tracker's async
+    // init hadn't resolved by first build and never recover): before init
+    // resolves it filters nothing; once it resolves, every subsequent source
+    // re-push is filtered. See #5237.
+    bool unavailableFilter(String videoId) => ref
+        .read(brokenVideoTrackerProvider)
+        .maybeWhen(
+          data: (tracker) => tracker.isVideoBroken(videoId),
+          orElse: () => false,
+        );
 
     return MultiBlocProvider(
       providers: [
