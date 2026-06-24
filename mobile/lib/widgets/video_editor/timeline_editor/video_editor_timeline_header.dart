@@ -6,7 +6,7 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/services/video_editor/video_editor_render_service.dart';
+import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_volume_mute_toggle.dart';
 import 'package:time_formatter/time_formatter.dart';
@@ -168,17 +168,12 @@ class _TimeDisplay extends StatelessWidget {
     // header reflects the final video, not the editing space. The timeline
     // layout itself stays on the editor axis.
     final clips = context.select((ClipEditorBloc b) => b.state.clips);
-    final outputDuration = VideoEditorRenderService.renderedOutputDuration(
-      clips,
-    );
+    final outputDuration = renderedOutputDuration(clips);
 
     return ValueListenableBuilder<Duration>(
       valueListenable: playheadPosition,
       builder: (context, position, _) {
-        final outputPosition = VideoEditorRenderService.editorToOutputPosition(
-          clips,
-          position,
-        );
+        final outputPosition = editorToOutputPosition(clips, position);
         final isOver =
             outputPosition.inMilliseconds >
             VideoEditorConstants.maxDuration.inMilliseconds;

@@ -11,7 +11,7 @@ import 'package:openvine/blocs/video_editor/transition_boundary/transition_bound
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/services/video_editor/transition_geometry.dart';
+import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/animation_picker_components.dart';
 import 'package:pro_video_editor/pro_video_editor.dart'

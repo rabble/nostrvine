@@ -24,12 +24,12 @@ import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
+import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/video_editor/transition_seam_render_service.dart';
-import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_feed_preview_overlay.dart';
@@ -288,12 +288,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   /// finishes, so the seam splices into the preview. Idempotent — cached seams
   /// are skipped, so it is safe to call on every clip change.
   ///
-  /// Renders the no-overlap-clamped transition
-  /// ([VideoEditorRenderService.clampTransitions]) so the preview consumes
-  /// exactly what the export will, and a clip touched by transitions on both
-  /// sides is split between them rather than over-consumed.
+  /// Renders the no-overlap-clamped transition ([clampTransitions]) so the
+  /// preview consumes exactly what the export will, and a clip touched by
+  /// transitions on both sides is split between them rather than over-consumed.
   void _ensureSeamsRendered(List<DivineVideoClip> clips) {
-    final clamped = VideoEditorRenderService.clampTransitions(clips);
+    final clamped = clampTransitions(clips);
     for (var i = 0; i < clips.length - 1; i++) {
       final transition = clamped[clips[i].id];
       if (transition == null) continue;

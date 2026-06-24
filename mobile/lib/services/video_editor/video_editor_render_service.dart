@@ -12,9 +12,9 @@ import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/extensions/layer_animation_storage.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
-import 'package:openvine/services/video_editor/transition_geometry.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -806,154 +806,6 @@ class VideoEditorRenderService {
       segments: segments,
       tempFilePaths: tempFilePaths,
     );
-  }
-
-  /// Maps each clip id to its outgoing transition, clamped so that **no clip is
-  /// consumed by transitions on both sides at once**. A clip's head (consumed by
-  /// the incoming boundary) plus its tail (consumed by the outgoing boundary)
-  /// can never exceed its playback length — the native compositor cannot render
-  /// two fully-overlapping dips of different colors, so overlap is prevented
-  /// rather than blended.
-  ///
-  /// When the requested transitions would over-consume a shared clip, both
-  /// boundaries touching it are scaled down proportionally to their demand, so
-  /// each keeps a fair share and the clip is split between them (e.g. two 2s
-  /// dips on a 1s middle clip each render as 1s, the first half fading one way
-  /// and the second half the other). A single transition on a clip is never
-  /// reduced.
-  ///
-  /// Returns `null` for the last clip (no following boundary) and whenever there
-  /// is no room for a transition. Keyed by clip id rather than index so it stays
-  /// correct even if the render pipeline reorders clips.
-  static Map<String, ClipTransition?> clampTransitions(
-    List<DivineVideoClip> clips,
-  ) {
-    final n = clips.length;
-
-    // Per-boundary requested per-side consumption. demand[i] is the boundary
-    // between clip i and clip i+1 (clip i's outgoing transition).
-    final demand = List<Duration>.filled(n, Duration.zero);
-    for (var i = 0; i < n - 1; i++) {
-      final transition = clips[i].transition;
-      if (transition != null) {
-        demand[i] = transitionConsumedPerSide(
-          clips[i].playbackDuration,
-          clips[i + 1].playbackDuration,
-          transition,
-        );
-      }
-    }
-
-    // Per-clip scale so the head + tail consumption fits the clip's playback
-    // length. A clip touched by only one transition (or none) keeps scale 1.
-    final scale = List<double>.filled(n, 1);
-    for (var i = 0; i < n; i++) {
-      final head = i > 0 ? demand[i - 1] : Duration.zero;
-      final tail = i < n - 1 ? demand[i] : Duration.zero;
-      final total = head + tail;
-      final playback = clips[i].playbackDuration;
-      if (total > playback && total > Duration.zero) {
-        scale[i] = playback.inMicroseconds / total.inMicroseconds;
-      }
-    }
-
-    // Each boundary is bounded by the tighter scale of the two clips it touches,
-    // so neither clip is over-consumed.
-    final clamped = <String, ClipTransition?>{};
-    for (var i = 0; i < n; i++) {
-      final transition = clips[i].transition;
-      if (i >= n - 1 || transition == null || demand[i] <= Duration.zero) {
-        clamped[clips[i].id] = null;
-        continue;
-      }
-      final s = scale[i] < scale[i + 1] ? scale[i] : scale[i + 1];
-      final finalConsumed = Duration(
-        microseconds: (demand[i].inMicroseconds * s).round(),
-      );
-      if (finalConsumed <= Duration.zero) {
-        clamped[clips[i].id] = null;
-        continue;
-      }
-      final clampedDuration = transitionDurationForConsumed(
-        finalConsumed,
-        transition.type,
-      );
-      if (clampedDuration < transition.duration) {
-        Log.debug(
-          '✂️ Clamping transition ${transition.duration.inMilliseconds}ms '
-          'to ${clampedDuration.inMilliseconds}ms (avoids overlap on a '
-          'shared clip)',
-          name: _logName,
-          category: .video,
-        );
-        clamped[clips[i].id] = transition.copyWith(duration: clampedDuration);
-      } else {
-        clamped[clips[i].id] = transition;
-      }
-    }
-    return clamped;
-  }
-
-  /// Whether a transition shortens the timeline. Overlaps
-  /// (dissolve/slide/push/wipe) blend both clips at once, so the blend duration
-  /// is removed from the total. Dips (fadeToBlack/White) fade out then in
-  /// without overlapping, so the duration is unchanged.
-  static bool _shortensTimeline(ClipTransitionType type) =>
-      type != ClipTransitionType.fadeToBlack &&
-      type != ClipTransitionType.fadeToWhite;
-
-  /// The duration of the rendered output for [clips] — the sum of clip playback
-  /// lengths minus the blend each overlap transition removes (after the
-  /// no-overlap clamp). Dips don't shorten the timeline, so they don't count.
-  ///
-  /// This is what the final export lasts, which differs from the editor
-  /// timeline length ([ClipEditorState.totalDuration], clips at full length)
-  /// whenever an overlap transition is used.
-  static Duration renderedOutputDuration(List<DivineVideoClip> clips) {
-    final clamped = clampTransitions(clips);
-    var total = Duration.zero;
-    for (final clip in clips) {
-      total += clip.playbackDuration;
-    }
-    for (var i = 0; i < clips.length - 1; i++) {
-      final transition = clamped[clips[i].id];
-      if (transition != null && _shortensTimeline(transition.type)) {
-        total -= transition.duration;
-      }
-    }
-    return total;
-  }
-
-  /// Maps an editor-timeline [position] (clips at full length) onto the rendered
-  /// output timeline. Each overlap boundary blends both clips for its duration,
-  /// so the `2×duration`-wide editor region around the boundary compresses to
-  /// `duration` of output; positions before the blend map 1:1. Lets the header
-  /// show where the playhead sits in the final video, not the editor.
-  static Duration editorToOutputPosition(
-    List<DivineVideoClip> clips,
-    Duration position,
-  ) {
-    final clamped = clampTransitions(clips);
-    var boundary = Duration.zero;
-    var removed = Duration.zero;
-    for (var i = 0; i < clips.length - 1; i++) {
-      boundary += clips[i].playbackDuration;
-      final transition = clamped[clips[i].id];
-      if (transition == null || !_shortensTimeline(transition.type)) continue;
-      final blend = transition.duration;
-      final blendStart = boundary - blend;
-      final blendEnd = boundary + blend;
-      if (position >= blendEnd) {
-        removed += blend;
-      } else if (position > blendStart) {
-        // Linear inside the 2×blend-wide region → removes half the offset.
-        removed += Duration(
-          microseconds: (position - blendStart).inMicroseconds ~/ 2,
-        );
-      }
-    }
-    final output = position - removed;
-    return output.isNegative ? Duration.zero : output;
   }
 
   /// Analyzes all clips to determine their crop parameters.

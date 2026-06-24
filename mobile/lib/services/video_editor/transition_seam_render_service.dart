@@ -9,7 +9,7 @@ import 'package:divine_video_player/divine_video_player.dart' as player;
 import 'package:flutter/foundation.dart';
 import 'package:openvine/extensions/divine_video_clip_player_mapping.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/services/video_editor/transition_geometry.dart';
+import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart'
@@ -50,7 +50,7 @@ class TransitionSeam {
 /// changes adjacency) naturally misses the cache and re-renders.
 ///
 /// The transition passed in is the **clamped** transition (see
-/// [VideoEditorRenderService.clampTransitions]) — the render-time duration that
+/// [clampTransitions]) — the render-time duration that
 /// guarantees no clip is consumed by transitions on both sides at once, so the
 /// preview matches the export and a middle clip is never replayed.
 class TransitionSeamRenderService {
@@ -387,7 +387,7 @@ class TransitionSeamRenderService {
 /// with the editor playhead. Identity when no seam is spliced.
 class SeamTimeline {
   SeamTimeline(List<DivineVideoClip> clips, TransitionSeamRenderService seams) {
-    final clamped = VideoEditorRenderService.clampTransitions(clips);
+    final clamped = clampTransitions(clips);
     var composite = Duration.zero;
     var editor = Duration.zero; // start of the current clip on the editor line
     // Last editor position handed to a segment. Clamping each segment's editor
@@ -522,14 +522,14 @@ Duration _maxDur(Duration a, Duration b) => a > b ? a : b;
 /// between neighbours. Transitions whose seam is not rendered yet simply play
 /// as a hard cut until the seam arrives.
 ///
-/// Transitions are taken from [VideoEditorRenderService.clampTransitions] so the
+/// Transitions are taken from [clampTransitions] so the
 /// preview consumes exactly what the export will, and a clip touched by
 /// transitions on both sides is split between them rather than replayed.
 List<player.VideoClip> buildSeamAwarePlayerClips(
   List<DivineVideoClip> clips,
   TransitionSeamRenderService seams,
 ) {
-  final clamped = VideoEditorRenderService.clampTransitions(clips);
+  final clamped = clampTransitions(clips);
   final result = <player.VideoClip>[];
   for (var i = 0; i < clips.length; i++) {
     final clip = clips[i];

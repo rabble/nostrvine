@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/services/video_editor/transition_seam_render_service.dart';
-import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' as editor;
 
 void main() {
@@ -359,7 +359,7 @@ void main() {
 
       // The seams are keyed by the clamped transition — what the canvas renders
       // and the preview plan looks up.
-      final clamped = VideoEditorRenderService.clampTransitions(clips);
+      final clamped = clampTransitions(clips);
       final service = TransitionSeamRenderService()
         ..cacheSeamForTest(
           clipA,
