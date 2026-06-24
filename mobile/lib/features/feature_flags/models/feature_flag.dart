@@ -48,6 +48,12 @@ enum FeatureFlag {
         'Changing relays can break publishing and discovery — only turn '
         'this on if you know what you are doing.',
   ),
+  publishDmRelayList(
+    'Publish DM Relay List',
+    'Self-advertise your NIP-17 kind-10050 DM inbox relays on login so '
+        'compliant senders deliver where divine reads. Keep off until the '
+        'backend relay accepts kind-10050.',
+  ),
   ;
 
   const FeatureFlag(

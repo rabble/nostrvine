@@ -480,6 +480,10 @@ void main() {
       NostrSigner? signer,
       DmDecryptIsolateSpawner? decryptIsolateSpawner,
       DmVerifyIsolateSpawner? verifyIsolateSpawner,
+      // #4974 RC3: default the feature on + inject a stable relay so the
+      // existing RC3 tests exercise the publish path; gating tests override.
+      bool publishDmRelayListEnabled = true,
+      String? dmInboxRelayUrl = 'wss://relay.divine.video',
     }) {
       return DmRepository(
         nostrClient: mockNostrClient,
@@ -502,6 +506,8 @@ void main() {
             verifyIsolateSpawner ?? () async => _RecordingVerifyWorker(),
         syncState: syncState,
         reactionsRepository: reactionsRepository,
+        publishDmRelayListEnabled: publishDmRelayListEnabled,
+        dmInboxRelayUrl: dmInboxRelayUrl,
         errorReporter: (error, stackTrace, {required site}) {
           reporterCalls.add(_ReporterCall(error, stackTrace, site));
         },
@@ -3041,15 +3047,9 @@ void main() {
         noResponseFrom: const [],
       );
 
-      setUp(() {
-        when(
-          () => mockNostrClient.primaryRelay,
-        ).thenReturn('wss://relay.divine.video');
-      });
-
       test(
-        'publishes a kind-10050 advertising the primary relay when absent and '
-        'records the flag on a confirmed OK',
+        'publishes a kind-10050 advertising the injected stable relay when '
+        'absent and records the flag on a confirmed OK',
         () async {
           // setUp default queryEvents -> [] : user has no existing kind-10050.
           when(
@@ -3187,6 +3187,152 @@ void main() {
           ),
         );
       });
+
+      test('is a no-op when the feature flag is off', () async {
+        final syncState = _FakeDmSyncState();
+        final repository = createRepository(
+          syncState: syncState,
+          publishDmRelayListEnabled: false,
+        );
+        await repository.ensureDmRelayListPublished();
+
+        // Gated before any work — no relay query, no signer round-trip.
+        verifyNever(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        );
+        verifyNever(
+          () => mockNostrClient.publishEventAwaitOk(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
+        expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
+      });
+
+      test(
+        'does NOT publish or set the flag when the own-inbox lookup fails '
+        '(transient) — never overwrites a real list',
+        () async {
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenThrow(Exception('relay down'));
+
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(syncState: syncState);
+          await repository.ensureDmRelayListPublished();
+
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          );
+          expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
+        },
+      );
+
+      test(
+        'a transient lookup failure is not cached — a later call re-queries '
+        'and can publish',
+        () async {
+          var queries = 0;
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async {
+            queries++;
+            if (queries == 1) throw Exception('relay down');
+            return const <Event>[]; // absent on the retry
+          });
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) async => outcome(accepted: true));
+
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(syncState: syncState);
+
+          // First login: lookup fails -> no publish, flag unset.
+          await repository.ensureDmRelayListPublished();
+          expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
+
+          // Next login: the failure was not memoized, so it re-queries,
+          // resolves absent, and publishes.
+          await repository.ensureDmRelayListPublished();
+          expect(queries, 2);
+          verify(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).called(1);
+          expect(
+            syncState.dmRelayListPublishedPubkeys,
+            contains(_validPubkeyA),
+          );
+        },
+      );
+
+      test(
+        'reuses the live subscription own-inbox resolve — one kind-10050 '
+        'query shared at login',
+        () async {
+          var resolveQueries = 0;
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            if (filter.kinds?.contains(EventKind.dmRelaysList) ?? false) {
+              resolveQueries++;
+            }
+            return const <Event>[];
+          });
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) async => outcome(accepted: true));
+
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(syncState: syncState);
+          await repository.startListening();
+          await repository.ensureDmRelayListPublished();
+
+          expect(resolveQueries, 1);
+
+          await repository.stopListening();
+          await controller.close();
+        },
+      );
     });
 
     group('backfillHistoryIfNeeded', () {

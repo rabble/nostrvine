@@ -20,6 +20,8 @@ import 'package:hive_ce/hive_ce.dart';
 import 'package:http/http.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
@@ -499,6 +501,17 @@ DmRepository dmRepository(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   final reactionsRepository = ref.watch(dmReactionsRepositoryProvider);
 
+  // #4974 RC3: gate self-publishing the user's kind-10050 behind the feature
+  // flag (default OFF until the backend relay accepts the kind), and advertise
+  // the environment's stable DM relay (same source as the kind-10002
+  // bootstrap), not the volatile connected-relay getter. Read, not watch, so a
+  // flag flip doesn't churn the live DM subscription — the provider body
+  // re-runs (and re-reads the flag) on each auth change.
+  final publishDmRelayListEnabled = ref.read(
+    isFeatureEnabledProvider(FeatureFlag.publishDmRelayList),
+  );
+  final dmInboxRelayUrl = ref.read(currentEnvironmentProvider).relayUrl;
+
   final repository = DmRepository(
     nostrClient: nostrService,
     directMessagesDao: db.directMessagesDao,
@@ -508,6 +521,8 @@ DmRepository dmRepository(Ref ref) {
     processedGiftWrapsDao: db.processedGiftWrapsDao,
     syncState: DmSyncState(prefs),
     reactionsRepository: reactionsRepository,
+    publishDmRelayListEnabled: publishDmRelayListEnabled,
+    dmInboxRelayUrl: dmInboxRelayUrl,
     errorReporter: (error, stackTrace, {required site}) {
       unawaited(
         CrashReportingService.instance.recordError(
