@@ -130,7 +130,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
 
-      await tester.drag(find.byType(DivineSlider), const Offset(1000, 0));
+      // Drag well past the slider's right edge so the thumb pins to the
+      // maximum regardless of the surface width under test — a fixed pixel
+      // offset under-reaches when another test leaks a wider surface.
+      final sliderWidth = tester.getSize(find.byType(DivineSlider)).width;
+      await tester.drag(find.byType(DivineSlider), Offset(sliderWidth * 2, 0));
       await tester.pump();
       await tester.tap(find.text(l10n.videoEditorDoneLabel));
       await tester.pump();
