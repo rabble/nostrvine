@@ -13982,6 +13982,36 @@ abstract class AppLocalizations {
   /// **'Direction'**
   String get videoEditorTransitionDirection;
 
+  /// Accessibility label for the left direction option of a slide/push/wipe transition.
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get videoEditorTransitionDirectionLeft;
+
+  /// Accessibility label for the right direction option of a slide/push/wipe transition.
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get videoEditorTransitionDirectionRight;
+
+  /// Accessibility label for the up direction option of a slide/push/wipe transition.
+  ///
+  /// In en, this message translates to:
+  /// **'Up'**
+  String get videoEditorTransitionDirectionUp;
+
+  /// Accessibility label for the down direction option of a slide/push/wipe transition.
+  ///
+  /// In en, this message translates to:
+  /// **'Down'**
+  String get videoEditorTransitionDirectionDown;
+
+  /// Accessibility label for an easing-curve option in the transition picker, identified by its position. The curve shape is shown visually as a glyph; screen readers announce the option number instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Easing curve {number}'**
+  String videoEditorTransitionCurveOptionSemanticLabel(int number);
+
   /// No description provided for @videoEditorFinishTimelineEditingSemanticLabel.
   ///
   /// In en, this message translates to:

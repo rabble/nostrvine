@@ -8089,6 +8089,23 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorTransitionDirection => 'Посока';
 
   @override
+  String get videoEditorTransitionDirectionLeft => 'Ляво';
+
+  @override
+  String get videoEditorTransitionDirectionRight => 'Дясно';
+
+  @override
+  String get videoEditorTransitionDirectionUp => 'Нагоре';
+
+  @override
+  String get videoEditorTransitionDirectionDown => 'Надолу';
+
+  @override
+  String videoEditorTransitionCurveOptionSemanticLabel(int number) {
+    return 'Крива на анимация $number';
+  }
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Завършете редактирането на времевата линия';
 

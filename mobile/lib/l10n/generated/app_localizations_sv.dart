@@ -8021,6 +8021,23 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorTransitionDirection => 'Riktning';
 
   @override
+  String get videoEditorTransitionDirectionLeft => 'Vänster';
+
+  @override
+  String get videoEditorTransitionDirectionRight => 'Höger';
+
+  @override
+  String get videoEditorTransitionDirectionUp => 'Upp';
+
+  @override
+  String get videoEditorTransitionDirectionDown => 'Ned';
+
+  @override
+  String videoEditorTransitionCurveOptionSemanticLabel(int number) {
+    return 'Animeringskurva $number';
+  }
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Avsluta redigering av tidslinje';
 

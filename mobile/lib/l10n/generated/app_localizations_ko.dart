@@ -7756,6 +7756,23 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorTransitionDirection => '방향';
 
   @override
+  String get videoEditorTransitionDirectionLeft => '왼쪽';
+
+  @override
+  String get videoEditorTransitionDirectionRight => '오른쪽';
+
+  @override
+  String get videoEditorTransitionDirectionUp => '위';
+
+  @override
+  String get videoEditorTransitionDirectionDown => '아래';
+
+  @override
+  String videoEditorTransitionCurveOptionSemanticLabel(int number) {
+    return '애니메이션 곡선 $number';
+  }
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel => '타임라인 편집 완료';
 
   @override

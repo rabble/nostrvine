@@ -7732,6 +7732,23 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorTransitionDirection => '方向';
 
   @override
+  String get videoEditorTransitionDirectionLeft => '左';
+
+  @override
+  String get videoEditorTransitionDirectionRight => '右';
+
+  @override
+  String get videoEditorTransitionDirectionUp => '上';
+
+  @override
+  String get videoEditorTransitionDirectionDown => '下';
+
+  @override
+  String videoEditorTransitionCurveOptionSemanticLabel(int number) {
+    return 'アニメーションカーブ $number';
+  }
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel => 'タイムライン編集を終了';
 
   @override

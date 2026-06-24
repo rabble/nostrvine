@@ -7991,6 +7991,23 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorTransitionDirection => 'Arah';
 
   @override
+  String get videoEditorTransitionDirectionLeft => 'Kiri';
+
+  @override
+  String get videoEditorTransitionDirectionRight => 'Kanan';
+
+  @override
+  String get videoEditorTransitionDirectionUp => 'Atas';
+
+  @override
+  String get videoEditorTransitionDirectionDown => 'Bawah';
+
+  @override
+  String videoEditorTransitionCurveOptionSemanticLabel(int number) {
+    return 'Kurva animasi $number';
+  }
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Selesai mengedit timeline';
 

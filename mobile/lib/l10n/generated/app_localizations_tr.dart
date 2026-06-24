@@ -7986,6 +7986,23 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorTransitionDirection => 'Yön';
 
   @override
+  String get videoEditorTransitionDirectionLeft => 'Sol';
+
+  @override
+  String get videoEditorTransitionDirectionRight => 'Sağ';
+
+  @override
+  String get videoEditorTransitionDirectionUp => 'Yukarı';
+
+  @override
+  String get videoEditorTransitionDirectionDown => 'Aşağı';
+
+  @override
+  String videoEditorTransitionCurveOptionSemanticLabel(int number) {
+    return 'Animasyon eğrisi $number';
+  }
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Zaman çizelgesi düzenlemeyi bitir';
 

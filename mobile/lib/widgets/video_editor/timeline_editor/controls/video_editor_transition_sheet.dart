@@ -327,17 +327,22 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      for (final curve in _curveOptions)
+                      for (var i = 0; i < _curveOptions.length; i++)
                         _PickerChip(
-                          selected: curve == _curve,
-                          onTap: () => setState(() => _curve = curve),
+                          selected: _curveOptions[i] == _curve,
+                          onTap: () =>
+                              setState(() => _curve = _curveOptions[i]),
+                          semanticLabel: l10n
+                              .videoEditorTransitionCurveOptionSemanticLabel(
+                                i + 1,
+                              ),
                           child: SizedBox(
                             width: 28,
                             height: 18,
                             child: CustomPaint(
                               painter: _CurveGlyphPainter(
-                                curve: _flutterCurve(curve),
-                                color: curve == _curve
+                                curve: _flutterCurve(_curveOptions[i]),
+                                color: _curveOptions[i] == _curve
                                     ? VineTheme.primary
                                     : VineTheme.secondaryText,
                               ),
@@ -359,6 +364,7 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
                             onTap: () => setState(
                               () => _direction = direction,
                             ),
+                            semanticLabel: _directionLabel(l10n, direction),
                             child: DivineIcon(
                               icon: _directionIcon(direction),
                               size: 18,
@@ -673,38 +679,49 @@ class _PreviewFrame extends StatelessWidget {
   }
 }
 
-/// Selectable pill used for duration and curve options.
+/// Selectable pill used for curve and direction options. The glyph/icon it
+/// holds carries no text, so [semanticLabel] names the option for screen
+/// readers and [selected] is surfaced as the semantic selected state.
 class _PickerChip extends StatelessWidget {
   const _PickerChip({
     required this.selected,
     required this.onTap,
+    required this.semanticLabel,
     required this.child,
   });
 
   final bool selected;
   final VoidCallback onTap;
+  final String semanticLabel;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: .opaque,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 36),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: selected
-                ? VineTheme.primary.withValues(alpha: 0.18)
-                : VineTheme.lightText.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: selected ? VineTheme.primary : Colors.transparent,
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: semanticLabel,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: .opaque,
+        child: ConstrainedBox(
+          // 48dp min keeps the tap target at the accessibility floor; the
+          // horizontal padding already takes the width past 48dp.
+          constraints: const BoxConstraints(minHeight: 48),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: selected
+                  ? VineTheme.primary.withValues(alpha: 0.18)
+                  : VineTheme.lightText.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: selected ? VineTheme.primary : Colors.transparent,
+              ),
             ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Center(widthFactor: 1, child: child),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              child: Center(widthFactor: 1, child: child),
+            ),
           ),
         ),
       ),
@@ -787,6 +804,16 @@ Curve _flutterCurve(AnimationCurve curve) => switch (curve) {
   AnimationCurve.elasticIn => Curves.elasticIn,
   AnimationCurve.elasticOut => Curves.elasticOut,
   AnimationCurve.elasticInOut => Curves.elasticInOut,
+};
+
+String _directionLabel(
+  AppLocalizations l10n,
+  ClipTransitionDirection direction,
+) => switch (direction) {
+  ClipTransitionDirection.left => l10n.videoEditorTransitionDirectionLeft,
+  ClipTransitionDirection.right => l10n.videoEditorTransitionDirectionRight,
+  ClipTransitionDirection.up => l10n.videoEditorTransitionDirectionUp,
+  ClipTransitionDirection.down => l10n.videoEditorTransitionDirectionDown,
 };
 
 DivineIconName _directionIcon(ClipTransitionDirection direction) =>

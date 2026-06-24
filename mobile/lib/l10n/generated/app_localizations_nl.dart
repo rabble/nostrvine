@@ -8053,6 +8053,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorTransitionDirection => 'Richting';
 
   @override
+  String get videoEditorTransitionDirectionLeft => 'Links';
+
+  @override
+  String get videoEditorTransitionDirectionRight => 'Rechts';
+
+  @override
+  String get videoEditorTransitionDirectionUp => 'Omhoog';
+
+  @override
+  String get videoEditorTransitionDirectionDown => 'Omlaag';
+
+  @override
+  String videoEditorTransitionCurveOptionSemanticLabel(int number) {
+    return 'Animatiecurve $number';
+  }
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Bewerken van tijdlijn voltooien';
 

@@ -246,6 +246,46 @@ void main() {
       expect(find.text(l10n.videoEditorTransitionDirection), findsOneWidget);
     });
 
+    testWidgets('curve chips expose a semantic label and selected state', (
+      tester,
+    ) async {
+      await openPicker(tester);
+
+      // The curve glyphs carry no text, so each chip names itself for screen
+      // readers via its position (1-based).
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Semantics &&
+              w.properties.label ==
+                  l10n.videoEditorTransitionCurveOptionSemanticLabel(1) &&
+              w.properties.button == true,
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('direction chips expose localized direction labels', (
+      tester,
+    ) async {
+      await openPicker(tester);
+
+      // Directions appear only for directional transitions.
+      await tester.tap(find.text(l10n.videoEditorTransitionSlide));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Semantics &&
+              w.properties.label == l10n.videoEditorTransitionDirectionUp &&
+              w.properties.button == true,
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('returns the chosen direction on confirm', (tester) async {
       await openPicker(tester);
 

@@ -7873,6 +7873,23 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorTransitionDirection => 'አቅጣጫ';
 
   @override
+  String get videoEditorTransitionDirectionLeft => 'ግራ';
+
+  @override
+  String get videoEditorTransitionDirectionRight => 'ቀኝ';
+
+  @override
+  String get videoEditorTransitionDirectionUp => 'ላይ';
+
+  @override
+  String get videoEditorTransitionDirectionDown => 'ታች';
+
+  @override
+  String videoEditorTransitionCurveOptionSemanticLabel(int number) {
+    return 'የአኒሜሽን ከርቭ $number';
+  }
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'የጊዜ መስመር አርትዖትን ጨርስ';
 

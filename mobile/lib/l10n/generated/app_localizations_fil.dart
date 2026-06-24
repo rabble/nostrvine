@@ -8104,6 +8104,23 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorTransitionDirection => 'Direksyon';
 
   @override
+  String get videoEditorTransitionDirectionLeft => 'Kaliwa';
+
+  @override
+  String get videoEditorTransitionDirectionRight => 'Kanan';
+
+  @override
+  String get videoEditorTransitionDirectionUp => 'Pataas';
+
+  @override
+  String get videoEditorTransitionDirectionDown => 'Pababa';
+
+  @override
+  String videoEditorTransitionCurveOptionSemanticLabel(int number) {
+    return 'Kurba ng animation $number';
+  }
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Tapusin ang pag-edit ng timeline';
 

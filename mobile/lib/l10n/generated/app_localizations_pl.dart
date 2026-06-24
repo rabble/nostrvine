@@ -8168,6 +8168,23 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorTransitionDirection => 'Kierunek';
 
   @override
+  String get videoEditorTransitionDirectionLeft => 'Lewo';
+
+  @override
+  String get videoEditorTransitionDirectionRight => 'Prawo';
+
+  @override
+  String get videoEditorTransitionDirectionUp => 'Góra';
+
+  @override
+  String get videoEditorTransitionDirectionDown => 'Dół';
+
+  @override
+  String videoEditorTransitionCurveOptionSemanticLabel(int number) {
+    return 'Krzywa animacji $number';
+  }
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Zakończ edycję osi czasu';
 

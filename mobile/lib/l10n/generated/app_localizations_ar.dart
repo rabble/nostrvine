@@ -7948,6 +7948,23 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorTransitionDirection => 'الاتجاه';
 
   @override
+  String get videoEditorTransitionDirectionLeft => 'يسار';
+
+  @override
+  String get videoEditorTransitionDirectionRight => 'يمين';
+
+  @override
+  String get videoEditorTransitionDirectionUp => 'أعلى';
+
+  @override
+  String get videoEditorTransitionDirectionDown => 'أسفل';
+
+  @override
+  String videoEditorTransitionCurveOptionSemanticLabel(int number) {
+    return 'منحنى الرسوم المتحركة $number';
+  }
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'إنهاء تحرير الجدول الزمني';
 

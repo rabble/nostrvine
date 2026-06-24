@@ -877,7 +877,15 @@ class _TransitionButtonsLayer extends StatelessWidget {
   final List<DivineVideoClip> clips;
   final ({List<double> widths, List<double> offsets, double totalWidth}) layout;
 
-  static const double _size = 26;
+  /// Visible glyph circle.
+  static const double _visualSize = 26;
+
+  /// Tap target around the glyph. The 1px clip gap leaves no horizontal room,
+  /// so the target overlaps the neighbours and is enlarged toward the
+  /// accessibility floor where the strip has room (vertically) without
+  /// swallowing too much of the adjacent clips (horizontally).
+  static const double _hitWidth = 36;
+  static const double _hitHeight = 48;
 
   @override
   Widget build(BuildContext context) {
@@ -890,11 +898,12 @@ class _TransitionButtonsLayer extends StatelessWidget {
                 layout.offsets[i] +
                 layout.widths[i] +
                 TimelineConstants.clipGap / 2 -
-                _size / 2,
-            top: (TimelineConstants.thumbnailStripHeight - _size) / 2,
-            width: _size,
-            height: _size,
+                _hitWidth / 2,
+            top: (TimelineConstants.thumbnailStripHeight - _hitHeight) / 2,
+            width: _hitWidth,
+            height: _hitHeight,
             child: _TransitionButton(
+              visualSize: _visualSize,
               hasTransition: clips[i].transition != null,
               onTap: () => editClipTransition(context, i),
             ),
@@ -905,10 +914,17 @@ class _TransitionButtonsLayer extends StatelessWidget {
 }
 
 class _TransitionButton extends StatelessWidget {
-  const _TransitionButton({required this.hasTransition, required this.onTap});
+  const _TransitionButton({
+    required this.hasTransition,
+    required this.onTap,
+    required this.visualSize,
+  });
 
   final bool hasTransition;
   final VoidCallback onTap;
+
+  /// Diameter of the visible glyph circle, centred inside the larger tap target.
+  final double visualSize;
 
   @override
   Widget build(BuildContext context) {
@@ -921,16 +937,21 @@ class _TransitionButton extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: VineTheme.surfaceBackground,
-            shape: BoxShape.circle,
-            border: Border.all(color: foreground, width: 1.5),
-          ),
-          child: Center(
-            child: CustomPaint(
-              size: const Size(10, 10),
-              painter: _TransitionGlyphPainter(color: foreground),
+        child: Center(
+          child: SizedBox.square(
+            dimension: visualSize,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: VineTheme.surfaceBackground,
+                shape: BoxShape.circle,
+                border: Border.all(color: foreground, width: 1.5),
+              ),
+              child: Center(
+                child: CustomPaint(
+                  size: const Size(10, 10),
+                  painter: _TransitionGlyphPainter(color: foreground),
+                ),
+              ),
             ),
           ),
         ),
