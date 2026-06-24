@@ -3025,6 +3025,81 @@ void main() {
           await controller.close();
         },
       );
+
+      // NOTE: the analogous "stopListening() during the resolve" case shares
+      // the identical session-token guard (stopListening bumps _resetGeneration
+      // exactly as _resetState does), so the account-switch test below covers
+      // the during-resolve invalidation mechanism for both paths.
+      test(
+        'an account switch during the own-inbox resolve bails the old '
+        "user's subscription and frees the new user to subscribe",
+        () async {
+          final resolveA = Completer<List<Event>>();
+          final resolveB = Completer<List<Event>>();
+          var resolveCalls = 0;
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) {
+            resolveCalls++;
+            return resolveCalls == 1 ? resolveA.future : resolveB.future;
+          });
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+          when(
+            () => mockNostrClient.unsubscribe(any()),
+          ).thenAnswer((_) async {});
+
+          final repository = createRepository(); // user A
+          final pendingA = repository.startListening(); // suspends at resolve
+
+          // Switch A -> B while A's resolve is still in flight.
+          repository.setCredentials(
+            userPubkey: _validPubkeyB,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
+
+          resolveA.complete(const <Event>[]);
+          await pendingA;
+
+          // A's continuation bailed — no subscription opened under A's id.
+          verifyNever(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: 'dm_inbox_$_validPubkeyA',
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          );
+
+          // _subscribing was released, so B opens its own subscription.
+          final pendingB = repository.startListening();
+          resolveB.complete(const <Event>[]);
+          await pendingB;
+          verify(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: 'dm_inbox_$_validPubkeyB',
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).called(1);
+
+          await repository.stopListening();
+          await controller.close();
+        },
+      );
     });
 
     group('ensureDmRelayListPublished (#4974 RC3)', () {

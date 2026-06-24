@@ -454,8 +454,11 @@ class DmRepository {
   void _resetState() {
     // Bump the session-identity token first so any in-flight `await` started
     // under the outgoing session detects the switch on resume and bails
-    // instead of acting on the new `_userPubkey`. See #4974.
+    // instead of acting on the new `_userPubkey`. Release `_subscribing` too,
+    // so the incoming user's startListening() is not blocked at its entry
+    // guard by the outgoing user's still-resolving subscribe. See #4974.
     _resetGeneration++;
+    _subscribing = false;
     _disposed = true;
     _eventLock = null;
     // Drop the in-flight history drain and decrypt-retry pass so the next
@@ -1240,6 +1243,13 @@ class DmRepository {
     // startListening() call a silent no-op, breaking re-open flows such
     // as the post-signOut cleanup in UserDataCleanupService that may be
     // followed by a fresh sign-in on the same repository instance.
+    //
+    // But DO bump the session token: an intentional stop must invalidate any
+    // startListening()/ensureDmRelayListPublished() resolve already in flight,
+    // so its post-await continuation bails instead of re-opening the
+    // subscription (or completing a publish) after the stop. _disposed stays
+    // false so a later startListening() re-opens cleanly. See #4974.
+    _resetGeneration++;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
     _eventLock = null;
