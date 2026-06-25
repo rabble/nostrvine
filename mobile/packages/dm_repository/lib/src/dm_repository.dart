@@ -3048,11 +3048,20 @@ class DmRepository {
     );
   }
 
-  /// Refreshes the conversation preview after a message is deleted.
+  /// Refreshes the denormalized preview columns of [conversationId] from its
+  /// actual messages (called after a deletion and after a duplicate merge).
   ///
-  /// If the deleted message was the last message shown in the conversation
-  /// list, the preview falls back to the next most recent non-deleted
-  /// message.
+  /// If the last shown message was deleted, the preview falls back to the
+  /// next most recent non-deleted message.
+  ///
+  /// This is a preview-only operation: it forwards the conversation's current
+  /// `isRead` back through the upsert so read state is never changed here.
+  /// Because `forceUpdateLastMessage` bypasses the timestamp guard, omitting
+  /// `isRead` would let the gate's default (`true`) overwrite an unread
+  /// conversation whenever the refreshed preview is strictly newer than the
+  /// stored timestamp — e.g. a stale-preview canonical row right after a
+  /// duplicate merge. Passing the current value makes preservation explicit
+  /// and immune to timestamp ordering.
   Future<void> _refreshConversationPreview(String conversationId) async {
     final remaining = await _directMessagesDao.getMessagesForConversation(
       conversationId,
@@ -3082,6 +3091,8 @@ class DmRepository {
         lastMessageTimestamp: null,
         // ignore: avoid_redundant_argument_values, clears preview
         lastMessageSenderPubkey: null,
+        // Preview-only refresh — preserve the current read state explicitly.
+        isRead: conversation.isRead,
         currentUserHasSent: conversation.currentUserHasSent,
         ownerPubkey: conversation.ownerPubkey,
         dmProtocol: conversation.dmProtocol,
@@ -3104,6 +3115,8 @@ class DmRepository {
         lastMessageContent: previewContent,
         lastMessageTimestamp: latest.createdAt,
         lastMessageSenderPubkey: latest.senderPubkey,
+        // Preview-only refresh — preserve the current read state explicitly.
+        isRead: conversation.isRead,
         currentUserHasSent: conversation.currentUserHasSent,
         ownerPubkey: conversation.ownerPubkey,
         dmProtocol: conversation.dmProtocol,
@@ -3603,8 +3616,11 @@ class DmRepository {
             );
           }
 
-          // If the canonical 1:1 row didn't exist, create it from the
-          // most recent duplicate's metadata.
+          // If the canonical 1:1 row didn't exist, create it from the most
+          // recent duplicate's metadata. Read state is the conservative
+          // merge — unread if ANY merged duplicate is unread — so
+          // canonicalization never silently drops a real unread signal from
+          // an older duplicate.
           if (!hasCanonicalRow) {
             final source = entry.value.first;
             await _conversationsDao.upsertConversation(
@@ -3615,7 +3631,7 @@ class DmRepository {
               lastMessageContent: source.lastMessageContent,
               lastMessageTimestamp: source.lastMessageTimestamp,
               lastMessageSenderPubkey: source.lastMessageSenderPubkey,
-              isRead: source.isRead,
+              isRead: entry.value.every((c) => c.isRead),
               currentUserHasSent: source.currentUserHasSent,
               ownerPubkey: source.ownerPubkey,
               dmProtocol: source.dmProtocol,
