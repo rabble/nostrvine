@@ -224,9 +224,11 @@ class DivineCamera {
 
   /// Sets the video stabilization mode.
   ///
-  /// The stabilized frames feed both the preview and the recording. On
-  /// platforms without stabilization support (macOS, Linux) this is a no-op
-  /// that returns false.
+  /// The selected mode stabilizes the recorded file. On iOS 17+ the live
+  /// preview is stabilized independently through a preview-optimized output so
+  /// it stays smooth at record start, so the preview and the recording may use
+  /// different stabilization internally. On platforms without stabilization
+  /// support (macOS, Linux) this is a no-op that returns false.
   ///
   /// [mode] the stabilization mode to apply.
   /// Returns true if the requested mode was applied.

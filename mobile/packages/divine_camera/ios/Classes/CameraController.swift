@@ -1749,9 +1749,9 @@ class CameraController: NSObject {
         let applied = applyVideoStabilization()
         if !applied {
             requestedStabilizationMode = previous
-            // applyVideoStabilization already nudged the preview output to the
-            // rejected mode; resync it to the restored mode.
-            applyPreviewStabilization()
+            // Re-apply the restored mode to both connections so the preview
+            // handoff matches the recording connection's actual state.
+            applyVideoStabilization()
         }
         return applied
     }
@@ -1829,17 +1829,28 @@ class CameraController: NSObject {
     @discardableResult
     private func applyVideoStabilization() -> Bool {
         let applied = applyRecordingStabilization()
-        applyPreviewStabilization()
+        // Only hand the preview to the preview-optimized output when the
+        // recording connection actually carries a non-off mode. A requested
+        // mode that could not be applied (e.g. unsupported after a lens/format
+        // switch) leaves the recording unstabilized, so the preview must stay
+        // on the full-resolution output to keep preview and file in sync.
+        applyPreviewStabilization(
+            recordingStabilized: applied && requestedStabilizationMode != .off
+        )
         return applied
     }
 
-    /// Keeps `previewOutput`'s connection in sync with whether stabilization is
-    /// on: `.previewOptimized` while the user has a mode selected (a smooth live
-    /// preview that doesn't zoom/jerk at record start), `.off` otherwise so the
-    /// preview matches the unstabilized recording. Flips `previewDrivesTexture`
-    /// so `captureOutput` routes the texture from the right output, and disables
-    /// the connection while unused so no frames are spent on it.
-    private func applyPreviewStabilization() {
+    /// Keeps `previewOutput`'s connection in sync with the recording
+    /// connection: `.previewOptimized` while the recording is actually
+    /// stabilized (a smooth live preview that doesn't zoom/jerk at record
+    /// start), `.off` otherwise so the preview matches the unstabilized
+    /// recording. `recordingStabilized` is true only when the requested mode
+    /// was successfully applied to the recording connection — a rejected mode
+    /// (e.g. unsupported after a lens/format switch) keeps the preview on the
+    /// full-resolution output. Flips `previewDrivesTexture` so `captureOutput`
+    /// routes the texture from the right output, and disables the connection
+    /// while unused so no frames are spent on it.
+    private func applyPreviewStabilization(recordingStabilized: Bool) {
         let previewConnection = previewOutput?.connection(with: .video)
         guard previewOptimizedActive,
             let connection = previewConnection,
@@ -1853,13 +1864,12 @@ class CameraController: NSObject {
             previewDrivesTexture = false
             return
         }
-        let wantPreviewOptimized = requestedStabilizationMode != .off
-        connection.isEnabled = wantPreviewOptimized
+        connection.isEnabled = recordingStabilized
         if #available(iOS 17.0, *) {
             connection.preferredVideoStabilizationMode =
-                wantPreviewOptimized ? .previewOptimized : .off
+                recordingStabilized ? .previewOptimized : .off
         }
-        previewDrivesTexture = wantPreviewOptimized
+        previewDrivesTexture = recordingStabilized
     }
 
     /// Applies `requestedStabilizationMode` to `videoOutput`'s connection — the
