@@ -258,19 +258,87 @@ END
 
   /// Mark a conversation as read.
   ///
+  /// Sets `isRead = true` and advances the read cursor
+  /// [Conversations.lastReadTimestamp] forward to the conversation's latest
+  /// message timestamp (monotonic: `max(existing, lastMessageTimestamp)`,
+  /// never lowered). The cursor is the cross-device / reinstall-restorable
+  /// read pointer (#4977).
+  ///
   /// Returns `true` if the row was updated, `false` if [id] was not found.
-  ///
-  /// Throws:
-  ///
-  /// * [InvalidDataException] if a column constraint is violated.
   Future<bool> markAsRead(String id, {String? ownerPubkey}) async {
-    final rows =
-        await (update(conversations)..where(
-              (t) =>
-                  t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
-            ))
-            .write(const ConversationsCompanion(isRead: Value(true)));
+    final rows = await customUpdate(
+      'UPDATE conversations SET is_read = 1, '
+      'last_read_timestamp = MAX( '
+      'COALESCE(last_read_timestamp, 0), '
+      'COALESCE(last_message_timestamp, 0)) '
+      'WHERE id = ?${_ownerSqlClause(ownerPubkey)}',
+      variables: [Variable(id), ..._ownerSqlVariables(ownerPubkey)],
+      updates: {attachedDatabase.conversations},
+      updateKind: UpdateKind.update,
+    );
     return rows > 0;
+  }
+
+  /// Advances the read cursor for [id] to `max(existing, timestamp)` and, when
+  /// the cursor then covers the latest message, marks the conversation read.
+  ///
+  /// Used by cross-device reconcile (a restored remote read-marker) and the
+  /// reinstall last-sent floor. Monotonic — never lowers the cursor, never
+  /// flips a genuinely-unread conversation read (only marks read when the
+  /// cursor reaches the latest message). Returns `true` if a row matched.
+  Future<bool> applyReadCursor(
+    String id,
+    int timestamp, {
+    String? ownerPubkey,
+  }) async {
+    final rows = await customUpdate(
+      'UPDATE conversations SET '
+      'last_read_timestamp = MAX(COALESCE(last_read_timestamp, 0), ?), '
+      'is_read = CASE WHEN COALESCE(last_message_timestamp, 0) <= '
+      'MAX(COALESCE(last_read_timestamp, 0), ?) THEN 1 ELSE is_read END '
+      'WHERE id = ?${_ownerSqlClause(ownerPubkey)}',
+      variables: [
+        Variable(timestamp),
+        Variable(timestamp),
+        Variable(id),
+        ..._ownerSqlVariables(ownerPubkey),
+      ],
+      updates: {attachedDatabase.conversations},
+      updateKind: UpdateKind.update,
+    );
+    return rows > 0;
+  }
+
+  /// Owner filter as a raw-SQL fragment matching [_ownedOrLegacy]: empty when
+  /// [ownerPubkey] is null (all rows), else owner-or-legacy-NULL.
+  String _ownerSqlClause(String? ownerPubkey) => ownerPubkey == null
+      ? ''
+      : ' AND (owner_pubkey = ? OR owner_pubkey IS NULL)';
+
+  List<Variable<Object>> _ownerSqlVariables(String? ownerPubkey) =>
+      ownerPubkey == null ? const [] : [Variable(ownerPubkey)];
+
+  /// Returns the timestamp of [userPubkey]'s own most-recent (non-deleted)
+  /// sent message per conversation, keyed by conversation id.
+  ///
+  /// The source for the reinstall "last-sent floor" (#4977): a conversation
+  /// the user last replied in can have its read cursor restored from the
+  /// self-1059 wraps the history drain recovered, without any read-marker.
+  Future<Map<String, int>> lastSentTimestampsByConversation(
+    String userPubkey, {
+    String? ownerPubkey,
+  }) async {
+    final rows = await customSelect(
+      'SELECT conversation_id AS cid, MAX(created_at) AS ts '
+      'FROM direct_messages '
+      'WHERE sender_pubkey = ? AND is_deleted = 0'
+      '${_ownerSqlClause(ownerPubkey)} '
+      'GROUP BY conversation_id',
+      variables: [Variable(userPubkey), ..._ownerSqlVariables(ownerPubkey)],
+    ).get();
+    return {
+      for (final row in rows) row.read<String>('cid'): row.read<int>('ts'),
+    };
   }
 
   /// Get unread conversation count.
@@ -317,15 +385,29 @@ END
   }
 
   /// Mark multiple conversations as read in a single batch.
+  ///
+  /// Advances each conversation's read cursor
+  /// [Conversations.lastReadTimestamp] to its latest message timestamp, with
+  /// the same monotonic semantics as [markAsRead].
   Future<void> markMultipleAsRead(
     List<String> ids, {
     String? ownerPubkey,
   }) async {
     if (ids.isEmpty) return;
-    await (update(conversations)..where(
-          (t) => t.id.isIn(ids) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
-        ))
-        .write(const ConversationsCompanion(isRead: Value(true)));
+    final placeholders = List.filled(ids.length, '?').join(', ');
+    await customUpdate(
+      'UPDATE conversations SET is_read = 1, '
+      'last_read_timestamp = MAX( '
+      'COALESCE(last_read_timestamp, 0), '
+      'COALESCE(last_message_timestamp, 0)) '
+      'WHERE id IN ($placeholders)${_ownerSqlClause(ownerPubkey)}',
+      variables: [
+        ...ids.map(Variable.new),
+        ..._ownerSqlVariables(ownerPubkey),
+      ],
+      updates: {attachedDatabase.conversations},
+      updateKind: UpdateKind.update,
+    );
   }
 
   /// Delete a conversation by ID.

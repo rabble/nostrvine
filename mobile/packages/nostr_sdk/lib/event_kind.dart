@@ -128,6 +128,10 @@ class EventKind {
 
   static const int longFormLinked = 30024;
 
+  /// NIP-78 application-specific data (addressable). Used by diVine as the
+  /// self-encrypted DM read-state cursor marker (#4977).
+  static const int appSpecificData = 30078;
+
   static const int liveEvent = 30311;
 
   static const int communityDefinition = 34550;

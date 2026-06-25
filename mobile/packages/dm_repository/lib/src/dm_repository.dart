@@ -216,7 +216,9 @@ class DmRepository {
     DmReactionsRepository? reactionsRepository,
     bool publishDmRelayListEnabled = false,
     String? dmInboxRelayUrl,
+    Duration readMarkerDebounceDelay = _defaultReadMarkerDebounceDelay,
   }) : _nostrClient = nostrClient,
+       _readMarkerDebounceDelay = readMarkerDebounceDelay,
        _directMessagesDao = directMessagesDao,
        _conversationsDao = conversationsDao,
        _outgoingDmsDao = outgoingDmsDao,
@@ -320,6 +322,24 @@ class DmRepository {
   /// NOT cached — the memo is cleared once it resolves so the next caller
   /// re-queries, and RC3 never overwrites a real list on a transient failure.
   Future<({_OwnDmInboxState state, List<String>? relays})>? _ownInboxFuture;
+
+  /// Debounced cross-device DM read-state marker publish (#4977). Reading a
+  /// conversation advances its read cursor and schedules this; a burst of
+  /// reads (e.g. paging through many threads) coalesces into ONE self-encrypted
+  /// kind-30078 marker publish — bounding 1059 accumulation, metadata cadence,
+  /// and the relay's 60-events/min/pubkey rate limit. Cancelled on reset/stop.
+  Timer? _readMarkerDebounce;
+  final Duration _readMarkerDebounceDelay;
+  static const _defaultReadMarkerDebounceDelay = Duration(seconds: 3);
+  static const _readMarkerDTag = 'divine/dm-read/v1';
+  static const _readMarkerPayloadVersion = 1;
+
+  /// Read cursors parsed from a restored marker whose conversation row did not
+  /// exist yet — a marker processed before its messages during the reinstall
+  /// drain. Flushed once the drain completes (all conversations present), keyed
+  /// by conversation id → max read timestamp. Cleared on reset. Loss on a
+  /// kill mid-drain self-heals on the next read + marker publish.
+  final Map<String, int> _pendingReadCursors = {};
 
   /// A single long-lived decrypt isolate, alive only for the duration of a
   /// history drain. Spawned in [_runHistoryDrain] for local-key signers and
@@ -484,6 +504,11 @@ class DmRepository {
     }
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    // Drop a pending read-marker publish and any un-flushed read cursors so
+    // they never leak across an account switch. #4977.
+    _readMarkerDebounce?.cancel();
+    _readMarkerDebounce = null;
+    _pendingReadCursors.clear();
     unawaited(_giftWrapSubscription?.cancel());
     _giftWrapSubscription = null;
     // Drop the outgoing user's resolved own-inbox relays so the next user
@@ -1178,6 +1203,9 @@ class DmRepository {
         final nip04Recovered = await _recoverOutgoingNip04(pubkey);
         if (nip04Recovered) {
           await syncState.markHistoryDrainComplete(pubkey);
+          // Restore read state now that the full conversation set is present:
+          // last-sent floor + any read markers stashed during the drain. #4977.
+          await _restoreReadStateAfterDrain(pubkey);
           Log.info(
             'DM history drain complete for $pubkey: '
             'pages=$pagesRun, eventsFetched=$totalEvents',
@@ -1252,6 +1280,11 @@ class DmRepository {
     _resetGeneration++;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    // Cancel a pending read-marker publish; the cursor is persisted, so it
+    // republishes on the next read or session. Keep _pendingReadCursors — the
+    // same user may resume listening. #4977.
+    _readMarkerDebounce?.cancel();
+    _readMarkerDebounce = null;
     _eventLock = null;
     await _giftWrapSubscription?.cancel();
     _giftWrapSubscription = null;
@@ -1469,6 +1502,17 @@ class DmRepository {
         if (outcome == DmReactionWrapOutcome.processed) {
           await _recordProcessedWrap(giftWrapEvent.id);
         }
+        return;
+      }
+
+      // Cross-device DM read-state marker (#4977). Route to the reconciler
+      // before the DM-only kinds gate so it is never rendered as a message,
+      // then record it terminally so it is not re-decrypted every launch. The
+      // reconcile is idempotent (a forward-only max cursor) and the post-drain
+      // restore re-applies any cursor whose conversation had not synced yet.
+      if (rumor.kind == EventKind.appSpecificData) {
+        await _reconcileReadMarker(rumor);
+        await _recordProcessedWrap(giftWrapEvent.id);
         return;
       }
 
@@ -3722,21 +3766,194 @@ class DmRepository {
   }
 
   /// Mark a conversation as read.
-  Future<void> markConversationAsRead(String conversationId) {
-    return _conversationsDao.markAsRead(
+  ///
+  /// Advances the conversation's read cursor (see
+  /// [ConversationsDao.markAsRead]) and schedules a debounced cross-device
+  /// read-state marker publish (#4977).
+  Future<void> markConversationAsRead(String conversationId) async {
+    await _conversationsDao.markAsRead(
       conversationId,
       ownerPubkey: _ownerPubkey,
     );
+    _scheduleReadMarkerPublish();
   }
 
   /// Mark multiple conversations as read in a single batch.
   ///
-  /// No-op when [conversationIds] is empty.
-  Future<void> markConversationsAsRead(List<String> conversationIds) {
-    return _conversationsDao.markMultipleAsRead(
+  /// No-op when [conversationIds] is empty. Advances each cursor and schedules
+  /// a single debounced read-state marker publish (#4977).
+  Future<void> markConversationsAsRead(List<String> conversationIds) async {
+    if (conversationIds.isEmpty) return;
+    await _conversationsDao.markMultipleAsRead(
       conversationIds,
       ownerPubkey: _ownerPubkey,
     );
+    _scheduleReadMarkerPublish();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cross-device read-state sync (#4977)
+  // ---------------------------------------------------------------------------
+
+  /// Schedule a debounced publish of the read-state marker so a burst of reads
+  /// coalesces into one self-encrypted kind-30078 marker.
+  void _scheduleReadMarkerPublish() {
+    if (!isInitialized) return;
+    _readMarkerDebounce?.cancel();
+    _readMarkerDebounce = Timer(
+      _readMarkerDebounceDelay,
+      () => unawaited(_publishReadMarker()),
+    );
+  }
+
+  /// Build the current per-conversation read-cursor map and publish it as a
+  /// self-addressed, NIP-44-sealed kind-30078 marker (#4977 v1).
+  ///
+  /// Best-effort: a failed publish just means read state syncs on the next
+  /// read. Published to the user's own DM inbox relays (or the default pool) —
+  /// the same set the history drain reads — so other devices and a reinstall
+  /// recover it.
+  Future<void> _publishReadMarker() async {
+    final service = _messageService;
+    if (service == null || !isInitialized) return;
+    final gen = _resetGeneration;
+    try {
+      final conversations = await _conversationsDao.getAllConversations(
+        ownerPubkey: _ownerPubkey,
+      );
+      if (_disposed || _resetGeneration != gen) return;
+      final readMap = <String, int>{};
+      for (final convo in conversations) {
+        final cursor = convo.lastReadTimestamp;
+        if (cursor == null || cursor <= 0) continue;
+        final tupleKey = _participantTupleKey(convo.participantPubkeys);
+        if (tupleKey == null) continue;
+        final existing = readMap[tupleKey];
+        if (existing == null || cursor > existing) readMap[tupleKey] = cursor;
+      }
+      if (readMap.isEmpty) return;
+      final content = jsonEncode(<String, dynamic>{
+        'v': _readMarkerPayloadVersion,
+        'read': readMap,
+      });
+      final ownInbox = await _ownInboxTargetRelays();
+      if (_disposed || _resetGeneration != gen) return;
+      await service.publishSelfApplicationMarker(
+        content: content,
+        tags: const [
+          ['d', _readMarkerDTag],
+        ],
+        targetRelays: ownInbox,
+      );
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'DM read-marker publish failed (non-fatal): $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// The canonical cross-client wire key for a conversation: its participant
+  /// pubkeys, sorted, comma-joined (matching divine-web's form). Each client
+  /// maps this tuple to its own internal conversation id. Returns null when
+  /// [participantPubkeysJson] can't be parsed.
+  String? _participantTupleKey(String participantPubkeysJson) {
+    try {
+      final list = (jsonDecode(participantPubkeysJson) as List<dynamic>)
+          .cast<String>();
+      if (list.isEmpty) return null;
+      final sorted = List<String>.from(list)..sort();
+      return sorted.join(',');
+    } on Object {
+      return null;
+    }
+  }
+
+  /// Reconcile a restored kind-30078 read-state marker rumor (#4977): advance
+  /// each conversation's read cursor to the marker's timestamp (forward-only
+  /// max). A conversation not yet ingested (marker processed before its
+  /// messages during the drain) is stashed in [_pendingReadCursors] and
+  /// applied when the drain completes.
+  Future<void> _reconcileReadMarker(Event rumor) async {
+    if (!_hasReadMarkerDTag(rumor)) return;
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(rumor.content);
+    } on Object {
+      return;
+    }
+    if (decoded is! Map) return;
+    final read = decoded['read'];
+    if (read is! Map) return;
+    for (final entry in read.entries) {
+      final tupleKey = entry.key;
+      final ts = entry.value;
+      if (tupleKey is! String || ts is! int) continue;
+      final pubkeys = tupleKey.split(',');
+      if (pubkeys.length < 2) continue;
+      final conversationId = computeConversationId(pubkeys);
+      final applied = await _conversationsDao.applyReadCursor(
+        conversationId,
+        ts,
+        ownerPubkey: _ownerPubkey,
+      );
+      if (!applied) {
+        final existing = _pendingReadCursors[conversationId];
+        if (existing == null || ts > existing) {
+          _pendingReadCursors[conversationId] = ts;
+        }
+      }
+    }
+  }
+
+  bool _hasReadMarkerDTag(Event rumor) {
+    for (final tag in rumor.tags) {
+      if (tag.length >= 2 && tag[0] == 'd') return tag[1] == _readMarkerDTag;
+    }
+    return false;
+  }
+
+  /// After the history drain completes, restore read state (#4977):
+  /// (1) the last-sent floor — for each conversation the user replied in,
+  /// advance the cursor to their own most-recent sent message; and
+  /// (2) flush [_pendingReadCursors] — markers whose conversations had not yet
+  /// been ingested when the marker was first processed.
+  Future<void> _restoreReadStateAfterDrain(String pubkey) async {
+    try {
+      final floors = await _conversationsDao.lastSentTimestampsByConversation(
+        pubkey,
+        ownerPubkey: pubkey,
+      );
+      for (final entry in floors.entries) {
+        if (_disposed || _userPubkey != pubkey) return;
+        await _conversationsDao.applyReadCursor(
+          entry.key,
+          entry.value,
+          ownerPubkey: pubkey,
+        );
+      }
+      if (_pendingReadCursors.isNotEmpty) {
+        final pending = Map<String, int>.from(_pendingReadCursors);
+        _pendingReadCursors.clear();
+        for (final entry in pending.entries) {
+          if (_disposed || _userPubkey != pubkey) return;
+          await _conversationsDao.applyReadCursor(
+            entry.key,
+            entry.value,
+            ownerPubkey: pubkey,
+          );
+        }
+      }
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'DM read-state restore after drain failed: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   /// Remove a conversation and all its messages atomically.

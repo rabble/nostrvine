@@ -411,6 +411,22 @@ class AppDatabase extends _$AppDatabase {
     // Add dm_protocol column for NIP-04/NIP-17 protocol tracking
     await _addColumnIfMissing('conversations', 'dm_protocol', 'TEXT');
 
+    // Add last_read_timestamp read cursor for cross-device read-state sync
+    // (#4977). Backfill already-read rows once so the upgrade doesn't surface
+    // a one-time unread bump. The WHERE clause makes it self-idempotent: once
+    // a row has a non-null cursor (set here or by markAsRead) it is skipped on
+    // subsequent launches.
+    await _addColumnIfMissing(
+      'conversations',
+      'last_read_timestamp',
+      'INTEGER',
+    );
+    await customStatement(
+      'UPDATE conversations SET last_read_timestamp = last_message_timestamp '
+      'WHERE last_read_timestamp IS NULL AND is_read = 1 '
+      'AND last_message_timestamp IS NOT NULL',
+    );
+
     // Add is_deleted column for NIP-09 kind 5 soft-delete support
     await _addColumnIfMissing(
       'direct_messages',

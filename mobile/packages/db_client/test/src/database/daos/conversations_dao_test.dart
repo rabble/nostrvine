@@ -313,6 +313,11 @@ void main() {
               .map((column) => column.$name)
               .toSet();
           const immutableColumns = {'id', 'created_at'};
+          // last_read_timestamp is intentionally NEVER written by the upsert
+          // conflict path: the read cursor is owned exclusively by
+          // markAsRead / applyReadCursor so re-ingesting messages (incl. the
+          // reinstall drain) cannot move read state. (#4977)
+          const cursorOwnedColumns = {'last_read_timestamp'};
           const handledColumns = {
             'participant_pubkeys',
             'is_group',
@@ -328,7 +333,11 @@ void main() {
 
           expect(
             handledColumns,
-            unorderedEquals(schemaColumns.difference(immutableColumns)),
+            unorderedEquals(
+              schemaColumns
+                  .difference(immutableColumns)
+                  .difference(cursorOwnedColumns),
+            ),
           );
         },
       );
@@ -541,6 +550,166 @@ void main() {
 
         final conv2 = await dao.getConversation('conv_2');
         expect(conv2!.isRead, isFalse);
+      });
+    });
+
+    group('read cursor (#4977)', () {
+      test('markAsRead advances the cursor to the latest message', () async {
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["a","b"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageTimestamp: 1700000200,
+          isRead: false,
+        );
+
+        await dao.markAsRead('conv_1');
+
+        final result = await dao.getConversation('conv_1');
+        expect(result!.isRead, isTrue);
+        expect(result.lastReadTimestamp, 1700000200);
+      });
+
+      test('markAsRead never lowers the cursor (monotonic)', () async {
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["a","b"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageTimestamp: 1700000500,
+          isRead: false,
+        );
+        await dao.markAsRead('conv_1');
+        // A later upsert leaves the cursor untouched; a re-read whose latest
+        // message is OLDER must not lower it.
+        await dao.applyReadCursor('conv_1', 1700000100);
+
+        final result = await dao.getConversation('conv_1');
+        expect(result!.lastReadTimestamp, 1700000500);
+      });
+
+      test(
+        'applyReadCursor advances the cursor and marks read when it covers '
+        'the latest message',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["a","b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageTimestamp: 1700000300,
+            lastMessageSenderPubkey: 'b',
+            isRead: false,
+          );
+
+          // A restored remote marker / last-sent floor at-or-after the latest
+          // message marks the conversation read.
+          final updated = await dao.applyReadCursor('conv_1', 1700000300);
+          expect(updated, isTrue);
+
+          final result = await dao.getConversation('conv_1');
+          expect(result!.isRead, isTrue);
+          expect(result.lastReadTimestamp, 1700000300);
+        },
+      );
+
+      test(
+        'applyReadCursor below the latest message advances the cursor but '
+        'leaves a genuinely-unread conversation unread',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["a","b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageTimestamp: 1700000300,
+            lastMessageSenderPubkey: 'b',
+            isRead: false,
+          );
+
+          final updated = await dao.applyReadCursor('conv_1', 1700000100);
+          expect(updated, isTrue);
+
+          final result = await dao.getConversation('conv_1');
+          expect(result!.isRead, isFalse);
+          expect(result.lastReadTimestamp, 1700000100);
+        },
+      );
+
+      test('applyReadCursor never lowers the cursor', () async {
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["a","b"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageTimestamp: 1700000300,
+          isRead: false,
+        );
+        await dao.applyReadCursor('conv_1', 1700000250);
+        await dao.applyReadCursor('conv_1', 1700000150);
+
+        final result = await dao.getConversation('conv_1');
+        expect(result!.lastReadTimestamp, 1700000250);
+      });
+
+      test('applyReadCursor returns false for a non-existent row', () async {
+        final updated = await dao.applyReadCursor('nope', 1700000000);
+        expect(updated, isFalse);
+      });
+
+      test('markMultipleAsRead advances each cursor', () async {
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["a","b"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageTimestamp: 1700000200,
+          isRead: false,
+        );
+        await dao.upsertConversation(
+          id: 'conv_2',
+          participantPubkeys: '["a","c"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageTimestamp: 1700000400,
+          isRead: false,
+        );
+
+        await dao.markMultipleAsRead(['conv_1', 'conv_2']);
+
+        final c1 = await dao.getConversation('conv_1');
+        final c2 = await dao.getConversation('conv_2');
+        expect(c1!.isRead, isTrue);
+        expect(c1.lastReadTimestamp, 1700000200);
+        expect(c2!.isRead, isTrue);
+        expect(c2.lastReadTimestamp, 1700000400);
+      });
+
+      test('ingest upsert never writes the cursor', () async {
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["a","b"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageTimestamp: 1700000200,
+          lastMessageSenderPubkey: 'b',
+          isRead: false,
+        );
+        // Re-ingest a newer received message (the normal ingest path).
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["a","b"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageContent: 'newer',
+          lastMessageTimestamp: 1700000600,
+          lastMessageSenderPubkey: 'b',
+          isRead: false,
+        );
+
+        final result = await dao.getConversation('conv_1');
+        expect(result!.lastReadTimestamp, isNull);
       });
     });
 

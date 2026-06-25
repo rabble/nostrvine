@@ -738,6 +738,67 @@ void main() {
       );
 
       test(
+        'adds last_read_timestamp and backfills already-read rows on upgrade '
+        '(#4977)',
+        () async {
+          // Simulate a pre-#4977 conversations table with no cursor column.
+          await database.customStatement('DROP TABLE conversations');
+          await database.customStatement('''
+            CREATE TABLE conversations (
+              id TEXT NOT NULL PRIMARY KEY,
+              participant_pubkeys TEXT NOT NULL,
+              is_group INTEGER NOT NULL DEFAULT 0,
+              last_message_content TEXT,
+              last_message_timestamp INTEGER,
+              last_message_sender_pubkey TEXT,
+              subject TEXT,
+              is_read INTEGER NOT NULL DEFAULT 1,
+              current_user_has_sent INTEGER NOT NULL DEFAULT 0,
+              created_at INTEGER NOT NULL,
+              owner_pubkey TEXT,
+              dm_protocol TEXT
+            )
+          ''');
+          await database.customStatement(
+            'INSERT INTO conversations '
+            '(id, participant_pubkeys, created_at, last_message_timestamp, '
+            'is_read) VALUES '
+            "('read_conv', '[\"a\",\"b\"]', 1, 200, 1), "
+            "('unread_conv', '[\"a\",\"c\"]', 1, 300, 0)",
+          );
+
+          // Reopen → beforeOpen adds the column and runs the one-time backfill.
+          await database.close();
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+          final rows = await database
+              .customSelect(
+                'SELECT id, last_read_timestamp FROM conversations '
+                'ORDER BY id',
+              )
+              .get();
+          final byId = {
+            for (final r in rows)
+              r.read<String>('id'): r.readNullable<int>('last_read_timestamp'),
+          };
+          // Already-read row backfilled to its latest message; unread NULL.
+          expect(byId['read_conv'], 200);
+          expect(byId['unread_conv'], isNull);
+
+          // Idempotent: a second open does not change the backfilled values.
+          await database.close();
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+          final again = await database
+              .customSelect(
+                'SELECT last_read_timestamp FROM conversations '
+                "WHERE id = 'read_conv'",
+              )
+              .getSingle();
+          expect(again.read<int>('last_read_timestamp'), 200);
+        },
+      );
+
+      test(
         'schema parity — dm_message_reactions fresh-install matches runtime '
         'CREATE-IF-NOT-EXISTS path',
         () async {

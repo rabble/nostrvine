@@ -934,6 +934,15 @@ class Conversations extends Table {
   BoolColumn get isRead =>
       boolean().withDefault(const Constant(true)).named('is_read')();
 
+  /// Per-conversation read cursor (unix seconds) for cross-device read-state
+  /// sync (#4977). Monotonic high-water mark of the newest message the user
+  /// has read; published encrypted-to-self over Nostr and restored on
+  /// reinstall. NULL until the conversation is first read. Ingest never writes
+  /// it — only `ConversationsDao.markAsRead` / `applyReadCursor` advance it,
+  /// and only ever forward (`max`).
+  IntColumn get lastReadTimestamp =>
+      integer().nullable().named('last_read_timestamp')();
+
   /// Whether the current user has sent a message in this conversation.
   BoolColumn get currentUserHasSent => boolean()
       .withDefault(const Constant(false))
