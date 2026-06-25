@@ -675,6 +675,41 @@ void main() {
           expect(result!.isRead, isFalse);
         },
       );
+
+      test(
+        'an older sent wrap during drain does not mark a newer unread '
+        'received conversation read',
+        () async {
+          // Newest message is received and still unread.
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["a","b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'Newer received',
+            lastMessageTimestamp: 1700000200,
+            lastMessageSenderPubkey: 'b',
+            isRead: false,
+          );
+
+          // The reinstall drain re-ingests an OLDER message we sent
+          // ourselves: ingest passes isRead: isSentByMe == true (the default
+          // here), but the timestamp is older, so the strict gate must
+          // preserve unread.
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["a","b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'Older sent',
+            lastMessageTimestamp: 1700000100,
+            lastMessageSenderPubkey: 'a',
+          );
+
+          final result = await dao.getConversation('conv_1');
+          expect(result!.isRead, isFalse);
+        },
+      );
     });
 
     group('getUnreadCount', () {

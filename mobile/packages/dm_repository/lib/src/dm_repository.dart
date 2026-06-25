@@ -1856,6 +1856,50 @@ class DmRepository {
     }
   }
 
+  /// Upserts a conversation for a LIVE outgoing send and marks it read in
+  /// the same transaction as the caller. Sending a message implies the
+  /// thread is read.
+  ///
+  /// MUST be called from within a [ConversationsDao.runInTransaction] block
+  /// so the upsert and the read flip stay atomic with the message insert.
+  ///
+  /// Scoped to live sends ONLY. The history-drain / ingest paths
+  /// ([_persistDecryptedGiftWrap], NIP-04 ingest) MUST NOT call this — they
+  /// pass `isRead: isSentByMe` to [ConversationsDao.upsertConversation]
+  /// directly, so re-ingesting our own historical sent wraps during a
+  /// reinstall drain does not mark threads read.
+  ///
+  /// Read state is flipped via an explicit [ConversationsDao.markAsRead]
+  /// rather than the upsert's `isRead` argument: the `isRead` conflict gate
+  /// only writes when the incoming event is strictly newer, so a send that
+  /// lands in the same epoch-second as the last received message (NIP-17
+  /// timestamps are seconds) would otherwise leave the thread unread.
+  Future<void> _upsertSentConversationAndMarkRead({
+    required String id,
+    required String participantPubkeys,
+    required bool isGroup,
+    required int createdAt,
+    required int lastMessageTimestamp,
+    required String lastMessageSenderPubkey,
+    String? lastMessageContent,
+    String? ownerPubkey,
+    String? dmProtocol,
+  }) async {
+    await _conversationsDao.upsertConversation(
+      id: id,
+      participantPubkeys: participantPubkeys,
+      isGroup: isGroup,
+      createdAt: createdAt,
+      lastMessageContent: lastMessageContent,
+      lastMessageTimestamp: lastMessageTimestamp,
+      lastMessageSenderPubkey: lastMessageSenderPubkey,
+      currentUserHasSent: true,
+      ownerPubkey: ownerPubkey,
+      dmProtocol: dmProtocol,
+    );
+    await _conversationsDao.markAsRead(id, ownerPubkey: ownerPubkey);
+  }
+
   /// Send a text message to a 1:1 conversation.
   ///
   /// Throws [StateError] if the repository has not been initialized.
@@ -1974,7 +2018,7 @@ class DmRepository {
           // send-first conversation stayed `null` forever and every
           // subsequent send fired the NIP-04 fallback (#3663).
           final nextProtocol = protocol ?? 'nip17';
-          await _conversationsDao.upsertConversation(
+          await _upsertSentConversationAndMarkRead(
             id: conversationId,
             participantPubkeys: jsonEncode(participants),
             isGroup: false,
@@ -1982,7 +2026,6 @@ class DmRepository {
             lastMessageContent: content,
             lastMessageTimestamp: now,
             lastMessageSenderPubkey: _userPubkey,
-            currentUserHasSent: true,
             ownerPubkey: _userPubkey,
             dmProtocol: nextProtocol,
           );
@@ -2479,7 +2522,7 @@ class DmRepository {
           // message ourselves, mark the conversation NIP-17 so the
           // legacy NIP-04 fallback path doesn't fire on future sends.
           final nextProtocol = existing?.dmProtocol ?? 'nip17';
-          await _conversationsDao.upsertConversation(
+          await _upsertSentConversationAndMarkRead(
             id: row.conversationId,
             participantPubkeys: jsonEncode(participants),
             isGroup: false,
@@ -2487,7 +2530,6 @@ class DmRepository {
             lastMessageContent: row.content,
             lastMessageTimestamp: now,
             lastMessageSenderPubkey: _userPubkey,
-            currentUserHasSent: true,
             ownerPubkey: _userPubkey,
             dmProtocol: nextProtocol,
           );
@@ -2879,7 +2921,7 @@ class DmRepository {
           conversationId,
           ownerPubkey: _userPubkey,
         );
-        await _conversationsDao.upsertConversation(
+        await _upsertSentConversationAndMarkRead(
           id: conversationId,
           participantPubkeys: jsonEncode(participants),
           isGroup: true,
@@ -2887,7 +2929,6 @@ class DmRepository {
           lastMessageContent: content,
           lastMessageTimestamp: now,
           lastMessageSenderPubkey: _userPubkey,
-          currentUserHasSent: true,
           ownerPubkey: _userPubkey,
           dmProtocol: existingGroup?.dmProtocol,
         );
@@ -3158,7 +3199,7 @@ class DmRepository {
           conversationId,
           ownerPubkey: _userPubkey,
         );
-        await _conversationsDao.upsertConversation(
+        await _upsertSentConversationAndMarkRead(
           id: conversationId,
           participantPubkeys: jsonEncode(participants),
           isGroup: false,
@@ -3166,7 +3207,6 @@ class DmRepository {
           lastMessageContent: _filePreviewText(fileMetadata.fileType),
           lastMessageTimestamp: now,
           lastMessageSenderPubkey: _userPubkey,
-          currentUserHasSent: true,
           ownerPubkey: _userPubkey,
           dmProtocol: existingFile?.dmProtocol,
         );

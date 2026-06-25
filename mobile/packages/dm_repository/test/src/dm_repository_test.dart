@@ -423,6 +423,16 @@ void main() {
         await callback();
       });
 
+      // Global stub for markAsRead — every live-send path now marks the
+      // conversation read in the same transaction (#5515: sending implies
+      // read). Default to a successful flip so send tests don't restub it.
+      when(
+        () => mockConversationsDao.markAsRead(
+          any(),
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((_) async => true);
+
       // Default stub for buildRumor — production sendMessage now calls
       // buildRumor first to enqueue a queue row keyed by the rumor's id
       // before publishing. Returning a real Event so .id is computed
@@ -887,6 +897,17 @@ void main() {
             dmProtocol: any(named: 'dmProtocol'),
           ),
         ).called(1);
+
+        // Sending implies the thread is read (#5515): the send marks the
+        // conversation read explicitly so the strict isRead gate can't leave
+        // it unread when the send shares an epoch-second with the last
+        // received message.
+        verify(
+          () => mockConversationsDao.markAsRead(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
       });
 
       test('does not persist on send failure', () async {
@@ -927,6 +948,13 @@ void main() {
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
             tagsJson: any(named: 'tagsJson'),
+          ),
+        );
+        // Nothing persisted → nothing marked read.
+        verifyNever(
+          () => mockConversationsDao.markAsRead(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
           ),
         );
       });
@@ -1373,6 +1401,16 @@ void main() {
             dmProtocol: any(named: 'dmProtocol'),
           ),
         ).called(1);
+
+        // Ingesting a received message must NOT mark the conversation read
+        // (#5515): mark-read-on-send is scoped to live sends only, so
+        // re-ingesting wraps during the reinstall drain can't clobber unread.
+        verifyNever(
+          () => mockConversationsDao.markAsRead(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
 
         await controller.close();
         await repository.stopListening();
@@ -5303,6 +5341,14 @@ void main() {
             dmProtocol: any(named: 'dmProtocol'),
           ),
         ).called(1);
+
+        // Sending a file marks the conversation read (#5515).
+        verify(
+          () => mockConversationsDao.markAsRead(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
       });
 
       test('does not persist on send failure', () async {
@@ -9214,6 +9260,14 @@ void main() {
               tagsJson: any(named: 'tagsJson'),
             ),
           ).called(1);
+
+          // Sending a group message marks the conversation read (#5515).
+          verify(
+            () => mockConversationsDao.markAsRead(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
         },
       );
 
@@ -11927,6 +11981,15 @@ void main() {
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: _validPubkeyA,
               tagsJson: any(named: 'tagsJson'),
+            ),
+          ).called(1);
+
+          // Recovering a full queued send re-persists the message and
+          // conversation, so it marks the conversation read (#5515).
+          verify(
+            () => mockConversationsDao.markAsRead(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).called(1);
         },
