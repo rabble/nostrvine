@@ -7,6 +7,10 @@ import io.flutter.plugin.common.MethodChannel
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -255,5 +259,95 @@ internal class VideoStabilizationTest {
                 intArrayOf(off, on, preview),
             ),
         )
+    }
+}
+
+@RunWith(RobolectricTestRunner::class)
+internal class SurfaceProvisionTest {
+    @Test
+    fun existingSurfaceValid_reusesRegardlessOfTexture() {
+        assertEquals(
+            SurfaceProvision.REUSE,
+            CameraController.decideSurfaceProvision(
+                hasTexture = true,
+                existingSurfaceValid = true,
+            ),
+        )
+        assertEquals(
+            SurfaceProvision.REUSE,
+            CameraController.decideSurfaceProvision(
+                hasTexture = false,
+                existingSurfaceValid = true,
+            ),
+        )
+    }
+
+    @Test
+    fun noExistingSurfaceButTexturePresent_createsNew() {
+        assertEquals(
+            SurfaceProvision.CREATE,
+            CameraController.decideSurfaceProvision(
+                hasTexture = true,
+                existingSurfaceValid = false,
+            ),
+        )
+    }
+
+    @Test
+    fun noTexture_declinesInsteadOfBuildingFromNull() {
+        // Regression for the "surfaceTexture must not be null" crash: when the
+        // Flutter texture was released before the surface request lands, the
+        // request must be declined, never turned into Surface(null).
+        assertEquals(
+            SurfaceProvision.DECLINE,
+            CameraController.decideSurfaceProvision(
+                hasTexture = false,
+                existingSurfaceValid = false,
+            ),
+        )
+    }
+}
+
+@RunWith(RobolectricTestRunner::class)
+internal class RejectionTolerantExecutorServiceTest {
+    @Test
+    fun execute_beforeShutdown_runsTaskOnDelegate() {
+        val executor =
+            RejectionTolerantExecutorService(Executors.newSingleThreadExecutor())
+        val latch = CountDownLatch(1)
+
+        executor.execute { latch.countDown() }
+
+        assertTrue(latch.await(2, TimeUnit.SECONDS))
+        executor.shutdown()
+    }
+
+    @Test
+    fun execute_afterShutdown_dropsTaskWithoutThrowing() {
+        // Regression for the encoder-teardown RejectedExecutionException: a
+        // MediaCodec callback that posts after release()'s shutdown must be
+        // dropped, not crash on the codec thread.
+        val executor =
+            RejectionTolerantExecutorService(Executors.newSingleThreadExecutor())
+        executor.shutdown()
+        assertTrue(executor.isShutdown)
+
+        val ran = AtomicBoolean(false)
+        executor.execute { ran.set(true) }
+
+        assertFalse(ran.get())
+    }
+
+    @Test
+    fun lifecycleMethods_delegateToWrappedExecutor() {
+        val executor =
+            RejectionTolerantExecutorService(Executors.newSingleThreadExecutor())
+        assertFalse(executor.isShutdown)
+
+        executor.shutdown()
+
+        assertTrue(executor.isShutdown)
+        assertTrue(executor.awaitTermination(2, TimeUnit.SECONDS))
+        assertTrue(executor.isTerminated)
     }
 }

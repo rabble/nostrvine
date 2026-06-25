@@ -40,6 +40,9 @@ import java.util.concurrent.Executors
 private const val TAG = "DivineCameraController"
 private const val LENS_SWITCH_HYSTERESIS = 0.03f
 
+/** How a preview [Surface] should be supplied to a CameraX surface request. */
+internal enum class SurfaceProvision { REUSE, CREATE, DECLINE }
+
 /**
  * Controller for CameraX-based camera operations.
  * Handles camera initialization, preview, video recording, and camera controls.
@@ -64,7 +67,8 @@ class CameraController(
     private var flutterSurfaceTexture: SurfaceTexture? = null
     private var previewSurface: Surface? = null
 
-    private var cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+    private var cameraExecutor: ExecutorService =
+        RejectionTolerantExecutorService(Executors.newSingleThreadExecutor())
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private var currentLens: Int = CameraSelector.LENS_FACING_BACK
@@ -218,6 +222,25 @@ class CameraController(
             STABILIZATION_LOW_LATENCY,
             STABILIZATION_AUTO,
         )
+
+        /**
+         * Decides how a preview surface request should be fulfilled.
+         *
+         * The Flutter [SurfaceTexture] can be torn down (released and the
+         * field nulled by `release()`) between registering a surface provider
+         * and CameraX actually dispatching the request. Reading it then
+         * passing it straight to `Surface(...)` crashes with
+         * `surfaceTexture must not be null`, so callers must [DECLINE] when no
+         * texture is available rather than build a surface from null.
+         */
+        internal fun decideSurfaceProvision(
+            hasTexture: Boolean,
+            existingSurfaceValid: Boolean,
+        ): SurfaceProvision = when {
+            existingSurfaceValid -> SurfaceProvision.REUSE
+            hasTexture -> SurfaceProvision.CREATE
+            else -> SurfaceProvision.DECLINE
+        }
 
         /** Returns the next lower quality, or null if already at minimum. */
         fun lowerQuality(current: Quality): Quality? = when (current) {
@@ -774,6 +797,28 @@ class CameraController(
     }
 
     /**
+     * Returns a preview [Surface] to hand to a CameraX surface request,
+     * reusing the existing one when still valid and otherwise creating a new
+     * one from [surfaceTexture]. Returns null when no surface can be supplied
+     * (the Flutter texture was released), so the caller declines the request
+     * via `willNotProvideSurface()` instead of constructing `Surface(null)`.
+     */
+    private fun resolvePreviewSurface(surfaceTexture: SurfaceTexture?): Surface? {
+        val existing = previewSurface
+        return when (
+            decideSurfaceProvision(
+                hasTexture = surfaceTexture != null,
+                existingSurfaceValid = existing != null && existing.isValid,
+            )
+        ) {
+            SurfaceProvision.REUSE -> existing
+            SurfaceProvision.CREATE ->
+                surfaceTexture?.let { Surface(it).also { s -> previewSurface = s } }
+            SurfaceProvision.DECLINE -> null
+        }
+    }
+
+    /**
      * Starts the camera with preview and video capture use cases.
      */
     private fun startCamera(callback: (Map<String, Any?>?, String?) -> Unit) {
@@ -849,16 +894,17 @@ class CameraController(
                 aspectRatio = videoHeight.toFloat() / videoWidth.toFloat()
                 DivineCameraLog.d(TAG, "Aspect ratio set to: $aspectRatio (portrait), video dimensions: ${videoWidth}x${videoHeight}")
 
-                // Set the buffer size to match camera resolution
-                flutterSurfaceTexture?.setDefaultBufferSize(videoWidth, videoHeight)
+                // Capture the texture locally: the request fires asynchronously
+                // and release() may have nulled the field in the meantime.
+                val surfaceTexture = flutterSurfaceTexture
+                surfaceTexture?.setDefaultBufferSize(videoWidth, videoHeight)
 
-                // Create surface from Flutter's SurfaceTexture
-                previewSurface = Surface(flutterSurfaceTexture)
+                val surface = resolvePreviewSurface(surfaceTexture)
 
                 // Provide the surface
-                if (previewSurface != null && previewSurface!!.isValid) {
+                if (surface != null && surface.isValid) {
                     request.provideSurface(
-                        previewSurface!!,
+                        surface,
                         ContextCompat.getMainExecutor(context)
                     ) { result ->
                         DivineCameraLog.d(TAG, "Surface result code: ${result.resultCode}")
@@ -873,7 +919,8 @@ class CameraController(
                         callback(state, null)
                     }
                 } else {
-                    DivineCameraLog.e(TAG, "Preview surface is null or invalid!")
+                    DivineCameraLog.w(TAG, "Preview texture unavailable; declining surface request")
+                    request.willNotProvideSurface()
                     if (!callbackCalled) {
                         callbackCalled = true
                         callback(null, "Failed to create preview surface")
@@ -1006,28 +1053,22 @@ class CameraController(
                 // Update aspect ratio for portrait mode (height/width gives 9:16 ratio)
                 aspectRatio = videoHeight.toFloat() / videoWidth.toFloat()
 
-                // Update buffer size for new camera resolution
-                flutterSurfaceTexture?.setDefaultBufferSize(videoWidth, videoHeight)
+                // Capture the texture locally: release() may have nulled the
+                // field between registering the provider and this request.
+                val surfaceTexture = flutterSurfaceTexture
+                surfaceTexture?.setDefaultBufferSize(videoWidth, videoHeight)
 
-                // Provide the existing surface
-                if (previewSurface != null && previewSurface!!.isValid) {
+                val surface = resolvePreviewSurface(surfaceTexture)
+                if (surface != null && surface.isValid) {
                     request.provideSurface(
-                        previewSurface!!,
+                        surface,
                         ContextCompat.getMainExecutor(context)
                     ) { result ->
                         DivineCameraLog.d(TAG, "Switch: Surface result code: ${result.resultCode}")
                     }
                 } else {
-                    // Surface was released, create new one
-                    previewSurface = Surface(flutterSurfaceTexture)
-                    if (previewSurface != null && previewSurface!!.isValid) {
-                        request.provideSurface(
-                            previewSurface!!,
-                            ContextCompat.getMainExecutor(context)
-                        ) { result ->
-                            DivineCameraLog.d(TAG, "Switch: New surface result code: ${result.resultCode}")
-                        }
-                    }
+                    DivineCameraLog.w(TAG, "Switch: preview texture unavailable; declining surface request")
+                    request.willNotProvideSurface()
                 }
             }
 
@@ -1572,18 +1613,11 @@ class CameraController(
                 // Post surface provision to let setZoomRatio settle
                 // in the camera pipeline before any frames flow.
                 mainHandler.postDelayed({
-                    val surface = if (
-                        previewSurface != null &&
-                        previewSurface!!.isValid
-                    ) {
-                        previewSurface!!
-                    } else {
-                        previewSurface =
-                            Surface(flutterSurfaceTexture)
-                        previewSurface!!
-                    }
-
-                    if (surface.isValid) {
+                    // Re-read the texture: release() can null it during the
+                    // delay, which would crash Surface(null).
+                    val surface =
+                        resolvePreviewSurface(flutterSurfaceTexture)
+                    if (surface != null && surface.isValid) {
                         request.provideSurface(
                             surface,
                             ContextCompat.getMainExecutor(
@@ -1596,13 +1630,20 @@ class CameraController(
                                     "${result.resultCode}"
                             )
                         }
+                        DivineCameraLog.d(
+                            TAG,
+                            "AutoSwitch surface provided " +
+                                "(delayed)"
+                        )
+                    } else {
+                        DivineCameraLog.w(
+                            TAG,
+                            "AutoSwitch: preview texture " +
+                                "unavailable; declining request"
+                        )
+                        request.willNotProvideSurface()
                     }
                     isAutoSwitching = false
-                    DivineCameraLog.d(
-                        TAG,
-                        "AutoSwitch surface provided " +
-                            "(delayed)"
-                    )
                 }, 100)
             }
 
@@ -2348,8 +2389,9 @@ class CameraController(
             textureEntry = null
             flutterSurfaceTexture = null
 
-            // Shutdown executor after a delay to let CameraX finish pending tasks
-            // This prevents RejectedExecutionException during cleanup
+            // Delay shutdown so CameraX can drain in-flight encoder/muxer
+            // tasks. cameraExecutor is rejection-tolerant, so any callback
+            // that still arrives after shutdown is dropped, not crashed.
             if (!cameraExecutor.isShutdown) {
                 mainHandler.postDelayed({
                     try {
