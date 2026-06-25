@@ -487,6 +487,122 @@ void main() {
         },
       );
 
+      test('awaits betweenChunks after every non-final chunk', () async {
+        const testPublicKey = _testPublicKey;
+        var betweenChunksCalls = 0;
+        final backpressureService = BlossomUploadService(
+          authProvider: mockAuthProvider,
+          dio: mockDio,
+          betweenChunks: () async => betweenChunksCalls++,
+        );
+
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => _signedEvent(testPublicKey, 24242, const [], 'Upload'),
+        );
+
+        final tempDir = await Directory.systemTemp.createTemp(
+          'blossom_backpressure_test_',
+        );
+        final videoFile = File('${tempDir.path}/video.mp4')
+          ..writeAsBytesSync(List<int>.generate(10, (index) => index));
+
+        when(
+          () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+        ).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/upload'),
+            statusCode: 200,
+            headers: Headers.fromMap({
+              DivineUploadHeaders.extensions: [
+                DivineUploadExtensions.resumableSessions,
+              ],
+              DivineUploadHeaders.controlHost: ['https://media.divine.video'],
+              DivineUploadHeaders.dataHost: ['https://upload.divine.video'],
+            }),
+          ),
+        );
+
+        when(
+          () => mockDio.post<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+          ),
+        ).thenAnswer((invocation) async {
+          final url = invocation.positionalArguments.first as String;
+          if (url.endsWith('/upload/init')) {
+            return Response(
+              requestOptions: RequestOptions(path: '/upload/init'),
+              statusCode: 200,
+              data: {
+                'uploadId': 'up_123',
+                'uploadUrl': 'https://upload.divine.video/sessions/up_123',
+                'expiresAt': '1774827544',
+                'chunkSize': 4,
+                'nextOffset': 0,
+              },
+            );
+          }
+          return Response(
+            requestOptions: RequestOptions(path: '/upload/up_123/complete'),
+            statusCode: 200,
+            data: {
+              'url': 'https://media.divine.video/final',
+              'fallbackUrl': 'https://media.divine.video/final',
+            },
+          );
+        });
+
+        // 10 bytes / 4-byte chunks => 3 chunks => offsets 4, 8, 10.
+        var chunkRequestCount = 0;
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((_) async {
+          chunkRequestCount += 1;
+          final offset = switch (chunkRequestCount) {
+            1 => '4',
+            2 => '8',
+            _ => '10',
+          };
+          return Response(
+            requestOptions: RequestOptions(path: '/sessions/up_123'),
+            statusCode: 204,
+            headers: Headers.fromMap({
+              DivineUploadHeaders.uploadOffset: [offset],
+            }),
+          );
+        });
+
+        final result = await backpressureService.uploadVideo(
+          videoFile: videoFile,
+          nostrPubkey: testPublicKey,
+          title: 'Backpressure Video',
+          description: null,
+          hashtags: null,
+          proofManifestJson: null,
+        );
+
+        expect(result.success, isTrue);
+        expect(chunkRequestCount, equals(3));
+        // Three chunks have two inter-chunk boundaries; the final chunk does
+        // not pause.
+        expect(betweenChunksCalls, equals(2));
+
+        await tempDir.delete(recursive: true);
+      });
+
       test('resumeUploadSession parses upload-expires unix seconds from '
           'session HEAD', () async {
         final expectedExpiresAt = DateTime.fromMillisecondsSinceEpoch(
@@ -2137,9 +2253,9 @@ void main() {
         final mockResponse = _MockResponse();
         when(() => mockResponse.statusCode).thenReturn(400);
         when(() => mockResponse.headers).thenReturn(Headers());
-        when(() => mockResponse.data).thenReturn(<String, dynamic>{
-          'message': 'bad VTT',
-        });
+        when(
+          () => mockResponse.data,
+        ).thenReturn(<String, dynamic>{'message': 'bad VTT'});
         when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
         when(
           () => mockAuthProvider.createAndSignEvent(
@@ -2177,9 +2293,37 @@ void main() {
       });
 
       test('returns failure when subtitle upload setup throws', () async {
-        when(() => mockAuthProvider.isAuthenticated).thenThrow(
-          StateError('auth state unavailable'),
+        when(
+          () => mockAuthProvider.isAuthenticated,
+        ).thenThrow(StateError('auth state unavailable'));
+        final service = BlossomUploadService(authProvider: mockAuthProvider);
+
+        final result = await service.uploadSubtitleVtt(
+          bytes: Uint8List.fromList(utf8.encode('WEBVTT\n')),
         );
+
+        expect(result.success, isFalse);
+        expect(result.errorMessage, contains('Subtitle VTT upload failed'));
+        expect(
+          result.failureReason,
+          equals(BlossomUploadFailureReason.unknown),
+        );
+      });
+
+      test('returns authUnavailable (not auth) when the signer cannot produce '
+          'the auth header', () async {
+        // Authenticated, but the remote signer is briefly unreachable so
+        // createAndSignEvent yields null. This is transient — it must NOT
+        // be classified as a permanent `auth` rejection.
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => null);
+
         final service = BlossomUploadService(authProvider: mockAuthProvider);
 
         final result = await service.uploadSubtitleVtt(
@@ -2188,53 +2332,19 @@ void main() {
 
         expect(result.success, isFalse);
         expect(
-          result.errorMessage,
-          contains('Subtitle VTT upload failed'),
-        );
-        expect(
           result.failureReason,
-          equals(BlossomUploadFailureReason.unknown),
+          equals(BlossomUploadFailureReason.authUnavailable),
         );
       });
-
-      test(
-        'returns authUnavailable (not auth) when the signer cannot produce '
-        'the auth header',
-        () async {
-          // Authenticated, but the remote signer is briefly unreachable so
-          // createAndSignEvent yields null. This is transient — it must NOT
-          // be classified as a permanent `auth` rejection.
-          when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
-          when(
-            () => mockAuthProvider.createAndSignEvent(
-              kind: any(named: 'kind'),
-              content: any(named: 'content'),
-              tags: any(named: 'tags'),
-            ),
-          ).thenAnswer((_) async => null);
-
-          final service = BlossomUploadService(authProvider: mockAuthProvider);
-
-          final result = await service.uploadSubtitleVtt(
-            bytes: Uint8List.fromList(utf8.encode('WEBVTT\n')),
-          );
-
-          expect(result.success, isFalse);
-          expect(
-            result.failureReason,
-            equals(BlossomUploadFailureReason.authUnavailable),
-          );
-        },
-      );
 
       test('returns auth when the server rejects the PUT with 403', () async {
         final mockDio = _MockDio();
         final mockResponse = _MockResponse();
         when(() => mockResponse.statusCode).thenReturn(403);
         when(() => mockResponse.headers).thenReturn(Headers());
-        when(() => mockResponse.data).thenReturn(<String, dynamic>{
-          'message': 'forbidden',
-        });
+        when(
+          () => mockResponse.data,
+        ).thenReturn(<String, dynamic>{'message': 'forbidden'});
         when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
         when(
           () => mockAuthProvider.createAndSignEvent(

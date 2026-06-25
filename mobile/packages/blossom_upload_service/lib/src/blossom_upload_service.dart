@@ -353,6 +353,12 @@ class BlossomUploadService {
   /// [_uploadWithRetry]. Defaults to `Future<void>.delayed`. Tests pass a
   /// no-op so the retry-behavior group doesn't pay real wall time on each
   /// backoff; production code should leave it at the default.
+  ///
+  /// [betweenChunks] is awaited once after every successfully-uploaded chunk
+  /// of a resumable upload (except the last). It lets the caller apply
+  /// backpressure — e.g. yield bandwidth to foreground video playback by
+  /// pausing briefly while the home feed is actively streaming. The default
+  /// is a no-op, so uploads run at full speed unless a host injects a policy.
   BlossomUploadService({
     required this.authProvider,
     BlossomPerformanceMonitor? performanceMonitor,
@@ -360,12 +366,14 @@ class BlossomUploadService {
     String? defaultServerUrl,
     DateTime Function()? clock,
     Future<void> Function(Duration)? sleep,
+    Future<void> Function()? betweenChunks,
   }) : _performanceMonitor =
            performanceMonitor ?? const NoOpPerformanceMonitor(),
        dio = dio ?? Dio(),
        _defaultServerUrl = defaultServerUrl ?? defaultBlossomServer,
        _clock = clock ?? DateTime.now,
-       _sleep = sleep ?? Future<void>.delayed;
+       _sleep = sleep ?? Future<void>.delayed,
+       _betweenChunks = betweenChunks;
 
   static const String _blossomServerKey = 'blossom_server_url';
   static const String _useBlossomKey = 'use_blossom_upload';
@@ -414,6 +422,10 @@ class BlossomUploadService {
   final String _defaultServerUrl;
   final DateTime Function() _clock;
   final Future<void> Function(Duration) _sleep;
+
+  /// Awaited after each non-final chunk to let the host apply upload
+  /// backpressure. `null` means no throttling.
+  final Future<void> Function()? _betweenChunks;
 
   /// In-memory cache of capability discovery results keyed by server URL.
   final Map<String, _CachedCapability> _capabilityCache = {};
@@ -1237,6 +1249,13 @@ class BlossomUploadService {
               currentSession.expiresAt,
         );
         onResumableSessionUpdated?.call(currentSession);
+
+        // Yield bandwidth between chunks when the host asks for backpressure
+        // (e.g. foreground video is streaming). No-op when no policy is set
+        // or when this was the final chunk.
+        if (currentSession.nextOffset < fileSize) {
+          await _betweenChunks?.call();
+        }
       }
 
       uploadStopwatch.stop();
@@ -2562,10 +2581,7 @@ class BlossomUploadService {
 
           final result = await _uploadToServer(
             serverUrl: serverUrl,
-            source: _BytesUploadSource(
-              bytes: bytes,
-              filename: 'subtitles.vtt',
-            ),
+            source: _BytesUploadSource(bytes: bytes, filename: 'subtitles.vtt'),
             fileHash: fileHash,
             fileSize: fileSize,
             contentType: mimeType,
