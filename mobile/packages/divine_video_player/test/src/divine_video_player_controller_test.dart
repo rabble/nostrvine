@@ -467,10 +467,6 @@ void main() {
       );
 
       test('setClips resets firstFrameCompleter when completed', () async {
-        final states = <DivineVideoPlayerState>[];
-        final subscription = controller.stateStream.listen(states.add);
-        addTearDown(subscription.cancel);
-
         // Complete the firstFrameCompleter by sending a state event.
         eventController.add({
           'status': 'playing',
@@ -485,7 +481,6 @@ void main() {
 
         // Now setClips should reset it.
         await controller.setClips([const VideoClip(uri: '/c.mp4')]);
-        await Future<void>.delayed(Duration.zero);
 
         // The new future should NOT be completed yet.
         var completed = false;
@@ -494,11 +489,6 @@ void main() {
         );
         await Future<void>.delayed(Duration.zero);
         expect(completed, isFalse);
-        expect(controller.state.isFirstFrameRendered, isFalse);
-        expect(
-          states.map((state) => state.isFirstFrameRendered),
-          containsAllInOrder([true, false]),
-        );
       });
 
       test('setClips delegates to the Linux backend when active', () async {

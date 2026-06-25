@@ -203,7 +203,9 @@ class _PlaceholderOverlayState extends State<_PlaceholderOverlay> {
   /// Fade-out duration from the placeholder to the first video frame.
   static const _fadeDuration = Duration(milliseconds: 120);
 
-  StreamSubscription<bool>? _firstFrameSubscription;
+  /// Bumped whenever a fresh first-frame wait begins (mount, or a swap to a
+  /// different controller), so a late completion from a superseded controller
+  /// can't flip this overlay's state.
   var _firstFrameWaitToken = 0;
   bool _firstFrameRendered = false;
   bool _faded = false;
@@ -211,48 +213,23 @@ class _PlaceholderOverlayState extends State<_PlaceholderOverlay> {
   @override
   void initState() {
     super.initState();
-    _listenToFirstFrameState();
     _awaitFirstFrame();
   }
 
   @override
   void didUpdateWidget(covariant _PlaceholderOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Only a genuinely different controller restarts the fade. The *same*
+    // controller reloading clips (setClips resets firstFrameRendered) does NOT
+    // re-show the placeholder on purpose: the editor swaps clips in place on
+    // every trim/reorder/speed/transition change, and re-showing would flash
+    // the (first clip's) thumbnail over the live preview each time. This is a
+    // one-shot fade for the initial thumbnail→video handoff.
     if (oldWidget.controller == widget.controller) return;
-
-    unawaited(_firstFrameSubscription?.cancel());
-    _firstFrameSubscription = null;
-    _firstFrameRendered = false;
-    _faded = false;
-    _listenToFirstFrameState();
-    _awaitFirstFrame();
-  }
-
-  @override
-  void dispose() {
-    _firstFrameWaitToken++;
-    unawaited(_firstFrameSubscription?.cancel());
-    super.dispose();
-  }
-
-  void _listenToFirstFrameState() {
-    final controller = widget.controller;
-    _firstFrameSubscription = controller.stateStream
-        .map((state) => state.isFirstFrameRendered)
-        .distinct()
-        .listen((isFirstFrameRendered) {
-          if (controller != widget.controller) return;
-          _handleFirstFrameState(isFirstFrameRendered);
-        });
-  }
-
-  void _handleFirstFrameState(bool isFirstFrameRendered) {
-    if (isFirstFrameRendered) {
-      _markFirstFrameRendered();
-      return;
-    }
-
-    _resetForNextFirstFrame();
+    setState(() {
+      _firstFrameRendered = false;
+      _faded = false;
+    });
     _awaitFirstFrame();
   }
 
@@ -266,19 +243,6 @@ class _PlaceholderOverlayState extends State<_PlaceholderOverlay> {
         setState(() => _firstFrameRendered = true);
       }),
     );
-  }
-
-  void _markFirstFrameRendered() {
-    if (_firstFrameRendered) return;
-    setState(() => _firstFrameRendered = true);
-  }
-
-  void _resetForNextFirstFrame() {
-    if (!_firstFrameRendered && !_faded) return;
-    setState(() {
-      _firstFrameRendered = false;
-      _faded = false;
-    });
   }
 
   @override
