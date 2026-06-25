@@ -4,9 +4,13 @@
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/active_video_provider.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/crosspost_api_client.dart';
@@ -97,12 +101,25 @@ MediaAuthInterceptor mediaAuthInterceptor(Ref ref) {
   );
 }
 
-/// Blossom upload service (uses user-configured Blossom server)
 /// How long to pause between upload chunks while the home feed is actively
 /// streaming video, so the upload yields bandwidth to playback. Applied only
-/// while [activeVideoIdProvider] is non-null (foreground feed playing).
+/// while foreground playback is visible.
 const _feedStreamingUploadChunkPause = Duration(milliseconds: 750);
 
+/// Whether a foreground video feed is visible enough that uploads should yield
+/// bandwidth between chunks.
+final uploadBackpressureActiveProvider = Provider<bool>((ref) {
+  if (ref.watch(activeVideoIdProvider) != null) return true;
+
+  final isHomeFeedActive =
+      ref.watch(appForegroundProvider) &&
+      ref.watch(activeBranchIndexProvider) == 0 &&
+      !ref.watch(shellObscuredProvider) &&
+      !ref.watch(overlayVisibilityProvider).hasVisibleOverlay;
+  return isHomeFeedActive;
+});
+
+/// Blossom upload service (uses user-configured Blossom server)
 @riverpod
 BlossomUploadService blossomUploadService(Ref ref) {
   final authService = ref.watch(authServiceProvider);
@@ -115,7 +132,7 @@ BlossomUploadService blossomUploadService(Ref ref) {
     // pause briefly between chunks so the upload doesn't starve playback on a
     // congested connection. No pause when nothing is streaming.
     betweenChunks: () async {
-      if (ref.read(activeVideoIdProvider) != null) {
+      if (ref.read(uploadBackpressureActiveProvider)) {
         await Future<void>.delayed(_feedStreamingUploadChunkPause);
       }
     },
