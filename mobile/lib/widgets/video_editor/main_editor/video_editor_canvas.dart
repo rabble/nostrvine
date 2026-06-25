@@ -480,9 +480,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     // time from the stale anchor before the next native report re-anchors it;
     // the report with isPlaying == true restarts it.
     _setPlayheadTickerActive(false);
-    // Playback owns the play time now; release any scrub / swap pin so reports
-    // can drive the timeline forward again.
-    _pendingSeekTarget = null;
+    // Restart jumps to the start, so re-pin the play time to zero: a stale
+    // pre-restart report is rejected while the player seeks, and a position-0
+    // report (the restart target) is accepted. _onPlayerStateChanged releases
+    // the pin once playback is actually reported.
+    _pendingSeekTarget = Duration.zero;
     _videoPlayer?.seekTo(Duration.zero);
     _videoPlayer?.play();
   }
@@ -498,8 +500,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       _setPlayheadTickerActive(false);
       _videoPlayer?.pause();
     } else {
-      // Playback owns the play time now; release any scrub / swap pin.
-      _pendingSeekTarget = null;
+      // Keep any scrub / swap pin until the player actually reports isPlaying
+      // (released in _onPlayerStateChanged). Clearing it here, before the first
+      // isPlaying report, would reopen the window where a delayed reset report
+      // (seekTarget == null) is accepted and snaps the playhead to the start.
       _videoPlayer?.play();
     }
   }
@@ -514,8 +518,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       _setPlayheadTickerActive(false);
       _videoPlayer?.pause();
     } else {
-      // Playback owns the play time now; release any scrub / swap pin.
-      _pendingSeekTarget = null;
+      // Keep any scrub / swap pin until the player reports isPlaying; see
+      // _onPlaybackToggleRequested for why clearing it here would reopen the
+      // delayed-reset-report window.
       _videoPlayer?.play();
     }
   }
@@ -743,6 +748,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         .read<VideoEditorMainBloc>()
         .state
         .currentPosition;
+    // Pin so a reset report from loading the (seam-aware) composition doesn't
+    // snap the playhead back while paused.
+    _pendingSeekTarget = currentPosition;
     _videoPlayer?.setClips([
       ...buildSeamAwarePlayerClips(clips, _seamService),
     ], startPosition: _timelineToPlayer(currentPosition));
@@ -1197,6 +1205,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
             .state
             .currentPosition;
 
+        // Pin so a reset report from loading the seam-aware composition
+        // doesn't snap the playhead back while paused.
+        _pendingSeekTarget = currentPosition;
         _videoPlayer?.setClips([
           ...buildSeamAwarePlayerClips(clips, _seamService),
         ], startPosition: _timelineToPlayer(currentPosition));
@@ -1219,6 +1230,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
             .state
             .currentPosition;
 
+        // Pin so a reset report from loading the seam-aware composition
+        // doesn't snap the playhead back while paused.
+        _pendingSeekTarget = currentPosition;
         _videoPlayer?.setClips([
           ...buildSeamAwarePlayerClips(clips, _seamService),
         ], startPosition: _timelineToPlayer(currentPosition));
@@ -1476,6 +1490,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
 
               if (!mounted) return;
               _lastReportedPosition = currentPosition;
+              _pendingSeekTarget = currentPosition;
               _proVideoController.setPlayTime(currentPosition);
             } catch (e, s) {
               Log.error(
@@ -1552,6 +1567,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
               );
             } finally {
               _lastReportedPosition = startPosition;
+              _pendingSeekTarget = startPosition;
               if (_seekEpoch == ownerEpoch) {
                 _isSeeking = false;
               }
