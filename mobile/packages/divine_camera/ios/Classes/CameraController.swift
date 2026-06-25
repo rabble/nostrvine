@@ -1766,6 +1766,10 @@ class CameraController: NSObject {
         ]
         // Preview can drop late frames — they never reach the asset writer.
         output.alwaysDiscardsLateVideoFrames = true
+        // Shares videoOutputQueue on purpose: one serial queue serializes both
+        // outputs so the texture handoff (previewDrivesTexture) and the
+        // switch-completion / pixel-buffer state stay race-free. A separate
+        // queue would reintroduce those races for marginal throughput.
         output.setSampleBufferDelegate(self, queue: videoOutputQueue)
 
         guard session.canAddOutput(output) else {
@@ -1830,10 +1834,16 @@ class CameraController: NSObject {
     /// so `captureOutput` routes the texture from the right output, and disables
     /// the connection while unused so no frames are spent on it.
     private func applyPreviewStabilization() {
+        let previewConnection = previewOutput?.connection(with: .video)
         guard previewOptimizedActive,
-            let connection = previewOutput?.connection(with: .video),
+            let connection = previewConnection,
             connection.isVideoStabilizationSupported
         else {
+            // A camera that lost stabilization support (e.g. after a lens
+            // switch) would otherwise keep this output delivering frames the
+            // texture path immediately discards — disable it so no frames are
+            // spent on it.
+            previewConnection?.isEnabled = false
             previewDrivesTexture = false
             return
         }
