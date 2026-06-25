@@ -112,10 +112,29 @@ void main() {
         expect(prefs.containsKey('content_moderation_local_mutes'), isFalse);
       });
 
-      test('clears draft-related keys', () async {
+      test(
+        'preserves legacy drafts on same-user non-destructive cleanup',
+        () async {
+          await prefs.setString('vine_drafts', '{"drafts": []}');
+
+          await service.clearUserSpecificData();
+
+          expect(prefs.containsKey('vine_drafts'), isTrue);
+        },
+      );
+
+      test('clears legacy drafts on destructive cleanup', () async {
         await prefs.setString('vine_drafts', '{"drafts": []}');
 
-        await service.clearUserSpecificData();
+        await service.clearUserSpecificData(deleteUserData: true);
+
+        expect(prefs.containsKey('vine_drafts'), isFalse);
+      });
+
+      test('clears legacy drafts on identity change', () async {
+        await prefs.setString('vine_drafts', '{"drafts": []}');
+
+        await service.clearUserSpecificData(isIdentityChange: true);
 
         expect(prefs.containsKey('vine_drafts'), isFalse);
       });
@@ -209,6 +228,7 @@ void main() {
         'returns correct count including prefix keys on identity change',
         () async {
           await prefs.setStringList('curated_lists', ['list1']);
+          await prefs.setString('vine_drafts', '{"drafts": []}');
           await prefs.setString('following_list_abc123', '["pubkey1"]');
           await prefs.setString('relay_discovery_npub1abc', 'data');
 
@@ -217,8 +237,8 @@ void main() {
             isIdentityChange: true,
           );
 
-          // 1 static + 2 prefix keys
-          expect(count, equals(3));
+          // 1 static + 1 owner-scoped legacy key + 2 prefix keys
+          expect(count, equals(4));
         },
       );
 
@@ -275,6 +295,30 @@ void main() {
         },
       );
 
+      test(
+        'does not throw database cleanup failure on non-destructive cleanup',
+        () async {
+          service.onDatabaseCleanup =
+              ({String? userPubkey, bool deleteUserData = false}) async {
+                throw StateError('cleanup failed');
+              };
+
+          await expectLater(service.clearUserSpecificData(), completes);
+        },
+      );
+
+      test('throws database cleanup failure on destructive cleanup', () async {
+        service.onDatabaseCleanup =
+            ({String? userPubkey, bool deleteUserData = false}) async {
+              throw StateError('cleanup failed');
+            };
+
+        await expectLater(
+          service.clearUserSpecificData(deleteUserData: true),
+          throwsA(isA<StateError>()),
+        );
+      });
+
       test('claimLegacyRows calls onClaimLegacyRows callback', () async {
         String? receivedPubkey;
         service.onClaimLegacyRows = (String pubkey) async {
@@ -312,9 +356,6 @@ void main() {
         expect(keys, contains('seen_video_ids'));
         expect(keys, contains('content_reports_history'));
 
-        // Drafts
-        expect(keys, contains('vine_drafts'));
-
         // TOS
         expect(keys, contains('age_verified_16_plus'));
         expect(keys, contains('terms_accepted_at'));
@@ -327,6 +368,14 @@ void main() {
         expect(keys, isNot(contains('relay_url')));
         expect(keys, isNot(contains('analytics_enabled')));
         expect(keys, isNot(contains('current_user_pubkey_hex')));
+      });
+    });
+
+    group('ownerScopedLegacyKeys', () {
+      test('contains legacy draft storage', () {
+        const keys = UserDataCleanupService.ownerScopedLegacyKeys;
+
+        expect(keys, contains('vine_drafts'));
       });
     });
 
