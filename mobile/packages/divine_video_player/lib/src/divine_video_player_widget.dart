@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:divine_video_player/src/divine_video_player_controller.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -23,6 +25,7 @@ class DivineVideoPlayer extends StatelessWidget {
   const DivineVideoPlayer({
     required this.controller,
     this.placeholder,
+    this.crossFadePlaceholder = false,
     super.key,
   }) : assert(
          controller != null || placeholder != null,
@@ -35,6 +38,21 @@ class DivineVideoPlayer extends StatelessWidget {
   /// Optional widget displayed over the video surface until the
   /// first frame has been rendered.
   final Widget? placeholder;
+
+  /// Whether to keep the [placeholder] mounted and cross-fade it out even when
+  /// the first frame is *already* rendered at the moment this widget is first
+  /// built.
+  ///
+  /// Defaults to `false`: when the first frame is already up, the surface is
+  /// shown directly with no placeholder (the common fresh-load case where the
+  /// placeholder bridged the decode gap and is no longer needed).
+  ///
+  /// Set to `true` when the placeholder was already on screen *before* this
+  /// widget mounted — e.g. the video editor, where the host swaps an external
+  /// thumbnail spinner straight to the player once the frame is decoded. There
+  /// the early-out would hard-cut thumbnail→video; this keeps the placeholder
+  /// long enough to cross-fade it out instead.
+  final bool crossFadePlaceholder;
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +93,8 @@ class DivineVideoPlayer extends StatelessWidget {
       };
     }
 
-    if (placeholder == null || ctrl.state.isFirstFrameRendered) {
+    if (placeholder == null ||
+        (!crossFadePlaceholder && ctrl.state.isFirstFrameRendered)) {
       return surface;
     }
 
@@ -159,9 +178,15 @@ class _RotatingTexture extends StatelessWidget {
   }
 }
 
-/// Shows the [placeholder] over the video surface and hides it once
-/// [DivineVideoPlayerController.firstFrameRendered] completes.
-class _PlaceholderOverlay extends StatelessWidget {
+/// Shows the [placeholder] over the video surface and fades it out once
+/// [DivineVideoPlayerController.firstFrameRendered] completes, then removes
+/// it from the tree.
+///
+/// Fading — rather than hard-cutting to [SizedBox.shrink] — avoids a visible
+/// flash when the first decoded frame doesn't pixel-match the placeholder
+/// (e.g. a thumbnail cropped differently than the live texture, or a
+/// black frame the platform view composites before the decoder catches up).
+class _PlaceholderOverlay extends StatefulWidget {
   const _PlaceholderOverlay({
     required this.controller,
     required this.placeholder,
@@ -171,13 +196,55 @@ class _PlaceholderOverlay extends StatelessWidget {
   final Widget placeholder;
 
   @override
+  State<_PlaceholderOverlay> createState() => _PlaceholderOverlayState();
+}
+
+class _PlaceholderOverlayState extends State<_PlaceholderOverlay> {
+  /// Fade-out duration from the placeholder to the first video frame.
+  static const _fadeDuration = Duration(milliseconds: 120);
+
+  bool _firstFrameRendered = false;
+  bool _faded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_awaitFirstFrame());
+  }
+
+  Future<void> _awaitFirstFrame() async {
+    await widget.controller.firstFrameRendered;
+    if (!mounted) return;
+    setState(() => _firstFrameRendered = true);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: controller.firstFrameRendered,
-      builder: (context, snapshot) {
-        if (snapshot.data == true) return const SizedBox.shrink();
-        return placeholder;
-      },
+    // Fully faded out — drop the placeholder so it stops painting and
+    // intercepting hit tests over the now-visible video.
+    if (_faded) return const SizedBox.shrink();
+
+    // The video surface stays mounted behind this overlay (the parent Stack).
+    // The placeholder starts fully opaque (so it's actually visible) and fades
+    // out once the first frame is up. AnimatedSwitcher is unsuitable here: it
+    // also animates the initial child *in* (0→1), so when the first frame
+    // arrives almost immediately the placeholder is reversed out before it
+    // ever becomes visible — reading as an instant cut.
+    return IgnorePointer(
+      // Let taps reach the video surface the moment the frame is up, even
+      // while the placeholder is still fading.
+      ignoring: _firstFrameRendered,
+      child: AnimatedOpacity(
+        opacity: _firstFrameRendered ? 0.0 : 1.0,
+        curve: Curves.easeInOut,
+        duration: _fadeDuration,
+        onEnd: () {
+          if (_firstFrameRendered && mounted) {
+            setState(() => _faded = true);
+          }
+        },
+        child: widget.placeholder,
+      ),
     );
   }
 }

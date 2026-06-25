@@ -9,10 +9,8 @@ class VideoEditorThumbnail extends ConsumerWidget {
   const VideoEditorThumbnail({
     required this.contentSize,
     super.key,
-    this.isInitialized = false,
   });
 
-  final bool isInitialized;
   final Size contentSize;
 
   @override
@@ -22,20 +20,16 @@ class VideoEditorThumbnail extends ConsumerWidget {
     );
     if (clip == null) return const SizedBox.shrink();
 
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 100),
-      opacity: isInitialized ? 0.0 : 1.0,
-      child: FittedBox(
-        fit: .cover,
-        child: clip.thumbnailPath != null
-            ? Image.file(File(clip.thumbnailPath!))
-            : SizedBox.fromSize(
-                size: contentSize,
-                child: const Center(
-                  child: CircularProgressIndicator(color: VineTheme.primary),
-                ),
+    return FittedBox(
+      fit: .cover,
+      child: clip.thumbnailPath != null
+          ? Image.file(File(clip.thumbnailPath!))
+          : SizedBox.fromSize(
+              size: contentSize,
+              child: const Center(
+                child: CircularProgressIndicator(color: VineTheme.primary),
               ),
-      ),
+            ),
     );
   }
 }

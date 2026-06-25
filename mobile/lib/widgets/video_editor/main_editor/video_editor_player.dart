@@ -35,6 +35,11 @@ class VideoEditorPlayer extends StatelessWidget {
         child: DivineVideoPlayer(
           controller: controller,
           placeholder: VideoEditorThumbnail(contentSize: renderSize),
+          // The editor swaps an external thumbnail spinner straight to the
+          // player once the frame is decoded, so the first frame is already
+          // rendered when this mounts. Cross-fade the thumbnail out instead of
+          // hard-cutting (which read as a flicker on editor open).
+          crossFadePlaceholder: true,
         ),
       ),
     );
