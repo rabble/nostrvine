@@ -249,7 +249,10 @@ class _PlaceholderOverlayState extends State<_PlaceholderOverlay> {
   Widget build(BuildContext context) {
     // Fully faded out — drop the placeholder so it stops painting and
     // intercepting hit tests over the now-visible video.
-    if (_faded) return const SizedBox.shrink();
+    if (_faded ||
+        (_firstFrameRendered && MediaQuery.disableAnimationsOf(context))) {
+      return const SizedBox.shrink();
+    }
 
     // The video surface stays mounted behind this overlay (the parent Stack).
     // The placeholder starts fully opaque (so it's actually visible) and fades

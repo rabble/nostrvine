@@ -437,6 +437,41 @@ void main() {
       },
     );
 
+    testWidgets('skips placeholder fade when animations are disabled', (
+      tester,
+    ) async {
+      final linuxController = await initLinuxController();
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: DivineVideoPlayer(
+              controller: linuxController,
+              placeholder: const Text('Loading...'),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Loading...'), findsOneWidget);
+      expect(find.byType(AnimatedOpacity), findsOneWidget);
+
+      _FakeLinuxBackend.instance!.emitState(
+        const DivineVideoPlayerState(
+          status: PlaybackStatus.ready,
+          clipCount: 1,
+          isFirstFrameRendered: true,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Loading...'), findsNothing);
+      expect(find.byType(AnimatedOpacity), findsNothing);
+    });
+
     testWidgets(
       'is a one-shot: does not re-show the placeholder after setClips '
       'reloads the same controller',
