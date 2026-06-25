@@ -21,6 +21,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/mixins/codec_heavy_surface_guard.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -63,7 +64,8 @@ class VideoEditorScreen extends ConsumerStatefulWidget {
   ConsumerState<VideoEditorScreen> createState() => _VideoEditorScreenState();
 }
 
-class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
+class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
+    with CodecHeavySurfaceGuard {
   final _editorKey = GlobalKey<ProImageEditorState>();
   final GlobalKey<State<StatefulWidget>> _removeAreaKey = GlobalKey();
 

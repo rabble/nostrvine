@@ -2279,5 +2279,202 @@ void main() {
         }
       });
     });
+
+    group('releaseCurrentWhenInactive', () {
+      testWidgets('drops the current player too when going inactive', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0, 1, 2, 3]);
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        final videos = [_makeVideo('cur'), _makeVideo('next')];
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(
+            key.currentState!.debugLiveControllerIndices,
+            equals(<int>{0, 1}),
+          );
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                isActive: false,
+                releaseCurrentWhenInactive: true,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          // Full drain: not even the current player is retained.
+          expect(key.currentState!.debugLiveControllerIndices, isEmpty);
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
+      testWidgets(
+        'fully drains when the flag turns on while already inactive',
+        (
+          tester,
+        ) async {
+          // Mirrors the production path: the home feed is backgrounded on
+          // another tab (neighbours released, current kept warm) and *then* a
+          // codec-heavy surface (camera/editor) opens over it.
+          DivineVideoPlayerController.resetIdCounterForTesting();
+          final harness = _NativePlayerHarness(tester);
+          await harness.install(playerIds: const <int>[0, 1, 2, 3]);
+          final key = GlobalKey<InfiniteVideoFeedState>();
+          final videos = [_makeVideo('cur'), _makeVideo('next')];
+
+          try {
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  key: key,
+                  videos: videos,
+                  cache: cache,
+                  releaseNeighboursWhenInactive: true,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump();
+
+            // Backgrounded: neighbour released, current kept warm.
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  key: key,
+                  videos: videos,
+                  cache: cache,
+                  isActive: false,
+                  releaseNeighboursWhenInactive: true,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                ),
+              ),
+            );
+            await tester.pump();
+            expect(
+              key.currentState!.debugLiveControllerIndices,
+              equals(<int>{0}),
+            );
+
+            // Codec-heavy surface opens over the still-inactive feed.
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  key: key,
+                  videos: videos,
+                  cache: cache,
+                  isActive: false,
+                  releaseNeighboursWhenInactive: true,
+                  releaseCurrentWhenInactive: true,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                ),
+              ),
+            );
+            await tester.pump();
+
+            expect(key.currentState!.debugLiveControllerIndices, isEmpty);
+          } finally {
+            await tester.pumpWidget(const SizedBox.shrink());
+            await tester.pump();
+            await harness.dispose();
+          }
+        },
+      );
+
+      testWidgets('re-initialises the current video when reactivated after a '
+          'full release', (tester) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0, 1, 2, 3]);
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        final videos = [_makeVideo('cur'), _makeVideo('next')];
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          // Full drain while a codec-heavy surface is open.
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                isActive: false,
+                releaseCurrentWhenInactive: true,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          expect(key.currentState!.debugLiveControllerIndices, isEmpty);
+
+          // Surface closed, feed visible again — the window rebuilds.
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(
+            key.currentState!.debugLiveControllerIndices,
+            equals(<int>{0, 1}),
+          );
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+    });
   });
 }

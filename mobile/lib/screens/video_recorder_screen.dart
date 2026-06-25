@@ -14,6 +14,7 @@ import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/mixins/codec_heavy_surface_guard.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -118,7 +119,7 @@ class VideoRecorderView extends ConsumerStatefulWidget {
 }
 
 class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, CodecHeavySurfaceGuard {
   ProviderSubscription<AudioEvent?>? _soundSubscription;
   OverlayVisibility? _overlayVisibilityNotifier;
   VideoRecorderMode? _lastRecorderMode;

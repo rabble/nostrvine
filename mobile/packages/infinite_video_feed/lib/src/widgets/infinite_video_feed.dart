@@ -42,6 +42,7 @@ class InfiniteVideoFeed extends StatefulWidget {
     this.keepPreviousAlive = true,
     this.keepNextAlive = true,
     this.releaseNeighboursWhenInactive = false,
+    this.releaseCurrentWhenInactive = false,
     this.prefetchCount = 8,
     this.shouldPortraitExpand = true,
     this.maxLoopDuration,
@@ -188,6 +189,22 @@ class InfiniteVideoFeed extends StatefulWidget {
   /// staying on screen (e.g. behind a focused text composer).
   final bool releaseNeighboursWhenInactive;
 
+  /// Whether the *current* player is released too — a full drain of the live
+  /// window — while the feed is inactive (see [isActive]).
+  ///
+  /// A backgrounded feed normally keeps its current player warm even when
+  /// neighbours are released ([releaseNeighboursWhenInactive]), so playback
+  /// resumes instantly at the same frame on reactivation. Set this `true` only
+  /// while a surface that needs the device's scarce hardware video codecs for
+  /// itself is open — the camera, the video editor, or the exporter. When it is
+  /// `true` and the feed is (or becomes) inactive, every native player is
+  /// disposed, handing the decoders back. The current video re-initializes —
+  /// restarting from its first frame — when the feed becomes active again.
+  ///
+  /// Takes precedence over [releaseNeighboursWhenInactive]: a full drain
+  /// releases the neighbours regardless of that flag.
+  final bool releaseCurrentWhenInactive;
+
   /// Number of videos ahead of the current index to prefetch to disk.
   ///
   /// These videos are downloaded via [MediaCacheManager] and played
@@ -304,6 +321,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // controllers that become active. Seeded from widget.initialVolume.
   late double _volume;
   late bool _isActive;
+
+  // Set when a full drain (releaseCurrentWhenInactive) tore down the current
+  // controller while inactive. The next activation re-initializes the window
+  // instead of trying to resume a player that no longer exists.
+  bool _needsReinitOnActivate = false;
 
   // Generation counter for the player window so async neighbour-init can
   // detect that the user scrolled away mid-load.
@@ -442,14 +464,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive != oldWidget.isActive) {
       _setPlaybackActive(widget.isActive);
-    } else if (!widget.isActive &&
-        widget.releaseNeighboursWhenInactive !=
-            oldWidget.releaseNeighboursWhenInactive) {
-      if (widget.releaseNeighboursWhenInactive) {
-        _releaseNeighboursAndPrefetch();
-      } else {
-        unawaited(_onIndexChanged(_currentIndex));
-      }
+    } else if (!widget.isActive) {
+      _reconcileInactiveReleasePolicy(oldWidget);
     }
     _syncCurrentAutoPlayGate(oldWidget);
     if (widget.videos == oldWidget.videos) return;
@@ -569,6 +585,13 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     if (_isActive == isActive) return;
     _isActive = isActive;
     if (_isActive) {
+      if (_needsReinitOnActivate) {
+        // A full drain dropped the current player while inactive. Re-build the
+        // live window from scratch instead of resuming a disposed controller.
+        _needsReinitOnActivate = false;
+        unawaited(_onIndexChanged(_currentIndex));
+        return;
+      }
       _resumeCurrentPlaybackIfReady();
       if (widget.releaseNeighboursWhenInactive) {
         // Re-expand the live window and resume disk prefetch now that the
@@ -577,10 +600,54 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       }
     } else {
       _pauseCurrentPlayback();
-      if (widget.releaseNeighboursWhenInactive) {
+      if (widget.releaseCurrentWhenInactive) {
+        _fullyReleaseWhileInactive();
+      } else if (widget.releaseNeighboursWhenInactive) {
         _releaseNeighboursAndPrefetch();
       }
     }
+  }
+
+  /// Applies the release policy when a flag changes while the feed stays
+  /// inactive (its [InfiniteVideoFeed.isActive] did not flip this update).
+  void _reconcileInactiveReleasePolicy(InfiniteVideoFeed oldWidget) {
+    // A codec-heavy surface just opened over a backgrounded feed: drop the
+    // current player too. Takes precedence over the neighbour policy.
+    if (widget.releaseCurrentWhenInactive) {
+      if (!oldWidget.releaseCurrentWhenInactive) {
+        _fullyReleaseWhileInactive();
+      }
+      return;
+    }
+    // The surface closed again while the feed is still inactive. The pool was
+    // already drained; there is nothing to re-acquire until reactivation, which
+    // re-inits via [_needsReinitOnActivate].
+    if (oldWidget.releaseCurrentWhenInactive) return;
+
+    if (widget.releaseNeighboursWhenInactive ==
+        oldWidget.releaseNeighboursWhenInactive) {
+      return;
+    }
+    if (widget.releaseNeighboursWhenInactive) {
+      _releaseNeighboursAndPrefetch();
+    } else {
+      unawaited(_onIndexChanged(_currentIndex));
+    }
+  }
+
+  /// Tears down every live controller (current + neighbours) and cancels disk
+  /// prefetch while the feed is inactive, flagging a re-init so the current
+  /// video reloads when the feed becomes active again.
+  ///
+  /// Driven by [InfiniteVideoFeed.releaseCurrentWhenInactive] when a
+  /// codec-heavy surface (camera, video editor, exporter) needs the hardware
+  /// decoders this backgrounded feed is holding.
+  void _fullyReleaseWhileInactive() {
+    if (_controllers.isEmpty && _needsReinitOnActivate) return;
+    _log('Releasing all players while inactive (codec-heavy surface open)');
+    _teardownAllControllers();
+    _needsReinitOnActivate = true;
+    _rebuild();
   }
 
   /// Disposes the neighbour controllers and cancels the in-flight disk

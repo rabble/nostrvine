@@ -30,6 +30,7 @@ import 'package:invite_api_client/invite_api_client.dart';
 import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
+import 'package:openvine/blocs/codec_heavy_surface/codec_heavy_surface_cubit.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
@@ -2425,6 +2426,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                 sharedPreferences: ref.read(sharedPreferencesProvider),
               ),
             ),
+            // App-global signal: a codec-heavy surface (camera/editor/exporter)
+            // is open, so background feeds must release their hardware decoders.
+            BlocProvider(create: (_) => CodecHeavySurfaceCubit()),
             BlocProvider(
               create: (_) => LocaleCubit(
                 localePreferenceService: LocalePreferenceService(

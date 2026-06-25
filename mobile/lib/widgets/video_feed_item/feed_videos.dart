@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/codec_heavy_surface/codec_heavy_surface_cubit.dart';
 import 'package:openvine/blocs/feed_loading_moderation/feed_loading_moderation_cubit.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
@@ -246,6 +247,16 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   @override
   Widget build(BuildContext context) {
     final isFeedActive = widget.isActive && _routeAllowsPlayback;
+    // While a codec-heavy surface (camera, video editor, exporter) is open, a
+    // backgrounded feed must release even its warm current player so the editor
+    // can claim the device's scarce hardware decoders/encoder. Selected so the
+    // feed re-evaluates the moment the surface opens or closes. Nullable lookup:
+    // the signal is an optimization, so a feed mounted without the cubit (tests,
+    // isolated previews) simply never force-drains rather than crashing.
+    final codecHeavySurfaceActive = context
+        .select<CodecHeavySurfaceCubit?, bool>(
+          (cubit) => cubit?.state.isActive ?? false,
+        );
     return MultiBlocListener(
       listeners: [
         BlocListener<VideoVolumeCubit, VideoVolumeState>(
@@ -271,6 +282,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
         videos: widget.videos,
         isActive: isFeedActive,
         releaseNeighboursWhenInactive: widget.releaseNeighboursWhenInactive,
+        releaseCurrentWhenInactive: codecHeavySurfaceActive,
         // mediaCacheProvider is a keepAlive singleton; identity is stable for
         // the app lifetime, so ref.read is safe here. See
         // .claude/rules/state_management.md → "Bridging Riverpod-provided
