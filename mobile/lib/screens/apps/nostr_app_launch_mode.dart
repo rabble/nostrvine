@@ -20,17 +20,20 @@ import 'package:url_launcher/url_launcher.dart';
 /// preloaded ones by slug (see
 /// `NostrAppDirectoryService._mergeWithPreloadedApps`), so the slug is the
 /// identity that survives a remote override — a server-sent flag on the
-/// preloaded entry would not. Both verifier spellings are listed: remote
-/// directory data and older on-device caches may still carry the legacy
-/// `verifyer` slug, which would otherwise survive the merge as its own tile
-/// and dead-end in the sandbox.
+/// preloaded entry would not. Both verifier spellings are accepted on
+/// purpose: remote directory data and on-device caches may carry either
+/// `verifier` or the older `verifyer`, and both resolve to the same worker.
+/// The `verifyer`→`verifier` standardization is tracked in the verifier repo
+/// (divinevideo/divine-identify-verification-service#16, #23); keep both here
+/// regardless, since the alias is harmless and guards stale directory data.
 const Set<String> kSystemBrowserAppSlugs = {'verifier', 'verifyer'};
 
 /// Hosts the system-browser launch is allowed to open. The launch target
 /// comes from directory JSON (`launch_url`), which a remote or cached entry
 /// can override; pinning to these hosts stops a crafted entry from opening an
 /// arbitrary URL under a trusted first-party tile. Both verifier spellings are
-/// listed for the same directory-data transition as [kSystemBrowserAppSlugs].
+/// accepted for the same reason as [kSystemBrowserAppSlugs] — move the two
+/// sets together.
 const Set<String> _systemBrowserAppHosts = {
   'verifier.divine.video',
   'verifyer.divine.video',
@@ -43,7 +46,8 @@ bool appRequiresSystemBrowser(NostrAppDirectoryEntry app) =>
 
 /// Whether [rawUrl] is a safe system-browser target: an `https` URL on a
 /// pinned verifier host. Guards against a crafted directory `launch_url`.
-bool _isAllowedSystemBrowserTarget(String rawUrl) {
+@visibleForTesting
+bool isAllowedSystemBrowserTarget(String rawUrl) {
   final uri = Uri.tryParse(rawUrl);
   return uri != null &&
       uri.scheme == 'https' &&
@@ -75,7 +79,7 @@ Future<void> launchNostrApp(
 
   final messenger = ScaffoldMessenger.of(context);
   final errorText = context.l10n.relaySettingsCouldNotOpenBrowser;
-  if (!_isAllowedSystemBrowserTarget(app.launchUrl)) {
+  if (!isAllowedSystemBrowserTarget(app.launchUrl)) {
     messenger.showSnackBar(
       SnackBar(content: Text(errorText), backgroundColor: VineTheme.error),
     );

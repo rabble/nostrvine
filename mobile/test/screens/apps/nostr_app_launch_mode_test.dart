@@ -36,7 +36,7 @@ void main() {
     });
 
     test(
-      'returns true for the legacy verifyer slug (directory transition)',
+      'returns true for the older verifyer slug (directory data may carry it)',
       () {
         final app = _entry(
           slug: 'verifyer',
@@ -56,6 +56,66 @@ void main() {
         (app) => app.id == 'bundled-verifier',
       );
       expect(appRequiresSystemBrowser(verifier), isTrue);
+    });
+  });
+
+  group('isAllowedSystemBrowserTarget', () {
+    test(
+      'accepts the real preloaded verifier launch_url (guards host drift)',
+      () {
+        final verifier = preloadedNostrApps.firstWhere(
+          (app) => app.id == 'bundled-verifier',
+        );
+        expect(isAllowedSystemBrowserTarget(verifier.launchUrl), isTrue);
+      },
+    );
+
+    test('accepts both verifier host spellings over https', () {
+      expect(
+        isAllowedSystemBrowserTarget('https://verifier.divine.video/'),
+        isTrue,
+      );
+      expect(
+        isAllowedSystemBrowserTarget('https://verifyer.divine.video/'),
+        isTrue,
+      );
+    });
+
+    test('rejects the pinned host over a non-https scheme', () {
+      expect(
+        isAllowedSystemBrowserTarget('http://verifier.divine.video/'),
+        isFalse,
+      );
+    });
+
+    test('rejects non-web schemes', () {
+      expect(isAllowedSystemBrowserTarget('tel:12345'), isFalse);
+      expect(
+        isAllowedSystemBrowserTarget('intent://verifier.divine.video'),
+        isFalse,
+      );
+    });
+
+    test('rejects a userinfo-spoofed host', () {
+      expect(
+        isAllowedSystemBrowserTarget(
+          'https://verifier.divine.video@evil.test/',
+        ),
+        isFalse,
+      );
+    });
+
+    test('rejects a subdomain-suffix-spoofed host', () {
+      expect(
+        isAllowedSystemBrowserTarget(
+          'https://verifier.divine.video.evil.test/',
+        ),
+        isFalse,
+      );
+    });
+
+    test('rejects an off-host https url', () {
+      expect(isAllowedSystemBrowserTarget('https://evil.test/'), isFalse);
     });
   });
 }
