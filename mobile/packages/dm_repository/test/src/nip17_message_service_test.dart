@@ -89,6 +89,116 @@ void main() {
       );
     });
 
+    group('publishSelfApplicationMarker (#4977)', () {
+      setUp(() {
+        // The self marker is NIP-44-sealed to the sender's own key, so the
+        // sender pubkey must be a real curve point derived from the signing
+        // key (the module-level _testPublicKey is a non-curve placeholder).
+        service = NIP17MessageService(
+          signer: LocalNostrSigner(_testPrivateKey),
+          senderPublicKey: getPublicKey(_testPrivateKey),
+          nostrService: mockNostrClient,
+        );
+      });
+
+      test('routes the self marker to the provided targetRelays', () async {
+        List<String>? routedTo;
+        when(
+          () => mockNostrClient.publishEvent(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((inv) async {
+          routedTo = inv.namedArguments[#targetRelays] as List<String>?;
+          return PublishSuccess(event: inv.positionalArguments[0] as Event);
+        });
+
+        final ok = await service.publishSelfApplicationMarker(
+          content: '{"v":1,"read":{}}',
+          tags: const [
+            ['d', 'divine/dm-read/v1'],
+          ],
+          targetRelays: const ['wss://inbox.example.com'],
+        );
+
+        expect(ok, isTrue);
+        expect(routedTo, const ['wss://inbox.example.com']);
+      });
+
+      test('falls back to the default pool when no targetRelays', () async {
+        var bareCalls = 0;
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
+          bareCalls++;
+          return PublishSuccess(event: inv.positionalArguments[0] as Event);
+        });
+
+        final ok = await service.publishSelfApplicationMarker(
+          content: '{"v":1,"read":{}}',
+          tags: const [
+            ['d', 'divine/dm-read/v1'],
+          ],
+        );
+
+        expect(ok, isTrue);
+        expect(bareCalls, 1);
+      });
+
+      test('returns false when the publish does not succeed', () async {
+        when(
+          () => mockNostrClient.publishEvent(any()),
+        ).thenAnswer((_) async => const PublishNoRelays());
+
+        final ok = await service.publishSelfApplicationMarker(
+          content: '{"v":1,"read":{}}',
+          tags: const [
+            ['d', 'divine/dm-read/v1'],
+          ],
+        );
+
+        expect(ok, isFalse);
+      });
+
+      test('returns false when the gift wrap builder yields null', () async {
+        final nullBuilderService = NIP17MessageService(
+          signer: LocalNostrSigner(_testPrivateKey),
+          senderPublicKey: _testPublicKey,
+          nostrService: mockNostrClient,
+          giftWrapBuilder: (_, _, _) async => null,
+        );
+
+        final ok = await nullBuilderService.publishSelfApplicationMarker(
+          content: '{"v":1,"read":{}}',
+          tags: const [
+            ['d', 'divine/dm-read/v1'],
+          ],
+        );
+
+        expect(ok, isFalse);
+        verifyNever(() => mockNostrClient.publishEvent(any()));
+      });
+
+      test(
+        'returns false (non-fatal) when the gift wrap builder throws',
+        () async {
+          final throwingService = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: _testPublicKey,
+            nostrService: mockNostrClient,
+            giftWrapBuilder: (_, _, _) async => throw StateError('boom'),
+          );
+
+          final ok = await throwingService.publishSelfApplicationMarker(
+            content: '{"v":1,"read":{}}',
+            tags: const [
+              ['d', 'divine/dm-read/v1'],
+            ],
+          );
+
+          expect(ok, isFalse);
+        },
+      );
+    });
+
     group('sendPrivateMessage', () {
       test('returns success with gift wrap event details', () async {
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
