@@ -168,12 +168,13 @@ class _TimeDisplay extends StatelessWidget {
     // header reflects the final video, not the editing space. The timeline
     // layout itself stays on the editor axis.
     final clips = context.select((ClipEditorBloc b) => b.state.clips);
-    final outputDuration = renderedOutputDuration(clips);
+    final timelineMap = TransitionTimelineMap.fromClips(clips);
+    final outputDuration = timelineMap.outputDuration;
 
     return ValueListenableBuilder<Duration>(
       valueListenable: playheadPosition,
       builder: (context, position, _) {
-        final outputPosition = editorToOutputPosition(clips, position);
+        final outputPosition = timelineMap.editorToOutput(position);
         final isOver =
             outputPosition.inMilliseconds >
             VideoEditorConstants.maxDuration.inMilliseconds;
