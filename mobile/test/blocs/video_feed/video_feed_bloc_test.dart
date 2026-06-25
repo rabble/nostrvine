@@ -347,6 +347,91 @@ void main() {
         ],
       );
 
+      test(
+        'ignores stale background enrichment after switching sources',
+        () async {
+          final authors = ['author1'];
+          final compactVideo = createTestVideo('video-1').copyWith(
+            rawTags: const {
+              'd': 'video-1',
+              'url': 'https://example.com/video-1.mp4',
+              'title': 'REST row',
+              'thumb': 'https://example.com/video-1.jpg',
+            },
+          );
+          final newVideos = createTestVideos(2, idPrefix: 'new');
+          final enrichment = Completer<List<VideoEvent>>();
+          var enrichCallCount = 0;
+
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(authors);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: authors,
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: [compactVideo]));
+          when(
+            () => mockVideosRepository.getNewVideos(
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => newVideos);
+
+          final bloc = VideoFeedBloc(
+            videosRepository: mockVideosRepository,
+            followRepository: mockFollowRepository,
+            curatedListRepository: mockCuratedListRepository,
+            enrichVideos: (videos) {
+              enrichCallCount += 1;
+              if (enrichCallCount == 1) return enrichment.future;
+              return Future.value(videos);
+            },
+          );
+          addTearDown(bloc.close);
+
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
+          await pumpEventQueue();
+          expect(bloc.state.videos.map((video) => video.id), ['video-1']);
+
+          bloc.add(const VideoFeedSourceChanged(VideoFeedSource.newVideos()));
+          await pumpEventQueue();
+          expect(bloc.state.source, const VideoFeedSource.newVideos());
+          expect(bloc.state.videos.map((video) => video.id), [
+            'new-0',
+            'new-1',
+          ]);
+
+          enrichment.complete([
+            compactVideo.copyWith(
+              rawTags: {
+                ...compactVideo.rawTags,
+                'verification': 'verified_mobile',
+                'proofmode': '{}',
+              },
+            ),
+          ]);
+          await pumpEventQueue();
+          await pumpEventQueue();
+
+          expect(bloc.state.source, const VideoFeedSource.newVideos());
+          expect(bloc.state.videos.map((video) => video.id), [
+            'new-0',
+            'new-1',
+          ]);
+          expect(
+            bloc.state.videos.any(
+              (video) => video.rawTags.containsKey('proofmode'),
+            ),
+            isFalse,
+          );
+        },
+      );
+
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'reports unexpected background enrichment failures as Reportable',
         setUp: () {

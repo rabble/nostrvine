@@ -29,12 +29,15 @@ List<VideoEvent> mergeProfileFeedEnrichment({
   final keepFromCurrent = current
       .where((v) => !sourceKeys.contains(canonicalProfileFeedVideoKey(v)))
       .toList();
-  final mergedSource = incoming.map((video) {
-    final currentVideo = currentByKey[canonicalProfileFeedVideoKey(video)];
-    return currentVideo == null
-        ? video
-        : _mergeEnrichmentIntoCurrent(currentVideo, video);
-  }).toList();
+  final mergedSource = incoming
+      .map((video) {
+        final currentVideo = currentByKey[canonicalProfileFeedVideoKey(video)];
+        return currentVideo == null
+            ? null
+            : _mergeEnrichmentIntoCurrent(currentVideo, video);
+      })
+      .nonNulls
+      .toList();
   return removeTombstones(
     mergeProfileFeedVideoLists(keepFromCurrent, mergedSource),
   );

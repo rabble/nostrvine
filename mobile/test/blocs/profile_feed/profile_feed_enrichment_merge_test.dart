@@ -56,5 +56,24 @@ void main() {
         '39307:pubkey:subtitles:video-subtitles',
       ]);
     });
+
+    test('does not reintroduce source videos missing from current state', () {
+      final staleSource = _video(id: 'old-rest', vineId: 'old-vine');
+      final current = _video(id: 'new-rest', vineId: 'new-vine');
+      final enriched = _video(
+        id: 'old-nostr',
+        vineId: 'old-vine',
+        textTrackRef: 'https://media.divine.video/stale.vtt',
+      );
+
+      final merged = mergeProfileFeedEnrichment(
+        current: [current],
+        sourceKeys: {canonicalProfileFeedVideoKey(staleSource)},
+        incoming: [enriched],
+        removeTombstones: (videos) => videos,
+      );
+
+      expect(merged, [current]);
+    });
   });
 }

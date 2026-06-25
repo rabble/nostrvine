@@ -973,5 +973,40 @@ void main() {
 
       expect(cubit.state.videos.single.title, 'enriched');
     });
+
+    test(
+      'stale background enrichment cannot reintroduce refreshed videos',
+      () async {
+        final enrichment = Completer<List<VideoEvent>>();
+        var enrichCallCount = 0;
+        h.enrichOverride = (videos) {
+          enrichCallCount += 1;
+          if (enrichCallCount == 1) return enrichment.future;
+          return Future.value(videos);
+        };
+        h.stubAuthorFeedSequence([
+          _result([_video('old-rest', vineId: 'old-vine')]),
+          _result([_video('new-rest', vineId: 'new-vine')]),
+        ]);
+
+        final cubit = h.build();
+        addTearDown(cubit.close);
+        await pumpEventQueue();
+        expect(cubit.state.videos.map((video) => video.id), ['old-rest']);
+
+        cubit.add(const ProfileFeedRefreshRequested());
+        await pumpEventQueue();
+        expect(cubit.state.videos.map((video) => video.id), ['new-rest']);
+
+        enrichment.complete([
+          _video('old-nostr', vineId: 'old-vine', originalLikes: 10),
+        ]);
+        await pumpEventQueue();
+        await pumpEventQueue();
+
+        expect(cubit.state.videos.map((video) => video.id), ['new-rest']);
+        expect(cubit.state.videos.single.originalLikes, isNull);
+      },
+    );
   });
 }
