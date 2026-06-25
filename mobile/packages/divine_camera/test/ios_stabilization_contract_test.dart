@@ -42,5 +42,35 @@ void main() {
         contains('Self.isPreviewOptimized(requestedStabilizationMode)'),
       );
     });
+
+    test('drives the preview from a dedicated preview-sized output', () {
+      // The preview-optimized path needs a second, preview-sized data output —
+      // that is the eligibility requirement for .previewOptimized on a data
+      // output (the recorder still records from the full-resolution output).
+      expect(
+        controllerSource,
+        contains('func setupPreviewOptimizedOutputIfPossible'),
+      );
+      expect(
+        controllerSource,
+        contains('deliversPreviewSizedOutputBuffers = true'),
+      );
+    });
+
+    test('gates the second output behind a runtime feasibility check', () {
+      // A single AVCaptureSession may reject a second video data output, so the
+      // preview-optimized path must be guarded and fall back to the existing
+      // single-output preview rather than regress on unsupported devices.
+      expect(controllerSource, contains('session.canAddOutput(output)'));
+      expect(controllerSource, contains('using single-output preview'));
+    });
+
+    test('applies previewOptimized to the preview connection only', () {
+      // previewOptimized is applied to the preview output (and only while the
+      // user has stabilization on); the recorded file keeps the user-selected
+      // overscan mode on the full-resolution output.
+      expect(controllerSource, contains('.previewOptimized : .off'));
+      expect(controllerSource, contains('previewOptimizedActive = true'));
+    });
   });
 }

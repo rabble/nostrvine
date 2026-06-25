@@ -22,6 +22,15 @@ class CameraController: NSObject {
     private var videoOutput: AVCaptureVideoDataOutput?
     private var audioOutput: AVCaptureAudioDataOutput?
 
+    /// Optional second, preview-sized video data output dedicated to the live
+    /// preview texture. Runs `.previewOptimized` stabilization (iOS 17+) so the
+    /// preview stays smooth and does not jump/jerk when recording starts, while
+    /// `videoOutput` keeps the user-selected overscan mode for the recorded
+    /// file. Nil when the dual-output path is unavailable (older iOS,
+    /// unsupported device, or the session rejects a second video data output);
+    /// the controller then drives the texture from `videoOutput` as before.
+    private var previewOutput: AVCaptureVideoDataOutput?
+
     /// Still-photo output for single-frame capture (stop-motion). Added at
     /// session setup alongside the video data output; AVCapturePhotoOutput
     /// coexists with AVCaptureVideoDataOutput (unlike AVCaptureMovieFileOutput).
@@ -83,6 +92,18 @@ class CameraController: NSObject {
     // so it affects both the live preview texture and the recorded file.
     // Defaults to .off to preserve existing behaviour until the user opts in.
     private var requestedStabilizationMode: AVCaptureVideoStabilizationMode = .off
+
+    /// True once `previewOutput` is wired and able to carry `.previewOptimized`.
+    private var previewOptimizedActive = false
+
+    /// True while the preview texture should be fed from `previewOutput` rather
+    /// than `videoOutput` — i.e. the dual-output path is active AND the user has
+    /// a non-off stabilization mode selected. Read on `videoOutputQueue` in
+    /// `captureOutput`; written when the stabilization mode changes. The
+    /// cross-queue access is a benign single-`Bool` race (mirrors the existing
+    /// cross-queue reads of `requestedStabilizationMode`): a stale read costs at
+    /// most one frame routed from the other output, never a dropped frame.
+    private var previewDrivesTexture = false
 
     // Auto lens switching via zoom
     // When true, uses a virtual multi-camera device (builtInTripleCamera,
@@ -747,6 +768,15 @@ class CameraController: NSObject {
             DivineCameraLog.shared.error("DivineCamera: Cannot add photo output to session", name: "DivineCamera.Setup")
         }
 
+        // Optional preview-optimized output (iOS 17+). A second, preview-sized
+        // data output carries `.previewOptimized`, so the live preview stays
+        // smooth and does not jump when recording starts. `videoOutput` keeps
+        // the user-selected overscan mode for the recorded file. Added AFTER the
+        // photo output so that, on any device with an output-count limit, the
+        // existing photo capture wins and this optional output falls back to the
+        // single-output preview path.
+        setupPreviewOptimizedOutputIfPossible(session: session)
+
         // NOTE: AVCaptureAudioDataOutput is also added lazily in startRecording().
         
         // NOTE: MovieOutput is intentionally NOT added here during initialization.
@@ -1203,6 +1233,16 @@ class CameraController: NSObject {
                     let isFront = newDevice.position == .front
                     if photoConnection.isVideoMirroringSupported {
                         photoConnection.isVideoMirrored = isFront && self.mirrorFrontCameraOutput
+                    }
+                }
+                if self.previewOptimizedActive,
+                    let previewConnection = self.previewOutput?.connection(with: .video) {
+                    if previewConnection.isVideoOrientationSupported {
+                        previewConnection.videoOrientation = .portrait
+                    }
+                    let isFront = newDevice.position == .front
+                    if previewConnection.isVideoMirroringSupported {
+                        previewConnection.isVideoMirrored = isFront && self.mirrorFrontCameraOutput
                     }
                 }
             } catch {
@@ -1703,16 +1743,114 @@ class CameraController: NSObject {
         let applied = applyVideoStabilization()
         if !applied {
             requestedStabilizationMode = previous
+            // applyVideoStabilization already nudged the preview output to the
+            // rejected mode; resync it to the restored mode.
+            applyPreviewStabilization()
         }
         return applied
     }
 
-    /// Applies `requestedStabilizationMode` to the video connection. The
-    /// stabilized frames feed both the preview texture and the asset writer,
-    /// so the recording matches what the user sees. Returns true when the
-    /// requested mode could be applied (off is always considered applied).
+    /// Builds the optional preview-optimized output and adds it to `session`.
+    /// On success `previewOutput` is set and `previewOptimizedActive` becomes
+    /// true; on any failure the controller silently keeps the single-output
+    /// preview path (texture from `videoOutput`). Must run inside the session's
+    /// begin/commit configuration block.
+    private func setupPreviewOptimizedOutputIfPossible(
+        session: AVCaptureSession
+    ) {
+        guard #available(iOS 17.0, *) else { return }
+
+        let output = AVCaptureVideoDataOutput()
+        output.videoSettings = [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+        ]
+        // Preview can drop late frames — they never reach the asset writer.
+        output.alwaysDiscardsLateVideoFrames = true
+        output.setSampleBufferDelegate(self, queue: videoOutputQueue)
+
+        guard session.canAddOutput(output) else {
+            DivineCameraLog.shared.debug(
+                "DivineCamera: Session rejected a second video data output; "
+                    + "using single-output preview",
+                name: "DivineCamera.Stabilization"
+            )
+            return
+        }
+        session.addOutput(output)
+
+        // Preview-sized buffers are the eligibility requirement for
+        // `.previewOptimized` on a data output, and are lighter for the
+        // texture. These can only be set once the output joins the session.
+        output.automaticallyConfiguresOutputBufferDimensions = false
+        output.deliversPreviewSizedOutputBuffers = true
+
+        guard let connection = output.connection(with: .video),
+            connection.isVideoStabilizationSupported
+        else {
+            session.removeOutput(output)
+            DivineCameraLog.shared.debug(
+                "DivineCamera: Preview output has no stabilizable connection; "
+                    + "using single-output preview",
+                name: "DivineCamera.Stabilization"
+            )
+            return
+        }
+        if connection.isVideoOrientationSupported {
+            connection.videoOrientation = .portrait
+        }
+        if connection.isVideoMirroringSupported {
+            connection.isVideoMirrored =
+                (currentLens == .front) && mirrorFrontCameraOutput
+        }
+        // Idle until the user turns stabilization on (see applyPreviewStabilization).
+        connection.isEnabled = false
+
+        self.previewOutput = output
+        self.previewOptimizedActive = true
+        DivineCameraLog.shared.debug(
+            "DivineCamera: Preview-optimized output added",
+            name: "DivineCamera.Stabilization"
+        )
+    }
+
+    /// Applies the requested mode to the recording connection and keeps the
+    /// preview-optimized output in sync. Returns true when the requested
+    /// (recording) mode could be applied.
     @discardableResult
     private func applyVideoStabilization() -> Bool {
+        let applied = applyRecordingStabilization()
+        applyPreviewStabilization()
+        return applied
+    }
+
+    /// Keeps `previewOutput`'s connection in sync with whether stabilization is
+    /// on: `.previewOptimized` while the user has a mode selected (a smooth live
+    /// preview that doesn't zoom/jerk at record start), `.off` otherwise so the
+    /// preview matches the unstabilized recording. Flips `previewDrivesTexture`
+    /// so `captureOutput` routes the texture from the right output, and disables
+    /// the connection while unused so no frames are spent on it.
+    private func applyPreviewStabilization() {
+        guard previewOptimizedActive,
+            let connection = previewOutput?.connection(with: .video),
+            connection.isVideoStabilizationSupported
+        else {
+            previewDrivesTexture = false
+            return
+        }
+        let wantPreviewOptimized = requestedStabilizationMode != .off
+        connection.isEnabled = wantPreviewOptimized
+        if #available(iOS 17.0, *) {
+            connection.preferredVideoStabilizationMode =
+                wantPreviewOptimized ? .previewOptimized : .off
+        }
+        previewDrivesTexture = wantPreviewOptimized
+    }
+
+    /// Applies `requestedStabilizationMode` to `videoOutput`'s connection — the
+    /// frames written to the asset writer. Returns true when the requested mode
+    /// could be applied (off is always considered applied).
+    @discardableResult
+    private func applyRecordingStabilization() -> Bool {
         guard let connection = videoOutput?.connection(with: .video) else {
             return requestedStabilizationMode == .off
         }
@@ -1777,10 +1915,12 @@ class CameraController: NSObject {
         if #available(iOS 13.0, *) {
             candidates.append((.cinematicExtended, "cinematicExtended"))
         }
-        // previewOptimized is intentionally omitted for this recorder. Apple
-        // only supports it on connections with a preview layer or preview-sized
-        // AVCaptureVideoDataOutput, while this controller records from the
-        // full-resolution data output that backs the Flutter texture.
+        // previewOptimized is intentionally omitted for this recorder's
+        // selectable modes: it stabilizes the live preview, not the recorded
+        // file. It is applied internally to a dedicated preview-sized output
+        // (see setupPreviewOptimizedOutputIfPossible) so the preview stays
+        // smooth, while the recorded file uses the user-selected overscan mode
+        // on the full-resolution output.
         if #available(iOS 26.0, *) {
             candidates.append((.lowLatency, "lowLatency"))
         }
@@ -2255,7 +2395,10 @@ class CameraController: NSObject {
             self.audioInput = nil
             self.videoOutput = nil
             self.audioOutput = nil
-            
+            self.previewOutput = nil
+            self.previewOptimizedActive = false
+            self.previewDrivesTexture = false
+
             // Cleanup asset writer if recording
             self.assetWriter = nil
             self.videoWriterInput = nil
@@ -2339,7 +2482,7 @@ extension CameraController: FlutterTexture {
 extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         guard !isPaused else { return }
-        
+
         // Handle video output
         if output == videoOutput {
             // Get pixel buffer from sample buffer
@@ -2348,53 +2491,35 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
                 print("DivineCamera: Could not get pixel buffer from sample buffer")
                 return
             }
-            
-            // Thread-safe update of the pixel buffer for preview
-            pixelBufferLock.lock()
-            let isFirstFrame = latestSampleBuffer == nil
-            latestSampleBuffer = sampleBuffer
-            pixelBufferRef = pixelBuffer
-            pixelBufferLock.unlock()
-            
-            if isFirstFrame {
-                DivineCameraLog.shared.debug("DivineCamera: First frame received! Pixel buffer dimensions: \(CVPixelBufferGetWidth(pixelBuffer))x\(CVPixelBufferGetHeight(pixelBuffer))")
-                
-                // Complete initialization now that we know frames are flowing
-                DispatchQueue.main.async { [weak self] in
-                    self?.completeInitializationIfNeeded(timedOut: false)
-                }
+
+            // The preview texture is driven by previewOutput while the
+            // preview-optimized path is engaged; otherwise videoOutput drives it.
+            if !previewDrivesTexture {
+                updatePreviewTexture(pixelBuffer: pixelBuffer, sampleBuffer: sampleBuffer)
             }
-            
-            // Notify Flutter on main thread that a new frame is available
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self, self.textureId >= 0 else { return }
-                self.textureRegistry.textureFrameAvailable(self.textureId)
-            }
-            
-            // Complete camera switch if waiting for first frame from new camera.
-            // This is done AFTER textureFrameAvailable so Flutter shows the new frame
-            // before receiving the state update with the new lens.
-            if let switchCompletion = switchCameraCompletion {
-                switchCameraCompletion = nil
-                let state = getCameraState()
-                switchCompletion(state, nil)
-            }
-            
+
             // Write video frame to asset writer if recording
             if isRecording, let writer = assetWriter, let videoInput = videoWriterInput, let adaptor = pixelBufferAdaptor {
                 let timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-                
+
                 // Start session on first frame
                 if !isWriterSessionStarted && writer.status == .writing {
                     writer.startSession(atSourceTime: timestamp)
                     isWriterSessionStarted = true
                     DivineCameraLog.shared.debug("DivineCamera: Writer session started at \(timestamp.seconds)")
                 }
-                
+
                 if writer.status == .writing && videoInput.isReadyForMoreMediaData {
                     adaptor.append(pixelBuffer, withPresentationTime: timestamp)
                 }
             }
+        }
+        // Preview-optimized output drives the texture only while engaged.
+        else if output == previewOutput {
+            guard previewDrivesTexture,
+                let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)
+            else { return }
+            updatePreviewTexture(pixelBuffer: pixelBuffer, sampleBuffer: sampleBuffer)
         }
         // Handle audio output
         else if output == audioOutput {
@@ -2407,6 +2532,46 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
                     audioInput.append(sampleBuffer)
                 }
             }
+        }
+    }
+
+    /// Publishes a freshly captured frame to the Flutter texture and handles
+    /// first-frame initialization and pending camera-switch completion. Called
+    /// from whichever output currently drives the preview — `previewOutput`
+    /// while the preview-optimized path is engaged, otherwise `videoOutput`.
+    private func updatePreviewTexture(
+        pixelBuffer: CVPixelBuffer,
+        sampleBuffer: CMSampleBuffer
+    ) {
+        // Thread-safe update of the pixel buffer for preview
+        pixelBufferLock.lock()
+        let isFirstFrame = latestSampleBuffer == nil
+        latestSampleBuffer = sampleBuffer
+        pixelBufferRef = pixelBuffer
+        pixelBufferLock.unlock()
+
+        if isFirstFrame {
+            DivineCameraLog.shared.debug("DivineCamera: First frame received! Pixel buffer dimensions: \(CVPixelBufferGetWidth(pixelBuffer))x\(CVPixelBufferGetHeight(pixelBuffer))")
+
+            // Complete initialization now that we know frames are flowing
+            DispatchQueue.main.async { [weak self] in
+                self?.completeInitializationIfNeeded(timedOut: false)
+            }
+        }
+
+        // Notify Flutter on main thread that a new frame is available
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, self.textureId >= 0 else { return }
+            self.textureRegistry.textureFrameAvailable(self.textureId)
+        }
+
+        // Complete camera switch if waiting for first frame from new camera.
+        // This is done AFTER textureFrameAvailable so Flutter shows the new frame
+        // before receiving the state update with the new lens.
+        if let switchCompletion = switchCameraCompletion {
+            switchCameraCompletion = nil
+            let state = getCameraState()
+            switchCompletion(state, nil)
         }
     }
 }
