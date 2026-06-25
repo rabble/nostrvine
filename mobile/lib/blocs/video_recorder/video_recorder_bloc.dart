@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:divine_camera/divine_camera.dart'
@@ -981,16 +982,28 @@ class VideoRecorderBloc
     Emitter<VideoRecorderBlocState> emit,
   ) async {
     const maxDragDistance = 240.0;
-    final dragDistance = (-event.offsetFromOrigin.dy).clamp(
-      0.0,
+    // Up is negative dy, so a positive [verticalDrag] is a drag up (zoom in)
+    // and a negative one is a drag down (zoom out).
+    final verticalDrag = (-event.offsetFromOrigin.dy).clamp(
+      -maxDragDistance,
       maxDragDistance,
     );
 
-    final availableZoomRange =
-        _cameraService.maxZoomLevel - state.baseZoomLevel;
-    final zoomLevel =
-        state.baseZoomLevel +
-        (dragDistance / maxDragDistance) * availableZoomRange;
+    // Exponential drag→zoom mapping so perceived sensitivity is uniform in
+    // both directions: an equal drag step always multiplies zoom by the same
+    // factor, so 1×→2× travels the same distance as 2×→4×. Dragging up
+    // approaches the camera max; dragging down approaches the camera min
+    // (e.g. an ultra-wide 0.6×). The previous linear, upward-only mapping
+    // packed the whole absolute range into a short upward drag — jumpy at the
+    // most-used low end — and could never reach sub-1× zoom. Mirrors the
+    // multiplicative pinch mapping in _onScaleUpdated.
+    final baseZoom = state.baseZoomLevel <= 0 ? 1.0 : state.baseZoomLevel;
+    final targetBound = verticalDrag >= 0
+        ? _cameraService.maxZoomLevel
+        : _cameraService.minZoomLevel;
+    final progress = verticalDrag.abs() / maxDragDistance;
+    final zoomLevel = (baseZoom * math.pow(targetBound / baseZoom, progress))
+        .clamp(_cameraService.minZoomLevel, _cameraService.maxZoomLevel);
 
     // Re-uses the same camera+state path as ZoomLevelSet.
     add(VideoRecorderZoomLevelSet(zoomLevel));
