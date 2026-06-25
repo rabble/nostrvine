@@ -789,6 +789,7 @@ class BugReportService {
       buffer.writeln('Total Log Lines: ${allLogLines.length}');
       buffer.writeln('Log Files: ${stats['fileCount']}');
       buffer.writeln('Total Size: ${stats['totalSizeMB']} MB');
+      buffer.write(buildRuntimeDiagnostics());
       if (currentScreen != null) {
         buffer.writeln('Current Screen: $currentScreen');
       }
@@ -824,6 +825,39 @@ class BugReportService {
       );
       return const LogExportResult(success: false);
     }
+  }
+
+  /// Device/runtime diagnostics for the export header: OS and version,
+  /// CPU core count, build mode, and this process's memory footprint.
+  ///
+  /// Returns an empty string on web, where `dart:io` `Platform` and
+  /// `ProcessInfo` are unavailable.
+  @visibleForTesting
+  static String buildRuntimeDiagnostics() {
+    if (kIsWeb) return '';
+    final buffer = StringBuffer()
+      ..writeln(
+        'Platform: ${Platform.operatingSystem} '
+        '${Platform.operatingSystemVersion}',
+      )
+      ..writeln('CPU Cores: ${Platform.numberOfProcessors}')
+      ..writeln('Build Mode: $_buildModeName');
+    try {
+      const bytesPerMb = 1024 * 1024;
+      final rssMb = (ProcessInfo.currentRss / bytesPerMb).toStringAsFixed(1);
+      final peakMb = (ProcessInfo.maxRss / bytesPerMb).toStringAsFixed(1);
+      buffer.writeln('Process Memory: RSS $rssMb MB (peak $peakMb MB)');
+    } on Object catch (_) {
+      // ProcessInfo memory probes throw on unsupported platforms; omit
+      // the line rather than failing the whole export.
+    }
+    return buffer.toString();
+  }
+
+  static String get _buildModeName {
+    if (kDebugMode) return 'debug';
+    if (kProfileMode) return 'profile';
+    return 'release';
   }
 
   bool get _isDesktop {

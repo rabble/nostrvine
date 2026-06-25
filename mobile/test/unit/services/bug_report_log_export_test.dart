@@ -50,4 +50,25 @@ void main() {
       expect(result.cancelled, isFalse);
     });
   });
+
+  group('buildRuntimeDiagnostics', () {
+    test('reports platform, CPU count, build mode and process memory', () {
+      final diagnostics = BugReportService.buildRuntimeDiagnostics();
+
+      expect(diagnostics, contains('Platform: '));
+      expect(diagnostics, contains('CPU Cores: '));
+      expect(diagnostics, contains('Build Mode: '));
+      expect(diagnostics, contains('Process Memory: RSS '));
+    });
+
+    test('reports a positive CPU core count', () {
+      final diagnostics = BugReportService.buildRuntimeDiagnostics();
+      final cpuLine = diagnostics
+          .split('\n')
+          .firstWhere((line) => line.startsWith('CPU Cores: '));
+      final cores = int.parse(cpuLine.substring('CPU Cores: '.length).trim());
+
+      expect(cores, greaterThan(0));
+    });
+  });
 }
