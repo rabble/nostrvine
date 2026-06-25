@@ -156,11 +156,14 @@ class CameraController: NSObject {
     private var maxDurationMs: Int?
     private var isWriterSessionStarted: Bool = false
 
-    /// PTS of the last video frame appended to the asset writer. Used at
-    /// finalize to bound the writer session to the video's actual end, so a
-    /// look-ahead stabilization mode (which delays video ~0.5–1s behind audio)
-    /// can't leave the clip ending on a frozen frame while audio keeps playing.
-    private var lastVideoFramePTS: CMTime?
+    /// End PTS (`presentationTime + frameDuration`) of the last video frame
+    /// appended to the asset writer. Used at finalize to bound the writer
+    /// session to the video's actual end, so a look-ahead stabilization mode
+    /// (which delays video ~0.5–1s behind audio) can't leave the clip ending on
+    /// a frozen frame while audio keeps playing. The frame's *end* — not its
+    /// start — so the last frame keeps its full display duration and short
+    /// recordings don't collapse toward zero.
+    private var lastVideoFrameEndPTS: CMTime?
     
     /// Completion handler for camera switch - called when first frame from new camera arrives
     private var switchCameraCompletion: (([String: Any]?, String?) -> Void)?
@@ -2152,7 +2155,7 @@ class CameraController: NSObject {
 
             self.isRecording = true
             self.isWriterSessionStarted = false  // Will be set to true when first frame is received
-            self.lastVideoFramePTS = nil
+            self.lastVideoFrameEndPTS = nil
             self.recordingStartTime = Date()
 
             // Check and enable auto-flash if needed
@@ -2234,7 +2237,7 @@ class CameraController: NSObject {
             // surplus audio so both tracks stop together.
             if writer.status == .writing,
                 self.isWriterSessionStarted,
-                let endPTS = self.lastVideoFramePTS {
+                let endPTS = self.lastVideoFrameEndPTS {
                 writer.endSession(atSourceTime: endPTS)
             }
 
@@ -2319,7 +2322,7 @@ class CameraController: NSObject {
                     self.currentRecordingURL = nil
                     self.recordingStartTime = nil
                     self.isWriterSessionStarted = false
-                    self.lastVideoFramePTS = nil
+                    self.lastVideoFrameEndPTS = nil
                 }
             }
         }
@@ -2451,7 +2454,7 @@ class CameraController: NSObject {
             self.videoWriterInput = nil
             self.audioWriterInput = nil
             self.pixelBufferAdaptor = nil
-            self.lastVideoFramePTS = nil
+            self.lastVideoFrameEndPTS = nil
 
             if self.textureId >= 0 {
                 self.textureRegistry.unregisterTexture(self.textureId)
@@ -2559,7 +2562,15 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
 
                 if writer.status == .writing && videoInput.isReadyForMoreMediaData {
                     adaptor.append(pixelBuffer, withPresentationTime: timestamp)
-                    lastVideoFramePTS = timestamp
+                    // Track the frame's END, not its start, so endSession keeps
+                    // the last frame's full duration. Capture buffers usually
+                    // carry a valid duration; fall back to ~30fps if not.
+                    let frameDuration = CMSampleBufferGetDuration(sampleBuffer)
+                    let endDuration =
+                        frameDuration.isNumeric && frameDuration.seconds > 0
+                            ? frameDuration
+                            : CMTime(value: 1, timescale: 30)
+                    lastVideoFrameEndPTS = timestamp + endDuration
                 }
             }
         }
