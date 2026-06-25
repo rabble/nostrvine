@@ -7931,9 +7931,14 @@ void main() {
             conversations.first.lastMessageSenderPubkey,
             equals(_validPubkeyA),
           );
+          // The watch path maps conversation rows straight to previews; it
+          // must never re-read messages per conversation (the removed
+          // _overlayLatestMessages overlay used to). See #4407.
           verifyNever(
-            () => mockDirectMessagesDao.getLatestMessagesForConversations(
+            () => mockDirectMessagesDao.getMessagesForConversation(
               any(),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
           );

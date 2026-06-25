@@ -290,66 +290,6 @@ void main() {
       });
     });
 
-    group('getLatestMessagesForConversations', () {
-      test(
-        'returns the latest non-deleted message for each conversation',
-        () async {
-          await dao.insertMessage(
-            id: 'conv1_old',
-            conversationId: conversationId1,
-            senderPubkey: 'pubkey_alice',
-            content: 'Old 1',
-            createdAt: 1700000000,
-            giftWrapId: 'gw_conv1_old',
-          );
-          await dao.insertMessage(
-            id: 'conv1_new',
-            conversationId: conversationId1,
-            senderPubkey: 'pubkey_bob',
-            content: 'New 1',
-            createdAt: 1700000200,
-            giftWrapId: 'gw_conv1_new',
-          );
-          await dao.insertMessage(
-            id: 'conv2_old',
-            conversationId: conversationId2,
-            senderPubkey: 'pubkey_alice',
-            content: 'Old 2',
-            createdAt: 1700000100,
-            giftWrapId: 'gw_conv2_old',
-          );
-          await dao.insertMessage(
-            id: 'conv2_new',
-            conversationId: conversationId2,
-            senderPubkey: 'pubkey_bob',
-            content: 'New 2',
-            createdAt: 1700000300,
-            giftWrapId: 'gw_conv2_new',
-          );
-
-          await dao.markMessageDeleted('conv2_new');
-
-          final latest = await dao.getLatestMessagesForConversations([
-            conversationId1,
-            conversationId2,
-            'missing',
-          ]);
-
-          expect(latest.keys, containsAll([conversationId1, conversationId2]));
-          expect(latest, isNot(contains('missing')));
-          expect(latest[conversationId1]?.id, equals('conv1_new'));
-          expect(latest[conversationId1]?.content, equals('New 1'));
-          expect(latest[conversationId2]?.id, equals('conv2_old'));
-          expect(
-            latest[conversationId2]?.content,
-            equals('Old 2'),
-            reason:
-                'soft-deleted newer rows must not win latest-message lookup',
-          );
-        },
-      );
-    });
-
     group('watchMessagesForConversation', () {
       test('emits initial list sorted by createdAt desc', () async {
         await dao.insertMessage(

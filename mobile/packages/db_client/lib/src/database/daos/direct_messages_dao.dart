@@ -110,63 +110,6 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return query.get();
   }
 
-  /// Returns the latest non-deleted message for each conversation in one query.
-  ///
-  /// Results are keyed by `conversationId`. Conversations with no messages are
-  /// omitted from the returned map.
-  Future<Map<String, DirectMessageRow>> getLatestMessagesForConversations(
-    Iterable<String> conversationIds, {
-    String? ownerPubkey,
-  }) async {
-    final ids = conversationIds.toSet().toList();
-    if (ids.isEmpty) return const {};
-
-    final variables = <Variable<Object>>[...ids.map(Variable.withString)];
-    if (ownerPubkey != null) {
-      variables
-        ..add(Variable.withString(ownerPubkey))
-        ..add(Variable.withString(ownerPubkey));
-    }
-
-    final ownerFilter = ownerPubkey == null
-        ? '1 = 1'
-        : '(dm.owner_pubkey = ? OR dm.owner_pubkey IS NULL)';
-    final newerOwnerFilter = ownerPubkey == null
-        ? '1 = 1'
-        : '(newer.owner_pubkey = ? OR newer.owner_pubkey IS NULL)';
-    final placeholders = List.filled(ids.length, '?').join(', ');
-
-    final rows = await customSelect(
-      '''
-      SELECT dm.*
-      FROM direct_messages dm
-      WHERE dm.is_deleted = 0
-        AND dm.conversation_id IN ($placeholders)
-        AND $ownerFilter
-        AND NOT EXISTS (
-          SELECT 1
-          FROM direct_messages newer
-          WHERE newer.conversation_id = dm.conversation_id
-            AND newer.is_deleted = 0
-            AND $newerOwnerFilter
-            AND (
-              newer.created_at > dm.created_at OR
-              (newer.created_at = dm.created_at AND newer.id > dm.id)
-            )
-        )
-      ''',
-      variables: variables,
-      readsFrom: {directMessages},
-    ).get();
-
-    final latestByConversation = <String, DirectMessageRow>{};
-    for (final row in rows) {
-      final message = directMessages.map(row.data);
-      latestByConversation[message.conversationId] = message;
-    }
-    return latestByConversation;
-  }
-
   /// Watch messages for a conversation (reactive stream), newest first.
   ///
   /// Excludes soft-deleted messages (NIP-09 kind 5).
