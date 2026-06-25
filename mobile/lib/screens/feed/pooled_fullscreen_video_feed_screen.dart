@@ -22,6 +22,7 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/comments/comments_screen.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
@@ -791,6 +792,11 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                                         trafficSource: widget.trafficSource,
                                         sourceDetail: widget.sourceDetail,
                                         onActiveVideoChanged: (video, index) {
+                                          ref
+                                              .read(
+                                                foregroundFeedActivityGateProvider,
+                                              )
+                                              .markActive();
                                           _resumeAutoAdvanceAfterSwipe();
                                           FeedPerformanceTracker()
                                               .startVideoSwipeTracking(
@@ -834,9 +840,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                           ReelReplyBridge(
                             setComposerFocused: (focused) {
                               if (mounted && focused != _replyComposerFocused) {
-                                setState(
-                                  () => _replyComposerFocused = focused,
-                                );
+                                setState(() => _replyComposerFocused = focused);
                               }
                             },
                             playReaction: (emoji) {

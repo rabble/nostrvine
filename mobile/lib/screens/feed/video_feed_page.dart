@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -366,6 +367,9 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       isLoadingMore: state.isLoadingMore,
                       trafficSource: ViewTrafficSource.home,
                       onActiveVideoChanged: (video, index) {
+                        ref
+                            .read(foregroundFeedActivityGateProvider)
+                            .markActive();
                         _currentIndex = index;
                         context.read<VideoFeedBloc>().add(
                           VideoFeedActiveIndexChanged(index),

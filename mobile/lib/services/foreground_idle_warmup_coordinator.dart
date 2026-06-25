@@ -116,6 +116,7 @@ class ForegroundIdleWarmupTask {
     required this.id,
     required this.run,
     required this.cooldown,
+    this.shouldRun,
     this.timeout = const Duration(seconds: 12),
   });
 
@@ -128,6 +129,9 @@ class ForegroundIdleWarmupTask {
   /// Maximum time this low-priority task may occupy the serial queue.
   final Duration timeout;
 
+  /// Whether this task has applicable warmup work right now.
+  final bool Function()? shouldRun;
+
   /// Performs the data-only warmup.
   final Future<void> Function() run;
 }
@@ -139,15 +143,18 @@ class ForegroundIdleWarmupCoordinator {
     required List<ForegroundIdleWarmupTask> tasks,
     required bool Function() isForeground,
     required bool Function() isIdle,
+    Stream<void>? gateChanges,
     DateTime Function()? now,
   }) : _tasks = List.unmodifiable(tasks),
        _isForeground = isForeground,
        _isIdle = isIdle,
+       _gateChanges = gateChanges,
        _now = now ?? DateTime.now;
 
   final List<ForegroundIdleWarmupTask> _tasks;
   final bool Function() _isForeground;
   final bool Function() _isIdle;
+  final Stream<void>? _gateChanges;
   final DateTime Function() _now;
 
   final Map<ForegroundIdleWarmupTaskId, DateTime> _lastSuccessAt = {};
@@ -158,9 +165,7 @@ class ForegroundIdleWarmupCoordinator {
   /// If another pass is running, returns the same future. Each pass checks the
   /// foreground/idle gates before every task so user interaction can stop the
   /// queue quickly.
-  Future<void> requestWarmup({
-    required ForegroundIdleWarmupTrigger trigger,
-  }) {
+  Future<void> requestWarmup({required ForegroundIdleWarmupTrigger trigger}) {
     final inFlight = _inFlight;
     if (inFlight != null) {
       Log.debug(
@@ -215,6 +220,14 @@ class ForegroundIdleWarmupCoordinator {
         );
         continue;
       }
+      if (task.shouldRun?.call() == false) {
+        Log.debug(
+          'Foreground idle warmup skipped ${task.id.name}: not applicable',
+          name: 'ForegroundIdleWarmupCoordinator',
+          category: LogCategory.system,
+        );
+        continue;
+      }
 
       try {
         Log.debug(
@@ -222,20 +235,33 @@ class ForegroundIdleWarmupCoordinator {
           name: 'ForegroundIdleWarmupCoordinator',
           category: LogCategory.system,
         );
-        await task.run().timeout(task.timeout);
-        _lastSuccessAt[task.id] = _now();
-        Log.info(
-          'Foreground idle warmup completed ${task.id.name}',
-          name: 'ForegroundIdleWarmupCoordinator',
-          category: LogCategory.system,
-        );
-      } on TimeoutException {
-        Log.warning(
-          'Foreground idle warmup timed out '
-          '(${task.id.name}, ${trigger.name}, ${task.timeout.inSeconds}s)',
-          name: 'ForegroundIdleWarmupCoordinator',
-          category: LogCategory.system,
-        );
+        final outcome = await _runTask(task);
+        switch (outcome) {
+          case _ForegroundIdleWarmupTaskOutcome.completed:
+            _lastSuccessAt[task.id] = _now();
+            Log.info(
+              'Foreground idle warmup completed ${task.id.name}',
+              name: 'ForegroundIdleWarmupCoordinator',
+              category: LogCategory.system,
+            );
+            continue;
+          case _ForegroundIdleWarmupTaskOutcome.gateClosed:
+            Log.info(
+              'Foreground idle warmup stopped during ${task.id.name}: '
+              'foreground=${_isForeground()}, idle=${_isIdle()}',
+              name: 'ForegroundIdleWarmupCoordinator',
+              category: LogCategory.system,
+            );
+            return;
+          case _ForegroundIdleWarmupTaskOutcome.timedOut:
+            Log.warning(
+              'Foreground idle warmup timed out '
+              '(${task.id.name}, ${trigger.name}, ${task.timeout.inSeconds}s)',
+              name: 'ForegroundIdleWarmupCoordinator',
+              category: LogCategory.system,
+            );
+            continue;
+        }
       } catch (error) {
         Log.warning(
           'Foreground idle warmup failed '
@@ -247,9 +273,42 @@ class ForegroundIdleWarmupCoordinator {
     }
   }
 
+  Future<_ForegroundIdleWarmupTaskOutcome> _runTask(
+    ForegroundIdleWarmupTask task,
+  ) async {
+    final gateChanges = _gateChanges;
+    StreamSubscription<void>? gateSubscription;
+    final gateClosed = Completer<_ForegroundIdleWarmupTaskOutcome>();
+
+    void completeIfGateClosed() {
+      if (_canRun || gateClosed.isCompleted) return;
+      gateClosed.complete(_ForegroundIdleWarmupTaskOutcome.gateClosed);
+    }
+
+    if (gateChanges != null) {
+      gateSubscription = gateChanges.listen((_) => completeIfGateClosed());
+      completeIfGateClosed();
+    }
+
+    try {
+      return await Future.any([
+        task.run().then((_) => _ForegroundIdleWarmupTaskOutcome.completed),
+        Future<_ForegroundIdleWarmupTaskOutcome>.delayed(
+          task.timeout,
+          () => _ForegroundIdleWarmupTaskOutcome.timedOut,
+        ),
+        if (gateChanges != null) gateClosed.future,
+      ]);
+    } finally {
+      await gateSubscription?.cancel();
+    }
+  }
+
   bool _isCoolingDown(ForegroundIdleWarmupTask task) {
     final lastSuccessAt = _lastSuccessAt[task.id];
     if (lastSuccessAt == null) return false;
     return _now().difference(lastSuccessAt) < task.cooldown;
   }
 }
+
+enum _ForegroundIdleWarmupTaskOutcome { completed, gateClosed, timedOut }
