@@ -84,6 +84,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   bool get isAutosavedDraft => state.isAutosavedDraft;
 
   int _renderGeneration = 0;
+  Future<void>? _activeRenderFuture;
 
   /// When true, [triggerAutosave] is a no-op.
   ///
@@ -939,10 +940,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   ///
   /// Combines all clips, applies audio settings, and creates the final
   /// rendered clip for publishing.
-  Future<void> startRenderVideo() async {
+  Future<void> startRenderVideo() {
     if (state.finalRenderedClip != null) {
       setProcessing(false);
-      return;
+      return Future<void>.value();
     }
 
     Log.info(
@@ -952,8 +953,19 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
     setProcessing(true);
 
-    final renderParameters = _buildRenderParameters();
     final generation = ++_renderGeneration;
+    late final Future<void> renderFuture;
+    renderFuture = _runRenderVideo(generation).whenComplete(() {
+      if (identical(_activeRenderFuture, renderFuture)) {
+        _activeRenderFuture = null;
+      }
+    });
+    _activeRenderFuture = renderFuture;
+    return renderFuture;
+  }
+
+  Future<void> _runRenderVideo(int generation) async {
+    final renderParameters = _buildRenderParameters();
 
     final result = await VideoEditorRenderService.renderVideoToClip(
       clips: _clips,
@@ -994,8 +1006,40 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Cancel an ongoing video render operation.
   Future<void> cancelRenderVideo() async {
+    final generation = ++_renderGeneration;
+    final activeRender = _activeRenderFuture;
     await VideoEditorRenderService.cancelTask(draftId);
-    state = state.copyWith(isProcessing: false);
+    if (activeRender != null) {
+      try {
+        await activeRender;
+      } catch (e) {
+        Log.debug(
+          'Render future completed after cancellation: $e',
+          name: 'VideoEditorNotifier',
+          category: LogCategory.video,
+        );
+      }
+    }
+    if (generation == _renderGeneration) {
+      state = state.copyWith(isProcessing: false);
+    }
+  }
+
+  /// Waits until the current render has completed or cancellation teardown has
+  /// unwound. Used by codec-heavy UI surfaces before rebuilding preview
+  /// decoders.
+  Future<void> waitForRenderIdle() async {
+    final activeRender = _activeRenderFuture;
+    if (activeRender == null) return;
+    try {
+      await activeRender;
+    } catch (e) {
+      Log.debug(
+        'Render future completed while waiting for idle: $e',
+        name: 'VideoEditorNotifier',
+        category: LogCategory.video,
+      );
+    }
   }
 
   /// Publish the video to the Nostr network.

@@ -187,6 +187,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   /// #5522). pro_image_editor invokes `onDone` before `onCompleteWithParameters`,
   /// so this is always created (in [_handleDone]) before it is awaited.
   Completer<void>? _decoderReleaseGate;
+  bool _isMetadataRouteActive = false;
 
   bool _isInitialized = false;
   bool _isImportingHistory = false;
@@ -1159,6 +1160,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     // contend for the device's scarce hardware codecs (see #5522). The gate is
     // created by [_handleDone], which always runs first.
     await (_decoderReleaseGate?.future ?? Future<void>.value());
+    if (!_isMetadataRouteActive) {
+      notifier.setProcessing(false);
+      return;
+    }
     notifier.startRenderVideo();
   }
 
@@ -1191,6 +1196,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     // context — timeout-bounded — when the scope didn't provide it.
     final awaitCover = VideoEditorScope.of(context).awaitPushCoverTransition;
     final gate = _decoderReleaseGate = Completer<void>();
+    _isMetadataRouteActive = true;
     final navigation = context.push(VideoMetadataScreen.path);
     try {
       await (awaitCover?.call() ??
@@ -1205,7 +1211,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       if (!gate.isCompleted) gate.complete();
     }
 
-    await navigation;
+    try {
+      await navigation;
+    } finally {
+      _isMetadataRouteActive = false;
+    }
+    if (!mounted || _clipPaths.isEmpty) return;
+    await ref.read(videoEditorProvider.notifier).waitForRenderIdle();
     if (!mounted || _clipPaths.isEmpty) return;
     await _initializePlayer(_clipPaths, startPosition: resumePosition);
     if (mounted && wasPlaying) {

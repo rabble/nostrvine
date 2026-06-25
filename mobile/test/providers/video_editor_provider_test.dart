@@ -898,6 +898,10 @@ void main() {
     });
 
     group('cancelRenderVideo', () {
+      tearDown(() {
+        VideoEditorRenderService.renderVideoToClipOverride = null;
+      });
+
       test(
         'resets isProcessing to false when clips are already empty',
         () async {
@@ -966,6 +970,55 @@ void main() {
 
         expect(container.read(videoEditorProvider).isProcessing, isFalse);
       });
+
+      test(
+        'waits for active render future to unwind before completing cancel',
+        () async {
+          final notifier = container.read(videoEditorProvider.notifier);
+
+          container
+              .read(clipManagerProvider.notifier)
+              .addClip(
+                video: EditorVideo.file('/docs/original.mp4'),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+                duration: const Duration(seconds: 2),
+                limitClipDuration: false,
+              );
+
+          final renderCompleter = Completer<(DivineVideoClip, String?)?>();
+          VideoEditorRenderService.renderVideoToClipOverride =
+              ({
+                required clips,
+                required editorStateHistory,
+                parameters,
+                taskId,
+              }) => renderCompleter.future;
+
+          final render = notifier.startRenderVideo();
+
+          var cancelCompleted = false;
+          final cancel = notifier.cancelRenderVideo().then(
+            (_) => cancelCompleted = true,
+          );
+
+          await Future<void>.delayed(Duration.zero);
+          expect(
+            cancelCompleted,
+            isFalse,
+            reason:
+                'cancel must not let the editor rebuild its preview decoder '
+                'until the active render future has released native resources',
+          );
+
+          renderCompleter.complete(null);
+          await cancel;
+          await render;
+
+          expect(cancelCompleted, isTrue);
+          expect(container.read(videoEditorProvider).isProcessing, isFalse);
+        },
+      );
     });
   });
 
