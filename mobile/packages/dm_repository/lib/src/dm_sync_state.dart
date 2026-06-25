@@ -161,6 +161,7 @@ class DmSyncState {
     await _prefs.remove('$_drainCompletePrefix$pubkey');
     await _prefs.remove('$_drainCursorPrefix$pubkey');
     await _prefs.remove('$_drainVersionPrefix$pubkey');
+    await _prefs.remove('$_dmRelayListPublishedPrefix$pubkey');
   }
 
   /// Removes all DM sync state entries for every pubkey.
@@ -176,7 +177,8 @@ class DmSyncState {
               key.startsWith(_oldestPrefix) ||
               key.startsWith(_drainCompletePrefix) ||
               key.startsWith(_drainCursorPrefix) ||
-              key.startsWith(_drainVersionPrefix),
+              key.startsWith(_drainVersionPrefix) ||
+              key.startsWith(_dmRelayListPublishedPrefix),
         )
         .toList();
     for (final key in keysToRemove) {
