@@ -394,5 +394,98 @@ void main() {
         );
       });
     });
+
+    group('outputToEditorPosition', () {
+      // 2×1s with a 500ms dissolve: editor axis 0..2s, output axis 0..1.5s.
+      // The blend covers editor [0.5s, 1.5s] (2×500ms) → 500ms of output.
+      final overlap500 = dissolve.copyWith(
+        duration: const Duration(milliseconds: 500),
+      );
+      final clips = [
+        clip('a', const Duration(seconds: 1), transition: overlap500),
+        clip('b', const Duration(seconds: 1)),
+      ];
+
+      test('is the identity before the blend region', () {
+        expect(
+          outputToEditorPosition(clips, const Duration(milliseconds: 250)),
+          equals(const Duration(milliseconds: 250)),
+        );
+      });
+
+      test('expands 1:2 inside the blend region', () {
+        // Output 0.75s sits at the blend midpoint → editor boundary 1s.
+        expect(
+          outputToEditorPosition(clips, const Duration(milliseconds: 750)),
+          equals(const Duration(seconds: 1)),
+        );
+      });
+
+      test('maps the output end onto the editor end', () {
+        expect(
+          outputToEditorPosition(clips, const Duration(milliseconds: 1500)),
+          equals(const Duration(seconds: 2)),
+        );
+      });
+
+      test('clamps a negative output to zero', () {
+        expect(
+          outputToEditorPosition(clips, const Duration(milliseconds: -100)),
+          equals(Duration.zero),
+        );
+      });
+
+      test('round-trips with editorToOutputPosition', () {
+        for (final editorMs in [0, 250, 500, 750, 1000, 1250, 1500, 2000]) {
+          final editor = Duration(milliseconds: editorMs);
+          final output = editorToOutputPosition(clips, editor);
+          expect(
+            outputToEditorPosition(clips, output),
+            equals(editor),
+            reason: 'editor ${editorMs}ms should survive a round-trip',
+          );
+        }
+      });
+
+      test('is the identity when no transition shortens the timeline', () {
+        final plain = [
+          clip('a', const Duration(seconds: 1)),
+          clip('b', const Duration(seconds: 1)),
+        ];
+
+        expect(
+          outputToEditorPosition(plain, const Duration(milliseconds: 1500)),
+          equals(const Duration(milliseconds: 1500)),
+        );
+      });
+    });
+
+    group(TransitionTimelineMap, () {
+      final overlap500 = dissolve.copyWith(
+        duration: const Duration(milliseconds: 500),
+      );
+
+      test('exposes editor and output durations for an overlap', () {
+        final map = TransitionTimelineMap.fromClips([
+          clip('a', const Duration(seconds: 1), transition: overlap500),
+          clip('b', const Duration(seconds: 1)),
+        ]);
+
+        expect(map.editorDuration, equals(const Duration(seconds: 2)));
+        expect(map.outputDuration, equals(const Duration(milliseconds: 1500)));
+      });
+
+      test('editor and output durations match for a dip', () {
+        final dip500 = fadeToBlack.copyWith(
+          duration: const Duration(milliseconds: 500),
+        );
+        final map = TransitionTimelineMap.fromClips([
+          clip('a', const Duration(seconds: 1), transition: dip500),
+          clip('b', const Duration(seconds: 1)),
+        ]);
+
+        expect(map.editorDuration, equals(map.outputDuration));
+      });
+    });
   });
 }

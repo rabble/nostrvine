@@ -1,10 +1,16 @@
 // ABOUTME: Widget tests for VideoEditorTimelineRulesIndicator.
 // ABOUTME: Validates ruler rendering, label formatting, and zoom-dependent density.
 
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart' as model;
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_rules_indicator.dart';
+import 'package:pro_video_editor/pro_video_editor.dart'
+    show ClipTransition, ClipTransitionType, EditorVideo;
 
 void main() {
   group(VideoEditorTimelineRulesIndicator, () {
@@ -18,10 +24,25 @@ void main() {
       scrollController.dispose();
     });
 
+    DivineVideoClip clip(
+      String id,
+      Duration duration, {
+      ClipTransition? transition,
+    }) => DivineVideoClip(
+      id: id,
+      video: EditorVideo.file('${Directory.systemTemp.path}/$id.mp4'),
+      duration: duration,
+      recordedAt: DateTime(2026),
+      targetAspectRatio: model.AspectRatio.vertical,
+      originalAspectRatio: 9 / 16,
+      transition: transition,
+    );
+
     Widget buildWidget({
       Duration totalDuration = const Duration(seconds: 10),
       double pixelsPerSecond = TimelineConstants.pixelsPerSecond,
       double scrollPadding = 0,
+      List<DivineVideoClip> clips = const [],
     }) {
       return Directionality(
         textDirection: TextDirection.ltr,
@@ -34,6 +55,7 @@ void main() {
             pixelsPerSecond: pixelsPerSecond,
             scrollController: scrollController,
             scrollPadding: scrollPadding,
+            clips: clips,
           ),
         ),
       );
@@ -74,6 +96,37 @@ void main() {
           ),
         );
         expect(sizedBox.width, equals(expectedWidth));
+      });
+
+      testWidgets('keeps the box on the editor axis with an overlap transition', (
+        tester,
+      ) async {
+        // 2×3s clips with a 1s dissolve: the rendered output is 5s, but the box
+        // must stay 6s wide so the ruler aligns with the full-length clip strip.
+        const pps = 100.0;
+        const dissolve1s = ClipTransition(
+          type: ClipTransitionType.dissolve,
+          duration: Duration(seconds: 1),
+        );
+        final clips = [
+          clip('a', const Duration(seconds: 3), transition: dissolve1s),
+          clip('b', const Duration(seconds: 3)),
+        ];
+
+        await tester.pumpWidget(
+          buildWidget(
+            totalDuration: const Duration(seconds: 6),
+            pixelsPerSecond: pps,
+            clips: clips,
+          ),
+        );
+
+        final sizedBox = tester.widget<SizedBox>(
+          find.byWidgetPredicate(
+            (w) => w is SizedBox && w.height == TimelineConstants.rulerHeight,
+          ),
+        );
+        expect(sizedBox.width, equals(6.0 * pps));
       });
     });
 

@@ -134,6 +134,7 @@ class VideoEditorTimelineBody extends StatelessWidget {
                     pixelsPerSecond: pixelsPerSecond,
                     scrollController: scrollController,
                     scrollPadding: scrollPadding,
+                    clips: clips,
                   ),
                 ),
               ),

@@ -136,6 +136,107 @@ Map<String, ClipTransition?> clampTransitions(List<DivineVideoClip> clips) {
   return clamped;
 }
 
+/// One overlap blend on the editor axis: the region
+/// `[editorStart, editorStart + 2×blend]` (clips at full length) compresses to
+/// `blend` of output. Dips are excluded — they don't shorten the timeline.
+class _Blend {
+  const _Blend({required this.editorStart, required this.blend});
+
+  final Duration editorStart;
+  final Duration blend;
+}
+
+/// Precomputed piecewise-linear map between the editor timeline (clips at full
+/// length) and the rendered output timeline. Build once with
+/// [TransitionTimelineMap.fromClips], then map any number of positions in
+/// either direction without re-running [clampTransitions] per call — the
+/// timeline ruler maps every visible tick on each scroll frame.
+///
+/// Each overlap boundary blends both clips for its duration, so the
+/// `2×duration`-wide editor region around the boundary compresses to
+/// `duration` of output; positions outside any blend map 1:1. The no-overlap
+/// clamp guarantees adjacent blend regions never touch, so the mapping is
+/// strictly monotonic and invertible.
+class TransitionTimelineMap {
+  TransitionTimelineMap._(
+    this._blends, {
+    required this.editorDuration,
+    required this.outputDuration,
+  });
+
+  factory TransitionTimelineMap.fromClips(List<DivineVideoClip> clips) {
+    final clamped = clampTransitions(clips);
+    var editorTotal = Duration.zero;
+    for (final clip in clips) {
+      editorTotal += clip.playbackDuration;
+    }
+
+    final blends = <_Blend>[];
+    var boundary = Duration.zero;
+    var removed = Duration.zero;
+    for (var i = 0; i < clips.length - 1; i++) {
+      boundary += clips[i].playbackDuration;
+      final transition = clamped[clips[i].id];
+      if (transition == null || !_shortensTimeline(transition.type)) continue;
+      final blend = transition.duration;
+      blends.add(_Blend(editorStart: boundary - blend, blend: blend));
+      removed += blend;
+    }
+
+    return TransitionTimelineMap._(
+      blends,
+      editorDuration: editorTotal,
+      outputDuration: editorTotal - removed,
+    );
+  }
+
+  /// Length of the editor timeline — clips laid out at full length.
+  final Duration editorDuration;
+
+  /// Length of the rendered output — [editorDuration] minus every overlap
+  /// blend. This is what the final export lasts.
+  final Duration outputDuration;
+
+  final List<_Blend> _blends;
+
+  /// Maps an editor-axis [position] onto the output axis.
+  Duration editorToOutput(Duration position) {
+    var removed = Duration.zero;
+    for (final b in _blends) {
+      final blendEnd = b.editorStart + b.blend * 2;
+      if (position >= blendEnd) {
+        removed += b.blend;
+      } else if (position > b.editorStart) {
+        // Linear inside the 2×blend-wide region → removes half the offset.
+        removed += Duration(
+          microseconds: (position - b.editorStart).inMicroseconds ~/ 2,
+        );
+      }
+    }
+    final output = position - removed;
+    return output.isNegative ? Duration.zero : output;
+  }
+
+  /// Inverse of [editorToOutput]: maps an output-axis [position] back to the
+  /// editor axis. Inside a blend the editor advances at twice the output rate.
+  Duration outputToEditor(Duration position) {
+    if (position.isNegative) return Duration.zero;
+    var removed = Duration.zero;
+    for (final b in _blends) {
+      final outBlendStart = b.editorStart - removed;
+      final outBlendEnd = outBlendStart + b.blend;
+      if (position >= outBlendEnd) {
+        removed += b.blend;
+      } else if (position > outBlendStart) {
+        return b.editorStart + (position - outBlendStart) * 2;
+      } else {
+        return position + removed;
+      }
+    }
+    return position + removed;
+  }
+}
+
 /// The duration of the rendered output for [clips] — the sum of clip playback
 /// lengths minus the blend each overlap transition removes (after the
 /// no-overlap clamp). Dips don't shorten the timeline, so they don't count.
@@ -143,49 +244,21 @@ Map<String, ClipTransition?> clampTransitions(List<DivineVideoClip> clips) {
 /// This is what the final export lasts, which differs from the editor
 /// timeline length (`ClipEditorState.totalDuration`, clips at full length)
 /// whenever an overlap transition is used.
-Duration renderedOutputDuration(List<DivineVideoClip> clips) {
-  final clamped = clampTransitions(clips);
-  var total = Duration.zero;
-  for (final clip in clips) {
-    total += clip.playbackDuration;
-  }
-  for (var i = 0; i < clips.length - 1; i++) {
-    final transition = clamped[clips[i].id];
-    if (transition != null && _shortensTimeline(transition.type)) {
-      total -= transition.duration;
-    }
-  }
-  return total;
-}
+Duration renderedOutputDuration(List<DivineVideoClip> clips) =>
+    TransitionTimelineMap.fromClips(clips).outputDuration;
 
 /// Maps an editor-timeline [position] (clips at full length) onto the rendered
-/// output timeline. Each overlap boundary blends both clips for its duration,
-/// so the `2×duration`-wide editor region around the boundary compresses to
-/// `duration` of output; positions before the blend map 1:1. Lets the header
-/// show where the playhead sits in the final video, not the editor.
+/// output timeline. Lets the header show where the playhead sits in the final
+/// video, not the editor.
 Duration editorToOutputPosition(
   List<DivineVideoClip> clips,
   Duration position,
-) {
-  final clamped = clampTransitions(clips);
-  var boundary = Duration.zero;
-  var removed = Duration.zero;
-  for (var i = 0; i < clips.length - 1; i++) {
-    boundary += clips[i].playbackDuration;
-    final transition = clamped[clips[i].id];
-    if (transition == null || !_shortensTimeline(transition.type)) continue;
-    final blend = transition.duration;
-    final blendStart = boundary - blend;
-    final blendEnd = boundary + blend;
-    if (position >= blendEnd) {
-      removed += blend;
-    } else if (position > blendStart) {
-      // Linear inside the 2×blend-wide region → removes half the offset.
-      removed += Duration(
-        microseconds: (position - blendStart).inMicroseconds ~/ 2,
-      );
-    }
-  }
-  final output = position - removed;
-  return output.isNegative ? Duration.zero : output;
-}
+) => TransitionTimelineMap.fromClips(clips).editorToOutput(position);
+
+/// Inverse of [editorToOutputPosition]: maps an output-timeline [position] back
+/// onto the editor axis. Lets the ruler place an output-time tick at the editor
+/// pixel where the clips actually sit, so it stays aligned with the strip.
+Duration outputToEditorPosition(
+  List<DivineVideoClip> clips,
+  Duration position,
+) => TransitionTimelineMap.fromClips(clips).outputToEditor(position);

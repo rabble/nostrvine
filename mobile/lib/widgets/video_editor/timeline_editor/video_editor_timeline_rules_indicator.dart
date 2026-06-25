@@ -1,12 +1,23 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/transition_geometry.dart';
 
 /// Ruler markers — "0s · 10f · 20f · 1s · …"
 ///
 /// Adapts label density based on [pixelsPerSecond]. At low zoom
 /// only whole-second labels appear; at high zoom frame-based
 /// sub-second markers (10f, 20f) fill the gaps — like TikTok.
+///
+/// Labels read the **rendered output** time, not the editor axis: an overlap
+/// transition (dissolve/slide/push/wipe) blends two clips so the output is
+/// shorter than the editor layout. The box keeps the editor width so it stays
+/// aligned with the clip strip and scrolls together, but each tick is placed at
+/// the editor pixel where its output second actually falls (via
+/// [TransitionTimelineMap.outputToEditor]). The ruler therefore agrees with the
+/// output-mapped header, stretching slightly across blend regions. Without an
+/// overlap transition the mapping is the identity and the ruler is unchanged.
 ///
 /// Uses [CustomPaint] with the [scrollController] as repaint
 /// listenable so only the ~10–20 visible labels are drawn per frame,
@@ -17,12 +28,19 @@ class VideoEditorTimelineRulesIndicator extends StatelessWidget {
     required this.pixelsPerSecond,
     required this.scrollController,
     required this.scrollPadding,
+    this.clips = const [],
     super.key,
   });
 
+  /// Editor-axis length (clips at full length). Drives the box width so the
+  /// ruler aligns with the clip strip.
   final Duration totalDuration;
   final double pixelsPerSecond;
   final ScrollController scrollController;
+
+  /// Clips on the timeline, used to map ruler ticks onto the output axis.
+  /// Empty falls back to the editor axis (identity mapping).
+  final List<DivineVideoClip> clips;
 
   /// Left padding of the enclosing [SingleChildScrollView].
   /// Needed so the painter can convert scroll offset to the
@@ -33,6 +51,7 @@ class VideoEditorTimelineRulesIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final totalSeconds = totalDuration.inMilliseconds / 1000.0;
     final totalWidth = totalSeconds * pixelsPerSecond;
+    final timelineMap = TransitionTimelineMap.fromClips(clips);
 
     return ExcludeSemantics(
       child: SizedBox(
@@ -44,6 +63,8 @@ class VideoEditorTimelineRulesIndicator extends StatelessWidget {
             pixelsPerSecond: pixelsPerSecond,
             scrollController: scrollController,
             scrollPadding: scrollPadding,
+            clips: clips,
+            timelineMap: timelineMap,
           ),
         ),
       ),
@@ -57,12 +78,16 @@ class _RulerPainter extends CustomPainter {
     required this.pixelsPerSecond,
     required this.scrollController,
     required this.scrollPadding,
+    required this.clips,
+    required this.timelineMap,
   }) : super(repaint: scrollController);
 
   final Duration totalDuration;
   final double pixelsPerSecond;
   final ScrollController scrollController;
   final double scrollPadding;
+  final List<DivineVideoClip> clips;
+  final TransitionTimelineMap timelineMap;
 
   static const double _minLabelSpacing = 30;
   static const int _fps = 30;
@@ -96,18 +121,23 @@ class _RulerPainter extends CustomPainter {
   static final Map<String, TextPainter> _tpCache = {};
   static const int _tpCacheMax = 256;
 
+  /// Labels count output seconds; the box and clip strip span the editor axis.
+  /// With no overlap transition the two axes coincide.
+  double get _outputSeconds {
+    final output = clips.isEmpty ? totalDuration : timelineMap.outputDuration;
+    return output.inMilliseconds / 1000.0;
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
-    final totalSeconds = totalDuration.inMilliseconds / 1000.0;
     final frameStep = _frameStepForZoom(pixelsPerSecond);
     final stepSeconds = frameStep / _fps;
-    final stepPx = stepSeconds * pixelsPerSecond;
-    final totalCount = (totalSeconds / stepSeconds).floor();
+    final totalCount = (_outputSeconds / stepSeconds).floor();
     final centerY = size.height / 2;
 
-    // Convert scroll offset to the ruler's local coordinate space.
-    // The ruler starts at [scrollPadding] within the scroll view,
-    // so subtract it to get the visible range in ruler-local pixels.
+    // Convert scroll offset to the ruler's local (editor-pixel) coordinate
+    // space. The ruler starts at [scrollPadding] within the scroll view, so
+    // subtract it to get the visible range in ruler-local pixels.
     //
     // Use [positions] instead of [position] to avoid the assertion
     // "ScrollController attached to multiple scroll views" that can
@@ -119,16 +149,26 @@ class _RulerPainter extends CustomPainter {
 
     final rulerStart = scrollOffset - scrollPadding;
 
-    // Add a buffer of one step on each side so labels at the edges
-    // don't pop in.
-    final visibleStart = rulerStart - stepPx;
-    final visibleEnd = rulerStart + viewportWidth + stepPx;
+    // The visible window is in editor pixels; map its edges to output seconds
+    // to pick which output ticks to draw, then place each one back on the
+    // editor axis. A one-step buffer on each side keeps edge labels from
+    // popping in.
+    final visibleStartOutput = _editorPxToOutputSeconds(rulerStart);
+    final visibleEndOutput = _editorPxToOutputSeconds(
+      rulerStart + viewportWidth,
+    );
 
-    final firstIndex = (visibleStart / stepPx).floor().clamp(0, totalCount);
-    final lastIndex = (visibleEnd / stepPx).ceil().clamp(0, totalCount);
+    final firstIndex = ((visibleStartOutput / stepSeconds).floor() - 1).clamp(
+      0,
+      totalCount,
+    );
+    final lastIndex = ((visibleEndOutput / stepSeconds).ceil() + 1).clamp(
+      0,
+      totalCount,
+    );
 
     for (var i = firstIndex; i <= lastIndex; i++) {
-      final x = i * stepPx;
+      final x = _outputSecondsToEditorPx(i * stepSeconds);
       final label = _formatLabel(i * frameStep);
 
       final tp = _tpCache.putIfAbsent(
@@ -147,6 +187,22 @@ class _RulerPainter extends CustomPainter {
 
       tp.paint(canvas, Offset(x, centerY - tp.height / 2));
     }
+  }
+
+  double _editorPxToOutputSeconds(double editorPx) {
+    if (clips.isEmpty) return editorPx / pixelsPerSecond;
+    final editor = Duration(
+      microseconds: (editorPx / pixelsPerSecond * 1e6).round(),
+    );
+    return timelineMap.editorToOutput(editor).inMicroseconds / 1e6;
+  }
+
+  double _outputSecondsToEditorPx(double outputSeconds) {
+    if (clips.isEmpty) return outputSeconds * pixelsPerSecond;
+    final output = Duration(microseconds: (outputSeconds * 1e6).round());
+    return timelineMap.outputToEditor(output).inMicroseconds /
+        1e6 *
+        pixelsPerSecond;
   }
 
   int _frameStepForZoom(double pps) {
@@ -168,5 +224,6 @@ class _RulerPainter extends CustomPainter {
   bool shouldRepaint(_RulerPainter oldDelegate) =>
       oldDelegate.totalDuration != totalDuration ||
       oldDelegate.pixelsPerSecond != pixelsPerSecond ||
-      oldDelegate.scrollPadding != scrollPadding;
+      oldDelegate.scrollPadding != scrollPadding ||
+      !identical(oldDelegate.clips, clips);
 }
