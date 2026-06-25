@@ -262,7 +262,8 @@ internal class VideoStabilizationTest {
     }
 }
 
-@RunWith(RobolectricTestRunner::class)
+// Pure decision logic with no Android framework dependency, so it runs on
+// the plain JUnit runner rather than Robolectric.
 internal class SurfaceProvisionTest {
     @Test
     fun existingSurfaceValid_reusesRegardlessOfTexture() {

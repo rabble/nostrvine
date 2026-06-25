@@ -13,6 +13,13 @@ import java.util.concurrent.RejectedExecutionException
  * otherwise crash the app with an uncaught `RejectedExecutionException` on
  * the MediaCodec thread. Swallowing the rejection makes teardown
  * timing-independent.
+ *
+ * Only [execute] is guarded. Kotlin's `by` delegation forwards `submit`,
+ * `invokeAll`, and `invokeAny` straight to [delegate], whose own `execute`
+ * (not this override) runs the task, so a rejection raised on those paths
+ * would still propagate. That is sufficient here because `EncoderImpl` posts
+ * its teardown callbacks via `execute(...)`; extend this wrapper if a future
+ * caller routes work through `submit(...)`.
  */
 internal class RejectionTolerantExecutorService(
     private val delegate: ExecutorService,
