@@ -203,19 +203,82 @@ class _PlaceholderOverlayState extends State<_PlaceholderOverlay> {
   /// Fade-out duration from the placeholder to the first video frame.
   static const _fadeDuration = Duration(milliseconds: 120);
 
+  StreamSubscription<bool>? _firstFrameSubscription;
+  var _firstFrameWaitToken = 0;
   bool _firstFrameRendered = false;
   bool _faded = false;
 
   @override
   void initState() {
     super.initState();
-    unawaited(_awaitFirstFrame());
+    _listenToFirstFrameState();
+    _awaitFirstFrame();
   }
 
-  Future<void> _awaitFirstFrame() async {
-    await widget.controller.firstFrameRendered;
-    if (!mounted) return;
+  @override
+  void didUpdateWidget(covariant _PlaceholderOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller == widget.controller) return;
+
+    unawaited(_firstFrameSubscription?.cancel());
+    _firstFrameSubscription = null;
+    _firstFrameRendered = false;
+    _faded = false;
+    _listenToFirstFrameState();
+    _awaitFirstFrame();
+  }
+
+  @override
+  void dispose() {
+    _firstFrameWaitToken++;
+    unawaited(_firstFrameSubscription?.cancel());
+    super.dispose();
+  }
+
+  void _listenToFirstFrameState() {
+    final controller = widget.controller;
+    _firstFrameSubscription = controller.stateStream
+        .map((state) => state.isFirstFrameRendered)
+        .distinct()
+        .listen((isFirstFrameRendered) {
+          if (controller != widget.controller) return;
+          _handleFirstFrameState(isFirstFrameRendered);
+        });
+  }
+
+  void _handleFirstFrameState(bool isFirstFrameRendered) {
+    if (isFirstFrameRendered) {
+      _markFirstFrameRendered();
+      return;
+    }
+
+    _resetForNextFirstFrame();
+    _awaitFirstFrame();
+  }
+
+  void _awaitFirstFrame() {
+    final token = ++_firstFrameWaitToken;
+    unawaited(
+      widget.controller.firstFrameRendered.then((_) {
+        if (!mounted || token != _firstFrameWaitToken || _firstFrameRendered) {
+          return;
+        }
+        setState(() => _firstFrameRendered = true);
+      }),
+    );
+  }
+
+  void _markFirstFrameRendered() {
+    if (_firstFrameRendered) return;
     setState(() => _firstFrameRendered = true);
+  }
+
+  void _resetForNextFirstFrame() {
+    if (!_firstFrameRendered && !_faded) return;
+    setState(() {
+      _firstFrameRendered = false;
+      _faded = false;
+    });
   }
 
   @override

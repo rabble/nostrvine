@@ -436,6 +436,56 @@ void main() {
         expect(find.text('Loading...'), findsNothing);
       },
     );
+
+    testWidgets(
+      'shows placeholder again after setClips resets first frame state',
+      (tester) async {
+        final linuxController = await initLinuxController(
+          firstFrameRendered: true,
+        );
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: DivineVideoPlayer(
+              controller: linuxController,
+              placeholder: const Text('Loading...'),
+              crossFadePlaceholder: true,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Loading...'), findsNothing);
+
+        await linuxController.setClips(const [VideoClip(uri: '/next.mp4')]);
+        await tester.pump();
+
+        expect(find.text('Loading...'), findsOneWidget);
+        expect(
+          tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity)).opacity,
+          1.0,
+        );
+
+        _FakeLinuxBackend.instance!.emitState(
+          const DivineVideoPlayerState(
+            status: PlaybackStatus.ready,
+            clipCount: 1,
+            isFirstFrameRendered: true,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Loading...'), findsOneWidget);
+        expect(
+          tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity)).opacity,
+          0.0,
+        );
+
+        await tester.pumpAndSettle();
+        expect(find.text('Loading...'), findsNothing);
+      },
+    );
   });
 }
 

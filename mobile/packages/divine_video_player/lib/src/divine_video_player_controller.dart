@@ -393,6 +393,12 @@ class DivineVideoPlayerController {
     }
     if (_firstFrameCompleter.isCompleted) {
       _firstFrameCompleter = Completer<bool>();
+      if (_state.isFirstFrameRendered) {
+        _state = _state.copyWith(isFirstFrameRendered: false);
+        if (!_stateController.isClosed) {
+          _stateController.add(_state);
+        }
+      }
     }
     if (_isWebBackend) {
       await _webBackend!.setClips(clips, startPosition: startPosition);
