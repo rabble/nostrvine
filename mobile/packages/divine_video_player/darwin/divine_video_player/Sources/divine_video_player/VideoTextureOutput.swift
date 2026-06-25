@@ -66,6 +66,28 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     private var mediaDataRearmCount = 0
     private static let maxMediaDataRearmCount = 10
 
+    /// Item time of the most recently delivered frame, or `.invalid` until
+    /// the first frame and after every attach / flush. Used to detect a
+    /// "playing but frozen" texture: when the player clock advances past this
+    /// while `copyPixelBuffer` keeps returning `nil`, the output pull is
+    /// wedged and needs an explicit re-prime (see `pullAndDeliverFrame`).
+    private var lastDeliveredItemTime: CMTime = .invalid
+
+    /// Throttle (monotonic `CACurrentMediaTime()`) gating how often the
+    /// stalled-texture recovery may re-arm the output, so a persistently
+    /// wedged frame can't spam `requestNotificationOfMediaDataChange` on
+    /// every display-link tick.
+    private var nextStallRecoveryTime: CFTimeInterval = 0
+
+    /// How far the player clock must advance past `lastDeliveredItemTime`
+    /// with no new frame before the texture counts as stalled. Comfortably
+    /// above a normal between-tick frame gap so brief decode hiccups and the
+    /// loop-boundary time reset don't trip it.
+    private static let stalledTextureAdvanceSeconds = 0.25
+
+    /// Minimum spacing between stalled-texture recovery re-arms.
+    private static let stallRecoveryIntervalSeconds: CFTimeInterval = 0.3
+
     /// Serialises access to `latestPixelBuffer`, which is written on the
     /// display-link callback (main thread) and read on Flutter's render
     /// thread via `copyPixelBuffer()`.
@@ -140,6 +162,8 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         hasDeliveredFirstFrame = false
         pendingSeekTime = .invalid
         mediaDataRearmCount = 0
+        lastDeliveredItemTime = .invalid
+        nextStallRecoveryTime = 0
 
         // The first `copyPixelBuffer` attempt right after attach often
         // races decoder init (especially on HEVC 10-bit / HDR), and
@@ -208,7 +232,7 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         forceRefreshDeadline = 0
         forceWindowFailCount = 0
         mediaDataRearmCount = 0
-        deliverFrame(pixelBuffer)
+        deliverFrame(pixelBuffer, at: time)
         return true
     }
 
@@ -217,6 +241,7 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     /// Called after a seek flushes the output queue.
     func outputSequenceWasFlushed(_ output: AVPlayerItemOutput) {
         mediaDataRearmCount = 0
+        lastDeliveredItemTime = .invalid
         (output as? AVPlayerItemVideoOutput)?
             .requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
     }
@@ -252,7 +277,7 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         pendingSeekTime = .invalid
         forceRefreshDeadline = 0
         forceWindowFailCount = 0
-        deliverFrame(pixelBuffer)
+        deliverFrame(pixelBuffer, at: targetTime)
     }
 
     // MARK: - App lifecycle
@@ -345,7 +370,9 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     }
     #endif
 
-    private func deliverFrame(_ pixelBuffer: CVPixelBuffer) {
+    private func deliverFrame(_ pixelBuffer: CVPixelBuffer, at itemTime: CMTime) {
+        lastDeliveredItemTime = itemTime
+        nextStallRecoveryTime = 0
         os_unfair_lock_lock(&pixelBufferLock)
         latestPixelBuffer = pixelBuffer
         os_unfair_lock_unlock(&pixelBufferLock)
@@ -374,7 +401,7 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
                 pendingSeekTime = .invalid
                 forceRefreshDeadline = 0
                 forceWindowFailCount = 0
-                deliverFrame(pixelBuffer)
+                deliverFrame(pixelBuffer, at: itemTime)
             } else {
                 forceWindowFailCount += 1
             }
@@ -394,19 +421,53 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         }
 
         // Skip `hasNewPixelBuffer(forItemTime:)` and just attempt the
-        // copy. With an `AVMutableComposition` + `AVVideoComposition`,
-        // the predicate returns `false` indefinitely on some HEVC
-        // sources even while the player is actively decoding — audio
-        // continues, time advances, but the texture stays on the first
-        // frame until a flush (loop restart) clears the deadlock.
-        // `copyPixelBuffer(forItemTime:)` is cheap when no new frame
-        // is ready (returns `nil`), so polling it on every display-link
-        // tick costs only the call itself.
+        // copy. The predicate returns `false` indefinitely on some
+        // sources (HEVC over `AVMutableComposition`, and progressive
+        // MP4 under decode pressure) even while the player is actively
+        // decoding — audio continues and time advances, but the texture
+        // wedges on the last frame. `copyPixelBuffer(forItemTime:)` is
+        // cheap when no new frame is ready (returns `nil`), so polling
+        // it on every display-link tick costs only the call itself; a
+        // sustained `nil` streak while playing triggers an explicit
+        // re-prime via `recoverStalledTextureIfNeeded`.
         if let pixelBuffer = output.copyPixelBuffer(
             forItemTime: itemTime,
             itemTimeForDisplay: nil
         ) {
-            deliverFrame(pixelBuffer)
+            deliverFrame(pixelBuffer, at: itemTime)
+        } else {
+            recoverStalledTextureIfNeeded(output, itemTime: itemTime)
         }
+    }
+
+    /// Breaks the "playing but frozen" deadlock where `AVPlayerItemVideoOutput`
+    /// keeps returning `nil` from `copyPixelBuffer` while the player clock
+    /// keeps advancing — audio plays on, but the texture stays on the last
+    /// delivered frame until the next flush (loop restart) clears it. Re-arms
+    /// the output's media-data notification — the same unstick the loop flush
+    /// performs in `outputSequenceWasFlushed` — as soon as the clock has
+    /// demonstrably moved past `lastDeliveredItemTime`, so playback recovers
+    /// mid-clip instead of only on the next loop.
+    ///
+    /// Gated so it can't fire spuriously: a paused player legitimately holds
+    /// its last frame (`rate <= 0`), and a genuine buffer underrun freezes the
+    /// player clock too (`itemTime` stops advancing), so neither trips it.
+    /// Throttled to one re-arm per `stallRecoveryIntervalSeconds`.
+    private func recoverStalledTextureIfNeeded(
+        _ output: AVPlayerItemVideoOutput,
+        itemTime: CMTime
+    ) {
+        guard let player, player.rate > 0, lastDeliveredItemTime.isValid
+        else { return }
+        let advanced = CMTimeGetSeconds(itemTime)
+            - CMTimeGetSeconds(lastDeliveredItemTime)
+        guard advanced > VideoTextureOutput.stalledTextureAdvanceSeconds
+        else { return }
+        let now = CACurrentMediaTime()
+        guard now >= nextStallRecoveryTime else { return }
+        nextStallRecoveryTime =
+            now + VideoTextureOutput.stallRecoveryIntervalSeconds
+        mediaDataRearmCount = 0
+        output.requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
     }
 }
