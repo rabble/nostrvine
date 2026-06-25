@@ -25,6 +25,7 @@ class ShutterGestureDetector extends StatefulWidget {
     super.key,
     this.isLongPressSupported = true,
     this.startsRecordingOnPressDown = false,
+    this.onLongPressZoomStart,
     this.onLongPressMoveUpdate,
     this.behavior,
   });
@@ -37,6 +38,11 @@ class ShutterGestureDetector extends StatefulWidget {
   final VoidCallback onTapToggle;
   final VoidCallback onLongPressStartRecording;
   final VoidCallback onLongPressStopRecording;
+
+  /// Fires at the start of every long-press gesture, before any move updates
+  /// and even when the press lands on an already-active recording. Lets the
+  /// host capture the zoom level that [onLongPressMoveUpdate] drags anchor to.
+  final VoidCallback? onLongPressZoomStart;
   final GestureLongPressMoveUpdateCallback? onLongPressMoveUpdate;
   final HitTestBehavior? behavior;
 
@@ -76,6 +82,10 @@ class _ShutterGestureDetectorState extends State<ShutterGestureDetector> {
   }
 
   void _handleLongPressStart(LongPressStartDetails _) {
+    // Anchor the zoom base for this gesture before the recording-state gate,
+    // so a long-press that only zooms (recording already active) still
+    // captures it.
+    widget.onLongPressZoomStart?.call();
     if (widget.isRecording) return;
     _startedByLongPress = true;
     widget.onLongPressStartRecording();

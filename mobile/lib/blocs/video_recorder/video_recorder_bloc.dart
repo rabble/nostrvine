@@ -203,6 +203,7 @@ class VideoRecorderBloc
       _onRecordingStopRequested,
       transformer: sequential(),
     );
+    on<VideoRecorderLongPressZoomStarted>(_onLongPressZoomStarted);
     on<VideoRecorderZoomedByLongPress>(_onZoomedByLongPress);
     on<VideoRecorderScaleStarted>(_onScaleStarted);
     on<VideoRecorderScaleUpdated>(_onScaleUpdated);
@@ -975,6 +976,17 @@ class VideoRecorderBloc
     try {
       await File(workCopyPath).delete();
     } catch (_) {}
+  }
+
+  void _onLongPressZoomStarted(
+    VideoRecorderLongPressZoomStarted event,
+    Emitter<VideoRecorderBlocState> emit,
+  ) {
+    // Anchor the drag-zoom to the zoom level in effect when the gesture
+    // begins. Without this, a long-press on a recording started elsewhere
+    // (tap, volume key, BLE remote) — or one resumed after a pinch changed the
+    // zoom — would measure from a stale base and snap on the first move.
+    emit(state.copyWith(baseZoomLevel: state.zoomLevel));
   }
 
   Future<void> _onZoomedByLongPress(

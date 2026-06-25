@@ -163,6 +163,16 @@ final class VideoRecorderRecordingStopRequested extends VideoRecorderEvent {
   List<Object?> get props => [result];
 }
 
+/// A long-press gesture began — captures the current zoom as the base that
+/// subsequent [VideoRecorderZoomedByLongPress] drags are measured from.
+///
+/// Recording-start already anchors the base for hold-to-record, but a
+/// long-press that lands on a recording started elsewhere (tap, volume key,
+/// BLE remote) never re-runs that path, so it needs its own capture.
+final class VideoRecorderLongPressZoomStarted extends VideoRecorderEvent {
+  const VideoRecorderLongPressZoomStarted();
+}
+
 /// Adjusts zoom by vertical drag offset during a long-press gesture.
 final class VideoRecorderZoomedByLongPress extends VideoRecorderEvent {
   const VideoRecorderZoomedByLongPress(this.offsetFromOrigin);

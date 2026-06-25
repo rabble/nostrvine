@@ -75,6 +75,11 @@ class RecordButton extends ConsumerWidget {
         onLongPressStopRecording: () => context.read<VideoRecorderBloc>().add(
           const VideoRecorderRecordingStopRequested(),
         ),
+        onLongPressZoomStart: isLongPressSupported
+            ? () => context.read<VideoRecorderBloc>().add(
+                const VideoRecorderLongPressZoomStarted(),
+              )
+            : null,
         onLongPressMoveUpdate: state.isRecording && isLongPressSupported
             ? (details) => context.read<VideoRecorderBloc>().add(
                 VideoRecorderZoomedByLongPress(details.localOffsetFromOrigin),

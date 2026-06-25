@@ -9,6 +9,7 @@ void main() {
       required VoidCallback onTapToggle,
       required VoidCallback onLongPressStartRecording,
       required VoidCallback onLongPressStopRecording,
+      VoidCallback? onLongPressZoomStart,
       bool isRecording = false,
       bool isEnabled = true,
       bool isLongPressSupported = true,
@@ -27,6 +28,7 @@ void main() {
               onTapToggle: onTapToggle,
               onLongPressStartRecording: onLongPressStartRecording,
               onLongPressStopRecording: onLongPressStopRecording,
+              onLongPressZoomStart: onLongPressZoomStart,
               child: const SizedBox(width: 80, height: 80),
             ),
           ),
@@ -77,6 +79,58 @@ void main() {
 
         expect(started, equals(0));
         expect(stopped, equals(0));
+      },
+    );
+
+    testWidgets('long-press from idle captures the zoom base then records', (
+      tester,
+    ) async {
+      var zoomStart = 0;
+      var started = 0;
+      await pumpHost(
+        tester,
+        onTapToggle: () {},
+        onLongPressStartRecording: () => started++,
+        onLongPressStopRecording: () {},
+        onLongPressZoomStart: () => zoomStart++,
+      );
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(ShutterGestureDetector)),
+      );
+      await tester.pump(const Duration(seconds: 1));
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(zoomStart, equals(1));
+      expect(started, equals(1));
+    });
+
+    testWidgets(
+      'long-press on an active recording still captures the zoom base',
+      (tester) async {
+        var zoomStart = 0;
+        var started = 0;
+        await pumpHost(
+          tester,
+          isRecording: true,
+          onTapToggle: () {},
+          onLongPressStartRecording: () => started++,
+          onLongPressStopRecording: () {},
+          onLongPressZoomStart: () => zoomStart++,
+        );
+
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(ShutterGestureDetector)),
+        );
+        await tester.pump(const Duration(seconds: 1));
+        await gesture.up();
+        await tester.pumpAndSettle();
+
+        // Path B: the press did not start the recording (it was already
+        // active) but must still anchor the drag-zoom base.
+        expect(zoomStart, equals(1));
+        expect(started, equals(0));
       },
     );
 
