@@ -14,7 +14,6 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -299,9 +298,11 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
           _resumeAutoAdvanceAfterSwipe();
           widget.onActiveVideoChanged?.call(video, index);
         },
+        // Do not pass maxLoopDuration here. Feed playback should loop at the
+        // asset boundary; restarting with a Dart seek at the 6.3s recording
+        // limit creates an audible seam.
         onVideoLoopCompleted: _handleAutoAdvanceCompleted,
         shouldPortraitExpand: widget.shouldPortraitExpand,
-        maxLoopDuration: VideoEditorConstants.maxDuration,
         canAutoPlay: _canAutoPlayVideo,
         videoBuilder: (context, child, index, controller) {
           if (index < 0 || index >= widget.videos.length) {
