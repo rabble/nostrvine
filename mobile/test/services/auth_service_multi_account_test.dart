@@ -2101,7 +2101,7 @@ void main() {
     });
 
     test(
-      'destructive sign-out passes the signed-in pubkey to cleanup',
+      'remove-device sign-out preserves owner-scoped data for signed-in pubkey',
       () async {
         SharedPreferences.setMockInitialValues({
           'authentication_source': 'automatic',
@@ -2117,7 +2117,8 @@ void main() {
           () => mockCleanupService.clearUserSpecificData(
             reason: 'explicit_logout',
             userPubkey: expectedPubkey,
-            deleteUserData: true,
+            // ignore: avoid_redundant_argument_values
+            deleteUserData: false,
           ),
         ).called(1);
       },

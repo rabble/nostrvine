@@ -79,7 +79,10 @@ void main() {
       ).thenAnswer((_) async => PublishSuccess(event: mockEvent));
 
       when(
-        () => mockAuthService.signOut(deleteKeys: true),
+        () => mockAuthService.signOut(
+          deleteKeys: true,
+          deleteLocalUserData: true,
+        ),
       ).thenAnswer((_) async => Future.value());
 
       final deletionService = AccountDeletionService(
@@ -120,8 +123,13 @@ void main() {
       // Verify NIP-62 event was published
       verify(() => mockNostrService.publishEvent(any())).called(1);
 
-      // Verify user was signed out with keys deleted
-      verify(() => mockAuthService.signOut(deleteKeys: true)).called(1);
+      // Verify user was signed out with keys and local user data deleted
+      verify(
+        () => mockAuthService.signOut(
+          deleteKeys: true,
+          deleteLocalUserData: true,
+        ),
+      ).called(1);
 
       // Verify completion dialog appears
       expect(find.text('✓ Account Deleted'), findsOneWidget);

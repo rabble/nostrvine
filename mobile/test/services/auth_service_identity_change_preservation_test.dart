@@ -207,7 +207,7 @@ void main() {
     );
 
     test(
-      'explicit account removal (deleteKeys: true) still deletes user data',
+      'remove-device signOut (deleteKeys: true) preserves user data by default',
       () async {
         // First sign in so there is a current identity to sign out from.
         when(
@@ -215,7 +215,8 @@ void main() {
         ).thenReturn(false);
         await _ignoringDiscoveryErrors(authService.createNewIdentity);
 
-        // Now perform a destructive sign-out (account deletion / remove keys).
+        // Now remove local login material. This must not delete device-local
+        // drafts/clips because they are scoped by ownerPubkey.
         when(
           () => mockCleanupService.clearUserSpecificData(
             reason: any(named: 'reason'),
@@ -226,16 +227,42 @@ void main() {
 
         await authService.signOut(deleteKeys: true);
 
-        // The explicit-logout path must still pass deleteUserData: true.
+        // The explicit-logout path preserves owner-scoped local data by default.
         verify(
           () => mockCleanupService.clearUserSpecificData(
             reason: 'explicit_logout',
             userPubkey: any(named: 'userPubkey'),
-            deleteUserData: true,
+            // ignore: avoid_redundant_argument_values
+            deleteUserData: false,
           ),
         ).called(1);
       },
     );
+
+    test('account deletion opts in to deleting local user data', () async {
+      when(
+        () => mockCleanupService.shouldClearDataForUser(any()),
+      ).thenReturn(false);
+      await _ignoringDiscoveryErrors(authService.createNewIdentity);
+
+      when(
+        () => mockCleanupService.clearUserSpecificData(
+          reason: any(named: 'reason'),
+          userPubkey: any(named: 'userPubkey'),
+          deleteUserData: any(named: 'deleteUserData'),
+        ),
+      ).thenAnswer((_) async => 0);
+
+      await authService.signOut(deleteKeys: true, deleteLocalUserData: true);
+
+      verify(
+        () => mockCleanupService.clearUserSpecificData(
+          reason: 'explicit_logout',
+          userPubkey: any(named: 'userPubkey'),
+          deleteUserData: true,
+        ),
+      ).called(1);
+    });
 
     test(
       'non-destructive signOut (account switch) passes deleteUserData: false',

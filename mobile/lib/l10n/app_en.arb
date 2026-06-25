@@ -1137,7 +1137,7 @@
   "nostrSettingsClientAttribution": "Client Attribution",
   "nostrSettingsClientAttributionSubtitle": "Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.",
   "nostrSettingsRemoveKeys": "Remove this account from this device",
-  "nostrSettingsRemoveKeysSubtitle": "Remove this account's local login from this device. This won't delete your Divine account or Nostr identity.",
+  "nostrSettingsRemoveKeysSubtitle": "Remove this account's local login from this device. Your local drafts and clips stay saved for this account.",
   "nostrSettingsCouldNotRemoveKeys": "Could not remove this account from this device. Please try again.",
   "nostrSettingsFailedToRemoveKeys": "Failed to remove this account: {error}",
   "@nostrSettingsFailedToRemoveKeys": {
@@ -3634,7 +3634,7 @@
   "deleteAccountPreparingDeletion": "Preparing deletion...",
   "deleteAccountProgressEvents": "{current} / {total} events",
   "@deleteAccountProgressEvents": {"placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}},
-  "deleteAccountRemoveKeysBody": "This removes the local login for this account from this device. It won't delete your Divine account or Nostr identity.\n\nIf this is your last local account, you'll return to the login screen.",
+  "deleteAccountRemoveKeysBody": "This removes the local login for this account from this device. It won't delete your Divine account or Nostr identity.\n\nYour drafts and clips stay saved on this device for this account. If this is your last local account, you'll return to the login screen.",
   "deleteAccountRemoveKeysConfirm": "Remove from device",
   "deleteAccountRemoveKeysTitle": "Remove this account from this device?",
   "deleteAccountServerDeletionFailed": "Could not delete your account from the server. Please check your connection and try again.",

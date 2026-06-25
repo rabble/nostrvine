@@ -333,14 +333,14 @@ Future<void> executeAccountDeletion({
         );
       }
 
-      // Step 3: Sign out and delete local keys
+      // Step 3: Sign out, delete local keys, and clear local account data
       // Router will automatically redirect to /welcome when auth state
       // becomes unauthenticated.
       // signOut may throw SecureKeyStorageException if platform key
       // deletion failed — the user IS signed out but keys may remain.
       String? keyDeletionWarning;
       try {
-        await authService.signOut(deleteKeys: true);
+        await authService.signOut(deleteKeys: true, deleteLocalUserData: true);
       } on SecureKeyStorageException catch (e) {
         Log.warning(
           'Key deletion failed during account deletion: $e',

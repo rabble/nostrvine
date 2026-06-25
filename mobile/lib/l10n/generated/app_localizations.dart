@@ -3637,7 +3637,7 @@ abstract class AppLocalizations {
   /// No description provided for @nostrSettingsRemoveKeysSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Remove this account\'s local login from this device. This won\'t delete your Divine account or Nostr identity.'**
+  /// **'Remove this account\'s local login from this device. Your local drafts and clips stay saved for this account.'**
   String get nostrSettingsRemoveKeysSubtitle;
 
   /// No description provided for @nostrSettingsCouldNotRemoveKeys.
@@ -11378,7 +11378,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteAccountRemoveKeysBody.
   ///
   /// In en, this message translates to:
-  /// **'This removes the local login for this account from this device. It won\'t delete your Divine account or Nostr identity.\n\nIf this is your last local account, you\'ll return to the login screen.'**
+  /// **'This removes the local login for this account from this device. It won\'t delete your Divine account or Nostr identity.\n\nYour drafts and clips stay saved on this device for this account. If this is your last local account, you\'ll return to the login screen.'**
   String get deleteAccountRemoveKeysBody;
 
   /// No description provided for @deleteAccountRemoveKeysConfirm.

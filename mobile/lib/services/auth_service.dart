@@ -3705,6 +3705,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// When [deleteKeys] is true, the current account's local login material is
   /// removed from the device.
   ///
+  /// When [deleteLocalUserData] is true, owner-scoped local rows for the
+  /// current account are also deleted. Keep this false for "Remove this account
+  /// from this device" so device-local drafts/clips survive re-login. Use true
+  /// only for flows that explicitly delete the account and its local data.
+  ///
   /// When [abortOnKeyDeletionFailure] is true (only meaningful with
   /// [deleteKeys]), platform key deletion is attempted **before** any
   /// session cleanup. If deletion fails the method throws immediately and
@@ -3719,6 +3724,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   Future<void> signOut({
     bool deleteKeys = false,
     bool abortOnKeyDeletionFailure = false,
+    bool deleteLocalUserData = false,
   }) async {
     final pubkeyAtSignOutStart = _currentKeyContainer?.publicKeyHex;
     final npubAtSignOutStart = _currentKeyContainer?.npub;
@@ -3727,6 +3733,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       'authSource=${_authSource.name}, '
       'deleteKeys=$deleteKeys, '
       'abortOnKeyDeletionFailure=$abortOnKeyDeletionFailure, '
+      'deleteLocalUserData=$deleteLocalUserData, '
       'currentPubkey=${_currentKeyContainer?.publicKeyHex ?? "null"}',
       name: 'AuthService',
       category: LogCategory.auth,
@@ -3792,13 +3799,13 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       await prefs.remove('terms_accepted_at');
 
       // Clear user-specific cached data on explicit logout.
-      // Per-user DAO rows (drafts, clips, uploads, etc.) are only deleted
-      // on destructive sign-out (deleteKeys=true). Non-destructive sign-out
-      // (account switch) preserves them since they're scoped by ownerPubkey.
+      // Owner-scoped local rows (drafts, clips, uploads, etc.) are only
+      // deleted when the caller explicitly opts in. Removing local login
+      // material from the device is not enough reason to destroy local work.
       await _userDataCleanupService.clearUserSpecificData(
         reason: 'explicit_logout',
         userPubkey: _currentKeyContainer?.publicKeyHex,
-        deleteUserData: deleteKeys,
+        deleteUserData: deleteLocalUserData,
       );
 
       // Clear configured relays so next login re-discovers from NIP-65
@@ -4950,8 +4957,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         // clips, pending uploads) are already invisible to the incoming account
         // because every query filters by ownerPubkey. Deleting them here would
         // cause permanent data loss on account switch and mismatched re-login.
-        // Destructive per-user DAO deletion is reserved for explicit account
-        // removal (signOut(deleteKeys: true)).
+        // Destructive per-user DAO deletion is reserved for account deletion
+        // (signOut(deleteKeys: true, deleteLocalUserData: true)).
         await _userDataCleanupService.clearUserSpecificData(
           reason: 'identity_change',
           isIdentityChange: true,

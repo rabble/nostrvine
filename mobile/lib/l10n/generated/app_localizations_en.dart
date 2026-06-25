@@ -2062,7 +2062,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nostrSettingsRemoveKeysSubtitle =>
-      'Remove this account\'s local login from this device. This won\'t delete your Divine account or Nostr identity.';
+      'Remove this account\'s local login from this device. Your local drafts and clips stay saved for this account.';
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
@@ -6501,7 +6501,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountRemoveKeysBody =>
-      'This removes the local login for this account from this device. It won\'t delete your Divine account or Nostr identity.\n\nIf this is your last local account, you\'ll return to the login screen.';
+      'This removes the local login for this account from this device. It won\'t delete your Divine account or Nostr identity.\n\nYour drafts and clips stay saved on this device for this account. If this is your last local account, you\'ll return to the login screen.';
 
   @override
   String get deleteAccountRemoveKeysConfirm => 'Remove from device';
