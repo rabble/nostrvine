@@ -92,6 +92,38 @@ class VideoEditorCanvas extends StatelessWidget {
     required bool seedSelectedSoundAsAudioTrack,
   }) => hasSelectedSound && seedSelectedSoundAsAudioTrack;
 
+  /// Tolerance within which a player position report is treated as having
+  /// converged on a pending scrub / swap target. Comfortably wider than a
+  /// single frame and the native report interval (~200ms) so an exact seek's
+  /// settled report is accepted, yet far narrower than the multi-second gap
+  /// back to position 0 whose reset report must be rejected.
+  @visibleForTesting
+  static const seekSettleTolerance = Duration(milliseconds: 120);
+
+  /// Whether a player position [report] (in editor-timeline space) may drive
+  /// the play time, given a possibly-pending [seekTarget] that a scrub or a
+  /// composition swap pinned the play time to.
+  ///
+  /// When a transition seam finishes rendering the composition is swapped to
+  /// splice in the freshly rendered seam file; while the native player loads
+  /// that file it briefly reports position 0, which — if accepted — snaps the
+  /// timeline playhead back to the start. Rapid back-and-forth scrubbing emits
+  /// the same kind of stale, superseded report. While a target is pending and
+  /// playback is paused, only a report that has converged to within
+  /// [seekSettleTolerance] of the target is accepted; anything else is a stale
+  /// / reset report and is dropped. Playback always accepts reports — once
+  /// playing, the play time follows playback, not the pinned target.
+  @visibleForTesting
+  static bool shouldAcceptPlayerReport({
+    required Duration report,
+    required Duration? seekTarget,
+    required bool isPlaying,
+  }) {
+    if (isPlaying || seekTarget == null) return true;
+    final delta = report - seekTarget;
+    return (delta.isNegative ? -delta : delta) <= seekSettleTolerance;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSubEditorOpen = context.select(
@@ -200,6 +232,22 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   /// Monotonically increasing seek generation. Bumped on every composition
   /// swap so in-flight seeks from the previous composition are discarded.
   int _seekEpoch = 0;
+
+  /// Editor-timeline position the play time is currently pinned to by a scrub
+  /// seek or a composition swap. While set (and playback is paused) any player
+  /// position report that deviates from it is dropped — the short-lived
+  /// position 0 the native player emits while loading a freshly rendered
+  /// transition seam file in [_swapComposition] (which can arrive hundreds of
+  /// ms after the swap completes), and out-of-order reports from a superseded
+  /// scrub seek. Without it such a report drives the play time and snaps the
+  /// timeline playhead back to position 0 (or a previously scrubbed spot).
+  ///
+  /// The pin is intentionally *not* released on the first converged report —
+  /// that report arrives well before the delayed reset report, so clearing
+  /// early would let the reset report through. It is released only when
+  /// playback resumes (it then owns the play time) or when a new scrub / swap
+  /// re-pins it (see [VideoEditorCanvas.shouldAcceptPlayerReport]).
+  Duration? _pendingSeekTarget;
 
   /// Cached documents directory path — resolved once in [initState].
   late final Future<String> _documentsPath;
@@ -341,6 +389,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   /// across the reload so [_onPlayerStateChanged] skips emission, then pins
   /// [_lastReportedPosition] to the restored position before releasing
   /// ownership (only if no newer swap took over).
+  ///
+  /// [_isSeeking] only covers reports emitted *during* the reload. Loading the
+  /// freshly rendered seam file makes the native player emit a reset report
+  /// (position 0) hundreds of ms *after* the reload completes; pinning
+  /// [_pendingSeekTarget] keeps that delayed report from snapping the playhead
+  /// back to the start while playback stays paused.
   Future<void> _swapComposition(
     List<DivineVideoClip> clips, {
     required Duration timelineStartPosition,
@@ -359,6 +413,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       // newer swap (e.g. a trim-start) already set.
       if (mounted && _seekEpoch == ownerEpoch) {
         _lastReportedPosition = timelineStartPosition;
+        _pendingSeekTarget = timelineStartPosition;
         _proVideoController.setPlayTime(timelineStartPosition);
       }
     } catch (e, s) {
@@ -425,6 +480,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     // time from the stale anchor before the next native report re-anchors it;
     // the report with isPlaying == true restarts it.
     _setPlayheadTickerActive(false);
+    // Playback owns the play time now; release any scrub / swap pin so reports
+    // can drive the timeline forward again.
+    _pendingSeekTarget = null;
     _videoPlayer?.seekTo(Duration.zero);
     _videoPlayer?.play();
   }
@@ -440,6 +498,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       _setPlayheadTickerActive(false);
       _videoPlayer?.pause();
     } else {
+      // Playback owns the play time now; release any scrub / swap pin.
+      _pendingSeekTarget = null;
       _videoPlayer?.play();
     }
   }
@@ -454,6 +514,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       _setPlayheadTickerActive(false);
       _videoPlayer?.pause();
     } else {
+      // Playback owns the play time now; release any scrub / swap pin.
+      _pendingSeekTarget = null;
       _videoPlayer?.play();
     }
   }
@@ -521,7 +583,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     // A scrub owns the play time now; stop the playback interpolator so it
     // can't overwrite the seek target before the next player report stops it.
     _setPlayheadTickerActive(false);
-    _proVideoController.setPlayTime(playTimePosition ?? position);
+    final playTime = playTimePosition ?? position;
+    _proVideoController.setPlayTime(playTime);
+    // Pin the play time to this scrub so late reports from a superseded seek
+    // are dropped until the player converges here (see [_onPlayerStateChanged]
+    // / [VideoEditorCanvas.shouldAcceptPlayerReport]).
+    _pendingSeekTarget = playTime;
 
     if (_isSeeking) {
       _pendingSeekPosition = position;
@@ -569,7 +636,25 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       bloc.add(VideoEditorPlaybackChanged(isPlaying: isPlaying));
     }
 
+    // Once playback resumes it owns the play time, so release any scrub / swap
+    // pin. While paused the pin is kept (not cleared on the first converged
+    // report) so a reset report arriving hundreds of ms after a seam swap
+    // finishes loading is still rejected instead of snapping the playhead back
+    // to the start.
+    if (isPlaying) _pendingSeekTarget = null;
+
     _lastPlayerDuration = playerState.duration;
+
+    final timelinePosition = _playerToTimeline(playerState.position);
+
+    // Drop the delayed reset report a composition swap emits while loading the
+    // new seam file (and late reports from a superseded scrub seek) so the
+    // playhead doesn't snap back to the start.
+    final reportAccepted = VideoEditorCanvas.shouldAcceptPlayerReport(
+      report: timelinePosition,
+      seekTarget: _pendingSeekTarget,
+      isPlaying: isPlaying,
+    );
 
     // The play time may only be driven by playback while no seek / trim / drag
     // gesture owns it (those paths call setPlayTime directly).
@@ -578,9 +663,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         !_isTrimmingClip &&
         !_isDraggingLayer &&
         !_isSeeking &&
-        _pendingSeekPosition == null;
+        _pendingSeekPosition == null &&
+        reportAccepted;
 
-    final timelinePosition = _playerToTimeline(playerState.position);
     if (canDrivePlayTime && timelinePosition != _lastReportedPosition) {
       _lastReportedPosition = timelinePosition;
       bloc.add(VideoEditorPositionChanged(timelinePosition));

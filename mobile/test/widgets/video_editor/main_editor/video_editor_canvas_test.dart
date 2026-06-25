@@ -202,6 +202,108 @@ void main() {
     });
   });
 
+  group('VideoEditorCanvas.shouldAcceptPlayerReport', () {
+    const target = Duration(seconds: 3, milliseconds: 500);
+
+    test(
+      'accepts any report while playing, regardless of a pending target',
+      () {
+        // Playback owns the play time, so the settle guard never applies.
+        expect(
+          VideoEditorCanvas.shouldAcceptPlayerReport(
+            report: Duration.zero,
+            seekTarget: target,
+            isPlaying: true,
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test('accepts any report when no scrub / swap target is pending', () {
+      expect(
+        VideoEditorCanvas.shouldAcceptPlayerReport(
+          report: const Duration(seconds: 2),
+          seekTarget: null,
+          isPlaying: false,
+        ),
+        isTrue,
+      );
+    });
+
+    test('accepts a paused report that has converged on the target', () {
+      // Within tolerance on either side (frame snapping after an exact seek).
+      expect(
+        VideoEditorCanvas.shouldAcceptPlayerReport(
+          report: target + const Duration(milliseconds: 40),
+          seekTarget: target,
+          isPlaying: false,
+        ),
+        isTrue,
+      );
+      expect(
+        VideoEditorCanvas.shouldAcceptPlayerReport(
+          report: target - const Duration(milliseconds: 40),
+          seekTarget: target,
+          isPlaying: false,
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'rejects the position-0 reset report a seam swap emits while paused',
+      () {
+        // The reported regression: a transition finishes rendering, the player
+        // loads the seam file and reports position 0. Accepting it would snap the
+        // playhead back to the start.
+        expect(
+          VideoEditorCanvas.shouldAcceptPlayerReport(
+            report: Duration.zero,
+            seekTarget: target,
+            isPlaying: false,
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test('rejects a stale paused report from a superseded scrub seek', () {
+      // Scrubbed 2s -> 4s -> 3.5s; a late report for the 2s leading seek must
+      // not drive the play time back to 2s.
+      expect(
+        VideoEditorCanvas.shouldAcceptPlayerReport(
+          report: const Duration(seconds: 2),
+          seekTarget: target,
+          isPlaying: false,
+        ),
+        isFalse,
+      );
+    });
+
+    test('accepts a paused report exactly at the tolerance boundary', () {
+      expect(
+        VideoEditorCanvas.shouldAcceptPlayerReport(
+          report: target + VideoEditorCanvas.seekSettleTolerance,
+          seekTarget: target,
+          isPlaying: false,
+        ),
+        isTrue,
+      );
+      expect(
+        VideoEditorCanvas.shouldAcceptPlayerReport(
+          report:
+              target +
+              VideoEditorCanvas.seekSettleTolerance +
+              const Duration(milliseconds: 1),
+          seekTarget: target,
+          isPlaying: false,
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('interpolatePlayheadPosition', () {
     const maxDuration = Duration(seconds: 10);
 
