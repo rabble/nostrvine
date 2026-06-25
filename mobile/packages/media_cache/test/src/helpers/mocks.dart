@@ -155,6 +155,10 @@ class FakeCancellableDownload implements CancellableDownload {
   Future<io.File?> get file => _completer.future;
 
   @override
+  Future<CancellableDownloadResult> get result async =>
+      CancellableDownloadResult(file: await file);
+
+  @override
   bool get isCancelled => _isCancelled;
 
   @override

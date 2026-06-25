@@ -78,13 +78,8 @@ void main() {
 
         when(() => cache.getCachedFileSync('id3')).thenReturn(null);
         when(
-          () => cache.cacheFileCancellable(
-            url,
-            key: 'id3',
-          ),
-        ).thenReturn(
-          CancellableCacheOperation.completed(mockFile),
-        );
+          () => cache.cacheFileCancellable(url, key: 'id3'),
+        ).thenReturn(CancellableCacheOperation.completed(mockFile));
 
         final videos = [_makeVideo('id3', url: url)];
 
@@ -95,12 +90,7 @@ void main() {
           resolveUrls: (v) => [if (v.videoUrl != null) v.videoUrl!],
         );
 
-        verify(
-          () => cache.cacheFileCancellable(
-            url,
-            key: 'id3',
-          ),
-        ).called(1);
+        verify(() => cache.cacheFileCancellable(url, key: 'id3')).called(1);
         expect(logs.any((l) => l.contains('completed')), isTrue);
       });
 
@@ -110,10 +100,7 @@ void main() {
         // endIndex 5 is out of bounds; should not throw.
         when(() => cache.getCachedFileSync(any())).thenReturn(null);
         when(
-          () => cache.cacheFileCancellable(
-            any(),
-            key: any(named: 'key'),
-          ),
+          () => cache.cacheFileCancellable(any(), key: any(named: 'key')),
         ).thenReturn(CancellableCacheOperation.completed(_MockFile()));
 
         await prefetcher.run(
@@ -125,10 +112,7 @@ void main() {
 
         // Only id4 at index 0 is valid; no exception thrown.
         verify(
-          () => cache.cacheFileCancellable(
-            any(),
-            key: any(named: 'key'),
-          ),
+          () => cache.cacheFileCancellable(any(), key: any(named: 'key')),
         ).called(1);
       });
 
@@ -148,10 +132,7 @@ void main() {
           final downloadCompleter = _ManualCompleter<File?>();
           when(() => slowCache.getCachedFileSync(any())).thenReturn(null);
           when(
-            () => slowCache.cacheFileCancellable(
-              any(),
-              key: any(named: 'key'),
-            ),
+            () => slowCache.cacheFileCancellable(any(), key: any(named: 'key')),
           ).thenAnswer((_) {
             secondRunStarted = true;
             return _PendingOperation(downloadCompleter.future);
@@ -210,13 +191,8 @@ void main() {
           final downloadCompleter = _ManualCompleter<File?>();
           when(() => slowCache.getCachedFileSync(any())).thenReturn(null);
           when(
-            () => slowCache.cacheFileCancellable(
-              any(),
-              key: any(named: 'key'),
-            ),
-          ).thenAnswer(
-            (_) => _PendingOperation(downloadCompleter.future),
-          );
+            () => slowCache.cacheFileCancellable(any(), key: any(named: 'key')),
+          ).thenAnswer((_) => _PendingOperation(downloadCompleter.future));
 
           final videos = List.generate(
             10,
@@ -247,17 +223,11 @@ void main() {
             ),
           );
 
-          expect(
-            logs2.any((l) => l.contains('still active')),
-            isTrue,
-          );
+          expect(logs2.any((l) => l.contains('still active')), isTrue);
 
           // Only one cacheFileCancellable call — the second run skipped.
           verify(
-            () => slowCache.cacheFileCancellable(
-              any(),
-              key: any(named: 'key'),
-            ),
+            () => slowCache.cacheFileCancellable(any(), key: any(named: 'key')),
           ).called(1);
 
           downloadCompleter.complete(null);
@@ -271,10 +241,7 @@ void main() {
 
         when(() => cache.getCachedFileSync('id_fail')).thenReturn(null);
         when(
-          () => cache.cacheFileCancellable(
-            url,
-            key: 'id_fail',
-          ),
+          () => cache.cacheFileCancellable(url, key: 'id_fail'),
         ).thenAnswer((_) => _PendingOperation(failCompleter.future));
 
         final videos = [_makeVideo('id_fail', url: url)];
@@ -290,6 +257,219 @@ void main() {
         await runFuture;
 
         expect(logs.any((l) => l.contains('failed')), isTrue);
+      });
+
+      test('defers HTTP 202 prefetch without trying fallback URL', () async {
+        var now = DateTime.utc(2026, 6, 25);
+        final processingPrefetcher = DiskPrefetcher(
+          cache: cache,
+          log: logs.add,
+          now: () => now,
+        );
+        addTearDown(processingPrefetcher.dispose);
+
+        when(() => cache.getCachedFileSync('id_processing')).thenReturn(null);
+        when(
+          () => cache.cacheFileCancellable(
+            'http://example.com/processing.mp4',
+            key: 'id_processing',
+          ),
+        ).thenReturn(
+          _PendingResultOperation.completed(
+            const CancellableDownloadResult(
+              file: null,
+              statusCode: 202,
+              headers: {'retry-after': '20'},
+            ),
+          ),
+        );
+
+        final videos = [_makeVideo('id_processing')];
+
+        await processingPrefetcher.run(
+          startIndex: 0,
+          endIndex: 0,
+          videos: videos,
+          resolveUrls: (_) => const [
+            'http://example.com/processing.mp4',
+            'http://example.com/fallback.mp4',
+          ],
+        );
+
+        verifyNever(
+          () => cache.cacheFileCancellable(
+            'http://example.com/fallback.mp4',
+            key: any(named: 'key'),
+            aliasKey: any(named: 'aliasKey'),
+          ),
+        );
+        expect(logs.any((l) => l.contains('media processing')), isTrue);
+
+        logs.clear();
+        await processingPrefetcher.run(
+          startIndex: 0,
+          endIndex: 0,
+          videos: videos,
+          resolveUrls: (_) => const [
+            'http://example.com/processing.mp4',
+            'http://example.com/fallback.mp4',
+          ],
+        );
+
+        expect(logs.any((l) => l.contains('Prefetch skip')), isTrue);
+
+        now = now.add(const Duration(seconds: 21));
+        logs.clear();
+        await processingPrefetcher.run(
+          startIndex: 0,
+          endIndex: 0,
+          videos: videos,
+          resolveUrls: (_) => const [
+            'http://example.com/processing.mp4',
+            'http://example.com/fallback.mp4',
+          ],
+        );
+
+        verify(
+          () => cache.cacheFileCancellable(
+            'http://example.com/processing.mp4',
+            key: 'id_processing',
+          ),
+        ).called(2);
+      });
+
+      test('defers HTTP 202 prefetch until Retry-After HTTP date', () async {
+        var now = DateTime.utc(2026, 6, 25, 12);
+        final processingPrefetcher = DiskPrefetcher(
+          cache: cache,
+          log: logs.add,
+          now: () => now,
+        );
+        addTearDown(processingPrefetcher.dispose);
+
+        when(
+          () => cache.getCachedFileSync('id_processing_date'),
+        ).thenReturn(null);
+        when(
+          () => cache.cacheFileCancellable(
+            'http://example.com/processing.mp4',
+            key: 'id_processing_date',
+          ),
+        ).thenReturn(
+          _PendingResultOperation.completed(
+            CancellableDownloadResult(
+              file: null,
+              statusCode: 202,
+              headers: {
+                'retry-after': HttpDate.format(
+                  now.add(const Duration(seconds: 30)),
+                ),
+              },
+            ),
+          ),
+        );
+
+        final videos = [_makeVideo('id_processing_date')];
+
+        await processingPrefetcher.run(
+          startIndex: 0,
+          endIndex: 0,
+          videos: videos,
+          resolveUrls: (_) => const ['http://example.com/processing.mp4'],
+        );
+
+        logs.clear();
+        now = now.add(const Duration(seconds: 29));
+        await processingPrefetcher.run(
+          startIndex: 0,
+          endIndex: 0,
+          videos: videos,
+          resolveUrls: (_) => const ['http://example.com/processing.mp4'],
+        );
+
+        expect(logs.any((l) => l.contains('Prefetch skip')), isTrue);
+
+        logs.clear();
+        now = now.add(const Duration(seconds: 1));
+        await processingPrefetcher.run(
+          startIndex: 0,
+          endIndex: 0,
+          videos: videos,
+          resolveUrls: (_) => const ['http://example.com/processing.mp4'],
+        );
+
+        expect(logs.any((l) => l.contains('media processing')), isTrue);
+        verify(
+          () => cache.cacheFileCancellable(
+            'http://example.com/processing.mp4',
+            key: 'id_processing_date',
+          ),
+        ).called(2);
+      });
+
+      test('uses default retry delay for invalid Retry-After header', () async {
+        var now = DateTime.utc(2026, 6, 25, 12);
+        final processingPrefetcher = DiskPrefetcher(
+          cache: cache,
+          log: logs.add,
+          now: () => now,
+        );
+        addTearDown(processingPrefetcher.dispose);
+
+        when(
+          () => cache.getCachedFileSync('id_processing_invalid'),
+        ).thenReturn(null);
+        when(
+          () => cache.cacheFileCancellable(
+            'http://example.com/processing.mp4',
+            key: 'id_processing_invalid',
+          ),
+        ).thenReturn(
+          _PendingResultOperation.completed(
+            const CancellableDownloadResult(
+              file: null,
+              statusCode: 202,
+              headers: {'retry-after': 'not a date'},
+            ),
+          ),
+        );
+
+        final videos = [_makeVideo('id_processing_invalid')];
+
+        await processingPrefetcher.run(
+          startIndex: 0,
+          endIndex: 0,
+          videos: videos,
+          resolveUrls: (_) => const ['http://example.com/processing.mp4'],
+        );
+
+        logs.clear();
+        now = now.add(const Duration(seconds: 14));
+        await processingPrefetcher.run(
+          startIndex: 0,
+          endIndex: 0,
+          videos: videos,
+          resolveUrls: (_) => const ['http://example.com/processing.mp4'],
+        );
+
+        expect(logs.any((l) => l.contains('Prefetch skip')), isTrue);
+
+        logs.clear();
+        now = now.add(const Duration(seconds: 1));
+        await processingPrefetcher.run(
+          startIndex: 0,
+          endIndex: 0,
+          videos: videos,
+          resolveUrls: (_) => const ['http://example.com/processing.mp4'],
+        );
+
+        expect(logs.any((l) => l.contains('media processing')), isTrue);
+        verify(
+          () => cache.cacheFileCancellable(
+            'http://example.com/processing.mp4',
+            key: 'id_processing_invalid',
+          ),
+        ).called(2);
       });
 
       test(
@@ -428,6 +608,30 @@ class _PendingOperation implements CancellableCacheOperation {
 
   @override
   Future<File?> get file => _fileFuture;
+
+  @override
+  Future<CancellableDownloadResult> get result async =>
+      CancellableDownloadResult(file: await _fileFuture);
+
+  @override
+  bool get isCancelled => _cancelled;
+  bool _cancelled = false;
+
+  @override
+  void cancel() => _cancelled = true;
+}
+
+class _PendingResultOperation implements CancellableCacheOperation {
+  _PendingResultOperation.completed(CancellableDownloadResult result)
+    : _resultFuture = Future<CancellableDownloadResult>.value(result);
+
+  final Future<CancellableDownloadResult> _resultFuture;
+
+  @override
+  Future<File?> get file async => (await _resultFuture).file;
+
+  @override
+  Future<CancellableDownloadResult> get result => _resultFuture;
 
   @override
   bool get isCancelled => _cancelled;

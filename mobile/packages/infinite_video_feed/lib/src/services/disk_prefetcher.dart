@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart';
 
+const _defaultProcessingRetryAfter = Duration(seconds: 15);
+
 /// Resolves the URL to download for [video], or `null` to skip.
 typedef PrefetchUrlResolver = String? Function(VideoEvent video);
 
@@ -30,13 +32,17 @@ class DiskPrefetcher {
     required MediaCacheManager cache,
     required void Function(String message) log,
     Duration stallTimeout = const Duration(seconds: 8),
+    DateTime Function() now = DateTime.now,
   }) : _cache = cache,
        _log = log,
-       _stallTimeout = stallTimeout;
+       _stallTimeout = stallTimeout,
+       _now = now;
 
   final MediaCacheManager _cache;
   final void Function(String) _log;
   final Duration _stallTimeout;
+  final DateTime Function() _now;
+  final _processingRetryAfterByVideoId = <String, DateTime>{};
 
   CancellableCacheOperation? _active;
   int _generation = 0;
@@ -125,9 +131,7 @@ class DiskPrefetcher {
     _cycleVideos = videos;
     _cycleResolveUrls = resolveUrls;
 
-    _log(
-      'Prefetch cycle #$generation: range=[$startIndex..$endIndex]',
-    );
+    _log('Prefetch cycle #$generation: range=[$startIndex..$endIndex]');
 
     for (var i = startIndex; i <= _cycleEndIndex; i++) {
       if (isDisposed) return;
@@ -142,6 +146,18 @@ class DiskPrefetcher {
       if (_cache.getCachedFileSync(video.id) != null) {
         _log('Prefetch skip index $i — already cached (${video.id})');
         continue;
+      }
+
+      final retryAfter = _processingRetryAfterByVideoId[video.id];
+      if (retryAfter != null) {
+        if (_now().isBefore(retryAfter)) {
+          _log(
+            'Prefetch skip index $i — media processing (${video.id}) '
+            'retryAfter=${retryAfter.toIso8601String()}',
+          );
+          continue;
+        }
+        _processingRetryAfterByVideoId.remove(video.id);
       }
 
       final urls = _cycleResolveUrls(video);
@@ -192,10 +208,10 @@ class DiskPrefetcher {
       _active = op;
       _activeIndex = index;
 
-      File? file;
+      CancellableDownloadResult? result;
       var didStall = false;
       try {
-        file = await op.file.timeout(_stallTimeout);
+        result = await op.result.timeout(_stallTimeout);
       } on TimeoutException {
         didStall = true;
         op.cancel();
@@ -211,8 +227,19 @@ class DiskPrefetcher {
         return;
       }
 
-      if (file != null) {
+      if (result?.file != null) {
         _log('Prefetch completed index $index ($videoId)');
+        return;
+      }
+
+      if (result?.statusCode == 202) {
+        final retryAfter = _retryAfterFromHeaders(result!.headers);
+        final nextAttemptAt = _now().add(retryAfter);
+        _processingRetryAfterByVideoId[videoId] = nextAttemptAt;
+        _log(
+          'Prefetch deferred index $index ($videoId) url=$url '
+          '— media processing, retryAfterMs=${retryAfter.inMilliseconds}',
+        );
         return;
       }
 
@@ -228,5 +255,25 @@ class DiskPrefetcher {
   void dispose() {
     isDisposed = true;
     cancelActive();
+  }
+
+  Duration _retryAfterFromHeaders(Map<String, String> headers) {
+    final value = headers['retry-after'];
+    if (value == null || value.trim().isEmpty) {
+      return _defaultProcessingRetryAfter;
+    }
+
+    final seconds = int.tryParse(value.trim());
+    if (seconds != null && seconds >= 0) {
+      return Duration(seconds: seconds);
+    }
+
+    try {
+      final date = HttpDate.parse(value);
+      final delay = date.difference(_now());
+      return delay.isNegative ? Duration.zero : delay;
+    } on HttpException {
+      return _defaultProcessingRetryAfter;
+    }
   }
 }

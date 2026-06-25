@@ -549,44 +549,42 @@ class MediaCacheManager extends CacheManager {
     final completer = Completer<File?>();
     _pendingCacheOperations[key] = completer;
 
-    unawaited(
-      () async {
-        try {
-          final fileInfo = await downloadFile(
-            url,
-            key: key,
-            authHeaders: authHeaders ?? {},
-          );
+    unawaited(() async {
+      try {
+        final fileInfo = await downloadFile(
+          url,
+          key: key,
+          authHeaders: authHeaders ?? {},
+        );
 
-          if (_isProcessingResponse(fileInfo)) {
-            await removeCachedFile(key);
-            try {
-              if (fileInfo.file.existsSync()) {
-                await fileInfo.file.delete();
-              }
-            } on Object {
-              // Best-effort cleanup; the cache metadata has already been
-              // removed so the processing response cannot be replayed.
+        if (_isProcessingResponse(fileInfo)) {
+          await removeCachedFile(key);
+          try {
+            if (fileInfo.file.existsSync()) {
+              await fileInfo.file.delete();
             }
-            if (!completer.isCompleted) completer.complete(null);
-            return;
+          } on Object {
+            // Best-effort cleanup; the cache metadata has already been
+            // removed so the processing response cannot be replayed.
           }
-
-          // Update manifest
-          if (_config.enableSyncManifest && !_isClosed) {
-            _cacheManifest[key] = fileInfo.file.path;
-          }
-
-          if (!completer.isCompleted) {
-            completer.complete(_isClosed ? null : fileInfo.file);
-          }
-        } on Exception {
           if (!completer.isCompleted) completer.complete(null);
-        } finally {
-          _pendingCacheOperations.remove(key);
+          return;
         }
-      }(),
-    );
+
+        // Update manifest
+        if (_config.enableSyncManifest && !_isClosed) {
+          _cacheManifest[key] = fileInfo.file.path;
+        }
+
+        if (!completer.isCompleted) {
+          completer.complete(_isClosed ? null : fileInfo.file);
+        }
+      } on Exception {
+        if (!completer.isCompleted) completer.complete(null);
+      } finally {
+        _pendingCacheOperations.remove(key);
+      }
+    }());
 
     return completer.future;
   }
@@ -705,7 +703,8 @@ class MediaCacheManager extends CacheManager {
           headers: authHeaders,
         );
         activeDownload = download;
-        final file = await download.file;
+        final downloadResult = await download.result;
+        final file = downloadResult.file;
         if (file != null && !download.isCancelled) {
           // Register in flutter_cache_manager's store so the file survives
           // app restart and shows up in [getAllObjects] on next launch.
@@ -878,11 +877,9 @@ class MediaCacheManager extends CacheManager {
               key: item.key,
               authHeaders: authHeadersProvider?.call(item.key),
               trackPrefetchMetrics: false,
-            ).file.whenComplete(
-              () {
-                inFlightByKey.removeWhere((key, _) => key == item.key);
-              },
-            );
+            ).file.whenComplete(() {
+              inFlightByKey.removeWhere((key, _) => key == item.key);
+            });
         inFlightByKey[item.key] = downloadFuture;
         batch.add(downloadFuture);
       }
@@ -990,7 +987,7 @@ class MediaCacheManager extends CacheManager {
 /// Bridges a deferred [Future] (which performs async setup before the real
 /// [CancellableDownload] starts) into the [CancellableDownload] interface
 /// expected by [CancellableCacheOperation.fromDownload].
-class _DeferredDownload implements CancellableDownload {
+class _DeferredDownload extends CancellableDownload {
   _DeferredDownload({
     required Future<File?> future,
     required void Function() cancel,
@@ -1004,7 +1001,8 @@ class _DeferredDownload implements CancellableDownload {
   final bool Function() _isCancelledGetter;
 
   @override
-  Future<File?> get file => _future;
+  Future<CancellableDownloadResult> get result async =>
+      CancellableDownloadResult(file: await _future);
 
   // coverage:ignore-start
   @override
@@ -1015,9 +1013,10 @@ class _DeferredDownload implements CancellableDownload {
   void cancel() => _cancel();
 }
 
-class _CompletedNullDownload implements CancellableDownload {
+class _CompletedNullDownload extends CancellableDownload {
   @override
-  Future<File?> get file async => null;
+  Future<CancellableDownloadResult> get result async =>
+      const CancellableDownloadResult(file: null);
 
   // coverage:ignore-start
   @override

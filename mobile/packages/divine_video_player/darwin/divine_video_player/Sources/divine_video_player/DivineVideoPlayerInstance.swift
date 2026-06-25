@@ -1026,7 +1026,14 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
         // HTTP errors carried inside AVFoundation errors.
         if let httpResponse = err.userInfo["NSURLErrorFailingURLResponseErrorKey"] as? HTTPURLResponse {
+            if httpResponse.statusCode == 202 {
+                return "media_processing"
+            }
             return httpResponse.statusCode >= 500 ? "http_server_error" : "http_client_error"
+        }
+
+        if err.localizedDescription.contains("HTTP 202") {
+            return "media_processing"
         }
 
         switch (err.domain, err.code) {

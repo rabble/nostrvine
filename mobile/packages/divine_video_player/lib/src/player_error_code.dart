@@ -7,6 +7,12 @@
 /// This lets Dart make reliable, platform-independent retry/failover
 /// decisions without string-parsing the raw error message.
 enum NativePlayerErrorCode {
+  /// HTTP 202 from Divine media while renditions are still processing.
+  ///
+  /// Android: `ERROR_CODE_IO_BAD_HTTP_STATUS` with response code 202.
+  /// iOS: CoreMedia / AVFoundation errors whose message includes HTTP 202.
+  mediaProcessing,
+
   /// HTTP 4xx response from the media server.
   ///
   /// Android: `ERROR_CODE_IO_BAD_HTTP_STATUS` when 400–499.
@@ -57,6 +63,7 @@ enum NativePlayerErrorCode {
   /// source. HTTP 4xx/5xx and parse errors indicate the current source is not
   /// usable right now, so the feed should skip to the next available source.
   bool get shouldFailover => switch (this) {
+    mediaProcessing => false,
     httpClientError => true,
     httpServerError => true,
     parseError => true,
@@ -73,6 +80,7 @@ enum NativePlayerErrorCode {
   ///
   /// Transient conditions like network loss or timeout may resolve on retry.
   bool get isTransient => switch (this) {
+    mediaProcessing => true,
     networkError => true,
     timeout => true,
     httpServerError => false,
@@ -84,6 +92,7 @@ enum NativePlayerErrorCode {
 
   /// Parses the string value sent over the platform channel.
   static NativePlayerErrorCode fromString(String value) => switch (value) {
+    'media_processing' => mediaProcessing,
     'http_client_error' => httpClientError,
     'http_server_error' => httpServerError,
     'network_error' => networkError,

@@ -41,12 +41,7 @@ List<String> resolvePlaybackSources(
     // a progressive stream.
     return isRawBlob
         ? orderedUniqueSources([resolvedSource, hlsUrl, originalUrl])
-        : orderedUniqueSources([
-            resolvedSource,
-            hlsUrl,
-            rawUrl,
-            originalUrl,
-          ]);
+        : orderedUniqueSources([resolvedSource, hlsUrl, rawUrl, originalUrl]);
   }
 
   return orderedUniqueSources([resolvedSource, originalUrl]);
@@ -54,10 +49,7 @@ List<String> resolvePlaybackSources(
 
 /// Classifies a playback failure into a [VideoErrorType] using the error
 /// message and (optionally) the source that produced it.
-VideoErrorType classifyVideoError({
-  String? errorMessage,
-  String? source,
-}) {
+VideoErrorType classifyVideoError({String? errorMessage, String? source}) {
   final lower = (errorMessage ?? '').toLowerCase();
   // Divine derivative URLs can legitimately return HTTP 202 while MP4/HLS
   // processing catches up after upload. Treat that as transient playback
@@ -83,6 +75,16 @@ VideoErrorType classifyVideoError({
   }
 
   return VideoErrorType.generic;
+}
+
+/// Whether an error represents Divine media still preparing renditions.
+///
+/// Freshly-published Divine derivative URLs can return HTTP 202 while the
+/// server finishes MP4/HLS processing. Playback should retry the same source
+/// for these responses instead of treating the rendition as failed.
+bool isMediaProcessingError(Object? error, {String? errorMessage}) {
+  final lower = '${errorMessage ?? ''} ${error ?? ''}'.toLowerCase();
+  return _mentionsHttpStatus(lower, 202);
 }
 
 bool _mentionsHttpStatus(String lower, int status) {

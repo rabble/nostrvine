@@ -25,6 +25,10 @@ class _ThrowingDownload implements CancellableDownload {
   Future<File?> get file => Future<File?>.error(Exception('download failed'));
 
   @override
+  Future<CancellableDownloadResult> get result =>
+      Future<CancellableDownloadResult>.error(Exception('download failed'));
+
+  @override
   bool get isCancelled => false;
 
   @override
@@ -124,17 +128,14 @@ void main() {
         await controller.close();
       });
 
-      test(
-        'file future completes with null when stream.listen throws '
-        'synchronously',
-        () async {
-          final op = CancellableCacheOperation.fromStream(
-            _SynchronouslyThrowingStream(),
-          );
+      test('file future completes with null when stream.listen throws '
+          'synchronously', () async {
+        final op = CancellableCacheOperation.fromStream(
+          _SynchronouslyThrowingStream(),
+        );
 
-          expect(await op.file, isNull);
-        },
-      );
+        expect(await op.file, isNull);
+      });
     });
 
     group('cancel', () {

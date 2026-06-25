@@ -19,6 +19,14 @@ import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+const _runtimeProcessingRetryDelays = <Duration>[
+  Duration(seconds: 1),
+  Duration(seconds: 2),
+  Duration(seconds: 3),
+  Duration(seconds: 5),
+  Duration(seconds: 8),
+];
+
 /// Infinite scrolling video feed using native platform video players.
 ///
 /// Manages [DivineVideoPlayerController] instances for the current and
@@ -71,7 +79,7 @@ class InfiniteVideoFeed extends StatefulWidget {
           Platform.isAndroid ||
           Platform.isIOS ||
           Platform.isMacOS ||
-          Platform.isLinux);
+          Platform.isLinux); // coverage:ignore-line
 
   static bool? _isSupportedOverrideForTesting;
 
@@ -349,6 +357,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // — this guard prevents them from re-triggering failover or showing
   // the error UI on top of a successfully recovered controller.
   final _failoverInFlight = <int>{};
+  final _processingRetryInFlight = <int>{};
+  final _processingRetryAttempts = <int, int>{};
 
   // Indices whose initial source was the on-disk cache file. If a runtime
   // error fires for one of these we evict the cached file so future loads
@@ -953,6 +963,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
     _loopSeekInProgress.clear();
     _failoverInFlight.clear();
+    _processingRetryInFlight.clear();
+    _processingRetryAttempts.clear();
     _loadedFromCache.clear();
     _errors.clear();
     _errorTypes.clear();
@@ -979,6 +991,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _errors.remove(index);
     _loopSeekInProgress.remove(index);
     _failoverInFlight.remove(index);
+    _processingRetryInFlight.remove(index);
+    _processingRetryAttempts.remove(index);
     _loadedFromCache.remove(index);
     _errorTypes.remove(index);
     _httpHeadersByIndex.remove(index);
@@ -1215,6 +1229,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   }) async {
     _errors.remove(index);
     _errorTypes.remove(index);
+    _processingRetryInFlight.remove(index);
+    _processingRetryAttempts.remove(index);
     if (httpHeaders.isEmpty) {
       _httpHeadersByIndex.remove(index);
     } else {
@@ -1296,6 +1312,86 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       _onVideoStalled(index);
     } finally {
       _failoverInFlight.remove(index);
+    }
+  }
+
+  Future<void> _retryCurrentProcessingSource(
+    int index,
+    Object? errorMessage,
+  ) async {
+    if (_processingRetryInFlight.contains(index)) return;
+
+    final source = _sources.activeSourceFor(index);
+    if (source == null) {
+      _log('No active source to retry for processing index $index');
+      _stopAndMarkError(index, VideoErrorType.generic);
+      return;
+    }
+
+    final attempt = _processingRetryAttempts[index] ?? 0;
+    if (attempt >= _runtimeProcessingRetryDelays.length) {
+      _log(
+        'Processing retry exhausted index $index: '
+        'source=$source error=$errorMessage',
+      );
+      _stopAndMarkError(index, VideoErrorType.generic);
+      return;
+    }
+
+    final controller = _controllers[index];
+    if (controller == null) return;
+
+    final delay = _runtimeProcessingRetryDelays[attempt];
+    _processingRetryAttempts[index] = attempt + 1;
+    _processingRetryInFlight.add(index);
+    var retryProcessingAgain = false;
+    _log(
+      'Processing retry index $index: '
+      'source=$source retryInMs=${delay.inMilliseconds} '
+      'attempt=${attempt + 1}/${_runtimeProcessingRetryDelays.length}',
+    );
+
+    try {
+      await Future<void>.delayed(delay);
+      if (!mounted || !_controllers.containsKey(index)) return;
+      await controller.stop();
+      await controller.setSource(
+        VideoClip.network(
+          source,
+          httpHeaders: _httpHeadersByIndex[index] ?? const {},
+        ),
+      );
+      if (index == _currentIndex && _isActive && _canAutoPlayAt(index)) {
+        await controller.setVolume(_volume);
+        await controller.play();
+        if (index == _currentIndex && _isActive) {
+          _watchdog.start(index, controller);
+          _staleDetector.resetGrace();
+        }
+      }
+      _processingRetryAttempts.remove(index);
+    } on Object catch (e, stackTrace) {
+      _log('Processing retry failed index $index source=$source: $e');
+      Log.error(
+        'Processing retry failed',
+        name: _logName,
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      if (isMediaProcessingError(e)) {
+        retryProcessingAgain = true;
+      } else {
+        _stopAndMarkError(
+          index,
+          classifyVideoError(errorMessage: e.toString(), source: source),
+        );
+      }
+    } finally {
+      _processingRetryInFlight.remove(index);
+    }
+    if (retryProcessingAgain) {
+      unawaited(_retryCurrentProcessingSource(index, errorMessage));
     }
   }
   // coverage:ignore-end
@@ -1397,7 +1493,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         index,
         controller,
         isAlreadyError: () =>
-            _errors.contains(index) || _failoverInFlight.contains(index),
+            _errors.contains(index) ||
+            _failoverInFlight.contains(index) ||
+            _processingRetryInFlight.contains(index),
         onError: (errorCode, errorMessage) {
           _log(
             'Runtime playback error at index '
@@ -1406,6 +1504,12 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           );
           _watchdog.stop(index);
           if (index == _currentIndex) _staleDetector.stop();
+
+          if (errorCode == NativePlayerErrorCode.mediaProcessing ||
+              isMediaProcessingError(errorMessage)) {
+            unawaited(_retryCurrentProcessingSource(index, errorMessage));
+            return;
+          }
 
           // Use the typed error code for a reliable failover decision.
           // Fall back to attempting failover for unknown errors so we

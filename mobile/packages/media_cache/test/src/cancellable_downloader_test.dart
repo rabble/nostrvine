@@ -27,7 +27,33 @@ class _CallbackClient extends http.BaseClient {
   }
 }
 
+class _ResultOnlyDownload extends CancellableDownload {
+  _ResultOnlyDownload(this._result);
+
+  final CancellableDownloadResult _result;
+
+  @override
+  Future<CancellableDownloadResult> get result async => _result;
+
+  @override
+  bool get isCancelled => false;
+
+  @override
+  void cancel() {}
+}
+
 void main() {
+  group(CancellableDownload, () {
+    test('file returns the file from result', () async {
+      final file = File('video.mp4');
+      final download = _ResultOnlyDownload(
+        CancellableDownloadResult(file: file),
+      );
+
+      expect(await download.file, same(file));
+    });
+  });
+
   group(HttpCancellableDownloader, () {
     late Directory tempDir;
 
@@ -189,10 +215,7 @@ void main() {
       final target = File('${tempDir.path}/non_success_warns.mp4');
 
       final file = await downloader
-          .download(
-            url: 'https://example.com/missing.mp4',
-            targetFile: target,
-          )
+          .download(url: 'https://example.com/missing.mp4', targetFile: target)
           .file;
 
       expect(file, isNull);
@@ -238,24 +261,24 @@ void main() {
       expect(target.existsSync(), isFalse);
     });
 
-    test('returns null for non-OK responses', () async {
+    test('returns null for non-OK responses and exposes status', () async {
       final client = _CallbackClient(
         (_) async => http.StreamedResponse(
           Stream<List<int>>.value(utf8.encode('not found')),
           404,
+          headers: {'retry-after': '10'},
         ),
       );
       final downloader = HttpCancellableDownloader(client);
       final target = File('${tempDir.path}/non_success.mp4');
 
-      final file = await downloader
-          .download(
-            url: 'https://example.com/missing.mp4',
-            targetFile: target,
-          )
-          .file;
+      final result = await downloader
+          .download(url: 'https://example.com/missing.mp4', targetFile: target)
+          .result;
 
-      expect(file, isNull);
+      expect(result.file, isNull);
+      expect(result.statusCode, equals(404));
+      expect(result.headers['retry-after'], equals('10'));
       expect(target.existsSync(), isFalse);
     });
 
@@ -318,10 +341,7 @@ void main() {
         final target = File('${tempDir.path}/error_stream.mp4');
 
         final future = downloader
-            .download(
-              url: 'https://example.com/error.mp4',
-              targetFile: target,
-            )
+            .download(url: 'https://example.com/error.mp4', targetFile: target)
             .file;
 
         controller
@@ -343,10 +363,7 @@ void main() {
       final target = File('${tempDir.path}/send_throw.mp4');
 
       final file = await downloader
-          .download(
-            url: 'https://example.com/fail.mp4',
-            targetFile: target,
-          )
+          .download(url: 'https://example.com/fail.mp4', targetFile: target)
           .file;
 
       expect(file, isNull);
@@ -366,10 +383,7 @@ void main() {
       final target = File('${tempDir.path}/http_not_allowed.mp4');
 
       final file = await downloader
-          .download(
-            url: 'http://example.com/insecure.mp4',
-            targetFile: target,
-          )
+          .download(url: 'http://example.com/insecure.mp4', targetFile: target)
           .file;
 
       expect(file, isNull);
@@ -425,35 +439,32 @@ void main() {
       expect(target.existsSync(), isTrue);
     });
 
-    test(
-      'cancel during stream completion keeps successful file',
-      () async {
-        final controller = StreamController<List<int>>();
-        final client = _CallbackClient(
-          (_) async => http.StreamedResponse(controller.stream, 200),
-        );
-        final downloader = HttpCancellableDownloader(client);
-        final target = File('${tempDir.path}/cancel_during_done.mp4');
+    test('cancel during stream completion keeps successful file', () async {
+      final controller = StreamController<List<int>>();
+      final client = _CallbackClient(
+        (_) async => http.StreamedResponse(controller.stream, 200),
+      );
+      final downloader = HttpCancellableDownloader(client);
+      final target = File('${tempDir.path}/cancel_during_done.mp4');
 
-        final dl = downloader.download(
-          url: 'https://example.com/cancel_during_done.mp4',
-          targetFile: target,
-        );
+      final dl = downloader.download(
+        url: 'https://example.com/cancel_during_done.mp4',
+        targetFile: target,
+      );
 
-        // Ensure listener is attached before we trigger completion.
-        await Future<void>.delayed(const Duration(milliseconds: 1));
-        controller.add(utf8.encode('partial'));
-        await controller.close();
+      // Ensure listener is attached before we trigger completion.
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+      controller.add(utf8.encode('partial'));
+      await controller.close();
 
-        // Trigger cancellation while stream completion is in-flight.
-        dl.cancel();
+      // Trigger cancellation while stream completion is in-flight.
+      dl.cancel();
 
-        final file = await dl.file;
-        expect(file, isNotNull);
-        expect(dl.isCancelled, isFalse);
-        expect(target.existsSync(), isTrue);
-      },
-    );
+      final file = await dl.file;
+      expect(file, isNotNull);
+      expect(dl.isCancelled, isFalse);
+      expect(target.existsSync(), isTrue);
+    });
 
     test('cancel queued before stream done deletes the target file', () async {
       final controller = StreamController<List<int>>();

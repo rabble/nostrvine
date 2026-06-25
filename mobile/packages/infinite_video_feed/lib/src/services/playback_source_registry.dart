@@ -32,7 +32,6 @@ class PlaybackSourceRegistry {
   ///
   /// Returns `null` for prestart entries (active index `-1`) — no network
   /// source is in use yet, the first frame is coming from a local cache.
-  @visibleForTesting
   String? activeSourceFor(int index) {
     final list = _sources[index];
     if (list == null) return null;

@@ -1,13 +1,22 @@
 import 'package:divine_video_player/divine_video_player.dart';
+import 'package:infinite_video_feed/src/utils/playback_sources.dart';
+
+const _mediaProcessingRetryDelays = <Duration>[
+  Duration(seconds: 1),
+  Duration(seconds: 2),
+  Duration(seconds: 3),
+  Duration(seconds: 5),
+  Duration(seconds: 8),
+];
+
+/// Waits before a same-source retry after media returns HTTP 202.
+typedef SourceLoadDelay = Future<void> Function(Duration duration);
 
 /// Signals that source loading was cancelled because the owning controller
 /// window moved on while fallbacks were still in flight.
 class SourceLoadAborted implements Exception {
   /// Creates an abort signal for the stale source load at [index].
-  const SourceLoadAborted({
-    required this.index,
-    required this.source,
-  });
+  const SourceLoadAborted({required this.index, required this.source});
 
   /// Feed index whose source load was aborted.
   final int index;
@@ -32,6 +41,7 @@ Future<(String, int)> setSourceWithFallbacks({
   required void Function(String) log,
   Map<String, String>? Function(String source)? httpHeadersForSource,
   bool Function()? isLoadCurrent,
+  SourceLoadDelay delay = Future<void>.delayed,
 }) async {
   Object? lastError;
   StackTrace? lastStackTrace;
@@ -60,6 +70,39 @@ Future<(String, int)> setSourceWithFallbacks({
       abortIfStale(source);
       lastError = error;
       lastStackTrace = stackTrace;
+      if (isMediaProcessingError(error)) {
+        for (final retryDelay in _mediaProcessingRetryDelays) {
+          log(
+            'Source processing index $index: '
+            'source=$source '
+            'attempt=$attemptIndex '
+            'retryInMs=${retryDelay.inMilliseconds} '
+            'error=$error',
+          );
+          await delay(retryDelay);
+          abortIfStale(source);
+          try {
+            await controller.setSource(
+              VideoClip.network(
+                source,
+                httpHeaders: httpHeadersForSource?.call(source) ?? const {},
+              ),
+            );
+            abortIfStale(source);
+            return (source, attemptIndex);
+          } on SourceLoadAborted {
+            rethrow;
+          } on Object catch (retryError, retryStackTrace) {
+            abortIfStale(source);
+            lastError = retryError;
+            lastStackTrace = retryStackTrace;
+            if (isMediaProcessingError(retryError)) {
+              continue;
+            }
+            break;
+          }
+        }
+      }
       final nextAttempt = attemptIndex + 1;
       if (nextAttempt < sources.length) {
         log(
@@ -67,7 +110,7 @@ Future<(String, int)> setSourceWithFallbacks({
           'failedSource=$source '
           'retrySource=${sources[nextAttempt]} '
           'attempt=$attemptIndex '
-          'error=$error',
+          'error=$lastError',
         );
         continue;
       }
@@ -76,7 +119,7 @@ Future<(String, int)> setSourceWithFallbacks({
         'All sources failed index $index: '
         'failedSource=$source '
         'attempt=$attemptIndex '
-        'error=$error',
+        'error=$lastError',
       );
     }
   }

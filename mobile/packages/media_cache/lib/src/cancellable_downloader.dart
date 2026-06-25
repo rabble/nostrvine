@@ -4,6 +4,25 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:unified_logger/unified_logger.dart';
 
+/// Result of a cancellable HTTP download.
+class CancellableDownloadResult {
+  /// Creates a download result.
+  const CancellableDownloadResult({
+    required this.file,
+    this.statusCode,
+    this.headers = const {},
+  });
+
+  /// The completed file, or `null` when the download failed or was cancelled.
+  final File? file;
+
+  /// HTTP response status when headers were received.
+  final int? statusCode;
+
+  /// HTTP response headers, lower-cased by `package:http`.
+  final Map<String, String> headers;
+}
+
 /// Handle to an in-progress HTTP download writing to a single target file.
 ///
 /// Cancelling tears down the underlying HTTP socket immediately and removes
@@ -11,7 +30,10 @@ import 'package:unified_logger/unified_logger.dart';
 abstract class CancellableDownload {
   /// Resolves to the downloaded file when complete, or `null` on failure
   /// or cancellation.
-  Future<File?> get file;
+  Future<File?> get file async => (await result).file;
+
+  /// Resolves to the completed download result.
+  Future<CancellableDownloadResult> get result;
 
   /// Whether this download has been cancelled.
   bool get isCancelled;
@@ -85,9 +107,7 @@ class HttpCancellableDownloader implements CancellableDownloader {
     for (final download in activeDownloads) {
       download.cancel();
     }
-    await Future.wait<File?>(
-      activeDownloads.map((download) => download.file),
-    );
+    await Future.wait<File?>(activeDownloads.map((download) => download.file));
     _client.close();
   }
 }
@@ -107,7 +127,7 @@ class _HttpDownload implements CancellableDownload {
   final Map<String, String>? _headers;
   final void Function(_HttpDownload download) onComplete;
 
-  final _completer = Completer<File?>();
+  final _completer = Completer<CancellableDownloadResult>();
   final _abortCompleter = Completer<void>();
   // ignore: cancel_subscriptions, owned across cancel/stream lifecycle methods.
   StreamSubscription<List<int>>? _subscription;
@@ -116,7 +136,10 @@ class _HttpDownload implements CancellableDownload {
   bool _isDone = false;
 
   @override
-  Future<File?> get file => _completer.future;
+  Future<CancellableDownloadResult> get result => _completer.future;
+
+  @override
+  Future<File?> get file async => (await result).file;
 
   @override
   bool get isCancelled => _isCancelled;
@@ -130,7 +153,7 @@ class _HttpDownload implements CancellableDownload {
           name: 'MediaCache',
           category: LogCategory.video,
         );
-        _safeComplete(null);
+        _safeComplete(const CancellableDownloadResult(file: null));
         return;
       }
 
@@ -145,7 +168,13 @@ class _HttpDownload implements CancellableDownload {
       final response = await _client.send(req);
       if (_isCancelled) {
         unawaited(response.stream.drain<void>());
-        _safeComplete(null);
+        _safeComplete(
+          CancellableDownloadResult(
+            file: null,
+            statusCode: response.statusCode,
+            headers: response.headers,
+          ),
+        );
         return;
       }
       if (response.statusCode != HttpStatus.ok) {
@@ -155,7 +184,13 @@ class _HttpDownload implements CancellableDownload {
           category: LogCategory.video,
         );
         unawaited(response.stream.drain<void>());
-        _safeComplete(null);
+        _safeComplete(
+          CancellableDownloadResult(
+            file: null,
+            statusCode: response.statusCode,
+            headers: response.headers,
+          ),
+        );
         return;
       }
 
@@ -184,7 +219,7 @@ class _HttpDownload implements CancellableDownload {
             );
           }
           await _cleanupPartial();
-          _safeComplete(null);
+          _safeComplete(const CancellableDownloadResult(file: null));
         },
         onDone: () async {
           // Mark as done before async finalization so cancel() cannot race
@@ -200,11 +235,23 @@ class _HttpDownload implements CancellableDownload {
           // coverage:ignore-start
           if (_isCancelled) {
             await _safeDelete();
-            _safeComplete(null);
+            _safeComplete(
+              CancellableDownloadResult(
+                file: null,
+                statusCode: response.statusCode,
+                headers: response.headers,
+              ),
+            );
             return;
           }
           // coverage:ignore-end
-          _safeComplete(_file);
+          _safeComplete(
+            CancellableDownloadResult(
+              file: _file,
+              statusCode: response.statusCode,
+              headers: response.headers,
+            ),
+          );
         },
         cancelOnError: true,
       );
@@ -220,7 +267,7 @@ class _HttpDownload implements CancellableDownload {
         );
       }
       await _cleanupPartial();
-      _safeComplete(null);
+      _safeComplete(const CancellableDownloadResult(file: null));
     }
   }
 
@@ -242,9 +289,9 @@ class _HttpDownload implements CancellableDownload {
     }
   }
 
-  void _safeComplete(File? f) {
+  void _safeComplete(CancellableDownloadResult result) {
     if (_completer.isCompleted) return;
-    _completer.complete(f);
+    _completer.complete(result);
     onComplete(this);
   }
 
@@ -263,17 +310,23 @@ class _HttpDownload implements CancellableDownload {
     unawaited(
       subscription.cancel().whenComplete(() async {
         await _cleanupPartial();
-        _safeComplete(null);
+        _safeComplete(const CancellableDownloadResult(file: null));
       }),
     );
   }
 }
 
 class _CompletedDownload implements CancellableDownload {
-  _CompletedDownload(File? file) : file = Future<File?>.value(file);
+  _CompletedDownload(File? file)
+    : result = Future<CancellableDownloadResult>.value(
+        CancellableDownloadResult(file: file),
+      );
 
   @override
-  final Future<File?> file;
+  final Future<CancellableDownloadResult> result;
+
+  @override
+  Future<File?> get file async => (await result).file;
 
   @override
   bool get isCancelled => false;

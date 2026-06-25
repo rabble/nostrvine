@@ -4,6 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group(NativePlayerErrorCode, () {
     group('shouldFailover', () {
+      test('returns false for mediaProcessing', () {
+        expect(NativePlayerErrorCode.mediaProcessing.shouldFailover, isFalse);
+      });
+
       test('returns true for httpClientError', () {
         expect(NativePlayerErrorCode.httpClientError.shouldFailover, isTrue);
       });
@@ -34,6 +38,10 @@ void main() {
     });
 
     group('isTransient', () {
+      test('returns true for mediaProcessing', () {
+        expect(NativePlayerErrorCode.mediaProcessing.isTransient, isTrue);
+      });
+
       test('returns true for networkError', () {
         expect(NativePlayerErrorCode.networkError.isTransient, isTrue);
       });
@@ -64,6 +72,13 @@ void main() {
     });
 
     group('fromString', () {
+      test('parses media_processing', () {
+        expect(
+          NativePlayerErrorCode.fromString('media_processing'),
+          equals(NativePlayerErrorCode.mediaProcessing),
+        );
+      });
+
       test('parses http_client_error', () {
         expect(
           NativePlayerErrorCode.fromString('http_client_error'),
@@ -388,10 +403,7 @@ void main() {
         final copy = original.copyWith(status: PlaybackStatus.idle);
 
         expect(copy.errorMessage, equals('boom'));
-        expect(
-          copy.errorCode,
-          equals(NativePlayerErrorCode.networkError),
-        );
+        expect(copy.errorCode, equals(NativePlayerErrorCode.networkError));
       });
     });
 
@@ -486,9 +498,9 @@ void main() {
       });
 
       test('defaults unknown status to idle', () {
-        final state = DivineVideoPlayerState.fromMap(
-          {'status': 'unknown_status'},
-        );
+        final state = DivineVideoPlayerState.fromMap({
+          'status': 'unknown_status',
+        });
         expect(state.status, equals(PlaybackStatus.idle));
       });
 
@@ -514,9 +526,7 @@ void main() {
       });
 
       test('includes error message when present', () {
-        const state = DivineVideoPlayerState(
-          status: PlaybackStatus.error,
-        );
+        const state = DivineVideoPlayerState(status: PlaybackStatus.error);
         expect(state.toString(), contains('error'));
       });
 

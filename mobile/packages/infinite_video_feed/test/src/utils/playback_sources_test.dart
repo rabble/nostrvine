@@ -64,10 +64,7 @@ void main() {
         'returns [hlsUrl, rawUrl] deduplicated when originalUrl equals hlsUrl',
         () {
           final video = _makeVideo(videoUrl: _hlsUrl);
-          expect(
-            resolvePlaybackSources(video),
-            equals([_hlsUrl, _rawUrl]),
-          );
+          expect(resolvePlaybackSources(video), equals([_hlsUrl, _rawUrl]));
         },
       );
     });
@@ -76,10 +73,7 @@ void main() {
       test('returns [rawUrl, hlsUrl, originalUrl] deduplicated', () {
         final video = _makeVideo(videoUrl: _rawUrl);
         // raw == original → [rawUrl, hlsUrl]
-        expect(
-          resolvePlaybackSources(video),
-          equals([_rawUrl, _hlsUrl]),
-        );
+        expect(resolvePlaybackSources(video), equals([_rawUrl, _hlsUrl]));
       });
 
       test('includes originalUrl when it differs from rawUrl', () {
@@ -111,10 +105,7 @@ void main() {
     group('with resolver returning null', () {
       test('falls back to videoUrl', () {
         final video = _makeVideo(videoUrl: 'https://example.com/video.mp4');
-        final result = resolvePlaybackSources(
-          video,
-          urlResolver: (_) => null,
-        );
+        final result = resolvePlaybackSources(video, urlResolver: (_) => null);
         expect(result, equals(['https://example.com/video.mp4']));
       });
     });
@@ -122,10 +113,7 @@ void main() {
     group('with resolver returning empty string', () {
       test('falls back to videoUrl', () {
         final video = _makeVideo(videoUrl: 'https://example.com/video.mp4');
-        final result = resolvePlaybackSources(
-          video,
-          urlResolver: (_) => '',
-        );
+        final result = resolvePlaybackSources(video, urlResolver: (_) => '');
         expect(result, equals(['https://example.com/video.mp4']));
       });
     });
@@ -226,6 +214,31 @@ void main() {
       expect(
         classifyVideoError(source: 'https://example.com/video.mp4'),
         equals(VideoErrorType.generic),
+      );
+    });
+  });
+
+  group('isMediaProcessingError', () {
+    test('matches iOS CoreMedia HTTP 202 messages', () {
+      expect(
+        isMediaProcessingError(
+          Exception('CoreMediaErrorDomain error -12667 - HTTP 202'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('matches Android response-code 202 messages', () {
+      expect(
+        isMediaProcessingError(Exception('Source error. Response code: 202')),
+        isTrue,
+      );
+    });
+
+    test('does not match unrelated 202 numbers', () {
+      expect(
+        isMediaProcessingError(Exception('Response completed in 2025 ms')),
+        isFalse,
       );
     });
   });

@@ -134,6 +134,9 @@ void main() {
     // Stub cacheFileCancellable so DiskPrefetcher does not throw.
     final mockCancellable = _MockCancellable();
     when(() => mockCancellable.file).thenAnswer((_) async => null);
+    when(
+      () => mockCancellable.result,
+    ).thenAnswer((_) async => const CancellableDownloadResult(file: null));
     when(() => mockCancellable.isCancelled).thenReturn(false);
     when(mockCancellable.cancel).thenReturn(null);
     when(
@@ -1746,9 +1749,7 @@ void main() {
     });
 
     group('prefetch', () {
-      testWidgets('default disk prefetch window stays bounded', (
-        tester,
-      ) async {
+      testWidgets('default disk prefetch window stays bounded', (tester) async {
         DivineVideoPlayerController.resetIdCounterForTesting();
         final harness = _NativePlayerHarness(tester);
         await harness.install();
@@ -2336,9 +2337,7 @@ void main() {
 
       testWidgets(
         'fully drains when the flag turns on while already inactive',
-        (
-          tester,
-        ) async {
+        (tester) async {
           // Mirrors the production path: the home feed is backgrounded on
           // another tab (neighbours released, current kept warm) and *then* a
           // codec-heavy surface (camera/editor) opens over it.

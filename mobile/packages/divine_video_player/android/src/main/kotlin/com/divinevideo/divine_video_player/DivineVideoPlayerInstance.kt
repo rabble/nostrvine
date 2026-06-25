@@ -726,7 +726,11 @@ internal class DivineVideoPlayerInstance(
             map["errorCode"] = when (error.errorCode) {
                 PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS -> {
                     val status = (error.cause as? androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException)?.responseCode ?: 0
-                    if (status in 400..499) "http_client_error" else "http_server_error"
+                    when {
+                        status == 202 -> "media_processing"
+                        status in 400..499 -> "http_client_error"
+                        else -> "http_server_error"
+                    }
                 }
                 PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND,
                 PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE,

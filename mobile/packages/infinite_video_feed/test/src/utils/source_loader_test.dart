@@ -65,6 +65,105 @@ void main() {
       expect(logs.first, contains('badUrl'));
     });
 
+    test('retries same source for HTTP 202 before falling back', () async {
+      final clips = <VideoClip>[];
+      final controller = _RecordingControllerWithFailures(
+        clips.add,
+        failures: [
+          Exception('CoreMediaErrorDomain error -12667 - HTTP 202'),
+          Exception('Response code: 202'),
+        ],
+      );
+      addTearDown(controller.dispose);
+
+      final delays = <Duration>[];
+      final result = await setSourceWithFallbacks(
+        index: 2,
+        controller: controller,
+        sources: ['processingUrl', 'hlsUrl'],
+        log: logs.add,
+        delay: (duration) async => delays.add(duration),
+      );
+
+      expect(result, equals(('processingUrl', 0)));
+      expect(
+        clips.map((clip) => clip.uri),
+        equals(['processingUrl', 'processingUrl', 'processingUrl']),
+      );
+      expect(delays, hasLength(2));
+      expect(
+        logs.where((line) => line.contains('Source processing')),
+        hasLength(2),
+      );
+      expect(logs.any((line) => line.contains('retrySource=hlsUrl')), isFalse);
+    });
+
+    test('uses source headers when retrying after HTTP 202', () async {
+      final clips = <VideoClip>[];
+      final controller = _RecordingControllerWithFailures(
+        clips.add,
+        failures: [Exception('CoreMediaErrorDomain error -12667 - HTTP 202')],
+      );
+      addTearDown(controller.dispose);
+
+      const headers = {'Authorization': 'Nostr token'};
+      final result = await setSourceWithFallbacks(
+        index: 2,
+        controller: controller,
+        sources: ['processingUrl'],
+        log: logs.add,
+        httpHeadersForSource: (_) => headers,
+        delay: (_) async {},
+      );
+
+      expect(result, equals(('processingUrl', 0)));
+      expect(clips, hasLength(2));
+      expect(clips[0].httpHeaders, equals(headers));
+      expect(clips[1].httpHeaders, equals(headers));
+    });
+
+    test(
+      'falls back after bounded HTTP 202 retry budget is exhausted',
+      () async {
+        final clips = <VideoClip>[];
+        final controller = _RecordingControllerWithFailures(
+          clips.add,
+          failures: List<Exception>.filled(
+            6,
+            Exception('CoreMediaErrorDomain error -12667 - HTTP 202'),
+          ),
+        );
+        addTearDown(controller.dispose);
+
+        final result = await setSourceWithFallbacks(
+          index: 2,
+          controller: controller,
+          sources: ['processingUrl', 'hlsUrl'],
+          log: logs.add,
+          delay: (_) async {},
+        );
+
+        expect(result, equals(('hlsUrl', 1)));
+        expect(
+          clips.map((clip) => clip.uri),
+          equals([
+            'processingUrl',
+            'processingUrl',
+            'processingUrl',
+            'processingUrl',
+            'processingUrl',
+            'processingUrl',
+            'hlsUrl',
+          ]),
+        );
+        expect(
+          logs.where((line) => line.contains('Source processing')),
+          hasLength(5),
+        );
+        expect(logs.any((line) => line.contains('retrySource=hlsUrl')), isTrue);
+      },
+    );
+
     test(
       'applies the same headers to every source in the fallover chain',
       () async {
@@ -115,36 +214,30 @@ void main() {
       expect(clips[1].httpHeaders, equals(headers));
     });
 
-    test(
-      'aborts stale fallback without logging all sources failed',
-      () async {
-        var isCurrent = true;
-        final controller = _DisposedDuringFallbackController(
-          onDisposedFallback: () => isCurrent = false,
-        );
-        addTearDown(controller.dispose);
+    test('aborts stale fallback without logging all sources failed', () async {
+      var isCurrent = true;
+      final controller = _DisposedDuringFallbackController(
+        onDisposedFallback: () => isCurrent = false,
+      );
+      addTearDown(controller.dispose);
 
-        await expectLater(
-          () => setSourceWithFallbacks(
-            index: 0,
-            controller: controller,
-            sources: ['derivedMp4', 'hls', 'raw'],
-            log: logs.add,
-            isLoadCurrent: () => isCurrent,
-          ),
-          throwsA(isA<SourceLoadAborted>()),
-        );
+      await expectLater(
+        () => setSourceWithFallbacks(
+          index: 0,
+          controller: controller,
+          sources: ['derivedMp4', 'hls', 'raw'],
+          log: logs.add,
+          isLoadCurrent: () => isCurrent,
+        ),
+        throwsA(isA<SourceLoadAborted>()),
+      );
 
-        expect(controller.attempts, equals(2));
-        expect(logs, hasLength(1));
-        expect(logs.single, contains('failedSource=derivedMp4'));
-        expect(logs.single, contains('retrySource=hls'));
-        expect(
-          logs.any((line) => line.contains('All sources failed')),
-          isFalse,
-        );
-      },
-    );
+      expect(controller.attempts, equals(2));
+      expect(logs, hasLength(1));
+      expect(logs.single, contains('failedSource=derivedMp4'));
+      expect(logs.single, contains('retrySource=hls'));
+      expect(logs.any((line) => line.contains('All sources failed')), isFalse);
+    });
 
     test(
       'aborts when the controller goes stale after a source opens',
@@ -266,6 +359,23 @@ class _RecordingControllerWithOneFailure extends FakeController {
   }
 }
 
+class _RecordingControllerWithFailures extends FakeController {
+  _RecordingControllerWithFailures(this._record, {required this.failures});
+
+  final void Function(VideoClip) _record;
+  final List<Exception> failures;
+  int attempts = 0;
+
+  @override
+  Future<void> setSource(VideoClip clip) async {
+    _record(clip);
+    if (attempts < failures.length) {
+      throw failures[attempts++];
+    }
+    attempts++;
+  }
+}
+
 class _DisposedDuringFallbackController extends FakeController {
   _DisposedDuringFallbackController({required this.onDisposedFallback});
 
@@ -276,7 +386,7 @@ class _DisposedDuringFallbackController extends FakeController {
   Future<void> setSource(VideoClip clip) async {
     attempts++;
     if (attempts == 1) {
-      throw Exception('HTTP 202 Accepted');
+      throw Exception('first source error');
     }
 
     onDisposedFallback();
