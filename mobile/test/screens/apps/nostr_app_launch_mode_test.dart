@@ -35,6 +35,17 @@ void main() {
       expect(appRequiresSystemBrowser(app), isTrue);
     });
 
+    test(
+      'returns true for the legacy verifyer slug (directory transition)',
+      () {
+        final app = _entry(
+          slug: 'verifyer',
+          launchUrl: 'https://verifyer.divine.video/',
+        );
+        expect(appRequiresSystemBrowser(app), isTrue);
+      },
+    );
+
     test('returns false for an ordinary sandbox app', () {
       final app = _entry(slug: 'primal', launchUrl: 'https://primal.net/');
       expect(appRequiresSystemBrowser(app), isFalse);

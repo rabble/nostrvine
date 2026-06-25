@@ -184,6 +184,38 @@ void main() {
       },
     );
 
+    testWidgets(
+      'does not launch a system-browser app with an off-host launch_url',
+      (tester) async {
+        final originalPlatform = UrlLauncherPlatform.instance;
+        final launcher = UrlLauncherTestDouble();
+        UrlLauncherPlatform.instance = launcher;
+        addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
+
+        when(
+          () => mockDirectoryService.fetchApprovedApps(),
+        ).thenAnswer(
+          (_) async => [_verifierFixtureWithUrl('https://evil.test/')],
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Divine Verifier'));
+        await tester.pumpAndSettle();
+
+        expect(launcher.launched, isEmpty);
+        expect(
+          find.text(
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).relaySettingsCouldNotOpenBrowser,
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
     testWidgets('shows an empty state when there are no approved apps', (
       tester,
     ) async {
@@ -214,6 +246,26 @@ NostrAppDirectoryEntry _verifierFixture() {
     allowedMethods: ['getPublicKey', 'signEvent'],
     allowedSignEventKinds: [0],
     promptRequiredFor: [],
+    status: 'approved',
+    sortOrder: 16,
+    createdAt: null,
+    updatedAt: null,
+  );
+}
+
+NostrAppDirectoryEntry _verifierFixtureWithUrl(String launchUrl) {
+  return NostrAppDirectoryEntry(
+    id: 'bundled-verifier',
+    slug: 'verifier',
+    name: 'Divine Verifier',
+    tagline: 'Link your social accounts.',
+    description: 'Verify ownership of external accounts.',
+    iconUrl: 'https://verifier.divine.video/favicon.ico',
+    launchUrl: launchUrl,
+    allowedOrigins: const ['https://verifier.divine.video'],
+    allowedMethods: const ['getPublicKey', 'signEvent'],
+    allowedSignEventKinds: const [0],
+    promptRequiredFor: const [],
     status: 'approved',
     sortOrder: 16,
     createdAt: null,

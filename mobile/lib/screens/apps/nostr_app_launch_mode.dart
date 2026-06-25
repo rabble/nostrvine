@@ -20,13 +20,35 @@ import 'package:url_launcher/url_launcher.dart';
 /// preloaded ones by slug (see
 /// `NostrAppDirectoryService._mergeWithPreloadedApps`), so the slug is the
 /// identity that survives a remote override — a server-sent flag on the
-/// preloaded entry would not. If the verifier slug changes, update this set.
-const Set<String> kSystemBrowserAppSlugs = {'verifier'};
+/// preloaded entry would not. Both verifier spellings are listed: remote
+/// directory data and older on-device caches may still carry the legacy
+/// `verifyer` slug, which would otherwise survive the merge as its own tile
+/// and dead-end in the sandbox.
+const Set<String> kSystemBrowserAppSlugs = {'verifier', 'verifyer'};
+
+/// Hosts the system-browser launch is allowed to open. The launch target
+/// comes from directory JSON (`launch_url`), which a remote or cached entry
+/// can override; pinning to these hosts stops a crafted entry from opening an
+/// arbitrary URL under a trusted first-party tile. Both verifier spellings are
+/// listed for the same directory-data transition as [kSystemBrowserAppSlugs].
+const Set<String> _systemBrowserAppHosts = {
+  'verifier.divine.video',
+  'verifyer.divine.video',
+};
 
 /// Whether [app] must be opened in the system browser rather than the
 /// in-app sandbox.
 bool appRequiresSystemBrowser(NostrAppDirectoryEntry app) =>
     kSystemBrowserAppSlugs.contains(app.slug);
+
+/// Whether [rawUrl] is a safe system-browser target: an `https` URL on a
+/// pinned verifier host. Guards against a crafted directory `launch_url`.
+bool _isAllowedSystemBrowserTarget(String rawUrl) {
+  final uri = Uri.tryParse(rawUrl);
+  return uri != null &&
+      uri.scheme == 'https' &&
+      _systemBrowserAppHosts.contains(uri.host);
+}
 
 /// Opens [app] from the directory.
 ///
@@ -53,6 +75,13 @@ Future<void> launchNostrApp(
 
   final messenger = ScaffoldMessenger.of(context);
   final errorText = context.l10n.relaySettingsCouldNotOpenBrowser;
+  if (!_isAllowedSystemBrowserTarget(app.launchUrl)) {
+    messenger.showSnackBar(
+      SnackBar(content: Text(errorText), backgroundColor: VineTheme.error),
+    );
+    return;
+  }
+
   var launched = false;
   try {
     launched = await launchUrl(
