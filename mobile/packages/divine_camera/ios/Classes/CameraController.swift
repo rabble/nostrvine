@@ -155,6 +155,12 @@ class CameraController: NSObject {
     private var maxDurationTimer: Timer?
     private var maxDurationMs: Int?
     private var isWriterSessionStarted: Bool = false
+
+    /// PTS of the last video frame appended to the asset writer. Used at
+    /// finalize to bound the writer session to the video's actual end, so a
+    /// look-ahead stabilization mode (which delays video ~0.5–1s behind audio)
+    /// can't leave the clip ending on a frozen frame while audio keeps playing.
+    private var lastVideoFramePTS: CMTime?
     
     /// Completion handler for camera switch - called when first frame from new camera arrives
     private var switchCameraCompletion: (([String: Any]?, String?) -> Void)?
@@ -2136,6 +2142,7 @@ class CameraController: NSObject {
 
             self.isRecording = true
             self.isWriterSessionStarted = false  // Will be set to true when first frame is received
+            self.lastVideoFramePTS = nil
             self.recordingStartTime = Date()
 
             // Check and enable auto-flash if needed
@@ -2210,36 +2217,55 @@ class CameraController: NSObject {
         videoOutputQueue.async { [weak self] in
             guard let self = self else { return }
 
+            // Bound the session to the last video frame. With a look-ahead
+            // stabilization mode the trailing ~0.5–1s of video never reaches
+            // the writer, so audio would otherwise outlast video and the clip
+            // would end on a held (frozen) frame. Ending here trims that
+            // surplus audio so both tracks stop together.
+            if writer.status == .writing,
+                self.isWriterSessionStarted,
+                let endPTS = self.lastVideoFramePTS {
+                writer.endSession(atSourceTime: endPTS)
+            }
+
             self.videoWriterInput?.markAsFinished()
             self.audioWriterInput?.markAsFinished()
-            
+
             writer.finishWriting { [weak self] in
                 guard let self = self else { return }
                 
                 DispatchQueue.main.async {
                     if writer.status == .completed {
-                        // Calculate duration
-                        let duration: Int
-                        if let startTime = self.recordingStartTime {
-                            duration = Int(Date().timeIntervalSince(startTime) * 1000)
-                        } else {
-                            duration = 0
-                        }
-                        
                         // Get video dimensions
                         guard let outputURL = self.currentRecordingURL else {
                             completion(nil, "Output URL not available")
                             return
                         }
-                        
+
                         var width: Int = 1920
                         var height: Int = 1080
-                        
+
                         let asset = AVAsset(url: outputURL)
                         if let track = asset.tracks(withMediaType: .video).first {
                             let size = track.naturalSize.applying(track.preferredTransform)
                             width = Int(abs(size.width))
                             height = Int(abs(size.height))
+                        }
+
+                        // Report the finished file's real duration. The
+                        // wall-clock span over-reports for look-ahead
+                        // stabilization (the trailing video never reaches the
+                        // writer), which would make a player hold the last
+                        // frame. Fall back to wall clock only if the asset
+                        // duration is unavailable.
+                        let assetSeconds = CMTimeGetSeconds(asset.duration)
+                        let duration: Int
+                        if assetSeconds.isFinite, assetSeconds > 0 {
+                            duration = Int(assetSeconds * 1000)
+                        } else if let startTime = self.recordingStartTime {
+                            duration = Int(Date().timeIntervalSince(startTime) * 1000)
+                        } else {
+                            duration = 0
                         }
 
                         // Definitive signal for the "clip saved without sound"
@@ -2283,11 +2309,12 @@ class CameraController: NSObject {
                     self.currentRecordingURL = nil
                     self.recordingStartTime = nil
                     self.isWriterSessionStarted = false
+                    self.lastVideoFramePTS = nil
                 }
             }
         }
     }
-    
+
     /// Pauses the camera preview.
     func pausePreview() {
         disableScreenFlash()
@@ -2414,7 +2441,8 @@ class CameraController: NSObject {
             self.videoWriterInput = nil
             self.audioWriterInput = nil
             self.pixelBufferAdaptor = nil
-            
+            self.lastVideoFramePTS = nil
+
             if self.textureId >= 0 {
                 self.textureRegistry.unregisterTexture(self.textureId)
                 self.textureId = -1
@@ -2521,6 +2549,7 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
 
                 if writer.status == .writing && videoInput.isReadyForMoreMediaData {
                     adaptor.append(pixelBuffer, withPresentationTime: timestamp)
+                    lastVideoFramePTS = timestamp
                 }
             }
         }
