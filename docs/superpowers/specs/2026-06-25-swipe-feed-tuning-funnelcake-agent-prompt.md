@@ -29,7 +29,7 @@ tooling. It is recommendation feedback, never a moderation/block signal.)
 
 ```jsonc
 {
-  "kind": <FEED_TUNING_KIND>,   // TBD — see "Coordination". Regular range 1000-9999.
+  "kind": 4242,                 // EventKind.feedTuning. Regular range 1000-9999.
   "content": "",
   "tags": [
     ["direction", "more"],                              // "more" | "less"
@@ -76,9 +76,8 @@ Produce a short spec, then a plan, then implement. Decide and document:
 
 ## Coordination with the mobile side (cross-repo, do not skip)
 
-- **The kind number is unallocated.** Pick an unused regular-range kind
-  (1000-9999), reserve it (registry-of-kinds if that's the workflow), and report
-  it back so divine-mobile pins the same constant. Both repos MUST agree.
+- **The kind number is pinned on mobile.** Use kind `4242` for funnelcake
+  ingestion so both repos agree on the same regular-range constant.
 - **Relay allow-listing.** The relay rejects unknown kinds by policy in some
   paths. Get the new kind accepted or the whole loop is inert.
 - These are the critical-path blockers; surface them early.

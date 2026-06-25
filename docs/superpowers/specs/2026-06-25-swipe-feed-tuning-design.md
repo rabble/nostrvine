@@ -1,7 +1,7 @@
 # Swipe-to-Tune Feed Recommendations — Design
 
-**Date:** 2026-06-25  
-**Status:** Design proposal — ready for implementation planning after kind reservation  
+**Date:** 2026-06-25
+**Status:** Design proposal — mobile implementation tracked by #5517
 **Scope:** `divine-mobile` client only
 
 ---
@@ -91,7 +91,7 @@ Use a new **regular append-only Nostr kind** owned by Divine.
 
 ```jsonc
 {
-  "kind": <feedTuningKind>, // final regular-range kind TBD: 1000-9999
+  "kind": 4242, // EventKind.feedTuning, regular range 1000-9999
   "content": "",
   "tags": [
     ["direction", "more"],                              // "more" | "less"
@@ -130,16 +130,14 @@ Use a new **regular append-only Nostr kind** owned by Divine.
   filtering and mirrors NIP-09 deletion examples already used in repository
   tests.
 - **Undo:** publish a NIP-09 kind-5 deletion request referencing the
-  feed-tuning event id with an `e` tag and `["k", "<feedTuningKind>"]`.
+  feed-tuning event id with an `e` tag and `["k", "4242"]`.
   Re-swiping remains latest-wins; deletion is for accidental immediate undo.
 
-### Open Protocol Dependency
+### Open Rollout Dependency
 
-Implementation must not hardcode a placeholder. Before merge, pick an unused
-regular-range kind (`1000-9999`), add it to
-`mobile/packages/nostr_sdk/lib/event_kind.dart` or the repo's active kind
-constants, reserve/register it in the Nostr kinds registry if that is the
-chosen workflow, and coordinate relay allow-listing.
+Mobile pins `EventKind.feedTuning = 4242` as the Divine client/backend contract.
+Before enabling the feature flag in production, funnelcake ingestion and the
+relay allow-list must use that same kind.
 
 ---
 
@@ -149,7 +147,8 @@ Follow the repo's layered flow: **UI -> BLoC -> Repository -> Client**.
 
 ### Repository Layer: `feed_tuning_repository`
 
-Create `mobile/packages/feed_tuning_repository` as a pure Dart package.
+Create `mobile/packages/feed_tuning_repository` as a Flutter workspace package
+with no UI dependencies.
 
 Responsibilities:
 
@@ -183,7 +182,7 @@ Implementation notes:
   read better.
 - Constructor-inject the Nostr client/signing abstraction used by existing
   publish repositories.
-- Follow the `dm_repository` reporter-port pattern for pure Dart packages:
+- Follow the `dm_repository` reporter-port pattern:
   network/relay publish failures are not Crashlytics-worthy; programming
   invariants and unexpected malformed target derivation are.
 - Tests should use the existing mocktail style in package tests.
@@ -270,8 +269,8 @@ Undo:
 
 ## Implementation Sequence
 
-1. **Protocol prep:** choose/reserve final kind, add constants, and confirm the
-   relay allow-list path. Do not leave a placeholder kind in committed code.
+1. **Protocol prep:** pin the mobile/backend kind constant and confirm the relay
+   allow-list path before enabling the feature flag.
 2. **Repository package:** build event construction, publish, undo, reporter
    sites, package tests.
 3. **BLoC wiring:** add the tuning event + `lastTuningAction` outbox and bloc
@@ -374,9 +373,8 @@ backend must honor:
 Two cross-repo blockers are owned jointly and must be settled before the loop is
 live end-to-end:
 
-1. **The kind number** (`<feedTuningKind>`) is unallocated. The backend reserves
-   an unused regular-range kind and reports it back; both repos pin the same
-   constant (`packages/nostr_sdk/lib/event_kind.dart` on the mobile side).
+1. **The kind number** is pinned to `4242` on mobile; backend ingestion must use
+   the same constant.
 2. **Relay allow-listing** of that kind.
 
 A ready-to-use briefing prompt for the funnelcake/Gorse agent is maintained
@@ -395,5 +393,5 @@ Safe cuts if implementation pressure is real:
 Not recommended to cut:
 
 - Accessibility actions. Gesture-only tuning is not acceptable.
-- Final kind reservation. Shipping placeholder protocol constants will create
-  relay/backend churn.
+- Kind coordination. Mobile, relay, and backend must agree on `4242` before the
+  feature flag is enabled.

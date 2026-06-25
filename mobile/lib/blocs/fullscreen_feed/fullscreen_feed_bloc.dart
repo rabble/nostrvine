@@ -158,6 +158,7 @@ class FullscreenFeedBloc
   final FeedTuningRepository? _feedTuningRepository;
   StreamSubscription<bool>? _hasMoreSubscription;
   StreamSubscription<String>? _removedIdsSubscription;
+  int _tuningActionSequence = 0;
 
   /// Queue of video IDs waiting to be cached in the background.
   final Queue<_CacheRequest> _cacheQueue = Queue<_CacheRequest>();
@@ -193,6 +194,7 @@ class FullscreenFeedBloc
         lastTuningAction: FullscreenFeedTuningAction(
           videoId: event.videoId,
           direction: event.direction,
+          sequence: ++_tuningActionSequence,
           publishedEventId: publishedEventId,
         ),
       ),

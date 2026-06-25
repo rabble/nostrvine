@@ -296,7 +296,42 @@ void main() {
               bloc.state.lastTuningAction?.publishedEventId,
               'published-id',
             );
+            expect(bloc.state.lastTuningAction?.sequence, 1);
             expect(bloc.state.removedVideoIds, isEmpty);
+          },
+        );
+
+        blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+          'records identical repeated swipes as distinct actions',
+          build: () => createBloc(feedTuningRepository: tuningRepository),
+          act: (bloc) async {
+            bloc.add(const FullscreenFeedStarted());
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            videosController.add([createTestVideo('video1')]);
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            bloc
+              ..add(
+                const FullscreenFeedTuningSwipeCommitted(
+                  videoId: 'video1',
+                  direction: FeedTuningDirection.more,
+                ),
+              )
+              ..add(
+                const FullscreenFeedTuningSwipeCommitted(
+                  videoId: 'video1',
+                  direction: FeedTuningDirection.more,
+                ),
+              );
+          },
+          wait: const Duration(milliseconds: 150),
+          verify: (bloc) {
+            verify(
+              () => tuningRepository.tune(
+                video: any(named: 'video'),
+                direction: FeedTuningDirection.more,
+              ),
+            ).called(2);
+            expect(bloc.state.lastTuningAction?.sequence, 2);
           },
         );
 

@@ -19,6 +19,10 @@ abstract class FeedTuningTags {
   static const String direction = 'direction';
 }
 
+/// Canonical Divine relay hint used when the source video does not carry one.
+@visibleForTesting
+const feedTuningDefaultRelayHint = 'wss://relay.divine.video';
+
 /// Publishes Divine feed-tuning signals — "more like this" / "less like this"
 /// swipes — as append-only [EventKind.feedTuning] events, and retracts them
 /// via NIP-09 deletions.
@@ -128,10 +132,7 @@ class FeedTuningRepository {
   }
 
   List<String> _eTag(VideoEvent video) {
-    final relay = video.sourceRelay;
-    return (relay == null || relay.isEmpty)
-        ? ['e', video.id]
-        : ['e', video.id, relay];
+    return ['e', video.id, _relayHint(video)];
   }
 
   /// The addressable coordinate, only when the source video carried a real `d`
@@ -143,9 +144,11 @@ class FeedTuningRepository {
     if (dTag == null || dTag.isEmpty) return null;
 
     final coordinate = '$kind:${video.pubkey}:$dTag';
+    return ['a', coordinate, _relayHint(video)];
+  }
+
+  String _relayHint(VideoEvent video) {
     final relay = video.sourceRelay;
-    return (relay == null || relay.isEmpty)
-        ? ['a', coordinate]
-        : ['a', coordinate, relay];
+    return relay == null || relay.isEmpty ? feedTuningDefaultRelayHint : relay;
   }
 }

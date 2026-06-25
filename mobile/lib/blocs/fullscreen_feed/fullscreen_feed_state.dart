@@ -24,6 +24,7 @@ final class FullscreenFeedTuningAction extends Equatable {
   const FullscreenFeedTuningAction({
     required this.videoId,
     required this.direction,
+    required this.sequence,
     this.publishedEventId,
   });
 
@@ -33,12 +34,15 @@ final class FullscreenFeedTuningAction extends Equatable {
   /// The direction that was published.
   final FeedTuningDirection direction;
 
+  /// Monotonic action id so identical consecutive swipes still notify listeners.
+  final int sequence;
+
   /// Published feed-tuning event id, or `null` when nothing was published
   /// (no signer). Undo is only possible when this is non-null.
   final String? publishedEventId;
 
   @override
-  List<Object?> get props => [videoId, direction, publishedEventId];
+  List<Object?> get props => [videoId, direction, sequence, publishedEventId];
 }
 
 /// State for the FullscreenFeedBloc.
@@ -93,7 +97,8 @@ final class FullscreenFeedState extends Equatable {
 
   /// The most recently committed feed-tuning swipe, for the UI's Undo
   /// snackbar. `null` until the user tunes a video. A `BlocListener` reacts to
-  /// changes here; it is never cleared (latest-wins, change-only semantics).
+  /// changes here. [FullscreenFeedTuningAction.sequence] makes each committed
+  /// swipe distinct even when the same video/direction/event id repeats.
   final FullscreenFeedTuningAction? lastTuningAction;
 
   /// The current video, if available.

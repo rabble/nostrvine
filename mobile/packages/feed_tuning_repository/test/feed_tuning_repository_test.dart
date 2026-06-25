@@ -111,7 +111,10 @@ void main() {
         );
 
         final event = capturedEvent();
-        expect(_tag(event, 'e'), equals(['e', 'vid-123']));
+        expect(
+          _tag(event, 'e'),
+          equals(['e', 'vid-123', feedTuningDefaultRelayHint]),
+        );
         expect(_tag(event, 'p'), equals(['p', 'creator-99']));
         expect(_tag(event, 'k'), equals(['k', '34236']));
       });
@@ -136,7 +139,11 @@ void main() {
         );
         expect(
           _tag(capturedEvent(), 'a'),
-          equals(['a', '34236:creator-99:real-d-tag']),
+          equals([
+            'a',
+            '34236:creator-99:real-d-tag',
+            feedTuningDefaultRelayHint,
+          ]),
         );
       });
 
@@ -152,7 +159,11 @@ void main() {
         );
         expect(
           _tag(capturedEvent(), 'a'),
-          equals(['a', '34235:creator-99:real-d-tag']),
+          equals([
+            'a',
+            '34235:creator-99:real-d-tag',
+            feedTuningDefaultRelayHint,
+          ]),
         );
       });
 
