@@ -3575,6 +3575,7 @@ class DmRepository {
               lastMessageContent: source.lastMessageContent,
               lastMessageTimestamp: source.lastMessageTimestamp,
               lastMessageSenderPubkey: source.lastMessageSenderPubkey,
+              isRead: source.isRead,
               currentUserHasSent: source.currentUserHasSent,
               ownerPubkey: source.ownerPubkey,
               dmProtocol: source.dmProtocol,
