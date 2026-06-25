@@ -26,10 +26,29 @@ mixin CodecHeavySurfaceGuard<T extends StatefulWidget> on State<T> {
   Animation<double>? _entranceAnimation;
   bool _entered = false;
 
+  /// Whether to wait for the entrance transition before asserting the signal.
+  ///
+  /// `true` (default) keeps the previous screen's video frame visible during
+  /// the push animation. Correct for the **camera**, which does not allocate a
+  /// video decoder on open — the preview uses the camera pipeline and the
+  /// encoder is created only when recording starts — so there is no codec
+  /// contention to race.
+  ///
+  /// Override to `false` for a surface that allocates a hardware **decoder**
+  /// immediately on mount: the **video editor** builds its preview player in
+  /// `initState`/the first post-frame, so the background feed must hand back its
+  /// decoder before that new one is created — even at the cost of a brief frame
+  /// drop behind the incoming screen.
+  bool get assertCodecSignalAfterEntranceTransition => true;
+
   @override
   void initState() {
     super.initState();
     _codecHeavySurfaceCubit = context.read<CodecHeavySurfaceCubit?>();
+    if (!assertCodecSignalAfterEntranceTransition) {
+      _enterCodecHeavySurface();
+      return;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _armAfterEntrance();
     });

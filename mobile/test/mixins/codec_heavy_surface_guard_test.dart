@@ -19,6 +19,23 @@ class _GuardedScreenState extends State<_GuardedScreen>
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
+class _ImmediateGuardedScreen extends StatefulWidget {
+  const _ImmediateGuardedScreen();
+
+  @override
+  State<_ImmediateGuardedScreen> createState() =>
+      _ImmediateGuardedScreenState();
+}
+
+class _ImmediateGuardedScreenState extends State<_ImmediateGuardedScreen>
+    with CodecHeavySurfaceGuard {
+  @override
+  bool get assertCodecSignalAfterEntranceTransition => false;
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+}
+
 void main() {
   group(CodecHeavySurfaceGuard, () {
     late CodecHeavySurfaceCubit cubit;
@@ -60,6 +77,30 @@ void main() {
       // Transition finished — now the signal asserts.
       await tester.pumpAndSettle();
       expect(cubit.state.isActive, isTrue);
+    });
+
+    testWidgets('asserts the signal immediately when the transition wait is '
+        'disabled', (tester) async {
+      await pumpHost(tester);
+
+      unawaited(
+        navKey.currentState!.push(
+          MaterialPageRoute<void>(
+            builder: (_) => const _ImmediateGuardedScreen(),
+          ),
+        ),
+      );
+
+      // First frame, still mid-transition: the override drains right away so a
+      // screen that allocates a decoder on mount (the editor) does not race the
+      // feed's decoder.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(cubit.state.isActive, isTrue);
+
+      navKey.currentState!.pop();
+      await tester.pumpAndSettle();
+      expect(cubit.state.isActive, isFalse);
     });
 
     testWidgets('releases the signal on pop', (tester) async {

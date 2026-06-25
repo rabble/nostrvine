@@ -645,6 +645,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   void _fullyReleaseWhileInactive() {
     if (_controllers.isEmpty && _needsReinitOnActivate) return;
     _log('Releasing all players while inactive (codec-heavy surface open)');
+    // Stop the whole prefetch cycle, not just the active download
+    // (_teardownAllControllers only cancels the active op), so a backgrounded
+    // feed downloads nothing while the codec-heavy surface is open.
+    _prefetcher.cancelCycle();
     _teardownAllControllers();
     _needsReinitOnActivate = true;
     _rebuild();
@@ -742,6 +746,17 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   Future<void> _updatePlayerWindow(int index) async {
     final generation = ++_playerWindowGeneration;
 
+    // Full drain: a codec-heavy surface is open over this inactive feed, so it
+    // must hold no native players at all. An index change, a first mount, or a
+    // video-list update while drained must not re-allocate a decoder the
+    // camera/editor needs. Flag a re-init so the window rebuilds from the
+    // current list once the feed becomes active again.
+    if (widget.releaseCurrentWhenInactive && !_isActive) {
+      _controllers.keys.toList().forEach(_disposeAt);
+      _needsReinitOnActivate = true;
+      return;
+    }
+
     final lastIndex = widget.videos.length - 1;
     // Neighbour players are kept alive while the feed is active. When the feed
     // is hidden and configured to release them
@@ -816,10 +831,15 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   }
 
   Future<void> _runPrefetch(int index) async {
-    // Pause disk prefetch while a release-on-inactive feed is hidden so a
-    // background feed stops downloading upcoming videos. It resumes from the
-    // current index on reactivation.
-    if (widget.releaseNeighboursWhenInactive && !_isActive) return;
+    // Pause disk prefetch while a hidden feed is releasing players (neighbours
+    // only, or a full drain under a codec-heavy surface) so it stops
+    // downloading upcoming videos. It resumes from the current index on
+    // reactivation.
+    if (!_isActive &&
+        (widget.releaseNeighboursWhenInactive ||
+            widget.releaseCurrentWhenInactive)) {
+      return;
+    }
     if (widget.prefetchCount <= 0) return;
 
     // coverage:ignore-start

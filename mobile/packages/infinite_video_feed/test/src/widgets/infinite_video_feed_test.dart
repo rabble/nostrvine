@@ -2475,6 +2475,114 @@ void main() {
           await harness.dispose();
         }
       });
+
+      testWidgets('stays fully drained across a video-list update while '
+          'inactive', (tester) async {
+        // A backgrounded feed whose videos refresh from relay data while the
+        // camera/editor is open must not re-allocate a decoder.
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0, 1, 2, 3]);
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        var videos = [_makeVideo('cur'), _makeVideo('next')];
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+          expect(
+            key.currentState!.debugLiveControllerIndices,
+            equals(<int>{0, 1}),
+          );
+
+          // Inactive + full drain → empty.
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                isActive: false,
+                releaseCurrentWhenInactive: true,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          expect(key.currentState!.debugLiveControllerIndices, isEmpty);
+
+          // Video list grows while still inactive + drained — must NOT rebuild
+          // a controller.
+          videos = [...videos, _makeVideo('appended')];
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                isActive: false,
+                releaseCurrentWhenInactive: true,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+          expect(key.currentState!.debugLiveControllerIndices, isEmpty);
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
+      testWidgets('skips disk prefetch while fully drained', (tester) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0, 1, 2, 3, 4]);
+        final videos = List.generate(
+          4,
+          (i) => _makeVideo('d$i', videoUrl: 'https://example.com/d$i.mp4'),
+        );
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: videos,
+                cache: cache,
+                isActive: false,
+                releaseCurrentWhenInactive: true,
+                prefetchCount: 5,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          // A fully drained feed downloads nothing.
+          verifyNever(
+            () => cache.cacheFileCancellable(any(), key: any(named: 'key')),
+          );
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
     });
   });
 }

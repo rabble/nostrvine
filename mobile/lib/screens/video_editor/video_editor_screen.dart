@@ -66,6 +66,11 @@ class VideoEditorScreen extends ConsumerStatefulWidget {
 
 class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     with CodecHeavySurfaceGuard {
+  // The editor builds its preview decoder immediately, so release the feed's
+  // decoder now rather than waiting for the entrance transition.
+  @override
+  bool get assertCodecSignalAfterEntranceTransition => false;
+
   final _editorKey = GlobalKey<ProImageEditorState>();
   final GlobalKey<State<StatefulWidget>> _removeAreaKey = GlobalKey();
 
