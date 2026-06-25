@@ -1505,14 +1505,17 @@ class DmRepository {
         return;
       }
 
-      // Cross-device DM read-state marker (#4977). Route to the reconciler
-      // before the DM-only kinds gate so it is never rendered as a message,
-      // then record it terminally so it is not re-decrypted every launch. The
-      // reconcile is idempotent (a forward-only max cursor) and the post-drain
-      // restore re-applies any cursor whose conversation had not synced yet.
+      // Cross-device DM read-state marker (#4977). Route only Divine's read
+      // marker d-tag to the reconciler before the DM-only kinds gate so it is
+      // never rendered as a message, then record it terminally so it is not
+      // re-decrypted every launch. Other app-specific self-wraps must remain
+      // unrecorded so future/foreign kind-30078 handlers can still process
+      // them instead of losing them to the processed-wrap ledger.
       if (rumor.kind == EventKind.appSpecificData) {
-        await _reconcileReadMarker(rumor);
-        await _recordProcessedWrap(giftWrapEvent.id);
+        if (_hasReadMarkerDTag(rumor)) {
+          await _reconcileReadMarker(rumor);
+          await _recordProcessedWrap(giftWrapEvent.id);
+        }
         return;
       }
 

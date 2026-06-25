@@ -5526,8 +5526,9 @@ void main() {
       });
 
       test(
-        'a marker with a foreign d-tag does not advance any cursor',
+        'a marker with a foreign d-tag is ignored without ledgering',
         () async {
+          final ledger = _InMemoryProcessedGiftWrapsDao();
           final foreignMarker = Event.fromJson({
             'id': _rumorEventId,
             'pubkey': _validPubkeyA,
@@ -5554,6 +5555,7 @@ void main() {
           ).thenAnswer((_) => controller.stream);
 
           final repository = createRepository(
+            processedGiftWrapsDao: ledger,
             rumorDecryptor: (_, _) async => foreignMarker,
           );
           await repository.startListening();
@@ -5581,6 +5583,7 @@ void main() {
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
           );
+          expect(ledger.recorded, isNot(contains(_giftWrapEventId)));
         },
       );
     });
