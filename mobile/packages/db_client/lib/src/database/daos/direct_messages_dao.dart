@@ -105,6 +105,10 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       )
       ..orderBy([
         (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+        // `id` is the rumor event hash: this secondary sort is a stable but
+        // arbitrary tie-break for messages sharing a `createdAt` second. Keep
+        // it `id DESC` to match ConversationsDao.backfillLatestMessagePreviews
+        // so the inbox preview agrees with the open conversation's newest row.
         (t) => OrderingTerm(expression: t.id, mode: OrderingMode.desc),
       ]);
     if (limit != null) query.limit(limit, offset: offset);
@@ -128,6 +132,10 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       )
       ..orderBy([
         (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+        // `id` is the rumor event hash: this secondary sort is a stable but
+        // arbitrary tie-break for messages sharing a `createdAt` second. Keep
+        // it `id DESC` to match ConversationsDao.backfillLatestMessagePreviews
+        // so the inbox preview agrees with the open conversation's newest row.
         (t) => OrderingTerm(expression: t.id, mode: OrderingMode.desc),
       ]);
     if (limit != null) query.limit(limit);
