@@ -68,6 +68,8 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
     // Use popularVideosFeedProvider which tries REST API (sort=watching) first,
     // then falls back to Nostr (NIP-50 sort:hot) if unavailable.
     final feedAsync = ref.watch(popularVideosFeedProvider);
+    final selectedVariant = ref.watch(popularVideosVariantProvider);
+    final loadedVariant = ref.watch(popularVideosLoadedVariantProvider);
 
     Log.debug(
       '🔍 PopularVideosTab: AsyncValue state - isLoading: ${feedAsync.isLoading}, '
@@ -83,7 +85,9 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
     }
 
     // CRITICAL: Check hasValue FIRST before isLoading
-    if (feedAsync.hasValue && feedAsync.value != null) {
+    if (feedAsync.hasValue &&
+        feedAsync.value != null &&
+        loadedVariant == selectedVariant) {
       return _buildDataState(feedAsync.value!.videos);
     }
 

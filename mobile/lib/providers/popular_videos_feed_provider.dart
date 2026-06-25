@@ -26,6 +26,15 @@ final popularVideosVariantProvider = StateProvider<PopularVideosVariant>(
   (ref) => PopularVideosVariant.native,
 );
 
+/// The Popular variant represented by the currently rendered feed data.
+///
+/// Riverpod can retain the previous AsyncValue while a dependency-triggered
+/// rebuild is loading. The Popular tab uses this marker to avoid presenting a
+/// stale Native page as Classic (or vice versa) during variant switches.
+final popularVideosLoadedVariantProvider = StateProvider<PopularVideosVariant?>(
+  (ref) => null,
+);
+
 /// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
 /// Delegates video fetching to [VideosRepository.getPopularVideos] with the
@@ -101,11 +110,13 @@ class PopularVideosFeed extends _$PopularVideosFeed {
           category: LogCategory.video,
         );
 
-        return VideoFeedState(
+        final feedState = VideoFeedState(
           videos: filteredVideos,
           hasMoreContent: _pageHasMoreContent(page),
           lastUpdated: DateTime.now(),
         );
+        _markLoadedIfActive(variant);
+        return feedState;
       }
 
       Log.warning(
@@ -114,6 +125,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         category: LogCategory.video,
       );
 
+      _markLoadedIfActive(variant);
       return const VideoFeedState(videos: [], hasMoreContent: false);
     } catch (e) {
       Log.error(
@@ -122,6 +134,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         category: LogCategory.video,
       );
       if (preserveExistingOnError) rethrow;
+      _markLoadedIfActive(variant);
       return VideoFeedState(
         videos: const [],
         hasMoreContent: false,
@@ -143,6 +156,20 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       preferredLanguages: hints.preferredLanguages,
       viewerCountry: hints.viewerCountry,
     );
+  }
+
+  /// Warms the repository-backed first page for [variant] without changing the
+  /// visible feed when another variant is selected.
+  Future<void> preloadVariant(PopularVideosVariant variant) async {
+    try {
+      await _fetchFirstPage(variant, skipCache: false);
+    } catch (e) {
+      Log.warning(
+        'PopularVideosFeed: Failed to preload ${variant.name} variant: $e',
+        name: 'PopularVideosFeedProvider',
+        category: LogCategory.video,
+      );
+    }
   }
 
   /// Load more videos for pagination.
@@ -276,6 +303,12 @@ class PopularVideosFeed extends _$PopularVideosFeed {
 
   bool _pageHasMoreContent(PopularVideosPage page) {
     return page.hasMore;
+  }
+
+  void _markLoadedIfActive(PopularVideosVariant variant) {
+    if (!ref.mounted) return;
+    if (ref.read(popularVideosVariantProvider) != variant) return;
+    ref.read(popularVideosLoadedVariantProvider.notifier).state = variant;
   }
 
   void _scheduleEnrichment(List<VideoEvent> videos) {

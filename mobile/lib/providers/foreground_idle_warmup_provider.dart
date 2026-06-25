@@ -2,6 +2,7 @@
 // ABOUTME: Warms existing feed and notification caches without prefetching media bytes.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/notifications/services/notification_refresh_coordinator.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
@@ -62,6 +63,9 @@ final foregroundIdleWarmupCoordinatorProvider =
             cooldown: const Duration(minutes: 10),
             run: () async {
               await ref.read(popularVideosFeedProvider.future);
+              final popular = ref.read(popularVideosFeedProvider.notifier);
+              await popular.preloadVariant(PopularVideosVariant.native);
+              await popular.preloadVariant(PopularVideosVariant.classic);
             },
           ),
           ForegroundIdleWarmupTask(

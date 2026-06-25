@@ -418,6 +418,95 @@ void main() {
     });
 
     test(
+      'popular videos exposes selected variant as loading until its page resolves',
+      () async {
+        final classicCompleter = Completer<PopularVideosPage>();
+        final requestedVariants = <PopularVideosVariant>[];
+
+        when(
+          () => mockVideosRepository.getPopularVideosPage(
+            limit: any(named: 'limit'),
+            until: any(named: 'until'),
+            cursor: any(named: 'cursor'),
+            variant: any(named: 'variant'),
+            skipCache: any(named: 'skipCache'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
+          ),
+        ).thenAnswer((invocation) {
+          final variant =
+              invocation.namedArguments[#variant] as PopularVideosVariant;
+          requestedVariants.add(variant);
+          if (variant == PopularVideosVariant.native) {
+            return Future.value(_popularPage([_video('popular-native')]));
+          }
+          return classicCompleter.future;
+        });
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            appReadyProvider.overrideWithValue(true),
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockBlocklistRepository,
+            ),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+            nostrServiceProvider.overrideWithValue(mockNostrClient),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final subscription = container.listen(
+          popularVideosFeedProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+
+        final nativeState = await container.read(
+          popularVideosFeedProvider.future,
+        );
+        expect(nativeState.videos.map((video) => video.id), [
+          'popular-native',
+        ]);
+        expect(
+          container.read(popularVideosLoadedVariantProvider),
+          PopularVideosVariant.native,
+        );
+
+        container.read(popularVideosVariantProvider.notifier).state =
+            PopularVideosVariant.classic;
+        await pumpEventQueue();
+
+        expect(requestedVariants, [
+          PopularVideosVariant.native,
+          PopularVideosVariant.classic,
+        ]);
+        expect(
+          container.read(popularVideosLoadedVariantProvider),
+          PopularVideosVariant.native,
+          reason:
+              'The UI must not treat the old Native page as the selected Classic page.',
+        );
+
+        classicCompleter.complete(
+          _popularPage([_vineArchiveVideo('popular-classic')]),
+        );
+        final classicState = await container.read(
+          popularVideosFeedProvider.future,
+        );
+
+        expect(classicState.videos.map((video) => video.id), [
+          'popular-classic',
+        ]);
+        expect(
+          container.read(popularVideosLoadedVariantProvider),
+          PopularVideosVariant.classic,
+        );
+      },
+    );
+
+    test(
       'popular videos preserves existing videos when refresh fails',
       () async {
         final initialVideos = [_video('popular-initial')];
