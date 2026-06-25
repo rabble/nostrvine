@@ -10,13 +10,16 @@ import 'package:flutter/material.dart';
 /// Releasing a heavy resource (camera, video decoder) while the pushed route is
 /// still animating in would reveal the placeholder behind it; this defers until
 /// the route's [ModalRoute.secondaryAnimation] reaches
-/// [AnimationStatus.completed]. Returns immediately when nothing is animating
-/// over the current route.
+/// [AnimationStatus.completed]. Returns immediately only when a screen already
+/// fully covers the current route (its secondary animation is already
+/// `completed`).
 ///
-/// Pass [timeout] to bound the wait so a missing transition signal can never
-/// stall the caller; on timeout the listener is detached and the future
-/// resolves. With no [timeout] the wait resolves only once the transition
-/// genuinely completes.
+/// Intended to be called right after a `push`, where the secondary animation is
+/// mid-transition. A route that never becomes covered — no push, or the push is
+/// dismissed again — leaves the animation `dismissed`, so the wait resolves only
+/// via [timeout]. Pass [timeout] to bound the wait; on timeout the listener is
+/// detached and the future resolves. With no [timeout] the wait resolves only
+/// once the transition genuinely completes.
 Future<void> awaitPushTransition(
   BuildContext context, {
   Duration? timeout,

@@ -43,7 +43,7 @@ void main() {
       expect(completed, isTrue);
     });
 
-    testWidgets('returns immediately when nothing covers the route', (
+    testWidgets('resolves via the timeout when no transition completes', (
       tester,
     ) async {
       late BuildContext homeContext;

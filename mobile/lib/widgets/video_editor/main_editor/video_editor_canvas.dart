@@ -334,6 +334,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     _playheadTicker?.dispose();
     _videoPlayerSubscription?.cancel();
     _videoPlayer?.dispose();
+    // Null it so a release/init still awaiting bails instead of double-disposing
+    // or writing to the disposed notifier below.
+    _videoPlayer = null;
     _isPlayerReadyNotifier.dispose();
     _seamService.clear();
     _pendingSeamRenders.dispose();
@@ -830,7 +833,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     // Dispose old player if it exists.
     await _videoPlayerSubscription?.cancel();
     await _videoPlayer?.dispose();
-    _isPlayerReadyNotifier.value = false;
+    if (mounted) _isPlayerReadyNotifier.value = false;
 
     final clips = ref.read(clipManagerProvider).clips;
 
@@ -840,11 +843,16 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       category: LogCategory.video,
     );
 
-    _videoPlayer = DivineVideoPlayerController(useTexture: true);
+    // Hold the controller locally and re-check identity after every await: a
+    // fast Done-tap (release) or a newer init can replace/null `_videoPlayer`
+    // mid-flight. Whoever supersedes us owns disposing this controller, so we
+    // just abandon it rather than resurrecting a released player.
+    final player = DivineVideoPlayerController(useTexture: true);
+    _videoPlayer = player;
 
-    await _videoPlayer!.initialize();
-    if (!mounted) return;
-    await _videoPlayer!.setClips(
+    await player.initialize();
+    if (!mounted || !identical(_videoPlayer, player)) return;
+    await player.setClips(
       [
         ...buildSeamAwarePlayerClips(clips, _seamService),
       ],
@@ -852,24 +860,20 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
           ? _timelineToPlayer(startPosition)
           : null,
     );
-    if (!mounted) return;
+    if (!mounted || !identical(_videoPlayer, player)) return;
 
     if (clips.isEmpty) return;
     _ensureSeamsRendered(clips);
-    await _videoPlayer!.setLooping(looping: true);
-    if (!mounted) return;
+    await player.setLooping(looping: true);
+    if (!mounted || !identical(_videoPlayer, player)) return;
 
     _isPlayerReadyNotifier.value = true;
 
     // Notify BLoC that player is ready
-    if (mounted) {
-      context.read<VideoEditorMainBloc>().add(const VideoEditorPlayerReady());
-    }
+    context.read<VideoEditorMainBloc>().add(const VideoEditorPlayerReady());
 
     // Setup state stream listener
-    _videoPlayerSubscription = _videoPlayer!.stateStream.listen(
-      _onPlayerStateChanged,
-    );
+    _videoPlayerSubscription = player.stateStream.listen(_onPlayerStateChanged);
 
     // Initialize audio if selected
     await _syncAudioTracks();
@@ -892,11 +896,17 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   Future<void> _releasePlayer() async {
     final player = _videoPlayer;
     if (player == null) return;
-    _setPlayheadTickerActive(false);
+    // Claim ownership immediately so a concurrent init / dispose sees null and
+    // bails instead of racing us on the same controller.
+    _videoPlayer = null;
     await _videoPlayerSubscription?.cancel();
     _videoPlayerSubscription = null;
-    _videoPlayer = null;
-    _isPlayerReadyNotifier.value = false;
+    // The wait before this can outlive the widget (dispose() disposes the
+    // notifier/ticker); only touch them while still mounted.
+    if (mounted) {
+      _setPlayheadTickerActive(false);
+      _isPlayerReadyNotifier.value = false;
+    }
     await player.dispose();
   }
 
