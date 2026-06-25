@@ -238,6 +238,44 @@ void main() {
         },
       );
 
+      test(
+        'uses id desc as a stable tie-breaker for equal timestamps',
+        () async {
+          await dao.insertMessage(
+            id: 'msg_same_a',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_alice',
+            content: 'First same-time message',
+            createdAt: 1700000200,
+            giftWrapId: 'gw_same_a',
+          );
+          await dao.insertMessage(
+            id: 'msg_same_c',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_bob',
+            content: 'Latest same-time message',
+            createdAt: 1700000200,
+            giftWrapId: 'gw_same_c',
+          );
+          await dao.insertMessage(
+            id: 'msg_same_b',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_alice',
+            content: 'Middle same-time message',
+            createdAt: 1700000200,
+            giftWrapId: 'gw_same_b',
+          );
+
+          final results = await dao.getMessagesForConversation(conversationId1);
+
+          expect(results.map((message) => message.id), [
+            'msg_same_c',
+            'msg_same_b',
+            'msg_same_a',
+          ]);
+        },
+      );
+
       test('respects limit and offset parameters', () async {
         for (var i = 0; i < 5; i++) {
           await dao.insertMessage(
@@ -316,6 +354,45 @@ void main() {
         expect(results[0].id, equals('msg_new'));
         expect(results[1].id, equals('msg_old'));
       });
+
+      test(
+        'uses id desc as a stable tie-breaker for equal timestamps',
+        () async {
+          await dao.insertMessage(
+            id: 'msg_same_a',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_alice',
+            content: 'First same-time message',
+            createdAt: 1700000200,
+            giftWrapId: 'gw_watch_same_a',
+          );
+          await dao.insertMessage(
+            id: 'msg_same_c',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_bob',
+            content: 'Latest same-time message',
+            createdAt: 1700000200,
+            giftWrapId: 'gw_watch_same_c',
+          );
+          await dao.insertMessage(
+            id: 'msg_same_b',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_alice',
+            content: 'Middle same-time message',
+            createdAt: 1700000200,
+            giftWrapId: 'gw_watch_same_b',
+          );
+
+          final stream = dao.watchMessagesForConversation(conversationId1);
+          final results = await stream.first;
+
+          expect(results.map((message) => message.id), [
+            'msg_same_c',
+            'msg_same_b',
+            'msg_same_a',
+          ]);
+        },
+      );
 
       test('respects limit parameter', () async {
         for (var i = 0; i < 3; i++) {

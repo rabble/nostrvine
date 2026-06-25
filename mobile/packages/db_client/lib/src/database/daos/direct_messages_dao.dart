@@ -105,6 +105,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       )
       ..orderBy([
         (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+        (t) => OrderingTerm(expression: t.id, mode: OrderingMode.desc),
       ]);
     if (limit != null) query.limit(limit, offset: offset);
     return query.get();
@@ -127,6 +128,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       )
       ..orderBy([
         (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+        (t) => OrderingTerm(expression: t.id, mode: OrderingMode.desc),
       ]);
     if (limit != null) query.limit(limit);
     return query.watch();
