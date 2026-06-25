@@ -24,3 +24,32 @@ jobs:
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
     with:
       working_directory: "mobile/packages/divine_camera"
+
+  android-unit-tests:
+    name: Android Unit Tests
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.0"
+          channel: "stable"
+          cache: true
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Run divine_camera Android unit tests
+        working-directory: mobile/android
+        run: gradle :divine_camera:testDebugUnitTest
