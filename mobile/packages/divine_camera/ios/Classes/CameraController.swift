@@ -98,12 +98,25 @@ class CameraController: NSObject {
 
     /// True while the preview texture should be fed from `previewOutput` rather
     /// than `videoOutput` — i.e. the dual-output path is active AND the user has
-    /// a non-off stabilization mode selected. Read on `videoOutputQueue` in
-    /// `captureOutput`; written when the stabilization mode changes. The
-    /// cross-queue access is a benign single-`Bool` race (mirrors the existing
-    /// cross-queue reads of `requestedStabilizationMode`): a stale read costs at
-    /// most one frame routed from the other output, never a dropped frame.
-    private var previewDrivesTexture = false
+    /// a non-off stabilization mode selected.
+    ///
+    /// Synchronized because writes happen while applying stabilization on
+    /// `sessionQueue`, while reads happen on `videoOutputQueue` in
+    /// `captureOutput`.
+    private let previewDrivesTextureLock = NSLock()
+    private var _previewDrivesTexture = false
+    private var previewDrivesTexture: Bool {
+        get {
+            previewDrivesTextureLock.lock()
+            defer { previewDrivesTextureLock.unlock() }
+            return _previewDrivesTexture
+        }
+        set {
+            previewDrivesTextureLock.lock()
+            _previewDrivesTexture = newValue
+            previewDrivesTextureLock.unlock()
+        }
+    }
 
     // Auto lens switching via zoom
     // When true, uses a virtual multi-camera device (builtInTripleCamera,
