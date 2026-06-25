@@ -6,6 +6,8 @@ import 'package:infinite_video_feed/src/utils/source_loader.dart';
 import '../../helpers/fake_controller.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('setSourceWithFallbacks', () {
     final logs = <String>[];
 

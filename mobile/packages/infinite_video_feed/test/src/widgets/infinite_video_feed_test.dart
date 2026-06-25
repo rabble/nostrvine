@@ -2720,6 +2720,57 @@ void main() {
           await harness.dispose();
         }
       });
+
+      testWidgets('cancels a scheduled auto-retry when the feed deactivates', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0, 1, 2, 3]);
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('deactivated_noretry')],
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+                autoRetryBaseDelay: const Duration(milliseconds: 200),
+                errorBuilder: (_, _, _, _) => const Text('VIDEO_ERROR'),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await driveToError(harness);
+          final setClipsAfterError = harness.countCalls('setClips');
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('deactivated_noretry')],
+                cache: cache,
+                isActive: false,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+                autoRetryBaseDelay: const Duration(milliseconds: 200),
+                errorBuilder: (_, _, _, _) => const Text('VIDEO_ERROR'),
+              ),
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump();
+
+          expect(harness.countCalls('setClips'), equals(setClipsAfterError));
+          expect(find.text('VIDEO_ERROR'), findsOneWidget);
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
     });
   });
 }

@@ -16,6 +16,8 @@ LoadWatchdog _makeWatchdog({
 );
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group(LoadWatchdog, () {
     group('start with null controller', () {
       test('does nothing — no timer is started', () {

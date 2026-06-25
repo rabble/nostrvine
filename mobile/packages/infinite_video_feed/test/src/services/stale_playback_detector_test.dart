@@ -20,6 +20,8 @@ void _tick(FakeAsync async, int ticks) =>
     async.elapse(StalePlaybackDetector.interval * ticks);
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group(StalePlaybackDetector, () {
     group('start with null controller', () {
       test('does nothing', () {

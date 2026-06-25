@@ -5,6 +5,8 @@ import 'package:infinite_video_feed/src/services/controller_subscriptions.dart';
 import '../../helpers/fake_controller.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group(ControllerSubscriptions, () {
     late ControllerSubscriptions subs;
 
