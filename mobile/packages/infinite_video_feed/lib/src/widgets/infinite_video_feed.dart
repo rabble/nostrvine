@@ -55,6 +55,9 @@ class InfiniteVideoFeed extends StatefulWidget {
     this.preloadGracePeriod = const Duration(seconds: 3),
     this.isActive = true,
     this.canAutoPlay,
+    this.autoRetryMaxAttempts = 4,
+    this.autoRetryBaseDelay = const Duration(seconds: 2),
+    this.autoRetryMaxDelay = const Duration(seconds: 30),
     super.key,
   });
 
@@ -269,6 +272,42 @@ class InfiniteVideoFeed extends StatefulWidget {
   /// duration — whichever is earlier. Defaults to 3 seconds.
   final Duration preloadGracePeriod;
 
+  /// How many times the active video automatically re-initializes after it
+  /// fails to load before auto-retry gives up (manual retry still works).
+  ///
+  /// On a flaky connection a transient stall would otherwise leave a
+  /// permanent error tile; auto-retry heals it once the network recovers.
+  /// Defaults to 4.
+  final int autoRetryMaxAttempts;
+
+  /// Base delay before the first automatic retry of a failed active video.
+  ///
+  /// The delay doubles per attempt (capped at [autoRetryMaxDelay]) so a
+  /// still-bad connection isn't hammered. Defaults to 2 seconds.
+  final Duration autoRetryBaseDelay;
+
+  /// Upper bound on the exponential auto-retry backoff. Defaults to 30s.
+  final Duration autoRetryMaxDelay;
+
+  /// Backoff before the next automatic retry of an errored video, or `null`
+  /// when [attempt] has reached [maxAttempts] (auto-retry gives up; manual
+  /// retry still works). Doubles [baseDelay] per attempt, capped at
+  /// [maxDelay].
+  @visibleForTesting
+  static Duration? autoRetryDelay({
+    required int attempt,
+    required int maxAttempts,
+    required Duration baseDelay,
+    required Duration maxDelay,
+  }) {
+    if (attempt >= maxAttempts) return null;
+    // Cap the shift so a large maxAttempts can't overflow the multiply; the
+    // clamp below is the real bound, this only keeps the intermediate sane.
+    final factor = 1 << (attempt > 16 ? 16 : attempt);
+    final scaled = baseDelay.inMilliseconds * factor;
+    return Duration(milliseconds: scaled.clamp(0, maxDelay.inMilliseconds));
+  }
+
   @override
   State<InfiniteVideoFeed> createState() => InfiniteVideoFeedState();
 }
@@ -334,6 +373,12 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // Per-index generation token used by _initController to cancel stale
   // async work when ownership changes while awaits are in flight.
   final _controllerInitGenerations = <int, int>{};
+
+  // Pending automatic-retry timers and per-index attempt counters for the
+  // active errored video. Only the visible index is auto-retried; the
+  // counter resets when the video plays or the slot is disposed.
+  final _autoRetryTimers = <int, Timer>{};
+  final _autoRetryAttempts = <int, int>{};
 
   // ─── Services ───────────────────────────────────────────────────────────
 
@@ -561,6 +606,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _watchdog.disposeAll();
     _staleDetector.disposeAll();
     _subscriptions.disposeAll();
+    for (final timer in _autoRetryTimers.values) {
+      timer.cancel();
+    }
+    _autoRetryTimers.clear();
+    _autoRetryAttempts.clear();
     _sources.clear();
     _pagePosition.dispose();
     _pageController.dispose();
@@ -724,6 +774,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     if (!_isActive || index != _currentIndex) return;
     await controller.play();
     if (!_isActive || index != _currentIndex) return;
+    // Playback resumed cleanly — clear any auto-retry budget spent on this
+    // slot so a later, unrelated stall starts from a fresh backoff.
+    _autoRetryAttempts.remove(index);
     _watchdog.start(index, controller);
     _staleDetector.start(index, controller);
   }
@@ -884,6 +937,12 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _subscriptions.disposeAll();
     _sources.clear();
 
+    for (final timer in _autoRetryTimers.values) {
+      timer.cancel();
+    }
+    _autoRetryTimers.clear();
+    _autoRetryAttempts.clear();
+
     _loopSeekInProgress.clear();
     _failoverInFlight.clear();
     _loadedFromCache.clear();
@@ -908,6 +967,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _watchdog.stop(index);
     if (index == _currentIndex) _staleDetector.stop();
     _staleDetector.forget(index);
+    _cancelAutoRetry(index);
     _errors.remove(index);
     _loopSeekInProgress.remove(index);
     _failoverInFlight.remove(index);
@@ -1113,6 +1173,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       // coverage:ignore-end
     }
     _rebuild();
+    if (_errors.contains(index)) {
+      _scheduleAutoRetryIfEligible(index);
+    }
   }
 
   // coverage:ignore-start
@@ -1128,7 +1191,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   Future<bool> retryAt(
     int index, {
     Map<String, String> httpHeaders = const {},
-  }) => _retryController(index, httpHeaders: httpHeaders);
+  }) {
+    // A manual retry resets the auto-retry budget for a fresh start.
+    _cancelAutoRetry(index);
+    return _retryController(index, httpHeaders: httpHeaders);
+  }
 
   Future<bool> _retryController(
     int index, {
@@ -1253,6 +1320,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _errors.add(index);
     _errorTypes[index] ??= type;
     _rebuild();
+    _scheduleAutoRetryIfEligible(index);
   }
 
   void _seekKick(int index, int positionMs) {
@@ -1261,6 +1329,44 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     unawaited(controller.seekTo(Duration(milliseconds: positionMs)));
   }
   // coverage:ignore-end
+
+  /// Schedules an automatic re-init of the errored video at [index] after a
+  /// backoff, so a transient network stall doesn't strand a permanent error
+  /// tile. Only the active, visible video auto-retries — off-screen errors
+  /// re-init on revisit, and retrying them would add load that worsens the
+  /// congestion that caused the stall. Gives up after
+  /// [InfiniteVideoFeed.autoRetryMaxAttempts]; manual retry still works.
+  void _scheduleAutoRetryIfEligible(int index) {
+    if (index != _currentIndex || !_isActive) return;
+    final attempt = _autoRetryAttempts[index] ?? 0;
+    final delay = InfiniteVideoFeed.autoRetryDelay(
+      attempt: attempt,
+      maxAttempts: widget.autoRetryMaxAttempts,
+      baseDelay: widget.autoRetryBaseDelay,
+      maxDelay: widget.autoRetryMaxDelay,
+    );
+    if (delay == null) return;
+    _autoRetryTimers.remove(index)?.cancel();
+    _autoRetryTimers[index] = Timer(delay, () {
+      _autoRetryTimers.remove(index);
+      if (!mounted || index != _currentIndex || !_errors.contains(index)) {
+        return;
+      }
+      _autoRetryAttempts[index] = attempt + 1;
+      unawaited(
+        _retryController(
+          index,
+          httpHeaders: _httpHeadersByIndex[index] ?? const {},
+        ),
+      );
+    });
+  }
+
+  /// Cancels a pending auto-retry and clears the attempt budget for [index].
+  void _cancelAutoRetry(int index) {
+    _autoRetryTimers.remove(index)?.cancel();
+    _autoRetryAttempts.remove(index);
+  }
 
   // ─── Subscription wiring ────────────────────────────────────────────────
 

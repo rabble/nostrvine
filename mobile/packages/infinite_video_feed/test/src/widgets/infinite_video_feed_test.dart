@@ -2584,5 +2584,142 @@ void main() {
         }
       });
     });
+
+    group('auto-retry of failed active video', () {
+      Future<void> driveToError(_NativePlayerHarness harness) async {
+        // A non-Divine URL has no transcoded fallbacks, so the first error
+        // marks the slot. Extra errors after that are harmless no-ops.
+        for (var i = 0; i < 3; i++) {
+          await harness.sendEvent(0, const <Object?, Object?>{
+            'status': 'error',
+            'errorCode': 'parse_error',
+            'errorMessage': 'parse failed',
+          });
+          await harness.tester.pump();
+        }
+      }
+
+      testWidgets('re-initializes the active video after it fails', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0, 1, 2, 3]);
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('autoretry')],
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+                autoRetryBaseDelay: const Duration(milliseconds: 200),
+                errorBuilder: (_, _, _, _) => const Text('VIDEO_ERROR'),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await driveToError(harness);
+          expect(find.text('VIDEO_ERROR'), findsOneWidget);
+          final setClipsBeforeRetry = harness.countCalls('setClips');
+
+          // Let the backoff elapse: the feed re-initializes on its own,
+          // the fresh player reports ready, and the error tile clears.
+          await tester.pump(const Duration(milliseconds: 250));
+          await tester.pump();
+          await tester.pump();
+
+          expect(
+            harness.countCalls('setClips'),
+            greaterThan(setClipsBeforeRetry),
+          );
+          expect(find.text('VIDEO_ERROR'), findsNothing);
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
+      testWidgets('does not auto-retry when maxAttempts is zero', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0, 1, 2, 3]);
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('noretry')],
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+                autoRetryMaxAttempts: 0,
+                autoRetryBaseDelay: const Duration(milliseconds: 200),
+                errorBuilder: (_, _, _, _) => const Text('VIDEO_ERROR'),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await driveToError(harness);
+          final setClipsAfterError = harness.countCalls('setClips');
+
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump();
+
+          expect(harness.countCalls('setClips'), equals(setClipsAfterError));
+          expect(find.text('VIDEO_ERROR'), findsOneWidget);
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
+      testWidgets('does not auto-retry while the feed is inactive', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0, 1, 2, 3]);
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('inactive_noretry')],
+                cache: cache,
+                isActive: false,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+                autoRetryBaseDelay: const Duration(milliseconds: 200),
+                errorBuilder: (_, _, _, _) => const Text('VIDEO_ERROR'),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await driveToError(harness);
+          final setClipsAfterError = harness.countCalls('setClips');
+
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump();
+
+          expect(harness.countCalls('setClips'), equals(setClipsAfterError));
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+    });
   });
 }
