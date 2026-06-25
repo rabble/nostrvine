@@ -57,6 +57,36 @@ void main() {
           expect(service.shouldClearDataForUser('any_pubkey'), isTrue);
         },
       );
+
+      test(
+        'keeps preserved legacy drafts for same-user re-login',
+        () async {
+          const pubkey = 'same_user_pubkey';
+          await prefs.setString('vine_drafts', '[{"id":"draft1"}]');
+          await service.markOwnerScopedLegacyDataForUser(pubkey);
+
+          expect(service.shouldClearDataForUser(pubkey), isFalse);
+        },
+      );
+
+      test(
+        'clears preserved legacy drafts for a different user',
+        () async {
+          await prefs.setString('vine_drafts', '[{"id":"draft1"}]');
+          await service.markOwnerScopedLegacyDataForUser('old_user_pubkey');
+
+          expect(service.shouldClearDataForUser('new_user_pubkey'), isTrue);
+        },
+      );
+
+      test(
+        'clears unmarked legacy drafts as orphaned data',
+        () async {
+          await prefs.setString('vine_drafts', '[{"id":"draft1"}]');
+
+          expect(service.shouldClearDataForUser('any_pubkey'), isTrue);
+        },
+      );
     });
 
     group('clearUserSpecificData', () {
@@ -125,18 +155,44 @@ void main() {
 
       test('clears legacy drafts on destructive cleanup', () async {
         await prefs.setString('vine_drafts', '{"drafts": []}');
+        await service.markOwnerScopedLegacyDataForUser('abc123');
 
         await service.clearUserSpecificData(deleteUserData: true);
 
         expect(prefs.containsKey('vine_drafts'), isFalse);
+        expect(
+          prefs.containsKey(UserDataCleanupService.legacyDraftOwnerKey),
+          isFalse,
+        );
       });
 
       test('clears legacy drafts on identity change', () async {
         await prefs.setString('vine_drafts', '{"drafts": []}');
+        await service.markOwnerScopedLegacyDataForUser('abc123');
 
         await service.clearUserSpecificData(isIdentityChange: true);
 
         expect(prefs.containsKey('vine_drafts'), isFalse);
+        expect(
+          prefs.containsKey(UserDataCleanupService.legacyDraftOwnerKey),
+          isFalse,
+        );
+      });
+
+      test('marks legacy draft owner only when legacy drafts exist', () async {
+        await service.markOwnerScopedLegacyDataForUser('abc123');
+        expect(
+          prefs.containsKey(UserDataCleanupService.legacyDraftOwnerKey),
+          isFalse,
+        );
+
+        await prefs.setString('vine_drafts', '{"drafts": []}');
+        await service.markOwnerScopedLegacyDataForUser('abc123');
+
+        expect(
+          prefs.getString(UserDataCleanupService.legacyDraftOwnerKey),
+          equals('abc123'),
+        );
       });
 
       test('returns count of cleared keys', () async {

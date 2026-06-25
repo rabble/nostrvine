@@ -3285,5 +3285,6 @@
     "videoEditorMergeSelectedClipsSemanticLabel": "선택한 클립 병합",
     "videoEditorDeleteSelectedClipsSemanticLabel": "선택한 클립 삭제",
     "videoEditorMergeProgressLabel": "잠시만요, 클립을 병합하고 있어요",
-    "videoEditorMergeFailed": "클립을 병합할 수 없습니다. 다시 시도해 주세요."
+    "videoEditorMergeFailed": "클립을 병합할 수 없습니다. 다시 시도해 주세요.",
+  "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device."
 }

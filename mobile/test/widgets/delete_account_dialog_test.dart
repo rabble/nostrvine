@@ -4,8 +4,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/services/account_deletion_service.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
+
+class _MockAccountDeletionService extends Mock
+    implements AccountDeletionService {}
+
+class _MockAuthService extends Mock implements AuthService {}
 
 /// Minimal router wrapper so [context.pop()] works inside the dialog.
 Widget _wrapWithRouter(Widget child) {
@@ -141,6 +150,57 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(called, isTrue);
+    });
+  });
+
+  group('executeAccountDeletion', () {
+    testWidgets('shows failure when local data cleanup fails after sign-out', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      when(
+        () =>
+            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+      ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
+      when(
+        authService.deleteKeycastAccount,
+      ).thenAnswer((_) async => (true, null));
+      when(
+        () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+      ).thenThrow(
+        const UserDataCleanupException(
+          'Signed out but local user data cleanup failed',
+        ),
+      );
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Account deleted and signed out, but some local data could not be '
+          'removed from this device.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Your account has been deleted'), findsNothing);
     });
   });
 }

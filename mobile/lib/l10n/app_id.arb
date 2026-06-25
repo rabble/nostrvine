@@ -3968,5 +3968,6 @@
     "videoEditorMergeSelectedClipsSemanticLabel": "Gabungkan klip yang dipilih",
     "videoEditorDeleteSelectedClipsSemanticLabel": "Hapus klip yang dipilih",
     "videoEditorMergeProgressLabel": "Sebentar, kami sedang menggabungkan klipmu",
-    "videoEditorMergeFailed": "Tidak dapat menggabungkan klip. Silakan coba lagi."
+    "videoEditorMergeFailed": "Tidak dapat menggabungkan klip. Silakan coba lagi.",
+  "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device."
 }

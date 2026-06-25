@@ -45,6 +45,9 @@ void main() {
       when(
         () => mockCleanupService.claimLegacyRows(any()),
       ).thenAnswer((_) async {});
+      when(
+        () => mockCleanupService.markOwnerScopedLegacyDataForUser(any()),
+      ).thenAnswer((_) async {});
     });
 
     test('returns success when no OAuth client is configured', () async {

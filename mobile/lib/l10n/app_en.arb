@@ -3631,6 +3631,7 @@
   "deleteAccountFinalConfirmationBody": "To confirm permanent deletion of ALL your content from Nostr relays, type:",
   "deleteAccountFinalConfirmationTitle": "\u26a0\ufe0f Final Confirmation",
   "deleteAccountKeyDeletionWarning": "Account deleted, but your keys may not have been fully removed from this device. Go to Settings \u2192 Nostr Keys \u2192 Remove Keys to retry.",
+  "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
   "deleteAccountPreparingDeletion": "Preparing deletion...",
   "deleteAccountProgressEvents": "{current} / {total} events",
   "@deleteAccountProgressEvents": {"placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}},

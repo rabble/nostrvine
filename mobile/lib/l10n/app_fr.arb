@@ -3968,5 +3968,6 @@
     "videoEditorMergeSelectedClipsSemanticLabel": "Fusionner les clips sélectionnés",
     "videoEditorDeleteSelectedClipsSemanticLabel": "Supprimer les clips sélectionnés",
     "videoEditorMergeProgressLabel": "Un instant, nous fusionnons vos clips",
-    "videoEditorMergeFailed": "Impossible de fusionner les clips. Veuillez réessayer."
+    "videoEditorMergeFailed": "Impossible de fusionner les clips. Veuillez réessayer.",
+  "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device."
 }

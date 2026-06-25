@@ -46,6 +46,9 @@ void main() {
       when(
         () => mockCleanupService.claimLegacyRows(any()),
       ).thenAnswer((_) async {});
+      when(
+        () => mockCleanupService.markOwnerScopedLegacyDataForUser(any()),
+      ).thenAnswer((_) async {});
 
       secureStorage = {};
 

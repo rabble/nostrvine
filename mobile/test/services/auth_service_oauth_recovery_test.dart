@@ -186,6 +186,9 @@ void main() {
     when(
       () => mockCleanupService.claimLegacyRows(any()),
     ).thenAnswer((_) async {});
+    when(
+      () => mockCleanupService.markOwnerScopedLegacyDataForUser(any()),
+    ).thenAnswer((_) async {});
 
     // Mock OAuth client: logout clears the same keys that the real
     // KeycastOAuth.logout() would clear via SecureKeycastStorage.

@@ -13,6 +13,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Show warning dialog for removing keys from device only
@@ -292,6 +293,8 @@ Future<void> executeAccountDeletion({
   // Captured before the first await so the post-sign-out catch can localize
   // without reading BuildContext across an async gap.
   final keyDeletionWarningText = context.l10n.deleteAccountKeyDeletionWarning;
+  final localDataDeletionFailedText =
+      context.l10n.deleteAccountLocalDataDeletionFailed;
 
   // Step 1: Execute NIP-62 deletion request (requires working signer)
   try {
@@ -339,6 +342,7 @@ Future<void> executeAccountDeletion({
       // signOut may throw SecureKeyStorageException if platform key
       // deletion failed — the user IS signed out but keys may remain.
       String? keyDeletionWarning;
+      String? localDataDeletionFailure;
       try {
         await authService.signOut(deleteKeys: true, deleteLocalUserData: true);
       } on SecureKeyStorageException catch (e) {
@@ -348,16 +352,28 @@ Future<void> executeAccountDeletion({
           category: LogCategory.auth,
         );
         keyDeletionWarning = keyDeletionWarningText;
+      } on UserDataCleanupException catch (e) {
+        Log.warning(
+          'Local user data cleanup failed during account deletion: $e',
+          name: screenName,
+          category: LogCategory.auth,
+        );
+        localDataDeletionFailure = localDataDeletionFailedText;
       }
 
       // Close loading indicator and show result snackbar
       // Router will automatically redirect to /welcome after sign out
       dismissDialog();
       if (context.mounted) {
+        final snackbarText =
+            keyDeletionWarning ??
+            localDataDeletionFailure ??
+            context.l10n.deleteAccountSuccess;
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
-            keyDeletionWarning ?? context.l10n.deleteAccountSuccess,
-            error: keyDeletionWarning != null,
+            snackbarText,
+            error:
+                keyDeletionWarning != null || localDataDeletionFailure != null,
           ),
         );
       }

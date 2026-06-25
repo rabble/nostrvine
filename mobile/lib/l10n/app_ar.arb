@@ -3968,5 +3968,6 @@
     "videoEditorMergeSelectedClipsSemanticLabel": "دمج المقاطع المحددة",
     "videoEditorDeleteSelectedClipsSemanticLabel": "حذف المقاطع المحددة",
     "videoEditorMergeProgressLabel": "لحظة من فضلك، نقوم بدمج مقاطعك",
-    "videoEditorMergeFailed": "تعذّر دمج المقاطع. يُرجى المحاولة مرة أخرى."
+    "videoEditorMergeFailed": "تعذّر دمج المقاطع. يُرجى المحاولة مرة أخرى.",
+  "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device."
 }

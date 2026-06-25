@@ -4093,5 +4093,6 @@
     "videoEditorMergeSelectedClipsSemanticLabel": "የተመረጡ ቅንጥቦችን አዋህድ",
     "videoEditorDeleteSelectedClipsSemanticLabel": "የተመረጡ ቅንጥቦችን ሰርዝ",
     "videoEditorMergeProgressLabel": "ትንሽ ይቆዩ፣ ቅንጥቦችዎን እያዋሃድን ነው",
-    "videoEditorMergeFailed": "ቅንጥቦችን ማዋሃድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።"
+    "videoEditorMergeFailed": "ቅንጥቦችን ማዋሃድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
+  "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device."
 }

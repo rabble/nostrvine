@@ -115,6 +115,9 @@ void main() {
         () => mockCleanupService.claimLegacyRows(any()),
       ).thenAnswer((_) async {});
       when(
+        () => mockCleanupService.markOwnerScopedLegacyDataForUser(any()),
+      ).thenAnswer((_) async {});
+      when(
         () => mockKeyStorage.deleteIdentityKeyContainer(
           any(),
           biometricPrompt: any(named: 'biometricPrompt'),
@@ -544,6 +547,41 @@ void main() {
         expect(authService.authState, equals(AuthState.unauthenticated));
         verify(() => mockKeyStorage.deleteKeys()).called(1);
       });
+
+      test(
+        'account deletion cleanup failure surfaces after teardown',
+        () async {
+          final keyContainer = SecureKeyContainer.fromNsec(testNsec);
+          authService.debugSetCurrentKeyContainer(keyContainer);
+          when(
+            () => mockCleanupService.clearUserSpecificData(
+              reason: 'explicit_logout',
+              userPubkey: keyContainer.publicKeyHex,
+              deleteUserData: true,
+            ),
+          ).thenThrow(StateError('database cleanup failed'));
+          when(() => mockKeyStorage.deleteKeys()).thenAnswer((_) async {});
+          when(
+            () => mockKeyStorage.deleteIdentityKeyContainer(
+              any(),
+              biometricPrompt: any(named: 'biometricPrompt'),
+            ),
+          ).thenAnswer((_) async {});
+          when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+          when(
+            () => mockKeyStorage.getKeyContainer(),
+          ).thenAnswer((_) async => null);
+
+          await expectLater(
+            authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+            throwsA(isA<UserDataCleanupException>()),
+          );
+
+          verify(() => mockKeyStorage.deleteKeys()).called(1);
+          expect(authService.currentIdentity, isNull);
+          expect(authService.authState, equals(AuthState.unauthenticated));
+        },
+      );
 
       test('signOut with abortOnKeyDeletionFailure throws before cleanup '
           'when key deletion fails', () async {

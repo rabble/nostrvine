@@ -3747,6 +3747,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
 
     Object? keyDeletionError;
+    Object? userDataCleanupError;
 
     await _runBeforeSessionTeardownCallbacks();
 
@@ -3754,6 +3755,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // Clear TOS acceptance on any logout - user must re-accept when logging
       // back in
       final prefs = await SharedPreferences.getInstance();
+      final currentPubkey = _currentKeyContainer?.publicKeyHex;
 
       // Capture the leaving account as the session recovery anchor BEFORE any
       // teardown — but only for non-destructive sign-out (account switch).
@@ -3802,11 +3804,25 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // Owner-scoped local rows (drafts, clips, uploads, etc.) are only
       // deleted when the caller explicitly opts in. Removing local login
       // material from the device is not enough reason to destroy local work.
-      await _userDataCleanupService.clearUserSpecificData(
-        reason: 'explicit_logout',
-        userPubkey: _currentKeyContainer?.publicKeyHex,
-        deleteUserData: deleteLocalUserData,
-      );
+      if (deleteKeys && !deleteLocalUserData && currentPubkey != null) {
+        await _userDataCleanupService.markOwnerScopedLegacyDataForUser(
+          currentPubkey,
+        );
+      }
+      try {
+        await _userDataCleanupService.clearUserSpecificData(
+          reason: 'explicit_logout',
+          userPubkey: currentPubkey,
+          deleteUserData: deleteLocalUserData,
+        );
+      } catch (e) {
+        userDataCleanupError = e;
+        Log.error(
+          'User data cleanup failed during signOut: $e',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
 
       // Clear configured relays so next login re-discovers from NIP-65
       await prefs.remove('configured_relays');
@@ -3819,8 +3835,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       await prefs.remove('current_user_pubkey_hex');
 
       // Multi-account: archive or remove this account's signer info
-      final currentPubkey = _currentKeyContainer?.publicKeyHex;
-
       // Account-scoped CacheSync invalidation. Cache keys follow
       // `${pubkey}:${operation}` (RFC #4244), so this clears the
       // leaving account only and leaves other accounts intact.
@@ -4017,6 +4031,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     if (keyDeletionError != null) {
       throw SecureKeyStorageException(
         'Signed out but key deletion failed: $keyDeletionError',
+      );
+    }
+    if (userDataCleanupError != null && deleteLocalUserData) {
+      throw UserDataCleanupException(
+        'Signed out but local user data cleanup failed',
+        userDataCleanupError,
       );
     }
   }

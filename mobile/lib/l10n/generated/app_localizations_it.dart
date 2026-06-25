@@ -6543,6 +6543,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Account deleted, but your keys may not have been fully removed from this device. Go to Settings → Nostr Keys → Remove Keys to retry.';
 
   @override
+  String get deleteAccountLocalDataDeletionFailed =>
+      'Account deleted and signed out, but some local data could not be removed from this device.';
+
+  @override
   String get deleteAccountPreparingDeletion => 'Preparing deletion...';
 
   @override

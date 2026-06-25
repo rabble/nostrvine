@@ -11363,6 +11363,12 @@ abstract class AppLocalizations {
   /// **'Account deleted, but your keys may not have been fully removed from this device. Go to Settings → Nostr Keys → Remove Keys to retry.'**
   String get deleteAccountKeyDeletionWarning;
 
+  /// No description provided for @deleteAccountLocalDataDeletionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deleted and signed out, but some local data could not be removed from this device.'**
+  String get deleteAccountLocalDataDeletionFailed;
+
   /// No description provided for @deleteAccountPreparingDeletion.
   ///
   /// In en, this message translates to:
