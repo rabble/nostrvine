@@ -30,6 +30,7 @@ class VideoEditorScope extends InheritedWidget {
     required this.zoomMatrixNotifier,
     required this.fromLibrary,
     this.editorOverride,
+    this.awaitPushCoverTransition,
     super.child = const SizedBox.shrink(),
     super.key,
   });
@@ -75,6 +76,13 @@ class VideoEditorScope extends InheritedWidget {
 
   /// Callback to open the text editor.
   final Future<TextLayer?> Function([TextLayer? layer]) onAddEditTextLayer;
+
+  /// Awaits the entrance transition of a screen pushed over the editor, using a
+  /// context **above** the canvas's nested `Navigator` so the editor route's
+  /// `secondaryAnimation` is actually driven by the push. Provided by the
+  /// screen; the canvas falls back to its own (nested) context when absent
+  /// (e.g. in isolated widget tests that never navigate).
+  final Future<void> Function()? awaitPushCoverTransition;
 
   /// FittedBox scale factor between bodySize and renderSize.
   double get fittedBoxScale =>

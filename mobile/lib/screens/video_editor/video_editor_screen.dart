@@ -28,6 +28,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/utils/await_push_transition.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
@@ -606,6 +607,18 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     }
   }
 
+  /// Awaits the entrance transition of a screen pushed over the editor.
+  ///
+  /// Uses the screen's own context, which sits **above** the canvas's nested
+  /// `Navigator`, so `ModalRoute.of` resolves to the go_router editor route
+  /// whose `secondaryAnimation` the push actually drives. The canvas's own
+  /// context resolves to that inner route instead, which the outer push never
+  /// animates — so the canvas delegates here.
+  Future<void> _awaitMetadataCoverTransition() => awaitPushTransition(
+    context,
+    timeout: VideoEditorConstants.coverTransitionTimeout,
+  );
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
@@ -677,6 +690,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
                 );
               },
               onOpenMusicLibrary: _openMusicLibrary,
+              awaitPushCoverTransition: _awaitMetadataCoverTransition,
               child: ValueListenableBuilder<bool>(
                 valueListenable: _isLoadingDraft,
                 builder: (_, isLoading, _) =>

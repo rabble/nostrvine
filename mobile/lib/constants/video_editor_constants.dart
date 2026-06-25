@@ -55,6 +55,13 @@ class VideoEditorConstants {
   /// the rest of the session.
   static const draftSaveTimeout = Duration(seconds: 15);
 
+  /// Maximum time to wait for the screen pushed over the editor (the metadata /
+  /// export screen) to finish its entrance transition before releasing the
+  /// preview decoder anyway. Bounds the wait so a missing transition signal can
+  /// never stall the export — the decoder is released (and the render proceeds)
+  /// at the latest after this.
+  static const coverTransitionTimeout = Duration(milliseconds: 1500);
+
   /// Primary accent color used in the video editor UI.
   static const primaryColor = Color(0xFFFFF140);
 

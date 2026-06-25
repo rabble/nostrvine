@@ -20,6 +20,7 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
+import 'package:openvine/utils/await_push_transition.dart';
 
 /// Closes the video recorder.
 ///
@@ -65,7 +66,7 @@ Future<void> openVideoEditorFromRecorder(
       ? context.push(VideoEditorScreen.path)
       : context.push(VideoMetadataScreen.path);
 
-  await _awaitPushTransition(context);
+  await awaitPushTransition(context);
   bloc.add(const VideoRecorderCameraPausedForNavigation());
 
   await navigation;
@@ -83,7 +84,7 @@ Future<void> openRecorderLibrary(BuildContext context, WidgetRef ref) async {
 
   final navigation = context.pushNamed(LibraryScreen.clipsOnlyRouteName);
 
-  await _awaitPushTransition(context);
+  await awaitPushTransition(context);
   bloc.add(const VideoRecorderCameraPausedForNavigation());
 
   await navigation;
@@ -134,34 +135,4 @@ Future<bool> _ensureAuthenticatedForRecorderExit(
     context.go(WelcomeScreen.path);
   }
   return false;
-}
-
-/// Waits for the current route's push transition to finish before returning.
-///
-/// Disposing the camera while the new route is still animating in would reveal
-/// the camera-init screen behind it; this defers until the secondary animation
-/// completes.
-Future<void> _awaitPushTransition(BuildContext context) async {
-  await WidgetsBinding.instance.endOfFrame;
-
-  if (!context.mounted) return;
-
-  final route = ModalRoute.of(context);
-  if (route == null) return;
-
-  final secondary = route.secondaryAnimation;
-  if (secondary == null || secondary.status == AnimationStatus.completed) {
-    return;
-  }
-
-  final completer = Completer<void>();
-  void onStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed && !completer.isCompleted) {
-      secondary.removeStatusListener(onStatus);
-      completer.complete();
-    }
-  }
-
-  secondary.addStatusListener(onStatus);
-  await completer.future;
 }
