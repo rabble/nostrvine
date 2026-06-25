@@ -31,6 +31,13 @@ class _MockNotificationRefreshCoordinator extends Mock
     implements NotificationRefreshCoordinator {}
 
 final _feedBuilds = <String>[];
+const _expectedEmptyFollowingWarmupBuilds = [
+  'forYou',
+  'newVideos',
+  'popular',
+  'popular:native',
+  'popular:classic',
+];
 
 class _TestForYouFeed extends ForYouFeed {
   @override
@@ -150,13 +157,7 @@ void main() {
             trigger: ForegroundIdleWarmupTrigger.videoPlaybackSettled,
           );
 
-      expect(_feedBuilds, [
-        'forYou',
-        'newVideos',
-        'popular',
-        'popular:native',
-        'popular:classic',
-      ]);
+      expect(_feedBuilds, _expectedEmptyFollowingWarmupBuilds);
       verify(() => followRepository.followingPubkeys).called(1);
       verifyNever(
         () => videosRepository.getHomeFeedVideos(
@@ -179,13 +180,7 @@ void main() {
             trigger: ForegroundIdleWarmupTrigger.videoPlaybackSettled,
           );
 
-      expect(_feedBuilds, [
-        'forYou',
-        'newVideos',
-        'popular',
-        'popular:native',
-        'popular:classic',
-      ]);
+      expect(_feedBuilds, _expectedEmptyFollowingWarmupBuilds);
     });
 
     test('notification warmup uses foreground idle warmup reason', () async {

@@ -462,6 +462,20 @@ void main() {
           (_, _) {},
         );
         addTearDown(subscription.close);
+        final loadedVariantSubscription = container.listen(
+          popularVideosLoadedVariantProvider,
+          (_, next) {
+            if (next != PopularVideosVariant.classic) return;
+            final currentFeed = container.read(popularVideosFeedProvider).value;
+            expect(
+              currentFeed?.videos.map((video) => video.id),
+              ['popular-classic'],
+              reason:
+                  'Loaded variant must not update before matching feed data is published.',
+            );
+          },
+        );
+        addTearDown(loadedVariantSubscription.close);
 
         final nativeState = await container.read(
           popularVideosFeedProvider.future,
@@ -484,7 +498,7 @@ void main() {
         ]);
         expect(
           container.read(popularVideosLoadedVariantProvider),
-          PopularVideosVariant.native,
+          isNull,
           reason:
               'The UI must not treat the old Native page as the selected Classic page.',
         );

@@ -47,10 +47,19 @@ final popularVideosLoadedVariantProvider = StateProvider<PopularVideosVariant?>(
 @Riverpod(keepAlive: true)
 class PopularVideosFeed extends _$PopularVideosFeed {
   String? _nextCursor;
+  PopularVideosVariant? _pendingLoadedVariant;
+  void Function()? _removeLoadedVariantListener;
   final _enrichmentAttemptTracker = NostrTagEnrichmentAttemptTracker();
 
   @override
   Future<VideoFeedState> build() async {
+    _listenForLoadedVariantState();
+    ref.listen(popularVideosVariantProvider, (previous, next) {
+      if (previous == next) return;
+      _pendingLoadedVariant = null;
+      ref.read(popularVideosLoadedVariantProvider.notifier).state = null;
+    });
+
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
     ref.watch(divineHostFilterVersionProvider);
@@ -115,7 +124,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
           hasMoreContent: _pageHasMoreContent(page),
           lastUpdated: DateTime.now(),
         );
-        _markLoadedIfActive(variant);
+        _markLoadedWhenPublished(variant);
         return feedState;
       }
 
@@ -125,7 +134,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         category: LogCategory.video,
       );
 
-      _markLoadedIfActive(variant);
+      _markLoadedWhenPublished(variant);
       return const VideoFeedState(videos: [], hasMoreContent: false);
     } catch (e) {
       Log.error(
@@ -134,7 +143,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         category: LogCategory.video,
       );
       if (preserveExistingOnError) rethrow;
-      _markLoadedIfActive(variant);
+      _markLoadedWhenPublished(variant);
       return VideoFeedState(
         videos: const [],
         hasMoreContent: false,
@@ -303,6 +312,25 @@ class PopularVideosFeed extends _$PopularVideosFeed {
 
   bool _pageHasMoreContent(PopularVideosPage page) {
     return page.hasMore;
+  }
+
+  void _listenForLoadedVariantState() {
+    if (_removeLoadedVariantListener != null) return;
+    _removeLoadedVariantListener = listenSelf((_, next) {
+      if (!next.hasValue) return;
+      final variant = _pendingLoadedVariant;
+      if (variant == null) return;
+      _pendingLoadedVariant = null;
+      _markLoadedIfActive(variant);
+    });
+    ref.onDispose(() {
+      _removeLoadedVariantListener?.call();
+      _removeLoadedVariantListener = null;
+    });
+  }
+
+  void _markLoadedWhenPublished(PopularVideosVariant variant) {
+    _pendingLoadedVariant = variant;
   }
 
   void _markLoadedIfActive(PopularVideosVariant variant) {
