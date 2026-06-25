@@ -94,9 +94,9 @@ class VideoEditorCanvas extends StatelessWidget {
 
   /// Tolerance within which a player position report is treated as having
   /// converged on a pending scrub / swap target. Comfortably wider than a
-  /// single frame and the native report interval (~200ms) so an exact seek's
-  /// settled report is accepted, yet far narrower than the multi-second gap
-  /// back to position 0 whose reset report must be rejected.
+  /// single frame so frame-snapped reports from an exact seek are accepted, yet
+  /// far narrower than the multi-second gap back to position 0 whose reset
+  /// report must be rejected.
   @visibleForTesting
   static const seekSettleTolerance = Duration(milliseconds: 120);
 
