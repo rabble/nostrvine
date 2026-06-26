@@ -523,6 +523,16 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     );
     if (!mounted || takes == null || takes.isEmpty) return;
 
+    // The recorder's per-take duration is derived from amplitude-sample counts
+    // and can drift from the encoded file. Probe each file's real duration up
+    // front so the committed timeline window matches the audio (mirrors the
+    // music-library path).
+    final takeSecs = <double>[];
+    for (final take in takes) {
+      takeSecs.add(await _resolveRecordedTakeDurationSecs(take));
+    }
+    if (!mounted) return;
+
     final editor = _editorKey.currentState;
     if (editor == null) return;
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -530,9 +540,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     var cursor = Duration.zero;
     for (var i = 0; i < takes.length; i++) {
       final take = takes[i];
-      final takeDuration = Duration(
-        milliseconds: ((take.duration ?? 0) * 1000).round(),
-      );
+      final secs = takeSecs[i];
+      final takeDuration = Duration(milliseconds: (secs * 1000).round());
       // When the previous take already filled the video, restart at the
       // beginning so this take stays visible within the timeline instead of
       // landing off the end (where it couldn't be seen or edited).
@@ -547,6 +556,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
               id: '${take.id}-$now-$i',
               startTime: start,
               endTime: endTime,
+              duration: secs > 0 ? secs : null,
             )
             .toJson(),
       );
@@ -563,6 +573,33 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         ],
       },
     );
+  }
+
+  /// Probes the real on-disk duration (seconds) of a recorded voice-over take.
+  ///
+  /// The recorder's live duration is derived from amplitude-sample counts and
+  /// can drift from the encoded file, so the committed timeline window uses the
+  /// probed value. Falls back to the recorder's estimate when the probe fails.
+  Future<double> _resolveRecordedTakeDurationSecs(AudioEvent take) async {
+    final estimate = take.duration ?? 0;
+    final path = take.localFilePath;
+    if (path == null || path.isEmpty) return estimate;
+    try {
+      final metadata = await ProVideoEditor.instance.getMetadata(
+        EditorVideo.file(path),
+      );
+      final secs = metadata.duration.inMilliseconds / 1000.0;
+      return secs > 0 ? secs : estimate;
+    } catch (e, s) {
+      Log.error(
+        'Failed to probe voice-over take duration for ${take.id}',
+        name: 'VideoEditorScreen',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: s,
+      );
+      return estimate;
+    }
   }
 
   /// Resolves the sound's duration in seconds, probing the source via

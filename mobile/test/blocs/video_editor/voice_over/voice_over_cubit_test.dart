@@ -80,6 +80,10 @@ class _FakePermissions implements PermissionsService {
 }
 
 void main() {
+  // The cubit triggers HapticService (a platform channel) on record/stop/
+  // delete; the test binding handles those calls without a real device.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group(VoiceOverCubit, () {
     late _FakeRecorder recorder;
     late Directory tempDir;

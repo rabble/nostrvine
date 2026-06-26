@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/video_editor/voice_over_recorder_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -30,14 +31,18 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
   /// long. A [storageDirectoryProvider] can be injected for testing; it
   /// defaults to a `voice_over_recordings` folder under the app documents
   /// directory.
+  ///
+  /// [recorder] defaults to a [RecordVoiceOverRecorderService] so the UI layer
+  /// can construct the cubit without importing the service directly (keeping
+  /// the UI → BLoC boundary); tests inject a fake.
   VoiceOverCubit({
-    required VoiceOverRecorderService recorder,
     required PermissionsService permissionsService,
     required String Function(int takeNumber) takeTitleBuilder,
+    VoiceOverRecorderService? recorder,
     Duration availableDuration = Duration.zero,
     int priorTakeCount = 0,
     Future<Directory> Function()? storageDirectoryProvider,
-  }) : _recorder = recorder,
+  }) : _recorder = recorder ?? RecordVoiceOverRecorderService(),
        _permissionsService = permissionsService,
        _takeTitleBuilder = takeTitleBuilder,
        _storageDirectoryProvider =
@@ -122,6 +127,9 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
       ),
     );
 
+    // Confirm the recording started with a tactile pulse.
+    unawaited(HapticService.recordingFeedback());
+
     _amplitudeSubscription = _recorder.amplitudeStream.listen(_onAmplitude);
   }
 
@@ -131,12 +139,16 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
     if (bars.length > _maxWaveformBars) {
       bars.removeRange(0, bars.length - _maxWaveformBars);
     }
-    emit(
-      state.copyWith(
-        waveformBars: bars,
-        currentDuration: state.currentDuration + _amplitudeInterval,
-      ),
+    final wasOver = state.isOverAvailable;
+    final next = state.copyWith(
+      waveformBars: bars,
+      currentDuration: state.currentDuration + _amplitudeInterval,
     );
+    emit(next);
+    // Warn with a stronger pulse the moment the audio outgrows the video.
+    if (!wasOver && next.isOverAvailable) {
+      unawaited(HapticService.heavyImpact());
+    }
   }
 
   /// Stops the in-progress take and appends it to [VoiceOverState.takes].
@@ -144,6 +156,8 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
   /// A take with zero duration is discarded.
   Future<void> stop() async {
     if (!state.isRecording) return;
+    // Confirm the recording stopped with a tactile pulse.
+    unawaited(HapticService.recordingFeedback());
     await _stopMetering();
 
     try {
@@ -192,6 +206,7 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
   Future<void> deleteLastTake() async {
     if (state.isRecording || state.takes.isEmpty) return;
     final takes = state.takes;
+    unawaited(HapticService.lightImpact());
     await _deleteFile(takes.last.localFilePath);
     emit(state.copyWith(takes: takes.sublist(0, takes.length - 1)));
   }

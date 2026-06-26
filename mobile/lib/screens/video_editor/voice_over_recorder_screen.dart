@@ -8,8 +8,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/video_editor/voice_over/voice_over_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/services/haptic_service.dart';
-import 'package:openvine/services/video_editor/voice_over_recorder_service.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 import 'package:permissions_service/permissions_service.dart';
 
@@ -48,7 +46,6 @@ class VoiceOverRecorderScreen extends StatelessWidget {
     final l10n = context.l10n;
     return BlocProvider<VoiceOverCubit>(
       create: (_) => VoiceOverCubit(
-        recorder: RecordVoiceOverRecorderService(),
         permissionsService: const PermissionHandlerPermissionsService(),
         takeTitleBuilder: l10n.videoEditorVoiceOverTakeName,
         availableDuration: availableDuration,
@@ -72,23 +69,24 @@ class VoiceOverRecorderView extends StatelessWidget {
       backgroundColor: VineTheme.surfaceBackground,
       body: MultiBlocListener(
         listeners: [
+          // Announce when a take starts recording.
           BlocListener<VoiceOverCubit, VoiceOverState>(
             listenWhen: (previous, current) =>
-                previous.isRecording != current.isRecording ||
-                previous.recordingCount != current.recordingCount,
-            listener: _announce,
+                !previous.isRecording && current.isRecording,
+            listener: (context, _) => _announce(
+              context,
+              context.l10n.videoEditorVoiceOverRecordingStarted,
+            ),
           ),
-          // Confirm each recording start/stop with a tactile pulse.
+          // Announce only when a take is saved (the count grew) — never on a
+          // delete, which also changes recordingCount.
           BlocListener<VoiceOverCubit, VoiceOverState>(
             listenWhen: (previous, current) =>
-                previous.isRecording != current.isRecording,
-            listener: (_, _) => HapticService.recordingFeedback(),
-          ),
-          // Warn with a stronger pulse the moment the audio outgrows the video.
-          BlocListener<VoiceOverCubit, VoiceOverState>(
-            listenWhen: (previous, current) =>
-                !previous.isOverAvailable && current.isOverAvailable,
-            listener: (_, _) => HapticService.heavyImpact(),
+                current.recordingCount > previous.recordingCount,
+            listener: (context, _) => _announce(
+              context,
+              context.l10n.videoEditorVoiceOverRecordingSaved,
+            ),
           ),
         ],
         child: const Column(
@@ -102,12 +100,7 @@ class VoiceOverRecorderView extends StatelessWidget {
     );
   }
 
-  void _announce(BuildContext context, VoiceOverState state) {
-    final l10n = context.l10n;
-    final message = state.isRecording
-        ? l10n.videoEditorVoiceOverRecordingStarted
-        : (state.hasTakes ? l10n.videoEditorVoiceOverRecordingSaved : null);
-    if (message == null) return;
+  void _announce(BuildContext context, String message) {
     SemanticsService.sendAnnouncement(
       View.of(context),
       message,
@@ -363,10 +356,8 @@ class _RecordControls extends StatelessWidget {
               height: 40,
               child: (hasTakes && !isRecording)
                   ? TextButton(
-                      onPressed: () {
-                        HapticService.lightImpact();
-                        context.read<VoiceOverCubit>().deleteLastTake();
-                      },
+                      onPressed: () =>
+                          context.read<VoiceOverCubit>().deleteLastTake(),
                       child: Text(
                         context.l10n.videoEditorVoiceOverDeleteLast,
                         style: VineTheme.labelLargeFont(

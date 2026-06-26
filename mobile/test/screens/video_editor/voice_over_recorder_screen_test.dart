@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -234,6 +235,99 @@ void main() {
         await tester.pump();
 
         expect(tester.takeException(), isNull);
+      });
+    });
+
+    group('announcements', () {
+      // Captures the messages SemanticsService.sendAnnouncement delivers on
+      // the platform accessibility channel, mirroring the precedent in
+      // conversation_view_test.dart.
+      List<Object?> setUpAnnouncementCapture(WidgetTester tester) {
+        final announced = <Object?>[];
+        tester.binding.defaultBinaryMessenger
+            .setMockDecodedMessageHandler<Object?>(
+              SystemChannels.accessibility,
+              (message) async {
+                if (message is Map && message['type'] == 'announce') {
+                  announced.add((message['data'] as Map?)?['message']);
+                }
+                return null;
+              },
+            );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger
+              .setMockDecodedMessageHandler<Object?>(
+                SystemChannels.accessibility,
+                null,
+              ),
+        );
+        return announced;
+      }
+
+      testWidgets('announces when a take is saved (count grows)', (
+        tester,
+      ) async {
+        final controller = StreamController<VoiceOverState>();
+        addTearDown(controller.close);
+        whenListen(
+          cubit,
+          controller.stream,
+          initialState: const VoiceOverState(),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        final announced = setUpAnnouncementCapture(tester);
+
+        controller.add(VoiceOverState(takes: [_take('a')]));
+        await tester.pump();
+
+        expect(announced, contains(l10n.videoEditorVoiceOverRecordingSaved));
+      });
+
+      testWidgets('does not announce "saved" when a take is deleted', (
+        tester,
+      ) async {
+        final controller = StreamController<VoiceOverState>();
+        addTearDown(controller.close);
+        whenListen(
+          cubit,
+          controller.stream,
+          initialState: VoiceOverState(takes: [_take('a'), _take('b')]),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        final announced = setUpAnnouncementCapture(tester);
+
+        controller.add(VoiceOverState(takes: [_take('a')]));
+        await tester.pump();
+
+        expect(
+          announced,
+          isNot(contains(l10n.videoEditorVoiceOverRecordingSaved)),
+        );
+      });
+
+      testWidgets('announces when recording starts', (tester) async {
+        final controller = StreamController<VoiceOverState>();
+        addTearDown(controller.close);
+        whenListen(
+          cubit,
+          controller.stream,
+          initialState: const VoiceOverState(),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        final announced = setUpAnnouncementCapture(tester);
+
+        controller.add(
+          const VoiceOverState(status: VoiceOverStatus.recording),
+        );
+        await tester.pump();
+
+        expect(
+          announced,
+          contains(l10n.videoEditorVoiceOverRecordingStarted),
+        );
       });
     });
 
