@@ -7917,6 +7917,63 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Audio registrato';
 
   @override
+  String get videoEditorVoiceOverLabel => 'Voce fuori campo';
+
+  @override
+  String get videoEditorVoiceOverTitle => 'Voce fuori campo';
+
+  @override
+  String videoEditorVoiceOverTakeName(int number) {
+    return 'Registrazione $number';
+  }
+
+  @override
+  String get videoEditorOpenVoiceOverSemanticLabel =>
+      'Registra una voce fuori campo';
+
+  @override
+  String get videoEditorVoiceOverRecordSemanticLabel => 'Avvia registrazione';
+
+  @override
+  String get videoEditorVoiceOverStopSemanticLabel => 'Ferma registrazione';
+
+  @override
+  String get videoEditorVoiceOverHint =>
+      'Tocca per registrare. Aggiungi tutte le riprese che vuoi.';
+
+  @override
+  String videoEditorVoiceOverRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count registrazioni',
+      one: '1 registrazione',
+      zero: 'Ancora nessuna registrazione',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorVoiceOverDeleteLast => 'Elimina l’ultima registrazione';
+
+  @override
+  String get videoEditorVoiceOverPermissionTitle =>
+      'Serve l’accesso al microfono';
+
+  @override
+  String get videoEditorVoiceOverPermissionBody =>
+      'Consenti l’accesso al microfono per registrare una voce fuori campo.';
+
+  @override
+  String get videoEditorVoiceOverOpenSettings => 'Apri impostazioni';
+
+  @override
+  String get videoEditorVoiceOverRecordingStarted => 'Registrazione avviata';
+
+  @override
+  String get videoEditorVoiceOverRecordingSaved => 'Registrazione salvata';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Riproduci';
 
   @override

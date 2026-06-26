@@ -7824,6 +7824,61 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Kaydedilmiş ses';
 
   @override
+  String get videoEditorVoiceOverLabel => 'Dış ses';
+
+  @override
+  String get videoEditorVoiceOverTitle => 'Dış ses';
+
+  @override
+  String videoEditorVoiceOverTakeName(int number) {
+    return 'Kayıt $number';
+  }
+
+  @override
+  String get videoEditorOpenVoiceOverSemanticLabel => 'Dış ses kaydet';
+
+  @override
+  String get videoEditorVoiceOverRecordSemanticLabel => 'Kaydı başlat';
+
+  @override
+  String get videoEditorVoiceOverStopSemanticLabel => 'Kaydı durdur';
+
+  @override
+  String get videoEditorVoiceOverHint =>
+      'Kaydetmek için dokun. İstediğin kadar çekim ekle.';
+
+  @override
+  String videoEditorVoiceOverRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kayıt',
+      one: '1 kayıt',
+      zero: 'Henüz kayıt yok',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorVoiceOverDeleteLast => 'Son kaydı sil';
+
+  @override
+  String get videoEditorVoiceOverPermissionTitle => 'Mikrofon erişimi gerekli';
+
+  @override
+  String get videoEditorVoiceOverPermissionBody =>
+      'Dış ses kaydetmek için mikrofon erişimine izin ver.';
+
+  @override
+  String get videoEditorVoiceOverOpenSettings => 'Ayarları aç';
+
+  @override
+  String get videoEditorVoiceOverRecordingStarted => 'Kayıt başladı';
+
+  @override
+  String get videoEditorVoiceOverRecordingSaved => 'Kayıt kaydedildi';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Oynat';
 
   @override

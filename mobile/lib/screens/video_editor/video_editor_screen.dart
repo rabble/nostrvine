@@ -17,6 +17,7 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/blocs/video_editor/voice_over/voice_over_cubit.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
@@ -27,6 +28,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
+import 'package:openvine/screens/video_editor/voice_over_recorder_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/await_push_transition.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
@@ -480,6 +482,89 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     );
   }
 
+  /// Opens the full-screen voice-over recorder and appends the recorded takes
+  /// to the editor timeline.
+  ///
+  /// Takes are laid back-to-back: the first starts at the beginning and each
+  /// subsequent take starts where the previous one ended, clamped to
+  /// [VideoEditorConstants.maxDuration]. All takes are committed in a single
+  /// history entry so one undo removes them together.
+  Future<void> _openVoiceOver() async {
+    const maxDuration = VideoEditorConstants.maxDuration;
+    final clipDuration = _clipEditorBloc.state.totalDuration;
+    final availableDuration =
+        clipDuration > Duration.zero && clipDuration < maxDuration
+        ? clipDuration
+        : maxDuration;
+
+    // Count voice-over already on the timeline so the take numbering continues
+    // (e.g. "Recording 5") instead of restarting at 1.
+    final priorTakeCount = _timelineOverlayBloc.state.audioTracks
+        .where((t) => t.id.startsWith(VoiceOverCubit.voiceOverIdPrefix))
+        .length;
+
+    final takes = await Navigator.of(context).push<List<AudioEvent>>(
+      PageRouteBuilder<List<AudioEvent>>(
+        pageBuilder: (_, _, _) => VoiceOverRecorderScreen(
+          availableDuration: availableDuration,
+          priorTakeCount: priorTakeCount,
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // Classic Material "fade upwards": slides up slightly while fading in.
+          return const FadeUpwardsPageTransitionsBuilder().buildTransitions(
+            null,
+            context,
+            animation,
+            secondaryAnimation,
+            child,
+          );
+        },
+      ),
+    );
+    if (!mounted || takes == null || takes.isEmpty) return;
+
+    final editor = _editorKey.currentState;
+    if (editor == null) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final placed = <Map<String, dynamic>>[];
+    var cursor = Duration.zero;
+    for (var i = 0; i < takes.length; i++) {
+      final take = takes[i];
+      final takeDuration = Duration(
+        milliseconds: ((take.duration ?? 0) * 1000).round(),
+      );
+      // When the previous take already filled the video, restart at the
+      // beginning so this take stays visible within the timeline instead of
+      // landing off the end (where it couldn't be seen or edited).
+      final start = cursor < availableDuration ? cursor : Duration.zero;
+      final endTime = start + takeDuration < availableDuration
+          ? start + takeDuration
+          : availableDuration;
+      if (endTime <= start) continue;
+      placed.add(
+        take
+            .copyWith(
+              id: '${take.id}-$now-$i',
+              startTime: start,
+              endTime: endTime,
+            )
+            .toJson(),
+      );
+      cursor = endTime;
+    }
+    if (placed.isEmpty) return;
+
+    editor.addHistory(
+      meta: {
+        ...editor.stateManager.activeMeta,
+        VideoEditorConstants.audioStateHistoryKey: [
+          ...editor.stateManager.audioTracks.map((e) => e.toJson()),
+          ...placed,
+        ],
+      },
+    );
+  }
+
   /// Resolves the sound's duration in seconds, probing the source via
   /// [ProVideoEditor.getMetadata] when the event carries no duration tag
   /// (common for Nostr sounds). Returns the tagged duration when present, or
@@ -690,6 +775,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
                 );
               },
               onOpenMusicLibrary: _openMusicLibrary,
+              onOpenVoiceOver: _openVoiceOver,
               awaitPushCoverTransition: _awaitMetadataCoverTransition,
               child: ValueListenableBuilder<bool>(
                 valueListenable: _isLoadingDraft,

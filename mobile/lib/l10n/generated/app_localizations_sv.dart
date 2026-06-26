@@ -7857,6 +7857,61 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Inspelat ljud';
 
   @override
+  String get videoEditorVoiceOverLabel => 'Voice-over';
+
+  @override
+  String get videoEditorVoiceOverTitle => 'Voice-over';
+
+  @override
+  String videoEditorVoiceOverTakeName(int number) {
+    return 'Inspelning $number';
+  }
+
+  @override
+  String get videoEditorOpenVoiceOverSemanticLabel => 'Spela in en voice-over';
+
+  @override
+  String get videoEditorVoiceOverRecordSemanticLabel => 'Starta inspelning';
+
+  @override
+  String get videoEditorVoiceOverStopSemanticLabel => 'Stoppa inspelning';
+
+  @override
+  String get videoEditorVoiceOverHint =>
+      'Tryck för att spela in. Lägg till hur många tagningar du vill.';
+
+  @override
+  String videoEditorVoiceOverRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count inspelningar',
+      one: '1 inspelning',
+      zero: 'Inga inspelningar än',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorVoiceOverDeleteLast => 'Ta bort senaste inspelningen';
+
+  @override
+  String get videoEditorVoiceOverPermissionTitle => 'Mikrofonåtkomst krävs';
+
+  @override
+  String get videoEditorVoiceOverPermissionBody =>
+      'Tillåt åtkomst till mikrofonen för att spela in en voice-over.';
+
+  @override
+  String get videoEditorVoiceOverOpenSettings => 'Öppna inställningar';
+
+  @override
+  String get videoEditorVoiceOverRecordingStarted => 'Inspelning startad';
+
+  @override
+  String get videoEditorVoiceOverRecordingSaved => 'Inspelning sparad';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Spela';
 
   @override

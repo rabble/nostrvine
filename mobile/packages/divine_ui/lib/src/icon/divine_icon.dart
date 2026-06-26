@@ -126,6 +126,7 @@ enum DivineIconName {
   lockSimple('lock_simple'),
   logo('logo'),
   menu('menu'),
+  microphone('microphone'),
   minus('minus'),
   moreHoriz('more_horiz'),
   musicNote('music_note'),

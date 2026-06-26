@@ -7786,6 +7786,62 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'الصوت المسجل';
 
   @override
+  String get videoEditorVoiceOverLabel => 'تعليق صوتي';
+
+  @override
+  String get videoEditorVoiceOverTitle => 'تعليق صوتي';
+
+  @override
+  String videoEditorVoiceOverTakeName(int number) {
+    return 'تسجيل $number';
+  }
+
+  @override
+  String get videoEditorOpenVoiceOverSemanticLabel => 'تسجيل تعليق صوتي';
+
+  @override
+  String get videoEditorVoiceOverRecordSemanticLabel => 'بدء التسجيل';
+
+  @override
+  String get videoEditorVoiceOverStopSemanticLabel => 'إيقاف التسجيل';
+
+  @override
+  String get videoEditorVoiceOverHint =>
+      'انقر للتسجيل. أضِف أي عدد من اللقطات تريده.';
+
+  @override
+  String videoEditorVoiceOverRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تسجيلات',
+      one: 'تسجيل واحد',
+      zero: 'لا توجد تسجيلات بعد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorVoiceOverDeleteLast => 'حذف آخر تسجيل';
+
+  @override
+  String get videoEditorVoiceOverPermissionTitle =>
+      'يلزم الوصول إلى الميكروفون';
+
+  @override
+  String get videoEditorVoiceOverPermissionBody =>
+      'اسمح بالوصول إلى الميكروفون لتسجيل تعليق صوتي.';
+
+  @override
+  String get videoEditorVoiceOverOpenSettings => 'فتح الإعدادات';
+
+  @override
+  String get videoEditorVoiceOverRecordingStarted => 'بدأ التسجيل';
+
+  @override
+  String get videoEditorVoiceOverRecordingSaved => 'تم حفظ التسجيل';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'تشغيل';
 
   @override

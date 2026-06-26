@@ -7886,6 +7886,61 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Opgenomen audio';
 
   @override
+  String get videoEditorVoiceOverLabel => 'Voice-over';
+
+  @override
+  String get videoEditorVoiceOverTitle => 'Voice-over';
+
+  @override
+  String videoEditorVoiceOverTakeName(int number) {
+    return 'Opname $number';
+  }
+
+  @override
+  String get videoEditorOpenVoiceOverSemanticLabel => 'Een voice-over opnemen';
+
+  @override
+  String get videoEditorVoiceOverRecordSemanticLabel => 'Opname starten';
+
+  @override
+  String get videoEditorVoiceOverStopSemanticLabel => 'Opname stoppen';
+
+  @override
+  String get videoEditorVoiceOverHint =>
+      'Tik om op te nemen. Voeg zoveel opnames toe als je wilt.';
+
+  @override
+  String videoEditorVoiceOverRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count opnames',
+      one: '1 opname',
+      zero: 'Nog geen opnames',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorVoiceOverDeleteLast => 'Laatste opname verwijderen';
+
+  @override
+  String get videoEditorVoiceOverPermissionTitle => 'Microfoontoegang vereist';
+
+  @override
+  String get videoEditorVoiceOverPermissionBody =>
+      'Geef toegang tot de microfoon om een voice-over op te nemen.';
+
+  @override
+  String get videoEditorVoiceOverOpenSettings => 'Instellingen openen';
+
+  @override
+  String get videoEditorVoiceOverRecordingStarted => 'Opname gestart';
+
+  @override
+  String get videoEditorVoiceOverRecordingSaved => 'Opname opgeslagen';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Afspelen';
 
   @override

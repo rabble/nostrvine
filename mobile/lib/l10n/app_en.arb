@@ -4485,6 +4485,32 @@
   "videoEditorFailedLoadStickers": "Failed to load stickers",
   "videoEditorAdjustVolumeTitle": "Adjust volume",
   "videoEditorRecordedAudioLabel": "Recorded audio",
+  "videoEditorVoiceOverLabel": "Voice over",
+  "videoEditorVoiceOverTitle": "Voice over",
+  "videoEditorVoiceOverTakeName": "Recording {number}",
+  "@videoEditorVoiceOverTakeName": {
+    "description": "Title for a single recorded voice-over take, numbered by capture position.",
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "videoEditorOpenVoiceOverSemanticLabel": "Record a voice over",
+  "videoEditorVoiceOverRecordSemanticLabel": "Start recording",
+  "videoEditorVoiceOverStopSemanticLabel": "Stop recording",
+  "videoEditorVoiceOverHint": "Tap to record. Add as many takes as you like.",
+  "videoEditorVoiceOverRecordingsCount": "{count, plural, =0{No recordings yet} =1{1 recording} other{{count} recordings}}",
+  "@videoEditorVoiceOverRecordingsCount": {
+    "description": "Counts the voice-over takes recorded so far in the recorder screen.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "videoEditorVoiceOverDeleteLast": "Delete last recording",
+  "videoEditorVoiceOverPermissionTitle": "Microphone access needed",
+  "videoEditorVoiceOverPermissionBody": "Allow microphone access to record a voice over.",
+  "videoEditorVoiceOverOpenSettings": "Open settings",
+  "videoEditorVoiceOverRecordingStarted": "Recording started",
+  "videoEditorVoiceOverRecordingSaved": "Recording saved",
   "videoEditorPlaySemanticLabel": "Play",
   "videoEditorPauseSemanticLabel": "Pause",
   "videoEditorMuteAudioSemanticLabel": "Mute audio",

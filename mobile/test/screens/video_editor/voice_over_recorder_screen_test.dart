@@ -1,0 +1,341 @@
+// ABOUTME: Widget tests for VoiceOverRecorderView.
+// ABOUTME: Covers rendering, record toggle, permission UI, and done/close.
+
+import 'dart:async';
+
+import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/blocs/video_editor/voice_over/voice_over_cubit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/screens/video_editor/voice_over_recorder_screen.dart';
+
+class _MockVoiceOverCubit extends MockCubit<VoiceOverState>
+    implements VoiceOverCubit {}
+
+AudioEvent _take(String id) => AudioEvent.fromLocalImport(
+  id: 'local_import_voice_over_$id',
+  filePath: '/tmp/$id.m4a',
+  createdAt: 0,
+  title: 'Recorded audio',
+  mimeType: 'audio/mp4',
+  duration: 1,
+);
+
+void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
+  group(VoiceOverRecorderView, () {
+    late _MockVoiceOverCubit cubit;
+
+    setUp(() {
+      cubit = _MockVoiceOverCubit();
+      when(() => cubit.toggleRecording()).thenAnswer((_) async {});
+      when(() => cubit.deleteLastTake()).thenAnswer((_) async {});
+      when(() => cubit.discardAll()).thenAnswer((_) async {});
+      when(() => cubit.openSettings()).thenAnswer((_) async {});
+    });
+
+    void stub(VoiceOverState state) => whenListen(
+      cubit,
+      const Stream<VoiceOverState>.empty(),
+      initialState: state,
+    );
+
+    Widget buildSubject() {
+      return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: BlocProvider<VoiceOverCubit>.value(
+          value: cubit,
+          child: const VoiceOverRecorderView(),
+        ),
+      );
+    }
+
+    group('renders', () {
+      testWidgets('record control and hint when idle', (tester) async {
+        stub(const VoiceOverState());
+
+        await tester.pumpWidget(buildSubject());
+
+        expect(
+          find.bySemanticsLabel(l10n.videoEditorVoiceOverRecordSemanticLabel),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.videoEditorVoiceOverHint), findsOneWidget);
+        expect(
+          find.text(l10n.videoEditorVoiceOverRecordingsCount(0)),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('stop control while recording', (tester) async {
+        stub(const VoiceOverState(status: VoiceOverStatus.recording));
+
+        await tester.pumpWidget(buildSubject());
+
+        expect(
+          find.bySemanticsLabel(l10n.videoEditorVoiceOverStopSemanticLabel),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('recording count for captured takes', (tester) async {
+        stub(VoiceOverState(takes: [_take('a'), _take('b')]));
+
+        await tester.pumpWidget(buildSubject());
+
+        expect(
+          find.text(l10n.videoEditorVoiceOverRecordingsCount(2)),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.videoEditorVoiceOverDeleteLast),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('shows total recorded time over available length', (
+        tester,
+      ) async {
+        stub(
+          VoiceOverState(
+            takes: [_take('a'), _take('b')],
+            availableDuration: const Duration(seconds: 6),
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+
+        expect(find.text('0:02 / 0:06'), findsOneWidget);
+      });
+
+      testWidgets('marks the time readout red when audio is too long', (
+        tester,
+      ) async {
+        stub(
+          VoiceOverState(
+            takes: [_take('a'), _take('b')],
+            availableDuration: const Duration(seconds: 1),
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+
+        final readout = tester.widget<Text>(find.text('0:02 / 0:01'));
+        expect(readout.style?.color, equals(VineTheme.error));
+      });
+
+      testWidgets('count and time ignore voice-over already on the timeline', (
+        tester,
+      ) async {
+        stub(
+          const VoiceOverState(
+            priorTakeCount: 3,
+            availableDuration: Duration(seconds: 6),
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+
+        // Count and the time readout reset each session — prior takes only
+        // affect the take numbering, which is applied in the cubit.
+        expect(
+          find.text(l10n.videoEditorVoiceOverRecordingsCount(0)),
+          findsOneWidget,
+        );
+        expect(find.textContaining(' / '), findsNothing);
+      });
+
+      testWidgets('permission prompt when denied', (tester) async {
+        stub(
+          const VoiceOverState(status: VoiceOverStatus.permissionDenied),
+        );
+
+        await tester.pumpWidget(buildSubject());
+
+        expect(
+          find.text(l10n.videoEditorVoiceOverPermissionTitle),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.videoEditorVoiceOverOpenSettings),
+          findsOneWidget,
+        );
+      });
+    });
+
+    group('interactions', () {
+      testWidgets('tapping the record control toggles recording', (
+        tester,
+      ) async {
+        stub(const VoiceOverState());
+
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(
+          find.bySemanticsLabel(l10n.videoEditorVoiceOverRecordSemanticLabel),
+        );
+
+        verify(() => cubit.toggleRecording()).called(1);
+      });
+
+      testWidgets('tapping delete last removes the last take', (tester) async {
+        stub(VoiceOverState(takes: [_take('a')]));
+
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.text(l10n.videoEditorVoiceOverDeleteLast));
+
+        verify(() => cubit.deleteLastTake()).called(1);
+      });
+
+      testWidgets('open settings delegates to the cubit', (tester) async {
+        stub(
+          const VoiceOverState(status: VoiceOverStatus.permissionDenied),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.text(l10n.videoEditorVoiceOverOpenSettings));
+
+        verify(() => cubit.openSettings()).called(1);
+      });
+    });
+
+    group('waveform', () {
+      testWidgets('animates while recording without leaking the ticker', (
+        tester,
+      ) async {
+        final controller = StreamController<VoiceOverState>();
+        addTearDown(controller.close);
+        whenListen(
+          cubit,
+          controller.stream,
+          initialState: const VoiceOverState(),
+        );
+
+        await tester.pumpWidget(buildSubject());
+
+        controller.add(
+          const VoiceOverState(
+            status: VoiceOverStatus.recording,
+            waveformBars: [0.4, 0.8],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(tester.takeException(), isNull);
+
+        controller.add(const VoiceOverState());
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+      });
+    });
+
+    group('navigation', () {
+      // Pushes the view and records the pop result into [onResult] when the
+      // route completes (after Done/Close pops it).
+      Future<void> pushView(
+        WidgetTester tester,
+        void Function(List<AudioEvent>? result) onResult,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => TextButton(
+                  onPressed: () async {
+                    onResult(
+                      await Navigator.of(context).push<List<AudioEvent>>(
+                        MaterialPageRoute<List<AudioEvent>>(
+                          builder: (_) => BlocProvider<VoiceOverCubit>.value(
+                            value: cubit,
+                            child: const VoiceOverRecorderView(),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('done returns the recorded takes', (tester) async {
+        final takes = [_take('a'), _take('b')];
+        stub(VoiceOverState(takes: takes));
+
+        List<AudioEvent>? captured;
+        var popped = false;
+        await pushView(tester, (result) {
+          captured = result;
+          popped = true;
+        });
+
+        await tester.tap(
+          find.bySemanticsLabel(l10n.videoEditorDoneSemanticLabel),
+        );
+        await tester.pumpAndSettle();
+
+        expect(popped, isTrue);
+        expect(captured, equals(takes));
+      });
+
+      testWidgets('close discards takes and returns nothing', (tester) async {
+        stub(VoiceOverState(takes: [_take('a')]));
+
+        List<AudioEvent>? captured;
+        var popped = false;
+        await pushView(tester, (result) {
+          captured = result;
+          popped = true;
+        });
+
+        await tester.tap(
+          find.bySemanticsLabel(l10n.videoEditorCloseSemanticLabel),
+        );
+        await tester.pumpAndSettle();
+
+        verify(() => cubit.discardAll()).called(1);
+        expect(popped, isTrue);
+        expect(captured, isNull);
+        expect(find.byType(VoiceOverRecorderView), findsNothing);
+      });
+    });
+  });
+
+  group(VoiceOverRecorderScreen, () {
+    testWidgets('builds its own cubit without reading l10n in create', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: VoiceOverRecorderScreen(
+            availableDuration: Duration(seconds: 6),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(VoiceOverRecorderView), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(l10n.videoEditorVoiceOverRecordSemanticLabel),
+        findsOneWidget,
+      );
+    });
+  });
+}

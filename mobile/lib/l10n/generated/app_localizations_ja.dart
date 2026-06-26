@@ -7579,6 +7579,60 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => '録音済みオーディオ';
 
   @override
+  String get videoEditorVoiceOverLabel => 'ナレーション';
+
+  @override
+  String get videoEditorVoiceOverTitle => 'ナレーション';
+
+  @override
+  String videoEditorVoiceOverTakeName(int number) {
+    return '録音 $number';
+  }
+
+  @override
+  String get videoEditorOpenVoiceOverSemanticLabel => 'ナレーションを録音';
+
+  @override
+  String get videoEditorVoiceOverRecordSemanticLabel => '録音を開始';
+
+  @override
+  String get videoEditorVoiceOverStopSemanticLabel => '録音を停止';
+
+  @override
+  String get videoEditorVoiceOverHint => 'タップして録音。好きなだけテイクを追加できます。';
+
+  @override
+  String videoEditorVoiceOverRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '録音$count件',
+      one: '録音1件',
+      zero: 'まだ録音はありません',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorVoiceOverDeleteLast => '最後の録音を削除';
+
+  @override
+  String get videoEditorVoiceOverPermissionTitle => 'マイクへのアクセスが必要です';
+
+  @override
+  String get videoEditorVoiceOverPermissionBody =>
+      'ナレーションを録音するにはマイクへのアクセスを許可してください。';
+
+  @override
+  String get videoEditorVoiceOverOpenSettings => '設定を開く';
+
+  @override
+  String get videoEditorVoiceOverRecordingStarted => '録音を開始しました';
+
+  @override
+  String get videoEditorVoiceOverRecordingSaved => '録音を保存しました';
+
+  @override
   String get videoEditorPlaySemanticLabel => '再生';
 
   @override

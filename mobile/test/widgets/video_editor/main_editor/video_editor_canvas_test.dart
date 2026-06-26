@@ -37,6 +37,7 @@ void main() {
               onAddStickers: () {},
               onOpenClipsEditor: () {},
               onOpenMusicLibrary: () {},
+              onOpenVoiceOver: () {},
               onAddEditTextLayer: ([_]) async => null,
               originalClipAspectRatio: 9 / 16,
               bodySizeNotifier: bodySizeNotifier,

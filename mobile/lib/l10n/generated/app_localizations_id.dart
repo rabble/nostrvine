@@ -7826,6 +7826,61 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Audio yang direkam';
 
   @override
+  String get videoEditorVoiceOverLabel => 'Sulih suara';
+
+  @override
+  String get videoEditorVoiceOverTitle => 'Sulih suara';
+
+  @override
+  String videoEditorVoiceOverTakeName(int number) {
+    return 'Rekaman $number';
+  }
+
+  @override
+  String get videoEditorOpenVoiceOverSemanticLabel => 'Rekam sulih suara';
+
+  @override
+  String get videoEditorVoiceOverRecordSemanticLabel => 'Mulai merekam';
+
+  @override
+  String get videoEditorVoiceOverStopSemanticLabel => 'Hentikan rekaman';
+
+  @override
+  String get videoEditorVoiceOverHint =>
+      'Ketuk untuk merekam. Tambahkan sebanyak yang kamu mau.';
+
+  @override
+  String videoEditorVoiceOverRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rekaman',
+      one: '1 rekaman',
+      zero: 'Belum ada rekaman',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorVoiceOverDeleteLast => 'Hapus rekaman terakhir';
+
+  @override
+  String get videoEditorVoiceOverPermissionTitle => 'Perlu akses mikrofon';
+
+  @override
+  String get videoEditorVoiceOverPermissionBody =>
+      'Izinkan akses mikrofon untuk merekam sulih suara.';
+
+  @override
+  String get videoEditorVoiceOverOpenSettings => 'Buka pengaturan';
+
+  @override
+  String get videoEditorVoiceOverRecordingStarted => 'Rekaman dimulai';
+
+  @override
+  String get videoEditorVoiceOverRecordingSaved => 'Rekaman disimpan';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Putar';
 
   @override

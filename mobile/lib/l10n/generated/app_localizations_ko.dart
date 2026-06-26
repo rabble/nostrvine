@@ -7601,6 +7601,59 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => '녹음된 오디오';
 
   @override
+  String get videoEditorVoiceOverLabel => '내레이션';
+
+  @override
+  String get videoEditorVoiceOverTitle => '내레이션';
+
+  @override
+  String videoEditorVoiceOverTakeName(int number) {
+    return '녹음 $number';
+  }
+
+  @override
+  String get videoEditorOpenVoiceOverSemanticLabel => '내레이션 녹음';
+
+  @override
+  String get videoEditorVoiceOverRecordSemanticLabel => '녹음 시작';
+
+  @override
+  String get videoEditorVoiceOverStopSemanticLabel => '녹음 중지';
+
+  @override
+  String get videoEditorVoiceOverHint => '탭하여 녹음하세요. 원하는 만큼 테이크를 추가할 수 있어요.';
+
+  @override
+  String videoEditorVoiceOverRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '녹음 $count개',
+      one: '녹음 1개',
+      zero: '아직 녹음이 없습니다',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorVoiceOverDeleteLast => '마지막 녹음 삭제';
+
+  @override
+  String get videoEditorVoiceOverPermissionTitle => '마이크 접근 권한이 필요합니다';
+
+  @override
+  String get videoEditorVoiceOverPermissionBody => '내레이션을 녹음하려면 마이크 접근을 허용하세요.';
+
+  @override
+  String get videoEditorVoiceOverOpenSettings => '설정 열기';
+
+  @override
+  String get videoEditorVoiceOverRecordingStarted => '녹음 시작됨';
+
+  @override
+  String get videoEditorVoiceOverRecordingSaved => '녹음 저장됨';
+
+  @override
   String get videoEditorPlaySemanticLabel => '재생';
 
   @override

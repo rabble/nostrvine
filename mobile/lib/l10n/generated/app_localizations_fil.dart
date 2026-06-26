@@ -7937,6 +7937,64 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Na-record na audio';
 
   @override
+  String get videoEditorVoiceOverLabel => 'Voice over';
+
+  @override
+  String get videoEditorVoiceOverTitle => 'Voice over';
+
+  @override
+  String videoEditorVoiceOverTakeName(int number) {
+    return 'Recording $number';
+  }
+
+  @override
+  String get videoEditorOpenVoiceOverSemanticLabel =>
+      'Mag-record ng voice over';
+
+  @override
+  String get videoEditorVoiceOverRecordSemanticLabel =>
+      'Simulan ang pag-record';
+
+  @override
+  String get videoEditorVoiceOverStopSemanticLabel => 'Itigil ang pag-record';
+
+  @override
+  String get videoEditorVoiceOverHint =>
+      'I-tap para mag-record. Magdagdag ng kahit ilang take.';
+
+  @override
+  String videoEditorVoiceOverRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count na recording',
+      one: '1 recording',
+      zero: 'Wala pang recording',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorVoiceOverDeleteLast => 'Burahin ang huling recording';
+
+  @override
+  String get videoEditorVoiceOverPermissionTitle =>
+      'Kailangan ng access sa mikropono';
+
+  @override
+  String get videoEditorVoiceOverPermissionBody =>
+      'Payagan ang access sa mikropono para makapag-record ng voice over.';
+
+  @override
+  String get videoEditorVoiceOverOpenSettings => 'Buksan ang mga setting';
+
+  @override
+  String get videoEditorVoiceOverRecordingStarted => 'Nagsimula ang pag-record';
+
+  @override
+  String get videoEditorVoiceOverRecordingSaved => 'Na-save ang recording';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'I-play';
 
   @override

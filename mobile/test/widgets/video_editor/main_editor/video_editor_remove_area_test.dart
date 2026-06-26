@@ -54,6 +54,7 @@ void main() {
               onAddStickers: () {},
               onAddEditTextLayer: ([layer]) async => null,
               onOpenMusicLibrary: () {},
+              onOpenVoiceOver: () {},
               child: BlocProvider<VideoEditorMainBloc>.value(
                 value: mockBloc,
                 child: const VideoEditorRemoveArea(),

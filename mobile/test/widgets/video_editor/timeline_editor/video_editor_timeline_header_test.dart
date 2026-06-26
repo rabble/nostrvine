@@ -100,6 +100,7 @@ void main() {
             onOpenClipsEditor: () {},
             onAddStickers: () {},
             onOpenMusicLibrary: () {},
+            onOpenVoiceOver: () {},
             onAddEditTextLayer: ([layer]) async => null,
             child: MultiBlocProvider(
               providers: [

@@ -79,6 +79,7 @@ void main() {
                 onAddStickers: () {},
                 onAddEditTextLayer: ([layer]) async => null,
                 onOpenMusicLibrary: () {},
+                onOpenVoiceOver: () {},
                 editorOverride: mockEditor,
                 child: TimelineOverlayControls(item: item),
               ),
@@ -106,6 +107,7 @@ void main() {
               onAddStickers: () {},
               onAddEditTextLayer: ([layer]) async => null,
               onOpenMusicLibrary: () {},
+              onOpenVoiceOver: () {},
               child: BlocProvider<TimelineOverlayBloc>.value(
                 value: overlayBloc,
                 child: TimelineOverlayControls(item: item),

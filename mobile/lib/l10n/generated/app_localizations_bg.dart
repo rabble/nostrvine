@@ -7922,6 +7922,62 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Записано аудио';
 
   @override
+  String get videoEditorVoiceOverLabel => 'Глас зад кадър';
+
+  @override
+  String get videoEditorVoiceOverTitle => 'Глас зад кадър';
+
+  @override
+  String videoEditorVoiceOverTakeName(int number) {
+    return 'Запис $number';
+  }
+
+  @override
+  String get videoEditorOpenVoiceOverSemanticLabel => 'Запис на глас зад кадър';
+
+  @override
+  String get videoEditorVoiceOverRecordSemanticLabel => 'Започни запис';
+
+  @override
+  String get videoEditorVoiceOverStopSemanticLabel => 'Спри записа';
+
+  @override
+  String get videoEditorVoiceOverHint =>
+      'Докосни, за да записваш. Добави колкото дубъла искаш.';
+
+  @override
+  String videoEditorVoiceOverRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count записа',
+      one: '1 запис',
+      zero: 'Все още няма записи',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorVoiceOverDeleteLast => 'Изтрий последния запис';
+
+  @override
+  String get videoEditorVoiceOverPermissionTitle =>
+      'Нужен е достъп до микрофона';
+
+  @override
+  String get videoEditorVoiceOverPermissionBody =>
+      'Разреши достъп до микрофона, за да запишеш глас зад кадър.';
+
+  @override
+  String get videoEditorVoiceOverOpenSettings => 'Отвори настройките';
+
+  @override
+  String get videoEditorVoiceOverRecordingStarted => 'Записът започна';
+
+  @override
+  String get videoEditorVoiceOverRecordingSaved => 'Записът е запазен';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Играйте';
 
   @override

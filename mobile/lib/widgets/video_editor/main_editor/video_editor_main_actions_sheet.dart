@@ -106,6 +106,16 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
                 },
               ),
               _ItemButton(
+                icon: .microphone,
+                label: context.l10n.videoEditorVoiceOverLabel,
+                semanticLabel:
+                    context.l10n.videoEditorOpenVoiceOverSemanticLabel,
+                onTap: () {
+                  Navigator.pop(context);
+                  scope.onOpenVoiceOver();
+                },
+              ),
+              _ItemButton(
                 icon: .textAa,
                 label: context.l10n.videoEditorTextLabel,
                 semanticLabel: context.l10n.videoEditorOpenTextSemanticLabel,

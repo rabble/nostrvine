@@ -124,6 +124,7 @@ dependencies:
   webview_flutter_wkwebview: ^3.24.1
 
   permission_handler: ^12.0.1 # Handle runtime permissions
+  record: ^7.1.0 # Microphone capture for voice-over recording
 
   # Camera and media
   c2pa_flutter:

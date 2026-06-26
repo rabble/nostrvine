@@ -7896,6 +7896,62 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Áudio gravado';
 
   @override
+  String get videoEditorVoiceOverLabel => 'Narração';
+
+  @override
+  String get videoEditorVoiceOverTitle => 'Narração';
+
+  @override
+  String videoEditorVoiceOverTakeName(int number) {
+    return 'Gravação $number';
+  }
+
+  @override
+  String get videoEditorOpenVoiceOverSemanticLabel => 'Gravar uma narração';
+
+  @override
+  String get videoEditorVoiceOverRecordSemanticLabel => 'Iniciar gravação';
+
+  @override
+  String get videoEditorVoiceOverStopSemanticLabel => 'Parar gravação';
+
+  @override
+  String get videoEditorVoiceOverHint =>
+      'Toque para gravar. Adicione quantas tomadas quiser.';
+
+  @override
+  String videoEditorVoiceOverRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gravações',
+      one: '1 gravação',
+      zero: 'Ainda sem gravações',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorVoiceOverDeleteLast => 'Excluir última gravação';
+
+  @override
+  String get videoEditorVoiceOverPermissionTitle =>
+      'Acesso ao microfone necessário';
+
+  @override
+  String get videoEditorVoiceOverPermissionBody =>
+      'Permita o acesso ao microfone para gravar uma narração.';
+
+  @override
+  String get videoEditorVoiceOverOpenSettings => 'Abrir configurações';
+
+  @override
+  String get videoEditorVoiceOverRecordingStarted => 'Gravação iniciada';
+
+  @override
+  String get videoEditorVoiceOverRecordingSaved => 'Gravação salva';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Reproduzir';
 
   @override

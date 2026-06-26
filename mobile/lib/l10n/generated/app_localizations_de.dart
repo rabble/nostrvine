@@ -7937,6 +7937,62 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Aufgenommener Ton';
 
   @override
+  String get videoEditorVoiceOverLabel => 'Voiceover';
+
+  @override
+  String get videoEditorVoiceOverTitle => 'Voiceover';
+
+  @override
+  String videoEditorVoiceOverTakeName(int number) {
+    return 'Aufnahme $number';
+  }
+
+  @override
+  String get videoEditorOpenVoiceOverSemanticLabel => 'Voiceover aufnehmen';
+
+  @override
+  String get videoEditorVoiceOverRecordSemanticLabel => 'Aufnahme starten';
+
+  @override
+  String get videoEditorVoiceOverStopSemanticLabel => 'Aufnahme stoppen';
+
+  @override
+  String get videoEditorVoiceOverHint =>
+      'Zum Aufnehmen tippen. Nimm so viele Takes auf, wie du möchtest.';
+
+  @override
+  String videoEditorVoiceOverRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aufnahmen',
+      one: '1 Aufnahme',
+      zero: 'Noch keine Aufnahmen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorVoiceOverDeleteLast => 'Letzte Aufnahme löschen';
+
+  @override
+  String get videoEditorVoiceOverPermissionTitle =>
+      'Mikrofonzugriff erforderlich';
+
+  @override
+  String get videoEditorVoiceOverPermissionBody =>
+      'Erlaube den Mikrofonzugriff, um ein Voiceover aufzunehmen.';
+
+  @override
+  String get videoEditorVoiceOverOpenSettings => 'Einstellungen öffnen';
+
+  @override
+  String get videoEditorVoiceOverRecordingStarted => 'Aufnahme gestartet';
+
+  @override
+  String get videoEditorVoiceOverRecordingSaved => 'Aufnahme gespeichert';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Abspielen';
 
   @override

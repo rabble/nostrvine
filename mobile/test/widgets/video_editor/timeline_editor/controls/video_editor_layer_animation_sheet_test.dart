@@ -422,6 +422,7 @@ void main() {
             onAddStickers: () {},
             onAddEditTextLayer: ([layer]) async => null,
             onOpenMusicLibrary: () {},
+            onOpenVoiceOver: () {},
             editorOverride: mockEditor,
             child: Scaffold(
               body: Builder(

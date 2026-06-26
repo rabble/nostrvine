@@ -36,6 +36,14 @@ void main() {
       expect(DivineIconName.users.assetPath, 'assets/icon/users.svg');
     });
 
+    test('microphone maps to the voice-over capture glyph', () {
+      expect(DivineIconName.microphone.fileName, 'microphone');
+      expect(
+        DivineIconName.microphone.assetPath,
+        'assets/icon/microphone.svg',
+      );
+    });
+
     test('all enum values have non-empty file names', () {
       for (final icon in DivineIconName.values) {
         expect(

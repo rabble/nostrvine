@@ -8020,6 +8020,64 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Audio înregistrat';
 
   @override
+  String get videoEditorVoiceOverLabel => 'Voce off';
+
+  @override
+  String get videoEditorVoiceOverTitle => 'Voce off';
+
+  @override
+  String videoEditorVoiceOverTakeName(int number) {
+    return 'Înregistrarea $number';
+  }
+
+  @override
+  String get videoEditorOpenVoiceOverSemanticLabel =>
+      'Înregistrează o voce off';
+
+  @override
+  String get videoEditorVoiceOverRecordSemanticLabel =>
+      'Pornește înregistrarea';
+
+  @override
+  String get videoEditorVoiceOverStopSemanticLabel => 'Oprește înregistrarea';
+
+  @override
+  String get videoEditorVoiceOverHint =>
+      'Atinge pentru a înregistra. Adaugă câte cadre vrei.';
+
+  @override
+  String videoEditorVoiceOverRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count înregistrări',
+      one: '1 înregistrare',
+      zero: 'Nicio înregistrare încă',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorVoiceOverDeleteLast => 'Șterge ultima înregistrare';
+
+  @override
+  String get videoEditorVoiceOverPermissionTitle =>
+      'Este necesar accesul la microfon';
+
+  @override
+  String get videoEditorVoiceOverPermissionBody =>
+      'Permite accesul la microfon pentru a înregistra o voce off.';
+
+  @override
+  String get videoEditorVoiceOverOpenSettings => 'Deschide setările';
+
+  @override
+  String get videoEditorVoiceOverRecordingStarted => 'Înregistrare pornită';
+
+  @override
+  String get videoEditorVoiceOverRecordingSaved => 'Înregistrare salvată';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Redă';
 
   @override

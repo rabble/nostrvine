@@ -13688,6 +13688,90 @@ abstract class AppLocalizations {
   /// **'Recorded audio'**
   String get videoEditorRecordedAudioLabel;
 
+  /// No description provided for @videoEditorVoiceOverLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice over'**
+  String get videoEditorVoiceOverLabel;
+
+  /// No description provided for @videoEditorVoiceOverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice over'**
+  String get videoEditorVoiceOverTitle;
+
+  /// Title for a single recorded voice-over take, numbered by capture position.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording {number}'**
+  String videoEditorVoiceOverTakeName(int number);
+
+  /// No description provided for @videoEditorOpenVoiceOverSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Record a voice over'**
+  String get videoEditorOpenVoiceOverSemanticLabel;
+
+  /// No description provided for @videoEditorVoiceOverRecordSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start recording'**
+  String get videoEditorVoiceOverRecordSemanticLabel;
+
+  /// No description provided for @videoEditorVoiceOverStopSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop recording'**
+  String get videoEditorVoiceOverStopSemanticLabel;
+
+  /// No description provided for @videoEditorVoiceOverHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to record. Add as many takes as you like.'**
+  String get videoEditorVoiceOverHint;
+
+  /// Counts the voice-over takes recorded so far in the recorder screen.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No recordings yet} =1{1 recording} other{{count} recordings}}'**
+  String videoEditorVoiceOverRecordingsCount(int count);
+
+  /// No description provided for @videoEditorVoiceOverDeleteLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete last recording'**
+  String get videoEditorVoiceOverDeleteLast;
+
+  /// No description provided for @videoEditorVoiceOverPermissionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone access needed'**
+  String get videoEditorVoiceOverPermissionTitle;
+
+  /// No description provided for @videoEditorVoiceOverPermissionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow microphone access to record a voice over.'**
+  String get videoEditorVoiceOverPermissionBody;
+
+  /// No description provided for @videoEditorVoiceOverOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get videoEditorVoiceOverOpenSettings;
+
+  /// No description provided for @videoEditorVoiceOverRecordingStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording started'**
+  String get videoEditorVoiceOverRecordingStarted;
+
+  /// No description provided for @videoEditorVoiceOverRecordingSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording saved'**
+  String get videoEditorVoiceOverRecordingSaved;
+
   /// No description provided for @videoEditorPlaySemanticLabel.
   ///
   /// In en, this message translates to:

@@ -57,6 +57,7 @@ void main() {
       expect(find.text(l10n.videoEditorCameraLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorLibraryLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorAudioLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorVoiceOverLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorTextLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorDrawLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorFilterLabel), findsOneWidget);
@@ -103,6 +104,26 @@ void main() {
       expect(openedMusic, isTrue);
     });
 
+    testWidgets('tap on Voice over triggers onOpenVoiceOver', (tester) async {
+      var openedVoiceOver = false;
+
+      await tester.pumpWidget(
+        _buildWidget(
+          mainBloc: mainBloc,
+          clipBloc: clipBloc,
+          timelineOverlayBloc: timelineOverlayBloc,
+          onOpenVoiceOver: () => openedVoiceOver = true,
+        ),
+      );
+
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoEditorOpenVoiceOverSemanticLabel),
+      );
+      await tester.pumpAndSettle();
+
+      expect(openedVoiceOver, isTrue);
+    });
+
     testWidgets('tap on Stickers triggers onAddStickers', (tester) async {
       var addedStickers = false;
 
@@ -131,6 +152,7 @@ Widget _buildWidget({
   required _MockTimelineOverlayBloc timelineOverlayBloc,
   VoidCallback? onOpenClipsEditor,
   VoidCallback? onOpenMusicLibrary,
+  VoidCallback? onOpenVoiceOver,
   VoidCallback? onAddStickers,
 }) {
   final editorKey = GlobalKey<ProImageEditorState>();
@@ -144,6 +166,7 @@ Widget _buildWidget({
     onOpenClipsEditor: onOpenClipsEditor ?? () {},
     onAddEditTextLayer: ([layer]) async => null,
     onOpenMusicLibrary: onOpenMusicLibrary ?? () {},
+    onOpenVoiceOver: onOpenVoiceOver ?? () {},
     originalClipAspectRatio: 9 / 16,
     bodySizeNotifier: ValueNotifier(const Size(400, 800)),
     zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
@@ -172,6 +195,7 @@ Widget _buildWidget({
               onOpenClipsEditor: scope.onOpenClipsEditor,
               onAddEditTextLayer: scope.onAddEditTextLayer,
               onOpenMusicLibrary: scope.onOpenMusicLibrary,
+              onOpenVoiceOver: scope.onOpenVoiceOver,
               originalClipAspectRatio: scope.originalClipAspectRatio,
               bodySizeNotifier: scope.bodySizeNotifier,
               zoomMatrixNotifier: scope.zoomMatrixNotifier,

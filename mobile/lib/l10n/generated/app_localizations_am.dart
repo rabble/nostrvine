@@ -7716,6 +7716,60 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'የተቀዳ ኦዲዮ';
 
   @override
+  String get videoEditorVoiceOverLabel => 'የድምፅ ትረካ';
+
+  @override
+  String get videoEditorVoiceOverTitle => 'የድምፅ ትረካ';
+
+  @override
+  String videoEditorVoiceOverTakeName(int number) {
+    return 'ቅረጻ $number';
+  }
+
+  @override
+  String get videoEditorOpenVoiceOverSemanticLabel => 'የድምፅ ትረካ ቅዳ';
+
+  @override
+  String get videoEditorVoiceOverRecordSemanticLabel => 'ቅረጻ ጀምር';
+
+  @override
+  String get videoEditorVoiceOverStopSemanticLabel => 'ቅረጻ አቁም';
+
+  @override
+  String get videoEditorVoiceOverHint => 'ለመቅዳት ንካ። የፈለግከውን ያህል ቅረጻዎች አክል።';
+
+  @override
+  String videoEditorVoiceOverRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ቅረጻዎች',
+      one: '1 ቅረጻ',
+      zero: 'እስካሁን ቅረጻ የለም',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorVoiceOverDeleteLast => 'የመጨረሻውን ቅረጻ ሰርዝ';
+
+  @override
+  String get videoEditorVoiceOverPermissionTitle => 'የማይክሮፎን መዳረሻ ያስፈልጋል';
+
+  @override
+  String get videoEditorVoiceOverPermissionBody =>
+      'የድምፅ ትረካ ለመቅዳት የማይክሮፎን መዳረሻ ፍቀድ።';
+
+  @override
+  String get videoEditorVoiceOverOpenSettings => 'ቅንብሮችን ክፈት';
+
+  @override
+  String get videoEditorVoiceOverRecordingStarted => 'ቅረጻ ተጀመረ';
+
+  @override
+  String get videoEditorVoiceOverRecordingSaved => 'ቅረጻ ተቀምጧል';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'ይጫወቱ';
 
   @override
