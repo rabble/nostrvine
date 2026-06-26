@@ -4,7 +4,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/upload_initialization_helper.dart';
@@ -26,8 +26,15 @@ class PendingUploadStore {
   final String? currentNostrPubkey;
 
   Box<PendingUpload>? _box;
-  final List<PendingUpload> _pendingSaveQueue = [];
+
+  /// Deferred-save retry queue, keyed by [PendingUpload.id] so re-enqueuing the
+  /// same upload is idempotent (the queue can never hold the same upload twice).
+  final Map<String, PendingUpload> _pendingSaveQueue = {};
   Timer? _saveQueueTimer;
+
+  /// True while [_processSaveQueue] is draining; guards against a re-entrant
+  /// drain started by a retry timer firing mid-drain.
+  bool _isDraining = false;
 
   // ---------------------------------------------------------------------------
   // Status accessors
@@ -77,6 +84,7 @@ class PendingUploadStore {
     _saveQueueTimer?.cancel();
     _saveQueueTimer = null;
     _pendingSaveQueue.clear();
+    _isDraining = false;
     // Null the reference so isReady → false without actually closing.
     _box = null;
   }
@@ -168,7 +176,7 @@ class PendingUploadStore {
       category: LogCategory.video,
     );
 
-    _pendingSaveQueue.add(upload);
+    _pendingSaveQueue[upload.id] = upload;
 
     // Schedule retry in 5 seconds.
     _saveQueueTimer?.cancel();
@@ -176,41 +184,66 @@ class PendingUploadStore {
   }
 
   Future<void> _processSaveQueue() async {
+    // A retry timer can fire while a drain is still awaiting save() (which can
+    // take seconds during a storage outage). Don't start a second drain.
+    if (_isDraining) return;
     if (_pendingSaveQueue.isEmpty) return;
 
-    Log.info(
-      'Processing ${_pendingSaveQueue.length} queued uploads',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
+    _isDraining = true;
+    try {
+      Log.info(
+        'Processing ${_pendingSaveQueue.length} queued uploads',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
 
-    final queue = List<PendingUpload>.from(_pendingSaveQueue);
-    _pendingSaveQueue.clear();
+      final queue = _pendingSaveQueue.values.toList();
+      _pendingSaveQueue.clear();
 
-    for (final upload in queue) {
-      try {
-        await save(upload);
-        Log.info(
-          'Successfully saved queued upload: ${upload.id}',
-          name: 'UploadManager',
-          category: LogCategory.video,
-        );
-      } catch (e) {
-        Log.error(
-          'Failed to save queued upload ${upload.id}: $e',
-          name: 'UploadManager',
-          category: LogCategory.video,
-        );
-        // Re-queue for another attempt.
-        _pendingSaveQueue.add(upload);
+      for (final upload in queue) {
+        try {
+          await save(upload);
+          Log.info(
+            'Successfully saved queued upload: ${upload.id}',
+            name: 'UploadManager',
+            category: LogCategory.video,
+          );
+        } catch (e) {
+          Log.error(
+            'Failed to save queued upload ${upload.id}: $e',
+            name: 'UploadManager',
+            category: LogCategory.video,
+          );
+          // Re-queue for another attempt. Keyed by id, so this is idempotent
+          // with save()'s own _queueUploadForLater enqueue of the same upload.
+          _pendingSaveQueue[upload.id] = upload;
+        }
       }
+    } finally {
+      _isDraining = false;
     }
 
-    // If items remain, schedule a further retry in 30 seconds.
+    // If items remain, schedule a further retry in 30 seconds. Cancel first so
+    // the 5 s timer set during this drain (via _queueUploadForLater) can't leak.
     if (_pendingSaveQueue.isNotEmpty) {
+      _saveQueueTimer?.cancel();
       _saveQueueTimer = Timer(const Duration(seconds: 30), _processSaveQueue);
     }
   }
+
+  /// Triggers the deferred-save drain. The drain is otherwise invoked only by
+  /// the internal retry timer; tests use this to exercise it deterministically.
+  @visibleForTesting
+  Future<void> drainPendingSaves() => _processSaveQueue();
+
+  /// True while a drain is in flight — test hook for the re-entrancy guard.
+  @visibleForTesting
+  bool get isDraining => _isDraining;
+
+  /// True when a deferred-save retry timer is currently scheduled — test hook to
+  /// assert exactly one timer is live (no orphaned retry).
+  @visibleForTesting
+  bool get hasScheduledRetry => _saveQueueTimer?.isActive ?? false;
 
   // ---------------------------------------------------------------------------
   // Query helpers

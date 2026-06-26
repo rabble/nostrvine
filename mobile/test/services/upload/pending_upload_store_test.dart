@@ -41,6 +41,49 @@ Future<PendingUploadStore> _openStore({
   return store;
 }
 
+/// Force every box-open attempt to fail deterministically, so `save()` cannot
+/// persist and must fall back to the deferred-save queue. Returns the isolated
+/// dir to build upload paths from.
+///
+/// Hive.openBox returns any already-open box *by name* regardless of path, so a
+/// box another test left open would let save() succeed. Close all boxes first
+/// (swallowing the benign lock-file delete race when the backing temp dir was
+/// already removed), then:
+/// - Null PathProvider -> the init helper's primary path resolution throws.
+/// - Hive's home points at a regular file -> the helper's recovery strategy
+///   (Hive.openBox) cannot create box files either.
+Future<Directory> _forceStorageFailure() async {
+  try {
+    await Hive.close();
+  } catch (_) {
+    // Closing a box whose temp dir was already deleted races the lock-file
+    // cleanup; the box is still unregistered, so ignore.
+  }
+  UploadInitializationHelper.reset();
+
+  final isolatedDir = await Directory.systemTemp.createTemp(
+    'pending_upload_store_queue_',
+  );
+  final blocker = File('${isolatedDir.path}/storage_blocker');
+  await blocker.writeAsString('not a directory');
+
+  addTearDown(() async {
+    try {
+      await Hive.close();
+    } catch (_) {
+      // See note above: ignore the benign lock-cleanup race.
+    }
+    UploadInitializationHelper.reset();
+    if (isolatedDir.existsSync()) {
+      await isolatedDir.delete(recursive: true);
+    }
+  });
+
+  Hive.init(blocker.path);
+  PathProviderPlatform.instance = MockPathProviderPlatform();
+  return isolatedDir;
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -232,44 +275,7 @@ void main() {
       test(
         'queues the upload and throws when storage cannot be opened',
         () async {
-          // Force every box-open attempt to fail deterministically.
-          //
-          // Hive.openBox returns any already-open box *by name* regardless of
-          // path, so a box another test left open would let save() succeed.
-          // Close all boxes first (swallowing the benign lock-file delete race
-          // when the backing temp dir was already removed), then:
-          // - Null PathProvider -> the init helper's primary path resolution
-          //   throws immediately.
-          // - Hive's home points at a regular file -> the helper's recovery
-          //   strategy (Hive.openBox) cannot create box files either.
-          try {
-            await Hive.close();
-          } catch (_) {
-            // Closing a box whose temp dir was already deleted races the
-            // lock-file cleanup; the box is still unregistered, so ignore.
-          }
-          UploadInitializationHelper.reset();
-
-          final isolatedDir = await Directory.systemTemp.createTemp(
-            'pending_upload_store_queue_',
-          );
-          final blocker = File('${isolatedDir.path}/storage_blocker');
-          await blocker.writeAsString('not a directory');
-
-          addTearDown(() async {
-            try {
-              await Hive.close();
-            } catch (_) {
-              // See note above: ignore the benign lock-cleanup race.
-            }
-            UploadInitializationHelper.reset();
-            if (isolatedDir.existsSync()) {
-              await isolatedDir.delete(recursive: true);
-            }
-          });
-
-          Hive.init(blocker.path);
-          PathProviderPlatform.instance = MockPathProviderPlatform();
+          final isolatedDir = await _forceStorageFailure();
 
           final store = PendingUploadStore(
             scopeUploadsToCurrentUser: false,
@@ -295,6 +301,98 @@ void main() {
           expect(store.queuedCount, equals(0));
         },
       );
+
+      test(
+        'draining a still-failing upload does not double-enqueue it',
+        () async {
+          final isolatedDir = await _forceStorageFailure();
+
+          final store = PendingUploadStore(
+            scopeUploadsToCurrentUser: false,
+            currentNostrPubkey: null,
+          );
+          addTearDown(store.disposeStore);
+
+          final upload = PendingUpload.create(
+            localVideoPath: '${isolatedDir.path}/video.mp4',
+            nostrPubkey: _pubkeyA,
+          );
+
+          // First save fails and enqueues exactly one entry.
+          await expectLater(
+            () => store.save(upload),
+            throwsA(isA<Exception>()),
+          );
+          expect(store.queuedCount, equals(1));
+
+          // The drain retries the save; it re-fails and re-enqueues. Because the
+          // queue is keyed by id, the count stays 1 — a raw List would grow to 2
+          // (save()'s own re-queue + the drain loop's re-queue).
+          await store.drainPendingSaves();
+          expect(store.queuedCount, equals(1));
+        },
+      );
+
+      test(
+        'drain reschedules exactly one store-owned (cancellable) retry timer',
+        () async {
+          final isolatedDir = await _forceStorageFailure();
+
+          final store = PendingUploadStore(
+            scopeUploadsToCurrentUser: false,
+            currentNostrPubkey: null,
+          );
+
+          final upload = PendingUpload.create(
+            localVideoPath: '${isolatedDir.path}/video.mp4',
+            nostrPubkey: _pubkeyA,
+          );
+          await expectLater(
+            () => store.save(upload),
+            throwsA(isA<Exception>()),
+          );
+
+          // After the drain a retry is scheduled, and it is owned by the store:
+          // disposeStore() cancels it. Pre-fix, the 5 s timer set during the
+          // drain was orphaned by the 30 s reschedule and survived disposal.
+          await store.drainPendingSaves();
+          expect(store.hasScheduledRetry, isTrue);
+
+          store.disposeStore();
+          expect(store.hasScheduledRetry, isFalse);
+        },
+      );
+
+      test('a drain is a no-op while another drain is in flight', () async {
+        final isolatedDir = await _forceStorageFailure();
+
+        final store = PendingUploadStore(
+          scopeUploadsToCurrentUser: false,
+          currentNostrPubkey: null,
+        );
+        addTearDown(store.disposeStore);
+
+        final upload = PendingUpload.create(
+          localVideoPath: '${isolatedDir.path}/video.mp4',
+          nostrPubkey: _pubkeyA,
+        );
+        await expectLater(
+          () => store.save(upload),
+          throwsA(isA<Exception>()),
+        );
+
+        // Start a drain but don't await it — it suspends on the failing save().
+        final inFlight = store.drainPendingSaves();
+        expect(store.isDraining, isTrue);
+
+        // A second drain triggered while the first runs returns immediately
+        // (the re-entrancy guard) instead of starting a concurrent drain.
+        await store.drainPendingSaves();
+        expect(store.isDraining, isTrue);
+
+        await inFlight;
+        expect(store.isDraining, isFalse);
+      });
     });
 
     // -----------------------------------------------------------------------
