@@ -329,6 +329,35 @@ class _ConnectionAwareTempRelay extends Relay {
   }
 }
 
+class _HangingSendRelay extends Relay {
+  _HangingSendRelay(String url) : super(url, RelayStatus(url));
+
+  final List<List<dynamic>> sentMessages = [];
+
+  @override
+  Future<bool> doConnect() async {
+    relayStatus.connected = ClientConnected.connected;
+    return true;
+  }
+
+  @override
+  Future<void> disconnect() async {
+    relayStatus.connected = ClientConnected.disconnect;
+  }
+
+  @override
+  Future<bool> send(
+    List<dynamic> message, {
+    bool? forceSend,
+    bool queueIfFailed = true,
+    bool skipReconnect = false,
+    DateTime? deadline,
+  }) {
+    sentMessages.add(message);
+    return Completer<bool>().future;
+  }
+}
+
 void main() {
   group('RelayPool concurrency', () {
     late Nostr nostr;
@@ -362,6 +391,27 @@ void main() {
       // fails to send and is not registered in the EOSE tracking
       expect(stopwatch.elapsedMilliseconds, lessThan(2000));
       expect(events, isEmpty);
+    });
+
+    test('hung relay send does not outlive queryEvents timeout', () async {
+      final hangingRelay = _HangingSendRelay('wss://hanging.relay');
+      await nostr.relayPool.add(hangingRelay);
+
+      final stopwatch = Stopwatch()..start();
+      final events = await nostr.queryEvents([
+        {
+          'kinds': [1],
+          'limit': 1,
+        },
+      ], timeout: const Duration(seconds: 1));
+      stopwatch.stop();
+
+      expect(stopwatch.elapsedMilliseconds, lessThan(1000));
+      expect(events, isEmpty);
+      expect(
+        hangingRelay.sentMessages.where((m) => m.first == 'REQ'),
+        hasLength(1),
+      );
     });
 
     test(

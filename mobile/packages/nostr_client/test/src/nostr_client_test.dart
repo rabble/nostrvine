@@ -3460,6 +3460,56 @@ void main() {
         expect(tempRelays, contains('wss://nostr.wine'));
         expect(tempRelays, hasLength(3));
       });
+
+      test('bypasses general query pool for interactive search', () async {
+        final originalMaxConcurrentQueries = NostrClient.maxConcurrentQueries;
+        NostrClient.maxConcurrentQueries = 1;
+        addTearDown(
+          () => NostrClient.maxConcurrentQueries = originalMaxConcurrentQueries,
+        );
+
+        var callCount = 0;
+        final pendingBackgroundQuery = Completer<List<Event>>();
+        final profileEvent = _createTestEvent(
+          kind: EventKind.metadata,
+          content: '{"name": "Alice"}',
+        );
+
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) {
+          callCount++;
+          if (callCount == 1) {
+            return pendingBackgroundQuery.future;
+          }
+          return Future.value([profileEvent]);
+        });
+
+        final backgroundQuery = client.queryEvents(
+          [
+            Filter(kinds: const [1059]),
+          ],
+          useCache: false,
+        );
+        await pumpEventQueue();
+
+        final result = await client
+            .queryUsers('alice')
+            .timeout(const Duration(milliseconds: 100));
+
+        expect(result, [profileEvent]);
+        expect(callCount, 2);
+
+        pendingBackgroundQuery.complete(<Event>[]);
+        await backgroundQuery;
+      });
     });
 
     group('countEvents', () {

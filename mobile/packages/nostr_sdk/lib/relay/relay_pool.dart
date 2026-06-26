@@ -237,7 +237,9 @@ class RelayPool {
         // For vine.hol.is, send the query to trigger AUTH challenge
         if (relay.url.contains('vine.hol.is')) {
           log('🔐 vine.hol.is query - sending to trigger AUTH challenge');
-          var result = await relay.send(message, forceSend: true);
+          final result = await relay
+              .send(message, forceSend: true)
+              .timeout(perRelaySendTimeout, onTimeout: () => false);
           if (result) {
             relay.saveQuery(subscription);
             return true;
@@ -251,7 +253,9 @@ class RelayPool {
       } else {
         // Skip reconnect during query fan-out to avoid blocking
         // other relays while one dead relay tries exponential backoff.
-        final result = await relay.send(message, skipReconnect: true);
+        final result = await relay
+            .send(message, skipReconnect: true)
+            .timeout(perRelaySendTimeout, onTimeout: () => false);
         if (result) {
           relay.saveQuery(subscription);
         }

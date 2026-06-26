@@ -513,6 +513,7 @@ class NostrClient {
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth = false,
     bool useCache = true,
+    bool useQueryPool = true,
     Duration timeout = const Duration(seconds: 5),
   }) async {
     final effectiveTempRelays = _allowedRelays(tempRelays);
@@ -534,20 +535,21 @@ class NostrClient {
       await retryDisconnectedRelays();
     }
     final filtersJson = filters.map((f) => f.toJson()).toList();
+    Future<List<Event>> runWebSocketQuery() => _nostr.queryEvents(
+      filtersJson,
+      id: subscriptionId,
+      tempRelays: effectiveTempRelays,
+      relayTypes: relayTypes,
+      sendAfterAuth: sendAfterAuth,
+      timeout: timeout,
+    );
     // Throttle concurrent one-shot REQs so high fan-out (a profile with many
-    // videos → per-item like-count/badge/profile/repost fetches) can't trip a
+    // videos -> per-item like-count/badge/profile/repost fetches) can't trip a
     // relay's "too many concurrent REQs" limit. `withResource` releases the
     // slot when the (time-bounded) query completes, so it can't leak.
-    final websocketEvents = await _queryPool.withResource(
-      () => _nostr.queryEvents(
-        filtersJson,
-        id: subscriptionId,
-        tempRelays: effectiveTempRelays,
-        relayTypes: relayTypes,
-        sendAfterAuth: sendAfterAuth,
-        timeout: timeout,
-      ),
-    );
+    final websocketEvents = useQueryPool
+        ? await _queryPool.withResource(runWebSocketQuery)
+        : await runWebSocketQuery();
 
     // Cache websocket results (fire-and-forget)
     if (websocketEvents.isNotEmpty) {
@@ -1228,7 +1230,11 @@ class NostrClient {
       search: query,
     );
 
-    return queryEvents([filter], tempRelays: _nip50SearchRelays);
+    return queryEvents(
+      [filter],
+      tempRelays: _nip50SearchRelays,
+      useQueryPool: false,
+    );
   }
 
   /// Creates a NIP-98 HTTP authentication header.
