@@ -6690,6 +6690,77 @@ class AppLocalizationsNl extends AppLocalizations {
   String get proofmodePublishedByLabel => 'Published by:';
 
   @override
+  String get publishErrorNotSignedIn => 'Log in om video\'s te publiceren.';
+
+  @override
+  String get publishErrorNoRetry => 'Geen upload om opnieuw te proberen.';
+
+  @override
+  String get publishErrorNoInternet =>
+      'Geen internetverbinding. Controleer je wifi of mobiele data en probeer het opnieuw.';
+
+  @override
+  String get publishErrorServerUnreachable =>
+      'Kan de server niet bereiken. Probeer het zo opnieuw.';
+
+  @override
+  String get publishErrorTimeout =>
+      'De upload duurde te lang. Probeer een sterkere verbinding of een kleinere video.';
+
+  @override
+  String get publishErrorTls =>
+      'Beveiligde verbinding mislukt. Controleer je netwerk — openbare wifi kan uploads blokkeren.';
+
+  @override
+  String publishErrorServerNotFound(String serverName) {
+    return 'De mediaserver ($serverName) is niet beschikbaar. Je kunt een andere kiezen in je instellingen.';
+  }
+
+  @override
+  String get publishErrorFileTooLarge =>
+      'Het videobestand is te groot voor de server. Knip het in of verlaag de kwaliteit.';
+
+  @override
+  String publishErrorServerInternalError(String serverName) {
+    return 'De mediaserver ($serverName) had een interne fout. Je kunt een andere kiezen in je instellingen.';
+  }
+
+  @override
+  String publishErrorServerDown(String serverName) {
+    return 'De mediaserver ($serverName) is tijdelijk uit de lucht. Probeer het zo opnieuw of kies een andere in je instellingen.';
+  }
+
+  @override
+  String get publishErrorForbidden =>
+      'Je hebt geen toestemming om naar deze server te uploaden.';
+
+  @override
+  String get publishErrorFileNotFound =>
+      'Het videobestand is niet gevonden. Misschien is het verwijderd. Neem opnieuw op en probeer het nog eens.';
+
+  @override
+  String get publishErrorLowStorage =>
+      'Niet genoeg opslag op je apparaat. Maak wat ruimte vrij en probeer het opnieuw.';
+
+  @override
+  String get publishErrorThumbnailFailed =>
+      'De video is geüpload, maar de thumbnail kon niet worden voorbereid. Probeer het opnieuw.';
+
+  @override
+  String get publishErrorNostrPublishFailed =>
+      'De video is geüpload, maar de post kon niet worden gepubliceerd. Controleer je relay-instellingen en probeer het opnieuw.';
+
+  @override
+  String get publishErrorInterrupted =>
+      'Deze upload is onderbroken. Wil je het opnieuw proberen?';
+
+  @override
+  String get publishErrorGeneric => 'Er ging iets mis. Probeer het opnieuw.';
+
+  @override
+  String get publishErrorUnknownServer => 'Onbekende server';
+
+  @override
   String searchFilterPillSemanticLabel(String filter) {
     return 'Filter: $filter';
   }

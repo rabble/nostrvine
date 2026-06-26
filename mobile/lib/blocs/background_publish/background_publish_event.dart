@@ -54,11 +54,11 @@ class BackgroundPublishRetryRequested extends BackgroundPublishEvent {
 /// Used to surface interrupted uploads (e.g. from a previous session) in
 /// the failure sheet so the user can decide whether to retry or discard.
 class BackgroundPublishFailed extends BackgroundPublishEvent {
-  BackgroundPublishFailed({required this.draft, required this.userMessage});
+  BackgroundPublishFailed({required this.draft, required this.error});
 
   final DivineVideoDraft draft;
-  final String userMessage;
+  final PublishError error;
 
   @override
-  List<Object?> get props => [draft, userMessage];
+  List<Object?> get props => [draft, error];
 }

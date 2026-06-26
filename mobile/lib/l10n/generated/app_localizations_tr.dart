@@ -6638,6 +6638,78 @@ class AppLocalizationsTr extends AppLocalizations {
   String get proofmodePublishedByLabel => 'Published by:';
 
   @override
+  String get publishErrorNotSignedIn =>
+      'Video yayınlamak için lütfen giriş yap.';
+
+  @override
+  String get publishErrorNoRetry => 'Yeniden denenecek bir yükleme yok.';
+
+  @override
+  String get publishErrorNoInternet =>
+      'İnternet bağlantısı yok. Wi-Fi\'ını veya mobil verini kontrol edip tekrar dene.';
+
+  @override
+  String get publishErrorServerUnreachable =>
+      'Sunucuya ulaşılamadı. Lütfen birazdan tekrar dene.';
+
+  @override
+  String get publishErrorTimeout =>
+      'Yükleme zaman aşımına uğradı. Daha güçlü bir bağlantı ya da daha küçük bir video dene.';
+
+  @override
+  String get publishErrorTls =>
+      'Güvenli bağlantı kurulamadı. Ağını kontrol et — herkese açık Wi-Fi yüklemeleri engelleyebilir.';
+
+  @override
+  String publishErrorServerNotFound(String serverName) {
+    return 'Medya sunucusu ($serverName) kullanılamıyor. Ayarlarından başka birini seçebilirsin.';
+  }
+
+  @override
+  String get publishErrorFileTooLarge =>
+      'Video dosyası sunucu için fazla büyük. Kırpmayı ya da kaliteyi düşürmeyi dene.';
+
+  @override
+  String publishErrorServerInternalError(String serverName) {
+    return 'Medya sunucusunda ($serverName) dahili bir hata oluştu. Ayarlarından başka birini seçebilirsin.';
+  }
+
+  @override
+  String publishErrorServerDown(String serverName) {
+    return 'Medya sunucusu ($serverName) geçici olarak çalışmıyor. Birazdan tekrar dene ya da ayarlarından başka birini seç.';
+  }
+
+  @override
+  String get publishErrorForbidden => 'Bu sunucuya yükleme yapma iznin yok.';
+
+  @override
+  String get publishErrorFileNotFound =>
+      'Video dosyası bulunamadı. Silinmiş olabilir. Yeniden kaydedip tekrar dene.';
+
+  @override
+  String get publishErrorLowStorage =>
+      'Cihazında yeterli depolama alanı yok. Biraz yer açıp tekrar dene.';
+
+  @override
+  String get publishErrorThumbnailFailed =>
+      'Video yüklendi ama küçük resim hazırlanamadı. Lütfen tekrar dene.';
+
+  @override
+  String get publishErrorNostrPublishFailed =>
+      'Video yüklendi ama gönderi yayınlanamadı. Röle ayarlarını kontrol edip tekrar dene.';
+
+  @override
+  String get publishErrorInterrupted =>
+      'Bu yükleme yarıda kaldı. Tekrar denemek ister misin?';
+
+  @override
+  String get publishErrorGeneric =>
+      'Bir şeyler ters gitti. Lütfen tekrar dene.';
+
+  @override
+  String get publishErrorUnknownServer => 'Bilinmeyen sunucu';
+
+  @override
   String searchFilterPillSemanticLabel(String filter) {
     return 'Filter: $filter';
   }

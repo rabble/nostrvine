@@ -6661,6 +6661,77 @@ class AppLocalizationsEn extends AppLocalizations {
   String get proofmodePublishedByLabel => 'Published by:';
 
   @override
+  String get publishErrorNotSignedIn => 'Please sign in to publish videos.';
+
+  @override
+  String get publishErrorNoRetry => 'No upload to retry.';
+
+  @override
+  String get publishErrorNoInternet =>
+      'No internet connection. Check your Wi-Fi or mobile data and try again.';
+
+  @override
+  String get publishErrorServerUnreachable =>
+      'Could not reach the server. Please try again in a moment.';
+
+  @override
+  String get publishErrorTimeout =>
+      'The upload timed out. Try a stronger connection or a smaller video.';
+
+  @override
+  String get publishErrorTls =>
+      'Secure connection failed. Check your network — public Wi-Fi can block uploads.';
+
+  @override
+  String publishErrorServerNotFound(String serverName) {
+    return 'The media server ($serverName) is not available. You can choose another in your settings.';
+  }
+
+  @override
+  String get publishErrorFileTooLarge =>
+      'The video file is too large for the server. Try trimming it or lowering the quality.';
+
+  @override
+  String publishErrorServerInternalError(String serverName) {
+    return 'The media server ($serverName) had an internal error. You can choose another in your settings.';
+  }
+
+  @override
+  String publishErrorServerDown(String serverName) {
+    return 'The media server ($serverName) is temporarily down. Try again shortly or choose another in your settings.';
+  }
+
+  @override
+  String get publishErrorForbidden =>
+      'You don’t have permission to upload to this server.';
+
+  @override
+  String get publishErrorFileNotFound =>
+      'The video file could not be found. It may have been deleted. Re-record and try again.';
+
+  @override
+  String get publishErrorLowStorage =>
+      'Not enough storage on your device. Free up some space and try again.';
+
+  @override
+  String get publishErrorThumbnailFailed =>
+      'The video uploaded, but the thumbnail could not be prepared. Please try again.';
+
+  @override
+  String get publishErrorNostrPublishFailed =>
+      'The video uploaded but the post could not be published. Check your relay settings and try again.';
+
+  @override
+  String get publishErrorInterrupted =>
+      'This upload was interrupted. Would you like to try again?';
+
+  @override
+  String get publishErrorGeneric => 'Something went wrong. Please try again.';
+
+  @override
+  String get publishErrorUnknownServer => 'Unknown server';
+
+  @override
   String searchFilterPillSemanticLabel(String filter) {
     return 'Filter: $filter';
   }

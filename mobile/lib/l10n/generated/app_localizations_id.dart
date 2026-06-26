@@ -6637,6 +6637,78 @@ class AppLocalizationsId extends AppLocalizations {
   String get proofmodePublishedByLabel => 'Published by:';
 
   @override
+  String get publishErrorNotSignedIn =>
+      'Silakan masuk untuk mempublikasikan video.';
+
+  @override
+  String get publishErrorNoRetry => 'Tidak ada unggahan untuk dicoba ulang.';
+
+  @override
+  String get publishErrorNoInternet =>
+      'Tidak ada koneksi internet. Periksa Wi-Fi atau data selulermu dan coba lagi.';
+
+  @override
+  String get publishErrorServerUnreachable =>
+      'Tidak dapat menjangkau server. Silakan coba lagi sebentar lagi.';
+
+  @override
+  String get publishErrorTimeout =>
+      'Waktu unggah habis. Coba pakai koneksi yang lebih kuat atau video yang lebih kecil.';
+
+  @override
+  String get publishErrorTls =>
+      'Koneksi aman gagal. Periksa jaringanmu—Wi-Fi publik bisa memblokir unggahan.';
+
+  @override
+  String publishErrorServerNotFound(String serverName) {
+    return 'Server media ($serverName) tidak tersedia. Kamu bisa memilih yang lain di pengaturan.';
+  }
+
+  @override
+  String get publishErrorFileTooLarge =>
+      'File video terlalu besar untuk server. Coba pangkas videonya atau turunkan kualitasnya.';
+
+  @override
+  String publishErrorServerInternalError(String serverName) {
+    return 'Server media ($serverName) mengalami kesalahan internal. Kamu bisa memilih yang lain di pengaturan.';
+  }
+
+  @override
+  String publishErrorServerDown(String serverName) {
+    return 'Server media ($serverName) sedang tidak aktif sementara. Coba lagi sebentar lagi atau pilih yang lain di pengaturan.';
+  }
+
+  @override
+  String get publishErrorForbidden =>
+      'Kamu tidak punya izin untuk mengunggah ke server ini.';
+
+  @override
+  String get publishErrorFileNotFound =>
+      'File video tidak ditemukan. Mungkin sudah terhapus. Rekam ulang lalu coba lagi.';
+
+  @override
+  String get publishErrorLowStorage =>
+      'Penyimpanan di perangkatmu tidak cukup. Kosongkan sedikit ruang lalu coba lagi.';
+
+  @override
+  String get publishErrorThumbnailFailed =>
+      'Video berhasil diunggah, tapi thumbnail tidak bisa disiapkan. Silakan coba lagi.';
+
+  @override
+  String get publishErrorNostrPublishFailed =>
+      'Video berhasil diunggah, tapi posting tidak bisa dipublikasikan. Periksa pengaturan relay-mu dan coba lagi.';
+
+  @override
+  String get publishErrorInterrupted =>
+      'Unggahan ini terganggu. Mau coba lagi?';
+
+  @override
+  String get publishErrorGeneric => 'Terjadi kesalahan. Silakan coba lagi.';
+
+  @override
+  String get publishErrorUnknownServer => 'Server tidak dikenal';
+
+  @override
   String searchFilterPillSemanticLabel(String filter) {
     return 'Filter: $filter';
   }

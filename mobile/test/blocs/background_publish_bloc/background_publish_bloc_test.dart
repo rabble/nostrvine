@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 
 class _MockVineDraft extends Mock implements DivineVideoDraft {}
@@ -64,7 +65,7 @@ void main() {
           uploads: [
             BackgroundUpload(
               draft: draft,
-              result: const PublishError('error'),
+              result: const PublishError(PublishErrorKind.generic),
               progress: 1.0,
             ),
           ],
@@ -82,7 +83,7 @@ void main() {
           uploads: [
             BackgroundUpload(
               draft: draft1,
-              result: const PublishError('error'),
+              result: const PublishError(PublishErrorKind.generic),
               progress: 1.0,
             ),
             BackgroundUpload(draft: draft2, result: null, progress: 0.3),
@@ -154,7 +155,9 @@ void main() {
           act: (bloc) => bloc.add(
             BackgroundPublishRequested(
               draft: draft,
-              publishmentProcess: Future.value(const PublishError('ops')),
+              publishmentProcess: Future.value(
+                const PublishError(PublishErrorKind.generic),
+              ),
             ),
           ),
           expect: () => [
@@ -167,7 +170,7 @@ void main() {
               uploads: [
                 BackgroundUpload(
                   draft: draft,
-                  result: const PublishError('ops'),
+                  result: const PublishError(PublishErrorKind.generic),
                   progress: 1.0,
                 ),
               ],
@@ -178,7 +181,7 @@ void main() {
               () => mockDraftStorageService.updatePublishStatus(
                 draftId: draftId,
                 status: PublishStatus.failed,
-                publishError: 'ops',
+                publishError: 'pek1:generic',
               ),
             ).called(1);
           },
@@ -260,9 +263,7 @@ void main() {
               uploads: [
                 BackgroundUpload(
                   draft: draft,
-                  result: const PublishError(
-                    'Something went wrong. Please try again.',
-                  ),
+                  result: const PublishError(PublishErrorKind.generic),
                   progress: 1.0,
                 ),
               ],
@@ -374,7 +375,7 @@ void main() {
           uploads: [
             BackgroundUpload(
               draft: draft,
-              result: const PublishError('error'),
+              result: const PublishError(PublishErrorKind.generic),
               progress: 1.0,
             ),
           ],
@@ -502,7 +503,7 @@ void main() {
         act: (bloc) => bloc.add(
           BackgroundPublishFailed(
             draft: draft,
-            userMessage: 'This upload was interrupted.',
+            error: const PublishError(PublishErrorKind.interrupted),
           ),
         ),
         expect: () => [
@@ -510,7 +511,7 @@ void main() {
             uploads: [
               BackgroundUpload(
                 draft: draft,
-                result: const PublishError('This upload was interrupted.'),
+                result: const PublishError(PublishErrorKind.interrupted),
                 progress: 0,
               ),
             ],
@@ -528,7 +529,7 @@ void main() {
           uploads: [
             BackgroundUpload(
               draft: draft,
-              result: const PublishError('Previous error'),
+              result: const PublishError(PublishErrorKind.generic),
               progress: 1.0,
             ),
           ],
@@ -536,7 +537,7 @@ void main() {
         act: (bloc) => bloc.add(
           BackgroundPublishFailed(
             draft: draft,
-            userMessage: 'This upload was interrupted.',
+            error: const PublishError(PublishErrorKind.interrupted),
           ),
         ),
         expect: () => <BackgroundPublishState>[],
@@ -574,7 +575,7 @@ void main() {
           uploads: [
             BackgroundUpload(
               draft: draft,
-              result: const PublishError('Previous error'),
+              result: const PublishError(PublishErrorKind.generic),
               progress: 1.0,
             ),
           ],

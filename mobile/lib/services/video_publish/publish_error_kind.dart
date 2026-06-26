@@ -1,0 +1,64 @@
+// ABOUTME: Stable, localizable classification of video-publish failures.
+// ABOUTME: State/persistence carry the kind; the UI maps it to context.l10n.
+
+/// Stable categories of video-publish failure.
+///
+/// A [PublishError] carries one of these instead of an English string, so the
+/// UI can localize it via `PublishErrorKindL10n` and a persisted failure can be
+/// re-localized in the reader's current locale on interrupted-draft resume.
+///
+/// The set mirrors the substring branches that previously lived in
+/// `VideoPublishService._getUserFriendlyErrorMessage`, plus the direct
+/// not-signed-in / no-retry / interrupted / generic cases.
+enum PublishErrorKind {
+  /// User is not authenticated (also `unauthorized` / 401).
+  notSignedIn,
+
+  /// No background upload available to retry.
+  noRetry,
+
+  /// No network connectivity (socket / DNS / host-lookup failures).
+  noInternet,
+
+  /// Server reachable-by-DNS but the connection was refused/reset/closed.
+  serverUnreachable,
+
+  /// The upload exceeded its time budget.
+  timeout,
+
+  /// TLS / certificate / handshake failure.
+  tls,
+
+  /// Media server returned 404 / not found. Carries `serverName`.
+  serverNotFound,
+
+  /// Payload too large (413).
+  fileTooLarge,
+
+  /// Media server returned 500 / internal error. Carries `serverName`.
+  serverInternalError,
+
+  /// Media server temporarily down (502/503). Carries `serverName`.
+  serverDown,
+
+  /// Upload forbidden (403).
+  forbidden,
+
+  /// Local video file missing / path not found.
+  fileNotFound,
+
+  /// Not enough device storage.
+  lowStorage,
+
+  /// Video uploaded but the thumbnail could not be prepared.
+  thumbnailFailed,
+
+  /// Media uploaded but the Nostr event could not be published.
+  nostrPublishFailed,
+
+  /// A previous upload was interrupted (surfaced on resume).
+  interrupted,
+
+  /// Unclassified failure — generic "try again" copy.
+  generic,
+}

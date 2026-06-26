@@ -16,6 +16,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/publish_error_kind_l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
@@ -40,6 +41,7 @@ import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
+import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -266,13 +268,12 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         category: LogCategory.video,
       );
 
-      // TODO(l10n): Replace with context.l10n when localization is added.
       backgroundPublishBloc.add(
         BackgroundPublishFailed(
           draft: draft,
-          userMessage:
-              draft.publishError ??
-              'This upload was interrupted. Would you like to try again?',
+          error:
+              PublishError.fromPersistedString(draft.publishError) ??
+              const PublishError(PublishErrorKind.interrupted),
         ),
       );
     }
@@ -479,10 +480,14 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
             _showCollaboratorInviteWarning(warnings: result.inviteWarnings);
           }
 
-        case PublishError(:final userMessage):
-          setError(userMessage);
+        case PublishError(:final kind, :final serverName, :final rawFallback):
+          final l10n = currentAppL10n(ref.read(sharedPreferencesProvider));
+          final message =
+              rawFallback ??
+              l10n.publishErrorMessage(kind, serverName: serverName);
+          setError(message);
           Log.error(
-            '❌ Publish failed: $userMessage',
+            '❌ Publish failed: $message',
             name: 'VideoPublishNotifier',
             category: .video,
           );

@@ -6725,6 +6725,77 @@ class AppLocalizationsBg extends AppLocalizations {
   String get proofmodePublishedByLabel => 'Published by:';
 
   @override
+  String get publishErrorNotSignedIn => 'Влез, за да публикуваш видеа.';
+
+  @override
+  String get publishErrorNoRetry => 'Няма качване, което да повториш.';
+
+  @override
+  String get publishErrorNoInternet =>
+      'Няма връзка с интернет. Провери Wi-Fi или мобилните данни и опитай пак.';
+
+  @override
+  String get publishErrorServerUnreachable =>
+      'Сървърът е недостъпен. Опитай пак след малко.';
+
+  @override
+  String get publishErrorTimeout =>
+      'Качването отне твърде дълго. Опитай с по-стабилна връзка или по-малко видео.';
+
+  @override
+  String get publishErrorTls =>
+      'Сигурната връзка се провали. Провери мрежата си — публичният Wi-Fi може да блокира качванията.';
+
+  @override
+  String publishErrorServerNotFound(String serverName) {
+    return 'Медийният сървър ($serverName) не е наличен. Можеш да избереш друг в настройките.';
+  }
+
+  @override
+  String get publishErrorFileTooLarge =>
+      'Видеофайлът е твърде голям за сървъра. Опитай да го скъсиш или да намалиш качеството.';
+
+  @override
+  String publishErrorServerInternalError(String serverName) {
+    return 'Медийният сървър ($serverName) получи вътрешна грешка. Можеш да избереш друг в настройките.';
+  }
+
+  @override
+  String publishErrorServerDown(String serverName) {
+    return 'Медийният сървър ($serverName) временно не работи. Опитай пак скоро или избери друг в настройките.';
+  }
+
+  @override
+  String get publishErrorForbidden =>
+      'Нямаш разрешение да качваш на този сървър.';
+
+  @override
+  String get publishErrorFileNotFound =>
+      'Видеофайлът не може да бъде намерен. Може да е изтрит. Запиши отново и опитай пак.';
+
+  @override
+  String get publishErrorLowStorage =>
+      'Няма достатъчно място на устройството ти. Освободи малко място и опитай пак.';
+
+  @override
+  String get publishErrorThumbnailFailed =>
+      'Видеото се качи, но миниатюрата не можа да се подготви. Опитай пак.';
+
+  @override
+  String get publishErrorNostrPublishFailed =>
+      'Видеото се качи, но публикацията не можа да се пусне. Провери настройките за релета и опитай пак.';
+
+  @override
+  String get publishErrorInterrupted =>
+      'Качването беше прекъснато. Искаш ли да опиташ пак?';
+
+  @override
+  String get publishErrorGeneric => 'Нещо се обърка. Опитай пак.';
+
+  @override
+  String get publishErrorUnknownServer => 'Неизвестен сървър';
+
+  @override
   String searchFilterPillSemanticLabel(String filter) {
     return 'Filter: $filter';
   }

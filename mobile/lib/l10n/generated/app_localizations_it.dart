@@ -6712,6 +6712,77 @@ class AppLocalizationsIt extends AppLocalizations {
   String get proofmodePublishedByLabel => 'Published by:';
 
   @override
+  String get publishErrorNotSignedIn => 'Accedi per pubblicare i video.';
+
+  @override
+  String get publishErrorNoRetry => 'Nessun caricamento da riprovare.';
+
+  @override
+  String get publishErrorNoInternet =>
+      'Nessuna connessione a internet. Controlla il Wi-Fi o i dati mobili e riprova.';
+
+  @override
+  String get publishErrorServerUnreachable =>
+      'Impossibile raggiungere il server. Riprova tra un attimo.';
+
+  @override
+  String get publishErrorTimeout =>
+      'Il caricamento è scaduto. Prova con una connessione più stabile o un video più piccolo.';
+
+  @override
+  String get publishErrorTls =>
+      'Connessione sicura non riuscita. Controlla la rete: il Wi-Fi pubblico può bloccare i caricamenti.';
+
+  @override
+  String publishErrorServerNotFound(String serverName) {
+    return 'Il server multimediale ($serverName) non è disponibile. Puoi sceglierne un altro nelle impostazioni.';
+  }
+
+  @override
+  String get publishErrorFileTooLarge =>
+      'Il file video è troppo grande per il server. Prova a tagliarlo o ad abbassare la qualità.';
+
+  @override
+  String publishErrorServerInternalError(String serverName) {
+    return 'Il server multimediale ($serverName) ha avuto un errore interno. Puoi sceglierne un altro nelle impostazioni.';
+  }
+
+  @override
+  String publishErrorServerDown(String serverName) {
+    return 'Il server multimediale ($serverName) è temporaneamente fuori uso. Riprova tra poco o scegline un altro nelle impostazioni.';
+  }
+
+  @override
+  String get publishErrorForbidden =>
+      'Non hai i permessi per caricare su questo server.';
+
+  @override
+  String get publishErrorFileNotFound =>
+      'Impossibile trovare il file video. Potrebbe essere stato eliminato. Registra di nuovo e riprova.';
+
+  @override
+  String get publishErrorLowStorage =>
+      'Spazio insufficiente sul dispositivo. Libera un po\' di spazio e riprova.';
+
+  @override
+  String get publishErrorThumbnailFailed =>
+      'Il video è stato caricato, ma non è stato possibile preparare la miniatura. Riprova.';
+
+  @override
+  String get publishErrorNostrPublishFailed =>
+      'Il video è stato caricato, ma non è stato possibile pubblicare il post. Controlla le impostazioni dei relay e riprova.';
+
+  @override
+  String get publishErrorInterrupted =>
+      'Questo caricamento è stato interrotto. Vuoi riprovare?';
+
+  @override
+  String get publishErrorGeneric => 'Qualcosa è andato storto. Riprova.';
+
+  @override
+  String get publishErrorUnknownServer => 'Server sconosciuto';
+
+  @override
   String searchFilterPillSemanticLabel(String filter) {
     return 'Filter: $filter';
   }

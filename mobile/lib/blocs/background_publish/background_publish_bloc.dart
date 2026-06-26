@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -65,8 +66,7 @@ class BackgroundPublishBloc
         stackTrace: stackTrace,
       );
       addError(e, stackTrace);
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      result = const PublishError('Something went wrong. Please try again.');
+      result = const PublishError(PublishErrorKind.generic);
     }
 
     // Remove the upload if it was successful
@@ -94,11 +94,15 @@ class BackgroundPublishBloc
 
       emit(state.copyWith(uploads: updatedUploads));
 
-      final errorMessage = result is PublishError ? result.userMessage : null;
+      // Persist the classified kind (same encoding the service writes), so the
+      // service/bloc writes are idempotent and resume re-localizes correctly.
+      final publishError = result is PublishError
+          ? result.toPersistedString()
+          : null;
       await _persistPublishStatus(
         draftId: event.draft.id,
         status: PublishStatus.failed,
-        publishError: errorMessage,
+        publishError: publishError,
       );
     }
   }
@@ -204,7 +208,7 @@ class BackgroundPublishBloc
 
     final failedUpload = BackgroundUpload(
       draft: event.draft,
-      result: PublishError(event.userMessage),
+      result: event.error,
       progress: 0,
     );
     emit(state.copyWith(uploads: [...state.uploads, failedUpload]));

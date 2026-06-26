@@ -11675,6 +11675,114 @@ abstract class AppLocalizations {
   /// **'Published by:'**
   String get proofmodePublishedByLabel;
 
+  /// No description provided for @publishErrorNotSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in to publish videos.'**
+  String get publishErrorNotSignedIn;
+
+  /// No description provided for @publishErrorNoRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'No upload to retry.'**
+  String get publishErrorNoRetry;
+
+  /// No description provided for @publishErrorNoInternet.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection. Check your Wi-Fi or mobile data and try again.'**
+  String get publishErrorNoInternet;
+
+  /// No description provided for @publishErrorServerUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach the server. Please try again in a moment.'**
+  String get publishErrorServerUnreachable;
+
+  /// No description provided for @publishErrorTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'The upload timed out. Try a stronger connection or a smaller video.'**
+  String get publishErrorTimeout;
+
+  /// No description provided for @publishErrorTls.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure connection failed. Check your network — public Wi-Fi can block uploads.'**
+  String get publishErrorTls;
+
+  /// Shown when the media (Blossom) server returns 404. {serverName} is the server host.
+  ///
+  /// In en, this message translates to:
+  /// **'The media server ({serverName}) is not available. You can choose another in your settings.'**
+  String publishErrorServerNotFound(String serverName);
+
+  /// No description provided for @publishErrorFileTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'The video file is too large for the server. Try trimming it or lowering the quality.'**
+  String get publishErrorFileTooLarge;
+
+  /// Shown when the media (Blossom) server returns 500. {serverName} is the server host.
+  ///
+  /// In en, this message translates to:
+  /// **'The media server ({serverName}) had an internal error. You can choose another in your settings.'**
+  String publishErrorServerInternalError(String serverName);
+
+  /// Shown when the media (Blossom) server returns 502/503. {serverName} is the server host.
+  ///
+  /// In en, this message translates to:
+  /// **'The media server ({serverName}) is temporarily down. Try again shortly or choose another in your settings.'**
+  String publishErrorServerDown(String serverName);
+
+  /// No description provided for @publishErrorForbidden.
+  ///
+  /// In en, this message translates to:
+  /// **'You don’t have permission to upload to this server.'**
+  String get publishErrorForbidden;
+
+  /// No description provided for @publishErrorFileNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'The video file could not be found. It may have been deleted. Re-record and try again.'**
+  String get publishErrorFileNotFound;
+
+  /// No description provided for @publishErrorLowStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough storage on your device. Free up some space and try again.'**
+  String get publishErrorLowStorage;
+
+  /// No description provided for @publishErrorThumbnailFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The video uploaded, but the thumbnail could not be prepared. Please try again.'**
+  String get publishErrorThumbnailFailed;
+
+  /// No description provided for @publishErrorNostrPublishFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The video uploaded but the post could not be published. Check your relay settings and try again.'**
+  String get publishErrorNostrPublishFailed;
+
+  /// No description provided for @publishErrorInterrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'This upload was interrupted. Would you like to try again?'**
+  String get publishErrorInterrupted;
+
+  /// No description provided for @publishErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get publishErrorGeneric;
+
+  /// No description provided for @publishErrorUnknownServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown server'**
+  String get publishErrorUnknownServer;
+
   /// No description provided for @searchFilterPillSemanticLabel.
   ///
   /// In en, this message translates to:

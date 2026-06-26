@@ -11,8 +11,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/publish_error_kind_l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
 
@@ -25,6 +27,7 @@ class _MockBackgroundPublishBloc
     implements BackgroundPublishBloc {}
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
   late _MockDivineVideoDraft mockDraft;
   late _MockDivineVideoClip mockClip;
   late _MockBackgroundPublishBloc mockBloc;
@@ -68,28 +71,64 @@ void main() {
         final upload = BackgroundUpload(
           draft: mockDraft,
           progress: 1,
-          result: const PublishError('Something went wrong'),
+          result: const PublishError(PublishErrorKind.generic),
         );
 
         await tester.pumpWidget(buildSubject(upload: upload));
         await tester.tap(find.text('Open Sheet'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Upload Failed'), findsOneWidget);
+        expect(find.text(l10n.uploadFailureSheetTitle), findsOneWidget);
       });
 
-      testWidgets('error message from $PublishError', (tester) async {
+      testWidgets('localized error message from $PublishError kind', (
+        tester,
+      ) async {
         final upload = BackgroundUpload(
           draft: mockDraft,
           progress: 1,
-          result: const PublishError('Network connection lost'),
+          result: const PublishError(PublishErrorKind.serverUnreachable),
         );
 
         await tester.pumpWidget(buildSubject(upload: upload));
         await tester.tap(find.text('Open Sheet'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Network connection lost'), findsOneWidget);
+        expect(
+          find.text(
+            l10n.publishErrorMessage(PublishErrorKind.serverUnreachable),
+          ),
+          findsOneWidget,
+        );
+        // Proves the body reads from l10n, not a hardcoded string.
+        expect(
+          find.text(
+            lookupAppLocalizations(
+              const Locale('de'),
+            ).publishErrorMessage(PublishErrorKind.serverUnreachable),
+          ),
+          findsNothing,
+        );
+      });
+
+      testWidgets('renders rawFallback verbatim when present', (tester) async {
+        final upload = BackgroundUpload(
+          draft: mockDraft,
+          progress: 1,
+          result: const PublishError(
+            PublishErrorKind.generic,
+            rawFallback: 'Upstream already-friendly message.',
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject(upload: upload));
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Upstream already-friendly message.'),
+          findsOneWidget,
+        );
       });
 
       testWidgets('no error message when result is not $PublishError', (
@@ -105,7 +144,7 @@ void main() {
         await tester.tap(find.text('Open Sheet'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Upload Failed'), findsOneWidget);
+        expect(find.text(l10n.uploadFailureSheetTitle), findsOneWidget);
         // Only the title, no additional error text
         expect(
           find.byType(Text),
@@ -120,7 +159,7 @@ void main() {
         final upload = BackgroundUpload(
           draft: mockDraft,
           progress: 1,
-          result: const PublishError('Error'),
+          result: const PublishError(PublishErrorKind.generic),
         );
 
         await tester.pumpWidget(buildSubject(upload: upload));
@@ -128,14 +167,17 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(DivineButton), findsAtLeastNWidgets(1));
-        expect(find.text('Try Again'), findsOneWidget);
+        expect(
+          find.text(l10n.uploadFailureSheetTryAgainButton),
+          findsOneWidget,
+        );
       });
 
       testWidgets('$DivineButton with Save to Drafts label', (tester) async {
         final upload = BackgroundUpload(
           draft: mockDraft,
           progress: 1,
-          result: const PublishError('Error'),
+          result: const PublishError(PublishErrorKind.generic),
         );
 
         await tester.pumpWidget(buildSubject(upload: upload));
@@ -143,7 +185,10 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(DivineButton), findsAtLeastNWidgets(1));
-        expect(find.text('Save to Drafts'), findsOneWidget);
+        expect(
+          find.text(l10n.uploadFailureSheetSaveToDraftsButton),
+          findsOneWidget,
+        );
       });
 
       testWidgets('fallback image when clip has no thumbnail', (tester) async {
@@ -152,7 +197,7 @@ void main() {
         final upload = BackgroundUpload(
           draft: mockDraft,
           progress: 1,
-          result: const PublishError('Error'),
+          result: const PublishError(PublishErrorKind.generic),
         );
 
         await tester.pumpWidget(buildSubject(upload: upload));
@@ -170,21 +215,24 @@ void main() {
           final upload = BackgroundUpload(
             draft: mockDraft,
             progress: 1,
-            result: const PublishError('Error'),
+            result: const PublishError(PublishErrorKind.generic),
           );
 
           await tester.pumpWidget(buildSubject(upload: upload));
           await tester.tap(find.text('Open Sheet'));
           await tester.pumpAndSettle();
 
-          await tester.tap(find.text('Try Again'));
+          await tester.tap(find.text(l10n.uploadFailureSheetTryAgainButton));
           await tester.pumpAndSettle();
 
           // Sheet should be dismissed
-          expect(find.text('Upload Failed'), findsNothing);
+          expect(find.text(l10n.uploadFailureSheetTitle), findsNothing);
 
           // Snackbar shown
-          expect(find.text('Retrying upload…'), findsOneWidget);
+          expect(
+            find.text(l10n.uploadFailureSheetRetryingSnackbar),
+            findsOneWidget,
+          );
 
           // Bloc received retry event
           verify(
@@ -201,22 +249,27 @@ void main() {
           final upload = BackgroundUpload(
             draft: mockDraft,
             progress: 1,
-            result: const PublishError('Error'),
+            result: const PublishError(PublishErrorKind.generic),
           );
 
           await tester.pumpWidget(buildSubject(upload: upload));
           await tester.tap(find.text('Open Sheet'));
           await tester.pumpAndSettle();
 
-          await tester.tap(find.text('Save to Drafts'));
+          await tester.tap(
+            find.text(l10n.uploadFailureSheetSaveToDraftsButton),
+          );
           await tester.pumpAndSettle();
 
           // Sheet should be dismissed
-          expect(find.text('Upload Failed'), findsNothing);
+          expect(find.text(l10n.uploadFailureSheetTitle), findsNothing);
 
           // Snackbar shown with View action
-          expect(find.text('Saved to drafts'), findsOneWidget);
-          expect(find.text('View'), findsOneWidget);
+          expect(
+            find.text(l10n.uploadFailureSheetSavedToDraftsSnackbar),
+            findsOneWidget,
+          );
+          expect(find.text(l10n.contentWarningView), findsOneWidget);
 
           // Bloc received vanish event
           verify(

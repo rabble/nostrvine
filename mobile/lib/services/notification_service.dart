@@ -5,7 +5,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:openvine/services/notification_helpers.dart'
     show NotificationPayloadKeys;
@@ -79,58 +78,6 @@ class AppNotification {
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 
-  /// Create notification for successful video publishing
-  factory AppNotification.videoPublished({
-    required String videoTitle,
-    required String nostrEventId,
-    String? videoUrl,
-  }) => AppNotification(
-    title: 'Video Published!',
-    body: videoTitle.isEmpty
-        ? 'Your vine is now live on Nostr'
-        : '"$videoTitle" is now live on Nostr',
-    type: NotificationType.videoPublished,
-    data: {
-      'event_id': nostrEventId,
-      'video_url': videoUrl,
-      'action': 'open_feed',
-    },
-  );
-
-  /// Create notification for upload completion
-  factory AppNotification.uploadComplete({required String videoTitle}) =>
-      AppNotification(
-        title: 'Upload Complete',
-        body: videoTitle.isEmpty
-            ? 'Your video is processing'
-            : '"$videoTitle" is being processed',
-        type: NotificationType.uploadComplete,
-        data: {'action': 'open_uploads'},
-      );
-
-  /// Create notification for upload failure
-  factory AppNotification.uploadFailed({
-    required String videoTitle,
-    required String reason,
-  }) => AppNotification(
-    title: 'Upload Failed',
-    body: videoTitle.isEmpty
-        ? 'Video upload failed: $reason'
-        : '"$videoTitle" failed: $reason',
-    type: NotificationType.uploadFailed,
-    data: {'action': 'retry_upload', 'reason': reason},
-  );
-
-  /// Create notification for processing start
-  factory AppNotification.processingStarted({required String videoTitle}) =>
-      AppNotification(
-        title: 'Processing Started',
-        body: videoTitle.isEmpty
-            ? 'Your video is being processed'
-            : 'Processing "$videoTitle"',
-        type: NotificationType.processingStarted,
-        data: {'action': 'show_progress'},
-      );
   final String title;
   final String body;
   final NotificationType type;
@@ -225,72 +172,6 @@ class NotificationService {
         category: LogCategory.system,
       );
     }
-  }
-
-  /// Show a notification
-  Future<void> show(AppNotification notification) async {
-    Log.debug(
-      '📱 Showing notification: ${notification.title}',
-      name: 'NotificationService',
-      category: LogCategory.system,
-    );
-
-    // Add to internal list
-    _addNotification(notification);
-
-    try {
-      if (_permissionsGranted) {
-        // Show platform notification
-        await _showPlatformNotification(notification);
-      } else {
-        // Show in-app notification only
-        Log.warning(
-          'No notification permissions, showing in-app only',
-          name: 'NotificationService',
-          category: LogCategory.system,
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to show notification: $e',
-        name: 'NotificationService',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  /// Show notification for video publishing success
-  Future<void> showVideoPublished({
-    required String videoTitle,
-    required String nostrEventId,
-    String? videoUrl,
-  }) async {
-    final notification = AppNotification.videoPublished(
-      videoTitle: videoTitle,
-      nostrEventId: nostrEventId,
-      videoUrl: videoUrl,
-    );
-
-    await show(notification);
-  }
-
-  /// Show notification for upload completion
-  Future<void> showUploadComplete({required String videoTitle}) async {
-    final notification = AppNotification.uploadComplete(videoTitle: videoTitle);
-    await show(notification);
-  }
-
-  /// Show notification for upload failure
-  Future<void> showUploadFailed({
-    required String videoTitle,
-    required String reason,
-  }) async {
-    final notification = AppNotification.uploadFailed(
-      videoTitle: videoTitle,
-      reason: reason,
-    );
-
-    await show(notification);
   }
 
   /// Clear all notifications
@@ -710,120 +591,6 @@ class NotificationService {
   Future<void> _requestPermissions() async {
     // Delegate to public ensurePermission method
     await ensurePermission();
-  }
-
-  /// Show platform-specific notification
-  Future<void> _showPlatformNotification(AppNotification notification) async {
-    try {
-      // Use sendLocal to display the notification (but it will add to list again)
-      // So we need to just show the platform notification without adding to list
-      await _sendPlatformNotification(
-        title: notification.title,
-        body: notification.body,
-      );
-
-      // Provide haptic feedback for important notifications
-      if (notification.type == NotificationType.videoPublished) {
-        HapticFeedback.mediumImpact();
-      } else if (notification.type == NotificationType.uploadFailed) {
-        HapticFeedback.heavyImpact();
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to show platform notification: $e',
-        name: 'NotificationService',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  /// Send platform notification without adding to internal list
-  /// Internal method used by _showPlatformNotification
-  Future<void> _sendPlatformNotification({
-    required String title,
-    required String body,
-  }) async {
-    Log.debug(
-      '📱 Sending platform notification: $title',
-      name: 'NotificationService',
-      category: LogCategory.system,
-    );
-
-    // Skip platform notification on web or without permissions
-    if (kIsWeb || !_permissionsGranted) {
-      Log.debug(
-        'Skipping platform notification (web: $kIsWeb, permissions: $_permissionsGranted)',
-        name: 'NotificationService',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
-    try {
-      // Initialize plugin if needed
-      if (!_pluginInitialized) {
-        await _initializePlugin();
-      }
-
-      // Define Android notification details
-      // Note: To add more notification channels (e.g., for different notification types),
-      // create separate AndroidNotificationDetails with different channel IDs:
-      // - 'openvine_uploads': Upload-related notifications
-      // - 'openvine_social': Likes, comments, follows
-      // - 'openvine_system': App updates, announcements
-      const androidDetails = AndroidNotificationDetails(
-        'openvine_default', // channel ID - stable, do not change
-        'OpenVine Notifications', // channel name - user-visible
-        channelDescription: 'Notifications for video uploads and publishing',
-        importance: Importance.high, // Shows at top of notification shade
-        priority: Priority.high, // Affects heads-up notification display
-      );
-
-      // Define iOS notification details
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-
-      // Define macOS notification details
-      const macosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-
-      // Define Linux notification details
-      const linuxDetails = LinuxNotificationDetails();
-
-      const notificationDetails = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-        macOS: macosDetails,
-        linux: linuxDetails,
-      );
-
-      // Show the notification with unique ID from timestamp
-      final notificationId = DateTime.now().millisecondsSinceEpoch % 100000;
-      await _flutterLocalNotificationsPlugin.show(
-        id: notificationId,
-        title: title,
-        body: body,
-        notificationDetails: notificationDetails,
-      );
-
-      Log.debug(
-        'Platform notification sent successfully',
-        name: 'NotificationService',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to send platform notification: $e',
-        name: 'NotificationService',
-        category: LogCategory.system,
-      );
-    }
   }
 
   /// Add notification to internal list

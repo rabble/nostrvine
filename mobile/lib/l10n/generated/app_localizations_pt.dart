@@ -6698,6 +6698,78 @@ class AppLocalizationsPt extends AppLocalizations {
   String get proofmodePublishedByLabel => 'Published by:';
 
   @override
+  String get publishErrorNotSignedIn =>
+      'Entre na sua conta para publicar vídeos.';
+
+  @override
+  String get publishErrorNoRetry => 'Nenhum envio para tentar novamente.';
+
+  @override
+  String get publishErrorNoInternet =>
+      'Sem conexão com a internet. Verifique seu Wi-Fi ou dados móveis e tente novamente.';
+
+  @override
+  String get publishErrorServerUnreachable =>
+      'Não foi possível acessar o servidor. Tente novamente em instantes.';
+
+  @override
+  String get publishErrorTimeout =>
+      'O tempo de envio esgotou. Tente uma conexão melhor ou um vídeo menor.';
+
+  @override
+  String get publishErrorTls =>
+      'Falha na conexão segura. Verifique sua rede — Wi-Fi público pode bloquear envios.';
+
+  @override
+  String publishErrorServerNotFound(String serverName) {
+    return 'O servidor de mídia ($serverName) não está disponível. Você pode escolher outro nas configurações.';
+  }
+
+  @override
+  String get publishErrorFileTooLarge =>
+      'O arquivo de vídeo é grande demais para o servidor. Tente cortá-lo ou reduzir a qualidade.';
+
+  @override
+  String publishErrorServerInternalError(String serverName) {
+    return 'O servidor de mídia ($serverName) teve um erro interno. Você pode escolher outro nas configurações.';
+  }
+
+  @override
+  String publishErrorServerDown(String serverName) {
+    return 'O servidor de mídia ($serverName) está temporariamente fora do ar. Tente novamente em breve ou escolha outro nas configurações.';
+  }
+
+  @override
+  String get publishErrorForbidden =>
+      'Você não tem permissão para enviar para este servidor.';
+
+  @override
+  String get publishErrorFileNotFound =>
+      'Não foi possível encontrar o arquivo de vídeo. Ele pode ter sido excluído. Grave de novo e tente novamente.';
+
+  @override
+  String get publishErrorLowStorage =>
+      'Não há espaço suficiente no seu dispositivo. Libere espaço e tente novamente.';
+
+  @override
+  String get publishErrorThumbnailFailed =>
+      'O vídeo foi enviado, mas não foi possível preparar a miniatura. Tente novamente.';
+
+  @override
+  String get publishErrorNostrPublishFailed =>
+      'O vídeo foi enviado, mas não foi possível publicar o post. Verifique suas configurações de relay e tente novamente.';
+
+  @override
+  String get publishErrorInterrupted =>
+      'Este envio foi interrompido. Quer tentar de novo?';
+
+  @override
+  String get publishErrorGeneric => 'Algo deu errado. Tente novamente.';
+
+  @override
+  String get publishErrorUnknownServer => 'Servidor desconhecido';
+
+  @override
   String searchFilterPillSemanticLabel(String filter) {
     return 'Filter: $filter';
   }

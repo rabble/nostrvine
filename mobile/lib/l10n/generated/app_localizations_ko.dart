@@ -6448,6 +6448,73 @@ class AppLocalizationsKo extends AppLocalizations {
   String get proofmodePublishedByLabel => 'Published by:';
 
   @override
+  String get publishErrorNotSignedIn => '영상을 게시하려면 로그인해주세요.';
+
+  @override
+  String get publishErrorNoRetry => '다시 시도할 업로드가 없어요.';
+
+  @override
+  String get publishErrorNoInternet =>
+      '인터넷에 연결되어 있지 않아요. 와이파이나 모바일 데이터를 확인하고 다시 시도해주세요.';
+
+  @override
+  String get publishErrorServerUnreachable => '서버에 연결할 수 없어요. 잠시 후 다시 시도해주세요.';
+
+  @override
+  String get publishErrorTimeout =>
+      '업로드 시간이 초과됐어요. 더 안정적인 연결을 쓰거나 더 작은 영상으로 시도해보세요.';
+
+  @override
+  String get publishErrorTls =>
+      '보안 연결에 실패했어요. 네트워크를 확인해주세요 — 공용 와이파이는 업로드를 막을 수 있어요.';
+
+  @override
+  String publishErrorServerNotFound(String serverName) {
+    return '미디어 서버($serverName)를 사용할 수 없어요. 설정에서 다른 서버를 고를 수 있어요.';
+  }
+
+  @override
+  String get publishErrorFileTooLarge =>
+      '영상 파일이 서버에 올리기엔 너무 커요. 영상을 자르거나 화질을 낮춰서 시도해보세요.';
+
+  @override
+  String publishErrorServerInternalError(String serverName) {
+    return '미디어 서버($serverName)에 내부 오류가 발생했어요. 설정에서 다른 서버를 고를 수 있어요.';
+  }
+
+  @override
+  String publishErrorServerDown(String serverName) {
+    return '미디어 서버($serverName)가 일시적으로 다운됐어요. 잠시 후 다시 시도하거나 설정에서 다른 서버를 골라보세요.';
+  }
+
+  @override
+  String get publishErrorForbidden => '이 서버에 업로드할 권한이 없어요.';
+
+  @override
+  String get publishErrorFileNotFound =>
+      '영상 파일을 찾을 수 없어요. 삭제됐을 수도 있어요. 다시 녹화하고 시도해주세요.';
+
+  @override
+  String get publishErrorLowStorage => '기기에 저장 공간이 부족해요. 공간을 좀 확보하고 다시 시도해주세요.';
+
+  @override
+  String get publishErrorThumbnailFailed =>
+      '영상은 업로드됐지만 썸네일을 준비하지 못했어요. 다시 시도해주세요.';
+
+  @override
+  String get publishErrorNostrPublishFailed =>
+      '영상은 업로드됐지만 게시물을 올리지 못했어요. 릴레이 설정을 확인하고 다시 시도해주세요.';
+
+  @override
+  String get publishErrorInterrupted => '업로드가 중단됐어요. 다시 시도할까요?';
+
+  @override
+  String get publishErrorGeneric => '문제가 생겼어요. 다시 시도해주세요.';
+
+  @override
+  String get publishErrorUnknownServer => '알 수 없는 서버';
+
+  @override
   String searchFilterPillSemanticLabel(String filter) {
     return 'Filter: $filter';
   }

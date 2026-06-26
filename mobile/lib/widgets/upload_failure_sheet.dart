@@ -10,6 +10,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/publish_error_kind_l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
@@ -94,7 +95,9 @@ class _UploadFailureSheetContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final errorMessage = switch (upload.result) {
-      PublishError(:final userMessage) => userMessage,
+      PublishError(:final kind, :final serverName, :final rawFallback) =>
+        rawFallback ??
+            context.l10n.publishErrorMessage(kind, serverName: serverName),
       _ => null,
     };
 

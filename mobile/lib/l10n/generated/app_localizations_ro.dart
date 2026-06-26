@@ -6813,6 +6813,78 @@ class AppLocalizationsRo extends AppLocalizations {
   String get proofmodePublishedByLabel => 'Published by:';
 
   @override
+  String get publishErrorNotSignedIn =>
+      'Autentifică-te ca să publici videoclipuri.';
+
+  @override
+  String get publishErrorNoRetry => 'Nu există nicio încărcare de reîncercat.';
+
+  @override
+  String get publishErrorNoInternet =>
+      'Nu există conexiune la internet. Verifică Wi-Fi-ul sau datele mobile și încearcă din nou.';
+
+  @override
+  String get publishErrorServerUnreachable =>
+      'Nu am putut accesa serverul. Încearcă din nou într-o clipă.';
+
+  @override
+  String get publishErrorTimeout =>
+      'Încărcarea a expirat. Încearcă o conexiune mai bună sau un videoclip mai mic.';
+
+  @override
+  String get publishErrorTls =>
+      'Conexiunea securizată a eșuat. Verifică-ți rețeaua — Wi-Fi-ul public poate bloca încărcările.';
+
+  @override
+  String publishErrorServerNotFound(String serverName) {
+    return 'Serverul media ($serverName) nu este disponibil. Poți alege altul în setări.';
+  }
+
+  @override
+  String get publishErrorFileTooLarge =>
+      'Fișierul video este prea mare pentru server. Încearcă să-l scurtezi sau să reduci calitatea.';
+
+  @override
+  String publishErrorServerInternalError(String serverName) {
+    return 'Serverul media ($serverName) a avut o eroare internă. Poți alege altul în setări.';
+  }
+
+  @override
+  String publishErrorServerDown(String serverName) {
+    return 'Serverul media ($serverName) este temporar indisponibil. Încearcă din nou în scurt timp sau alege altul în setări.';
+  }
+
+  @override
+  String get publishErrorForbidden =>
+      'Nu ai permisiunea de a încărca pe acest server.';
+
+  @override
+  String get publishErrorFileNotFound =>
+      'Fișierul video nu a putut fi găsit. Poate a fost șters. Înregistrează din nou și încearcă iar.';
+
+  @override
+  String get publishErrorLowStorage =>
+      'Nu ai destul spațiu de stocare pe dispozitiv. Eliberează niște spațiu și încearcă din nou.';
+
+  @override
+  String get publishErrorThumbnailFailed =>
+      'Videoclipul s-a încărcat, dar miniatura nu a putut fi pregătită. Încearcă din nou.';
+
+  @override
+  String get publishErrorNostrPublishFailed =>
+      'Videoclipul s-a încărcat, dar postarea nu a putut fi publicată. Verifică-ți setările relay-urilor și încearcă din nou.';
+
+  @override
+  String get publishErrorInterrupted =>
+      'Această încărcare a fost întreruptă. Vrei să încerci din nou?';
+
+  @override
+  String get publishErrorGeneric => 'Ceva nu a mers bine. Încearcă din nou.';
+
+  @override
+  String get publishErrorUnknownServer => 'Server necunoscut';
+
+  @override
   String searchFilterPillSemanticLabel(String filter) {
     return 'Filter: $filter';
   }

@@ -6608,6 +6608,76 @@ class AppLocalizationsAr extends AppLocalizations {
   String get proofmodePublishedByLabel => 'Published by:';
 
   @override
+  String get publishErrorNotSignedIn => 'يرجى تسجيل الدخول لنشر الفيديوهات.';
+
+  @override
+  String get publishErrorNoRetry => 'لا يوجد رفع لإعادة محاولته.';
+
+  @override
+  String get publishErrorNoInternet =>
+      'لا يوجد اتصال بالإنترنت. تحقّق من Wi-Fi أو بيانات الجوال وحاول مرّة أخرى.';
+
+  @override
+  String get publishErrorServerUnreachable =>
+      'تعذّر الوصول إلى الخادم. يرجى المحاولة مرّة أخرى بعد قليل.';
+
+  @override
+  String get publishErrorTimeout =>
+      'انتهت مهلة الرفع. جرّب اتصالاً أقوى أو فيديو أصغر.';
+
+  @override
+  String get publishErrorTls =>
+      'فشل الاتصال الآمن. تحقّق من شبكتك — قد تحجب شبكات Wi-Fi العامة عمليات الرفع.';
+
+  @override
+  String publishErrorServerNotFound(String serverName) {
+    return 'خادم الوسائط ($serverName) غير متاح. يمكنك اختيار خادم آخر من الإعدادات.';
+  }
+
+  @override
+  String get publishErrorFileTooLarge =>
+      'ملف الفيديو أكبر من أن يقبله الخادم. جرّب قصّه أو خفض الجودة.';
+
+  @override
+  String publishErrorServerInternalError(String serverName) {
+    return 'واجه خادم الوسائط ($serverName) خطأً داخليًا. يمكنك اختيار خادم آخر من الإعدادات.';
+  }
+
+  @override
+  String publishErrorServerDown(String serverName) {
+    return 'خادم الوسائط ($serverName) متوقّف مؤقتًا. حاول مرّة أخرى بعد قليل أو اختر خادمًا آخر من الإعدادات.';
+  }
+
+  @override
+  String get publishErrorForbidden => 'ليست لديك صلاحية الرفع إلى هذا الخادم.';
+
+  @override
+  String get publishErrorFileNotFound =>
+      'تعذّر العثور على ملف الفيديو. ربّما تم حذفه. أعد التسجيل وحاول مرّة أخرى.';
+
+  @override
+  String get publishErrorLowStorage =>
+      'لا توجد مساحة تخزين كافية على جهازك. فرّغ بعض المساحة وحاول مرّة أخرى.';
+
+  @override
+  String get publishErrorThumbnailFailed =>
+      'تم رفع الفيديو، لكن تعذّر تجهيز الصورة المصغّرة. يرجى المحاولة مرّة أخرى.';
+
+  @override
+  String get publishErrorNostrPublishFailed =>
+      'تم رفع الفيديو لكن تعذّر نشر المنشور. تحقّق من إعدادات المحوّلات وحاول مرّة أخرى.';
+
+  @override
+  String get publishErrorInterrupted =>
+      'تم قطع هذا الرفع. هل ترغب في المحاولة مرّة أخرى؟';
+
+  @override
+  String get publishErrorGeneric => 'حدث خطأ ما. يرجى المحاولة مرّة أخرى.';
+
+  @override
+  String get publishErrorUnknownServer => 'خادم غير معروف';
+
+  @override
   String searchFilterPillSemanticLabel(String filter) {
     return 'Filter: $filter';
   }

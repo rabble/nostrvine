@@ -6663,6 +6663,77 @@ class AppLocalizationsSv extends AppLocalizations {
   String get proofmodePublishedByLabel => 'Published by:';
 
   @override
+  String get publishErrorNotSignedIn => 'Logga in för att publicera videor.';
+
+  @override
+  String get publishErrorNoRetry => 'Ingen uppladdning att försöka igen med.';
+
+  @override
+  String get publishErrorNoInternet =>
+      'Ingen internetanslutning. Kontrollera ditt wifi eller mobildata och försök igen.';
+
+  @override
+  String get publishErrorServerUnreachable =>
+      'Kunde inte nå servern. Försök igen om en stund.';
+
+  @override
+  String get publishErrorTimeout =>
+      'Uppladdningen tog för lång tid. Prova en starkare anslutning eller en mindre video.';
+
+  @override
+  String get publishErrorTls =>
+      'Den säkra anslutningen misslyckades. Kontrollera ditt nätverk – offentligt wifi kan blockera uppladdningar.';
+
+  @override
+  String publishErrorServerNotFound(String serverName) {
+    return 'Mediaservern ($serverName) är inte tillgänglig. Du kan välja en annan i dina inställningar.';
+  }
+
+  @override
+  String get publishErrorFileTooLarge =>
+      'Videofilen är för stor för servern. Prova att korta ner den eller sänka kvaliteten.';
+
+  @override
+  String publishErrorServerInternalError(String serverName) {
+    return 'Mediaservern ($serverName) råkade ut för ett internt fel. Du kan välja en annan i dina inställningar.';
+  }
+
+  @override
+  String publishErrorServerDown(String serverName) {
+    return 'Mediaservern ($serverName) är tillfälligt nere. Försök igen snart eller välj en annan i dina inställningar.';
+  }
+
+  @override
+  String get publishErrorForbidden =>
+      'Du har inte behörighet att ladda upp till den här servern.';
+
+  @override
+  String get publishErrorFileNotFound =>
+      'Videofilen kunde inte hittas. Den kan ha raderats. Spela in på nytt och försök igen.';
+
+  @override
+  String get publishErrorLowStorage =>
+      'Det finns inte tillräckligt med lagringsutrymme på enheten. Frigör utrymme och försök igen.';
+
+  @override
+  String get publishErrorThumbnailFailed =>
+      'Videon laddades upp, men miniatyrbilden kunde inte skapas. Försök igen.';
+
+  @override
+  String get publishErrorNostrPublishFailed =>
+      'Videon laddades upp men inlägget kunde inte publiceras. Kontrollera dina relinställningar och försök igen.';
+
+  @override
+  String get publishErrorInterrupted =>
+      'Uppladdningen avbröts. Vill du försöka igen?';
+
+  @override
+  String get publishErrorGeneric => 'Något gick fel. Försök igen.';
+
+  @override
+  String get publishErrorUnknownServer => 'Okänd server';
+
+  @override
   String searchFilterPillSemanticLabel(String filter) {
     return 'Filter: $filter';
   }

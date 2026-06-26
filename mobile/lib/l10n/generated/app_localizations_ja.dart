@@ -6425,6 +6425,74 @@ class AppLocalizationsJa extends AppLocalizations {
   String get proofmodePublishedByLabel => 'Published by:';
 
   @override
+  String get publishErrorNotSignedIn => '動画を投稿するにはサインインしてね。';
+
+  @override
+  String get publishErrorNoRetry => 'やり直せるアップロードがないよ。';
+
+  @override
+  String get publishErrorNoInternet =>
+      'ネットに接続できないよ。Wi-Fi かモバイルデータを確認して、もう一回試してみて。';
+
+  @override
+  String get publishErrorServerUnreachable =>
+      'サーバーに接続できなかったよ。少し待ってからもう一回試してみて。';
+
+  @override
+  String get publishErrorTimeout =>
+      'アップロードがタイムアウトしたよ。接続のいい場所に移るか、もっと小さい動画で試してみて。';
+
+  @override
+  String get publishErrorTls =>
+      'セキュア接続に失敗したよ。ネットワークを確認してみて。公共の Wi-Fi だとアップロードがブロックされることがあるよ。';
+
+  @override
+  String publishErrorServerNotFound(String serverName) {
+    return 'メディアサーバー（$serverName）が利用できないよ。設定で別のサーバーを選べるよ。';
+  }
+
+  @override
+  String get publishErrorFileTooLarge =>
+      '動画ファイルがサーバーには大きすぎるよ。トリミングするか、画質を下げて試してみて。';
+
+  @override
+  String publishErrorServerInternalError(String serverName) {
+    return 'メディアサーバー（$serverName）で内部エラーが起きたよ。設定で別のサーバーを選べるよ。';
+  }
+
+  @override
+  String publishErrorServerDown(String serverName) {
+    return 'メディアサーバー（$serverName）が一時的にダウンしてるよ。少し待ってからもう一回試すか、設定で別のサーバーを選んでみて。';
+  }
+
+  @override
+  String get publishErrorForbidden => 'このサーバーにアップロードする権限がないよ。';
+
+  @override
+  String get publishErrorFileNotFound =>
+      '動画ファイルが見つからなかったよ。削除されたのかもしれない。もう一回撮影して試してみて。';
+
+  @override
+  String get publishErrorLowStorage => '端末の空き容量が足りないよ。容量を空けてもう一回試してみて。';
+
+  @override
+  String get publishErrorThumbnailFailed =>
+      '動画はアップロードできたけど、サムネイルを準備できなかったよ。もう一回試してみて。';
+
+  @override
+  String get publishErrorNostrPublishFailed =>
+      '動画はアップロードできたけど、投稿を公開できなかったよ。リレー設定を確認して、もう一回試してみて。';
+
+  @override
+  String get publishErrorInterrupted => 'アップロードが中断されたよ。もう一回試す？';
+
+  @override
+  String get publishErrorGeneric => '問題が発生したよ。もう一回試してみて。';
+
+  @override
+  String get publishErrorUnknownServer => '不明なサーバー';
+
+  @override
   String searchFilterPillSemanticLabel(String filter) {
     return 'Filter: $filter';
   }

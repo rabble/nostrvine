@@ -6549,6 +6549,75 @@ class AppLocalizationsAm extends AppLocalizations {
   String get proofmodePublishedByLabel => 'Published by:';
 
   @override
+  String get publishErrorNotSignedIn => 'ቪዲዮዎችን ለማተም እባክዎ ይግቡ።';
+
+  @override
+  String get publishErrorNoRetry => 'እንደገና የሚሞከር ስቀላ የለም።';
+
+  @override
+  String get publishErrorNoInternet =>
+      'የበይነመረብ ግንኙነት የለም። ዋይ ፋይዎን ወይም የሞባይል ዳታዎን ይፈትሹ እና እንደገና ይሞክሩ።';
+
+  @override
+  String get publishErrorServerUnreachable =>
+      'አገልጋዩ ላይ መድረስ አልተቻለም። እባክዎ ከአፍታ በኋላ እንደገና ይሞክሩ።';
+
+  @override
+  String get publishErrorTimeout =>
+      'ስቀላው ጊዜው አልፎበታል። ጠንካራ ግንኙነት ወይም አነስ ያለ ቪዲዮ ይሞክሩ።';
+
+  @override
+  String get publishErrorTls =>
+      'ደህንነቱ የተጠበቀ ግንኙነት አልተሳካም። አውታረ መረብዎን ይፈትሹ — የሕዝብ ዋይ ፋይ ስቀላዎችን ሊያግድ ይችላል።';
+
+  @override
+  String publishErrorServerNotFound(String serverName) {
+    return 'የሚዲያ አገልጋዩ ($serverName) አይገኝም። በቅንብሮችዎ ውስጥ ሌላ መምረጥ ይችላሉ።';
+  }
+
+  @override
+  String get publishErrorFileTooLarge =>
+      'የቪዲዮ ፋይሉ ለአገልጋዩ በጣም ትልቅ ነው። ቆርጠው ለማሳጠር ወይም ጥራቱን ለመቀነስ ይሞክሩ።';
+
+  @override
+  String publishErrorServerInternalError(String serverName) {
+    return 'የሚዲያ አገልጋዩ ($serverName) የውስጥ ስህተት አጋጥሞታል። በቅንብሮችዎ ውስጥ ሌላ መምረጥ ይችላሉ።';
+  }
+
+  @override
+  String publishErrorServerDown(String serverName) {
+    return 'የሚዲያ አገልጋዩ ($serverName) ለጊዜው ተቋርጧል። ከጥቂት ጊዜ በኋላ እንደገና ይሞክሩ ወይም በቅንብሮችዎ ውስጥ ሌላ ይምረጡ።';
+  }
+
+  @override
+  String get publishErrorForbidden => 'ወደዚህ አገልጋይ ለመስቀል ፈቃድ የለዎትም።';
+
+  @override
+  String get publishErrorFileNotFound =>
+      'የቪዲዮ ፋይሉ ሊገኝ አልቻለም። ምናልባት ተሰርዞ ሊሆን ይችላል። እንደገና ይቅረጹ እና ይሞክሩ።';
+
+  @override
+  String get publishErrorLowStorage =>
+      'በመሣሪያዎ ላይ በቂ ማከማቻ የለም። ትንሽ ቦታ ነፃ ያድርጉ እና እንደገና ይሞክሩ።';
+
+  @override
+  String get publishErrorThumbnailFailed =>
+      'ቪዲዮው ተሰቅሏል፣ ነገር ግን ድንክዬው ሊዘጋጅ አልቻለም። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
+  String get publishErrorNostrPublishFailed =>
+      'ቪዲዮው ተሰቅሏል ነገር ግን ልጥፉ ሊታተም አልቻለም። የቅብብሎሽ ቅንብሮችዎን ይፈትሹ እና እንደገና ይሞክሩ።';
+
+  @override
+  String get publishErrorInterrupted => 'ይህ ስቀላ ተቋርጧል። እንደገና መሞከር ይፈልጋሉ?';
+
+  @override
+  String get publishErrorGeneric => 'የሆነ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
+  String get publishErrorUnknownServer => 'ያልታወቀ አገልጋይ';
+
+  @override
   String searchFilterPillSemanticLabel(String filter) {
     return 'Filter: $filter';
   }

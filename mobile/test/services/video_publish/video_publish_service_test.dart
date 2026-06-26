@@ -14,6 +14,7 @@ import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
+import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -107,10 +108,7 @@ void main() {
 
         // Assert
         expect(result, isA<PublishError>());
-        expect(
-          (result as PublishError).userMessage,
-          'Please sign in to publish videos.',
-        );
+        expect((result as PublishError).kind, PublishErrorKind.notSignedIn);
       });
 
       test('returns success when publish completes successfully', () async {
@@ -155,8 +153,8 @@ void main() {
           // Assert
           expect(result, isA<PublishError>());
           expect(
-            (result as PublishError).userMessage,
-            'The video uploaded, but the thumbnail could not be prepared. Please try again.',
+            (result as PublishError).kind,
+            PublishErrorKind.thumbnailFailed,
           );
           verifyNever(
             () => mockVideoEventPublisher.publishVideoEvent(
@@ -877,7 +875,7 @@ void main() {
 
         // Assert
         expect(result, isA<PublishError>());
-        expect((result as PublishError).userMessage, 'No upload to retry.');
+        expect((result as PublishError).kind, PublishErrorKind.noRetry);
       });
 
       test(
@@ -897,7 +895,7 @@ void main() {
 
           // Assert
           expect(result, isA<PublishError>());
-          expect((result as PublishError).userMessage, 'No upload to retry.');
+          expect((result as PublishError).kind, PublishErrorKind.noRetry);
         },
       );
 
@@ -943,7 +941,7 @@ void main() {
 
           // Assert
           expect(result, isA<PublishError>());
-          expect((result as PublishError).userMessage, 'No upload to retry.');
+          expect((result as PublishError).kind, PublishErrorKind.noRetry);
         },
       );
 
@@ -978,7 +976,7 @@ void main() {
 
           // Assert
           expect(result, isA<PublishError>());
-          expect((result as PublishError).userMessage, 'No upload to retry.');
+          expect((result as PublishError).kind, PublishErrorKind.noRetry);
         },
       );
     });
@@ -1146,8 +1144,8 @@ void main() {
 
         // Assert
         expect(result, isA<PublishError>());
-        expect((result as PublishError).userMessage, contains('media server'));
-        expect(result.userMessage, contains('not available'));
+        expect((result as PublishError).kind, PublishErrorKind.serverNotFound);
+        expect(result.serverName, 'media.divine.video');
       });
 
       test('returns user-friendly message for network error', () async {
@@ -1176,10 +1174,7 @@ void main() {
 
         // Assert
         expect(result, isA<PublishError>());
-        expect(
-          (result as PublishError).userMessage,
-          contains('Something went wrong'),
-        );
+        expect((result as PublishError).kind, PublishErrorKind.generic);
       });
 
       test('returns user-friendly message for timeout error', () async {
@@ -1204,7 +1199,7 @@ void main() {
         final result = await service.publishVideo(draft: draft);
 
         expect(result, isA<PublishError>());
-        expect((result as PublishError).userMessage, contains('timed out'));
+        expect((result as PublishError).kind, PublishErrorKind.timeout);
       });
 
       test('returns user-friendly message for TLS/certificate error', () async {
@@ -1229,10 +1224,7 @@ void main() {
         final result = await service.publishVideo(draft: draft);
 
         expect(result, isA<PublishError>());
-        expect(
-          (result as PublishError).userMessage,
-          contains('Secure connection failed'),
-        );
+        expect((result as PublishError).kind, PublishErrorKind.tls);
       });
 
       test('returns user-friendly message for 413 payload too large', () async {
@@ -1257,7 +1249,7 @@ void main() {
         final result = await service.publishVideo(draft: draft);
 
         expect(result, isA<PublishError>());
-        expect((result as PublishError).userMessage, contains('too large'));
+        expect((result as PublishError).kind, PublishErrorKind.fileTooLarge);
       });
 
       test(
@@ -1286,9 +1278,9 @@ void main() {
           final result = await service.publishVideo(draft: draft);
 
           expect(result, isA<PublishError>());
-          final msg = (result as PublishError).userMessage;
-          expect(msg, contains('internal error'));
-          expect(msg, contains('media.divine.video'));
+          final error = result as PublishError;
+          expect(error.kind, PublishErrorKind.serverInternalError);
+          expect(error.serverName, 'media.divine.video');
         },
       );
 
@@ -1318,9 +1310,9 @@ void main() {
           final result = await service.publishVideo(draft: draft);
 
           expect(result, isA<PublishError>());
-          final msg = (result as PublishError).userMessage;
-          expect(msg, contains('temporarily down'));
-          expect(msg, contains('media.divine.video'));
+          final error = result as PublishError;
+          expect(error.kind, PublishErrorKind.serverDown);
+          expect(error.serverName, 'media.divine.video');
         },
       );
 
@@ -1346,7 +1338,7 @@ void main() {
         final result = await service.publishVideo(draft: draft);
 
         expect(result, isA<PublishError>());
-        expect((result as PublishError).userMessage, contains('sign in'));
+        expect((result as PublishError).kind, PublishErrorKind.notSignedIn);
       });
 
       test('returns user-friendly message for 403 forbidden', () async {
@@ -1371,7 +1363,7 @@ void main() {
         final result = await service.publishVideo(draft: draft);
 
         expect(result, isA<PublishError>());
-        expect((result as PublishError).userMessage, contains('permission'));
+        expect((result as PublishError).kind, PublishErrorKind.forbidden);
       });
 
       test('returns user-friendly message for file not found', () async {
@@ -1396,10 +1388,7 @@ void main() {
         final result = await service.publishVideo(draft: draft);
 
         expect(result, isA<PublishError>());
-        expect(
-          (result as PublishError).userMessage,
-          contains('could not be found'),
-        );
+        expect((result as PublishError).kind, PublishErrorKind.fileNotFound);
       });
 
       test('returns user-friendly message for storage full', () async {
@@ -1424,7 +1413,7 @@ void main() {
         final result = await service.publishVideo(draft: draft);
 
         expect(result, isA<PublishError>());
-        expect((result as PublishError).userMessage, contains('storage'));
+        expect((result as PublishError).kind, PublishErrorKind.lowStorage);
       });
 
       test('returns user-friendly message for Nostr relay failure', () async {
@@ -1449,8 +1438,10 @@ void main() {
         final result = await service.publishVideo(draft: draft);
 
         expect(result, isA<PublishError>());
-        final msg = (result as PublishError).userMessage;
-        expect(msg, contains('relay'));
+        expect(
+          (result as PublishError).kind,
+          PublishErrorKind.nostrPublishFailed,
+        );
       });
 
       test('returns user-friendly message for SocketException '
@@ -1476,10 +1467,7 @@ void main() {
         final result = await service.publishVideo(draft: draft);
 
         expect(result, isA<PublishError>());
-        expect(
-          (result as PublishError).userMessage,
-          contains('No internet connection'),
-        );
+        expect((result as PublishError).kind, PublishErrorKind.noInternet);
       });
 
       test('returns user-friendly message for connection refused', () async {
@@ -1505,8 +1493,8 @@ void main() {
 
         expect(result, isA<PublishError>());
         expect(
-          (result as PublishError).userMessage,
-          contains('Could not reach the server'),
+          (result as PublishError).kind,
+          PublishErrorKind.serverUnreachable,
         );
       });
     });
