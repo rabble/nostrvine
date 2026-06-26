@@ -116,15 +116,25 @@ class _InteractiveZoomRulerState extends State<_InteractiveZoomRuler> {
 
   void _onDragEnd(DragEndDetails details) => _dragZoom = null;
 
-  /// Whether scrubbing from [from] to [to] passed a major ruler mark — every
+  /// Whether scrubbing from [from] to [to] reached a major ruler mark — every
   /// whole factor, plus the 0.5× ultra-wide stop — matching the ticks the
-  /// painter draws as majors.
+  /// painter draws as majors. Catches both crossing a mark mid-drag and
+  /// arriving on one pinned to a clamp bound, where the value lands on the mark
+  /// from one side and can never cross past it (e.g. the 0.5× stop on an
+  /// ultra-wide min, or a 1× min) — the cross-only checks stay silent there.
   bool _crossedMajorMark(double from, double to) {
     if (from == to) return false;
     final crossedWhole = from.floorToDouble() != to.floorToDouble();
     final crossedHalf = (from < 0.5) != (to < 0.5);
-    return crossedWhole || crossedHalf;
+    final arrivedAtMark = _isMajorMark(to) && !_isMajorMark(from);
+    return crossedWhole || crossedHalf || arrivedAtMark;
   }
+
+  /// Whether [value] sits exactly on a major mark — a whole factor or the 0.5×
+  /// stop. Lets [_crossedMajorMark] detect arrival on a mark that coincides
+  /// with a clamp bound.
+  bool _isMajorMark(double value) =>
+      value == 0.5 || value == value.roundToDouble();
 
   /// Eases [value] toward the nearest major mark within [_snapRadius], using
   /// the same damped gravity-well curve as the pinch's 1× detent, so the
@@ -148,8 +158,10 @@ class _InteractiveZoomRulerState extends State<_InteractiveZoomRuler> {
     return (value - 0.5).abs() < (value - whole).abs() ? 0.5 : whole;
   }
 
-  void _nudge(double delta) =>
-      _setZoom((widget.zoom + delta).clamp(widget.minZoom, widget.maxZoom));
+  double _nudgedZoom(double delta) =>
+      (widget.zoom + delta).clamp(widget.minZoom, widget.maxZoom);
+
+  void _nudge(double delta) => _setZoom(_nudgedZoom(delta));
 
   void _setZoom(double value) {
     if (value == widget.zoom) return;
@@ -163,17 +175,27 @@ class _InteractiveZoomRulerState extends State<_InteractiveZoomRuler> {
       label: context.l10n.videoRecorderZoomLevelLabel(
         _accessibilityValue(widget.zoom),
       ),
+      // Carry the factor on `value` too, so a VoiceOver adjust gesture re-reads
+      // the new zoom (iOS re-announces `value`, not `label`, after a nudge).
+      value: '${_accessibilityValue(widget.zoom)}×',
+      increasedValue: '${_accessibilityValue(_nudgedZoom(_semanticZoomStep))}×',
+      decreasedValue:
+          '${_accessibilityValue(_nudgedZoom(-_semanticZoomStep))}×',
       onIncrease: () => _nudge(_semanticZoomStep),
       onDecrease: () => _nudge(-_semanticZoomStep),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onHorizontalDragStart: _onDragStart,
-        onHorizontalDragUpdate: _onDragUpdate,
-        onHorizontalDragEnd: _onDragEnd,
-        child: _ZoomRuler(
-          zoom: widget.zoom,
-          minZoom: widget.minZoom,
-          maxZoom: widget.maxZoom,
+      // The visual read-out duplicates the slider's label/value, so keep it out
+      // of the semantics tree rather than letting it merge into the label.
+      child: ExcludeSemantics(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onHorizontalDragStart: _onDragStart,
+          onHorizontalDragUpdate: _onDragUpdate,
+          onHorizontalDragEnd: _onDragEnd,
+          child: _ZoomRuler(
+            zoom: widget.zoom,
+            minZoom: widget.minZoom,
+            maxZoom: widget.maxZoom,
+          ),
         ),
       ),
     );
