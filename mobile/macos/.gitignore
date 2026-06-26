@@ -5,3 +5,8 @@
 # Xcode-related
 **/dgph
 **/xcuserdata/
+
+# SwiftPM lockfiles: macOS builds via CocoaPods, so Xcode regenerates these
+# per-machine on open as untracked noise. (iOS deliberately tracks its own —
+# see ios/.gitignore.)
+**/xcshareddata/swiftpm/
