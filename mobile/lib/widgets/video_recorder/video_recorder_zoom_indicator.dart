@@ -5,10 +5,10 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/services/haptic_service.dart';
 
 /// Transient zoom indicator modelled on the native Android camera ruler.
 ///
@@ -103,8 +103,10 @@ class _InteractiveZoomRulerState extends State<_InteractiveZoomRuler> {
       widget.maxZoom,
     );
     // Tick as the value passes a major mark, mirroring the pinch detent.
+    // Flutter's HapticFeedback directly, like the other recorder/editor UI
+    // widgets — the UI layer must not import the app's service package.
     if (_crossedMajorMark(current, next)) {
-      unawaited(HapticService.snapFeedback());
+      unawaited(HapticFeedback.lightImpact());
     }
     // [_dragZoom] tracks the raw finger position; the detent is an emit-only
     // transform so the well never traps the accumulator.
