@@ -9,7 +9,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/services/video_prewarmer.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 
 /// Fake VideoEventService for testing reactive behavior
@@ -89,7 +88,6 @@ void main() {
       container = ProviderContainer(
         overrides: [
           videoEventServiceProvider.overrideWithValue(fakeService),
-          videoPrewarmerProvider.overrideWithValue(NoopPrewarmer()),
           pageContextProvider.overrideWith((ref) {
             return Stream.value(const RouteContext(type: RouteType.home));
           }),
@@ -110,7 +108,6 @@ void main() {
       container = ProviderContainer(
         overrides: [
           videoEventServiceProvider.overrideWithValue(fakeService),
-          videoPrewarmerProvider.overrideWithValue(NoopPrewarmer()),
           pageContextProvider.overrideWith((ref) {
             return Stream.value(
               const RouteContext(type: RouteType.profile, npub: ''),
@@ -132,7 +129,6 @@ void main() {
       container = ProviderContainer(
         overrides: [
           videoEventServiceProvider.overrideWithValue(fakeService),
-          videoPrewarmerProvider.overrideWithValue(NoopPrewarmer()),
           pageContextProvider.overrideWith((ref) {
             return Stream.value(
               const RouteContext(type: RouteType.profile, npub: 'invalid-npub'),
@@ -154,7 +150,6 @@ void main() {
       container = ProviderContainer(
         overrides: [
           videoEventServiceProvider.overrideWithValue(fakeService),
-          videoPrewarmerProvider.overrideWithValue(NoopPrewarmer()),
           routerLocationStreamProvider.overrideWithValue(
             Stream.value('/profile/$testNpub/0'),
           ),
@@ -203,7 +198,6 @@ void main() {
       container = ProviderContainer(
         overrides: [
           videoEventServiceProvider.overrideWithValue(fakeService),
-          videoPrewarmerProvider.overrideWithValue(NoopPrewarmer()),
           routerLocationStreamProvider.overrideWithValue(
             Stream.value('/profile/$testNpub/0'),
           ),
@@ -270,7 +264,6 @@ void main() {
       container = ProviderContainer(
         overrides: [
           videoEventServiceProvider.overrideWithValue(fakeService),
-          videoPrewarmerProvider.overrideWithValue(NoopPrewarmer()),
           routerLocationStreamProvider.overrideWithValue(
             Stream.value('/profile/$testNpub/0'),
           ),
@@ -331,7 +324,6 @@ void main() {
       container = ProviderContainer(
         overrides: [
           videoEventServiceProvider.overrideWithValue(fakeService),
-          videoPrewarmerProvider.overrideWithValue(NoopPrewarmer()),
           pageContextProvider.overrideWith((ref) {
             return Stream.value(
               RouteContext(
