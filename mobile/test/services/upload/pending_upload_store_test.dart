@@ -202,21 +202,20 @@ void main() {
         final store = await _openStore();
         addTearDown(store.disposeStore);
 
+        // Pin createdAt explicitly so newest-first ordering is deterministic
+        // rather than depending on a wall-clock gap between the two saves.
         final older = PendingUpload.create(
           localVideoPath: '${tempDir.path}/old.mp4',
           nostrPubkey: _pubkeyA,
           title: 'Older',
-        );
+        ).copyWith(createdAt: DateTime(2024, 1, 1, 12));
         await store.save(older);
-
-        // Ensure distinct timestamps.
-        await Future<void>.delayed(const Duration(milliseconds: 10));
 
         final newer = PendingUpload.create(
           localVideoPath: '${tempDir.path}/new.mp4',
           nostrPubkey: _pubkeyA,
           title: 'Newer',
-        );
+        ).copyWith(createdAt: DateTime(2024, 1, 1, 13));
         await store.save(newer);
 
         final uploads = store.pendingUploads;
