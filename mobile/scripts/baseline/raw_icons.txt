@@ -14,7 +14,6 @@ lib/screens/comments/widgets/comments_empty_state.dart	1
 lib/screens/creator_analytics_screen.dart	9
 lib/screens/curated_list_feed_screen.dart	2
 lib/screens/discover_lists_screen.dart	2
-lib/screens/feed/video_feed_page.dart	1
 lib/screens/followers/my_followers_screen.dart	1
 lib/screens/followers/others_followers_screen.dart	1
 lib/screens/hashtag_feed_screen.dart	1

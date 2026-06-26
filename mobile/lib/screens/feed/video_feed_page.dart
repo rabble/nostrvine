@@ -5,10 +5,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
-import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
@@ -16,9 +14,10 @@ import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
+import 'package:openvine/screens/feed/video_feed_page/feed_empty_widget.dart';
+import 'package:openvine/screens/feed/video_feed_page/feed_error_widget.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/view_event_publisher.dart'
     show ViewTrafficSource;
@@ -326,7 +325,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
               // Error state
               if (state.status == VideoFeedStatus.failure) {
-                return _FeedErrorWidget(
+                return FeedErrorWidget(
                   error: state.error,
                   onRetry: () => _refreshFeed(context),
                 );
@@ -423,195 +422,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
           s.status == VideoFeedStatus.success ||
           s.status == VideoFeedStatus.failure,
       orElse: () => bloc.state,
-    );
-  }
-}
-
-class _FeedErrorWidget extends StatelessWidget {
-  const _FeedErrorWidget({required this.onRetry, this.error});
-
-  final VideoFeedError? error;
-  final Future<void> Function() onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const DivineIcon(
-            icon: DivineIconName.warningCircle,
-            color: VineTheme.error,
-            size: 64,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            context.l10n.feedFailedToLoadVideos,
-            style: const TextStyle(color: VineTheme.whiteText, fontSize: 18),
-          ),
-          if (error != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              style: const TextStyle(color: VineTheme.lightText),
-            ),
-          ],
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => unawaited(onRetry()),
-            child: Text(context.l10n.feedRetry),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class FeedEmptyWidget extends StatelessWidget {
-  const FeedEmptyWidget({required this.state, super.key});
-
-  final VideoFeedBlocState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final isNoFollowedUsers =
-        state.mode == FeedMode.forYou &&
-        state.error == VideoFeedError.noFollowedUsers;
-
-    if (state.mode == FeedMode.following) {
-      return const _FollowingFeedEmptyState();
-    }
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.video_library_outlined,
-            color: VineTheme.lightText,
-            size: 64,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _getEmptyMessage(context, state),
-            style: const TextStyle(color: VineTheme.whiteText, fontSize: 18),
-            textAlign: TextAlign.center,
-          ),
-          if (isNoFollowedUsers) ...[
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () => context.go(ExploreScreen.path),
-              icon: const DivineIcon(
-                icon: DivineIconName.compass,
-                color: VineTheme.backgroundColor,
-              ),
-              label: Text(context.l10n.feedExploreVideos),
-              style: FilledButton.styleFrom(
-                backgroundColor: VineTheme.vineGreen,
-                foregroundColor: VineTheme.backgroundColor,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  String _getEmptyMessage(BuildContext context, VideoFeedBlocState state) {
-    if ((state.mode == FeedMode.following || state.mode == FeedMode.forYou) &&
-        state.error == VideoFeedError.noFollowedUsers) {
-      return context.l10n.feedNoFollowedUsers;
-    }
-
-    return switch (state.mode) {
-      FeedMode.forYou => context.l10n.feedForYouEmpty,
-      FeedMode.following => context.l10n.feedFollowingEmpty,
-      FeedMode.latest => context.l10n.feedLatestEmpty,
-    };
-  }
-}
-
-class _FollowingFeedEmptyState extends StatelessWidget {
-  const _FollowingFeedEmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const _FeedEmptyTestPatternMark(),
-            const SizedBox(height: 28),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 320),
-              child: Text(
-                context.l10n.feedFollowingEmpty,
-                style: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 28),
-            DivineButton(
-              label: context.l10n.feedExploreVideos,
-              trailingIcon: DivineIconName.arrowRight,
-              onPressed: () => context.go(ExploreScreen.pathForTab('popular')),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FeedEmptyTestPatternMark extends StatelessWidget {
-  const _FeedEmptyTestPatternMark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 112,
-      height: 88,
-      decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: VineTheme.outlineMuted),
-      ),
-      padding: const EdgeInsets.all(8),
-      child: const Column(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(child: ColoredBox(color: VineTheme.primary)),
-                Expanded(child: ColoredBox(color: VineTheme.warning)),
-                Expanded(child: ColoredBox(color: VineTheme.error)),
-                Expanded(child: ColoredBox(color: VineTheme.inverseSurface)),
-              ],
-            ),
-          ),
-          SizedBox(height: 6),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: ColoredBox(color: VineTheme.onSurface),
-                ),
-                Expanded(child: ColoredBox(color: VineTheme.outlineMuted)),
-                Expanded(flex: 2, child: ColoredBox(color: VineTheme.scrim65)),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
