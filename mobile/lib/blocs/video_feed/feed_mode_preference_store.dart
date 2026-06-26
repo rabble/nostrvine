@@ -105,6 +105,9 @@ class FeedModePreferenceStore {
     if (saved == FeedMode.forYou.name) {
       return const VideoFeedSource.forYou();
     }
+    if (saved == FeedMode.classic.name) {
+      return const VideoFeedSource.classic();
+    }
     return null;
   }
 

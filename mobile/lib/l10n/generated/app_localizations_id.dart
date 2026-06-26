@@ -4083,6 +4083,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get feedModeFollowing => 'Mengikuti';
 
   @override
+  String get feedModeClassics => 'Klasik';
+
+  @override
   String feedModeSemanticLabel(String label) {
     return 'Mode feed: $label';
   }
@@ -4106,6 +4109,9 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get feedLatestEmpty =>
       'Belum ada video baru.\nCek lagi sebentar lagi.';
+
+  @override
+  String get feedClassicEmpty => 'Belum ada klasik.\nCek lagi sebentar lagi.';
 
   @override
   String get feedExploreVideos => 'Jelajahi Video';

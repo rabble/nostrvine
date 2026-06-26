@@ -1706,6 +1706,7 @@
     "feedModeForYou": "Untukmu",
     "feedModeNew": "Baru",
     "feedModeFollowing": "Mengikuti",
+    "feedModeClassics": "Klasik",
     "feedModeSemanticLabel": "Mode feed: {label}",
     "@feedModeSemanticLabel": {
         "placeholders": {
@@ -1726,6 +1727,7 @@
     "feedForYouEmpty": "Feed Untuk Anda kamu kosong.\nJelajahi video dan ikuti kreator untuk membentuknya.",
     "feedFollowingEmpty": "Belum ada video dari orang yang kamu ikuti.\nTemukan kreator yang kamu suka dan ikuti mereka.",
     "feedLatestEmpty": "Belum ada video baru.\nCek lagi sebentar lagi.",
+    "feedClassicEmpty": "Belum ada klasik.\nCek lagi sebentar lagi.",
     "feedExploreVideos": "Jelajahi Video",
     "feedExternalVideoSlow": "Video eksternal memuat lambat",
     "feedSkip": "Lewati",

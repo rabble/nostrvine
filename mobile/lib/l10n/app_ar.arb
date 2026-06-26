@@ -1699,6 +1699,7 @@
     "feedModeForYou": "لك",
     "feedModeNew": "جديد",
     "feedModeFollowing": "المتابَعون",
+    "feedModeClassics": "الكلاسيكيات",
     "feedModeSemanticLabel": "وضع الموجز: {label}",
     "@feedModeSemanticLabel": {
         "placeholders": {
@@ -1719,6 +1720,7 @@
     "feedForYouEmpty": "خلاصة لك فارغة.\nاستكشف المقاطع واتبع صناع المحتوى لتخصيصها.",
     "feedFollowingEmpty": "لا توجد مقاطع بعد من الأشخاص الذين تتابعهم.\nاعثر على صناع محتوى يعجبونك وتابعهم.",
     "feedLatestEmpty": "لا توجد مقاطع جديدة بعد.\nعد لاحقًا.",
+    "feedClassicEmpty": "لا توجد كلاسيكيات بعد.\nعد لاحقًا.",
     "feedExploreVideos": "استكشاف مقاطع الفيديو",
     "feedExternalVideoSlow": "الفيديو الخارجي يُحمَّل ببطء",
     "feedSkip": "تخطي",

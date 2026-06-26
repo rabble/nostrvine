@@ -2019,6 +2019,7 @@
     "feedModeForYou": "ለእርስዎ",
     "feedModeNew": "አዲስ",
     "feedModeFollowing": "እየተከተሉ",
+    "feedModeClassics": "ክላሲኮች",
     "feedModeSemanticLabel": "የፊድ ሁነታ: {label}",
     "@feedModeSemanticLabel": {
         "placeholders": {
@@ -2039,6 +2040,7 @@
     "feedForYouEmpty": "የእርስዎ ለአንተ ምግብ ባዶ ነው።\nቪዲዮዎችን ያስሱ እና ለመቅረጽ ፈጣሪዎችን ይከተሉ።",
     "feedFollowingEmpty": "እስካሁን ከምትከተላቸው ሰዎች ምንም ቪዲዮዎች የሉም።\nየሚወዷቸውን ፈጣሪዎች ያግኙ እና ይከተሉዋቸው።",
     "feedLatestEmpty": "እስካሁን ምንም አዲስ ቪዲዮዎች የሉም።\nበቅርቡ ተመልሰው ይመልከቱ።",
+    "feedClassicEmpty": "እስካሁን ምንም ክላሲኮች የሉም።\nበቅርቡ ተመልሰው ይመልከቱ።",
     "feedExploreVideos": "ቪዲዮዎችን ያስሱ",
     "feedExternalVideoSlow": "ውጫዊ ቪዲዮ ቀስ በቀስ በመጫን ላይ",
     "feedSkip": "ዝለል",

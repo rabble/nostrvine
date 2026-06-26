@@ -4169,6 +4169,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get feedModeFollowing => 'Fino-follow';
 
   @override
+  String get feedModeClassics => 'Klasiko';
+
+  @override
   String feedModeSemanticLabel(String label) {
     return 'Mode ng feed: $label';
   }
@@ -4191,6 +4194,9 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get feedLatestEmpty => 'Wala pang bagong video.\nBumalik mamaya.';
+
+  @override
+  String get feedClassicEmpty => 'Wala pang klasiko.\nBumalik mamaya.';
 
   @override
   String get feedExploreVideos => 'Mag-explore ng Video';

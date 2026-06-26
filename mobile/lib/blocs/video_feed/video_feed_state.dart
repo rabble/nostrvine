@@ -13,6 +13,9 @@ enum FeedMode {
 
   /// Legacy persisted restore value. Home no longer exposes this mode.
   latest,
+
+  /// Popular classic Vine archive videos.
+  classic,
 }
 
 /// Typed source for the home video feed.
@@ -28,6 +31,9 @@ enum VideoFeedSourceType {
 
   /// Most recently published videos (chronological).
   newVideos,
+
+  /// Popular classic Vine archive videos.
+  classic,
 }
 
 /// Source selection for [VideoFeedBloc].
@@ -56,11 +62,18 @@ final class VideoFeedSource extends Equatable {
       listId = null,
       listName = null;
 
+  /// Popular classic Vine archive videos.
+  const VideoFeedSource.classic()
+    : type = VideoFeedSourceType.classic,
+      listId = null,
+      listName = null;
+
   /// Compatibility conversion for legacy mode-based callers.
   factory VideoFeedSource.fromMode(FeedMode mode) => switch (mode) {
     FeedMode.following => const VideoFeedSource.following(),
     FeedMode.forYou => const VideoFeedSource.forYou(),
     FeedMode.latest => const VideoFeedSource.newVideos(),
+    FeedMode.classic => const VideoFeedSource.classic(),
   };
 
   /// The source type.
@@ -76,6 +89,7 @@ final class VideoFeedSource extends Equatable {
   FeedMode get mode => switch (type) {
     VideoFeedSourceType.forYou => FeedMode.forYou,
     VideoFeedSourceType.newVideos => FeedMode.latest,
+    VideoFeedSourceType.classic => FeedMode.classic,
     VideoFeedSourceType.following ||
     VideoFeedSourceType.subscribedList => FeedMode.following,
   };
@@ -85,6 +99,7 @@ final class VideoFeedSource extends Equatable {
     VideoFeedSourceType.forYou => FeedMode.forYou.name,
     VideoFeedSourceType.newVideos => FeedMode.latest.name,
     VideoFeedSourceType.following => FeedMode.following.name,
+    VideoFeedSourceType.classic => FeedMode.classic.name,
     VideoFeedSourceType.subscribedList => listName ?? '',
   };
 
@@ -93,6 +108,7 @@ final class VideoFeedSource extends Equatable {
     VideoFeedSourceType.forYou => FeedMode.forYou.name,
     VideoFeedSourceType.newVideos => FeedMode.latest.name,
     VideoFeedSourceType.following => FeedMode.following.name,
+    VideoFeedSourceType.classic => FeedMode.classic.name,
     VideoFeedSourceType.subscribedList => 'list:$listId',
   };
 
@@ -152,6 +168,8 @@ final class VideoFeedBlocState extends Equatable {
                ? const VideoFeedSource.following()
                : mode == FeedMode.latest
                ? const VideoFeedSource.newVideos()
+               : mode == FeedMode.classic
+               ? const VideoFeedSource.classic()
                : const VideoFeedSource.forYou());
 
   /// The current loading status.

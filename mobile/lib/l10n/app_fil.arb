@@ -1050,6 +1050,7 @@
     "feedModeForYou": "Para Sa Iyo",
     "feedModeNew": "Bago",
     "feedModeFollowing": "Fino-follow",
+    "feedModeClassics": "Klasiko",
     "feedModeSemanticLabel": "Mode ng feed: {label}",
     "@feedModeSemanticLabel": {
         "placeholders": {
@@ -1070,6 +1071,7 @@
     "feedForYouEmpty": "Walang laman ang For You feed mo.\nMag-explore ng video at mag-follow ng creators para mahubog ito.",
     "feedFollowingEmpty": "Wala pang video mula sa mga taong fino-follow mo.\nHumanap ng creators na gusto mo at i-follow sila.",
     "feedLatestEmpty": "Wala pang bagong video.\nBumalik mamaya.",
+    "feedClassicEmpty": "Wala pang klasiko.\nBumalik mamaya.",
     "feedExploreVideos": "Mag-explore ng Video",
     "feedExternalVideoSlow": "Mabagal nag-lo-load ang external video",
     "feedSkip": "Laktawan",

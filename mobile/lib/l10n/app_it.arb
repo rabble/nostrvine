@@ -1709,6 +1709,7 @@
     "feedModeForYou": "Per te",
     "feedModeNew": "Nuovo",
     "feedModeFollowing": "Seguiti",
+    "feedModeClassics": "Classici",
     "feedModeSemanticLabel": "Modalità feed: {label}",
     "@feedModeSemanticLabel": {
         "placeholders": {
@@ -1729,6 +1730,7 @@
     "feedForYouEmpty": "Il tuo feed Per te è vuoto.\nEsplora i video e segui i creator per personalizzarlo.",
     "feedFollowingEmpty": "Ancora nessun video dalle persone che segui.\nTrova creator che ti piacciono e seguili.",
     "feedLatestEmpty": "Ancora nessun nuovo video.\nTorna a controllare a breve.",
+    "feedClassicEmpty": "Ancora nessun classico.\nTorna a controllare a breve.",
     "feedExploreVideos": "Esplora video",
     "feedExternalVideoSlow": "Video esterno in caricamento lento",
     "feedSkip": "Salta",

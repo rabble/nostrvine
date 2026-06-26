@@ -2297,6 +2297,7 @@
   "feedModeForYou": "For You",
   "feedModeNew": "New",
   "feedModeFollowing": "Following",
+  "feedModeClassics": "Classics",
   "feedModeSemanticLabel": "Feed mode: {label}",
   "@feedModeSemanticLabel": {
     "description": "Semantic label for the feed mode row (current mode plus affordance hint). Screen reader only.",
@@ -2324,6 +2325,7 @@
   "feedForYouEmpty": "Your For You feed is empty.\nExplore videos and follow creators to shape it.",
   "feedFollowingEmpty": "No videos from people you follow yet.\nFind creators you like and follow them.",
   "feedLatestEmpty": "No new videos yet.\nCheck back soon.",
+  "feedClassicEmpty": "No classic Vines yet.\nCheck back soon.",
   "feedExploreVideos": "Explore Videos",
   "feedExternalVideoSlow": "External video loading slowly",
   "feedSkip": "Skip",

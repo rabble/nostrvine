@@ -4112,6 +4112,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feedModeFollowing => 'Following';
 
   @override
+  String get feedModeClassics => 'Classics';
+
+  @override
   String feedModeSemanticLabel(String label) {
     return 'Feed mode: $label';
   }
@@ -4134,6 +4137,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+
+  @override
+  String get feedClassicEmpty => 'No classic Vines yet.\nCheck back soon.';
 
   @override
   String get feedExploreVideos => 'Explore Videos';

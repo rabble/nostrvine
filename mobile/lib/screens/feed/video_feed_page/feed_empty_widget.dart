@@ -73,6 +73,7 @@ class FeedEmptyWidget extends StatelessWidget {
       FeedMode.forYou => context.l10n.feedForYouEmpty,
       FeedMode.following => context.l10n.feedFollowingEmpty,
       FeedMode.latest => context.l10n.feedLatestEmpty,
+      FeedMode.classic => context.l10n.feedClassicEmpty,
     };
   }
 }

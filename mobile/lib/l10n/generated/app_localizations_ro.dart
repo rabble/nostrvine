@@ -4234,6 +4234,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get feedModeFollowing => 'Urmăresc';
 
   @override
+  String get feedModeClassics => 'Clasice';
+
+  @override
   String feedModeSemanticLabel(String label) {
     return 'Mod flux: $label';
   }
@@ -4257,6 +4260,9 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get feedLatestEmpty =>
       'Încă nu există videoclipuri noi.\nRevino curând.';
+
+  @override
+  String get feedClassicEmpty => 'Încă nu există clasice.\nRevino curând.';
 
   @override
   String get feedExploreVideos => 'Explorează videoclipuri';

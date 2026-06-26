@@ -4029,6 +4029,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get feedModeFollowing => 'እየተከተሉ';
 
   @override
+  String get feedModeClassics => 'ክላሲኮች';
+
+  @override
   String feedModeSemanticLabel(String label) {
     return 'የፊድ ሁነታ: $label';
   }
@@ -4051,6 +4054,9 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get feedLatestEmpty => 'እስካሁን ምንም አዲስ ቪዲዮዎች የሉም።\nበቅርቡ ተመልሰው ይመልከቱ።';
+
+  @override
+  String get feedClassicEmpty => 'እስካሁን ምንም ክላሲኮች የሉም።\nበቅርቡ ተመልሰው ይመልከቱ።';
 
   @override
   String get feedExploreVideos => 'ቪዲዮዎችን ያስሱ';

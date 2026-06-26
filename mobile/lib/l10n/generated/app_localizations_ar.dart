@@ -4068,6 +4068,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get feedModeFollowing => 'المتابَعون';
 
   @override
+  String get feedModeClassics => 'الكلاسيكيات';
+
+  @override
   String feedModeSemanticLabel(String label) {
     return 'وضع الموجز: $label';
   }
@@ -4090,6 +4093,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get feedLatestEmpty => 'لا توجد مقاطع جديدة بعد.\nعد لاحقًا.';
+
+  @override
+  String get feedClassicEmpty => 'لا توجد كلاسيكيات بعد.\nعد لاحقًا.';
 
   @override
   String get feedExploreVideos => 'استكشاف مقاطع الفيديو';

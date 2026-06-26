@@ -1699,6 +1699,7 @@
     "feedModeForYou": "おすすめ",
     "feedModeNew": "新着",
     "feedModeFollowing": "フォロー中",
+    "feedModeClassics": "クラシック",
     "feedModeSemanticLabel": "フィードモード: {label}",
     "@feedModeSemanticLabel": {
         "placeholders": {
@@ -1719,6 +1720,7 @@
     "feedForYouEmpty": "おすすめフィードはまだ空です。\n動画を見つけてクリエイターをフォローし、あなた向けに育てましょう。",
     "feedFollowingEmpty": "フォロー中の人の動画はまだありません。\n気に入ったクリエイターを見つけてフォローしましょう。",
     "feedLatestEmpty": "新しい動画はまだありません。\nしばらくしてからもう一度確認してください。",
+    "feedClassicEmpty": "クラシック動画はまだありません。\nしばらくしてからもう一度確認してください。",
     "feedExploreVideos": "動画を探しに行こう",
     "feedExternalVideoSlow": "外部動画の読み込みに時間がかかってる",
     "feedSkip": "スキップ",

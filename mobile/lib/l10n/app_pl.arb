@@ -1709,6 +1709,7 @@
     "feedModeForYou": "Dla ciebie",
     "feedModeNew": "Nowe",
     "feedModeFollowing": "Obserwowane",
+    "feedModeClassics": "Klasyki",
     "feedModeSemanticLabel": "Tryb kanału: {label}",
     "@feedModeSemanticLabel": {
         "placeholders": {
@@ -1729,6 +1730,7 @@
     "feedForYouEmpty": "Twój kanał Dla Ciebie jest pusty.\nOdkrywaj filmy i obserwuj twórców, aby go ukształtować.",
     "feedFollowingEmpty": "Brak filmów od osób, które obserwujesz.\nZnajdź twórców, których lubisz i zacznij ich obserwować.",
     "feedLatestEmpty": "Brak nowych filmów.\nWróć tu wkrótce.",
+    "feedClassicEmpty": "Brak klasyków.\nWróć tu wkrótce.",
     "feedExploreVideos": "Odkrywaj filmy",
     "feedExternalVideoSlow": "Zewnętrzny film wczytuje się powoli",
     "feedSkip": "Pomiń",

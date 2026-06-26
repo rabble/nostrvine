@@ -4218,6 +4218,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get feedModeFollowing => 'Obserwowane';
 
   @override
+  String get feedModeClassics => 'Klasyki';
+
+  @override
   String feedModeSemanticLabel(String label) {
     return 'Tryb kanału: $label';
   }
@@ -4240,6 +4243,9 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get feedLatestEmpty => 'Brak nowych filmów.\nWróć tu wkrótce.';
+
+  @override
+  String get feedClassicEmpty => 'Brak klasyków.\nWróć tu wkrótce.';
 
   @override
   String get feedExploreVideos => 'Odkrywaj filmy';

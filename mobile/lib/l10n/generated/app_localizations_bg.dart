@@ -4157,6 +4157,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get feedModeFollowing => 'Следвани';
 
   @override
+  String get feedModeClassics => 'Класики';
+
+  @override
   String feedModeSemanticLabel(String label) {
     return 'Режим на емисията: $label';
   }
@@ -4179,6 +4182,9 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get feedLatestEmpty => 'Още няма нови видеа.\nПровери пак скоро.';
+
+  @override
+  String get feedClassicEmpty => 'Още няма класики.\nПровери пак скоро.';
 
   @override
   String get feedExploreVideos => 'Разгледай видеа';

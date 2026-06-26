@@ -1709,6 +1709,7 @@
     "feedModeForYou": "Para você",
     "feedModeNew": "Novo",
     "feedModeFollowing": "Seguindo",
+    "feedModeClassics": "Clássicos",
     "feedModeSemanticLabel": "Modo do feed: {label}",
     "@feedModeSemanticLabel": {
         "placeholders": {
@@ -1729,6 +1730,7 @@
     "feedForYouEmpty": "Seu feed Para você está vazio.\nExplore vídeos e siga criadores para personalizá-lo.",
     "feedFollowingEmpty": "Ainda não há vídeos das pessoas que você segue.\nEncontre criadores de que goste e siga-os.",
     "feedLatestEmpty": "Ainda não há vídeos novos.\nVolte em breve.",
+    "feedClassicEmpty": "Ainda não há clássicos.\nVolte em breve.",
     "feedExploreVideos": "Explorar vídeos",
     "feedExternalVideoSlow": "Vídeo externo carregando devagar",
     "feedSkip": "Pular",

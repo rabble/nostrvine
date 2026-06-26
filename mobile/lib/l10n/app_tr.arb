@@ -1706,6 +1706,7 @@
     "feedModeForYou": "Senin için",
     "feedModeNew": "Yeni",
     "feedModeFollowing": "Takip",
+    "feedModeClassics": "Klasikler",
     "feedModeSemanticLabel": "Akış modu: {label}",
     "@feedModeSemanticLabel": {
         "placeholders": {
@@ -1726,6 +1727,7 @@
     "feedForYouEmpty": "Sana Özel akışın boş.\nVideolar keşfet ve içerik üreticileri takip ederek akışını şekillendir.",
     "feedFollowingEmpty": "Takip ettiğin kişilerden henüz video yok.\nBeğendiğin içerik üreticilerini bulup takip et.",
     "feedLatestEmpty": "Henüz yeni video yok.\nYakında tekrar kontrol et.",
+    "feedClassicEmpty": "Henüz klasik yok.\nYakında tekrar kontrol et.",
     "feedExploreVideos": "Videoları Keşfet",
     "feedExternalVideoSlow": "Harici video yavaş yükleniyor",
     "feedSkip": "Atla",

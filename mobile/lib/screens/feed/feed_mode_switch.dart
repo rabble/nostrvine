@@ -90,6 +90,10 @@ class FeedModeSwitch extends StatelessWidget {
           label: l10n.feedModeNew,
           value: 'latest',
         ),
+        VineBottomSheetSelectionOptionData(
+          label: l10n.feedModeClassics,
+          value: 'classic',
+        ),
         ...state.subscribedLists.map(
           (list) => VineBottomSheetSelectionOptionData(
             label: list.name,
@@ -117,6 +121,9 @@ VideoFeedSource _sourceForSelection(String selected, VideoFeedBlocState state) {
   if (selected == 'latest') {
     return const VideoFeedSource.newVideos();
   }
+  if (selected == 'classic') {
+    return const VideoFeedSource.classic();
+  }
   if (selected.startsWith('list:')) {
     final listId = selected.substring('list:'.length);
     final list = state.subscribedLists.firstWhere((list) => list.id == listId);
@@ -132,6 +139,7 @@ String _labelForSource(VideoFeedBlocState state, AppLocalizations l10n) {
     VideoFeedSourceType.forYou => l10n.feedModeForYou,
     VideoFeedSourceType.following => l10n.feedModeFollowing,
     VideoFeedSourceType.newVideos => l10n.feedModeNew,
+    VideoFeedSourceType.classic => l10n.feedModeClassics,
     VideoFeedSourceType.subscribedList =>
       _listNameForSource(state) ?? source.listName ?? source.labelFallback,
   };
@@ -150,6 +158,7 @@ String _labelForMode(FeedMode mode, AppLocalizations l10n) => switch (mode) {
   FeedMode.forYou => l10n.feedModeForYou,
   FeedMode.latest => l10n.feedModeNew,
   FeedMode.following => l10n.feedModeFollowing,
+  FeedMode.classic => l10n.feedModeClassics,
 };
 
 /// Shared row rendering — label + caret + optional trailing widget — used

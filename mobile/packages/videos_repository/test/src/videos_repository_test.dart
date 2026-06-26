@@ -3981,6 +3981,92 @@ void main() {
       });
     });
 
+    group('getClassicVideos', () {
+      late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+      setUp(() {
+        mockFunnelcakeClient = MockFunnelcakeApiClient();
+        when(
+          () => mockFunnelcakeClient.getBulkVideoStats(any()),
+        ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+        when(
+          () => mockFunnelcakeClient.getV2PopularVideosPage(
+            variant: any(named: 'variant'),
+            limit: any(named: 'limit'),
+            cursor: any(named: 'cursor'),
+            before: any(named: 'before'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
+          ),
+        ).thenAnswer((invocation) async {
+          final stats = await mockFunnelcakeClient.getV2PopularVideos(
+            variant:
+                invocation.namedArguments[#variant] as PopularVideosVariant,
+            limit: invocation.namedArguments[#limit] as int? ?? 25,
+            before: invocation.namedArguments[#before] as int?,
+          );
+          return V2PopularVideosResponse(videos: stats);
+        });
+      });
+
+      test(
+        'delegates to the classic popular feed and maps it to a HomeFeedResult',
+        () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getV2PopularVideos(
+              variant: any(named: 'variant'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'vine-1',
+                pubkey: 'pubkey-1',
+                dTag: 'vine-1',
+                videoUrl: 'https://example.com/vine-1.mp4',
+                rawTags: const {'platform': 'vine'},
+              ),
+            ],
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getClassicVideos();
+
+          expect(result.videos.map((v) => v.id), ['vine-1']);
+          verify(
+            () => mockFunnelcakeClient.getV2PopularVideosPage(
+              variant: PopularVideosVariant.classic,
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
+              before: any(named: 'before'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test('returns an empty result when Funnelcake is unavailable', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
+
+        final repositoryWithApi = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repositoryWithApi.getClassicVideos();
+
+        expect(result.videos, isEmpty);
+        expect(result.hasMore, isFalse);
+      });
+    });
+
     group('getPopularVideos', () {
       group('Funnelcake API first', () {
         late MockFunnelcakeApiClient mockFunnelcakeClient;

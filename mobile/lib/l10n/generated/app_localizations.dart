@@ -7178,6 +7178,12 @@ abstract class AppLocalizations {
   /// **'Following'**
   String get feedModeFollowing;
 
+  /// No description provided for @feedModeClassics.
+  ///
+  /// In en, this message translates to:
+  /// **'Classics'**
+  String get feedModeClassics;
+
   /// Semantic label for the feed mode row (current mode plus affordance hint). Screen reader only.
   ///
   /// In en, this message translates to:
@@ -7213,6 +7219,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No new videos yet.\nCheck back soon.'**
   String get feedLatestEmpty;
+
+  /// No description provided for @feedClassicEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No classic Vines yet.\nCheck back soon.'**
+  String get feedClassicEmpty;
 
   /// No description provided for @feedExploreVideos.
   ///

@@ -130,7 +130,18 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   bool _usesHomeFeedCache(VideoFeedSource source) =>
       source.type == VideoFeedSourceType.forYou ||
       source.type == VideoFeedSourceType.following ||
-      source.type == VideoFeedSourceType.newVideos;
+      source.type == VideoFeedSourceType.newVideos ||
+      source.type == VideoFeedSourceType.classic;
+
+  /// Whether [source] paginates via an opaque server cursor (recommendation
+  /// and popular feeds) rather than a `createdAt` "until" timestamp.
+  ///
+  /// Cursor-backed feeds arrive in server-ranked order, so pages must be
+  /// appended as-is (no `createdAt` re-sort) and exhaustion is signalled by a
+  /// null [HomeFeedResult.paginationCursor] rather than an empty page.
+  bool _usesCursorPagination(VideoFeedSource source) =>
+      source.type == VideoFeedSourceType.forYou ||
+      source.type == VideoFeedSourceType.classic;
 
   bool _canEmitForSource(
     VideoFeedSource source,
@@ -332,8 +343,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       return;
     }
 
-    if (state.source.type == VideoFeedSourceType.forYou &&
-        state.paginationCursor == null) {
+    if (_usesCursorPagination(state.source) && state.paginationCursor == null) {
       emit(state.copyWith(hasMore: false));
       return;
     }
@@ -351,12 +361,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
           .reduce((a, b) => a < b ? a : b);
       final until = oldestCreatedAt;
 
+      final usesCursor = _usesCursorPagination(source);
       final result = await _fetchVideosForSource(
         source,
-        until: source.type == VideoFeedSourceType.forYou ? null : until,
-        paginationCursor: source.type == VideoFeedSourceType.forYou
-            ? state.paginationCursor
-            : null,
+        until: usesCursor ? null : until,
+        paginationCursor: usesCursor ? state.paginationCursor : null,
       );
       if (!_canEmitForSource(source, emit)) return;
 
@@ -376,10 +385,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         }
       }
 
-      // For You pages arrive in server-ranked recommendation order;
-      // re-sorting by createdAt would shuffle new videos around the
+      // Cursor-backed feeds (For You, Classics) arrive in server-ranked
+      // order; re-sorting by createdAt would shuffle new videos around the
       // current play index and resurface already-seen ones.
-      if (source.type != VideoFeedSourceType.forYou) {
+      if (!usesCursor) {
         updatedVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       }
       final addedUniqueVideos = updatedVideos.length > state.videos.length;
@@ -814,7 +823,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     required bool fallbackHasMore,
   }) {
     final upstreamHasMore = result.hasMore ?? fallbackHasMore;
-    if (source.type != VideoFeedSourceType.forYou) {
+    if (!_usesCursorPagination(source)) {
       return upstreamHasMore;
     }
 
@@ -865,6 +874,16 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       _videosRepository
           .getNewVideos(until: until, skipCache: skipCache)
           .then((videos) => HomeFeedResult(videos: videos)),
+    VideoFeedSourceType.classic =>
+      paginationCursor == null
+          ? _videosRepository.getClassicVideos(
+              until: until,
+              skipCache: skipCache,
+            )
+          : _videosRepository.getClassicVideos(
+              cursor: paginationCursor,
+              skipCache: skipCache,
+            ),
   };
 
   void _scheduleNostrEnrichment({

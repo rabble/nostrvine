@@ -4091,6 +4091,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get feedModeFollowing => 'Takip';
 
   @override
+  String get feedModeClassics => 'Klasikler';
+
+  @override
   String feedModeSemanticLabel(String label) {
     return 'Akış modu: $label';
   }
@@ -4114,6 +4117,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get feedLatestEmpty =>
       'Henüz yeni video yok.\nYakında tekrar kontrol et.';
+
+  @override
+  String get feedClassicEmpty =>
+      'Henüz klasik yok.\nYakında tekrar kontrol et.';
 
   @override
   String get feedExploreVideos => 'Videoları Keşfet';

@@ -1906,6 +1906,7 @@
     "feedModeForYou": "За теб",
     "feedModeNew": "Ново",
     "feedModeFollowing": "Следвани",
+    "feedModeClassics": "Класики",
     "feedModeSemanticLabel": "Режим на емисията: {label}",
     "@feedModeSemanticLabel": {
         "placeholders": {
@@ -1926,6 +1927,7 @@
     "feedForYouEmpty": "Твоят фийд „За теб“ е празен.\nРазгледай видеа и последвай творци, за да го оформиш.",
     "feedFollowingEmpty": "Още няма видеа от хората, които следваш.\nНамери творци, които ти допадат, и ги последвай.",
     "feedLatestEmpty": "Още няма нови видеа.\nПровери пак скоро.",
+    "feedClassicEmpty": "Още няма класики.\nПровери пак скоро.",
     "feedExploreVideos": "Разгледай видеа",
     "feedExternalVideoSlow": "Външното видео се зарежда бавно",
     "feedSkip": "Пропускане",
