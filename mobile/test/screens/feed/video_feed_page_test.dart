@@ -139,6 +139,26 @@ void main() {
       expect(find.textContaining('ForYou'), findsNothing);
     });
 
+    testWidgets('uses localized Classics copy for an empty Classics feed', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await tester.pumpWidget(
+        _buildEmptyFeedSubject(
+          const VideoFeedBlocState(
+            status: VideoFeedStatus.success,
+            mode: FeedMode.classic,
+          ),
+        ),
+      );
+
+      expect(find.text(l10n.feedClassicEmpty), findsOneWidget);
+      // Guards against the switch falling through to a neighbouring mode.
+      expect(find.text(l10n.feedLatestEmpty), findsNothing);
+      expect(find.text(l10n.feedForYouEmpty), findsNothing);
+    });
+
     testWidgets('uses localized Following copy for an empty Following feed', (
       tester,
     ) async {

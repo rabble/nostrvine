@@ -1549,13 +1549,24 @@ void main() {
             final cursor =
                 invocation.namedArguments[const Symbol('cursor')] as String?;
             if (cursor == 'cursor-2') {
+              // Page 2 is stamped *newer* than page 1 so a (wrong) timestamp
+              // re-sort would surface it first — pinning the server-ranked
+              // append order the cursor path must preserve.
               return HomeFeedResult(
-                videos: createTestVideos(2, idPrefix: 'page2'),
+                videos: createTestVideos(
+                  2,
+                  idPrefix: 'page2',
+                  startTimestamp: 2000,
+                ),
                 hasMore: false,
               );
             }
             return HomeFeedResult(
-              videos: createTestVideos(2, idPrefix: 'page1'),
+              videos: createTestVideos(
+                2,
+                idPrefix: 'page1',
+                startTimestamp: 1000,
+              ),
               paginationCursor: 'cursor-2',
               hasMore: true,
             );
@@ -1578,6 +1589,12 @@ void main() {
           ).called(1);
           expect(bloc.state.videos.length, 4);
           expect(bloc.state.hasMore, isFalse);
+          // Server-ranked order is appended as-is, never re-sorted: page 1
+          // (older) stays ahead of the newer page 2.
+          expect(
+            bloc.state.videos.map((v) => v.id).toList(),
+            ['page1-0', 'page1-1', 'page2-0', 'page2-1'],
+          );
         },
       );
 
@@ -2677,6 +2694,28 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
         expect: () => <VideoFeedBlocState>[],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'does nothing when mode is classic',
+        build: createBloc,
+        seed: () => VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.classic,
+          videos: createTestVideos(5),
+        ),
+        act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
+        expect: () => <VideoFeedBlocState>[],
+        verify: (_) {
+          verifyNever(
+            () => mockVideosRepository.getClassicVideos(
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              cursor: any(named: 'cursor'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          );
+        },
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(

@@ -4052,6 +4052,48 @@ void main() {
         },
       );
 
+      test(
+        'maps a non-null page cursor to paginationCursor with hasMore',
+        () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getV2PopularVideosPage(
+              variant: any(named: 'variant'),
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
+              before: any(named: 'before'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer(
+            (_) async => V2PopularVideosResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'vine-1',
+                  pubkey: 'pubkey-1',
+                  dTag: 'vine-1',
+                  videoUrl: 'https://example.com/vine-1.mp4',
+                  rawTags: const {'platform': 'vine'},
+                ),
+              ],
+              nextCursor: 'page-2',
+              hasMore: true,
+            ),
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getClassicVideos(limit: 1);
+
+          expect(result.videos.map((v) => v.id), ['vine-1']);
+          expect(result.paginationCursor, 'page-2');
+          expect(result.hasMore, isTrue);
+        },
+      );
+
       test('returns an empty result when Funnelcake is unavailable', () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
 
