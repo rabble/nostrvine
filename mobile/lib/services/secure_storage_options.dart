@@ -14,8 +14,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// `keychain-access-groups` entitlement; release builds are properly signed and
 /// keep the recommended data-protection keychain.
 ///
-/// Mirrors the workaround already used by `nostr_key_manager`'s
-/// `PlatformSecureStorage`. See #5563.
+/// Mirrors the `useDataProtectionKeyChain` gate already used by
+/// `nostr_key_manager`'s `PlatformSecureStorage`. `accessibility` is
+/// intentionally left at the package default (`unlocked`) to preserve the app
+/// stores' prior macOS behavior. See #5563.
 MacOsOptions appMacOsSecureStorageOptions() => MacOsOptions(
   useDataProtectionKeyChain:
       defaultTargetPlatform != TargetPlatform.macOS || !kDebugMode,
