@@ -172,6 +172,39 @@ void main() {
       expect(downloaderWarnings, isEmpty);
     });
 
+    // Canary for the negative assertion above: a genuine failure must
+    // surface a captured warning. If the capture path is ever gated or
+    // refactored away, this fails loudly instead of letting the
+    // "does not log a warning" test quietly go vacuous.
+    test('a genuine non-2xx failure logs a captured warning', () async {
+      await LogCaptureService().clearAllLogs();
+
+      final client = _CallbackClient(
+        (_) async => http.StreamedResponse(
+          Stream<List<int>>.value(utf8.encode('not found')),
+          404,
+        ),
+      );
+      final downloader = HttpCancellableDownloader(client);
+      final target = File('${tempDir.path}/non_success_warns.mp4');
+
+      final file = await downloader
+          .download(
+            url: 'https://example.com/missing.mp4',
+            targetFile: target,
+          )
+          .file;
+
+      expect(file, isNull);
+
+      final downloaderWarnings = LogCaptureService()
+          .getRecentLogs()
+          .where((entry) => entry.message.contains('CancellableDownload'))
+          .toList();
+      expect(downloaderWarnings, isNotEmpty);
+      expect(downloaderWarnings.first.message, contains('returned HTTP 404'));
+    });
+
     test('close waits for active response stream cancellation', () async {
       var streamCancelled = false;
       var closedAfterStreamCancel = false;
