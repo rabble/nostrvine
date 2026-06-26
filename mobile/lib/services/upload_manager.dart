@@ -14,26 +14,16 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
+import 'package:openvine/services/upload/upload_progress_reporter.dart';
+import 'package:openvine/services/upload/upload_retry_policy.dart';
 import 'package:openvine/services/upload_initialization_helper.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
-import 'package:openvine/utils/async_utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
-
-/// Get platform name for logging (web-safe)
-String _getPlatformName() {
-  if (kIsWeb) return 'web';
-  try {
-    return defaultTargetPlatform.name;
-  } catch (_) {
-    return 'unknown';
-  }
-}
 
 /// Exception thrown when a [BlossomUploadResult] indicates failure.
 ///
@@ -121,7 +111,17 @@ class UploadManager {
        _store = PendingUploadStore(
          scopeUploadsToCurrentUser: scopeUploadsToCurrentUser,
          currentNostrPubkey: currentNostrPubkey,
-       );
+       ) {
+    _retryPolicy = UploadRetryPolicy(
+      store: _store,
+      retryConfig: _retryConfig,
+    );
+    _reporter = UploadProgressReporter(
+      store: _store,
+      circuitBreaker: _circuitBreaker,
+      retryConfig: _retryConfig,
+    );
+  }
 
   // Core services
   final PendingUploadStore _store;
@@ -131,16 +131,14 @@ class UploadManager {
   final UploadRetryConfig _retryConfig;
   final Dio _dio = Dio();
 
-  // State tracking
-  final Map<String, StreamSubscription<double>> _progressSubscriptions = {};
-  final Map<String, UploadMetrics> _uploadMetrics = {};
-  final Map<String, Timer> _retryTimers = {};
+  // Extracted concerns
+  late final UploadRetryPolicy _retryPolicy;
+  late final UploadProgressReporter _reporter;
 
   // Processing-completion polls keyed by upload id, so dispose() can
   // cancel them — an untracked periodic timer would keep firing against
   // a disposed manager for up to 5 minutes.
   final Map<String, Timer> _processingPollTimers = {};
-  final Map<String, Future<void>> _sessionPersistFutures = {};
 
   bool _isInitialized = false;
 
@@ -210,7 +208,7 @@ class UploadManager {
       );
 
       // Send crash report for initialization failure
-      await _sendInitializationFailureCrashReport(e, stackTrace);
+      await _reporter.sendInitializationFailureCrashReport(e, stackTrace);
 
       // Don't rethrow - allow the app to continue and retry on demand
       // rethrow;
@@ -687,12 +685,15 @@ class UploadManager {
       category: LogCategory.video,
     );
 
-    _uploadMetrics[upload.id] = UploadMetrics(
-      uploadId: upload.id,
-      startTime: startTime,
-      retryCount: upload.retryCount ?? 0,
-      fileSizeMB: fileSizeMB,
-      wasSuccessful: false,
+    _reporter.recordStart(
+      upload.id,
+      UploadMetrics(
+        uploadId: upload.id,
+        startTime: startTime,
+        retryCount: upload.retryCount ?? 0,
+        fileSizeMB: fileSizeMB,
+        wasSuccessful: false,
+      ),
     );
 
     try {
@@ -712,77 +713,38 @@ class UploadManager {
     }
   }
 
-  /// Perform upload with exponential backoff retry using proper async patterns
+  /// Perform upload with exponential backoff retry using proper async patterns.
+  ///
+  /// Delegates retry orchestration to [UploadRetryPolicy]. The execute callback
+  /// re-fetches the current upload from the store on each attempt so resumable
+  /// session updates from prior chunk callbacks are picked up automatically.
   Future<void> _performUploadWithRetry(
     PendingUpload upload,
     File videoFile,
     ValueChanged<double>? onProgress,
   ) async {
-    // Local-only counter for how many auto-attempts have been made in this
-    // call. Must NOT be persisted to Hive: PendingUpload.retryCount is the
-    // manual-retry budget (canRetry gates on retryCount < 3). Writing
-    // auto-attempt counts there would exhaust the budget and prevent the user
-    // from calling retryUpload() after a failed session.
-    var autoAttempt = 0;
+    await _retryPolicy.performWithRetry(
+      upload,
+      () async {
+        final currentUpload = _store.getUpload(upload.id) ?? upload;
 
-    try {
-      await AsyncUtils.retryWithBackoff(
-        operation: () async {
-          final currentUpload = getUpload(upload.id) ?? upload;
+        // Validate file still exists
+        if (!videoFile.existsSync()) {
+          throw Exception('Video file not found: ${upload.localVideoPath}');
+        }
 
-          // NOTE: Circuit breaker removed from upload flow - it was blocking legitimate retries
-          // Uploads already have proper retry logic with exponential backoff
-          // Users should be able to retry uploads even if previous attempts failed
+        // Execute upload with timeout
+        final result = await _executeUploadWithTimeout(
+          currentUpload,
+          videoFile,
+          onProgress,
+        );
 
-          // autoAttempt is local to this _performUploadWithRetry invocation and
-          // is never written to Hive, so the manual-retry budget is preserved.
-          autoAttempt++;
-          Log.warning(
-            'Upload attempt $autoAttempt/${_retryConfig.maxRetries + 1} for ${currentUpload.id}',
-            name: 'UploadManager',
-            category: LogCategory.video,
-          );
-
-          await _store.update(
-            currentUpload.copyWith(
-              status: autoAttempt == 1
-                  ? UploadStatus.uploading
-                  : UploadStatus.retrying,
-              // retryCount is intentionally left unchanged here — it is the
-              // manual-retry budget managed exclusively by retryUpload().
-            ),
-          );
-
-          // Validate file still exists
-          if (!videoFile.existsSync()) {
-            throw Exception('Video file not found: ${upload.localVideoPath}');
-          }
-
-          // Execute upload with timeout
-          final result = await _executeUploadWithTimeout(
-            currentUpload,
-            videoFile,
-            onProgress,
-          );
-
-          // Success - record metrics and complete
-          await _handleUploadSuccess(currentUpload, result);
-        },
-        maxRetries: _retryConfig.maxRetries,
-        baseDelay: _retryConfig.initialDelay,
-        maxDelay: _retryConfig.maxDelay,
-        backoffMultiplier: _retryConfig.backoffMultiplier,
-        retryWhen: isRetriableError,
-        debugName: 'Upload-${upload.id}',
-      );
-    } catch (e) {
-      Log.error(
-        'Upload failed after all retries: $e',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-      rethrow;
-    }
+        // Success - record metrics and complete
+        await _handleUploadSuccess(currentUpload, result);
+      },
+      isRetriable: _retryPolicy.isRetriableError,
+    );
   }
 
   /// Execute upload with timeout and progress tracking
@@ -861,7 +823,7 @@ class UploadManager {
             proofManifestJson: upload.proofManifestJson,
             resumableSession: upload.resumableSession,
             onResumableSessionUpdated: (session) {
-              _enqueueSessionPersist(
+              _retryPolicy.enqueueSessionPersist(
                 upload.id,
                 session,
                 videoFile.lengthSync(),
@@ -870,7 +832,7 @@ class UploadManager {
             onProgress: (value) {
               final progress = value * 0.8; // Reserve 20% for thumbnail
 
-              _updateUploadProgress(upload.id, progress);
+              _reporter.updateProgress(upload.id, progress);
               onProgress?.call(progress);
             },
           )
@@ -887,13 +849,15 @@ class UploadManager {
               );
 
               // Send timeout crash report asynchronously
-              _sendTimeoutCrashReport(upload, timeoutError).catchError((e) {
-                Log.error(
-                  'Failed to send timeout crash report: $e',
-                  name: 'UploadManager',
-                  category: LogCategory.video,
-                );
-              });
+              _reporter.sendTimeoutCrashReport(upload, timeoutError).catchError(
+                (e) {
+                  Log.error(
+                    'Failed to send timeout crash report: $e',
+                    name: 'UploadManager',
+                    category: LogCategory.video,
+                  );
+                },
+              );
 
               throw timeoutError;
             },
@@ -940,7 +904,7 @@ class UploadManager {
       }
 
       if (result.success) {
-        _updateUploadProgress(upload.id, 1.0);
+        _reporter.updateProgress(upload.id, 1.0);
         onProgress?.call(1.0);
       }
 
@@ -971,7 +935,7 @@ class UploadManager {
     dynamic result,
   ) async {
     final endTime = DateTime.now();
-    final metrics = _uploadMetrics[upload.id];
+    final metrics = _reporter.metricsFor(upload.id);
 
     if (result.success == true) {
       // Get the LATEST upload record from Hive (may have been updated with thumbnail URL)
@@ -983,15 +947,15 @@ class UploadManager {
 
       // Record successful metrics
       if (metrics != null) {
-        final updatedMetrics = _createSuccessMetrics(
+        final updatedMetrics = _reporter.createSuccessMetrics(
           metrics,
           endTime,
           upload.retryCount ?? 0,
         );
-        _uploadMetrics[upload.id] = updatedMetrics;
+        _reporter.recordSuccess(upload.id, updatedMetrics);
 
         // Log success with formatted output
-        _logUploadSuccess(result, updatedMetrics);
+        _reporter.logUploadSuccess(result, updatedMetrics);
       }
 
       // If upload is in processing state, start polling for completion
@@ -1010,13 +974,13 @@ class UploadManager {
   /// Handle upload failure with comprehensive crash reporting
   Future<void> _handleUploadFailure(PendingUpload upload, dynamic error) async {
     final endTime = DateTime.now();
-    final metrics = _uploadMetrics[upload.id];
+    final metrics = _reporter.metricsFor(upload.id);
     final latestUpload = getUpload(upload.id) ?? upload;
 
     // Check network connectivity and categorize error
-    final connectivity = await _checkNetworkConnectivity();
-    final errorCategory = await categorizeError(error);
-    final userMessage = getUserFriendlyErrorMessage(
+    final connectivity = await _reporter.checkNetworkConnectivity();
+    final errorCategory = await _reporter.categorizeError(error);
+    final userMessage = _reporter.getUserFriendlyErrorMessage(
       errorCategory,
       connectivity,
     );
@@ -1032,7 +996,7 @@ class UploadManager {
       category: LogCategory.video,
     );
     Log.error(
-      'Network: ${getNetworkTypeString(connectivity)}',
+      'Network: ${_reporter.getNetworkTypeString(connectivity)}',
       name: 'UploadManager',
       category: LogCategory.video,
     );
@@ -1043,12 +1007,13 @@ class UploadManager {
     );
 
     // Send comprehensive crash report to Crashlytics with network state
-    await _sendUploadFailureCrashReport(
+    await _reporter.sendUploadFailureCrashReport(
       upload,
       error,
       errorCategory,
       metrics,
       connectivity,
+      isManagerInitialized: _isInitialized,
     );
 
     // Store user-friendly error message instead of raw exception
@@ -1057,7 +1022,7 @@ class UploadManager {
         status: UploadStatus.failed,
         errorMessage: userMessage,
         retryCount: latestUpload.retryCount ?? 0,
-        resumableSession: _isExpiredResumableSessionError(error)
+        resumableSession: _reporter.isExpiredResumableSessionError(error)
             ? null
             : latestUpload.resumableSession,
       ),
@@ -1065,341 +1030,46 @@ class UploadManager {
 
     // Record failure metrics
     if (metrics != null) {
-      _uploadMetrics[upload.id] = UploadMetrics(
-        uploadId: upload.id,
-        startTime: metrics.startTime,
-        endTime: endTime,
-        uploadDuration: endTime.difference(metrics.startTime),
-        retryCount: latestUpload.retryCount ?? 0,
-        fileSizeMB: metrics.fileSizeMB,
-        errorCategory: errorCategory,
-        wasSuccessful: false,
+      _reporter.recordFailure(
+        upload.id,
+        UploadMetrics(
+          uploadId: upload.id,
+          startTime: metrics.startTime,
+          endTime: endTime,
+          uploadDuration: endTime.difference(metrics.startTime),
+          retryCount: latestUpload.retryCount ?? 0,
+          fileSizeMB: metrics.fileSizeMB,
+          errorCategory: errorCategory,
+          wasSuccessful: false,
+        ),
       );
     }
   }
 
-  Future<void> _storeResumableSessionProgress(
-    String uploadId,
-    BlossomResumableUploadSession session,
-    int fileSizeBytes,
-  ) async {
-    final upload = getUpload(uploadId);
-    if (upload == null) {
-      return;
-    }
+  // ---------------------------------------------------------------------------
+  // Thin delegators for moved methods (keep @visibleForTesting annotations)
+  // ---------------------------------------------------------------------------
 
-    final persistedProgress = fileSizeBytes <= 0
-        ? upload.uploadProgress
-        : ((session.nextOffset / fileSizeBytes) * 0.8).clamp(0.0, 0.8);
-
-    await _store.update(
-      upload.copyWith(
-        resumableSession: session,
-        uploadProgress: persistedProgress,
-      ),
-    );
-  }
-
-  /// Enqueues a session persistence write so that rapid chunk callbacks
-  /// are serialized per upload, preventing interleaved Hive writes.
-  void _enqueueSessionPersist(
-    String uploadId,
-    BlossomResumableUploadSession session,
-    int fileSizeBytes,
-  ) {
-    final previous = _sessionPersistFutures[uploadId] ?? Future<void>.value();
-    _sessionPersistFutures[uploadId] = previous.then((_) async {
-      try {
-        await _storeResumableSessionProgress(uploadId, session, fileSizeBytes);
-      } catch (e, s) {
-        Log.error(
-          'Failed to persist resumable session progress for $uploadId: $e',
-          name: 'UploadManager',
-          category: LogCategory.video,
-          error: e,
-          stackTrace: s,
-        );
-      }
-    });
-  }
-
-  bool _isExpiredResumableSessionError(dynamic error) {
-    if (error is BlossomResumableUploadException) {
-      return error.statusCode == 404 || error.statusCode == 410;
-    }
-
-    final errorMessage = error.toString().toLowerCase();
-    return errorMessage.contains('session expired') ||
-        errorMessage.contains('session is no longer available');
-  }
-
-  /// Check if error is retriable
+  /// Delegates to [UploadRetryPolicy.isRetriableError].
   @visibleForTesting
-  bool isRetriableError(dynamic error) {
-    if (_isExpiredResumableSessionError(error)) {
-      return false;
-    }
+  bool isRetriableError(dynamic error) => _retryPolicy.isRetriableError(error);
 
-    // Use structured classification when available.
-    if (error is BlossomUploadFailureException) {
-      // A transient inability to *produce* a signed auth header (the remote
-      // signer or its network path was briefly unreachable) is retriable —
-      // distinct from a permanent 401/403 rejection handled below. This is
-      // the fix for uploads that died on a momentary signer DNS blip.
-      final reason = error.failureReason;
-      if (reason == BlossomUploadFailureReason.authUnavailable ||
-          reason == BlossomUploadFailureReason.network) {
-        return true;
-      }
-      if (reason == BlossomUploadFailureReason.auth ||
-          reason == BlossomUploadFailureReason.fileTooLarge) {
-        return false;
-      }
-
-      final code = error.statusCode;
-      if (code != null) {
-        // 408 request timeout — retriable
-        if (code == 408) return true;
-        // 429 rate limited — retriable after backoff
-        if (code == 429) return true;
-        // Transient server errors — retriable
-        if (code == 500 || code == 502 || code == 503 || code == 504) {
-          return true;
-        }
-        // Other 5xx (501, 505, etc.) are permanent — not retriable
-        if (code >= 500) return false;
-        // 4xx client errors are not retriable
-        if (code >= 400) return false;
-      }
-    }
-
-    // Fall back to string matching for non-HTTP errors
-    final errorStr = error.toString().toLowerCase();
-
-    // A missing required thumbnail already exhausted the image upload's own
-    // retry path; retrying here would re-upload the full video.
-    if (errorStr.contains('thumbnail upload failed')) {
-      return false;
-    }
-
-    // Network and timeout errors are retriable
-    if (errorStr.contains('timeout') ||
-        errorStr.contains('cannot connect') ||
-        errorStr.contains('network error') ||
-        errorStr.contains('connection') ||
-        errorStr.contains('socket')) {
-      return true;
-    }
-
-    // File not found errors are not retriable
-    if (errorStr.contains('file not found') ||
-        errorStr.contains('does not exist')) {
-      return false;
-    }
-
-    // Permission and cancellation failures are permanent. Authentication is
-    // classified structurally above (failureReason / 401-403 statusCode): a
-    // failed auth-header *creation* is transient while a server *rejection*
-    // is not, and the bare substring 'auth' cannot tell them apart — so it
-    // no longer gates retries here.
-    if (errorStr.contains('permission') || errorStr.contains('cancelled')) {
-      return false;
-    }
-
-    // Unknown errors are retriable by default
-    return true;
-  }
-
-  /// Check network connectivity status
-  Future<ConnectivityResult> _checkNetworkConnectivity() async {
-    try {
-      final connectivity = Connectivity();
-      final result = await connectivity.checkConnectivity();
-
-      // connectivity_plus 7.x returns List<ConnectivityResult>
-      // Return first non-none result, or none if all are none
-      final resultList = result.cast<ConnectivityResult>();
-      // Prefer WiFi > Cellular > Ethernet > VPN > None
-      if (resultList.contains(ConnectivityResult.wifi)) {
-        return ConnectivityResult.wifi;
-      }
-      if (resultList.contains(ConnectivityResult.mobile)) {
-        return ConnectivityResult.mobile;
-      }
-      if (resultList.contains(ConnectivityResult.ethernet)) {
-        return ConnectivityResult.ethernet;
-      }
-      if (resultList.contains(ConnectivityResult.vpn)) {
-        return ConnectivityResult.vpn;
-      }
-      return ConnectivityResult.none;
-    } catch (e) {
-      Log.error(
-        'Failed to check network connectivity: $e',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-      return ConnectivityResult.none;
-    }
-  }
-
-  /// Get human-readable network type
+  /// Delegates to [UploadProgressReporter.getNetworkTypeString].
   @visibleForTesting
-  String getNetworkTypeString(ConnectivityResult connectivity) {
-    switch (connectivity) {
-      case ConnectivityResult.wifi:
-        return 'WiFi';
-      case ConnectivityResult.mobile:
-        return 'Cellular';
-      case ConnectivityResult.ethernet:
-        return 'Ethernet';
-      case ConnectivityResult.vpn:
-        return 'VPN';
-      case ConnectivityResult.none:
-        return 'Offline';
-      default:
-        return 'Unknown';
-    }
-  }
+  String getNetworkTypeString(ConnectivityResult connectivity) =>
+      _reporter.getNetworkTypeString(connectivity);
 
-  /// Categorize error for monitoring with network-aware detection
+  /// Delegates to [UploadProgressReporter.categorizeError].
   @visibleForTesting
-  Future<String> categorizeError(dynamic error) async {
-    if (_isExpiredResumableSessionError(error)) {
-      return 'UPLOAD_SESSION_EXPIRED';
-    }
+  Future<String> categorizeError(dynamic error) =>
+      _reporter.categorizeError(error);
 
-    // Check network connectivity for better categorization
-    final connectivity = await _checkNetworkConnectivity();
-
-    // No internet connection
-    if (connectivity == ConnectivityResult.none) {
-      return 'NO_INTERNET';
-    }
-
-    // Use structured classification when available.
-    if (error is BlossomUploadFailureException) {
-      // A failure to *produce* the signed auth header (the signer was briefly
-      // unreachable) is a connectivity problem, not a server rejection. It
-      // carries no HTTP status, so classify it on the typed reason and surface
-      // the retry-friendly network copy instead of the generic UNKNOWN message.
-      if (error.failureReason == BlossomUploadFailureReason.authUnavailable) {
-        return 'NETWORK_ERROR';
-      }
-
-      final code = error.statusCode;
-      if (code != null) {
-        if (code == 408) return 'TIMEOUT';
-        if (code == 413) return 'FILE_TOO_LARGE';
-        if (code == 429) return 'RATE_LIMITED';
-        if (code == 401 || code == 403) return 'AUTHENTICATION';
-        if (code == 502 || code == 503 || code == 504) {
-          return 'SERVER_UNAVAILABLE';
-        }
-        if (code >= 500) return 'SERVER_ERROR';
-        if (code >= 400) return 'CLIENT_ERROR';
-      }
-    }
-
-    // Fall back to string matching for non-HTTP errors
-    // (timeouts, connection errors, DNS, etc.)
-    final errorStr = error.toString().toLowerCase();
-
-    // Timeout variants from BlossomUploadService
-    if (errorStr.contains('timeout')) {
-      if (connectivity == ConnectivityResult.mobile) {
-        return 'SLOW_CONNECTION';
-      }
-      return 'TIMEOUT';
-    }
-
-    if (errorStr.contains('host') || errorStr.contains('dns')) {
-      return 'DNS_ERROR';
-    }
-
-    // "Cannot connect to Blossom server" or generic "Network error:"
-    if (errorStr.contains('cannot connect') ||
-        errorStr.contains('network error') ||
-        errorStr.contains('connection')) {
-      return 'NETWORK_ERROR';
-    }
-
-    // File errors
-    if (errorStr.contains('file not found')) return 'FILE_NOT_FOUND';
-    if (errorStr.contains('memory')) return 'OUT_OF_MEMORY';
-    if (errorStr.contains('permission')) return 'PERMISSION_DENIED';
-
-    return 'UNKNOWN';
-  }
-
-  /// Get user-friendly error message based on category
+  /// Delegates to [UploadProgressReporter.getUserFriendlyErrorMessage].
   @visibleForTesting
   String getUserFriendlyErrorMessage(
     String category,
     ConnectivityResult connectivity,
-  ) {
-    switch (category) {
-      case 'NO_INTERNET':
-        return 'No internet connection. Check your WiFi or cellular data and try again.';
-
-      case 'SLOW_CONNECTION':
-        return 'Upload timed out on cellular data. Try connecting to WiFi for faster uploads.';
-
-      case 'TIMEOUT':
-        return 'Upload timed out. Your connection might be slow. Try again or connect to WiFi.';
-
-      case 'NETWORK_ERROR':
-        final networkType = getNetworkTypeString(connectivity);
-        return 'Network error on $networkType. Check your connection and try again.';
-
-      case 'DNS_ERROR':
-        return 'Could not reach the upload server. Check your connection or try a different network.';
-
-      case 'FILE_NOT_FOUND':
-        return 'Video file not found. Please record the video again.';
-
-      case 'FILE_TOO_LARGE':
-        return 'Video is too large to upload. Try recording a shorter video.';
-
-      case 'OUT_OF_MEMORY':
-        return 'Not enough memory to upload. Close other apps and try again.';
-
-      case 'PERMISSION_DENIED':
-        return 'Permission denied. Check app permissions in Settings.';
-
-      case 'AUTHENTICATION':
-        return 'Authentication failed. Please sign in again.';
-
-      case 'UPLOAD_SESSION_EXPIRED':
-        return 'Upload session expired. Please retry the upload.';
-
-      case 'RATE_LIMITED':
-        return 'Too many uploads. Please wait a moment and try again.';
-
-      case 'SERVER_UNAVAILABLE':
-        return 'Upload server is temporarily unavailable. '
-            'It will retry automatically.';
-
-      case 'SERVER_ERROR':
-        return 'Upload server encountered an error. Please try again later.';
-
-      case 'CLIENT_ERROR':
-        return 'Upload request failed. Please try again.';
-
-      default:
-        return 'Upload failed. Please check your connection and try again.';
-    }
-  }
-
-  /// Update upload progress
-  void _updateUploadProgress(String uploadId, double progress) {
-    final upload = getUpload(uploadId);
-    if (upload != null &&
-        (upload.status == UploadStatus.uploading ||
-            upload.status == UploadStatus.retrying)) {
-      _store.update(upload.copyWith(uploadProgress: progress));
-    }
-  }
+  ) => _reporter.getUserFriendlyErrorMessage(category, connectivity);
 
   /// Pause an active upload
   Future<void> pauseUpload(String uploadId) async {
@@ -1440,8 +1110,7 @@ class UploadManager {
     await _store.update(pausedUpload);
 
     // Cancel progress subscription
-    _progressSubscriptions[uploadId]?.cancel();
-    _progressSubscriptions.remove(uploadId);
+    _reporter.cancelAndRemoveSubscription(uploadId);
 
     Log.info(
       'Upload paused: $uploadId',
@@ -1497,70 +1166,24 @@ class UploadManager {
     );
   }
 
-  /// Retry a failed upload
+  /// Retry a failed upload. Delegates to [UploadRetryPolicy.retryUpload].
   Future<void> retryUpload(String uploadId) async {
-    final upload = getUpload(uploadId);
-    if (upload == null) {
-      Log.error(
-        'Upload not found for retry: $uploadId',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-      return;
-    }
-
-    if (!upload.canRetry) {
-      Log.error(
-        'Upload cannot be retried: $uploadId (retries: ${upload.retryCount})',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-      return;
-    }
-
-    Log.warning(
-      'Retrying upload: $uploadId',
-      name: 'UploadManager',
-      category: LogCategory.video,
+    await _retryPolicy.retryUpload(
+      uploadId,
+      performUpload: _performUpload,
     );
-
-    // retryCount tracks user-triggered retries, so consume one budget slot
-    // before starting a new upload session.
-    final nextRetryCount = (upload.retryCount ?? 0) + 1;
-    final resetUpload = upload.copyWith(
-      status: UploadStatus.pending,
-      retryCount: nextRetryCount,
-    );
-
-    await _store.update(resetUpload);
-
-    // Start upload again and wait for completion
-    await _performUpload(resetUpload);
   }
 
   /// Resumes a single interrupted upload.
   ///
   /// For uploads left in [UploadStatus.uploading] or
-  /// [UploadStatus.retrying] after an app restart. The upload's
-  /// [BlossomResumableUploadSession] (if present) is passed through to
-  /// [BlossomUploadService.uploadVideo] automatically by [_performUpload].
+  /// [UploadStatus.retrying] after an app restart. Delegates to
+  /// [UploadRetryPolicy.resumeInterruptedUpload].
   void resumeInterruptedUpload(String uploadId) {
-    final upload = getUpload(uploadId);
-    if (upload == null) return;
-    if (upload.status != UploadStatus.uploading &&
-        upload.status != UploadStatus.retrying) {
-      return;
-    }
-
-    Log.info(
-      'Resuming interrupted upload: $uploadId',
-      name: 'UploadManager',
-      category: LogCategory.video,
+    _retryPolicy.resumeInterruptedUpload(
+      uploadId,
+      performUpload: _performUpload,
     );
-
-    final resumed = upload.copyWith(status: UploadStatus.uploading);
-    unawaited(_store.update(resumed));
-    unawaited(_performUpload(resumed));
   }
 
   /// Cancel an upload (stops the upload but keeps it for retry)
@@ -1588,8 +1211,7 @@ class UploadManager {
     await _store.update(cancelledUpload);
 
     // Cancel progress subscription
-    _progressSubscriptions[uploadId]?.cancel();
-    _progressSubscriptions.remove(uploadId);
+    _reporter.cancelAndRemoveSubscription(uploadId);
 
     Log.warning(
       'Upload cancelled and available for retry: $uploadId',
@@ -1640,105 +1262,18 @@ class UploadManager {
   Future<void> cleanupProblematicUploads() =>
       _store.cleanupProblematicUploads();
 
-  /// Get comprehensive performance metrics
-  Map<String, dynamic> getPerformanceMetrics() {
-    final metrics = _uploadMetrics.values.toList();
-    final successful = metrics.where((m) => m.wasSuccessful).toList();
-    final failed = metrics.where((m) => !m.wasSuccessful).toList();
+  /// Delegates to [UploadProgressReporter.getPerformanceMetrics].
+  Map<String, dynamic> getPerformanceMetrics() =>
+      _reporter.getPerformanceMetrics();
 
-    return {
-      'total_uploads': metrics.length,
-      'successful_uploads': successful.length,
-      'failed_uploads': failed.length,
-      'success_rate': metrics.isNotEmpty
-          ? (successful.length / metrics.length * 100)
-          : 0,
-      'average_throughput_mbps': successful.isNotEmpty
-          ? successful
-                    .map((m) => m.throughputMBps ?? 0)
-                    .reduce((a, b) => a + b) /
-                successful.length
-          : 0,
-      'average_retry_count': metrics.isNotEmpty
-          ? metrics.map((m) => m.retryCount).reduce((a, b) => a + b) /
-                metrics.length
-          : 0,
-      'error_categories': _getErrorCategoriesCount(failed),
-      'circuit_breaker_state': _circuitBreaker.state.toString(),
-      'circuit_breaker_failure_rate': _circuitBreaker.failureRate,
-    };
-  }
-
-  /// Get error categories breakdown
-  Map<String, int> _getErrorCategoriesCount(List<UploadMetrics> failedMetrics) {
-    final categories = <String, int>{};
-    for (final metric in failedMetrics) {
-      final category = metric.errorCategory ?? 'UNKNOWN';
-      categories[category] = (categories[category] ?? 0) + 1;
-    }
-    return categories;
-  }
-
-  /// Clear old metrics to prevent memory bloat
-  void _cleanupOldMetrics() {
-    final now = DateTime.now();
-    final cutoff = now.subtract(const Duration(days: 7)); // Keep 1 week
-
-    _uploadMetrics.removeWhere(
-      (key, metric) => metric.startTime.isBefore(cutoff),
-    );
-  }
-
-  /// Enhanced retry mechanism for manual retry
+  /// Enhanced retry mechanism for manual retry.
+  ///
+  /// Delegates to [UploadRetryPolicy.retryUploadWithBackoff].
   Future<void> retryUploadWithBackoff(String uploadId) async {
-    final upload = getUpload(uploadId);
-    if (upload == null) {
-      Log.warning(
-        'Upload not found for retry: $uploadId',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-      return;
-    }
-
-    if (upload.status != UploadStatus.failed) {
-      Log.error(
-        'Upload is not in failed state: ${upload.status}',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-      return;
-    }
-
-    // Cancel any existing retry timer
-    _retryTimers[uploadId]?.cancel();
-    _retryTimers.remove(uploadId);
-
-    Log.warning(
-      'Retrying upload with backoff: $uploadId',
-      name: 'UploadManager',
-      category: LogCategory.video,
+    await _retryPolicy.retryUploadWithBackoff(
+      uploadId,
+      performUpload: _performUpload,
     );
-
-    // Reset retry count if it's been more than 1 hour since last attempt
-    final now = DateTime.now();
-    final timeSinceLastAttempt = upload.completedAt != null
-        ? now.difference(upload.completedAt!)
-        : now.difference(upload.createdAt);
-
-    final shouldResetRetries = timeSinceLastAttempt.inHours >= 1;
-    final newRetryCount = shouldResetRetries ? 1 : (upload.retryCount ?? 0) + 1;
-
-    // Update upload with reset retry count if applicable
-    final updatedUpload = upload.copyWith(
-      status: UploadStatus.pending,
-      retryCount: newRetryCount,
-    );
-
-    await _store.update(updatedUpload);
-
-    // Start upload process
-    await _performUpload(updatedUpload);
   }
 
   /// Create successful upload with metadata
@@ -1882,305 +1417,6 @@ class UploadManager {
         _isHttpUrl(existingThumbnailUrl);
   }
 
-  /// Create success metrics with calculated values
-  UploadMetrics _createSuccessMetrics(
-    UploadMetrics currentMetrics,
-    DateTime endTime,
-    int retryCount,
-  ) {
-    final duration = endTime.difference(currentMetrics.startTime);
-    final throughput = _calculateThroughput(
-      currentMetrics.fileSizeMB,
-      duration,
-    );
-
-    return UploadMetrics(
-      uploadId: currentMetrics.uploadId,
-      startTime: currentMetrics.startTime,
-      endTime: endTime,
-      uploadDuration: duration,
-      retryCount: retryCount,
-      fileSizeMB: currentMetrics.fileSizeMB,
-      throughputMBps: throughput,
-      wasSuccessful: true,
-    );
-  }
-
-  /// Calculate upload throughput in MB/s
-  double _calculateThroughput(double fileSizeMB, Duration duration) {
-    // Handle zero duration edge case
-    if (duration.inMicroseconds == 0) {
-      return fileSizeMB * 1000; // Assume instant = 1ms
-    }
-    return fileSizeMB / (duration.inMicroseconds / 1000000.0);
-  }
-
-  /// Log upload success with formatted details
-  void _logUploadSuccess(dynamic result, UploadMetrics metrics) {
-    Log.info(
-      'Direct upload successful: ${result.videoId}',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-    Log.debug(
-      '🎬 CDN URL: ${result.cdnUrl}',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-
-    final durationStr = metrics.uploadDuration?.inSeconds ?? 0;
-    final throughputStr = metrics.throughputMBps?.toStringAsFixed(2) ?? '0.00';
-
-    Log.debug(
-      'Upload metrics: ${metrics.fileSizeMB.toStringAsFixed(1)}MB in ${durationStr}s ($throughputStr MB/s)',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-  }
-
-  /// Send comprehensive upload failure crash report to Crashlytics
-  Future<void> _sendUploadFailureCrashReport(
-    PendingUpload upload,
-    dynamic error,
-    String errorCategory,
-    UploadMetrics? metrics,
-    ConnectivityResult connectivity,
-  ) async {
-    try {
-      final crashReporting = CrashReportingService.instance;
-
-      // Set context for the crash report
-      final context = {
-        'upload_id': upload.id,
-        'upload_status': upload.status.toString(),
-        'error_category': errorCategory,
-        'retry_count': upload.retryCount ?? 0,
-        'can_retry': upload.canRetry,
-        'upload_target': 'blossomServer',
-        'circuit_breaker_state': _circuitBreaker.state.toString(),
-        'circuit_breaker_failure_rate': _circuitBreaker.failureRate,
-        'local_file_path': upload.localVideoPath,
-        'video_id': upload.videoId,
-        'cdn_url': upload.cdnUrl,
-        'upload_progress': upload.uploadProgress,
-        'created_at': upload.createdAt.toIso8601String(),
-        'file_exists': !kIsWeb && File(upload.localVideoPath).existsSync(),
-        // Network connectivity information
-        'network_type': getNetworkTypeString(connectivity),
-        'network_status': connectivity.toString(),
-        'is_offline': connectivity == ConnectivityResult.none,
-        'is_cellular': connectivity == ConnectivityResult.mobile,
-        'is_wifi': connectivity == ConnectivityResult.wifi,
-      };
-
-      // Add metrics if available
-      if (metrics != null) {
-        context.addAll({
-          'file_size_mb': metrics.fileSizeMB,
-          'start_time': metrics.startTime.toIso8601String(),
-          'upload_duration_seconds': metrics.uploadDuration?.inSeconds,
-          'throughput_mbps': metrics.throughputMBps,
-          'metrics_retry_count': metrics.retryCount,
-        });
-      }
-
-      // Add system context
-      context.addAll({
-        'total_uploads': _store.length,
-        'active_uploads': _progressSubscriptions.length,
-        'queued_uploads': _store.queuedCount,
-        'platform': _getPlatformName(),
-        'is_initialized': _isInitialized,
-        'timestamp': DateTime.now().toIso8601String(),
-      });
-
-      // Set all context as custom keys
-      for (final entry in context.entries) {
-        await crashReporting.setCustomKey(
-          'upload_failure_${entry.key}',
-          entry.value.toString(),
-        );
-      }
-
-      // Get stack trace from current context
-      final stackTrace = StackTrace.current;
-
-      // Create detailed error message
-      final fileExists = kIsWeb
-          ? 'N/A (web)'
-          : '${File(upload.localVideoPath).existsSync()}';
-      final detailedError =
-          '''
-Upload Failure Report:
-- Upload ID: ${upload.id}
-- Error Category: $errorCategory
-- Error: $error
-- Network: ${getNetworkTypeString(connectivity)} (${connectivity == ConnectivityResult.none ? 'OFFLINE' : 'ONLINE'})
-- File: ${upload.localVideoPath}
-- File Exists: $fileExists
-- Upload Status: ${upload.status}
-- Retry Count: ${upload.retryCount ?? 0}
-- Can Retry: ${upload.canRetry}
-- Circuit Breaker: ${_circuitBreaker.state} (${_circuitBreaker.failureRate}% failure rate)
-- Upload Target: blossomServer
-${metrics != null ? '- File Size: ${metrics.fileSizeMB} MB\n- Duration: ${metrics.uploadDuration}\n- Throughput: ${metrics.throughputMBps} MB/s' : ''}
-''';
-
-      // Log the detailed error
-      crashReporting.log('UPLOAD_FAILURE: $detailedError');
-
-      // Record the error to Crashlytics
-      await crashReporting.recordError(
-        error,
-        stackTrace,
-        reason: 'Video upload failure - $errorCategory',
-      );
-
-      Log.info(
-        '📊 Sent comprehensive upload failure report to Crashlytics',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-    } catch (crashReportingError) {
-      // Don't let crash reporting failures break the upload failure handling
-      Log.error(
-        'Failed to send crash report for upload failure: $crashReportingError',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-    }
-  }
-
-  /// Send initialization failure crash report to Crashlytics
-  Future<void> _sendInitializationFailureCrashReport(
-    dynamic error,
-    StackTrace stackTrace,
-  ) async {
-    try {
-      final crashReporting = CrashReportingService.instance;
-
-      // Set context for the crash report
-      await crashReporting.setCustomKey('init_failure_error', error.toString());
-      await crashReporting.setCustomKey(
-        'init_failure_platform',
-        _getPlatformName(),
-      );
-      await crashReporting.setCustomKey(
-        'init_failure_timestamp',
-        DateTime.now().toIso8601String(),
-      );
-      await crashReporting.setCustomKey(
-        'init_failure_retry_attempts',
-        'multiple',
-      );
-
-      // Create detailed error message
-      final detailedError =
-          '''
-UploadManager Initialization Failure:
-- Error: $error
-- Platform: ${_getPlatformName()}
-- Timestamp: ${DateTime.now().toIso8601String()}
-- Context: Failed after all retry attempts in UploadInitializationHelper
-''';
-
-      // Log the detailed error
-      crashReporting.log('INIT_FAILURE: $detailedError');
-
-      // Record the error to Crashlytics
-      await crashReporting.recordError(
-        error,
-        stackTrace,
-        reason: 'UploadManager initialization failure after retries',
-      );
-
-      Log.info(
-        '📊 Sent UploadManager initialization failure report to Crashlytics',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-    } catch (crashReportingError) {
-      // Don't let crash reporting failures break the initialization failure handling
-      Log.error(
-        'Failed to send initialization crash report: $crashReportingError',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-    }
-  }
-
-  /// Send timeout failure crash report to Crashlytics
-  Future<void> _sendTimeoutCrashReport(
-    PendingUpload upload,
-    TimeoutException timeoutError,
-  ) async {
-    try {
-      final crashReporting = CrashReportingService.instance;
-
-      // Set context for the crash report
-      final context = {
-        'timeout_upload_id': upload.id,
-        'timeout_file_path': upload.localVideoPath,
-        'timeout_upload_target': 'blossomServer',
-        'timeout_network_timeout_minutes':
-            _retryConfig.networkTimeout.inMinutes,
-        'timeout_retry_count': upload.retryCount ?? 0,
-        'timeout_upload_status': upload.status.toString(),
-        'timeout_platform': _getPlatformName(),
-        'timeout_file_exists':
-            !kIsWeb && File(upload.localVideoPath).existsSync(),
-        'timeout_timestamp': DateTime.now().toIso8601String(),
-      };
-
-      // Set all context as custom keys
-      for (final entry in context.entries) {
-        await crashReporting.setCustomKey(entry.key, entry.value.toString());
-      }
-
-      // Create detailed error message
-      final fileExists = kIsWeb
-          ? 'N/A (web)'
-          : '${File(upload.localVideoPath).existsSync()}';
-      final detailedError =
-          '''
-Upload Timeout Failure:
-- Upload ID: ${upload.id}
-- File: ${upload.localVideoPath}
-- File Exists: $fileExists
-- Upload Target: blossomServer
-- Timeout Duration: ${_retryConfig.networkTimeout.inMinutes} minutes
-- Retry Count: ${upload.retryCount ?? 0}
-- Upload Status: ${upload.status}
-- Platform: ${_getPlatformName()}
-- Timestamp: ${DateTime.now().toIso8601String()}
-''';
-
-      // Log the detailed error
-      crashReporting.log('TIMEOUT_FAILURE: $detailedError');
-
-      // Record the error to Crashlytics
-      await crashReporting.recordError(
-        timeoutError,
-        StackTrace.current,
-        reason:
-            'Video upload timeout after ${_retryConfig.networkTimeout.inMinutes} minutes',
-      );
-
-      Log.info(
-        '📊 Sent upload timeout failure report to Crashlytics',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-    } catch (crashReportingError) {
-      // Don't let crash reporting failures break the timeout failure handling
-      Log.error(
-        'Failed to send timeout crash report: $crashReportingError',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-    }
-  }
-
   /// Generate and upload thumbnail to Blossom CDN
   Future<String?> _generateAndUploadThumbnail({
     required File videoFile,
@@ -2228,7 +1464,7 @@ Upload Timeout Failure:
         category: LogCategory.video,
       );
 
-      _updateUploadProgress(upload.id, 0.85);
+      _reporter.updateProgress(upload.id, 0.85);
 
       // Upload thumbnail to Blossom server. Divine relay publishing requires
       // a CDN thumbnail, so keep the image upload's own retry enabled here.
@@ -2239,7 +1475,7 @@ Upload Timeout Failure:
         nostrPubkey: nostrPubkey,
         onProgress: (progress) {
           // Map thumbnail progress to 85%-100% of total upload
-          _updateUploadProgress(upload.id, 0.85 + (progress * 0.15));
+          _reporter.updateProgress(upload.id, 0.85 + (progress * 0.15));
         },
       );
 
@@ -2275,29 +1511,16 @@ Upload Timeout Failure:
   }
 
   void dispose() {
-    // Cancel all progress subscriptions
-    for (final subscription in _progressSubscriptions.values) {
-      subscription.cancel();
-    }
-    _progressSubscriptions.clear();
-
-    // Cancel all retry timers
-    for (final timer in _retryTimers.values) {
-      timer.cancel();
-    }
-    _retryTimers.clear();
+    // Delegate to extracted policy/reporter (handles subscriptions, timers,
+    // session futures, and metrics cleanup).
+    _retryPolicy.dispose();
+    _reporter.dispose();
 
     // Cancel all processing-completion polls
     for (final timer in _processingPollTimers.values) {
       timer.cancel();
     }
     _processingPollTimers.clear();
-
-    // Discard pending session persistence futures
-    _sessionPersistFutures.clear();
-
-    // Clean up old metrics
-    _cleanupOldMetrics();
 
     // Delegate storage teardown (timer, queue, box pointer) to the store.
     _store.disposeStore();
