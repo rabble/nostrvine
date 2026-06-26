@@ -272,7 +272,7 @@ internal class DivineVideoPlayerInstance(
         }
     }
 
-    private fun httpHeadersForRequest(url: String): Map<String, String> {
+    internal fun httpHeadersForRequest(url: String): Map<String, String> {
         httpHeadersByUri[url]?.let { return it }
         val hash = blobHashFromUrl(url) ?: return emptyMap()
         return httpHeadersByHash[hash] ?: emptyMap()

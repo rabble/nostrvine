@@ -94,7 +94,7 @@ internal object VideoCache {
     }
 }
 
-private class AuthAwareCacheBypassDataSource(
+internal class AuthAwareCacheBypassDataSource(
     private val cachedFactory: DataSource.Factory,
     private val uncachedFactory: DataSource.Factory,
     private val httpHeadersForUri: (Uri) -> Map<String, String>,

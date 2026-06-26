@@ -117,6 +117,79 @@ class DivineVideoPlayerInstanceTest {
         )
     }
 
+    // -- viewer auth header resolution (gated HLS, #4884 / #4897) --
+
+    @Test
+    fun `httpHeadersForRequest returns the viewer header for the exact clip URI`() {
+        val url = "https://media.divine.video/${"a".repeat(64)}/720p.mp4"
+        instance.onMethodCall(
+            setClipsWithHeaders(url, mapOf("Authorization" to "Nostr token")),
+            mockk(relaxed = true),
+        )
+
+        assertEquals(
+            mapOf("Authorization" to "Nostr token"),
+            instance.httpHeadersForRequest(url),
+        )
+    }
+
+    @Test
+    fun `httpHeadersForRequest authenticates HLS segments via the hash fallback`() {
+        val hash = "a".repeat(64)
+        instance.onMethodCall(
+            setClipsWithHeaders(
+                "https://media.divine.video/$hash/hls/master.m3u8",
+                mapOf("Authorization" to "Nostr token"),
+            ),
+            mockk(relaxed = true),
+        )
+
+        // A media segment lives under the same blob hash but at a different URI;
+        // it must resolve the same viewer-auth header (the #4884 fix) so gated
+        // HLS playback authenticates end-to-end.
+        assertEquals(
+            mapOf("Authorization" to "Nostr token"),
+            instance.httpHeadersForRequest(
+                "https://media.divine.video/$hash/hls/segment_1.ts",
+            ),
+        )
+    }
+
+    @Test
+    fun `httpHeadersForRequest returns empty for a URL outside the gated blob`() {
+        val hash = "a".repeat(64)
+        instance.onMethodCall(
+            setClipsWithHeaders(
+                "https://media.divine.video/$hash/720p.mp4",
+                mapOf("Authorization" to "Nostr token"),
+            ),
+            mockk(relaxed = true),
+        )
+
+        assertEquals(
+            emptyMap<String, String>(),
+            instance.httpHeadersForRequest("https://cdn.example.com/other.ts"),
+        )
+    }
+
+    private fun setClipsWithHeaders(
+        uri: String,
+        httpHeaders: Map<String, String>,
+    ): MethodCall =
+        MethodCall(
+            "setClips",
+            mapOf(
+                "clips" to listOf(
+                    mapOf(
+                        "uri" to uri,
+                        "startMs" to 0,
+                        "endMs" to 1000,
+                        "httpHeaders" to httpHeaders,
+                    ),
+                ),
+            ),
+        )
+
     @Test
     fun `dispose removes listener, stops decoder, clears surface, then releases (in order)`() {
         materializePlayer()

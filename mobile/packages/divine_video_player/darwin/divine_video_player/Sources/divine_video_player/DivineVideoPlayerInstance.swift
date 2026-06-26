@@ -34,6 +34,19 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     private static let setClipsTimeoutMs = 10_000
     private static let bufferingStallMs = 8_000
 
+    /// AVFoundation's asset-option key for per-asset HTTP request headers.
+    ///
+    /// Headers supplied under this key propagate to *every* HTTP request
+    /// AVFoundation derives from the asset — the HLS master/variant playlists,
+    /// the media segments, and AES key requests — so a single hash-bound
+    /// viewer-auth token authenticates gated HLS playback end-to-end without an
+    /// `AVAssetResourceLoaderDelegate`. The key is an established but
+    /// historically undocumented `String`; AVFoundation exposes no typed symbol
+    /// for it, hence the literal. (The Android player has no equivalent
+    /// propagation and instead re-derives the token per request via
+    /// `httpHeadersForRequest` / `blobHashFromUrl`.)
+    private static let avURLAssetHTTPHeaderFieldsKey = "AVURLAssetHTTPHeaderFieldsKey"
+
     // MARK: - Texture rendering
 
     /// Non-nil when the player renders into a Flutter texture instead of
@@ -329,7 +342,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             }
 
             let assetOptions: [String: Any]? = httpHeaders.map {
-                ["AVURLAssetHTTPHeaderFieldsKey": $0]
+                [Self.avURLAssetHTTPHeaderFieldsKey: $0]
             }
             let asset = AVURLAsset(url: url, options: assetOptions)
 
