@@ -194,6 +194,43 @@ void main() {
         expect(events.last.value, closeTo(2, 0.02));
       });
 
+      testWidgets('reaches a non-integer camera max next to a detent', (
+        tester,
+      ) async {
+        // maxZoom 2.1 sits inside the 2× detent radius; the bound must stay
+        // reachable rather than being pulled back toward 2×.
+        await tester.pumpWidget(buildWidget(maxZoomLevel: 2.1));
+        await tester.pumpAndSettle();
+
+        await tester.drag(
+          find.byType(VideoRecorderZoomIndicator),
+          const Offset(-1000, 0),
+        );
+        await tester.pumpAndSettle();
+
+        final events = capturedZoomEvents();
+        expect(events, isNotEmpty);
+        expect(events.last.value, closeTo(2.1, 1e-9));
+      });
+
+      testWidgets('reaches a non-integer camera min next to a detent', (
+        tester,
+      ) async {
+        // minZoom 0.95 sits inside the 1× detent radius.
+        await tester.pumpWidget(buildWidget(minZoomLevel: 0.95));
+        await tester.pumpAndSettle();
+
+        await tester.drag(
+          find.byType(VideoRecorderZoomIndicator),
+          const Offset(1000, 0),
+        );
+        await tester.pumpAndSettle();
+
+        final events = capturedZoomEvents();
+        expect(events, isNotEmpty);
+        expect(events.last.value, closeTo(0.95, 1e-9));
+      });
+
       testWidgets('ticks haptics when crossing a major mark', (tester) async {
         final calls = <MethodCall>[];
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger

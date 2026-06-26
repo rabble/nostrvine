@@ -128,6 +128,11 @@ class _InteractiveZoomRulerState extends State<_InteractiveZoomRuler> {
   /// the same damped gravity-well curve as the pinch's 1× detent, so the
   /// scrubbed value gently clicks onto whole factors and the 0.5× stop.
   double _snapToMajor(double value) {
+    // The camera's zoom extremes are reachable stops in their own right. When
+    // a bound sits within [_snapRadius] of a major (e.g. maxZoom 2.1 next to
+    // the 2× mark), the detent would otherwise pull it inward and the user
+    // could never reach the actual min/max — so never snap a bound.
+    if (value == widget.minZoom || value == widget.maxZoom) return value;
     final mark = _nearestMajorMark(value);
     final dist = (value - mark).abs();
     if (dist >= _snapRadius) return value;
