@@ -4486,7 +4486,6 @@
   "videoEditorAdjustVolumeTitle": "Adjust volume",
   "videoEditorRecordedAudioLabel": "Recorded audio",
   "videoEditorVoiceOverLabel": "Voice over",
-  "videoEditorVoiceOverTitle": "Voice over",
   "videoEditorVoiceOverTakeName": "Recording {number}",
   "@videoEditorVoiceOverTakeName": {
     "description": "Title for a single recorded voice-over take, numbered by capture position.",

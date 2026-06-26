@@ -2794,7 +2794,6 @@
     "videoEditorAdjustVolumeTitle": "Ajustar volume",
     "videoEditorRecordedAudioLabel": "Áudio gravado",
     "videoEditorVoiceOverLabel": "Narração",
-    "videoEditorVoiceOverTitle": "Narração",
     "videoEditorVoiceOverTakeName": "Gravação {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "Gravar uma narração",
     "videoEditorVoiceOverRecordSemanticLabel": "Iniciar gravação",

@@ -1725,7 +1725,6 @@
     "videoEditorAdjustVolumeTitle": "I-adjust ang volume",
     "videoEditorRecordedAudioLabel": "Na-record na audio",
     "videoEditorVoiceOverLabel": "Voice over",
-    "videoEditorVoiceOverTitle": "Voice over",
     "videoEditorVoiceOverTakeName": "Recording {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "Mag-record ng voice over",
     "videoEditorVoiceOverRecordSemanticLabel": "Simulan ang pag-record",

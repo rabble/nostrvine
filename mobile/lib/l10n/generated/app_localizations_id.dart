@@ -7829,9 +7829,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorVoiceOverLabel => 'Sulih suara';
 
   @override
-  String get videoEditorVoiceOverTitle => 'Sulih suara';
-
-  @override
   String videoEditorVoiceOverTakeName(int number) {
     return 'Rekaman $number';
   }

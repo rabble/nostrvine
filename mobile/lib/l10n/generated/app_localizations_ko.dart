@@ -7604,9 +7604,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorVoiceOverLabel => '내레이션';
 
   @override
-  String get videoEditorVoiceOverTitle => '내레이션';
-
-  @override
   String videoEditorVoiceOverTakeName(int number) {
     return '녹음 $number';
   }

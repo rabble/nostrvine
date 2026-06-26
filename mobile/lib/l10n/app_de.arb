@@ -2794,7 +2794,6 @@
     "videoEditorAdjustVolumeTitle": "Lautstärke anpassen",
     "videoEditorRecordedAudioLabel": "Aufgenommener Ton",
     "videoEditorVoiceOverLabel": "Voiceover",
-    "videoEditorVoiceOverTitle": "Voiceover",
     "videoEditorVoiceOverTakeName": "Aufnahme {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "Voiceover aufnehmen",
     "videoEditorVoiceOverRecordSemanticLabel": "Aufnahme starten",

@@ -2794,7 +2794,6 @@
     "videoEditorAdjustVolumeTitle": "Volume aanpassen",
     "videoEditorRecordedAudioLabel": "Opgenomen audio",
     "videoEditorVoiceOverLabel": "Voice-over",
-    "videoEditorVoiceOverTitle": "Voice-over",
     "videoEditorVoiceOverTakeName": "Opname {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "Een voice-over opnemen",
     "videoEditorVoiceOverRecordSemanticLabel": "Opname starten",

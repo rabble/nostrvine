@@ -7920,9 +7920,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoEditorVoiceOverLabel => 'Voce fuori campo';
 
   @override
-  String get videoEditorVoiceOverTitle => 'Voce fuori campo';
-
-  @override
   String videoEditorVoiceOverTakeName(int number) {
     return 'Registrazione $number';
   }

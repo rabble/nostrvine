@@ -2756,7 +2756,6 @@
     "videoEditorPlaySemanticLabel": "تشغيل",
     "videoEditorRecordedAudioLabel": "الصوت المسجل",
     "videoEditorVoiceOverLabel": "تعليق صوتي",
-    "videoEditorVoiceOverTitle": "تعليق صوتي",
     "videoEditorVoiceOverTakeName": "تسجيل {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "تسجيل تعليق صوتي",
     "videoEditorVoiceOverRecordSemanticLabel": "بدء التسجيل",

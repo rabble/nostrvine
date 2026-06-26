@@ -2794,7 +2794,6 @@
     "videoEditorAdjustVolumeTitle": "Justera volym",
     "videoEditorRecordedAudioLabel": "Inspelat ljud",
     "videoEditorVoiceOverLabel": "Voice-over",
-    "videoEditorVoiceOverTitle": "Voice-over",
     "videoEditorVoiceOverTakeName": "Inspelning {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "Spela in en voice-over",
     "videoEditorVoiceOverRecordSemanticLabel": "Starta inspelning",

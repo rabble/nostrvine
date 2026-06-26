@@ -2080,7 +2080,6 @@
     "videoEditorPlaySemanticLabel": "재생",
     "videoEditorRecordedAudioLabel": "녹음된 오디오",
     "videoEditorVoiceOverLabel": "내레이션",
-    "videoEditorVoiceOverTitle": "내레이션",
     "videoEditorVoiceOverTakeName": "녹음 {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "내레이션 녹음",
     "videoEditorVoiceOverRecordSemanticLabel": "녹음 시작",

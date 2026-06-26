@@ -13694,12 +13694,6 @@ abstract class AppLocalizations {
   /// **'Voice over'**
   String get videoEditorVoiceOverLabel;
 
-  /// No description provided for @videoEditorVoiceOverTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Voice over'**
-  String get videoEditorVoiceOverTitle;
-
   /// Title for a single recorded voice-over take, numbered by capture position.
   ///
   /// In en, this message translates to:

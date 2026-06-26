@@ -8004,9 +8004,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorVoiceOverLabel => 'Narracja';
 
   @override
-  String get videoEditorVoiceOverTitle => 'Narracja';
-
-  @override
   String videoEditorVoiceOverTakeName(int number) {
     return 'Nagranie $number';
   }

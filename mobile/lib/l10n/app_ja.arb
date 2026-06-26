@@ -2756,7 +2756,6 @@
     "videoEditorPlaySemanticLabel": "再生",
     "videoEditorRecordedAudioLabel": "録音済みオーディオ",
     "videoEditorVoiceOverLabel": "ナレーション",
-    "videoEditorVoiceOverTitle": "ナレーション",
     "videoEditorVoiceOverTakeName": "録音 {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "ナレーションを録音",
     "videoEditorVoiceOverRecordSemanticLabel": "録音を開始",

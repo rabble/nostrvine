@@ -3044,7 +3044,6 @@
     "videoEditorAdjustVolumeTitle": "Регулирайте силата на звука",
     "videoEditorRecordedAudioLabel": "Записано аудио",
     "videoEditorVoiceOverLabel": "Глас зад кадър",
-    "videoEditorVoiceOverTitle": "Глас зад кадър",
     "videoEditorVoiceOverTakeName": "Запис {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "Запис на глас зад кадър",
     "videoEditorVoiceOverRecordSemanticLabel": "Започни запис",

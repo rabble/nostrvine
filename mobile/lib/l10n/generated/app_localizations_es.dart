@@ -7921,9 +7921,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditorVoiceOverLabel => 'Voz en off';
 
   @override
-  String get videoEditorVoiceOverTitle => 'Voz en off';
-
-  @override
   String videoEditorVoiceOverTakeName(int number) {
     return 'Grabación $number';
   }

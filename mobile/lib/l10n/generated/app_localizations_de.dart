@@ -7940,9 +7940,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoEditorVoiceOverLabel => 'Voiceover';
 
   @override
-  String get videoEditorVoiceOverTitle => 'Voiceover';
-
-  @override
   String videoEditorVoiceOverTakeName(int number) {
     return 'Aufnahme $number';
   }

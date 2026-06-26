@@ -7827,9 +7827,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorVoiceOverLabel => 'Dış ses';
 
   @override
-  String get videoEditorVoiceOverTitle => 'Dış ses';
-
-  @override
   String videoEditorVoiceOverTakeName(int number) {
     return 'Kayıt $number';
   }

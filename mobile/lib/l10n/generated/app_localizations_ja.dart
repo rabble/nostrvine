@@ -7582,9 +7582,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorVoiceOverLabel => 'ナレーション';
 
   @override
-  String get videoEditorVoiceOverTitle => 'ナレーション';
-
-  @override
   String videoEditorVoiceOverTakeName(int number) {
     return '録音 $number';
   }

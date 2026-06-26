@@ -7889,9 +7889,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorVoiceOverLabel => 'Voice-over';
 
   @override
-  String get videoEditorVoiceOverTitle => 'Voice-over';
-
-  @override
   String videoEditorVoiceOverTakeName(int number) {
     return 'Opname $number';
   }

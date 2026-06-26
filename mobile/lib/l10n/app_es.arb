@@ -2802,7 +2802,6 @@
     "videoEditorAdjustVolumeTitle": "Ajustar volumen",
     "videoEditorRecordedAudioLabel": "Audio grabado",
     "videoEditorVoiceOverLabel": "Voz en off",
-    "videoEditorVoiceOverTitle": "Voz en off",
     "videoEditorVoiceOverTakeName": "Grabación {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "Grabar una voz en off",
     "videoEditorVoiceOverRecordSemanticLabel": "Iniciar grabación",

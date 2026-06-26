@@ -7789,9 +7789,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorVoiceOverLabel => 'تعليق صوتي';
 
   @override
-  String get videoEditorVoiceOverTitle => 'تعليق صوتي';
-
-  @override
   String videoEditorVoiceOverTakeName(int number) {
     return 'تسجيل $number';
   }

@@ -8023,9 +8023,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorVoiceOverLabel => 'Voce off';
 
   @override
-  String get videoEditorVoiceOverTitle => 'Voce off';
-
-  @override
   String videoEditorVoiceOverTakeName(int number) {
     return 'Înregistrarea $number';
   }

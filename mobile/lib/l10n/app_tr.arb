@@ -2763,7 +2763,6 @@
     "videoEditorPlaySemanticLabel": "Oynat",
     "videoEditorRecordedAudioLabel": "Kaydedilmiş ses",
     "videoEditorVoiceOverLabel": "Dış ses",
-    "videoEditorVoiceOverTitle": "Dış ses",
     "videoEditorVoiceOverTakeName": "Kayıt {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "Dış ses kaydet",
     "videoEditorVoiceOverRecordSemanticLabel": "Kaydı başlat",

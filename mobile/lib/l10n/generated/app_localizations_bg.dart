@@ -7925,9 +7925,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorVoiceOverLabel => 'Глас зад кадър';
 
   @override
-  String get videoEditorVoiceOverTitle => 'Глас зад кадър';
-
-  @override
   String videoEditorVoiceOverTakeName(int number) {
     return 'Запис $number';
   }

@@ -7719,9 +7719,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorVoiceOverLabel => 'የድምፅ ትረካ';
 
   @override
-  String get videoEditorVoiceOverTitle => 'የድምፅ ትረካ';
-
-  @override
   String videoEditorVoiceOverTakeName(int number) {
     return 'ቅረጻ $number';
   }
