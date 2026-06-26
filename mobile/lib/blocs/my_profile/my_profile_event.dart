@@ -39,6 +39,19 @@ final class MyProfileFetchRequested extends MyProfileEvent {
   const MyProfileFetchRequested();
 }
 
+/// Event triggered when the current user explicitly refreshes their profile.
+///
+/// Unlike [MyProfileFetchRequested], this drives visible loading/error state
+/// and completes [completer] when the refresh attempt finishes so pull-to-
+/// refresh controls can stop their indicator without reaching into the
+/// repository layer.
+final class MyProfileRefreshRequested extends MyProfileEvent {
+  const MyProfileRefreshRequested({this.completer});
+
+  /// Optional completion signal for UI refresh affordances.
+  final Completer<void>? completer;
+}
+
 /// Event triggered to fetch verifier-confirmed NIP-39 identity claims for
 /// the currently loaded profile.
 ///

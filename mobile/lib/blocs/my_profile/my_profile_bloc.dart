@@ -27,6 +27,10 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       transformer: restartable(),
     );
     on<MyProfileFetchRequested>(_onFetchRequested);
+    on<MyProfileRefreshRequested>(
+      _onRefreshRequested,
+      transformer: sequential(),
+    );
     on<VerifiedClaimsRequested>(_onVerifiedClaimsRequested);
   }
 
@@ -133,7 +137,13 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
             externalNip05: profile.externalNip05,
           );
         }
-        return const MyProfileLoading();
+        final currentProfile = _profileFromState(state);
+        if (currentProfile == null) return const MyProfileLoading();
+        return MyProfileLoading(
+          profile: currentProfile,
+          extractedUsername: currentProfile.divineUsername,
+          externalNip05: currentProfile.externalNip05,
+        );
       },
       onError: (error, stackTrace) {
         addError(error, stackTrace);
@@ -150,6 +160,45 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       await _profileRepository.fetchFreshProfile(pubkey: pubkey);
     } on Exception catch (e, stackTrace) {
       addError(e, stackTrace);
+    }
+  }
+
+  Future<void> _onRefreshRequested(
+    MyProfileRefreshRequested event,
+    Emitter<MyProfileState> emit,
+  ) async {
+    final currentProfile = _profileFromState(state);
+    emit(_loadingStateFor(currentProfile));
+
+    try {
+      final freshProfile = await _profileRepository.fetchFreshProfile(
+        pubkey: pubkey,
+      );
+      if (isClosed) return;
+
+      if (freshProfile != null) {
+        emit(_loadedStateFor(freshProfile, isFresh: true));
+        add(const VerifiedClaimsRequested());
+      } else if (currentProfile != null) {
+        emit(_loadedStateFor(currentProfile, isFresh: false));
+        add(const VerifiedClaimsRequested());
+      } else {
+        emit(const MyProfileError(errorType: MyProfileErrorType.notFound));
+      }
+    } on Exception catch (e, stackTrace) {
+      addError(e, stackTrace);
+      if (isClosed) return;
+      if (currentProfile != null) {
+        emit(_loadedStateFor(currentProfile, isFresh: false));
+        add(const VerifiedClaimsRequested());
+      } else {
+        emit(const MyProfileError(errorType: MyProfileErrorType.networkError));
+      }
+    } finally {
+      final completer = event.completer;
+      if (completer != null && !completer.isCompleted) {
+        completer.complete();
+      }
     }
   }
 
@@ -201,4 +250,30 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       }
     }
   }
+
+  UserProfile? _profileFromState(MyProfileState state) {
+    final profile = switch (state) {
+      MyProfileLoaded(:final profile) => profile,
+      MyProfileUpdated(:final profile) => profile,
+      MyProfileLoading(:final profile) => profile,
+      _ => null,
+    };
+    return profile?.pubkey == pubkey ? profile : null;
+  }
+
+  MyProfileLoading _loadingStateFor(UserProfile? profile) => MyProfileLoading(
+    profile: profile,
+    extractedUsername: profile?.divineUsername,
+    externalNip05: profile?.externalNip05,
+  );
+
+  MyProfileLoaded _loadedStateFor(
+    UserProfile profile, {
+    required bool isFresh,
+  }) => MyProfileLoaded(
+    profile: profile,
+    isFresh: isFresh,
+    extractedUsername: profile.divineUsername,
+    externalNip05: profile.externalNip05,
+  );
 }

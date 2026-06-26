@@ -28,6 +28,7 @@ class _ErrorCapturingObserver extends BlocObserver {
 void main() {
   group(MyProfileBloc, () {
     late _MockProfileRepository mockProfileRepository;
+    late StreamController<UserProfile?> profileStreamController;
 
     // Test data constants - using full 64-character hex pubkey as required
     const testPubkey =
@@ -238,6 +239,12 @@ void main() {
       test('$MyProfileFetchRequested instances are equal', () {
         const event1 = MyProfileFetchRequested();
         const event2 = MyProfileFetchRequested();
+        expect(event1, equals(event2));
+      });
+
+      test('$MyProfileRefreshRequested instances are equal', () {
+        const event1 = MyProfileRefreshRequested();
+        const event2 = MyProfileRefreshRequested();
         expect(event1, equals(event2));
       });
     });
@@ -837,6 +844,49 @@ void main() {
       );
 
       blocTest<MyProfileBloc, MyProfileState>(
+        'keeps the last displayed profile when the watched row is deleted',
+        setUp: () {
+          final controller = StreamController<UserProfile?>();
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.watchProfile(pubkey: testPubkey),
+          ).thenAnswer((_) => controller.stream);
+          addTearDown(() {
+            if (!controller.isClosed) {
+              controller.close();
+            }
+          });
+          profileStreamController = controller;
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const MyProfileSubscriptionRequested());
+          await pumpEventQueue();
+          profileStreamController.add(
+            createTestProfile(displayName: 'Visible Profile'),
+          );
+          await pumpEventQueue();
+          profileStreamController.add(null);
+          await pumpEventQueue();
+        },
+        expect: () => [
+          isA<MyProfileLoading>().having((s) => s.profile, 'profile', isNull),
+          isA<MyProfileUpdated>().having(
+            (s) => s.profile.displayName,
+            'profile.displayName',
+            'Visible Profile',
+          ),
+          isA<MyProfileLoading>().having(
+            (s) => s.profile?.displayName,
+            'profile.displayName',
+            'Visible Profile',
+          ),
+        ],
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
         'extracts username from stream profile NIP-05',
         setUp: () {
           final profile = createTestProfile(nip05: '_@alice.divine.video');
@@ -950,6 +1000,99 @@ void main() {
             () => mockProfileRepository.watchProfile(pubkey: testPubkey),
           ).called(2);
         },
+      );
+    });
+
+    group('$MyProfileRefreshRequested', () {
+      blocTest<MyProfileBloc, MyProfileState>(
+        'emits notFound and completes when no profile exists',
+        setUp: () {
+          when(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          final completer = Completer<void>();
+          bloc.add(MyProfileRefreshRequested(completer: completer));
+          await completer.future;
+        },
+        expect: () => [
+          isA<MyProfileLoading>().having((s) => s.profile, 'profile', isNull),
+          isA<MyProfileError>().having(
+            (s) => s.errorType,
+            'errorType',
+            MyProfileErrorType.notFound,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ).called(1);
+        },
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'keeps the current profile visible when refresh fails',
+        seed: () => MyProfileUpdated(
+          profile: createTestProfile(displayName: 'Visible Profile'),
+        ),
+        setUp: () {
+          when(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ).thenThrow(Exception('Network error'));
+        },
+        build: createBloc,
+        act: (bloc) async {
+          final completer = Completer<void>();
+          bloc.add(MyProfileRefreshRequested(completer: completer));
+          await completer.future;
+        },
+        expect: () => [
+          isA<MyProfileLoading>().having(
+            (s) => s.profile?.displayName,
+            'profile.displayName',
+            'Visible Profile',
+          ),
+          isA<MyProfileLoaded>()
+              .having(
+                (s) => s.profile.displayName,
+                'profile.displayName',
+                'Visible Profile',
+              )
+              .having((s) => s.isFresh, 'isFresh', false),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'does not preserve a stale profile for a different pubkey',
+        seed: () => MyProfileUpdated(
+          profile: createTestProfile(
+            pubkey:
+                'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+            displayName: 'Wrong User',
+          ),
+        ),
+        setUp: () {
+          when(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          final completer = Completer<void>();
+          bloc.add(MyProfileRefreshRequested(completer: completer));
+          await completer.future;
+        },
+        expect: () => [
+          isA<MyProfileLoading>().having((s) => s.profile, 'profile', isNull),
+          isA<MyProfileError>().having(
+            (s) => s.errorType,
+            'errorType',
+            MyProfileErrorType.notFound,
+          ),
+        ],
       );
     });
 

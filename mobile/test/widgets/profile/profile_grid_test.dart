@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -37,6 +38,9 @@ class _MockBookmarkService extends Mock implements BookmarkService {}
 class _MockProfileFeedCubit extends MockBloc<ProfileFeedEvent, ProfileFeedState>
     implements ProfileFeedCubit {}
 
+class _MockMyProfileBloc extends MockBloc<MyProfileEvent, MyProfileState>
+    implements MyProfileBloc {}
+
 void main() {
   const userIdHex =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -49,7 +53,13 @@ void main() {
     late _MockContentBlocklistRepository blocklistRepository;
     late _MockBookmarkService bookmarkService;
     late _MockProfileFeedCubit profileFeedCubit;
+    late _MockMyProfileBloc myProfileBloc;
     late MockNostrClient nostrClient;
+
+    setUpAll(() {
+      registerFallbackValue(const MyProfileLoadRequested());
+      registerFallbackValue(const ProfileFeedStarted());
+    });
 
     setUp(() {
       likesRepository = _MockLikesRepository();
@@ -59,6 +69,7 @@ void main() {
       blocklistRepository = _MockContentBlocklistRepository();
       bookmarkService = _MockBookmarkService();
       profileFeedCubit = _MockProfileFeedCubit();
+      myProfileBloc = _MockMyProfileBloc();
       nostrClient = createMockNostrService();
 
       when(() => nostrClient.publicKey).thenReturn(userIdHex);
@@ -83,6 +94,29 @@ void main() {
         const Stream<ProfileFeedState>.empty(),
         initialState: const ProfileFeedState(status: ProfileFeedStatus.ready),
       );
+      final profile = UserProfile(
+        pubkey: userIdHex,
+        displayName: 'Visible Profile',
+        rawData: const {},
+        createdAt: DateTime(2024),
+        eventId:
+            'profile1234567890123456789012345678901234567890123456789012345',
+      );
+      whenListen(
+        myProfileBloc,
+        const Stream<MyProfileState>.empty(),
+        initialState: MyProfileUpdated(profile: profile),
+      );
+      when(() => myProfileBloc.state).thenReturn(
+        MyProfileUpdated(profile: profile),
+      );
+      when(() => myProfileBloc.pubkey).thenReturn(userIdHex);
+      when(() => myProfileBloc.add(any())).thenAnswer((invocation) {
+        final event = invocation.positionalArguments.first;
+        if (event is MyProfileRefreshRequested) {
+          event.completer?.complete();
+        }
+      });
     });
 
     Widget buildSubject({
@@ -94,12 +128,7 @@ void main() {
         home: Scaffold(
           body: MultiBlocProvider(
             providers: [
-              BlocProvider<MyProfileBloc>(
-                create: (_) => MyProfileBloc(
-                  profileRepository: createMockProfileRepository(),
-                  pubkey: userIdHex,
-                ),
-              ),
+              BlocProvider<MyProfileBloc>.value(value: myProfileBloc),
               BlocProvider<ProfileFeedCubit>.value(value: profileFeedCubit),
             ],
             child: ProfileGridView(
@@ -167,5 +196,24 @@ void main() {
         expect(find.byType(ProfileVideosGridSkeleton), findsOneWidget);
       },
     );
+
+    testWidgets('pull-to-refresh refreshes profile metadata and feed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(isOwnProfile: true));
+      await tester.pump();
+
+      final refreshIndicator = tester.widget<RefreshIndicator>(
+        find.byType(RefreshIndicator),
+      );
+      await refreshIndicator.onRefresh();
+
+      verify(
+        () => myProfileBloc.add(any(that: isA<MyProfileRefreshRequested>())),
+      ).called(1);
+      verify(
+        () => profileFeedCubit.add(const ProfileFeedRefreshRequested()),
+      ).called(1);
+    });
   });
 }

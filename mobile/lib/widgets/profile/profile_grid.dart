@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.dart';
 import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
@@ -306,6 +307,27 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     }
   }
 
+  Future<void> _refreshProfileContent() async {
+    final profileRefresh = Completer<void>();
+
+    if (widget.isOwnProfile) {
+      try {
+        context.read<MyProfileBloc>().add(
+          MyProfileRefreshRequested(completer: profileRefresh),
+        );
+      } on ProviderNotFoundException {
+        profileRefresh.complete();
+      }
+    } else {
+      profileRefresh.complete();
+    }
+
+    context.read<ProfileFeedCubit>().add(const ProfileFeedRefreshRequested());
+    _onRefreshRequested();
+
+    await profileRefresh.future;
+  }
+
   @override
   void dispose() {
     widget.refreshNotifier?.removeListener(_onRefreshRequested);
@@ -545,58 +567,67 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       ),
     );
 
-    final content = ClipRRect(
-      borderRadius: const .vertical(bottom: .circular(30)),
-      child: ColoredBox(
-        color: VineTheme.surfaceBackground,
-        child: DefaultTabController(
-          length: _tabKinds.length,
-          child: NestedScrollView(
-            controller: widget.scrollController,
-            physics: const ClampingScrollPhysics(),
-            headerSliverBuilder: (context, innerBoxIsScrolled) => [
-              // Profile Header (GlobalKey for measuring height)
-              SliverToBoxAdapter(
-                child: Stack(
-                  children: [
-                    ProfileBannerLayer(
-                      userIdHex: widget.userIdHex,
-                      isOwnProfile: widget.isOwnProfile,
-                      profile: widget.profile,
-                    ),
-                    ProfileHeaderWidget(
-                      key: _headerKey,
-                      userIdHex: widget.userIdHex,
-                      isOwnProfile: widget.isOwnProfile,
-                      videoCount: widget.videos.length,
-                      profile: widget.profile,
-                      profileStats: widget.profileStats,
-                      onEditProfile: widget.onEditProfile,
-                      onBack: widget.onBack,
-                      onMore: widget.onMore,
-                      displayNameHint: widget.displayNameHint,
-                      avatarUrlHint: widget.avatarUrlHint,
-                      displayName: widget.displayName,
-                      onOpenClips: widget.onOpenClips,
-                      onMessageUser: widget.onMessageUser,
-                      onShareProfile: widget.onShareProfile,
-                      onBlockedTap: widget.onBlockedTap,
-                    ),
-                  ],
+    final content = RefreshIndicator(
+      color: VineTheme.primary,
+      backgroundColor: VineTheme.surfaceContainer,
+      onRefresh: _refreshProfileContent,
+      child: ClipRRect(
+        borderRadius: const .vertical(bottom: .circular(30)),
+        child: ColoredBox(
+          color: VineTheme.surfaceBackground,
+          child: DefaultTabController(
+            length: _tabKinds.length,
+            child: NestedScrollView(
+              controller: widget.scrollController,
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: ClampingScrollPhysics(),
+              ),
+              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                // Profile Header (GlobalKey for measuring height)
+                SliverToBoxAdapter(
+                  child: Stack(
+                    children: [
+                      ProfileBannerLayer(
+                        userIdHex: widget.userIdHex,
+                        isOwnProfile: widget.isOwnProfile,
+                        profile: widget.profile,
+                      ),
+                      ProfileHeaderWidget(
+                        key: _headerKey,
+                        userIdHex: widget.userIdHex,
+                        isOwnProfile: widget.isOwnProfile,
+                        videoCount: widget.videos.length,
+                        profile: widget.profile,
+                        profileStats: widget.profileStats,
+                        onEditProfile: widget.onEditProfile,
+                        onBack: widget.onBack,
+                        onMore: widget.onMore,
+                        displayNameHint: widget.displayNameHint,
+                        avatarUrlHint: widget.avatarUrlHint,
+                        displayName: widget.displayName,
+                        onOpenClips: widget.onOpenClips,
+                        onMessageUser: widget.onMessageUser,
+                        onShareProfile: widget.onShareProfile,
+                        onBlockedTap: widget.onBlockedTap,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              // Sticky Tab Bar
-              ProfileTabBar(
-                controller: _tabController,
-                scrollController: widget.scrollController,
-                tabs: [for (final kind in _tabKinds) _tabPresentationFor(kind)],
-                headerKey: _headerKey,
-                // Sticky cache-revalidation bar for the active cached tab.
-                isRefreshing: _activeTabRefreshing(videosRefreshing),
-              ),
-            ],
-            body: tabContent,
+                // Sticky Tab Bar
+                ProfileTabBar(
+                  controller: _tabController,
+                  scrollController: widget.scrollController,
+                  tabs: [
+                    for (final kind in _tabKinds) _tabPresentationFor(kind),
+                  ],
+                  headerKey: _headerKey,
+                  // Sticky cache-revalidation bar for the active cached tab.
+                  isRefreshing: _activeTabRefreshing(videosRefreshing),
+                ),
+              ],
+              body: tabContent,
+            ),
           ),
         ),
       ),
