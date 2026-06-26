@@ -10,6 +10,10 @@ import 'package:unified_logger/unified_logger.dart';
 /// Factory for a platform-native [CancellableDownloader].
 typedef NativeDownloaderFactory = CancellableDownloader Function();
 
+/// Factory for a native Cronet [CronetEngine]. Injectable for tests so the
+/// eager-build + fallback path can be exercised without the Android JNI stack.
+typedef CronetEngineFactory = CronetEngine Function();
+
 final _nativeFallbackState = _NativeDownloaderFallbackState();
 
 final class _NativeDownloaderFallbackState {
@@ -44,6 +48,7 @@ CancellableDownloader createPlatformDownloaderImpl({
   @visibleForTesting bool? isAndroidOverride,
   @visibleForTesting NativeDownloaderFactory? cupertinoDownloaderFactory,
   @visibleForTesting NativeDownloaderFactory? cronetDownloaderFactory,
+  @visibleForTesting CronetEngineFactory? cronetEngineFactory,
 }) {
   if (isWeb) {
     return HttpCancellableDownloader(IOClient(HttpClient()));
@@ -94,7 +99,8 @@ CancellableDownloader createPlatformDownloaderImpl({
       // `cronet_http` does not expose per-client connect/idle timeout knobs.
       // On Android, `connectionTimeout` and `idleTimeout` therefore do not
       // apply while Cronet is active.
-      return cronetDownloaderFactory?.call() ?? _createCronetDownloader();
+      return cronetDownloaderFactory?.call() ??
+          _createCronetDownloader(cronetEngineFactory);
     } on Object catch (e, st) {
       _nativeFallbackState.cronetUnavailable = true;
       Log.warning(
@@ -140,18 +146,19 @@ CancellableDownloader _createCupertinoDownloader({
 }
 // coverage:ignore-end
 
-// coverage:ignore-start
-CancellableDownloader _createCronetDownloader() {
+CancellableDownloader _createCronetDownloader(
+  CronetEngineFactory? engineFactory,
+) {
   // Build the engine eagerly so a missing/disabled Cronet provider throws
   // here — inside the factory's try/catch, which latches `cronetUnavailable`
   // and falls back to dart:io. `CronetClient.defaultCronetEngine()` defers
   // the build to the first request, where the failure is swallowed by the
   // download error path and the fallback latch never trips, leaving every
   // media fetch broken for the whole process.
-  final engine = CronetEngine.build();
+  final engine = (engineFactory ?? CronetEngine.build)();
+  // coverage:ignore-start
   return HttpCancellableDownloader(
     CronetClient.fromCronetEngine(engine, closeEngine: true),
   );
+  // coverage:ignore-end
 }
-
-// coverage:ignore-end
