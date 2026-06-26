@@ -385,6 +385,8 @@ void main() {
 
         expect(popped, isTrue);
         expect(captured, equals(takes));
+        // Done commits the takes so the cubit's close() keeps their files.
+        verify(() => cubit.markCommitted()).called(1);
       });
 
       testWidgets('close discards takes and returns nothing', (tester) async {

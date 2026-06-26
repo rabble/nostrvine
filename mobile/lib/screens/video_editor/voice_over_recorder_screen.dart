@@ -130,8 +130,8 @@ class _Toolbar extends StatelessWidget {
   }
 
   void _done(BuildContext context) {
-    final takes = context.read<VoiceOverCubit>().state.takes;
-    Navigator.of(context).pop<List<AudioEvent>>(takes);
+    final cubit = context.read<VoiceOverCubit>()..markCommitted();
+    Navigator.of(context).pop<List<AudioEvent>>(cubit.state.takes);
   }
 }
 

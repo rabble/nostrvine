@@ -489,7 +489,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   /// subsequent take starts where the previous one ended, clamped to
   /// [VideoEditorConstants.maxDuration]. All takes are committed in a single
   /// history entry so one undo removes them together.
-  Future<void> _openVoiceOver() async {
+  Future<void> _openVoiceOver({required VideoEditorMainBloc mainBloc}) async {
     const maxDuration = VideoEditorConstants.maxDuration;
     final clipDuration = _clipEditorBloc.state.totalDuration;
     final availableDuration =
@@ -503,6 +503,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         .where((t) => t.id.startsWith(VoiceOverCubit.voiceOverIdPrefix))
         .length;
 
+    // Pause editor playback so the preview's audio isn't captured into the
+    // voice-over while the recorder is open.
+    mainBloc.add(const VideoEditorExternalPauseRequested(isPaused: true));
     final takes = await Navigator.of(context).push<List<AudioEvent>>(
       PageRouteBuilder<List<AudioEvent>>(
         pageBuilder: (_, _, _) => VoiceOverRecorderScreen(
@@ -521,7 +524,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         },
       ),
     );
-    if (!mounted || takes == null || takes.isEmpty) return;
+    if (!mounted) return;
+    mainBloc.add(const VideoEditorExternalPauseRequested(isPaused: false));
+    if (takes == null || takes.isEmpty) return;
 
     // The recorder's per-take duration is derived from amplitude-sample counts
     // and can drift from the encoded file. Probe each file's real duration up
@@ -812,7 +817,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
                 );
               },
               onOpenMusicLibrary: _openMusicLibrary,
-              onOpenVoiceOver: _openVoiceOver,
+              onOpenVoiceOver: () {
+                final mainBloc = context.read<VideoEditorMainBloc>();
+                _openVoiceOver(mainBloc: mainBloc);
+              },
               awaitPushCoverTransition: _awaitMetadataCoverTransition,
               child: ValueListenableBuilder<bool>(
                 valueListenable: _isLoadingDraft,

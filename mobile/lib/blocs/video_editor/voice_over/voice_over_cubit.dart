@@ -66,6 +66,17 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
   StreamSubscription<double>? _amplitudeSubscription;
   String? _currentPath;
 
+  /// Re-entrancy latch for the async start/stop transitions. State only flips
+  /// to recording after permission + native `start()` resolve, so without this
+  /// a rapid double-tap could start (or stop) the recorder twice before the
+  /// status updates.
+  bool _isTransitioning = false;
+
+  /// Whether the takes were handed off to the editor via Done. When `false`,
+  /// [close] discards the recorded files so a system-back / swipe-close exit
+  /// doesn't leave orphaned recordings in app documents.
+  bool _committed = false;
+
   /// Maximum number of amplitude bars retained for the live waveform.
   ///
   /// Kept well above the bar count any phone width can show (the painter draws
@@ -84,9 +95,11 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
 
   /// Requests microphone permission if needed, then starts a new take.
   ///
-  /// Emits [VoiceOverStatus.permissionDenied] when the user declines.
+  /// Emits [VoiceOverStatus.permissionDenied] when the user declines. Ignores
+  /// re-entrant calls while a start is already in flight.
   Future<void> requestPermissionAndStart() async {
-    if (state.isRecording) return;
+    if (state.isRecording || _isTransitioning) return;
+    _isTransitioning = true;
     try {
       var status = await _permissionsService.checkMicrophoneStatus();
       if (status == PermissionStatus.canRequest) {
@@ -100,8 +113,14 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       emit(state.copyWith(status: VoiceOverStatus.error));
+    } finally {
+      _isTransitioning = false;
     }
   }
+
+  /// Marks the recorded takes as committed to the editor timeline, so [close]
+  /// keeps their files. Called by the screen's Done action.
+  void markCommitted() => _committed = true;
 
   /// Opens the OS app-settings page so the user can grant microphone access
   /// after a permanent denial.
@@ -155,7 +174,8 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
   ///
   /// A take with zero duration is discarded.
   Future<void> stop() async {
-    if (!state.isRecording) return;
+    if (!state.isRecording || _isTransitioning) return;
+    _isTransitioning = true;
     // Confirm the recording stopped with a tactile pulse.
     unawaited(HapticService.recordingFeedback());
     await _stopMetering();
@@ -197,6 +217,8 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       emit(state.copyWith(status: VoiceOverStatus.error));
+    } finally {
+      _isTransitioning = false;
     }
   }
 
@@ -261,6 +283,15 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
   @override
   Future<void> close() async {
     await _stopMetering();
+    // Unless the takes were committed via Done, discard their files so a
+    // system-back / swipe-close exit (which never runs discardAll) doesn't
+    // leave orphaned recordings behind.
+    if (!_committed) {
+      await _safeStopRecorder();
+      await _deleteTakeFiles(state.takes);
+      await _deleteFile(_currentPath);
+      _currentPath = null;
+    }
     await _recorder.dispose();
     return super.close();
   }

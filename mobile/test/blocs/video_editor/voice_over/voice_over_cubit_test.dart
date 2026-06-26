@@ -331,6 +331,70 @@ void main() {
       });
     });
 
+    group('re-entrancy', () {
+      test('ignores a re-entrant start while one is in flight', () async {
+        final cubit = buildCubit(_FakePermissions(PermissionStatus.granted));
+
+        await Future.wait([
+          cubit.requestPermissionAndStart(),
+          cubit.requestPermissionAndStart(),
+        ]);
+
+        expect(recorder.startCount, equals(1));
+        expect(cubit.state.isRecording, isTrue);
+
+        await cubit.close();
+      });
+
+      test('ignores a re-entrant stop while one is in flight', () async {
+        final cubit = buildCubit(_FakePermissions(PermissionStatus.granted));
+        await cubit.requestPermissionAndStart();
+        recorder.emitAmplitude(0.5);
+        await flush();
+
+        await Future.wait([cubit.stop(), cubit.stop()]);
+
+        expect(recorder.stopCount, equals(1));
+        expect(cubit.state.takes, hasLength(1));
+
+        await cubit.close();
+      });
+    });
+
+    group('close', () {
+      test('discards uncommitted take files', () async {
+        final cubit = buildCubit(_FakePermissions(PermissionStatus.granted));
+        await cubit.requestPermissionAndStart();
+        recorder.emitAmplitude(0.5);
+        await flush();
+        await cubit.stop();
+
+        final path = cubit.state.takes.single.localFilePath!;
+        File(path).writeAsStringSync('audio');
+        expect(File(path).existsSync(), isTrue);
+
+        await cubit.close();
+
+        expect(File(path).existsSync(), isFalse);
+      });
+
+      test('keeps take files once committed', () async {
+        final cubit = buildCubit(_FakePermissions(PermissionStatus.granted));
+        await cubit.requestPermissionAndStart();
+        recorder.emitAmplitude(0.5);
+        await flush();
+        await cubit.stop();
+
+        final path = cubit.state.takes.single.localFilePath!;
+        File(path).writeAsStringSync('audio');
+        cubit.markCommitted();
+
+        await cubit.close();
+
+        expect(File(path).existsSync(), isTrue);
+      });
+    });
+
     group('openSettings', () {
       test('delegates to the permissions service', () async {
         final permissions = _FakePermissions(
