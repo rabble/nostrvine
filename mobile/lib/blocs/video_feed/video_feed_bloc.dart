@@ -119,8 +119,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
 
   /// Whether [source] participates in the cross-restart [HomeFeedCache].
   ///
-  /// All three home modes (For You, Following, New) are served from and
-  /// written to the cache so cold start shows the last feed instantly. The
+  /// All four home modes (For You, Following, New, Classics) are served from
+  /// and written to the cache so cold start shows the last feed instantly. The
   /// `forYou` staleness concern from #3861 is handled differently now: the
   /// cached feed is positioned at the user's last index and everything past
   /// the active video is replaced with fresh server data on every load

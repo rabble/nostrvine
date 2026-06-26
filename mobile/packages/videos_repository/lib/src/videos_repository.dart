@@ -738,10 +738,14 @@ class VideosRepository {
   /// Fetches popular classic Vine archive videos for the home feed's
   /// Classics mode.
   ///
-  /// Backed by the v2 popular feed filtered to `platform=vine` (the same
-  /// source as Explore → Classics), mapped into a [HomeFeedResult] so the
-  /// home feed paginates it via [HomeFeedResult.paginationCursor] like the
-  /// For You feed. Funnelcake-only: returns an empty result when no
+  /// Delegates to [getPopularVideosPage] with [PopularVideosVariant.classic],
+  /// so the source is identical to Explore → Popular's "Classic" toggle
+  /// (v2 popular feed, `sort=popular&period=month&platform=vine`,
+  /// cursor-paged, server-ordered) — not the standalone Explore → Classics
+  /// tab, which is offset-based and client-side shuffled. Mapped into a
+  /// [HomeFeedResult] so the home feed paginates it via
+  /// [HomeFeedResult.paginationCursor] like the For You feed. Funnelcake-only:
+  /// returns an empty result when no
   /// Funnelcake relay is connected (relays do not expose the server-side
   /// `platform` filter).
   Future<HomeFeedResult> getClassicVideos({
