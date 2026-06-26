@@ -6768,19 +6768,19 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get publishErrorRateLimited =>
-      'Too many uploads right now. Wait a moment and try again.';
+      'Muitos envios agora. Espere um momento e tente novamente.';
 
   @override
   String get publishErrorUploadSessionExpired =>
-      'Your upload session expired. Please try again.';
+      'Sua sessão de envio expirou. Tente novamente.';
 
   @override
   String get publishErrorPermissionDenied =>
-      'Divine doesn’t have permission to upload. Check app permissions in your settings and try again.';
+      'O Divine não tem permissão para enviar. Verifique as permissões do app nas suas configurações e tente novamente.';
 
   @override
   String get publishErrorOutOfMemory =>
-      'Your device is low on memory. Close some apps and try again.';
+      'Seu dispositivo está com pouca memória. Feche alguns apps e tente novamente.';
 
   @override
   String get publishErrorUnknownServer => 'Servidor desconhecido';

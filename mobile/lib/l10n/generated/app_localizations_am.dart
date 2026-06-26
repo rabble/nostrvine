@@ -6616,19 +6616,19 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get publishErrorRateLimited =>
-      'Too many uploads right now. Wait a moment and try again.';
+      'አሁን በጣም ብዙ ስቀላዎች አሉ። ከአፍታ በኋላ እንደገና ይሞክሩ።';
 
   @override
   String get publishErrorUploadSessionExpired =>
-      'Your upload session expired. Please try again.';
+      'የስቀላ ክፍለ ጊዜዎ አብቅቷል። እባክዎ እንደገና ይሞክሩ።';
 
   @override
   String get publishErrorPermissionDenied =>
-      'Divine doesn’t have permission to upload. Check app permissions in your settings and try again.';
+      'Divine ለመስቀል ፈቃድ የለውም። በቅንብሮችዎ ውስጥ የመተግበሪያ ፈቃዶችን ይፈትሹ እና እንደገና ይሞክሩ።';
 
   @override
   String get publishErrorOutOfMemory =>
-      'Your device is low on memory. Close some apps and try again.';
+      'የመሣሪያዎ ማህደረ ትውስታ እያለቀ ነው። አንዳንድ መተግበሪያዎችን ይዝጉ እና እንደገና ይሞክሩ።';
 
   @override
   String get publishErrorUnknownServer => 'ያልታወቀ አገልጋይ';

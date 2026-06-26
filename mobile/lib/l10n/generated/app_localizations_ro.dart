@@ -6883,19 +6883,19 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get publishErrorRateLimited =>
-      'Too many uploads right now. Wait a moment and try again.';
+      'Prea multe încărcări chiar acum. Așteaptă o clipă și încearcă din nou.';
 
   @override
   String get publishErrorUploadSessionExpired =>
-      'Your upload session expired. Please try again.';
+      'Sesiunea de încărcare a expirat. Încearcă din nou.';
 
   @override
   String get publishErrorPermissionDenied =>
-      'Divine doesn’t have permission to upload. Check app permissions in your settings and try again.';
+      'Divine nu are permisiunea de a încărca. Verifică permisiunile aplicației în setări și încearcă din nou.';
 
   @override
   String get publishErrorOutOfMemory =>
-      'Your device is low on memory. Close some apps and try again.';
+      'Dispozitivul are puțină memorie disponibilă. Închide câteva aplicații și încearcă din nou.';
 
   @override
   String get publishErrorUnknownServer => 'Server necunoscut';

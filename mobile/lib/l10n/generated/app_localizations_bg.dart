@@ -6794,19 +6794,19 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get publishErrorRateLimited =>
-      'Too many uploads right now. Wait a moment and try again.';
+      'Твърде много качвания в момента. Изчакай малко и опитай пак.';
 
   @override
   String get publishErrorUploadSessionExpired =>
-      'Your upload session expired. Please try again.';
+      'Сесията ти за качване изтече. Опитай пак.';
 
   @override
   String get publishErrorPermissionDenied =>
-      'Divine doesn’t have permission to upload. Check app permissions in your settings and try again.';
+      'Divine няма разрешение да качва. Провери разрешенията на приложението в настройките и опитай пак.';
 
   @override
   String get publishErrorOutOfMemory =>
-      'Your device is low on memory. Close some apps and try again.';
+      'Устройството ти е с малко свободна памет. Затвори няколко приложения и опитай пак.';
 
   @override
   String get publishErrorUnknownServer => 'Неизвестен сървър';

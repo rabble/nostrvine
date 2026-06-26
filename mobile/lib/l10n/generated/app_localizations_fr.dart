@@ -6809,19 +6809,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get publishErrorRateLimited =>
-      'Too many uploads right now. Wait a moment and try again.';
+      'Trop d\'envois en ce moment. Réessaie dans un instant.';
 
   @override
   String get publishErrorUploadSessionExpired =>
-      'Your upload session expired. Please try again.';
+      'Ta session d\'envoi a expiré. Réessaie.';
 
   @override
   String get publishErrorPermissionDenied =>
-      'Divine doesn’t have permission to upload. Check app permissions in your settings and try again.';
+      'Divine n\'a pas l\'autorisation d\'envoyer. Vérifie les autorisations de l\'application dans tes réglages et réessaie.';
 
   @override
   String get publishErrorOutOfMemory =>
-      'Your device is low on memory. Close some apps and try again.';
+      'Ton appareil manque de mémoire. Ferme quelques applications et réessaie.';
 
   @override
   String get publishErrorUnknownServer => 'Serveur inconnu';

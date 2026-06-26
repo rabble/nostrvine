@@ -6805,19 +6805,19 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get publishErrorRateLimited =>
-      'Too many uploads right now. Wait a moment and try again.';
+      'Masyadong maraming upload ngayon. Maghintay sandali at subukan ulit.';
 
   @override
   String get publishErrorUploadSessionExpired =>
-      'Your upload session expired. Please try again.';
+      'Nag-expire ang iyong upload session. Pakisubukan ulit.';
 
   @override
   String get publishErrorPermissionDenied =>
-      'Divine doesn’t have permission to upload. Check app permissions in your settings and try again.';
+      'Walang permission ang Divine para mag-upload. Tingnan ang app permissions sa iyong settings at subukan ulit.';
 
   @override
   String get publishErrorOutOfMemory =>
-      'Your device is low on memory. Close some apps and try again.';
+      'Kulang ang memory sa device mo. Magsara ng ilang app at subukan ulit.';
 
   @override
   String get publishErrorUnknownServer => 'Hindi kilalang server';

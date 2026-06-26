@@ -6707,19 +6707,19 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get publishErrorRateLimited =>
-      'Too many uploads right now. Wait a moment and try again.';
+      'Terlalu banyak unggahan saat ini. Tunggu sebentar lalu coba lagi.';
 
   @override
   String get publishErrorUploadSessionExpired =>
-      'Your upload session expired. Please try again.';
+      'Sesi unggahanmu sudah berakhir. Silakan coba lagi.';
 
   @override
   String get publishErrorPermissionDenied =>
-      'Divine doesn’t have permission to upload. Check app permissions in your settings and try again.';
+      'Divine tidak punya izin untuk mengunggah. Periksa izin aplikasi di pengaturanmu dan coba lagi.';
 
   @override
   String get publishErrorOutOfMemory =>
-      'Your device is low on memory. Close some apps and try again.';
+      'Memori perangkatmu menipis. Tutup beberapa aplikasi lalu coba lagi.';
 
   @override
   String get publishErrorUnknownServer => 'Server tidak dikenal';
