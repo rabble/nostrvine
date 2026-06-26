@@ -142,7 +142,16 @@ CancellableDownloader _createCupertinoDownloader({
 
 // coverage:ignore-start
 CancellableDownloader _createCronetDownloader() {
-  return HttpCancellableDownloader(CronetClient.defaultCronetEngine());
+  // Build the engine eagerly so a missing/disabled Cronet provider throws
+  // here — inside the factory's try/catch, which latches `cronetUnavailable`
+  // and falls back to dart:io. `CronetClient.defaultCronetEngine()` defers
+  // the build to the first request, where the failure is swallowed by the
+  // download error path and the fallback latch never trips, leaving every
+  // media fetch broken for the whole process.
+  final engine = CronetEngine.build();
+  return HttpCancellableDownloader(
+    CronetClient.fromCronetEngine(engine, closeEngine: true),
+  );
 }
 
 // coverage:ignore-end
