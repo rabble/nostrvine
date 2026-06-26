@@ -1497,8 +1497,107 @@ void main() {
           PublishErrorKind.serverUnreachable,
         );
       });
+
+      test(
+        're-localizes an already-rendered upload-manager message instead of '
+        'passing it through as English rawFallback',
+        () async {
+          // The upload manager hands the publish service an already-rendered
+          // English sentence via PendingUpload.errorMessage. It must map to a
+          // kind (so it re-localizes on resume), not survive as rawFallback.
+          const message =
+              'No internet connection. Check your WiFi or cellular data '
+              'and try again.';
+          _stubFailedUpload(
+            mockAuthService: mockAuthService,
+            mockDraftService: mockDraftService,
+            mockUploadManager: mockUploadManager,
+            mockBlossomService: mockBlossomService,
+            errorMessage: message,
+          );
+
+          final result = await service.publishVideo(draft: _createTestDraft());
+
+          expect(result, isA<PublishError>());
+          final error = result as PublishError;
+          expect(error.kind, PublishErrorKind.noInternet);
+          expect(error.rawFallback, isNull);
+        },
+      );
+
+      test('re-localizes an upload-manager file-too-large message', () async {
+        const message =
+            'Video is too large to upload. Try recording a shorter video.';
+        _stubFailedUpload(
+          mockAuthService: mockAuthService,
+          mockDraftService: mockDraftService,
+          mockUploadManager: mockUploadManager,
+          mockBlossomService: mockBlossomService,
+          errorMessage: message,
+        );
+
+        final result = await service.publishVideo(draft: _createTestDraft());
+
+        expect(result, isA<PublishError>());
+        final error = result as PublishError;
+        expect(error.kind, PublishErrorKind.fileTooLarge);
+        expect(error.rawFallback, isNull);
+      });
+
+      test(
+        'still renders a genuinely unknown upstream sentence via rawFallback',
+        () async {
+          const message =
+              'A brand new upstream failure we do not classify yet. '
+              'Please retry.';
+          _stubFailedUpload(
+            mockAuthService: mockAuthService,
+            mockDraftService: mockDraftService,
+            mockUploadManager: mockUploadManager,
+            mockBlossomService: mockBlossomService,
+            errorMessage: message,
+          );
+
+          final result = await service.publishVideo(draft: _createTestDraft());
+
+          expect(result, isA<PublishError>());
+          final error = result as PublishError;
+          expect(error.kind, PublishErrorKind.generic);
+          expect(error.rawFallback, message);
+        },
+      );
     });
   });
+}
+
+/// Stubs the publish flow so a fresh upload immediately resolves to a failed
+/// [PendingUpload] carrying [errorMessage].
+void _stubFailedUpload({
+  required MockAuthService mockAuthService,
+  required MockDraftStorageService mockDraftService,
+  required MockUploadManager mockUploadManager,
+  required MockBlossomUploadService mockBlossomService,
+  required String errorMessage,
+}) {
+  when(() => mockAuthService.isAuthenticated).thenReturn(true);
+  when(() => mockAuthService.currentPublicKeyHex).thenReturn('test_pubkey');
+  when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
+  when(() => mockUploadManager.isInitialized).thenReturn(true);
+  final failed = _createPendingUpload(
+    status: UploadStatus.failed,
+    errorMessage: errorMessage,
+  );
+  when(
+    () => mockUploadManager.startUploadFromDraft(
+      draft: any(named: 'draft'),
+      nostrPubkey: any(named: 'nostrPubkey'),
+      onProgress: any(named: 'onProgress'),
+    ),
+  ).thenAnswer((_) async => failed);
+  when(() => mockUploadManager.getUpload(any())).thenReturn(failed);
+  when(
+    () => mockBlossomService.getBlossomServer(),
+  ).thenAnswer((_) async => 'https://media.divine.video');
 }
 
 // Helper functions

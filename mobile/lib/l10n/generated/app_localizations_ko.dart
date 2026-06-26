@@ -6512,6 +6512,22 @@ class AppLocalizationsKo extends AppLocalizations {
   String get publishErrorGeneric => '문제가 생겼어요. 다시 시도해주세요.';
 
   @override
+  String get publishErrorRateLimited =>
+      'Too many uploads right now. Wait a moment and try again.';
+
+  @override
+  String get publishErrorUploadSessionExpired =>
+      'Your upload session expired. Please try again.';
+
+  @override
+  String get publishErrorPermissionDenied =>
+      'Divine doesn’t have permission to upload. Check app permissions in your settings and try again.';
+
+  @override
+  String get publishErrorOutOfMemory =>
+      'Your device is low on memory. Close some apps and try again.';
+
+  @override
   String get publishErrorUnknownServer => '알 수 없는 서버';
 
   @override

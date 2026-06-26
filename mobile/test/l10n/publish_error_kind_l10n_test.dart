@@ -17,6 +17,17 @@ void main() {
       }
     });
 
+    test('maps every kind to a distinct message', () {
+      final messages = PublishErrorKind.values
+          .map((kind) => l10n.publishErrorMessage(kind, serverName: 'srv'))
+          .toList();
+      expect(
+        messages.toSet(),
+        hasLength(messages.length),
+        reason: 'two kinds resolve to the same copy',
+      );
+    });
+
     test('interpolates the server name for server kinds', () {
       const serverKinds = [
         PublishErrorKind.serverNotFound,

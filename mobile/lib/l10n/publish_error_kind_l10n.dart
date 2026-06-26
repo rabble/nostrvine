@@ -24,6 +24,8 @@ extension PublishErrorKindL10n on AppLocalizations {
         return publishErrorServerUnreachable;
       case PublishErrorKind.timeout:
         return publishErrorTimeout;
+      case PublishErrorKind.uploadSessionExpired:
+        return publishErrorUploadSessionExpired;
       case PublishErrorKind.tls:
         return publishErrorTls;
       case PublishErrorKind.serverNotFound:
@@ -34,12 +36,18 @@ extension PublishErrorKindL10n on AppLocalizations {
         return publishErrorServerInternalError(server);
       case PublishErrorKind.serverDown:
         return publishErrorServerDown(server);
+      case PublishErrorKind.rateLimited:
+        return publishErrorRateLimited;
       case PublishErrorKind.forbidden:
         return publishErrorForbidden;
+      case PublishErrorKind.permissionDenied:
+        return publishErrorPermissionDenied;
       case PublishErrorKind.fileNotFound:
         return publishErrorFileNotFound;
       case PublishErrorKind.lowStorage:
         return publishErrorLowStorage;
+      case PublishErrorKind.outOfMemory:
+        return publishErrorOutOfMemory;
       case PublishErrorKind.thumbnailFailed:
         return publishErrorThumbnailFailed;
       case PublishErrorKind.nostrPublishFailed:

@@ -26,6 +26,9 @@ enum PublishErrorKind {
   /// The upload exceeded its time budget.
   timeout,
 
+  /// The resumable upload session expired and must be restarted.
+  uploadSessionExpired,
+
   /// TLS / certificate / handshake failure.
   tls,
 
@@ -41,14 +44,24 @@ enum PublishErrorKind {
   /// Media server temporarily down (502/503). Carries `serverName`.
   serverDown,
 
+  /// Too many uploads in a short window (HTTP 429 / rate limited).
+  rateLimited,
+
   /// Upload forbidden (403).
   forbidden,
+
+  /// A device/app permission was denied (distinct from server [forbidden]).
+  permissionDenied,
 
   /// Local video file missing / path not found.
   fileNotFound,
 
   /// Not enough device storage.
   lowStorage,
+
+  /// The device ran out of memory during upload (distinct from [lowStorage]
+  /// disk space).
+  outOfMemory,
 
   /// Video uploaded but the thumbnail could not be prepared.
   thumbnailFailed,

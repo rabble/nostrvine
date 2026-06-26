@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
+import 'package:meta/meta.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
@@ -693,17 +694,26 @@ class VideoPublishService {
   /// Classifies a technical error into a stable [PublishErrorKind] (plus a
   /// `serverName` for the server-related kinds) so the UI can localize it.
   ///
-  /// If the error is already a user-friendly string (e.g. from the upload
-  /// manager), it is returned via `rawFallback` for verbatim display instead
-  /// of falling through to the generic kind.
+  /// Known categories — including the upload manager's already-rendered
+  /// English sentences — are mapped to a kind first, so a persisted failure
+  /// re-localizes in the reader's locale on resume. `rawFallback` is reserved
+  /// for genuinely unknown/legacy upstream text (a user-friendly sentence we
+  /// don't recognize), which the UI renders verbatim.
   Future<({PublishErrorKind kind, String? serverName, String? rawFallback})>
   _classifyError(Object? e) async {
     final raw = e.toString();
-    final errorString = raw.toLowerCase();
 
-    // Errors from the upload manager may already be user-friendly strings.
-    // Detect them by stripping any "Exception: " prefix and checking
-    // whether the remainder looks like a sentence, not a class/stack dump.
+    final matched = classifyPublishErrorMessage(raw);
+    if (matched != null) {
+      final serverName = _serverNameKinds.contains(matched)
+          ? await _resolveServerName()
+          : null;
+      return (kind: matched, serverName: serverName, rawFallback: null);
+    }
+
+    // No known category matched. Reserve `rawFallback` for genuinely
+    // user-friendly upstream text (a sentence, not a class/stack dump) so an
+    // unrecognized message still renders verbatim instead of a generic line.
     final stripped = raw.replaceFirst(RegExp(r'^Exception:\s*'), '');
     if (stripped != raw || e is String) {
       final clean = (e is String ? raw : stripped).trim();
@@ -718,38 +728,68 @@ class VideoPublishService {
         );
       }
     }
-    String? serverName;
 
+    return (
+      kind: PublishErrorKind.generic,
+      serverName: null,
+      rawFallback: null,
+    );
+  }
+
+  /// Kinds that interpolate the media-server host into their localized copy.
+  static const Set<PublishErrorKind> _serverNameKinds = {
+    PublishErrorKind.serverNotFound,
+    PublishErrorKind.serverInternalError,
+    PublishErrorKind.serverDown,
+  };
+
+  /// Resolves the current media-server host for the server-related kinds.
+  Future<String?> _resolveServerName() async {
     try {
       final serverUrl = await blossomService.getBlossomServer();
       if (serverUrl != null && serverUrl.isNotEmpty) {
-        serverName = Uri.tryParse(serverUrl)?.host ?? serverUrl;
+        return Uri.tryParse(serverUrl)?.host ?? serverUrl;
       }
     } catch (_) {}
+    return null;
+  }
 
-    ({PublishErrorKind kind, String? serverName, String? rawFallback}) of(
-      PublishErrorKind kind, {
-      bool withServer = false,
-    }) => (
-      kind: kind,
-      serverName: withServer ? serverName : null,
-      rawFallback: null,
-    );
+  /// Maps a technical error string to a stable [PublishErrorKind], or null
+  /// when no known category matches.
+  ///
+  /// Handles both raw exception text and the upload manager's already-rendered
+  /// user-friendly sentences (e.g. "No internet connection. …"), so a failure
+  /// surfaced through [UploadManager] re-localizes instead of being passed
+  /// through as English `rawFallback`.
+  ///
+  /// The upload-manager sentence substrings must stay in sync with
+  /// [UploadManager.getUserFriendlyErrorMessage]; the drift guard in
+  /// `video_publish_service_test.dart` fails loudly if that copy changes.
+  @visibleForTesting
+  static PublishErrorKind? classifyPublishErrorMessage(String error) {
+    final errorString = error.toLowerCase();
 
     // Network / connectivity
     if (errorString.contains('socketexception') ||
         errorString.contains('network is unreachable') ||
         errorString.contains('no address associated') ||
-        errorString.contains('failed host lookup')) {
-      return of(PublishErrorKind.noInternet);
+        errorString.contains('failed host lookup') ||
+        errorString.contains('no internet connection')) {
+      return PublishErrorKind.noInternet;
     }
     if (errorString.contains('connection refused') ||
         errorString.contains('connection reset') ||
-        errorString.contains('connection closed')) {
-      return of(PublishErrorKind.serverUnreachable);
+        errorString.contains('connection closed') ||
+        errorString.contains('network error') ||
+        errorString.contains('could not reach')) {
+      return PublishErrorKind.serverUnreachable;
+    }
+    if (errorString.contains('session expired') ||
+        errorString.contains('session is no longer available')) {
+      return PublishErrorKind.uploadSessionExpired;
     }
     if (errorString.contains('timeout') || errorString.contains('timed out')) {
-      return of(PublishErrorKind.timeout);
+      return PublishErrorKind.timeout;
     }
 
     // TLS / certificate
@@ -757,62 +797,86 @@ class VideoPublishService {
         errorString.contains('handshake') ||
         errorString.contains('ssl') ||
         errorString.contains('tls')) {
-      return of(PublishErrorKind.tls);
+      return PublishErrorKind.tls;
     }
 
     // Server errors
     if (errorString.contains('404') || errorString.contains('not_found')) {
-      return of(PublishErrorKind.serverNotFound, withServer: true);
+      return PublishErrorKind.serverNotFound;
     }
     if (errorString.contains('413') ||
         errorString.contains('payload too large') ||
         errorString.contains('too large')) {
-      return of(PublishErrorKind.fileTooLarge);
+      return PublishErrorKind.fileTooLarge;
+    }
+    if (errorString.contains('429') ||
+        errorString.contains('too many uploads') ||
+        errorString.contains('rate limit')) {
+      return PublishErrorKind.rateLimited;
     }
     if (errorString.contains('500') ||
-        errorString.contains('internal server error')) {
-      return of(PublishErrorKind.serverInternalError, withServer: true);
+        errorString.contains('internal server error') ||
+        errorString.contains('server encountered an error')) {
+      return PublishErrorKind.serverInternalError;
     }
     if (errorString.contains('502') ||
         errorString.contains('503') ||
         errorString.contains('bad gateway') ||
-        errorString.contains('service unavailable')) {
-      return of(PublishErrorKind.serverDown, withServer: true);
+        errorString.contains('service unavailable') ||
+        errorString.contains('temporarily unavailable')) {
+      return PublishErrorKind.serverDown;
     }
 
-    // Auth
+    // Auth / permissions
     if (errorString.contains('not authenticated') ||
         errorString.contains('unauthorized') ||
+        errorString.contains('authentication failed') ||
         errorString.contains('401')) {
-      return of(PublishErrorKind.notSignedIn);
+      return PublishErrorKind.notSignedIn;
     }
     if (errorString.contains('403') || errorString.contains('forbidden')) {
-      return of(PublishErrorKind.forbidden);
+      return PublishErrorKind.forbidden;
+    }
+    if (errorString.contains('permission denied') ||
+        errorString.contains('permission_denied')) {
+      return PublishErrorKind.permissionDenied;
     }
 
-    // Local file issues
+    // Local file / device resources
     if (errorString.contains('no such file') ||
         errorString.contains('file not found') ||
         errorString.contains('pathnotfoundexception')) {
-      return of(PublishErrorKind.fileNotFound);
+      return PublishErrorKind.fileNotFound;
     }
     if (errorString.contains('storage') ||
         errorString.contains('no space') ||
         errorString.contains('disk full')) {
-      return of(PublishErrorKind.lowStorage);
+      return PublishErrorKind.lowStorage;
+    }
+    if (errorString.contains('not enough memory') ||
+        errorString.contains('out of memory') ||
+        errorString.contains('outofmemory')) {
+      return PublishErrorKind.outOfMemory;
     }
 
     if (errorString.contains('thumbnail upload failed')) {
-      return of(PublishErrorKind.thumbnailFailed);
+      return PublishErrorKind.thumbnailFailed;
     }
 
     // Nostr event publish
     if (errorString.contains('failed to publish nostr event') ||
         errorString.contains('relay')) {
-      return of(PublishErrorKind.nostrPublishFailed);
+      return PublishErrorKind.nostrPublishFailed;
     }
 
-    return of(PublishErrorKind.generic);
+    // Upload-manager generic fallbacks (CLIENT_ERROR / default UNKNOWN) —
+    // localize as generic rather than passing the English sentence through.
+    if (errorString.contains('upload request failed') ||
+        errorString.contains('upload failed. please check')) {
+      return PublishErrorKind.generic;
+    }
+
+    return null;
   }
 }
 

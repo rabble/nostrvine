@@ -6781,6 +6781,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get publishErrorGeneric => 'Algo salió mal. Intentá de nuevo.';
 
   @override
+  String get publishErrorRateLimited =>
+      'Too many uploads right now. Wait a moment and try again.';
+
+  @override
+  String get publishErrorUploadSessionExpired =>
+      'Your upload session expired. Please try again.';
+
+  @override
+  String get publishErrorPermissionDenied =>
+      'Divine doesn’t have permission to upload. Check app permissions in your settings and try again.';
+
+  @override
+  String get publishErrorOutOfMemory =>
+      'Your device is low on memory. Close some apps and try again.';
+
+  @override
   String get publishErrorUnknownServer => 'Servidor desconocido';
 
   @override

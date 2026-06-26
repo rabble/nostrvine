@@ -11777,6 +11777,30 @@ abstract class AppLocalizations {
   /// **'Something went wrong. Please try again.'**
   String get publishErrorGeneric;
 
+  /// No description provided for @publishErrorRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many uploads right now. Wait a moment and try again.'**
+  String get publishErrorRateLimited;
+
+  /// No description provided for @publishErrorUploadSessionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your upload session expired. Please try again.'**
+  String get publishErrorUploadSessionExpired;
+
+  /// No description provided for @publishErrorPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine doesn’t have permission to upload. Check app permissions in your settings and try again.'**
+  String get publishErrorPermissionDenied;
+
+  /// No description provided for @publishErrorOutOfMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Your device is low on memory. Close some apps and try again.'**
+  String get publishErrorOutOfMemory;
+
   /// No description provided for @publishErrorUnknownServer.
   ///
   /// In en, this message translates to:
