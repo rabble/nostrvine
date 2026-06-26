@@ -24,7 +24,6 @@ import 'package:openvine/utils/async_utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Get platform name for logging (web-safe)
@@ -122,8 +121,6 @@ class UploadManager {
        _scopeUploadsToCurrentUser = scopeUploadsToCurrentUser,
        _circuitBreaker = circuitBreaker ?? VideoCircuitBreaker(),
        _retryConfig = retryConfig ?? const UploadRetryConfig();
-  // Removed unused _uploadsBoxName constant
-  static const String _uploadTargetKey = 'upload_target';
 
   // Core services
   Box<PendingUpload>? _uploadsBox;
@@ -150,23 +147,6 @@ class UploadManager {
 
   /// Check if the upload manager is initialized
   bool get isInitialized => _isInitialized && _uploadsBox != null;
-
-  /// Set the upload target (deprecated - only Blossom uploads supported)
-  @Deprecated('Only Blossom uploads are supported')
-  Future<void> setUploadTarget(dynamic target) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_uploadTargetKey, target.index as int);
-    Log.info(
-      'Upload target set to: ${target.name}',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-  }
-
-  /// Check if Blossom is available and configured
-  Future<bool> isBlossomAvailable() async {
-    return _blossomService.isBlossomEnabled();
-  }
 
   /// Initialize the upload manager and load persisted uploads
   /// Uses robust initialization with retry logic and recovery strategies
@@ -320,56 +300,6 @@ class UploadManager {
     }
     return null;
   }
-
-  /// Update an upload's status to published with Nostr event ID
-  Future<void> markUploadPublished(String uploadId, String nostrEventId) async {
-    final upload = getUpload(uploadId);
-    if (upload != null) {
-      final updatedUpload = upload.copyWith(
-        status: UploadStatus.published,
-        nostrEventId: nostrEventId,
-        completedAt: DateTime.now(),
-      );
-
-      await _updateUpload(updatedUpload);
-      Log.info(
-        'Upload marked as published: $uploadId -> $nostrEventId',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-    } else {
-      Log.warning(
-        'Could not find upload to mark as published: $uploadId',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-    }
-  }
-
-  /// Update an upload's status to ready for publishing
-  Future<void> markUploadReadyToPublish(
-    String uploadId,
-    String cloudinaryPublicId,
-  ) async {
-    final upload = getUpload(uploadId);
-    if (upload != null) {
-      final updatedUpload = upload.copyWith(
-        status: UploadStatus.readyToPublish,
-        cloudinaryPublicId: cloudinaryPublicId,
-      );
-
-      await _updateUpload(updatedUpload);
-      Log.debug(
-        'Upload marked as ready to publish: $uploadId',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-    }
-  }
-
-  /// Get uploads that are ready for background processing
-  List<PendingUpload> get uploadsReadyForProcessing =>
-      getUploadsByStatus(UploadStatus.processing);
 
   /// Start upload from VineDraft (preferred method - single source of truth)
   Future<PendingUpload> startUploadFromDraft({
@@ -1726,39 +1656,6 @@ class UploadManager {
     );
   }
 
-  /// Delete an upload permanently (removes from storage)
-  Future<void> deleteUpload(String uploadId) async {
-    final upload = getUpload(uploadId);
-    if (upload == null) return;
-
-    Log.debug(
-      '📱️ Deleting upload: $uploadId',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-
-    // Cancel any active upload first
-    if (upload.status == UploadStatus.uploading) {
-      if (upload.cloudinaryPublicId != null) {
-        // Blossom upload cancellation handled by request timeout
-      }
-    }
-
-    // Cancel progress subscription
-    _progressSubscriptions[uploadId]?.cancel();
-    _progressSubscriptions.remove(uploadId);
-    _sessionPersistFutures.remove(uploadId);
-
-    // Remove from storage
-    await _uploadsBox?.delete(uploadId);
-
-    Log.info(
-      'Upload deleted permanently: $uploadId',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-  }
-
   /// Remove completed, published, or unrecoverable failed uploads
   Future<void> cleanupCompletedUploads() async {
     if (_uploadsBox == null) return;
@@ -1966,35 +1863,6 @@ class UploadManager {
     );
   }
 
-  /// Update upload metadata (title, description, hashtags)
-  Future<void> updateUploadMetadata(
-    String uploadId, {
-    String? title,
-    String? description,
-    List<String>? hashtags,
-  }) async {
-    final upload = getUpload(uploadId);
-    if (upload == null) {
-      Log.warning(
-        'Upload not found for metadata update: $uploadId',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-      return;
-    }
-    final updatedUpload = upload.copyWith(
-      title: title ?? upload.title,
-      description: description ?? upload.description,
-      hashtags: hashtags ?? upload.hashtags,
-    );
-    await _updateUpload(updatedUpload);
-    Log.info(
-      'Updated upload metadata: $uploadId',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-  }
-
   /// Get upload statistics
   Map<String, int> get uploadStats {
     final uploads = pendingUploads;
@@ -2082,20 +1950,6 @@ class UploadManager {
       categories[category] = (categories[category] ?? 0) + 1;
     }
     return categories;
-  }
-
-  /// Get upload metrics for a specific upload
-  UploadMetrics? getUploadMetrics(String uploadId) => _uploadMetrics[uploadId];
-
-  /// Get recent upload metrics (last 24 hours)
-  List<UploadMetrics> getRecentMetrics() {
-    final now = DateTime.now();
-    final cutoff = now.subtract(const Duration(hours: 24));
-
-    return _uploadMetrics.values
-        .where((m) => m.startTime.isAfter(cutoff))
-        .toList()
-      ..sort((a, b) => b.startTime.compareTo(a.startTime));
   }
 
   /// Clear old metrics to prevent memory bloat
