@@ -8,12 +8,10 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/foundation.dart' show kReleaseMode, listEquals;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' hide Layer;
 import 'package:flutter/scheduler.dart' show Ticker;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
@@ -33,10 +31,10 @@ import 'package:openvine/services/video_editor/transition_seam_render_service.da
 import 'package:openvine/utils/await_push_transition.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_canvas_overlay.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_feed_preview_overlay.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
-import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:pro_image_editor/pro_image_editor.dart'
@@ -142,7 +140,7 @@ class VideoEditorCanvas extends StatelessWidget {
         }
       },
       // Const child: Flutter detects identical() widget and skips the
-      // rebuild cascade (_CanvasFitter → LayoutBuilder → _VideoEditorState)
+      // rebuild cascade (CanvasFitter → LayoutBuilder → _VideoEditor)
       // when only isSubEditorOpen changes.
       child: const _CanvasBody(),
     );
@@ -156,7 +154,7 @@ class _CanvasBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: .only(top: MediaQuery.viewPaddingOf(context).top),
-      child: _CanvasFitter(
+      child: CanvasFitter(
         builder: (bodySize, renderSize) =>
             _VideoEditor(renderSize: renderSize, bodySize: bodySize),
       ),
@@ -1844,7 +1842,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
           videoEditor: VideoEditorConfigs(
             showControls: false,
             widgets: VideoEditorWidgets(
-              videoSetupLoadingIndicator: _VideoSetupLoadingIndicator(
+              videoSetupLoadingIndicator: VideoSetupLoadingIndicator(
                 renderSize: widget.renderSize,
                 bodySize: widget.bodySize,
                 targetAspectRatio: targetAspectRatio,
@@ -2046,384 +2044,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         ),
       ),
     );
-  }
-}
-
-class _VideoSetupLoadingIndicator extends StatelessWidget {
-  const _VideoSetupLoadingIndicator({
-    required this.renderSize,
-    required this.bodySize,
-    required this.targetAspectRatio,
-  });
-
-  final Size renderSize;
-  final Size bodySize;
-  final model.AspectRatio targetAspectRatio;
-
-  @override
-  Widget build(BuildContext context) {
-    // Contain mode: the visible area is targetAspectRatio fitted in renderSize
-    final containSize = Size(
-      renderSize.height * targetAspectRatio.value,
-      renderSize.height,
-    );
-    final containRadius = Radius.circular(
-      VideoEditorConstants.canvasRadius * containSize.width / bodySize.width,
-    );
-
-    return Center(
-      child: ClipRRect(
-        borderRadius: BorderRadius.all(containRadius),
-        child: SizedBox.fromSize(
-          size: containSize,
-          child: VideoEditorThumbnail(contentSize: containSize),
-        ),
-      ),
-    );
-  }
-}
-
-class _CanvasFitter extends ConsumerWidget {
-  const _CanvasFitter({required this.builder});
-
-  final Widget Function(Size bodySize, Size renderSize) builder;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final clip = ref.watch(
-      clipManagerProvider.select((s) => s.firstClipOrNull),
-    );
-    if (clip == null) return const SizedBox.shrink();
-    final scope = VideoEditorScope.of(context);
-
-    return LayoutBuilder(
-      builder: (_, constraints) {
-        final bodySize = constraints.biggest;
-
-        // Height is constrained by maxWidth or maxHeight,
-        // depending on which dimension is reached first
-        final height = min(bodySize.width, bodySize.height);
-        final renderSize = Size(height * clip.originalAspectRatio, height);
-
-        // Notify parent about body size
-        scope.bodySizeNotifier.value = bodySize;
-
-        // Contain mode: fit targetAspectRatio within bodySize,
-        // then cover that area with the original aspect ratio
-        final Size targetSize;
-        if (bodySize.aspectRatio > clip.targetAspectRatio.value) {
-          // Body is wider, height is limiting
-          targetSize = Size(
-            bodySize.height * clip.targetAspectRatio.value,
-            bodySize.height,
-          );
-        } else {
-          // Body is narrower, width is limiting
-          targetSize = Size(
-            bodySize.width,
-            bodySize.width / clip.targetAspectRatio.value,
-          );
-        }
-
-        // The visual chain below (Center > SizedBox > FittedBox >
-        // SizedBox > Navigator) is unchanged — it owns the aspect-ratio
-        // mapping (cover-fit [renderSize] into [targetSize], centered
-        // in [bodySize]).
-        //
-        // [HitTestExpander] wraps it so that taps in the scrim /
-        // letterbox zone (outside [targetSize]) are clamped to the
-        // nearest point inside [targetSize] and re-dispatched into the
-        // chain. Without this, `Center.hitTestChildren` drops every
-        // pointer event that falls outside its child rect, so the
-        // editor's top-level GestureDetector never opens an arena and
-        // [onScaleStart] / [onScaleUpdate] never fire.
-        return _OverlayCutArea(
-          child: HitTestExpander(
-            visibleSize: targetSize,
-            child: Center(
-              child: SizedBox.fromSize(
-                size: targetSize,
-                child: FittedBox(
-                  fit: BoxFit.cover,
-                  child: SizedBox.fromSize(
-                    size: renderSize,
-                    child: Navigator(
-                      clipBehavior: Clip.none,
-                      onGenerateRoute: (_) => PageRouteBuilder(
-                        pageBuilder: (_, _, _) => builder(bodySize, renderSize),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Maps the editor's zoom [editorMatrix] (expressed in the editor's
-/// render-space, where pinch translation is in render pixels) into the
-/// body-space transform for the letterbox scrim, so the bars track the
-/// magnified video instead of lagging behind it.
-///
-/// The editor content is cover-fitted from its render size into
-/// [targetSize] and centered in [boxSize]. With that fit+centre affine
-/// `A`, the on-screen effect of `editorMatrix` (`M`) in body coordinates is
-/// `A · M · A⁻¹`. For a zoom-only `M` (uniform scale `k`, translation `t`),
-/// that reduces to: same scale `k`, translation `coverScale·t + (1-k)·d`,
-/// where `d` is the body-space offset of the render origin. Without the
-/// `coverScale` factor the bars move too little.
-///
-/// Assumes a scale+translate matrix (pinch zoom on the canvas); any
-/// rotation/skew is collapsed to a uniform scale by
-/// [Matrix4.getMaxScaleOnAxis]. Returns the identity transform for a
-/// degenerate (zero-area) box so the scrim renders untransformed.
-@visibleForTesting
-Matrix4 scrimZoomTransform({
-  required Matrix4 editorMatrix,
-  required Size boxSize,
-  required Size targetSize,
-  required double originalAspectRatio,
-}) {
-  final renderHeight = boxSize.shortestSide;
-  final renderWidth = renderHeight * originalAspectRatio;
-  if (renderWidth <= 0 || renderHeight <= 0) return Matrix4.identity();
-
-  final coverScale = max(
-    targetSize.width / renderWidth,
-    targetSize.height / renderHeight,
-  );
-  final dx = (boxSize.width - coverScale * renderWidth) / 2;
-  final dy = (boxSize.height - coverScale * renderHeight) / 2;
-
-  final k = editorMatrix.getMaxScaleOnAxis();
-  final t = editorMatrix.getTranslation();
-
-  return Matrix4.identity()
-    ..setEntry(0, 0, k)
-    ..setEntry(1, 1, k)
-    ..setEntry(0, 3, coverScale * t.x + (1 - k) * dx)
-    ..setEntry(1, 3, coverScale * t.y + (1 - k) * dy);
-}
-
-class _OverlayCutArea extends ConsumerWidget {
-  const _OverlayCutArea({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final targetAspectRatio = ref.watch(
-      clipManagerProvider.select((s) => s.firstClipOrNull?.targetAspectRatio),
-    );
-    if (targetAspectRatio == null) return const SizedBox.shrink();
-
-    final overlayColor = VineTheme.backgroundCamera.withAlpha(166);
-    final safeArea = MediaQuery.paddingOf(context);
-    final scope = VideoEditorScope.of(context);
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final boxSize = constraints.biggest;
-        // Compute the visible child size: largest rect with
-        // targetAspectRatio that fits inside boxSize (BoxFit.contain).
-        final double childWidth;
-        final double childHeight;
-        if (boxSize.width / boxSize.height > targetAspectRatio.value) {
-          childHeight = boxSize.height;
-          childWidth = boxSize.height * targetAspectRatio.value;
-        } else {
-          childWidth = boxSize.width;
-          childHeight = boxSize.width / targetAspectRatio.value;
-        }
-        final verticalGap = (boxSize.height - childHeight) / 2;
-        final horizontalGap = (boxSize.width - childWidth) / 2;
-
-        final scrimBars = _ScrimBars(
-          overlayColor: overlayColor,
-          verticalGap: verticalGap,
-          horizontalGap: horizontalGap,
-          safeAreaTop: safeArea.top,
-        );
-
-        return Stack(
-          fit: StackFit.expand,
-          clipBehavior: .none,
-          children: [
-            child,
-
-            ValueListenableBuilder<Matrix4>(
-              valueListenable: scope.zoomMatrixNotifier,
-              builder: (context, matrix, child) => Transform(
-                transform: scrimZoomTransform(
-                  editorMatrix: matrix,
-                  boxSize: boxSize,
-                  targetSize: Size(childWidth, childHeight),
-                  originalAspectRatio: scope.originalClipAspectRatio,
-                ),
-                child: child,
-              ),
-              child: scrimBars,
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-/// The dark letterbox bars that frame the visible target rect. The bars sit
-/// outside the [verticalGap] / [horizontalGap] cut area and are non-
-/// interactive; [_OverlayCutArea] applies the zoom transform around them.
-class _ScrimBars extends StatelessWidget {
-  const _ScrimBars({
-    required this.overlayColor,
-    required this.verticalGap,
-    required this.horizontalGap,
-    required this.safeAreaTop,
-  });
-
-  final Color overlayColor;
-  final double verticalGap;
-  final double horizontalGap;
-  final double safeAreaTop;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Stack(
-        fit: StackFit.expand,
-        clipBehavior: .none,
-        children: [
-          // Top bar — extends up into the safe area so there is no
-          // uncovered strip above the scrim when the canvas is padded
-          // below the status bar.
-          if (verticalGap > 0 || safeAreaTop > 0)
-            Positioned(
-              top: -safeAreaTop,
-              left: 0,
-              right: 0,
-              height: verticalGap + safeAreaTop,
-              child: ColoredBox(color: overlayColor),
-            ),
-          // Bottom bar
-          if (verticalGap > 0)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: verticalGap,
-              child: ColoredBox(color: overlayColor),
-            ),
-          // Left bar
-          if (horizontalGap > 0)
-            Positioned(
-              top: 0,
-              bottom: 0,
-              left: 0,
-              width: horizontalGap,
-              child: ColoredBox(color: overlayColor),
-            ),
-          // Right bar
-          if (horizontalGap > 0)
-            Positioned(
-              top: 0,
-              bottom: 0,
-              right: 0,
-              width: horizontalGap,
-              child: ColoredBox(color: overlayColor),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Forwards hit-tests from the entire parent box into [child], even
-/// when the pointer falls outside [child]'s painted area.
-///
-/// Layout / paint are unchanged — [child] is laid out with the parent
-/// constraints and painted at offset zero, exactly like a passthrough
-/// wrapper. Only [hitTest] is customised: positions outside the
-/// centered [visibleSize] rect are clamped to its nearest edge so the
-/// downstream hit-test chain (which clips to `Center > SizedBox`) sees
-/// a position it accepts and forwards the down event normally.
-///
-/// Subsequent move events flow through the gesture arena that the
-/// initial down opens, so [GestureDetector.onScaleUpdate] still
-/// receives real-pointer deltas.
-@visibleForTesting
-class HitTestExpander extends SingleChildRenderObjectWidget {
-  /// Creates a [HitTestExpander].
-  @visibleForTesting
-  const HitTestExpander({
-    required this.visibleSize,
-    required Widget super.child,
-    super.key,
-  });
-
-  /// The size of the painted, hit-testable region inside the parent
-  /// box, centered on both axes. Hits outside this rect are clamped
-  /// onto its nearest edge before being forwarded.
-  final Size visibleSize;
-
-  // The render object is a true implementation detail; the widget is
-  // only public for `@visibleForTesting`.
-  @override
-  // ignore: library_private_types_in_public_api
-  _RenderHitTestExpander createRenderObject(BuildContext context) {
-    return _RenderHitTestExpander(visibleSize: visibleSize);
-  }
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    // ignore: library_private_types_in_public_api
-    _RenderHitTestExpander renderObject,
-  ) {
-    renderObject.visibleSize = visibleSize;
-  }
-}
-
-class _RenderHitTestExpander extends RenderProxyBox {
-  _RenderHitTestExpander({required Size visibleSize})
-    : _visibleSize = visibleSize;
-
-  /// Symmetric 1 px inset applied when clamping a hit position onto
-  /// the visible rect. Required because downstream transforms
-  /// (FittedBox cover-fit) can map an exact `left`/`top` value to a
-  /// slightly negative local coordinate after float multiplication,
-  /// which then fails `Rect.contains` and drops the hit. The trailing
-  /// inset is needed because `Rect.contains` excludes the right /
-  /// bottom edge.
-  static const double _hitTestEpsilon = 1.0;
-
-  Size _visibleSize;
-  set visibleSize(Size value) {
-    if (value == _visibleSize) return;
-    _visibleSize = value;
-    // No markNeedsLayout/Paint: layout and paint don't depend on
-    // [visibleSize] — only [hitTest] does, and that runs per-event.
-  }
-
-  @override
-  bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    final c = child;
-    if (c == null) return false;
-    final left = (size.width - _visibleSize.width) / 2;
-    final top = (size.height - _visibleSize.height) / 2;
-    final clampedDx = position.dx.clamp(
-      left + _hitTestEpsilon,
-      left + _visibleSize.width - _hitTestEpsilon,
-    );
-    final clampedDy = position.dy.clamp(
-      top + _hitTestEpsilon,
-      top + _visibleSize.height - _hitTestEpsilon,
-    );
-    return c.hitTest(result, position: Offset(clampedDx, clampedDy));
   }
 }
 
