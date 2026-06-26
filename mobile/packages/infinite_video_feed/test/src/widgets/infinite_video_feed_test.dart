@@ -20,6 +20,7 @@ class _NativePlayerHarness {
   final WidgetTester tester;
   final List<String> methodCalls = <String>[];
   final Map<int, Completer<void>> setClipsDelays = <int, Completer<void>>{};
+  final Map<int, int> failSetClipsAfter = <int, int>{};
   final Set<int> _installedPlayerIds = <int>{};
   static const _globalChannel = MethodChannel('divine_video_player');
   static const _codec = StandardMethodCodec();
@@ -52,6 +53,14 @@ class _NativePlayerHarness {
             if (delay != null && !delay.isCompleted) {
               await delay.future;
             }
+            final failAfter = failSetClipsAfter[playerId];
+            if (failAfter != null &&
+                countCallsForPlayer(playerId, 'setClips') > failAfter) {
+              throw PlatformException(
+                code: 'stale_set_clips',
+                message: 'stale player_$playerId setClips',
+              );
+            }
           }
           return null;
         },
@@ -79,6 +88,9 @@ class _NativePlayerHarness {
 
   int countCalls(String method) =>
       methodCalls.where((call) => call.endsWith(':$method')).length;
+
+  int countCallsForPlayer(int playerId, String method) =>
+      methodCalls.where((call) => call == 'player_$playerId:$method').length;
 
   Future<void> sendEvent(int playerId, Map<Object?, Object?> event) async {
     final eventChannelName = 'divine_video_player/player_$playerId/events';
@@ -2770,6 +2782,97 @@ void main() {
           await harness.dispose();
         }
       });
+    });
+
+    group('runtime processing retry', () {
+      testWidgets(
+        'does not drive a stale controller after the slot is reinitialized',
+        (tester) async {
+          DivineVideoPlayerController.resetIdCounterForTesting();
+          final harness = _NativePlayerHarness(tester);
+          await harness.install();
+          final key = GlobalKey<InfiniteVideoFeedState>();
+          final videos = [_makeVideo('processing_retry')];
+
+          try {
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  key: key,
+                  videos: videos,
+                  cache: cache,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                  errorBuilder: (_, _, _, _) => const Text('VIDEO_ERROR'),
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump();
+
+            expect(key.currentState!.debugLiveControllerIndices, equals({0}));
+            expect(harness.countCallsForPlayer(0, 'setClips'), equals(1));
+
+            harness.failSetClipsAfter[0] = harness.countCallsForPlayer(
+              0,
+              'setClips',
+            );
+            await harness.sendEvent(0, const <Object?, Object?>{
+              'status': 'error',
+              'errorCode': 'media_processing',
+              'errorMessage': 'HTTP 202: media still processing',
+            });
+            await tester.pump();
+            expect(find.text('VIDEO_ERROR'), findsNothing);
+
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  key: key,
+                  videos: videos,
+                  cache: cache,
+                  isActive: false,
+                  releaseCurrentWhenInactive: true,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                  errorBuilder: (_, _, _, _) => const Text('VIDEO_ERROR'),
+                ),
+              ),
+            );
+            await tester.pump();
+            expect(key.currentState!.debugLiveControllerIndices, isEmpty);
+
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  key: key,
+                  videos: videos,
+                  cache: cache,
+                  releaseCurrentWhenInactive: true,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                  errorBuilder: (_, _, _, _) => const Text('VIDEO_ERROR'),
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump();
+
+            expect(key.currentState!.debugLiveControllerIndices, equals({0}));
+            expect(harness.countCallsForPlayer(1, 'setClips'), equals(1));
+
+            await tester.pump(const Duration(milliseconds: 1100));
+            await tester.pump();
+
+            expect(harness.countCallsForPlayer(0, 'setClips'), equals(1));
+            expect(find.text('VIDEO_ERROR'), findsNothing);
+          } finally {
+            await tester.pumpWidget(const SizedBox.shrink());
+            await tester.pump();
+            await harness.dispose();
+          }
+        },
+      );
     });
   });
 }

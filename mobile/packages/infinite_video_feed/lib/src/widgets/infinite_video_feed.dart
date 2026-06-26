@@ -1321,10 +1321,28 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   ) async {
     if (_processingRetryInFlight.contains(index)) return;
 
+    final controller = _controllers[index];
+    if (controller == null) return;
+    final retryGeneration = _controllerInitGenerations[index];
+
+    bool ownsRetry() {
+      return mounted &&
+          _controllerInitGenerations[index] == retryGeneration &&
+          identical(_controllers[index], controller);
+    }
+
+    bool guardRetryOwnership(String step) {
+      if (ownsRetry()) return true;
+      _log('Abort stale processing retry at index $index during $step');
+      return false;
+    }
+
     final source = _sources.activeSourceFor(index);
     if (source == null) {
       _log('No active source to retry for processing index $index');
-      _stopAndMarkError(index, VideoErrorType.generic);
+      if (ownsRetry()) {
+        _stopAndMarkError(index, VideoErrorType.generic);
+      }
       return;
     }
 
@@ -1334,12 +1352,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         'Processing retry exhausted index $index: '
         'source=$source error=$errorMessage',
       );
-      _stopAndMarkError(index, VideoErrorType.generic);
+      if (ownsRetry()) {
+        _stopAndMarkError(index, VideoErrorType.generic);
+      }
       return;
     }
-
-    final controller = _controllers[index];
-    if (controller == null) return;
 
     final delay = _runtimeProcessingRetryDelays[attempt];
     _processingRetryAttempts[index] = attempt + 1;
@@ -1353,17 +1370,21 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
     try {
       await Future<void>.delayed(delay);
-      if (!mounted || !_controllers.containsKey(index)) return;
+      if (!guardRetryOwnership('delay')) return;
       await controller.stop();
+      if (!guardRetryOwnership('stop')) return;
       await controller.setSource(
         VideoClip.network(
           source,
           httpHeaders: _httpHeadersByIndex[index] ?? const {},
         ),
       );
+      if (!guardRetryOwnership('setSource')) return;
       if (index == _currentIndex && _isActive && _canAutoPlayAt(index)) {
         await controller.setVolume(_volume);
+        if (!guardRetryOwnership('setVolume')) return;
         await controller.play();
+        if (!guardRetryOwnership('play')) return;
         if (index == _currentIndex && _isActive) {
           _watchdog.start(index, controller);
           _staleDetector.resetGrace();
@@ -1371,6 +1392,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       }
       _processingRetryAttempts.remove(index);
     } on Object catch (e, stackTrace) {
+      if (!ownsRetry()) {
+        guardRetryOwnership('error handling');
+        return;
+      }
       _log('Processing retry failed index $index source=$source: $e');
       Log.error(
         'Processing retry failed',
@@ -1388,9 +1413,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         );
       }
     } finally {
-      _processingRetryInFlight.remove(index);
+      if (ownsRetry()) {
+        _processingRetryInFlight.remove(index);
+      }
     }
-    if (retryProcessingAgain) {
+    if (retryProcessingAgain && ownsRetry()) {
       unawaited(_retryCurrentProcessingSource(index, errorMessage));
     }
   }
