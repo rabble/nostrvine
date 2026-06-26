@@ -9,15 +9,14 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/services/upload/pending_upload_store.dart';
 import 'package:openvine/services/upload_initialization_helper.dart';
-import 'package:openvine/services/upload_publishability.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/async_utils.dart';
@@ -117,17 +116,17 @@ class UploadManager {
   }) : _blossomService = blossomService,
        _defaultBlossomUrl =
            defaultBlossomUrl ?? BlossomUploadService.defaultBlossomServer,
-       _currentNostrPubkey = currentNostrPubkey,
-       _scopeUploadsToCurrentUser = scopeUploadsToCurrentUser,
        _circuitBreaker = circuitBreaker ?? VideoCircuitBreaker(),
-       _retryConfig = retryConfig ?? const UploadRetryConfig();
+       _retryConfig = retryConfig ?? const UploadRetryConfig(),
+       _store = PendingUploadStore(
+         scopeUploadsToCurrentUser: scopeUploadsToCurrentUser,
+         currentNostrPubkey: currentNostrPubkey,
+       );
 
   // Core services
-  Box<PendingUpload>? _uploadsBox;
+  final PendingUploadStore _store;
   final BlossomUploadService _blossomService;
   final String _defaultBlossomUrl;
-  final String? _currentNostrPubkey;
-  final bool _scopeUploadsToCurrentUser;
   final VideoCircuitBreaker _circuitBreaker;
   final UploadRetryConfig _retryConfig;
   final Dio _dio = Dio();
@@ -146,12 +145,12 @@ class UploadManager {
   bool _isInitialized = false;
 
   /// Check if the upload manager is initialized
-  bool get isInitialized => _isInitialized && _uploadsBox != null;
+  bool get isInitialized => _isInitialized && _store.isReady;
 
   /// Initialize the upload manager and load persisted uploads
   /// Uses robust initialization with retry logic and recovery strategies
   Future<void> initialize() async {
-    if (_isInitialized && _uploadsBox != null && _uploadsBox!.isOpen) {
+    if (_isInitialized && _store.isReady) {
       Log.info(
         'UploadManager already initialized',
         name: 'UploadManager',
@@ -167,12 +166,10 @@ class UploadManager {
     );
 
     try {
-      // Use the robust initialization helper
-      _uploadsBox = await UploadInitializationHelper.initializeUploadsBox(
-        forceReinit: !_isInitialized,
-      );
+      // Delegate box open to the store.
+      await _store.open();
 
-      if (_uploadsBox == null || !_uploadsBox!.isOpen) {
+      if (!_store.isReady) {
         throw Exception(
           'Failed to initialize uploads box after all recovery attempts',
         );
@@ -181,7 +178,7 @@ class UploadManager {
       _isInitialized = true;
 
       Log.info(
-        '✅ UploadManager initialized successfully with ${_uploadsBox!.length} existing uploads',
+        '✅ UploadManager initialized successfully with ${_store.length} existing uploads',
         name: 'UploadManager',
         category: LogCategory.video,
       );
@@ -199,7 +196,6 @@ class UploadManager {
       // records (and their resumable sessions) when the user taps "Try Again".
     } catch (e, stackTrace) {
       _isInitialized = false;
-      _uploadsBox = null;
 
       // Log the error but don't rethrow immediately - the helper already retried
       Log.error(
@@ -221,56 +217,20 @@ class UploadManager {
     }
   }
 
-  List<PendingUpload> get _allUploads {
-    if (_uploadsBox == null) return [];
-    return _uploadsBox!.values.toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt)); // Newest first
-  }
-
   /// Get pending uploads visible to the current owner.
   ///
   /// Production providers opt into owner scoping so account switches do not
   /// surface another user's persisted Hive uploads. Tests and maintenance
   /// harnesses that construct [UploadManager] directly keep the historical
   /// unscoped view unless they pass [scopeUploadsToCurrentUser].
-  List<PendingUpload> get pendingUploads {
-    final uploads = _allUploads;
-    if (!_scopeUploadsToCurrentUser) return uploads;
-
-    return uploads.where(_isVisibleToCurrentOwner).toList();
-  }
-
-  bool _isVisibleToCurrentOwner(PendingUpload upload) {
-    if (!_scopeUploadsToCurrentUser) return true;
-    final currentPubkey = _currentNostrPubkey;
-    return currentPubkey != null &&
-        currentPubkey.isNotEmpty &&
-        upload.nostrPubkey == currentPubkey;
-  }
-
-  /// Get uploads by status
-  List<PendingUpload> getUploadsByStatus(UploadStatus status) =>
-      pendingUploads.where((upload) => upload.status == status).toList();
+  List<PendingUpload> get pendingUploads => _store.pendingUploads;
 
   /// Get a specific upload by ID
-  PendingUpload? getUpload(String id) {
-    final upload = _uploadsBox?.get(id);
-    if (upload == null || !_isVisibleToCurrentOwner(upload)) {
-      return null;
-    }
-    return upload;
-  }
+  PendingUpload? getUpload(String id) => _store.getUpload(id);
 
   /// Get an upload by file path
-  PendingUpload? getUploadByFilePath(String filePath) {
-    try {
-      return pendingUploads.firstWhere(
-        (upload) => upload.localVideoPath == filePath,
-      );
-    } catch (e) {
-      return null;
-    }
-  }
+  PendingUpload? getUploadByFilePath(String filePath) =>
+      _store.getUploadByFilePath(filePath);
 
   /// Finds a reusable upload for the given video file path.
   ///
@@ -282,24 +242,8 @@ class UploadManager {
   /// Relies on [pendingUploads] being sorted newest-first (by
   /// [PendingUpload.createdAt] descending) so the first match is the
   /// most recent candidate.
-  PendingUpload? findReusableUpload(String filePath) {
-    for (final upload in pendingUploads) {
-      if (upload.localVideoPath != filePath) continue;
-      if (upload.status == UploadStatus.published) continue;
-      if (upload.status == UploadStatus.pending) continue;
-      if (upload.status == UploadStatus.paused) continue;
-      if (upload.status == UploadStatus.readyToPublish &&
-          !readyUploadIsPublishable(upload)) {
-        continue;
-      }
-      if (upload.status == UploadStatus.failed &&
-          upload.resumableSession == null) {
-        continue;
-      }
-      return upload;
-    }
-    return null;
-  }
+  PendingUpload? findReusableUpload(String filePath) =>
+      _store.findReusableUpload(filePath);
 
   /// Start upload from VineDraft (preferred method - single source of truth)
   Future<PendingUpload> startUploadFromDraft({
@@ -498,7 +442,7 @@ class UploadManager {
     );
 
     // Ensure initialization with robust retry
-    if (!isInitialized || _uploadsBox == null || !_uploadsBox!.isOpen) {
+    if (!isInitialized || !_store.isReady) {
       Log.warning(
         'UploadManager not ready, attempting robust initialization...',
         name: 'UploadManager',
@@ -506,12 +450,10 @@ class UploadManager {
       );
 
       try {
-        // Use the robust helper directly for immediate retry
-        _uploadsBox = await UploadInitializationHelper.initializeUploadsBox(
-          forceReinit: true,
-        );
+        // Delegate force-reinit to the store.
+        await _store.ensureOpen();
 
-        if (_uploadsBox != null && _uploadsBox!.isOpen) {
+        if (_store.isReady) {
           _isInitialized = true;
           Log.info(
             '✅ Robust initialization successful',
@@ -637,7 +579,7 @@ class UploadManager {
       name: 'UploadManager',
       category: LogCategory.video,
     );
-    await _saveUpload(upload);
+    await _store.save(upload);
     Log.info(
       '✅ Upload saved to storage',
       name: 'UploadManager',
@@ -801,7 +743,7 @@ class UploadManager {
             category: LogCategory.video,
           );
 
-          await _updateUpload(
+          await _store.update(
             currentUpload.copyWith(
               status: autoAttempt == 1
                   ? UploadStatus.uploading
@@ -1004,7 +946,7 @@ class UploadManager {
 
       // Store thumbnail URL in upload for later use
       if (thumbnailCdnUrl != null) {
-        await _updateUpload(upload.copyWith(thumbnailPath: thumbnailCdnUrl));
+        await _store.update(upload.copyWith(thumbnailPath: thumbnailCdnUrl));
       }
 
       Log.info(
@@ -1037,7 +979,7 @@ class UploadManager {
 
       // Create updated upload with success metadata
       final updatedUpload = _createSuccessfulUpload(latestUpload, result);
-      await _updateUpload(updatedUpload);
+      await _store.update(updatedUpload);
 
       // Record successful metrics
       if (metrics != null) {
@@ -1110,7 +1052,7 @@ class UploadManager {
     );
 
     // Store user-friendly error message instead of raw exception
-    await _updateUpload(
+    await _store.update(
       latestUpload.copyWith(
         status: UploadStatus.failed,
         errorMessage: userMessage,
@@ -1150,7 +1092,7 @@ class UploadManager {
         ? upload.uploadProgress
         : ((session.nextOffset / fileSizeBytes) * 0.8).clamp(0.0, 0.8);
 
-    await _updateUpload(
+    await _store.update(
       upload.copyWith(
         resumableSession: session,
         uploadProgress: persistedProgress,
@@ -1455,7 +1397,7 @@ class UploadManager {
     if (upload != null &&
         (upload.status == UploadStatus.uploading ||
             upload.status == UploadStatus.retrying)) {
-      _updateUpload(upload.copyWith(uploadProgress: progress));
+      _store.update(upload.copyWith(uploadProgress: progress));
     }
   }
 
@@ -1495,7 +1437,7 @@ class UploadManager {
       // Keep current progress and don't set error message
     );
 
-    await _updateUpload(pausedUpload);
+    await _store.update(pausedUpload);
 
     // Cancel progress subscription
     _progressSubscriptions[uploadId]?.cancel();
@@ -1543,7 +1485,7 @@ class UploadManager {
           : upload.uploadProgress,
     );
 
-    await _updateUpload(resumedUpload);
+    await _store.update(resumedUpload);
 
     // Start upload process again and wait for completion
     await _performUpload(resumedUpload);
@@ -1590,7 +1532,7 @@ class UploadManager {
       retryCount: nextRetryCount,
     );
 
-    await _updateUpload(resetUpload);
+    await _store.update(resetUpload);
 
     // Start upload again and wait for completion
     await _performUpload(resetUpload);
@@ -1617,7 +1559,7 @@ class UploadManager {
     );
 
     final resumed = upload.copyWith(status: UploadStatus.uploading);
-    unawaited(_updateUpload(resumed));
+    unawaited(_store.update(resumed));
     unawaited(_performUpload(resumed));
   }
 
@@ -1643,7 +1585,7 @@ class UploadManager {
       errorMessage: 'Upload cancelled by user',
     );
 
-    await _updateUpload(cancelledUpload);
+    await _store.update(cancelledUpload);
 
     // Cancel progress subscription
     _progressSubscriptions[uploadId]?.cancel();
@@ -1656,180 +1598,8 @@ class UploadManager {
     );
   }
 
-  /// Remove completed, published, or unrecoverable failed uploads
-  Future<void> cleanupCompletedUploads() async {
-    if (_uploadsBox == null) return;
-
-    final uploadsToClean = <PendingUpload>[];
-
-    for (final upload in _allUploads) {
-      // Clean up published uploads immediately - they're done
-      if (upload.status == UploadStatus.published) {
-        uploadsToClean.add(upload);
-        continue;
-      }
-
-      // Clean up completed uploads after 1 day
-      if (upload.isCompleted &&
-          upload.completedAt != null &&
-          DateTime.now().difference(upload.completedAt!).inDays >= 1) {
-        uploadsToClean.add(upload);
-        continue;
-      }
-
-      // Clean up failed uploads with missing video files (unrecoverable)
-      if (upload.status == UploadStatus.failed && !kIsWeb) {
-        final videoFile = File(upload.localVideoPath);
-        if (!videoFile.existsSync()) {
-          uploadsToClean.add(upload);
-          continue;
-        }
-      }
-    }
-
-    for (final upload in uploadsToClean) {
-      await _uploadsBox!.delete(upload.id);
-      Log.debug(
-        '🗑️ Cleaned up upload: ${upload.id} (${upload.status.name})',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-    }
-
-    if (uploadsToClean.isNotEmpty) {
-      Log.info(
-        '🧹 Cleaned up ${uploadsToClean.length} old/unrecoverable uploads',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-    }
-  }
-
-  /// Save upload to local storage with robust retry logic
-  Future<void> _saveUpload(PendingUpload upload) async {
-    // First attempt with existing box
-    if (_uploadsBox != null && _uploadsBox!.isOpen) {
-      try {
-        await _uploadsBox!.put(upload.id, upload);
-        Log.info(
-          '✅ Upload saved to Hive box with ID: ${upload.id}',
-          name: 'UploadManager',
-          category: LogCategory.video,
-        );
-        return;
-      } catch (e) {
-        Log.warning(
-          'Failed to save with existing box: $e, attempting recovery...',
-          name: 'UploadManager',
-          category: LogCategory.video,
-        );
-      }
-    }
-
-    // Box is null or save failed - use robust initialization
-    Log.warning(
-      'Upload box not ready, using robust initialization...',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-
-    try {
-      _uploadsBox = await UploadInitializationHelper.initializeUploadsBox(
-        forceReinit: true,
-      );
-
-      if (_uploadsBox == null || !_uploadsBox!.isOpen) {
-        throw Exception('Failed to initialize box for saving upload');
-      }
-
-      _isInitialized = true;
-
-      // Retry save with new box
-      await _uploadsBox!.put(upload.id, upload);
-      Log.info(
-        '✅ Upload saved after robust initialization: ${upload.id}',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-    } catch (e) {
-      Log.error(
-        '❌ Failed to save upload after all retries: $e',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-
-      // As a last resort, queue the upload for later
-      _queueUploadForLater(upload);
-
-      throw Exception(
-        'Unable to save upload: Storage initialization failed after multiple attempts',
-      );
-    }
-  }
-
-  // Queue for uploads that couldn't be saved immediately
-  final List<PendingUpload> _pendingSaveQueue = [];
-  Timer? _saveQueueTimer;
-
-  /// Queue upload for later save attempt
-  void _queueUploadForLater(PendingUpload upload) {
-    Log.warning(
-      'Queueing upload ${upload.id} for later save attempt',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-
-    _pendingSaveQueue.add(upload);
-
-    // Schedule retry in 5 seconds
-    _saveQueueTimer?.cancel();
-    _saveQueueTimer = Timer(const Duration(seconds: 5), _processSaveQueue);
-  }
-
-  /// Process queued uploads
-  Future<void> _processSaveQueue() async {
-    if (_pendingSaveQueue.isEmpty) return;
-
-    Log.info(
-      'Processing ${_pendingSaveQueue.length} queued uploads',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-
-    final queue = List<PendingUpload>.from(_pendingSaveQueue);
-    _pendingSaveQueue.clear();
-
-    for (final upload in queue) {
-      try {
-        await _saveUpload(upload);
-        Log.info(
-          'Successfully saved queued upload: ${upload.id}',
-          name: 'UploadManager',
-          category: LogCategory.video,
-        );
-      } catch (e) {
-        Log.error(
-          'Failed to save queued upload ${upload.id}: $e',
-          name: 'UploadManager',
-          category: LogCategory.video,
-        );
-        // Re-queue for another attempt
-        _pendingSaveQueue.add(upload);
-      }
-    }
-
-    // If there are still pending uploads, schedule another retry
-    if (_pendingSaveQueue.isNotEmpty) {
-      _saveQueueTimer = Timer(const Duration(seconds: 30), _processSaveQueue);
-    }
-  }
-
-  /// Update existing upload
-  Future<void> _updateUpload(PendingUpload upload) async {
-    if (_uploadsBox == null) return;
-
-    await _uploadsBox!.put(upload.id, upload);
-  }
+  /// Remove completed, published, or unrecoverable failed uploads.
+  Future<void> cleanupCompletedUploads() => _store.cleanupCompletedUploads();
 
   /// Update upload status (public method for VideoEventPublisher)
   Future<void> updateUploadStatus(
@@ -1855,7 +1625,7 @@ class UploadManager {
           : upload.completedAt,
     );
 
-    await _updateUpload(updatedUpload);
+    await _store.update(updatedUpload);
     Log.info(
       'Updated upload status: $uploadId -> $status',
       name: 'UploadManager',
@@ -1864,54 +1634,11 @@ class UploadManager {
   }
 
   /// Get upload statistics
-  Map<String, int> get uploadStats {
-    final uploads = pendingUploads;
-    return {
-      'total': uploads.length,
-      'pending': uploads.where((u) => u.status == UploadStatus.pending).length,
-      'uploading': uploads
-          .where((u) => u.status == UploadStatus.uploading)
-          .length,
-      'processing': uploads
-          .where((u) => u.status == UploadStatus.processing)
-          .length,
-      'ready': uploads
-          .where((u) => u.status == UploadStatus.readyToPublish)
-          .length,
-      'published': uploads
-          .where((u) => u.status == UploadStatus.published)
-          .length,
-      'failed': uploads.where((u) => u.status == UploadStatus.failed).length,
-    };
-  }
+  Map<String, int> get uploadStats => _store.uploadStats;
 
   /// Fix uploads stuck in readyToPublish without proper data (debug method)
-  Future<void> cleanupProblematicUploads() async {
-    final uploads = pendingUploads;
-    var fixedCount = 0;
-
-    for (final upload in uploads) {
-      if (upload.status == UploadStatus.readyToPublish &&
-          !readyUploadIsPublishable(upload)) {
-        Log.error(
-          'Fixing stuck upload: ${upload.id} (missing publishable video data) - moving to failed',
-          name: 'UploadManager',
-          category: LogCategory.video,
-        );
-        final fixedUpload = upload.copyWith(status: UploadStatus.failed);
-        await _updateUpload(fixedUpload);
-        fixedCount++;
-      }
-    }
-
-    if (fixedCount > 0) {
-      Log.error(
-        'Fixed $fixedCount stuck uploads - moved back to failed status',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-    }
-  }
+  Future<void> cleanupProblematicUploads() =>
+      _store.cleanupProblematicUploads();
 
   /// Get comprehensive performance metrics
   Map<String, dynamic> getPerformanceMetrics() {
@@ -2008,7 +1735,7 @@ class UploadManager {
       retryCount: newRetryCount,
     );
 
-    await _updateUpload(updatedUpload);
+    await _store.update(updatedUpload);
 
     // Start upload process
     await _performUpload(updatedUpload);
@@ -2259,9 +1986,9 @@ class UploadManager {
 
       // Add system context
       context.addAll({
-        'total_uploads': _uploadsBox?.length ?? 0,
+        'total_uploads': _store.length,
         'active_uploads': _progressSubscriptions.length,
-        'queued_uploads': _pendingSaveQueue.length,
+        'queued_uploads': _store.queuedCount,
         'platform': _getPlatformName(),
         'is_initialized': _isInitialized,
         'timestamp': DateTime.now().toIso8601String(),
@@ -2569,22 +2296,12 @@ Upload Timeout Failure:
     // Discard pending session persistence futures
     _sessionPersistFutures.clear();
 
-    // Cancel save queue timer
-    _saveQueueTimer?.cancel();
-    _saveQueueTimer = null;
-
     // Clean up old metrics
     _cleanupOldMetrics();
 
-    // Note: We don't close the box here as it might be shared across instances
-    // The box will be closed when Hive.close() is called in tearDownAll
-    // Closing it here causes "File closed" errors in tests
-    // _uploadsBox?.close();
-    _uploadsBox = null;
+    // Delegate storage teardown (timer, queue, box pointer) to the store.
+    _store.disposeStore();
     _isInitialized = false;
-
-    // Clear any pending saves
-    _pendingSaveQueue.clear();
 
     Log.info(
       'UploadManager disposed',
@@ -2635,7 +2352,7 @@ Upload Timeout Failure:
               uploadProgress: 1.0,
               completedAt: DateTime.now(),
             );
-            await _updateUpload(readyUpload);
+            await _store.update(readyUpload);
 
             Log.info(
               '✅ Video processing complete: ${upload.id}',

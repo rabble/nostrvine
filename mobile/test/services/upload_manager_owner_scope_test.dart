@@ -129,8 +129,8 @@ void main() {
         final uploads = await seedUploads();
 
         expect(
-          manager
-              .getUploadsByStatus(UploadStatus.processing)
+          manager.pendingUploads
+              .where((upload) => upload.status == UploadStatus.processing)
               .map((upload) => upload.nostrPubkey),
           equals([pubkeyA]),
         );

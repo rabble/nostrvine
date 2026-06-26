@@ -1,0 +1,390 @@
+// ABOUTME: Persistence layer for PendingUpload records – owns the Hive box,
+// ABOUTME: the save-queue fallback, and all query/cleanup operations.
+
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/services/upload_initialization_helper.dart';
+import 'package:openvine/services/upload_publishability.dart';
+import 'package:unified_logger/unified_logger.dart';
+
+/// Owns the Hive persistence layer for [PendingUpload] records.
+///
+/// [UploadManager] constructs exactly one instance and delegates all
+/// storage reads and writes here.  The two scoping params mirror the
+/// corresponding fields that previously lived on [UploadManager].
+class PendingUploadStore {
+  PendingUploadStore({
+    required this.scopeUploadsToCurrentUser,
+    required this.currentNostrPubkey,
+  });
+
+  final bool scopeUploadsToCurrentUser;
+  final String? currentNostrPubkey;
+
+  Box<PendingUpload>? _box;
+  final List<PendingUpload> _pendingSaveQueue = [];
+  Timer? _saveQueueTimer;
+
+  // ---------------------------------------------------------------------------
+  // Status accessors
+  // ---------------------------------------------------------------------------
+
+  /// True when the Hive box is open and ready for reads/writes.
+  bool get isReady => _box != null && _box!.isOpen;
+
+  /// Total number of records currently in the box (0 when not ready).
+  int get length => _box?.length ?? 0;
+
+  /// Number of uploads waiting in the deferred-save queue.
+  int get queuedCount => _pendingSaveQueue.length;
+
+  // ---------------------------------------------------------------------------
+  // Lifecycle
+  // ---------------------------------------------------------------------------
+
+  /// Open the Hive box for the first time (called from [UploadManager.initialize]).
+  ///
+  /// On failure the box pointer is reset to null so [isReady] reports false –
+  /// mirroring the original `initialize()` catch that nulled the box – before
+  /// the error propagates to the manager's initialization error handler.
+  Future<void> open() async {
+    try {
+      _box = await UploadInitializationHelper.initializeUploadsBox(
+        forceReinit: true,
+      );
+    } catch (_) {
+      _box = null;
+      rethrow;
+    }
+  }
+
+  /// Force-reopen the box (called from re-init-when-closed paths).
+  Future<void> ensureOpen() async {
+    _box = await UploadInitializationHelper.initializeUploadsBox(
+      forceReinit: true,
+    );
+  }
+
+  /// Cancel timers, drain the queue reference, and null the box pointer.
+  ///
+  /// Does NOT close the box – closing is Hive's responsibility and closing
+  /// here causes "File closed" errors in tests that share the box instance.
+  void disposeStore() {
+    _saveQueueTimer?.cancel();
+    _saveQueueTimer = null;
+    _pendingSaveQueue.clear();
+    // Null the reference so isReady → false without actually closing.
+    _box = null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Persistence – write paths
+  // ---------------------------------------------------------------------------
+
+  /// Persist a new [upload] to the Hive box.
+  ///
+  /// If the box is unavailable, falls back to robust re-init; on failure
+  /// the upload is queued for a deferred retry (5 s / 30 s schedule).
+  Future<void> save(PendingUpload upload) async {
+    // Fast path – box is already open.
+    if (_box != null && _box!.isOpen) {
+      try {
+        await _box!.put(upload.id, upload);
+        Log.info(
+          '✅ Upload saved to Hive box with ID: ${upload.id}',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+        return;
+      } catch (e) {
+        Log.warning(
+          'Failed to save with existing box: $e, attempting recovery...',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+      }
+    }
+
+    // Slow path – box is null or save failed; try robust re-init.
+    Log.warning(
+      'Upload box not ready, using robust initialization...',
+      name: 'UploadManager',
+      category: LogCategory.video,
+    );
+
+    try {
+      await ensureOpen();
+
+      if (!isReady) {
+        throw Exception('Failed to initialize box for saving upload');
+      }
+
+      await _box!.put(upload.id, upload);
+      Log.info(
+        '✅ Upload saved after robust initialization: ${upload.id}',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
+    } catch (e) {
+      Log.error(
+        '❌ Failed to save upload after all retries: $e',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
+
+      // Last resort – queue for a later retry attempt.
+      _queueUploadForLater(upload);
+
+      throw Exception(
+        'Unable to save upload: Storage initialization failed after multiple attempts',
+      );
+    }
+  }
+
+  /// Overwrite an existing [upload] record (no-op when box is not ready).
+  Future<void> update(PendingUpload upload) async {
+    if (_box == null) return;
+    await _box!.put(upload.id, upload);
+  }
+
+  /// Delete the record with [id] from the box (no-op when box is not ready).
+  Future<void> delete(String id) async {
+    if (_box == null) return;
+    await _box!.delete(id);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Deferred-save queue
+  // ---------------------------------------------------------------------------
+
+  void _queueUploadForLater(PendingUpload upload) {
+    Log.warning(
+      'Queueing upload ${upload.id} for later save attempt',
+      name: 'UploadManager',
+      category: LogCategory.video,
+    );
+
+    _pendingSaveQueue.add(upload);
+
+    // Schedule retry in 5 seconds.
+    _saveQueueTimer?.cancel();
+    _saveQueueTimer = Timer(const Duration(seconds: 5), _processSaveQueue);
+  }
+
+  Future<void> _processSaveQueue() async {
+    if (_pendingSaveQueue.isEmpty) return;
+
+    Log.info(
+      'Processing ${_pendingSaveQueue.length} queued uploads',
+      name: 'UploadManager',
+      category: LogCategory.video,
+    );
+
+    final queue = List<PendingUpload>.from(_pendingSaveQueue);
+    _pendingSaveQueue.clear();
+
+    for (final upload in queue) {
+      try {
+        await save(upload);
+        Log.info(
+          'Successfully saved queued upload: ${upload.id}',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+      } catch (e) {
+        Log.error(
+          'Failed to save queued upload ${upload.id}: $e',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+        // Re-queue for another attempt.
+        _pendingSaveQueue.add(upload);
+      }
+    }
+
+    // If items remain, schedule a further retry in 30 seconds.
+    if (_pendingSaveQueue.isNotEmpty) {
+      _saveQueueTimer = Timer(const Duration(seconds: 30), _processSaveQueue);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Query helpers
+  // ---------------------------------------------------------------------------
+
+  /// All uploads sorted newest-first; not owner-scoped.
+  List<PendingUpload> get _allUploads {
+    if (_box == null) return [];
+    return _box!.values.toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  }
+
+  /// Uploads visible to the configured owner (or all uploads when unscoped).
+  List<PendingUpload> get pendingUploads {
+    final uploads = _allUploads;
+    if (!scopeUploadsToCurrentUser) return uploads;
+    return uploads.where(_isVisibleToCurrentOwner).toList();
+  }
+
+  bool _isVisibleToCurrentOwner(PendingUpload upload) {
+    if (!scopeUploadsToCurrentUser) return true;
+    final currentPubkey = currentNostrPubkey;
+    return currentPubkey != null &&
+        currentPubkey.isNotEmpty &&
+        upload.nostrPubkey == currentPubkey;
+  }
+
+  /// Retrieve a single upload by [id], applying owner-scope filter.
+  PendingUpload? getUpload(String id) {
+    final upload = _box?.get(id);
+    if (upload == null || !_isVisibleToCurrentOwner(upload)) return null;
+    return upload;
+  }
+
+  /// All uploads in [pendingUploads] that match [status].
+  List<PendingUpload> getUploadsByStatus(UploadStatus status) =>
+      pendingUploads.where((upload) => upload.status == status).toList();
+
+  /// First upload in [pendingUploads] whose local path equals [filePath].
+  PendingUpload? getUploadByFilePath(String filePath) {
+    try {
+      return pendingUploads.firstWhere(
+        (upload) => upload.localVideoPath == filePath,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Most-recent upload for [filePath] that is in a resumable/reusable state.
+  PendingUpload? findReusableUpload(String filePath) {
+    for (final upload in pendingUploads) {
+      if (upload.localVideoPath != filePath) continue;
+      if (upload.status == UploadStatus.published) continue;
+      if (upload.status == UploadStatus.pending) continue;
+      if (upload.status == UploadStatus.paused) continue;
+      if (upload.status == UploadStatus.readyToPublish &&
+          !readyUploadIsPublishable(upload)) {
+        continue;
+      }
+      if (upload.status == UploadStatus.failed &&
+          upload.resumableSession == null) {
+        continue;
+      }
+      return upload;
+    }
+    return null;
+  }
+
+  /// Count of uploads in each status bucket (owner-scoped).
+  Map<String, int> get uploadStats {
+    final uploads = pendingUploads;
+    return {
+      'total': uploads.length,
+      'pending': uploads.where((u) => u.status == UploadStatus.pending).length,
+      'uploading': uploads
+          .where((u) => u.status == UploadStatus.uploading)
+          .length,
+      'processing': uploads
+          .where((u) => u.status == UploadStatus.processing)
+          .length,
+      'ready': uploads
+          .where((u) => u.status == UploadStatus.readyToPublish)
+          .length,
+      'published': uploads
+          .where((u) => u.status == UploadStatus.published)
+          .length,
+      'failed': uploads.where((u) => u.status == UploadStatus.failed).length,
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cleanup
+  // ---------------------------------------------------------------------------
+
+  /// Delete published, stale-completed, and unrecoverable-failed uploads.
+  ///
+  /// Operates on ALL uploads (not owner-scoped) to avoid leaving orphaned
+  /// records from previous accounts.
+  Future<void> cleanupCompletedUploads() async {
+    if (_box == null) return;
+
+    final uploadsToClean = <PendingUpload>[];
+
+    for (final upload in _allUploads) {
+      // Published uploads are fully done – remove immediately.
+      if (upload.status == UploadStatus.published) {
+        uploadsToClean.add(upload);
+        continue;
+      }
+
+      // Remove completed uploads after 1 day.
+      if (upload.isCompleted &&
+          upload.completedAt != null &&
+          DateTime.now().difference(upload.completedAt!).inDays >= 1) {
+        uploadsToClean.add(upload);
+        continue;
+      }
+
+      // Remove failed uploads whose video file no longer exists (unrecoverable).
+      if (upload.status == UploadStatus.failed && !kIsWeb) {
+        final videoFile = File(upload.localVideoPath);
+        if (!videoFile.existsSync()) {
+          uploadsToClean.add(upload);
+          continue;
+        }
+      }
+    }
+
+    for (final upload in uploadsToClean) {
+      await _box!.delete(upload.id);
+      Log.debug(
+        '🗑️ Cleaned up upload: ${upload.id} (${upload.status.name})',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
+    }
+
+    if (uploadsToClean.isNotEmpty) {
+      Log.info(
+        '🧹 Cleaned up ${uploadsToClean.length} old/unrecoverable uploads',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
+    }
+  }
+
+  /// Move readyToPublish uploads that are missing required CDN data to failed.
+  ///
+  /// Operates on owner-scoped [pendingUploads].
+  Future<void> cleanupProblematicUploads() async {
+    final uploads = pendingUploads;
+    var fixedCount = 0;
+
+    for (final upload in uploads) {
+      if (upload.status == UploadStatus.readyToPublish &&
+          !readyUploadIsPublishable(upload)) {
+        Log.error(
+          'Fixing stuck upload: ${upload.id} (missing publishable video data) - moving to failed',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+        final fixedUpload = upload.copyWith(status: UploadStatus.failed);
+        await update(fixedUpload);
+        fixedCount++;
+      }
+    }
+
+    if (fixedCount > 0) {
+      Log.error(
+        'Fixed $fixedCount stuck uploads - moved back to failed status',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
+    }
+  }
+}
