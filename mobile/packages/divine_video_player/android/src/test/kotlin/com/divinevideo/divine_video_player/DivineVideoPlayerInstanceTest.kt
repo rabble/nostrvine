@@ -172,6 +172,28 @@ class DivineVideoPlayerInstanceTest {
         )
     }
 
+    @Test
+    fun `httpHeadersForRequest returns empty for a different, unregistered blob hash`() {
+        instance.onMethodCall(
+            setClipsWithHeaders(
+                "https://media.divine.video/${"a".repeat(64)}/720p.mp4",
+                mapOf("Authorization" to "Nostr token"),
+            ),
+            mockk(relaxed = true),
+        )
+
+        // A valid 64-hex hash that was never registered must NOT inherit another
+        // blob's viewer header. Unlike the miss above (the URL parses to no hash),
+        // this hits the hash-miss branch: blobHashFromUrl succeeds but the hash is
+        // absent from httpHeadersByHash, so it falls through to emptyMap().
+        assertEquals(
+            emptyMap<String, String>(),
+            instance.httpHeadersForRequest(
+                "https://media.divine.video/${"b".repeat(64)}/hls/segment_1.ts",
+            ),
+        )
+    }
+
     private fun setClipsWithHeaders(
         uri: String,
         httpHeaders: Map<String, String>,
