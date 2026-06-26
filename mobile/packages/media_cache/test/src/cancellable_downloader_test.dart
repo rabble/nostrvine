@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:media_cache/src/cancellable_downloader.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _CallbackClient extends http.BaseClient {
   _CallbackClient(this._onSend, {this.onClose});
@@ -142,6 +143,33 @@ void main() {
       expect(client.closed, isTrue);
       expect(closedAfterAbort, isTrue);
       expect(target.existsSync(), isFalse);
+    });
+
+    test('cancelling an in-flight request does not log a warning', () async {
+      await LogCaptureService().clearAllLogs();
+
+      final client = _CallbackClient((request) async {
+        await (request as http.AbortableRequest).abortTrigger;
+        throw http.RequestAbortedException(request.url);
+      });
+      final downloader = HttpCancellableDownloader(client);
+      final target = File('${tempDir.path}/cancel_no_warning.mp4');
+
+      final download = downloader.download(
+        url: 'https://example.com/cancel_no_warning.mp4',
+        targetFile: target,
+      );
+      await Future<void>.delayed(Duration.zero);
+      download.cancel();
+
+      expect(await download.file, isNull);
+      expect(download.isCancelled, isTrue);
+
+      final downloaderWarnings = LogCaptureService()
+          .getRecentLogs()
+          .where((entry) => entry.message.contains('CancellableDownload'))
+          .toList();
+      expect(downloaderWarnings, isEmpty);
     });
 
     test('close waits for active response stream cancellation', () async {
