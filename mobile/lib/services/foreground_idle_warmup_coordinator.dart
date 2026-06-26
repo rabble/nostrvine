@@ -159,12 +159,19 @@ class ForegroundIdleWarmupCoordinator {
 
   final Map<ForegroundIdleWarmupTaskId, DateTime> _lastSuccessAt = {};
   Future<void>? _inFlight;
+  Future<void>? _abandonedTaskRun;
 
   /// Requests a best-effort warmup pass.
   ///
   /// If another pass is running, returns the same future. Each pass checks the
   /// foreground/idle gates before every task so user interaction can stop the
   /// queue quickly.
+  ///
+  /// When a pass abandons a still-running task (a gate closed or the task
+  /// timed out), the coordinator keeps accounting for that task until it
+  /// settles. A new request made in that window waits for the abandoned task
+  /// instead of starting an overlapping pass, so warmups can never contend
+  /// with each other.
   Future<void> requestWarmup({required ForegroundIdleWarmupTrigger trigger}) {
     final inFlight = _inFlight;
     if (inFlight != null) {
@@ -174,6 +181,17 @@ class ForegroundIdleWarmupCoordinator {
         category: LogCategory.system,
       );
       return inFlight;
+    }
+
+    final abandonedTaskRun = _abandonedTaskRun;
+    if (abandonedTaskRun != null) {
+      Log.debug(
+        'Foreground idle warmup held (${trigger.name}): '
+        'awaiting an abandoned task to settle',
+        name: 'ForegroundIdleWarmupCoordinator',
+        category: LogCategory.system,
+      );
+      return abandonedTaskRun;
     }
 
     if (!_canRun) {
@@ -235,7 +253,7 @@ class ForegroundIdleWarmupCoordinator {
           name: 'ForegroundIdleWarmupCoordinator',
           category: LogCategory.system,
         );
-        final outcome = await _runTask(task);
+        final (outcome, run) = await _runTask(task);
         switch (outcome) {
           case _ForegroundIdleWarmupTaskOutcome.completed:
             _lastSuccessAt[task.id] = _now();
@@ -252,6 +270,7 @@ class ForegroundIdleWarmupCoordinator {
               name: 'ForegroundIdleWarmupCoordinator',
               category: LogCategory.system,
             );
+            _trackAbandonedRun(run);
             return;
           case _ForegroundIdleWarmupTaskOutcome.timedOut:
             Log.warning(
@@ -260,7 +279,8 @@ class ForegroundIdleWarmupCoordinator {
               name: 'ForegroundIdleWarmupCoordinator',
               category: LogCategory.system,
             );
-            continue;
+            _trackAbandonedRun(run);
+            return;
         }
       } catch (error) {
         Log.warning(
@@ -273,7 +293,7 @@ class ForegroundIdleWarmupCoordinator {
     }
   }
 
-  Future<_ForegroundIdleWarmupTaskOutcome> _runTask(
+  Future<(_ForegroundIdleWarmupTaskOutcome, Future<void>)> _runTask(
     ForegroundIdleWarmupTask task,
   ) async {
     final gateChanges = _gateChanges;
@@ -285,23 +305,43 @@ class ForegroundIdleWarmupCoordinator {
       gateClosed.complete(_ForegroundIdleWarmupTaskOutcome.gateClosed);
     }
 
+    final run = task.run();
+
     if (gateChanges != null) {
       gateSubscription = gateChanges.listen((_) => completeIfGateClosed());
       completeIfGateClosed();
     }
 
     try {
-      return await Future.any([
-        task.run().then((_) => _ForegroundIdleWarmupTaskOutcome.completed),
+      final outcome = await Future.any([
+        run.then((_) => _ForegroundIdleWarmupTaskOutcome.completed),
         Future<_ForegroundIdleWarmupTaskOutcome>.delayed(
           task.timeout,
           () => _ForegroundIdleWarmupTaskOutcome.timedOut,
         ),
         if (gateChanges != null) gateClosed.future,
       ]);
+      return (outcome, run);
     } finally {
       await gateSubscription?.cancel();
     }
+  }
+
+  /// Keeps a still-running task accounted for after its pass stopped waiting
+  /// on it, so a later request waits instead of starting an overlapping pass.
+  void _trackAbandonedRun(Future<void> run) {
+    final abandoned = run.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    _abandonedTaskRun = abandoned;
+    unawaited(
+      abandoned.whenComplete(() {
+        if (identical(_abandonedTaskRun, abandoned)) {
+          _abandonedTaskRun = null;
+        }
+      }),
+    );
   }
 
   bool _isCoolingDown(ForegroundIdleWarmupTask task) {
