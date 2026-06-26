@@ -1,20 +1,27 @@
-// ABOUTME: Android-style zoom ruler that appears only while pinch-zooming
+// ABOUTME: Android-style zoom ruler shown while pinch-zooming; also draggable
 // ABOUTME: Fine ticks scroll under a fixed centre marker; value floats above
+
+import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/services/haptic_service.dart';
 
 /// Transient zoom indicator modelled on the native Android camera ruler.
 ///
 /// A horizontal strip of fine tick marks scrolls under a fixed centre
 /// accent while the user pinch-zooms, with the live zoom factor floating
-/// above it. It is purely a read-out — the pinch gesture on the preview
-/// drives the zoom — so it ignores pointer events and only becomes visible
-/// while [VideoRecorderBlocState.showZoomIndicator] is set (during a pinch
-/// and for a short hold afterwards).
+/// above it. While visible it is also interactive: a horizontal drag along
+/// the ruler scrubs the zoom — dragging toward the higher marks (left) zooms
+/// in, mirroring how the ticks scroll under a pinch. The value eases onto the
+/// major marks (whole factors and the 0.5× stop) with a soft detent and a
+/// haptic tick, matching the pinch's 1× snap. It only accepts pointer events
+/// while [VideoRecorderBlocState.showZoomIndicator] is set (during a pinch and
+/// for a short hold afterwards); the rest of the time it ignores them so the
+/// preview keeps its own gestures.
 ///
 /// Renders nothing when the active camera exposes no usable zoom range
 /// (single lens / before initialization).
@@ -42,22 +49,124 @@ class VideoRecorderZoomIndicator extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    // Only grab pointer events while the ruler is visible, so the preview
+    // keeps its pinch / tap / long-press gestures the rest of the time.
     return IgnorePointer(
+      ignoring: !showZoomIndicator,
       child: ExcludeSemantics(
         excluding: !showZoomIndicator,
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),
           opacity: showZoomIndicator ? 1 : 0,
-          child: Semantics(
-            label: context.l10n.videoRecorderZoomLevelLabel(
-              _accessibilityValue(zoomLevel),
-            ),
-            child: _ZoomRuler(
-              zoom: zoomLevel,
-              minZoom: minZoomLevel,
-              maxZoom: maxZoomLevel,
-            ),
+          child: _InteractiveZoomRuler(
+            zoom: zoomLevel,
+            minZoom: minZoomLevel,
+            maxZoom: maxZoomLevel,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Wraps the [_ZoomRuler] read-out with a horizontal drag scrubber and
+/// slider semantics, dispatching [VideoRecorderZoomLevelSet] as the user
+/// adjusts the zoom.
+class _InteractiveZoomRuler extends StatefulWidget {
+  const _InteractiveZoomRuler({
+    required this.zoom,
+    required this.minZoom,
+    required this.maxZoom,
+  });
+
+  final double zoom;
+  final double minZoom;
+  final double maxZoom;
+
+  @override
+  State<_InteractiveZoomRuler> createState() => _InteractiveZoomRulerState();
+}
+
+class _InteractiveZoomRulerState extends State<_InteractiveZoomRuler> {
+  /// Zoom captured at drag start and advanced locally on every update, so a
+  /// burst of drag events doesn't compound against a stale [widget.zoom]
+  /// between rebuilds. Null while no drag is in progress.
+  double? _dragZoom;
+
+  void _onDragStart(DragStartDetails details) => _dragZoom = widget.zoom;
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    final current = _dragZoom ?? widget.zoom;
+    // The ruler scrolls left as the zoom grows, so dragging left zooms in.
+    final next = (current - details.delta.dx / _pxPerZoomUnit).clamp(
+      widget.minZoom,
+      widget.maxZoom,
+    );
+    // Tick as the value passes a major mark, mirroring the pinch detent.
+    if (_crossedMajorMark(current, next)) {
+      unawaited(HapticService.snapFeedback());
+    }
+    // [_dragZoom] tracks the raw finger position; the detent is an emit-only
+    // transform so the well never traps the accumulator.
+    _dragZoom = next;
+    _setZoom(_snapToMajor(next));
+  }
+
+  void _onDragEnd(DragEndDetails details) => _dragZoom = null;
+
+  /// Whether scrubbing from [from] to [to] passed a major ruler mark — every
+  /// whole factor, plus the 0.5× ultra-wide stop — matching the ticks the
+  /// painter draws as majors.
+  bool _crossedMajorMark(double from, double to) {
+    if (from == to) return false;
+    final crossedWhole = from.floorToDouble() != to.floorToDouble();
+    final crossedHalf = (from < 0.5) != (to < 0.5);
+    return crossedWhole || crossedHalf;
+  }
+
+  /// Eases [value] toward the nearest major mark within [_snapRadius], using
+  /// the same damped gravity-well curve as the pinch's 1× detent, so the
+  /// scrubbed value gently clicks onto whole factors and the 0.5× stop.
+  double _snapToMajor(double value) {
+    final mark = _nearestMajorMark(value);
+    final dist = (value - mark).abs();
+    if (dist >= _snapRadius) return value;
+    final t = dist / _snapRadius;
+    final pulled = mark + (value >= mark ? 1.0 : -1.0) * _snapRadius * t * t;
+    return pulled.clamp(widget.minZoom, widget.maxZoom);
+  }
+
+  double _nearestMajorMark(double value) {
+    final whole = value.roundToDouble();
+    return (value - 0.5).abs() < (value - whole).abs() ? 0.5 : whole;
+  }
+
+  void _nudge(double delta) =>
+      _setZoom((widget.zoom + delta).clamp(widget.minZoom, widget.maxZoom));
+
+  void _setZoom(double value) {
+    if (value == widget.zoom) return;
+    context.read<VideoRecorderBloc>().add(VideoRecorderZoomLevelSet(value));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      slider: true,
+      label: context.l10n.videoRecorderZoomLevelLabel(
+        _accessibilityValue(widget.zoom),
+      ),
+      onIncrease: () => _nudge(_semanticZoomStep),
+      onDecrease: () => _nudge(-_semanticZoomStep),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragStart: _onDragStart,
+        onHorizontalDragUpdate: _onDragUpdate,
+        onHorizontalDragEnd: _onDragEnd,
+        child: _ZoomRuler(
+          zoom: widget.zoom,
+          minZoom: widget.minZoom,
+          maxZoom: widget.maxZoom,
         ),
       ),
     );
@@ -189,6 +298,14 @@ const _pxPerZoomUnit = 110.0;
 
 /// Spacing between minor tick marks, in zoom units.
 const _minorStep = 0.1;
+
+/// Zoom step applied per screen-reader increase / decrease action.
+const _semanticZoomStep = 0.1;
+
+/// Radius (in zoom units) of the soft detent around each major mark while
+/// dragging. Matches the pinch gesture's 1× gravity well; kept well below the
+/// 0.5× tick spacing so neighbouring wells never overlap.
+const _snapRadius = 0.15;
 
 const _minorTickHeight = 9.0;
 const _majorTickHeight = 16.0;

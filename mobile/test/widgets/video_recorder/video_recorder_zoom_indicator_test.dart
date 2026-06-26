@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,6 +14,10 @@ class _MockVideoRecorderBloc
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    registerFallbackValue(const VideoRecorderZoomLevelSet(1));
+  });
 
   group(VideoRecorderZoomIndicator, () {
     late _MockVideoRecorderBloc bloc;
@@ -113,6 +118,124 @@ void main() {
 
         expect(find.byType(AnimatedOpacity), findsNothing);
         expect(find.text('1×'), findsNothing);
+      });
+    });
+
+    group('interaction', () {
+      List<VideoRecorderZoomLevelSet> capturedZoomEvents() {
+        return verify(
+          () => bloc.add(captureAny()),
+        ).captured.whereType<VideoRecorderZoomLevelSet>().toList();
+      }
+
+      testWidgets('dragging left zooms in', (tester) async {
+        await tester.pumpWidget(buildWidget(zoomLevel: 2));
+        await tester.pumpAndSettle();
+
+        await tester.drag(
+          find.byType(VideoRecorderZoomIndicator),
+          const Offset(-110, 0),
+        );
+        await tester.pumpAndSettle();
+
+        final events = capturedZoomEvents();
+        expect(events, isNotEmpty);
+        expect(events.last.value, greaterThan(2));
+      });
+
+      testWidgets('dragging right zooms out', (tester) async {
+        await tester.pumpWidget(buildWidget(zoomLevel: 3));
+        await tester.pumpAndSettle();
+
+        await tester.drag(
+          find.byType(VideoRecorderZoomIndicator),
+          const Offset(110, 0),
+        );
+        await tester.pumpAndSettle();
+
+        final events = capturedZoomEvents();
+        expect(events, isNotEmpty);
+        expect(events.last.value, lessThan(3));
+      });
+
+      testWidgets('never dispatches beyond the camera max', (tester) async {
+        await tester.pumpWidget(
+          buildWidget(zoomLevel: 4.8),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.drag(
+          find.byType(VideoRecorderZoomIndicator),
+          const Offset(-1000, 0),
+        );
+        await tester.pumpAndSettle();
+
+        for (final event in capturedZoomEvents()) {
+          expect(event.value, lessThanOrEqualTo(5));
+        }
+      });
+
+      testWidgets('eases onto a major mark when released nearby', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        // 1× dragged ~0.95 lands at a raw 1.95×, inside the 2× detent radius,
+        // so the emitted value is pulled snug to 2× rather than left at 1.95×.
+        await tester.drag(
+          find.byType(VideoRecorderZoomIndicator),
+          const Offset(-104.5, 0),
+        );
+        await tester.pumpAndSettle();
+
+        final events = capturedZoomEvents();
+        expect(events, isNotEmpty);
+        expect(events.last.value, closeTo(2, 0.02));
+      });
+
+      testWidgets('ticks haptics when crossing a major mark', (tester) async {
+        final calls = <MethodCall>[];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+              calls.add(call);
+              return null;
+            });
+        addTearDown(() {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(SystemChannels.platform, null);
+        });
+
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        // 1× → ~2× crosses the 2× whole-factor mark.
+        await tester.drag(
+          find.byType(VideoRecorderZoomIndicator),
+          const Offset(-110, 0),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          calls.where((c) => c.method == 'HapticFeedback.vibrate'),
+          isNotEmpty,
+        );
+      });
+
+      testWidgets('does not capture drags while hidden', (tester) async {
+        await tester.pumpWidget(buildWidget(showZoomIndicator: false));
+        await tester.pumpAndSettle();
+
+        await tester.drag(
+          find.byType(VideoRecorderZoomIndicator),
+          const Offset(-110, 0),
+          warnIfMissed: false,
+        );
+        await tester.pumpAndSettle();
+
+        verifyNever(
+          () => bloc.add(any(that: isA<VideoRecorderZoomLevelSet>())),
+        );
       });
     });
   });
