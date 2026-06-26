@@ -26,6 +26,7 @@ import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
 import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/pending_verification_service.dart';
+import 'package:openvine/services/secure_storage_options.dart';
 import 'package:openvine/services/web_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -62,15 +63,16 @@ OAuthConfig oauthConfig(Ref ref) {
 }
 
 @Riverpod(keepAlive: true)
-FlutterSecureStorage flutterSecureStorage(Ref ref) =>
-    const FlutterSecureStorage(
-      // Do not enable AndroidOptions.resetOnError here. This storage holds
-      // OAuth/Keycast and pending-verification credentials; silently deleting
-      // them after a transient Android Keystore read error logs users out.
-      aOptions: AndroidOptions(
-        encryptedSharedPreferences: true,
-      ),
-    );
+FlutterSecureStorage flutterSecureStorage(Ref ref) => FlutterSecureStorage(
+  // Do not enable AndroidOptions.resetOnError here. This storage holds
+  // OAuth/Keycast and pending-verification credentials; silently deleting
+  // them after a transient Android Keystore read error logs users out.
+  aOptions: const AndroidOptions(
+    encryptedSharedPreferences: true,
+  ),
+  // macOS debug builds can't use the data-protection keychain (#5563).
+  mOptions: appMacOsSecureStorageOptions(),
+);
 
 @Riverpod(keepAlive: true)
 SecureKeycastStorage secureKeycastStorage(Ref ref) =>

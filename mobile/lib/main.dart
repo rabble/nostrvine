@@ -96,6 +96,7 @@ import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/pro_video_editor_log_forwarder.dart';
 import 'package:openvine/services/quick_actions_coordinator.dart';
+import 'package:openvine/services/secure_storage_options.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
@@ -1312,8 +1313,9 @@ Future<void> _startOpenVineApp() async {
   // first use. This also verifies package:sqlite3 loaded the sqlite3mc hook
   // build and runs the one-time plaintext→encrypted migration, both of which
   // must happen before any Drift database open. (#570, finding C2)
-  const dbCipherSecureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  final dbCipherSecureStorage = FlutterSecureStorage(
+    aOptions: const AndroidOptions(encryptedSharedPreferences: true),
+    mOptions: appMacOsSecureStorageOptions(),
   );
   var didRecordDatabaseBootstrapFailure = false;
   Future<void> recordDatabaseBootstrapFailure(
