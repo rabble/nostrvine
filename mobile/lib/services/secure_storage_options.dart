@@ -18,7 +18,12 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// `nostr_key_manager`'s `PlatformSecureStorage`. `accessibility` is
 /// intentionally left at the package default (`unlocked`) to preserve the app
 /// stores' prior macOS behavior. See #5563.
-MacOsOptions appMacOsSecureStorageOptions() => MacOsOptions(
-  useDataProtectionKeyChain:
-      defaultTargetPlatform != TargetPlatform.macOS || !kDebugMode,
-);
+///
+/// [isDebug] defaults to [kDebugMode] (a compile-time constant) and exists only
+/// so tests can exercise the macOS release branch, which `kDebugMode` cannot
+/// reach under `flutter test`. Production callers omit it.
+MacOsOptions appMacOsSecureStorageOptions({bool isDebug = kDebugMode}) =>
+    MacOsOptions(
+      useDataProtectionKeyChain:
+          defaultTargetPlatform != TargetPlatform.macOS || !isDebug,
+    );
