@@ -88,6 +88,8 @@ class _ProfileBannerLayerState extends ConsumerState<ProfileBannerLayer> {
       final state = context.watch<MyProfileBloc>().state;
       return switch (state) {
         MyProfileUpdated(:final profile) => profile,
+        MyProfileLoaded(:final profile) => profile,
+        MyProfileLoading(:final profile) => profile,
         _ => null,
       };
     } on ProviderNotFoundException {

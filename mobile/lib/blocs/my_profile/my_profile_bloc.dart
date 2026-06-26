@@ -54,6 +54,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
         profile: cachedProfile,
         extractedUsername: cachedProfile?.divineUsername,
         externalNip05: cachedProfile?.externalNip05,
+        verifiedClaims: _claimsFromState(state),
       ),
     );
 
@@ -143,6 +144,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
           profile: currentProfile,
           extractedUsername: currentProfile.divineUsername,
           externalNip05: currentProfile.externalNip05,
+          verifiedClaims: _claimsFromState(state),
         );
       },
       onError: (error, stackTrace) {
@@ -168,7 +170,9 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
     Emitter<MyProfileState> emit,
   ) async {
     final currentProfile = _profileFromState(state);
-    emit(_loadingStateFor(currentProfile));
+    emit(
+      _loadingStateFor(currentProfile, verifiedClaims: _claimsFromState(state)),
+    );
 
     try {
       final freshProfile = await _profileRepository.fetchFreshProfile(
@@ -176,11 +180,24 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       );
       if (isClosed) return;
 
+      final latestClaims = _claimsFromState(state);
       if (freshProfile != null) {
-        emit(_loadedStateFor(freshProfile, isFresh: true));
+        emit(
+          _loadedStateFor(
+            freshProfile,
+            isFresh: true,
+            verifiedClaims: latestClaims,
+          ),
+        );
         add(const VerifiedClaimsRequested());
-      } else if (currentProfile != null) {
-        emit(_loadedStateFor(currentProfile, isFresh: false));
+      } else if (_profileFromState(state) case final latestProfile?) {
+        emit(
+          _loadedStateFor(
+            latestProfile,
+            isFresh: false,
+            verifiedClaims: latestClaims,
+          ),
+        );
         add(const VerifiedClaimsRequested());
       } else {
         emit(const MyProfileError(errorType: MyProfileErrorType.notFound));
@@ -188,8 +205,15 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
     } on Exception catch (e, stackTrace) {
       addError(e, stackTrace);
       if (isClosed) return;
-      if (currentProfile != null) {
-        emit(_loadedStateFor(currentProfile, isFresh: false));
+      final latestClaims = _claimsFromState(state);
+      if (_profileFromState(state) case final latestProfile?) {
+        emit(
+          _loadedStateFor(
+            latestProfile,
+            isFresh: false,
+            verifiedClaims: latestClaims,
+          ),
+        );
         add(const VerifiedClaimsRequested());
       } else {
         emit(const MyProfileError(errorType: MyProfileErrorType.networkError));
@@ -261,19 +285,38 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
     return profile?.pubkey == pubkey ? profile : null;
   }
 
-  MyProfileLoading _loadingStateFor(UserProfile? profile) => MyProfileLoading(
+  List<IdentityClaim> _claimsFromState(MyProfileState state) {
+    final claims = switch (state) {
+      MyProfileLoaded(:final profile, :final verifiedClaims) =>
+        profile.pubkey == pubkey ? verifiedClaims : const <IdentityClaim>[],
+      MyProfileUpdated(:final profile, :final verifiedClaims) =>
+        profile.pubkey == pubkey ? verifiedClaims : const <IdentityClaim>[],
+      MyProfileLoading(:final profile, :final verifiedClaims) =>
+        profile?.pubkey == pubkey ? verifiedClaims : const <IdentityClaim>[],
+      _ => const <IdentityClaim>[],
+    };
+    return claims;
+  }
+
+  MyProfileLoading _loadingStateFor(
+    UserProfile? profile, {
+    List<IdentityClaim> verifiedClaims = const [],
+  }) => MyProfileLoading(
     profile: profile,
     extractedUsername: profile?.divineUsername,
     externalNip05: profile?.externalNip05,
+    verifiedClaims: verifiedClaims,
   );
 
   MyProfileLoaded _loadedStateFor(
     UserProfile profile, {
     required bool isFresh,
+    List<IdentityClaim> verifiedClaims = const [],
   }) => MyProfileLoaded(
     profile: profile,
     isFresh: isFresh,
     extractedUsername: profile.divineUsername,
     externalNip05: profile.externalNip05,
+    verifiedClaims: verifiedClaims,
   );
 }

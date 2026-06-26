@@ -1004,6 +1004,14 @@ void main() {
     });
 
     group('$MyProfileRefreshRequested', () {
+      const verifiedClaim = IdentityClaim(
+        pubkey: testPubkey,
+        platform: 'github',
+        identity: 'octocat',
+        proof: 'https://github.com/octocat',
+      );
+      late Completer<UserProfile?> refreshFetchCompleter;
+
       blocTest<MyProfileBloc, MyProfileState>(
         'emits notFound and completes when no profile exists',
         setUp: () {
@@ -1063,6 +1071,113 @@ void main() {
               .having((s) => s.isFresh, 'isFresh', false),
         ],
         errors: () => [isA<Exception>()],
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'preserves verified claims while refresh revalidates',
+        seed: () => MyProfileUpdated(
+          profile: createTestProfile(displayName: 'Visible Profile'),
+          verifiedClaims: const [verifiedClaim],
+        ),
+        setUp: () {
+          when(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          final completer = Completer<void>();
+          bloc.add(MyProfileRefreshRequested(completer: completer));
+          await completer.future;
+        },
+        expect: () => [
+          isA<MyProfileLoading>()
+              .having(
+                (s) => s.profile?.displayName,
+                'profile.displayName',
+                'Visible Profile',
+              )
+              .having((s) => s.verifiedClaims, 'verifiedClaims', [
+                verifiedClaim,
+              ]),
+          isA<MyProfileLoaded>()
+              .having(
+                (s) => s.profile.displayName,
+                'profile.displayName',
+                'Visible Profile',
+              )
+              .having((s) => s.verifiedClaims, 'verifiedClaims', [
+                verifiedClaim,
+              ]),
+        ],
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'uses the latest watched profile when refresh returns no profile',
+        setUp: () {
+          final controller = StreamController<UserProfile?>();
+          refreshFetchCompleter = Completer<UserProfile?>();
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer(
+            (_) async => createTestProfile(displayName: 'Old Profile'),
+          );
+          when(
+            () => mockProfileRepository.watchProfile(pubkey: testPubkey),
+          ).thenAnswer((_) => controller.stream);
+          when(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ).thenAnswer((_) => refreshFetchCompleter.future);
+          addTearDown(() {
+            if (!controller.isClosed) {
+              controller.close();
+            }
+          });
+          profileStreamController = controller;
+          addTearDown(() {
+            if (!refreshFetchCompleter.isCompleted) {
+              refreshFetchCompleter.complete(null);
+            }
+          });
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const MyProfileSubscriptionRequested());
+          await pumpEventQueue();
+          final completer = Completer<void>();
+          bloc.add(MyProfileRefreshRequested(completer: completer));
+          await pumpEventQueue();
+          profileStreamController.add(
+            createTestProfile(displayName: 'New Profile'),
+          );
+          await pumpEventQueue();
+          refreshFetchCompleter.complete(null);
+          await completer.future;
+        },
+        expect: () => [
+          isA<MyProfileLoading>().having(
+            (s) => s.profile?.displayName,
+            'profile.displayName',
+            'Old Profile',
+          ),
+          isA<MyProfileUpdated>().having(
+            (s) => s.profile.displayName,
+            'profile.displayName',
+            'New Profile',
+          ),
+          isA<MyProfileLoaded>()
+              .having(
+                (s) => s.profile.displayName,
+                'profile.displayName',
+                'New Profile',
+              )
+              .having((s) => s.isFresh, 'isFresh', false),
+        ],
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ).called(1);
+        },
       );
 
       blocTest<MyProfileBloc, MyProfileState>(

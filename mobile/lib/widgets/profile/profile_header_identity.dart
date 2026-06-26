@@ -345,6 +345,7 @@ class _VerifiedAccountsBlock extends StatelessWidget {
         final state = bloc.state;
         if (state is MyProfileLoaded) return state.verifiedClaims;
         if (state is MyProfileUpdated) return state.verifiedClaims;
+        if (state is MyProfileLoading) return state.verifiedClaims;
         return const [];
       });
     } on ProviderNotFoundException {

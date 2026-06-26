@@ -107,9 +107,9 @@ void main() {
         const Stream<MyProfileState>.empty(),
         initialState: MyProfileUpdated(profile: profile),
       );
-      when(() => myProfileBloc.state).thenReturn(
-        MyProfileUpdated(profile: profile),
-      );
+      when(
+        () => myProfileBloc.state,
+      ).thenReturn(MyProfileUpdated(profile: profile));
       when(() => myProfileBloc.pubkey).thenReturn(userIdHex);
       when(() => myProfileBloc.add(any())).thenAnswer((invocation) {
         final event = invocation.positionalArguments.first;
@@ -207,6 +207,28 @@ void main() {
         find.byType(RefreshIndicator),
       );
       await refreshIndicator.onRefresh();
+
+      verify(
+        () => myProfileBloc.add(any(that: isA<MyProfileRefreshRequested>())),
+      ).called(1);
+      verify(
+        () => profileFeedCubit.add(const ProfileFeedRefreshRequested()),
+      ).called(1);
+    });
+
+    testWidgets('pull gesture triggers profile metadata and feed refresh', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(isOwnProfile: true));
+      await tester.pump();
+
+      await tester.fling(
+        find.byType(NestedScrollView),
+        const Offset(0, 500),
+        1000,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       verify(
         () => myProfileBloc.add(any(that: isA<MyProfileRefreshRequested>())),

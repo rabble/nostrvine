@@ -31,6 +31,7 @@ final class MyProfileLoading extends MyProfileState {
     this.profile,
     this.extractedUsername,
     this.externalNip05,
+    this.verifiedClaims = const [],
   });
 
   /// Cached profile to display while loading fresh data.
@@ -44,8 +45,18 @@ final class MyProfileLoading extends MyProfileState {
   /// Null if the NIP-05 is a divine.video/openvine.co domain or not set.
   final String? externalNip05;
 
+  /// Verifier-confirmed NIP-39 identity claims from the previously visible
+  /// profile. Preserved during refresh so the row does not disappear while the
+  /// verifier revalidates.
+  final List<IdentityClaim> verifiedClaims;
+
   @override
-  List<Object?> get props => [profile, extractedUsername, externalNip05];
+  List<Object?> get props => [
+    profile,
+    extractedUsername,
+    externalNip05,
+    verifiedClaims,
+  ];
 }
 
 /// Successfully loaded profile state.

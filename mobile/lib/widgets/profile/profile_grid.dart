@@ -287,24 +287,81 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   }
 
   void _onRefreshRequested() {
+    unawaited(_refreshSyncedTabs());
+  }
+
+  Future<void> _refreshSyncedTabs() async {
     // Re-dispatch sync only for tabs that have been viewed (lazy load still
     // applies).
+    final refreshes = <Future<void>>[];
     for (final kind in _syncedKinds) {
       switch (kind) {
         case ProfileTabKind.videos:
           break;
         case ProfileTabKind.collabs:
-          _collabVideosBloc?.add(const ProfileCollabVideosFetchRequested());
+          final bloc = _collabVideosBloc;
+          if (bloc == null) break;
+          bloc.add(const ProfileCollabVideosFetchRequested());
+          refreshes.add(
+            bloc.stream.firstWhere(
+              (state) =>
+                  !state.isRefreshing &&
+                  state.status != ProfileCollabVideosStatus.loading,
+              orElse: () => bloc.state,
+            ),
+          );
         case ProfileTabKind.liked:
-          _likedVideosBloc?.add(const ProfileLikedVideosSyncRequested());
+          final bloc = _likedVideosBloc;
+          if (bloc == null) break;
+          bloc.add(const ProfileLikedVideosSyncRequested());
+          refreshes.add(
+            bloc.stream.firstWhere(
+              (state) =>
+                  !state.isRefreshing &&
+                  state.status != ProfileLikedVideosStatus.syncing &&
+                  state.status != ProfileLikedVideosStatus.loading,
+              orElse: () => bloc.state,
+            ),
+          );
         case ProfileTabKind.reposts:
-          _repostedVideosBloc?.add(const ProfileRepostedVideosSyncRequested());
+          final bloc = _repostedVideosBloc;
+          if (bloc == null) break;
+          bloc.add(const ProfileRepostedVideosSyncRequested());
+          refreshes.add(
+            bloc.stream.firstWhere(
+              (state) =>
+                  !state.isRefreshing &&
+                  state.status != ProfileRepostedVideosStatus.syncing &&
+                  state.status != ProfileRepostedVideosStatus.loading,
+              orElse: () => bloc.state,
+            ),
+          );
         case ProfileTabKind.saved:
-          _savedVideosBloc?.add(const ProfileSavedVideosSyncRequested());
+          final bloc = _savedVideosBloc;
+          if (bloc == null) break;
+          bloc.add(const ProfileSavedVideosSyncRequested());
+          refreshes.add(
+            bloc.stream.firstWhere(
+              (state) =>
+                  !state.isRefreshing &&
+                  state.status != ProfileSavedVideosStatus.syncing &&
+                  state.status != ProfileSavedVideosStatus.loading,
+              orElse: () => bloc.state,
+            ),
+          );
         case ProfileTabKind.comments:
-          _commentsBloc?.add(const ProfileCommentsSyncRequested());
+          final bloc = _commentsBloc;
+          if (bloc == null) break;
+          bloc.add(const ProfileCommentsSyncRequested());
+          refreshes.add(
+            bloc.stream.firstWhere(
+              (state) => state.status != ProfileCommentsStatus.loading,
+              orElse: () => bloc.state,
+            ),
+          );
       }
     }
+    await Future.wait(refreshes);
   }
 
   Future<void> _refreshProfileContent() async {
@@ -322,10 +379,15 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       profileRefresh.complete();
     }
 
-    context.read<ProfileFeedCubit>().add(const ProfileFeedRefreshRequested());
-    _onRefreshRequested();
+    final profileFeedCubit = context.read<ProfileFeedCubit>();
+    profileFeedCubit.add(const ProfileFeedRefreshRequested());
+    final feedRefresh = profileFeedCubit.stream.firstWhere(
+      (state) => !state.isRefreshing && !state.isFetchingTotalCount,
+      orElse: () => profileFeedCubit.state,
+    );
+    final tabRefresh = _refreshSyncedTabs();
 
-    await profileRefresh.future;
+    await Future.wait([profileRefresh.future, feedRefresh, tabRefresh]);
   }
 
   @override
@@ -570,6 +632,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     final content = RefreshIndicator(
       color: VineTheme.primary,
       backgroundColor: VineTheme.surfaceContainer,
+      notificationPredicate: (_) => true,
       onRefresh: _refreshProfileContent,
       child: ClipRRect(
         borderRadius: const .vertical(bottom: .circular(30)),
