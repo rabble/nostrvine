@@ -149,6 +149,11 @@ class _HttpDownload implements CancellableDownload {
         return;
       }
       if (response.statusCode < 200 || response.statusCode >= 300) {
+        Log.warning(
+          'CancellableDownload: $_url returned HTTP ${response.statusCode}',
+          name: 'MediaCache',
+          category: LogCategory.video,
+        );
         unawaited(response.stream.drain<void>());
         _safeComplete(null);
         return;
@@ -168,7 +173,12 @@ class _HttpDownload implements CancellableDownload {
             // Sink errors surface in onError.
           }
         },
-        onError: (Object _) async {
+        onError: (Object error) async {
+          Log.warning(
+            'CancellableDownload: stream error for $_url: $error',
+            name: 'MediaCache',
+            category: LogCategory.video,
+          );
           await _cleanupPartial();
           _safeComplete(null);
         },
@@ -194,7 +204,12 @@ class _HttpDownload implements CancellableDownload {
         },
         cancelOnError: true,
       );
-    } on Object {
+    } on Object catch (error) {
+      Log.warning(
+        'CancellableDownload: request failed for $_url: $error',
+        name: 'MediaCache',
+        category: LogCategory.video,
+      );
       await _cleanupPartial();
       _safeComplete(null);
     }

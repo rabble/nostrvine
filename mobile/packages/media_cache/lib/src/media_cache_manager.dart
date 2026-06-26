@@ -11,6 +11,7 @@ import 'package:media_cache/src/platform_downloader_factory.dart';
 import 'package:media_cache/src/safe_cache_info_repository.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// {@template media_cache_config}
 /// Configuration for [MediaCacheManager].
@@ -715,7 +716,12 @@ class MediaCacheManager extends CacheManager {
           }
         }
         if (!completer.isCompleted) completer.complete(file);
-      } on Object {
+      } on Object catch (error) {
+        Log.warning(
+          'MediaCacheManager: download setup failed for $url: $error',
+          name: 'MediaCache',
+          category: LogCategory.video,
+        );
         if (!completer.isCompleted) completer.complete();
       } finally {
         _pendingCacheOperations.remove(key);
