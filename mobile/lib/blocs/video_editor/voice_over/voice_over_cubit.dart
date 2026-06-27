@@ -64,6 +64,13 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
   final Future<Directory> Function() _storageDirectoryProvider;
 
   StreamSubscription<double>? _amplitudeSubscription;
+
+  // `state_management.md` ("No Mutable Instance Variables in BLoC") reserves
+  // mutable cubit fields for injected deps and stream handles. The three below
+  // are an intentional, documented exception: they hold transient
+  // recorder-lifecycle bookkeeping that never needs to be observed by the UI
+  // (an in-flight file path, a re-entrancy latch, and a commit flag), so
+  // surfacing them through state would add churn without any rendering value.
   String? _currentPath;
 
   /// Re-entrancy latch for the async start/stop transitions. State only flips
@@ -136,7 +143,16 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
       'voice_over_${DateTime.now().millisecondsSinceEpoch}.m4a',
     );
     _currentPath = path;
-    await _recorder.start(path);
+    try {
+      await _recorder.start(path);
+    } catch (_) {
+      // start() may have created a partial file before throwing; delete it and
+      // clear the field so the failed take can't strand an orphan or be
+      // overwritten (and leaked) by the next successful start.
+      await _deleteFile(path);
+      _currentPath = null;
+      rethrow;
+    }
 
     emit(
       state.copyWith(
@@ -186,6 +202,10 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
       _currentPath = null;
 
       if (path == null || duration <= Duration.zero) {
+        // The recorder wrote a (near-empty) file even for a take stopped this
+        // fast; delete it here since the take never enters state.takes and so
+        // would never be reclaimed by close()/discardAll()/deleteLastTake().
+        await _deleteFile(path);
         emit(
           state.copyWith(
             status: VoiceOverStatus.idle,

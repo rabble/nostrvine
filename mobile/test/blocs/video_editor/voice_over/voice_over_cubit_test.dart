@@ -24,9 +24,12 @@ class _FakeRecorder implements VoiceOverRecorderService {
 
   @override
   Future<void> start(String path) async {
+    lastPath = path;
+    // Mirror the native recorder, which opens (creates) the output file as
+    // part of start — even when it then fails, leaving a partial file behind.
+    File(path).writeAsStringSync('audio');
     if (throwOnStart) throw StateError('mic unavailable');
     startCount++;
-    lastPath = path;
   }
 
   @override
@@ -161,6 +164,22 @@ void main() {
 
         await cubit.close();
       });
+
+      test(
+        'deletes the partial file when the recorder fails to start',
+        () async {
+          recorder.throwOnStart = true;
+          final cubit = buildCubit(_FakePermissions(PermissionStatus.granted));
+
+          await cubit.requestPermissionAndStart();
+
+          // start() created the file before throwing; the failed take must not
+          // strand it on disk.
+          expect(File(recorder.lastPath!).existsSync(), isFalse);
+
+          await cubit.close();
+        },
+      );
     });
 
     group('amplitude', () {
@@ -219,6 +238,25 @@ void main() {
 
         await cubit.close();
       });
+
+      test(
+        'deletes the orphaned file when a zero-duration take is discarded',
+        () async {
+          final cubit = buildCubit(_FakePermissions(PermissionStatus.granted));
+          await cubit.requestPermissionAndStart();
+
+          final path = recorder.lastPath!;
+          expect(File(path).existsSync(), isTrue);
+
+          // No amplitude samples → currentDuration stays zero → discard branch.
+          await cubit.stop();
+
+          expect(cubit.state.takes, isEmpty);
+          expect(File(path).existsSync(), isFalse);
+
+          await cubit.close();
+        },
+      );
 
       test('captures multiple takes without leaving the screen', () async {
         final cubit = buildCubit(_FakePermissions(PermissionStatus.granted));

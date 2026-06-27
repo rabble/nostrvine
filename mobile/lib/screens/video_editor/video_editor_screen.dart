@@ -29,6 +29,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/screens/video_editor/voice_over_recorder_screen.dart';
+import 'package:openvine/screens/video_editor/voice_over_take_placement.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/await_push_transition.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
@@ -540,33 +541,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
 
     final editor = _editorKey.currentState;
     if (editor == null) return;
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final placed = <Map<String, dynamic>>[];
-    var cursor = Duration.zero;
-    for (var i = 0; i < takes.length; i++) {
-      final take = takes[i];
-      final secs = takeSecs[i];
-      final takeDuration = Duration(milliseconds: (secs * 1000).round());
-      // When the previous take already filled the video, restart at the
-      // beginning so this take stays visible within the timeline instead of
-      // landing off the end (where it couldn't be seen or edited).
-      final start = cursor < availableDuration ? cursor : Duration.zero;
-      final endTime = start + takeDuration < availableDuration
-          ? start + takeDuration
-          : availableDuration;
-      if (endTime <= start) continue;
-      placed.add(
-        take
-            .copyWith(
-              id: '${take.id}-$now-$i',
-              startTime: start,
-              endTime: endTime,
-              duration: secs > 0 ? secs : null,
-            )
-            .toJson(),
-      );
-      cursor = endTime;
-    }
+    final placed = placeVoiceOverTakes(
+      takes: takes,
+      takeDurationsSecs: takeSecs,
+      availableDuration: availableDuration,
+      nowMs: DateTime.now().millisecondsSinceEpoch,
+    );
     if (placed.isEmpty) return;
 
     editor.addHistory(
@@ -574,7 +554,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         ...editor.stateManager.activeMeta,
         VideoEditorConstants.audioStateHistoryKey: [
           ...editor.stateManager.audioTracks.map((e) => e.toJson()),
-          ...placed,
+          ...placed.map((e) => e.toJson()),
         ],
       },
     );
