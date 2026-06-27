@@ -23,6 +23,7 @@ import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_reply_context_provider.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
@@ -31,6 +32,27 @@ import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/core/models/video/progress_model.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Result of a [VideoEditorNotifier.saveAsDraft] attempt.
+///
+/// Replaces a bare `bool` so the UI can tell a real failure apart from a
+/// no-op, and so the failure cause stops hiding behind a generic snackbar.
+enum DraftSaveOutcome {
+  /// The draft was persisted to local storage.
+  saved,
+
+  /// A save was already in flight, so this call did nothing. The save button is
+  /// normally disabled while saving, so this is a defensive case.
+  alreadyInProgress,
+
+  /// The write exceeded [VideoEditorConstants.draftSaveTimeout] — typically
+  /// slow or wedged local storage.
+  timedOut,
+
+  /// The write threw an unexpected error. The cause is logged and reported to
+  /// Crashlytics.
+  failed,
+}
 
 final videoEditorProvider =
     NotifierProvider<VideoEditorNotifier, VideoEditorProviderState>(
@@ -678,16 +700,21 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Save the current video project as a draft.
   ///
-  /// Persists clips and metadata to local storage for later editing.
-  /// Returns `true` on success, `false` on failure — including when the write
-  /// exceeds [VideoEditorConstants.draftSaveTimeout].
+  /// Persists clips and metadata to local storage for later editing and returns
+  /// a [DraftSaveOutcome] describing the result — [DraftSaveOutcome.saved],
+  /// [DraftSaveOutcome.alreadyInProgress] (a save was already running, so this
+  /// call was a no-op), [DraftSaveOutcome.timedOut] (the write exceeded
+  /// [VideoEditorConstants.draftSaveTimeout]), or [DraftSaveOutcome.failed] (the
+  /// write threw; the cause is logged and reported to Crashlytics).
   ///
   /// The write is bounded so a stalled save can't wedge the button. The
   /// autosave cleanup that follows is deliberately *not* bounded (see the call
   /// site): it must run to completion, so a stalled cleanup keeps the save in
   /// flight — and the button disabled — until it lands.
-  Future<bool> saveAsDraft({bool enforceCreateNewDraft = false}) async {
-    if (state.isSavingDraft) return false;
+  Future<DraftSaveOutcome> saveAsDraft({
+    bool enforceCreateNewDraft = false,
+  }) async {
+    if (state.isSavingDraft) return DraftSaveOutcome.alreadyInProgress;
 
     state = state.copyWith(isSavingDraft: true);
 
@@ -719,7 +746,23 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         name: 'VideoEditorNotifier',
         category: .video,
       );
+      return DraftSaveOutcome.saved;
+    } on TimeoutException catch (e, stackTrace) {
+      // Slow/wedged local storage is an environmental failure, not a bug — log
+      // it for the unified log export but keep it out of Crashlytics.
+      Log.error(
+        '❌ Draft save timed out after '
+        '${VideoEditorConstants.draftSaveTimeout.inSeconds}s: $draftId',
+        name: 'VideoEditorNotifier',
+        category: .video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return DraftSaveOutcome.timedOut;
     } catch (e, stackTrace) {
+      // An unexpected write failure: origin/main always saves, so this is a real
+      // defect. Report it so the actual cause stops hiding behind a generic
+      // "Failed to save" snackbar.
       Log.error(
         '❌ Failed to save draft: $e',
         name: 'VideoEditorNotifier',
@@ -727,7 +770,14 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         error: e,
         stackTrace: stackTrace,
       );
-      return false;
+      unawaited(
+        CrashReportingService.instance.recordError(
+          e,
+          stackTrace,
+          reason: 'VideoEditorNotifier.saveAsDraft',
+        ),
+      );
+      return DraftSaveOutcome.failed;
     } finally {
       // Always clear the flag — a timed-out or failed save must re-enable the
       // save button. Guard against a dispose that races the timeout.
@@ -735,8 +785,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         state = state.copyWith(isSavingDraft: false);
       }
     }
-
-    return true;
   }
 
   /// Restore a draft from local storage.

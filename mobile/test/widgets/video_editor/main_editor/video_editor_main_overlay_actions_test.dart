@@ -31,14 +31,12 @@ class _FakeVideoEditorNotifier extends VideoEditorNotifier {
   _FakeVideoEditorNotifier({
     required this.initialState,
     required this.activeDraft,
-    this.saveAsDraftSucceeds = true,
-    this.saveAsDraftThrows = false,
+    this.saveAsDraftResult = DraftSaveOutcome.saved,
   });
 
   final VideoEditorProviderState initialState;
   final DivineVideoDraft activeDraft;
-  final bool saveAsDraftSucceeds;
-  final bool saveAsDraftThrows;
+  final DraftSaveOutcome saveAsDraftResult;
 
   int saveAsDraftCalls = 0;
 
@@ -50,12 +48,11 @@ class _FakeVideoEditorNotifier extends VideoEditorNotifier {
       activeDraft;
 
   @override
-  Future<bool> saveAsDraft({bool enforceCreateNewDraft = false}) async {
+  Future<DraftSaveOutcome> saveAsDraft({
+    bool enforceCreateNewDraft = false,
+  }) async {
     saveAsDraftCalls++;
-    if (saveAsDraftThrows) {
-      throw StateError('save failed');
-    }
-    return saveAsDraftSucceeds;
+    return saveAsDraftResult;
   }
 }
 
@@ -95,8 +92,7 @@ void main() {
       VideoEditorMainState? state,
       bool isAutosavedDraft = false,
       bool hasBeenEdited = false,
-      bool saveAsDraftSucceeds = true,
-      bool saveAsDraftThrows = false,
+      DraftSaveOutcome saveAsDraftResult = DraftSaveOutcome.saved,
     }) {
       if (state != null) {
         when(() => mockBloc.state).thenReturn(state);
@@ -110,8 +106,7 @@ void main() {
           isAutosavedDraft: isAutosavedDraft,
         ),
         activeDraft: mockDraft,
-        saveAsDraftSucceeds: saveAsDraftSucceeds,
-        saveAsDraftThrows: saveAsDraftThrows,
+        saveAsDraftResult: saveAsDraftResult,
       );
       fakeVideoPublishNotifier = _FakeVideoPublishNotifier();
 
@@ -324,7 +319,7 @@ void main() {
             buildWidget(
               isAutosavedDraft: true,
               hasBeenEdited: true,
-              saveAsDraftThrows: true,
+              saveAsDraftResult: DraftSaveOutcome.failed,
             ),
           );
 

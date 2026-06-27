@@ -446,7 +446,7 @@ void main() {
 
         final mockNotifier = _MockVideoEditorNotifier(
           validState0(),
-          saveAsDraftResult: false,
+          saveAsDraftResult: DraftSaveOutcome.failed,
         );
 
         await tester.pumpWidget(
@@ -510,7 +510,7 @@ void main() {
 
         final mockNotifier = _MockVideoEditorNotifier(
           validState0(),
-          saveAsDraftResult: false,
+          saveAsDraftResult: DraftSaveOutcome.failed,
         );
 
         await tester.pumpWidget(
@@ -539,7 +539,7 @@ void main() {
         // State without finalRenderedClip so gallery save returns null.
         final mockNotifier = _MockVideoEditorNotifier(
           VideoEditorProviderState(title: 'Test'),
-          saveAsDraftResult: false,
+          saveAsDraftResult: DraftSaveOutcome.failed,
         );
 
         await tester.pumpWidget(
@@ -631,7 +631,7 @@ void main() {
 
         final mockNotifier = _MockVideoEditorNotifier(
           validState0(),
-          saveAsDraftResult: false,
+          saveAsDraftResult: DraftSaveOutcome.failed,
         );
 
         await tester.pumpWidget(
@@ -726,13 +726,13 @@ class _MockVideoEditorNotifier extends VideoEditorNotifier {
     this._state, {
     this.onPostVideo,
     this.onSaveAsDraft,
-    this.saveAsDraftResult = true,
+    this.saveAsDraftResult = DraftSaveOutcome.saved,
   });
 
   final VideoEditorProviderState _state;
   final VoidCallback? onPostVideo;
   final VoidCallback? onSaveAsDraft;
-  final bool saveAsDraftResult;
+  final DraftSaveOutcome saveAsDraftResult;
 
   @override
   VideoEditorProviderState build() => _state;
@@ -743,7 +743,9 @@ class _MockVideoEditorNotifier extends VideoEditorNotifier {
   }
 
   @override
-  Future<bool> saveAsDraft({bool enforceCreateNewDraft = false}) async {
+  Future<DraftSaveOutcome> saveAsDraft({
+    bool enforceCreateNewDraft = false,
+  }) async {
     onSaveAsDraft?.call();
     return saveAsDraftResult;
   }

@@ -11,7 +11,6 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/gallery_save_utils.dart';
-import 'package:unified_logger/unified_logger.dart';
 
 /// Bottom bar with "Save for Later" and "Post" buttons for video metadata.
 ///
@@ -53,29 +52,17 @@ class VideoMetadataCaptureBottomBar extends ConsumerWidget {
 
   Future<void> _onSaveForLater(BuildContext context, WidgetRef ref) async {
     await saveToGallery(context, ref);
-    var draftSaved = true;
 
-    try {
-      // Save the draft to the library.
-      final draftSuccess = await ref
-          .read(videoEditorProvider.notifier)
-          .saveAsDraft(enforceCreateNewDraft: true);
-      if (!draftSuccess) {
-        throw StateError('Failed to save draft');
-      }
-    } catch (e, stackTrace) {
-      Log.error(
-        'Failed to save: $e',
-        name: 'VideoMetadataCaptureBottomBar',
-        category: LogCategory.video,
-        error: e,
-        stackTrace: stackTrace,
-      );
-      draftSaved = false;
-    }
+    final outcome = await ref
+        .read(videoEditorProvider.notifier)
+        .saveAsDraft(enforceCreateNewDraft: true);
 
+    // A save was already in flight (the button is normally disabled
+    // meanwhile); there's nothing to report or navigate.
+    if (outcome == DraftSaveOutcome.alreadyInProgress) return;
     if (!context.mounted) return;
 
+    final draftSaved = outcome == DraftSaveOutcome.saved;
     final router = GoRouter.of(context);
 
     _showStatusSnackBar(

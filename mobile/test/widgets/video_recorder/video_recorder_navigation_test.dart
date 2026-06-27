@@ -34,13 +34,15 @@ class _MockVideoRecorderBloc
 class _FakeVideoEditorNotifier extends VideoEditorNotifier {
   bool saveAsDraftCalled = false;
   bool startRenderVideoCalled = false;
-  bool saveResult = true;
+  DraftSaveOutcome saveResult = DraftSaveOutcome.saved;
 
   @override
   VideoEditorProviderState build() => VideoEditorProviderState();
 
   @override
-  Future<bool> saveAsDraft({bool enforceCreateNewDraft = false}) async {
+  Future<DraftSaveOutcome> saveAsDraft({
+    bool enforceCreateNewDraft = false,
+  }) async {
     saveAsDraftCalled = true;
     return saveResult;
   }

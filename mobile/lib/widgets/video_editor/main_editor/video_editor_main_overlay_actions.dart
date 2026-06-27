@@ -12,7 +12,6 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
-import 'package:unified_logger/unified_logger.dart';
 
 /// Top action bar for the video editor.
 ///
@@ -126,26 +125,16 @@ class _TopActions extends ConsumerWidget {
     required BuildContext context,
     required WidgetRef ref,
   }) async {
-    var draftSaved = true;
-    try {
-      // Save the draft to the library.
-      final draftSuccess = await ref
-          .read(videoEditorProvider.notifier)
-          .saveAsDraft(enforceCreateNewDraft: true);
-      if (!draftSuccess) {
-        throw StateError('Failed to save draft');
-      }
-    } catch (e, stackTrace) {
-      Log.error(
-        'Failed to save: $e',
-        name: 'VideoMetadataCaptureBottomBar',
-        category: LogCategory.video,
-        error: e,
-        stackTrace: stackTrace,
-      );
-      draftSaved = false;
-    }
+    final outcome = await ref
+        .read(videoEditorProvider.notifier)
+        .saveAsDraft(enforceCreateNewDraft: true);
+
+    // A save was already in flight (the button is normally disabled
+    // meanwhile); leave the prompt as-is.
+    if (outcome == DraftSaveOutcome.alreadyInProgress) return;
     if (!context.mounted) return;
+
+    final draftSaved = outcome == DraftSaveOutcome.saved;
 
     if (draftSaved) {
       // Success: close prompt + close editor.
