@@ -36,6 +36,14 @@ class PendingUploadStore {
   /// drain started by a retry timer firing mid-drain.
   bool _isDraining = false;
 
+  /// Latched true by [disposeStore]; gates every queue mutation and timer-arm
+  /// so a drain suspended on `await save()` at disposal cannot repopulate the
+  /// queue or schedule a retry that outlives the store. Cleared only by [open]
+  /// — the deliberate re-initialization entrypoint, which is never reached from
+  /// the drain's own `save() -> ensureOpen()` path, so a storage recovery
+  /// mid-drain can't silently revive a disposed store.
+  bool _disposed = false;
+
   // ---------------------------------------------------------------------------
   // Status accessors
   // ---------------------------------------------------------------------------
@@ -59,6 +67,10 @@ class PendingUploadStore {
   /// mirroring the original `initialize()` catch that nulled the box – before
   /// the error propagates to the manager's initialization error handler.
   Future<void> open() async {
+    // A fresh lifecycle: clear the disposed latch so a reused store can queue
+    // and retry again. open() is unreachable from the drain (which only calls
+    // ensureOpen), so clearing here can't revive a store mid-drain.
+    _disposed = false;
     try {
       _box = await UploadInitializationHelper.initializeUploadsBox(
         forceReinit: true,
@@ -81,6 +93,10 @@ class PendingUploadStore {
   /// Does NOT close the box – closing is Hive's responsibility and closing
   /// here causes "File closed" errors in tests that share the box instance.
   void disposeStore() {
+    // Latch disposed first: a drain may be suspended on `await save()` right
+    // now, and must see this the instant it resumes so it can't re-enqueue or
+    // re-arm a timer past disposal.
+    _disposed = true;
     _saveQueueTimer?.cancel();
     _saveQueueTimer = null;
     _pendingSaveQueue.clear();
@@ -170,6 +186,11 @@ class PendingUploadStore {
   // ---------------------------------------------------------------------------
 
   void _queueUploadForLater(PendingUpload upload) {
+    // A disposed store must not requeue or re-arm a timer — this runs from the
+    // failure slow path of save(), which a zombie drain re-enters after
+    // disposeStore() nulls the box.
+    if (_disposed) return;
+
     Log.warning(
       'Queueing upload ${upload.id} for later save attempt',
       name: 'UploadManager',
@@ -184,6 +205,9 @@ class PendingUploadStore {
   }
 
   Future<void> _processSaveQueue() async {
+    // A disposed store never drains — defends the @visibleForTesting drain hook
+    // and any retry that races disposal.
+    if (_disposed) return;
     // A retry timer can fire while a drain is still awaiting save() (which can
     // take seconds during a storage outage). Don't start a second drain.
     if (_isDraining) return;
@@ -216,7 +240,9 @@ class PendingUploadStore {
           );
           // Re-queue for another attempt. Keyed by id, so this is idempotent
           // with save()'s own _queueUploadForLater enqueue of the same upload.
-          _pendingSaveQueue[upload.id] = upload;
+          // Skip once disposed so a drain that resumes after disposeStore()
+          // leaves the queue empty.
+          if (!_disposed) _pendingSaveQueue[upload.id] = upload;
         }
       }
     } finally {
@@ -225,7 +251,9 @@ class PendingUploadStore {
 
     // If items remain, schedule a further retry in 30 seconds. Cancel first so
     // the 5 s timer set during this drain (via _queueUploadForLater) can't leak.
-    if (_pendingSaveQueue.isNotEmpty) {
+    // Never re-arm once disposed: a drain that resumed after disposeStore()
+    // must not schedule a retry that outlives the store.
+    if (!_disposed && _pendingSaveQueue.isNotEmpty) {
       _saveQueueTimer?.cancel();
       _saveQueueTimer = Timer(const Duration(seconds: 30), _processSaveQueue);
     }
@@ -239,6 +267,11 @@ class PendingUploadStore {
   /// True while a drain is in flight — test hook for the re-entrancy guard.
   @visibleForTesting
   bool get isDraining => _isDraining;
+
+  /// True once [disposeStore] has latched the store closed and before any
+  /// [open] revives it — test hook for the disposal latch.
+  @visibleForTesting
+  bool get isDisposed => _disposed;
 
   /// True when a deferred-save retry timer is currently scheduled — test hook to
   /// assert exactly one timer is live (no orphaned retry).

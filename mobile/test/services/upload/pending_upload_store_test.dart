@@ -393,6 +393,74 @@ void main() {
         await inFlight;
         expect(store.isDraining, isFalse);
       });
+
+      test(
+        'a drain that resumes after disposeStore() leaves no timer and an '
+        'empty queue',
+        () async {
+          final isolatedDir = await _forceStorageFailure();
+
+          final store = PendingUploadStore(
+            scopeUploadsToCurrentUser: false,
+            currentNostrPubkey: null,
+          );
+
+          final upload = PendingUpload.create(
+            localVideoPath: '${isolatedDir.path}/video.mp4',
+            nostrPubkey: _pubkeyA,
+          );
+          await expectLater(
+            () => store.save(upload),
+            throwsA(isA<Exception>()),
+          );
+          expect(store.queuedCount, equals(1));
+
+          // Start a drain; it suspends on the still-failing save().
+          final inFlight = store.drainPendingSaves();
+          expect(store.isDraining, isTrue);
+
+          // Tear the store down mid-drain. disposeStore() cancels the timer and
+          // clears the queue, but the drain is still parked on `await save()`.
+          store.disposeStore();
+          expect(store.isDisposed, isTrue);
+
+          // The drain resumes and re-fails. Pre-fix it would re-queue the upload
+          // (via save()'s _queueUploadForLater and the loop catch) and arm a
+          // fresh 30 s timer that disposeStore() can no longer cancel — a
+          // self-perpetuating retry surviving disposal. The disposed latch makes
+          // the resumed drain inert.
+          await inFlight;
+
+          expect(
+            store.queuedCount,
+            equals(0),
+            reason: 'a disposed store must not repopulate its queue',
+          );
+          expect(
+            store.hasScheduledRetry,
+            isFalse,
+            reason: 'no retry timer may survive disposal',
+          );
+        },
+      );
+
+      test(
+        'open() clears the disposed latch so a reused store can queue again',
+        () async {
+          final store = await _openStore();
+          addTearDown(store.disposeStore);
+
+          store.disposeStore();
+          expect(store.isDisposed, isTrue);
+
+          // Re-initialising the same instance (the manager's initialize() path)
+          // must restore a fully usable store — including the deferred-save
+          // queue, which the disposed latch otherwise keeps inert.
+          await store.open();
+          expect(store.isDisposed, isFalse);
+          expect(store.isReady, isTrue);
+        },
+      );
     });
 
     // -----------------------------------------------------------------------
