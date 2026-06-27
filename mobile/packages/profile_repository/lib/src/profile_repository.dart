@@ -32,11 +32,11 @@ const _nameServerHttpTimeout = Duration(seconds: 10);
 // which still carries the typed REST fields after #4175.
 const _publishSeedRelayTimeout = Duration(seconds: 4);
 
-// Caps the NIP-50 user search query. On timeout the bloc still receives
-// the accumulated partial result, with the relay source marked as
-// SearchSourceFailed(reason: timeout) so the UI can surface a retry
-// affordance when nothing else contributed.
+// Caps NIP-50 user search. The relay query has a slightly shorter inner
+// budget and returns partial results on SDK timeout; the outer guard is a
+// repository safety net for stalls before the SDK budget starts.
 const _nip50SearchTimeout = Duration(seconds: 5);
+const _nip50RelayQueryTimeout = Duration(milliseconds: 4500);
 
 // TODO(search): Move ProfileSearchFilter to a shared package
 // (e.g., search_utils) when we need to reuse search logic across
@@ -1150,7 +1150,11 @@ class ProfileRepository {
       final phase3Watch = Stopwatch()..start();
       try {
         final events = await _nostrClient
-            .queryUsers(trimmed, limit: limit)
+            .queryUsers(
+              trimmed,
+              limit: limit,
+              timeout: _nip50RelayQueryTimeout,
+            )
             .timeout(_nip50SearchTimeout);
         for (final event in events) {
           final profile = UserProfile.fromNostrEvent(event);

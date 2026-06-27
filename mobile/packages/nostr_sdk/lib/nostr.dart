@@ -320,11 +320,7 @@ class Nostr {
     var eventBox = EventMemBox(sortAfterAdd: false);
     var completer = Completer<void>();
     final subscriptionId = id ?? StringUtil.rndNameStr(16);
-    const callerTimeoutBuffer = Duration(milliseconds: 250);
-    final effectiveTimeout = timeout > callerTimeoutBuffer
-        ? timeout - callerTimeoutBuffer
-        : timeout;
-    final deadline = DateTime.now().add(effectiveTimeout);
+    final deadline = DateTime.now().add(timeout);
 
     Duration remainingTimeout() {
       final remaining = deadline.difference(DateTime.now());

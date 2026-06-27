@@ -406,7 +406,7 @@ void main() {
       ], timeout: const Duration(seconds: 1));
       stopwatch.stop();
 
-      expect(stopwatch.elapsedMilliseconds, lessThan(1000));
+      expect(stopwatch.elapsedMilliseconds, lessThan(2000));
       expect(events, isEmpty);
       expect(
         hangingRelay.sentMessages.where((m) => m.first == 'REQ'),

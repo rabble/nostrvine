@@ -59,6 +59,7 @@ void main() {
       );
       registerFallbackValue(Uri.parse('https://example.com'));
       registerFallbackValue(<Filter>[]);
+      registerFallbackValue(Duration.zero);
     });
 
     setUp(() {
@@ -2826,7 +2827,11 @@ void main() {
         ).thenReturn(jsonEncode({'display_name': 'Test Remote'}));
 
         when(
-          () => mockNostrClient.queryUsers('test', limit: 200),
+          () => mockNostrClient.queryUsers(
+            'test',
+            limit: 200,
+            timeout: any(named: 'timeout'),
+          ),
         ).thenAnswer((_) async => [mockRemoteEvent]);
 
         // Act
@@ -2894,7 +2899,11 @@ void main() {
         ).thenAnswer((_) async => []);
 
         when(
-          () => mockNostrClient.queryUsers('test', limit: 200),
+          () => mockNostrClient.queryUsers(
+            'test',
+            limit: 200,
+            timeout: any(named: 'timeout'),
+          ),
         ).thenAnswer((_) async => [mockProfileEvent]);
 
         // Act
@@ -2950,7 +2959,11 @@ void main() {
 
           // NIP-50
           when(
-            () => mockNostrClient.queryUsers('test', limit: 200),
+            () => mockNostrClient.queryUsers(
+              'test',
+              limit: 200,
+              timeout: any(named: 'timeout'),
+            ),
           ).thenAnswer((_) async => []);
 
           final repoWithFunnelcake = ProfileRepository(
@@ -2996,7 +3009,11 @@ void main() {
           ).thenAnswer((_) async => []);
 
           when(
-            () => mockNostrClient.queryUsers('test', limit: 200),
+            () => mockNostrClient.queryUsers(
+              'test',
+              limit: 200,
+              timeout: any(named: 'timeout'),
+            ),
           ).thenAnswer((_) async => [mockProfileEvent]);
 
           final repoWithFunnelcake = ProfileRepository(
@@ -3043,7 +3060,11 @@ void main() {
           ).thenAnswer((_) async => []);
 
           when(
-            () => mockNostrClient.queryUsers('test', limit: 200),
+            () => mockNostrClient.queryUsers(
+              'test',
+              limit: 200,
+              timeout: any(named: 'timeout'),
+            ),
           ).thenThrow(StateError('WebSocket error'));
 
           final repoWithFunnelcake = ProfileRepository(
@@ -3099,7 +3120,11 @@ void main() {
           ).thenAnswer((_) async => []);
 
           when(
-            () => mockNostrClient.queryUsers('test', limit: 200),
+            () => mockNostrClient.queryUsers(
+              'test',
+              limit: 200,
+              timeout: any(named: 'timeout'),
+            ),
           ).thenAnswer((_) async => [mockWsEvent]);
 
           final repoWithFunnelcake = ProfileRepository(
@@ -3134,7 +3159,11 @@ void main() {
           ).thenReturn(jsonEncode({'display_name': 'Alice Test'}));
 
           when(
-            () => mockNostrClient.queryUsers('test', limit: 200),
+            () => mockNostrClient.queryUsers(
+              'test',
+              limit: 200,
+              timeout: any(named: 'timeout'),
+            ),
           ).thenAnswer((_) async => [mockWsEvent]);
 
           var filterCalled = false;
@@ -3177,7 +3206,11 @@ void main() {
             );
 
             when(
-              () => mockNostrClient.queryUsers('alice', limit: 200),
+              () => mockNostrClient.queryUsers(
+                'alice',
+                limit: 200,
+                timeout: any(named: 'timeout'),
+              ),
             ).thenAnswer((_) async => []);
 
             when(
@@ -3238,7 +3271,11 @@ void main() {
             () => mockUserProfilesDao.getAllProfiles(),
           ).thenAnswer((_) async => []);
           when(
-            () => mockNostrClient.queryUsers(any(), limit: any(named: 'limit')),
+            () => mockNostrClient.queryUsers(
+              any(),
+              limit: any(named: 'limit'),
+              timeout: any(named: 'timeout'),
+            ),
           ).thenAnswer((_) async => []);
         });
 
@@ -3470,7 +3507,11 @@ void main() {
             () => wsEvent.content,
           ).thenReturn(jsonEncode({'display_name': 'WS User'}));
           when(
-            () => mockNostrClient.queryUsers('test', limit: 200),
+            () => mockNostrClient.queryUsers(
+              'test',
+              limit: 200,
+              timeout: any(named: 'timeout'),
+            ),
           ).thenAnswer((_) async => [wsEvent]);
 
           final repo = ProfileRepository(
@@ -3505,7 +3546,11 @@ void main() {
             ).thenThrow(StateError('db down'));
             when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
             when(
-              () => mockNostrClient.queryUsers('test', limit: 200),
+              () => mockNostrClient.queryUsers(
+                'test',
+                limit: 200,
+                timeout: any(named: 'timeout'),
+              ),
             ).thenAnswer((_) async => []);
 
             final repo = ProfileRepository(
@@ -3542,7 +3587,11 @@ void main() {
             ),
           ).thenThrow(Exception('connection refused'));
           when(
-            () => mockNostrClient.queryUsers('test', limit: 200),
+            () => mockNostrClient.queryUsers(
+              'test',
+              limit: 200,
+              timeout: any(named: 'timeout'),
+            ),
           ).thenAnswer((_) async => []);
 
           final repo = ProfileRepository(
@@ -3570,7 +3619,11 @@ void main() {
             ).thenAnswer((_) async => []);
             when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
             when(
-              () => mockNostrClient.queryUsers('test', limit: 200),
+              () => mockNostrClient.queryUsers(
+                'test',
+                limit: 200,
+                timeout: any(named: 'timeout'),
+              ),
             ).thenAnswer((_) async {
               // Sleep past the 5 s NIP-50 timeout so .timeout() fires.
               await Future<void>.delayed(const Duration(seconds: 6));
@@ -3594,6 +3647,13 @@ void main() {
               (relayStatus! as SearchSourceFailed).reason,
               SearchSourceFailureReason.timeout,
             );
+            verify(
+              () => mockNostrClient.queryUsers(
+                'test',
+                limit: 200,
+                timeout: const Duration(milliseconds: 4500),
+              ),
+            ).called(1);
           },
           timeout: const Timeout(Duration(seconds: 10)),
         );
@@ -3614,7 +3674,11 @@ void main() {
               ),
             ).thenThrow(Exception('REST down'));
             when(
-              () => mockNostrClient.queryUsers('test', limit: 200),
+              () => mockNostrClient.queryUsers(
+                'test',
+                limit: 200,
+                timeout: any(named: 'timeout'),
+              ),
             ).thenThrow(StateError('WS down'));
 
             final repo = ProfileRepository(
@@ -3653,7 +3717,11 @@ void main() {
               () => mockUserProfilesDao.getAllProfiles(),
             ).thenAnswer((_) async => []);
             when(
-              () => mockNostrClient.queryUsers('test', limit: 200),
+              () => mockNostrClient.queryUsers(
+                'test',
+                limit: 200,
+                timeout: any(named: 'timeout'),
+              ),
             ).thenAnswer((_) async => []);
 
             final repo = ProfileRepository(

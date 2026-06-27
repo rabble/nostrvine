@@ -544,7 +544,7 @@ class NostrClient {
       timeout: timeout,
     );
     // Throttle concurrent one-shot REQs so high fan-out (a profile with many
-    // videos -> per-item like-count/badge/profile/repost fetches) can't trip a
+    // videos → per-item like-count/badge/profile/repost fetches) can't trip a
     // relay's "too many concurrent REQs" limit. `withResource` releases the
     // slot when the (time-bounded) query completes, so it can't leak.
     final websocketEvents = useQueryPool
@@ -1223,7 +1223,11 @@ class NostrClient {
   ///
   /// Unlike [searchUsers], this returns a Future that completes once,
   /// making it suitable for one-time search operations.
-  Future<List<Event>> queryUsers(String query, {int? limit}) {
+  Future<List<Event>> queryUsers(
+    String query, {
+    int? limit,
+    Duration timeout = const Duration(seconds: 5),
+  }) {
     final filter = Filter(
       kinds: const [EventKind.metadata],
       limit: limit ?? 100,
@@ -1234,6 +1238,7 @@ class NostrClient {
       [filter],
       tempRelays: _nip50SearchRelays,
       useQueryPool: false,
+      timeout: timeout,
     );
   }
 

@@ -27,7 +27,7 @@ UserSearchBloc                              mobile/lib/blocs/user_search/
 ProfileRepository.searchUsersProgressive    mobile/packages/profile_repository/
   Phase 1 (offset==0): searchUsersLocally        SQLite cache, no timeout
   Phase 2:             funnelcake.searchProfiles REST, no explicit timeout
-  Phase 3 (offset==0): nostrClient.queryUsers    NIP-50 WS, .timeout(5s)
+  Phase 3 (offset==0): nostrClient.queryUsers    NIP-50 WS, 4.5s relay budget + 5s guard
   Each phase records a SearchSourceStatus in the result envelope.
   Final yield: _enrichFromCache + _applyFilter (block filter + boost)
         ↓
@@ -45,8 +45,10 @@ The repository consults sources in a fixed, sequential order:
    Consulted on every page. Skipped (`SearchSourceSkipped`) when the
    client is configured without a base URL.
 3. **nip50Relay** — Federated NIP-50 search across three hardcoded
-   relays. Consulted only on the first page (`offset == 0`). Hard
-   timeout of `_nip50SearchTimeout` (5 s).
+   relays. Consulted only on the first page (`offset == 0`). The SDK
+   relay query has a 4.5 s budget and returns partial results when that
+   budget expires; the repository keeps a 5 s guard for setup stalls
+   before the SDK budget starts.
 
 After each phase that produced new profiles, the repository yields a
 `ProgressiveSearchResult` carrying:
