@@ -67,17 +67,23 @@ class CommentsRepository {
   ///
   /// Parameters:
   /// - [nostrClient]: Client for Nostr relay communication (handles signing)
+  /// - [clock]: Injectable time source for the recently-posted-comment
+  ///   self-heal window (see [_recentlyPostedComments]). Defaults to
+  ///   [DateTime.now]; override in tests for deterministic TTL behaviour.
   CommentsRepository({
     required NostrClient nostrClient,
     FunnelcakeApiClient? funnelcakeApiClient,
     BlockedCommentFilter? blockFilter,
+    DateTime Function()? clock,
   }) : _nostrClient = nostrClient,
        _funnelcakeApiClient = funnelcakeApiClient,
-       _blockFilter = blockFilter;
+       _blockFilter = blockFilter,
+       _now = clock ?? DateTime.now;
 
   final NostrClient _nostrClient;
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final BlockedCommentFilter? _blockFilter;
+  final DateTime Function() _now;
 
   /// In-memory cache of comment counts keyed by root event ID.
   ///
@@ -102,6 +108,26 @@ class CommentsRepository {
   /// `rootAddressableId` is in scope; reads check this map when the
   /// event-id cache misses ([_readCachedCommentCount]).
   final Map<String, int> _commentCountCacheByAddressableId = {};
+
+  /// Comments this user has just posted, retained briefly so the user's own
+  /// comment stays visible when the comment sheet is reopened before the
+  /// Funnelcake REST index (the primary read source in [loadComments]) has
+  /// ingested it. Keyed by root event id.
+  ///
+  /// Issue #5598 (recurrence of #211): a comment publishes to relays
+  /// instantly, but [loadComments] reads REST-first and only falls back to
+  /// relays when REST is unavailable. A stale-but-non-empty REST response
+  /// short-circuits, so a fresh read after posting omits the user's own
+  /// comment until the index catches up. Entries are merged into read results
+  /// and pruned once the fetched thread contains them or after
+  /// [_recentlyPostedRetention].
+  final Map<String, List<_RecentlyPostedComment>> _recentlyPostedComments = {};
+
+  /// How long a just-posted comment is retained for the self-heal merge before
+  /// it is assumed stale. Long enough to cover worst-case REST index lag, short
+  /// enough that a never-indexed comment (relay-rejected, or deleted from
+  /// another client) cannot linger locally indefinitely.
+  static const _recentlyPostedRetention = Duration(minutes: 10);
 
   /// Subscription ID for the active comment watch, if any.
   String? _watchSubscriptionId;
@@ -159,7 +185,12 @@ class CommentsRepository {
               rootEventKind,
               rootAddressableId: rootAddressableId,
             );
-            final thread = restThread;
+            // Merge the user's own just-posted comment when the REST index has
+            // not yet ingested it, so a sheet reopen doesn't drop it (#5598).
+            final thread = _mergeRecentlyPostedComments(
+              restThread,
+              rootEventId,
+            );
             if (thread.hasExactTotal) {
               // Auto-update the count cache with the authoritative REST total.
               // Zero is written too so a previously cached positive value
@@ -232,6 +263,12 @@ class CommentsRepository {
           rootEventId,
           rootEventKind,
         );
+      }
+
+      // Merge the user's own just-posted comment on first-page loads when the
+      // relay query has not yet returned it, mirroring the REST path (#5598).
+      if (before == null) {
+        thread = _mergeRecentlyPostedComments(thread, rootEventId);
       }
 
       // Auto-update the count cache with the authoritative total so that
@@ -353,7 +390,7 @@ class CommentsRepository {
       );
       final videoMetadata = _parseVideoMetadataFromImetaTags(sentEvent.tags);
 
-      return Comment(
+      final comment = Comment(
         id: sentEvent.id,
         content: trimmedContent,
         authorPubkey: sentEvent.pubkey,
@@ -369,6 +406,12 @@ class CommentsRepository {
         videoDuration: videoMetadata.videoDuration,
         videoBlurhash: videoMetadata.videoBlurhash,
       );
+
+      // Retain so a comment-sheet reopen shows the user's own comment even
+      // while the REST read source has not yet indexed it (#5598).
+      _recordRecentlyPostedComment(rootEventId, comment);
+
+      return comment;
     } on CommentsRepositoryException {
       rethrow;
     } on Exception catch (e) {
@@ -471,13 +514,15 @@ class CommentsRepository {
     );
   }
 
-  /// Clears the in-memory comment count cache.
+  /// Clears the in-memory comment count cache and the recently-posted-comment
+  /// self-heal buffer.
   ///
-  /// Should be called on logout so stale counts from a previous user's
-  /// session are not served after re-login.
+  /// Should be called on logout so stale counts and a previous user's pending
+  /// comments are not served after re-login.
   void clearCommentCountCache() {
     _commentCountCache.clear();
     _commentCountCacheByAddressableId.clear();
+    _recentlyPostedComments.clear();
   }
 
   /// Reads the cached comment count, checking event-id first then the
@@ -523,6 +568,55 @@ class CommentsRepository {
       rootEventId,
       updated < 0 ? 0 : updated,
       rootAddressableId: rootAddressableId,
+    );
+  }
+
+  /// Records a just-posted [comment] so [loadComments] can keep it visible on
+  /// a comment-sheet reopen while the REST read source catches up (#5598).
+  void _recordRecentlyPostedComment(String rootEventId, Comment comment) {
+    _recentlyPostedComments.putIfAbsent(rootEventId, () => [])
+      ..removeWhere((p) => p.comment.id == comment.id)
+      ..add(_RecentlyPostedComment(comment, _now()));
+  }
+
+  /// Merges any retained just-posted comments for [rootEventId] into [thread]
+  /// when the fetched thread does not already contain them (#5598).
+  ///
+  /// Self-pruning: entries already present in [thread] (the backend caught up)
+  /// or older than [_recentlyPostedRetention] are dropped. Deduplication is by
+  /// event id, so a later relay echo or REST refresh cannot create a duplicate
+  /// row. [CommentThread.totalCount] is bumped by the number of injected
+  /// comments so the count badge stays consistent with the rendered list.
+  CommentThread _mergeRecentlyPostedComments(
+    CommentThread thread,
+    String rootEventId,
+  ) {
+    final pending = _recentlyPostedComments[rootEventId];
+    if (pending == null || pending.isEmpty) return thread;
+
+    final now = _now();
+    pending
+      ..removeWhere(
+        (p) => now.difference(p.postedAt) > _recentlyPostedRetention,
+      )
+      ..removeWhere((p) => thread.commentCache.containsKey(p.comment.id));
+
+    if (pending.isEmpty) {
+      _recentlyPostedComments.remove(rootEventId);
+      return thread;
+    }
+
+    final mergedCache = <String, Comment>{
+      ...thread.commentCache,
+      for (final p in pending) p.comment.id: p.comment,
+    };
+    final mergedComments = mergedCache.values.toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    return thread.copyWith(
+      comments: mergedComments,
+      commentCache: Map<String, Comment>.unmodifiable(mergedCache),
+      totalCount: thread.totalCount + pending.length,
     );
   }
 
@@ -1087,4 +1181,15 @@ class _CommentVideoMetadata {
   final String? videoDimensions;
   final int? videoDuration;
   final String? videoBlurhash;
+}
+
+/// A comment the local user just posted, retained briefly in
+/// [CommentsRepository] so it survives a comment-sheet reopen while the REST
+/// read source catches up. See [CommentsRepository] field
+/// `_recentlyPostedComments` and issue #5598.
+class _RecentlyPostedComment {
+  _RecentlyPostedComment(this.comment, this.postedAt);
+
+  final Comment comment;
+  final DateTime postedAt;
 }
