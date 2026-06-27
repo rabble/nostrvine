@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
+import 'package:openvine/services/upload/upload_session_errors.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -21,7 +22,6 @@ class UploadRetryPolicy {
   final PendingUploadStore _store;
   final UploadRetryConfig _retryConfig;
 
-  final Map<String, Timer> _retryTimers = {};
   final Map<String, Future<void>> _sessionPersistFutures = {};
 
   // ---------------------------------------------------------------------------
@@ -33,6 +33,11 @@ class UploadRetryPolicy {
     Future<void> Function() executeUpload, {
     required bool Function(dynamic) isRetriable,
   }) async {
+    // Local-only counter for how many auto-attempts have been made in this
+    // call. Must NOT be persisted to Hive: PendingUpload.retryCount is the
+    // manual-retry budget (canRetry gates on retryCount < 3). Writing
+    // auto-attempt counts there would exhaust the budget and prevent the user
+    // from calling retryUpload() after a failed session.
     var autoAttempt = 0;
 
     try {
@@ -40,6 +45,8 @@ class UploadRetryPolicy {
         operation: () async {
           final currentUpload = _store.getUpload(upload.id) ?? upload;
 
+          // autoAttempt is local to this performWithRetry invocation and is
+          // never written to Hive, so the manual-retry budget is preserved.
           autoAttempt++;
           Log.warning(
             'Upload attempt $autoAttempt/${_retryConfig.maxRetries + 1} for ${currentUpload.id}',
@@ -52,6 +59,8 @@ class UploadRetryPolicy {
               status: autoAttempt == 1
                   ? UploadStatus.uploading
                   : UploadStatus.retrying,
+              // retryCount is intentionally left unchanged here — it is the
+              // manual-retry budget managed exclusively by retryUpload().
             ),
           );
 
@@ -156,6 +165,12 @@ class UploadRetryPolicy {
     unawaited(performUpload(resumed));
   }
 
+  /// Re-run a failed upload, resetting the manual-retry budget when the last
+  /// attempt is at least an hour old and otherwise incrementing it.
+  ///
+  /// Despite the name there is no backoff *timer* — the budget is the
+  /// "backoff": [performUpload] is invoked immediately and the 1-hour reset
+  /// window is what spaces out repeated manual retries.
   Future<void> retryUploadWithBackoff(
     String uploadId, {
     required Future<void> Function(PendingUpload) performUpload,
@@ -178,9 +193,6 @@ class UploadRetryPolicy {
       );
       return;
     }
-
-    _retryTimers[uploadId]?.cancel();
-    _retryTimers.remove(uploadId);
 
     Log.warning(
       'Retrying upload with backoff: $uploadId',
@@ -206,11 +218,16 @@ class UploadRetryPolicy {
   }
 
   bool isRetriableError(dynamic error) {
-    if (_isExpiredResumableSessionError(error)) {
+    if (isExpiredResumableSessionError(error)) {
       return false;
     }
 
+    // Use structured classification when available.
     if (error is BlossomUploadFailureException) {
+      // A transient inability to *produce* a signed auth header (the remote
+      // signer or its network path was briefly unreachable) is retriable —
+      // distinct from a permanent 401/403 rejection handled below. This is
+      // the fix for uploads that died on a momentary signer DNS blip.
       final reason = error.failureReason;
       if (reason == BlossomUploadFailureReason.authUnavailable ||
           reason == BlossomUploadFailureReason.network) {
@@ -223,22 +240,31 @@ class UploadRetryPolicy {
 
       final code = error.statusCode;
       if (code != null) {
+        // 408 request timeout — retriable
         if (code == 408) return true;
+        // 429 rate limited — retriable after backoff
         if (code == 429) return true;
+        // Transient server errors — retriable
         if (code == 500 || code == 502 || code == 503 || code == 504) {
           return true;
         }
+        // Other 5xx (501, 505, etc.) are permanent — not retriable
         if (code >= 500) return false;
+        // 4xx client errors are not retriable
         if (code >= 400) return false;
       }
     }
 
+    // Fall back to string matching for non-HTTP errors
     final errorStr = error.toString().toLowerCase();
 
+    // A missing required thumbnail already exhausted the image upload's own
+    // retry path; retrying here would re-upload the full video.
     if (errorStr.contains('thumbnail upload failed')) {
       return false;
     }
 
+    // Network and timeout errors are retriable
     if (errorStr.contains('timeout') ||
         errorStr.contains('cannot connect') ||
         errorStr.contains('network error') ||
@@ -247,23 +273,26 @@ class UploadRetryPolicy {
       return true;
     }
 
+    // File not found errors are not retriable
     if (errorStr.contains('file not found') ||
         errorStr.contains('does not exist')) {
       return false;
     }
 
+    // Permission and cancellation failures are permanent. Authentication is
+    // classified structurally above (failureReason / 401-403 statusCode): a
+    // failed auth-header *creation* is transient while a server *rejection*
+    // is not, and the bare substring 'auth' cannot tell them apart — so it
+    // no longer gates retries here.
     if (errorStr.contains('permission') || errorStr.contains('cancelled')) {
       return false;
     }
 
+    // Unknown errors are retriable by default
     return true;
   }
 
   void dispose() {
-    for (final timer in _retryTimers.values) {
-      timer.cancel();
-    }
-    _retryTimers.clear();
     _sessionPersistFutures.clear();
   }
 
@@ -289,15 +318,5 @@ class UploadRetryPolicy {
         uploadProgress: persistedProgress,
       ),
     );
-  }
-
-  bool _isExpiredResumableSessionError(dynamic error) {
-    if (error is BlossomResumableUploadException) {
-      return error.statusCode == 404 || error.statusCode == 410;
-    }
-
-    final errorMessage = error.toString().toLowerCase();
-    return errorMessage.contains('session expired') ||
-        errorMessage.contains('session is no longer available');
   }
 }

@@ -15,12 +15,15 @@ PendingUpload _makeUpload({
   String id = 'upload-1',
   UploadStatus status = UploadStatus.uploading,
   int? retryCount = 0,
+  DateTime? createdAt,
+  DateTime? completedAt,
 }) => PendingUpload(
   id: id,
   localVideoPath: '/tmp/video.mp4',
   nostrPubkey: 'pubkey-abc',
   status: status,
-  createdAt: DateTime(2024),
+  createdAt: createdAt ?? DateTime(2024),
+  completedAt: completedAt,
   retryCount: retryCount,
 );
 
@@ -383,6 +386,109 @@ void main() {
 
       await Future<void>.delayed(Duration.zero);
       expect(called, isFalse);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  group('retryUploadWithBackoff', () {
+    test('resets retryCount to 1 when last attempt was >= 1h ago', () async {
+      final upload = _makeUpload(
+        status: UploadStatus.failed,
+        retryCount: 2,
+        completedAt: DateTime.now().subtract(const Duration(hours: 2)),
+      );
+      when(() => store.getUpload('upload-1')).thenReturn(upload);
+      when(() => store.update(any())).thenAnswer((_) async {});
+
+      PendingUpload? received;
+      await policy.retryUploadWithBackoff(
+        'upload-1',
+        performUpload: (u) async {
+          received = u;
+        },
+      );
+
+      expect(received, isNotNull);
+      expect(received!.retryCount, equals(1));
+      expect(received!.status, equals(UploadStatus.pending));
+    });
+
+    test('increments retryCount when last attempt was < 1h ago', () async {
+      final upload = _makeUpload(
+        status: UploadStatus.failed,
+        retryCount: 1,
+        completedAt: DateTime.now(),
+      );
+      when(() => store.getUpload('upload-1')).thenReturn(upload);
+      when(() => store.update(any())).thenAnswer((_) async {});
+
+      PendingUpload? received;
+      await policy.retryUploadWithBackoff(
+        'upload-1',
+        performUpload: (u) async {
+          received = u;
+        },
+      );
+
+      expect(received, isNotNull);
+      expect(received!.retryCount, equals(2));
+      expect(received!.status, equals(UploadStatus.pending));
+    });
+
+    test(
+      'falls back to createdAt for the reset window when completedAt is null',
+      () async {
+        // createdAt defaults to 2024 (well over an hour ago) and completedAt
+        // is null, so the reset window keys off createdAt and resets to 1.
+        final upload = _makeUpload(
+          status: UploadStatus.failed,
+          retryCount: 2,
+        );
+        when(() => store.getUpload('upload-1')).thenReturn(upload);
+        when(() => store.update(any())).thenAnswer((_) async {});
+
+        PendingUpload? received;
+        await policy.retryUploadWithBackoff(
+          'upload-1',
+          performUpload: (u) async {
+            received = u;
+          },
+        );
+
+        expect(received, isNotNull);
+        expect(received!.retryCount, equals(1));
+      },
+    );
+
+    test('no-op when upload is not in failed state', () async {
+      final upload = _makeUpload(status: UploadStatus.paused);
+      when(() => store.getUpload('upload-1')).thenReturn(upload);
+
+      var called = false;
+      await policy.retryUploadWithBackoff(
+        'upload-1',
+        performUpload: (_) async {
+          called = true;
+        },
+      );
+
+      expect(called, isFalse);
+      verifyNever(() => store.update(any()));
+    });
+
+    test('no-op when upload not found in store', () async {
+      when(() => store.getUpload('upload-1')).thenReturn(null);
+
+      var called = false;
+      await policy.retryUploadWithBackoff(
+        'upload-1',
+        performUpload: (_) async {
+          called = true;
+        },
+      );
+
+      expect(called, isFalse);
+      verifyNever(() => store.update(any()));
     });
   });
 

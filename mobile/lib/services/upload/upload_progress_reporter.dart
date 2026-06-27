@@ -11,6 +11,7 @@ import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
+import 'package:openvine/services/upload/upload_session_errors.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -71,15 +72,6 @@ class UploadProgressReporter {
   // ---------------------------------------------------------------------------
   // Progress subscriptions
   // ---------------------------------------------------------------------------
-
-  /// Return the active progress subscription for [uploadId], if any.
-  StreamSubscription<double>? subscriptionFor(String uploadId) =>
-      _progressSubscriptions[uploadId];
-
-  /// Register [sub] as the active progress subscription for [uploadId].
-  void setSubscription(String uploadId, StreamSubscription<double> sub) {
-    _progressSubscriptions[uploadId] = sub;
-  }
 
   /// Cancel and remove the progress subscription for [uploadId].
   void cancelAndRemoveSubscription(String uploadId) {
@@ -160,7 +152,7 @@ class UploadProgressReporter {
 
   /// Categorise [error] into a string category constant for monitoring.
   Future<String> categorizeError(dynamic error) async {
-    if (_isExpiredResumableSessionError(error)) {
+    if (isExpiredResumableSessionError(error)) {
       return 'UPLOAD_SESSION_EXPIRED';
     }
 
@@ -171,6 +163,10 @@ class UploadProgressReporter {
     }
 
     if (error is BlossomUploadFailureException) {
+      // A failure to *produce* the signed auth header (the signer was briefly
+      // unreachable) is a connectivity problem, not a server rejection. It
+      // carries no HTTP status, so classify it on the typed reason and surface
+      // the retry-friendly network copy instead of the generic UNKNOWN message.
       if (error.failureReason == BlossomUploadFailureReason.authUnavailable) {
         return 'NETWORK_ERROR';
       }
@@ -272,25 +268,6 @@ class UploadProgressReporter {
         return 'Upload failed. Please check your connection and try again.';
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // Expired-session helper (public surface for UploadManager._handleUploadFailure)
-  // ---------------------------------------------------------------------------
-
-  // Duplicated from UploadRetryPolicy to avoid cross-class import.
-  bool _isExpiredResumableSessionError(dynamic error) {
-    if (error is BlossomResumableUploadException) {
-      return error.statusCode == 404 || error.statusCode == 410;
-    }
-
-    final errorMessage = error.toString().toLowerCase();
-    return errorMessage.contains('session expired') ||
-        errorMessage.contains('session is no longer available');
-  }
-
-  /// Return true if [error] represents an expired resumable-upload session.
-  bool isExpiredResumableSessionError(dynamic error) =>
-      _isExpiredResumableSessionError(error);
 
   // ---------------------------------------------------------------------------
   // Metrics computation (replaces _createSuccessMetrics / _logUploadSuccess)
@@ -613,7 +590,8 @@ Upload Timeout Failure:
       subscription.cancel();
     }
     _progressSubscriptions.clear();
-    _cleanupOldMetrics();
+    // Drop all metrics (not just the 7-day prune) so a later initialize()
+    // starts from a clean slate and the disposed reporter frees its memory.
     _uploadMetrics.clear();
   }
 

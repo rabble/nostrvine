@@ -17,6 +17,7 @@ import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
 import 'package:openvine/services/upload/upload_progress_reporter.dart';
 import 'package:openvine/services/upload/upload_retry_policy.dart';
+import 'package:openvine/services/upload/upload_session_errors.dart';
 import 'package:openvine/services/upload_initialization_helper.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
@@ -1022,7 +1023,7 @@ class UploadManager {
         status: UploadStatus.failed,
         errorMessage: userMessage,
         retryCount: latestUpload.retryCount ?? 0,
-        resumableSession: _reporter.isExpiredResumableSessionError(error)
+        resumableSession: isExpiredResumableSessionError(error)
             ? null
             : latestUpload.resumableSession,
       ),

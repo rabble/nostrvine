@@ -1,8 +1,6 @@
 // ABOUTME: Unit tests for UploadProgressReporter — covers metrics lifecycle,
 // ABOUTME: subscription management, error categorisation, and progress updates.
 
-import 'dart:async';
-
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -141,39 +139,11 @@ void main() {
 
   // ---------------------------------------------------------------------------
   group('subscription lifecycle', () {
-    test('setSubscription / subscriptionFor roundtrip', () {
-      final controller = StreamController<double>();
-      addTearDown(controller.close);
-
-      final sub = controller.stream.listen((_) {});
-      reporter.setSubscription('upload-1', sub);
-
-      expect(reporter.subscriptionFor('upload-1'), equals(sub));
-    });
-
-    test('cancelAndRemoveSubscription cancels and clears entry', () async {
-      final controller = StreamController<double>();
-      addTearDown(controller.close);
-
-      final sub = controller.stream.listen((_) {});
-
-      reporter.setSubscription('upload-1', sub);
-      reporter.cancelAndRemoveSubscription('upload-1');
-
-      // Give cancellation a microtask to propagate
-      await Future<void>.delayed(Duration.zero);
-
-      expect(reporter.subscriptionFor('upload-1'), isNull);
-    });
-
-    test('subscriptionFor returns null after removal', () {
-      final controller = StreamController<double>();
-      addTearDown(controller.close);
-      final sub = controller.stream.listen((_) {});
-      reporter.setSubscription('upload-1', sub);
-      reporter.cancelAndRemoveSubscription('upload-1');
-
-      expect(reporter.subscriptionFor('upload-1'), isNull);
+    test('cancelAndRemoveSubscription is a safe no-op for an unknown id', () {
+      expect(
+        () => reporter.cancelAndRemoveSubscription('not-tracked'),
+        returnsNormally,
+      );
     });
   });
 
@@ -253,69 +223,14 @@ void main() {
       // check, so we can only test categories that fire before connectivity is
       // needed — but for a reliable test, we use the expired-session fast path.
       //
-      // For code paths that need connectivity, we verify via isExpiredResumableSessionError.
+      // The shared expired-session predicate is covered directly in
+      // upload_session_errors_test.dart.
       const error = BlossomResumableUploadException(
         'Gone',
         statusCode: 410,
       );
       final result = await reporter.categorizeError(error);
       expect(result, equals('UPLOAD_SESSION_EXPIRED'));
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  group('isExpiredResumableSessionError', () {
-    test('BlossomResumableUploadException 404 → true', () {
-      expect(
-        reporter.isExpiredResumableSessionError(
-          const BlossomResumableUploadException('Not found', statusCode: 404),
-        ),
-        isTrue,
-      );
-    });
-
-    test('BlossomResumableUploadException 410 → true', () {
-      expect(
-        reporter.isExpiredResumableSessionError(
-          const BlossomResumableUploadException('Gone', statusCode: 410),
-        ),
-        isTrue,
-      );
-    });
-
-    test('BlossomResumableUploadException 500 → false', () {
-      expect(
-        reporter.isExpiredResumableSessionError(
-          const BlossomResumableUploadException(
-            'Server error',
-            statusCode: 500,
-          ),
-        ),
-        isFalse,
-      );
-    });
-
-    test('"session expired" string → true', () {
-      expect(
-        reporter.isExpiredResumableSessionError(Exception('session expired')),
-        isTrue,
-      );
-    });
-
-    test('"session is no longer available" string → true', () {
-      expect(
-        reporter.isExpiredResumableSessionError(
-          Exception('session is no longer available'),
-        ),
-        isTrue,
-      );
-    });
-
-    test('generic network error → false', () {
-      expect(
-        reporter.isExpiredResumableSessionError(Exception('network error')),
-        isFalse,
-      );
     });
   });
 
@@ -472,24 +387,9 @@ void main() {
 
   // ---------------------------------------------------------------------------
   group('dispose', () {
-    test('cancels all subscriptions', () async {
-      final controllers = List.generate(3, (_) => StreamController<double>());
-      addTearDown(() {
-        for (final c in controllers) {
-          c.close();
-        }
-      });
-
-      for (var i = 0; i < 3; i++) {
-        reporter.setSubscription('id-$i', controllers[i].stream.listen((_) {}));
-      }
-
-      reporter.dispose();
-
-      // After dispose, subscriptionFor should return null for all
-      for (var i = 0; i < 3; i++) {
-        expect(reporter.subscriptionFor('id-$i'), isNull);
-      }
+    test('can be called without throwing', () {
+      reporter.recordStart('upload-1', _makeMetrics());
+      expect(reporter.dispose, returnsNormally);
     });
 
     test('clears metrics', () {
