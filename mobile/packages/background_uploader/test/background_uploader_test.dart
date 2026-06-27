@@ -1,0 +1,127 @@
+import 'dart:async';
+
+import 'package:background_uploader/background_uploader.dart';
+import 'package:background_uploader/background_uploader_platform_interface.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+
+class _FakeBackgroundUploaderPlatform extends BackgroundUploaderPlatform
+    with MockPlatformInterfaceMixin {
+  final List<BackgroundUploadRequest> enqueued = <BackgroundUploadRequest>[];
+  final List<String> cancelled = <String>[];
+
+  @override
+  Stream<BackgroundUploadEvent> get events =>
+      const Stream<BackgroundUploadEvent>.empty();
+
+  @override
+  Future<bool> isSupported() async => true;
+
+  @override
+  Future<void> enqueue(BackgroundUploadRequest request) async =>
+      enqueued.add(request);
+
+  @override
+  Future<void> cancel(String taskId) async => cancelled.add(taskId);
+
+  @override
+  Future<List<String>> activeTaskIds() async => const <String>[];
+}
+
+void main() {
+  group('BackgroundUploader.enqueue validation', () {
+    late _FakeBackgroundUploaderPlatform fake;
+
+    setUp(() {
+      fake = _FakeBackgroundUploaderPlatform();
+      BackgroundUploaderPlatform.instance = fake;
+    });
+
+    BackgroundUploadRequest request({
+      String method = 'PUT',
+      String url = 'https://media.divine.video/upload',
+    }) {
+      return BackgroundUploadRequest(
+        taskId: 'task-1',
+        url: Uri.parse(url),
+        filePath: '/tmp/video.mp4',
+        method: method,
+      );
+    }
+
+    test('forwards a valid request to the platform', () async {
+      await BackgroundUploader.instance.enqueue(request());
+      expect(fake.enqueued.single.taskId, 'task-1');
+    });
+
+    test('rejects an empty HTTP method', () async {
+      await expectLater(
+        () => BackgroundUploader.instance.enqueue(request(method: '  ')),
+        throwsArgumentError,
+      );
+      expect(fake.enqueued, isEmpty);
+    });
+
+    test('rejects a non-https URL', () async {
+      await expectLater(
+        () => BackgroundUploader.instance.enqueue(
+          request(url: 'http://media.divine.video/upload'),
+        ),
+        throwsArgumentError,
+      );
+      expect(fake.enqueued, isEmpty);
+    });
+
+    test('cancel forwards the task id', () async {
+      await BackgroundUploader.instance.cancel('task-9');
+      expect(fake.cancelled.single, 'task-9');
+    });
+  });
+
+  group('BackgroundUploadEvent', () {
+    test('parses a terminal success map', () {
+      final event = BackgroundUploadEvent.fromMap(const <String, Object?>{
+        'taskId': 'task-1',
+        'status': 'completed',
+        'progress': 1.0,
+        'httpStatusCode': 201,
+        'responseBody': '{"ok":true}',
+      });
+
+      expect(event.status, BackgroundUploadStatus.completed);
+      expect(event.isTerminal, isTrue);
+      expect(event.httpStatusCode, 201);
+      expect(event.responseBody, '{"ok":true}');
+    });
+
+    test('clamps out-of-range progress', () {
+      final event = BackgroundUploadEvent.fromMap(const <String, Object?>{
+        'taskId': 'task-1',
+        'status': 'running',
+        'progress': 4.2,
+      });
+
+      expect(event.progress, 1.0);
+      expect(event.isTerminal, isFalse);
+    });
+
+    test('tryFromMap returns null without a taskId', () {
+      expect(
+        BackgroundUploadEvent.tryFromMap(<String, Object?>{
+          'status': 'completed',
+        }),
+        isNull,
+      );
+    });
+
+    test('tryFromMap returns null on an unknown status', () {
+      expect(
+        BackgroundUploadEvent.tryFromMap(<String, Object?>{
+          'taskId': 'task-1',
+          'status': 'teleported',
+        }),
+        isNull,
+      );
+    });
+  });
+}

@@ -1,0 +1,33 @@
+name: background_uploader
+description: "OS-backed background file uploader for Android and Apple platforms that survives app suspension."
+version: 0.0.1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+  flutter: ^3.41.1
+
+dependencies:
+  equatable: ^2.0.8
+  flutter:
+    sdk: flutter
+  plugin_platform_interface: ^2.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^10.2.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: co.openvine.background_uploader
+        pluginClass: BackgroundUploaderPlugin
+      ios:
+        pluginClass: BackgroundUploaderPlugin
+        sharedDarwinSource: true
+      macos:
+        pluginClass: BackgroundUploaderPlugin
+        sharedDarwinSource: true
