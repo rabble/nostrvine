@@ -377,6 +377,26 @@ void main() {
 
         await cubit.close();
       });
+
+      test('ignores the delete after the cubit is closed mid-delete', () async {
+        final cubit = buildCubit(_FakePermissions(PermissionStatus.granted));
+        await cubit.requestPermissionAndStart();
+        recorder.emitAmplitude(0.5);
+        await flush();
+        await cubit.stop();
+
+        final path = cubit.state.takes.single.localFilePath!;
+
+        // The recorder screen calls deleteLastTake fire-and-forget with no
+        // PopScope, so a back gesture can close the cubit between the file
+        // delete and the emit. Without the isClosed guard that emit would throw
+        // an uncaught StateError straight to the zone handler.
+        final pending = cubit.deleteLastTake();
+        await cubit.close();
+
+        await expectLater(pending, completes);
+        expect(File(path).existsSync(), isFalse);
+      });
     });
 
     group('prior takes already on the timeline', () {
@@ -455,6 +475,23 @@ void main() {
         expect(File(secondPath).existsSync(), isFalse);
 
         await cubit.close();
+      });
+
+      test('ignores the reset after the cubit is closed mid-discard', () async {
+        final cubit = buildCubit(_FakePermissions(PermissionStatus.granted));
+        await cubit.requestPermissionAndStart();
+        recorder.emitAmplitude(0.5);
+        await flush();
+        await cubit.stop();
+        expect(cubit.state.takes, hasLength(1));
+
+        // Lower-risk sibling of the deleteLastTake race (_close awaits this
+        // before popping), but the isClosed guard still has to hold if a
+        // double-pop closes the cubit before the reset emit runs.
+        final pending = cubit.discardAll();
+        await cubit.close();
+
+        await expectLater(pending, completes);
       });
     });
 

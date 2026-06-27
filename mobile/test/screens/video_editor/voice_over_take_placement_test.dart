@@ -1,22 +1,23 @@
-// ABOUTME: Unit tests for placeVoiceOverTakes.
-// ABOUTME: Covers back-to-back layout, wrap, clamp, zero-window skip, ids.
+// ABOUTME: Unit tests for placeVoiceOverTakes, resolveVoiceOverAvailableDuration
+// ABOUTME: and countPriorVoiceOverTakes: layout, wrap, clamp, skip, ids,
+// ABOUTME: available-duration fallback, and prior-take numbering.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/screens/video_editor/voice_over_take_placement.dart';
 
 void main() {
+  AudioEvent take(String id) => AudioEvent.fromLocalImport(
+    id: id,
+    filePath: '/tmp/$id.m4a',
+    createdAt: 0,
+    title: id,
+    mimeType: 'audio/mp4',
+  );
+
   group('placeVoiceOverTakes', () {
     const nowMs = 1000;
     const available = Duration(seconds: 6);
-
-    AudioEvent take(String id) => AudioEvent.fromLocalImport(
-      id: id,
-      filePath: '/tmp/$id.m4a',
-      createdAt: 0,
-      title: id,
-      mimeType: 'audio/mp4',
-    );
 
     test('lays a single take from zero', () {
       final placed = placeVoiceOverTakes(
@@ -115,6 +116,103 @@ void main() {
       );
 
       expect(placed, isEmpty);
+    });
+  });
+
+  group('resolveVoiceOverAvailableDuration', () {
+    const maxDuration = Duration(seconds: 60);
+
+    test('uses the clip duration when positive and shorter than the cap', () {
+      expect(
+        resolveVoiceOverAvailableDuration(
+          clipDuration: const Duration(seconds: 8),
+          maxDuration: maxDuration,
+        ),
+        equals(const Duration(seconds: 8)),
+      );
+    });
+
+    test('falls back to the cap when the clip duration is zero', () {
+      expect(
+        resolveVoiceOverAvailableDuration(
+          clipDuration: Duration.zero,
+          maxDuration: maxDuration,
+        ),
+        equals(maxDuration),
+      );
+    });
+
+    test('falls back to the cap when the clip duration is negative', () {
+      expect(
+        resolveVoiceOverAvailableDuration(
+          clipDuration: const Duration(seconds: -1),
+          maxDuration: maxDuration,
+        ),
+        equals(maxDuration),
+      );
+    });
+
+    test('falls back to the cap when the clip duration exceeds it', () {
+      expect(
+        resolveVoiceOverAvailableDuration(
+          clipDuration: const Duration(seconds: 90),
+          maxDuration: maxDuration,
+        ),
+        equals(maxDuration),
+      );
+    });
+
+    test('falls back to the cap when the clip duration equals it', () {
+      expect(
+        resolveVoiceOverAvailableDuration(
+          clipDuration: maxDuration,
+          maxDuration: maxDuration,
+        ),
+        equals(maxDuration),
+      );
+    });
+  });
+
+  group('countPriorVoiceOverTakes', () {
+    const prefix = 'local_import_voice_over';
+
+    test('returns zero for an empty track list', () {
+      expect(
+        countPriorVoiceOverTakes(
+          audioTracks: const <AudioEvent>[],
+          voiceOverIdPrefix: prefix,
+        ),
+        equals(0),
+      );
+    });
+
+    test('counts only tracks whose id starts with the prefix', () {
+      final tracks = [
+        take('${prefix}_1'),
+        take('music_library_a'),
+        take('${prefix}_2'),
+        take('local_import_song_b'),
+      ];
+
+      expect(
+        countPriorVoiceOverTakes(
+          audioTracks: tracks,
+          voiceOverIdPrefix: prefix,
+        ),
+        equals(2),
+      );
+    });
+
+    test('returns zero when no track matches the prefix', () {
+      final tracks = [take('music_a'), take('local_import_song_b')];
+
+      expect(
+        countPriorVoiceOverTakes(
+          audioTracks: tracks,
+          voiceOverIdPrefix: prefix,
+        ),
+        equals(0),
+      );
     });
   });
 }

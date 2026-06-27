@@ -274,6 +274,10 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
     final takes = state.takes;
     unawaited(HapticService.lightImpact());
     await _deleteFile(takes.last.localFilePath);
+    // The recorder screen calls this fire-and-forget with no PopScope, so a
+    // back gesture can close the cubit mid-delete; guard the emit so it can't
+    // throw StateError straight to the zone handler.
+    if (isClosed) return;
     emit(state.copyWith(takes: takes.sublist(0, takes.length - 1)));
   }
 
@@ -291,6 +295,10 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
       await _deleteFile(_currentPath);
       _currentPath = null;
     }
+    // Same close-mid-await guard as deleteLastTake; lower risk here since
+    // _close awaits this before popping, but a double-pop race can still
+    // close the cubit before this emit runs.
+    if (isClosed) return;
     emit(const VoiceOverState());
   }
 

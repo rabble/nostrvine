@@ -492,18 +492,17 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   /// [VideoEditorConstants.maxDuration]. All takes are committed in a single
   /// history entry so one undo removes them together.
   Future<void> _openVoiceOver({required VideoEditorMainBloc mainBloc}) async {
-    const maxDuration = VideoEditorConstants.maxDuration;
-    final clipDuration = _clipEditorBloc.state.totalDuration;
-    final availableDuration =
-        clipDuration > Duration.zero && clipDuration < maxDuration
-        ? clipDuration
-        : maxDuration;
+    final availableDuration = resolveVoiceOverAvailableDuration(
+      clipDuration: _clipEditorBloc.state.totalDuration,
+      maxDuration: VideoEditorConstants.maxDuration,
+    );
 
     // Count voice-over already on the timeline so the take numbering continues
     // (e.g. "Recording 5") instead of restarting at 1.
-    final priorTakeCount = _timelineOverlayBloc.state.audioTracks
-        .where((t) => t.id.startsWith(VoiceOverCubit.voiceOverIdPrefix))
-        .length;
+    final priorTakeCount = countPriorVoiceOverTakes(
+      audioTracks: _timelineOverlayBloc.state.audioTracks,
+      voiceOverIdPrefix: VoiceOverCubit.voiceOverIdPrefix,
+    );
 
     // Pause editor playback so the preview's audio isn't captured into the
     // voice-over while the recorder is open.

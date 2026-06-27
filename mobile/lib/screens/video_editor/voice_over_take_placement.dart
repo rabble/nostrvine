@@ -1,7 +1,34 @@
 // ABOUTME: Pure placement math for laying recorded voice-over takes onto the
-// ABOUTME: editor timeline back-to-back, wrapping and clamping to the clip.
+// ABOUTME: editor timeline back-to-back, wrapping and clamping to the clip,
+// ABOUTME: plus the available-duration and prior-take-count inputs it consumes.
 
 import 'package:models/models.dart' show AudioEvent;
+
+/// Resolves the timeline length available for laying out voice-over takes.
+///
+/// Uses the clip's own [clipDuration] when it is positive and shorter than
+/// [maxDuration]; otherwise falls back to [maxDuration]. This keeps takes laid
+/// out against the real clip length without ever exceeding the editor's cap
+/// (a zero/negative or over-cap clip duration is treated as "use the cap").
+Duration resolveVoiceOverAvailableDuration({
+  required Duration clipDuration,
+  required Duration maxDuration,
+}) {
+  return clipDuration > Duration.zero && clipDuration < maxDuration
+      ? clipDuration
+      : maxDuration;
+}
+
+/// Counts the voice-over takes already present in [audioTracks].
+///
+/// Used to continue the "Recording N" numbering across re-opens instead of
+/// restarting at 1. Matches tracks whose id starts with [voiceOverIdPrefix].
+int countPriorVoiceOverTakes({
+  required Iterable<AudioEvent> audioTracks,
+  required String voiceOverIdPrefix,
+}) {
+  return audioTracks.where((t) => t.id.startsWith(voiceOverIdPrefix)).length;
+}
 
 /// Lays [takes] back-to-back onto a timeline of length [availableDuration].
 ///
