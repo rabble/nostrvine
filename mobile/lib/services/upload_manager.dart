@@ -14,7 +14,9 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
+import 'package:openvine/services/upload/upload_ports.dart';
 import 'package:openvine/services/upload/upload_progress_reporter.dart';
 import 'package:openvine/services/upload/upload_retry_policy.dart';
 import 'package:openvine/services/upload/upload_session_errors.dart';
@@ -94,6 +96,27 @@ class UploadMetrics {
 
 /// Upload target options
 
+/// App-layer adapter forwarding the upload pipeline's [UploadCrashReporter]
+/// port to the Firebase-backed [CrashReportingService].
+///
+/// Keeps the extracted upload concerns free of a direct Firebase import so
+/// they can move into a pure-Dart package; the manager injects this adapter
+/// by default.
+class CrashReportingUploadReporter implements UploadCrashReporter {
+  const CrashReportingUploadReporter();
+
+  @override
+  Future<void> setCustomKey(String key, Object value) =>
+      CrashReportingService.instance.setCustomKey(key, value);
+
+  @override
+  void log(String message) => CrashReportingService.instance.log(message);
+
+  @override
+  Future<void> recordError(Object error, StackTrace? stack, {String? reason}) =>
+      CrashReportingService.instance.recordError(error, stack, reason: reason);
+}
+
 /// Manages video uploads and their persistent state with enhanced reliability
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class UploadManager {
@@ -104,6 +127,7 @@ class UploadManager {
     bool scopeUploadsToCurrentUser = false,
     VideoCircuitBreaker? circuitBreaker,
     UploadRetryConfig? retryConfig,
+    UploadCrashReporter? crashReporter,
   }) : _blossomService = blossomService,
        _defaultBlossomUrl =
            defaultBlossomUrl ?? BlossomUploadService.defaultBlossomServer,
@@ -121,6 +145,7 @@ class UploadManager {
       store: _store,
       circuitBreaker: _circuitBreaker,
       retryConfig: _retryConfig,
+      crashReporter: crashReporter ?? const CrashReportingUploadReporter(),
     );
   }
 
@@ -973,7 +998,7 @@ class UploadManager {
   }
 
   /// Handle upload failure with comprehensive crash reporting
-  Future<void> _handleUploadFailure(PendingUpload upload, dynamic error) async {
+  Future<void> _handleUploadFailure(PendingUpload upload, Object error) async {
     final endTime = DateTime.now();
     final metrics = _reporter.metricsFor(upload.id);
     final latestUpload = getUpload(upload.id) ?? upload;

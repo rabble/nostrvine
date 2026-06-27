@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for UploadProgressReporter — covers metrics lifecycle,
 // ABOUTME: subscription management, error categorisation, and progress updates.
 
+import 'dart:async';
+
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,10 +10,13 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
+import 'package:openvine/services/upload/upload_ports.dart';
 import 'package:openvine/services/upload/upload_progress_reporter.dart';
 import 'package:openvine/services/upload_manager.dart';
 
 class _MockPendingUploadStore extends Mock implements PendingUploadStore {}
+
+class _MockUploadCrashReporter extends Mock implements UploadCrashReporter {}
 
 PendingUpload _makeUpload({
   String id = 'upload-1',
@@ -50,22 +55,38 @@ void main() {
         createdAt: DateTime(2024),
       ),
     );
+    registerFallbackValue(StackTrace.empty);
+    const Object objectFallback = 'fallback-error';
+    registerFallbackValue(objectFallback);
   });
 
   late _MockPendingUploadStore store;
   // Use a real VideoCircuitBreaker — its state/failureRate getters return
   // non-nullable enum values that are awkward to stub with Mocktail.
   late VideoCircuitBreaker circuitBreaker;
+  late _MockUploadCrashReporter crashReporter;
   late UploadProgressReporter reporter;
 
   setUp(() {
     store = _MockPendingUploadStore();
     circuitBreaker = VideoCircuitBreaker();
+    crashReporter = _MockUploadCrashReporter();
+    when(
+      () => crashReporter.setCustomKey(any(), any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => crashReporter.recordError(
+        any(),
+        any(),
+        reason: any(named: 'reason'),
+      ),
+    ).thenAnswer((_) async {});
 
     reporter = UploadProgressReporter(
       store: store,
       circuitBreaker: circuitBreaker,
       retryConfig: const UploadRetryConfig(),
+      crashReporter: crashReporter,
     );
   });
 
@@ -393,8 +414,86 @@ void main() {
         store: store,
         circuitBreaker: circuitBreaker,
         retryConfig: const UploadRetryConfig(),
+        crashReporter: crashReporter,
       );
       expect(reporter.metricsFor('upload-1'), isNull);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  group('crash reporting', () {
+    test(
+      'sendUploadFailureCrashReport routes the error to the crash port',
+      () async {
+        when(() => store.length).thenReturn(3);
+        when(() => store.queuedCount).thenReturn(1);
+        final upload = _makeUpload();
+        final error = Exception('boom');
+
+        await reporter.sendUploadFailureCrashReport(
+          upload,
+          error,
+          'NETWORK_ERROR',
+          null,
+          ConnectivityResult.wifi,
+          isManagerInitialized: true,
+        );
+
+        final captured = verify(
+          () => crashReporter.recordError(
+            captureAny(),
+            any(),
+            reason: captureAny(named: 'reason'),
+          ),
+        ).captured;
+        expect(captured[0], same(error));
+        expect(captured[1], equals('Video upload failure - NETWORK_ERROR'));
+        verify(
+          () => crashReporter.setCustomKey(any(), any()),
+        ).called(greaterThan(0));
+      },
+    );
+
+    test(
+      'sendInitializationFailureCrashReport routes the error to the port',
+      () async {
+        final error = StateError('init boom');
+
+        await reporter.sendInitializationFailureCrashReport(
+          error,
+          StackTrace.current,
+        );
+
+        final captured = verify(
+          () => crashReporter.recordError(
+            captureAny(),
+            any(),
+            reason: captureAny(named: 'reason'),
+          ),
+        ).captured;
+        expect(captured[0], same(error));
+        expect(
+          captured[1],
+          equals('UploadManager initialization failure after retries'),
+        );
+      },
+    );
+
+    test('sendTimeoutCrashReport routes the timeout to the port', () async {
+      final upload = _makeUpload();
+      final timeout = TimeoutException('too slow');
+
+      await reporter.sendTimeoutCrashReport(upload, timeout);
+
+      final captured = verify(
+        () => crashReporter.recordError(
+          captureAny(),
+          any(),
+          reason: captureAny(named: 'reason'),
+        ),
+      ).captured;
+      expect(captured[0], same(timeout));
+      expect(captured[1], equals('Video upload timeout after 10 minutes'));
     });
   });
 }

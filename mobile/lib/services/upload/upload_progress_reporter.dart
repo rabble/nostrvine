@@ -9,8 +9,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
-import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
+import 'package:openvine/services/upload/upload_ports.dart';
 import 'package:openvine/services/upload/upload_session_errors.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -35,13 +35,16 @@ class UploadProgressReporter {
     required PendingUploadStore store,
     required VideoCircuitBreaker circuitBreaker,
     required UploadRetryConfig retryConfig,
+    required UploadCrashReporter crashReporter,
   }) : _store = store,
        _circuitBreaker = circuitBreaker,
-       _retryConfig = retryConfig;
+       _retryConfig = retryConfig,
+       _crashReporter = crashReporter;
 
   final PendingUploadStore _store;
   final VideoCircuitBreaker _circuitBreaker;
   final UploadRetryConfig _retryConfig;
+  final UploadCrashReporter _crashReporter;
 
   final Map<String, StreamSubscription<double>> _progressSubscriptions = {};
   final Map<String, UploadMetrics> _uploadMetrics = {};
@@ -360,14 +363,14 @@ class UploadProgressReporter {
   /// Send a comprehensive upload-failure report to Crashlytics.
   Future<void> sendUploadFailureCrashReport(
     PendingUpload upload,
-    dynamic error,
+    Object error,
     String errorCategory,
     UploadMetrics? metrics,
     ConnectivityResult connectivity, {
     required bool isManagerInitialized,
   }) async {
     try {
-      final crashReporting = CrashReportingService.instance;
+      final crashReporting = _crashReporter;
 
       final context = {
         'upload_id': upload.id,
@@ -464,11 +467,11 @@ ${metrics != null ? '- File Size: ${metrics.fileSizeMB} MB\n- Duration: ${metric
 
   /// Send an initialization-failure report to Crashlytics.
   Future<void> sendInitializationFailureCrashReport(
-    dynamic error,
+    Object error,
     StackTrace stackTrace,
   ) async {
     try {
-      final crashReporting = CrashReportingService.instance;
+      final crashReporting = _crashReporter;
 
       await crashReporting.setCustomKey('init_failure_error', error.toString());
       await crashReporting.setCustomKey(
@@ -521,7 +524,7 @@ UploadManager Initialization Failure:
     TimeoutException timeoutError,
   ) async {
     try {
-      final crashReporting = CrashReportingService.instance;
+      final crashReporting = _crashReporter;
 
       final context = {
         'timeout_upload_id': upload.id,
