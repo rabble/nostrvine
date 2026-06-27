@@ -36,12 +36,13 @@ class PendingUploadStore {
   /// drain started by a retry timer firing mid-drain.
   bool _isDraining = false;
 
-  /// Latched true by [disposeStore]; gates every queue mutation and timer-arm
-  /// so a drain suspended on `await save()` at disposal cannot repopulate the
-  /// queue or schedule a retry that outlives the store. Cleared only by [open]
-  /// — the deliberate re-initialization entrypoint, which is never reached from
-  /// the drain's own `save() -> ensureOpen()` path, so a storage recovery
-  /// mid-drain can't silently revive a disposed store.
+  /// Latched true by [disposeStore]; gates every queue mutation, timer-arm, and
+  /// box revival so a drain suspended on `await save()` at disposal cannot
+  /// repopulate the queue, schedule a retry that outlives the store, or reopen
+  /// the box via [ensureOpen]. Cleared only by [open] — the deliberate
+  /// re-initialization entrypoint, which is never reached from the drain's own
+  /// `save() -> ensureOpen()` path, so a storage recovery mid-drain can't
+  /// silently revive a disposed store.
   bool _disposed = false;
 
   // ---------------------------------------------------------------------------
@@ -83,6 +84,11 @@ class PendingUploadStore {
 
   /// Force-reopen the box (called from re-init-when-closed paths).
   Future<void> ensureOpen() async {
+    // Stay inert once disposed. A drain suspended on `await save()` resumes into
+    // this via save()'s slow path; reviving _box here would leave a disposed
+    // store with a live, open box (isReady → true while _disposed). open() — the
+    // deliberate re-init entrypoint — clears the latch and is the only revival.
+    if (_disposed) return;
     _box = await UploadInitializationHelper.initializeUploadsBox(
       forceReinit: true,
     );

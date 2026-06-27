@@ -461,6 +461,30 @@ void main() {
           expect(store.isReady, isTrue);
         },
       );
+
+      test(
+        'ensureOpen() does not revive the box after disposeStore()',
+        () async {
+          final store = await _openStore();
+          addTearDown(store.disposeStore);
+
+          store.disposeStore();
+          expect(store.isReady, isFalse);
+
+          // A zombie drain resumes through save()'s slow path -> ensureOpen()
+          // with storage now healthy. ensureOpen() must stay inert: reviving the
+          // box would leave a disposed store reporting isReady == true (a live,
+          // open box behind a disposed latch). Only open() re-inits.
+          await store.ensureOpen();
+
+          expect(
+            store.isReady,
+            isFalse,
+            reason: 'a disposed store must stay inert until open() re-inits it',
+          );
+          expect(store.isDisposed, isTrue);
+        },
+      );
     });
 
     // -----------------------------------------------------------------------
