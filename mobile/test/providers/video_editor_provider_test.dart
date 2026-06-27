@@ -28,6 +28,7 @@ import 'package:pro_image_editor/pro_image_editor.dart'
     show CompleteParameters, WidgetLayer, WidgetLayerExportConfigs;
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqlite3/sqlite3.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
@@ -1664,10 +1665,13 @@ void main() {
 
     test('returns failed and clears isSavingDraft when the write throws', () {
       // The cause of an unexpected write failure must surface (logged +
-      // reported) instead of hiding behind a generic snackbar.
-      when(
-        () => mockDraftStorage.saveDraft(any()),
-      ).thenThrow(StateError('database is locked'));
+      // reported) instead of hiding behind a generic snackbar. Use a
+      // SqliteException — the shape a real DB-lock / disk-full write actually
+      // throws up from the Drift DAO — so the test exercises the production
+      // failure mode rather than a StateError the cause will rarely be.
+      when(() => mockDraftStorage.saveDraft(any())).thenThrow(
+        SqliteException(extendedResultCode: 5, message: 'database is locked'),
+      );
 
       fakeAsync((async) {
         final notifier = container.read(videoEditorProvider.notifier);

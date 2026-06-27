@@ -119,10 +119,10 @@ Future<bool> _ensureAuthenticatedForRecorderExit(
   final outcome = await ref
       .read(videoEditorProvider.notifier)
       .saveAsDraft(enforceCreateNewDraft: true);
-  if (!context.mounted) return false;
 
   // A save was already in flight; don't double-report or navigate.
   if (outcome == DraftSaveOutcome.alreadyInProgress) return false;
+  if (!context.mounted) return false;
 
   final saved = outcome == DraftSaveOutcome.saved;
   ScaffoldMessenger.of(context).showSnackBar(

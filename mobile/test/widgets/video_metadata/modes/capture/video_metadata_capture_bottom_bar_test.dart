@@ -653,6 +653,37 @@ void main() {
         expect(find.byType(VideoMetadataCaptureBottomBar), findsOneWidget);
       });
 
+      testWidgets('save for later with a save already in flight shows no '
+          'snackbar and does not navigate', (tester) async {
+        when(
+          () => mockGallerySaveService.saveVideoToGallery(any()),
+        ).thenAnswer((_) async => const GallerySaveSuccess());
+
+        final mockNotifier = _MockVideoEditorNotifier(
+          validState0(),
+          saveAsDraftResult: DraftSaveOutcome.alreadyInProgress,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              videoEditorProvider.overrideWith(() => mockNotifier),
+              gallerySaveServiceProvider.overrideWith(
+                (ref) => mockGallerySaveService,
+              ),
+            ],
+            child: _createTestApp(const VideoMetadataCaptureBottomBar()),
+          ),
+        );
+
+        await tester.tap(find.text('Save for Later'));
+        await tester.pumpAndSettle();
+
+        // A concurrent save is a silent no-op: no snackbar, stays on the page.
+        expect(find.byType(DivineSnackbarContainer), findsNothing);
+        expect(find.byType(VideoMetadataCaptureBottomBar), findsOneWidget);
+      });
+
       testWidgets('post shows no snackbar when gallery save succeeds', (
         tester,
       ) async {

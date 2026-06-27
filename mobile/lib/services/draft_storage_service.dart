@@ -145,6 +145,13 @@ class DraftStorageService {
   /// Save a draft to storage. If a draft with the same ID exists, it will be
   /// updated. When updating, orphaned clip files (video/thumbnail) from the
   /// old draft are deleted.
+  ///
+  /// Throws a `SqliteException` if the underlying Drift read/write fails —
+  /// e.g. the database is locked, the disk is full, or the file is corrupt.
+  /// These are environmental IO failures (an `Exception`, not an `Error`), so
+  /// per the reportability matrix they are expected rather than bugs. Orphaned
+  /// clip-file deletions are best-effort: their failures are logged and
+  /// swallowed, never thrown.
   Future<void> saveDraft(DivineVideoDraft draft) async {
     Log.debug(
       '💾 Saving draft: ${draft.id}',

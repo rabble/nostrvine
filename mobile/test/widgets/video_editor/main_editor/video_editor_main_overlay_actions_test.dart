@@ -335,6 +335,33 @@ void main() {
           expect(find.bySemanticsLabel('Close'), findsOneWidget);
         },
       );
+
+      testWidgets(
+        'save draft already in flight leaves the prompt open with no '
+        'snackbar or navigation',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(
+              isAutosavedDraft: true,
+              hasBeenEdited: true,
+              saveAsDraftResult: DraftSaveOutcome.alreadyInProgress,
+            ),
+          );
+
+          await tester.tap(find.bySemanticsLabel('Close'));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text('Save draft'));
+          await tester.pumpAndSettle();
+
+          expect(fakeVideoEditorNotifier.saveAsDraftCalls, equals(1));
+          verifyNever(() => mockGoRouter.pop<Object?>(any()));
+          expect(find.text('Saved to library'), findsNothing);
+          expect(find.text('Failed to save'), findsNothing);
+          // The prompt stays open so the in-flight save can land.
+          expect(find.text('Save your draft?'), findsOneWidget);
+        },
+      );
     });
   });
 }

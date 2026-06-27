@@ -223,6 +223,28 @@ void main() {
 
         await tester.pumpAndSettle(const Duration(seconds: 5));
       });
+
+      testWidgets('openVideoEditorFromRecorder with a save already in flight '
+          'shows no snackbar and stays on the recorder', (tester) async {
+        fakeEditor.saveResult = DraftSaveOutcome.alreadyInProgress;
+
+        await tester.pumpWidget(buildHarness());
+        await tester.pumpAndSettle();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.tap(find.byKey(const Key('open-editor')));
+        await tester.pumpAndSettle();
+
+        expect(fakeEditor.saveAsDraftCalled, isTrue);
+        expect(
+          find.text(l10n.uploadFailureSheetSavedToDraftsSnackbar),
+          findsNothing,
+        );
+        expect(find.text(l10n.videoMetadataFailedToSaveSnackbar), findsNothing);
+        expect(find.text('welcome'), findsNothing);
+        expect(find.text('editor'), findsNothing);
+        expect(find.byKey(const Key('open-editor')), findsOneWidget);
+      });
     });
   });
 }

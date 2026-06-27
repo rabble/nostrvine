@@ -51,6 +51,9 @@ class VideoMetadataCaptureBottomBar extends ConsumerWidget {
   }
 
   Future<void> _onSaveForLater(BuildContext context, WidgetRef ref) async {
+    // Gallery save runs first, before the alreadyInProgress guard below: the
+    // Save-for-later button is disabled while a draft save is in flight, so a
+    // concurrent tap landing here is a narrow race, not the common path.
     await saveToGallery(context, ref);
 
     final outcome = await ref
