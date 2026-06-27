@@ -8,7 +8,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/video_editor/voice_over/voice_over_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/services/video_editor/voice_over_recorder_service.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 import 'package:permissions_service/permissions_service.dart';
 
@@ -269,7 +268,7 @@ class _WaveState extends State<_Wave> with SingleTickerProviderStateMixin {
     super.initState();
     _scroll = AnimationController(
       vsync: this,
-      duration: VoiceOverRecorderService.amplitudeInterval,
+      duration: VoiceOverCubit.amplitudeInterval,
     );
   }
 

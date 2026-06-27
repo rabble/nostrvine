@@ -58,6 +58,13 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
   /// recognise prior voice-over tracks among all audio on the timeline.
   static const voiceOverIdPrefix = '${AudioEvent.localImportMarker}_voice_over';
 
+  /// Re-exposes [VoiceOverRecorderService.amplitudeInterval] (the canonical
+  /// owner of the sampling cadence) so the UI's waveform painter can read it
+  /// through the cubit it already depends on, without importing the service
+  /// layer directly and crossing the UI → BLoC boundary.
+  static const Duration amplitudeInterval =
+      VoiceOverRecorderService.amplitudeInterval;
+
   final VoiceOverRecorderService _recorder;
   final PermissionsService _permissionsService;
   final String Function(int takeNumber) _takeTitleBuilder;
@@ -188,8 +195,7 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
     final wasOver = state.isOverAvailable;
     final next = state.copyWith(
       waveformBars: bars,
-      currentDuration:
-          state.currentDuration + VoiceOverRecorderService.amplitudeInterval,
+      currentDuration: state.currentDuration + amplitudeInterval,
     );
     emit(next);
     // Warn with a stronger pulse the moment the audio outgrows the video.
