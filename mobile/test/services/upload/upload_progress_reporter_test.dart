@@ -213,25 +213,17 @@ void main() {
       expect(result, equals('UPLOAD_SESSION_EXPIRED'));
     });
 
-    test('BlossomUploadFailureException 408 → TIMEOUT', () async {
-      // We need connectivity to not be none for status-code branching to fire.
-      // Since the test doesn't mock Connectivity plugin, categorizeError will
-      // call checkNetworkConnectivity which may fail or return none. So we
-      // test with errors that are classified before the connectivity check.
-      //
-      // BlossomUploadFailureException code check happens AFTER the connectivity
-      // check, so we can only test categories that fire before connectivity is
-      // needed — but for a reliable test, we use the expired-session fast path.
-      //
-      // The shared expired-session predicate is covered directly in
-      // upload_session_errors_test.dart.
-      const error = BlossomResumableUploadException(
-        'Gone',
-        statusCode: 410,
-      );
-      final result = await reporter.categorizeError(error);
-      expect(result, equals('UPLOAD_SESSION_EXPIRED'));
-    });
+    test(
+      'expired session (BlossomResumableUploadException 410) → UPLOAD_SESSION_EXPIRED',
+      () async {
+        const error = BlossomResumableUploadException(
+          'Gone',
+          statusCode: 410,
+        );
+        final result = await reporter.categorizeError(error);
+        expect(result, equals('UPLOAD_SESSION_EXPIRED'));
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
