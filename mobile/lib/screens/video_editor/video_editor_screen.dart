@@ -29,6 +29,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/screens/video_editor/voice_over_recorder_screen.dart';
+import 'package:openvine/screens/video_editor/voice_over_take_commit.dart';
 import 'package:openvine/screens/video_editor/voice_over_take_placement.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/await_push_transition.dart';
@@ -525,7 +526,14 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         },
       ),
     );
-    if (!mounted) return;
+    // Committed (Done) takes whose files never reach the timeline belong to no
+    // draft, so the deferred draft-scoped cleanup can't reclaim them. Delete
+    // them on every early return below to avoid permanent orphans. (A close/
+    // discard returns null here and the cubit already deleted those files.)
+    if (!mounted) {
+      await deleteVoiceOverTakeFiles(takes);
+      return;
+    }
     mainBloc.add(const VideoEditorExternalPauseRequested(isPaused: false));
     if (takes == null || takes.isEmpty) return;
 
@@ -535,19 +543,28 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     // music-library path).
     final takeSecs = <double>[];
     for (final take in takes) {
-      takeSecs.add(await _resolveRecordedTakeDurationSecs(take));
+      takeSecs.add(await resolveRecordedTakeDurationSecs(take));
     }
-    if (!mounted) return;
+    if (!mounted) {
+      await deleteVoiceOverTakeFiles(takes);
+      return;
+    }
 
     final editor = _editorKey.currentState;
-    if (editor == null) return;
+    if (editor == null) {
+      await deleteVoiceOverTakeFiles(takes);
+      return;
+    }
     final placed = placeVoiceOverTakes(
       takes: takes,
       takeDurationsSecs: takeSecs,
       availableDuration: availableDuration,
       nowMs: DateTime.now().millisecondsSinceEpoch,
     );
-    if (placed.isEmpty) return;
+    if (placed.isEmpty) {
+      await deleteVoiceOverTakeFiles(takes);
+      return;
+    }
 
     editor.addHistory(
       meta: {
@@ -558,33 +575,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         ],
       },
     );
-  }
-
-  /// Probes the real on-disk duration (seconds) of a recorded voice-over take.
-  ///
-  /// The recorder's live duration is derived from amplitude-sample counts and
-  /// can drift from the encoded file, so the committed timeline window uses the
-  /// probed value. Falls back to the recorder's estimate when the probe fails.
-  Future<double> _resolveRecordedTakeDurationSecs(AudioEvent take) async {
-    final estimate = take.duration ?? 0;
-    final path = take.localFilePath;
-    if (path == null || path.isEmpty) return estimate;
-    try {
-      final metadata = await ProVideoEditor.instance.getMetadata(
-        EditorVideo.file(path),
-      );
-      final secs = metadata.duration.inMilliseconds / 1000.0;
-      return secs > 0 ? secs : estimate;
-    } catch (e, s) {
-      Log.error(
-        'Failed to probe voice-over take duration for ${take.id}',
-        name: 'VideoEditorScreen',
-        category: LogCategory.video,
-        error: e,
-        stackTrace: s,
-      );
-      return estimate;
-    }
   }
 
   /// Resolves the sound's duration in seconds, probing the source via

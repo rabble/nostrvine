@@ -339,6 +339,13 @@ class _RecordControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isPermissionDenied = context.select(
+      (VoiceOverCubit c) => c.state.status == VoiceOverStatus.permissionDenied,
+    );
+    // While denied, the body shows the "Open Settings" call to action; hide the
+    // record button so it doesn't compete with it. Tapping it would only
+    // silently re-request and re-emit the denial.
+    if (isPermissionDenied) return const SizedBox.shrink();
     final isRecording = context.select(
       (VoiceOverCubit c) => c.state.isRecording,
     );

@@ -169,6 +169,27 @@ void main() {
           findsOneWidget,
         );
       });
+
+      testWidgets('hides the record button while permission is denied', (
+        tester,
+      ) async {
+        stub(
+          const VoiceOverState(status: VoiceOverStatus.permissionDenied),
+        );
+
+        await tester.pumpWidget(buildSubject());
+
+        // The "Open Settings" CTA is the only action; the record button must
+        // not compete with it.
+        expect(
+          find.bySemanticsLabel(l10n.videoEditorVoiceOverRecordSemanticLabel),
+          findsNothing,
+        );
+        expect(
+          find.bySemanticsLabel(l10n.videoEditorVoiceOverStopSemanticLabel),
+          findsNothing,
+        );
+      });
     });
 
     group('interactions', () {

@@ -82,6 +82,37 @@ class _FakePermissions implements PermissionsService {
       throw UnimplementedError();
 }
 
+/// Permissions fake whose microphone check resolves only when the test
+/// completes [microphoneCheck], so a close() can be interleaved mid-await.
+class _DeferredPermissions implements PermissionsService {
+  final Completer<PermissionStatus> microphoneCheck =
+      Completer<PermissionStatus>();
+
+  @override
+  Future<PermissionStatus> checkMicrophoneStatus() => microphoneCheck.future;
+
+  @override
+  Future<PermissionStatus> requestMicrophonePermission() async =>
+      PermissionStatus.granted;
+
+  @override
+  Future<bool> openAppSettings() async => true;
+
+  @override
+  Future<PermissionStatus> checkCameraStatus() => throw UnimplementedError();
+
+  @override
+  Future<PermissionStatus> requestCameraPermission() =>
+      throw UnimplementedError();
+
+  @override
+  Future<PermissionStatus> checkGalleryStatus() => throw UnimplementedError();
+
+  @override
+  Future<PermissionStatus> requestGalleryPermission() =>
+      throw UnimplementedError();
+}
+
 void main() {
   // The cubit triggers HapticService (a platform channel) on record/stop/
   // delete; the test binding handles those calls without a real device.
@@ -180,6 +211,21 @@ void main() {
           await cubit.close();
         },
       );
+
+      test('ignores the permission result after the cubit is closed', () async {
+        final permissions = _DeferredPermissions();
+        final cubit = buildCubit(permissions);
+
+        final pending = cubit.requestPermissionAndStart();
+        await cubit.close();
+        permissions.microphoneCheck.complete(PermissionStatus.granted);
+
+        // Without the isClosed guard the continuation would emit on the closed
+        // cubit and throw a StateError, then throw a second StateError inside
+        // the catch which would surface uncaught.
+        await expectLater(pending, completes);
+        expect(recorder.startCount, equals(0));
+      });
     });
 
     group('amplitude', () {
@@ -314,6 +360,23 @@ void main() {
 
         await cubit.close();
       });
+
+      test('deletes the removed take file from disk', () async {
+        final cubit = buildCubit(_FakePermissions(PermissionStatus.granted));
+        await cubit.requestPermissionAndStart();
+        recorder.emitAmplitude(0.5);
+        await flush();
+        await cubit.stop();
+
+        final path = cubit.state.takes.single.localFilePath!;
+        expect(File(path).existsSync(), isTrue);
+
+        await cubit.deleteLastTake();
+
+        expect(File(path).existsSync(), isFalse);
+
+        await cubit.close();
+      });
     });
 
     group('prior takes already on the timeline', () {
@@ -367,6 +430,61 @@ void main() {
 
         await cubit.close();
       });
+
+      test('deletes every take file from disk', () async {
+        final cubit = buildCubit(_FakePermissions(PermissionStatus.granted));
+
+        await cubit.requestPermissionAndStart();
+        recorder.emitAmplitude(0.5);
+        await flush();
+        await cubit.stop();
+        final firstPath = cubit.state.takes.first.localFilePath!;
+
+        await cubit.requestPermissionAndStart();
+        recorder.emitAmplitude(0.7);
+        await flush();
+        await cubit.stop();
+        final secondPath = cubit.state.takes.last.localFilePath!;
+
+        expect(File(firstPath).existsSync(), isTrue);
+        expect(File(secondPath).existsSync(), isTrue);
+
+        await cubit.discardAll();
+
+        expect(File(firstPath).existsSync(), isFalse);
+        expect(File(secondPath).existsSync(), isFalse);
+
+        await cubit.close();
+      });
+    });
+
+    group('over-available warning', () {
+      test(
+        'flags over-available once recorded time exceeds the clip',
+        () async {
+          final cubit = VoiceOverCubit(
+            recorder: recorder,
+            permissionsService: _FakePermissions(PermissionStatus.granted),
+            takeTitleBuilder: takeTitle,
+            availableDuration: const Duration(milliseconds: 150),
+            storageDirectoryProvider: () async => tempDir,
+          );
+
+          await cubit.requestPermissionAndStart();
+          expect(cubit.state.isOverAvailable, isFalse);
+
+          // Two 100ms samples (200ms) outgrow the 150ms clip, crossing into the
+          // over-available branch that fires the warning haptic.
+          recorder
+            ..emitAmplitude(0.5)
+            ..emitAmplitude(0.5);
+          await flush();
+
+          expect(cubit.state.isOverAvailable, isTrue);
+
+          await cubit.close();
+        },
+      );
     });
 
     group('re-entrancy', () {

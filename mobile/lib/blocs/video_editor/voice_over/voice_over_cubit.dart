@@ -109,8 +109,14 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
     _isTransitioning = true;
     try {
       var status = await _permissionsService.checkMicrophoneStatus();
+      // The screen is dismissible (system back / close) mid-await, which
+      // closes the cubit first. Bail before any emit so a closed-cubit
+      // StateError can't throw again inside the catch and surface uncaught
+      // (a StateError is forwarded to Crashlytics per the error matrix).
+      if (isClosed) return;
       if (status == PermissionStatus.canRequest) {
         status = await _permissionsService.requestMicrophonePermission();
+        if (isClosed) return;
       }
       if (status != PermissionStatus.granted) {
         emit(state.copyWith(status: VoiceOverStatus.permissionDenied));
@@ -119,7 +125,7 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
       await _start();
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(state.copyWith(status: VoiceOverStatus.error));
+      if (!isClosed) emit(state.copyWith(status: VoiceOverStatus.error));
     } finally {
       _isTransitioning = false;
     }
@@ -135,6 +141,7 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
 
   Future<void> _start() async {
     final directory = await _storageDirectoryProvider();
+    if (isClosed) return;
     if (!directory.existsSync()) {
       await directory.create(recursive: true);
     }
@@ -152,6 +159,15 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
       await _deleteFile(path);
       _currentPath = null;
       rethrow;
+    }
+
+    // The screen can close while start() awaits; close() runs its cleanup
+    // before this file exists, so reclaim it here and skip the emit on the
+    // now-closed cubit.
+    if (isClosed) {
+      await _deleteFile(path);
+      _currentPath = null;
+      return;
     }
 
     emit(
@@ -201,6 +217,14 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
       final duration = state.currentDuration;
       _currentPath = null;
 
+      // Screen dismissed mid-stop: this take never enters state.takes, and
+      // close() may have already nulled _currentPath, so delete the file here
+      // to avoid an orphan and bail before emitting on the closed cubit.
+      if (isClosed) {
+        await _deleteFile(path);
+        return;
+      }
+
       if (path == null || duration <= Duration.zero) {
         // The recorder wrote a (near-empty) file even for a take stopped this
         // fast; delete it here since the take never enters state.takes and so
@@ -236,7 +260,7 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
       );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(state.copyWith(status: VoiceOverStatus.error));
+      if (!isClosed) emit(state.copyWith(status: VoiceOverStatus.error));
     } finally {
       _isTransitioning = false;
     }
