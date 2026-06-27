@@ -19,11 +19,23 @@ void main() {
       expect(usesDataProtectionKeyChain(isDebug: true), isFalse);
     });
 
-    test('keeps the data-protection keychain on macOS release', () {
+    test('keeps the prior keychain contract on macOS release', () {
       // Release builds are properly signed, so the data-protection keychain
-      // stays enabled even on macOS.
+      // stays enabled even on macOS. Asserting the full map locks the
+      // no-regression contract: if the helper later set `accessibility`
+      // (e.g. to mirror `nostr_key_manager`'s `first_unlock`) the App Store
+      // keychain attributes would change silently and could orphan
+      // already-stored keys for real users. #5563.
       debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
-      expect(usesDataProtectionKeyChain(isDebug: false), isTrue);
+      expect(
+        appMacOsSecureStorageOptions(isDebug: false).toMap(),
+        <String, String>{
+          'accessibility': 'unlocked',
+          'accountName': 'flutter_secure_storage_service',
+          'synchronizable': 'false',
+          'useDataProtectionKeyChain': 'true',
+        },
+      );
     });
 
     test('keeps the data-protection keychain on iOS', () {

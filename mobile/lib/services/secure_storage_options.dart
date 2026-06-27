@@ -19,6 +19,13 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// intentionally left at the package default (`unlocked`) to preserve the app
 /// stores' prior macOS behavior. See #5563.
 ///
+/// Because of this gate, macOS debug and release builds read from *different*
+/// keychains on the same Mac. Switching build modes locally won't find the
+/// other mode's database cipher key and triggers the dev-only
+/// backup-then-recreate key-loss path in `DatabaseEncryptionBootstrap`. This is
+/// harmless for end users — who only ever run a single signed release build —
+/// but surprising during local development.
+///
 /// [isDebug] defaults to [kDebugMode] (a compile-time constant) and exists only
 /// so tests can exercise the macOS release branch, which `kDebugMode` cannot
 /// reach under `flutter test`. Production callers omit it.
