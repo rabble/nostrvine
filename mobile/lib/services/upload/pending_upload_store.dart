@@ -245,10 +245,6 @@ class PendingUploadStore {
     return upload;
   }
 
-  /// All uploads in [pendingUploads] that match [status].
-  List<PendingUpload> getUploadsByStatus(UploadStatus status) =>
-      pendingUploads.where((upload) => upload.status == status).toList();
-
   /// First upload in [pendingUploads] whose local path equals [filePath].
   PendingUpload? getUploadByFilePath(String filePath) {
     try {

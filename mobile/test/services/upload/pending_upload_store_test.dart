@@ -298,37 +298,6 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
-    // getUploadsByStatus
-    // -----------------------------------------------------------------------
-
-    group('getUploadsByStatus', () {
-      test('returns only uploads matching the requested status', () async {
-        final store = await _openStore();
-        addTearDown(store.disposeStore);
-
-        final pending = PendingUpload.create(
-          localVideoPath: '${tempDir.path}/p.mp4',
-          nostrPubkey: _pubkeyA,
-        );
-        final uploading = PendingUpload.create(
-          localVideoPath: '${tempDir.path}/u.mp4',
-          nostrPubkey: _pubkeyA,
-        ).copyWith(status: UploadStatus.uploading);
-
-        await store.save(pending);
-        await store.save(uploading);
-
-        final pendingList = store.getUploadsByStatus(UploadStatus.pending);
-        final uploadingList = store.getUploadsByStatus(UploadStatus.uploading);
-
-        expect(pendingList, hasLength(1));
-        expect(pendingList.single.id, equals(pending.id));
-        expect(uploadingList, hasLength(1));
-        expect(uploadingList.single.id, equals(uploading.id));
-      });
-    });
-
-    // -----------------------------------------------------------------------
     // getUploadByFilePath
     // -----------------------------------------------------------------------
 
