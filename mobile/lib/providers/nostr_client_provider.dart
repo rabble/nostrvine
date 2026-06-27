@@ -114,11 +114,25 @@ typedef NostrClientFactory =
       AppDbClient? dbClient,
     });
 
+typedef NostrInitRetryDelay = Duration Function(int attempt);
+
 /// Indirection layer over [NostrServiceFactory.create] so tests can
 /// substitute a fake factory without touching the real relay/network
 /// code path. Production builds use this provider transparently.
 @Riverpod(keepAlive: true)
 NostrClientFactory nostrClientFactory(Ref ref) => NostrServiceFactory.create;
+
+/// Backoff policy for recovering the app-wide Nostr session after startup
+/// relay or signer initialization fails.
+///
+/// Attempts are one-indexed. Tests override this with [Duration.zero] so the
+/// recovery path can be exercised without wall-clock sleeps.
+final nostrInitRetryDelayProvider = Provider<NostrInitRetryDelay>((ref) {
+  return (attempt) {
+    final seconds = 5 * (1 << (attempt - 1).clamp(0, 4));
+    return Duration(seconds: seconds.clamp(5, 60));
+  };
+});
 
 /// Core Nostr service via NostrClient for relay communication
 /// Uses a Notifier to react to auth state changes and recreate the client
@@ -126,9 +140,12 @@ NostrClientFactory nostrClientFactory(Ref ref) => NostrServiceFactory.create;
 @Riverpod(keepAlive: true)
 class NostrService extends _$NostrService {
   StreamSubscription<AuthState>? _authSubscription;
+  Timer? _initializationRetryTimer;
   String? _lastPubkey;
   Future<void> _authStateChangeQueue = Future<void>.value();
   int _clientGeneration = 0;
+  int _initializationFailureCount = 0;
+  final Set<NostrClient> _trackedClients = {};
 
   int _nextClientGeneration() => ++_clientGeneration;
 
@@ -139,10 +156,10 @@ class NostrService extends _$NostrService {
   @override
   NostrClient build() {
     final authService = ref.watch(authServiceProvider);
-    final statisticsService = ref.watch(relayStatisticsServiceProvider);
-    final environmentConfig = ref.watch(currentEnvironmentProvider);
-    final dbClient = ref.watch(appDbClientProvider);
-    final factory = ref.watch(nostrClientFactoryProvider);
+    ref.watch(relayStatisticsServiceProvider);
+    ref.watch(currentEnvironmentProvider);
+    ref.watch(appDbClientProvider);
+    ref.watch(nostrClientFactoryProvider);
 
     final initialPubkey = authService.currentIdentity?.pubkey;
 
@@ -162,72 +179,167 @@ class NostrService extends _$NostrService {
     // currentIdentity is nullable — before auth completes, the factory falls
     // back to a no-op LocalKeySigner. _onAuthStateChanged recreates the client
     // once the user authenticates.
-    final client = factory(
-      signer: authService.currentIdentity,
-      statisticsService: statisticsService,
-      environmentConfig: environmentConfig,
-      dbClient: dbClient,
-    );
+    final client = _createClient(authService.currentIdentity);
     final clientGeneration = _nextClientGeneration();
 
     // NIP-65 discovered-relays callback — see _userRelaysDiscoveredCallbackFor.
-    authService.registerUserRelaysDiscoveredCallback(
-      _userRelaysDiscoveredCallbackFor(client, initialPubkey, clientGeneration),
-    );
-
-    // Bootstrap kind:10002 publisher — see _bootstrapCallbackFor.
-    authService.registerBootstrapRelayListCallback(
-      _bootstrapCallbackFor(client),
+    _registerClientCallbacks(
+      authService: authService,
+      client: client,
+      pubkey: initialPubkey,
+      clientGeneration: clientGeneration,
     );
 
     // Schedule initialization after build completes
     // Add user relays BEFORE initialize() to avoid race condition
-    Future.microtask(() async {
-      try {
-        // Add user relays first (must complete before initialize)
-        if (userRelayUrls.isNotEmpty) {
-          await client.addRelays(userRelayUrls);
-        }
-        // Then initialize the client
-        await client.initialize();
-        if (_isCurrentClientForPubkey(
-          client,
-          initialPubkey,
-          clientGeneration,
-        )) {
-          _lastPubkey = initialPubkey;
-        }
-        _markClientReadyIfCurrent(client, initialPubkey, clientGeneration);
-        Log.info(
-          '[NostrService] Client initialized via build()',
-          name: 'NostrService',
-          category: LogCategory.system,
-        );
-      } catch (e) {
-        Log.error(
-          '[NostrService] Failed to initialize client in build(): $e',
-          name: 'NostrService',
-          category: LogCategory.system,
-        );
-        if (_lastPubkey == initialPubkey &&
-            ref.read(authServiceProvider).currentIdentity?.pubkey ==
-                initialPubkey) {
-          _lastPubkey = null;
-          _setSessionIdentityState(initialPubkey);
-        }
-      }
-    });
+    Future.microtask(
+      () => _initializeClient(
+        client: client,
+        pubkey: initialPubkey,
+        clientGeneration: clientGeneration,
+        userRelayUrls: userRelayUrls,
+        source: 'build',
+      ),
+    );
 
-    // Capture client reference for disposal - can't access state inside onDispose
     ref.onDispose(() {
+      _initializationRetryTimer?.cancel();
+      _initializationRetryTimer = null;
       authService.registerUserRelaysDiscoveredCallback(null);
       authService.registerBootstrapRelayListCallback(null);
       _authSubscription?.cancel();
       _invalidateClientGeneration();
-      client.dispose();
+      for (final trackedClient in _trackedClients.toList()) {
+        trackedClient.dispose();
+      }
+      _trackedClients.clear();
     });
 
     return client;
+  }
+
+  NostrClient _createClient(NostrSigner? signer) {
+    final client = ref.read(nostrClientFactoryProvider)(
+      signer: signer,
+      statisticsService: ref.read(relayStatisticsServiceProvider),
+      environmentConfig: ref.read(currentEnvironmentProvider),
+      dbClient: ref.read(appDbClientProvider),
+    );
+    _trackedClients.add(client);
+    return client;
+  }
+
+  void _disposeClient(NostrClient client) {
+    if (_trackedClients.remove(client)) {
+      client.dispose();
+    }
+  }
+
+  void _registerClientCallbacks({
+    required AuthService authService,
+    required NostrClient client,
+    required String? pubkey,
+    required int clientGeneration,
+  }) {
+    authService.registerUserRelaysDiscoveredCallback(
+      _userRelaysDiscoveredCallbackFor(client, pubkey, clientGeneration),
+    );
+    authService.registerBootstrapRelayListCallback(
+      _bootstrapCallbackFor(client),
+    );
+  }
+
+  Future<void> _initializeClient({
+    required NostrClient client,
+    required String? pubkey,
+    required int clientGeneration,
+    required List<String> userRelayUrls,
+    required String source,
+  }) async {
+    try {
+      if (userRelayUrls.isNotEmpty) {
+        await client.addRelays(userRelayUrls);
+      }
+      await client.initialize();
+      if (_isCurrentClientForPubkey(client, pubkey, clientGeneration)) {
+        _lastPubkey = pubkey;
+        _initializationFailureCount = 0;
+        _initializationRetryTimer?.cancel();
+        _initializationRetryTimer = null;
+      }
+      _markClientReadyIfCurrent(client, pubkey, clientGeneration);
+      Log.info(
+        '[NostrService] Client initialized via $source()',
+        name: 'NostrService',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.error(
+        '[NostrService] Failed to initialize client in $source(): $e',
+        name: 'NostrService',
+        category: LogCategory.system,
+      );
+      if (!_isCurrentClientForPubkey(client, pubkey, clientGeneration)) {
+        return;
+      }
+      if (_lastPubkey == pubkey) {
+        _lastPubkey = null;
+      }
+      _setSessionIdentityState(pubkey);
+      _scheduleInitializationRetry(pubkey);
+    }
+  }
+
+  void _scheduleInitializationRetry(String? pubkey) {
+    if (pubkey == null) return;
+    if (_initializationRetryTimer?.isActive ?? false) return;
+
+    final attempt = ++_initializationFailureCount;
+    final delay = ref.read(nostrInitRetryDelayProvider)(attempt);
+    Log.warning(
+      '[NostrService] Scheduling initialization retry $attempt in $delay',
+      name: 'NostrService',
+      category: LogCategory.system,
+    );
+    _initializationRetryTimer = Timer(delay, () {
+      _initializationRetryTimer = null;
+      unawaited(_retryInitializeCurrentIdentity(pubkey));
+    });
+  }
+
+  Future<void> _retryInitializeCurrentIdentity(String pubkey) async {
+    final authService = ref.read(authServiceProvider);
+    final identity = authService.currentIdentity;
+    if (identity == null || identity.pubkey != pubkey) {
+      return;
+    }
+
+    authService.registerUserRelaysDiscoveredCallback(null);
+    authService.registerBootstrapRelayListCallback(null);
+    final oldClient = state;
+    _invalidateClientGeneration();
+    _disposeClient(oldClient);
+
+    final userRelayUrls = authService.userRelays
+        .map((relay) => relay.url)
+        .toList();
+    final client = _createClient(identity);
+    final clientGeneration = _nextClientGeneration();
+    state = client;
+    _setSessionIdentityState(pubkey);
+    _registerClientCallbacks(
+      authService: authService,
+      client: client,
+      pubkey: pubkey,
+      clientGeneration: clientGeneration,
+    );
+    await _initializeClient(
+      client: client,
+      pubkey: pubkey,
+      clientGeneration: clientGeneration,
+      userRelayUrls: userRelayUrls,
+      source: 'retry',
+    );
   }
 
   void _enqueueAuthStateChanged(AuthState newState) {
@@ -288,14 +400,11 @@ class NostrService extends _$NostrService {
       // Unregister callback for old client before disposing it
       authService.registerUserRelaysDiscoveredCallback(null);
       authService.registerBootstrapRelayListCallback(null);
-      state.dispose();
+      _initializationRetryTimer?.cancel();
+      _initializationRetryTimer = null;
+      _initializationFailureCount = 0;
+      _disposeClient(state);
       _invalidateClientGeneration();
-
-      // Create new client with updated signer and public key
-      final statisticsService = ref.read(relayStatisticsServiceProvider);
-      final environmentConfig = ref.read(currentEnvironmentProvider);
-      final dbClient = ref.read(appDbClientProvider);
-      final factory = ref.read(nostrClientFactoryProvider);
 
       // Get user relay URLs from discovered relays (NIP-65)
       // Include all relays - NostrClient needs both read and write capable relays
@@ -304,39 +413,27 @@ class NostrService extends _$NostrService {
           .map((relay) => relay.url)
           .toList();
 
-      final newClient = factory(
-        signer: newIdentity,
-        statisticsService: statisticsService,
-        environmentConfig: environmentConfig,
-        dbClient: dbClient,
-      );
+      final newClient = _createClient(newIdentity);
       final clientGeneration = _nextClientGeneration();
 
       // NIP-65 discovered-relays callback — see _userRelaysDiscoveredCallbackFor.
-      authService.registerUserRelaysDiscoveredCallback(
-        _userRelaysDiscoveredCallbackFor(
-          newClient,
-          newPubkey,
-          clientGeneration,
-        ),
-      );
-
-      // Bootstrap kind:10002 publisher — see _bootstrapCallbackFor.
-      authService.registerBootstrapRelayListCallback(
-        _bootstrapCallbackFor(newClient),
+      _registerClientCallbacks(
+        authService: authService,
+        client: newClient,
+        pubkey: newPubkey,
+        clientGeneration: clientGeneration,
       );
 
       state = newClient;
       _setSessionIdentityState(newPubkey);
 
-      // Add user relays first (must complete before initialize)
-      if (userRelayUrls.isNotEmpty) {
-        await newClient.addRelays(userRelayUrls);
-      }
-      // Then initialize the new client
-      await newClient.initialize();
-      _lastPubkey = newPubkey;
-      _markClientReadyIfCurrent(newClient, newPubkey, clientGeneration);
+      await _initializeClient(
+        client: newClient,
+        pubkey: newPubkey,
+        clientGeneration: clientGeneration,
+        userRelayUrls: userRelayUrls,
+        source: 'authStateChanged',
+      );
     }
   }
 

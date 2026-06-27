@@ -137,6 +137,21 @@ void main() {
     );
   }
 
+  ProviderContainer createRetryContainer() {
+    return ProviderContainer(
+      overrides: [
+        authServiceProvider.overrideWithValue(mockAuth),
+        relayStatisticsServiceProvider.overrideWithValue(mockStats),
+        currentEnvironmentProvider.overrideWithValue(
+          EnvironmentConfig.production,
+        ),
+        appDbClientProvider.overrideWithValue(mockDbClient),
+        nostrClientFactoryProvider.overrideWithValue(factory.call),
+        nostrInitRetryDelayProvider.overrideWithValue((_) => Duration.zero),
+      ],
+    );
+  }
+
   group('NostrService uses NostrIdentity as source of truth', () {
     test('does not recreate with null-signer placeholder when authenticating '
         'emits while currentIdentity is still null', () async {
@@ -534,107 +549,148 @@ void main() {
       },
     );
 
+    test('failed same-pubkey transition can retry client creation', () async {
+      when(() => mockAuth.currentIdentity).thenReturn(identityA);
+      when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyA);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      container.read(nostrServiceProvider);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(factory.callCount, equals(1));
+
+      final failedBInitialize = Completer<void>();
+      factory.initializeCompleters[pubkeyB] = failedBInitialize;
+
+      when(() => mockAuth.currentIdentity).thenReturn(identityB);
+      when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyB);
+      authStream.add(AuthState.authenticated);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(factory.callCount, equals(2));
+
+      failedBInitialize.completeError(StateError('B initialize failed'));
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      factory.initializeCompleters.remove(pubkeyB);
+      authStream.add(AuthState.authenticated);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        factory.callCount,
+        equals(3),
+        reason:
+            'A failed transition must not mark pubkey B complete; a later '
+            'auth emission for B should recreate and initialize a new client.',
+      );
+      expect(factory.clients.last.publicKey, equals(pubkeyB));
+      expect(container.read(nostrServiceProvider), same(factory.clients.last));
+      expect(
+        container.read(nostrSessionProvider),
+        isA<NostrSessionReadiness>()
+            .having(
+              (readiness) => readiness.phase,
+              'phase',
+              NostrSessionPhase.nostrReady,
+            )
+            .having((readiness) => readiness.pubkey, 'pubkey', pubkeyB)
+            .having(
+              (readiness) => readiness.client,
+              'client',
+              same(factory.clients.last),
+            ),
+      );
+    });
+
+    test('failed initial same-pubkey build can retry client creation', () async {
+      final failedInitialAInitialize = Completer<void>();
+      factory.initializeCompleters[pubkeyA] = failedInitialAInitialize;
+      when(() => mockAuth.currentIdentity).thenReturn(identityA);
+      when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyA);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      container.read(nostrServiceProvider);
+      await Future<void>.delayed(Duration.zero);
+      expect(factory.callCount, equals(1));
+
+      failedInitialAInitialize.completeError(
+        StateError('initial A initialize failed'),
+      );
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        container.read(nostrSessionProvider),
+        isA<NostrSessionReadiness>()
+            .having(
+              (readiness) => readiness.phase,
+              'phase',
+              NostrSessionPhase.identityKnown,
+            )
+            .having((readiness) => readiness.pubkey, 'pubkey', pubkeyA),
+        reason:
+            'A failed initial client must leave readiness non-ready for the '
+            'known identity.',
+      );
+
+      factory.initializeCompleters.remove(pubkeyA);
+      authStream.add(AuthState.authenticated);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        factory.callCount,
+        equals(2),
+        reason:
+            'A failed initial build must not mark pubkey A complete; a later '
+            'auth emission for A should recreate and initialize a new client.',
+      );
+      expect(factory.clients.last.publicKey, equals(pubkeyA));
+      expect(container.read(nostrServiceProvider), same(factory.clients.last));
+      expect(
+        container.read(nostrSessionProvider),
+        isA<NostrSessionReadiness>()
+            .having(
+              (readiness) => readiness.phase,
+              'phase',
+              NostrSessionPhase.nostrReady,
+            )
+            .having((readiness) => readiness.pubkey, 'pubkey', pubkeyA)
+            .having(
+              (readiness) => readiness.client,
+              'client',
+              same(factory.clients.last),
+            ),
+      );
+    });
+
     test(
-      'failed same-pubkey transition can retry client creation',
-      () async {
-        when(() => mockAuth.currentIdentity).thenReturn(identityA);
-        when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyA);
-
-        final container = createContainer();
-        addTearDown(container.dispose);
-
-        container.read(nostrServiceProvider);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-        expect(factory.callCount, equals(1));
-
-        final failedBInitialize = Completer<void>();
-        factory.initializeCompleters[pubkeyB] = failedBInitialize;
-
-        when(() => mockAuth.currentIdentity).thenReturn(identityB);
-        when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyB);
-        authStream.add(AuthState.authenticated);
-        await Future<void>.delayed(Duration.zero);
-
-        expect(factory.callCount, equals(2));
-
-        failedBInitialize.completeError(StateError('B initialize failed'));
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-
-        factory.initializeCompleters.remove(pubkeyB);
-        authStream.add(AuthState.authenticated);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-
-        expect(
-          factory.callCount,
-          equals(3),
-          reason:
-              'A failed transition must not mark pubkey B complete; a later '
-              'auth emission for B should recreate and initialize a new client.',
-        );
-        expect(factory.clients.last.publicKey, equals(pubkeyB));
-        expect(
-          container.read(nostrServiceProvider),
-          same(factory.clients.last),
-        );
-        expect(
-          container.read(nostrSessionProvider),
-          isA<NostrSessionReadiness>()
-              .having(
-                (readiness) => readiness.phase,
-                'phase',
-                NostrSessionPhase.nostrReady,
-              )
-              .having((readiness) => readiness.pubkey, 'pubkey', pubkeyB)
-              .having(
-                (readiness) => readiness.client,
-                'client',
-                same(factory.clients.last),
-              ),
-        );
-      },
-    );
-
-    test(
-      'failed initial same-pubkey build can retry client creation',
+      'failed initial build retries automatically for same identity',
       () async {
         final failedInitialAInitialize = Completer<void>();
         factory.initializeCompleters[pubkeyA] = failedInitialAInitialize;
         when(() => mockAuth.currentIdentity).thenReturn(identityA);
         when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyA);
 
-        final container = createContainer();
+        final container = createRetryContainer();
         addTearDown(container.dispose);
 
-        container.read(nostrServiceProvider);
+        final failedClient = container.read(nostrServiceProvider);
         await Future<void>.delayed(Duration.zero);
         expect(factory.callCount, equals(1));
 
         failedInitialAInitialize.completeError(
           StateError('initial A initialize failed'),
         );
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-
-        expect(
-          container.read(nostrSessionProvider),
-          isA<NostrSessionReadiness>()
-              .having(
-                (readiness) => readiness.phase,
-                'phase',
-                NostrSessionPhase.identityKnown,
-              )
-              .having((readiness) => readiness.pubkey, 'pubkey', pubkeyA),
-          reason:
-              'A failed initial client must leave readiness non-ready for the '
-              'known identity.',
-        );
-
         factory.initializeCompleters.remove(pubkeyA);
-        authStream.add(AuthState.authenticated);
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(Duration.zero);
@@ -643,10 +699,12 @@ void main() {
           factory.callCount,
           equals(2),
           reason:
-              'A failed initial build must not mark pubkey A complete; a later '
-              'auth emission for A should recreate and initialize a new client.',
+              'The same authenticated identity should get a fresh NostrClient '
+              'after the first startup initialize fails.',
         );
-        expect(factory.clients.last.publicKey, equals(pubkeyA));
+        expect(factory.signers.last, same(identityA));
+        expect(factory.clients.last, isNot(same(failedClient)));
+        verify(failedClient.dispose).called(1);
         expect(
           container.read(nostrServiceProvider),
           same(factory.clients.last),
@@ -665,6 +723,9 @@ void main() {
                 'client',
                 same(factory.clients.last),
               ),
+          reason:
+              'Profile and publish providers gated on nostrReady must recover '
+              'without requiring an app restart.',
         );
       },
     );
