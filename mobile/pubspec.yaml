@@ -26,6 +26,7 @@ workspace:
   - packages/analytics
   - packages/app_update_repository
   - packages/app_version_client
+  - packages/background_uploader
   - packages/blossom_upload_service
   - packages/blurhash_service
   - packages/cache_sync
@@ -91,6 +92,9 @@ dependencies:
 
   # Analytics — unified event schema and the single Firebase analytics surface.
   analytics:
+
+  # OS-backed background uploads that survive app suspension.
+  background_uploader:
 
   blossom_upload_service:
 

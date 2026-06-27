@@ -1,6 +1,7 @@
 // ABOUTME: Upload & media Riverpod providers split from app_providers.dart
 // ABOUTME: Blossom upload, media-auth chain, upload manager, API clients, audio playback
 
+import 'package:background_uploader/background_uploader.dart';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/active_video_provider.dart';
@@ -47,6 +48,62 @@ class _BlossomAuthAdapter implements BlossomAuthProvider {
     );
     if (event == null) return null;
     return BlossomSignedEvent(json: event.toJson());
+  }
+}
+
+/// Adapts the [BackgroundUploader] plugin to the package-level
+/// [BlossomBackgroundTransport] port, so the Blossom service can hand a single
+/// PUT to the OS without depending on the plugin directly.
+class _BackgroundUploadTransportAdapter implements BlossomBackgroundTransport {
+  const _BackgroundUploadTransportAdapter(this._uploader);
+
+  final BackgroundUploader _uploader;
+
+  @override
+  Stream<BlossomBackgroundTransferEvent> get events =>
+      _uploader.events.map(_toTransferEvent);
+
+  @override
+  Future<void> enqueue({
+    required String taskId,
+    required String url,
+    required String method,
+    required Map<String, String> headers,
+    required String filePath,
+  }) {
+    return _uploader.enqueue(
+      BackgroundUploadRequest(
+        taskId: taskId,
+        url: Uri.parse(url),
+        filePath: filePath,
+        method: method,
+        headers: headers,
+      ),
+    );
+  }
+
+  @override
+  Future<void> cancel(String taskId) => _uploader.cancel(taskId);
+
+  static BlossomBackgroundTransferEvent _toTransferEvent(
+    BackgroundUploadEvent event,
+  ) {
+    return BlossomBackgroundTransferEvent(
+      taskId: event.taskId,
+      status: switch (event.status) {
+        BackgroundUploadStatus.running =>
+          BlossomBackgroundTransferStatus.running,
+        BackgroundUploadStatus.completed =>
+          BlossomBackgroundTransferStatus.completed,
+        BackgroundUploadStatus.failed => BlossomBackgroundTransferStatus.failed,
+        BackgroundUploadStatus.cancelled =>
+          BlossomBackgroundTransferStatus.cancelled,
+      },
+      progress: event.progress,
+      httpStatusCode: event.httpStatusCode,
+      responseBody: event.responseBody,
+      error: event.error,
+    );
   }
 }
 
@@ -118,6 +175,12 @@ final uploadBackpressureActiveProvider = Provider<bool>((ref) {
   return isHomeFeedActive;
 });
 
+/// OS-backed background upload transport (URLSession on iOS/macOS, a
+/// foreground service on Android), adapted to the Blossom transport port.
+final backgroundUploadTransportProvider = Provider<BlossomBackgroundTransport>(
+  (ref) => _BackgroundUploadTransportAdapter(BackgroundUploader.instance),
+);
+
 /// Blossom upload service (uses user-configured Blossom server)
 @riverpod
 BlossomUploadService blossomUploadService(Ref ref) {
@@ -129,6 +192,7 @@ BlossomUploadService blossomUploadService(Ref ref) {
       ref.watch(performanceMonitoringServiceProvider),
     ),
     defaultServerUrl: env.blossomUrl,
+    backgroundTransport: ref.watch(backgroundUploadTransportProvider),
     // Backpressure: while a feed video is actively playing in the foreground,
     // pause briefly between chunks so the upload doesn't starve playback on a
     // congested connection. No pause when nothing is streaming.
@@ -139,6 +203,14 @@ BlossomUploadService blossomUploadService(Ref ref) {
     },
   );
 }
+
+/// Whether video publishing routes through the OS background uploader so the
+/// transfer survives app suspension. Flip to `false` to fall back to the
+/// in-process chunked/resumable upload path.
+///
+/// NOTE: the background path requires on-device verification (iOS/macOS
+/// URLSession + Android foreground service) before being relied on.
+const _backgroundUploadEnabled = true;
 
 /// Upload manager uses only Blossom upload service
 @Riverpod(keepAlive: true)
@@ -152,6 +224,7 @@ UploadManager uploadManager(Ref ref) {
     defaultBlossomUrl: env.blossomUrl,
     currentNostrPubkey: currentPubkey,
     scopeUploadsToCurrentUser: true,
+    useBackgroundUpload: _backgroundUploadEnabled,
   );
   ref.onDispose(manager.dispose);
   return manager;

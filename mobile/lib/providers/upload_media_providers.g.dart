@@ -165,7 +165,7 @@ final class BlossomUploadServiceProvider
 }
 
 String _$blossomUploadServiceHash() =>
-    r'6df7595f06a8a9c53f83ca2c135de7f3af06e247';
+    r'c57d4fd1c6b33a1ad1ae1383332051f9aefde433';
 
 /// Upload manager uses only Blossom upload service
 
@@ -211,7 +211,7 @@ final class UploadManagerProvider
   }
 }
 
-String _$uploadManagerHash() => r'9cfb9aeca47922785af40243c40b4fc2d5f63608';
+String _$uploadManagerHash() => r'4f30b7e592133c381c01fcf4d55e046d31c3e8c1';
 
 /// API service depends on auth service
 

@@ -128,6 +128,7 @@ class UploadManager {
     VideoCircuitBreaker? circuitBreaker,
     UploadRetryConfig? retryConfig,
     UploadCrashReporter? crashReporter,
+    this.useBackgroundUpload = false,
   }) : _blossomService = blossomService,
        _defaultBlossomUrl =
            defaultBlossomUrl ?? BlossomUploadService.defaultBlossomServer,
@@ -148,6 +149,12 @@ class UploadManager {
       crashReporter: crashReporter ?? const CrashReportingUploadReporter(),
     );
   }
+
+  /// Routes the video transfer through the OS background uploader
+  /// ([BlossomUploadService.uploadVideoInBackground]) instead of the in-process
+  /// chunked/legacy path, so it survives app suspension. Requires the
+  /// blossom service to have been built with a background transport.
+  final bool useBackgroundUpload;
 
   // Core services
   final PendingUploadStore _store;
@@ -839,55 +846,66 @@ class UploadManager {
         );
       }
 
-      final result = await _blossomService
-          .uploadVideo(
-            videoFile: videoFile,
-            nostrPubkey: upload.nostrPubkey,
-            title: upload.title ?? '',
-            description: upload.description,
-            hashtags: upload.hashtags,
-            proofManifestJson: upload.proofManifestJson,
-            resumableSession: upload.resumableSession,
-            onResumableSessionUpdated: (session) {
-              _retryPolicy.enqueueSessionPersist(
-                upload.id,
-                session,
-                videoFile.lengthSync(),
-              );
-            },
-            onProgress: (value) {
-              final progress = value * 0.8; // Reserve 20% for thumbnail
+      void reportProgress(double value) {
+        final progress = value * 0.8; // Reserve 20% for thumbnail
+        _reporter.updateProgress(upload.id, progress);
+        onProgress?.call(progress);
+      }
 
-              _reporter.updateProgress(upload.id, progress);
-              onProgress?.call(progress);
-            },
-          )
-          .timeout(
-            _retryConfig.networkTimeout,
-            onTimeout: () {
-              Log.error(
-                '⏱️ Upload timed out!',
-                name: 'UploadManager',
-                category: LogCategory.video,
-              );
-              final timeoutError = TimeoutException(
-                'Upload timed out after ${_retryConfig.networkTimeout.inMinutes} minutes',
-              );
+      // Background uploads are a single OS-owned PUT that survives suspension;
+      // the in-process path keeps chunked-resumable. Both await the same way
+      // and feed the same thumbnail + success handling below.
+      final uploadFuture = useBackgroundUpload
+          ? _blossomService.uploadVideoInBackground(
+              videoFile: videoFile,
+              taskId: upload.id,
+              proofManifestJson: upload.proofManifestJson,
+              onProgress: reportProgress,
+            )
+          : _blossomService.uploadVideo(
+              videoFile: videoFile,
+              nostrPubkey: upload.nostrPubkey,
+              title: upload.title ?? '',
+              description: upload.description,
+              hashtags: upload.hashtags,
+              proofManifestJson: upload.proofManifestJson,
+              resumableSession: upload.resumableSession,
+              onResumableSessionUpdated: (session) {
+                _retryPolicy.enqueueSessionPersist(
+                  upload.id,
+                  session,
+                  videoFile.lengthSync(),
+                );
+              },
+              onProgress: reportProgress,
+            );
 
-              // Send timeout crash report asynchronously
-              _reporter.sendTimeoutCrashReport(upload, timeoutError).catchError(
-                (e) {
-                  Log.error(
-                    'Failed to send timeout crash report: $e',
-                    name: 'UploadManager',
-                    category: LogCategory.video,
-                  );
-                },
-              );
-
-              throw timeoutError;
-            },
+      final result = await uploadFuture.timeout(
+        _retryConfig.networkTimeout,
+        onTimeout: () {
+          Log.error(
+            '⏱️ Upload timed out!',
+            name: 'UploadManager',
+            category: LogCategory.video,
           );
+          final timeoutError = TimeoutException(
+            'Upload timed out after ${_retryConfig.networkTimeout.inMinutes} minutes',
+          );
+
+          // Send timeout crash report asynchronously
+          _reporter.sendTimeoutCrashReport(upload, timeoutError).catchError((
+            e,
+          ) {
+            Log.error(
+              'Failed to send timeout crash report: $e',
+              name: 'UploadManager',
+              category: LogCategory.video,
+            );
+          });
+
+          throw timeoutError;
+        },
+      );
 
       // Generate and upload thumbnail after video upload succeeds
       String? thumbnailCdnUrl;
