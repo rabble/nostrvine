@@ -2821,6 +2821,27 @@ void main() {
               equals(BlossomUploadFailureReason.server),
             );
           });
+
+          test('returns network for unknown wrapping a SocketException', () {
+            expect(
+              BlossomUploadFailureReason.fromDioException(
+                DioException(
+                  requestOptions: RequestOptions(path: '/upload'),
+                  error: const SocketException('Connection reset by peer'),
+                ),
+              ),
+              equals(BlossomUploadFailureReason.network),
+            );
+          });
+
+          test('returns unknown for unknown without a SocketException', () {
+            expect(
+              BlossomUploadFailureReason.fromDioException(
+                dioException(DioExceptionType.unknown),
+              ),
+              equals(BlossomUploadFailureReason.unknown),
+            );
+          });
         });
       });
     });
@@ -4519,6 +4540,129 @@ void main() {
 
         // Falls back to legacy after session expires
         expect(result.success, isTrue);
+
+        await tempDir.delete(recursive: true);
+      });
+
+      test('does not restart via legacy when a committed chunk then hits a '
+          'transient network error', () async {
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => _signedEvent(_testPublicKey, 24242, const [], 'upload'),
+        );
+
+        final tempDir = await Directory.systemTemp.createTemp(
+          'chunk_transient_test_',
+        );
+        final file = File('${tempDir.path}/video.mp4')
+          ..writeAsBytesSync(List.generate(10, (i) => i));
+
+        when(
+          () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+        ).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/upload'),
+            statusCode: 200,
+            headers: Headers.fromMap({
+              DivineUploadHeaders.extensions: [
+                DivineUploadExtensions.resumableSessions,
+              ],
+            }),
+          ),
+        );
+
+        when(
+          () => mockDio.post<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+          ),
+        ).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/upload/init'),
+            statusCode: 200,
+            data: {
+              'uploadId': 'up_net',
+              'uploadUrl': 'https://upload.divine.video/sessions/up_net',
+              'chunkSize': 5,
+              'nextOffset': 0,
+            },
+          ),
+        );
+
+        // First chunk commits offset 5; the second is killed mid-flight by a
+        // connection reset (the symptom of the OS suspending a backgrounded
+        // app), which dio surfaces as an `unknown` DioException wrapping a
+        // SocketException.
+        var chunkCount = 0;
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((invocation) async {
+          final url = invocation.positionalArguments.first as String;
+          if (url.contains('sessions/up_net')) {
+            chunkCount++;
+            if (chunkCount == 1) {
+              return Response(
+                requestOptions: RequestOptions(path: '/sessions'),
+                statusCode: 204,
+                headers: Headers.fromMap({
+                  DivineUploadHeaders.uploadOffset: ['5'],
+                }),
+              );
+            }
+            throw DioException(
+              requestOptions: RequestOptions(path: '/sessions'),
+              error: const SocketException('Connection reset by peer'),
+            );
+          }
+
+          // Legacy fallback PUT — must NOT be reached.
+          return Response(
+            requestOptions: RequestOptions(path: '/upload'),
+            statusCode: 200,
+            data: {
+              'url': 'https://media.divine.video/hash',
+              'fallbackUrl': 'https://media.divine.video/hash',
+            },
+          );
+        });
+
+        final result = await service.uploadVideo(
+          videoFile: file,
+          nostrPubkey: _testPublicKey,
+          title: 'test',
+          description: null,
+          hashtags: null,
+          proofManifestJson: null,
+        );
+
+        // The transient failure is surfaced (so the caller's outer retry can
+        // resume from the committed offset) rather than restarting the whole
+        // file through the legacy PUT.
+        expect(result.success, isFalse);
+        expect(
+          result.failureReason,
+          equals(BlossomUploadFailureReason.network),
+        );
+        verifyNever(
+          () => mockDio.put<dynamic>(
+            'https://media.divine.video/upload',
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        );
 
         await tempDir.delete(recursive: true);
       });
