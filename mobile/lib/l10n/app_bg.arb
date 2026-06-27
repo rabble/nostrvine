@@ -3056,6 +3056,7 @@
     "videoEditorVoiceOverOpenSettings": "Отвори настройките",
     "videoEditorVoiceOverRecordingStarted": "Записът започна",
     "videoEditorVoiceOverRecordingSaved": "Записът е запазен",
+    "videoEditorVoiceOverTooLong": "Записът е по-дълъг от вашето видео",
     "videoEditorPlaySemanticLabel": "Играйте",
     "videoEditorPauseSemanticLabel": "Пауза",
     "videoEditorMuteAudioSemanticLabel": "Заглушаване на звука",

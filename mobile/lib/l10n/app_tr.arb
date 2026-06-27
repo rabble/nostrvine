@@ -2775,6 +2775,7 @@
     "videoEditorVoiceOverOpenSettings": "Ayarları aç",
     "videoEditorVoiceOverRecordingStarted": "Kayıt başladı",
     "videoEditorVoiceOverRecordingSaved": "Kayıt kaydedildi",
+    "videoEditorVoiceOverTooLong": "Kayıt videonuzdan daha uzun",
     "videoEditorRedoSemanticLabel": "Yinele",
     "videoEditorReleaseToDeleteLayer": "Katmanı silmek için bırak",
     "videoEditorSaturationBrightnessSemanticLabel": "Doygunluk ve parlaklık",

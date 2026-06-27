@@ -7992,6 +7992,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorVoiceOverRecordingSaved => 'Na-save ang recording';
 
   @override
+  String get videoEditorVoiceOverTooLong =>
+      'Mas mahaba ang recording kaysa sa video mo';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'I-play';
 
   @override

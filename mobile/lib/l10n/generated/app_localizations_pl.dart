@@ -8054,6 +8054,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorVoiceOverRecordingSaved => 'Zapisano nagranie';
 
   @override
+  String get videoEditorVoiceOverTooLong =>
+      'Nagranie jest dłuższe niż Twój film';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Odtwórz';
 
   @override

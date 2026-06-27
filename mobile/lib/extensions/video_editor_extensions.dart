@@ -5,6 +5,26 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' hide AudioTrack;
 
+/// Builds the editor history meta for appending [newTracks] after the audio
+/// tracks already present in [existingTracks].
+///
+/// Merges over [activeMeta] and serializes both lists into the audio-state
+/// key. Pure so the music-library and voice-over commit paths share one merge
+/// instead of each duplicating the spread-and-serialize.
+Map<String, dynamic> buildAppendedAudioMeta({
+  required Map<String, dynamic> activeMeta,
+  required Iterable<AudioEvent> existingTracks,
+  required Iterable<AudioEvent> newTracks,
+}) {
+  return {
+    ...activeMeta,
+    VideoEditorConstants.audioStateHistoryKey: [
+      ...existingTracks.map((track) => track.toJson()),
+      ...newTracks.map((track) => track.toJson()),
+    ],
+  };
+}
+
 extension VideoEditorExtensions on ProImageEditorState {
   void setSoundTimeline({
     required int index,

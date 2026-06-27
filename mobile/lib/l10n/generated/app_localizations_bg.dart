@@ -7975,6 +7975,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorVoiceOverRecordingSaved => 'Записът е запазен';
 
   @override
+  String get videoEditorVoiceOverTooLong =>
+      'Записът е по-дълъг от вашето видео';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Играйте';
 
   @override

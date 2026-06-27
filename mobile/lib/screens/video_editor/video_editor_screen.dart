@@ -474,13 +474,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       duration: durationSecs > 0 ? durationSecs : null,
     );
     editor.addHistory(
-      meta: {
-        ...editor.stateManager.activeMeta,
-        VideoEditorConstants.audioStateHistoryKey: [
-          ...editor.stateManager.audioTracks.map((e) => e.toJson()),
-          result.toJson(),
-        ],
-      },
+      meta: buildAppendedAudioMeta(
+        activeMeta: editor.stateManager.activeMeta,
+        existingTracks: editor.stateManager.audioTracks,
+        newTracks: [result],
+      ),
     );
   }
 
@@ -566,13 +564,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     }
 
     editor.addHistory(
-      meta: {
-        ...editor.stateManager.activeMeta,
-        VideoEditorConstants.audioStateHistoryKey: [
-          ...editor.stateManager.audioTracks.map((e) => e.toJson()),
-          ...placed.map((e) => e.toJson()),
-        ],
-      },
+      meta: buildAppendedAudioMeta(
+        activeMeta: editor.stateManager.activeMeta,
+        existingTracks: editor.stateManager.audioTracks,
+        newTracks: placed,
+      ),
     );
   }
 

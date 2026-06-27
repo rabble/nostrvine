@@ -2092,6 +2092,7 @@
     "videoEditorVoiceOverOpenSettings": "설정 열기",
     "videoEditorVoiceOverRecordingStarted": "녹음 시작됨",
     "videoEditorVoiceOverRecordingSaved": "녹음 저장됨",
+    "videoEditorVoiceOverTooLong": "녹음이 동영상보다 깁니다",
     "videoEditorRedoSemanticLabel": "다시 실행",
     "videoEditorReleaseToDeleteLayer": "놓아서 레이어 삭제",
     "videoEditorSaturationBrightnessSemanticLabel": "채도 및 밝기",

@@ -2806,6 +2806,7 @@
     "videoEditorVoiceOverOpenSettings": "Instellingen openen",
     "videoEditorVoiceOverRecordingStarted": "Opname gestart",
     "videoEditorVoiceOverRecordingSaved": "Opname opgeslagen",
+    "videoEditorVoiceOverTooLong": "Opname is langer dan je video",
     "videoEditorPlaySemanticLabel": "Afspelen",
     "videoEditorPauseSemanticLabel": "Pauzeren",
     "videoEditorMuteAudioSemanticLabel": "Audio dempen",

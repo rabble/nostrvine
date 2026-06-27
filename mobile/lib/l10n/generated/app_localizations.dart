@@ -13766,6 +13766,12 @@ abstract class AppLocalizations {
   /// **'Recording saved'**
   String get videoEditorVoiceOverRecordingSaved;
 
+  /// Screen-reader announcement and warning cue shown when the recorded voice-over runs longer than the video it will be laid over.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording is longer than your video'**
+  String get videoEditorVoiceOverTooLong;
+
   /// No description provided for @videoEditorPlaySemanticLabel.
   ///
   /// In en, this message translates to:

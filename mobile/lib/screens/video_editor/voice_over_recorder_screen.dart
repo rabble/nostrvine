@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/video_editor/voice_over/voice_over_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/services/video_editor/voice_over_recorder_service.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 import 'package:permissions_service/permissions_service.dart';
 
@@ -86,6 +87,16 @@ class VoiceOverRecorderView extends StatelessWidget {
             listener: (context, _) => _announce(
               context,
               context.l10n.videoEditorVoiceOverRecordingSaved,
+            ),
+          ),
+          // Announce when the recording first outgrows the video — the readout
+          // also turns red, but color alone misses color-blind users.
+          BlocListener<VoiceOverCubit, VoiceOverState>(
+            listenWhen: (previous, current) =>
+                !previous.isOverAvailable && current.isOverAvailable,
+            listener: (context, _) => _announce(
+              context,
+              context.l10n.videoEditorVoiceOverTooLong,
             ),
           ),
         ],
@@ -247,23 +258,25 @@ class _Wave extends StatefulWidget {
 }
 
 class _WaveState extends State<_Wave> with SingleTickerProviderStateMixin {
-  /// Duration of one bar's left-glide. Matches [VoiceOverCubit]'s amplitude
-  /// sampling interval so each new bar slides in over exactly one interval.
-  static const _sampleInterval = Duration(milliseconds: 100);
-
   // Phase-locked 0->1 scroll fraction between two amplitude samples. Restarted
   // on every new sample so the strip glides one bar to the left and parks
-  // (clamped at 1) if the next sample is late — never running off-screen.
+  // (clamped at 1) if the next sample is late — never running off-screen. The
+  // glide spans exactly one amplitude interval so each new bar slides fully in.
   late final AnimationController _scroll;
 
   @override
   void initState() {
     super.initState();
-    _scroll = AnimationController(vsync: this, duration: _sampleInterval);
+    _scroll = AnimationController(
+      vsync: this,
+      duration: VoiceOverRecorderService.amplitudeInterval,
+    );
   }
 
-  void _onState(VoiceOverState state) {
-    if (state.isRecording) {
+  void _onState(VoiceOverState state, {required bool reduceMotion}) {
+    // Honor the reduced-motion preference: park the strip so new bars appear
+    // in place instead of gliding (accessibility.md).
+    if (state.isRecording && !reduceMotion) {
       _scroll.forward(from: 0);
     } else {
       _scroll
@@ -281,6 +294,7 @@ class _WaveState extends State<_Wave> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final bars = context.select((VoiceOverCubit c) => c.state.waveformBars);
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return BlocListener<VoiceOverCubit, VoiceOverState>(
       // currentDuration advances once per amplitude sample, so it is a
       // reliable "new sample" signal even after the bar buffer hits its cap
@@ -288,7 +302,7 @@ class _WaveState extends State<_Wave> with SingleTickerProviderStateMixin {
       listenWhen: (previous, current) =>
           previous.isRecording != current.isRecording ||
           previous.currentDuration != current.currentDuration,
-      listener: (_, state) => _onState(state),
+      listener: (_, state) => _onState(state, reduceMotion: reduceMotion),
       child: ExcludeSemantics(
         child: CustomPaint(
           painter: _VoiceOverWaveformPainter(
@@ -319,11 +333,25 @@ class _TimeReadout extends StatelessWidget {
     final isOver = context.select(
       (VoiceOverCubit c) => c.state.isOverAvailable,
     );
-    return Text(
+    final readout = Text(
       '${_formatClock(total)} / ${_formatClock(available)}',
       style: VineTheme.titleLargeFont(
         color: isOver ? VineTheme.error : VineTheme.onSurface,
       ),
+    );
+    if (!isOver) return readout;
+    // Pair the red color with a shape cue so the over-length warning reaches
+    // color-blind users too (accessibility.md). The screen-reader announcement
+    // carries the meaning, so the icon itself is excluded from semantics.
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 6,
+      children: [
+        const ExcludeSemantics(
+          child: DivineIcon(icon: .warning, size: 20, color: VineTheme.error),
+        ),
+        readout,
+      ],
     );
   }
 }
@@ -408,7 +436,10 @@ class _RecordButton extends StatelessWidget {
           ),
           child: Center(
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              // Skip the morph animation under the reduced-motion preference.
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 200),
               width: isRecording ? 30 : 60,
               height: isRecording ? 30 : 60,
               decoration: BoxDecoration(

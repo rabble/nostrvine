@@ -52,6 +52,50 @@ void main() {
       verify(() => recorder.dispose()).called(1);
     });
 
+    test(
+      'start translates a recorder failure into a typed exception',
+      () async {
+        final cause = StateError('mic busy');
+        when(
+          () => recorder.start(any(), path: any(named: 'path')),
+        ).thenThrow(cause);
+
+        await expectLater(
+          service.start('/tmp/take.m4a'),
+          throwsA(
+            isA<VoiceOverRecorderException>().having(
+              (e) => e.cause,
+              'cause',
+              same(cause),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('stop translates a recorder failure into a typed exception', () async {
+      when(() => recorder.stop()).thenThrow(StateError('not recording'));
+
+      await expectLater(
+        service.stop(),
+        throwsA(isA<VoiceOverRecorderException>()),
+      );
+    });
+
+    test(
+      'dispose translates a recorder failure into a typed exception',
+      () async {
+        when(
+          () => recorder.dispose(),
+        ).thenThrow(StateError('already disposed'));
+
+        await expectLater(
+          service.dispose(),
+          throwsA(isA<VoiceOverRecorderException>()),
+        );
+      },
+    );
+
     group('amplitudeStream normalization', () {
       Future<List<double>> normalize(List<double> dbValues) {
         when(() => recorder.onAmplitudeChanged(any())).thenAnswer(

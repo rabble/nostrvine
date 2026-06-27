@@ -2775,6 +2775,7 @@
     "videoEditorVoiceOverOpenSettings": "Buka pengaturan",
     "videoEditorVoiceOverRecordingStarted": "Rekaman dimulai",
     "videoEditorVoiceOverRecordingSaved": "Rekaman disimpan",
+    "videoEditorVoiceOverTooLong": "Rekaman lebih panjang dari video Anda",
     "videoEditorRedoSemanticLabel": "Ulangi",
     "videoEditorReleaseToDeleteLayer": "Lepas untuk menghapus lapisan",
     "videoEditorSaturationBrightnessSemanticLabel": "Saturasi dan kecerahan",

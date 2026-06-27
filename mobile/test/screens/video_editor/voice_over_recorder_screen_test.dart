@@ -18,6 +18,12 @@ import 'package:openvine/screens/video_editor/voice_over_recorder_screen.dart';
 class _MockVoiceOverCubit extends MockCubit<VoiceOverState>
     implements VoiceOverCubit {}
 
+// The toolbar also renders DivineIcons (close/done), so match the warning icon
+// specifically rather than by widget type.
+final Finder _warningIcon = find.byWidgetPredicate(
+  (widget) => widget is DivineIcon && widget.icon == DivineIconName.warning,
+);
+
 AudioEvent _take(String id) => AudioEvent.fromLocalImport(
   id: 'local_import_voice_over_$id',
   filePath: '/tmp/$id.m4a',
@@ -130,6 +136,38 @@ void main() {
 
         final readout = tester.widget<Text>(find.text('0:02 / 0:01'));
         expect(readout.style?.color, equals(VineTheme.error));
+      });
+
+      testWidgets('shows a non-color warning cue when audio is too long', (
+        tester,
+      ) async {
+        stub(
+          VoiceOverState(
+            takes: [_take('a'), _take('b')],
+            availableDuration: const Duration(seconds: 1),
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+
+        // Color alone misses color-blind users, so a warning icon accompanies
+        // the red readout.
+        expect(_warningIcon, findsOneWidget);
+      });
+
+      testWidgets('omits the warning cue when audio fits the video', (
+        tester,
+      ) async {
+        stub(
+          VoiceOverState(
+            takes: [_take('a'), _take('b')],
+            availableDuration: const Duration(seconds: 6),
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+
+        expect(_warningIcon, findsNothing);
       });
 
       testWidgets('count and time ignore voice-over already on the timeline', (
@@ -349,6 +387,78 @@ void main() {
           announced,
           contains(l10n.videoEditorVoiceOverRecordingStarted),
         );
+      });
+
+      testWidgets('announces when the recording first outgrows the video', (
+        tester,
+      ) async {
+        final controller = StreamController<VoiceOverState>();
+        addTearDown(controller.close);
+        whenListen(
+          cubit,
+          controller.stream,
+          initialState: const VoiceOverState(
+            status: VoiceOverStatus.recording,
+            availableDuration: Duration(seconds: 1),
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        final announced = setUpAnnouncementCapture(tester);
+
+        // The recorded time crosses past the 1s clip, flipping isOverAvailable.
+        controller.add(
+          const VoiceOverState(
+            status: VoiceOverStatus.recording,
+            availableDuration: Duration(seconds: 1),
+            currentDuration: Duration(seconds: 2),
+          ),
+        );
+        await tester.pump();
+
+        expect(announced, contains(l10n.videoEditorVoiceOverTooLong));
+      });
+    });
+
+    group('reduced motion', () {
+      Widget buildReducedMotionSubject() {
+        return MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: BlocProvider<VoiceOverCubit>.value(
+              value: cubit,
+              child: const VoiceOverRecorderView(),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('record button morph is instant when animations disabled', (
+        tester,
+      ) async {
+        stub(const VoiceOverState());
+
+        await tester.pumpWidget(buildReducedMotionSubject());
+
+        final animated = tester.widget<AnimatedContainer>(
+          find.byType(AnimatedContainer),
+        );
+        expect(animated.duration, equals(Duration.zero));
+      });
+
+      testWidgets('record button morph animates when animations enabled', (
+        tester,
+      ) async {
+        stub(const VoiceOverState());
+
+        await tester.pumpWidget(buildSubject());
+
+        final animated = tester.widget<AnimatedContainer>(
+          find.byType(AnimatedContainer),
+        );
+        expect(animated.duration, greaterThan(Duration.zero));
       });
     });
 

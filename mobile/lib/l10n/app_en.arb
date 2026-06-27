@@ -4510,6 +4510,10 @@
   "videoEditorVoiceOverOpenSettings": "Open settings",
   "videoEditorVoiceOverRecordingStarted": "Recording started",
   "videoEditorVoiceOverRecordingSaved": "Recording saved",
+  "videoEditorVoiceOverTooLong": "Recording is longer than your video",
+  "@videoEditorVoiceOverTooLong": {
+    "description": "Screen-reader announcement and warning cue shown when the recorded voice-over runs longer than the video it will be laid over."
+  },
   "videoEditorPlaySemanticLabel": "Play",
   "videoEditorPauseSemanticLabel": "Pause",
   "videoEditorMuteAudioSemanticLabel": "Mute audio",

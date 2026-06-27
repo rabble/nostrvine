@@ -2814,6 +2814,7 @@
     "videoEditorVoiceOverOpenSettings": "Abrir ajustes",
     "videoEditorVoiceOverRecordingStarted": "Grabación iniciada",
     "videoEditorVoiceOverRecordingSaved": "Grabación guardada",
+    "videoEditorVoiceOverTooLong": "La grabación es más larga que tu video",
     "videoEditorPlaySemanticLabel": "Reproducir",
     "videoEditorPauseSemanticLabel": "Pausar",
     "videoEditorMuteAudioSemanticLabel": "Silenciar audio",

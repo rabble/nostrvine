@@ -2768,6 +2768,7 @@
     "videoEditorVoiceOverOpenSettings": "設定を開く",
     "videoEditorVoiceOverRecordingStarted": "録音を開始しました",
     "videoEditorVoiceOverRecordingSaved": "録音を保存しました",
+    "videoEditorVoiceOverTooLong": "録音が動画より長くなっています",
     "videoEditorRedoSemanticLabel": "やり直し",
     "videoEditorReleaseToDeleteLayer": "離してレイヤーを削除",
     "videoEditorSaturationBrightnessSemanticLabel": "彩度と明度",

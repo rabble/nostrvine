@@ -2806,6 +2806,7 @@
     "videoEditorVoiceOverOpenSettings": "Öppna inställningar",
     "videoEditorVoiceOverRecordingStarted": "Inspelning startad",
     "videoEditorVoiceOverRecordingSaved": "Inspelning sparad",
+    "videoEditorVoiceOverTooLong": "Inspelningen är längre än din video",
     "videoEditorPlaySemanticLabel": "Spela",
     "videoEditorPauseSemanticLabel": "Pausa",
     "videoEditorMuteAudioSemanticLabel": "Stäng av ljud",

@@ -2,6 +2,7 @@
 // ABOUTME: probing real on-disk durations and reclaiming unplaced take files.
 
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:models/models.dart' show AudioEvent;
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -14,7 +15,9 @@ import 'package:unified_logger/unified_logger.dart';
 /// value. Falls back to the recorder's estimate when the path is missing, the
 /// probe returns a non-positive duration, or the probe throws.
 Future<double> resolveRecordedTakeDurationSecs(AudioEvent take) async {
-  final estimate = take.duration ?? 0;
+  // Clamp to non-negative so the documented "falls back to the estimate"
+  // contract can never propagate a negative duration onto the timeline.
+  final estimate = math.max(0.0, take.duration ?? 0);
   final path = take.localFilePath;
   if (path == null || path.isEmpty) return estimate;
   try {

@@ -91,11 +91,6 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
   /// always fills the full width instead of leaving an empty band.
   static const _maxWaveformBars = 256;
 
-  /// The interval between amplitude samples emitted by the recorder. The
-  /// elapsed recording time is advanced by this amount on each sample, so it
-  /// must stay in sync with the recorder service's reporting interval.
-  static const _amplitudeInterval = Duration(milliseconds: 100);
-
   /// Toggles recording: stops the current take or starts a new one.
   Future<void> toggleRecording() =>
       state.isRecording ? stop() : requestPermissionAndStart();
@@ -193,7 +188,8 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
     final wasOver = state.isOverAvailable;
     final next = state.copyWith(
       waveformBars: bars,
-      currentDuration: state.currentDuration + _amplitudeInterval,
+      currentDuration:
+          state.currentDuration + VoiceOverRecorderService.amplitudeInterval,
     );
     emit(next);
     // Warn with a stronger pulse the moment the audio outgrows the video.
@@ -230,6 +226,9 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
         // fast; delete it here since the take never enters state.takes and so
         // would never be reclaimed by close()/discardAll()/deleteLastTake().
         await _deleteFile(path);
+        // Close can land during the delete above; bail before the emit so the
+        // post-await emit pattern stays uniform with deleteLastTake/discardAll.
+        if (isClosed) return;
         emit(
           state.copyWith(
             status: VoiceOverStatus.idle,

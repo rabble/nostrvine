@@ -3366,6 +3366,7 @@
     "videoEditorVoiceOverOpenSettings": "ቅንብሮችን ክፈት",
     "videoEditorVoiceOverRecordingStarted": "ቅረጻ ተጀመረ",
     "videoEditorVoiceOverRecordingSaved": "ቅረጻ ተቀምጧል",
+    "videoEditorVoiceOverTooLong": "ቅረጻው ከቪዲዮዎ ይረዝማል",
     "videoEditorPlaySemanticLabel": "ይጫወቱ",
     "videoEditorPauseSemanticLabel": "ለአፍታ አቁም",
     "videoEditorMuteAudioSemanticLabel": "ኦዲዮ ድምጸ-ከል አድርግ",

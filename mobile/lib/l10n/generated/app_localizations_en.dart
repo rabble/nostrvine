@@ -7898,6 +7898,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorVoiceOverRecordingSaved => 'Recording saved';
 
   @override
+  String get videoEditorVoiceOverTooLong =>
+      'Recording is longer than your video';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Play';
 
   @override

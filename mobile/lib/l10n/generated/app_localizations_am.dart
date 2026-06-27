@@ -7767,6 +7767,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorVoiceOverRecordingSaved => 'ቅረጻ ተቀምጧል';
 
   @override
+  String get videoEditorVoiceOverTooLong => 'ቅረጻው ከቪዲዮዎ ይረዝማል';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'ይጫወቱ';
 
   @override

@@ -5,6 +5,28 @@ import 'dart:async';
 
 import 'package:record/record.dart';
 
+/// Thrown when the microphone recorder fails to start, stop, or release.
+///
+/// The client layer translates the `record` package's untyped failures into
+/// this single type (carrying the original in [cause]) so callers can catch one
+/// documented exception instead of reaching into package internals.
+class VoiceOverRecorderException implements Exception {
+  /// Creates a [VoiceOverRecorderException] describing [message], optionally
+  /// wrapping the underlying [cause].
+  VoiceOverRecorderException(this.message, {this.cause});
+
+  /// Human-readable description of the failure.
+  final String message;
+
+  /// The original error thrown by the `record` package, if any.
+  final Object? cause;
+
+  @override
+  String toString() => cause == null
+      ? 'VoiceOverRecorderException: $message'
+      : 'VoiceOverRecorderException: $message ($cause)';
+}
+
 /// Captures microphone audio for the voice-over recorder.
 ///
 /// Kept free of permission and UI concerns: the caller (the
@@ -12,15 +34,25 @@ import 'package:record/record.dart';
 /// and owns the recorded files. This abstraction exists so the cubit can be
 /// unit-tested with a fake recorder instead of hitting native audio APIs.
 abstract class VoiceOverRecorderService {
+  /// Interval between amplitude samples emitted by [amplitudeStream].
+  ///
+  /// Single source of truth for the sampling cadence: the cubit advances the
+  /// elapsed recording time by this amount per sample and the live waveform
+  /// glides one bar per interval, so both read this constant instead of
+  /// redefining the value (which would silently desync if any copy drifted).
+  static const amplitudeInterval = Duration(milliseconds: 100);
+
   /// Starts recording to [path], which should be an `.m4a` file path.
   ///
-  /// Throws if the microphone is unavailable or permission was not granted.
+  /// Throws a [VoiceOverRecorderException] if the recorder cannot start — for
+  /// example when the microphone is unavailable or permission was not granted.
   Future<void> start(String path);
 
   /// Stops the current recording.
   ///
   /// Returns the path of the written file, or `null` when nothing was
-  /// recorded.
+  /// recorded. Throws a [VoiceOverRecorderException] if the recorder fails to
+  /// stop.
   Future<String?> stop();
 
   /// Normalized (`0.0`–`1.0`) amplitude updates emitted while recording.
@@ -29,6 +61,8 @@ abstract class VoiceOverRecorderService {
   Stream<double> get amplitudeStream;
 
   /// Releases native recorder resources.
+  ///
+  /// Throws a [VoiceOverRecorderException] if the recorder fails to release.
   Future<void> dispose();
 }
 
@@ -45,25 +79,50 @@ class RecordVoiceOverRecorderService implements VoiceOverRecorderService {
   /// [EditorAudio.file] path.
   static const _config = RecordConfig(numChannels: 1);
 
-  /// How often the meter reports a new amplitude sample.
-  static const _amplitudeInterval = Duration(milliseconds: 100);
-
   /// Floor of the dBFS range we map onto the `0.0`–`1.0` waveform. Levels
   /// quieter than this are treated as silence.
   static const _minDb = -45.0;
 
   @override
-  Stream<double> get amplitudeStream =>
-      _recorder.onAmplitudeChanged(_amplitudeInterval).map(_normalize);
+  Stream<double> get amplitudeStream => _recorder
+      .onAmplitudeChanged(VoiceOverRecorderService.amplitudeInterval)
+      .map(_normalize);
 
   @override
-  Future<void> start(String path) => _recorder.start(_config, path: path);
+  Future<void> start(String path) async {
+    try {
+      await _recorder.start(_config, path: path);
+    } catch (e, s) {
+      Error.throwWithStackTrace(
+        VoiceOverRecorderException('Failed to start recording', cause: e),
+        s,
+      );
+    }
+  }
 
   @override
-  Future<String?> stop() => _recorder.stop();
+  Future<String?> stop() async {
+    try {
+      return await _recorder.stop();
+    } catch (e, s) {
+      Error.throwWithStackTrace(
+        VoiceOverRecorderException('Failed to stop recording', cause: e),
+        s,
+      );
+    }
+  }
 
   @override
-  Future<void> dispose() => _recorder.dispose();
+  Future<void> dispose() async {
+    try {
+      await _recorder.dispose();
+    } catch (e, s) {
+      Error.throwWithStackTrace(
+        VoiceOverRecorderException('Failed to release recorder', cause: e),
+        s,
+      );
+    }
+  }
 
   static double _normalize(Amplitude amplitude) {
     final db = amplitude.current;

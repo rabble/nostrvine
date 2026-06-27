@@ -8075,6 +8075,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorVoiceOverRecordingSaved => 'Înregistrare salvată';
 
   @override
+  String get videoEditorVoiceOverTooLong =>
+      'Înregistrarea este mai lungă decât videoclipul tău';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Redă';
 
   @override

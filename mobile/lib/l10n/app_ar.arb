@@ -2768,6 +2768,7 @@
     "videoEditorVoiceOverOpenSettings": "فتح الإعدادات",
     "videoEditorVoiceOverRecordingStarted": "بدأ التسجيل",
     "videoEditorVoiceOverRecordingSaved": "تم حفظ التسجيل",
+    "videoEditorVoiceOverTooLong": "التسجيل أطول من الفيديو الخاص بك",
     "videoEditorRedoSemanticLabel": "إعادة",
     "videoEditorReleaseToDeleteLayer": "أفلت لحذف الطبقة",
     "videoEditorSaturationBrightnessSemanticLabel": "التشبع والسطوع",

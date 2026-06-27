@@ -7839,6 +7839,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorVoiceOverRecordingSaved => 'تم حفظ التسجيل';
 
   @override
+  String get videoEditorVoiceOverTooLong => 'التسجيل أطول من الفيديو الخاص بك';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'تشغيل';
 
   @override

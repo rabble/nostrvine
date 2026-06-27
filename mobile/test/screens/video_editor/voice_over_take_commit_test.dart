@@ -92,6 +92,25 @@ void main() {
         expect(mock.metadataCalls, equals(0));
       },
     );
+
+    test('clamps a negative estimate to zero when the path is empty', () async {
+      final secs = await resolveRecordedTakeDurationSecs(
+        _take(filePath: '', duration: -5),
+      );
+
+      expect(secs, equals(0.0));
+    });
+
+    test(
+      'clamps a negative estimate to zero when the probe returns zero',
+      () async {
+        ProVideoEditor.instance = _MockProVideoEditor();
+
+        final secs = await resolveRecordedTakeDurationSecs(_take(duration: -2));
+
+        expect(secs, equals(0.0));
+      },
+    );
   });
 
   group('deleteVoiceOverTakeFiles', () {

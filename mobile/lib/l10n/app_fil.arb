@@ -1737,6 +1737,7 @@
     "videoEditorVoiceOverOpenSettings": "Buksan ang mga setting",
     "videoEditorVoiceOverRecordingStarted": "Nagsimula ang pag-record",
     "videoEditorVoiceOverRecordingSaved": "Na-save ang recording",
+    "videoEditorVoiceOverTooLong": "Mas mahaba ang recording kaysa sa video mo",
     "videoEditorPlaySemanticLabel": "I-play",
     "videoEditorPauseSemanticLabel": "I-pause",
     "videoEditorMuteAudioSemanticLabel": "I-mute ang audio",

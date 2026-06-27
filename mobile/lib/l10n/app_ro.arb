@@ -2806,6 +2806,7 @@
     "videoEditorVoiceOverOpenSettings": "Deschide setările",
     "videoEditorVoiceOverRecordingStarted": "Înregistrare pornită",
     "videoEditorVoiceOverRecordingSaved": "Înregistrare salvată",
+    "videoEditorVoiceOverTooLong": "Înregistrarea este mai lungă decât videoclipul tău",
     "videoEditorPlaySemanticLabel": "Redă",
     "videoEditorPauseSemanticLabel": "Pauză",
     "videoEditorMuteAudioSemanticLabel": "Dezactivează sunetul",

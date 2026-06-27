@@ -127,4 +127,56 @@ void main() {
       verifyNever(() => editor.addHistory(meta: any(named: 'meta')));
     });
   });
+
+  group('buildAppendedAudioMeta', () {
+    const existing = AudioEvent(id: 'existing', pubkey: 'p', createdAt: 1);
+    const incoming = AudioEvent(id: 'incoming', pubkey: 'p', createdAt: 2);
+
+    test('appends new tracks after existing ones and carries other meta', () {
+      final meta = buildAppendedAudioMeta(
+        activeMeta: {
+          VideoEditorConstants.timelineMarkersStateHistoryKey: [1200],
+        },
+        existingTracks: const [existing],
+        newTracks: const [incoming],
+      );
+
+      expect(
+        meta[VideoEditorConstants.timelineMarkersStateHistoryKey],
+        equals([1200]),
+      );
+      expect(
+        meta[VideoEditorConstants.audioStateHistoryKey],
+        equals([existing.toJson(), incoming.toJson()]),
+      );
+    });
+
+    test('overwrites any prior audio key in activeMeta', () {
+      final meta = buildAppendedAudioMeta(
+        activeMeta: {
+          VideoEditorConstants.audioStateHistoryKey: ['stale'],
+        },
+        existingTracks: const [existing],
+        newTracks: const [incoming],
+      );
+
+      expect(
+        meta[VideoEditorConstants.audioStateHistoryKey],
+        equals([existing.toJson(), incoming.toJson()]),
+      );
+    });
+
+    test('keeps the existing tracks when no new tracks are appended', () {
+      final meta = buildAppendedAudioMeta(
+        activeMeta: const {},
+        existingTracks: const [existing],
+        newTracks: const [],
+      );
+
+      expect(
+        meta[VideoEditorConstants.audioStateHistoryKey],
+        equals([existing.toJson()]),
+      );
+    });
+  });
 }

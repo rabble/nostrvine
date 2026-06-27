@@ -7651,6 +7651,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorVoiceOverRecordingSaved => '녹음 저장됨';
 
   @override
+  String get videoEditorVoiceOverTooLong => '녹음이 동영상보다 깁니다';
+
+  @override
   String get videoEditorPlaySemanticLabel => '재생';
 
   @override

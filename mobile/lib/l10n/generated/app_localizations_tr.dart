@@ -7876,6 +7876,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorVoiceOverRecordingSaved => 'Kayıt kaydedildi';
 
   @override
+  String get videoEditorVoiceOverTooLong => 'Kayıt videonuzdan daha uzun';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Oynat';
 
   @override

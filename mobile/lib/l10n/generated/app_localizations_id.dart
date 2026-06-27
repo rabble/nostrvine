@@ -7878,6 +7878,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorVoiceOverRecordingSaved => 'Rekaman disimpan';
 
   @override
+  String get videoEditorVoiceOverTooLong =>
+      'Rekaman lebih panjang dari video Anda';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Putar';
 
   @override

@@ -7909,6 +7909,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorVoiceOverRecordingSaved => 'Inspelning sparad';
 
   @override
+  String get videoEditorVoiceOverTooLong =>
+      'Inspelningen är längre än din video';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Spela';
 
   @override

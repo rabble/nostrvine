@@ -7938,6 +7938,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorVoiceOverRecordingSaved => 'Opname opgeslagen';
 
   @override
+  String get videoEditorVoiceOverTooLong => 'Opname is langer dan je video';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Afspelen';
 
   @override

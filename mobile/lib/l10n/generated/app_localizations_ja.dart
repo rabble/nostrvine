@@ -7630,6 +7630,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorVoiceOverRecordingSaved => '録音を保存しました';
 
   @override
+  String get videoEditorVoiceOverTooLong => '録音が動画より長くなっています';
+
+  @override
   String get videoEditorPlaySemanticLabel => '再生';
 
   @override
