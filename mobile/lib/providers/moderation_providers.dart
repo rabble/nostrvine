@@ -136,26 +136,31 @@ AccountLabelService accountLabelService(Ref ref) {
 @Riverpod(keepAlive: true)
 ModerationLabelService moderationLabelService(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
+  final readiness = ref.watch(nostrSessionProvider);
   final authService = ref.watch(authServiceProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
-  final followRepository = ref.watch(followRepositoryProvider);
   final service = ModerationLabelService(
     nostrClient: nostrClient,
     authService: authService,
     sharedPreferences: prefs,
   );
-  unawaited(
-    service.initialize().then((_) {
-      return service.syncFollowedLabelers(followRepository.followingPubkeys);
-    }),
-  );
-  final followingSubscription = followRepository.followingStream.listen((
-    pubkeys,
-  ) {
-    unawaited(service.syncFollowedLabelers(pubkeys));
-  });
+
+  StreamSubscription<List<String>>? followingSubscription;
+  if (readiness.isReadyForActiveClient &&
+      identical(readiness.client, nostrClient)) {
+    final followRepository = ref.watch(followRepositoryProvider);
+    unawaited(
+      service.initialize().then((_) {
+        return service.syncFollowedLabelers(followRepository.followingPubkeys);
+      }),
+    );
+    followingSubscription = followRepository.followingStream.listen((pubkeys) {
+      unawaited(service.syncFollowedLabelers(pubkeys));
+    });
+  }
+
   ref.onDispose(() {
-    followingSubscription.cancel();
+    unawaited(followingSubscription?.cancel());
     service.dispose();
   });
   return service;
