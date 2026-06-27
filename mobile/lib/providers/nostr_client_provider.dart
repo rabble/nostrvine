@@ -116,6 +116,11 @@ typedef NostrClientFactory =
 
 typedef NostrInitRetryDelay = Duration Function(int attempt);
 
+const _nostrInitRetryBaseDelay = Duration(seconds: 5);
+const _nostrInitRetryMaxDelay = Duration(seconds: 60);
+const _nostrInitRetryExponentCap = 4;
+const _nostrInitializationTimeout = Duration(seconds: 90);
+
 /// Indirection layer over [NostrServiceFactory.create] so tests can
 /// substitute a fake factory without touching the real relay/network
 /// code path. Production builds use this provider transparently.
@@ -129,10 +134,17 @@ NostrClientFactory nostrClientFactory(Ref ref) => NostrServiceFactory.create;
 /// recovery path can be exercised without wall-clock sleeps.
 final nostrInitRetryDelayProvider = Provider<NostrInitRetryDelay>((ref) {
   return (attempt) {
-    final seconds = 5 * (1 << (attempt - 1).clamp(0, 4));
-    return Duration(seconds: seconds.clamp(5, 60));
+    final exponent = (attempt - 1).clamp(0, _nostrInitRetryExponentCap);
+    final seconds = _nostrInitRetryBaseDelay.inSeconds * (1 << exponent);
+    return Duration(
+      seconds: seconds.clamp(0, _nostrInitRetryMaxDelay.inSeconds),
+    );
   };
 });
+
+final nostrInitializationTimeoutProvider = Provider<Duration>(
+  (ref) => _nostrInitializationTimeout,
+);
 
 /// Core Nostr service via NostrClient for relay communication
 /// Uses a Notifier to react to auth state changes and recreate the client
@@ -257,10 +269,7 @@ class NostrService extends _$NostrService {
     required String source,
   }) async {
     try {
-      if (userRelayUrls.isNotEmpty) {
-        await client.addRelays(userRelayUrls);
-      }
-      await client.initialize();
+      await _runClientInitialization(client, userRelayUrls);
       if (_isCurrentClientForPubkey(client, pubkey, clientGeneration)) {
         _lastPubkey = pubkey;
         _initializationFailureCount = 0;
@@ -290,6 +299,18 @@ class NostrService extends _$NostrService {
     }
   }
 
+  Future<void> _runClientInitialization(
+    NostrClient client,
+    List<String> userRelayUrls,
+  ) {
+    return (() async {
+      if (userRelayUrls.isNotEmpty) {
+        await client.addRelays(userRelayUrls);
+      }
+      await client.initialize();
+    })().timeout(ref.read(nostrInitializationTimeoutProvider));
+  }
+
   void _scheduleInitializationRetry(String? pubkey) {
     if (pubkey == null) return;
     if (_initializationRetryTimer?.isActive ?? false) return;
@@ -303,7 +324,9 @@ class NostrService extends _$NostrService {
     );
     _initializationRetryTimer = Timer(delay, () {
       _initializationRetryTimer = null;
-      unawaited(_retryInitializeCurrentIdentity(pubkey));
+      _enqueueClientLifecycleMutation(
+        () => _retryInitializeCurrentIdentity(pubkey),
+      );
     });
   }
 
@@ -314,40 +337,68 @@ class NostrService extends _$NostrService {
       return;
     }
 
-    authService.registerUserRelaysDiscoveredCallback(null);
-    authService.registerBootstrapRelayListCallback(null);
     final oldClient = state;
     _invalidateClientGeneration();
-    _disposeClient(oldClient);
 
     final userRelayUrls = authService.userRelays
         .map((relay) => relay.url)
         .toList();
     final client = _createClient(identity);
     final clientGeneration = _nextClientGeneration();
-    state = client;
-    _setSessionIdentityState(pubkey);
-    _registerClientCallbacks(
-      authService: authService,
-      client: client,
-      pubkey: pubkey,
-      clientGeneration: clientGeneration,
-    );
-    await _initializeClient(
-      client: client,
-      pubkey: pubkey,
-      clientGeneration: clientGeneration,
-      userRelayUrls: userRelayUrls,
-      source: 'retry',
-    );
+    try {
+      await _runClientInitialization(client, userRelayUrls);
+      if (!_isActiveIdentity(pubkey, clientGeneration)) {
+        _disposeClient(client);
+        return;
+      }
+      authService.registerUserRelaysDiscoveredCallback(null);
+      authService.registerBootstrapRelayListCallback(null);
+      _disposeClient(oldClient);
+      state = client;
+      _lastPubkey = pubkey;
+      _initializationFailureCount = 0;
+      _initializationRetryTimer?.cancel();
+      _initializationRetryTimer = null;
+      _registerClientCallbacks(
+        authService: authService,
+        client: client,
+        pubkey: pubkey,
+        clientGeneration: clientGeneration,
+      );
+      _markClientReadyIfCurrent(client, pubkey, clientGeneration);
+      Log.info(
+        '[NostrService] Client initialized via retry()',
+        name: 'NostrService',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.error(
+        '[NostrService] Failed to initialize client in retry(): $e',
+        name: 'NostrService',
+        category: LogCategory.system,
+      );
+      _disposeClient(client);
+      if (!_isActiveIdentity(pubkey, clientGeneration)) {
+        return;
+      }
+      if (_lastPubkey == pubkey) {
+        _lastPubkey = null;
+      }
+      _setSessionIdentityState(pubkey);
+      _scheduleInitializationRetry(pubkey);
+    }
   }
 
   void _enqueueAuthStateChanged(AuthState newState) {
+    _enqueueClientLifecycleMutation(() => _onAuthStateChanged(newState));
+  }
+
+  void _enqueueClientLifecycleMutation(Future<void> Function() mutation) {
     _authStateChangeQueue = _authStateChangeQueue
         .catchError(_logAuthTransitionFailure)
         .then((_) async {
           try {
-            await _onAuthStateChanged(newState);
+            await mutation();
           } catch (e, st) {
             _logAuthTransitionFailure(e, st);
           }
@@ -481,6 +532,11 @@ class NostrService extends _$NostrService {
     return clientGeneration == _clientGeneration &&
         identical(state, client) &&
         currentPubkey == pubkey;
+  }
+
+  bool _isActiveIdentity(String pubkey, int clientGeneration) {
+    final currentPubkey = ref.read(authServiceProvider).currentIdentity?.pubkey;
+    return clientGeneration == _clientGeneration && currentPubkey == pubkey;
   }
 
   /// Builds the NIP-65 discovered-relays callback bound to [client].
