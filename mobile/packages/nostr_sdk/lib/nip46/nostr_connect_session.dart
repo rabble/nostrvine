@@ -21,6 +21,8 @@ import '../utils/string_util.dart';
 import 'nostr_remote_response.dart';
 import 'nostr_remote_signer_info.dart';
 
+const _relayConnectTimeout = Duration(seconds: 8);
+
 /// State of a nostrconnect:// session.
 enum NostrConnectState {
   /// Session not started.
@@ -200,6 +202,11 @@ class NostrConnectSession {
       );
     }
 
+    final activeWait = _connectionCompleter;
+    if (activeWait != null && !activeWait.isCompleted) {
+      return activeWait.future;
+    }
+
     _connectionCompleter = Completer<NostrConnectResult?>();
 
     // Start timeout timer
@@ -253,6 +260,31 @@ class NostrConnectSession {
     if (_relays.isEmpty) {
       log('[NostrConnectSession] All relays lost, reconnecting from scratch');
       await _connectToRelays();
+    }
+  }
+
+  /// Adds a signer-supplied relay to the active session.
+  ///
+  /// Some same-device signers return a callback relay after the user approves
+  /// the connection. Connect to it in addition to the original nostrconnect://
+  /// relays so the response event can arrive on the signer's chosen transport.
+  Future<void> addRelay(String relayUrl) async {
+    if (_isClosed || _state != NostrConnectState.listening) return;
+    if (relays.contains(relayUrl) ||
+        _relays.any((relay) => relay.relayStatus.addr == relayUrl)) {
+      return;
+    }
+
+    try {
+      final relay = await _connectToRelay(relayUrl);
+      if (_isClosed) {
+        relay.disconnect();
+        return;
+      }
+      _relays.add(relay);
+      log('[NostrConnectSession] Added callback relay $relayUrl');
+    } catch (e) {
+      log('[NostrConnectSession] Failed to add callback relay $relayUrl: $e');
     }
   }
 
@@ -316,7 +348,10 @@ class NostrConnectSession {
     // Add subscription for listening to responses
     await _addSubscription(relay);
 
-    await relay.connect();
+    final connected = await relay.connect().timeout(_relayConnectTimeout);
+    if (!connected) {
+      throw StateError('Relay connect returned false');
+    }
     log('[NostrConnectSession] Connected to $relayAddr');
 
     return relay;

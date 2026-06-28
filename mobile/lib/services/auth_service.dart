@@ -335,6 +335,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
   // NIP-46 nostrconnect:// session state (for client-initiated connections)
   NostrConnectSession? _nostrConnectSession;
+  Future<AuthResult>? _nostrConnectWaitFuture;
+  Timer? _nostrConnectCallbackHandoffTimer;
+  bool _isNostrConnectCallbackHandoffActive = false;
 
   // Atomic signing identity — couples pubkey with signing mechanism
   NostrIdentity? _currentIdentity;
@@ -3337,13 +3340,31 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// authenticate, or [AuthResult.failure] on timeout/error.
   Future<AuthResult> waitForNostrConnectResponse({
     Duration timeout = const Duration(minutes: 2),
-  }) async {
+  }) {
     if (_nostrConnectSession == null) {
-      return AuthResult.failure(
-        'No active nostrconnect session. Call initiateNostrConnect first.',
+      return Future.value(
+        AuthResult.failure(
+          'No active nostrconnect session. Call initiateNostrConnect first.',
+        ),
       );
     }
 
+    final activeWait = _nostrConnectWaitFuture;
+    if (activeWait != null) return activeWait;
+
+    final waitFuture = _waitForNostrConnectResponse(timeout: timeout);
+    _nostrConnectWaitFuture = waitFuture;
+    waitFuture.whenComplete(() {
+      if (identical(_nostrConnectWaitFuture, waitFuture)) {
+        _nostrConnectWaitFuture = null;
+      }
+    });
+    return waitFuture;
+  }
+
+  Future<AuthResult> _waitForNostrConnectResponse({
+    required Duration timeout,
+  }) async {
     Log.info(
       'Waiting for nostrconnect response (timeout: ${timeout.inSeconds}s)...',
       name: 'AuthService',
@@ -3456,6 +3477,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   ///
   /// Safe to call even if no session is active.
   void cancelNostrConnect() {
+    _nostrConnectWaitFuture = null;
+    _isNostrConnectCallbackHandoffActive = false;
+    _nostrConnectCallbackHandoffTimer?.cancel();
+    _nostrConnectCallbackHandoffTimer = null;
+
     if (_nostrConnectSession != null) {
       Log.info(
         'Cancelling nostrconnect session',
@@ -3480,14 +3506,33 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   Stream<NostrConnectState>? get nostrConnectStateStream =>
       _nostrConnectSession?.stateStream;
 
+  /// True while Android/iOS custom-scheme routing is handing control back
+  /// from a NIP-46 signer app to Divine.
+  bool get isNostrConnectCallbackHandoffActive =>
+      _isNostrConnectCallbackHandoffActive;
+
   /// Called when a divine:// signer callback deep link is received.
   ///
   /// Ensures the nostrconnect session relay connections are alive so we
   /// don't miss the bunker's response event after being brought back
   /// from background.
-  void onSignerCallbackReceived() {
+  void onSignerCallbackReceived({String? relayUrl}) {
+    _isNostrConnectCallbackHandoffActive = true;
+    _nostrConnectCallbackHandoffTimer?.cancel();
+    _nostrConnectCallbackHandoffTimer = Timer(const Duration(seconds: 5), () {
+      _isNostrConnectCallbackHandoffActive = false;
+    });
+
     if (_nostrConnectSession != null &&
         _nostrConnectSession!.state == NostrConnectState.listening) {
+      if (relayUrl != null) {
+        Log.info(
+          'Signer callback supplied relay $relayUrl - connecting',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        unawaited(_nostrConnectSession!.addRelay(relayUrl));
+      }
       Log.info(
         'Signer callback received - ensuring nostrconnect relays are connected',
         name: 'AuthService',
@@ -5671,6 +5716,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     // Close Amber signer if active
     _amberSigner?.close();
     _amberSigner = null;
+
+    _nostrConnectCallbackHandoffTimer?.cancel();
+    _nostrConnectCallbackHandoffTimer = null;
 
     // Securely dispose of key container
     _currentKeyContainer?.dispose();

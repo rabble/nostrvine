@@ -33,7 +33,16 @@ bool shouldSkipRouteNormalization(String loc) {
   }
 
   final uri = Uri.tryParse(loc);
-  if (uri == null || !uri.scheme.startsWith('http')) {
+  if (uri == null) {
+    return false;
+  }
+
+  final deepLinkType = DeepLinkService.parseDeepLink(loc).type;
+  if (deepLinkType == DeepLinkType.signerCallback) {
+    return true;
+  }
+
+  if (!uri.scheme.startsWith('http')) {
     return false;
   }
 
@@ -48,7 +57,7 @@ bool shouldSkipRouteNormalization(String loc) {
   // redirect or in the app-wide DeepLinkService listener. They are not part
   // of the internal parseRoute/buildRoute contract, so normalizing them here
   // can rewrite a valid deep link into an unrelated internal fallback.
-  return DeepLinkService.parseDeepLink(loc).type != DeepLinkType.unknown;
+  return deepLinkType != DeepLinkType.unknown;
 }
 
 /// Watches router location changes and redirects to canonical URLs when needed.

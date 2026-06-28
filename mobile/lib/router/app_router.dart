@@ -90,7 +90,9 @@ import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart'
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
+import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Global route observer for [RouteAware] subscribers (e.g. pausing video
@@ -113,6 +115,19 @@ void suppressNextAuthenticatedAuthRouteRedirect() {
 /// Clears a pending authenticated auth-route redirect suppression.
 void clearAuthenticatedAuthRouteRedirectSuppression() {
   _suppressNextAuthenticatedAuthRouteRedirect = false;
+}
+
+@visibleForTesting
+String? signerCallbackRedirectTarget(Uri uri, AuthService authService) {
+  final deepLink = DeepLinkService.parseDeepLink(uri.toString());
+  if (deepLink.type != DeepLinkType.signerCallback) {
+    return null;
+  }
+
+  authService.onSignerCallbackReceived(relayUrl: deepLink.signerCallbackRelay);
+  return authService.nostrConnectUrl != null
+      ? NostrConnectScreen.path
+      : WelcomeScreen.path;
 }
 
 /// Reset navigation state for testing purposes
@@ -307,6 +322,22 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     errorBuilder: (context, state) =>
         RouteErrorScreen(message: context.l10n.routeUnknownPath),
     redirect: (context, state) {
+      final authService = ref.read(authServiceProvider);
+      final signerCallbackRedirect = signerCallbackRedirectTarget(
+        state.uri,
+        authService,
+      );
+      if (signerCallbackRedirect != null) {
+        Log.info(
+          'Router redirect: signer callback '
+          '${redactUriStringForLogs(state.uri.toString())} -> '
+          '$signerCallbackRedirect',
+          name: 'AppRouter',
+          category: LogCategory.auth,
+        );
+        return signerCallbackRedirect;
+      }
+
       // Rewrite divine.video universal-link URLs to internal paths before the
       // auth/match logic runs. Android delivers the full intent URL (scheme +
       // host + path) to GoRouter, which only matches on path. Without this
@@ -324,7 +355,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       }
 
       final location = state.matchedLocation;
-      final authService = ref.read(authServiceProvider);
       final authState = authService.authState;
       final reviewStatusAsync = ref.read(
         currentMinorAccountReviewStatusProvider,

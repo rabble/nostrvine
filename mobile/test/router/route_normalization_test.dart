@@ -36,6 +36,15 @@ void main() {
       );
     });
 
+    test('skips NIP-46 signer callbacks from native signer apps', () {
+      expect(
+        shouldSkipRouteNormalization(
+          'divine://nostrconnect?x-source=aegis&relay=wss://localrelay.link:28443',
+        ),
+        isTrue,
+      );
+    });
+
     test('does not skip unrelated hosts', () {
       expect(
         shouldSkipRouteNormalization('https://example.com/video/abc123'),

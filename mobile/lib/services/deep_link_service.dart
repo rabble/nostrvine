@@ -27,6 +27,7 @@ class DeepLink {
     this.hashtag,
     this.searchTerm,
     this.inviteCode,
+    this.signerCallbackRelay,
     this.index,
     this.autoOpenComments = false,
   });
@@ -42,6 +43,7 @@ class DeepLink {
   final String? hashtag;
   final String? searchTerm;
   final String? inviteCode;
+  final String? signerCallbackRelay;
   final int? index; // Optional video index for feed view
 
   /// When true the video detail screen should open the comments section
@@ -148,7 +150,12 @@ class DeepLinkService {
           name: 'DeepLinkService',
           category: LogCategory.auth,
         );
-        return const DeepLink(type: DeepLinkType.signerCallback);
+        return DeepLink(
+          type: DeepLinkType.signerCallback,
+          signerCallbackRelay: _validSignerCallbackRelay(
+            uri.queryParameters['relay'],
+          ),
+        );
       }
 
       if (_isInternalAppRoute(uri, url)) {
@@ -330,6 +337,14 @@ class DeepLinkService {
     }
 
     return null;
+  }
+
+  static String? _validSignerCallbackRelay(String? relay) {
+    if (relay == null || relay.isEmpty) return null;
+    final uri = Uri.tryParse(relay);
+    if (uri == null || uri.host.isEmpty) return null;
+    if (uri.scheme != 'wss' && uri.scheme != 'ws') return null;
+    return relay;
   }
 
   static String _describeUriForLogs(Uri uri) {

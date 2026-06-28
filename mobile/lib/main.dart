@@ -2091,7 +2091,11 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                 name: 'DeepLinkHandler',
                 category: LogCategory.auth,
               );
-              ref.read(authServiceProvider).onSignerCallbackReceived();
+              ref
+                  .read(authServiceProvider)
+                  .onSignerCallbackReceived(
+                    relayUrl: deepLink.signerCallbackRelay,
+                  );
             case DeepLinkType.unknown:
               Log.warning(
                 '📱 Unknown deep link type',

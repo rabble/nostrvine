@@ -39,6 +39,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
   StreamSubscription<NostrConnectState>? _stateSubscription;
   bool _isWaiting = false;
   bool _switchedToBunker = false;
+  int _sessionAttempt = 0;
   final Stopwatch _elapsedTimer = Stopwatch();
   Timer? _uiTimer;
 
@@ -49,7 +50,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
   void initState() {
     super.initState();
     _authService = ref.read(authServiceProvider);
-    _startSession();
+    _startOrResumeSession();
   }
 
   @override
@@ -57,13 +58,86 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
     _stateSubscription?.cancel();
     _uiTimer?.cancel();
     _elapsedTimer.stop();
-    // Cancel the session if user leaves the screen
-    _authService.cancelNostrConnect();
+    // Android can route the signer callback through GoRouter before the
+    // app-links stream finishes handling it. In that short handoff, preserve
+    // the active NIP-46 session so the replacement route can reattach.
+    if (!_authService.isNostrConnectCallbackHandoffActive) {
+      _authService.cancelNostrConnect();
+    }
     super.dispose();
   }
 
-  Future<void> _startSession() async {
+  void _startOrResumeSession() {
+    final activeUrl = _authService.nostrConnectUrl;
+    final activeState = _authService.nostrConnectState;
+    if (activeUrl != null &&
+        (activeState == NostrConnectState.generating ||
+            activeState == NostrConnectState.listening)) {
+      _resumeActiveSession(activeUrl, activeState ?? NostrConnectState.idle);
+      return;
+    }
+
+    _startSession();
+  }
+
+  void _resumeActiveSession(String activeUrl, NostrConnectState activeState) {
+    final attempt = ++_sessionAttempt;
+    unawaited(_stateSubscription?.cancel());
+    _stateSubscription = null;
+    _uiTimer?.cancel();
+    _uiTimer = null;
+    _elapsedTimer
+      ..stop()
+      ..reset()
+      ..start();
+    _isWaiting = false;
+    _switchedToBunker = false;
+
+    Log.info(
+      'Resuming active nostrconnect session after signer callback',
+      name: 'NostrConnectScreen',
+      category: LogCategory.auth,
+    );
+
     setState(() {
+      _connectUrl = activeUrl;
+      _sessionState = activeState;
+      _errorMessage = null;
+    });
+
+    _stateSubscription = _authService.nostrConnectStateStream?.listen((state) {
+      if (!mounted || attempt != _sessionAttempt) return;
+      setState(() {
+        _sessionState = state;
+      });
+      if (state == NostrConnectState.listening) {
+        unawaited(_waitForConnection(attempt));
+      }
+    });
+
+    _uiTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && attempt == _sessionAttempt) setState(() {});
+    });
+
+    if (activeState == NostrConnectState.listening) {
+      unawaited(_waitForConnection(attempt));
+    }
+  }
+
+  Future<void> _startSession() async {
+    final attempt = ++_sessionAttempt;
+    await _stateSubscription?.cancel();
+    _stateSubscription = null;
+    _uiTimer?.cancel();
+    _uiTimer = null;
+    _elapsedTimer
+      ..stop()
+      ..reset();
+    _isWaiting = false;
+    _switchedToBunker = false;
+
+    setState(() {
+      _connectUrl = null;
       _sessionState = NostrConnectState.generating;
       _errorMessage = null;
     });
@@ -72,7 +146,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       final authService = ref.read(authServiceProvider);
       final session = await authService.initiateNostrConnect();
 
-      if (!mounted) return;
+      if (!mounted || attempt != _sessionAttempt) return;
 
       setState(() {
         _connectUrl = session.connectUrl;
@@ -81,7 +155,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
 
       // Listen to state changes
       _stateSubscription = session.stateStream.listen((state) {
-        if (!mounted) return;
+        if (!mounted || attempt != _sessionAttempt) return;
         setState(() {
           _sessionState = state;
         });
@@ -94,14 +168,14 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       });
 
       // Start waiting for the connection
-      _waitForConnection();
+      _waitForConnection(attempt);
     } catch (e) {
       Log.error(
         'Failed to start nostrconnect session: $e',
         name: 'NostrConnectScreen',
         category: LogCategory.auth,
       );
-      if (!mounted) return;
+      if (!mounted || attempt != _sessionAttempt) return;
       setState(() {
         _sessionState = NostrConnectState.error;
         _errorMessage = 'Failed to start session: $e';
@@ -109,18 +183,18 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
     }
   }
 
-  Future<void> _waitForConnection() async {
+  Future<void> _waitForConnection(int attempt) async {
     if (_isWaiting) return;
     _isWaiting = true;
 
     final authService = ref.read(authServiceProvider);
     final result = await authService.waitForNostrConnectResponse();
 
+    if (!mounted || attempt != _sessionAttempt) return;
+
     _isWaiting = false;
     _elapsedTimer.stop();
     _uiTimer?.cancel();
-
-    if (!mounted) return;
 
     // If the user switched to a bunker connection via the paste dialog,
     // ignore the nostrconnect session result to avoid interfering with
@@ -256,6 +330,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
     // Cancel the current nostrconnect session and prevent its completion
     // callback from interfering with the bunker auth flow.
     _switchedToBunker = true;
+    _sessionAttempt++;
     _authService.cancelNostrConnect();
     _stateSubscription?.cancel();
     _uiTimer?.cancel();

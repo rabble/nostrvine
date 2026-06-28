@@ -223,6 +223,20 @@ void main() {
       });
     });
 
+    group('Signer Callback Parsing', () {
+      test('parses NIP-46 callback from native signer apps', () {
+        final result = DeepLinkService.parseDeepLink(
+          'divine://nostrconnect?x-source=aegis&relay=wss://localrelay.link:28443',
+        );
+
+        expect(result.type, equals(DeepLinkType.signerCallback));
+        expect(
+          result.signerCallbackRelay,
+          equals('wss://localrelay.link:28443'),
+        );
+      });
+    });
+
     group('Unknown URL Patterns', () {
       test('ignores internal app route paths', () {
         const url = '/profile/npub1abc123def456';

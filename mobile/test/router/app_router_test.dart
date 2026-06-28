@@ -17,6 +17,7 @@ import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_page.dart';
@@ -394,6 +395,34 @@ void main() {
         );
       },
     );
+  });
+
+  group('NIP-46 signer callbacks', () {
+    test('redirect active signer callback route back to nostr connect', () {
+      final authService = _MockAuthService();
+      when(() => authService.nostrConnectUrl).thenReturn(
+        'nostrconnect://4c4060f6d19c8cafad01952e625e9819386b7a620bc03bfc6491b797b36cde5a',
+      );
+      when(
+        () => authService.onSignerCallbackReceived(
+          relayUrl: any(named: 'relayUrl'),
+        ),
+      ).thenReturn(null);
+
+      final target = signerCallbackRedirectTarget(
+        Uri.parse(
+          'divine://nostrconnect?x-source=aegis&relay=wss://localrelay.link:28443',
+        ),
+        authService,
+      );
+
+      expect(target, equals(NostrConnectScreen.path));
+      verify(
+        () => authService.onSignerCallbackReceived(
+          relayUrl: 'wss://localrelay.link:28443',
+        ),
+      ).called(greaterThan(0));
+    });
   });
 
   group('DM route extras', () {
