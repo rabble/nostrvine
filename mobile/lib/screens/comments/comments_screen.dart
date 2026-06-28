@@ -238,7 +238,10 @@ abstract final class CommentsScreen {
             },
           ),
           trailing: const _CommentsSortToggle(),
-          bottomInput: const _MainCommentInput(),
+          // Wrap the input so the keyboard is dropped the instant the sheet
+          // starts dismissing (drag / scrim / back), otherwise iOS leaves it
+          // stranded over the feed below (#5604).
+          bottomInput: const UnfocusOnSheetDismiss(child: _MainCommentInput()),
           buildScrollBody: (scrollController) {
             activeScrollController = scrollController;
             return CommentsSheetLoadTelemetry(
