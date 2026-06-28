@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_camera/divine_camera.dart';
@@ -1201,6 +1202,7 @@ void main() {
 
     group('VideoRecorderRecordingLockedForNavigation → recording lock', () {
       late Completer<bool> startGate;
+      late File orphanFile;
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'resets an active recording to idle without disposing the camera — the '
@@ -1276,6 +1278,45 @@ void main() {
           verify(() => cameraService.stopRecording()).called(1);
           // No dispose during the abort — the single dispose is close().
           verify(() => cameraService.dispose()).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'discards the orphaned file of an aborted in-flight start — the '
+        'recording is never surfaced, so its file must not leak on disk',
+        setUp: () {
+          startGate = Completer<bool>();
+          when(
+            () => cameraService.startRecording(
+              maxDuration: any(named: 'maxDuration'),
+            ),
+          ).thenAnswer((_) => startGate.future);
+          // The aborted native session yields a real file that, without the
+          // discard, would be orphaned (never added to the library).
+          orphanFile = File(
+            '${Directory.systemTemp.createTempSync('rec_abort').path}/clip.mp4',
+          )..writeAsStringSync('aborted recording');
+          final aborted = _MockEditorVideo();
+          when(aborted.safeFilePath).thenAnswer((_) async => orphanFile.path);
+          when(
+            () => cameraService.stopRecording(),
+          ).thenAnswer((_) async => aborted);
+        },
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const VideoRecorderRecordingStartRequested());
+          await pumpEventQueue();
+          bloc.add(const VideoRecorderRecordingLockedForNavigation());
+          await pumpEventQueue();
+          // Native start finally reports success after the lock landed — the
+          // handler stops it and must delete the orphaned file.
+          startGate.complete(true);
+          await pumpEventQueue();
+        },
+        verify: (_) {
+          verify(() => cameraService.stopRecording()).called(1);
+          expect(orphanFile.existsSync(), isFalse);
+          orphanFile.parent.deleteSync(recursive: true);
         },
       );
     });
@@ -1387,6 +1428,28 @@ void main() {
               enableAutoLensSwitch: true,
             ),
           ).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'releases the navigation recording lock even when re-init fails — a '
+        'failed camera return must not leave the recorder permanently locked',
+        setUp: () {
+          when(() => cameraService.isInitialized).thenReturn(false);
+          when(
+            () => cameraService.initializationError,
+          ).thenReturn('boom');
+        },
+        build: () => buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(recordingLockedForNavigation: true),
+          ),
+        act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
+        verify: (bloc) {
+          // Confirm we actually hit the init-failure return path…
+          expect(bloc.state.initializationErrorMessage, isNotNull);
+          // …and the lock was still cleared up front.
+          expect(bloc.state.recordingLockedForNavigation, isFalse);
         },
       );
 

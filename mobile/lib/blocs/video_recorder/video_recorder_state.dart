@@ -38,6 +38,7 @@ class VideoRecorderBlocState extends Equatable {
     this.isStartingRecording = false,
     this.isStoppingRecording = false,
     this.pendingStopAfterStart = false,
+    this.recordingLockedForNavigation = false,
     this.baseZoomLevel = 1.0,
     this.snappedTo1x = false,
     this.lastRawZoom = 1.0,
@@ -136,6 +137,18 @@ class VideoRecorderBlocState extends Equatable {
   /// rather than an indefinite recording (#hold-to-record-brief-press).
   final bool pendingStopAfterStart;
 
+  /// True while the camera is released for a navigation push (editor, metadata,
+  /// library) and cleared on the next re-initialization.
+  ///
+  /// Gates recording start/toggle so a volume / Bluetooth trigger that races
+  /// the navigation can't begin a recording on a camera that is being torn
+  /// down — which would otherwise strand the recorder, since an in-flight
+  /// native start hung behind the disposed camera permanently occupies the
+  /// `sequential()` start bucket. Held in the state stream (not a private
+  /// field) per `state_management.md`, alongside the other recording-lifecycle
+  /// flags.
+  final bool recordingLockedForNavigation;
+
   /// Zoom level captured at the start of the current pinch gesture.
   ///
   /// Used to compute relative zoom from pinch scale. Moved out of the
@@ -202,6 +215,7 @@ class VideoRecorderBlocState extends Equatable {
     bool? isStartingRecording,
     bool? isStoppingRecording,
     bool? pendingStopAfterStart,
+    bool? recordingLockedForNavigation,
     double? baseZoomLevel,
     bool? snappedTo1x,
     double? lastRawZoom,
@@ -241,6 +255,8 @@ class VideoRecorderBlocState extends Equatable {
       isStoppingRecording: isStoppingRecording ?? this.isStoppingRecording,
       pendingStopAfterStart:
           pendingStopAfterStart ?? this.pendingStopAfterStart,
+      recordingLockedForNavigation:
+          recordingLockedForNavigation ?? this.recordingLockedForNavigation,
       baseZoomLevel: baseZoomLevel ?? this.baseZoomLevel,
       snappedTo1x: snappedTo1x ?? this.snappedTo1x,
       lastRawZoom: lastRawZoom ?? this.lastRawZoom,
@@ -276,6 +292,7 @@ class VideoRecorderBlocState extends Equatable {
     isStartingRecording,
     isStoppingRecording,
     pendingStopAfterStart,
+    recordingLockedForNavigation,
     baseZoomLevel,
     snappedTo1x,
     lastRawZoom,

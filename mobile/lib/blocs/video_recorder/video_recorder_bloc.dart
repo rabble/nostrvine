@@ -241,14 +241,6 @@ class VideoRecorderBloc
   Timer? _zoomIndicatorTimer;
   bool _remoteRecordControlEnabled = false;
 
-  /// Set while the camera is released for a navigation push (editor, metadata,
-  /// library) and cleared on the next re-initialization. Gates recording
-  /// start/toggle so a volume / Bluetooth trigger that races the navigation
-  /// can't begin a recording on a camera that is being torn down — which would
-  /// otherwise strand the recorder, since an in-flight native start hung behind
-  /// the disposed camera permanently occupies the `sequential()` start bucket.
-  bool _recordingLockedForNavigation = false;
-
   /// How long the zoom ruler stays visible after the last pinch activity
   /// before the auto-hide timer clears it.
   static const _zoomIndicatorHideDelay = Duration(milliseconds: 1000);
@@ -273,6 +265,16 @@ class VideoRecorderBloc
     VideoRecorderInitializeRequested event,
     Emitter<VideoRecorderBlocState> emit,
   ) async {
+    // Re-initialization marks the end of any navigation teardown, so release
+    // the navigation recording lock up front — this covers the camera-init
+    // error returns below too, which previously left the recorder locked until
+    // a later successful init. The camera isn't usable yet (`canRecord` stays
+    // false until initialize() completes), so clearing the lock here cannot let
+    // a racing trigger start a recording on a torn-down camera.
+    if (state.recordingLockedForNavigation) {
+      emit(state.copyWith(recordingLockedForNavigation: false));
+    }
+
     final prefs = _readSharedPreferences();
 
     final savedMode = VideoRecorderMode.fromName(
@@ -325,10 +327,6 @@ class VideoRecorderBloc
       emit(state.copyWith(initializationErrorMessage: error));
       return;
     }
-
-    // Camera is back — release the navigation recording lock set when it was
-    // paused for the push (see [_onCameraPausedForNavigation]).
-    _recordingLockedForNavigation = false;
 
     final clips = _readClipManager().clips;
     _emitCameraSync(
@@ -606,7 +604,7 @@ class VideoRecorderBloc
       return;
     }
 
-    if (_recordingLockedForNavigation) {
+    if (state.recordingLockedForNavigation) {
       Log.debug(
         '🎮 toggleRecording ignored - recording locked for navigation',
         name: 'VideoRecorderBloc',
@@ -631,7 +629,7 @@ class VideoRecorderBloc
     final clipManager = _readClipManager();
     final remainingDuration = clipManager.remainingDuration;
 
-    if (_recordingLockedForNavigation ||
+    if (state.recordingLockedForNavigation ||
         !_cameraService.canRecord ||
         state.isRecording ||
         state.isStartingRecording ||
@@ -714,7 +712,7 @@ class VideoRecorderBloc
       return;
     }
 
-    if (_recordingLockedForNavigation) {
+    if (state.recordingLockedForNavigation) {
       // Navigation released (or is releasing) the camera before the native
       // start ran — abort to idle instead of recording on a camera that is
       // about to be torn down.
@@ -745,12 +743,13 @@ class VideoRecorderBloc
           : null,
     );
 
-    if (_recordingLockedForNavigation) {
+    if (state.recordingLockedForNavigation) {
       // The camera was released for navigation while the native start was in
       // flight. Don't latch a recording the user can never stop — stop the
-      // just-started session best-effort and return to idle.
+      // just-started session best-effort, discard its orphaned file (it is
+      // never surfaced to the user), and return to idle.
       if (success) {
-        await _cameraService.stopRecording();
+        await _discardAbortedRecording(await _cameraService.stopRecording());
       }
       emit(
         state.copyWith(
@@ -1077,6 +1076,22 @@ class VideoRecorderBloc
     } catch (_) {}
   }
 
+  /// Best-effort deletes the orphaned file from a recording aborted by the
+  /// navigation lock. Such a recording is never added to the library or shown
+  /// to the user, so without this its file would leak on disk.
+  Future<void> _discardAbortedRecording(EditorVideo? video) async {
+    if (video == null) return;
+    try {
+      await File(await video.safeFilePath()).delete();
+    } catch (error) {
+      Log.debug(
+        '⚠️ Failed to delete aborted recording file: $error',
+        name: 'VideoRecorderBloc',
+        category: LogCategory.video,
+      );
+    }
+  }
+
   void _onLongPressZoomStarted(
     VideoRecorderLongPressZoomStarted event,
     Emitter<VideoRecorderBlocState> emit,
@@ -1260,7 +1275,6 @@ class VideoRecorderBloc
   /// the dispose (if any) happens after — so it never races the native start.
   /// The lock is cleared on the next [VideoRecorderInitializeRequested].
   void _lockRecordingForNavigation(Emitter<VideoRecorderBlocState> emit) {
-    _recordingLockedForNavigation = true;
     _cameraService.onRemoteRecordTrigger = null;
     if (state.isRecording || state.isStartingRecording) {
       _readClipManager()
@@ -1268,12 +1282,15 @@ class VideoRecorderBloc
         ..resetRecording();
       emit(
         state.copyWith(
+          recordingLockedForNavigation: true,
           recordingState: VideoRecorderState.idle,
           isStartingRecording: false,
           isStoppingRecording: false,
           pendingStopAfterStart: false,
         ),
       );
+    } else {
+      emit(state.copyWith(recordingLockedForNavigation: true));
     }
   }
 
