@@ -19,6 +19,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/router/app_router.dart';
@@ -227,6 +228,7 @@ Future<void> _pumpFeedVideos(
   _MockCommentsRepository? commentsRepository,
   _MockRepostsRepository? repostsRepository,
   bool isActive = true,
+  bool appForeground = true,
   bool hasMore = false,
   bool isLoadingMore = false,
   void Function(VideoEvent, int)? onActiveVideoChanged,
@@ -250,6 +252,7 @@ Future<void> _pumpFeedVideos(
       repostsRepository: repostsRepository,
     ).cast(),
   );
+  container.read(appForegroundProvider.notifier).setForeground(appForeground);
   addTearDown(container.dispose);
 
   await tester.pumpWidget(
@@ -550,12 +553,26 @@ void main() {
   });
 
   group('activity wiring', () {
-    testWidgets('passes widget isActive through to InfiniteVideoFeed', (
+    testWidgets('passes effective activity through to InfiniteVideoFeed', (
       tester,
     ) async {
       final video = _makeVideo();
 
       await _pumpFeedVideos(tester, videos: [video], isActive: false);
+      await tester.pump();
+
+      final feed = tester.widget<InfiniteVideoFeed>(
+        find.byType(InfiniteVideoFeed),
+      );
+      expect(feed.isActive, isFalse);
+    });
+
+    testWidgets('pauses InfiniteVideoFeed while app is backgrounded', (
+      tester,
+    ) async {
+      final video = _makeVideo();
+
+      await _pumpFeedVideos(tester, videos: [video], appForeground: false);
       await tester.pump();
 
       final feed = tester.widget<InfiniteVideoFeed>(

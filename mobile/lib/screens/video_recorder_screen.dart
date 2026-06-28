@@ -290,7 +290,6 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
     try {
       _overlayVisibilityNotifier = ref.read(overlayVisibilityProvider.notifier);
       _overlayVisibilityNotifier!.setPageOpen(true);
-      ref.read(videoVisibilityManagerProvider).pauseAllVideos();
       _disposeVideoControllers();
       Log.info(
         '⏸️ Paused background playback for camera',

@@ -61,59 +61,6 @@ final class VideoFilterBuilderProvider
 String _$videoFilterBuilderHash() =>
     r'fa2390a9274ddcc619886531d6cfa0671b545d1a';
 
-/// Video visibility manager for controlling video playback based on visibility
-
-@ProviderFor(videoVisibilityManager)
-final videoVisibilityManagerProvider = VideoVisibilityManagerProvider._();
-
-/// Video visibility manager for controlling video playback based on visibility
-
-final class VideoVisibilityManagerProvider
-    extends
-        $FunctionalProvider<
-          VideoVisibilityManager,
-          VideoVisibilityManager,
-          VideoVisibilityManager
-        >
-    with $Provider<VideoVisibilityManager> {
-  /// Video visibility manager for controlling video playback based on visibility
-  VideoVisibilityManagerProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'videoVisibilityManagerProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$videoVisibilityManagerHash();
-
-  @$internal
-  @override
-  $ProviderElement<VideoVisibilityManager> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  VideoVisibilityManager create(Ref ref) {
-    return videoVisibilityManager(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(VideoVisibilityManager value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<VideoVisibilityManager>(value),
-    );
-  }
-}
-
-String _$videoVisibilityManagerHash() =>
-    r'e1a7642e6cb5e4c1733981be738064df7c3c0a91';
-
 /// Personal event cache service for ALL user's own events
 
 @ProviderFor(personalEventCacheService)

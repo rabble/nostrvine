@@ -40,7 +40,6 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/services/video_metadata_update_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
-import 'package:openvine/services/video_visibility_manager.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -54,12 +53,6 @@ part 'video_providers.g.dart';
 VideoFilterBuilder videoFilterBuilder(Ref ref) {
   final capabilityService = ref.watch(relayCapabilityServiceProvider);
   return VideoFilterBuilder(capabilityService);
-}
-
-/// Video visibility manager for controlling video playback based on visibility
-@riverpod
-VideoVisibilityManager videoVisibilityManager(Ref ref) {
-  return VideoVisibilityManager();
 }
 
 /// Personal event cache service for ALL user's own events

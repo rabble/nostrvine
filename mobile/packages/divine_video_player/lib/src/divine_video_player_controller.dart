@@ -193,7 +193,13 @@ class DivineVideoPlayerController {
   /// Call in test `setUp` to make IDs deterministic regardless of
   /// test ordering.
   @visibleForTesting
-  static void resetIdCounterForTesting() => _nextId = 0;
+  static void resetIdCounterForTesting() {
+    _nextId = 0;
+    _liveControllers.clear();
+  }
+
+  static final Set<DivineVideoPlayerController> _liveControllers =
+      <DivineVideoPlayerController>{};
 
   /// Disposes all native player instances that may still be alive.
   ///
@@ -367,6 +373,7 @@ class DivineVideoPlayerController {
     }
 
     _initialized = true;
+    _liveControllers.add(this);
   }
 
   /// Sets a single video source.
@@ -418,6 +425,7 @@ class DivineVideoPlayerController {
   /// Starts or resumes playback.
   Future<void> play() async {
     _ensureInitialized();
+    await _pauseOtherLiveControllers();
     if (_isWebBackend) return _webBackend!.play();
     if (_isLinuxBackend) return _linuxBackend!.play();
     await _methodChannel.invokeMethod<void>('play');
@@ -537,6 +545,7 @@ class DivineVideoPlayerController {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
+    _liveControllers.remove(this);
 
     // Cancel the event subscription before disposing the native player.
     // The native dispose tears down the EventChannel stream handler, so if
@@ -557,6 +566,29 @@ class DivineVideoPlayerController {
   }
 
   // -- internals --
+
+  Future<void> _pauseOtherLiveControllers() async {
+    final otherControllers = _liveControllers
+        .where(
+          (controller) =>
+              !identical(controller, this) &&
+              controller._initialized &&
+              !controller._disposed,
+        )
+        .toList(growable: false);
+
+    for (final controller in otherControllers) {
+      try {
+        await controller.pause();
+      } on Object catch (error) {
+        Log.warning(
+          'Failed to pause sibling player before starting playback: $error',
+          name: 'DivineVideoPlayerController',
+          category: LogCategory.video,
+        );
+      }
+    }
+  }
 
   void _ensureInitialized() {
     if (!_initialized) {

@@ -303,6 +303,47 @@ void main() {
         expect(playerCalls.last.method, equals('play'));
       });
 
+      test('play pauses other live controllers before starting', () async {
+        final otherController = DivineVideoPlayerController();
+        addTearDown(otherController.dispose);
+        await otherController.initialize();
+
+        playerCalls.clear();
+
+        await otherController.play();
+
+        expect(playerCalls, hasLength(2));
+        expect(playerCalls.first.method, equals('pause'));
+        expect(playerCalls.last.method, equals('play'));
+      });
+
+      test('play continues when pausing another controller fails', () async {
+        final otherController = DivineVideoPlayerController();
+        addTearDown(otherController.dispose);
+        await otherController.initialize();
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              MethodChannel(
+                'divine_video_player/player_${controller.playerId}',
+              ),
+              (call) async {
+                playerCalls.add(call);
+                if (call.method == 'pause') {
+                  throw PlatformException(code: 'pause_failed');
+                }
+                return null;
+              },
+            );
+        playerCalls.clear();
+
+        await otherController.play();
+
+        expect(playerCalls, hasLength(2));
+        expect(playerCalls.first.method, equals('pause'));
+        expect(playerCalls.last.method, equals('play'));
+      });
+
       test('pause invokes native method', () async {
         await controller.pause();
 

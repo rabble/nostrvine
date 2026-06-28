@@ -92,8 +92,6 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    final visibilityManager = ref.read(videoVisibilityManagerProvider);
-
     // Notify background activity manager first
     _backgroundManager.onAppLifecycleStateChanged(state);
 
@@ -130,10 +128,10 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
         );
         unawaited(context.read<InviteStatusCubit?>()?.load());
 
-        // Don't force resume playback - let visibility detectors naturally trigger
-        // This prevents playing videos that are covered by modals/camera screen
+        // Don't force resume playback. Foreground, route, and overlay gates
+        // decide which mounted feed may play.
         Log.info(
-          '📱 App resumed - visibility detectors will handle playback naturally',
+          '📱 App resumed - foreground playback gates restored',
           name: 'AppLifecycleHandler',
           category: LogCategory.system,
         );
@@ -150,25 +148,19 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
         Log.info(
-          '📱 App backgrounded - clearing active video and pausing all videos',
+          '📱 App backgrounded - disabling foreground playback gates',
           name: 'AppLifecycleHandler',
           category: LogCategory.system,
         );
 
-        // CRITICAL: Notify foreground state provider FIRST - disables visibility detection
-        // This prevents VisibilityDetector callbacks from reactivating videos
+        // Playback pause is handled by appForegroundProvider=false:
+        // - pooled FeedVideos forwards isActive=false to InfiniteVideoFeed
+        // - activeVideoIdProvider returns null for legacy video items.
         ref.read(appForegroundProvider.notifier).setForeground(false);
 
         if (_tickersEnabled) {
           setState(() => _tickersEnabled = false);
         }
-
-        // Active video pause is now handled by derived provider:
-        // appForegroundProvider=false → activeVideoIdProvider returns null → VideoFeedItem pauses
-
-        // Pause all videos and clear visibility state
-        // Execute async to prevent blocking scene update
-        Future.microtask(visibilityManager.pauseAllVideos);
 
       case AppLifecycleState.detached:
         // App is being terminated

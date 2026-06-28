@@ -16,6 +16,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
@@ -245,7 +246,9 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    final isFeedActive = widget.isActive && _routeAllowsPlayback;
+    final appForeground = ref.watch(appForegroundProvider);
+    final isFeedActive =
+        widget.isActive && _routeAllowsPlayback && appForeground;
     // While a codec-heavy surface (camera, video editor, exporter) is open, a
     // backgrounded feed must release even its warm current player so the editor
     // can claim the device's scarce hardware decoders/encoder. Selected so the
