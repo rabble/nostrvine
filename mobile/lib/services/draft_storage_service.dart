@@ -281,20 +281,13 @@ class DraftStorageService {
           continue;
         }
 
-        try {
-          drafts.add(
-            DivineVideoDraft.fromDriftRow(
-              row: row,
-              clipRows: clipRows,
-              documentsPath: documentsPath,
-            ),
-          );
-        } catch (e) {
-          Log.error(
-            '🧹 Skipping corrupt draft ${row.id}: $e',
-            name: 'DraftStorageService',
-            category: LogCategory.video,
-          );
+        final draft = _tryParseDraftRow(
+          row: row,
+          clipRows: clipRows,
+          documentsPath: documentsPath,
+        );
+        if (draft != null) {
+          drafts.add(draft);
         }
       }
     }

@@ -753,6 +753,41 @@ void main() {
         expect(row, isNull);
       });
 
+      test(
+        'skips a draft with a corrupt clip and keeps valid matching drafts',
+        () async {
+          final validDraft = createDraftWithStatus(
+            'valid_failed',
+            PublishStatus.failed,
+          );
+          final corruptDraft = createDraftWithStatus(
+            'corrupt_failed',
+            PublishStatus.failed,
+          );
+          await service.saveDraft(validDraft);
+          await service.saveDraft(corruptDraft);
+
+          final corruptClipData = corruptDraft.clips.first.toJson()
+            ..['filePath'] = null;
+          await database.clipsDao.upsertClip(
+            id: 'clip_corrupt_failed',
+            draftId: 'corrupt_failed',
+            orderIndex: 0,
+            durationMs: 6000,
+            recordedAt: DateTime.now(),
+            data: jsonEncode(corruptClipData),
+            filePath: null,
+            thumbnailPath: null,
+          );
+
+          final results = await service.getDraftsByPublishStatuses({
+            PublishStatus.failed,
+          });
+
+          expect(results.map((draft) => draft.id), ['valid_failed']);
+        },
+      );
+
       test('should return drafts for a single status', () async {
         await service.saveDraft(
           createDraftWithStatus('d1', PublishStatus.failed),
