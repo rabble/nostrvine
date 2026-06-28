@@ -278,20 +278,34 @@ class DivineVideoClip {
         (json['targetAspectRatio'] ?? json['aspectRatio']) as String?;
     final thumbnailTimestampMs = json['thumbnailTimestampMs'] as int?;
 
+    // A clip's only persisted video source is its file path; without it the
+    // clip can't be reconstructed (`EditorVideo` requires a non-null source).
+    // Validate the required fields up front and throw a typed error so the
+    // loader can skip this single corrupt row instead of a cryptic
+    // `Null is not a subtype of String` cast aborting the whole library/draft
+    // load.
+    final id = json['id'] as String?;
+    final filePath = json['filePath'] as String?;
+    final rawRecordedAt = (json['recordedAt'] ?? json['createdAt']) as String?;
+    if (id == null || filePath == null || rawRecordedAt == null) {
+      throw const FormatException(
+        'DivineVideoClip JSON is missing a required field '
+        '(id, filePath, or recordedAt); cannot reconstruct the clip.',
+      );
+    }
+
     return DivineVideoClip(
-      id: json['id'] as String,
+      id: id,
       video: EditorVideo.file(
         resolvePath(
-          json['filePath'] as String,
+          filePath,
           documentsPath,
           useOriginalPath: useOriginalPath,
         ),
       ),
       libraryTitle: json['libraryTitle'] as String?,
       duration: Duration(milliseconds: json['durationMs'] as int),
-      recordedAt: DateTime.parse(
-        (json['recordedAt'] ?? json['createdAt']) as String,
-      ),
+      recordedAt: DateTime.parse(rawRecordedAt),
       thumbnailPath: resolvePath(
         json['thumbnailPath'] as String?,
         documentsPath,

@@ -281,13 +281,21 @@ class DraftStorageService {
           continue;
         }
 
-        drafts.add(
-          DivineVideoDraft.fromDriftRow(
-            row: row,
-            clipRows: clipRows,
-            documentsPath: documentsPath,
-          ),
-        );
+        try {
+          drafts.add(
+            DivineVideoDraft.fromDriftRow(
+              row: row,
+              clipRows: clipRows,
+              documentsPath: documentsPath,
+            ),
+          );
+        } catch (e) {
+          Log.error(
+            '🧹 Skipping corrupt draft ${row.id}: $e',
+            name: 'DraftStorageService',
+            category: LogCategory.video,
+          );
+        }
       }
     }
 
@@ -419,12 +427,20 @@ class DraftStorageService {
           continue;
         }
 
-        final draft = DivineVideoDraft.fromDriftRow(
-          row: row,
-          clipRows: clipRows,
-          documentsPath: documentsPath,
-        );
-        drafts.add(_clearMissingFinalRenderedClip(draft));
+        try {
+          final draft = DivineVideoDraft.fromDriftRow(
+            row: row,
+            clipRows: clipRows,
+            documentsPath: documentsPath,
+          );
+          drafts.add(_clearMissingFinalRenderedClip(draft));
+        } catch (e) {
+          Log.error(
+            '🧹 Skipping corrupt draft ${row.id}: $e',
+            name: 'DraftStorageService',
+            category: LogCategory.video,
+          );
+        }
       }
 
       // Clean up corrupted drafts (0 clips) in the background

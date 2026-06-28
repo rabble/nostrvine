@@ -1,6 +1,8 @@
 // ABOUTME: Tests for ClipLibraryService - persistent storage for video clips
 // ABOUTME: Covers save, load, delete, and thumbnail generation for clips
 
+import 'dart:convert';
+
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -252,6 +254,37 @@ void main() {
         final clips = await service.getAllClips();
         expect(clips.first.id, 'new_clip');
         expect(clips.last.id, 'old_clip');
+      });
+
+      test('skips a corrupt clip and still returns valid ones', () async {
+        final validClip = DivineVideoClip(
+          id: 'valid_clip',
+          video: EditorVideo.file('/tmp/valid.mp4'),
+          duration: const Duration(seconds: 1),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .square,
+          originalAspectRatio: 9 / 16,
+        );
+        await service.saveClip(validClip);
+
+        // Insert a corrupt row directly: its JSON has no filePath, so
+        // DivineVideoClip.fromJson throws. It must be skipped, not wipe the
+        // whole library load (regression for #fix/drafts-clips-fail-to-load).
+        final corruptData = validClip.toJson()
+          ..['id'] = 'corrupt_clip'
+          ..['filePath'] = null;
+        await database.clipsDao.upsertClip(
+          id: 'corrupt_clip',
+          orderIndex: 0,
+          durationMs: 1000,
+          recordedAt: DateTime.now(),
+          data: jsonEncode(corruptData),
+          filePath: null,
+          thumbnailPath: null,
+        );
+
+        final clips = await service.getAllClips();
+        expect(clips.map((c) => c.id), ['valid_clip']);
       });
     });
 
