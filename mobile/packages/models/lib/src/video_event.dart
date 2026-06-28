@@ -1159,7 +1159,8 @@ class VideoEvent {
 
   /// ProofMode: Check if video has any proof
   bool get hasProofMode {
-    return proofModeVerificationLevel != null ||
+    return (proofModeVerificationLevel != null &&
+            proofModeVerificationLevel != 'unverified') ||
         hasProofModeManifest ||
         hasProofModePgpFingerprint ||
         hasProofModeDeviceAttestation ||
