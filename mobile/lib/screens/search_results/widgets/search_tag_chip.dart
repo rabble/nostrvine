@@ -31,7 +31,14 @@ class SearchTagChip extends StatelessWidget {
                 '#',
                 style: VineTheme.bodyLargeFont(color: VineTheme.vineGreen),
               ),
-              Text(tag, style: VineTheme.titleSmallFont()),
+              Flexible(
+                child: Text(
+                  tag,
+                  style: VineTheme.titleSmallFont(),
+                  maxLines: 1,
+                  overflow: .ellipsis,
+                ),
+              ),
             ],
           ),
         ),
