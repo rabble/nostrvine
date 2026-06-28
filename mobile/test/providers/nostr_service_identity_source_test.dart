@@ -1172,54 +1172,85 @@ void main() {
     test('does not touch ref after the container is disposed mid-init '
         '(success path)', () async {
       when(() => mockAuth.currentIdentity).thenReturn(identityA);
-      // Gate initialize() so _initializeClient parks on the await.
-      factory.initializeCompleters[pubkeyA] = Completer<void>();
 
-      final container = createContainer();
-      container.read(nostrServiceProvider); // schedules _initializeClient
+      // The leak under test is the fire-and-forgotten `Future.microtask` that
+      // build() schedules for _initializeClient. An uncaught async error is
+      // reported to the zone that was current when the future was *created*,
+      // so container.read() (and the gating completer) must run inside this
+      // guarded zone for the leak to land in [errors]. Without the ref.mounted
+      // guard, the resumed _isCurrentClientForPubkey reads a disposed ref and
+      // throws ("Cannot use the Ref ... after it has been disposed").
+      final errors = <Object>[];
+      await runZonedGuarded(
+        () async {
+          // Gate initialize() so _initializeClient parks on the await.
+          factory.initializeCompleters[pubkeyA] = Completer<void>();
 
-      // Let the scheduled microtask reach `await client.initialize()`.
-      await Future<void>.delayed(Duration.zero);
-      expect(
-        factory.initializePubkeys,
-        contains(pubkeyA),
-        reason: '_initializeClient must be parked on the gated initialize()',
+          final container = createContainer();
+          container.read(nostrServiceProvider); // schedules _initializeClient
+
+          // Let the scheduled microtask reach `await client.initialize()`.
+          await Future<void>.delayed(Duration.zero);
+          expect(
+            factory.initializePubkeys,
+            contains(pubkeyA),
+            reason:
+                '_initializeClient must be parked on the gated initialize()',
+          );
+
+          // Dispose mid-init, then let init resume past the await.
+          container.dispose();
+          factory.initializeCompleters[pubkeyA]!.complete();
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+        },
+        (error, _) => errors.add(error),
       );
 
-      // Dispose mid-init, then let init resume. Without the ref.mounted guard,
-      // the resumed _isCurrentClientForPubkey reads a disposed ref and throws
-      // ("Cannot use the Ref ... after it has been disposed"), surfacing as an
-      // uncaught async error that fails this test. The guard makes it bail.
-      container.dispose();
-      factory.initializeCompleters[pubkeyA]!.complete();
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
-
-      expect(factory.initializeCompleters[pubkeyA]!.isCompleted, isTrue);
+      expect(
+        errors,
+        isEmpty,
+        reason: 'a disposed-ref read leaked past the guard: $errors',
+      );
     });
 
     test('does not touch ref after the container is disposed mid-init '
         '(error path)', () async {
       when(() => mockAuth.currentIdentity).thenReturn(identityA);
-      factory.initializeCompleters[pubkeyA] = Completer<void>();
 
-      final container = createContainer();
-      container.read(nostrServiceProvider);
+      // Same zone rule as the success path: container.read() runs inside the
+      // guarded zone so the fire-and-forgotten init microtask reports any
+      // leaked error into [errors]. The gating completer is created inside the
+      // zone too, so the StateError used to fail init is owned by this zone and
+      // not the outer flutter_test zone. Failing init mid-disposal drives
+      // _initializeClient into its catch block; without the guard the catch
+      // path's ref reads throw on the disposed provider.
+      final errors = <Object>[];
+      await runZonedGuarded(
+        () async {
+          factory.initializeCompleters[pubkeyA] = Completer<void>();
 
-      await Future<void>.delayed(Duration.zero);
-      expect(factory.initializePubkeys, contains(pubkeyA));
+          final container = createContainer();
+          container.read(nostrServiceProvider);
 
-      // Dispose mid-init, then fail init so _initializeClient enters its catch
-      // block. Without the guard the catch path's ref reads throw on the
-      // disposed provider; the guard makes it bail.
-      container.dispose();
-      factory.initializeCompleters[pubkeyA]!.completeError(
-        StateError('init failed'),
+          await Future<void>.delayed(Duration.zero);
+          expect(factory.initializePubkeys, contains(pubkeyA));
+
+          container.dispose();
+          factory.initializeCompleters[pubkeyA]!.completeError(
+            StateError('init failed'),
+          );
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+        },
+        (error, _) => errors.add(error),
       );
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
 
-      expect(factory.initializeCompleters[pubkeyA]!.isCompleted, isTrue);
+      expect(
+        errors,
+        isEmpty,
+        reason: 'a disposed-ref read leaked past the guard: $errors',
+      );
     });
   });
 }
