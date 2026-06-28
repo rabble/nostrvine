@@ -70,6 +70,21 @@ void main() {
     );
 
     test(
+      'returns false when an "unverified" upload carries non-object JSON',
+      () {
+        expect(
+          build(
+            rawTags: const {
+              'verification': 'unverified',
+              'proofmode': '[]',
+            },
+          ).hasProofMode,
+          isFalse,
+        );
+      },
+    );
+
+    test(
       'returns true when an "unverified" upload carries a proofmode manifest '
       'whose JSON holds a real proof field (sensorDataCsv)',
       () {

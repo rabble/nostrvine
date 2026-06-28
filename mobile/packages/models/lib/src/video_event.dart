@@ -1139,9 +1139,16 @@ class VideoEvent {
   }
 
   bool get _rawProofModeManifestCarriesProof {
-    if (proofModeManifest == null) return false;
-    final manifest = proofModeManifestJson;
-    if (manifest == null) return true;
+    final rawManifest = proofModeManifest;
+    if (rawManifest == null) return false;
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(rawManifest);
+    } on FormatException {
+      return true;
+    }
+    if (decoded is! Map<String, dynamic>) return false;
+    final manifest = decoded;
     return _proofManifestSignalFields.any((field) {
       final value = manifest[field];
       return value is String && value.isNotEmpty;
