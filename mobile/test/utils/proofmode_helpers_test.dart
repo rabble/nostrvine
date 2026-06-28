@@ -91,8 +91,9 @@ void main() {
       expect(video.shouldShowProofModeBadge, isFalse);
     });
 
-    test('hasProofMode returns true with any proof tag', () {
-      // Test with manifest only
+    test('hasProofMode reflects manifest proof content', () {
+      // A proofmode manifest with no proof-signal field is an unverified
+      // shell, not proof — tag presence alone is not enough.
       var video = VideoEvent(
         id: 'test5',
         pubkey: 'pubkey5',
@@ -102,9 +103,9 @@ void main() {
         rawTags: const {'proofmode': '{"test": "data"}'},
       );
 
-      expect(video.hasProofMode, isTrue);
+      expect(video.hasProofMode, isFalse);
 
-      // Test with PGP signature in manifest only
+      // A manifest carrying a real proof signal (PGP signature) is proof.
       video = VideoEvent(
         id: 'test6',
         pubkey: 'pubkey6',
