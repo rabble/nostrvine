@@ -270,6 +270,10 @@ class NostrService extends _$NostrService {
   }) async {
     try {
       await _runClientInitialization(client, userRelayUrls);
+      // The provider can be disposed during the await (e.g. a rapid identity
+      // switch rebuilds it, or a test container is torn down mid-init). Reading
+      // `ref` after disposal throws, so bail before the ref-backed checks below.
+      if (!ref.mounted) return;
       if (_isCurrentClientForPubkey(client, pubkey, clientGeneration)) {
         _lastPubkey = pubkey;
         _initializationFailureCount = 0;
@@ -283,6 +287,9 @@ class NostrService extends _$NostrService {
         category: LogCategory.system,
       );
     } catch (e) {
+      // Same disposal hazard as the success path: a provider torn down mid-init
+      // makes the ref-backed recovery below throw. Bail before touching `ref`.
+      if (!ref.mounted) return;
       Log.error(
         '[NostrService] Failed to initialize client in $source(): $e',
         name: 'NostrService',

@@ -1167,4 +1167,59 @@ void main() {
       },
     );
   });
+
+  group('disposed-ref guard (#5602 / #5600 regression)', () {
+    test('does not touch ref after the container is disposed mid-init '
+        '(success path)', () async {
+      when(() => mockAuth.currentIdentity).thenReturn(identityA);
+      // Gate initialize() so _initializeClient parks on the await.
+      factory.initializeCompleters[pubkeyA] = Completer<void>();
+
+      final container = createContainer();
+      container.read(nostrServiceProvider); // schedules _initializeClient
+
+      // Let the scheduled microtask reach `await client.initialize()`.
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        factory.initializePubkeys,
+        contains(pubkeyA),
+        reason: '_initializeClient must be parked on the gated initialize()',
+      );
+
+      // Dispose mid-init, then let init resume. Without the ref.mounted guard,
+      // the resumed _isCurrentClientForPubkey reads a disposed ref and throws
+      // ("Cannot use the Ref ... after it has been disposed"), surfacing as an
+      // uncaught async error that fails this test. The guard makes it bail.
+      container.dispose();
+      factory.initializeCompleters[pubkeyA]!.complete();
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(factory.initializeCompleters[pubkeyA]!.isCompleted, isTrue);
+    });
+
+    test('does not touch ref after the container is disposed mid-init '
+        '(error path)', () async {
+      when(() => mockAuth.currentIdentity).thenReturn(identityA);
+      factory.initializeCompleters[pubkeyA] = Completer<void>();
+
+      final container = createContainer();
+      container.read(nostrServiceProvider);
+
+      await Future<void>.delayed(Duration.zero);
+      expect(factory.initializePubkeys, contains(pubkeyA));
+
+      // Dispose mid-init, then fail init so _initializeClient enters its catch
+      // block. Without the guard the catch path's ref reads throw on the
+      // disposed provider; the guard makes it bail.
+      container.dispose();
+      factory.initializeCompleters[pubkeyA]!.completeError(
+        StateError('init failed'),
+      );
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(factory.initializeCompleters[pubkeyA]!.isCompleted, isTrue);
+    });
+  });
 }
