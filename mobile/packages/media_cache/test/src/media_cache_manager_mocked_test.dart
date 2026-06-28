@@ -157,38 +157,6 @@ void main() {
         verify(mockFile.delete).called(1);
       });
 
-      test('removes existing HTTP 202 cache entries before replay', () async {
-        final mockFile = MockFile();
-        final mockFileInfo = MockFileInfo();
-        var removeFileCalled = false;
-
-        when(mockFile.existsSync).thenReturn(true);
-        when(() => mockFile.path).thenReturn('/test/path/processing.json');
-        when(() => mockFileInfo.file).thenReturn(mockFile);
-        mockFileInfo.statusCodeOverride = HttpStatus.accepted;
-
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        cacheManager = TestableMediaCacheManager(
-          config: MediaCacheConfig(
-            cacheKey: 'existing_processing_response_$timestamp',
-            enableSyncManifest: true,
-          ),
-          mockGetFileFromCache: (key) async => mockFileInfo,
-          mockRemoveFile: (key) async {
-            removeFileCalled = true;
-          },
-        );
-
-        final result = await cacheManager.cacheFile(
-          'https://example.com/processing.mp4',
-          key: 'processing_key',
-        );
-
-        expect(result, isNull);
-        expect(removeFileCalled, isTrue);
-        expect(cacheManager.getCachedFileSync('processing_key'), isNull);
-      });
-
       test('deduplicates concurrent requests for same key', () async {
         final mockFile = MockFile();
         final mockFileInfo = MockFileInfo();

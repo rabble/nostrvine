@@ -533,11 +533,6 @@ class MediaCacheManager extends CacheManager {
     // Check if already cached
     final existingFile = await getFileFromCache(key);
     if (existingFile != null && existingFile.file.existsSync()) {
-      if (_isProcessingResponse(existingFile)) {
-        await removeCachedFile(key);
-        return null;
-      }
-
       // Update manifest
       if (_config.enableSyncManifest) {
         _cacheManifest[key] = existingFile.file.path;

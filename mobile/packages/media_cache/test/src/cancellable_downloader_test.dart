@@ -281,6 +281,32 @@ void main() {
       expect(target.existsSync(), isFalse);
     });
 
+    for (final statusCode in [
+      HttpStatus.noContent,
+      HttpStatus.partialContent,
+    ]) {
+      test('rejects HTTP $statusCode responses', () async {
+        final client = _CallbackClient(
+          (_) async => http.StreamedResponse(
+            Stream<List<int>>.value(utf8.encode('unexpected bytes')),
+            statusCode,
+          ),
+        );
+        final downloader = HttpCancellableDownloader(client);
+        final target = File('${tempDir.path}/http_$statusCode.mp4');
+
+        final file = await downloader
+            .download(
+              url: 'https://example.com/http_$statusCode.mp4',
+              targetFile: target,
+            )
+            .file;
+
+        expect(file, isNull);
+        expect(target.existsSync(), isFalse);
+      });
+    }
+
     test(
       'returns null when stream emits an error and cleans partial file',
       () async {
