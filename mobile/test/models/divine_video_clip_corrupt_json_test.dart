@@ -58,5 +58,21 @@ void main() {
         throwsA(isA<FormatException>()),
       );
     });
+
+    test('throws FormatException when durationMs is null', () {
+      final json = validClip().toJson()..['durationMs'] = null;
+      expect(
+        () => DivineVideoClip.fromJson(json, '/docs', useOriginalPath: true),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('throws FormatException when durationMs is absent', () {
+      final json = validClip().toJson()..remove('durationMs');
+      expect(
+        () => DivineVideoClip.fromJson(json, '/docs', useOriginalPath: true),
+        throwsA(isA<FormatException>()),
+      );
+    });
   });
 }

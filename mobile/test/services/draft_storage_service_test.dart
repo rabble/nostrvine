@@ -347,6 +347,51 @@ void main() {
       });
     });
 
+    group('getDraftById', () {
+      test('returns null for a draft with a corrupt clip', () async {
+        final now = DateTime.now();
+        final draft = DivineVideoDraft(
+          id: 'draft_corrupt',
+          clips: [
+            DivineVideoClip(
+              id: 'clip_corrupt',
+              video: EditorVideo.file('/path/to/clip_corrupt.mp4'),
+              duration: const Duration(seconds: 6),
+              recordedAt: now,
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'draft_corrupt',
+          description: '',
+          hashtags: {},
+          selectedApproach: 'hybrid',
+          createdAt: now,
+          lastModified: now,
+          publishStatus: PublishStatus.draft,
+          publishAttempts: 0,
+        );
+        await service.saveDraft(draft);
+
+        // Drop the clip's filePath so DivineVideoClip.fromJson throws when
+        // the single draft is reconstructed. getDraftById must skip-and-log
+        // and return null rather than throwing out of the lookup.
+        final corruptData = draft.clips.first.toJson()..['filePath'] = null;
+        await database.clipsDao.upsertClip(
+          id: 'clip_corrupt',
+          draftId: 'draft_corrupt',
+          orderIndex: 0,
+          durationMs: 6000,
+          recordedAt: now,
+          data: jsonEncode(corruptData),
+          filePath: null,
+          thumbnailPath: null,
+        );
+
+        expect(await service.getDraftById('draft_corrupt'), isNull);
+      });
+    });
+
     group('deleteDraft', () {
       test('should delete draft by ID', () async {
         final now = DateTime.now();

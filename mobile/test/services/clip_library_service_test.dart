@@ -348,6 +348,33 @@ void main() {
         final found = await service.getClipById('nonexistent');
         expect(found, isNull);
       });
+
+      test('returns null for a corrupt clip row', () async {
+        final validClip = DivineVideoClip(
+          id: 'corrupt_clip',
+          video: EditorVideo.file('/tmp/corrupt.mp4'),
+          duration: const Duration(seconds: 1),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .square,
+          originalAspectRatio: 9 / 16,
+        );
+
+        // Drop the filePath so DivineVideoClip.fromJson throws. getClipById
+        // must skip-and-log and return null instead of throwing out of the
+        // lookup, matching the list loaders' behaviour.
+        final corruptData = validClip.toJson()..['filePath'] = null;
+        await database.clipsDao.upsertClip(
+          id: 'corrupt_clip',
+          orderIndex: 0,
+          durationMs: 1000,
+          recordedAt: DateTime.now(),
+          data: jsonEncode(corruptData),
+          filePath: null,
+          thumbnailPath: null,
+        );
+
+        expect(await service.getClipById('corrupt_clip'), isNull);
+      });
     });
 
     group('clearAllClips', () {

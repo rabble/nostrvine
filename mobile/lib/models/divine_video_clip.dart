@@ -287,10 +287,15 @@ class DivineVideoClip {
     final id = json['id'] as String?;
     final filePath = json['filePath'] as String?;
     final rawRecordedAt = (json['recordedAt'] ?? json['createdAt']) as String?;
-    if (id == null || filePath == null || rawRecordedAt == null) {
+    final durationMs = json['durationMs'] as int?;
+    if (id == null ||
+        filePath == null ||
+        rawRecordedAt == null ||
+        durationMs == null) {
       throw const FormatException(
         'DivineVideoClip JSON is missing a required field '
-        '(id, filePath, or recordedAt); cannot reconstruct the clip.',
+        '(id, filePath, recordedAt, or durationMs); cannot reconstruct '
+        'the clip.',
       );
     }
 
@@ -304,7 +309,7 @@ class DivineVideoClip {
         ),
       ),
       libraryTitle: json['libraryTitle'] as String?,
-      duration: Duration(milliseconds: json['durationMs'] as int),
+      duration: Duration(milliseconds: durationMs),
       recordedAt: DateTime.parse(rawRecordedAt),
       thumbnailPath: resolvePath(
         json['thumbnailPath'] as String?,

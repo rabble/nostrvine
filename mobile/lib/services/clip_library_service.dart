@@ -165,14 +165,17 @@ class ClipLibraryService {
     }
   }
 
-  /// Get a single clip by ID
+  /// Get a single clip by ID.
+  ///
+  /// Returns `null` when the row is missing or corrupt, matching the
+  /// list loaders' skip-and-log behaviour so a single bad row can't throw
+  /// out of a lookup. Callers already treat `null` as "no clip".
   Future<DivineVideoClip?> getClipById(String id) async {
     final row = await _clipsDao.getClipById(id);
     if (row == null) return null;
 
     final documentsPath = await getDocumentsPath();
-    final clipJson = json.decode(row.data) as Map<String, dynamic>;
-    return DivineVideoClip.fromJson(clipJson, documentsPath);
+    return _tryParseClipRow(row, documentsPath, label: 'clip');
   }
 
   /// Move a clip to the trash. The clip is hidden from active queries
