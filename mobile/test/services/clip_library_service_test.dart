@@ -109,6 +109,43 @@ void main() {
         final result = await service.softDelete('nonexistent_clip');
         expect(result, isFalse);
       });
+
+      test(
+        'getTrashedClips skips a corrupt clip and returns valid ones',
+        () async {
+          final validClip = DivineVideoClip(
+            id: 'valid_trashed',
+            video: EditorVideo.file('/tmp/valid.mp4'),
+            duration: const Duration(seconds: 1),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .square,
+            originalAspectRatio: 9 / 16,
+          );
+          await service.saveClip(validClip);
+
+          // A trashed library row whose JSON has no filePath: fromJson throws,
+          // so it must be skipped rather than wiping the whole trash view
+          // (regression for #fix/drafts-clips-fail-to-load).
+          final corruptData = validClip.toJson()
+            ..['id'] = 'corrupt_trashed'
+            ..['filePath'] = null;
+          await database.clipsDao.upsertClip(
+            id: 'corrupt_trashed',
+            orderIndex: 0,
+            durationMs: 1000,
+            recordedAt: DateTime.now(),
+            data: jsonEncode(corruptData),
+            filePath: null,
+            thumbnailPath: null,
+          );
+
+          await service.softDelete('valid_trashed');
+          await service.softDelete('corrupt_trashed');
+
+          final trashed = await service.getTrashedClips();
+          expect(trashed.map((c) => c.id), ['valid_trashed']);
+        },
+      );
     });
 
     group('restore', () {

@@ -131,7 +131,10 @@ class ClipLibraryService {
     try {
       final rows = await _clipsDao.getLibraryClips(ownerPubkey: ownerPubkey);
       final documentsPath = await getDocumentsPath();
-      return _parseClipRows(rows, documentsPath);
+      return rows
+          .map((row) => _tryParseClipRow(row, documentsPath, label: 'clip'))
+          .whereType<DivineVideoClip>()
+          .toList();
     } catch (e) {
       Log.error(
         '❌ Failed to load clips: $e',
@@ -142,26 +145,24 @@ class ClipLibraryService {
     }
   }
 
-  /// Parse [rows] into clips, skipping (and logging) any row that fails to
-  /// deserialize so one corrupt clip can't abort the whole load.
-  List<DivineVideoClip> _parseClipRows(
-    List<ClipRow> rows,
-    String documentsPath,
-  ) {
-    final clips = <DivineVideoClip>[];
-    for (final row in rows) {
-      try {
-        final clipJson = json.decode(row.data) as Map<String, dynamic>;
-        clips.add(DivineVideoClip.fromJson(clipJson, documentsPath));
-      } catch (e) {
-        Log.error(
-          '❌ Skipping corrupt clip ${row.id}: $e',
-          name: 'ClipLibraryService',
-          category: LogCategory.video,
-        );
-      }
+  /// Deserialize a single clip [row], returning `null` (and logging) when the
+  /// row is corrupt so one bad clip can't abort the whole list load.
+  DivineVideoClip? _tryParseClipRow(
+    ClipRow row,
+    String documentsPath, {
+    required String label,
+  }) {
+    try {
+      final clipJson = json.decode(row.data) as Map<String, dynamic>;
+      return DivineVideoClip.fromJson(clipJson, documentsPath);
+    } catch (e) {
+      Log.error(
+        '❌ Skipping corrupt $label ${row.id}: $e',
+        name: 'ClipLibraryService',
+        category: LogCategory.video,
+      );
+      return null;
     }
-    return clips;
   }
 
   /// Get a single clip by ID
@@ -254,20 +255,13 @@ class ClipLibraryService {
       final documentsPath = await getDocumentsPath();
       final clips = <DivineVideoClip>[];
       for (final row in rows) {
-        try {
-          final clipJson = json.decode(row.data) as Map<String, dynamic>;
-          clips.add(
-            DivineVideoClip.fromJson(
-              clipJson,
-              documentsPath,
-            ).copyWith(deletedAt: row.deletedAt),
-          );
-        } catch (e) {
-          Log.error(
-            '❌ Skipping corrupt trashed clip ${row.id}: $e',
-            name: 'ClipLibraryService',
-            category: LogCategory.video,
-          );
+        final clip = _tryParseClipRow(
+          row,
+          documentsPath,
+          label: 'trashed clip',
+        );
+        if (clip != null) {
+          clips.add(clip.copyWith(deletedAt: row.deletedAt));
         }
       }
       return clips;
