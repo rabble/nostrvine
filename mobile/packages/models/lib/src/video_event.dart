@@ -1086,8 +1086,8 @@ class VideoEvent {
   ///
   /// The `proofmode` Nostr tag carries the full `NativeProofData` JSON, so
   /// it is the source of truth for proof signals (`pgpSignature`,
-  /// `publicKey`, `deviceAttestation`, `c2paManifestId`) that the publisher
-  /// may not have additionally surfaced as standalone tags.
+  /// `sensorDataCsv`, `deviceAttestation`, `c2paManifestId`) that the
+  /// publisher may not have additionally surfaced as standalone tags.
   Map<String, dynamic>? get proofModeManifestJson {
     final manifest = proofModeManifest;
     if (manifest == null || manifest.isEmpty) return null;
