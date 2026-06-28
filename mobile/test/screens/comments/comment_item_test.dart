@@ -16,11 +16,14 @@ import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.d
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/comments/widgets/comment_item.dart';
 import 'package:openvine/screens/comments/widgets/video_comment_player.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../builders/comment_builder.dart';
@@ -322,5 +325,85 @@ void main() {
         await tester.pumpAndSettle();
       },
     );
+  });
+
+  group('author navigation', () {
+    testWidgets('tapping the author avatar opens the author profile', (
+      tester,
+    ) async {
+      final mocks = buildMocks();
+
+      final comment = CommentBuilder()
+          .withAuthorPubkey(_testHexPubkey)
+          .withRootEventId(_testRootEventId)
+          .withRootAuthorPubkey(_testRootAuthorPubkey)
+          .withContent('hello')
+          .build();
+
+      // Resolve the author profile so IdentitySkeletonizer is disabled —
+      // Skeletonizer.ignorePointers defaults to true, so a still-loading
+      // (null) profile would swallow the avatar tap.
+      final profile = UserProfile(
+        pubkey: _testHexPubkey,
+        displayName: 'Ada Lovelace',
+        rawData: const {},
+        createdAt: DateTime.utc(2026, 6, 28),
+        eventId:
+            'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
+      );
+
+      final expectedNpub = NostrKeyUtils.encodePubKey(_testHexPubkey);
+
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => Scaffold(
+              body: MultiBlocProvider(
+                providers: [
+                  BlocProvider<CommentComposerBloc>.value(
+                    value: mocks.composer,
+                  ),
+                  BlocProvider<CommentReactionsBloc>.value(
+                    value: mocks.reactions,
+                  ),
+                ],
+                child: SingleChildScrollView(
+                  child: CommentItem(comment: comment),
+                ),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: OtherProfileScreen.pathWithNpub,
+            builder: (context, state) => Scaffold(
+              body: Text('profile:${state.pathParameters['npub']}'),
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            nostrServiceProvider.overrideWithValue(const _FakeNostrClient()),
+            userProfileReactiveProvider(
+              _testHexPubkey,
+            ).overrideWith((ref) => Stream.value(profile)),
+          ],
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(UserAvatar));
+      await tester.pumpAndSettle();
+
+      expect(find.text('profile:$expectedNpub'), findsOneWidget);
+    });
   });
 }

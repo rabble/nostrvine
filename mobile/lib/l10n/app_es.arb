@@ -1,5 +1,6 @@
 {
     "@@locale": "es",
+    "commentAuthorAvatarSemanticLabel": "Ver el perfil de {name}",
     "publishErrorNotSignedIn": "Iniciá sesión para publicar vídeos.",
     "publishErrorNoRetry": "No hay ninguna subida para reintentar.",
     "publishErrorNoInternet": "Sin conexión a internet. Revisá tu Wi-Fi o los datos móviles e intentá de nuevo.",

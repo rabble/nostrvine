@@ -1,5 +1,6 @@
 {
     "@@locale": "ja",
+    "commentAuthorAvatarSemanticLabel": "{name}のプロフィールを表示",
     "publishErrorNotSignedIn": "動画を投稿するにはサインインしてね。",
     "publishErrorNoRetry": "やり直せるアップロードがないよ。",
     "publishErrorNoInternet": "ネットに接続できないよ。Wi-Fi かモバイルデータを確認して、もう一回試してみて。",

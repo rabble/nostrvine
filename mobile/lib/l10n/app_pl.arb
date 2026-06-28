@@ -1,5 +1,6 @@
 {
     "@@locale": "pl",
+    "commentAuthorAvatarSemanticLabel": "Zobacz profil użytkownika {name}",
     "publishErrorNotSignedIn": "Zaloguj się, aby publikować filmy.",
     "publishErrorNoRetry": "Brak przesyłania do ponowienia.",
     "publishErrorNoInternet": "Brak połączenia z internetem. Sprawdź Wi-Fi lub dane komórkowe i spróbuj ponownie.",

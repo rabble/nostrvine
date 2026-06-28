@@ -1,5 +1,6 @@
 {
     "@@locale": "am",
+    "commentAuthorAvatarSemanticLabel": "የ{name}ን መገለጫ ይመልከቱ",
     "publishErrorNotSignedIn": "ቪዲዮዎችን ለማተም እባክዎ ይግቡ።",
     "publishErrorNoRetry": "እንደገና የሚሞከር ስቀላ የለም።",
     "publishErrorNoInternet": "የበይነመረብ ግንኙነት የለም። ዋይ ፋይዎን ወይም የሞባይል ዳታዎን ይፈትሹ እና እንደገና ይሞክሩ።",

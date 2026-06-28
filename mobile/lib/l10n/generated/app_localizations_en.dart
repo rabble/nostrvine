@@ -6182,6 +6182,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commentAuthorYouIndicator => 'You';
 
   @override
+  String commentAuthorAvatarSemanticLabel(String name) {
+    return 'View $name\'s profile';
+  }
+
+  @override
   String get commentOptionsDeleteSemanticLabel => 'Delete comment';
 
   @override

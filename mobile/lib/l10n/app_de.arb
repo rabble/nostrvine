@@ -1,5 +1,6 @@
 {
     "@@locale": "de",
+    "commentAuthorAvatarSemanticLabel": "Profil von {name} ansehen",
     "publishErrorNotSignedIn": "Melde dich an, um Videos zu veröffentlichen.",
     "publishErrorNoRetry": "Kein Upload zum Wiederholen.",
     "publishErrorNoInternet": "Keine Internetverbindung. Prüfe dein WLAN oder deine mobilen Daten und versuch es erneut.",

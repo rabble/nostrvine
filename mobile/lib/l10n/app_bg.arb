@@ -1,5 +1,6 @@
 {
     "@@locale": "bg",
+    "commentAuthorAvatarSemanticLabel": "Преглед на профила на {name}",
     "publishErrorNotSignedIn": "Влез, за да публикуваш видеа.",
     "publishErrorNoRetry": "Няма качване, което да повториш.",
     "publishErrorNoInternet": "Няма връзка с интернет. Провери Wi-Fi или мобилните данни и опитай пак.",

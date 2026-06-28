@@ -1,5 +1,6 @@
 {
     "@@locale": "ko",
+    "commentAuthorAvatarSemanticLabel": "{name}님의 프로필 보기",
     "publishErrorNotSignedIn": "영상을 게시하려면 로그인해주세요.",
     "publishErrorNoRetry": "다시 시도할 업로드가 없어요.",
     "publishErrorNoInternet": "인터넷에 연결되어 있지 않아요. 와이파이나 모바일 데이터를 확인하고 다시 시도해주세요.",

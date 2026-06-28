@@ -3544,6 +3544,15 @@
   "keyImportSubtitle": "Import your existing Nostr identity using your private key or a bunker URL.",
   "keyImportTitle": "Import your\nNostr identity",
   "commentAuthorYouIndicator": "You",
+  "commentAuthorAvatarSemanticLabel": "View {name}'s profile",
+  "@commentAuthorAvatarSemanticLabel": {
+    "description": "Screen-reader label for the tappable comment author avatar, which opens the author's profile. {name} is the author's display name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "commentOptionsDeleteSemanticLabel": "Delete comment",
   "commentOptionsEditSemanticLabel": "Edit comment",
   "commentOptionsFlagContentLabel": "Flag Content",

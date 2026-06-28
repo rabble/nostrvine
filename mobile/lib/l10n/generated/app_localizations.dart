@@ -10856,6 +10856,12 @@ abstract class AppLocalizations {
   /// **'You'**
   String get commentAuthorYouIndicator;
 
+  /// Screen-reader label for the tappable comment author avatar, which opens the author's profile. {name} is the author's display name.
+  ///
+  /// In en, this message translates to:
+  /// **'View {name}\'s profile'**
+  String commentAuthorAvatarSemanticLabel(String name);
+
   /// No description provided for @commentOptionsDeleteSemanticLabel.
   ///
   /// In en, this message translates to:

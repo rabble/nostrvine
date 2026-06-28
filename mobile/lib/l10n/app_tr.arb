@@ -1,5 +1,6 @@
 {
     "@@locale": "tr",
+    "commentAuthorAvatarSemanticLabel": "{name} kullanıcısının profilini görüntüle",
     "publishErrorNotSignedIn": "Video yayınlamak için lütfen giriş yap.",
     "publishErrorNoRetry": "Yeniden denenecek bir yükleme yok.",
     "publishErrorNoInternet": "İnternet bağlantısı yok. Wi-Fi'ını veya mobil verini kontrol edip tekrar dene.",

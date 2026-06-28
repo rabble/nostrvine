@@ -18,12 +18,11 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/comments/comment_synthetic_video_event.dart';
 import 'package:openvine/screens/comments/widgets/comment_options_modal.dart';
 import 'package:openvine/screens/comments/widgets/video_comment_player.dart';
-import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -290,6 +289,13 @@ class _CommentHeader extends ConsumerWidget {
     final isCurrentUser =
         currentUserPubkey.isNotEmpty && currentUserPubkey == authorPubkey;
 
+    final displayName =
+        profile?.displayName ??
+        profile?.name ??
+        UserProfile.generatedNameFor(authorPubkey);
+
+    void openAuthorProfile() => context.pushOtherProfile(authorPubkey);
+
     return IdentitySkeletonizer(
       isLoading: profile == null,
       child: Row(
@@ -299,6 +305,10 @@ class _CommentHeader extends ConsumerWidget {
             size: avatarSize,
             imageUrl: profile?.picture,
             placeholderSeed: authorPubkey,
+            onTap: openAuthorProfile,
+            semanticLabel: context.l10n.commentAuthorAvatarSemanticLabel(
+              displayName,
+            ),
           ),
           Expanded(
             child: Column(
@@ -329,10 +339,7 @@ class _CommentHeader extends ConsumerWidget {
                   ],
                 ),
                 GestureDetector(
-                  onTap: () {
-                    final npub = NostrKeyUtils.encodePubKey(authorPubkey);
-                    context.push(OtherProfileScreen.pathForNpub(npub));
-                  },
+                  onTap: openAuthorProfile,
                   child: profile == null
                       ? Text(
                           UserProfile.generatedNameFor(authorPubkey),

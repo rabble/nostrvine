@@ -1,5 +1,6 @@
 {
     "@@locale": "ro",
+    "commentAuthorAvatarSemanticLabel": "Vezi profilul lui {name}",
     "publishErrorNotSignedIn": "Autentifică-te ca să publici videoclipuri.",
     "publishErrorNoRetry": "Nu există nicio încărcare de reîncercat.",
     "publishErrorNoInternet": "Nu există conexiune la internet. Verifică Wi-Fi-ul sau datele mobile și încearcă din nou.",

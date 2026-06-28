@@ -6158,6 +6158,11 @@ class AppLocalizationsId extends AppLocalizations {
   String get commentAuthorYouIndicator => 'You';
 
   @override
+  String commentAuthorAvatarSemanticLabel(String name) {
+    return 'Lihat profil $name';
+  }
+
+  @override
   String get commentOptionsDeleteSemanticLabel => 'Delete comment';
 
   @override

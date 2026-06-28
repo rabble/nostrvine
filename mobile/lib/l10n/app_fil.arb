@@ -1,5 +1,6 @@
 {
     "@@locale": "fil",
+    "commentAuthorAvatarSemanticLabel": "Tingnan ang profile ni {name}",
     "publishErrorNotSignedIn": "Mag-sign in muna para makapag-publish ng video.",
     "publishErrorNoRetry": "Walang upload na puwedeng subukan ulit.",
     "publishErrorNoInternet": "Walang internet connection. Tingnan ang iyong Wi-Fi o mobile data at subukan ulit.",

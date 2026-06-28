@@ -1,5 +1,6 @@
 {
     "@@locale": "pt",
+    "commentAuthorAvatarSemanticLabel": "Ver o perfil de {name}",
     "publishErrorNotSignedIn": "Entre na sua conta para publicar vídeos.",
     "publishErrorNoRetry": "Nenhum envio para tentar novamente.",
     "publishErrorNoInternet": "Sem conexão com a internet. Verifique seu Wi-Fi ou dados móveis e tente novamente.",

@@ -1,5 +1,6 @@
 {
     "@@locale": "id",
+    "commentAuthorAvatarSemanticLabel": "Lihat profil {name}",
     "publishErrorNotSignedIn": "Silakan masuk untuk mempublikasikan video.",
     "publishErrorNoRetry": "Tidak ada unggahan untuk dicoba ulang.",
     "publishErrorNoInternet": "Tidak ada koneksi internet. Periksa Wi-Fi atau data selulermu dan coba lagi.",

@@ -1,5 +1,6 @@
 {
     "@@locale": "ar",
+    "commentAuthorAvatarSemanticLabel": "عرض ملف {name} الشخصي",
     "publishErrorNotSignedIn": "يرجى تسجيل الدخول لنشر الفيديوهات.",
     "publishErrorNoRetry": "لا يوجد رفع لإعادة محاولته.",
     "publishErrorNoInternet": "لا يوجد اتصال بالإنترنت. تحقّق من Wi-Fi أو بيانات الجوال وحاول مرّة أخرى.",

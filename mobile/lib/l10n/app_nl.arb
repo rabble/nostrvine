@@ -1,5 +1,6 @@
 {
     "@@locale": "nl",
+    "commentAuthorAvatarSemanticLabel": "Profiel van {name} bekijken",
     "publishErrorNotSignedIn": "Log in om video's te publiceren.",
     "publishErrorNoRetry": "Geen upload om opnieuw te proberen.",
     "publishErrorNoInternet": "Geen internetverbinding. Controleer je wifi of mobiele data en probeer het opnieuw.",

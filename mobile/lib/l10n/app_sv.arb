@@ -1,5 +1,6 @@
 {
     "@@locale": "sv",
+    "commentAuthorAvatarSemanticLabel": "Visa {name}s profil",
     "publishErrorNotSignedIn": "Logga in för att publicera videor.",
     "publishErrorNoRetry": "Ingen uppladdning att försöka igen med.",
     "publishErrorNoInternet": "Ingen internetanslutning. Kontrollera ditt wifi eller mobildata och försök igen.",
