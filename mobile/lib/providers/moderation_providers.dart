@@ -136,28 +136,45 @@ AccountLabelService accountLabelService(Ref ref) {
 @Riverpod(keepAlive: true)
 ModerationLabelService moderationLabelService(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
-  final readiness = ref.watch(nostrSessionProvider);
   final authService = ref.watch(authServiceProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
   final service = ModerationLabelService(
     nostrClient: nostrClient,
     authService: authService,
     sharedPreferences: prefs,
+    canQueryRelays: () {
+      if (!ref.mounted) return false;
+      final readiness = ref.read(nostrSessionProvider);
+      return readiness.isReadyForActiveClient &&
+          identical(readiness.client, nostrClient);
+    },
   );
 
   StreamSubscription<List<String>>? followingSubscription;
-  if (readiness.isReadyForActiveClient &&
-      identical(readiness.client, nostrClient)) {
-    final followRepository = ref.watch(followRepositoryProvider);
-    unawaited(
-      service.initialize().then((_) {
-        return service.syncFollowedLabelers(followRepository.followingPubkeys);
-      }),
-    );
-    followingSubscription = followRepository.followingStream.listen((pubkeys) {
+
+  Future<void> startRelaySync(NostrSessionReadiness readiness) async {
+    if (!readiness.isReadyForActiveClient ||
+        !identical(readiness.client, nostrClient)) {
+      return;
+    }
+
+    final followRepository = ref.read(followRepositoryProvider);
+    await service.initialize();
+    await service.syncFollowedLabelers(followRepository.followingPubkeys);
+    followingSubscription ??= followRepository.followingStream.listen((
+      pubkeys,
+    ) {
       unawaited(service.syncFollowedLabelers(pubkeys));
     });
   }
+
+  unawaited(startRelaySync(ref.read(nostrSessionProvider)));
+
+  ref.listen<NostrSessionReadiness>(nostrSessionProvider, (_, next) {
+    unawaited(
+      startRelaySync(next),
+    );
+  });
 
   ref.onDispose(() {
     unawaited(followingSubscription?.cancel());

@@ -79,6 +79,7 @@ void main() {
       when(
         () => moderationLabelService.isFollowingModerationEnabled,
       ).thenReturn(false);
+      when(() => moderationLabelService.initialize()).thenAnswer((_) async {});
       when(() => moderationLabelService.customLabelers).thenReturn(<String>{});
       when(
         () => moderationLabelService.setFollowingModerationEnabled(

@@ -456,7 +456,7 @@ final class ModerationLabelServiceProvider
 }
 
 String _$moderationLabelServiceHash() =>
-    r'29250a03d39851a0bb66b8995d1a1de66e464040';
+    r'3a30421dc30c969f723bed27cd7eaec78ea8e37d';
 
 /// Content blocklist service for filtering unwanted content from feeds
 ///

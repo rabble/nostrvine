@@ -76,14 +76,17 @@ class ModerationLabelService {
     required NostrClient nostrClient,
     required AuthService authService,
     required SharedPreferences sharedPreferences,
+    bool Function()? canQueryRelays,
   }) : _nostrClient = nostrClient,
        _authService = authService,
-       _prefs = sharedPreferences;
+       _prefs = sharedPreferences,
+       _canQueryRelays = canQueryRelays ?? (() => true);
 
   final NostrClient _nostrClient;
   // ignore: unused_field
   final AuthService _authService;
   final SharedPreferences _prefs;
+  final bool Function() _canQueryRelays;
 
   /// SharedPreferences key for subscribed labeler pubkeys.
   static const String _subscribedLabelersKey = 'subscribed_labeler_pubkeys';
@@ -150,8 +153,9 @@ class ModerationLabelService {
   /// Active subscriptions.
   final Map<String, StreamSubscription<dynamic>> _subscriptions = {};
 
-  /// Whether the service has been initialized.
-  bool _initialized = false;
+  /// Whether persisted settings have been loaded.
+  bool _loadedPersistedState = false;
+  Future<void>? _loadPersistedStateFuture;
 
   /// Whether followed accounts should act as trusted labelers.
   bool _isFollowingModerationEnabled = false;
@@ -164,9 +168,16 @@ class ModerationLabelService {
 
   /// Initialize by loading persisted labeler subscriptions and subscribing.
   Future<void> initialize() async {
-    if (_initialized) return;
-    _initialized = true;
+    await _ensurePersistedStateLoaded();
+    await _syncSubscribedLabelersWithRelays();
+  }
 
+  Future<void> _ensurePersistedStateLoaded() {
+    if (_loadedPersistedState) return Future<void>.value();
+    return _loadPersistedStateFuture ??= _loadPersistedState();
+  }
+
+  Future<void> _loadPersistedState() async {
     try {
       // Resolve Divine moderation pubkey (cache → NIP-05 → fallback)
       _divineModerationPubkey = await _resolveModerationPubkey(_prefs);
@@ -186,13 +197,10 @@ class ModerationLabelService {
         _subscribedLabelers.add(_divineModerationPubkey);
       }
 
-      // Subscribe to all labelers
-      for (final pubkey in _subscribedLabelers) {
-        await subscribeToLabeler(pubkey);
-      }
+      _loadedPersistedState = true;
 
       Log.info(
-        'ModerationLabelService initialized with '
+        'ModerationLabelService loaded '
         '${_subscribedLabelers.length} labelers '
         '(moderation pubkey: $_divineModerationPubkey)',
         name: 'ModerationLabelService',
@@ -204,12 +212,28 @@ class ModerationLabelService {
         name: 'ModerationLabelService',
         category: LogCategory.system,
       );
+    } finally {
+      _loadPersistedStateFuture = null;
+    }
+  }
+
+  Future<void> _syncSubscribedLabelersWithRelays() async {
+    for (final pubkey in _subscribedLabelers) {
+      await subscribeToLabeler(pubkey);
     }
   }
 
   /// Subscribe to Kind 1985 events from a labeler pubkey.
   Future<void> subscribeToLabeler(String pubkey) async {
     if (_loadedLabelers.contains(pubkey)) return;
+    if (!_canQueryRelays()) {
+      Log.debug(
+        'Deferring labeler subscription until Nostr session is ready: $pubkey',
+        name: 'ModerationLabelService',
+        category: LogCategory.system,
+      );
+      return;
+    }
 
     try {
       final filter = Filter(
@@ -242,6 +266,7 @@ class ModerationLabelService {
 
   /// Add a new labeler and persist.
   Future<void> addLabeler(String pubkey) async {
+    await _ensurePersistedStateLoaded();
     _subscribedLabelers.add(pubkey);
     await _saveSubscribedLabelers();
     await subscribeToLabeler(pubkey);
@@ -249,6 +274,7 @@ class ModerationLabelService {
 
   /// Remove a labeler and clean up.
   Future<void> removeLabeler(String pubkey) async {
+    await _ensurePersistedStateLoaded();
     // Don't allow removing the built-in Divine labeler
     if (pubkey == _divineModerationPubkey) return;
 
@@ -264,6 +290,7 @@ class ModerationLabelService {
     bool enabled, {
     Iterable<String> followedPubkeys = const [],
   }) async {
+    await _ensurePersistedStateLoaded();
     _isFollowingModerationEnabled = enabled;
     await _saveFollowingModerationEnabled();
     await _syncFollowedLabelersInternal(
@@ -273,6 +300,7 @@ class ModerationLabelService {
 
   /// Sync the currently followed pubkeys that should act as trusted labelers.
   Future<void> syncFollowedLabelers(Iterable<String> followedPubkeys) async {
+    await _ensurePersistedStateLoaded();
     if (!_isFollowingModerationEnabled) return;
     await _syncFollowedLabelersInternal(followedPubkeys);
   }

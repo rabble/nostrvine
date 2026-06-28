@@ -120,5 +120,31 @@ void main() {
 
       verify(() => nostrClient.queryEvents(any())).called(1);
     });
+
+    test(
+      'does not query when readiness holds a stale client instance',
+      () async {
+        final activeClient = _MockNostrClient();
+        final staleReadyClient = _MockNostrClient();
+
+        when(() => staleReadyClient.hasKeys).thenReturn(true);
+        when(() => staleReadyClient.publicKey).thenReturn(testPubkey);
+
+        final container = await createContainer(
+          readiness: NostrSessionReadiness.nostrReady(
+            pubkey: testPubkey,
+            client: staleReadyClient,
+          ),
+          nostrClient: activeClient,
+        );
+        addTearDown(container.dispose);
+
+        container.read(moderationLabelServiceProvider);
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(() => activeClient.queryEvents(any()));
+        verifyNever(() => staleReadyClient.queryEvents(any()));
+      },
+    );
   });
 }

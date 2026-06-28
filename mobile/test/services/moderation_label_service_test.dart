@@ -50,6 +50,43 @@ void main() {
   });
 
   group(ModerationLabelService, () {
+    test(
+      'addLabeler preserves saved labelers before relay session is ready',
+      () async {
+        const existingLabeler =
+            '1111111111111111111111111111111111111111111111111111111111111111';
+        const newLabeler =
+            '2222222222222222222222222222222222222222222222222222222222222222';
+
+        SharedPreferences.setMockInitialValues({
+          'subscribed_labeler_pubkeys': [existingLabeler],
+          'divine_moderation_resolved_pubkey':
+              ModerationLabelService.fallbackModerationPubkeyHex,
+          'divine_moderation_resolved_at': DateTime.now().toIso8601String(),
+        });
+        final prefs = await SharedPreferences.getInstance();
+        final gatedService = ModerationLabelService(
+          nostrClient: mockNostrClient,
+          authService: mockAuthService,
+          sharedPreferences: prefs,
+          canQueryRelays: () => false,
+        );
+
+        await gatedService.addLabeler(newLabeler);
+
+        final saved = prefs.getStringList('subscribed_labeler_pubkeys');
+        expect(
+          saved,
+          containsAll([
+            existingLabeler,
+            newLabeler,
+            ModerationLabelService.fallbackModerationPubkeyHex,
+          ]),
+        );
+        verifyNever(() => mockNostrClient.queryEvents(any()));
+      },
+    );
+
     group('_processLabelEvent', () {
       test('parses basic content-warning label', () async {
         when(() => mockNostrClient.queryEvents(any())).thenAnswer(
