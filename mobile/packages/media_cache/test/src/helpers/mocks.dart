@@ -11,7 +11,12 @@ import 'package:sqflite/sqflite.dart' as sqflite;
 class MockDatabase extends Mock implements sqflite.Database {}
 
 /// A mock [FileInfo] for testing.
-class MockFileInfo extends Mock implements FileInfo {}
+class MockFileInfo extends Mock implements FileInfo {
+  int statusCodeOverride = io.HttpStatus.ok;
+
+  @override
+  int get statusCode => statusCodeOverride;
+}
 
 /// A mock [File] for testing.
 /// Uses File from the `file` package (used by flutter_cache_manager).

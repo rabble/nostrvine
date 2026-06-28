@@ -324,6 +324,9 @@ class MediaCacheManager extends CacheManager {
 
   bool _isClosed = false;
 
+  bool _isProcessingResponse(FileInfo fileInfo) =>
+      fileInfo.statusCode == HttpStatus.accepted;
+
   /// Whether this cache manager has been initialized.
   bool get isInitialized => _manifestInitialized;
 
@@ -530,6 +533,11 @@ class MediaCacheManager extends CacheManager {
     // Check if already cached
     final existingFile = await getFileFromCache(key);
     if (existingFile != null && existingFile.file.existsSync()) {
+      if (_isProcessingResponse(existingFile)) {
+        await removeCachedFile(key);
+        return null;
+      }
+
       // Update manifest
       if (_config.enableSyncManifest) {
         _cacheManifest[key] = existingFile.file.path;
@@ -554,6 +562,20 @@ class MediaCacheManager extends CacheManager {
             key: key,
             authHeaders: authHeaders ?? {},
           );
+
+          if (_isProcessingResponse(fileInfo)) {
+            await removeCachedFile(key);
+            try {
+              if (fileInfo.file.existsSync()) {
+                await fileInfo.file.delete();
+              }
+            } on Object {
+              // Best-effort cleanup; the cache metadata has already been
+              // removed so the processing response cannot be replayed.
+            }
+            if (!completer.isCompleted) completer.complete(null);
+            return;
+          }
 
           // Update manifest
           if (_config.enableSyncManifest && !_isClosed) {

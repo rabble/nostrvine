@@ -148,7 +148,7 @@ class _HttpDownload implements CancellableDownload {
         _safeComplete(null);
         return;
       }
-      if (response.statusCode < 200 || response.statusCode >= 300) {
+      if (response.statusCode != HttpStatus.ok) {
         Log.warning(
           'CancellableDownload: $_url returned HTTP ${response.statusCode}',
           name: 'MediaCache',
