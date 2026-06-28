@@ -212,6 +212,19 @@ final class VideoRecorderCameraPausedForNavigation extends VideoRecorderEvent {
   const VideoRecorderCameraPausedForNavigation();
 }
 
+/// Locks recording and detaches the remote (volume / Bluetooth) trigger the
+/// moment a navigation push away from the recorder begins — while the camera is
+/// still live, before [VideoRecorderCameraPausedForNavigation] disposes it.
+///
+/// Dispatched at the start of a navigation flow so a remote trigger that races
+/// the push can't start (or leave) a recording on a camera that is about to be
+/// torn down, which would otherwise strand the recorder. Cleared by
+/// [VideoRecorderInitializeRequested] on return.
+final class VideoRecorderRecordingLockedForNavigation
+    extends VideoRecorderEvent {
+  const VideoRecorderRecordingLockedForNavigation();
+}
+
 /// Sets the recorder mode. Capture↔classic transitions clear recorded
 /// clips and reset the editor; transitions involving
 /// [VideoRecorderMode.upload] preserve both.

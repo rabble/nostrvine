@@ -20,6 +20,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
@@ -207,6 +208,9 @@ class VideoRecorderBloc
     on<VideoRecorderZoomedByLongPress>(_onZoomedByLongPress);
     on<VideoRecorderScaleStarted>(_onScaleStarted);
     on<VideoRecorderScaleUpdated>(_onScaleUpdated);
+    on<VideoRecorderRecordingLockedForNavigation>(
+      _onRecordingLockedForNavigation,
+    );
     on<VideoRecorderCameraPausedForNavigation>(_onCameraPausedForNavigation);
     on<VideoRecorderRecorderModeSet>(_onRecorderModeSet);
     on<VideoRecorderTimerCycled>(_onTimerCycled);
@@ -236,6 +240,14 @@ class VideoRecorderBloc
   Timer? _focusPointTimer;
   Timer? _zoomIndicatorTimer;
   bool _remoteRecordControlEnabled = false;
+
+  /// Set while the camera is released for a navigation push (editor, metadata,
+  /// library) and cleared on the next re-initialization. Gates recording
+  /// start/toggle so a volume / Bluetooth trigger that races the navigation
+  /// can't begin a recording on a camera that is being torn down — which would
+  /// otherwise strand the recorder, since an in-flight native start hung behind
+  /// the disposed camera permanently occupies the `sequential()` start bucket.
+  bool _recordingLockedForNavigation = false;
 
   /// How long the zoom ruler stays visible after the last pinch activity
   /// before the auto-hide timer clears it.
@@ -313,6 +325,10 @@ class VideoRecorderBloc
       emit(state.copyWith(initializationErrorMessage: error));
       return;
     }
+
+    // Camera is back — release the navigation recording lock set when it was
+    // paused for the push (see [_onCameraPausedForNavigation]).
+    _recordingLockedForNavigation = false;
 
     final clips = _readClipManager().clips;
     _emitCameraSync(
@@ -590,6 +606,15 @@ class VideoRecorderBloc
       return;
     }
 
+    if (_recordingLockedForNavigation) {
+      Log.debug(
+        '🎮 toggleRecording ignored - recording locked for navigation',
+        name: 'VideoRecorderBloc',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
     switch (state.recordingState) {
       case VideoRecorderState.idle:
         add(const VideoRecorderRecordingStartRequested());
@@ -606,7 +631,8 @@ class VideoRecorderBloc
     final clipManager = _readClipManager();
     final remainingDuration = clipManager.remainingDuration;
 
-    if (!_cameraService.canRecord ||
+    if (_recordingLockedForNavigation ||
+        !_cameraService.canRecord ||
         state.isRecording ||
         state.isStartingRecording ||
         state.isStoppingRecording ||
@@ -688,6 +714,20 @@ class VideoRecorderBloc
       return;
     }
 
+    if (_recordingLockedForNavigation) {
+      // Navigation released (or is releasing) the camera before the native
+      // start ran — abort to idle instead of recording on a camera that is
+      // about to be torn down.
+      emit(
+        state.copyWith(
+          isStartingRecording: false,
+          pendingStopAfterStart: false,
+          recordingState: VideoRecorderState.idle,
+        ),
+      );
+      return;
+    }
+
     await _prepareSoundForPlayback();
 
     emit(state.copyWith(recordingState: VideoRecorderState.recording));
@@ -704,6 +744,23 @@ class VideoRecorderBloc
           ? remainingDuration
           : null,
     );
+
+    if (_recordingLockedForNavigation) {
+      // The camera was released for navigation while the native start was in
+      // flight. Don't latch a recording the user can never stop — stop the
+      // just-started session best-effort and return to idle.
+      if (success) {
+        await _cameraService.stopRecording();
+      }
+      emit(
+        state.copyWith(
+          isStartingRecording: false,
+          pendingStopAfterStart: false,
+          recordingState: VideoRecorderState.idle,
+        ),
+      );
+      return;
+    }
 
     if (success) {
       Log.info(
@@ -878,6 +935,48 @@ class VideoRecorderBloc
       category: LogCategory.video,
     );
 
+    // Clip post-processing — real duration, thumbnail, ghost frame and the
+    // metadata-enriched library save — is deliberately detached (not awaited).
+    // This handler runs in the `sequential()` stop bucket, so awaiting the
+    // post-processing would serialize it ahead of the *next* stop request: a
+    // slow library save or metadata pass (observed in the field taking ~100s)
+    // would leave the user unable to stop their next recording until it
+    // finished. The work mutates the clip in place on the clip manager (which
+    // the UI observes) and re-saves it, so it is safe to run detached. The
+    // bare clip was already persisted by the unawaited save above.
+    unawaited(
+      _enrichAndSaveClip(
+        videoResult: videoResult,
+        clip: clip,
+        clipManager: clipManager,
+        remainingDuration: remainingDuration,
+      ).catchError((Object error, StackTrace stackTrace) {
+        // Detached work must not escape as an unhandled async error. The bare
+        // clip is already saved, so a failure here only loses the enriched
+        // metadata, not the recording.
+        Log.error(
+          '⚠️ Clip post-processing failed for ${clip.id}',
+          name: 'VideoRecorderBloc',
+          category: LogCategory.video,
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }),
+    );
+  }
+
+  /// Enriches a freshly recorded [clip] with its real duration, thumbnail and
+  /// ghost frame, then re-saves the enriched clip to the library.
+  ///
+  /// Runs detached (fire-and-forget) from [_onRecordingStopRequested] so the
+  /// `sequential()` stop handler returns immediately and never blocks a
+  /// following stop request behind this potentially slow work.
+  Future<void> _enrichAndSaveClip({
+    required EditorVideo videoResult,
+    required DivineVideoClip clip,
+    required ClipManagerNotifier clipManager,
+    required Duration remainingDuration,
+  }) async {
     final videoPath = await videoResult.safeFilePath();
     final workCopyPath = '$videoPath.work.mp4';
     await File(videoPath).copy(workCopyPath);
@@ -1131,6 +1230,13 @@ class VideoRecorderBloc
     emit(state.copyWith(showZoomIndicator: false));
   }
 
+  void _onRecordingLockedForNavigation(
+    VideoRecorderRecordingLockedForNavigation event,
+    Emitter<VideoRecorderBlocState> emit,
+  ) {
+    _lockRecordingForNavigation(emit);
+  }
+
   Future<void> _onCameraPausedForNavigation(
     VideoRecorderCameraPausedForNavigation event,
     Emitter<VideoRecorderBlocState> emit,
@@ -1140,7 +1246,35 @@ class VideoRecorderBloc
       name: 'VideoRecorderBloc',
       category: LogCategory.video,
     );
+    // Idempotent with VideoRecorderRecordingLockedForNavigation (which the View
+    // dispatches first, before the push transition). Re-asserting here keeps
+    // the recorder safe even if only the pause event is dispatched.
+    _lockRecordingForNavigation(emit);
     await _cameraService.dispose();
+  }
+
+  /// Locks recording for a navigation push: sets the lock, detaches the remote
+  /// (volume / Bluetooth) trigger, and resets any in-flight / active recording
+  /// to idle so a trigger that raced the navigation can't leave a recording the
+  /// user can never stop. Runs synchronously while the camera is still live —
+  /// the dispose (if any) happens after — so it never races the native start.
+  /// The lock is cleared on the next [VideoRecorderInitializeRequested].
+  void _lockRecordingForNavigation(Emitter<VideoRecorderBlocState> emit) {
+    _recordingLockedForNavigation = true;
+    _cameraService.onRemoteRecordTrigger = null;
+    if (state.isRecording || state.isStartingRecording) {
+      _readClipManager()
+        ..stopRecording()
+        ..resetRecording();
+      emit(
+        state.copyWith(
+          recordingState: VideoRecorderState.idle,
+          isStartingRecording: false,
+          isStoppingRecording: false,
+          pendingStopAfterStart: false,
+        ),
+      );
+    }
   }
 
   void _onRecorderModeSet(

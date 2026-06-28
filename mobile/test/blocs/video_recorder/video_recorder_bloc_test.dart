@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_camera/divine_camera.dart';
 import 'package:flutter/widgets.dart';
@@ -5,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
@@ -13,6 +16,7 @@ import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dar
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:wakelock_plus_platform_interface/wakelock_plus_platform_interface.dart';
@@ -24,6 +28,8 @@ class _MockClipManager extends Mock implements ClipManagerNotifier {}
 class _MockVideoEditor extends Mock implements VideoEditorNotifier {}
 
 class _MockSharedPreferences extends Mock implements SharedPreferences {}
+
+class _MockEditorVideo extends Mock implements EditorVideo {}
 
 /// A fake wakelock platform —
 /// production code calls `WakelockPlus.enable/disable` around every
@@ -66,6 +72,18 @@ void main() {
     registerFallbackValue(DivineVideoQuality.fhd);
     registerFallbackValue(AppLifecycleState.resumed);
     registerFallbackValue(Offset.zero);
+    registerFallbackValue(EditorVideo.file('/fallback.mp4'));
+    registerFallbackValue(model.AspectRatio.vertical);
+    registerFallbackValue(
+      DivineVideoClip(
+        id: 'fallback',
+        video: EditorVideo.file('/fallback.mp4'),
+        duration: Duration.zero,
+        recordedAt: DateTime(2024),
+        targetAspectRatio: model.AspectRatio.vertical,
+        originalAspectRatio: 1,
+      ),
+    );
   });
 
   setUp(() {
@@ -1027,6 +1045,237 @@ void main() {
               maxDuration: any(named: 'maxDuration'),
             ),
           ).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'a hung clip post-processing does not strand the next stop — the '
+        'detached enrichment must not hold the sequential() stop bucket',
+        setUp: () {
+          // The first stop yields a clip whose post-processing hangs forever
+          // at its first await (safeFilePath). Before the fix that await ran
+          // *inside* the sequential() stop handler, so the handler never
+          // completed and the next stop could never be processed — the field
+          // symptom was a volume-button stop that did nothing for ~1 minute.
+          final hangingVideo = _MockEditorVideo();
+          when(
+            hangingVideo.safeFilePath,
+          ).thenAnswer((_) => Completer<String>().future);
+          when(
+            () => cameraService.stopRecording(),
+          ).thenAnswer((_) async => hangingVideo);
+          when(
+            () => clipManager.addClip(
+              video: any(named: 'video'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              lensMetadata: any(named: 'lensMetadata'),
+              limitClipDuration: any(named: 'limitClipDuration'),
+            ),
+          ).thenReturn(
+            DivineVideoClip(
+              id: 'hung-clip',
+              video: hangingVideo,
+              duration: const Duration(seconds: 2),
+              recordedAt: DateTime(2024),
+              targetAspectRatio: model.AspectRatio.vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+          );
+          when(
+            () => clipManager.saveClipToLibrary(any()),
+          ).thenAnswer((_) async => true);
+        },
+        build: () => buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(
+              recordingState: VideoRecorderState.recording,
+            ),
+          ),
+        act: (bloc) async {
+          bloc.add(const VideoRecorderRecordingStopRequested());
+          await pumpEventQueue();
+          // The first stop's enrichment is now hanging in the background.
+          // Re-arm to recording and request a second stop: it must still be
+          // honored rather than queued behind the hung post-processing.
+          bloc.emit(
+            const VideoRecorderBlocState(
+              recordingState: VideoRecorderState.recording,
+            ),
+          );
+          bloc.add(const VideoRecorderRecordingStopRequested());
+          await pumpEventQueue();
+        },
+        verify: (_) {
+          // Both stops reached the native stop — the second was not stranded
+          // behind the first stop's hung post-processing in the sequential()
+          // bucket.
+          verify(() => cameraService.stopRecording()).called(2);
+        },
+      );
+    });
+
+    group('VideoRecorderCameraPausedForNavigation → recording lock', () {
+      late Completer<bool> startGate;
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'resets an active recording to idle when the camera is released for '
+        'navigation, so it cannot survive as an unstoppable session',
+        build: () => buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(
+              recordingState: VideoRecorderState.recording,
+            ),
+          ),
+        act: (bloc) => bloc.add(const VideoRecorderCameraPausedForNavigation()),
+        verify: (bloc) {
+          expect(bloc.state.recordingState, VideoRecorderState.idle);
+          expect(bloc.state.isStartingRecording, isFalse);
+          verify(() => clipManager.stopRecording()).called(1);
+          verify(() => clipManager.resetRecording()).called(1);
+          // Disposed by the pause handler (the bloc also disposes on close()).
+          verify(() => cameraService.dispose());
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'rejects a record start while locked for navigation — a volume / BLE '
+        'trigger that races the push must not start a recording',
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const VideoRecorderCameraPausedForNavigation());
+          await pumpEventQueue();
+          bloc.add(const VideoRecorderRecordingStartRequested());
+          await pumpEventQueue();
+        },
+        verify: (_) {
+          // canRecord is still true on the mock, so only the navigation lock
+          // can stop the start from reaching the camera.
+          verifyNever(
+            () => cameraService.startRecording(
+              maxDuration: any(named: 'maxDuration'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'aborts an in-flight start when the camera is released mid-start, '
+        'returning to idle instead of latching an unstoppable recording',
+        setUp: () {
+          // The native start hangs until [startGate] completes, modelling a
+          // slow start that is still in flight when navigation releases the
+          // camera.
+          startGate = Completer<bool>();
+          when(
+            () => cameraService.startRecording(
+              maxDuration: any(named: 'maxDuration'),
+            ),
+          ).thenAnswer((_) => startGate.future);
+          when(
+            () => cameraService.stopRecording(),
+          ).thenAnswer((_) async => null);
+        },
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const VideoRecorderRecordingStartRequested());
+          await pumpEventQueue();
+          // Camera released for navigation while the native start is pending.
+          bloc.add(const VideoRecorderCameraPausedForNavigation());
+          await pumpEventQueue();
+          // Native start finally reports success — the handler must see the
+          // lock and abort rather than latch a recording.
+          startGate.complete(true);
+          await pumpEventQueue();
+        },
+        verify: (bloc) {
+          expect(bloc.state.recordingState, VideoRecorderState.idle);
+          expect(bloc.state.isStartingRecording, isFalse);
+          // Best-effort stop of the just-started native session.
+          verify(() => cameraService.stopRecording()).called(1);
+          // Disposed by the pause handler (the bloc also disposes on close()).
+          verify(() => cameraService.dispose());
+        },
+      );
+    });
+
+    group('VideoRecorderRecordingLockedForNavigation → recording lock', () {
+      late Completer<bool> startGate;
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'resets an active recording to idle without disposing the camera — the '
+        'camera is released later by CameraPausedForNavigation',
+        build: () => buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(
+              recordingState: VideoRecorderState.recording,
+            ),
+          ),
+        act: (bloc) =>
+            bloc.add(const VideoRecorderRecordingLockedForNavigation()),
+        verify: (bloc) {
+          expect(bloc.state.recordingState, VideoRecorderState.idle);
+          expect(bloc.state.isStartingRecording, isFalse);
+          verify(() => clipManager.stopRecording()).called(1);
+          verify(() => clipManager.resetRecording()).called(1);
+          // The lock itself does NOT dispose — the single dispose is the
+          // bloc's own close() teardown.
+          verify(() => cameraService.dispose()).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'rejects a record start while locked — a volume / BLE trigger that '
+        'races the push must not start a recording',
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const VideoRecorderRecordingLockedForNavigation());
+          await pumpEventQueue();
+          bloc.add(const VideoRecorderRecordingStartRequested());
+          await pumpEventQueue();
+        },
+        verify: (_) {
+          verifyNever(
+            () => cameraService.startRecording(
+              maxDuration: any(named: 'maxDuration'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'aborts an in-flight start when navigation locks, on the still-live '
+        'camera — the start resolves and returns to idle, no dispose race',
+        setUp: () {
+          startGate = Completer<bool>();
+          when(
+            () => cameraService.startRecording(
+              maxDuration: any(named: 'maxDuration'),
+            ),
+          ).thenAnswer((_) => startGate.future);
+          when(
+            () => cameraService.stopRecording(),
+          ).thenAnswer((_) async => null);
+        },
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const VideoRecorderRecordingStartRequested());
+          await pumpEventQueue();
+          // Navigation locks while the native start is still pending — the
+          // camera is NOT disposed here (that is deferred), so the start can
+          // resolve and abort cleanly.
+          bloc.add(const VideoRecorderRecordingLockedForNavigation());
+          await pumpEventQueue();
+          startGate.complete(true);
+          await pumpEventQueue();
+        },
+        verify: (bloc) {
+          expect(bloc.state.recordingState, VideoRecorderState.idle);
+          expect(bloc.state.isStartingRecording, isFalse);
+          // Best-effort stop of the just-started native session.
+          verify(() => cameraService.stopRecording()).called(1);
+          // No dispose during the abort — the single dispose is close().
+          verify(() => cameraService.dispose()).called(1);
         },
       );
     });

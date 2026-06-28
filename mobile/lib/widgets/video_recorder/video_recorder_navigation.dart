@@ -62,6 +62,12 @@ Future<void> openVideoEditorFromRecorder(
     ref.read(videoEditorProvider.notifier).startRenderVideo();
   }
 
+  // Lock recording before the push so a volume / Bluetooth trigger that races
+  // the navigation can't start (or leave) a recording on the camera we are
+  // about to release. The camera is still live here, so the lock can reset any
+  // in-flight recording cleanly — without racing the deferred dispose below.
+  bloc.add(const VideoRecorderRecordingLockedForNavigation());
+
   final navigation = recorderMode.hasVideoEditor
       ? context.push(VideoEditorScreen.path)
       : context.push(VideoMetadataScreen.path);
@@ -81,6 +87,12 @@ Future<void> openRecorderLibrary(BuildContext context, WidgetRef ref) async {
   if (!context.mounted) return;
 
   final bloc = context.read<VideoRecorderBloc>();
+
+  // Lock recording before the push so a volume / Bluetooth trigger that races
+  // the navigation can't start (or leave) a recording on the camera we are
+  // about to release. The camera is still live here, so the lock can reset any
+  // in-flight recording cleanly — without racing the deferred dispose below.
+  bloc.add(const VideoRecorderRecordingLockedForNavigation());
 
   final navigation = context.pushNamed(LibraryScreen.clipsOnlyRouteName);
 
