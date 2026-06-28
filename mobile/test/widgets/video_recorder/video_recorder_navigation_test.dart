@@ -132,6 +132,14 @@ void main() {
 
         expect(find.text('editor'), findsOneWidget);
         expect(fakeEditor.saveAsDraftCalled, isFalse);
+        // The lock guards the camera against a volume / BLE trigger racing the
+        // push — it is the feature's only production trigger, so assert it
+        // fired (deleting it would silently disable the lock).
+        verify(
+          () => recorderBloc.add(
+            const VideoRecorderRecordingLockedForNavigation(),
+          ),
+        ).called(1);
       });
 
       testWidgets('openRecorderLibrary proceeds to the library '
@@ -144,6 +152,14 @@ void main() {
 
         expect(find.text('library'), findsOneWidget);
         expect(fakeEditor.saveAsDraftCalled, isFalse);
+        // The lock guards the camera against a volume / BLE trigger racing the
+        // push — it is the feature's only production trigger, so assert it
+        // fired (deleting it would silently disable the lock).
+        verify(
+          () => recorderBloc.add(
+            const VideoRecorderRecordingLockedForNavigation(),
+          ),
+        ).called(1);
       });
 
       testWidgets('openVideoEditorFromRecorder mutes clips in lip-sync mode', (

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_camera/divine_camera.dart';
@@ -17,10 +18,14 @@ import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dar
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:wakelock_plus_platform_interface/wakelock_plus_platform_interface.dart';
+
+import '../../mocks/mock_path_provider_platform.dart';
 
 class _MockCameraService extends Mock implements CameraService {}
 
@@ -58,6 +63,25 @@ class _ThrowingWakelockDisablePlatform extends WakelockPlusPlatformInterface {
   Future<bool> get enabled async => false;
 }
 
+/// Blocks `WakelockPlus.enable()` until [enableGate] completes, so a test can
+/// land an event in the window where the start handler awaits the wakelock
+/// after the native session has already started.
+class _GatedWakelockPlatform extends WakelockPlusPlatformInterface {
+  final Completer<void> enableGate = Completer<void>();
+
+  @override
+  Future<void> toggle({required bool enable}) async {
+    if (enable) await enableGate.future;
+  }
+
+  @override
+  Future<bool> get enabled async => false;
+}
+
+class _MockProVideoEditor extends Mock
+    with MockPlatformInterfaceMixin
+    implements ProVideoEditor {}
+
 void main() {
   late _MockCameraService cameraService;
   late _MockClipManager clipManager;
@@ -75,6 +99,20 @@ void main() {
     registerFallbackValue(Offset.zero);
     registerFallbackValue(EditorVideo.file('/fallback.mp4'));
     registerFallbackValue(model.AspectRatio.vertical);
+    registerFallbackValue(
+      ThumbnailConfigs(
+        video: EditorVideo.file('/fallback.mp4'),
+        outputSize: const Size(1, 1),
+        timestamps: const [Duration.zero],
+      ),
+    );
+    registerFallbackValue(
+      SingleThumbnailConfigs(
+        video: EditorVideo.file('/fallback.mp4'),
+        outputSize: const Size(1, 1),
+        position: ThumbnailPosition.last,
+      ),
+    );
     registerFallbackValue(
       DivineVideoClip(
         id: 'fallback',
@@ -1116,6 +1154,103 @@ void main() {
       );
     });
 
+    group('detached enrichment → clip removed mid-enrichment', () {
+      late Directory docsDir;
+      late File recordingFile;
+      late ProVideoEditor originalProVideoEditor;
+      late PathProviderPlatform originalPathProvider;
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'skips the enriched save and still deletes the work copy when the clip '
+        'is gone before the metadata save — the work copy must not leak',
+        setUp: () {
+          // Stub path provider + ProVideoEditor so the detached enrichment runs
+          // to completion (thumbnail + ghost frame succeed on the first try, no
+          // retries) and reaches the clip lookup.
+          docsDir = Directory.systemTemp.createTempSync('rec_enrich_docs');
+          originalPathProvider = PathProviderPlatform.instance;
+          PathProviderPlatform.instance = MockPathProviderPlatform()
+            ..setApplicationDocumentsPath(docsDir.path)
+            ..setTemporaryPath(docsDir.path);
+
+          final editor = _MockProVideoEditor();
+          when(() => editor.getMetadata(any())).thenAnswer(
+            (_) async => VideoMetadata.fromMap(const {'duration': 2000}, 'mp4'),
+          );
+          when(
+            () => editor.getThumbnails(any()),
+          ).thenAnswer(
+            (_) async => [
+              Uint8List.fromList(const [1, 2, 3]),
+            ],
+          );
+          when(
+            () => editor.getSingleThumbnail(any()),
+          ).thenAnswer((_) async => Uint8List.fromList(const [1, 2, 3]));
+          originalProVideoEditor = ProVideoEditor.instance;
+          ProVideoEditor.instance = editor;
+
+          recordingFile = File('${docsDir.path}/recording.mp4')
+            ..writeAsStringSync('recorded clip');
+          final recorded = _MockEditorVideo();
+          when(
+            recorded.safeFilePath,
+          ).thenAnswer((_) async => recordingFile.path);
+          when(
+            () => cameraService.stopRecording(),
+          ).thenAnswer((_) async => recorded);
+          when(
+            () => clipManager.addClip(
+              video: any(named: 'video'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              lensMetadata: any(named: 'lensMetadata'),
+              limitClipDuration: any(named: 'limitClipDuration'),
+            ),
+          ).thenReturn(
+            DivineVideoClip(
+              id: 'removed-clip',
+              video: recorded,
+              duration: const Duration(seconds: 2),
+              recordedAt: DateTime(2024),
+              targetAspectRatio: model.AspectRatio.vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+          );
+          // clips stays empty (the shared setUp default), modelling a clip that
+          // was removed before the detached enrichment looks it up
+          // (delete-last-clip undo, capture↔classic switch).
+          when(
+            () => clipManager.saveClipToLibrary(any()),
+          ).thenAnswer((_) async => true);
+        },
+        tearDown: () {
+          ProVideoEditor.instance = originalProVideoEditor;
+          PathProviderPlatform.instance = originalPathProvider;
+          if (docsDir.existsSync()) docsDir.deleteSync(recursive: true);
+        },
+        build: () => buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(
+              recordingState: VideoRecorderState.recording,
+            ),
+          ),
+        act: (bloc) async {
+          bloc.add(const VideoRecorderRecordingStopRequested());
+          await pumpEventQueue(times: 100);
+        },
+        verify: (_) {
+          // Only the bare clip save ran; the enriched save was skipped because
+          // the clip was gone (firstWhereOrNull → null, not a thrown
+          // StateError swallowed by catchError).
+          verify(() => clipManager.saveClipToLibrary(any())).called(1);
+          // The work copy is always cleaned up in the finally — before the fix
+          // the firstWhere StateError jumped past the delete and leaked it.
+          expect(File('${recordingFile.path}.work.mp4').existsSync(), isFalse);
+        },
+      );
+    });
+
     group('VideoRecorderCameraPausedForNavigation → recording lock', () {
       late Completer<bool> startGate;
 
@@ -1203,6 +1338,7 @@ void main() {
     group('VideoRecorderRecordingLockedForNavigation → recording lock', () {
       late Completer<bool> startGate;
       late File orphanFile;
+      late _GatedWakelockPlatform gatedWakelock;
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'resets an active recording to idle without disposing the camera — the '
@@ -1317,6 +1453,55 @@ void main() {
           verify(() => cameraService.stopRecording()).called(1);
           expect(orphanFile.existsSync(), isFalse);
           orphanFile.parent.deleteSync(recursive: true);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'aborts a started recording when navigation locks during the '
+        'wakelock-enable await — the clip manager timer is never armed and '
+        "the just-started session's file is discarded",
+        setUp: () {
+          gatedWakelock = _GatedWakelockPlatform();
+          wakelockPlusPlatformInstance = gatedWakelock;
+          when(
+            () => cameraService.startRecording(
+              maxDuration: any(named: 'maxDuration'),
+            ),
+          ).thenAnswer((_) async => true);
+          orphanFile = File(
+            '${Directory.systemTemp.createTempSync('rec_wakelock').path}'
+            '/clip.mp4',
+          )..writeAsStringSync('aborted recording');
+          final aborted = _MockEditorVideo();
+          when(aborted.safeFilePath).thenAnswer((_) async => orphanFile.path);
+          when(
+            () => cameraService.stopRecording(),
+          ).thenAnswer((_) async => aborted);
+        },
+        tearDown: () {
+          wakelockPlusPlatformInstance = _FakeWakelockPlatform();
+          orphanFile.parent.deleteSync(recursive: true);
+        },
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const VideoRecorderRecordingStartRequested());
+          await pumpEventQueue();
+          // The native start has returned true; the handler is now parked on
+          // the gated WakelockPlus.enable() await. The lock lands in that
+          // window, before clipManager.startRecording() runs.
+          bloc.add(const VideoRecorderRecordingLockedForNavigation());
+          await pumpEventQueue();
+          gatedWakelock.enableGate.complete();
+          await pumpEventQueue();
+        },
+        verify: (bloc) {
+          expect(bloc.state.recordingState, VideoRecorderState.idle);
+          // The re-arm after the await never happened — without the post-await
+          // re-check this would start a 60fps timer that nothing cancels.
+          verifyNever(() => clipManager.startRecording());
+          // The just-started native session was stopped and its file discarded.
+          verify(() => cameraService.stopRecording()).called(1);
+          expect(orphanFile.existsSync(), isFalse);
         },
       );
     });

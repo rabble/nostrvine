@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:collection/collection.dart';
 import 'package:divine_camera/divine_camera.dart'
     show
         CameraLensMetadata,
@@ -745,19 +746,8 @@ class VideoRecorderBloc
 
     if (state.recordingLockedForNavigation) {
       // The camera was released for navigation while the native start was in
-      // flight. Don't latch a recording the user can never stop — stop the
-      // just-started session best-effort, discard its orphaned file (it is
-      // never surfaced to the user), and return to idle.
-      if (success) {
-        await _discardAbortedRecording(await _cameraService.stopRecording());
-      }
-      emit(
-        state.copyWith(
-          isStartingRecording: false,
-          pendingStopAfterStart: false,
-          recordingState: VideoRecorderState.idle,
-        ),
-      );
+      // flight. Don't latch a recording the user can never stop.
+      await _abortInFlightStartForLock(emit, sessionStarted: success);
       return;
     }
 
@@ -768,6 +758,14 @@ class VideoRecorderBloc
         category: LogCategory.video,
       );
       await WakelockPlus.enable();
+      if (state.recordingLockedForNavigation) {
+        // Navigation locked during the wakelock-enable await, after the native
+        // session started. Abort with the same teardown as the in-flight guard
+        // above rather than arm a clip manager (60fps timer + stopwatch) that
+        // nothing can stop.
+        await _abortInFlightStartForLock(emit, sessionStarted: true);
+        return;
+      }
       clipManager.startRecording();
       if (state.pendingStopAfterStart) {
         // A stop was requested while the native start was still in-flight
@@ -980,100 +978,138 @@ class VideoRecorderBloc
     final workCopyPath = '$videoPath.work.mp4';
     await File(videoPath).copy(workCopyPath);
 
-    final metadata = await ProVideoEditor.instance.getMetadata(
-      EditorVideo.file(File(workCopyPath)),
-    );
-    clipManager.updateClipDuration(clip.id, metadata.duration);
-    Log.debug(
-      '📊 Video duration: ${metadata.duration.inMilliseconds}ms',
-      name: 'VideoRecorderBloc',
-      category: LogCategory.video,
-    );
+    try {
+      final metadata = await ProVideoEditor.instance.getMetadata(
+        EditorVideo.file(File(workCopyPath)),
+      );
+      clipManager.updateClipDuration(clip.id, metadata.duration);
+      Log.debug(
+        '📊 Video duration: ${metadata.duration.inMilliseconds}ms',
+        name: 'VideoRecorderBloc',
+        category: LogCategory.video,
+      );
 
-    if (clipManager.clips.length == 1) {
-      if (clip.processingCompleter != null) {
-        unawaited(
-          clip.processingCompleter!.future.then((_) {
-            DivineVideoPlayerController.preload([VideoClip.file(videoPath)]);
-          }),
+      if (clipManager.clips.length == 1) {
+        if (clip.processingCompleter != null) {
+          unawaited(
+            clip.processingCompleter!.future.then((_) {
+              DivineVideoPlayerController.preload([VideoClip.file(videoPath)]);
+            }),
+          );
+        } else {
+          unawaited(
+            DivineVideoPlayerController.preload([VideoClip.file(videoPath)]),
+          );
+        }
+      }
+
+      final effectiveDuration = remainingDuration < metadata.duration
+          ? remainingDuration
+          : metadata.duration;
+      final halfDuration = effectiveDuration ~/ 2;
+      final targetTimestamp =
+          halfDuration < VideoEditorConstants.defaultThumbnailExtractTime
+          ? halfDuration
+          : VideoEditorConstants.defaultThumbnailExtractTime;
+
+      final thumbnailResult = await VideoThumbnailService.extractThumbnail(
+        videoPath: workCopyPath,
+        targetTimestamp: targetTimestamp,
+      );
+
+      if (thumbnailResult != null) {
+        clipManager.updateThumbnail(
+          clipId: clip.id,
+          thumbnailPath: thumbnailResult.path,
+          thumbnailTimestamp: thumbnailResult.timestamp,
+        );
+        Log.debug(
+          '🖼️  Thumbnail generated: ${thumbnailResult.path}',
+          name: 'VideoRecorderBloc',
+          category: LogCategory.video,
         );
       } else {
-        unawaited(
-          DivineVideoPlayerController.preload([VideoClip.file(videoPath)]),
+        Log.warning(
+          '⚠️ Thumbnail generation failed',
+          name: 'VideoRecorderBloc',
+          category: LogCategory.video,
         );
       }
+
+      final ghostFramePath = await VideoThumbnailService.extractLastFrame(
+        videoPath: workCopyPath,
+        videoDuration: metadata.duration,
+      );
+
+      if (ghostFramePath != null) {
+        clipManager.updateGhostFrame(
+          clipId: clip.id,
+          ghostFramePath: ghostFramePath,
+        );
+        Log.debug(
+          '👻 Ghost frame generated: $ghostFramePath',
+          name: 'VideoRecorderBloc',
+          category: LogCategory.video,
+        );
+      } else {
+        Log.warning(
+          '⚠️ Ghost frame generation failed',
+          name: 'VideoRecorderBloc',
+          category: LogCategory.video,
+        );
+      }
+
+      // firstWhereOrNull, not firstWhere: the clip can be removed mid-
+      // enrichment (delete-last-clip undo, capture↔classic switch) while this
+      // detached work runs. A swallowed StateError would skip the work-copy
+      // cleanup below; here the cleanup always runs in the finally.
+      final updatedClip = clipManager.clips.firstWhereOrNull(
+        (c) => c.id == clip.id,
+      );
+      if (updatedClip == null) {
+        Log.warning(
+          '⚠️ Clip ${clip.id} removed before metadata save — skipping '
+          'enriched library save',
+          name: 'VideoRecorderBloc',
+          category: LogCategory.video,
+        );
+        return;
+      }
+      final saved = await clipManager.saveClipToLibrary(updatedClip);
+      if (!saved) {
+        Log.warning(
+          '⚠️ Metadata-enriched clip save to library failed for ${clip.id}',
+          name: 'VideoRecorderBloc',
+          category: LogCategory.video,
+        );
+      }
+    } finally {
+      try {
+        await File(workCopyPath).delete();
+      } catch (_) {}
     }
+  }
 
-    final effectiveDuration = remainingDuration < metadata.duration
-        ? remainingDuration
-        : metadata.duration;
-    final halfDuration = effectiveDuration ~/ 2;
-    final targetTimestamp =
-        halfDuration < VideoEditorConstants.defaultThumbnailExtractTime
-        ? halfDuration
-        : VideoEditorConstants.defaultThumbnailExtractTime;
-
-    final thumbnailResult = await VideoThumbnailService.extractThumbnail(
-      videoPath: workCopyPath,
-      targetTimestamp: targetTimestamp,
+  /// Aborts a native recording session the navigation lock landed on while a
+  /// start was still in flight: best-effort stops + discards the just-started
+  /// session (when [sessionStarted]) and returns to idle. Shared by the two
+  /// lock guards in [_onRecordingStartRequested] — before the native start and
+  /// after the wakelock-enable await — so neither latches a recording the user
+  /// can never stop.
+  Future<void> _abortInFlightStartForLock(
+    Emitter<VideoRecorderBlocState> emit, {
+    required bool sessionStarted,
+  }) async {
+    if (sessionStarted) {
+      await _discardAbortedRecording(await _cameraService.stopRecording());
+    }
+    emit(
+      state.copyWith(
+        isStartingRecording: false,
+        pendingStopAfterStart: false,
+        recordingState: VideoRecorderState.idle,
+      ),
     );
-
-    if (thumbnailResult != null) {
-      clipManager.updateThumbnail(
-        clipId: clip.id,
-        thumbnailPath: thumbnailResult.path,
-        thumbnailTimestamp: thumbnailResult.timestamp,
-      );
-      Log.debug(
-        '🖼️  Thumbnail generated: ${thumbnailResult.path}',
-        name: 'VideoRecorderBloc',
-        category: LogCategory.video,
-      );
-    } else {
-      Log.warning(
-        '⚠️ Thumbnail generation failed',
-        name: 'VideoRecorderBloc',
-        category: LogCategory.video,
-      );
-    }
-
-    final ghostFramePath = await VideoThumbnailService.extractLastFrame(
-      videoPath: workCopyPath,
-      videoDuration: metadata.duration,
-    );
-
-    if (ghostFramePath != null) {
-      clipManager.updateGhostFrame(
-        clipId: clip.id,
-        ghostFramePath: ghostFramePath,
-      );
-      Log.debug(
-        '👻 Ghost frame generated: $ghostFramePath',
-        name: 'VideoRecorderBloc',
-        category: LogCategory.video,
-      );
-    } else {
-      Log.warning(
-        '⚠️ Ghost frame generation failed',
-        name: 'VideoRecorderBloc',
-        category: LogCategory.video,
-      );
-    }
-
-    final updatedClip = clipManager.clips.firstWhere(
-      (c) => c.id == clip.id,
-    );
-    final saved = await clipManager.saveClipToLibrary(updatedClip);
-    if (!saved) {
-      Log.warning(
-        '⚠️ Metadata-enriched clip save to library failed for ${clip.id}',
-        name: 'VideoRecorderBloc',
-        category: LogCategory.video,
-      );
-    }
-    try {
-      await File(workCopyPath).delete();
-    } catch (_) {}
   }
 
   /// Best-effort deletes the orphaned file from a recording aborted by the
