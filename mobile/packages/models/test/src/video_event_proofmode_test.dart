@@ -38,14 +38,62 @@ void main() {
     });
 
     test(
-      'returns true when verification is "unverified" but a proofmode '
-      'manifest tag is present',
+      'returns true when verification is "unverified" but an opaque '
+      '(non-JSON) proofmode manifest tag is present',
       () {
         expect(
           build(
             rawTags: const {
               'verification': 'unverified',
               'proofmode': 'manifest-blob',
+            },
+          ).hasProofMode,
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'returns false when an "unverified" upload carries an empty-shell '
+      'proofmode manifest (only a videoHash, no proof field)',
+      () {
+        expect(
+          build(
+            rawTags: const {
+              'verification': 'unverified',
+              'proofmode': '{"videoHash":"abc123"}',
+            },
+          ).hasProofMode,
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'returns true when an "unverified" upload carries a proofmode manifest '
+      'whose JSON holds a real proof field (sensorDataCsv)',
+      () {
+        expect(
+          build(
+            rawTags: const {
+              'verification': 'unverified',
+              'proofmode': '{"videoHash":"abc123","sensorDataCsv":"a,b,c"}',
+            },
+          ).hasProofMode,
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'returns true when an "unverified" upload carries a proofmode manifest '
+      'whose JSON holds a pgpSignature',
+      () {
+        expect(
+          build(
+            rawTags: const {
+              'verification': 'unverified',
+              'proofmode': '{"videoHash":"abc123","pgpSignature":"sig"}',
             },
           ).hasProofMode,
           isTrue,

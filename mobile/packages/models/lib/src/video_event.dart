@@ -1114,11 +1114,38 @@ class VideoEvent {
     return rawTags['identity_portable'] == 'cawg';
   }
 
+  /// Field names inside a `proofmode` manifest JSON that represent an actual
+  /// proof signal. A manifest that carries none of these (e.g. only a
+  /// `videoHash`) is an empty `unverified` shell, not proof.
+  static const _proofManifestSignalFields = <String>[
+    'pgpSignature',
+    'deviceAttestation',
+    'c2paManifestId',
+    'sensorDataCsv',
+  ];
+
   /// Whether this video has any ProofMode manifest signal, either as a raw tag
   /// or as a compact backend summary.
+  ///
+  /// The publisher writes a `proofmode` tag unconditionally — even for an
+  /// `unverified` upload whose manifest holds only a `videoHash` — so the raw
+  /// branch inspects the manifest *content* rather than mere tag presence. A
+  /// manifest that parses to JSON without any proof field is not a signal; an
+  /// opaque (non-JSON) value is kept as a signal so older or third-party
+  /// manifests are not silently dropped.
   bool get hasProofModeManifest {
-    return proofModeManifest != null ||
+    return _rawProofModeManifestCarriesProof ||
         proofSummary?.hasUsableProofmode == true;
+  }
+
+  bool get _rawProofModeManifestCarriesProof {
+    if (proofModeManifest == null) return false;
+    final manifest = proofModeManifestJson;
+    if (manifest == null) return true;
+    return _proofManifestSignalFields.any((field) {
+      final value = manifest[field];
+      return value is String && value.isNotEmpty;
+    });
   }
 
   /// Whether this video has any device-attestation signal, either as a raw tag
