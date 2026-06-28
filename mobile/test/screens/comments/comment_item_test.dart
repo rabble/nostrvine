@@ -57,9 +57,7 @@ void main() {
   setUpAll(() {
     VisibilityDetectorController.instance.updateInterval = Duration.zero;
     registerFallbackValue(const CommentReplyToggled(''));
-    registerFallbackValue(
-      const CommentReactionsErrorCleared(),
-    );
+    registerFallbackValue(const CommentReactionsErrorCleared());
   });
 
   ({_MockComposerBloc composer, _MockReactionsBloc reactions}) buildMocks() {
@@ -343,9 +341,11 @@ void main() {
       // Resolve the author profile so IdentitySkeletonizer is disabled —
       // Skeletonizer.ignorePointers defaults to true, so a still-loading
       // (null) profile would swallow the avatar tap.
+      const cleanedName = 'Ada\u0300\u0301';
       final profile = UserProfile(
         pubkey: _testHexPubkey,
-        displayName: 'Ada Lovelace',
+        displayName: '',
+        name: '$cleanedName\u0302\u0303',
         rawData: const {},
         createdAt: DateTime.utc(2026, 6, 28),
         eventId:
@@ -353,6 +353,7 @@ void main() {
       );
 
       final expectedNpub = NostrKeyUtils.encodePubKey(_testHexPubkey);
+      const expectedProfileLabel = "View $cleanedName's profile";
 
       final router = GoRouter(
         routes: [
@@ -376,9 +377,8 @@ void main() {
           ),
           GoRoute(
             path: OtherProfileScreen.pathWithNpub,
-            builder: (context, state) => Scaffold(
-              body: Text('profile:${state.pathParameters['npub']}'),
-            ),
+            builder: (context, state) =>
+                Scaffold(body: Text('profile:${state.pathParameters['npub']}')),
           ),
         ],
       );
@@ -399,6 +399,19 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label == expectedProfileLabel &&
+              widget.properties.button == true,
+        ),
+        findsNWidgets(2),
+        reason:
+            'The avatar and visible author name should both be announced as '
+            'profile-opening buttons with the same sanitized display name.',
+      );
 
       await tester.tap(find.byType(UserAvatar));
       await tester.pumpAndSettle();

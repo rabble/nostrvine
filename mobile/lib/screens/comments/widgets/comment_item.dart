@@ -289,10 +289,11 @@ class _CommentHeader extends ConsumerWidget {
     final isCurrentUser =
         currentUserPubkey.isNotEmpty && currentUserPubkey == authorPubkey;
 
-    final displayName =
-        profile?.displayName ??
-        profile?.name ??
-        UserProfile.generatedNameFor(authorPubkey);
+    final profileLabel =
+        profile?.bestDisplayName ?? UserProfile.generatedNameFor(authorPubkey);
+    final openProfileLabel = context.l10n.commentAuthorAvatarSemanticLabel(
+      profileLabel,
+    );
 
     void openAuthorProfile() => context.pushOtherProfile(authorPubkey);
 
@@ -306,9 +307,7 @@ class _CommentHeader extends ConsumerWidget {
             imageUrl: profile?.picture,
             placeholderSeed: authorPubkey,
             onTap: openAuthorProfile,
-            semanticLabel: context.l10n.commentAuthorAvatarSemanticLabel(
-              displayName,
-            ),
+            semanticLabel: openProfileLabel,
           ),
           Expanded(
             child: Column(
@@ -338,23 +337,27 @@ class _CommentHeader extends ConsumerWidget {
                     ],
                   ],
                 ),
-                GestureDetector(
-                  onTap: openAuthorProfile,
-                  child: profile == null
-                      ? Text(
-                          UserProfile.generatedNameFor(authorPubkey),
-                          style: VineTheme.titleSmallFont(
-                            color: VineTheme.onSurface,
+                Semantics(
+                  button: true,
+                  label: openProfileLabel,
+                  child: GestureDetector(
+                    onTap: openAuthorProfile,
+                    child: profile == null
+                        ? Text(
+                            UserProfile.generatedNameFor(authorPubkey),
+                            style: VineTheme.titleSmallFont(
+                              color: VineTheme.onSurface,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        : UserName.fromUserProfile(
+                            profile,
+                            style: VineTheme.titleSmallFont(
+                              color: VineTheme.onSurface,
+                            ),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        )
-                      : UserName.fromUserProfile(
-                          profile,
-                          style: VineTheme.titleSmallFont(
-                            color: VineTheme.onSurface,
-                          ),
-                        ),
+                  ),
                 ),
               ],
             ),
