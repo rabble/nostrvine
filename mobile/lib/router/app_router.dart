@@ -65,7 +65,7 @@ import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/original_sound_detail_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/screens/profile_setup/profile_setup.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';

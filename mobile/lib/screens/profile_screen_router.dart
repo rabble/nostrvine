@@ -20,7 +20,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
-import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/screens/profile_setup/profile_setup.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/share_position_origin.dart';

@@ -8,7 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
-import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/screens/profile_setup/profile_setup.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_action_type.dart';
 
 /// Content widget for the profile-actions bottom sheet.

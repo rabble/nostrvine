@@ -104,9 +104,15 @@ void main() {
       final featureRequestSource = File(
         'lib/widgets/feature_request_dialog.dart',
       ).readAsStringSync();
-      final profileSetupSource = File(
-        'lib/screens/profile_setup_screen.dart',
-      ).readAsStringSync();
+      // profile_setup_screen.dart was decomposed into lib/screens/profile_setup/
+      // (#4512). Read the whole directory so the assertions track whichever
+      // section file ends up owning each key.
+      final profileSetupSource = Directory('lib/screens/profile_setup')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((entity) => entity.path.endsWith('.dart'))
+          .map((file) => file.readAsStringSync())
+          .join('\n');
       final usernameStatusIndicatorSource = File(
         'lib/widgets/profile_editor/username_status_indicator.dart',
       ).readAsStringSync();
