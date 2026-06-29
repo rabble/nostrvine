@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
@@ -12,6 +13,10 @@ void main() {
 
     setUp(() {
       mockPermissionsService = _MockPermissionsService();
+    });
+
+    tearDown(() {
+      debugDefaultTargetPlatformOverride = null;
     });
 
     group('initial state', () {
@@ -28,7 +33,7 @@ void main() {
         'does nothing when state is CameraPermissionInitial',
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
         expect: () => <CameraPermissionState>[],
@@ -38,7 +43,7 @@ void main() {
         'does nothing when state is CameraPermissionLoading',
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         seed: () => const CameraPermissionLoading(),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
@@ -49,7 +54,7 @@ void main() {
         'does nothing when status is authorized',
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.authorized),
@@ -64,7 +69,7 @@ void main() {
         'does nothing when status is requiresSettings',
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         seed: () => const CameraPermissionLoaded(
           CameraPermissionStatus.requiresSettings,
@@ -91,7 +96,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
@@ -110,7 +115,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
@@ -140,7 +145,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
@@ -172,7 +177,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
@@ -191,7 +196,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
@@ -218,7 +223,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
@@ -246,7 +251,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
@@ -282,7 +287,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
@@ -301,7 +306,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
@@ -321,7 +326,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
@@ -344,7 +349,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
@@ -354,6 +359,48 @@ void main() {
     });
 
     group('CameraPermissionRefresh', () {
+      blocTest<CameraPermissionBloc, CameraPermissionState>(
+        'checks permissions on macOS instead of bypassing to authorized',
+        setUp: () {
+          debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+          when(
+            () => mockPermissionsService.checkCameraStatus(),
+          ).thenAnswer((_) async => PermissionStatus.requiresSettings);
+          when(
+            () => mockPermissionsService.checkMicrophoneStatus(),
+          ).thenAnswer((_) async => PermissionStatus.granted);
+        },
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
+        act: (bloc) => bloc.add(const CameraPermissionRefresh()),
+        expect: () => [
+          const CameraPermissionLoaded(CameraPermissionStatus.requiresSettings),
+        ],
+        verify: (_) {
+          verify(() => mockPermissionsService.checkCameraStatus()).called(1);
+          verify(
+            () => mockPermissionsService.checkMicrophoneStatus(),
+          ).called(1);
+        },
+      );
+
+      blocTest<CameraPermissionBloc, CameraPermissionState>(
+        'bypasses to authorized on Linux without checking permissions',
+        setUp: () {
+          debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+        },
+        build: () =>
+            CameraPermissionBloc(permissionsService: mockPermissionsService),
+        act: (bloc) => bloc.add(const CameraPermissionRefresh()),
+        expect: () => [
+          const CameraPermissionLoaded(CameraPermissionStatus.authorized),
+        ],
+        verify: (_) {
+          verifyNever(() => mockPermissionsService.checkCameraStatus());
+          verifyNever(() => mockPermissionsService.checkMicrophoneStatus());
+        },
+      );
+
       blocTest<CameraPermissionBloc, CameraPermissionState>(
         'drops a duplicate refresh while a permission check is in flight',
         setUp: () {
@@ -369,7 +416,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         act: (bloc) {
           bloc
@@ -403,7 +450,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         act: (bloc) => bloc.add(const CameraPermissionRefresh()),
         expect: () => [
@@ -426,7 +473,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         act: (bloc) => bloc.add(const CameraPermissionRefresh()),
         expect: () => [
@@ -449,7 +496,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         act: (bloc) => bloc.add(const CameraPermissionRefresh()),
         expect: () => [
@@ -474,7 +521,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         act: (bloc) => bloc.add(const CameraPermissionRefresh()),
         expect: () => [const CameraPermissionError()],
@@ -491,7 +538,7 @@ void main() {
         },
         build: () => CameraPermissionBloc(
           permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
+          skipLinuxBypass: true,
         ),
         act: (bloc) => bloc.add(const CameraPermissionOpenSettings()),
         expect: () => <CameraPermissionState>[],
@@ -517,7 +564,7 @@ void main() {
 
           final bloc = CameraPermissionBloc(
             permissionsService: mockPermissionsService,
-            skipMacOSBypass: true,
+            skipLinuxBypass: true,
           );
           final result = await bloc.checkPermissions();
 
@@ -559,7 +606,7 @@ void main() {
 
           final bloc = CameraPermissionBloc(
             permissionsService: mockPermissionsService,
-            skipMacOSBypass: true,
+            skipLinuxBypass: true,
           );
           final result = await bloc.checkPermissions();
 
@@ -603,7 +650,7 @@ void main() {
 
           final bloc = CameraPermissionBloc(
             permissionsService: mockPermissionsService,
-            skipMacOSBypass: true,
+            skipLinuxBypass: true,
           );
           final result = await bloc.checkPermissions();
 

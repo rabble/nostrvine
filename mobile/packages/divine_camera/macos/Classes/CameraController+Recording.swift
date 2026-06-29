@@ -27,6 +27,11 @@ extension CameraController {
         videoOutputQueue.async { [weak self] in
             guard let self = self else { return }
 
+            // Guard against the first-sample-buffer race (#4112): refuse to
+            // start the writer until the capture delegate has delivered a
+            // preview frame. Dimensions below come from the device's active
+            // format (always available), not the latest buffer, so this guard
+            // is the only thing gating record-start on the first frame.
             guard self.hasReceivedPreviewFrame() else {
                 self.disableAutoFlash()
                 DispatchQueue.main.async {

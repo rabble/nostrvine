@@ -31,9 +31,9 @@ class CameraPermissionBloc
     extends Bloc<CameraPermissionEvent, CameraPermissionState> {
   CameraPermissionBloc({
     required PermissionsService permissionsService,
-    @visibleForTesting bool? skipMacOSBypass,
+    @visibleForTesting bool? skipLinuxBypass,
   }) : _permissionsService = permissionsService,
-       _skipMacOSBypass = skipMacOSBypass ?? false,
+       _skipLinuxBypass = skipLinuxBypass ?? false,
        super(const CameraPermissionInitial()) {
     on<CameraPermissionRequest>(_onRequest, transformer: droppable());
     on<CameraPermissionRefresh>(_onRefresh, transformer: droppable());
@@ -41,7 +41,7 @@ class CameraPermissionBloc
   }
 
   final PermissionsService _permissionsService;
-  final bool _skipMacOSBypass;
+  final bool _skipLinuxBypass;
 
   Future<void> _onRequest(
     CameraPermissionRequest event,
@@ -73,9 +73,7 @@ class CameraPermissionBloc
 
       if (microphoneStatus != PermissionStatus.granted) {
         emit(
-          CameraPermissionLoaded(
-            _cameraStatusFromPermission(microphoneStatus),
-          ),
+          CameraPermissionLoaded(_cameraStatusFromPermission(microphoneStatus)),
         );
         return;
       }
@@ -102,15 +100,13 @@ class CameraPermissionBloc
     );
 
     // Linux has no camera support yet, so permissions are irrelevant and we
-    // assume authorized. macOS permission behavior is tracked separately in
-    // #4112; this refactor intentionally leaves the desktop bypass untouched.
+    // assume authorized. macOS now goes through the real permission check
+    // backed by the native AVFoundation channel (see PermissionsService).
     if (!kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.macOS ||
-            defaultTargetPlatform == TargetPlatform.linux) &&
-        !_skipMacOSBypass) {
+        defaultTargetPlatform == TargetPlatform.linux &&
+        !_skipLinuxBypass) {
       Log.info(
-        '🔐 Desktop detected - bypassing permission_handler, '
-        'assuming authorized',
+        '🔐 Linux detected - bypassing permission check, assuming authorized',
         name: 'CameraPermissionBloc',
         category: LogCategory.video,
       );

@@ -1,13 +1,26 @@
-// ABOUTME: Native macOS camera permission handling using AVFoundation
-// ABOUTME: Provides camera permission checks and system settings navigation
+// ABOUTME: Native macOS camera/microphone permission handling using AVFoundation
+// ABOUTME: Exposes explicit camera and microphone request/status methods to Dart
 
-import FlutterMacOS
 import AVFoundation
+import FlutterMacOS
 import Foundation
+import os
 
+/// Bridges macOS media permissions to Dart.
+///
+/// `permission_handler` does not drive the AVFoundation authorization dialog
+/// reliably on macOS, so the recorder permission flow routes camera and
+/// microphone checks/requests through this plugin instead. Each method returns
+/// a lowercase status string (`authorized`, `denied`, `restricted`,
+/// `notDetermined`, `unknown`) that the Dart side maps to its domain status.
 public class NativeCameraPlugin: NSObject, FlutterPlugin {
+    private static let logger = Logger(
+        subsystem: "com.nostrvine.nostrvineApp",
+        category: "NativeCamera"
+    )
+
     private var methodChannel: FlutterMethodChannel?
-    
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(
             name: "openvine/native_camera",
@@ -17,123 +30,114 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
         instance.methodChannel = channel
         registrar.addMethodCallDelegate(instance, channel: channel)
     }
-    
-    public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        print("🔵 [NativeCamera] Method called: \(call.method)")
-        print("🔵 [NativeCamera] Current thread: \(Thread.current)")
-        print("🔵 [NativeCamera] Is main thread: \(Thread.isMainThread)")
-        
+
+    public func handle(
+        _ call: FlutterMethodCall,
+        result: @escaping FlutterResult
+    ) {
+        Self.logger.debug("Method called: \(call.method, privacy: .public)")
+
         switch call.method {
-        case "requestPermission":
-            print("🔵 [NativeCamera] Handling requestPermission request")
-            requestPermission(result: result)
-        case "hasPermission":
-            print("🔵 [NativeCamera] Handling hasPermission request")
-            hasPermission(result: result)
+        case "requestCameraPermission":
+            requestPermission(for: .video, result: result)
+        case "requestMicrophonePermission":
+            requestPermission(for: .audio, result: result)
+        case "cameraPermissionStatus":
+            permissionStatus(for: .video, result: result)
+        case "microphonePermissionStatus":
+            permissionStatus(for: .audio, result: result)
         case "openSystemSettings":
-            print("🔵 [NativeCamera] Handling openSystemSettings request")
             openSystemSettings(result: result)
         default:
-            print("❌ [NativeCamera] Unknown method: \(call.method)")
+            Self.logger.error(
+                "Unknown method: \(call.method, privacy: .public)"
+            )
             result(FlutterMethodNotImplemented)
         }
     }
-    
-    private func requestPermission(result: @escaping FlutterResult) {
-        print("🔵 [NativeCamera] Requesting camera permission explicitly")
-        let currentStatus = AVCaptureDevice.authorizationStatus(for: .video)
-        print("🔵 [NativeCamera] Current status before request: \(currentStatus.rawValue)")
-        
+
+    private func requestPermission(
+        for mediaType: AVMediaType,
+        result: @escaping FlutterResult
+    ) {
+        let currentStatus = AVCaptureDevice.authorizationStatus(for: mediaType)
+
         switch currentStatus {
-        case .authorized:
-            print("✅ [NativeCamera] Permission already granted")
+        case .authorized, .denied, .restricted:
+            // Already resolved — report the current status so the gate can
+            // re-prompt or send the user to System Settings as appropriate.
             DispatchQueue.main.async {
-                result(true)
+                result(Self.statusString(currentStatus))
             }
-            
-        case .denied, .restricted:
-            print("❌ [NativeCamera] Permission previously denied or restricted")
-            print("💡 [NativeCamera] User must enable camera in System Settings")
-            
-            // Return error with instruction to open settings
-            DispatchQueue.main.async {
-                result(FlutterError(
-                    code: "PERMISSION_DENIED",
-                    message: "Camera permission denied. Please enable camera access in System Settings > Privacy & Security > Camera",
-                    details: ["openSettings": true, "status": currentStatus.rawValue]
-                ))
-            }
-            
         case .notDetermined:
-            print("🔵 [NativeCamera] Permission not determined, requesting...")
-            AVCaptureDevice.requestAccess(for: .video) { granted in
-                print("🔵 [NativeCamera] Permission request completed with result: \(granted)")
-                let newStatus = AVCaptureDevice.authorizationStatus(for: .video)
-                print("🔵 [NativeCamera] New status after request: \(newStatus.rawValue)")
-                
+            AVCaptureDevice.requestAccess(for: mediaType) { _ in
+                let newStatus = AVCaptureDevice.authorizationStatus(
+                    for: mediaType
+                )
                 DispatchQueue.main.async {
-                    result(granted)
+                    result(Self.statusString(newStatus))
                 }
             }
-            
         @unknown default:
-            print("⚠️ [NativeCamera] Unknown permission status")
             DispatchQueue.main.async {
-                result(FlutterError(
-                    code: "PERMISSION_UNKNOWN",
-                    message: "Unknown camera permission status",
-                    details: nil
-                ))
+                result(Self.statusString(currentStatus))
             }
         }
     }
-    
-    private func hasPermission(result: @escaping FlutterResult) {
-        let status = AVCaptureDevice.authorizationStatus(for: .video)
-        print("🔵 [NativeCamera] Checking permission status: \(status.rawValue)")
-        print("🔵 [NativeCamera] Status meanings: 0=notDetermined, 1=restricted, 2=denied, 3=authorized")
-        result(status == .authorized)
+
+    private func permissionStatus(
+        for mediaType: AVMediaType,
+        result: @escaping FlutterResult
+    ) {
+        let status = AVCaptureDevice.authorizationStatus(for: mediaType)
+        result(Self.statusString(status))
     }
-    
+
+    private static func statusString(
+        _ status: AVAuthorizationStatus
+    ) -> String {
+        switch status {
+        case .authorized:
+            return "authorized"
+        case .denied:
+            return "denied"
+        case .restricted:
+            return "restricted"
+        case .notDetermined:
+            return "notDetermined"
+        @unknown default:
+            return "unknown"
+        }
+    }
+
     private func openSystemSettings(result: @escaping FlutterResult) {
-        print("🔵 [NativeCamera] Opening System Settings for camera privacy")
-        
-        // On macOS 13+ (Ventura), we need to use a different approach
-        // The app only appears in Settings after it has requested camera access at least once
-        
-        // Try modern approach first (macOS 13+)
-        if #available(macOS 13.0, *) {
-            // Modern URL scheme for System Settings
-            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera") {
-                NSWorkspace.shared.open(url)
-                print("✅ [NativeCamera] System Settings opened (macOS 13+)")
-                result(true)
-                return
-            }
-        }
-        
-        // Fallback to older approach (macOS 12 and below)
-        // Note: This opens System Preferences, not System Settings
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera") {
+        // The app only appears in the Privacy pane after it has requested
+        // camera access at least once.
+        if let url = URL(
+            string:
+                "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera"
+        ) {
             NSWorkspace.shared.open(url)
-            print("✅ [NativeCamera] System Preferences opened (macOS 12-)") 
             result(true)
-        } else {
-            print("❌ [NativeCamera] Failed to create settings URL")
-            
-            // Last resort: Just open the Privacy & Security pane
-            let task = Process()
-            task.launchPath = "/usr/bin/open"
-            task.arguments = ["-b", "com.apple.systempreferences", "/System/Library/PreferencePanes/Security.prefPane"]
-            
-            do {
-                try task.run()
-                print("✅ [NativeCamera] Opened Security pane via command line")
-                result(true)
-            } catch {
-                print("❌ [NativeCamera] Failed to open settings: \(error)")
-                result(false)
-            }
+            return
+        }
+
+        let task = Process()
+        task.launchPath = "/usr/bin/open"
+        task.arguments = [
+            "-b", "com.apple.systempreferences",
+            "/System/Library/PreferencePanes/Security.prefPane",
+        ]
+
+        do {
+            try task.run()
+            result(true)
+        } catch {
+            let message = error.localizedDescription
+            Self.logger.error(
+                "Failed to open System Settings: \(message, privacy: .public)"
+            )
+            result(false)
         }
     }
 }

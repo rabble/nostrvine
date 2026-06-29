@@ -1,6 +1,8 @@
 // Not required for test files where we want to test non-const constructors
 // ignore_for_file: prefer_const_constructors
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
@@ -12,6 +14,8 @@ import 'package:permissions_service/permissions_service.dart';
 class MockPermissionsService extends Mock implements PermissionsService {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('PermissionStatus', () {
     test('has expected values', () {
       expect(PermissionStatus.values, hasLength(3));
@@ -30,15 +34,21 @@ void main() {
       service = PermissionHandlerPermissionsService();
     });
 
+    tearDown(() {
+      debugDefaultTargetPlatformOverride = null;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('openvine/native_camera'),
+            null,
+          );
+    });
+
     test('can be instantiated', () {
       expect(PermissionHandlerPermissionsService(), isNotNull);
     });
 
     test('is a PermissionsService', () {
-      expect(
-        PermissionHandlerPermissionsService(),
-        isA<PermissionsService>(),
-      );
+      expect(PermissionHandlerPermissionsService(), isA<PermissionsService>());
     });
 
     group('mapPermissionStatus', () {
@@ -79,6 +89,115 @@ void main() {
         );
         expect(result, PermissionStatus.canRequest);
       });
+    });
+
+    group('mapMacOSAuthorizationStatus', () {
+      test('maps authorized to PermissionStatus.granted', () {
+        expect(
+          service.mapMacOSAuthorizationStatus('authorized'),
+          PermissionStatus.granted,
+        );
+      });
+
+      test('maps denied to PermissionStatus.requiresSettings', () {
+        expect(
+          service.mapMacOSAuthorizationStatus('denied'),
+          PermissionStatus.requiresSettings,
+        );
+      });
+
+      test('maps restricted to PermissionStatus.requiresSettings', () {
+        expect(
+          service.mapMacOSAuthorizationStatus('restricted'),
+          PermissionStatus.requiresSettings,
+        );
+      });
+
+      test('maps notDetermined to PermissionStatus.canRequest', () {
+        expect(
+          service.mapMacOSAuthorizationStatus('notDetermined'),
+          PermissionStatus.canRequest,
+        );
+      });
+
+      test('maps null/unknown to PermissionStatus.canRequest', () {
+        expect(
+          service.mapMacOSAuthorizationStatus(null),
+          PermissionStatus.canRequest,
+        );
+        expect(
+          service.mapMacOSAuthorizationStatus('unknown'),
+          PermissionStatus.canRequest,
+        );
+      });
+    });
+
+    group('macOS native permissions', () {
+      void mockNativeCamera(Future<Object?>? Function(MethodCall) handler) {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('openvine/native_camera'),
+              handler,
+            );
+      }
+
+      test('checkCameraStatus routes through the native channel', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        mockNativeCamera((call) async {
+          expect(call.method, 'cameraPermissionStatus');
+          return 'denied';
+        });
+
+        expect(
+          await service.checkCameraStatus(),
+          PermissionStatus.requiresSettings,
+        );
+      });
+
+      test(
+        'requestCameraPermission routes through the native channel',
+        () async {
+          debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+          mockNativeCamera((call) async {
+            expect(call.method, 'requestCameraPermission');
+            return 'authorized';
+          });
+
+          expect(
+            await service.requestCameraPermission(),
+            PermissionStatus.granted,
+          );
+        },
+      );
+
+      test('checkMicrophoneStatus routes through the native channel', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        mockNativeCamera((call) async {
+          expect(call.method, 'microphonePermissionStatus');
+          return 'restricted';
+        });
+
+        expect(
+          await service.checkMicrophoneStatus(),
+          PermissionStatus.requiresSettings,
+        );
+      });
+
+      test(
+        'requestMicrophonePermission routes through the native channel',
+        () async {
+          debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+          mockNativeCamera((call) async {
+            expect(call.method, 'requestMicrophonePermission');
+            return 'authorized';
+          });
+
+          expect(
+            await service.requestMicrophonePermission(),
+            PermissionStatus.granted,
+          );
+        },
+      );
     });
   });
 
