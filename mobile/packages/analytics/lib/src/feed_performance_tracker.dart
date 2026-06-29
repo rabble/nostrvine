@@ -283,8 +283,7 @@ class FeedPerformanceTracker {
   /// Start tracking time-to-play for a video swipe transition.
   ///
   /// Called when the user swipes to a new video. The session completes
-  /// when [markVideoSwipeComplete] is called (typically from
-  /// [VideoLoadingMetrics.markPlaybackStart]).
+  /// when [markVideoSwipeComplete] is called.
   void startVideoSwipeTracking(String videoId) {
     final feedType = 'video_swipe_$videoId';
     startFeedLoad(feedType);

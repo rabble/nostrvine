@@ -7,4 +7,3 @@ export 'src/page_load_history.dart';
 export 'src/page_load_observer.dart';
 export 'src/screen_analytics_service.dart';
 export 'src/surface_performance_tracker.dart';
-export 'src/video_loading_metrics.dart';
