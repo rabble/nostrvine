@@ -34,18 +34,16 @@ void main() {
     }
 
     setUp(() {
-      SurfacePerformanceTracker.resetInstance();
       PageLoadHistory().clear();
       sink = RecordingAnalyticsEventSink();
       now = DateTime(2026, 6, 12, 12);
-      tracker = SurfacePerformanceTracker.testInstance(
+      tracker = SurfacePerformanceTracker(
         sink: sink,
         now: () => now,
       );
     });
 
     tearDown(() {
-      SurfacePerformanceTracker.resetInstance();
       PageLoadHistory().clear();
     });
 

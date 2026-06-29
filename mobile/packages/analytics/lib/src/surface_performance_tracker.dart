@@ -5,7 +5,6 @@ import 'package:analytics/src/analytics_event_sink.dart';
 import 'package:analytics/src/analytics_surface.dart';
 import 'package:analytics/src/firebase_analytics_event_sink.dart';
 import 'package:analytics/src/page_load_history.dart';
-import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:unified_logger/unified_logger.dart';
 
 /// Maximum age for a session before it is considered stale and discarded.
@@ -27,30 +26,12 @@ const Set<String> _safeSurfaceParamKeys = {
 
 /// Tracks perceived load performance for user-visible surfaces.
 class SurfacePerformanceTracker {
-  factory SurfacePerformanceTracker() =>
-      _instance ??= SurfacePerformanceTracker._();
-
-  SurfacePerformanceTracker._({
+  /// Creates a tracker. Defaults to the Firebase analytics sink in production;
+  /// pass a [sink] (e.g. [NoOpAnalyticsEventSink]) and [now] clock in tests.
+  SurfacePerformanceTracker({
     AnalyticsEventSink? sink,
     DateTime Function()? now,
   }) : _sink = sink ?? FirebaseAnalyticsEventSink(),
-       _now = now ?? DateTime.now;
-
-  static SurfacePerformanceTracker? _instance;
-
-  /// Resets the singleton so tests do not leak active sessions across files.
-  @visibleForTesting
-  static void resetInstance() {
-    _instance?._activeSessions.clear();
-    _instance = null;
-  }
-
-  /// Creates a testable instance that does not touch Firebase.
-  @visibleForTesting
-  SurfacePerformanceTracker.testInstance({
-    AnalyticsEventSink? sink,
-    DateTime Function()? now,
-  }) : _sink = sink ?? const NoOpAnalyticsEventSink(),
        _now = now ?? DateTime.now;
 
   AnalyticsEventSink _sink;

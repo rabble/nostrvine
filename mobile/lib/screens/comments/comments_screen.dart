@@ -18,6 +18,7 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/video_reply_context.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_reply_context_provider.dart';
@@ -143,11 +144,13 @@ abstract final class CommentsScreen {
       isFeatureEnabledProvider(FeatureFlag.videoReplies),
     );
     final seedCommentCount = initialCommentCount ?? liveCommentCountSeed(video);
-    final surfaceTelemetry = CommentsSurfacePerformanceTelemetry()
-      ..start(
-        videoRepliesEnabled: showVideoReplies,
-        initialCount: seedCommentCount,
-      );
+    final surfaceTelemetry =
+        CommentsSurfacePerformanceTelemetry.withTracker(
+          container.read(surfacePerformanceTrackerProvider),
+        )..start(
+          videoRepliesEnabled: showVideoReplies,
+          initialCount: seedCommentCount,
+        );
 
     // The draggable scroll controller is created inside buildScrollBody but
     // is also needed by the title's "new comments" pill (which lives above

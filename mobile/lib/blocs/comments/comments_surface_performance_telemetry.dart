@@ -3,9 +3,6 @@
 import 'package:analytics/analytics.dart';
 
 class CommentsSurfacePerformanceTelemetry {
-  CommentsSurfacePerformanceTelemetry()
-    : this.withTracker(SurfacePerformanceTracker());
-
   CommentsSurfacePerformanceTelemetry.withTracker(this._tracker);
 
   final SurfacePerformanceTracker _tracker;

@@ -152,7 +152,6 @@ void main() {
 
     tearDown(() {
       scrollController.dispose();
-      SurfacePerformanceTracker.resetInstance();
     });
 
     Widget buildTestWidget({
@@ -224,7 +223,7 @@ void main() {
 
       setUp(() {
         sink = _RecordingAnalyticsEventSink();
-        tracker = SurfacePerformanceTracker.testInstance(sink: sink);
+        tracker = SurfacePerformanceTracker(sink: sink);
       });
 
       testWidgets(

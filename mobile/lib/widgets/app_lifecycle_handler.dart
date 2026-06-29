@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/notifications/services/notification_refresh_coordinator.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -110,7 +111,7 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
         // 27+ hours) when providers re-fire on resume.
         FeedPerformanceTracker().resetAllSessions();
         ScreenAnalyticsService().resetAllSessions();
-        SurfacePerformanceTracker().resetAllSessions();
+        ref.read(surfacePerformanceTrackerProvider).resetAllSessions();
 
         // Notify foreground state provider - enables visibility detection
         ref.read(appForegroundProvider.notifier).setForeground(true);
