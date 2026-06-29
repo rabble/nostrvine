@@ -102,6 +102,9 @@ class _BadgeProbe extends ConsumerWidget {
       create: (_) => DmUnreadCountCubit(
         dmRepository: ref.read(_dmSelector),
         followRepository: ref.read(_followSelector),
+        // These tests assert repository-forwarding behaviour, not debounce
+        // timing, so disable the coalescing delay for prompt settling.
+        recomputeDebounce: Duration.zero,
       ),
       child: _DmRepositorySync(
         child: _MountProbe(

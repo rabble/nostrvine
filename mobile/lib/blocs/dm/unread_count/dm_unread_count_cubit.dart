@@ -49,7 +49,9 @@ class DmUnreadCountCubit extends Cubit<int> {
     required DmRepository dmRepository,
     required FollowRepository followRepository,
     ContentBlocklistRepository? contentBlocklistRepository,
-  }) : super(0) {
+    Duration recomputeDebounce = _defaultRecomputeDebounce,
+  }) : _recomputeDebounce = recomputeDebounce,
+       super(0) {
     setRepositories(
       dmRepository: dmRepository,
       followRepository: followRepository,
@@ -57,6 +59,17 @@ class DmUnreadCountCubit extends Cubit<int> {
     );
   }
 
+  /// Window over which bursty conversation writes are coalesced into a single
+  /// recompute. This cubit is always mounted (app-shell scope) and re-runs the
+  /// full follow-aware, blocklist-filtered list composition on every
+  /// conversations-table write; a relay delivery, the mark-read fan-out, or the
+  /// post-reinstall history drain can fire dozens of writes in a burst.
+  /// Collapsing each burst into one classify+sort+filter pass removes redundant
+  /// main-isolate CPU. The count is not latency-critical, so the small delay is
+  /// invisible and the coalesced result is identical. Overridable in tests.
+  static const _defaultRecomputeDebounce = Duration(milliseconds: 200);
+
+  final Duration _recomputeDebounce;
   DmRepository? _dmRepository;
   FollowRepository? _followRepository;
   ContentBlocklistRepository? _blocklistRepository;
@@ -103,6 +116,13 @@ class DmUnreadCountCubit extends Cubit<int> {
               .map<Object?>((_) => null)
               .startWith(null);
 
+    // The combiner stays cheap — it only packages the inputs into a record so
+    // the debounce sees one value per source tick. The expensive recompute
+    // (`_countUnread`: classify + mergeAndSort + filter) runs AFTER the debounce
+    // in `map`, so a burst of writes triggers a single pass, not one per write.
+    // Following/blocklist ticks carry no value into the record — they only need
+    // to trigger a recompute, and `_countUnread` reads the live follow/block
+    // state, so the debounced `map` picks up their latest values.
     _subscription =
         Rx.combineLatest5<
               List<DmConversation>,
@@ -110,7 +130,7 @@ class DmUnreadCountCubit extends Cubit<int> {
               List<String>,
               Object?,
               String,
-              int
+              (List<DmConversation>, List<DmConversation>, String)
             >(
               dmRepository.watchAcceptedConversations(),
               dmRepository.watchPotentialRequests(),
@@ -121,10 +141,18 @@ class DmUnreadCountCubit extends Cubit<int> {
               // _countUnread classifies with the empty pubkey and undercounts
               // followed-but-unreplied 1:1s. Re-fires once the identity lands.
               dmRepository.userPubkeyStream.startWith(dmRepository.userPubkey),
-              (accepted, potentialRequests, _, _, userPubkey) => _countUnread(
-                accepted: accepted,
-                potentialRequests: potentialRequests,
-                userPubkey: userPubkey,
+              (accepted, potentialRequests, _, _, userPubkey) => (
+                accepted,
+                potentialRequests,
+                userPubkey,
+              ),
+            )
+            .debounceTime(_recomputeDebounce)
+            .map(
+              (inputs) => _countUnread(
+                accepted: inputs.$1,
+                potentialRequests: inputs.$2,
+                userPubkey: inputs.$3,
               ),
             )
             .listen(

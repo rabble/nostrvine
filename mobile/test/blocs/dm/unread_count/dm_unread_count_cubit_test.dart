@@ -110,6 +110,10 @@ void main() {
         dmRepository: dmRepository,
         followRepository: followRepository,
         contentBlocklistRepository: contentBlocklistRepository,
+        // Behaviour tests assert the final settled count, not coalescing
+        // timing — disable the debounce so a single `_settle()` is enough.
+        // The debounce itself is covered by the dedicated coalescing test.
+        recomputeDebounce: Duration.zero,
       );
     }
 
@@ -422,6 +426,57 @@ void main() {
         acceptedController.add(const []);
         await _settle();
         expect(cubit.state, equals(2));
+      },
+    );
+
+    test(
+      'coalesces a burst of conversation writes into a single recompute '
+      '(debounce)',
+      () async {
+        var filterCalls = 0;
+        final blocklist = _MockContentBlocklistRepository();
+        final stateController = StreamController<ContentPolicyState>();
+        addTearDown(stateController.close);
+        when(
+          () => blocklist.stateStream,
+        ).thenAnswer((_) => stateController.stream);
+        // filterBlockedConversations runs once per `_countUnread` pass, so it
+        // doubles as a recompute counter.
+        when(
+          () => blocklist.filterBlockedConversations(
+            any(),
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((inv) {
+          filterCalls++;
+          return inv.positionalArguments.first as List<DmConversation>;
+        });
+
+        // Real (non-zero) debounce window so the burst is genuinely coalesced.
+        final cubit = DmUnreadCountCubit(
+          dmRepository: dmRepository,
+          followRepository: followRepository,
+          contentBlocklistRepository: blocklist,
+          recomputeDebounce: const Duration(milliseconds: 100),
+        );
+        addTearDown(cubit.close);
+
+        potentialController.add(const []);
+        // Five rapid accepted-list updates inside the debounce window.
+        for (var i = 0; i < 5; i++) {
+          acceptedController.add([
+            _convo('c$i', peer: _bob, isRead: false, currentUserHasSent: true),
+          ]);
+        }
+
+        // Still inside the window: the expensive pass has not run yet.
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(filterCalls, equals(0));
+
+        // After the window settles: exactly one recompute for the whole burst.
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+        expect(filterCalls, equals(1));
+        expect(cubit.state, equals(1));
       },
     );
 
