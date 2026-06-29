@@ -17,6 +17,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart' as nostr_filter;
 import 'package:nostr_sdk/nip44/nip44_v2.dart';
+import 'package:nostr_sdk/nip59/gift_wrap_batch_unwrap.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/signer/isolate_decrypt_signer.dart';
@@ -188,6 +189,36 @@ class _MockDmReactionsRepository extends Mock
     implements DmReactionsRepository {}
 
 class _MockNostrSigner extends Mock implements NostrSigner {}
+
+/// A remote signer that supports the #5471 server-side batch unwrap verb.
+///
+/// [nip17UnwrapBatch] delegates to [_onBatch]; the rest of the [NostrSigner]
+/// surface is stubbed via [noSuchMethod] except [getPublicKey], which the
+/// per-wrap fallback pool's `refreshPublicKey()` needs.
+class _BatchUnwrapSigner implements NostrSigner, GiftWrapBatchUnwrapper {
+  _BatchUnwrapSigner(this._onBatch);
+
+  final Future<List<GiftWrapUnwrapSlot>?> Function(
+    List<Map<String, dynamic>> giftWraps,
+  )
+  _onBatch;
+
+  int batchCalls = 0;
+
+  @override
+  Future<List<GiftWrapUnwrapSlot>?> nip17UnwrapBatch(
+    List<Map<String, dynamic>> giftWraps,
+  ) {
+    batchCalls++;
+    return _onBatch(giftWraps);
+  }
+
+  @override
+  Future<String?> getPublicKey() async => _validPubkeyA;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 class _FakeEvent extends Fake implements Event {}
 
@@ -1714,6 +1745,226 @@ void main() {
           ).called(wrapCount);
         },
       );
+
+      group('remote-signer batch unwrap (#5471)', () {
+        String hex64(int seed, String tag) =>
+            (tag * 64).substring(0, 62) +
+            seed.toRadixString(16).padLeft(2, '0');
+
+        List<Event> buildWraps(int count) => [
+          for (var i = 0; i < count; i++)
+            Event.fromJson({
+              'id': hex64(i, 'a'),
+              'pubkey': hex64(i, 'b'),
+              'created_at': 1700000000 - i,
+              'kind': EventKind.giftWrap,
+              'tags': [
+                ['p', _validPubkeyA],
+              ],
+              'content': 'wrap-$i',
+              'sig': '',
+            }),
+        ];
+
+        // The seal `sender` equals the rumor pubkey, mirroring the strict
+        // server which only returns success when they agree.
+        Map<String, dynamic> rumorJsonFor(int i) => {
+          'id': hex64(i, 'c'),
+          'pubkey': hex64(i, 'd'),
+          'created_at': 1700000000 - i,
+          'kind': EventKind.privateDirectMessage,
+          'tags': [
+            ['p', _validPubkeyA],
+          ],
+          'content': 'msg-$i',
+          'sig': '',
+        };
+
+        void serveOnePage(List<Event> wraps) {
+          var served = false;
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((inv) async {
+            final filters =
+                inv.positionalArguments.first as List<nostr_filter.Filter>;
+            final filter = filters.single;
+            if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+              return const <Event>[];
+            }
+            if (served) return const <Event>[];
+            served = true;
+            return wraps;
+          });
+        }
+
+        void verifyInserted(int times) {
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          ).called(times);
+        }
+
+        DmRepository batchRepository({
+          required NostrSigner signer,
+          required RumorDecryptor rumorDecryptor,
+        }) {
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 1700000000
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          return createRepository(
+            signer: signer,
+            syncState: syncState,
+            rumorDecryptor: rumorDecryptor,
+          );
+        }
+
+        setUp(() {
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+          stubDaoInserts();
+        });
+
+        test(
+          'drains a page via the batch verb without the per-wrap decryptor',
+          () async {
+            final wraps = buildWraps(4);
+            serveOnePage(wraps);
+
+            var decryptorCalls = 0;
+            final signer = _BatchUnwrapSigner(
+              (batch) async => [
+                for (var i = 0; i < batch.length; i++)
+                  GiftWrapUnwrapSlot.success(
+                    rumor: rumorJsonFor(i),
+                    sender: hex64(i, 'd'),
+                  ),
+              ],
+            );
+
+            final repository = batchRepository(
+              signer: signer,
+              rumorDecryptor: (_, _) async {
+                decryptorCalls++;
+                return null;
+              },
+            );
+
+            await repository.backfillHistoryIfNeeded();
+
+            expect(signer.batchCalls, 1);
+            expect(
+              decryptorCalls,
+              0,
+              reason: 'batch-handled wraps must not hit the per-wrap path',
+            );
+            verifyInserted(4);
+          },
+        );
+
+        test(
+          'falls back to the per-wrap pool when the verb is unsupported',
+          () async {
+            final wraps = buildWraps(4);
+            serveOnePage(wraps);
+
+            var decryptorCalls = 0;
+            final signer = _BatchUnwrapSigner((_) async => null);
+
+            final repository = batchRepository(
+              signer: signer,
+              rumorDecryptor: (_, wrap) async {
+                decryptorCalls++;
+                final i = wraps.indexWhere((w) => w.id == wrap.id);
+                return Event.fromJson(rumorJsonFor(i));
+              },
+            );
+
+            await repository.backfillHistoryIfNeeded();
+
+            expect(
+              signer.batchCalls,
+              1,
+              reason: 'probes the verb once, then latches it off',
+            );
+            expect(
+              decryptorCalls,
+              4,
+              reason: 'every wrap falls back to the per-wrap path',
+            );
+            verifyInserted(4);
+          },
+        );
+
+        test(
+          'routes a per-item error slot to the per-wrap recovery path',
+          () async {
+            final wraps = buildWraps(3);
+            serveOnePage(wraps);
+
+            var decryptorCalls = 0;
+            // Index 0 fails (e.g. sender_mismatch); 1 and 2 succeed.
+            final signer = _BatchUnwrapSigner(
+              (_) async => [
+                const GiftWrapUnwrapSlot.failure('sender_mismatch'),
+                GiftWrapUnwrapSlot.success(
+                  rumor: rumorJsonFor(1),
+                  sender: hex64(1, 'd'),
+                ),
+                GiftWrapUnwrapSlot.success(
+                  rumor: rumorJsonFor(2),
+                  sender: hex64(2, 'd'),
+                ),
+              ],
+            );
+
+            final repository = batchRepository(
+              signer: signer,
+              rumorDecryptor: (_, wrap) async {
+                decryptorCalls++;
+                final i = wraps.indexWhere((w) => w.id == wrap.id);
+                return Event.fromJson(rumorJsonFor(i));
+              },
+            );
+
+            await repository.backfillHistoryIfNeeded();
+
+            expect(signer.batchCalls, 1);
+            expect(
+              decryptorCalls,
+              1,
+              reason:
+                  'only the error-slot wrap falls through to the per-wrap path',
+            );
+            verifyInserted(3);
+          },
+        );
+      });
 
       test('successful gift-wrap persist advances sync boundaries', () async {
         const rumorCreatedAt = 1700000500;

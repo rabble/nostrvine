@@ -125,7 +125,7 @@ class LocalNostrIdentity extends NostrIdentity implements IsolateDecryptSigner {
 /// When a matching local private key is available, signs locally for speed.
 /// Otherwise delegates to the remote [KeycastRpc] signer.
 class KeycastNostrIdentity extends NostrIdentity
-    implements IsolateDecryptSigner {
+    implements IsolateDecryptSigner, GiftWrapBatchUnwrapper {
   /// Creates a Keycast identity.
   ///
   /// [rpcSigner] is the remote Keycast RPC signer.
@@ -199,6 +199,19 @@ class KeycastNostrIdentity extends NostrIdentity
     }
 
     return null;
+  }
+
+  @override
+  Future<List<GiftWrapUnwrapSlot>?> nip17UnwrapBatch(
+    List<Map<String, dynamic>> giftWraps,
+  ) {
+    // OAuth-only Keycast (no local key) drains DM history over RPC; the batch
+    // verb unwraps a whole chunk in one round trip. When a local key is present
+    // the drain decrypts in an isolate instead and never reaches this path.
+    if (_rpcSigner case final GiftWrapBatchUnwrapper unwrapper) {
+      return unwrapper.nip17UnwrapBatch(giftWraps);
+    }
+    return Future.value();
   }
 
   /// OAuth-only Keycast (no matching local key) signs over the network RPC,

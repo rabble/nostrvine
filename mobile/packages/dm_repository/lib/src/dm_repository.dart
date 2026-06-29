@@ -25,6 +25,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart' as nostr_filter;
+import 'package:nostr_sdk/nip59/gift_wrap_batch_unwrap.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/signer/isolate_decrypt_signer.dart';
@@ -117,6 +118,11 @@ abstract class DmHistoryDrainConfig {
   /// only *decryption* is parallelized — persistence stays serialized under the
   /// event lock. Local-key signers are unaffected (they use the batch isolate).
   static const int remoteDecryptConcurrency = 8;
+
+  /// Gift wraps unwrapped per server round trip on the remote-signer drain via
+  /// the Keycast `nip17_unwrap_batch` verb. Capped at the server's batch limit
+  /// (100), so a [pageSize] page is one chunk. See #5471.
+  static const int unwrapBatchSize = 100;
 }
 
 const _relayLoopbackHosts = <String>{
@@ -271,6 +277,12 @@ class DmRepository {
   String _userPubkey;
   NostrSigner? _signer;
   RumorDecryptor _rumorDecryptor;
+
+  /// Latches true once the active signer's keycast is found not to support the
+  /// `nip17_unwrap_batch` verb, so the drain stops probing it and uses the
+  /// per-wrap fallback pool for the rest of the session. Reset when the signer
+  /// changes. See #5471.
+  bool _batchUnwrapUnsupported = false;
   Nip04Decryptor? _nip04Decryptor;
   final DmDecryptIsolateSpawner _decryptIsolateSpawner;
   final DmVerifyIsolateSpawner _verifyIsolateSpawner;
@@ -448,6 +460,9 @@ class DmRepository {
 
     _userPubkey = userPubkey;
     _signer = signer;
+    // A new signer may be a keycast that supports (or lacks) the batch verb;
+    // re-probe it. See #5471.
+    _batchUnwrapUnsupported = false;
     _messageService = messageService;
     if (rumorDecryptor != null) _rumorDecryptor = rumorDecryptor;
     if (nip04Decryptor != null) _nip04Decryptor = nip04Decryptor;
@@ -523,6 +538,7 @@ class DmRepository {
     _postAuthMaintenance = null;
     _userPubkey = '';
     _signer = null;
+    _batchUnwrapUnsupported = false;
     _messageService = null;
     _disposed = false;
     _subscriptionId = 'dm_inbox';
@@ -1772,14 +1788,46 @@ class DmRepository {
     if (pending.isEmpty) return const {};
     if (_disposed) return const {};
 
-    // One signer handle shared across the pool: the public key is refreshed
-    // once up front and the workers only read it. Each decrypt is independent
-    // (pubkey + ciphertext in, plaintext out), so sharing is safe on a single
-    // isolate.
+    final decrypted = <String, Event>{};
+
+    // #5471: when the remote signer is Keycast, unwrap a whole chunk of gift
+    // wraps in ONE server round trip (`nip17_unwrap_batch`) instead of two
+    // `nip44Decrypt` RPCs per wrap. Wraps the batch cannot handle — an older
+    // keycast without the verb, a transient error, or a per-item failure — fall
+    // back to the per-wrap pool below, preserving the #5426 behaviour.
+    var fallback = pending;
+    if (signer case final GiftWrapBatchUnwrapper unwrapper
+        when !_batchUnwrapUnsupported) {
+      fallback = await _serverBatchUnwrapGiftWraps(
+        unwrapper,
+        pending,
+        decrypted,
+      );
+    }
+    if (fallback.isEmpty || _disposed) return decrypted;
+
+    // Per-wrap fallback pool (#5426): a bounded set of decrypts in flight, each
+    // two RPCs (gift wrap -> seal, seal -> rumor). Shares one signer handle
+    // with the public key refreshed once up front. Used for non-Keycast remote
+    // signers (Amber / NIP-46), an older keycast without the batch verb, or
+    // wraps a transient batch error skipped.
     final nostr = Nostr(signer, [], _dummyRelay);
     await nostr.refreshPublicKey();
+    await _workerPoolDecrypt(nostr, fallback, decrypted);
+    return decrypted;
+  }
 
-    final decrypted = <String, Event>{};
+  /// Per-wrap fallback decrypt pool: keeps
+  /// [DmHistoryDrainConfig.remoteDecryptConcurrency] gift-wrap decrypts in
+  /// flight, each via the per-wrap [_decryptRumor] path (two RPCs to a remote
+  /// signer). Successful rumors land in [decrypted]; failures are left out so
+  /// the caller routes them to the per-event path and the failed-decrypt retry
+  /// queue. See #5426 / #5202.
+  Future<void> _workerPoolDecrypt(
+    Nostr nostr,
+    List<Event> events,
+    Map<String, Event> decrypted,
+  ) async {
     var next = 0;
 
     Future<void> worker() async {
@@ -1788,9 +1836,9 @@ class DmRepository {
         // Read-then-increment with no await in between, so two workers never
         // claim the same index on a single isolate.
         final index = next;
-        if (index >= pending.length) return;
+        if (index >= events.length) return;
         next = index + 1;
-        final event = pending[index];
+        final event = events[index];
         try {
           final rumor = await _decryptRumor(nostr, event);
           if (rumor != null) decrypted[event.id] = rumor;
@@ -1814,11 +1862,115 @@ class DmRepository {
     }
 
     final workerCount =
-        pending.length < DmHistoryDrainConfig.remoteDecryptConcurrency
-        ? pending.length
+        events.length < DmHistoryDrainConfig.remoteDecryptConcurrency
+        ? events.length
         : DmHistoryDrainConfig.remoteDecryptConcurrency;
     await Future.wait([for (var i = 0; i < workerCount; i++) worker()]);
-    return decrypted;
+  }
+
+  /// #5471: unwraps [pending] gift wraps via the Keycast `nip17_unwrap_batch`
+  /// verb in chunks of [DmHistoryDrainConfig.unwrapBatchSize], one server round
+  /// trip per chunk. Successful slots are written into [decrypted]; per-item
+  /// error slots are left out so they fall through to the per-event path and
+  /// the failed-decrypt retry queue (the lenient per-wrap path recovers the
+  /// rare sender mismatch the strict server rejects). Returns the wraps still
+  /// need the per-wrap fallback pool: every wrap from the chunk where the verb
+  /// turned out to be unsupported onward, plus any chunk a transient error
+  /// (e.g. a timeout) skipped.
+  Future<List<Event>> _serverBatchUnwrapGiftWraps(
+    GiftWrapBatchUnwrapper unwrapper,
+    List<Event> pending,
+    Map<String, Event> decrypted,
+  ) async {
+    final fallback = <Event>[];
+    for (
+      var start = 0;
+      start < pending.length;
+      start += DmHistoryDrainConfig.unwrapBatchSize
+    ) {
+      if (_disposed) break;
+      final end = start + DmHistoryDrainConfig.unwrapBatchSize;
+      final chunk = pending.sublist(
+        start,
+        end < pending.length ? end : pending.length,
+      );
+
+      // The verb was found missing on an earlier chunk: don't keep probing it.
+      if (_batchUnwrapUnsupported) {
+        fallback.addAll(chunk);
+        continue;
+      }
+
+      List<GiftWrapUnwrapSlot>? slots;
+      try {
+        slots = await unwrapper.nip17UnwrapBatch([
+          for (final event in chunk) event.toJson(),
+        ]);
+      } on Object catch (e, stackTrace) {
+        // Transient failure (e.g. a TimeoutException): route this chunk to the
+        // per-wrap pool but keep trying the verb for later chunks.
+        Log.error(
+          'Batch gift-wrap unwrap chunk threw: $e',
+          category: LogCategory.system,
+          error: e,
+          stackTrace: stackTrace,
+        );
+        fallback.addAll(chunk);
+        await _yieldToEventLoop();
+        continue;
+      }
+
+      if (slots == null) {
+        // Older keycast without the verb: latch off and fall the rest back.
+        _batchUnwrapUnsupported = true;
+        fallback.addAll(chunk);
+        continue;
+      }
+
+      for (var i = 0; i < chunk.length; i++) {
+        final slot = i < slots.length ? slots[i] : null;
+        if (slot != null && slot.isSuccess) {
+          final rumor = _rumorFromSlot(slot);
+          if (rumor != null) decrypted[chunk[i].id] = rumor;
+        }
+        // Error or missing slots are intentionally omitted: the caller routes
+        // them to the per-event path, which records the failed decrypt for the
+        // retry queue and recovers a sender mismatch via the lenient per-wrap
+        // path. See #5202.
+      }
+
+      // Yield between chunks so a large backfill cannot starve frame
+      // rendering. See #5391.
+      await _yieldToEventLoop();
+    }
+    return fallback;
+  }
+
+  /// Builds the kind:14 rumor [Event] from a successful unwrap [slot],
+  /// attributing it to the server-authenticated [GiftWrapUnwrapSlot.sender] —
+  /// the same authority [GiftWrapUtil.getRumorEvent] applies locally. The
+  /// server already verified both the gift-wrap and seal signatures (#5471), so
+  /// the client does not re-verify. The event id is recomputed by the
+  /// constructor.
+  Event? _rumorFromSlot(GiftWrapUnwrapSlot slot) {
+    try {
+      final inner = Event.fromJson(slot.rumor!);
+      return Event(
+        slot.sender!,
+        inner.kind,
+        inner.tags,
+        inner.content,
+        createdAt: inner.createdAt,
+      );
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'Failed to build rumor from unwrap slot: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
   }
 
   /// Cooperative-scheduling yield (NOT UI timing): a zero-duration delay is a

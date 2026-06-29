@@ -515,5 +515,107 @@ void main() {
         expect(result, isNull);
       });
     });
+
+    group('nip17UnwrapBatch', () {
+      Map<String, dynamic> giftWrap(String id) => {
+        'id': id,
+        'pubkey': 'a' * 64,
+        'created_at': 1700000000,
+        'kind': 1059,
+        'tags': <List<String>>[],
+        'content': 'ciphertext-$id',
+        'sig': 'b' * 128,
+      };
+
+      test('posts the verb with the gift-wrap list and parses ordered '
+          'slots', () async {
+        final wraps = [giftWrap('11'), giftWrap('22')];
+        final rumor = {
+          'id': 'c' * 64,
+          'pubkey': 'd' * 64,
+          'created_at': 1700000001,
+          'kind': 14,
+          'tags': <List<String>>[],
+          'content': 'hello',
+        };
+
+        mockClient = MockClient((request) async {
+          expect(request.headers['Authorization'], 'Bearer test_token');
+          final body = jsonDecode(request.body);
+          expect(body['method'], 'nip17_unwrap_batch');
+          expect(body['params'], wraps);
+          return http.Response(
+            jsonEncode({
+              'result': [
+                {'rumor': rumor, 'sender': 'd' * 64},
+                {'error': 'sender_mismatch'},
+              ],
+            }),
+            200,
+          );
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+        );
+
+        final slots = await rpc.nip17UnwrapBatch(wraps);
+        expect(slots, hasLength(2));
+        expect(slots![0].isSuccess, isTrue);
+        expect(slots[0].sender, 'd' * 64);
+        expect(slots[0].rumor, rumor);
+        expect(slots[1].isSuccess, isFalse);
+        expect(slots[1].error, 'sender_mismatch');
+      });
+
+      test('returns null when the backend lacks the verb', () async {
+        mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({'error': 'Unsupported method: nip17_unwrap_batch'}),
+            200,
+          );
+        });
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+        );
+        expect(await rpc.nip17UnwrapBatch([giftWrap('1')]), isNull);
+      });
+
+      test('returns null on an HTTP error response', () async {
+        mockClient = MockClient((request) async {
+          return http.Response('boom', 400);
+        });
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+        );
+        expect(await rpc.nip17UnwrapBatch([giftWrap('1')]), isNull);
+      });
+
+      test('propagates TimeoutException rather than swallowing it to '
+          'null', () async {
+        // A timed-out page must be retryable by the caller, never mistaken
+        // for "no messages" — so unlike signCanonicalPayload, the batch verb
+        // does not catch TimeoutException.
+        mockClient = MockClient(
+          (request) => Completer<http.Response>().future,
+        );
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+          requestTimeout: const Duration(milliseconds: 50),
+        );
+        await expectLater(
+          rpc.nip17UnwrapBatch([giftWrap('1')]),
+          throwsA(isA<TimeoutException>()),
+        );
+      });
+    });
   });
 }

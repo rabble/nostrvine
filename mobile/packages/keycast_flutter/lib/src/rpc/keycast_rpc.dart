@@ -17,7 +17,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// is not possible.
 typedef TokenRefreshCallback = Future<String?> Function();
 
-class KeycastRpc implements NostrSigner {
+class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   /// Default timeout applied to every RPC HTTP request.
   ///
   /// Without a bound, a dead socket (e.g. Android Doze killing the
@@ -216,6 +216,52 @@ class KeycastRpc implements NostrSigner {
       // Network/parse error: degrade gracefully.
       return null;
     }
+  }
+
+  /// Server-side NIP-59 gift-wrap unwrap for the remote-signer DM history
+  /// drain (`nip17_unwrap_batch`).
+  ///
+  /// Sends a chunk of kind:1059 gift wraps and gets back ordered, index-aligned
+  /// slots — each the decrypted kind:14 rumor plus the authenticated sender, or
+  /// a per-item error code. This replaces two `nip44Decrypt` round trips per
+  /// wrap (gift wrap → seal, seal → rumor) with a single round trip per chunk;
+  /// the server verifies both signatures and decrypts both layers.
+  ///
+  /// Returns `null` (rather than throwing) when the backend does not expose the
+  /// verb yet — method-not-found surfaces as an [RpcException] — so callers fall
+  /// back to the per-wrap decrypt path. A [TimeoutException] is deliberately
+  /// allowed to propagate so a slow page is retried by the caller rather than
+  /// being mistaken for an empty result.
+  @override
+  Future<List<GiftWrapUnwrapSlot>?> nip17UnwrapBatch(
+    List<Map<String, dynamic>> giftWraps,
+  ) async {
+    try {
+      return await _call(
+        'nip17_unwrap_batch',
+        giftWraps,
+        (result) => [
+          for (final slot in result as List)
+            _parseUnwrapSlot(slot as Map<String, dynamic>),
+        ],
+      );
+    } on RpcException {
+      // Older keycast without the verb, or a server-level error: degrade so the
+      // caller uses the per-wrap fallback. Note: no `catch (_)` here — a
+      // TimeoutException must propagate, not be swallowed into a null result.
+      return null;
+    }
+  }
+
+  static GiftWrapUnwrapSlot _parseUnwrapSlot(Map<String, dynamic> slot) {
+    final error = slot['error'];
+    if (error != null) return GiftWrapUnwrapSlot.failure(error.toString());
+    final rumor = slot['rumor'];
+    final sender = slot['sender'];
+    if (rumor is Map<String, dynamic> && sender is String) {
+      return GiftWrapUnwrapSlot.success(rumor: rumor, sender: sender);
+    }
+    return const GiftWrapUnwrapSlot.failure('invalid_slot');
   }
 
   @override

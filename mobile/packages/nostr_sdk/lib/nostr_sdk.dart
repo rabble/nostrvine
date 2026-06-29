@@ -35,6 +35,7 @@ export 'nip51/follow_set.dart';
 // Platform-specific (conditionally exported)
 export 'nip55/android_nostr_signer.dart';
 export 'nip58/badge_definition.dart';
+export 'nip59/gift_wrap_batch_unwrap.dart';
 export 'nip59/gift_wrap_util.dart';
 export 'nip65/nip65.dart';
 export 'nip65/relay_list_metadata.dart';

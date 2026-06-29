@@ -26,6 +26,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(Event(testPublicKey, 0, [], ''));
     registerFallbackValue(Uint8List(0));
+    registerFallbackValue(<Map<String, dynamic>>[]);
   });
 
   group(LocalNostrIdentity, () {
@@ -260,6 +261,41 @@ void main() {
         expect(result, isNull);
       },
     );
+
+    test(
+      'nip17UnwrapBatch returns null when rpcSigner is a generic NostrSigner',
+      () async {
+        // A generic NostrSigner is not a GiftWrapBatchUnwrapper, so the
+        // identity short-circuits to null and the DM drain falls back to the
+        // per-wrap path. See #5471.
+        final identity = KeycastNostrIdentity(
+          pubkey: testPublicKey,
+          rpcSigner: mockRpc,
+        );
+
+        expect(await identity.nip17UnwrapBatch(const []), isNull);
+      },
+    );
+
+    test('nip17UnwrapBatch delegates to KeycastRpc', () async {
+      final mockKeycastRpc = _MockKeycastRpc();
+      final slots = [const GiftWrapUnwrapSlot.failure('decrypt_failed')];
+      when(
+        () => mockKeycastRpc.nip17UnwrapBatch(any()),
+      ).thenAnswer((_) async => slots);
+
+      final identity = KeycastNostrIdentity(
+        pubkey: testPublicKey,
+        rpcSigner: mockKeycastRpc,
+      );
+
+      final result = await identity.nip17UnwrapBatch([
+        {'id': 'wrap'},
+      ]);
+
+      expect(result, same(slots));
+      verify(() => mockKeycastRpc.nip17UnwrapBatch(any())).called(1);
+    });
 
     test(
       'signCanonicalPayload prefers local signer when available',
