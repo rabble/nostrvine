@@ -1,6 +1,8 @@
 // ABOUTME: Tests for ModerationLabelService
 // ABOUTME: Validates Kind 1985 label parsing including AI confidence metadata
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -86,6 +88,29 @@ void main() {
         verifyNever(() => mockNostrClient.queryEvents(any()));
       },
     );
+
+    test('ensureLoaded hydrates prefs without querying relays', () async {
+      const existingLabeler =
+          '1111111111111111111111111111111111111111111111111111111111111111';
+
+      SharedPreferences.setMockInitialValues({
+        'subscribed_labeler_pubkeys': [existingLabeler],
+        'following_moderation_enabled': true,
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final localOnlyService = ModerationLabelService(
+        nostrClient: mockNostrClient,
+        authService: mockAuthService,
+        sharedPreferences: prefs,
+        canQueryRelays: () => false,
+      );
+
+      await localOnlyService.ensureLoaded();
+
+      expect(localOnlyService.isFollowingModerationEnabled, isTrue);
+      expect(localOnlyService.customLabelers, contains(existingLabeler));
+      verifyNever(() => mockNostrClient.queryEvents(any()));
+    });
 
     group('_processLabelEvent', () {
       test('parses basic content-warning label', () async {
@@ -371,6 +396,83 @@ void main() {
 
         expect(service.isFollowingModerationEnabled, isTrue);
         expect(service.getContentWarnings('followed_event'), hasLength(1));
+      });
+
+      test(
+        'retries followed labelers enabled before relay readiness',
+        () async {
+          const followedLabeler =
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+          var canQueryRelays = false;
+          final gatedService = ModerationLabelService(
+            nostrClient: mockNostrClient,
+            authService: mockAuthService,
+            sharedPreferences: mockPrefs,
+            canQueryRelays: () => canQueryRelays,
+          );
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [
+              _FakeLabelEvent(
+                pubkey: followedLabeler,
+                tags: [
+                  ['L', 'content-warning'],
+                  ['l', 'nudity', 'content-warning'],
+                  ['e', 'deferred_followed_event'],
+                ],
+              ),
+            ],
+          );
+
+          await gatedService.setFollowingModerationEnabled(
+            true,
+            followedPubkeys: [followedLabeler],
+          );
+
+          expect(gatedService.isFollowingModerationEnabled, isTrue);
+          expect(
+            gatedService.getContentWarnings('deferred_followed_event'),
+            isEmpty,
+          );
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+
+          canQueryRelays = true;
+          await gatedService.syncFollowedLabelers([followedLabeler]);
+
+          expect(
+            gatedService.getContentWarnings('deferred_followed_event'),
+            hasLength(1),
+          );
+          verify(() => mockNostrClient.queryEvents(any())).called(1);
+        },
+      );
+
+      test('coalesces concurrent labeler subscriptions', () async {
+        const labeler =
+            'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+        final events = Completer<List<Event>>();
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) => events.future,
+        );
+
+        final firstSubscribe = service.subscribeToLabeler(labeler);
+        final secondSubscribe = service.subscribeToLabeler(labeler);
+        await Future<void>.delayed(Duration.zero);
+
+        verify(() => mockNostrClient.queryEvents(any())).called(1);
+
+        events.complete([
+          _FakeLabelEvent(
+            pubkey: labeler,
+            tags: [
+              ['L', 'content-warning'],
+              ['l', 'nudity', 'content-warning'],
+              ['e', 'coalesced_event'],
+            ],
+          ),
+        ]);
+        await Future.wait([firstSubscribe, secondSubscribe]);
+
+        expect(service.getContentWarnings('coalesced_event'), hasLength(1));
       });
 
       test('disabling followed labelers removes their cached labels', () async {

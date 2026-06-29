@@ -79,7 +79,9 @@ void main() {
       when(
         () => moderationLabelService.isFollowingModerationEnabled,
       ).thenReturn(false);
-      when(() => moderationLabelService.initialize()).thenAnswer((_) async {});
+      when(
+        () => moderationLabelService.ensureLoaded(),
+      ).thenAnswer((_) async {});
       when(() => moderationLabelService.customLabelers).thenReturn(<String>{});
       when(
         () => moderationLabelService.setFollowingModerationEnabled(
@@ -168,6 +170,8 @@ void main() {
       ],
       verify: (_) {
         verify(ageService.initialize).called(1);
+        verify(() => moderationLabelService.ensureLoaded()).called(1);
+        verifyNever(() => moderationLabelService.initialize());
       },
     );
 

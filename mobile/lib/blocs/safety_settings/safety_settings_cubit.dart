@@ -63,7 +63,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
   Future<void> load() async {
     emit(state.copyWith(status: SafetySettingsStatus.loading));
     await _ageVerificationService.initialize();
-    await _moderationLabelService.initialize();
+    await _moderationLabelService.ensureLoaded();
     emit(
       state.copyWith(
         status: SafetySettingsStatus.ready,
