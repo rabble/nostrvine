@@ -92,9 +92,18 @@ class PermissionHandlerPermissionsService implements PermissionsService {
   }
 
   @override
-  // coverage:ignore-start
-  Future<bool> openAppSettings() => ph.openAppSettings();
-  // coverage:ignore-end
+  Future<bool> openAppSettings() async {
+    if (_usesMacOSNativeMediaPermissions) {
+      final opened = await _nativeCameraChannel.invokeMethod<bool>(
+        'openSystemSettings',
+      );
+      return opened ?? false;
+    }
+
+    // coverage:ignore-start
+    return ph.openAppSettings();
+    // coverage:ignore-end
+  }
 
   @override
   Future<PermissionStatus> checkGalleryStatus() async {

@@ -198,6 +198,26 @@ void main() {
           );
         },
       );
+
+      test('openAppSettings routes through the native channel', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        mockNativeCamera((call) async {
+          expect(call.method, 'openSystemSettings');
+          return true;
+        });
+
+        expect(await service.openAppSettings(), isTrue);
+      });
+
+      test('openAppSettings handles null native channel results', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        mockNativeCamera((call) async {
+          expect(call.method, 'openSystemSettings');
+          return null;
+        });
+
+        expect(await service.openAppSettings(), isFalse);
+      });
     });
   });
 

@@ -112,10 +112,11 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
 
     private func openSystemSettings(result: @escaping FlutterResult) {
         // The app only appears in the Privacy pane after it has requested
-        // camera access at least once.
+        // media access at least once.
+        let privacyPane = Self.settingsPrivacyPane()
         if let url = URL(
             string:
-                "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera"
+                "x-apple.systempreferences:com.apple.preference.security?\(privacyPane)"
         ) {
             NSWorkspace.shared.open(url)
             result(true)
@@ -139,5 +140,19 @@ public class NativeCameraPlugin: NSObject, FlutterPlugin {
             )
             result(false)
         }
+    }
+
+    private static func settingsPrivacyPane() -> String {
+        let cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
+        if cameraStatus == .denied || cameraStatus == .restricted {
+            return "Privacy_Camera"
+        }
+
+        let microphoneStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+        if microphoneStatus == .denied || microphoneStatus == .restricted {
+            return "Privacy_Microphone"
+        }
+
+        return "Privacy_Camera"
     }
 }
