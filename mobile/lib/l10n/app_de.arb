@@ -1336,6 +1336,7 @@
     "authVerificationErrorNetworkExchange": "Netzwerkfehler bei der Anmeldung. Bitte versuch es nochmal.",
     "authVerificationErrorOAuthExchange": "Verifizierung fehlgeschlagen. Bitte registriere dich erneut.",
     "authVerificationErrorSignInFailed": "Anmeldung fehlgeschlagen. Bitte versuch es mit einer manuellen Anmeldung.",
+    "authVerificationEmailAlreadyRegistered": "Diese E-Mail ist bereits registriert. Melde dich stattdessen an.",
     "authInviteErrorAlreadyUsed": "Dieser Einladungscode ist nicht mehr verfügbar. Geh zurück zu deinem Einladungscode, tritt der Warteliste bei oder kontaktier den Support.",
     "authInviteErrorInvalid": "Dieser Einladungscode kann derzeit nicht verwendet werden. Geh zurück zu deinem Einladungscode, tritt der Warteliste bei oder kontaktier den Support.",
     "authInviteErrorTemporary": "Wir konnten deine Einladung gerade nicht bestätigen. Geh zurück zu deinem Einladungscode und versuch es nochmal oder kontaktier den Support.",

@@ -1336,6 +1336,7 @@
     "authVerificationErrorNetworkExchange": "Erro de rede durante o login. Tente novamente.",
     "authVerificationErrorOAuthExchange": "Verificação falhou. Tente se registrar novamente.",
     "authVerificationErrorSignInFailed": "Falha no login. Tente entrar manualmente.",
+    "authVerificationEmailAlreadyRegistered": "Este email já está registrado. Entre em vez disso.",
     "authInviteErrorAlreadyUsed": "Esse código de convite não está mais disponível. Volte para o seu código de convite, entre na lista de espera ou contate o suporte.",
     "authInviteErrorInvalid": "Esse código de convite não pode ser usado agora. Volte para o seu código de convite, entre na lista de espera ou contate o suporte.",
     "authInviteErrorTemporary": "Não conseguimos confirmar seu convite agora. Volte para o seu código de convite e tente novamente ou contate o suporte.",

@@ -3065,6 +3065,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'መግባት አልተሳካም። እባክህ ራስህ ለመግባት ሞክር።';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      'ይህ ኢሜይል አስቀድሞ ተመዝግቧል። በምትኩ ግባ።';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'ያ የግብዣ ኮድ ከአሁን በኋላ አይገኝም። ወደ የግብዣ ኮድዎ ይመለሱ፣ የተጠባባቂ ዝርዝሩን ይቀላቀሉ ወይም ድጋፍ ሰጪን ያግኙ።';
 

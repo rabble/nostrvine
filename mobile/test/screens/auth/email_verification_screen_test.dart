@@ -125,6 +125,14 @@ void main() {
                       const Scaffold(body: Text('Login Options')),
                 ),
                 GoRoute(
+                  path: '/welcome/login-options',
+                  builder: (_, state) => Scaffold(
+                    body: Text(
+                      'Login Options ${state.uri.queryParameters['email'] ?? ''}',
+                    ),
+                  ),
+                ),
+                GoRoute(
                   path: '/explore',
                   builder: (_, _) => const Scaffold(body: Text('Explore')),
                 ),
@@ -385,6 +393,36 @@ void main() {
           findsOneWidget,
         );
       });
+
+      testWidgets('renders sign-in recovery for duplicate email conflicts', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            deviceCode: 'test-device-code',
+            verifier: 'test-verifier',
+            initialState: const EmailVerificationState(
+              status: EmailVerificationStatus.failure,
+              pendingEmail: 'user@example.com',
+              errorCode: EmailVerificationError.emailAlreadyRegistered,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.text('This email is already registered. Sign in instead.'),
+          findsOneWidget,
+        );
+        expect(find.widgetWithText(DivineButton, 'Sign in'), findsOneWidget);
+
+        await tester.tap(find.widgetWithText(DivineButton, 'Sign in'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Login Options user@example.com'), findsOneWidget);
+        verify(() => mockPendingVerification.clear()).called(greaterThan(0));
+        verify(() => mockCubit.stopPolling()).called(greaterThan(0));
+      });
     });
 
     group('interactions', () {
@@ -484,6 +522,52 @@ void main() {
           ),
         ).called(1);
       });
+
+      testWidgets(
+        'does not start polling after duplicate-email verify failure',
+        (tester) async {
+          when(() => mockPendingVerification.load()).thenAnswer(
+            (_) async => PendingVerification(
+              deviceCode: 'persisted-device-code',
+              verifier: 'persisted-verifier',
+              email: 'user@example.com',
+              createdAt: DateTime(2026),
+            ),
+          );
+          when(
+            () => mockOAuth.verifyEmail(token: any(named: 'token')),
+          ).thenAnswer(
+            (_) async => VerifyEmailResult.error(
+              'This email is already registered.',
+              statusCode: 409,
+              failure: KeycastAuthFailure.emailAlreadyRegistered,
+            ),
+          );
+
+          await tester.pumpWidget(createTestWidget(token: 'persisted-token'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 10));
+
+          verify(
+            () => mockOAuth.verifyEmail(token: 'persisted-token'),
+          ).called(1);
+          verifyNever(
+            () => mockCubit.startPolling(
+              deviceCode: any(named: 'deviceCode'),
+              verifier: any(named: 'verifier'),
+              email: any(named: 'email'),
+              inviteCode: any(named: 'inviteCode'),
+            ),
+          );
+          verify(() => mockPendingVerification.clear()).called(greaterThan(0));
+          verify(
+            () => mockCubit.emitFailure(
+              EmailVerificationError.emailAlreadyRegistered,
+              pendingEmail: 'user@example.com',
+            ),
+          ).called(1);
+        },
+      );
 
       testWidgets(
         're-verifies when token changes while already in token mode',

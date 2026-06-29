@@ -3217,6 +3217,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Autentificarea a eșuat. Încearcă să te conectezi manual.';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      'Acest e-mail este deja înregistrat. Conectează-te în schimb.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Acest cod de invitație nu mai e disponibil. Întoarce-te la codul tău, alătură-te listei de așteptare sau contactează asistența.';
 

@@ -1333,6 +1333,7 @@
     "authVerificationErrorNetworkExchange": "Giriş sırasında ağ hatası. Lütfen tekrar dene.",
     "authVerificationErrorOAuthExchange": "Doğrulama başarısız. Lütfen tekrar kaydolmayı dene.",
     "authVerificationErrorSignInFailed": "Giriş başarısız. Lütfen manuel olarak giriş yapmayı dene.",
+    "authVerificationEmailAlreadyRegistered": "Bu e-posta zaten kayıtlı. Bunun yerine giriş yap.",
     "authInviteErrorAlreadyUsed": "Bu davet kodu artık kullanılamıyor. Davet koduna geri dön, bekleme listesine katıl veya destekle iletişime geç.",
     "authInviteErrorInvalid": "Bu davet kodu şu anda kullanılamıyor. Davet koduna geri dön, bekleme listesine katıl veya destekle iletişime geç.",
     "authInviteErrorTemporary": "Davetini şu anda doğrulayamadık. Davet koduna geri dönüp tekrar dene veya destekle iletişime geç.",

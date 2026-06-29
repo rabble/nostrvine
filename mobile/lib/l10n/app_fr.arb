@@ -1336,6 +1336,7 @@
     "authVerificationErrorNetworkExchange": "Erreur réseau pendant la connexion. Réessaie.",
     "authVerificationErrorOAuthExchange": "Vérification échouée. Essaie de t'inscrire à nouveau.",
     "authVerificationErrorSignInFailed": "Connexion échouée. Essaie de te connecter manuellement.",
+    "authVerificationEmailAlreadyRegistered": "Cet e-mail est déjà inscrit. Connecte-toi plutôt.",
     "authInviteErrorAlreadyUsed": "Ce code d'invitation n'est plus disponible. Retourne à ton code d'invitation, rejoins la liste d'attente, ou contacte le support.",
     "authInviteErrorInvalid": "Ce code d'invitation ne peut pas être utilisé pour l'instant. Retourne à ton code d'invitation, rejoins la liste d'attente, ou contacte le support.",
     "authInviteErrorTemporary": "On n'a pas pu confirmer ton invitation pour l'instant. Retourne à ton code d'invitation et réessaie, ou contacte le support.",

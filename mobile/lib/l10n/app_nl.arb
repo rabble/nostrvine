@@ -1336,6 +1336,7 @@
     "authVerificationErrorNetworkExchange": "Netwerkfout tijdens inloggen. Probeer het opnieuw.",
     "authVerificationErrorOAuthExchange": "Verificatie mislukt. Probeer opnieuw te registreren.",
     "authVerificationErrorSignInFailed": "Inloggen mislukt. Probeer handmatig in te loggen.",
+    "authVerificationEmailAlreadyRegistered": "Dit e-mailadres is al geregistreerd. Log in plaats daarvan in.",
     "authInviteErrorAlreadyUsed": "Die invite-code is niet meer beschikbaar. Ga terug naar je invite-code, kom op de wachtlijst of neem contact op met support.",
     "authInviteErrorInvalid": "Die invite-code kan nu niet worden gebruikt. Ga terug naar je invite-code, kom op de wachtlijst of neem contact op met support.",
     "authInviteErrorTemporary": "We konden je invite nu niet bevestigen. Ga terug naar je invite-code en probeer het opnieuw, of neem contact op met support.",

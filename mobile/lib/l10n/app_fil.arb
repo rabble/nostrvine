@@ -858,6 +858,7 @@
     "authVerificationErrorNetworkExchange": "May network error habang nagsa-sign in. Pakisubukang ulit.",
     "authVerificationErrorOAuthExchange": "Nabigo ang verification. Pakisubukang mag-register ulit.",
     "authVerificationErrorSignInFailed": "Nabigo ang sign-in. Pakisubukang mag-log in nang manu-mano.",
+    "authVerificationEmailAlreadyRegistered": "Nakarehistro na ang email na ito. Mag-sign in na lang.",
     "authInviteErrorAlreadyUsed": "Hindi na available ang invite code na iyon. Bumalik sa iyong invite code, sumali sa waitlist, o makipag-ugnayan sa support.",
     "authInviteErrorInvalid": "Hindi pwedeng gamitin ngayon ang invite code na iyon. Bumalik sa iyong invite code, sumali sa waitlist, o makipag-ugnayan sa support.",
     "authInviteErrorTemporary": "Hindi namin ma-confirm ang iyong invite ngayon. Bumalik sa iyong invite code at subukang ulit, o makipag-ugnayan sa support.",

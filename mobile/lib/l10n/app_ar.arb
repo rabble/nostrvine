@@ -1326,6 +1326,7 @@
     "authVerificationErrorNetworkExchange": "خطأ في الشبكة أثناء تسجيل الدخول. حاول مرّة أخرى.",
     "authVerificationErrorOAuthExchange": "فشل التحقق. حاول التسجيل مرّة أخرى.",
     "authVerificationErrorSignInFailed": "فشل تسجيل الدخول. حاول تسجيل الدخول يدويًا.",
+    "authVerificationEmailAlreadyRegistered": "هذا البريد الإلكتروني مسجل بالفعل. سجّل الدخول بدلًا من ذلك.",
     "authInviteErrorAlreadyUsed": "رمز الدعوة هذا لم يعد متاحًا. عد إلى رمز دعوتك، انضم لقائمة الانتظار، أو تواصل مع الدعم.",
     "authInviteErrorInvalid": "رمز الدعوة هذا لا يمكن استخدامه الآن. عد إلى رمز دعوتك، انضم لقائمة الانتظار، أو تواصل مع الدعم.",
     "authInviteErrorTemporary": "لم نتمكّن من تأكيد دعوتك الآن. عد إلى رمز دعوتك وحاول مرّة أخرى، أو تواصل مع الدعم.",

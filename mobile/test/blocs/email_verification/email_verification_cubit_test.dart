@@ -161,6 +161,113 @@ void main() {
       });
     });
 
+    group('poll failures', () {
+      test('stops polling on duplicate email conflict', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(() => mockOAuth.pollForCode(testDeviceCode)).thenAnswer(
+          (_) async => PollResult.error(
+            'This email is already registered.',
+            statusCode: 409,
+            failure: KeycastAuthFailure.emailAlreadyRegistered,
+          ),
+        );
+
+        fakeAsync((fake) {
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+          );
+
+          fake.elapse(const Duration(seconds: 3));
+          fake.flushMicrotasks();
+
+          expect(cubit.state.status, EmailVerificationStatus.failure);
+          expect(
+            cubit.state.errorCode,
+            EmailVerificationError.emailAlreadyRegistered,
+          );
+          expect(cubit.state.pendingEmail, testEmail);
+
+          fake.elapse(const Duration(seconds: 30));
+          fake.flushMicrotasks();
+          verify(() => mockOAuth.pollForCode(testDeviceCode)).called(1);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('keeps polling on transient backend failure', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(() => mockOAuth.pollForCode(testDeviceCode)).thenAnswer(
+          (_) async => PollResult.error(
+            'Temporary verification failure',
+            statusCode: 503,
+            failure: KeycastAuthFailure.temporary,
+          ),
+        );
+
+        fakeAsync((fake) {
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+          );
+
+          fake.elapse(const Duration(seconds: 3));
+          fake.flushMicrotasks();
+
+          expect(cubit.state.status, EmailVerificationStatus.polling);
+          expect(cubit.state.errorCode, isNull);
+
+          fake.elapse(const Duration(seconds: 3));
+          fake.flushMicrotasks();
+          verify(() => mockOAuth.pollForCode(testDeviceCode)).called(2);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('maps expired verification token to link-expired failure', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(() => mockOAuth.pollForCode(testDeviceCode)).thenAnswer(
+          (_) async => PollResult.error(
+            'Invalid or expired verification token',
+            statusCode: 401,
+            failure: KeycastAuthFailure.expiredVerification,
+          ),
+        );
+
+        fakeAsync((fake) {
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+          );
+
+          fake.elapse(const Duration(seconds: 3));
+          fake.flushMicrotasks();
+
+          expect(cubit.state.status, EmailVerificationStatus.failure);
+          expect(
+            cubit.state.errorCode,
+            EmailVerificationError.verificationLinkExpired,
+          );
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+    });
+
     group('invite activation', () {
       const testCode = 'auth-code-from-server';
 

@@ -3149,6 +3149,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Falha no login. Tente entrar manualmente.';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      'Este email já está registrado. Entre em vez disso.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Esse código de convite não está mais disponível. Volte para o seu código de convite, entre na lista de espera ou contate o suporte.';
 

@@ -1326,6 +1326,7 @@
     "authVerificationErrorNetworkExchange": "サインイン中にネットワークエラーが起きた。もう一回試してみて。",
     "authVerificationErrorOAuthExchange": "認証がうまくいかなかった。もう一回登録を試してみて。",
     "authVerificationErrorSignInFailed": "サインインがうまくいかなかった。手動でログインしてみて。",
+    "authVerificationEmailAlreadyRegistered": "このメールアドレスはすでに登録されているよ。代わりにログインしてね。",
     "authInviteErrorAlreadyUsed": "その招待コードはもう使えないよ。招待コードに戻るか、ウェイトリストに参加するか、サポートに連絡してね。",
     "authInviteErrorInvalid": "その招待コードは今は使えないよ。招待コードに戻るか、ウェイトリストに参加するか、サポートに連絡してね。",
     "authInviteErrorTemporary": "今は招待を確認できなかった。招待コードに戻ってもう一回試すか、サポートに連絡してね。",

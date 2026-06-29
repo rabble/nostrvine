@@ -3170,6 +3170,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Connexion échouée. Essaie de te connecter manuellement.';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      'Cet e-mail est déjà inscrit. Connecte-toi plutôt.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Ce code d\'invitation n\'est plus disponible. Retourne à ton code d\'invitation, rejoins la liste d\'attente, ou contacte le support.';
 

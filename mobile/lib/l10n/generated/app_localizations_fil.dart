@@ -3174,6 +3174,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Nabigo ang sign-in. Pakisubukang mag-log in nang manu-mano.';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      'Nakarehistro na ang email na ito. Mag-sign in na lang.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Hindi na available ang invite code na iyon. Bumalik sa iyong invite code, sumali sa waitlist, o makipag-ugnayan sa support.';
 

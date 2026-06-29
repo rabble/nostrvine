@@ -3106,6 +3106,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Giriş başarısız. Lütfen manuel olarak giriş yapmayı dene.';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      'Bu e-posta zaten kayıtlı. Bunun yerine giriş yap.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Bu davet kodu artık kullanılamıyor. Davet koduna geri dön, bekleme listesine katıl veya destekle iletişime geç.';
 

@@ -1336,6 +1336,7 @@
     "authVerificationErrorNetworkExchange": "Eroare de rețea la autentificare. Încearcă din nou.",
     "authVerificationErrorOAuthExchange": "Verificare eșuată. Încearcă să te înregistrezi din nou.",
     "authVerificationErrorSignInFailed": "Autentificarea a eșuat. Încearcă să te conectezi manual.",
+    "authVerificationEmailAlreadyRegistered": "Acest e-mail este deja înregistrat. Conectează-te în schimb.",
     "authInviteErrorAlreadyUsed": "Acest cod de invitație nu mai e disponibil. Întoarce-te la codul tău, alătură-te listei de așteptare sau contactează asistența.",
     "authInviteErrorInvalid": "Acest cod de invitație nu poate fi folosit acum. Întoarce-te la codul tău, alătură-te listei de așteptare sau contactează asistența.",
     "authInviteErrorTemporary": "N-am putut confirma invitația ta acum. Întoarce-te la codul tău și încearcă din nou, sau contactează asistența.",

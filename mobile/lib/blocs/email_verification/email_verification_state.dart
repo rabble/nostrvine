@@ -48,6 +48,9 @@ enum EmailVerificationError {
   /// Connection error while verifying via a token link.
   verificationConnectionError,
 
+  /// The verified email already belongs to another account.
+  emailAlreadyRegistered,
+
   /// Invite activation failed because the invite was already used.
   inviteAlreadyUsed,
 

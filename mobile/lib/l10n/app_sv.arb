@@ -1336,6 +1336,7 @@
     "authVerificationErrorNetworkExchange": "Nätverksfel vid inloggning. Försök igen.",
     "authVerificationErrorOAuthExchange": "Verifiering misslyckades. Försök registrera dig igen.",
     "authVerificationErrorSignInFailed": "Inloggning misslyckades. Försök logga in manuellt.",
+    "authVerificationEmailAlreadyRegistered": "Den här mejladressen är redan registrerad. Logga in i stället.",
     "authInviteErrorAlreadyUsed": "Den inbjudningskoden är inte längre tillgänglig. Gå tillbaka till din inbjudningskod, gå med i väntelistan eller kontakta supporten.",
     "authInviteErrorInvalid": "Den inbjudningskoden kan inte användas just nu. Gå tillbaka till din inbjudningskod, gå med i väntelistan eller kontakta supporten.",
     "authInviteErrorTemporary": "Vi kunde inte bekräfta din inbjudan just nu. Gå tillbaka till din inbjudningskod och försök igen, eller kontakta supporten.",

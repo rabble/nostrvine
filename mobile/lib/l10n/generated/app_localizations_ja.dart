@@ -2971,6 +2971,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'サインインがうまくいかなかった。手動でログインしてみて。';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      'このメールアドレスはすでに登録されているよ。代わりにログインしてね。';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'その招待コードはもう使えないよ。招待コードに戻るか、ウェイトリストに参加するか、サポートに連絡してね。';
 

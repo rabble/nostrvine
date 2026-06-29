@@ -3100,6 +3100,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Masuk gagal. Silakan coba login manual.';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      'Email ini sudah terdaftar. Masuk saja.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Kode undangan itu sudah tidak tersedia. Kembali ke kode undanganmu, gabung daftar tunggu, atau hubungi dukungan.';
 

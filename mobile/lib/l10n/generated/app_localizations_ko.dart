@@ -2984,6 +2984,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '로그인에 실패했어요. 수동으로 로그인을 시도해보세요.';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      '이 이메일은 이미 등록되어 있어요. 대신 로그인해 주세요.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       '그 초대 코드는 더 이상 쓸 수 없어요. 초대 코드로 돌아가거나, 대기자 명단에 등록하거나, 고객센터에 문의해주세요.';
 

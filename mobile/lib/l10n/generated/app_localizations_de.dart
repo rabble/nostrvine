@@ -3161,6 +3161,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Anmeldung fehlgeschlagen. Bitte versuch es mit einer manuellen Anmeldung.';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      'Diese E-Mail ist bereits registriert. Melde dich stattdessen an.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Dieser Einladungscode ist nicht mehr verfügbar. Geh zurück zu deinem Einladungscode, tritt der Warteliste bei oder kontaktier den Support.';
 

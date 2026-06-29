@@ -3120,6 +3120,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inloggning misslyckades. Försök logga in manuellt.';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      'Den här mejladressen är redan registrerad. Logga in i stället.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Den inbjudningskoden är inte längre tillgänglig. Gå tillbaka till din inbjudningskod, gå med i väntelistan eller kontakta supporten.';
 

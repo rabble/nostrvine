@@ -27,6 +27,36 @@ const _storageKeyHandle = 'keycast_auth_handle';
 /// clear)
 const _storageKeyRefreshToken = 'keycast_refresh_token';
 
+Map<String, dynamic> _decodeJsonObject(String body) {
+  final decoded = jsonDecode(body);
+  if (decoded is Map<String, dynamic>) {
+    return decoded;
+  }
+  throw const FormatException('Expected a JSON object');
+}
+
+String _responseErrorCode(Map<String, dynamic> json, String fallback) =>
+    json['code']?.toString() ?? json['error']?.toString() ?? fallback;
+
+String _responseErrorMessage(Map<String, dynamic> json, String fallback) =>
+    json['message']?.toString() ??
+    json['error_description']?.toString() ??
+    json['error']?.toString() ??
+    fallback;
+
+KeycastAuthFailure _failureForStatusCode(int statusCode) {
+  if (statusCode == 409) {
+    return KeycastAuthFailure.emailAlreadyRegistered;
+  }
+  if (statusCode == 401 || statusCode == 404) {
+    return KeycastAuthFailure.expiredVerification;
+  }
+  if (statusCode == 408 || statusCode == 429 || statusCode >= 500) {
+    return KeycastAuthFailure.temporary;
+  }
+  return KeycastAuthFailure.unknown;
+}
+
 class KeycastOAuth {
   /// Default timeout applied to every Keycast HTTP request.
   ///
@@ -549,7 +579,7 @@ class KeycastOAuth {
           .timeout(requestTimeout);
 
       if (response.statusCode == 200) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final json = _decodeJsonObject(response.body);
         final code = json['code'] as String?;
         if (code != null) {
           return PollResult.complete(code);
@@ -564,16 +594,27 @@ class KeycastOAuth {
 
       // Error
       try {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        final error = json['error'] as String? ?? 'poll_failed';
-        final description =
-            json['error_description'] as String? ?? 'Polling failed';
-        return PollResult.error('$error: $description');
+        final json = _decodeJsonObject(response.body);
+        final errorCode = _responseErrorCode(json, 'poll_failed');
+        final description = _responseErrorMessage(json, 'Polling failed');
+        return PollResult.error(
+          description,
+          errorCode: errorCode,
+          statusCode: response.statusCode,
+          failure: _failureForStatusCode(response.statusCode),
+        );
       } catch (_) {
-        return PollResult.error('HTTP ${response.statusCode}');
+        return PollResult.error(
+          'HTTP ${response.statusCode}',
+          statusCode: response.statusCode,
+          failure: _failureForStatusCode(response.statusCode),
+        );
       }
     } catch (e) {
-      return PollResult.error('Network error: $e');
+      return PollResult.error(
+        'Network error: $e',
+        failure: KeycastAuthFailure.network,
+      );
     }
   }
 
@@ -637,23 +678,46 @@ class KeycastOAuth {
   /// Verify email using token from email link
   Future<VerifyEmailResult> verifyEmail({required String token}) async {
     try {
-      final response = await _client.post(
-        Uri.parse('${config.serverUrl}/api/auth/verify-email'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'token': token}),
-      );
-
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      final response = await _client
+          .post(
+            Uri.parse('${config.serverUrl}/api/auth/verify-email'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'token': token}),
+          )
+          .timeout(requestTimeout);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return VerifyEmailResult.fromJson(json);
+        final json = _decodeJsonObject(response.body);
+        return VerifyEmailResult.fromJson(
+          json,
+          statusCode: response.statusCode,
+        );
       }
 
       // Handle server-side errors
-      final message = json['message']?.toString() ?? 'Failed to verify email';
-      return VerifyEmailResult.error(message);
+      try {
+        final json = _decodeJsonObject(response.body);
+        final message = _responseErrorMessage(json, 'Failed to verify email');
+        return VerifyEmailResult.error(
+          message,
+          errorCode: _responseErrorCode(json, 'verify_email_failed'),
+          statusCode: response.statusCode,
+          failure: _failureForStatusCode(response.statusCode),
+        );
+      } catch (_) {
+        return VerifyEmailResult.error(
+          'HTTP ${response.statusCode}',
+          statusCode: response.statusCode,
+          failure: _failureForStatusCode(response.statusCode),
+        );
+      }
+    } on FormatException catch (e) {
+      return VerifyEmailResult.error('Invalid server response: $e');
     } catch (e) {
-      return VerifyEmailResult.error('Network error: $e');
+      return VerifyEmailResult.error(
+        'Network error: $e',
+        failure: KeycastAuthFailure.network,
+      );
     }
   }
 

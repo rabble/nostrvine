@@ -155,11 +155,12 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   ///
   /// Callers must pass a reason code — state never carries English strings;
   /// the UI layer is responsible for mapping the code to localized copy.
-  void emitFailure(EmailVerificationError errorCode) {
+  void emitFailure(EmailVerificationError errorCode, {String? pendingEmail}) {
     _cleanup();
     emit(
       EmailVerificationState(
         status: EmailVerificationStatus.failure,
+        pendingEmail: pendingEmail,
         errorCode: errorCode,
       ),
     );
@@ -206,6 +207,20 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         errorCode: EmailVerificationError.timeout,
       ),
     );
+  }
+
+  EmailVerificationError _errorForPollFailure(PollResult result) {
+    switch (result.failure) {
+      case KeycastAuthFailure.emailAlreadyRegistered:
+        return EmailVerificationError.emailAlreadyRegistered;
+      case KeycastAuthFailure.expiredVerification:
+        return EmailVerificationError.verificationLinkExpired;
+      case KeycastAuthFailure.temporary:
+      case KeycastAuthFailure.network:
+      case KeycastAuthFailure.unknown:
+      case null:
+        return EmailVerificationError.pollFailed;
+    }
   }
 
   Future<void> _poll() async {
@@ -320,33 +335,36 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
 
         case PollStatus.error:
           final errorMsg = result.error ?? 'Verification failed';
-          // Check if this is a transient network error vs a real auth error
-          final isNetworkError =
-              errorMsg.contains('Network error') ||
-              errorMsg.contains('SocketException') ||
-              errorMsg.contains('ClientException') ||
-              errorMsg.contains('host lookup');
-
-          if (isNetworkError) {
+          if (result.isTransientFailure) {
             // Network errors are transient - keep polling
             Log.warning(
-              'Transient network error during poll, will retry: $errorMsg',
+              'Transient error during poll, will retry: '
+              'status=${result.statusCode}, code=${result.errorCode}, '
+              'failure=${result.failure}, error=$errorMsg',
               name: 'EmailVerificationCubit',
               category: LogCategory.auth,
             );
             // Don't stop polling - it will retry in 3 seconds
           } else {
-            // Real auth error (e.g., expired code, invalid code) - stop polling
+            final errorCode = _errorForPollFailure(result);
+            final pendingEmail = state.pendingEmail;
             Log.error(
-              'Email verification polling error (stopping): $errorMsg',
+              'Email verification polling error (stopping): '
+              'status=${result.statusCode}, code=${result.errorCode}, '
+              'failure=${result.failure}, mappedError=$errorCode, '
+              'error=$errorMsg',
               name: 'EmailVerificationCubit',
               category: LogCategory.auth,
             );
             _cleanup();
             emit(
-              const EmailVerificationState(
+              EmailVerificationState(
                 status: EmailVerificationStatus.failure,
-                errorCode: EmailVerificationError.pollFailed,
+                pendingEmail:
+                    errorCode == EmailVerificationError.emailAlreadyRegistered
+                    ? pendingEmail
+                    : null,
+                errorCode: errorCode,
               ),
             );
           }

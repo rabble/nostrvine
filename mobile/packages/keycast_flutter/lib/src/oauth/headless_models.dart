@@ -88,20 +88,52 @@ class HeadlessLoginResult {
 }
 
 /// Result from GET /api/oauth/poll
+enum KeycastAuthFailure {
+  emailAlreadyRegistered,
+  expiredVerification,
+  temporary,
+  network,
+  unknown,
+}
+
 class PollResult {
   final PollStatus status;
   final String? code;
   final String? error;
+  final String? errorCode;
+  final int? statusCode;
+  final KeycastAuthFailure? failure;
 
-  PollResult({required this.status, this.code, this.error});
+  PollResult({
+    required this.status,
+    this.code,
+    this.error,
+    this.errorCode,
+    this.statusCode,
+    this.failure,
+  });
 
   factory PollResult.pending() => PollResult(status: PollStatus.pending);
 
   factory PollResult.complete(String code) =>
       PollResult(status: PollStatus.complete, code: code);
 
-  factory PollResult.error(String message) =>
-      PollResult(status: PollStatus.error, error: message);
+  factory PollResult.error(
+    String message, {
+    String? errorCode,
+    int? statusCode,
+    KeycastAuthFailure failure = KeycastAuthFailure.unknown,
+  }) => PollResult(
+    status: PollStatus.error,
+    error: message,
+    errorCode: errorCode,
+    statusCode: statusCode,
+    failure: failure,
+  );
+
+  bool get isTransientFailure =>
+      failure == KeycastAuthFailure.network ||
+      failure == KeycastAuthFailure.temporary;
 }
 
 enum PollStatus {
@@ -175,18 +207,46 @@ class VerifyEmailResult {
   final bool success;
   final String? message;
   final String? error;
+  final String? errorCode;
+  final int? statusCode;
+  final KeycastAuthFailure? failure;
 
-  VerifyEmailResult({required this.success, this.message, this.error});
+  VerifyEmailResult({
+    required this.success,
+    this.message,
+    this.error,
+    this.errorCode,
+    this.statusCode,
+    this.failure,
+  });
 
-  factory VerifyEmailResult.fromJson(Map<String, dynamic> json) {
+  factory VerifyEmailResult.fromJson(
+    Map<String, dynamic> json, {
+    int? statusCode,
+  }) {
     return VerifyEmailResult(
       success: json['success'] as bool? ?? false,
       message: json['message'] as String?,
       error: json['error'] as String?,
+      errorCode: json['code'] as String?,
+      statusCode: statusCode,
     );
   }
 
-  factory VerifyEmailResult.error(String message) {
-    return VerifyEmailResult(success: false, error: message);
-  }
+  factory VerifyEmailResult.error(
+    String message, {
+    String? errorCode,
+    int? statusCode,
+    KeycastAuthFailure failure = KeycastAuthFailure.unknown,
+  }) => VerifyEmailResult(
+    success: false,
+    error: message,
+    errorCode: errorCode,
+    statusCode: statusCode,
+    failure: failure,
+  );
+
+  bool get isTransientFailure =>
+      failure == KeycastAuthFailure.network ||
+      failure == KeycastAuthFailure.temporary;
 }

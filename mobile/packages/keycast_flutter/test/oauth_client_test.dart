@@ -709,7 +709,45 @@ void main() {
         final result = await oauth.pollForCode('device123');
 
         expect(result.status, PollStatus.error);
-        expect(result.error, contains('expired_token'));
+        expect(result.error, 'Device code expired');
+        expect(result.errorCode, 'expired_token');
+        expect(result.statusCode, 400);
+      });
+
+      test('returns terminal duplicate email failure on 409', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({'error': 'This email is already registered.'}),
+            409,
+          );
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.pollForCode('device123');
+
+        expect(result.status, PollStatus.error);
+        expect(result.error, 'This email is already registered.');
+        expect(result.statusCode, 409);
+        expect(result.failure, KeycastAuthFailure.emailAlreadyRegistered);
+        expect(result.isTransientFailure, isFalse);
+      });
+
+      test('returns transient failure on 503', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({'error': 'Temporary verification failure'}),
+            503,
+          );
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.pollForCode('device123');
+
+        expect(result.status, PollStatus.error);
+        expect(result.error, 'Temporary verification failure');
+        expect(result.statusCode, 503);
+        expect(result.failure, KeycastAuthFailure.temporary);
+        expect(result.isTransientFailure, isTrue);
       });
 
       test('returns error with HTTP status on invalid JSON', () async {
@@ -863,6 +901,92 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.message, contains('Network error'));
+      });
+    });
+
+    group('verifyEmail', () {
+      test('returns success on idempotent completed verification', () async {
+        final mockClient = MockClient((request) async {
+          expect(request.url.path, '/api/auth/verify-email');
+          expect(request.method, 'POST');
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          expect(body['token'], 'verify-token');
+          return http.Response(
+            jsonEncode({'success': true, 'message': 'Email already verified'}),
+            200,
+          );
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.verifyEmail(token: 'verify-token');
+
+        expect(result.success, isTrue);
+        expect(result.message, 'Email already verified');
+        expect(result.statusCode, 200);
+        expect(result.failure, isNull);
+      });
+
+      test('maps duplicate email conflict to terminal failure', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'error':
+                  'This email is already registered. Please log in instead.',
+            }),
+            409,
+          );
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.verifyEmail(token: 'duplicate-token');
+
+        expect(result.success, isFalse);
+        expect(
+          result.error,
+          'This email is already registered. Please log in instead.',
+        );
+        expect(
+          result.errorCode,
+          'This email is already registered. Please log in instead.',
+        );
+        expect(result.statusCode, 409);
+        expect(result.failure, KeycastAuthFailure.emailAlreadyRegistered);
+        expect(result.isTransientFailure, isFalse);
+      });
+
+      test('maps expired token to expired verification failure', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({'error': 'Invalid or expired verification token'}),
+            401,
+          );
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.verifyEmail(token: 'expired-token');
+
+        expect(result.success, isFalse);
+        expect(result.error, 'Invalid or expired verification token');
+        expect(result.statusCode, 401);
+        expect(result.failure, KeycastAuthFailure.expiredVerification);
+      });
+
+      test('maps backend failure to transient failure', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({'error': 'Temporary verification failure'}),
+            503,
+          );
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.verifyEmail(token: 'retry-token');
+
+        expect(result.success, isFalse);
+        expect(result.error, 'Temporary verification failure');
+        expect(result.statusCode, 503);
+        expect(result.failure, KeycastAuthFailure.temporary);
+        expect(result.isTransientFailure, isTrue);
       });
     });
 
@@ -1123,9 +1247,7 @@ void main() {
           httpClient: mockClient,
           storage: storage,
         );
-        final result = await oauth.refreshSession(
-          userPubkey: 'abc123pubkey',
-        );
+        final result = await oauth.refreshSession(userPubkey: 'abc123pubkey');
 
         expect(result, isNotNull);
         expect(result!.userPubkey, 'abc123pubkey');
@@ -1286,32 +1408,26 @@ void main() {
 
       const shortTimeout = Duration(milliseconds: 50);
 
-      test(
-        'refreshSession fails within the timeout and preserves the '
-        'refresh token',
-        () async {
-          final storage = MemoryKeycastStorage();
-          await storage.write('keycast_refresh_token', 'my_refresh_token');
+      test('refreshSession fails within the timeout and preserves the '
+          'refresh token', () async {
+        final storage = MemoryKeycastStorage();
+        await storage.write('keycast_refresh_token', 'my_refresh_token');
 
-          final oauth = KeycastOAuth(
-            config: config,
-            httpClient: hangingClient(),
-            storage: storage,
-            requestTimeout: shortTimeout,
-          );
+        final oauth = KeycastOAuth(
+          config: config,
+          httpClient: hangingClient(),
+          storage: storage,
+          requestTimeout: shortTimeout,
+        );
 
-          final result = await oauth.refreshSession();
+        final result = await oauth.refreshSession();
 
-          expect(result, isNull);
-          // CRITICAL: a timeout is a network failure, not an auth
-          // rejection — the refresh token must survive so the next
-          // attempt can retry.
-          expect(
-            await storage.read('keycast_refresh_token'),
-            'my_refresh_token',
-          );
-        },
-      );
+        expect(result, isNull);
+        // CRITICAL: a timeout is a network failure, not an auth
+        // rejection — the refresh token must survive so the next
+        // attempt can retry.
+        expect(await storage.read('keycast_refresh_token'), 'my_refresh_token');
+      });
 
       test('exchangeCode throws TimeoutException on hung request', () async {
         final oauth = KeycastOAuth(
@@ -1377,6 +1493,21 @@ void main() {
 
         expect(result.status, PollStatus.error);
         expect(result.error, contains('TimeoutException'));
+      });
+
+      test('verifyEmail returns network failure on hung request', () async {
+        final oauth = KeycastOAuth(
+          config: config,
+          httpClient: hangingClient(),
+          requestTimeout: shortTimeout,
+        );
+
+        final result = await oauth.verifyEmail(token: 'verify-token');
+
+        expect(result.success, isFalse);
+        expect(result.error, contains('TimeoutException'));
+        expect(result.failure, KeycastAuthFailure.network);
+        expect(result.isTransientFailure, isTrue);
       });
 
       test(

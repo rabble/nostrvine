@@ -1333,6 +1333,7 @@
     "authVerificationErrorNetworkExchange": "Kesalahan jaringan saat masuk. Silakan coba lagi.",
     "authVerificationErrorOAuthExchange": "Verifikasi gagal. Silakan coba daftar lagi.",
     "authVerificationErrorSignInFailed": "Masuk gagal. Silakan coba login manual.",
+    "authVerificationEmailAlreadyRegistered": "Email ini sudah terdaftar. Masuk saja.",
     "authInviteErrorAlreadyUsed": "Kode undangan itu sudah tidak tersedia. Kembali ke kode undanganmu, gabung daftar tunggu, atau hubungi dukungan.",
     "authInviteErrorInvalid": "Kode undangan itu tidak bisa digunakan sekarang. Kembali ke kode undanganmu, gabung daftar tunggu, atau hubungi dukungan.",
     "authInviteErrorTemporary": "Kami tidak bisa mengkonfirmasi undanganmu sekarang. Kembali ke kode undanganmu dan coba lagi, atau hubungi dukungan.",

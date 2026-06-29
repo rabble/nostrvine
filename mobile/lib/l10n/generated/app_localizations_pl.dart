@@ -3198,6 +3198,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Logowanie nieudane. Spróbuj zalogować się ręcznie.';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      'Ten adres e-mail jest już zarejestrowany. Zaloguj się zamiast tego.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Ten kod zaproszenia nie jest już dostępny. Wróć do kodu zaproszenia, dołącz do listy oczekujących lub skontaktuj się z pomocą.';
 

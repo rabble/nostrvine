@@ -5498,6 +5498,12 @@ abstract class AppLocalizations {
   /// **'Sign-in failed. Please try logging in manually.'**
   String get authVerificationErrorSignInFailed;
 
+  /// No description provided for @authVerificationEmailAlreadyRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'This email is already registered. Sign in instead.'**
+  String get authVerificationEmailAlreadyRegistered;
+
   /// No description provided for @authInviteErrorAlreadyUsed.
   ///
   /// In en, this message translates to:

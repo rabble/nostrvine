@@ -3135,6 +3135,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Inloggen mislukt. Probeer handmatig in te loggen.';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      'Dit e-mailadres is al geregistreerd. Log in plaats daarvan in.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Die invite-code is niet meer beschikbaar. Ga terug naar je invite-code, kom op de wachtlijst of neem contact op met support.';
 

@@ -3170,6 +3170,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Входът не мина. Опитай да влезеш ръчно.';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      'Този имейл вече е регистриран. Влез вместо това.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Този код за покана вече не е наличен. Върни се към кода за покана, присъедини се към списъка с чакащи или се свържи с поддръжката.';
 

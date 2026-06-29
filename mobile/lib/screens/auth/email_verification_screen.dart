@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
@@ -162,13 +163,22 @@ class _EmailVerificationScreenState
       // complete login
       final oauth = ref.read(oauthClientProvider);
       try {
-        await oauth.verifyEmail(token: widget.token!);
+        final result = await oauth.verifyEmail(token: widget.token!);
+        if (!result.success) {
+          _handleVerifyEmailFailure(result, pendingEmail: pending.email);
+          return;
+        }
       } catch (e) {
         Log.error(
           'Email verification error: $e',
           name: 'EmailVerificationScreen',
           category: LogCategory.auth,
         );
+        _cubit.emitFailure(
+          EmailVerificationError.verificationConnectionError,
+          pendingEmail: pending.email,
+        );
+        return;
       }
 
       _cubit.startPolling(
@@ -185,6 +195,38 @@ class _EmailVerificationScreenState
       );
       _verifyWithToken(widget.token!);
     }
+  }
+
+  EmailVerificationError _errorForVerifyEmailResult(VerifyEmailResult result) {
+    switch (result.failure) {
+      case KeycastAuthFailure.emailAlreadyRegistered:
+        return EmailVerificationError.emailAlreadyRegistered;
+      case KeycastAuthFailure.network:
+      case KeycastAuthFailure.temporary:
+        return EmailVerificationError.verificationConnectionError;
+      case KeycastAuthFailure.expiredVerification:
+      case KeycastAuthFailure.unknown:
+      case null:
+        return EmailVerificationError.verificationLinkExpired;
+    }
+  }
+
+  void _handleVerifyEmailFailure(
+    VerifyEmailResult result, {
+    String? pendingEmail,
+  }) {
+    final errorCode = _errorForVerifyEmailResult(result);
+    Log.warning(
+      'Email verification failed: status=${result.statusCode}, '
+      'code=${result.errorCode}, failure=${result.failure}, '
+      'mappedError=$errorCode, error=${result.error}',
+      name: 'EmailVerificationScreen',
+      category: LogCategory.auth,
+    );
+    if (errorCode == EmailVerificationError.emailAlreadyRegistered) {
+      ref.read(pendingVerificationServiceProvider).clear();
+    }
+    _cubit.emitFailure(errorCode, pendingEmail: pendingEmail);
   }
 
   /// Verify email with token (standalone token mode without polling)
@@ -207,12 +249,7 @@ class _EmailVerificationScreenState
         // In token mode without polling, redirect to login
         _handleTokenModeSuccess();
       } else {
-        Log.warning(
-          'Email verification failed: ${result.error}',
-          name: 'EmailVerificationScreen',
-          category: LogCategory.auth,
-        );
-        _cubit.emitFailure(EmailVerificationError.verificationLinkExpired);
+        _handleVerifyEmailFailure(result);
       }
     } catch (e) {
       Log.error(
@@ -241,12 +278,19 @@ class _EmailVerificationScreenState
       final oauth = ref.read(oauthClientProvider);
       unawaited(() async {
         try {
-          await oauth.verifyEmail(token: widget.token!);
+          final result = await oauth.verifyEmail(token: widget.token!);
+          if (!result.success) {
+            _handleVerifyEmailFailure(result, pendingEmail: widget.email);
+          }
         } catch (e) {
           Log.error(
             'verifyEmail failed from token update: $e',
             name: 'EmailVerificationScreen',
             category: LogCategory.auth,
+          );
+          _cubit.emitFailure(
+            EmailVerificationError.verificationConnectionError,
+            pendingEmail: widget.email,
           );
         }
       }());
@@ -316,6 +360,18 @@ class _EmailVerificationScreenState
     context.go('/');
   }
 
+  void _handleSignInRecovery(String? email, EmailVerificationError errorCode) {
+    _cubit.stopPolling();
+    ref.read(pendingVerificationServiceProvider).clear();
+    context.read<InviteGateBloc>().add(const InviteGateAccessCleared());
+    context.go(
+      WelcomeScreen.loginOptionsPathWithRecovery(
+        email: email,
+        error: context.l10n.emailVerificationErrorMessage(errorCode),
+      ),
+    );
+  }
+
   void _handleInviteRecovery(
     String inviteCode,
     EmailVerificationError? errorCode,
@@ -381,6 +437,14 @@ class _EmailVerificationScreenState
                       EmailVerificationStatus.failure => _ErrorContent(
                         errorCode: state.errorCode,
                         onStartOver: _handleStartOver,
+                        onSignInInstead:
+                            state.errorCode ==
+                                EmailVerificationError.emailAlreadyRegistered
+                            ? () => _handleSignInRecovery(
+                                state.pendingEmail,
+                                state.errorCode!,
+                              )
+                            : null,
                         onReturnToInviteGate:
                             state.showInviteGateRecovery &&
                                 state.inviteRecoveryCode != null
@@ -692,11 +756,13 @@ class _ErrorContent extends StatelessWidget {
   const _ErrorContent({
     required this.onStartOver,
     required this.errorCode,
+    this.onSignInInstead,
     this.onReturnToInviteGate,
   });
 
   final VoidCallback onStartOver;
   final EmailVerificationError? errorCode;
+  final VoidCallback? onSignInInstead;
   final VoidCallback? onReturnToInviteGate;
 
   @override
@@ -741,10 +807,12 @@ class _ErrorContent extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 32),
           child: DivineButton(
             expanded: true,
-            label: onReturnToInviteGate == null
+            label: onSignInInstead != null
+                ? l10n.authSignInButton
+                : onReturnToInviteGate == null
                 ? l10n.authStartOver
                 : l10n.authBackToInviteCode,
-            onPressed: onReturnToInviteGate ?? onStartOver,
+            onPressed: onSignInInstead ?? onReturnToInviteGate ?? onStartOver,
           ),
         ),
       ],

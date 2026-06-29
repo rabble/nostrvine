@@ -3159,6 +3159,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Accesso fallito. Prova ad accedere manualmente.';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      'Questa email è già registrata. Accedi invece.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Quel codice invito non è più disponibile. Torna al tuo codice invito, entra nella lista d\'attesa o contatta l\'assistenza.';
 

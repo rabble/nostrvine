@@ -1340,6 +1340,7 @@
     "authVerificationErrorNetworkExchange": "Error de red al iniciar sesión. Probá de nuevo.",
     "authVerificationErrorOAuthExchange": "Falló la verificación. Registrate de nuevo.",
     "authVerificationErrorSignInFailed": "Falló el inicio de sesión. Iniciá sesión manualmente.",
+    "authVerificationEmailAlreadyRegistered": "Este email ya está registrado. Iniciá sesión en su lugar.",
     "authInviteErrorAlreadyUsed": "Ese código de invitación ya no está disponible. Volvé a tu código, unite a la lista de espera o contactá a soporte.",
     "authInviteErrorInvalid": "Ese código de invitación no se puede usar ahora. Volvé a tu código, unite a la lista de espera o contactá a soporte.",
     "authInviteErrorTemporary": "No pudimos confirmar tu invitación ahora. Volvé a tu código y probá de nuevo, o contactá a soporte.",

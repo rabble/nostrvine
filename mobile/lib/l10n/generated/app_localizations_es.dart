@@ -3160,6 +3160,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Falló el inicio de sesión. Iniciá sesión manualmente.';
 
   @override
+  String get authVerificationEmailAlreadyRegistered =>
+      'Este email ya está registrado. Iniciá sesión en su lugar.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Ese código de invitación ya no está disponible. Volvé a tu código, unite a la lista de espera o contactá a soporte.';
 

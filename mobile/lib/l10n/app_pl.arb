@@ -1336,6 +1336,7 @@
     "authVerificationErrorNetworkExchange": "Błąd sieci podczas logowania. Spróbuj ponownie.",
     "authVerificationErrorOAuthExchange": "Weryfikacja nieudana. Spróbuj zarejestrować się ponownie.",
     "authVerificationErrorSignInFailed": "Logowanie nieudane. Spróbuj zalogować się ręcznie.",
+    "authVerificationEmailAlreadyRegistered": "Ten adres e-mail jest już zarejestrowany. Zaloguj się zamiast tego.",
     "authInviteErrorAlreadyUsed": "Ten kod zaproszenia nie jest już dostępny. Wróć do kodu zaproszenia, dołącz do listy oczekujących lub skontaktuj się z pomocą.",
     "authInviteErrorInvalid": "Ten kod zaproszenia nie może być teraz użyty. Wróć do kodu zaproszenia, dołącz do listy oczekujących lub skontaktuj się z pomocą.",
     "authInviteErrorTemporary": "Nie mogliśmy teraz potwierdzić twojego zaproszenia. Wróć do kodu zaproszenia i spróbuj ponownie, lub skontaktuj się z pomocą.",
