@@ -31,6 +31,7 @@ import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/video_editor/transition_seam_render_service.dart';
 import 'package:openvine/utils/await_push_transition.dart';
+import 'package:openvine/utils/mounted_post_frame.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_feed_preview_overlay.dart';
@@ -1031,7 +1032,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     final editor = scope.editor;
     if (editor == null) return;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    // The frame can land after the editor is torn down; the guard bails before
+    // touching context or providers so we never read State.context post-unmount.
+    addPostFrameCallbackIfMounted(() async {
       bloc.add(
         VideoEditorMainCapabilitiesChanged(
           canUndo: editor.canUndo,
