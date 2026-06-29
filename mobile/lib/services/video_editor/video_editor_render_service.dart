@@ -617,8 +617,10 @@ class VideoEditorRenderService {
       final outputFile = File(outputPath);
 
       if (outputFile.existsSync()) {
-        if (inputFile.existsSync()) {
+        try {
           await inputFile.delete();
+        } on PathNotFoundException {
+          // The source can disappear between render completion and cleanup.
         }
         await outputFile.rename(inputPath);
       }
