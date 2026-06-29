@@ -30,6 +30,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_providers.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
@@ -39,7 +40,6 @@ import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/pending_action_service.dart';
-import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/utils/search_utils.dart';
 import 'package:people_lists_repository/people_lists_repository.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -230,10 +230,11 @@ List<CuratedList> subscribedListsForHomeBridge(CuratedListService service) =>
 HashtagRepository hashtagRepository(Ref ref) {
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
   final hashtagService = ref.watch(hashtagServiceProvider);
+  final topHashtags = ref.watch(topHashtagsServiceProvider);
 
   // Ensure static hashtags are loaded before any local search callback runs.
   // loadTopHashtags is idempotent and no-ops if already loaded.
-  TopHashtagsService.instance.loadTopHashtags();
+  topHashtags.loadTopHashtags();
 
   return HashtagRepository(
     funnelcakeApiClient: funnelcakeClient,
@@ -251,7 +252,7 @@ HashtagRepository hashtagRepository(Ref ref) {
       addMatches(hashtagService.searchHashtags(query));
       if (results.length < limit) {
         addMatches(
-          TopHashtagsService.instance.searchHashtags(query, limit: limit),
+          topHashtags.searchHashtags(query, limit: limit),
         );
       }
 

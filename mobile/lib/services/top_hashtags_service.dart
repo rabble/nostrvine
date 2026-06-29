@@ -6,8 +6,6 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-typedef _AssetStringLoader = Future<String> Function(String key);
-
 /// Minimal seam for loading hashtag suggestions.
 abstract interface class TopHashtagsLoader {
   /// Loads the top hashtag data used by explore surfaces.
@@ -38,16 +36,12 @@ class HashtagData {
 }
 
 class TopHashtagsService implements TopHashtagsLoader {
-  TopHashtagsService._({_AssetStringLoader? loadAssetString})
-    : _loadAssetString = loadAssetString ?? rootBundle.loadString;
+  TopHashtagsService() : _loadAssetString = rootBundle.loadString;
 
   @visibleForTesting
   TopHashtagsService.forTesting({
     required Future<String> Function(String key) loadAssetString,
-  }) : this._(loadAssetString: loadAssetString);
-
-  static final TopHashtagsService _instance = TopHashtagsService._();
-  static TopHashtagsService get instance => _instance;
+  }) : _loadAssetString = loadAssetString;
 
   /// Default fallback hashtags shown when loading fails or is slow.
   /// These mirror the top current suggestions from the bundled JSON asset.
@@ -76,7 +70,7 @@ class TopHashtagsService implements TopHashtagsLoader {
 
   List<HashtagData>? _topHashtags;
   bool _isLoaded = false;
-  final _AssetStringLoader _loadAssetString;
+  final Future<String> Function(String key) _loadAssetString;
 
   /// Get top hashtags (returns empty list if not loaded)
   List<HashtagData> get topHashtags => _topHashtags ?? [];

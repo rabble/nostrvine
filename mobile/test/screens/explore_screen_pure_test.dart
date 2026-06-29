@@ -38,10 +38,10 @@ void main() {
       });
 
       test('ExploreScreen should have constructor', () {
-        // ExploreScreen is a thin Page (StatelessWidget) that provides
-        // ExploreTabsCubit to its ConsumerStatefulWidget view.
+        // ExploreScreen is a thin Page (ConsumerWidget) that reads the shared
+        // topHashtagsServiceProvider and provides ExploreTabsCubit to its view.
         const screen = ExploreScreen();
-        expect(screen, isA<StatelessWidget>());
+        expect(screen, isA<ConsumerWidget>());
       });
     });
 

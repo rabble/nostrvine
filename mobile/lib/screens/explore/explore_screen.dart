@@ -3,12 +3,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/screens/explore/explore_view.dart';
 
 /// Explore screen: a thin tabs Page over [ExploreTabsCubit] + [ExploreView].
-class ExploreScreen extends StatelessWidget {
+class ExploreScreen extends ConsumerWidget {
   /// Creates the explore screen, optionally selecting [initialTabName].
   const ExploreScreen({super.key, this.initialTabName});
 
@@ -66,9 +68,10 @@ class ExploreScreen extends StatelessWidget {
   final String? initialTabName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
-      create: (_) => ExploreTabsCubit(),
+      create: (_) =>
+          ExploreTabsCubit(topHashtags: ref.read(topHashtagsServiceProvider)),
       child: ExploreView(initialTabName: initialTabName),
     );
   }

@@ -14,8 +14,8 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/feed_repository_provider.dart';
 import 'package:openvine/providers/popular_videos_feed_provider.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -220,7 +220,8 @@ class _PopularVideosTrendingContentState
     final popularVideosFeedNotifier = ref.read(
       popularVideosFeedProvider.notifier,
     );
-    final hashtags = TopHashtagsService.instance.getTopHashtags(limit: 20);
+    final topHashtags = ref.read(topHashtagsServiceProvider);
+    final hashtags = topHashtags.getTopHashtags(limit: 20);
 
     measureHeaderHeight();
 
@@ -290,7 +291,7 @@ class _PopularVideosTrendingContentState
           child: TrendingHashtagsSection(
             key: headerKey,
             hashtags: hashtags,
-            isLoading: !TopHashtagsService.instance.isLoaded,
+            isLoading: !topHashtags.isLoaded,
             leading: const _PopularFeedVariantToggle(),
           ),
         ),

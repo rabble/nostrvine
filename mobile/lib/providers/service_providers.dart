@@ -3,6 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/services/logging_config_service.dart';
+import 'package:openvine/services/top_hashtags_service.dart';
 
 /// Provides the app's [LoggingConfigService].
 ///
@@ -11,4 +12,14 @@ import 'package:openvine/services/logging_config_service.dart';
 /// static state. Kept alive for the app's lifetime (logging config is global).
 final loggingConfigServiceProvider = Provider<LoggingConfigService>(
   (ref) => LoggingConfigService(),
+);
+
+/// Provides the app's shared [TopHashtagsService].
+///
+/// Replaces the former `TopHashtagsService.instance` singleton. A single
+/// shared instance is kept alive so the in-memory hashtag list loaded by one
+/// consumer (e.g. the explore cubit warming the cache) is visible to the
+/// others (the hashtag repository and the popular-videos tab).
+final topHashtagsServiceProvider = Provider<TopHashtagsService>(
+  (ref) => TopHashtagsService(),
 );
