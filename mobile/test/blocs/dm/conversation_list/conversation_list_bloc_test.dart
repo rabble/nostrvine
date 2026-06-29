@@ -6,6 +6,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -16,6 +17,9 @@ import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart'
 class _MockDmRepository extends Mock implements DmRepository {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
+
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 // Full 64-character hex Nostr IDs for test data.
 const _testConversationId1 =
@@ -124,6 +128,10 @@ void main() {
     ConversationListBloc createBloc() => ConversationListBloc(
       dmRepository: mockDmRepository,
       followRepository: mockFollowRepository,
+      // These tests assert state sequences/content, not coalescing timing, so
+      // disable the recompute debounce for deterministic, prompt emissions.
+      // The debounce itself is covered by a dedicated coalescing test.
+      recomputeDebounce: Duration.zero,
     );
 
     test('initial state is $ConversationListState with initial status', () {
@@ -135,6 +143,78 @@ void main() {
 
       bloc.close();
     });
+
+    test(
+      'coalesces a burst of conversation writes into a single recompute '
+      '(debounce)',
+      () async {
+        final acceptedController =
+            StreamController<List<DmConversation>>.broadcast();
+        addTearDown(acceptedController.close);
+        when(
+          () => mockDmRepository.watchAcceptedConversations(
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => acceptedController.stream);
+        // combineLatest5 needs every source to emit at least once; potential
+        // emits a single empty value (the others use startWith in the bloc).
+        when(
+          () => mockDmRepository.watchPotentialRequests(),
+        ).thenAnswer((_) => Stream.value(const <DmConversation>[]));
+        when(
+          () => mockDmRepository.historyRecoveryStream,
+        ).thenAnswer((_) => const Stream<bool>.empty());
+        when(() => mockDmRepository.isRecoveringHistory).thenReturn(false);
+
+        // filterBlockedConversations runs once per `onData` pass (inbox +
+        // requests = 2 calls), so it doubles as a recompute counter.
+        var filterCalls = 0;
+        final blocklist = _MockContentBlocklistRepository();
+        when(
+          () => blocklist.filterBlockedConversations(
+            any(),
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((inv) {
+          filterCalls++;
+          return inv.positionalArguments.first as List<DmConversation>;
+        });
+
+        final bloc = ConversationListBloc(
+          dmRepository: mockDmRepository,
+          followRepository: mockFollowRepository,
+          contentBlocklistRepository: blocklist,
+          recomputeDebounce: const Duration(milliseconds: 100),
+        )..add(const ConversationListStarted());
+        addTearDown(bloc.close);
+
+        // Let _onStarted subscribe to the (broadcast) streams before the burst,
+        // otherwise events emitted pre-subscription are dropped.
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        final convos = [
+          _createConversation(
+            id: _testConversationId1,
+            isRead: false,
+            currentUserHasSent: true,
+          ),
+        ];
+        // Five rapid accepted-list updates inside the debounce window.
+        for (var i = 0; i < 5; i++) {
+          acceptedController.add(convos);
+        }
+
+        // Still inside the window: the expensive pass has not run yet.
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(filterCalls, equals(0));
+
+        // After the window settles: exactly one recompute (inbox + requests
+        // filtered once each) for the whole burst, not two per write.
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+        expect(filterCalls, equals(2));
+        expect(bloc.state.status, equals(ConversationListStatus.loaded));
+      },
+    );
 
     group('ConversationListStarted', () {
       blocTest<ConversationListBloc, ConversationListState>(

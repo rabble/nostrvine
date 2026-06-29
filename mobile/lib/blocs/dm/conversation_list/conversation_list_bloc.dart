@@ -23,9 +23,11 @@ class ConversationListBloc
     required DmRepository dmRepository,
     required FollowRepository followRepository,
     ContentBlocklistRepository? contentBlocklistRepository,
+    Duration recomputeDebounce = _defaultRecomputeDebounce,
   }) : _dmRepository = dmRepository,
        _followRepository = followRepository,
        _blocklistRepository = contentBlocklistRepository,
+       _recomputeDebounce = recomputeDebounce,
        super(const ConversationListState()) {
     on<ConversationListStarted>(_onStarted, transformer: restartable());
     on<ConversationListLoadMore>(_onLoadMore, transformer: droppable());
@@ -41,6 +43,18 @@ class ConversationListBloc
   final DmRepository _dmRepository;
   final FollowRepository _followRepository;
   final ContentBlocklistRepository? _blocklistRepository;
+
+  /// Window over which bursty conversation writes are coalesced before the
+  /// list is re-composed. The combined stream re-runs `classifyPotentialRequests`
+  /// + `mergeAndSort` + two `filterBlockedConversations` passes in `onData` on
+  /// every conversations-table write; relay deliveries, the mark-read fan-out,
+  /// and the post-reinstall drain fire those in bursts. Debouncing collapses a
+  /// burst into a single recompute. The list is not latency-critical, so the
+  /// small delay is invisible and the settled result is identical. Overridable
+  /// in tests.
+  static const _defaultRecomputeDebounce = Duration(milliseconds: 200);
+
+  final Duration _recomputeDebounce;
 
   Future<void> _onStarted(
     ConversationListStarted event,
@@ -99,7 +113,7 @@ class ConversationListBloc
           isRestoring: isRestoring,
           userPubkey: userPubkey,
         ),
-      ),
+      ).debounceTime(_recomputeDebounce),
       onData: (data) {
         // Until credentials are set, the pubkey is empty and self cannot be
         // filtered out of a conversation's participants — classifying now would
