@@ -135,7 +135,7 @@ class ConversationState extends Equatable {
   ///   until the user explicitly cancels.
   final List<OutgoingDm> pendingOutgoing;
 
-  /// Lookup of queue rows by rumor id for O(1) status resolution.
+  /// Lookup of queue rows by rumor id once the map is built.
   Map<String, OutgoingDm> get _outgoingByRumorId => {
     for (final row in pendingOutgoing) row.id: row,
   };
