@@ -274,6 +274,20 @@ void main() {
           expect(await dao.read('user2:z'), equals('zzzzz'));
         },
       );
+
+      test('reconciles the running counter after 256 writes', () async {
+        // Lines 99–100 of cache_dao_impl.dart: after _reconcileEveryWrites (256)
+        // writes the branch resets _writesSinceReconcile and nullifies _totalBytes
+        // so the next write recomputes the counter from the real DB sum.
+        for (var i = 0; i < 256; i++) {
+          await dao.write(key: 'k', payload: 'x');
+        }
+        // This 257th write exercises the post-reconcile path where _totalBytes
+        // was nullified and must be recomputed via totalPayloadBytes().
+        await dao.write(key: 'k', payload: 'x');
+        expect(await dao.read('k'), equals('x'));
+        expect(await dao.totalPayloadBytes(), equals(1));
+      });
     });
   });
 }
