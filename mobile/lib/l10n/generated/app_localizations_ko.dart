@@ -4639,9 +4639,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get saveOriginalNotNow => '나중에';
 
   @override
-  String get cameraPermissionNotNow => '나중에';
-
-  @override
   String get saveOriginalDownloadFailed => '다운로드 실패';
 
   @override

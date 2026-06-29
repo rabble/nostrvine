@@ -4834,9 +4834,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get saveOriginalNotNow => 'Inte nu';
 
   @override
-  String get cameraPermissionNotNow => 'Inte nu';
-
-  @override
   String get saveOriginalDownloadFailed => 'Nedladdning misslyckades';
 
   @override

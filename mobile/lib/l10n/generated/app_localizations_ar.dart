@@ -4787,9 +4787,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get saveOriginalNotNow => 'ليس الآن';
 
   @override
-  String get cameraPermissionNotNow => 'ليس الآن';
-
-  @override
   String get saveOriginalDownloadFailed => 'فشل التنزيل';
 
   @override

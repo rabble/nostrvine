@@ -4885,9 +4885,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get saveOriginalNotNow => 'Не сега';
 
   @override
-  String get cameraPermissionNotNow => 'Не сега';
-
-  @override
   String get saveOriginalDownloadFailed => 'Неуспешно изтегляне';
 
   @override

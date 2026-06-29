@@ -4855,9 +4855,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get saveOriginalNotNow => 'Niet nu';
 
   @override
-  String get cameraPermissionNotNow => 'Niet nu';
-
-  @override
   String get saveOriginalDownloadFailed => 'Download mislukt';
 
   @override

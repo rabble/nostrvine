@@ -4812,9 +4812,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get saveOriginalNotNow => 'Nanti Saja';
 
   @override
-  String get cameraPermissionNotNow => 'Nanti Saja';
-
-  @override
   String get saveOriginalDownloadFailed => 'Unduhan Gagal';
 
   @override

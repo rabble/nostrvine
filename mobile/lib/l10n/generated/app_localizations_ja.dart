@@ -4623,9 +4623,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get saveOriginalNotNow => '今はいい';
 
   @override
-  String get cameraPermissionNotNow => '今はいい';
-
-  @override
   String get saveOriginalDownloadFailed => 'ダウンロードがうまくいかなかった';
 
   @override

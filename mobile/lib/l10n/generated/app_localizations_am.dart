@@ -4735,9 +4735,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get saveOriginalNotNow => 'አሁን አይደለም';
 
   @override
-  String get cameraPermissionNotNow => 'አሁን አይደለም';
-
-  @override
   String get saveOriginalDownloadFailed => 'ማውረድ አልተሳካም።';
 
   @override

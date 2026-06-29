@@ -4894,9 +4894,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get saveOriginalNotNow => 'Nicht jetzt';
 
   @override
-  String get cameraPermissionNotNow => 'Nicht jetzt';
-
-  @override
   String get saveOriginalDownloadFailed => 'Download fehlgeschlagen';
 
   @override

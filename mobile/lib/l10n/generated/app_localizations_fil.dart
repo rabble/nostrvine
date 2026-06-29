@@ -4898,9 +4898,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get saveOriginalNotNow => 'Hindi muna';
 
   @override
-  String get cameraPermissionNotNow => 'Hindi muna';
-
-  @override
   String get saveOriginalDownloadFailed => 'Hindi Nag-download';
 
   @override

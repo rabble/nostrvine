@@ -4818,9 +4818,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get saveOriginalNotNow => 'Şimdi Değil';
 
   @override
-  String get cameraPermissionNotNow => 'Şimdi Değil';
-
-  @override
   String get saveOriginalDownloadFailed => 'İndirme Başarısız';
 
   @override

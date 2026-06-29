@@ -8468,12 +8468,6 @@ abstract class AppLocalizations {
   /// **'Not Now'**
   String get saveOriginalNotNow;
 
-  /// No description provided for @cameraPermissionNotNow.
-  ///
-  /// In en, this message translates to:
-  /// **'Not now'**
-  String get cameraPermissionNotNow;
-
   /// No description provided for @saveOriginalDownloadFailed.
   ///
   /// In en, this message translates to:

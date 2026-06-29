@@ -4957,9 +4957,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get saveOriginalNotNow => 'Nie teraz';
 
   @override
-  String get cameraPermissionNotNow => 'Nie teraz';
-
-  @override
   String get saveOriginalDownloadFailed => 'Pobieranie nieudane';
 
   @override

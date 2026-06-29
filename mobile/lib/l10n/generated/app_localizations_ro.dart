@@ -4972,9 +4972,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get saveOriginalNotNow => 'Nu acum';
 
   @override
-  String get cameraPermissionNotNow => 'Nu acum';
-
-  @override
   String get saveOriginalDownloadFailed => 'Descărcare eșuată';
 
   @override

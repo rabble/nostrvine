@@ -4883,9 +4883,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get saveOriginalNotNow => 'Non ora';
 
   @override
-  String get cameraPermissionNotNow => 'Non ora';
-
-  @override
   String get saveOriginalDownloadFailed => 'Download fallito';
 
   @override
