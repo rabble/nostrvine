@@ -3,6 +3,7 @@
 
 import 'dart:io' show Platform;
 
+import 'package:analytics/analytics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show BugReportData;
@@ -79,6 +80,24 @@ void main() {
       expect(data.recentLogs, isA<List>());
       expect(data.errorCounts, isA<Map<String, int>>());
       expect(data.timestamp, isA<DateTime>());
+    });
+
+    test('should collect error counts from injected tracker', () async {
+      final errorTracker =
+          ErrorAnalyticsTracker(
+            sink: const NoOpAnalyticsEventSink(),
+          )..trackError(
+            errorType: 'feed_load_failed',
+            errorMessage: 'Feed failed to load',
+            location: 'NewVideosTab',
+          );
+      final service = BugReportService(errorTracker: errorTracker);
+
+      final data = await service.collectDiagnostics(
+        userDescription: 'Feed failed',
+      );
+
+      expect(data.errorCounts, {'NewVideosTab:feed_load_failed': 1});
     });
 
     test(

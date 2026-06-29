@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/feed_repository_provider.dart';
 import 'package:openvine/providers/new_videos_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -54,7 +55,8 @@ class _NewVideosTabState extends ConsumerState<NewVideosTab> {
     super.initState();
     _screenAnalytics = widget.screenAnalytics ?? ScreenAnalyticsService();
     _feedTracker = widget.feedTracker ?? FeedPerformanceTracker();
-    _errorTracker = widget.errorTracker ?? ErrorAnalyticsTracker();
+    _errorTracker =
+        widget.errorTracker ?? ref.read(errorAnalyticsTrackerProvider);
   }
 
   @override

@@ -30,7 +30,7 @@ void main() {
 
     setUp(() {
       sink = _RecordingAnalyticsEventSink();
-      tracker = ErrorAnalyticsTracker.testInstance(sink: sink);
+      tracker = ErrorAnalyticsTracker(sink: sink);
     });
 
     test('trackError logs app_error and counts repeated occurrences', () {

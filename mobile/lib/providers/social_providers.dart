@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
@@ -509,5 +510,6 @@ BugReportService bugReportService(Ref ref) {
   return BugReportService(
     nip17MessageService: nip17Service,
     blossomUploadService: blossomService,
+    errorTracker: ref.watch(errorAnalyticsTrackerProvider),
   );
 }

@@ -31,12 +31,15 @@ class BugReportService {
   BugReportService({
     NIP17MessageService? nip17MessageService,
     BlossomUploadService? blossomUploadService,
+    ErrorAnalyticsTracker? errorTracker,
   }) : _nip17MessageService = nip17MessageService,
-       _blossomUploadService = blossomUploadService;
+       _blossomUploadService = blossomUploadService,
+       _errorTracker = errorTracker ?? ErrorAnalyticsTracker();
 
   static const _uuid = Uuid();
   final NIP17MessageService? _nip17MessageService;
   final BlossomUploadService? _blossomUploadService;
+  final ErrorAnalyticsTracker _errorTracker;
 
   /// Collect comprehensive diagnostics for bug report
   Future<BugReportData> collectDiagnostics({
@@ -130,8 +133,8 @@ class BugReportService {
         limit: BugReportConfig.maxLogEntries,
       );
 
-      // Get error counts from ErrorAnalyticsTracker
-      final errorCounts = ErrorAnalyticsTracker().getAllErrorCounts();
+      // Get error counts from the injected ErrorAnalyticsTracker
+      final errorCounts = _errorTracker.getAllErrorCounts();
 
       // Create bug report data
       final reportData = BugReportData(

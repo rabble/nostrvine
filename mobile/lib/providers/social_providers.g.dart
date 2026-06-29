@@ -725,4 +725,4 @@ final class BugReportServiceProvider
   }
 }
 
-String _$bugReportServiceHash() => r'a243bf5fae16e223b148a829b14f9857af1c4592';
+String _$bugReportServiceHash() => r'1f3ab38afd37b54e5920062232fcccd22c347014';

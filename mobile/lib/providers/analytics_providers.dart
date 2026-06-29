@@ -14,3 +14,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final surfacePerformanceTrackerProvider = Provider<SurfacePerformanceTracker>(
   (ref) => SurfacePerformanceTracker(),
 );
+
+/// Provides the app's shared [ErrorAnalyticsTracker].
+///
+/// Replaces the former `ErrorAnalyticsTracker()` factory singleton. A single
+/// shared instance is kept alive so per-error counts accumulate in one place
+/// (read back by the bug-report diagnostics), and the tracker is mockable
+/// through a provider override in tests instead of reaching into static state.
+final errorAnalyticsTrackerProvider = Provider<ErrorAnalyticsTracker>(
+  (ref) => ErrorAnalyticsTracker(),
+);

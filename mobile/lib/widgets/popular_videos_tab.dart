@@ -12,6 +12,7 @@ import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/feed_repository_provider.dart';
 import 'package:openvine/providers/popular_videos_feed_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
@@ -60,7 +61,8 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
     super.initState();
     _screenAnalytics = widget.screenAnalytics ?? ScreenAnalyticsService();
     _feedTracker = widget.feedTracker ?? FeedPerformanceTracker();
-    _errorTracker = widget.errorTracker ?? ErrorAnalyticsTracker();
+    _errorTracker =
+        widget.errorTracker ?? ref.read(errorAnalyticsTrackerProvider);
   }
 
   @override
