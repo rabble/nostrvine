@@ -486,6 +486,7 @@ class _ProfileDataView extends ConsumerWidget {
     final profileStats = ref
         .watch(userProfileStatsReactiveProvider(userIdHex))
         .value;
+    final profile = ref.watch(userProfileReactiveProvider(userIdHex)).value;
 
     if (feedState.status == ProfileFeedStatus.ready) {
       ScreenAnalyticsService().markDataLoaded(
@@ -526,6 +527,7 @@ class _ProfileDataView extends ConsumerWidget {
           userIdHex: userIdHex,
           isOwnProfile: isOwnProfile,
           displayName: displayName,
+          profile: profile,
           profileStats: profileStats,
           videos: feedState.videos,
           isLoadingVideos:
@@ -560,6 +562,7 @@ class ProfileViewSwitcher extends StatelessWidget {
     required this.onShareProfile,
     this.onEditProfile,
     this.profileStats,
+    this.profile,
     this.refreshNotifier,
     this.displayName,
     this.isLoadingVideos = false,
@@ -570,6 +573,7 @@ class ProfileViewSwitcher extends StatelessWidget {
   final String userIdHex;
   final bool isOwnProfile;
   final String? displayName;
+  final UserProfile? profile;
   final ProfileStats? profileStats;
   final List<VideoEvent> videos;
   final int? videoIndex;
@@ -609,6 +613,7 @@ class ProfileViewSwitcher extends StatelessWidget {
             userIdHex: userIdHex,
             isOwnProfile: isOwnProfile,
             displayName: displayName,
+            profile: profile,
             profileStats: profileStats,
             videos: videos,
             isLoadingVideos: isLoadingVideos,

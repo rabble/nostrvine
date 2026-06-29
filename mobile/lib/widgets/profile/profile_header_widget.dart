@@ -185,7 +185,10 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
         // identity shimmers until the bloc is wired in.
         selection = (profile: null, isInitialOrLoading: true);
       }
-      effectiveProfile = selection.profile ?? widget.profile;
+      effectiveProfile = _bestProfileForHeader(
+        selection.profile,
+        widget.profile,
+      );
       // Skeleton on the user's own profile is appropriate only while we
       // genuinely have nothing to show. As soon as a cached profile is
       // available, fall through to render the real identity. After
@@ -380,10 +383,46 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
             onMessageUser: widget.onMessageUser,
             onShareProfile: widget.onShareProfile,
             onBlockedTap: widget.onBlockedTap,
+            monetizationLinks:
+                effectiveProfile?.enabledMonetizationLinks ?? const [],
           ),
         ],
       ),
     );
+  }
+
+  UserProfile? _bestProfileForHeader(
+    UserProfile? blocProfile,
+    UserProfile? suppliedProfile,
+  ) {
+    if (blocProfile == null) return suppliedProfile;
+    if (suppliedProfile == null) return blocProfile;
+
+    final blocHasMonetization = blocProfile.rawData.containsKey(
+      divineMonetizationLinksKey,
+    );
+    final suppliedHasMonetization = suppliedProfile.rawData.containsKey(
+      divineMonetizationLinksKey,
+    );
+
+    // Funnelcake REST profiles do not include Divine's custom Kind 0 fields.
+    // Prefer a relay/cache profile that has the monetization key over a REST
+    // projection that cannot carry it, even when the REST timestamp is newer.
+    if (suppliedHasMonetization &&
+        !blocHasMonetization &&
+        blocProfile.eventId.startsWith('rest-')) {
+      return suppliedProfile;
+    }
+    if (blocHasMonetization &&
+        !suppliedHasMonetization &&
+        suppliedProfile.eventId.startsWith('rest-')) {
+      return blocProfile;
+    }
+
+    if (suppliedProfile.createdAt.isAfter(blocProfile.createdAt)) {
+      return suppliedProfile;
+    }
+    return blocProfile;
   }
 
   void _showSessionExpiredSheet(

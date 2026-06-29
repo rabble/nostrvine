@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:meta/meta.dart';
+import 'package:models/src/monetization_link.dart';
 import 'package:models/src/user_profile_result.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:text_sanitizer/text_sanitizer.dart';
@@ -212,6 +213,12 @@ class UserProfile {
     if (pubkey.length <= 16) return pubkey;
     return pubkey;
   }
+
+  List<MonetizationLink> get monetizationLinks =>
+      parseMonetizationLinks(rawData[divineMonetizationLinksKey]);
+
+  List<MonetizationLink> get enabledMonetizationLinks =>
+      monetizationLinks.where((link) => link.enabled).toList(growable: false);
 
   /// Like [bestDisplayName] but with a custom fallback placeholder.
   ///

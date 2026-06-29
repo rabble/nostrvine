@@ -60,12 +60,12 @@ enum FeatureFlag {
         'signals that personalize recommendations. Off by default until the '
         'relay and recommendation backend are ready.',
   ),
-  ;
-
-  const FeatureFlag(
-    this.displayName,
-    this.description,
+  profileMonetizationLinks(
+    'Profile Monetization Links',
+    'Enable outbound tip and subscription links on profiles.',
   );
+
+  const FeatureFlag(this.displayName, this.description);
 
   final String displayName;
   final String description;

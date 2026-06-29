@@ -16377,6 +16377,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Uploading video'**
   String get backgroundUploadNotificationTitle;
+
+  /// Title for the settings screen where creators configure outbound support links.
+  ///
+  /// In en, this message translates to:
+  /// **'Creator Support'**
+  String get monetizationSettingsTitle;
+
+  /// Subtitle for the settings row that opens creator support link settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Add tip and subscription links'**
+  String get monetizationSettingsSubtitle;
+
+  /// Heading explaining monetization links do not create in-app payments.
+  ///
+  /// In en, this message translates to:
+  /// **'Outbound links only'**
+  String get monetizationSettingsIntroTitle;
+
+  /// Body copy explaining profile monetization links are external only.
+  ///
+  /// In en, this message translates to:
+  /// **'Add creator-controlled destinations. Divine never handles the payment or unlocks in-app content from these links.'**
+  String get monetizationSettingsIntroBody;
+
+  /// Summary of active monetization links configured on the profile.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} active link(s) on your profile'**
+  String monetizationSettingsConfiguredCount(int count);
+
+  /// Section header for one-time tip link providers.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a tip'**
+  String get monetizationSettingsTipSection;
+
+  /// Section header for recurring or creator-support link providers.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe / support'**
+  String get monetizationSettingsSubscriptionSection;
+
+  /// Button label to save profile monetization links.
+  ///
+  /// In en, this message translates to:
+  /// **'Save support links'**
+  String get monetizationSettingsSave;
+
+  /// Button label while profile monetization links are saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving...'**
+  String get monetizationSettingsSaving;
+
+  /// Snackbar shown after monetization links are saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Support links updated'**
+  String get monetizationSettingsSaved;
+
+  /// Validation error for an empty monetization link input.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a handle or URL.'**
+  String get monetizationSettingsErrorEmpty;
+
+  /// Validation error for a malformed monetization link input.
+  ///
+  /// In en, this message translates to:
+  /// **'That link does not look right.'**
+  String get monetizationSettingsErrorInvalid;
+
+  /// Validation error when a monetization link uses the wrong provider domain.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a link for this provider.'**
+  String get monetizationSettingsErrorWrongProvider;
+
+  /// Input hint for Cash App monetization link.
+  ///
+  /// In en, this message translates to:
+  /// **'\$cashtag or cash.app link'**
+  String get monetizationSettingsHintCashApp;
+
+  /// Input hint for PayPal monetization link.
+  ///
+  /// In en, this message translates to:
+  /// **'PayPal.me handle or link'**
+  String get monetizationSettingsHintPayPal;
+
+  /// Input hint for Venmo monetization link.
+  ///
+  /// In en, this message translates to:
+  /// **'Venmo handle or link'**
+  String get monetizationSettingsHintVenmo;
+
+  /// Input hint for Patreon monetization link.
+  ///
+  /// In en, this message translates to:
+  /// **'Patreon handle or link'**
+  String get monetizationSettingsHintPatreon;
+
+  /// Input hint for Substack monetization link.
+  ///
+  /// In en, this message translates to:
+  /// **'Substack domain or link'**
+  String get monetizationSettingsHintSubstack;
+
+  /// Input hint for Medium monetization link.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium handle or link'**
+  String get monetizationSettingsHintMedium;
+
+  /// Input hint for Open Collective monetization link.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Collective slug or link'**
+  String get monetizationSettingsHintOpenCollective;
+
+  /// Title for the profile support links bottom sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Support this creator'**
+  String get profileSupportSheetTitle;
+
+  /// Policy copy in the profile support links bottom sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'These links open outside Divine. Nothing here unlocks content in the app.'**
+  String get profileSupportSheetBody;
+
+  /// Section header for tip links in the profile support sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a tip'**
+  String get profileSupportTipSection;
+
+  /// Section header for subscription links in the profile support sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe / support'**
+  String get profileSupportSubscriptionSection;
 }
 
 class _AppLocalizationsDelegate

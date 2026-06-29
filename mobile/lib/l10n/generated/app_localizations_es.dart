@@ -9563,4 +9563,83 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get backgroundUploadNotificationTitle => 'Subiendo video';
+
+  @override
+  String get monetizationSettingsTitle => 'Creator Support';
+
+  @override
+  String get monetizationSettingsSubtitle => 'Add tip and subscription links';
+
+  @override
+  String get monetizationSettingsIntroTitle => 'Outbound links only';
+
+  @override
+  String get monetizationSettingsIntroBody =>
+      'Add creator-controlled destinations. Divine never handles the payment or unlocks in-app content from these links.';
+
+  @override
+  String monetizationSettingsConfiguredCount(int count) {
+    return '$count active link(s) on your profile';
+  }
+
+  @override
+  String get monetizationSettingsTipSection => 'Send a tip';
+
+  @override
+  String get monetizationSettingsSubscriptionSection => 'Subscribe / support';
+
+  @override
+  String get monetizationSettingsSave => 'Save support links';
+
+  @override
+  String get monetizationSettingsSaving => 'Saving...';
+
+  @override
+  String get monetizationSettingsSaved => 'Support links updated';
+
+  @override
+  String get monetizationSettingsErrorEmpty => 'Add a handle or URL.';
+
+  @override
+  String get monetizationSettingsErrorInvalid =>
+      'That link does not look right.';
+
+  @override
+  String get monetizationSettingsErrorWrongProvider =>
+      'Use a link for this provider.';
+
+  @override
+  String get monetizationSettingsHintCashApp => '\$cashtag or cash.app link';
+
+  @override
+  String get monetizationSettingsHintPayPal => 'PayPal.me handle or link';
+
+  @override
+  String get monetizationSettingsHintVenmo => 'Venmo handle or link';
+
+  @override
+  String get monetizationSettingsHintPatreon => 'Patreon handle or link';
+
+  @override
+  String get monetizationSettingsHintSubstack => 'Substack domain or link';
+
+  @override
+  String get monetizationSettingsHintMedium => 'Medium handle or link';
+
+  @override
+  String get monetizationSettingsHintOpenCollective =>
+      'Open Collective slug or link';
+
+  @override
+  String get profileSupportSheetTitle => 'Support this creator';
+
+  @override
+  String get profileSupportSheetBody =>
+      'These links open outside Divine. Nothing here unlocks content in the app.';
+
+  @override
+  String get profileSupportTipSection => 'Send a tip';
+
+  @override
+  String get profileSupportSubscriptionSection => 'Subscribe / support';
 }

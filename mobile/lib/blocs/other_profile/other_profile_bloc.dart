@@ -31,11 +31,13 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     required ContentBlocklistRepository contentBlocklistRepository,
     required String currentUserPubkey,
     required FollowRepository followRepository,
+    bool requireRawKind0 = false,
     IdentityClaimsRepository? identityClaimsRepository,
   }) : _profileRepository = profileRepository,
        _blocklistRepository = contentBlocklistRepository,
        _currentUserPubkey = currentUserPubkey,
        _followRepository = followRepository,
+       _requireRawKind0 = requireRawKind0,
        _identityClaimsRepository = identityClaimsRepository,
        super(const OtherProfileInitial()) {
     on<OtherProfileLoadRequested>(_onLoadRequested);
@@ -49,6 +51,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   final ContentBlocklistRepository _blocklistRepository;
   final String _currentUserPubkey;
   final FollowRepository _followRepository;
+  final bool _requireRawKind0;
   final IdentityClaimsRepository? _identityClaimsRepository;
 
   /// The pubkey of the profile being viewed.
@@ -74,6 +77,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     try {
       final freshProfile = await _profileRepository.fetchFreshProfile(
         pubkey: pubkey,
+        requireRawKind0: _requireRawKind0,
       );
       if (isClosed) return;
       if (freshProfile != null) {
@@ -117,6 +121,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     try {
       final freshProfile = await _profileRepository.fetchFreshProfile(
         pubkey: pubkey,
+        requireRawKind0: _requireRawKind0,
       );
       if (isClosed) return;
       if (freshProfile != null) {

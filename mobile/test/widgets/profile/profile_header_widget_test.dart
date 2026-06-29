@@ -236,6 +236,9 @@ void main() {
       String? about,
       String? picture,
       String? nip05,
+      Map<String, dynamic> rawData = const {},
+      DateTime? createdAt,
+      String eventId = 'test-event',
     }) {
       return UserProfile(
         pubkey: testUserHex,
@@ -245,14 +248,15 @@ void main() {
           'about': ?about,
           'picture': ?picture,
           'nip05': ?nip05,
+          ...rawData,
         },
         displayName: displayName,
         name: name,
         about: about,
         picture: picture,
         nip05: nip05,
-        createdAt: DateTime.now(),
-        eventId: 'test-event',
+        createdAt: createdAt ?? DateTime.now(),
+        eventId: eventId,
       );
     }
 
@@ -740,6 +744,73 @@ void main() {
         expect(find.text('Seeded bio'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'shows support affordance from a newer supplied own-profile profile',
+      (tester) async {
+        final staleProfile = createTestProfile(
+          displayName: 'Creator',
+          createdAt: DateTime.utc(2026),
+          eventId: 'old-kind0',
+        );
+        final savedProfile = createTestProfile(
+          displayName: 'Creator',
+          createdAt: DateTime.utc(2026, 1, 1, 0, 1),
+          eventId: 'new-kind0',
+          rawData: {
+            divineMonetizationLinksKey: [
+              const MonetizationLink(
+                provider: MonetizationLinkProvider.cashApp,
+                category: MonetizationLinkCategory.tip,
+                url: r'https://cash.app/$creator',
+                enabled: true,
+              ).toJson(),
+            ],
+          },
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: staleProfile,
+            suppliedProfile: savedProfile,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('profile-support-button')), findsOneWidget);
+      },
+    );
+
+    testWidgets('shows support affordance for other profiles with links', (
+      tester,
+    ) async {
+      final creatorProfile = createTestProfile(
+        displayName: 'Creator',
+        rawData: {
+          divineMonetizationLinksKey: [
+            const MonetizationLink(
+              provider: MonetizationLinkProvider.patreon,
+              category: MonetizationLinkCategory.subscription,
+              url: 'https://www.patreon.com/creator',
+              enabled: true,
+            ).toJson(),
+          ],
+        },
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: creatorProfile,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('profile-support-button')), findsOneWidget);
+    });
 
     testWidgets('displays stats from ProfileStats when provided', (
       tester,

@@ -4,6 +4,11 @@
 import 'package:analytics/analytics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Provides the low-level analytics event sink for feature-specific events.
+final analyticsEventSinkProvider = Provider<AnalyticsEventSink>(
+  (ref) => FirebaseAnalyticsEventSink(),
+);
+
 /// Provides the app's shared [SurfacePerformanceTracker].
 ///
 /// Replaces the former `SurfacePerformanceTracker()` factory singleton. A

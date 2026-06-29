@@ -31,6 +31,7 @@ import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
+import 'package:openvine/screens/settings/monetization_links_settings_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
@@ -176,6 +177,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final accountSwitchingEnabled = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.accountSwitching),
     );
+    final monetizationLinksEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
+    );
     return BlocProvider.value(
       value: _accountCubit,
       child: Scaffold(
@@ -219,6 +223,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   divineIcon: DivineIconName.trendUp,
                   onTap: () => context.push(CreatorAnalyticsScreen.path),
                 ),
+                if (isAuthenticated && monetizationLinksEnabled)
+                  _SettingsTile(
+                    title: context.l10n.monetizationSettingsTitle,
+                    divineIcon: DivineIconName.heart,
+                    subtitle: context.l10n.monetizationSettingsSubtitle,
+                    onTap: () =>
+                        context.push(MonetizationLinksSettingsScreen.path),
+                  ),
                 _SettingsTile(
                   title: context.l10n.settingsSupportCenter,
                   icon: Icons.support_agent,

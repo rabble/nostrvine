@@ -88,6 +88,9 @@ class OtherProfileScreen extends ConsumerWidget {
     final identityClaimsRepository = ref.watch(
       identityClaimsRepositoryProvider,
     );
+    final requireRawKind0 = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
+    );
 
     return BlocProvider(
       create: (context) => OtherProfileBloc(
@@ -97,6 +100,7 @@ class OtherProfileScreen extends ConsumerWidget {
         currentUserPubkey: nostrClient.publicKey,
         followRepository: followRepository,
         identityClaimsRepository: identityClaimsRepository,
+        requireRawKind0: requireRawKind0,
       )..add(const OtherProfileLoadRequested()),
       child: OtherProfileView(
         pubkey: pubkey,

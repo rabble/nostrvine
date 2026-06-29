@@ -627,6 +627,32 @@ void main() {
           verify(() => mockUserProfilesDao.upsertProfile(any())).called(1);
         });
 
+        test('requires relay metadata when raw Kind 0 is requested', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).thenAnswer(
+            (_) async => UserProfileFound(
+              profile: UserProfileData.fromJson(testPubkey, const {
+                'display_name': 'REST User',
+                'name': 'restuser',
+              }),
+            ),
+          );
+
+          final result = await repoWithFunnelcake.fetchFreshProfile(
+            pubkey: testPubkey,
+            requireRawKind0: true,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.displayName, equals('Test User'));
+          verify(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).called(1);
+          verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+        });
+
         test('falls back to relay when Funnelcake throws', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
@@ -1581,6 +1607,112 @@ void main() {
                 ).captured.single
                 as Map<String, dynamic>;
         expect(captured['website'], equals('https://example.com'));
+      });
+
+      test(
+        'writes monetization links without dropping unrelated rawData',
+        () async {
+          final currentProfile = await createCurrentProfile({
+            'display_name': 'Old Name',
+            'custom_field': 'preserved',
+            divineMonetizationLinksKey: [
+              {
+                'provider': 'venmo',
+                'category': 'tip',
+                'url': 'https://venmo.com/u/old',
+                'enabled': true,
+              },
+            ],
+          });
+
+          await profileRepository.saveProfileEvent(
+            displayName: 'New Name',
+            currentProfile: currentProfile,
+            monetizationLinks: const [
+              MonetizationLink(
+                provider: MonetizationLinkProvider.patreon,
+                category: MonetizationLinkCategory.subscription,
+                url: 'https://www.patreon.com/alice',
+                enabled: true,
+              ),
+            ],
+          );
+
+          final captured =
+              verify(
+                    () => mockNostrClient.sendProfile(
+                      profileContent: captureAny(named: 'profileContent'),
+                    ),
+                  ).captured.single
+                  as Map<String, dynamic>;
+          expect(captured['display_name'], 'New Name');
+          expect(captured['custom_field'], 'preserved');
+          expect(captured[divineMonetizationLinksKey], [
+            {
+              'provider': 'patreon',
+              'category': 'subscription',
+              'url': 'https://www.patreon.com/alice',
+              'enabled': true,
+            },
+          ]);
+        },
+      );
+
+      test('removes monetization field when saved list is empty', () async {
+        final currentProfile = await createCurrentProfile({
+          'display_name': 'Old Name',
+          divineMonetizationLinksKey: [
+            {
+              'provider': 'venmo',
+              'category': 'tip',
+              'url': 'https://venmo.com/u/old',
+              'enabled': true,
+            },
+          ],
+        });
+
+        await profileRepository.saveProfileEvent(
+          displayName: 'New Name',
+          currentProfile: currentProfile,
+          monetizationLinks: const [],
+        );
+
+        final captured =
+            verify(
+                  () => mockNostrClient.sendProfile(
+                    profileContent: captureAny(named: 'profileContent'),
+                  ),
+                ).captured.single
+                as Map<String, dynamic>;
+        expect(captured.containsKey(divineMonetizationLinksKey), isFalse);
+      });
+
+      test('does not publish disabled monetization links', () async {
+        final currentProfile = await createCurrentProfile({
+          'display_name': 'Old Name',
+        });
+
+        await profileRepository.saveProfileEvent(
+          displayName: 'New Name',
+          currentProfile: currentProfile,
+          monetizationLinks: const [
+            MonetizationLink(
+              provider: MonetizationLinkProvider.venmo,
+              category: MonetizationLinkCategory.tip,
+              url: 'https://venmo.com/u/alice',
+              enabled: false,
+            ),
+          ],
+        );
+
+        final captured =
+            verify(
+                  () => mockNostrClient.sendProfile(
+                    profileContent: captureAny(named: 'profileContent'),
+                  ),
+                ).captured.single
+                as Map<String, dynamic>;
+        expect(captured.containsKey(divineMonetizationLinksKey), isFalse);
       });
 
       test('removes website key when empty string is passed', () async {

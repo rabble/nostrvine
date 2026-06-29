@@ -292,23 +292,33 @@ class ProfileRepository {
   ///
   /// Returns `null` if no profile exists across all sources.
   /// On success, the profile is automatically cached locally.
-  Future<UserProfile?> fetchFreshProfile({required String pubkey}) {
+  Future<UserProfile?> fetchFreshProfile({
+    required String pubkey,
+    bool requireRawKind0 = false,
+  }) {
     // Clear stale _confirmedMissing so we always re-check the REST API.
     // The sentinel may have been set by a batch fetch when the user had
     // no Kind 0 profile, but they may have published one since then.
     _confirmedMissing.remove(pubkey);
 
     // Deduplicate: return existing in-flight future if present.
-    final existing = _inFlightFetches[pubkey];
+    final fetchKey = requireRawKind0 ? '$pubkey#raw-kind0' : pubkey;
+    final existing = _inFlightFetches[fetchKey];
     if (existing != null) return existing;
 
-    final future = _doFetchFreshProfile(pubkey);
-    _inFlightFetches[pubkey] = future;
+    final future = _doFetchFreshProfile(
+      pubkey,
+      requireRawKind0: requireRawKind0,
+    );
+    _inFlightFetches[fetchKey] = future;
 
-    return future.whenComplete(() => _inFlightFetches.remove(pubkey));
+    return future.whenComplete(() => _inFlightFetches.remove(fetchKey));
   }
 
-  Future<UserProfile?> _doFetchFreshProfile(String pubkey) async {
+  Future<UserProfile?> _doFetchFreshProfile(
+    String pubkey, {
+    required bool requireRawKind0,
+  }) async {
     if (_blockFilter?.call(pubkey) ?? false) return null;
 
     // Step 1: Try Funnelcake REST API (fast, broad coverage).
@@ -320,7 +330,7 @@ class ProfileRepository {
             final funnelcakeProfile = UserProfile.fromUserProfileFound(result);
             await _cacheProfileStatsFromResult(pubkey, result);
 
-            if (result.profile.createdAt != null) {
+            if (result.profile.createdAt != null && !requireRawKind0) {
               // Funnelcake exposes the original Nostr Kind 0 `created_at`
               // (the `profile.profile_updated` field), so a newest-wins
               // merge against the local cache is safe — a stale Funnelcake
@@ -348,7 +358,7 @@ class ProfileRepository {
             // through to the relay/indexer path so a newer Kind 0 on
             // relays can still upgrade the cache.
             final existing = await _userProfilesDao.getProfile(pubkey);
-            if (existing == null) {
+            if (existing == null && !requireRawKind0) {
               _knownCached.add(pubkey);
               await _userProfilesDao.upsertProfile(funnelcakeProfile);
               return funnelcakeProfile;
@@ -562,6 +572,7 @@ class ProfileRepository {
     bool clearNip05 = false,
     String? picture,
     String? banner,
+    Iterable<MonetizationLink>? monetizationLinks,
     UserProfile? currentProfile,
   }) async {
     // External NIP-05 takes precedence when provided.
@@ -613,6 +624,17 @@ class ProfileRepository {
       newContent['nip05'] = effectiveNip05;
     } else if (clearNip05) {
       newContent.remove('nip05');
+    }
+
+    if (monetizationLinks != null) {
+      final encoded = encodeMonetizationLinks(
+        monetizationLinks.where((link) => link.enabled),
+      );
+      if (encoded.isEmpty) {
+        newContent.remove(divineMonetizationLinksKey);
+      } else {
+        newContent[divineMonetizationLinksKey] = encoded;
+      }
     }
 
     // Every other key — lud16, lud06, website, bot, NIP-39 `i` tags,

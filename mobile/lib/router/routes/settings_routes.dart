@@ -18,6 +18,7 @@ import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
+import 'package:openvine/screens/settings/monetization_links_settings_screen.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
@@ -59,6 +60,11 @@ List<RouteBase> settingsRoutes() {
       path: GeneralSettingsScreen.path,
       name: GeneralSettingsScreen.routeName,
       builder: (_, _) => const GeneralSettingsScreen(),
+    ),
+    GoRoute(
+      path: MonetizationLinksSettingsScreen.path,
+      name: MonetizationLinksSettingsScreen.routeName,
+      builder: (_, _) => const MonetizationLinksSettingsScreen(),
     ),
     GoRoute(
       path: AppLanguageScreen.path,

@@ -53,6 +53,8 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_PUBLISH_DM_RELAY_LIST');
       case FeatureFlag.feedTuning:
         return const bool.fromEnvironment('FF_FEED_TUNING');
+      case FeatureFlag.profileMonetizationLinks:
+        return const bool.fromEnvironment('FF_PROFILE_MONETIZATION_LINKS');
     }
   }
 
@@ -97,6 +99,8 @@ class BuildConfiguration {
         return 'FF_PUBLISH_DM_RELAY_LIST';
       case FeatureFlag.feedTuning:
         return 'FF_FEED_TUNING';
+      case FeatureFlag.profileMonetizationLinks:
+        return 'FF_PROFILE_MONETIZATION_LINKS';
     }
   }
 }

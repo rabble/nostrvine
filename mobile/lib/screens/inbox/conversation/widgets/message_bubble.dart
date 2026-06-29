@@ -17,21 +17,18 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/router/universal_link_resolver.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/utils/divine_video_url.dart';
+import 'package:openvine/utils/external_link_launcher.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_support.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/markdown/markdown.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-final _emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
 
 /// Matches a single line whose entire content is a straight-quoted
 /// string — the shape `VideoSharingService` uses to embed the title in
@@ -414,23 +411,6 @@ _SharedVideoTarget? _videoTargetFromRef(DmSharedVideoRef? ref) {
   );
 }
 
-/// Trusted domains that open without an external-link warning.
-const _trustedDomains = {
-  'divine.video',
-  'invite.divine.video',
-  'login.divine.video',
-  'media.divine.video',
-  'relay.divine.video',
-  'cdn.divine.video',
-  'stream.divine.video',
-};
-
-/// Returns `true` if [host] is a trusted Divine domain.
-bool _isTrustedDomain(String host) {
-  final lower = host.toLowerCase();
-  return _trustedDomains.any((d) => lower == d || lower.endsWith('.$d'));
-}
-
 /// Renders message text with inline markdown (bold / italic / strike /
 /// inline code / `[label](url)`) plus clickable URLs and Nostr
 /// references.
@@ -576,65 +556,8 @@ class _MessageTextState extends ConsumerState<_MessageText> {
     super.dispose();
   }
 
-  Future<void> _openLink(BuildContext context, String link) async {
-    final Uri? uri;
-    if (_emailRegex.hasMatch(link)) {
-      uri = Uri(scheme: 'mailto', path: link);
-    } else {
-      final normalized =
-          link.startsWith(RegExp('https?://', caseSensitive: false))
-          ? link
-          : 'https://$link';
-      uri = Uri.tryParse(normalized);
-    }
-    if (uri == null) return;
-
-    final appRoute = divineUrlToPushRoute(uri);
-    if (appRoute != null && context.mounted) {
-      await context.push(appRoute);
-      return;
-    }
-
-    // Show a warning for external (non-Divine) URLs.
-    if (uri.scheme != 'mailto' && !_isTrustedDomain(uri.host)) {
-      if (!context.mounted) return;
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: VineTheme.cardBackground,
-          title: Text(
-            ctx.l10n.messageExternalLinkDialogTitle,
-            style: VineTheme.titleMediumFont(),
-          ),
-          content: Text(
-            ctx.l10n.messageExternalLinkDialogBody(uri.toString()),
-            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(
-                ctx.l10n.commonCancel,
-                style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(
-                ctx.l10n.messageExternalLinkDialogOpen,
-                style: VineTheme.bodyMediumFont(color: VineTheme.primary),
-              ),
-            ),
-          ],
-        ),
-      );
-      if (confirmed != true) return;
-    }
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
+  Future<void> _openLink(BuildContext context, String link) =>
+      openExternalLink(context, link);
 }
 
 /// Inline video preview card for `divine.video/video/{stableId}` links.

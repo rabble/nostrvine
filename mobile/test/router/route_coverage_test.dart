@@ -24,6 +24,7 @@ import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
+import 'package:openvine/screens/settings/monetization_links_settings_screen.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
@@ -118,6 +119,24 @@ void main() {
         final path = buildRoute(const RouteContext(type: RouteType.badges));
         expect(path, BadgesScreen.path);
       });
+
+      test(
+        '${MonetizationLinksSettingsScreen.path} parses to RouteType.monetizationLinksSettings',
+        () {
+          final context = parseRoute(MonetizationLinksSettingsScreen.path);
+          expect(context.type, RouteType.monetizationLinksSettings);
+        },
+      );
+
+      test(
+        '${MonetizationLinksSettingsScreen.path} round-trips through buildRoute(parseRoute())',
+        () {
+          final canonical = buildRoute(
+            parseRoute(MonetizationLinksSettingsScreen.path),
+          );
+          expect(canonical, MonetizationLinksSettingsScreen.path);
+        },
+      );
 
       test('${NostrSettingsScreen.path} parses to RouteType.nostrSettings', () {
         final context = parseRoute(NostrSettingsScreen.path);
@@ -438,6 +457,7 @@ void main() {
       'hashtag': HashtagScreenRouter.pathForTag('nostr'),
       'category gallery': CategoryGalleryScreen.locationFor('animals'),
       'settings': SettingsScreen.path,
+      'monetization links settings': MonetizationLinksSettingsScreen.path,
       'badges': BadgesScreen.path,
       'relay settings': RelaySettingsScreen.path,
       'video edit': VideoMetadataEditScreen.pathFor('test-id-abc'),
@@ -483,6 +503,8 @@ void main() {
         RouteType.invites: InvitesScreen.path,
         RouteType.badges: BadgesScreen.path,
         RouteType.settings: SettingsScreen.path,
+        RouteType.monetizationLinksSettings:
+            MonetizationLinksSettingsScreen.path,
         RouteType.relaySettings: RelaySettingsScreen.path,
         RouteType.relayDiagnostic: RelayDiagnosticScreen.path,
         RouteType.blossomSettings: BlossomSettingsScreen.path,

@@ -23,6 +23,7 @@ export 'src/hashtag_search_result.dart';
 export 'src/home_feed_response.dart';
 export 'src/log_entry.dart';
 export 'src/logging_types.dart';
+export 'src/monetization_link.dart';
 export 'src/native_proof_data.dart';
 export 'src/nip17_send_result.dart';
 export 'src/nip71_video_kinds.dart';
