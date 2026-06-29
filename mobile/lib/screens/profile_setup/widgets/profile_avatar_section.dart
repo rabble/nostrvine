@@ -36,6 +36,15 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
     widget.nameController.addListener(_onNameChanged);
   }
 
+  @override
+  void didUpdateWidget(ProfileAvatarSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.nameController != widget.nameController) {
+      oldWidget.nameController.removeListener(_onNameChanged);
+      widget.nameController.addListener(_onNameChanged);
+    }
+  }
+
   void _onNameChanged() => setState(() {});
 
   @override

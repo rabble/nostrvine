@@ -29,6 +29,15 @@ class _DisplayNameFieldState extends State<DisplayNameField> {
     widget.focusNode.addListener(_onChange);
   }
 
+  @override
+  void didUpdateWidget(DisplayNameField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNode != widget.focusNode) {
+      oldWidget.focusNode.removeListener(_onChange);
+      widget.focusNode.addListener(_onChange);
+    }
+  }
+
   void _onChange() => setState(() {});
 
   @override

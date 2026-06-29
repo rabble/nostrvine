@@ -38,7 +38,10 @@ void main() {
 
     tearDown(() => nameController.dispose());
 
-    Future<void> pump(WidgetTester tester) {
+    Future<void> pump(
+      WidgetTester tester, {
+      TextEditingController? controller,
+    }) {
       return tester.pumpWidget(
         testProviderScope(
           additionalOverrides: [
@@ -51,7 +54,9 @@ void main() {
             home: Scaffold(
               body: BlocProvider<ProfileEditorBloc>.value(
                 value: bloc,
-                child: ProfileAvatarSection(nameController: nameController),
+                child: ProfileAvatarSection(
+                  nameController: controller ?? nameController,
+                ),
               ),
             ),
           ),
@@ -75,5 +80,28 @@ void main() {
       await pump(tester);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
+
+    testWidgets(
+      're-subscribes the avatar name when nameController is swapped',
+      (
+        tester,
+      ) async {
+        await pump(tester);
+
+        final swapped = TextEditingController(text: 'Bob');
+        addTearDown(swapped.dispose);
+        await pump(tester, controller: swapped);
+        expect(tester.widget<UserAvatar>(find.byType(UserAvatar)).name, 'Bob');
+
+        // Mutating the new controller updates the avatar only if the listener
+        // was re-bound in didUpdateWidget.
+        swapped.text = 'Carol';
+        await tester.pump();
+        expect(
+          tester.widget<UserAvatar>(find.byType(UserAvatar)).name,
+          'Carol',
+        );
+      },
+    );
   });
 }

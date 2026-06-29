@@ -50,5 +50,30 @@ void main() {
       await tester.pump();
       expect(find.text('${'loaded bio'.length}/360'), findsOneWidget);
     });
+
+    testWidgets('re-subscribes the counter when the controller is swapped', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      final swapped = TextEditingController(text: 'abc');
+      addTearDown(swapped.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: Scaffold(body: BioField(controller: swapped)),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('3/360'), findsOneWidget);
+
+      // Mutating the new controller drives the counter only if the listener
+      // was re-bound in didUpdateWidget.
+      swapped.text = 'abcdef';
+      await tester.pump();
+      expect(find.text('6/360'), findsOneWidget);
+    });
   });
 }

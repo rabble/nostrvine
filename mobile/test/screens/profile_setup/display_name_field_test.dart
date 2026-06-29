@@ -51,5 +51,34 @@ void main() {
       await tester.enterText(find.byType(TextFormField), 'Alice');
       expect(controller.text, 'Alice');
     });
+
+    testWidgets('re-subscribes the label highlight when focusNode is swapped', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      final swapped = FocusNode();
+      addTearDown(swapped.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: Scaffold(
+            body: DisplayNameField(controller: controller, focusNode: swapped),
+          ),
+        ),
+      );
+
+      // Focusing the new node highlights the label only if the listener was
+      // re-bound in didUpdateWidget.
+      await tester.tap(find.byType(TextFormField));
+      await tester.pump();
+      expect(swapped.hasFocus, isTrue);
+      final label = tester.widget<Text>(
+        find.text(l10n.profileSetupDisplayNameLabel),
+      );
+      expect(label.style?.color, VineTheme.primary);
+    });
   });
 }

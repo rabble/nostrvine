@@ -24,6 +24,15 @@ class _BioFieldState extends State<BioField> {
     widget.controller.addListener(_onChange);
   }
 
+  @override
+  void didUpdateWidget(BioField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_onChange);
+      widget.controller.addListener(_onChange);
+    }
+  }
+
   void _onChange() => setState(() {});
 
   @override
