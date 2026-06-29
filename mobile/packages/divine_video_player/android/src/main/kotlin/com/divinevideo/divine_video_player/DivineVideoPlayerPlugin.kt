@@ -137,16 +137,21 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
                 // channel name, so the old instance must release them
                 // first to avoid nullifying the new handlers.
                 PlayerRegistry.remove(id)?.dispose()
+                val bufferProfile = BufferProfile.fromWireValue(
+                    call.argument<String>("bufferProfile"),
+                )
                 val instance = DivineVideoPlayerInstance(
                     binding.binaryMessenger,
                     binding.applicationContext,
                     id,
+                    bufferProfile = bufferProfile,
                 )
                 PlayerRegistry.put(id, instance)
 
                 val useTexture = call.argument<Boolean>("useTexture") ?: false
                 DivineVideoPlayerLog.info(
-                    "Player $id created (useTexture=$useTexture)",
+                    "Player $id created " +
+                        "(useTexture=$useTexture, bufferProfile=$bufferProfile)",
                     name = "DivineVideoPlayer.Lifecycle",
                 )
                 if (useTexture) {

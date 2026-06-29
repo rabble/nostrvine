@@ -33,6 +33,7 @@ internal class DivineVideoPlayerInstance(
     private val context: Context,
     private val playerId: Int,
     private val playerFactory: ((Context) -> ExoPlayer)? = null,
+    private val bufferProfile: BufferProfile = BufferProfile.FULL,
     private val mainHandler: Handler = Handler(Looper.getMainLooper()),
     private val audioOverlayManagerFactory: (Context) -> AudioOverlayManager = { ctx ->
         AudioOverlayManager(ctx)
@@ -252,7 +253,21 @@ internal class DivineVideoPlayerInstance(
     }
 
     private fun ensurePlayer(): ExoPlayer {
-        return player ?: (playerFactory?.invoke(context) ?: ExoPlayer.Builder(context)
+        return player ?: (playerFactory?.invoke(context) ?: buildDefaultPlayer())
+            .also { newPlayer ->
+                player = newPlayer
+                newPlayer.setSeekParameters(SeekParameters.EXACT)
+                newPlayer.addListener(playerListener)
+                val surface = activeSurface
+                if (surface != null) {
+                    newPlayer.setVideoSurface(surface)
+                    needsSurface = false
+                }
+            }
+    }
+
+    private fun buildDefaultPlayer(): ExoPlayer {
+        val builder = ExoPlayer.Builder(context)
             .setMediaSourceFactory(
                 DefaultMediaSourceFactory(
                     VideoCache.dataSourceFactory(context) { uri: Uri ->
@@ -260,16 +275,13 @@ internal class DivineVideoPlayerInstance(
                     },
                 ),
             )
-            .build()).also { newPlayer ->
-            player = newPlayer
-            newPlayer.setSeekParameters(SeekParameters.EXACT)
-            newPlayer.addListener(playerListener)
-            val surface = activeSurface
-            if (surface != null) {
-                newPlayer.setVideoSurface(surface)
-                needsSurface = false
-            }
+        // The feed keeps several players live on memory-constrained devices,
+        // so cap their read-ahead to avoid ExoPlayer OOM (#3419). Editing
+        // surfaces keep the default unbounded buffering.
+        if (bufferProfile == BufferProfile.FEED) {
+            builder.setLoadControl(FeedLoadControl.build())
         }
+        return builder.build()
     }
 
     internal fun httpHeadersForRequest(url: String): Map<String, String> {

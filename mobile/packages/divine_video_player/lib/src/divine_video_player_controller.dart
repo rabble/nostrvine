@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:divine_video_player/src/audio_track.dart';
 import 'package:divine_video_player/src/linux/linux_video_player_backend.dart';
+import 'package:divine_video_player/src/video_buffer_profile.dart';
 import 'package:divine_video_player/src/video_clip.dart';
 import 'package:divine_video_player/src/video_player_state.dart';
 import 'package:divine_video_player/src/web/web_video_player_backend.dart';
@@ -46,9 +47,16 @@ class DivineVideoPlayerController {
   /// players coexist and a sibling decoder is released (the feed flicker).
   /// Use it for screens that render many players at once. No effect on
   /// iOS/macOS. Defaults to `false`.
+  ///
+  /// [bufferProfile] caps how much media each native player buffers into
+  /// memory. Defaults to [VideoBufferProfile.full] (platform defaults);
+  /// short-form many-player surfaces like the feed should pass
+  /// [VideoBufferProfile.feed] to bound per-player heap use. Only Android
+  /// acts on it today. See [VideoBufferProfile].
   DivineVideoPlayerController({
     this.useTexture = false,
     this.useLegacySurface = false,
+    this.bufferProfile = VideoBufferProfile.full,
   }) {
     _ensureNativeLogHandler();
   }
@@ -110,6 +118,10 @@ class DivineVideoPlayerController {
   /// Whether to use the legacy Android `SurfaceTextureEntry` backend
   /// instead of `SurfaceProducer`. See the constructor docs.
   final bool useLegacySurface;
+
+  /// How aggressively the native player buffers media into memory.
+  /// See the constructor docs and [VideoBufferProfile].
+  final VideoBufferProfile bufferProfile;
 
   static const _globalChannel = MethodChannel('divine_video_player');
 
@@ -360,6 +372,7 @@ class DivineVideoPlayerController {
           'id': _playerId,
           'useTexture': useTexture,
           'useLegacySurface': useLegacySurface,
+          'bufferProfile': bufferProfile.wireValue,
         },
       );
       if (useTexture && result != null) {

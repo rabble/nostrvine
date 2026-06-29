@@ -224,6 +224,36 @@ void main() {
         },
       );
 
+      test(
+        'passes default bufferProfile full through create',
+        () async {
+          await initController();
+
+          expect(globalCalls, hasLength(1));
+          expect(
+            globalCalls.first.arguments,
+            containsPair('bufferProfile', VideoBufferProfile.full.wireValue),
+          );
+        },
+      );
+
+      test(
+        'passes explicit bufferProfile feed through create',
+        () async {
+          controller = DivineVideoPlayerController(
+            bufferProfile: VideoBufferProfile.feed,
+          );
+
+          await initController();
+
+          expect(globalCalls, hasLength(1));
+          expect(
+            globalCalls.first.arguments,
+            containsPair('bufferProfile', VideoBufferProfile.feed.wireValue),
+          );
+        },
+      );
+
       test('throws StateError if called twice', () async {
         await initController();
 

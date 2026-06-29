@@ -1020,6 +1020,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     final controller = DivineVideoPlayerController(
       useTexture: true,
       useLegacySurface: true,
+      // Up to three feed players stay live at once; bound each one's native
+      // read-ahead buffer so short-form playback doesn't OOM on low-RAM
+      // Android devices (#3419).
+      bufferProfile: VideoBufferProfile.feed,
     );
     _controllers[index] = controller;
 
