@@ -17,8 +17,10 @@ extension DraftLocalAudioPaths on DivineVideoDraft {
     final paths = <String>{};
 
     void addIfLocal(AudioEvent event) {
+      // localFilePath is non-null only for a local import with a non-empty
+      // url, so the null check alone covers the import and emptiness guards.
       final path = event.localFilePath;
-      if (event.isLocalImport && path != null && path.isNotEmpty) {
+      if (path != null) {
         paths.add(path);
       }
     }
