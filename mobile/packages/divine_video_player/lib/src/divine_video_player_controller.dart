@@ -567,6 +567,8 @@ class DivineVideoPlayerController {
 
   // -- internals --
 
+  /// Enforces Divine's app-wide invariant that only one live
+  /// [DivineVideoPlayerController] is playing at a time.
   Future<void> _pauseOtherLiveControllers() async {
     final otherControllers = _liveControllers
         .where(
@@ -577,17 +579,19 @@ class DivineVideoPlayerController {
         )
         .toList(growable: false);
 
-    for (final controller in otherControllers) {
-      try {
-        await controller.pause();
-      } on Object catch (error) {
-        Log.warning(
-          'Failed to pause sibling player before starting playback: $error',
-          name: 'DivineVideoPlayerController',
-          category: LogCategory.video,
-        );
-      }
-    }
+    await Future.wait<void>(
+      otherControllers.map((controller) async {
+        try {
+          await controller.pause();
+        } on Object catch (error) {
+          Log.warning(
+            'Failed to pause sibling player before starting playback: $error',
+            name: 'DivineVideoPlayerController',
+            category: LogCategory.video,
+          );
+        }
+      }),
+    );
   }
 
   void _ensureInitialized() {
