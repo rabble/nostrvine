@@ -231,6 +231,62 @@ void main() {
               .having((s) => s.messages.length, 'messages.length', equals(2)),
         ],
       );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'does not re-mark read on an outgoing-queue-only tick, but does on a '
+        'genuinely new message',
+        setUp: () {
+          final messagesController = StreamController<List<DmMessage>>();
+          final outgoingController = StreamController<List<OutgoingDm>>();
+          when(
+            () => mockDmRepository.markConversationAsRead(conversationId),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDmRepository.watchMessages(conversationId),
+          ).thenAnswer((_) => messagesController.stream);
+          when(
+            () => mockDmRepository.watchOutgoing(any()),
+          ).thenAnswer((_) => outgoingController.stream);
+
+          Future<void>.delayed(Duration.zero).then((_) async {
+            // First message arrives: messages change -> marks read.
+            messagesController.add([testMessage]);
+            outgoingController.add(const <OutgoingDm>[]);
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+            // Outgoing-queue status change only (e.g. pending -> delivered):
+            // combineLatest2 re-emits the SAME messages instance, so this tick
+            // must NOT re-mark the conversation read.
+            outgoingController.add([_outgoingDm(id: 'pending-rumor')]);
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+            // A genuinely new incoming message: marks read again.
+            const secondMessage = DmMessage(
+              id: '7777777777777777777777777777777777777777777777777777777777777777',
+              conversationId: conversationId,
+              senderPubkey: recipientPubkey,
+              content: 'Reply message',
+              createdAt: 1700000100,
+              giftWrapId:
+                  '8888888888888888888888888888888888888888888888888888888888888888',
+            );
+            messagesController.add([testMessage, secondMessage]);
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+            await messagesController.close();
+            await outgoingController.close();
+          });
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const ConversationStarted()),
+        wait: const Duration(milliseconds: 80),
+        verify: (bloc) {
+          // The outgoing-only tick was processed (its row reached state)...
+          expect(bloc.state.pendingOutgoing, hasLength(1));
+          // ...but mark-read fired only on open + the two message-list changes,
+          // NOT on the outgoing-only tick in between.
+          verify(
+            () => mockDmRepository.markConversationAsRead(conversationId),
+          ).called(3);
+        },
+      );
     });
 
     group('ConversationMessageSent', () {

@@ -76,10 +76,22 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     await emit.forEach(
       ticks,
       onData: (tick) {
-        // Mark as read whenever new messages arrive while the user is
-        // viewing this conversation. This ensures incoming messages are
-        // immediately marked as read rather than only on initial open.
-        unawaited(_dmRepository.markConversationAsRead(_conversationId));
+        // Mark as read only when this conversation's persisted message list
+        // actually changed — a new (or edited/removed) message — not on ticks
+        // driven solely by the outgoing-queue stream or a bare re-emit.
+        //
+        // Every tick previously fired markConversationAsRead, and the DAO's
+        // conversations-table notification fans out to the badge cubit and the
+        // list bloc even when no row changed, so each outgoing-status
+        // transition (pending → sent → delivered) and re-emit forced a
+        // redundant recompute. A genuinely new incoming message always changes
+        // `messages`, so this never leaves an unread uncleared while the
+        // conversation is open. `combineLatest2` re-emits the same `messages`
+        // instance on an outgoing-only tick, so the `identical` fast-path keeps
+        // that common case O(1).
+        if (!_sameMessages(tick.messages, state.messages)) {
+          unawaited(_dmRepository.markConversationAsRead(_conversationId));
+        }
         return state.copyWith(
           status: ConversationStatus.loaded,
           messages: tick.messages,
@@ -93,6 +105,18 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         return state.copyWith(status: ConversationStatus.error);
       },
     );
+  }
+
+  /// Whether two persisted-message lists carry the same messages in the same
+  /// order. `DmMessage` is `Equatable`, so element comparison is by value.
+  /// The `identical` fast-path keeps the common outgoing-only tick O(1).
+  static bool _sameMessages(List<DmMessage> a, List<DmMessage> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   Future<void> _onMessageDeleted(
