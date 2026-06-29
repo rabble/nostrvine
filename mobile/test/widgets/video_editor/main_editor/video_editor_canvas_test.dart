@@ -341,6 +341,24 @@ void main() {
         throwsA(isA<ArgumentError>()),
       );
     });
+
+    test('rethrows non-composition platform errors', () {
+      expect(
+        VideoEditorCanvas.guardClipLoad(
+          () async => throw PlatformException(
+            code: 'PLAYER_ERROR',
+            message: 'Decoder failed while loading clips.',
+          ),
+        ),
+        throwsA(
+          isA<PlatformException>().having(
+            (error) => error.code,
+            'code',
+            'PLAYER_ERROR',
+          ),
+        ),
+      );
+    });
   });
 
   group('interpolatePlayheadPosition', () {

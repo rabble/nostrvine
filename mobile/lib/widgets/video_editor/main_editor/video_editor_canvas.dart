@@ -127,6 +127,8 @@ class VideoEditorCanvas extends StatelessWidget {
     return (delta.isNegative ? -delta : delta) <= seekSettleTolerance;
   }
 
+  static const _compositionErrorCode = 'COMPOSITION_ERROR';
+
   /// Runs a `setClips` [load], swallowing the native unbuildable-composition
   /// rejection.
   ///
@@ -134,22 +136,24 @@ class VideoEditorCanvas extends StatelessWidget {
   /// video track, or a missing / partially-rendered draft clip file — with a
   /// `COMPOSITION_ERROR` `PlatformException`. That is an expected domain
   /// failure for stale draft clips on reopen, not a crash. Returns `true` when
-  /// the composition built and `false` when the native player rejected it, so
-  /// callers can stay on the thumbnail fallback instead of letting the
-  /// rejection escape as an unhandled async error and surface as a Crashlytics
-  /// non-fatal (#3410).
+  /// the composition built and `false` when the native player rejected it with
+  /// that exact error, so callers can stay on the thumbnail fallback instead of
+  /// letting the rejection escape as an unhandled async error and surface as a
+  /// Crashlytics non-fatal (#3410).
   ///
-  /// Only [PlatformException] is swallowed; any other error (e.g. a
-  /// `StateError` from a broken invariant) is rethrown so it still reaches
-  /// Crashlytics rather than being silently hidden.
+  /// Only `COMPOSITION_ERROR` is swallowed; any other error (e.g. a
+  /// `PLAYER_ERROR`, `INVALID_ARGS`, or a `StateError` from a broken invariant)
+  /// is rethrown so it still reaches Crashlytics rather than being silently
+  /// hidden.
   @visibleForTesting
   static Future<bool> guardClipLoad(Future<void> Function() load) async {
     try {
       await load();
       return true;
     } on PlatformException catch (e, s) {
+      if (e.code != _compositionErrorCode) rethrow;
       Log.error(
-        'setClips failed: $e',
+        'setClips failed with $_compositionErrorCode: $e',
         name: 'VideoEditorCanvas',
         category: LogCategory.video,
         error: e,
@@ -450,9 +454,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     _isSeeking = true;
     final ownerEpoch = _seekEpoch;
     try {
-      await _videoPlayer?.setClips([
+      final loaded = await _setClipsSafely(_videoPlayer, [
         ...buildSeamAwarePlayerClips(clips, _seamService),
       ], startPosition: _timelineToPlayer(timelineStartPosition));
+      if (!loaded) return;
       // Only pin the restored position if no newer swap took over during the
       // await — matching the epoch-guarded [_isSeeking] release below. Without
       // this a stale swap would write its old composite position over the one a
@@ -462,14 +467,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         _pendingSeekTarget = timelineStartPosition;
         _proVideoController.setPlayTime(timelineStartPosition);
       }
-    } catch (e, s) {
-      Log.error(
-        'setClips failed on composition swap: $e',
-        name: 'VideoEditorCanvas',
-        category: LogCategory.video,
-        error: e,
-        stackTrace: s,
-      );
     } finally {
       if (_seekEpoch == ownerEpoch) _isSeeking = false;
     }
@@ -1630,22 +1627,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
             final ownerEpoch = _seekEpoch;
 
             try {
-              await _videoPlayer?.setClips([
+              final loaded = await _setClipsSafely(_videoPlayer, [
                 ...buildSeamAwarePlayerClips(state.clips, _seamService),
               ], startPosition: _timelineToPlayer(currentPosition));
+              if (!loaded) return;
 
               if (!mounted) return;
               _lastReportedPosition = currentPosition;
               _pendingSeekTarget = currentPosition;
               _proVideoController.setPlayTime(currentPosition);
-            } catch (e, s) {
-              Log.error(
-                'setClips failed after reverse completion: $e',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-                error: e,
-                stackTrace: s,
-              );
             } finally {
               if (_seekEpoch == ownerEpoch) {
                 _isSeeking = false;
@@ -1692,9 +1682,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
             final ownerEpoch = _seekEpoch;
 
             try {
-              await _videoPlayer?.setClips([
+              final loaded = await _setClipsSafely(_videoPlayer, [
                 ...buildSeamAwarePlayerClips(state.clips, _seamService),
               ], startPosition: _timelineToPlayer(startPosition));
+              if (!loaded) return;
               if (mounted) {
                 VideoEditorCanvas.syncPositionAfterTrimRelease(
                   mainBloc: bloc,
@@ -1703,14 +1694,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
                   trimEndAlreadyDispatched: trimEndPosition != null,
                 );
               }
-            } catch (e, s) {
-              Log.error(
-                'setClips failed on trim release: $e',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-                error: e,
-                stackTrace: s,
-              );
             } finally {
               _lastReportedPosition = startPosition;
               _pendingSeekTarget = startPosition;
