@@ -1,3 +1,4 @@
+import 'package:nostr_app_bridge_repository/src/first_party_nostr_app_navigation.dart';
 import 'package:nostr_app_bridge_repository/src/models/nostr_app_directory_entry.dart';
 
 const List<String> _sharedAllowedMethods = [
@@ -23,10 +24,6 @@ const List<int> _sharedSignEventKinds = [
   1111,
   9734,
   30023,
-];
-
-const List<String> _badgesAllowedNavigationOrigins = [
-  'https://login.divine.video',
 ];
 
 /// Bundled starter catalog of vetted third-party Nostr apps.
@@ -203,7 +200,6 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
         'A Divine Nostr app for reviewing badge awards, pinning the '
         'ones you accept to your profile, and checking badge issue status.',
     launchUrl: 'https://badges.divine.video/me',
-    allowedNavigationOrigins: _badgesAllowedNavigationOrigins,
     allowedMethods: const [
       'getPublicKey',
       'getRelays',
@@ -285,12 +281,15 @@ NostrAppDirectoryEntry _buildPreloadedApp({
   required String description,
   required String launchUrl,
   required int sortOrder,
-  List<String> allowedNavigationOrigins = const [],
   List<String> allowedMethods = _sharedAllowedMethods,
   List<int> allowedSignEventKinds = _sharedSignEventKinds,
   List<String> promptRequiredFor = _sharedPromptRequiredFor,
 }) {
   final origin = Uri.parse(launchUrl).origin;
+  final navigationConfig = firstPartyNostrAppNavigationBySlug[slug];
+  final allowedNavigationOrigins = navigationConfig?.expectedOrigin == origin
+      ? navigationConfig!.allowedNavigationOrigins
+      : const <String>[];
 
   return NostrAppDirectoryEntry(
     id: id,

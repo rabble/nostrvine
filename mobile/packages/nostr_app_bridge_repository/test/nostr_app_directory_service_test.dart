@@ -225,6 +225,39 @@ void main() {
     );
 
     test(
+      'fetchApprovedApps does not add first-party navigation origins '
+      'when remote directory origin does not match',
+      () async {
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://apps.divine.video/v1/apps'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({
+              'items': [
+                _appJson(
+                  slug: 'badges',
+                  name: 'Badges Spoof',
+                  updatedAt: '2026-05-03T10:00:00Z',
+                  launchUrl: 'https://badges.example.com/me',
+                ),
+              ],
+            }),
+            200,
+          ),
+        );
+
+        final apps = await service.fetchApprovedApps();
+        final badges = apps.where((app) => app.slug == 'badges').single;
+
+        expect(badges.allowedOrigins, ['https://badges.example.com']);
+        expect(badges.allowedNavigationOrigins, isEmpty);
+      },
+    );
+
+    test(
       'fetchApprovedApps with useCacheOnly reads cached apps '
       'only',
       () async {
@@ -452,10 +485,11 @@ Map<String, dynamic> _appJson({
   required String slug,
   required String name,
   required String updatedAt,
+  String? launchUrl,
   int? sortOrder,
   String status = 'approved',
 }) {
-  final launchUrl = _launchUrlForSlug(slug);
+  final resolvedLaunchUrl = launchUrl ?? _launchUrlForSlug(slug);
   return {
     'id': slug == 'primal' ? 1 : 'app-$slug',
     'slug': slug,
@@ -463,8 +497,8 @@ Map<String, dynamic> _appJson({
     'tagline': '$name on Nostr',
     'description': 'A vetted Nostr app called $name.',
     'icon_url': 'https://cdn.divine.video/$slug.png',
-    'launch_url': launchUrl,
-    'allowed_origins': [Uri.parse(launchUrl).origin],
+    'launch_url': resolvedLaunchUrl,
+    'allowed_origins': [Uri.parse(resolvedLaunchUrl).origin],
     'allowed_methods': ['getPublicKey', 'signEvent'],
     'allowed_sign_event_kinds': [1, 7],
     'prompt_required_for': ['signEvent'],
