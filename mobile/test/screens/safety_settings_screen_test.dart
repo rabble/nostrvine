@@ -121,7 +121,7 @@ void main() {
       divineHostFilterService = DivineHostFilterService(prefs);
 
       when(
-        () => mockModerationLabelService.initialize(),
+        () => mockModerationLabelService.ensureLoaded(),
       ).thenAnswer((_) async {});
       when(
         () => mockModerationLabelService.divineModerationPubkeyHex,
