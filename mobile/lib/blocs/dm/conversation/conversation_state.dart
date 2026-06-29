@@ -145,6 +145,12 @@ class ConversationState extends Equatable {
   /// (the repository transactionally couples queue-row deletion with
   /// persisted-row insertion).
   DmDeliveryStatus statusFor(String id) {
+    // Hot path: with no in-flight queue rows every bubble is delivered, so
+    // short-circuit before building `_outgoingByRumorId`. Mirrors the
+    // `displayedMessages` guard and avoids allocating an empty lookup map per
+    // sent bubble on every emit (statusFor is called per bubble via a
+    // BlocSelector).
+    if (pendingOutgoing.isEmpty) return DmDeliveryStatus.delivered;
     final q = _outgoingByRumorId[id];
     if (q == null) return DmDeliveryStatus.delivered;
     if (q.recipientWrapStatus == OutgoingWrapStatus.failed) {

@@ -1563,6 +1563,19 @@ void main() {
         );
       });
 
+      test(
+        'returns delivered for an id absent from a non-empty queue '
+        '(past the empty-queue short-circuit)',
+        () {
+          final row = _outgoingDm(id: 'rumor-present');
+          final state = ConversationState(pendingOutgoing: [row]);
+          expect(
+            state.statusFor('rumor-absent'),
+            equals(DmDeliveryStatus.delivered),
+          );
+        },
+      );
+
       test('returns pending while recipient wrap is pending', () {
         final row = _outgoingDm(id: 'rumor-pending');
         final state = ConversationState(pendingOutgoing: [row]);
