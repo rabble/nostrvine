@@ -42,7 +42,7 @@ class _MonetizationLinksSettingsScreenState
         provider: TextEditingController(),
     };
     _enabled = {
-      for (final provider in MonetizationLinkProvider.values) provider: true,
+      for (final provider in MonetizationLinkProvider.values) provider: false,
     };
   }
 
@@ -93,7 +93,7 @@ class _MonetizationLinksSettingsScreenState
                 _ProviderEditor(
                   provider: provider,
                   controller: _controllers[provider]!,
-                  enabled: _enabled[provider] ?? true,
+                  enabled: _enabled[provider] ?? false,
                   errorText: _errors[provider],
                   onEnabledChanged: (value) =>
                       setState(() => _enabled[provider] = value),
@@ -112,7 +112,7 @@ class _MonetizationLinksSettingsScreenState
                 _ProviderEditor(
                   provider: provider,
                   controller: _controllers[provider]!,
-                  enabled: _enabled[provider] ?? true,
+                  enabled: _enabled[provider] ?? false,
                   errorText: _errors[provider],
                   onEnabledChanged: (value) =>
                       setState(() => _enabled[provider] = value),
@@ -175,7 +175,7 @@ class _MonetizationLinksSettingsScreenState
     for (final provider in MonetizationLinkProvider.values) {
       final link = byProvider[provider];
       _controllers[provider]!.text = link?.url ?? '';
-      _enabled[provider] = link?.enabled ?? true;
+      _enabled[provider] = link?.enabled ?? false;
     }
     _errors.clear();
   }
@@ -187,7 +187,7 @@ class _MonetizationLinksSettingsScreenState
     for (final provider in MonetizationLinkProvider.values) {
       final input = _controllers[provider]!.text;
       if (input.trim().isEmpty) continue;
-      if (!(_enabled[provider] ?? true)) continue;
+      if (!(_enabled[provider] ?? false)) continue;
       final result = normalizeMonetizationLinkInput(
         provider: provider,
         input: input,

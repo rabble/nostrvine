@@ -128,6 +128,8 @@ void main() {
     profileStream.add(null);
     await tester.pump();
 
+    await tester.tap(find.byType(Switch).first);
+    await tester.pump();
     await tester.enterText(find.byType(TextFormField).first, r'$creator');
     await tester.ensureVisible(find.text(l10n.monetizationSettingsSave));
     await tester.tap(find.text(l10n.monetizationSettingsSave));
@@ -139,5 +141,61 @@ void main() {
     expect(capturedLinks!.single.provider, MonetizationLinkProvider.cashApp);
     expect(capturedLinks!.single.url, r'https://cash.app/$creator');
     expect(find.text(l10n.monetizationSettingsSaved), findsOneWidget);
+  });
+
+  testWidgets('starts new monetization link toggles off', (tester) async {
+    final authService = _MockAuthService();
+    final repository = _MockProfileRepository();
+    final profileStream = StreamController<UserProfile?>();
+
+    when(() => authService.authState).thenReturn(AuthState.authenticated);
+    when(
+      () => authService.authStateStream,
+    ).thenAnswer((_) => Stream.value(AuthState.authenticated));
+    when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
+    when(() => authService.hasExistingProfile).thenReturn(false);
+
+    when(
+      () => repository.getCachedProfile(pubkey: pubkey),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.fetchFreshProfile(pubkey: pubkey),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.watchProfile(pubkey: pubkey),
+    ).thenAnswer((_) => profileStream.stream);
+
+    addTearDown(profileStream.close);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authServiceProvider.overrideWithValue(authService),
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          profileRepositoryProvider.overrideWithValue(repository),
+          analyticsEventSinkProvider.overrideWithValue(
+            const NoOpAnalyticsEventSink(),
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: const MonetizationLinksSettingsScreen(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    profileStream.add(null);
+    await tester.pump();
+
+    final switches = tester.widgetList<Switch>(find.byType(Switch));
+    expect(switches, isNotEmpty);
+    expect(switches.every((toggle) => !toggle.value), isTrue);
+    expect(
+      tester.widget<TextFormField>(find.byType(TextFormField).first).enabled,
+      isFalse,
+    );
   });
 }

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 
@@ -52,7 +53,9 @@ void main() {
     );
   });
 
-  Widget buildWidget() {
+  Widget buildWidget({
+    List<MonetizationLink> monetizationLinks = const [],
+  }) {
     return testMaterialApp(
       home: Scaffold(
         body: ProfileActionButtons(
@@ -61,6 +64,7 @@ void main() {
           displayName: 'Target User',
           onMessageUser: () {},
           onShareProfile: (_) {},
+          monetizationLinks: monetizationLinks,
         ),
       ),
       additionalOverrides: [
@@ -72,6 +76,27 @@ void main() {
       mockNostrService: nostrClient,
     );
   }
+
+  testWidgets('shows a labeled support action when monetization links exist', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildWidget(
+        monetizationLinks: [
+          const MonetizationLink(
+            provider: MonetizationLinkProvider.cashApp,
+            category: MonetizationLinkCategory.tip,
+            url: r'https://cash.app/$creator',
+            enabled: true,
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const Key('profile-support-button')), findsOneWidget);
+    expect(find.text('Support this creator'), findsOneWidget);
+  });
 
   testWidgets(
     'hides follow and message actions when target cannot be targeted',

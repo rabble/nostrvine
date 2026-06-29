@@ -263,18 +263,22 @@ Widget? _supportButton(
   AnalyticsEventSink analytics,
 ) {
   if (links.isEmpty) return null;
-  return DivineIconButton(
-    key: const Key('profile-support-button'),
-    icon: .heart,
-    type: .secondary,
-    size: .small,
-    onPressed: () {
-      trackMonetizationAffordanceTapped(analytics: analytics, links: links);
-      showProfileSupportSheet(
-        context: context,
-        links: links,
-        analytics: analytics,
-      );
-    },
+  return Flexible(
+    child: DivineButton(
+      key: const Key('profile-support-button'),
+      leadingIcon: .heart,
+      type: .secondary,
+      size: .small,
+      expanded: true,
+      label: context.l10n.profileSupportSheetTitle,
+      onPressed: () {
+        trackMonetizationAffordanceTapped(analytics: analytics, links: links);
+        showProfileSupportSheet(
+          context: context,
+          links: links,
+          analytics: analytics,
+        );
+      },
+    ),
   );
 }
