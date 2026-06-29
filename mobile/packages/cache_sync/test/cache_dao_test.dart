@@ -232,6 +232,48 @@ void main() {
         expect(await unlimitedDao.read('x'), isNotNull);
         expect(await unlimitedDao.read('y'), isNotNull);
       });
+
+      test('overwriting with a smaller payload frees budget (counter '
+          'tracks the replaced length, no spurious eviction)', () async {
+        await dao.write(key: 'a', payload: 'aaaaaaaa'); // 8
+        await dao.write(key: 'b', payload: 'bb'); // 2 — total 10
+        // Shrink 'a' to 1 char: a correct counter drops the total to 3, so the
+        // next write fits. A counter that ignored the replaced 8 chars would
+        // think the store is full and evict.
+        await dao.write(key: 'a', payload: 'a'); // total 3
+        await dao.write(key: 'c', payload: 'ccccccc'); // 7 — total 10
+
+        expect(await dao.read('a'), equals('a'));
+        expect(await dao.read('b'), equals('bb'));
+        expect(await dao.read('c'), equals('ccccccc'));
+      });
+
+      test('delete frees budget so a later write does not evict', () async {
+        await dao.write(key: 'a', payload: 'aaaaa'); // 5
+        await dao.write(key: 'b', payload: 'bbbbb'); // 5 — total 10
+        await dao.delete('a'); // total 5
+        await dao.write(key: 'c', payload: 'ccccc'); // 5 — total 10, no evict
+
+        expect(await dao.read('a'), isNull);
+        expect(await dao.read('b'), equals('bbbbb'));
+        expect(await dao.read('c'), equals('ccccc'));
+      });
+
+      test(
+        'deletePrefix keeps the budget accurate for a later write',
+        () async {
+          await dao.write(key: 'user1:x', payload: 'xxxxx'); // 5
+          await dao.write(key: 'user2:y', payload: 'yyyyy'); // 5 — total 10
+          await dao.deletePrefix('user1:'); // removes user1:x → real total 5
+          // The counter was invalidated and is recomputed from the sum, so this
+          // write fits. A stale counter (still 10) would evict user2:y.
+          await dao.write(key: 'user2:z', payload: 'zzzzz'); // 5 — total 10
+
+          expect(await dao.read('user1:x'), isNull);
+          expect(await dao.read('user2:y'), equals('yyyyy'));
+          expect(await dao.read('user2:z'), equals('zzzzz'));
+        },
+      );
     });
   });
 }

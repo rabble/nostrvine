@@ -8,9 +8,17 @@ import 'package:drift/drift.dart';
 /// TTL eviction is applied **on read**: an expired row is deleted and `null`
 /// is returned, so stale data never reaches the caller.
 ///
-/// When [maxSizeBytes] is set, LRU eviction runs **after every write**:
-/// the oldest entries (by `cachedAt`) are deleted until the total payload
-/// size is within the budget.
+/// When [maxSizeBytes] is set, LRU eviction runs **after every write**: the
+/// oldest entries (by `cachedAt`) are deleted until the total payload size is
+/// within the budget.
+///
+/// To keep that budget check cheap, the total payload size is held in a
+/// running counter ([_totalBytes]) instead of a full-table
+/// `SUM(LENGTH(payload))` scan on every write. The counter is seeded lazily
+/// from [totalPayloadBytes], maintained on write/delete/evict, invalidated on
+/// the bulk [deletePrefix] path, and periodically reconciled against the real
+/// sum to bound drift from a concurrent same-key write. It is maintained only
+/// when [maxSizeBytes] is set — an unbounded cache pays nothing.
 class CacheDaoImpl implements CacheDao {
   CacheDaoImpl(this._db, {this.maxSizeBytes});
 
@@ -18,6 +26,20 @@ class CacheDaoImpl implements CacheDao {
 
   /// Maximum total payload size in characters. `null` = unlimited.
   final int? maxSizeBytes;
+
+  /// Running total payload size in characters, or `null` when not yet computed
+  /// / invalidated (recomputed lazily via [_ensureTotalBytes]).
+  int? _totalBytes;
+
+  /// Writes since the running counter was last reconciled against the real
+  /// `SUM`. Drift to zero forces a fresh [totalPayloadBytes] read.
+  int _writesSinceReconcile = 0;
+
+  /// Recompute the running counter from the real sum after this many writes, so
+  /// any drift from an interleaved same-key write self-corrects.
+  static const int _reconcileEveryWrites = 256;
+
+  Expression<int> get _payloadLength => _db.cacheEntries.payload.length;
 
   @override
   Future<String?> read(String key) async {
@@ -43,6 +65,17 @@ class CacheDaoImpl implements CacheDao {
     Duration? ttl,
   }) async {
     final now = DateTime.now().toUtc();
+    final limit = maxSizeBytes;
+
+    // Seed the running counter from the PRE-write total and capture the
+    // replaced payload's length, both before the upsert mutates the table, so
+    // the counter stays exact across an overwrite (insertOnConflictUpdate
+    // replaces an existing row). Only needed when a budget is enforced.
+    final preWriteTotal = limit == null ? 0 : await _ensureTotalBytes();
+    final replacedLength = limit == null
+        ? 0
+        : await _existingPayloadLength(key);
+
     await _db
         .into(_db.cacheEntries)
         .insertOnConflictUpdate(
@@ -54,18 +87,33 @@ class CacheDaoImpl implements CacheDao {
           ),
         );
 
-    final limit = maxSizeBytes;
-    if (limit != null) {
-      final total = await totalPayloadBytes();
-      if (total > limit) await evictOldest(total - limit);
+    if (limit == null) return;
+
+    final newTotal = preWriteTotal - replacedLength + payload.length;
+    _totalBytes = newTotal;
+    if (newTotal > limit) {
+      await evictOldest(newTotal - limit);
+    }
+
+    if (++_writesSinceReconcile >= _reconcileEveryWrites) {
+      _writesSinceReconcile = 0;
+      _totalBytes = null;
     }
   }
 
   @override
   Future<void> delete(String key) async {
+    // Keep the running counter exact: subtract the deleted row's length. Skip
+    // the probe when no budget is enforced or the counter isn't initialised
+    // (the next write recomputes it).
+    final removedLength = (maxSizeBytes != null && _totalBytes != null)
+        ? await _existingPayloadLength(key)
+        : 0;
     await (_db.delete(
       _db.cacheEntries,
     )..where((t) => t.cacheKey.equals(key))).go();
+    final total = _totalBytes;
+    if (total != null) _totalBytes = total - removedLength;
   }
 
   @override
@@ -82,6 +130,9 @@ class CacheDaoImpl implements CacheDao {
       r"DELETE FROM cache_entries WHERE cache_key LIKE ?1 || '%' ESCAPE '\'",
       [escaped],
     );
+    // A bulk delete can't cheaply report the freed byte count, so invalidate
+    // the running counter and let the next write recompute it from the sum.
+    _totalBytes = null;
   }
 
   @override
@@ -100,18 +151,47 @@ class CacheDaoImpl implements CacheDao {
   Future<void> evictOldest(int bytesToFree) async {
     if (bytesToFree <= 0) return;
     await _db.transaction(() async {
-      var freed = 0;
-      final rows = await (_db.select(
-        _db.cacheEntries,
-      )..orderBy([(t) => OrderingTerm.asc(t.cachedAt)])).get();
+      // Select only the key and payload LENGTH (oldest first) instead of
+      // materialising every full payload into memory.
+      final query = _db.selectOnly(_db.cacheEntries)
+        ..addColumns([_db.cacheEntries.cacheKey, _payloadLength])
+        ..orderBy([OrderingTerm.asc(_db.cacheEntries.cachedAt)]);
+      final rows = await query.get();
 
+      var freed = 0;
+      final keysToDelete = <String>[];
       for (final row in rows) {
         if (freed >= bytesToFree) break;
-        freed += row.payload.length;
-        await (_db.delete(
-          _db.cacheEntries,
-        )..where((t) => t.cacheKey.equals(row.cacheKey))).go();
+        final key = row.read(_db.cacheEntries.cacheKey);
+        if (key == null) continue;
+        freed += row.read(_payloadLength) ?? 0;
+        keysToDelete.add(key);
       }
+      if (keysToDelete.isEmpty) return;
+
+      // One bounded DELETE instead of a per-row delete loop.
+      await (_db.delete(
+        _db.cacheEntries,
+      )..where((t) => t.cacheKey.isIn(keysToDelete))).go();
+
+      final total = _totalBytes;
+      if (total != null) _totalBytes = total - freed;
     });
+  }
+
+  /// Returns the running counter, computing it from the real sum on first use
+  /// (or after invalidation).
+  Future<int> _ensureTotalBytes() async {
+    return _totalBytes ??= await totalPayloadBytes();
+  }
+
+  /// Length of the payload currently stored under [key], or 0 when absent.
+  /// Indexed point lookup on the `cache_key` primary key.
+  Future<int> _existingPayloadLength(String key) async {
+    final query = _db.selectOnly(_db.cacheEntries)
+      ..addColumns([_payloadLength])
+      ..where(_db.cacheEntries.cacheKey.equals(key));
+    final row = await query.getSingleOrNull();
+    return row?.read(_payloadLength) ?? 0;
   }
 }
