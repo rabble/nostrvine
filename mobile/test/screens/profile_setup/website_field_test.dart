@@ -1,0 +1,45 @@
+// ABOUTME: Widget tests for WebsiteField in the profile-setup form.
+// ABOUTME: Covers label rendering and controller binding.
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/screens/profile_setup/widgets/website_field.dart';
+
+void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
+  group(WebsiteField, () {
+    late TextEditingController controller;
+
+    setUp(() => controller = TextEditingController());
+    tearDown(() => controller.dispose());
+
+    Future<void> pump(WidgetTester tester) {
+      return tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: Scaffold(body: WebsiteField(controller: controller)),
+        ),
+      );
+    }
+
+    testWidgets('renders the localized label and hint', (tester) async {
+      await pump(tester);
+      expect(find.text(l10n.profileSetupWebsiteLabel), findsOneWidget);
+      expect(find.text(l10n.profileSetupWebsiteHint), findsOneWidget);
+    });
+
+    testWidgets('typing updates the bound controller', (tester) async {
+      await pump(tester);
+      await tester.enterText(
+        find.byType(TextFormField),
+        'https://divine.video',
+      );
+      expect(controller.text, 'https://divine.video');
+    });
+  });
+}

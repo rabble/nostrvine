@@ -17,7 +17,6 @@ lib/screens/auth/nostr_connect_screen.dart	817
 lib/screens/creator_analytics_screen.dart	1406
 lib/screens/feed/pooled_fullscreen_video_feed_screen.dart	1055
 lib/screens/library_screen.dart	884
-lib/screens/profile_setup_screen.dart	1897
 lib/screens/relay_diagnostic_screen.dart	1228
 lib/screens/relay_settings_screen.dart	971
 lib/screens/sound_detail_screen.dart	1108
