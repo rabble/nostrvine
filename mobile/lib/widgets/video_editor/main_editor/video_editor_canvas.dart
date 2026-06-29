@@ -126,6 +126,32 @@ class VideoEditorCanvas extends StatelessWidget {
     return (delta.isNegative ? -delta : delta) <= seekSettleTolerance;
   }
 
+  /// Runs a `setClips` [load], swallowing an unbuildable-composition failure.
+  ///
+  /// iOS rejects an unbuildable composition — zero render size, no playable
+  /// video track, or a missing / partially-rendered draft clip file — with a
+  /// `COMPOSITION_ERROR` `PlatformException`. That is an expected domain
+  /// failure for stale draft clips on reopen, not a crash. Returns `true` when
+  /// the composition built and `false` when it was rejected, so callers can
+  /// stay on the thumbnail fallback instead of letting the rejection escape as
+  /// an unhandled async error and surface as a Crashlytics non-fatal (#3410).
+  @visibleForTesting
+  static Future<bool> guardClipLoad(Future<void> Function() load) async {
+    try {
+      await load();
+      return true;
+    } catch (e, s) {
+      Log.error(
+        'setClips failed: $e',
+        name: 'VideoEditorCanvas',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: s,
+      );
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSubEditorOpen = context.select(
@@ -763,9 +789,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     // Pin so a reset report from loading the (seam-aware) composition doesn't
     // snap the playhead back while paused.
     _pendingSeekTarget = currentPosition;
-    _videoPlayer?.setClips([
-      ...buildSeamAwarePlayerClips(clips, _seamService),
-    ], startPosition: _timelineToPlayer(currentPosition));
+    unawaited(
+      _setClipsSafely(_videoPlayer, [
+        ...buildSeamAwarePlayerClips(clips, _seamService),
+      ], startPosition: _timelineToPlayer(currentPosition)),
+    );
     _ensureSeamsRendered(clips);
   }
 
@@ -826,6 +854,23 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         );
   }
 
+  /// Loads [clips] into [player], returning whether the composition built.
+  ///
+  /// Thin instance wrapper over [VideoEditorCanvas.guardClipLoad] so callers
+  /// don't repeat the null-player guard; see that method for the failure
+  /// contract.
+  Future<bool> _setClipsSafely(
+    DivineVideoPlayerController? player,
+    List<VideoClip> clips, {
+    Duration? startPosition,
+  }) {
+    return VideoEditorCanvas.guardClipLoad(
+      () =>
+          player?.setClips(clips, startPosition: startPosition) ??
+          Future<void>.value(),
+    );
+  }
+
   /// Initializes (or reinitializes) the native video player with [clipPaths].
   Future<void> _initializePlayer(
     List<String> clipPaths, {
@@ -853,7 +898,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
 
     await player.initialize();
     if (!mounted || !identical(_videoPlayer, player)) return;
-    await player.setClips(
+    final loaded = await _setClipsSafely(
+      player,
       [
         ...buildSeamAwarePlayerClips(clips, _seamService),
       ],
@@ -862,6 +908,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
           : null,
     );
     if (!mounted || !identical(_videoPlayer, player)) return;
+    // Composition failed to build (stale/corrupt draft clip): leave the canvas
+    // on its thumbnail fallback rather than marking a broken player ready.
+    if (!loaded) return;
 
     if (clips.isEmpty) return;
     _ensureSeamsRendered(clips);
@@ -1292,9 +1341,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         // Pin so a reset report from loading the seam-aware composition
         // doesn't snap the playhead back while paused.
         _pendingSeekTarget = currentPosition;
-        _videoPlayer?.setClips([
-          ...buildSeamAwarePlayerClips(clips, _seamService),
-        ], startPosition: _timelineToPlayer(currentPosition));
+        unawaited(
+          _setClipsSafely(_videoPlayer, [
+            ...buildSeamAwarePlayerClips(clips, _seamService),
+          ], startPosition: _timelineToPlayer(currentPosition)),
+        );
         _ensureSeamsRendered(clips);
       },
     );
@@ -1317,9 +1368,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         // Pin so a reset report from loading the seam-aware composition
         // doesn't snap the playhead back while paused.
         _pendingSeekTarget = currentPosition;
-        _videoPlayer?.setClips([
-          ...buildSeamAwarePlayerClips(clips, _seamService),
-        ], startPosition: _timelineToPlayer(currentPosition));
+        unawaited(
+          _setClipsSafely(_videoPlayer, [
+            ...buildSeamAwarePlayerClips(clips, _seamService),
+          ], startPosition: _timelineToPlayer(currentPosition)),
+        );
         _ensureSeamsRendered(clips);
       },
     );
@@ -1426,14 +1479,16 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
             _seekEpoch++;
             _pendingSeekPosition = null;
             _isSeeking = false;
-            _videoPlayer?.setClips([
-              VideoClip(
-                uri: path,
-                end: clip.duration,
-                volume: clip.volume,
-                playbackSpeed: clip.playbackSpeed ?? 1.0,
-              ),
-            ]);
+            unawaited(
+              _setClipsSafely(_videoPlayer, [
+                VideoClip(
+                  uri: path,
+                  end: clip.duration,
+                  volume: clip.volume,
+                  playbackSpeed: clip.playbackSpeed ?? 1.0,
+                ),
+              ]),
+            );
           },
         ),
         BlocListener<ClipEditorBloc, ClipEditorState>(
