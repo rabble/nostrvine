@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:db_client/db_client.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/draft_local_audio_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -520,6 +521,61 @@ class DraftStorageService {
       draftsDao: _draftsDao,
       clipsDao: _clipsDao,
     );
+
+    // Delete draft-local audio (imported audio + voice-over recordings) held
+    // in the editor metadata, keeping any file a surviving draft still
+    // references (e.g. a draft shared with its publish copy).
+    final audioPaths = draft.localAudioFilePaths;
+    if (audioPaths.isNotEmpty) {
+      await FileCleanupService.deleteDraftAudioFiles(
+        audioPaths,
+        draftsDao: _draftsDao,
+        clipsDao: _clipsDao,
+        referencedAudioFilenames: await _referencedLocalAudioFilenames(
+          excludeDraftId: id,
+        ),
+      );
+    }
+  }
+
+  /// Basenames of draft-local audio files referenced by any draft other than
+  /// [excludeDraftId], across all accounts.
+  ///
+  /// The same local audio file can be shared by a draft and its publish copy —
+  /// `copyWith` carries [DivineVideoDraft.editorStateHistory] and
+  /// [DivineVideoDraft.selectedSound] — so this guard keeps shared audio until
+  /// the last referencing draft is deleted. Scans the draft `data` blobs
+  /// directly (audio paths live there, not in an indexed column) and never
+  /// throws: a corrupt blob is logged and skipped.
+  Future<Set<String>> _referencedLocalAudioFilenames({
+    String? excludeDraftId,
+  }) async {
+    final rows = await _draftsDao.getAllDrafts();
+    final documentsPath = await getDocumentsPath();
+    final filenames = <String>{};
+
+    for (final row in rows) {
+      if (row.id == excludeDraftId) continue;
+      final DivineVideoDraft draft;
+      try {
+        draft = DivineVideoDraft.fromJson(
+          json.decode(row.data) as Map<String, dynamic>,
+          documentsPath,
+        );
+      } catch (e) {
+        Log.error(
+          '🧹 Skipping draft ${row.id} during audio reference scan: $e',
+          name: 'DraftStorageService',
+          category: LogCategory.video,
+        );
+        continue;
+      }
+      for (final path in draft.localAudioFilePaths) {
+        filenames.add(p.basename(path));
+      }
+    }
+
+    return filenames;
   }
 
   /// Clear all drafts from storage and delete associated files
@@ -538,6 +594,9 @@ class DraftStorageService {
     final allCustomThumbnailPaths = drafts
         .map((draft) => draft.customThumbnailPath)
         .toList();
+    final allAudioPaths = drafts
+        .expand((draft) => draft.localAudioFilePaths)
+        .toSet();
 
     // Clear DB first (clips cascade via FK), then delete files
     await _draftsDao.clearAll();
@@ -555,6 +614,12 @@ class DraftStorageService {
     );
     await FileCleanupService.deleteFilesIfUnreferenced(
       allCustomThumbnailPaths,
+      draftsDao: _draftsDao,
+      clipsDao: _clipsDao,
+    );
+    // No drafts survive a clear-all, so nothing can still reference the audio.
+    await FileCleanupService.deleteDraftAudioFiles(
+      allAudioPaths,
       draftsDao: _draftsDao,
       clipsDao: _clipsDao,
     );

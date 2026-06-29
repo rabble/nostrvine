@@ -7,7 +7,8 @@ import 'dart:io';
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' show AspectRatio;
+import 'package:models/models.dart' show AspectRatio, AudioEvent;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -1223,6 +1224,157 @@ void main() {
           cover.existsSync(),
           isFalse,
           reason: 'clearing all drafts should not leak custom cover files',
+        );
+      });
+    });
+
+    group('draft-local audio file hygiene', () {
+      late Directory docsDir;
+
+      setUp(() {
+        docsDir = Directory(documentsPath)..createSync(recursive: true);
+      });
+
+      tearDown(() {
+        if (docsDir.existsSync()) docsDir.deleteSync(recursive: true);
+      });
+
+      File writeAudio(String relativePath) {
+        final file = File(p.join(documentsPath, relativePath));
+        file.parent.createSync(recursive: true);
+        file.writeAsBytesSync(const [0, 1, 2, 3]);
+        return file;
+      }
+
+      Map<String, dynamic> historyWithLocalAudio(String audioPath, String id) {
+        final track = AudioEvent.fromLocalImport(
+          id: id,
+          filePath: audioPath,
+          createdAt: 1700000000,
+          title: 'Local audio',
+          mimeType: 'audio/mp4',
+        );
+        return {
+          'position': 0,
+          'history': [
+            {
+              'meta': {
+                VideoEditorConstants.audioStateHistoryKey: [track.toJson()],
+              },
+            },
+          ],
+        };
+      }
+
+      DivineVideoDraft draftWithAudio({
+        required String id,
+        required String audioPath,
+        required String audioId,
+      }) => DivineVideoDraft.create(
+        id: id,
+        clips: [
+          DivineVideoClip(
+            id: 'clip_$id',
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: const Duration(seconds: 6),
+            recordedAt: DateTime(2025),
+            targetAspectRatio: AspectRatio.square,
+            originalAspectRatio: 9 / 16,
+          ),
+        ],
+        title: 'Audio draft',
+        description: '',
+        hashtags: const {},
+        selectedApproach: 'video',
+        editorStateHistory: historyWithLocalAudio(audioPath, audioId),
+      );
+
+      test('deletes imported audio when the draft is deleted', () async {
+        final audio = writeAudio(
+          p.join('draft_audio_imports', 'draft_audio', 'imported.m4a'),
+        );
+        final draft = draftWithAudio(
+          id: 'draft_audio',
+          audioPath: audio.path,
+          audioId: 'local_import_1',
+        );
+        await service.saveDraft(draft);
+
+        await service.deleteDraft(draft.id);
+
+        expect(
+          audio.existsSync(),
+          isFalse,
+          reason: 'deleting a draft must remove its imported audio file',
+        );
+      });
+
+      test('deletes a committed voice-over recording when the draft is '
+          'deleted', () async {
+        final audio = writeAudio(
+          p.join('voice_over_recordings', 'voice_over_1.m4a'),
+        );
+        final draft = draftWithAudio(
+          id: 'draft_voice',
+          audioPath: audio.path,
+          audioId: 'local_import_voice_over_1',
+        );
+        await service.saveDraft(draft);
+
+        await service.deleteDraft(draft.id);
+
+        expect(
+          audio.existsSync(),
+          isFalse,
+          reason: 'deleting a draft must remove its voice-over recording',
+        );
+      });
+
+      test('keeps audio referenced by another draft (publish copy) when one '
+          'draft is deleted', () async {
+        final audio = writeAudio(
+          p.join('voice_over_recordings', 'shared_voice_over.m4a'),
+        );
+        final draft = draftWithAudio(
+          id: 'draft_source',
+          audioPath: audio.path,
+          audioId: 'local_import_voice_over_2',
+        );
+        // The publish flow copies editorStateHistory onto a new draft id, so
+        // both drafts reference the same local audio file.
+        final publishCopy = draft.copyWith(id: 'draft_publish_copy');
+
+        await service.saveDraft(draft);
+        await service.saveDraft(publishCopy);
+
+        await service.deleteDraft(draft.id);
+
+        expect(
+          audio.existsSync(),
+          isTrue,
+          reason:
+              'audio shared with a surviving draft must not be deleted until '
+              'the last referencing draft is gone',
+        );
+      });
+
+      test('deletes audio files when all drafts are cleared', () async {
+        final audio = writeAudio(
+          p.join('draft_audio_imports', 'draft_clear', 'imported.m4a'),
+        );
+        final draft = draftWithAudio(
+          id: 'draft_clear',
+          audioPath: audio.path,
+          audioId: 'local_import_3',
+        );
+        await service.saveDraft(draft);
+
+        await service.clearAllDrafts();
+
+        expect(
+          audio.existsSync(),
+          isFalse,
+          reason: 'clearing all drafts should not leak local audio files',
         );
       });
     });

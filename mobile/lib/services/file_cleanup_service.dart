@@ -82,6 +82,45 @@ class FileCleanupService {
     }
   }
 
+  /// Deletes draft-local audio files in [audioFilePaths], skipping any still
+  /// referenced elsewhere.
+  ///
+  /// Imported audio and voice-over recordings live in a draft's editor
+  /// metadata rather than an indexed file column, so a surviving draft that
+  /// shares the same file (e.g. a draft and its publish copy) cannot be
+  /// detected by the indexed-column check. The caller therefore supplies
+  /// [referencedAudioFilenames] — the basenames of local audio still
+  /// referenced by other drafts — and a file is kept when its basename is in
+  /// that set. The indexed clip/draft reference check still runs as a
+  /// defensive backstop.
+  ///
+  /// Throws:
+  ///
+  /// * No exceptions – errors are logged and silently handled.
+  static Future<void> deleteDraftAudioFiles(
+    Iterable<String> audioFilePaths, {
+    required DraftsDao draftsDao,
+    required ClipsDao clipsDao,
+    Set<String> referencedAudioFilenames = const {},
+  }) async {
+    for (final path in audioFilePaths) {
+      if (path.isEmpty) continue;
+      if (referencedAudioFilenames.contains(p.basename(path))) {
+        Log.info(
+          '🔗 Audio still referenced by another draft, skipping delete: $path',
+          name: 'FileCleanupService',
+          category: LogCategory.video,
+        );
+        continue;
+      }
+      await deleteFileIfUnreferenced(
+        path,
+        draftsDao: draftsDao,
+        clipsDao: clipsDao,
+      );
+    }
+  }
+
   /// Deletes files for a RecordingClip if not referenced
   static Future<void> deleteRecordingClipFiles(
     DivineVideoClip clip, {
