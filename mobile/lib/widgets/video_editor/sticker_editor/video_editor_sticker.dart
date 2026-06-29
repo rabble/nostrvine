@@ -53,7 +53,9 @@ class VideoEditorSticker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: sticker.description,
+      label: sticker.description.resolve(
+        Localizations.localeOf(context).languageCode,
+      ),
       button: onTap != null,
       child: GestureDetector(
         behavior: .translucent,

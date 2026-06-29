@@ -5,7 +5,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' show StickerData, StickerPackData;
+import 'package:models/models.dart'
+    show LocalizedText, StickerData, StickerPackData;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/widgets/stereo_waveform_painter.dart';
@@ -160,7 +161,7 @@ void main() {
       testWidgets('shows layerName from valid sticker meta', (tester) async {
         const sticker = StickerData.asset(
           'assets/stickers/test.png',
-          description: 'Test sticker',
+          description: LocalizedText({'en': 'Test sticker'}),
           tags: ['test'],
           packData: StickerPackData.fallback,
         );
@@ -188,7 +189,18 @@ void main() {
           ),
         );
 
-        expect(find.text(sticker.layerName), findsOneWidget);
+        final element = tester.element(find.byType(TimelineOverlayItemTile));
+        final l10n = AppLocalizations.of(element);
+        final locale = Localizations.localeOf(element).languageCode;
+        expect(
+          find.text(
+            sticker.layerName(
+              locale,
+              packDisplayName: l10n.videoEditorStickersDivineOriginals,
+            ),
+          ),
+          findsOneWidget,
+        );
         expect(find.text('Fallback Label'), findsNothing);
       });
 

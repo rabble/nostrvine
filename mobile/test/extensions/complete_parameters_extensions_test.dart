@@ -3,7 +3,8 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' show StickerData, StickerPackData;
+import 'package:models/models.dart'
+    show LocalizedText, StickerData, StickerPackData;
 import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -405,7 +406,7 @@ void main() {
       () {
         const sticker = StickerData.network(
           'https://stickers.example.com/heart.png',
-          description: 'Red heart',
+          description: LocalizedText({'en': 'Red heart'}),
           tags: ['heart'],
           packData: StickerPackData(
             packId: 'reactions',
@@ -448,7 +449,7 @@ void main() {
     test('preserves non-widget parameters alongside rehydrated layers', () {
       const sticker = StickerData.asset(
         'assets/stickers/star.svg',
-        description: 'Gold star',
+        description: LocalizedText({'en': 'Gold star'}),
         tags: ['star'],
         packData: StickerPackData.fallback,
       );

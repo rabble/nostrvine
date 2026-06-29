@@ -3,7 +3,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('StickerData', () {
-    const description = 'Happy emoji';
+    const descriptionEn = 'Happy emoji';
+    const description = LocalizedText({'en': descriptionEn});
     const networkUrl = 'https://example.com/sticker.png';
     const assetPath = 'assets/stickers/happy.png';
     const tags = ['happy', 'emoji', 'smile'];
@@ -138,9 +139,14 @@ void main() {
       });
 
       test('updates description when provided', () {
-        final copy = original.copyWith(description: 'New description');
+        final copy = original.copyWith(
+          description: const LocalizedText({'en': 'New description'}),
+        );
 
-        expect(copy.description, 'New description');
+        expect(
+          copy.description,
+          const LocalizedText({'en': 'New description'}),
+        );
         expect(copy.tags, original.tags);
         expect(copy.networkUrl, original.networkUrl);
         expect(copy.assetPath, original.assetPath);
@@ -186,14 +192,14 @@ void main() {
 
       test('updates all fields when provided', () {
         final copy = original.copyWith(
-          description: 'Updated',
+          description: const LocalizedText({'en': 'Updated'}),
           tags: ['updated'],
           networkUrl: 'https://updated.com',
           assetPath: 'assets/updated.png',
           packData: const StickerPackData(packId: 'x', packName: 'X'),
         );
 
-        expect(copy.description, 'Updated');
+        expect(copy.description, const LocalizedText({'en': 'Updated'}));
         expect(copy.tags, ['updated']);
         expect(copy.networkUrl, 'https://updated.com');
         expect(copy.assetPath, 'assets/updated.png');
@@ -231,7 +237,7 @@ void main() {
           packData: StickerPackData.fallback,
         );
         const stickerData2 = StickerData(
-          description: 'Other',
+          description: LocalizedText({'en': 'Other'}),
           tags: tags,
           packData: StickerPackData.fallback,
         );
@@ -321,24 +327,29 @@ void main() {
     });
 
     group('layerName', () {
-      test('returns description only when packName is empty', () {
-        const stickerData = StickerData(
-          description: description,
-          tags: tags,
-          packData: StickerPackData(packId: 'id', packName: ''),
-        );
+      const localizedSticker = StickerData(
+        description: LocalizedText({
+          'en': 'Adjustable dumbbell',
+          'de': 'Verstellbare Hantel',
+        }),
+        tags: tags,
+        packData: StickerPackData.fallback,
+      );
 
-        expect(stickerData.layerName, equals(description));
+      test('returns localized description only when packDisplayName is '
+          'omitted', () {
+        expect(localizedSticker.layerName('de'), equals('Verstellbare Hantel'));
       });
 
-      test('returns description with packName when packName is not empty', () {
-        const stickerData = StickerData(
-          description: description,
-          tags: tags,
-          packData: StickerPackData(packId: 'id', packName: 'My Pack'),
-        );
+      test('falls back to English when the locale is missing', () {
+        expect(localizedSticker.layerName('fr'), equals('Adjustable dumbbell'));
+      });
 
-        expect(stickerData.layerName, equals('$description ∙ My Pack'));
+      test('appends packDisplayName when provided', () {
+        expect(
+          localizedSticker.layerName('de', packDisplayName: 'Divine Originale'),
+          equals('Verstellbare Hantel ∙ Divine Originale'),
+        );
       });
     });
 
@@ -347,7 +358,7 @@ void main() {
         final json = {
           'networkUrl': networkUrl,
           'assetPath': assetPath,
-          'description': description,
+          'description': descriptionEn,
           'tags': tags,
         };
 
@@ -361,7 +372,7 @@ void main() {
 
       test('creates instance with only required fields', () {
         final json = {
-          'description': description,
+          'description': descriptionEn,
           'tags': tags,
         };
 
@@ -376,7 +387,7 @@ void main() {
       test('creates instance with networkUrl only', () {
         final json = {
           'networkUrl': networkUrl,
-          'description': description,
+          'description': descriptionEn,
           'tags': tags,
         };
 
@@ -389,7 +400,7 @@ void main() {
       test('creates instance with assetPath only', () {
         final json = {
           'assetPath': assetPath,
-          'description': description,
+          'description': descriptionEn,
           'tags': tags,
         };
 
@@ -401,7 +412,7 @@ void main() {
 
       test('handles empty tags list', () {
         final json = {
-          'description': description,
+          'description': descriptionEn,
           'tags': <String>[],
         };
 
@@ -412,7 +423,7 @@ void main() {
 
       test('deserializes packData when present', () {
         final json = {
-          'description': description,
+          'description': descriptionEn,
           'tags': tags,
           'packData': {'packId': 'pack1', 'packName': 'My Pack'},
         };
@@ -425,7 +436,7 @@ void main() {
 
       test('falls back to empty StickerPackData when packData is absent', () {
         final json = {
-          'description': description,
+          'description': descriptionEn,
           'tags': tags,
         };
 
@@ -451,7 +462,7 @@ void main() {
         expect(json, {
           'networkUrl': networkUrl,
           'assetPath': assetPath,
-          'description': description,
+          'description': descriptionEn,
           'tags': tags,
           'packData': StickerPackData.fallback.toJson(),
         });
@@ -470,7 +481,7 @@ void main() {
         expect(json.containsKey('networkUrl'), isFalse);
         expect(json, {
           'assetPath': assetPath,
-          'description': description,
+          'description': descriptionEn,
           'tags': tags,
           'packData': StickerPackData.fallback.toJson(),
         });
@@ -489,7 +500,7 @@ void main() {
         expect(json.containsKey('assetPath'), isFalse);
         expect(json, {
           'networkUrl': networkUrl,
-          'description': description,
+          'description': descriptionEn,
           'tags': tags,
           'packData': StickerPackData.fallback.toJson(),
         });
@@ -507,7 +518,7 @@ void main() {
         expect(json.containsKey('networkUrl'), isFalse);
         expect(json.containsKey('assetPath'), isFalse);
         expect(json, {
-          'description': description,
+          'description': descriptionEn,
           'tags': tags,
           'packData': StickerPackData.fallback.toJson(),
         });

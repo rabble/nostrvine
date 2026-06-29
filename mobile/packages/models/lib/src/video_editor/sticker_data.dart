@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:models/src/video_editor/localized_text.dart';
 
 /// Data model representing a sticker in the video editor.
 ///
@@ -17,7 +18,7 @@ class StickerData extends Equatable {
   /// Creates a [StickerData] from a network URL.
   const factory StickerData.network(
     String url, {
-    required String description,
+    required LocalizedText description,
     required List<String> tags,
     required StickerPackData packData,
   }) = _NetworkStickerData;
@@ -25,7 +26,7 @@ class StickerData extends Equatable {
   /// Creates a [StickerData] from a local asset path.
   const factory StickerData.asset(
     String path, {
-    required String description,
+    required LocalizedText description,
     required List<String> tags,
     required StickerPackData packData,
   }) = _AssetStickerData;
@@ -44,7 +45,7 @@ class StickerData extends Equatable {
     return StickerData(
       networkUrl: json['networkUrl'] as String?,
       assetPath: json['assetPath'] as String?,
-      description: json['description'] as String,
+      description: LocalizedText.fromJson(json['description']),
       tags: (json['tags'] as List<dynamic>).cast<String>(),
       packData: json['packData'] != null
           ? StickerPackData.fromJson(json['packData'] as Map<String, dynamic>)
@@ -52,10 +53,19 @@ class StickerData extends Equatable {
     );
   }
 
-  String get layerName {
-    if (packData.packName.isEmpty) return description;
+  /// Builds the timeline strip label for [localeCode]: the localized
+  /// [description], optionally suffixed with [packDisplayName].
+  ///
+  /// [packDisplayName] is supplied by the caller — resolved from app
+  /// localizations for bundled packs — rather than read from [packData], so
+  /// the displayed pack name follows the active locale instead of the
+  /// English pack name baked into the model. An empty [packDisplayName]
+  /// yields just the description.
+  String layerName(String localeCode, {String packDisplayName = ''}) {
+    final localizedDescription = description.resolve(localeCode);
+    if (packDisplayName.isEmpty) return localizedDescription;
 
-    return '$description ∙ ${packData.packName}';
+    return '$localizedDescription ∙ $packDisplayName';
   }
 
   /// The URL of a network image to display.
@@ -68,10 +78,12 @@ class StickerData extends Equatable {
   /// If provided, the sticker image will be loaded from the app's assets.
   final String? assetPath;
 
-  /// A human-readable description of the sticker.
+  /// A human-readable, localized description of the sticker.
   ///
-  /// Used for accessibility and semantic labels (e.g., screen readers).
-  final String description;
+  /// Used for accessibility and semantic labels (e.g., screen readers) and as
+  /// the timeline strip label. Resolve to the active locale with
+  /// [LocalizedText.resolve].
+  final LocalizedText description;
 
   /// A list of keywords associated with the sticker.
   ///
@@ -89,7 +101,7 @@ class StickerData extends Equatable {
   StickerData copyWith({
     String? networkUrl,
     String? assetPath,
-    String? description,
+    LocalizedText? description,
     List<String>? tags,
     StickerPackData? packData,
   }) {
@@ -107,7 +119,7 @@ class StickerData extends Equatable {
     return {
       if (networkUrl != null) 'networkUrl': networkUrl,
       if (assetPath != null) 'assetPath': assetPath,
-      'description': description,
+      'description': description.toJson(),
       'tags': tags,
       'packData': packData.toJson(),
     };

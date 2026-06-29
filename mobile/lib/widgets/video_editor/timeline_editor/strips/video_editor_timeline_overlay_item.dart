@@ -4,6 +4,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/widgets/stereo_waveform_painter.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -161,6 +162,13 @@ class _StickerPreview extends StatelessWidget {
       }
     }
 
+    final label = sticker != null
+        ? sticker.layerName(
+            Localizations.localeOf(context).languageCode,
+            packDisplayName: _packDisplayName(context, sticker),
+          )
+        : item.label;
+
     return OverflowBox(
       maxWidth: double.infinity,
       alignment: Alignment.centerLeft,
@@ -169,7 +177,7 @@ class _StickerPreview extends StatelessWidget {
         children: [
           if (layer != null) layer.widget,
           Text(
-            sticker?.layerName ?? item.label,
+            label,
             style: VineTheme.labelMediumFont(
               color: VineTheme.accentVioletVariant,
             ),
@@ -178,6 +186,19 @@ class _StickerPreview extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Resolves the localized pack name shown after the description.
+  ///
+  /// The bundled "Divine Originals" pack is translated through app
+  /// localizations — the same key the picker header uses — so the strip
+  /// label matches it across locales. Other packs fall back to the name
+  /// shipped in their manifest metadata.
+  String _packDisplayName(BuildContext context, StickerData sticker) {
+    if (sticker.packData.packId == StickerPackData.fallback.packId) {
+      return context.l10n.videoEditorStickersDivineOriginals;
+    }
+    return sticker.packData.packName;
   }
 }
 

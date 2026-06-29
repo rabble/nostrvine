@@ -1535,7 +1535,7 @@ void main() {
         () async {
           const sticker = StickerData.network(
             'https://stickers.example.com/heart.png',
-            description: 'Red heart',
+            description: LocalizedText({'en': 'Red heart'}),
             tags: ['heart'],
             packData: StickerPackData(
               packId: 'reactions',

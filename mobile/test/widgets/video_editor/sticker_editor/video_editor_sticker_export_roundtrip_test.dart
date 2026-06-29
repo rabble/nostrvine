@@ -8,7 +8,8 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' show StickerData, StickerPackData;
+import 'package:models/models.dart'
+    show LocalizedText, StickerData, StickerPackData;
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:pro_image_editor/pro_image_editor.dart'
     show
@@ -35,7 +36,7 @@ void main() {
         ),
         meta: sticker.toJson(),
         exportConfigs: WidgetLayerExportConfigs(
-          id: 'sticker-${sticker.description}',
+          id: 'sticker-${sticker.description.fallback}',
           meta: sticker.toJson(),
         ),
         offset: offset,
@@ -80,7 +81,7 @@ void main() {
       () {
         const sticker = StickerData.network(
           'https://stickers.example.com/heart.png',
-          description: 'Red heart',
+          description: LocalizedText({'en': 'Red heart'}),
           tags: ['heart', 'love'],
           packData: StickerPackData(
             packId: 'reactions',
@@ -110,7 +111,7 @@ void main() {
     test('asset sticker added → exported → reopened as VideoEditorSticker', () {
       const sticker = StickerData.asset(
         'assets/stickers/star.svg',
-        description: 'Gold star',
+        description: LocalizedText({'en': 'Gold star'}),
         tags: ['star', 'rating'],
         packData: StickerPackData.fallback,
       );
@@ -134,7 +135,7 @@ void main() {
       () {
         const sticker = StickerData.asset(
           'assets/stickers/smile.svg',
-          description: 'Smile',
+          description: LocalizedText({'en': 'Smile'}),
           tags: ['smile'],
           packData: StickerPackData.fallback,
         );
@@ -164,7 +165,7 @@ void main() {
       () {
         const sticker = StickerData.asset(
           'assets/stickers/legacy.svg',
-          description: 'Legacy sticker',
+          description: LocalizedText({'en': 'Legacy sticker'}),
           tags: ['legacy'],
           packData: StickerPackData.fallback,
         );

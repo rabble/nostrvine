@@ -45,6 +45,7 @@ export 'src/user_profile_data.dart';
 export 'src/user_profile_result.dart';
 export 'src/video_attribution.dart';
 export 'src/video_category.dart';
+export 'src/video_editor/localized_text.dart';
 export 'src/video_editor/sticker_data.dart';
 export 'src/video_event.dart';
 export 'src/video_event_filters.dart';

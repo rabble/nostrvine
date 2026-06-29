@@ -1,10 +1,8 @@
-import 'dart:convert';
-
 import 'package:equatable/equatable.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:models/models.dart' show StickerData, StickerPackData;
+import 'package:models/models.dart' show StickerData;
 import 'package:openvine/observability/reportable_error.dart';
+import 'package:openvine/repositories/sticker_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'video_editor_sticker_event.dart';
@@ -13,18 +11,23 @@ part 'video_editor_sticker_state.dart';
 /// BLoC for managing sticker selection in the video editor.
 ///
 /// Handles:
-/// - Loading stickers from assets
+/// - Loading stickers from the repository
 /// - Filtering stickers by search query
 class VideoEditorStickerBloc
     extends Bloc<VideoEditorStickerEvent, VideoEditorStickerState> {
-  VideoEditorStickerBloc({required this.onPrecacheStickers})
-    : super(const VideoEditorStickerInitial()) {
+  VideoEditorStickerBloc({
+    required this.stickerRepository,
+    required this.onPrecacheStickers,
+  }) : super(const VideoEditorStickerInitial()) {
     on<VideoEditorStickerLoad>(_onLoad);
     on<VideoEditorStickerSearch>(_onSearch);
   }
 
   /// Maximum number of stickers to precache on initial load.
   static const maxPrecacheCount = 18;
+
+  /// Loads the sticker catalog from bundled assets.
+  final StickerRepository stickerRepository;
 
   List<StickerData> _allStickers = [];
 
@@ -38,20 +41,7 @@ class VideoEditorStickerBloc
     emit(const VideoEditorStickerLoading());
 
     try {
-      // Load stickers from JSON to support shareable sticker packs in the
-      // future.
-      final jsonString = await rootBundle.loadString(
-        'assets/stickers/stickers.json',
-      );
-      final jsonList = json.decode(jsonString) as List<dynamic>;
-
-      _allStickers = jsonList.map((e) {
-        final sticker = StickerData.fromJson(e as Map<String, dynamic>);
-        if (sticker.packData.packId.isEmpty) {
-          return sticker.copyWith(packData: StickerPackData.fallback);
-        }
-        return sticker;
-      }).toList();
+      _allStickers = await stickerRepository.loadStickers(event.localeCode);
 
       Log.debug(
         '🌟 Loaded ${_allStickers.length} stickers',
@@ -88,10 +78,14 @@ class VideoEditorStickerBloc
     }
 
     final filtered = _allStickers.where((sticker) {
-      final description = sticker.description.toLowerCase();
-      final tags = sticker.tags.map((t) => t.toLowerCase()).toList();
+      // Match across every localized description so a sticker is findable
+      // regardless of the user's locale (and by its English search keywords).
+      final descriptions = sticker.description.values.values.map(
+        (value) => value.toLowerCase(),
+      );
+      final tags = sticker.tags.map((tag) => tag.toLowerCase());
 
-      return description.contains(query) ||
+      return descriptions.any((value) => value.contains(query)) ||
           tags.any((tag) => tag.contains(query));
     }).toList();
 

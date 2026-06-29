@@ -398,6 +398,7 @@ flutter:
     - assets/seed_media/thumbnails/
     - assets/seed_media/classic_viner_avatars/
     - assets/stickers/
+    - assets/stickers/i18n/
     - shorebird.yaml
 
   # An image asset can refer to one or more resolution-specific "variants", see

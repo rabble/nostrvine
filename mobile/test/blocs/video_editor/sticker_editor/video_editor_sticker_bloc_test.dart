@@ -1,66 +1,59 @@
 // ABOUTME: Tests for VideoEditorStickerBloc - loading, searching, and filtering stickers.
 // ABOUTME: Covers initial state, load events, search functionality, and error handling.
 
-import 'dart:convert';
-
 import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' show StickerData, StickerPackData;
+import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
 import 'package:openvine/observability/reportable_error.dart';
+import 'package:openvine/repositories/sticker_repository.dart';
+
+class _MockStickerRepository extends Mock implements StickerRepository {}
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
   group('VideoEditorStickerBloc', () {
+    late StickerRepository repository;
     late List<StickerData> testStickers;
 
-    void mockAssetBundle(List<StickerData> stickers) {
-      final jsonList = stickers.map((s) => s.toJson()).toList();
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMessageHandler('flutter/assets', (ByteData? message) async {
-            final jsonString = json.encode(jsonList);
-            return ByteData.view(
-              Uint8List.fromList(utf8.encode(jsonString)).buffer,
-            );
-          });
-    }
-
     setUp(() {
+      repository = _MockStickerRepository();
       testStickers = const [
         StickerData.asset(
           'assets/stickers/happy.png',
-          description: 'Happy face',
+          description: LocalizedText({
+            'en': 'Happy face',
+            'de': 'Frohes Gesicht',
+          }),
           tags: ['happy', 'smile', 'emoji'],
           packData: StickerPackData.fallback,
         ),
         StickerData.asset(
           'assets/stickers/sad.png',
-          description: 'Sad face',
+          description: LocalizedText({'en': 'Sad face'}),
           tags: ['sad', 'cry', 'emoji'],
           packData: StickerPackData.fallback,
         ),
         StickerData.network(
           'https://example.com/star.png',
-          description: 'Golden star',
+          description: LocalizedText({'en': 'Golden star'}),
           tags: ['star', 'gold', 'award'],
           packData: StickerPackData.fallback,
         ),
       ];
 
-      mockAssetBundle(testStickers);
+      when(() => repository.loadStickers(any())).thenAnswer(
+        (_) async => testStickers,
+      );
     });
 
-    tearDown(() {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMessageHandler('flutter/assets', null);
-      // rootBundle caches strings — clear so each test gets a fresh load.
-      rootBundle.evict('assets/stickers/stickers.json');
-    });
+    VideoEditorStickerBloc buildBloc() => VideoEditorStickerBloc(
+      stickerRepository: repository,
+      onPrecacheStickers: (_) {},
+    );
 
     test('initial state is VideoEditorStickerInitial', () async {
-      final bloc = VideoEditorStickerBloc(onPrecacheStickers: (_) {});
+      final bloc = buildBloc();
       expect(bloc.state, const VideoEditorStickerInitial());
       await bloc.close();
     });
@@ -68,8 +61,8 @@ void main() {
     group('VideoEditorStickerLoad', () {
       blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
         'emits [loading, loaded] when stickers load successfully',
-        build: () => VideoEditorStickerBloc(onPrecacheStickers: (_) {}),
-        act: (bloc) => bloc.add(const VideoEditorStickerLoad()),
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoEditorStickerLoad('en')),
         expect: () => [
           const VideoEditorStickerLoading(),
           isA<VideoEditorStickerLoaded>()
@@ -79,9 +72,18 @@ void main() {
       );
 
       blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
+        'requests stickers for the event locale',
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoEditorStickerLoad('de')),
+        verify: (_) {
+          verify(() => repository.loadStickers('de')).called(1);
+        },
+      );
+
+      blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
         'loads stickers with correct properties',
-        build: () => VideoEditorStickerBloc(onPrecacheStickers: (_) {}),
-        act: (bloc) => bloc.add(const VideoEditorStickerLoad()),
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoEditorStickerLoad('en')),
         verify: (bloc) {
           final state = bloc.state as VideoEditorStickerLoaded;
           expect(state.stickers[0].description, testStickers[0].description);
@@ -94,19 +96,12 @@ void main() {
       blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
         'wraps unexpected load error in Reportable with context',
         setUp: () {
-          // Return malformed JSON so json.decode throws FormatException
-          // inside the bloc's catch. The mocked asset bytes themselves
-          // resolve fine — the invariant-shaped failure lands inside
-          // the bloc as designed.
-          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-              .setMockMessageHandler('flutter/assets', (_) async {
-                return ByteData.view(
-                  Uint8List.fromList(utf8.encode('not valid json {')).buffer,
-                );
-              });
+          when(() => repository.loadStickers(any())).thenThrow(
+            const FormatException('corrupt manifest'),
+          );
         },
-        build: () => VideoEditorStickerBloc(onPrecacheStickers: (_) {}),
-        act: (bloc) => bloc.add(const VideoEditorStickerLoad()),
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoEditorStickerLoad('en')),
         expect: () => [
           const VideoEditorStickerLoading(),
           const VideoEditorStickerError(),
@@ -117,45 +112,15 @@ void main() {
               .having((r) => r.context, 'context', '_onLoad'),
         ],
       );
-
-      blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
-        'falls back to StickerPackData.fallback when JSON omits packData',
-        setUp: () {
-          // Mirror the production shipping shape of stickers.json today,
-          // which has no `packData` keys.
-          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-              .setMockMessageHandler('flutter/assets', (
-                ByteData? message,
-              ) async {
-                final jsonString = json.encode([
-                  {
-                    'assetPath': 'assets/stickers/no_pack.png',
-                    'description': 'No pack sticker',
-                    'tags': ['none'],
-                  },
-                ]);
-                return ByteData.view(
-                  Uint8List.fromList(utf8.encode(jsonString)).buffer,
-                );
-              });
-        },
-        build: () => VideoEditorStickerBloc(onPrecacheStickers: (_) {}),
-        act: (bloc) => bloc.add(const VideoEditorStickerLoad()),
-        verify: (bloc) {
-          final state = bloc.state as VideoEditorStickerLoaded;
-          expect(state.stickers, hasLength(1));
-          expect(state.stickers.first.packData, StickerPackData.fallback);
-        },
-      );
     });
 
     group('VideoEditorStickerSearch', () {
       blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
         'filters stickers by description',
-        build: () => VideoEditorStickerBloc(onPrecacheStickers: (_) {}),
+        build: buildBloc,
         act: (bloc) async {
           bloc
-            ..add(const VideoEditorStickerLoad())
+            ..add(const VideoEditorStickerLoad('en'))
             ..add(const VideoEditorStickerSearch('happy'));
         },
         skip: 2, // Skip loading and loaded states
@@ -173,11 +138,31 @@ void main() {
       );
 
       blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
-        'filters stickers by tag',
-        build: () => VideoEditorStickerBloc(onPrecacheStickers: (_) {}),
+        'filters stickers by a non-English localized description',
+        build: buildBloc,
         act: (bloc) async {
           bloc
-            ..add(const VideoEditorStickerLoad())
+            ..add(const VideoEditorStickerLoad('de'))
+            ..add(const VideoEditorStickerSearch('frohes'));
+        },
+        skip: 2,
+        expect: () => [
+          isA<VideoEditorStickerLoaded>()
+              .having((s) => s.stickers.length, 'stickers.length', 1)
+              .having(
+                (s) => s.stickers.first.description,
+                'first sticker description',
+                testStickers[0].description,
+              ),
+        ],
+      );
+
+      blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
+        'filters stickers by tag',
+        build: buildBloc,
+        act: (bloc) async {
+          bloc
+            ..add(const VideoEditorStickerLoad('en'))
             ..add(const VideoEditorStickerSearch('gold'));
         },
         skip: 2,
@@ -194,10 +179,10 @@ void main() {
 
       blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
         'returns all stickers when search query is empty',
-        build: () => VideoEditorStickerBloc(onPrecacheStickers: (_) {}),
+        build: buildBloc,
         act: (bloc) async {
           bloc
-            ..add(const VideoEditorStickerLoad())
+            ..add(const VideoEditorStickerLoad('en'))
             ..add(const VideoEditorStickerSearch('gold'))
             ..add(const VideoEditorStickerSearch(''));
         },
@@ -211,10 +196,10 @@ void main() {
 
       blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
         'returns all stickers when search query is whitespace only',
-        build: () => VideoEditorStickerBloc(onPrecacheStickers: (_) {}),
+        build: buildBloc,
         act: (bloc) async {
           bloc
-            ..add(const VideoEditorStickerLoad())
+            ..add(const VideoEditorStickerLoad('en'))
             ..add(const VideoEditorStickerSearch('happy')) // First filter
             ..add(const VideoEditorStickerSearch('   ')); // Then whitespace
         },
@@ -228,10 +213,10 @@ void main() {
 
       blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
         'search is case-insensitive',
-        build: () => VideoEditorStickerBloc(onPrecacheStickers: (_) {}),
+        build: buildBloc,
         act: (bloc) async {
           bloc
-            ..add(const VideoEditorStickerLoad())
+            ..add(const VideoEditorStickerLoad('en'))
             ..add(const VideoEditorStickerSearch('HAPPY'));
         },
         skip: 2,
@@ -248,10 +233,10 @@ void main() {
 
       blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
         'returns empty list when no stickers match',
-        build: () => VideoEditorStickerBloc(onPrecacheStickers: (_) {}),
+        build: buildBloc,
         act: (bloc) async {
           bloc
-            ..add(const VideoEditorStickerLoad())
+            ..add(const VideoEditorStickerLoad('en'))
             ..add(const VideoEditorStickerSearch('nonexistent'));
         },
         skip: 2,
@@ -265,10 +250,10 @@ void main() {
 
       blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
         'matches partial tag',
-        build: () => VideoEditorStickerBloc(onPrecacheStickers: (_) {}),
+        build: buildBloc,
         act: (bloc) async {
           bloc
-            ..add(const VideoEditorStickerLoad())
+            ..add(const VideoEditorStickerLoad('en'))
             ..add(const VideoEditorStickerSearch('emo'));
         },
         skip: 2,
@@ -319,12 +304,14 @@ void main() {
     });
 
     group('VideoEditorStickerEvent', () {
-      test('VideoEditorStickerLoad props are empty', () {
-        const event1 = VideoEditorStickerLoad();
-        const event2 = VideoEditorStickerLoad();
+      test('VideoEditorStickerLoad props include localeCode', () {
+        const event1 = VideoEditorStickerLoad('en');
+        const event2 = VideoEditorStickerLoad('en');
+        const event3 = VideoEditorStickerLoad('de');
 
         expect(event1, equals(event2));
-        expect(event1.props, isEmpty);
+        expect(event1, isNot(equals(event3)));
+        expect(event1.props, ['en']);
       });
 
       test('VideoEditorStickerSearch props include query', () {
