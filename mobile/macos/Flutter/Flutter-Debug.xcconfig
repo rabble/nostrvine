@@ -3,9 +3,8 @@
 
 // Require code signing for debug builds so the Runner entitlements are
 // applied and macOS shows the native camera/microphone prompts. The
-// identity comes from the Runner target's Debug config (team-signed via
-// CODE_SIGN_STYLE = Automatic); the `-` below is only a fallback for
-// contexts where the target sets no identity.
+// Runner target's Debug config also uses ad-hoc signing so local debug
+// builds do not require Apple Developer team membership or provisioning.
 CODE_SIGN_IDENTITY = -
 CODE_SIGNING_REQUIRED = YES
 CODE_SIGNING_ALLOWED = YES
