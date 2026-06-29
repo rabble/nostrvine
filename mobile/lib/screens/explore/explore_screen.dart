@@ -70,6 +70,8 @@ class ExploreScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
+      // topHashtagsServiceProvider is a stable keepAlive Provider that is never
+      // invalidated, so ref.read is safe here (see state_management.md §1).
       create: (_) =>
           ExploreTabsCubit(topHashtags: ref.read(topHashtagsServiceProvider)),
       child: ExploreView(initialTabName: initialTabName),

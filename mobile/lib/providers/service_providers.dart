@@ -25,11 +25,13 @@ final topHashtagsServiceProvider = Provider<TopHashtagsService>(
   (ref) => TopHashtagsService(),
 );
 
-/// Provides the app's [PerformanceMonitoringService] (a [PerformanceTraceMonitor]).
+/// Provides the app's [PerformanceMonitoringService].
 ///
 /// Replaces the former `PerformanceMonitoringService.instance` singleton. A
-/// single shared instance is kept alive; consumers that only need the trace
-/// API depend on it through the [PerformanceTraceMonitor] interface.
+/// single shared instance is kept alive. Typed to the concrete class (not
+/// [PerformanceTraceMonitor]) because app startup calls the concrete-only
+/// [PerformanceMonitoringService.initialize]; consumers that only need the
+/// trace API accept a [PerformanceTraceMonitor] in their constructor.
 final performanceMonitoringServiceProvider =
     Provider<PerformanceMonitoringService>(
       (ref) => PerformanceMonitoringService(),
