@@ -63,6 +63,8 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
     // the active NIP-46 session so the replacement route can reattach.
     if (!_authService.isNostrConnectCallbackHandoffActive) {
       _authService.cancelNostrConnect();
+    } else {
+      _authService.preserveNostrConnectForCallbackHandoff();
     }
     super.dispose();
   }
@@ -81,6 +83,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
   }
 
   void _resumeActiveSession(String activeUrl, NostrConnectState activeState) {
+    _authService.claimNostrConnectCallbackHandoff();
     final attempt = ++_sessionAttempt;
     unawaited(_stateSubscription?.cancel());
     _stateSubscription = null;

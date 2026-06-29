@@ -337,6 +337,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   NostrConnectSession? _nostrConnectSession;
   Future<AuthResult>? _nostrConnectWaitFuture;
   Timer? _nostrConnectCallbackHandoffTimer;
+  Timer? _nostrConnectCallbackHandoffCancelTimer;
   bool _isNostrConnectCallbackHandoffActive = false;
 
   // Atomic signing identity — couples pubkey with signing mechanism
@@ -3481,6 +3482,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _isNostrConnectCallbackHandoffActive = false;
     _nostrConnectCallbackHandoffTimer?.cancel();
     _nostrConnectCallbackHandoffTimer = null;
+    _nostrConnectCallbackHandoffCancelTimer?.cancel();
+    _nostrConnectCallbackHandoffCancelTimer = null;
 
     if (_nostrConnectSession != null) {
       Log.info(
@@ -3511,35 +3514,73 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   bool get isNostrConnectCallbackHandoffActive =>
       _isNostrConnectCallbackHandoffActive;
 
+  /// Preserve the active session for the replacement NostrConnect screen.
+  ///
+  /// If no replacement screen claims the handoff quickly, cancel the session so
+  /// backing out during the callback route handoff cannot orphan relay sockets.
+  void preserveNostrConnectForCallbackHandoff() {
+    if (!_isNostrConnectCallbackHandoffActive ||
+        _nostrConnectSession?.state != NostrConnectState.listening) {
+      return;
+    }
+
+    _nostrConnectCallbackHandoffCancelTimer?.cancel();
+    _nostrConnectCallbackHandoffCancelTimer = Timer(
+      const Duration(seconds: 5),
+      () {
+        _nostrConnectCallbackHandoffCancelTimer = null;
+        if (_isNostrConnectCallbackHandoffActive &&
+            _nostrConnectSession?.state == NostrConnectState.listening) {
+          Log.info(
+            'NostrConnect callback handoff was not resumed - cancelling',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          cancelNostrConnect();
+        }
+      },
+    );
+  }
+
+  /// Marks the callback handoff as claimed by a mounted NostrConnect screen.
+  ///
+  /// The short handoff flag is left to expire on its own so an old route that
+  /// disposes after the replacement screen mounts still preserves the session.
+  void claimNostrConnectCallbackHandoff() {
+    _nostrConnectCallbackHandoffCancelTimer?.cancel();
+    _nostrConnectCallbackHandoffCancelTimer = null;
+  }
+
   /// Called when a divine:// signer callback deep link is received.
   ///
   /// Ensures the nostrconnect session relay connections are alive so we
   /// don't miss the bunker's response event after being brought back
   /// from background.
   void onSignerCallbackReceived({String? relayUrl}) {
+    if (_nostrConnectSession?.state != NostrConnectState.listening) {
+      return;
+    }
+
     _isNostrConnectCallbackHandoffActive = true;
     _nostrConnectCallbackHandoffTimer?.cancel();
     _nostrConnectCallbackHandoffTimer = Timer(const Duration(seconds: 5), () {
       _isNostrConnectCallbackHandoffActive = false;
     });
 
-    if (_nostrConnectSession != null &&
-        _nostrConnectSession!.state == NostrConnectState.listening) {
-      if (relayUrl != null) {
-        Log.info(
-          'Signer callback supplied relay $relayUrl - connecting',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        unawaited(_nostrConnectSession!.addRelay(relayUrl));
-      }
+    if (relayUrl != null) {
       Log.info(
-        'Signer callback received - ensuring nostrconnect relays are connected',
+        'Signer callback supplied relay $relayUrl - connecting',
         name: 'AuthService',
         category: LogCategory.auth,
       );
-      _nostrConnectSession!.ensureConnected();
+      unawaited(_nostrConnectSession!.addRelay(relayUrl));
     }
+    Log.info(
+      'Signer callback received - ensuring nostrconnect relays are connected',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+    unawaited(_nostrConnectSession!.ensureConnected());
   }
 
   /// Sign in using OAuth 2.0 flow
@@ -5719,6 +5760,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
     _nostrConnectCallbackHandoffTimer?.cancel();
     _nostrConnectCallbackHandoffTimer = null;
+    _nostrConnectCallbackHandoffCancelTimer?.cancel();
+    _nostrConnectCallbackHandoffCancelTimer = null;
 
     // Securely dispose of key container
     _currentKeyContainer?.dispose();

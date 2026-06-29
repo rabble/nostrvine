@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for NostrConnectSession class
 // ABOUTME: Tests state machine transitions and URL generation
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:nostr_sdk/nip46/nostr_remote_response.dart';
@@ -285,6 +286,104 @@ void main() {
 
       session.dispose();
     });
+
+    test('addRelay dedupes configured and connected relays', () async {
+      final primaryRelay = await _TestRelayServer.start();
+      final callbackRelay = await _TestRelayServer.start();
+      addTearDown(primaryRelay.close);
+      addTearDown(callbackRelay.close);
+
+      final session = NostrConnectSession(relays: [primaryRelay.url]);
+      addTearDown(session.dispose);
+
+      await session.start();
+      expect(primaryRelay.connectionCount, equals(1));
+
+      await session.addRelay(primaryRelay.url);
+      expect(
+        primaryRelay.connectionCount,
+        equals(1),
+        reason: 'configured relays should not be added a second time',
+      );
+
+      await session.addRelay(callbackRelay.url);
+      expect(callbackRelay.connectionCount, equals(1));
+
+      await session.addRelay(callbackRelay.url);
+      expect(
+        callbackRelay.connectionCount,
+        equals(1),
+        reason: 'already-connected callback relays should be deduped',
+      );
+    });
+
+    test('addRelay is a no-op unless the session is listening', () async {
+      final callbackRelay = await _TestRelayServer.start();
+      addTearDown(callbackRelay.close);
+
+      final idleSession = NostrConnectSession(relays: ['ws://127.0.0.1:9']);
+      addTearDown(idleSession.dispose);
+
+      await idleSession.addRelay(callbackRelay.url);
+      expect(callbackRelay.connectionCount, equals(0));
+
+      idleSession.cancel();
+      await idleSession.addRelay(callbackRelay.url);
+      expect(callbackRelay.connectionCount, equals(0));
+    });
+
+    test('addRelay excludes relays whose connect returns false', () async {
+      final primaryRelay = await _TestRelayServer.start();
+      final failedPort = await _unusedLoopbackPort();
+      final callbackUrl = 'ws://127.0.0.1:$failedPort';
+      addTearDown(primaryRelay.close);
+
+      final session = NostrConnectSession(relays: [primaryRelay.url]);
+      addTearDown(session.dispose);
+
+      await session.start();
+      await session.addRelay(callbackUrl);
+
+      final callbackRelay = await _TestRelayServer.start(port: failedPort);
+      addTearDown(callbackRelay.close);
+
+      await session.addRelay(callbackUrl);
+      expect(
+        callbackRelay.connectionCount,
+        equals(1),
+        reason: 'failed relay attempts must not be retained as connected',
+      );
+    });
+
+    test(
+      'addRelay excludes relays whose connect times out',
+      () async {
+        final primaryRelay = await _TestRelayServer.start();
+        final blackhole = await _BlackholeServer.start();
+        final callbackUrl = blackhole.url;
+        addTearDown(primaryRelay.close);
+        addTearDown(blackhole.close);
+
+        final session = NostrConnectSession(relays: [primaryRelay.url]);
+        addTearDown(session.dispose);
+
+        await session.start();
+        await session.addRelay(callbackUrl);
+
+        final failedPort = blackhole.port;
+        await blackhole.close();
+        final callbackRelay = await _TestRelayServer.start(port: failedPort);
+        addTearDown(callbackRelay.close);
+
+        await session.addRelay(callbackUrl);
+        expect(
+          callbackRelay.connectionCount,
+          equals(1),
+          reason: 'timed-out relay attempts must not be retained as connected',
+        );
+      },
+      timeout: const Timeout(Duration(seconds: 20)),
+    );
   });
 
   group('NostrConnectState enum', () {
@@ -453,11 +552,11 @@ void main() {
     test(
       'source file does not log the response.result or the expected secret',
       () {
-        final sourceFile = File('lib/nip46/nostr_connect_session.dart');
+        final sourceFile = _findNostrConnectSessionSource();
         expect(
           sourceFile.existsSync(),
           isTrue,
-          reason: 'Test must run from the nostr_sdk package root',
+          reason: 'Test must resolve the nostr_sdk package source',
         );
         final source = sourceFile.readAsStringSync();
         // The pre-fix code logged both `result=${response.result}` in the
@@ -470,4 +569,106 @@ void main() {
       },
     );
   });
+}
+
+File _findNostrConnectSessionSource() {
+  var directory = Directory.current;
+  while (true) {
+    final packageRootFile = File(
+      '${directory.path}/lib/nip46/nostr_connect_session.dart',
+    );
+    if (packageRootFile.existsSync()) return packageRootFile;
+
+    final mobileRootFile = File(
+      '${directory.path}/packages/nostr_sdk/lib/nip46/nostr_connect_session.dart',
+    );
+    if (mobileRootFile.existsSync()) return mobileRootFile;
+
+    final parent = directory.parent;
+    if (parent.path == directory.path) return packageRootFile;
+    directory = parent;
+  }
+}
+
+Future<int> _unusedLoopbackPort() async {
+  final socket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+  final port = socket.port;
+  await socket.close();
+  return port;
+}
+
+class _TestRelayServer {
+  _TestRelayServer._(this._server) {
+    _requests = _server.listen(_handleRequest);
+  }
+
+  final HttpServer _server;
+  final _sockets = <WebSocket>[];
+  late final StreamSubscription<HttpRequest> _requests;
+  int connectionCount = 0;
+  bool _closed = false;
+
+  String get url => 'ws://127.0.0.1:${_server.port}';
+
+  static Future<_TestRelayServer> start({int? port}) async {
+    final server = await HttpServer.bind(
+      InternetAddress.loopbackIPv4,
+      port ?? 0,
+    );
+    return _TestRelayServer._(server);
+  }
+
+  Future<void> _handleRequest(HttpRequest request) async {
+    if (!WebSocketTransformer.isUpgradeRequest(request)) {
+      request.response.statusCode = HttpStatus.badRequest;
+      await request.response.close();
+      return;
+    }
+
+    final socket = await WebSocketTransformer.upgrade(request);
+    _sockets.add(socket);
+    connectionCount += 1;
+    socket.listen((_) {});
+  }
+
+  Future<void> close() async {
+    if (_closed) return;
+    _closed = true;
+    for (final socket in _sockets) {
+      await socket.close();
+    }
+    await _requests.cancel();
+    await _server.close(force: true);
+  }
+}
+
+class _BlackholeServer {
+  _BlackholeServer._(this._server) {
+    _requests = _server.listen((socket) {
+      _sockets.add(socket);
+    });
+  }
+
+  final ServerSocket _server;
+  final _sockets = <Socket>[];
+  late final StreamSubscription<Socket> _requests;
+  bool _closed = false;
+
+  int get port => _server.port;
+  String get url => 'ws://127.0.0.1:$port';
+
+  static Future<_BlackholeServer> start() async {
+    final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    return _BlackholeServer._(server);
+  }
+
+  Future<void> close() async {
+    if (_closed) return;
+    _closed = true;
+    for (final socket in _sockets) {
+      socket.destroy();
+    }
+    await _requests.cancel();
+    await _server.close();
+  }
 }

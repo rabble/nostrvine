@@ -124,6 +124,9 @@ String? signerCallbackRedirectTarget(Uri uri, AuthService authService) {
     return null;
   }
 
+  // The app-links stream handles this too, but GoRouter may see Android
+  // custom-scheme callbacks first. Keep this idempotent: it only preserves
+  // an already-listening NIP-46 session while routing back to its screen.
   authService.onSignerCallbackReceived(relayUrl: deepLink.signerCallbackRelay);
   return authService.nostrConnectUrl != null
       ? NostrConnectScreen.path

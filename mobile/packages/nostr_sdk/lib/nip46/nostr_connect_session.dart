@@ -364,7 +364,7 @@ class NostrConnectSession {
     try {
       // Re-add the subscription filter so it is sent on connect
       await _addSubscription(relay);
-      final connected = await relay.connect();
+      final connected = await relay.connect().timeout(_relayConnectTimeout);
       if (connected) {
         log('[NostrConnectSession] Reconnected to $addr');
       } else {
