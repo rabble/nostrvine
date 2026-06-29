@@ -75,8 +75,8 @@ void main() {
         await tapSemantic(tester, 'camera_button');
         logPhase('Camera button tapped');
 
-        // The CameraPermissionGate shows a pre-permission bottom sheet
-        // with a "Continue" button before triggering the native OS dialog.
+        // The recorder's CameraPermissionGate renders a permission screen
+        // with a "Continue" button that triggers the native OS dialog.
         // We must tap "Continue" first, then handle the native dialogs.
         final continuePermission = find.text('Continue');
         final foundContinue = await waitForWidget(

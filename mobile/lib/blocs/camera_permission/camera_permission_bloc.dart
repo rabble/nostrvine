@@ -1,3 +1,4 @@
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,11 +10,23 @@ part 'camera_permission_state.dart';
 
 /// BLoC for managing camera and microphone permissions.
 ///
+/// Permission prompting is owned by the recorder gate
+/// (`CameraPermissionGate`): a [CameraPermissionRequest] is only dispatched
+/// from the gate's explicit "Continue" action, so the native media permission
+/// dialog always happens in response to a user gesture on the recorder
+/// screen. Callers that navigate to the recorder no longer prompt themselves.
+///
 /// Handles:
 /// - Checking current permission status
-/// - Requesting permissions via OS dialog
+/// - Requesting permissions via OS dialog (from the gate)
 /// - Caching status to avoid repeated OS calls
 /// - Refreshing status when app resumes from background
+///
+/// Both [CameraPermissionRequest] and [CameraPermissionRefresh] use the
+/// `droppable()` transformer so duplicate requests/refreshes dispatched while
+/// one is already in flight are ignored. This replaces the previous in-flight
+/// boolean/future fields with the idiomatic bloc concurrency primitive and
+/// keeps all coordination out of mutable instance state.
 class CameraPermissionBloc
     extends Bloc<CameraPermissionEvent, CameraPermissionState> {
   CameraPermissionBloc({
@@ -22,8 +35,8 @@ class CameraPermissionBloc
   }) : _permissionsService = permissionsService,
        _skipMacOSBypass = skipMacOSBypass ?? false,
        super(const CameraPermissionInitial()) {
-    on<CameraPermissionRequest>(_onRequest);
-    on<CameraPermissionRefresh>(_onRefresh);
+    on<CameraPermissionRequest>(_onRequest, transformer: droppable());
+    on<CameraPermissionRefresh>(_onRefresh, transformer: droppable());
     on<CameraPermissionOpenSettings>(_onOpenSettings);
   }
 
@@ -48,7 +61,10 @@ class CameraPermissionBloc
       final cameraStatus = await _permissionsService.requestCameraPermission();
 
       if (cameraStatus != PermissionStatus.granted) {
-        emit(const CameraPermissionDenied());
+        // Stay on the recorder gate with the resolved status so the gate can
+        // re-prompt (canRequest) or send the user to Settings
+        // (requiresSettings) instead of silently bouncing back to the feed.
+        emit(CameraPermissionLoaded(_cameraStatusFromPermission(cameraStatus)));
         return;
       }
 
@@ -56,7 +72,11 @@ class CameraPermissionBloc
           .requestMicrophonePermission();
 
       if (microphoneStatus != PermissionStatus.granted) {
-        emit(const CameraPermissionDenied());
+        emit(
+          CameraPermissionLoaded(
+            _cameraStatusFromPermission(microphoneStatus),
+          ),
+        );
         return;
       }
 
@@ -81,11 +101,9 @@ class CameraPermissionBloc
       category: LogCategory.video,
     );
 
-    // On desktop, permission_handler doesn't work reliably.
-    // macOS handles camera permissions at the system level when the app
-    // actually tries to access the camera, showing its own permission dialog.
-    // Linux has no camera support yet, so permissions are irrelevant.
-    // So we bypass the permission check and assume authorized.
+    // Linux has no camera support yet, so permissions are irrelevant and we
+    // assume authorized. macOS permission behavior is tracked separately in
+    // #4112; this refactor intentionally leaves the desktop bypass untouched.
     if (!kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.macOS ||
             defaultTargetPlatform == TargetPlatform.linux) &&
@@ -124,6 +142,17 @@ class CameraPermissionBloc
   ) async {
     await _permissionsService.openAppSettings();
   }
+
+  /// Maps a raw [PermissionStatus] from a request to the gate-facing
+  /// [CameraPermissionStatus] so a denied/blocked request keeps the user on
+  /// the recorder gate with the correct prompt.
+  CameraPermissionStatus _cameraStatusFromPermission(PermissionStatus status) =>
+      switch (status) {
+        PermissionStatus.granted => CameraPermissionStatus.authorized,
+        PermissionStatus.requiresSettings =>
+          CameraPermissionStatus.requiresSettings,
+        PermissionStatus.canRequest => CameraPermissionStatus.canRequest,
+      };
 
   /// Check the status of camera, microphone, and gallery permissions.
   Future<CameraPermissionStatus> checkPermissions() async {

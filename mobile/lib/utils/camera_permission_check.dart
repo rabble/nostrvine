@@ -1,22 +1,26 @@
-// ABOUTME: Pre-navigation camera permission check with bottom sheet UI
-// ABOUTME: Shows permission sheet before navigating to VideoRecorderScreen
+// ABOUTME: Pre-navigation camera permission check for camera routes
+// ABOUTME: Routes requestable permissions to VideoRecorderScreen's gate
 
 import 'dart:async';
 
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
-import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 
 /// Extension for camera navigation with pre-flight permission check.
 extension CameraPermissionNavigation on BuildContext {
-  /// Checks camera/microphone permissions and shows a bottom sheet if
-  /// not authorized. Navigates to [VideoRecorderScreen] only when
-  /// permissions are granted.
+  /// Navigates to [VideoRecorderScreen] after the permission status has
+  /// settled.
+  ///
+  /// Permission prompts are owned by [VideoRecorderScreen]'s
+  /// `CameraPermissionGate`, so the native media permission request happens
+  /// from the recorder's explicit Continue action rather than from a
+  /// pre-navigation bottom sheet. This method only waits for the bloc to
+  /// resolve out of its initial state so the gate renders the correct screen
+  /// immediately on arrival.
   ///
   /// Returns `true` if navigation occurred.
   Future<bool> pushToCameraWithPermission() async {
@@ -27,88 +31,39 @@ extension CameraPermissionNavigation on BuildContext {
       return true;
     }
 
-    final status = await _resolvePermissionStatus(bloc);
+    await _awaitPermissionResolved(bloc);
     if (!mounted) return false;
 
-    // Couldn't determine status, already authorized, or requiresSettings
-    // → navigate directly (CameraPermissionGate handles the rest)
-    if (status == null ||
-        status == .authorized ||
-        status == .requiresSettings) {
-      await pushWithVideoPause(VideoRecorderScreen.path);
-      return true;
-    }
-
-    // canRequest → show bottom sheet
-    var permissionRequested = false;
-    await VineBottomSheetPrompt.show<void>(
-      context: this,
-      sticker: DivineStickerName.skeletonKey,
-      title: l10n.cameraPermissionAllowAccessTitle,
-      subtitle: l10n.cameraPermissionAllowAccessDescription,
-      primaryButtonText: l10n.cameraPermissionContinue,
-      onPrimaryPressed: () {
-        permissionRequested = true;
-        Navigator.of(this).pop();
-      },
-      secondaryButtonText: l10n.cameraPermissionNotNow,
-      onSecondaryPressed: () => Navigator.of(this).pop(),
-    );
-
-    if (!permissionRequested || !mounted) return false;
-
-    bloc.add(const CameraPermissionRequest());
-    final result = await bloc.stream
-        .firstWhere(
-          (s) =>
-              s is CameraPermissionLoaded ||
-              s is CameraPermissionDenied ||
-              s is CameraPermissionError,
-        )
-        .timeout(
-          const Duration(seconds: 30),
-          onTimeout: () => const CameraPermissionError(),
-        );
-    if (!mounted) return false;
-    if (result is CameraPermissionLoaded &&
-        result.status == CameraPermissionStatus.authorized) {
-      await pushWithVideoPause(VideoRecorderScreen.path);
-      return true;
-    }
-    return false;
+    // Navigate for every resolved status. The route gate renders the
+    // authorized camera, the canRequest prompt, the requiresSettings prompt,
+    // or the loading/error UI, and owns the native permission request.
+    await pushWithVideoPause(VideoRecorderScreen.path);
+    return true;
   }
 }
 
-/// Returns the current permission status, or `null` if it couldn't be
-/// determined (error / denied / unknown).
-Future<CameraPermissionStatus?> _resolvePermissionStatus(
-  CameraPermissionBloc bloc,
-) async {
+/// Waits until the permission bloc has settled out of its initial/loading
+/// state so the recorder gate renders the correct screen on arrival.
+///
+/// Triggers a refresh first when no check has run yet, and falls back after a
+/// timeout so navigation is never blocked on a stream that never emits.
+Future<void> _awaitPermissionResolved(CameraPermissionBloc bloc) async {
   final current = bloc.state;
-  if (current is CameraPermissionLoaded) return current.status;
+  if (current is CameraPermissionLoaded || current is CameraPermissionError) {
+    return;
+  }
 
-  // Already in a terminal state with no pending event — return
-  // immediately instead of waiting on a stream that will never emit.
-  if (current is CameraPermissionDenied) return null;
-  if (current is CameraPermissionError) return null;
-
-  // Not yet loaded — trigger refresh and wait for result.
+  // Not yet loaded — trigger refresh and wait for the result.
   if (current is CameraPermissionInitial) {
     bloc.add(const CameraPermissionRefresh());
   }
 
-  final state = await bloc.stream
+  await bloc.stream
       .firstWhere(
-        (s) =>
-            s is CameraPermissionLoaded ||
-            s is CameraPermissionError ||
-            s is CameraPermissionDenied,
+        (s) => s is CameraPermissionLoaded || s is CameraPermissionError,
       )
       .timeout(
         const Duration(seconds: 10),
         onTimeout: () => const CameraPermissionError(),
       );
-
-  if (state is CameraPermissionLoaded) return state.status;
-  return null;
 }

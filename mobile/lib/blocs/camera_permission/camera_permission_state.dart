@@ -40,13 +40,6 @@ class CameraPermissionLoaded extends CameraPermissionState {
   List<Object?> get props => [status];
 }
 
-class CameraPermissionDenied extends CameraPermissionState {
-  const CameraPermissionDenied();
-
-  @override
-  List<Object?> get props => [];
-}
-
 /// Error checking or requesting permissions.
 class CameraPermissionError extends CameraPermissionState {
   const CameraPermissionError();

@@ -1,12 +1,9 @@
 // ABOUTME: Tests for pushToCameraWithPermission extension on BuildContext
-// ABOUTME: Verifies pre-navigation permission check and bottom sheet flow
+// ABOUTME: Verifies pre-navigation permission checks route to the recorder gate
 
 import 'dart:async';
 
-import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,100 +14,6 @@ import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/camera_permission_check.dart';
 
 import '../helpers/go_router.dart';
-
-// 1×1 transparent PNG for DivineSticker asset loading in tests.
-final _transparentPng = Uint8List.fromList(const <int>[
-  0x89,
-  0x50,
-  0x4e,
-  0x47,
-  0x0d,
-  0x0a,
-  0x1a,
-  0x0a,
-  0x00,
-  0x00,
-  0x00,
-  0x0d,
-  0x49,
-  0x48,
-  0x44,
-  0x52,
-  0x00,
-  0x00,
-  0x00,
-  0x01,
-  0x00,
-  0x00,
-  0x00,
-  0x01,
-  0x08,
-  0x06,
-  0x00,
-  0x00,
-  0x00,
-  0x1f,
-  0x15,
-  0xc4,
-  0x89,
-  0x00,
-  0x00,
-  0x00,
-  0x0a,
-  0x49,
-  0x44,
-  0x41,
-  0x54,
-  0x78,
-  0x9c,
-  0x63,
-  0x00,
-  0x01,
-  0x00,
-  0x00,
-  0x05,
-  0x00,
-  0x01,
-  0x0d,
-  0x0a,
-  0x2d,
-  0xb4,
-  0x00,
-  0x00,
-  0x00,
-  0x00,
-  0x49,
-  0x45,
-  0x4e,
-  0x44,
-  0xae,
-  0x42,
-  0x60,
-  0x82,
-]);
-
-class _TestAssetBundle extends CachingAssetBundle {
-  _TestAssetBundle() {
-    final manifest = <String, List<Map<String, Object>>>{
-      for (final sticker in DivineStickerName.values)
-        sticker.assetPath: [
-          <String, Object>{'asset': sticker.assetPath},
-        ],
-    };
-    _manifest = const StandardMessageCodec().encodeMessage(manifest)!;
-  }
-
-  late final ByteData _manifest;
-  final ByteData _imageData = ByteData.sublistView(_transparentPng);
-
-  @override
-  Future<ByteData> load(String key) {
-    if (key == 'AssetManifest.bin') {
-      return SynchronousFuture<ByteData>(_manifest);
-    }
-    return SynchronousFuture<ByteData>(_imageData);
-  }
-}
 
 class _FakeCameraPermissionBloc extends Fake implements CameraPermissionBloc {
   _FakeCameraPermissionBloc(CameraPermissionState initialState)
@@ -147,11 +50,9 @@ class _FakeCameraPermissionBloc extends Fake implements CameraPermissionBloc {
 
 void main() {
   late MockGoRouter mockGoRouter;
-  late _TestAssetBundle testBundle;
 
   setUp(() {
     mockGoRouter = MockGoRouter();
-    testBundle = _TestAssetBundle();
     when(
       () => mockGoRouter.push<Object?>(any(), extra: any(named: 'extra')),
     ).thenAnswer((_) async => null);
@@ -169,8 +70,6 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            builder: (context, child) =>
-                DefaultAssetBundle(bundle: testBundle, child: child!),
             home: Scaffold(
               body: Builder(
                 builder: (context) => ElevatedButton(
@@ -290,8 +189,8 @@ void main() {
         await tester.tap(find.text('Trigger'));
         await tester.pump();
 
-        // Stream never emits → 10s timeout fires → status is null
-        // → navigates directly.
+        // Stream never emits → 10s timeout fires → navigates anyway and lets
+        // the gate render the loading/error UI.
         await tester.pump(const Duration(seconds: 11));
         await tester.pumpAndSettle();
 
@@ -330,29 +229,6 @@ void main() {
     });
 
     group('returns immediately for terminal states', () {
-      testWidgets('navigates directly when state is $CameraPermissionDenied', (
-        tester,
-      ) async {
-        final bloc = _FakeCameraPermissionBloc(const CameraPermissionDenied());
-        bool? result;
-        await tester.pumpWidget(
-          buildSubject(bloc, onResult: (r) => result = r),
-        );
-
-        await tester.tap(find.text('Trigger'));
-        await tester.pumpAndSettle();
-
-        verify(
-          () => mockGoRouter.push<Object?>(
-            VideoRecorderScreen.path,
-            extra: any(named: 'extra'),
-          ),
-        ).called(1);
-        expect(result, isTrue);
-        // Must not have dispatched any events.
-        expect(bloc.addedEvents, isEmpty);
-      });
-
       testWidgets('navigates directly when state is $CameraPermissionError', (
         tester,
       ) async {
@@ -376,144 +252,34 @@ void main() {
       });
     });
 
-    group('shows bottom sheet when canRequest', () {
-      testWidgets('renders prompt with correct content', (tester) async {
-        final bloc = _FakeCameraPermissionBloc(
-          const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
-        );
-        await tester.pumpWidget(buildSubject(bloc));
+    group('routes requestable permissions to the recorder gate', () {
+      testWidgets(
+        'navigates without dispatching $CameraPermissionRequest when canRequest',
+        (tester) async {
+          final bloc = _FakeCameraPermissionBloc(
+            const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
+          );
+          bool? result;
+          await tester.pumpWidget(
+            buildSubject(bloc, onResult: (r) => result = r),
+          );
 
-        await tester.tap(find.text('Trigger'));
-        await tester.pumpAndSettle();
+          await tester.tap(find.text('Trigger'));
+          await tester.pumpAndSettle();
 
-        expect(find.text('Allow camera & microphone access'), findsOneWidget);
-        expect(find.text('Continue'), findsOneWidget);
-        expect(find.text('Not now'), findsOneWidget);
-      });
-
-      testWidgets('navigates after user grants permission', (tester) async {
-        final bloc = _FakeCameraPermissionBloc(
-          const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
-        );
-        bool? result;
-        await tester.pumpWidget(
-          buildSubject(bloc, onResult: (r) => result = r),
-        );
-
-        await tester.tap(find.text('Trigger'));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
-
-        bloc.emitState(
-          const CameraPermissionLoaded(CameraPermissionStatus.authorized),
-        );
-        await tester.pumpAndSettle();
-
-        verify(
-          () => mockGoRouter.push<Object?>(
-            VideoRecorderScreen.path,
-            extra: any(named: 'extra'),
-          ),
-        ).called(1);
-        expect(result, isTrue);
-      });
-
-      testWidgets('adds $CameraPermissionRequest after user taps Continue', (
-        tester,
-      ) async {
-        final bloc = _FakeCameraPermissionBloc(
-          const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
-        );
-        await tester.pumpWidget(buildSubject(bloc));
-
-        await tester.tap(find.text('Trigger'));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
-
-        expect(bloc.addedEvents, contains(isA<CameraPermissionRequest>()));
-
-        // Unblock the stream wait
-        bloc.emitState(const CameraPermissionDenied());
-        await tester.pumpAndSettle();
-      });
-
-      testWidgets('returns false when permission is denied', (tester) async {
-        final bloc = _FakeCameraPermissionBloc(
-          const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
-        );
-        bool? result;
-        await tester.pumpWidget(
-          buildSubject(bloc, onResult: (r) => result = r),
-        );
-
-        await tester.tap(find.text('Trigger'));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
-
-        bloc.emitState(const CameraPermissionDenied());
-        await tester.pumpAndSettle();
-
-        verifyNever(
-          () => mockGoRouter.push<Object?>(any(), extra: any(named: 'extra')),
-        );
-        expect(result, isFalse);
-      });
-
-      testWidgets('returns false when user taps Not now', (tester) async {
-        final bloc = _FakeCameraPermissionBloc(
-          const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
-        );
-        bool? result;
-        await tester.pumpWidget(
-          buildSubject(bloc, onResult: (r) => result = r),
-        );
-
-        await tester.tap(find.text('Trigger'));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Not now'));
-        await tester.pumpAndSettle();
-
-        verifyNever(
-          () => mockGoRouter.push<Object?>(any(), extra: any(named: 'extra')),
-        );
-        expect(result, isFalse);
-      });
-
-      testWidgets('returns false when permission request times out', (
-        tester,
-      ) async {
-        final bloc = _FakeCameraPermissionBloc(
-          const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
-        );
-        bool? result;
-        await tester.pumpWidget(
-          buildSubject(bloc, onResult: (r) => result = r),
-        );
-
-        await tester.tap(find.text('Trigger'));
-        await tester.pumpAndSettle();
-
-        // Tap Continue to dispatch CameraPermissionRequest.
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
-
-        // Simulate timeout by using fakeAsync elapsed time.
-        // The stream never emits, so the 30 s timeout fires.
-        await tester.pump(const Duration(seconds: 31));
-        await tester.pumpAndSettle();
-
-        verifyNever(
-          () => mockGoRouter.push<Object?>(any(), extra: any(named: 'extra')),
-        );
-        expect(result, isFalse);
-      });
+          verify(
+            () => mockGoRouter.push<Object?>(
+              VideoRecorderScreen.path,
+              extra: any(named: 'extra'),
+            ),
+          ).called(1);
+          expect(
+            bloc.addedEvents,
+            isNot(contains(isA<CameraPermissionRequest>())),
+          );
+          expect(result, isTrue);
+        },
+      );
     });
   });
 }
