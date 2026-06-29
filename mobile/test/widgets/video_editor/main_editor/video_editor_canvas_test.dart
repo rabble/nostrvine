@@ -330,12 +330,15 @@ void main() {
       },
     );
 
-    test('reports failure for any thrown error, not just platform ones', () {
+    test('rethrows a non-platform error so genuine bugs still surface', () {
+      // A programming-invariant violation (StateError/ArgumentError) is not a
+      // composition rejection — it must propagate so it reaches Crashlytics
+      // instead of being hidden behind a silent thumbnail fallback.
       expect(
         VideoEditorCanvas.guardClipLoad(
           () async => throw ArgumentError('clips must not be empty'),
         ),
-        completion(isFalse),
+        throwsA(isA<ArgumentError>()),
       );
     });
   });

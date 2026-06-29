@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart' show kReleaseMode, listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' hide Layer;
 import 'package:flutter/scheduler.dart' show Ticker;
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -126,21 +127,27 @@ class VideoEditorCanvas extends StatelessWidget {
     return (delta.isNegative ? -delta : delta) <= seekSettleTolerance;
   }
 
-  /// Runs a `setClips` [load], swallowing an unbuildable-composition failure.
+  /// Runs a `setClips` [load], swallowing the native unbuildable-composition
+  /// rejection.
   ///
   /// iOS rejects an unbuildable composition — zero render size, no playable
   /// video track, or a missing / partially-rendered draft clip file — with a
   /// `COMPOSITION_ERROR` `PlatformException`. That is an expected domain
   /// failure for stale draft clips on reopen, not a crash. Returns `true` when
-  /// the composition built and `false` when it was rejected, so callers can
-  /// stay on the thumbnail fallback instead of letting the rejection escape as
-  /// an unhandled async error and surface as a Crashlytics non-fatal (#3410).
+  /// the composition built and `false` when the native player rejected it, so
+  /// callers can stay on the thumbnail fallback instead of letting the
+  /// rejection escape as an unhandled async error and surface as a Crashlytics
+  /// non-fatal (#3410).
+  ///
+  /// Only [PlatformException] is swallowed; any other error (e.g. a
+  /// `StateError` from a broken invariant) is rethrown so it still reaches
+  /// Crashlytics rather than being silently hidden.
   @visibleForTesting
   static Future<bool> guardClipLoad(Future<void> Function() load) async {
     try {
       await load();
       return true;
-    } catch (e, s) {
+    } on PlatformException catch (e, s) {
       Log.error(
         'setClips failed: $e',
         name: 'VideoEditorCanvas',
