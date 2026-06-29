@@ -893,6 +893,128 @@ void main() {
           expect(result!.about, equals('New bio'));
           expect(result.displayName, equals('New Name'));
         });
+
+        test('returns the richer local profile on a createdAt tie instead of '
+            'the leaner Funnelcake copy (#3141)', () async {
+          // Local cache and Funnelcake share the same Kind 0 timestamp.
+          // _cacheProfileIfNewer keeps the local copy (not strictly newer),
+          // so the return value must match the cache — the richer local
+          // profile, not the leaner Funnelcake one that may omit fields.
+          final localProfile = UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Local Name',
+            about: 'Local bio',
+            rawData: const {'display_name': 'Local Name', 'about': 'Local bio'},
+            createdAt: DateTime.utc(2024, 3),
+            eventId: testEventId,
+          );
+
+          final freshDao = MockUserProfilesDao();
+          when(
+            () => freshDao.getProfile(any()),
+          ).thenAnswer((_) async => localProfile);
+          when(() => freshDao.upsertProfile(any())).thenAnswer((_) async {});
+
+          final repo = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: freshDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            profileStatsDao: mockProfileStatsDao,
+          );
+
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).thenAnswer(
+            (_) async => UserProfileFound(
+              profile: UserProfileData.fromJson(testPubkey, const {
+                'display_name': 'Funnelcake Name',
+                'about': 'Funnelcake bio',
+                'profile_updated': '2024-03-01T00:00:00Z', // tie
+              }),
+            ),
+          );
+
+          final result = await repo.fetchFreshProfile(pubkey: testPubkey);
+
+          // Tie is not strictly newer — the cache is untouched.
+          verifyNever(() => freshDao.upsertProfile(any()));
+          // Resolved directly from the cache; no relay fallback.
+          verifyNever(() => mockNostrClient.fetchProfile(any()));
+          // The returned profile is the richer local copy, not Funnelcake's.
+          expect(result, isNotNull);
+          expect(result!.about, equals('Local bio'));
+          expect(result.displayName, equals('Local Name'));
+        });
+
+        test(
+          'keeps the local cache and falls through to relay when a found '
+          'Funnelcake profile carries no timestamp (defensive #3141)',
+          () async {
+            // Funnelcake returns a found profile but omits profile_updated, so
+            // UserProfileData.createdAt is null. With a local profile already
+            // cached, newest-wins cannot be applied, so the conservative path
+            // must run: do NOT overwrite the cache with the timestamp-less
+            // copy, and fall through to the relay/indexer path so a newer
+            // Kind 0 can still win.
+            final localProfile = UserProfile(
+              pubkey: testPubkey,
+              displayName: 'Local Name',
+              about: 'Local bio',
+              rawData: const {
+                'display_name': 'Local Name',
+                'about': 'Local bio',
+              },
+              createdAt: DateTime.utc(2024),
+              eventId: testEventId,
+            );
+
+            final freshDao = MockUserProfilesDao();
+            when(
+              () => freshDao.getProfile(any()),
+            ).thenAnswer((_) async => localProfile);
+            when(() => freshDao.upsertProfile(any())).thenAnswer((_) async {});
+
+            final repo = ProfileRepository(
+              nostrClient: mockNostrClient,
+              userProfilesDao: freshDao,
+              httpClient: mockHttpClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+              profileStatsDao: mockProfileStatsDao,
+            );
+
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => UserProfileFound(
+                profile: UserProfileData.fromJson(testPubkey, const {
+                  'display_name': 'Funnelcake Name',
+                  'about': 'Funnelcake bio',
+                  // No profile_updated → createdAt stays null.
+                }),
+              ),
+            );
+
+            // Relays find nothing newer — the local cache is the fallback.
+            when(
+              () => mockNostrClient.fetchProfile(testPubkey),
+            ).thenAnswer((_) async => null);
+
+            final result = await repo.fetchFreshProfile(pubkey: testPubkey);
+
+            // The timestamp-less Funnelcake copy must not overwrite the cache.
+            verifyNever(() => freshDao.upsertProfile(any()));
+
+            // The relay path must run so a newer Kind 0 can still win.
+            verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+
+            // Relays found nothing newer, so the local cache is returned.
+            expect(result, isNotNull);
+            expect(result!.about, equals('Local bio'));
+          },
+        );
       });
 
       group('indexer relay fallback', () {

@@ -328,14 +328,18 @@ class ProfileRepository {
               // genuinely newer Funnelcake profile can upgrade an older
               // local one (#3141).
               final existing = await _userProfilesDao.getProfile(pubkey);
-              await _cacheProfileIfNewer(funnelcakeProfile);
-              // Return the newest of the two so the caller never sees a
-              // stale Funnelcake copy when the local cache is more recent.
-              if (existing != null &&
-                  existing.createdAt.isAfter(funnelcakeProfile.createdAt)) {
-                return existing;
-              }
-              return funnelcakeProfile;
+              final funnelcakeWon = await _cacheProfileIfNewer(
+                funnelcakeProfile,
+                cached: existing,
+                cachedResolved: true,
+              );
+              // Mirror the cache decision exactly: when the Funnelcake copy
+              // did not win (older-or-equal, so the cache kept `existing`),
+              // return `existing` too. Returning the Funnelcake copy here
+              // would hand the caller a profile that disagrees with the
+              // cache and may be missing fields the local one carries
+              // (lud06, eventId, custom rawData).
+              return funnelcakeWon ? funnelcakeProfile : existing;
             }
 
             // Defensive fallback: a found profile without a parseable
@@ -395,16 +399,33 @@ class ProfileRepository {
     return null;
   }
 
-  Future<void> _cacheProfileIfNewer(UserProfile profile) async {
-    final cachedProfile = await _userProfilesDao.getProfile(profile.pubkey);
+  /// Upserts [profile] into the local cache only when it is strictly newer
+  /// than the currently-cached profile for the same pubkey.
+  ///
+  /// Returns `true` when the cache was written ([profile] won), `false` when
+  /// an existing, newer-or-equal cache entry was kept.
+  ///
+  /// Pass [cached] together with `cachedResolved: true` when the caller has
+  /// already read the current cache entry, to skip a redundant DAO read. A
+  /// `null` [cached] with [cachedResolved] true means "confirmed no local
+  /// profile".
+  Future<bool> _cacheProfileIfNewer(
+    UserProfile profile, {
+    UserProfile? cached,
+    bool cachedResolved = false,
+  }) async {
+    final cachedProfile = cachedResolved
+        ? cached
+        : await _userProfilesDao.getProfile(profile.pubkey);
     if (cachedProfile != null &&
         !profile.createdAt.isAfter(cachedProfile.createdAt)) {
-      return;
+      return false;
     }
 
     _confirmedMissing.remove(profile.pubkey);
     _knownCached.add(profile.pubkey);
     await _userProfilesDao.upsertProfile(profile);
+    return true;
   }
 
   /// Queries connected relays and indexer relays in parallel for a
