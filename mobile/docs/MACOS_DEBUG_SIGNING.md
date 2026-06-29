@@ -21,16 +21,22 @@ never showed the native camera or microphone permission prompts in
 debug. The recorder flow could not request access and appeared broken
 on debug builds.
 
-Debug builds now keep an **ad-hoc** identity (`CODE_SIGN_IDENTITY = -`,
-no Apple Developer account required) but require signing and apply the
-debug entitlements:
+Debug builds now **require** signing and apply the debug entitlements:
 
 ```
 CODE_SIGN_IDENTITY = -
-CODE_SIGN_ENTITLEMENTS = Runner/DebugProfile.entitlements
 CODE_SIGNING_REQUIRED = YES
 CODE_SIGNING_ALLOWED = YES
 ```
+
+The signing identity is chosen by the Runner target's Debug build
+config, which uses `CODE_SIGN_STYLE = Automatic` with
+`DEVELOPMENT_TEAM = GZCZBKH7MY`, so a debug build is **team-signed** by
+default. The `CODE_SIGN_IDENTITY = -` in the xcconfig sits at a lower
+precedence than the target setting and does **not** override it — it is
+only a fallback, not an ad-hoc switch. The debug entitlements
+(`Runner/DebugProfile.entitlements`) are applied through the Runner
+target's own `CODE_SIGN_ENTITLEMENTS`.
 
 Two related changes make that signed debug build run:
 
@@ -52,18 +58,19 @@ Two related changes make that signed debug build run:
    codesign --force --deep --options runtime --sign "$sign_identity" "$framework"
    ```
 
-   On an ad-hoc debug build `sign_identity` resolves to `-`, so frameworks
-   are ad-hoc signed *with* the hardened runtime option, matching the host
-   app. On a team-signed build it inherits the Runner's real identity, so
-   the Team IDs match. The phase now fails the build (instead of
-   swallowing the error) if a framework cannot be signed, since an
-   unsigned framework would crash the app at launch under Hardened
-   Runtime.
+   `sign_identity` resolves to whatever the Runner is signed with, so the
+   app and its embedded frameworks always share one identity and the Team
+   IDs match — the team identity for a normal debug build, or ad-hoc `-`
+   only if the target identity is unset. The phase now fails the build
+   (instead of swallowing the error) if a framework cannot be signed,
+   since an unsigned framework would crash the app at launch under
+   Hardened Runtime.
 
 ## Local setup expectations
 
-For day-to-day debug work nothing new is required: the ad-hoc identity
-needs no Apple Developer account and no team membership.
+Debug builds are signed with the Runner target's automatic-signing
+identity for team `GZCZBKH7MY`. If you belong to that team, nothing new
+is required:
 
 ```bash
 cd mobile
@@ -71,16 +78,13 @@ flutter run -d macos        # or ./run_dev.sh macos debug
 flutter build macos --debug
 ```
 
-The Runner target still carries `DEVELOPMENT_TEAM = GZCZBKH7MY` and
-`CODE_SIGN_STYLE = Automatic` for profile/release builds. For **debug**
-the explicit `CODE_SIGN_IDENTITY = -` in `Flutter-Debug.xcconfig` wins,
-so the debug build signs ad-hoc regardless of which team you belong to.
-
-If a fresh checkout still fails a debug build with a provisioning or
-team error, set your own team locally **without committing it**: open
-`macos/Runner.xcworkspace` in Xcode, select the Runner target, and pick
-your team under *Signing & Capabilities* for the Debug configuration.
-Keep that change local — never commit a different `DEVELOPMENT_TEAM`.
+If you are **not** in team `GZCZBKH7MY`, automatic signing fails with a
+provisioning or team error. Set your own team locally **without
+committing it**: open `macos/Runner.xcworkspace` in Xcode, select the
+Runner target, and pick your team under *Signing & Capabilities* for the
+Debug configuration. Any Apple ID provides a free personal team that can
+sign local debug builds. Keep that change local — never commit a
+different `DEVELOPMENT_TEAM`.
 
 ## If a stale Swift Package Manager cache blocks the build
 

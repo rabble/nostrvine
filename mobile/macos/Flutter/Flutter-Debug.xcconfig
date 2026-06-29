@@ -1,9 +1,11 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
 #include "ephemeral/Flutter-Generated.xcconfig"
 
-// Keep debug signing ad-hoc, but preserve Runner entitlements so macOS can
-// show native camera and microphone permission prompts.
+// Require code signing for debug builds so the Runner entitlements are
+// applied and macOS shows the native camera/microphone prompts. The
+// identity comes from the Runner target's Debug config (team-signed via
+// CODE_SIGN_STYLE = Automatic); the `-` below is only a fallback for
+// contexts where the target sets no identity.
 CODE_SIGN_IDENTITY = -
-CODE_SIGN_ENTITLEMENTS = Runner/DebugProfile.entitlements
 CODE_SIGNING_REQUIRED = YES
 CODE_SIGNING_ALLOWED = YES

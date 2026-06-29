@@ -240,10 +240,11 @@ Useful app entry paths from `mobile/`:
 - `./build_ios.sh release`
 - `./build_android.sh release`
 
-macOS debug builds are code signed (ad-hoc, no Apple Developer account
-needed) so the native camera and microphone prompts work. See
+macOS debug builds are code signed (using the Runner target's team
+identity) so the native camera and microphone prompts work. See
 [mobile/docs/MACOS_DEBUG_SIGNING.md](mobile/docs/MACOS_DEBUG_SIGNING.md)
-if a fresh checkout fails to sign.
+if a fresh checkout fails to sign — e.g. when you are not in the signing
+team.
 
 If generated code changes:
 

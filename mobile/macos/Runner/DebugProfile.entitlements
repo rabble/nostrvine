@@ -29,7 +29,6 @@
 	</array>
 	<key>com.apple.security.temporary-exception.files.absolute-path.read-only</key>
 	<array>
-		<string>/Users/rabble/code/andotherstuff/openvine/mobile/</string>
 		<string>/opt/homebrew/bin/ffmpeg</string>
 	</array>
 	<key>com.apple.security.cs.allow-unsigned-executable-memory</key>
