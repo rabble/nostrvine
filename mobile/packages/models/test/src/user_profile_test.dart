@@ -286,6 +286,43 @@ void main() {
         expect(profile.rawData.containsKey('lud16'), isFalse);
         expect(profile.rawData.containsKey('website'), isFalse);
       });
+
+      test('uses the original Kind 0 timestamp when Funnelcake provides '
+          'one (#3141)', () {
+        final original = DateTime.utc(2023, 11, 14, 22, 13, 20);
+        final result = UserProfileFound(
+          profile: UserProfileData(
+            pubkey: testPubkey,
+            displayName: 'Alice',
+            createdAt: original,
+          ),
+        );
+
+        final profile = UserProfile.fromUserProfileFound(result);
+
+        expect(profile.createdAt, equals(original));
+      });
+
+      test('falls back to DateTime.now() when no timestamp is provided', () {
+        const result = UserProfileFound(
+          profile: UserProfileData(pubkey: testPubkey, displayName: 'Alice'),
+        );
+
+        final before = DateTime.now();
+        final profile = UserProfile.fromUserProfileFound(result);
+        final after = DateTime.now();
+
+        expect(
+          profile.createdAt.isBefore(before),
+          isFalse,
+          reason: 'synthetic timestamp should be >= before',
+        );
+        expect(
+          profile.createdAt.isAfter(after),
+          isFalse,
+          reason: 'synthetic timestamp should be <= after',
+        );
+      });
     });
 
     group('fromJson', () {

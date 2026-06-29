@@ -44,6 +44,7 @@ class UserProfileData {
     this.website,
     this.nip05,
     this.lud16,
+    this.createdAt,
   });
 
   factory UserProfileData.fromJson(String pubkey, Map<String, dynamic> json) {
@@ -57,6 +58,10 @@ class UserProfileData {
       website: json['website'] as String?,
       nip05: json['nip05'] as String?,
       lud16: json['lud16'] as String?,
+      createdAt: switch (json['profile_updated']) {
+        final String value => DateTime.tryParse(value),
+        _ => null,
+      },
     );
   }
 
@@ -70,6 +75,16 @@ class UserProfileData {
   final String? nip05;
   final String? lud16;
 
+  /// The original Nostr Kind 0 event `created_at`, taken from Funnelcake's
+  /// `profile.profile_updated` field.
+  ///
+  /// Funnelcake derives this directly from the indexed Kind 0 event timestamp
+  /// (newest-wins), so it is a trustworthy original event time rather than a
+  /// service/cache write time. `null` when the API response omits it or the
+  /// value cannot be parsed. Used by `UserProfile.fromUserProfileFound` to
+  /// drive newest-wins cache merges instead of a synthetic `DateTime.now()`.
+  final DateTime? createdAt;
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -82,7 +97,8 @@ class UserProfileData {
         other.banner == banner &&
         other.website == website &&
         other.nip05 == nip05 &&
-        other.lud16 == lud16;
+        other.lud16 == lud16 &&
+        other.createdAt == createdAt;
   }
 
   @override
@@ -96,6 +112,7 @@ class UserProfileData {
     website,
     nip05,
     lud16,
+    createdAt,
   );
 
   @override

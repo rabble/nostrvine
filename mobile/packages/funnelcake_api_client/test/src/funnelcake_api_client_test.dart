@@ -3519,7 +3519,8 @@ void main() {
     "display_name": "Test User",
     "about": "A test profile",
     "picture": "https://example.com/avatar.jpg",
-    "nip05": "test@example.com"
+    "nip05": "test@example.com",
+    "profile_updated": "2023-11-14T22:13:20Z"
   }
 }
 ''';
@@ -3534,6 +3535,11 @@ void main() {
         expect(found.profile.pubkey, equals(testPubkey));
         expect(found.profile.name, equals('testuser'));
         expect(found.profile.displayName, equals('Test User'));
+        // The original Nostr Kind 0 timestamp is carried through (#3141).
+        expect(
+          found.profile.createdAt,
+          equals(DateTime.utc(2023, 11, 14, 22, 13, 20)),
+        );
       });
 
       test(

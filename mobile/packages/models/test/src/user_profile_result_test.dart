@@ -37,6 +37,34 @@ void main() {
       expect(data.pubkey, equals(_pubkey));
       expect(data.name, isNull);
       expect(data.displayName, isNull);
+      expect(data.createdAt, isNull);
+    });
+
+    test('fromJson parses profile_updated into createdAt', () {
+      final data = UserProfileData.fromJson(_pubkey, const {
+        'name': 'alice',
+        'profile_updated': '2023-11-14T22:13:20Z',
+      });
+
+      expect(
+        data.createdAt,
+        equals(DateTime.utc(2023, 11, 14, 22, 13, 20)),
+      );
+    });
+
+    test('fromJson leaves createdAt null when profile_updated absent', () {
+      final data = UserProfileData.fromJson(_pubkey, const {'name': 'alice'});
+
+      expect(data.createdAt, isNull);
+    });
+
+    test('fromJson leaves createdAt null when profile_updated unparseable', () {
+      final data = UserProfileData.fromJson(_pubkey, const {
+        'name': 'alice',
+        'profile_updated': 'not-a-date',
+      });
+
+      expect(data.createdAt, isNull);
     });
 
     test('equality', () {
@@ -44,6 +72,19 @@ void main() {
       final b = UserProfileData.fromJson(_pubkey, const {'name': 'alice'});
 
       expect(a, equals(b));
+    });
+
+    test('equality distinguishes createdAt', () {
+      final a = UserProfileData.fromJson(_pubkey, const {
+        'name': 'alice',
+        'profile_updated': '2023-11-14T22:13:20Z',
+      });
+      final b = UserProfileData.fromJson(_pubkey, const {
+        'name': 'alice',
+        'profile_updated': '2024-01-01T00:00:00Z',
+      });
+
+      expect(a, isNot(equals(b)));
     });
   });
 

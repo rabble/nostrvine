@@ -755,25 +755,18 @@ void main() {
 
         test('does not overwrite a newer locally-cached bio with stale '
             'Funnelcake data (regression: bio appears not to save)', () async {
-          // Simulate: user just saved their bio. The local cache holds
-          // the freshly-published profile (createdAt = 1704153600, newer).
-          // Funnelcake returns a stale cached profile
-          // (createdAt = 1704067200, older). The bio must NOT be
-          // overwritten, the relay path must still run (so a newer Kind 0
-          // on relays can win), and the return value must be the locally
-          // cached profile when relays find nothing newer.
-          const newerTimestamp = 1704153600; // newer — just saved
-          const olderTimestamp = 1704067200; // older — stale Funnelcake cache
-
+          // Simulate: user just saved their bio. The local cache holds the
+          // freshly-published profile (newer). Funnelcake returns a stale
+          // profile carrying its original — older — Kind 0 timestamp
+          // (profile.profile_updated). Newest-wins must keep the local copy:
+          // no overwrite, and the newer local profile is returned (#3141,
+          // follow-up to #3104).
           final freshlySavedProfile = UserProfile(
             pubkey: testPubkey,
             displayName: 'Test User',
             about: 'My new bio',
             rawData: const {'display_name': 'Test User', 'about': 'My new bio'},
-            createdAt: DateTime.fromMillisecondsSinceEpoch(
-              newerTimestamp * 1000,
-              isUtc: true,
-            ),
+            createdAt: DateTime.utc(2024, 1, 2), // newer — just saved
             eventId: testEventId,
           );
 
@@ -801,15 +794,10 @@ void main() {
               profile: UserProfileData.fromJson(testPubkey, const {
                 'display_name': 'Test User',
                 'about': '', // stale — bio not yet indexed by Funnelcake
-                'created_at': olderTimestamp,
+                'profile_updated': '2024-01-01T00:00:00Z', // older
               }),
             ),
           );
-
-          // Relays find nothing newer — the local cache is the fallback.
-          when(
-            () => mockNostrClient.fetchProfile(testPubkey),
-          ).thenAnswer((_) async => null);
 
           final result = await repo.fetchFreshProfile(pubkey: testPubkey);
 
@@ -826,16 +814,84 @@ void main() {
             ),
           );
 
-          // The relay path must have been invoked so a newer Kind 0 can
-          // still win — a future refactor cannot safely turn the Funnelcake
-          // break into an early return while keeping this assertion green.
-          verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+          // Funnelcake now carries the original Kind 0 timestamp, so the
+          // relay fallback is no longer needed to protect a freshly-saved
+          // bio — newest-wins resolves it directly.
+          verifyNever(() => mockNostrClient.fetchProfile(any()));
 
-          // The return value must be the freshly-saved local profile,
-          // not null (the break path falls back to the cache when relays
-          // find nothing).
+          // The newer local profile is returned, not the stale Funnelcake
+          // copy.
           expect(result, isNotNull);
           expect(result!.about, equals('My new bio'));
+        });
+
+        test('updates an older locally-cached profile when Funnelcake has a '
+            'newer one (#3141)', () async {
+          // The local cache holds an older profile. Funnelcake returns a
+          // newer profile carrying a newer original Kind 0 timestamp.
+          // Newest-wins must upsert the Funnelcake copy and return it.
+          final olderLocalProfile = UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Old Name',
+            about: 'Old bio',
+            rawData: const {'display_name': 'Old Name', 'about': 'Old bio'},
+            createdAt: DateTime.utc(2024), // older
+            eventId: testEventId,
+          );
+
+          UserProfile? stored = olderLocalProfile;
+          final freshDao = MockUserProfilesDao();
+          when(
+            () => freshDao.getProfile(any()),
+          ).thenAnswer((_) async => stored);
+          when(() => freshDao.upsertProfile(any())).thenAnswer((
+            invocation,
+          ) async {
+            stored = invocation.positionalArguments.first as UserProfile;
+          });
+
+          final repo = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: freshDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            profileStatsDao: mockProfileStatsDao,
+          );
+
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).thenAnswer(
+            (_) async => UserProfileFound(
+              profile: UserProfileData.fromJson(testPubkey, const {
+                'display_name': 'New Name',
+                'about': 'New bio',
+                'profile_updated': '2024-02-01T00:00:00Z', // newer
+              }),
+            ),
+          );
+
+          final result = await repo.fetchFreshProfile(pubkey: testPubkey);
+
+          // The newer Funnelcake profile upgrades the cache.
+          verify(
+            () => freshDao.upsertProfile(
+              any(
+                that: isA<UserProfile>().having(
+                  (p) => p.about,
+                  'about',
+                  equals('New bio'),
+                ),
+              ),
+            ),
+          ).called(1);
+
+          // Resolved directly from Funnelcake; no relay fallback needed.
+          verifyNever(() => mockNostrClient.fetchProfile(any()));
+
+          expect(result, isNotNull);
+          expect(result!.about, equals('New bio'));
+          expect(result.displayName, equals('New Name'));
         });
       });
 

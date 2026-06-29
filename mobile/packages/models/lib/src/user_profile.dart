@@ -119,6 +119,12 @@ class UserProfile {
   /// future NIP additions) cannot be recovered by this factory and
   /// must be re-seeded by `ProfileRepository.saveProfileEvent` from a
   /// relay query before publishing.
+  ///
+  /// `createdAt` uses the original Kind 0 event timestamp when Funnelcake
+  /// provides one (`UserProfileData.createdAt`), falling back to
+  /// `DateTime.now()` only when it is absent. The real timestamp lets the
+  /// repository run a newest-wins comparison against the local cache instead
+  /// of treating every Funnelcake profile as freshly minted.
   factory UserProfile.fromUserProfileFound(
     UserProfileFound result, {
     String? eventIdPrefix,
@@ -145,7 +151,7 @@ class UserProfile {
       nip05: p.nip05,
       lud16: p.lud16,
       rawData: rawData,
-      createdAt: DateTime.now(),
+      createdAt: p.createdAt ?? DateTime.now(),
       eventId: '${eventIdPrefix ?? 'rest'}-${p.pubkey}',
     );
   }
