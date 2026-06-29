@@ -1,0 +1,56 @@
+{
+  "metaswarm_version": "0.12.0",
+  "distribution": "plugin",
+  "installed_at": "2026-06-29T17:42:52Z",
+  "updated_at": "2026-06-29T18:30:00Z",
+  "detection": {
+    "language": "Dart / Flutter",
+    "framework": "Flutter",
+    "test_runner": "flutter test",
+    "linter": "flutter analyze",
+    "formatter": "dart format",
+    "package_manager": "pub",
+    "type_checker": "dart analyzer",
+    "ci": "GitHub Actions",
+    "git_hooks": null
+  },
+  "choices": {
+    "coverage_threshold": 80,
+    "external_tools": false,
+    "visual_review": false,
+    "ci_pipeline": false,
+    "git_hooks": false
+  },
+  "commands": {
+    "test": "cd mobile && flutter test",
+    "coverage": "cd mobile && flutter test --coverage",
+    "lint": "cd mobile && flutter analyze",
+    "typecheck": "cd mobile && flutter analyze",
+    "format_check": "cd mobile && dart format --set-exit-if-changed ."
+  },
+  "knowledge_sources": {
+    "divine_context": {
+      "required": true,
+      "path": "/Users/rabble/code/divine/divine-context/AGENT_CONTEXT.md",
+      "purpose": "Cross-repo product, architecture, Nostr, terminology, and service catalog context for every divine-* task."
+    },
+    "divine_brain": {
+      "required": true,
+      "mcp_server": "divine-brain",
+      "mcp_tools": [
+        "mcp__divine_brain__search",
+        "mcp__divine_brain__ask",
+        "mcp__divine_brain__world",
+        "mcp__divine_brain__sql"
+      ],
+      "purpose": "Major company knowledge store for Slack, Drive, GitHub, Gmail, Figma, Cloudflare, Fastly, incidents, customer themes, and prior decisions not visible in the local checkout.",
+      "auth_policy": "Do not commit CF Access headers or service tokens. Configure Divine Brain MCP credentials in developer-local/global MCP config."
+    },
+    "beads": {
+      "required_for_metaswarm_priming": true,
+      "prime_command": "bd prime",
+      "knowledge_path": ".beads/knowledge",
+      "fallback": "If bd is unavailable, read AGENTS.md and the relevant .beads/knowledge/*.jsonl files directly before starting metaswarm work."
+    }
+  }
+}

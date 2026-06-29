@@ -7,6 +7,16 @@
 - Start with current code and focused docs, especially `CONTRIBUTING.md`, `docs/STATE_MANAGEMENT.md`, `docs/BLOC_UI_MIGRATION_PRD.md`, `docs/NOSTR_EVENT_TYPES.md`, `mobile/docs/NOSTR_VIDEO_EVENTS.md`, `mobile/docs/DESIGN_SYSTEM_COMPONENTS.md`, and `mobile/docs/GOLDEN_TESTING_GUIDE.md`.
 - Older docs can drift. If documentation conflicts, trust the current implementation, targeted tests, and the newest focused doc over historical notes.
 
+## Divine Context And Brain
+
+- Before starting any task in this repo, read `/Users/rabble/code/divine/divine-context/AGENT_CONTEXT.md`. If it is missing, clone `divinevideo/divine-context` as a sibling repo under `/Users/rabble/code/divine/`.
+- `divine-context` is the cross-repo handbook for product goals, architecture, terminology, Nostr usage, and the service catalog. Use it before inventing a new service, protocol shape, or product assumption.
+- Divine Brain is a major knowledge store for company context that is not visible in the local working tree: Slack decisions, Drive docs, GitHub history, Gmail threads, Figma context, Cloudflare Workers, Fastly services, incidents, customer themes, and prior implementation rationale.
+- When a task would benefit from company memory, use the `using-divine-brain` skill and the `mcp__divine_brain__*` tools. Prefer `mcp__divine_brain__search` for raw engineering/context retrieval, `mcp__divine_brain__ask` for synthesized answers, `mcp__divine_brain__world` for typed entity lookup, and `mcp__divine_brain__sql` for allow-listed rollups.
+- Cite Brain results back to the user or PR text when they influence the answer. If Brain is unavailable, say that directly and continue only from local evidence; do not guess missing company context.
+- Do not commit Divine Brain CF Access headers, service tokens, nsecs, or other credentials to this repo. Brain auth belongs in developer-local/global MCP configuration. The repo `.mcp.json` may list non-secret public MCP servers only.
+- Metaswarm agents and subagents must load this section, read Divine Context, prime `.beads/knowledge` when available, and use Divine Brain as the first stop for non-local company knowledge before planning, implementation, review, or PR handoff.
+
 ## Worktree-First Task Workflow
 
 > See `.claude/rules/agent_workflow.md` for detailed rationale and forbidden patterns. The bullets below are the operational summary.
@@ -113,3 +123,46 @@
 - Before opening the PR, review the diff and remove stray edits, generated junk, logs, scratch files, and half-finished experiments.
 - After opening or updating a PR, inspect GitHub checks and rerun stale semantic jobs if needed.
 - After a branch is merged or abandoned, prune the worktree and branch so stale task state does not accumulate.
+
+## metaswarm
+
+This project uses [metaswarm](https://github.com/dsifry/metaswarm) for multi-agent orchestration. It provides 18 specialized agents, a 9-phase development workflow, and quality gates that enforce TDD, coverage thresholds, and spec-driven development.
+
+### Workflow
+
+- **Most tasks**: `$start` -- primes context, guides scoping, picks the right level of process
+- **Complex features** (multi-file, spec-driven): Describe what you want built with a Definition of Done, then say: `Use the full metaswarm orchestration workflow.`
+
+### Available Skills
+
+Codex discovers skills by their SKILL.md `name` field. Invoke with `$name` syntax.
+
+| Invoke | Purpose |
+|---|---|
+| `$start` | Begin tracked work on a task |
+| `$setup` | Interactive guided setup |
+| `$design-review-gate` | Trigger design review gate (5 reviewers) |
+| `$pr-shepherd` | Monitor a PR through to merge |
+| `$handling-pr-comments` | Handle PR review comments |
+| `$brainstorming-extension` | Refine an idea with design review gate |
+| `$create-issue` | Create a well-structured GitHub Issue |
+| `$plan-review-gate` | Adversarial plan review (3 reviewers) |
+
+### Quality Gates
+
+- **Design Review Gate** -- 5-reviewer design review after design is drafted (`$design-review-gate`)
+- **Plan Review Gate** -- 3 adversarial reviewers (Feasibility, Completeness, Scope & Alignment) -- ALL must PASS
+- **Coverage Gate** -- `.coverage-thresholds.json` defines thresholds. BLOCKING gate before PR creation
+
+### Testing & Quality
+
+- **TDD is mandatory** -- Write tests first, watch them fail, then implement
+- **80% test coverage required** -- Enforced via `.coverage-thresholds.json`
+- **Coverage source of truth** -- `.coverage-thresholds.json` defines thresholds. The orchestrator reads it during validation.
+
+### Workflow Enforcement (MANDATORY)
+
+- **After brainstorming** -> MUST run `$design-review-gate` before planning or implementation
+- **After any plan is created** -> MUST run `$plan-review-gate` before presenting to user
+- **Coverage** -> `.coverage-thresholds.json` is the single source of truth. All skills must check it.
+- **Agent discipline** -> NEVER use `--no-verify`, NEVER `git push --force` without approval, NEVER self-certify, ALWAYS follow TDD, STAY within file scope
