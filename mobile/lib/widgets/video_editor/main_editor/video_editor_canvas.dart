@@ -1052,8 +1052,17 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         ),
       );
 
+      // Drop clips whose source file no longer exists on disk before they
+      // reach the live timeline and the native player. Undo/redo can resurrect
+      // a clip that was removed earlier in the session — its media was already
+      // deleted by FileCleanupService, and handing that dead path to the
+      // player fails the whole composition (COMPOSITION_ERROR) and freezes the
+      // editor. Dropping it here also keeps the orphan out of the autosaved
+      // draft, so a later reopen can't reintroduce the freeze.
       final clips = List<DivineVideoClip>.from(
-        editor.stateManager.clipSnapshots(await _documentsPath),
+        editor.stateManager
+            .clipSnapshots(await _documentsPath)
+            .where((clip) => clip.hasResolvableVideoFile),
       );
       if (!mounted || clips.isEmpty || _isImportingHistory) return;
 

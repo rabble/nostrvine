@@ -2,6 +2,7 @@
 // ABOUTME: Supports ordering, thumbnails, crop metadata, and JSON serialization
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:divine_camera/divine_camera.dart'
     show CameraLensMetadata, DivineCameraLens;
@@ -146,6 +147,20 @@ class DivineVideoClip {
       playbackDuration.inMilliseconds / 1000.0;
   bool get isProcessing =>
       processingCompleter != null && !processingCompleter!.isCompleted;
+
+  /// Whether this clip's source video file currently exists on disk.
+  ///
+  /// A clip can outlive its media: when a clip is removed, [FileCleanupService]
+  /// deletes its source file as soon as no clip/draft row references it — but
+  /// the editor's undo history (and any draft that persisted that history) can
+  /// still resurrect the clip. Handing a clip whose file is gone to the native
+  /// preview player makes the whole composition fail with `COMPOSITION_ERROR`
+  /// and freezes the editor, so restore/undo paths use this to drop orphaned
+  /// clips. See `restoreDraft` and `VideoEditorCanvas._syncMainCapabilities`.
+  bool get hasResolvableVideoFile {
+    final path = video.file?.path;
+    return path != null && File(path).existsSync();
+  }
 
   /// Whether this clip was recorded with a front-facing camera.
   bool get isFrontCameraLens =>

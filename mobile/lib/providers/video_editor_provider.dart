@@ -814,9 +814,27 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       return false;
     }
 
+    // Drop clips whose source video file is gone. A draft can outlive its
+    // media: a clip removed mid-session has its file deleted by
+    // FileCleanupService, yet the draft's persisted undo history can still
+    // carry it. Restoring such a clip hands a dead path to the native player,
+    // which fails the whole composition (COMPOSITION_ERROR) and freezes the
+    // editor — so an orphaned clip must never re-enter the timeline.
+    final restorableClips = draft.clips
+        .where((clip) => clip.hasResolvableVideoFile)
+        .toList();
+    if (restorableClips.length != draft.clips.length) {
+      Log.warning(
+        '⚠️ Dropped ${draft.clips.length - restorableClips.length} clip(s) '
+        'with missing source files while restoring draft: $draftId',
+        name: 'VideoEditorNotifier',
+        category: LogCategory.video,
+      );
+    }
+
     // Regenerate missing thumbnails
     final clipsWithThumbnails = <DivineVideoClip>[];
-    for (final clip in draft.clips) {
+    for (final clip in restorableClips) {
       final thumbnailPath = clip.thumbnailPath;
       final thumbnailExists =
           thumbnailPath != null && File(thumbnailPath).existsSync();

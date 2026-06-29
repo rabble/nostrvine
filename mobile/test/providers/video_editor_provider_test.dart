@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';
 
@@ -1299,6 +1300,9 @@ void main() {
     group('restoreDraft', () {
       late _MockDraftStorageService mockDraftStorage;
       late ProviderContainer container;
+      late Directory tempDir;
+      late String clipVideoPath;
+      late String clipThumbnailPath;
 
       setUp(() async {
         SharedPreferences.setMockInitialValues({});
@@ -1310,10 +1314,18 @@ void main() {
             draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
           ],
         );
+        // A restorable clip must point at media that actually exists on disk;
+        // restoreDraft drops clips whose source file is gone.
+        tempDir = await Directory.systemTemp.createTemp('restore_draft_test');
+        clipVideoPath = '${tempDir.path}/clip.mp4';
+        clipThumbnailPath = '${tempDir.path}/clip_thumb.jpg';
+        await File(clipVideoPath).writeAsBytes(const [0]);
+        await File(clipThumbnailPath).writeAsBytes(const [0]);
       });
 
-      tearDown(() {
+      tearDown(() async {
         container.dispose();
+        if (tempDir.existsSync()) await tempDir.delete(recursive: true);
       });
 
       test('returns false when draft is not found', () async {
@@ -1358,13 +1370,99 @@ void main() {
         ).called(1);
       });
 
+      test(
+        'drops clips whose source video file is missing on restore',
+        () async {
+          final draft = DivineVideoDraft.create(
+            id: 'draft-1',
+            clips: [
+              DivineVideoClip(
+                id: 'present',
+                video: EditorVideo.file(clipVideoPath),
+                thumbnailPath: clipThumbnailPath,
+                duration: const Duration(seconds: 3),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+              ),
+              // This clip's media was deleted by FileCleanupService after it
+              // was removed mid-session; the draft's undo history still carries
+              // it. Restoring it would freeze the editor (COMPOSITION_ERROR).
+              DivineVideoClip(
+                id: 'orphan',
+                video: EditorVideo.file('${tempDir.path}/deleted.mp4'),
+                duration: const Duration(seconds: 3),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+              ),
+            ],
+            title: 'Title',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+          );
+          when(
+            () => mockDraftStorage.getDraftById('draft-1'),
+          ).thenAnswer((_) async => draft);
+
+          final result = await container
+              .read(videoEditorProvider.notifier)
+              .restoreDraft('draft-1');
+
+          expect(result, isTrue);
+          final clips = container.read(clipManagerProvider).clips;
+          expect(
+            clips.map((c) => c.id),
+            ['present'],
+            reason:
+                'the clip with a missing source file must be dropped, '
+                'leaving only the clip whose media still exists',
+          );
+        },
+      );
+
+      test(
+        'returns false when every clip has a missing source file',
+        () async {
+          final draft = DivineVideoDraft.create(
+            id: 'draft-1',
+            clips: [
+              DivineVideoClip(
+                id: 'orphan',
+                video: EditorVideo.file('${tempDir.path}/deleted.mp4'),
+                duration: const Duration(seconds: 3),
+                recordedAt: DateTime.now(),
+                targetAspectRatio: .vertical,
+                originalAspectRatio: 9 / 16,
+              ),
+            ],
+            title: 'Title',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+          );
+          when(
+            () => mockDraftStorage.getDraftById('draft-1'),
+          ).thenAnswer((_) async => draft);
+
+          final result = await container
+              .read(videoEditorProvider.notifier)
+              .restoreDraft('draft-1');
+
+          expect(result, isFalse);
+          expect(container.read(clipManagerProvider).clips, isEmpty);
+        },
+      );
+
       test('restores the saved cover position onto state', () async {
         final draft = DivineVideoDraft.create(
           id: 'draft-1',
           clips: [
             DivineVideoClip(
               id: 'c1',
-              video: EditorVideo.file('/docs/clip.mp4'),
+              video: EditorVideo.file(clipVideoPath),
+              thumbnailPath: clipThumbnailPath,
               duration: const Duration(seconds: 3),
               recordedAt: DateTime.now(),
               targetAspectRatio: .vertical,
@@ -1399,7 +1497,8 @@ void main() {
           clips: [
             DivineVideoClip(
               id: 'c1',
-              video: EditorVideo.file('/docs/clip.mp4'),
+              video: EditorVideo.file(clipVideoPath),
+              thumbnailPath: clipThumbnailPath,
               duration: const Duration(seconds: 3),
               recordedAt: DateTime.now(),
               targetAspectRatio: .vertical,
@@ -1488,7 +1587,8 @@ void main() {
             clips: [
               DivineVideoClip(
                 id: 'c1',
-                video: EditorVideo.file('/docs/clip.mp4'),
+                video: EditorVideo.file(clipVideoPath),
+                thumbnailPath: clipThumbnailPath,
                 duration: const Duration(seconds: 3),
                 recordedAt: DateTime.now(),
                 targetAspectRatio: .vertical,
