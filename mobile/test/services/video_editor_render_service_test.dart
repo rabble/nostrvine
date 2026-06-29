@@ -10,7 +10,10 @@ import 'package:models/models.dart' as model;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+import '../mocks/mock_path_provider_platform.dart';
 
 class _ProgressProVideoEditor extends ProVideoEditor {
   final _progressController = StreamController<ProgressModel>.broadcast();
@@ -86,6 +89,37 @@ class _PendingRender {
   final String filePath;
   final VideoRenderData task;
   final completer = Completer<void>();
+}
+
+/// Renders synchronously to a real on-disk file (or throws), so
+/// [VideoEditorRenderService.limitClipDuration] can be exercised against the
+/// actual file-replacement logic without a native renderer.
+class _ImmediateRenderProVideoEditor extends ProVideoEditor {
+  _ImmediateRenderProVideoEditor({this.throwOnRender = false});
+
+  final bool throwOnRender;
+  final cancelCalls = <String>[];
+
+  @override
+  void initializeStream() {}
+
+  @override
+  Future<String> renderVideoToFile(
+    String filePath,
+    VideoRenderData value, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
+    if (throwOnRender) {
+      throw Exception('native render failed');
+    }
+    File(filePath).writeAsStringSync('trimmed');
+    return filePath;
+  }
+
+  @override
+  Future<void> cancel(String taskId) async {
+    cancelCalls.add(taskId);
+  }
 }
 
 Future<void> _flushStreamEvents() => Future<void>.delayed(Duration.zero);
@@ -346,6 +380,107 @@ void main() {
 
       await secondCancellation;
       expect(VideoEditorRenderService.activeNativeTaskIdsForTesting, isEmpty);
+    });
+  });
+
+  group('VideoEditorRenderService limitClipDuration', () {
+    late ProVideoEditor originalProVideoEditor;
+    late PathProviderPlatform originalPathProvider;
+    late Directory tempDir;
+
+    setUp(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      originalProVideoEditor = ProVideoEditor.instance;
+      VideoEditorRenderService.resetActiveNativeTaskIdsForTesting();
+
+      tempDir = Directory.systemTemp.createTempSync('limit_clip_duration_test');
+      originalPathProvider = PathProviderPlatform.instance;
+      PathProviderPlatform.instance = MockPathProviderPlatform()
+        ..setTemporaryPath(tempDir.path);
+    });
+
+    tearDown(() {
+      VideoEditorRenderService.resetActiveNativeTaskIdsForTesting();
+      ProVideoEditor.instance = originalProVideoEditor;
+      PathProviderPlatform.instance = originalPathProvider;
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    DivineVideoClip clipForPath(String inputPath) {
+      return DivineVideoClip(
+        id: 'limit-clip',
+        video: EditorVideo.file(inputPath),
+        duration: const Duration(seconds: 6),
+        recordedAt: DateTime(2026, 6, 5, 12),
+        targetAspectRatio: model.AspectRatio.vertical,
+        originalAspectRatio: 9 / 16,
+      );
+    }
+
+    test(
+      'moves the trimmed output into place when the source file is gone',
+      () async {
+        ProVideoEditor.instance = _ImmediateRenderProVideoEditor();
+        // Simulate the concurrent-cleanup race: the source vanished before the
+        // trim output is moved into place. The file is intentionally not
+        // created.
+        final inputPath = '${tempDir.path}/VID_missing.mp4';
+
+        bool? completed;
+        await VideoEditorRenderService.limitClipDuration(
+          clip: clipForPath(inputPath),
+          duration: const Duration(seconds: 6),
+          onComplete: (value) => completed = value,
+        );
+
+        expect(completed, isTrue);
+        expect(
+          File(inputPath).existsSync(),
+          isTrue,
+          reason: 'trimmed output should be renamed into the source path',
+        );
+        expect(File(inputPath).readAsStringSync(), equals('trimmed'));
+      },
+    );
+
+    test('replaces an existing source file with the trimmed output', () async {
+      ProVideoEditor.instance = _ImmediateRenderProVideoEditor();
+      final inputPath = '${tempDir.path}/VID_present.mp4';
+      File(inputPath).writeAsStringSync('original');
+
+      bool? completed;
+      await VideoEditorRenderService.limitClipDuration(
+        clip: clipForPath(inputPath),
+        duration: const Duration(seconds: 6),
+        onComplete: (value) => completed = value,
+      );
+
+      expect(completed, isTrue);
+      expect(File(inputPath).readAsStringSync(), equals('trimmed'));
+    });
+
+    test('reports failure when the render genuinely fails', () async {
+      ProVideoEditor.instance = _ImmediateRenderProVideoEditor(
+        throwOnRender: true,
+      );
+      final inputPath = '${tempDir.path}/VID_render_fail.mp4';
+      File(inputPath).writeAsStringSync('original');
+
+      bool? completed;
+      await VideoEditorRenderService.limitClipDuration(
+        clip: clipForPath(inputPath),
+        duration: const Duration(seconds: 6),
+        onComplete: (value) => completed = value,
+      );
+
+      expect(completed, isFalse);
+      expect(
+        File(inputPath).readAsStringSync(),
+        equals('original'),
+        reason: 'a failed render must leave the source untouched',
+      );
     });
   });
 }

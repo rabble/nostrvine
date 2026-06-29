@@ -608,12 +608,18 @@ class VideoEditorRenderService {
         ),
       );
 
-      // Replace original file with trimmed version
+      // Replace the original file with the trimmed version. A concurrent
+      // cleanup (draft deletion, clip removal) can delete the source while
+      // this render runs, so deleting it is best-effort: a missing source is
+      // a recoverable outcome, not a failure — the trimmed output simply
+      // takes its place.
       final inputFile = File(inputPath);
       final outputFile = File(outputPath);
 
       if (outputFile.existsSync()) {
-        await inputFile.delete();
+        if (inputFile.existsSync()) {
+          await inputFile.delete();
+        }
         await outputFile.rename(inputPath);
       }
 
