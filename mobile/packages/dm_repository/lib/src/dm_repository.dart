@@ -1413,6 +1413,24 @@ class DmRepository {
     return ledger.hasGiftWrap(giftWrapId);
   }
 
+  /// Batched form of [_alreadyProcessed] for the history-drain dedup probe.
+  /// Resolves which of [giftWrapIds] are already persisted or in the dedup
+  /// ledger with TWO `IN` queries instead of 2×N sequential single-id lookups,
+  /// collapsing a full page's probe from ~200 bg-isolate round trips to 2. The
+  /// in-transaction `hasGiftWrap` re-check in the persist path still guards
+  /// TOCTOU races, so this is purely a fast-path filter. #5452.
+  Future<Set<String>> _alreadyProcessedBatch(Set<String> giftWrapIds) async {
+    if (giftWrapIds.isEmpty) return const <String>{};
+    final present = <String>{
+      ...await _directMessagesDao.giftWrapIdsPresent(giftWrapIds),
+    };
+    final ledger = _processedGiftWrapsDao;
+    if (ledger != null) {
+      present.addAll(await ledger.giftWrapIdsPresent(giftWrapIds));
+    }
+    return present;
+  }
+
   /// Records a terminally-processed gift wrap in the dedup ledger so it is not
   /// re-decrypted on a later launch. No-op when the ledger DAO is absent (older
   /// test fixtures). Recorded AFTER the outcome write so a crash in between
@@ -1703,13 +1721,19 @@ class DmRepository {
     }
 
     // Only wraps not already persisted, to avoid re-decrypting on resume
-    // drains. The in-transaction hasGiftWrap re-check still protects races.
-    final pending = <Event>[];
-    for (final event in events) {
-      if (event.kind != EventKind.giftWrap) continue;
-      if (await _alreadyProcessed(event.id)) continue;
-      pending.add(event);
-    }
+    // drains. One batched dedup probe per page instead of 2 queries per wrap;
+    // the in-transaction hasGiftWrap re-check still protects races. #5452.
+    final giftWraps = [
+      for (final event in events)
+        if (event.kind == EventKind.giftWrap) event,
+    ];
+    final processed = await _alreadyProcessedBatch({
+      for (final event in giftWraps) event.id,
+    });
+    final pending = [
+      for (final event in giftWraps)
+        if (!processed.contains(event.id)) event,
+    ];
     if (pending.isEmpty) return const {};
 
     final decrypted = <String, Event>{};
@@ -1784,14 +1808,20 @@ class DmRepository {
     if (signer == null) return const {};
 
     // Probe the dedup index before paying any network decrypt, so a resume
-    // drain over already-persisted history costs DB reads, not RPCs. The
+    // drain over already-persisted history costs DB reads, not RPCs. One
+    // batched probe per page instead of 2 queries per wrap; the
     // in-transaction hasGiftWrap re-check in the caller still guards races.
-    final pending = <Event>[];
-    for (final event in events) {
-      if (event.kind != EventKind.giftWrap) continue;
-      if (await _alreadyProcessed(event.id)) continue;
-      pending.add(event);
-    }
+    final giftWraps = [
+      for (final event in events)
+        if (event.kind == EventKind.giftWrap) event,
+    ];
+    final processed = await _alreadyProcessedBatch({
+      for (final event in giftWraps) event.id,
+    });
+    final pending = [
+      for (final event in giftWraps)
+        if (!processed.contains(event.id)) event,
+    ];
     if (pending.isEmpty) return const {};
     if (_disposed) return const {};
 

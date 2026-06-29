@@ -75,6 +75,18 @@ void main() {
       expect(await dao.hasGiftWrap(wrap1), isTrue);
     });
 
+    test('giftWrapIdsPresent returns only the recorded subset', () async {
+      await dao.record(giftWrapId: wrap1, ownerPubkey: ownerA);
+
+      expect(await dao.giftWrapIdsPresent({wrap1, wrap2}), equals({wrap1}));
+    });
+
+    test('giftWrapIdsPresent returns an empty set for empty input', () async {
+      await dao.record(giftWrapId: wrap1, ownerPubkey: ownerA);
+
+      expect(await dao.giftWrapIdsPresent(const <String>{}), isEmpty);
+    });
+
     test('clearAll removes every row', () async {
       await dao.record(giftWrapId: wrap1, ownerPubkey: ownerA);
       await dao.record(giftWrapId: wrap2, ownerPubkey: ownerB);

@@ -183,6 +183,26 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return result != null;
   }
 
+  /// Which of [giftWrapIds] already have a persisted message row. Batched
+  /// counterpart to [hasGiftWrap]: one `IN` query instead of N single-id
+  /// lookups, used by the history-drain dedup probe to avoid a per-wrap DB
+  /// round trip. Like [hasGiftWrap], it is NOT scoped by `ownerPubkey`
+  /// (gift-wrap IDs are globally unique). Returns an empty set for an empty
+  /// input.
+  Future<Set<String>> giftWrapIdsPresent(Set<String> giftWrapIds) async {
+    if (giftWrapIds.isEmpty) return const <String>{};
+    final query = selectOnly(directMessages)
+      ..addColumns([directMessages.giftWrapId])
+      ..where(directMessages.giftWrapId.isIn(giftWrapIds));
+    final rows = await query.get();
+    final present = <String>{};
+    for (final row in rows) {
+      final id = row.read(directMessages.giftWrapId);
+      if (id != null) present.add(id);
+    }
+    return present;
+  }
+
   /// Check if a message with the same sender and content already exists in a
   /// conversation within a ±5 second window. Used for cross-protocol dedup
   /// when both a NIP-17 and NIP-04 copy of the same message arrive.

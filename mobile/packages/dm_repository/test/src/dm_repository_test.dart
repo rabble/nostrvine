@@ -429,6 +429,13 @@ void main() {
         ),
       ).thenAnswer((_) async => []);
 
+      // Default for the batched drain dedup probe (#13): nothing already
+      // persisted. The drain group overrides this with a stateful version so
+      // its inclusive-`until` boundary re-request is deduped.
+      when(
+        () => mockDirectMessagesDao.giftWrapIdsPresent(any()),
+      ).thenAnswer((_) async => const <String>{});
+
       // Default for resolveDmInboxRelays(), which sendMessage now calls on
       // every send: recipient has no kind-10050 list, so the gift wrap
       // falls back to the default relay pool (existing behavior).
@@ -4660,6 +4667,15 @@ void main() {
           (inv) async =>
               persistedGiftWrapIds.contains(inv.positionalArguments[0]),
         );
+        // Batched dedup probe (#13) mirrors the same stateful set as
+        // hasGiftWrap, so the inclusive-`until` boundary re-request is deduped
+        // before decryption instead of re-decrypted.
+        when(
+          () => mockDirectMessagesDao.giftWrapIdsPresent(any()),
+        ).thenAnswer(
+          (inv) async => (inv.positionalArguments[0] as Set<String>)
+              .intersection(persistedGiftWrapIds),
+        );
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
             conversationId: any(named: 'conversationId'),
@@ -5099,6 +5115,42 @@ void main() {
             syncState.recorded.map((r) => r.createdAt),
             containsAll(<int>[1700000500, 1700000600]),
           );
+        },
+      );
+
+      test(
+        'probes the page dedup index with ONE batch query carrying the whole '
+        'page, not a per-wrap probe (#13)',
+        () async {
+          final wrap1 = await _buildGiftWrap(
+            rumor: rumorFor('probe 1', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          final wrap2 = await _buildGiftWrap(
+            rumor: rumorFor('probe 2', createdAt: 1700000600),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000001,
+          );
+          stubDrainPage([wrap1, wrap2]);
+
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: _IsolateLocalSigner(recipientPriv),
+            syncState: drainPending(),
+          );
+
+          await repository.backfillHistoryIfNeeded();
+
+          // The first dedup probe carries BOTH wrap ids in one query — proving
+          // the page is probed in a single batch, not one hasGiftWrap per wrap.
+          final probed = verify(
+            () => mockDirectMessagesDao.giftWrapIdsPresent(captureAny()),
+          ).captured;
+          expect(probed, isNotEmpty);
+          expect(probed.first, equals({wrap1.id, wrap2.id}));
         },
       );
 

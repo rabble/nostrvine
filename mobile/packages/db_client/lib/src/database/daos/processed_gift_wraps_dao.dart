@@ -25,6 +25,24 @@ class ProcessedGiftWrapsDao extends DatabaseAccessor<AppDatabase>
     return (await query.get()).isNotEmpty;
   }
 
+  /// Which of [giftWrapIds] are already recorded in the ledger. Batched
+  /// counterpart to [hasGiftWrap]: one `IN` query instead of N single-id
+  /// lookups, used by the history-drain dedup probe to avoid a per-wrap DB
+  /// round trip. Returns an empty set for an empty input.
+  Future<Set<String>> giftWrapIdsPresent(Set<String> giftWrapIds) async {
+    if (giftWrapIds.isEmpty) return const <String>{};
+    final query = selectOnly(processedGiftWraps)
+      ..addColumns([processedGiftWraps.giftWrapId])
+      ..where(processedGiftWraps.giftWrapId.isIn(giftWrapIds));
+    final rows = await query.get();
+    final present = <String>{};
+    for (final row in rows) {
+      final id = row.read(processedGiftWraps.giftWrapId);
+      if (id != null) present.add(id);
+    }
+    return present;
+  }
+
   /// Records [giftWrapId] as terminally processed (idempotent — a re-delivered
   /// wrap or a concurrent writer never throws). [ownerPubkey] is informational
   /// only — not part of the dedup key, and not used to scope deletes (cleanup

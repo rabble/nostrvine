@@ -448,6 +448,38 @@ void main() {
       });
     });
 
+    group('giftWrapIdsPresent', () {
+      test('returns only the subset of ids that have a message row', () async {
+        await dao.insertMessage(
+          id: 'msg_present',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_alice',
+          content: 'Hello!',
+          createdAt: 1700000000,
+          giftWrapId: 'gw_present',
+        );
+
+        final present = await dao.giftWrapIdsPresent({
+          'gw_present',
+          'gw_absent',
+        });
+        expect(present, equals({'gw_present'}));
+      });
+
+      test('returns an empty set for empty input', () async {
+        await dao.insertMessage(
+          id: 'msg_x',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_alice',
+          content: 'Hi',
+          createdAt: 1700000000,
+          giftWrapId: 'gw_x',
+        );
+
+        expect(await dao.giftWrapIdsPresent(const <String>{}), isEmpty);
+      });
+    });
+
     group('deleteConversationMessages', () {
       test('deletes all messages in a conversation', () async {
         await dao.insertMessage(
