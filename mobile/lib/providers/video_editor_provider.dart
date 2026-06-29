@@ -872,8 +872,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     DivineVideoClip? validFinalRenderedClip;
     final finalClip = draft.finalRenderedClip;
     if (finalClip != null) {
-      final videoPath = finalClip.video.file?.path;
-      if (videoPath != null && File(videoPath).existsSync()) {
+      if (finalClip.hasResolvableVideoFile) {
         validFinalRenderedClip = finalClip;
         Log.info(
           '✅ Restored final rendered clip',
