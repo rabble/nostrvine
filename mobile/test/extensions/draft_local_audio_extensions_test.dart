@@ -166,5 +166,27 @@ void main() {
 
       expect(draft.localAudioFilePaths, isEmpty);
     });
+
+    test('skips audio entries that parse as a map but throw in fromJson', () {
+      // These clear the `raw is! Map` guard and reach AudioEvent.fromJson,
+      // where the non-nullable id/pubkey/createdAt casts throw — exercising
+      // the try/catch "cleanup must never throw" branch.
+      final draft = _draft(
+        editorStateHistory: const {
+          'history': [
+            {
+              'meta': {
+                VideoEditorConstants.audioStateHistoryKey: [
+                  <String, dynamic>{},
+                  {'id': 123},
+                ],
+              },
+            },
+          ],
+        },
+      );
+
+      expect(draft.localAudioFilePaths, isEmpty);
+    });
   });
 }

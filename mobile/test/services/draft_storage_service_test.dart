@@ -1358,6 +1358,42 @@ void main() {
         );
       });
 
+      test('still deletes the target audio when a sibling draft has a corrupt '
+          'data blob', () async {
+        final audio = writeAudio(
+          p.join('draft_audio_imports', 'draft_target', 'imported.m4a'),
+        );
+        final draft = draftWithAudio(
+          id: 'draft_target',
+          audioPath: audio.path,
+          audioId: 'local_import_4',
+        );
+        await service.saveDraft(draft);
+
+        // A sibling row whose data blob can't be parsed back into a draft.
+        // The reference scan runs after the target row is already deleted, so
+        // an unguarded throw here would leak the deleted draft's audio file.
+        await database.draftsDao.upsertDraft(
+          id: 'draft_corrupt_sibling',
+          title: 'corrupt',
+          description: '',
+          publishStatus: 'draft',
+          createdAt: DateTime(2025),
+          lastModified: DateTime(2025),
+          data: 'not-json',
+          renderedFilePath: null,
+          renderedThumbnailPath: null,
+        );
+
+        await service.deleteDraft(draft.id);
+
+        expect(
+          audio.existsSync(),
+          isFalse,
+          reason: 'a corrupt sibling draft must not block audio cleanup',
+        );
+      });
+
       test('deletes audio files when all drafts are cleared', () async {
         final audio = writeAudio(
           p.join('draft_audio_imports', 'draft_clear', 'imported.m4a'),

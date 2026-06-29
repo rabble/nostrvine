@@ -92,6 +92,34 @@ void main() {
         },
       );
 
+      test(
+        'keeps audio still referenced by the indexed clip/draft backstop',
+        () async {
+          // No referencedAudioFilenames entry, so the cross-draft guard does not
+          // short-circuit and the defensive indexed reference check runs.
+          when(
+            () => clipsDao.isFileReferenced(any()),
+          ).thenAnswer((_) async => true);
+          when(
+            () => draftsDao.isDraftFileReferenced(any()),
+          ).thenAnswer((_) async => false);
+          final audio = writeAudio('indexed_ref.m4a');
+
+          await FileCleanupService.deleteDraftAudioFiles(
+            [audio.path],
+            draftsDao: draftsDao,
+            clipsDao: clipsDao,
+          );
+
+          expect(
+            audio.existsSync(),
+            isTrue,
+            reason:
+                'the indexed reference check must still keep referenced audio',
+          );
+        },
+      );
+
       test('skips empty paths without querying references', () async {
         await FileCleanupService.deleteDraftAudioFiles(
           [''],
