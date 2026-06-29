@@ -89,7 +89,7 @@ class CacheDaoImpl implements CacheDao {
 
     if (limit == null) return;
 
-    final newTotal = preWriteTotal - replacedLength + payload.length;
+    final newTotal = preWriteTotal - replacedLength + _payloadSize(payload);
     _totalBytes = newTotal;
     if (newTotal > limit) {
       await evictOldest(newTotal - limit);
@@ -194,4 +194,7 @@ class CacheDaoImpl implements CacheDao {
     final row = await query.getSingleOrNull();
     return row?.read(_payloadLength) ?? 0;
   }
+
+  /// Matches SQLite `LENGTH(payload)` for JSON text payloads.
+  static int _payloadSize(String payload) => payload.runes.length;
 }

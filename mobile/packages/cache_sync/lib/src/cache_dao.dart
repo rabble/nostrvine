@@ -34,7 +34,7 @@ abstract interface class CacheDao {
 
   /// Returns the total size of all `payload` strings, in characters.
   ///
-  /// Uses `String.length` semantics (UTF-16 code units), suitable as an
+  /// Uses SQLite `LENGTH` semantics for text payloads, suitable as an
   /// approximation of storage bytes for JSON-heavy payloads.
   Future<int> totalPayloadBytes();
 

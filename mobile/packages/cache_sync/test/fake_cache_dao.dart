@@ -50,7 +50,7 @@ class FakeCacheDao implements CacheDao {
 
   @override
   Future<int> totalPayloadBytes() async =>
-      _store.values.fold<int>(0, (sum, e) => sum + e.payload.length);
+      _store.values.fold<int>(0, (sum, e) => sum + e.payload.runes.length);
 
   @override
   Future<void> evictOldest(int bytesToFree) async {
@@ -60,7 +60,7 @@ class FakeCacheDao implements CacheDao {
       ..sort((a, b) => a.value.cachedAt.compareTo(b.value.cachedAt));
     for (final entry in sorted) {
       if (freed >= bytesToFree) break;
-      freed += entry.value.payload.length;
+      freed += entry.value.payload.runes.length;
       _store.remove(entry.key);
     }
   }

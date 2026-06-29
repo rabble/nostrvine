@@ -259,6 +259,15 @@ void main() {
         expect(await dao.read('c'), equals('ccccc'));
       });
 
+      test('uses the database length metric for non-BMP payloads', () async {
+        await dao.write(key: 'emoji', payload: '😀' * 5);
+        await dao.write(key: 'plain', payload: 'xxxxx');
+
+        expect(await dao.read('emoji'), equals('😀' * 5));
+        expect(await dao.read('plain'), equals('xxxxx'));
+        expect(await dao.totalPayloadBytes(), equals(10));
+      });
+
       test(
         'deletePrefix keeps the budget accurate for a later write',
         () async {
@@ -276,9 +285,8 @@ void main() {
       );
 
       test('reconciles the running counter after 256 writes', () async {
-        // Lines 99–100 of cache_dao_impl.dart: after _reconcileEveryWrites (256)
-        // writes the branch resets _writesSinceReconcile and nullifies _totalBytes
-        // so the next write recomputes the counter from the real DB sum.
+        // The reconcile branch resets the counter after enough writes, so the
+        // next write recomputes the value from the real DB sum.
         for (var i = 0; i < 256; i++) {
           await dao.write(key: 'k', payload: 'x');
         }
