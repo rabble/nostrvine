@@ -34,8 +34,8 @@ class StickerRepository {
   ///
   /// Throws a [FlutterError] / [FormatException] if the structural manifest or
   /// the English strings file is missing or malformed (a build invariant). A
-  /// missing per-locale strings file is tolerated — those stickers fall back
-  /// to English.
+  /// missing or unreadable per-locale strings file is tolerated — those
+  /// stickers fall back to English.
   Future<List<StickerData>> loadStickers(String localeCode) async {
     final manifest =
         json.decode(await _bundle.loadString(_manifestPath)) as List<dynamic>;
@@ -77,7 +77,10 @@ class StickerRepository {
     try {
       return await _loadStrings(localeCode);
     } catch (_) {
-      // No strings file for this locale — descriptions fall back to English.
+      // Missing or unreadable strings file for this locale — descriptions fall
+      // back to English rather than failing the whole picker over one locale's
+      // cosmetic labels. The consistency test guards the bundled files, so this
+      // only degrades genuinely absent or corrupt locales.
       return const <String, String>{};
     }
   }

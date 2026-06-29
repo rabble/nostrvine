@@ -111,9 +111,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   /// failed probe isn't retried on every audio-track change.
   final Set<String> _durationHealAttempted = {};
 
-  /// Guards the one-time sticker load so the active locale is read from a
-  /// [Localizations] ancestor (only available from [didChangeDependencies]).
-  bool _stickersLoadRequested = false;
+  /// The locale the sticker catalog was last loaded for. Tracked so a locale
+  /// change while the editor is open re-localizes descriptions. The active
+  /// locale is only readable from a [Localizations] ancestor (available from
+  /// [didChangeDependencies] onward), not from [initState].
+  String? _loadedStickerLocale;
 
   ProImageEditorState? get _editor => _editorKey.currentState;
 
@@ -211,11 +213,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_stickersLoadRequested) {
-      _stickersLoadRequested = true;
-      _stickerBloc.add(
-        VideoEditorStickerLoad(Localizations.localeOf(context).languageCode),
-      );
+    final localeCode = Localizations.localeOf(context).languageCode;
+    if (localeCode != _loadedStickerLocale) {
+      _loadedStickerLocale = localeCode;
+      _stickerBloc.add(VideoEditorStickerLoad(localeCode));
     }
   }
 

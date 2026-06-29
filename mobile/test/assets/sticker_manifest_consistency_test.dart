@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 
 void main() {
   group('sticker manifest assets', () {
@@ -13,27 +14,12 @@ void main() {
     const manifestPath = 'assets/stickers/stickers.json';
     const i18nDirectory = 'assets/stickers/i18n';
 
-    // Must match the app's supported locales.
-    const expectedLocales = [
-      'en',
-      'am',
-      'ar',
-      'bg',
-      'de',
-      'es',
-      'fil',
-      'fr',
-      'id',
-      'it',
-      'ja',
-      'ko',
-      'nl',
-      'pl',
-      'pt',
-      'ro',
-      'sv',
-      'tr',
-    ];
+    // Derived from the app's supported locales so adding a new app locale
+    // surfaces here (its strings file must ship) instead of silently falling
+    // back to English.
+    final expectedLocales = AppLocalizations.supportedLocales
+        .map((locale) => locale.languageCode)
+        .toList();
 
     late Set<String> manifestKeys;
 

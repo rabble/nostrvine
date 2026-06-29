@@ -1550,7 +1550,7 @@ void main() {
             ),
             meta: sticker.toJson(),
             exportConfigs: WidgetLayerExportConfigs(
-              id: 'sticker-${sticker.description}',
+              id: 'sticker-${sticker.description.fallback}',
               meta: sticker.toJson(),
             ),
           );

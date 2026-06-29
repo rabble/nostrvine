@@ -271,10 +271,17 @@ void main() {
       test(
         'VideoEditorStickerLoaded props include stickers and searchQuery',
         () {
-          final state1 = VideoEditorStickerLoaded(stickers: testStickers);
-          final state2 = VideoEditorStickerLoaded(stickers: testStickers);
+          final state1 = VideoEditorStickerLoaded(
+            stickers: testStickers,
+            allStickers: testStickers,
+          );
+          final state2 = VideoEditorStickerLoaded(
+            stickers: testStickers,
+            allStickers: testStickers,
+          );
           final state3 = VideoEditorStickerLoaded(
             stickers: testStickers,
+            allStickers: testStickers,
             searchQuery: 'test',
           );
 
@@ -286,17 +293,24 @@ void main() {
       test('hasSearchQuery returns correct value', () {
         final withQuery = VideoEditorStickerLoaded(
           stickers: testStickers,
+          allStickers: testStickers,
           searchQuery: 'test',
         );
-        final withoutQuery = VideoEditorStickerLoaded(stickers: testStickers);
+        final withoutQuery = VideoEditorStickerLoaded(
+          stickers: testStickers,
+          allStickers: testStickers,
+        );
 
         expect(withQuery.hasSearchQuery, isTrue);
         expect(withoutQuery.hasSearchQuery, isFalse);
       });
 
       test('isEmpty returns correct value', () {
-        const empty = VideoEditorStickerLoaded(stickers: []);
-        final notEmpty = VideoEditorStickerLoaded(stickers: testStickers);
+        const empty = VideoEditorStickerLoaded(stickers: [], allStickers: []);
+        final notEmpty = VideoEditorStickerLoaded(
+          stickers: testStickers,
+          allStickers: testStickers,
+        );
 
         expect(empty.isEmpty, isTrue);
         expect(notEmpty.isEmpty, isFalse);

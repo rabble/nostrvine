@@ -22,11 +22,16 @@ class VideoEditorStickerLoading extends VideoEditorStickerState {
 class VideoEditorStickerLoaded extends VideoEditorStickerState {
   const VideoEditorStickerLoaded({
     required this.stickers,
+    required this.allStickers,
     this.searchQuery = '',
   });
 
   /// The list of stickers to display (filtered if search is active).
   final List<StickerData> stickers;
+
+  /// The full, unfiltered catalog backing search; [stickers] is derived from
+  /// it whenever the query changes.
+  final List<StickerData> allStickers;
 
   /// The current search query, empty if no search is active.
   final String searchQuery;
@@ -36,7 +41,7 @@ class VideoEditorStickerLoaded extends VideoEditorStickerState {
   bool get isEmpty => stickers.isEmpty;
 
   @override
-  List<Object?> get props => [stickers, searchQuery];
+  List<Object?> get props => [stickers, allStickers, searchQuery];
 }
 
 /// Error loading stickers.

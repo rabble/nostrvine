@@ -29,8 +29,6 @@ class VideoEditorStickerBloc
   /// Loads the sticker catalog from bundled assets.
   final StickerRepository stickerRepository;
 
-  List<StickerData> _allStickers = [];
-
   /// Called after stickers are loaded for precaching.
   final Function(List<StickerData> stickers) onPrecacheStickers;
 
@@ -41,16 +39,16 @@ class VideoEditorStickerBloc
     emit(const VideoEditorStickerLoading());
 
     try {
-      _allStickers = await stickerRepository.loadStickers(event.localeCode);
+      final stickers = await stickerRepository.loadStickers(event.localeCode);
 
       Log.debug(
-        '🌟 Loaded ${_allStickers.length} stickers',
+        '🌟 Loaded ${stickers.length} stickers',
         name: 'VideoEditorStickerBloc',
         category: LogCategory.video,
       );
 
-      emit(VideoEditorStickerLoaded(stickers: _allStickers));
-      onPrecacheStickers(_allStickers.take(maxPrecacheCount).toList());
+      emit(VideoEditorStickerLoaded(stickers: stickers, allStickers: stickers));
+      onPrecacheStickers(stickers.take(maxPrecacheCount).toList());
     } catch (e, stackTrace) {
       // Matrix-YES: every failure path here is a build/asset invariant —
       // missing bundled asset (FlutterError), corrupt JSON (FormatException),
@@ -70,14 +68,23 @@ class VideoEditorStickerBloc
     VideoEditorStickerSearch event,
     Emitter<VideoEditorStickerState> emit,
   ) {
+    final currentState = state;
+    if (currentState is! VideoEditorStickerLoaded) return;
+
+    final allStickers = currentState.allStickers;
     final query = event.query.trim().toLowerCase();
 
     if (query.isEmpty) {
-      emit(VideoEditorStickerLoaded(stickers: _allStickers));
+      emit(
+        VideoEditorStickerLoaded(
+          stickers: allStickers,
+          allStickers: allStickers,
+        ),
+      );
       return;
     }
 
-    final filtered = _allStickers.where((sticker) {
+    final filtered = allStickers.where((sticker) {
       // Match across every localized description so a sticker is findable
       // regardless of the user's locale (and by its English search keywords).
       final descriptions = sticker.description.values.values.map(
@@ -89,6 +96,12 @@ class VideoEditorStickerBloc
           tags.any((tag) => tag.contains(query));
     }).toList();
 
-    emit(VideoEditorStickerLoaded(stickers: filtered, searchQuery: query));
+    emit(
+      VideoEditorStickerLoaded(
+        stickers: filtered,
+        allStickers: allStickers,
+        searchQuery: query,
+      ),
+    );
   }
 }

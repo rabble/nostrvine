@@ -49,7 +49,13 @@ void main() {
     Widget buildSubject({VideoEditorStickerState? state}) {
       when(
         () => mockBloc.state,
-      ).thenReturn(state ?? VideoEditorStickerLoaded(stickers: testStickers));
+      ).thenReturn(
+        state ??
+            VideoEditorStickerLoaded(
+              stickers: testStickers,
+              allStickers: testStickers,
+            ),
+      );
 
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -93,7 +99,12 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildSubject(state: VideoEditorStickerLoaded(stickers: testStickers)),
+          buildSubject(
+            state: VideoEditorStickerLoaded(
+              stickers: testStickers,
+              allStickers: testStickers,
+            ),
+          ),
         );
 
         // Should find GestureDetectors for each sticker (tappable items)
@@ -104,7 +115,12 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildSubject(state: const VideoEditorStickerLoaded(stickers: [])),
+          buildSubject(
+            state: const VideoEditorStickerLoaded(
+              stickers: [],
+              allStickers: [],
+            ),
+          ),
         );
 
         expect(find.text('No stickers available'), findsOneWidget);
@@ -117,6 +133,7 @@ void main() {
           buildSubject(
             state: const VideoEditorStickerLoaded(
               stickers: [],
+              allStickers: [],
               searchQuery: 'nonexistent',
             ),
           ),
@@ -162,6 +179,7 @@ void main() {
       ) async {
         final stateWithQuery = VideoEditorStickerLoaded(
           stickers: testStickers,
+          allStickers: testStickers,
           searchQuery: 'test',
         );
         whenListen(
@@ -184,7 +202,12 @@ void main() {
       testWidgets('hides clear button when no search query', (tester) async {
         when(
           () => mockBloc.state,
-        ).thenReturn(VideoEditorStickerLoaded(stickers: testStickers));
+        ).thenReturn(
+          VideoEditorStickerLoaded(
+            stickers: testStickers,
+            allStickers: testStickers,
+          ),
+        );
 
         await tester.pumpWidget(buildSubject());
         await tester.pump();
