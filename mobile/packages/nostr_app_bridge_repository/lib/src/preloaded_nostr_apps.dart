@@ -25,6 +25,10 @@ const List<int> _sharedSignEventKinds = [
   30023,
 ];
 
+const List<String> _badgesAllowedNavigationOrigins = [
+  'https://login.divine.video',
+];
+
 /// Bundled starter catalog of vetted third-party Nostr apps.
 ///
 /// Provides a curated baseline before the remote directory is
@@ -199,6 +203,7 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
         'A Divine Nostr app for reviewing badge awards, pinning the '
         'ones you accept to your profile, and checking badge issue status.',
     launchUrl: 'https://badges.divine.video/me',
+    allowedNavigationOrigins: _badgesAllowedNavigationOrigins,
     allowedMethods: const [
       'getPublicKey',
       'getRelays',
@@ -280,6 +285,7 @@ NostrAppDirectoryEntry _buildPreloadedApp({
   required String description,
   required String launchUrl,
   required int sortOrder,
+  List<String> allowedNavigationOrigins = const [],
   List<String> allowedMethods = _sharedAllowedMethods,
   List<int> allowedSignEventKinds = _sharedSignEventKinds,
   List<String> promptRequiredFor = _sharedPromptRequiredFor,
@@ -295,6 +301,7 @@ NostrAppDirectoryEntry _buildPreloadedApp({
     iconUrl: '$origin/favicon.ico',
     launchUrl: launchUrl,
     allowedOrigins: [origin],
+    allowedNavigationOrigins: allowedNavigationOrigins,
     allowedMethods: allowedMethods,
     allowedSignEventKinds: allowedSignEventKinds,
     promptRequiredFor: promptRequiredFor,

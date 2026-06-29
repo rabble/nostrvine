@@ -148,7 +148,7 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
   }
 
   bool _handleNavigationAttempt(Uri uri) {
-    if (_isAllowedOrigin(uri)) {
+    if (_isAllowedNavigationOrigin(uri)) {
       if (_blockedUri != null && mounted) {
         setState(() {
           _blockedUri = null;
@@ -165,8 +165,19 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
     return false;
   }
 
-  bool _isAllowedOrigin(Uri uri) {
-    return widget.app.allowedOrigins.any((allowedOrigin) {
+  bool _isAllowedNavigationOrigin(Uri uri) {
+    return _isAllowedOrigin(uri, [
+      ...widget.app.allowedOrigins,
+      ...widget.app.allowedNavigationOrigins,
+    ]);
+  }
+
+  bool _isAllowedBridgeOrigin(Uri uri) {
+    return _isAllowedOrigin(uri, widget.app.allowedOrigins);
+  }
+
+  bool _isAllowedOrigin(Uri uri, List<String> allowedOrigins) {
+    return allowedOrigins.any((allowedOrigin) {
       final parsedAllowed = Uri.tryParse(allowedOrigin);
       return parsedAllowed != null && parsedAllowed.origin == uri.origin;
     });
@@ -278,7 +289,7 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
   bool _shouldBootstrapNavigation(NavigationRequest request, Uri uri) {
     return defaultTargetPlatform == TargetPlatform.android &&
         request.isMainFrame &&
-        _isAllowedOrigin(uri);
+        _isAllowedBridgeOrigin(uri);
   }
 
   /// Activates platform-level frame attestation by replacing the pigeon-managed
@@ -430,7 +441,7 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
       }
 
       final resolvedUri = response.request?.url ?? uri;
-      if (!_isAllowedOrigin(resolvedUri)) {
+      if (!_isAllowedBridgeOrigin(resolvedUri)) {
         return null;
       }
 
@@ -450,7 +461,7 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
 
   Future<void> _injectBridge() async {
     final origin = _currentPageUri;
-    if (origin == null || !_isAllowedOrigin(origin)) {
+    if (origin == null || !_isAllowedBridgeOrigin(origin)) {
       return;
     }
 

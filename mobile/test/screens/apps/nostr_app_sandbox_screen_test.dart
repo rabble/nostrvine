@@ -237,6 +237,34 @@ void main() {
       );
     });
 
+    testWidgets(
+      'allows navigation-only origins without showing the safety block',
+      (tester) async {
+        void Function(Uri uri)? navigationHandler;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: NostrAppSandboxScreen(
+              app: _fixtureBadgesApp(),
+              sandboxBuilder: (_) => const SizedBox.shrink(),
+              onNavigationHandlerReady: (handler) =>
+                  navigationHandler = handler,
+            ),
+          ),
+        );
+
+        navigationHandler!(
+          Uri.parse('https://login.divine.video/api/oauth/authorize'),
+        );
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.appsSandboxBlockedTitle), findsNothing);
+      },
+    );
+
     testWidgets('handles bridge messages and emits JavaScript responses', (
       tester,
     ) async {
@@ -874,6 +902,7 @@ NostrAppDirectoryEntry _fixtureBadgesApp() {
     iconUrl: 'https://badges.divine.video/favicon.ico',
     launchUrl: 'https://badges.divine.video/me',
     allowedOrigins: const ['https://badges.divine.video'],
+    allowedNavigationOrigins: const ['https://login.divine.video'],
     allowedMethods: const ['getPublicKey', 'signEvent'],
     allowedSignEventKinds: const [3, 8, 10002, 10008, 30008, 30009],
     promptRequiredFor: const ['signEvent'],

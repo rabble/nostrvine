@@ -19,6 +19,7 @@ class NostrAppDirectoryEntry {
     required this.sortOrder,
     required this.createdAt,
     required this.updatedAt,
+    this.allowedNavigationOrigins = const [],
   });
 
   factory NostrAppDirectoryEntry.fromJson(Map<String, dynamic> json) {
@@ -31,6 +32,9 @@ class NostrAppDirectoryEntry {
       iconUrl: json['icon_url'] as String? ?? '',
       launchUrl: json['launch_url'] as String? ?? '',
       allowedOrigins: _readStringList(json['allowed_origins']),
+      allowedNavigationOrigins: _readStringList(
+        json['allowed_navigation_origins'],
+      ),
       allowedMethods: _readStringList(json['allowed_methods']),
       allowedSignEventKinds: _readIntList(json['allowed_sign_event_kinds']),
       promptRequiredFor: _readStringList(json['prompt_required_for']),
@@ -49,6 +53,7 @@ class NostrAppDirectoryEntry {
   final String iconUrl;
   final String launchUrl;
   final List<String> allowedOrigins;
+  final List<String> allowedNavigationOrigins;
   final List<String> allowedMethods;
   final List<int> allowedSignEventKinds;
   final List<String> promptRequiredFor;
@@ -70,6 +75,8 @@ class NostrAppDirectoryEntry {
       'icon_url': iconUrl,
       'launch_url': launchUrl,
       'allowed_origins': allowedOrigins,
+      if (allowedNavigationOrigins.isNotEmpty)
+        'allowed_navigation_origins': allowedNavigationOrigins,
       'allowed_methods': allowedMethods,
       'allowed_sign_event_kinds': allowedSignEventKinds,
       'prompt_required_for': promptRequiredFor,

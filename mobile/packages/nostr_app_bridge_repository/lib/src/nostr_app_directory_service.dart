@@ -27,6 +27,10 @@ class NostrAppDirectoryService {
   /// SharedPreferences key for the cached ETag.
   static const String eTagCacheKey = 'nostr_app_directory_etag';
 
+  static const Map<String, List<String>> _clientNavigationOriginsBySlug = {
+    'badges': ['https://login.divine.video'],
+  };
+
   final SharedPreferences _sharedPreferences;
   final http.Client _client;
   final String _baseUrl;
@@ -172,7 +176,7 @@ class NostrAppDirectoryService {
 
     for (final app in remoteOrCachedApps) {
       if (app.isApproved) {
-        appsBySlug[app.slug] = app;
+        appsBySlug[app.slug] = _withClientNavigationOrigins(app);
       } else {
         appsBySlug.remove(app.slug);
       }
@@ -180,5 +184,26 @@ class NostrAppDirectoryService {
 
     final apps = appsBySlug.values.toList(growable: false)..sort(_compareApps);
     return List<NostrAppDirectoryEntry>.unmodifiable(apps);
+  }
+
+  NostrAppDirectoryEntry _withClientNavigationOrigins(
+    NostrAppDirectoryEntry app,
+  ) {
+    final clientOrigins = _clientNavigationOriginsBySlug[app.slug];
+    if (clientOrigins == null || !_isExpectedFirstPartyApp(app)) {
+      return app;
+    }
+
+    final origins = <String>{
+      ...app.allowedNavigationOrigins,
+      ...clientOrigins,
+    }.toList(growable: false);
+    return app.copyWith(allowedNavigationOrigins: origins);
+  }
+
+  bool _isExpectedFirstPartyApp(NostrAppDirectoryEntry app) {
+    return app.slug == 'badges' &&
+        (app.primaryOrigin == 'https://badges.divine.video' ||
+            app.allowedOrigins.contains('https://badges.divine.video'));
   }
 }

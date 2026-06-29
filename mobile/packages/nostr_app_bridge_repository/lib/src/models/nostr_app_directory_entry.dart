@@ -22,6 +22,7 @@ class NostrAppDirectoryEntry extends Equatable {
     required this.sortOrder,
     required this.createdAt,
     required this.updatedAt,
+    this.allowedNavigationOrigins = const [],
     this.autoLoginScript,
   });
 
@@ -38,6 +39,9 @@ class NostrAppDirectoryEntry extends Equatable {
       iconUrl: json['icon_url'] as String? ?? '',
       launchUrl: json['launch_url'] as String? ?? '',
       allowedOrigins: _readStringList(json['allowed_origins']),
+      allowedNavigationOrigins: _readStringList(
+        json['allowed_navigation_origins'],
+      ),
       allowedMethods: _readStringList(json['allowed_methods']),
       allowedSignEventKinds: _readIntList(json['allowed_sign_event_kinds']),
       promptRequiredFor: _readStringList(json['prompt_required_for']),
@@ -72,6 +76,10 @@ class NostrAppDirectoryEntry extends Equatable {
 
   /// Origins that may make NIP-07 requests.
   final List<String> allowedOrigins;
+
+  /// Additional origins the sandbox may navigate to without granting NIP-07
+  /// bridge capability.
+  final List<String> allowedNavigationOrigins;
 
   /// NIP-07 methods the app may call.
   final List<String> allowedMethods;
@@ -118,6 +126,32 @@ class NostrAppDirectoryEntry extends Equatable {
     return uri.origin;
   }
 
+  /// Returns a copy with selected fields replaced.
+  NostrAppDirectoryEntry copyWith({
+    List<String>? allowedNavigationOrigins,
+  }) {
+    return NostrAppDirectoryEntry(
+      id: id,
+      slug: slug,
+      name: name,
+      tagline: tagline,
+      description: description,
+      iconUrl: iconUrl,
+      launchUrl: launchUrl,
+      allowedOrigins: allowedOrigins,
+      allowedNavigationOrigins:
+          allowedNavigationOrigins ?? this.allowedNavigationOrigins,
+      allowedMethods: allowedMethods,
+      allowedSignEventKinds: allowedSignEventKinds,
+      promptRequiredFor: promptRequiredFor,
+      status: status,
+      sortOrder: sortOrder,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      autoLoginScript: autoLoginScript,
+    );
+  }
+
   @override
   List<Object?> get props => [
     id,
@@ -128,6 +162,7 @@ class NostrAppDirectoryEntry extends Equatable {
     iconUrl,
     launchUrl,
     allowedOrigins,
+    allowedNavigationOrigins,
     allowedMethods,
     allowedSignEventKinds,
     promptRequiredFor,
@@ -149,6 +184,8 @@ class NostrAppDirectoryEntry extends Equatable {
       'icon_url': iconUrl,
       'launch_url': launchUrl,
       'allowed_origins': allowedOrigins,
+      if (allowedNavigationOrigins.isNotEmpty)
+        'allowed_navigation_origins': allowedNavigationOrigins,
       'allowed_methods': allowedMethods,
       'allowed_sign_event_kinds': allowedSignEventKinds,
       'prompt_required_for': promptRequiredFor,

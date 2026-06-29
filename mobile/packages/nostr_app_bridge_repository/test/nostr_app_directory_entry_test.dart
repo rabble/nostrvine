@@ -106,6 +106,50 @@ void main() {
       });
     });
 
+    group('allowedNavigationOrigins', () {
+      test('defaults to empty', () {
+        final entry = buildEntry();
+        expect(entry.allowedNavigationOrigins, isEmpty);
+      });
+
+      test('round-trips through JSON when present', () {
+        final entry = NostrAppDirectoryEntry(
+          id: '1',
+          slug: 'test',
+          name: 'Test',
+          tagline: 'A test app',
+          description: 'Description',
+          iconUrl: 'https://example.com/icon.png',
+          launchUrl: 'https://example.com/app',
+          allowedOrigins: const ['https://example.com'],
+          allowedNavigationOrigins: const ['https://login.divine.video'],
+          allowedMethods: const ['getPublicKey'],
+          allowedSignEventKinds: const [1],
+          promptRequiredFor: const ['signEvent'],
+          status: 'approved',
+          sortOrder: 0,
+          createdAt: DateTime.utc(2026),
+          updatedAt: DateTime.utc(2026),
+        );
+        final json = entry.toJson();
+        expect(
+          json['allowed_navigation_origins'],
+          equals(['https://login.divine.video']),
+        );
+
+        final restored = NostrAppDirectoryEntry.fromJson(json);
+        expect(restored.allowedNavigationOrigins, [
+          'https://login.divine.video',
+        ]);
+      });
+
+      test('omits allowed_navigation_origins from JSON when empty', () {
+        final entry = buildEntry();
+        final json = entry.toJson();
+        expect(json.containsKey('allowed_navigation_origins'), isFalse);
+      });
+    });
+
     group('Equatable', () {
       test('two entries with same fields are equal', () {
         final a = buildEntry();

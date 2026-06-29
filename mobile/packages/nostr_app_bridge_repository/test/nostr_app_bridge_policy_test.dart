@@ -175,6 +175,14 @@ void main() {
         );
         expect(blockedDirectMessage.decision, BridgeDecision.deny);
         expect(blockedDirectMessage.reasonCode, 'blocked_event_kind');
+
+        final loginOrigin = policy.evaluate(
+          app: badges,
+          origin: Uri.parse('https://login.divine.video/api/oauth/authorize'),
+          method: 'getPublicKey',
+        );
+        expect(loginOrigin.decision, BridgeDecision.deny);
+        expect(loginOrigin.reasonCode, 'blocked_origin');
       },
     );
   });

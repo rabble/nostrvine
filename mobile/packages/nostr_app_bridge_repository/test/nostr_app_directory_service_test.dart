@@ -174,6 +174,9 @@ void main() {
         expect(badges.name, 'Divine Badges');
         expect(badges.launchUrl, 'https://badges.divine.video/me');
         expect(badges.allowedOrigins, ['https://badges.divine.video']);
+        expect(badges.allowedNavigationOrigins, [
+          'https://login.divine.video',
+        ]);
         expect(
           badges.allowedMethods,
           ['getPublicKey', 'getRelays', 'signEvent'],
@@ -184,6 +187,40 @@ void main() {
         );
         expect(badges.promptRequiredFor, ['signEvent']);
         expect(badges.autoLoginScript, contains('dbdg_session'));
+      },
+    );
+
+    test(
+      'fetchApprovedApps preserves Badges OAuth navigation origin when '
+      'remote directory data overrides the bundled entry',
+      () async {
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://apps.divine.video/v1/apps'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({
+              'items': [
+                _appJson(
+                  slug: 'badges',
+                  name: 'Divine Badges',
+                  updatedAt: '2026-05-03T10:00:00Z',
+                ),
+              ],
+            }),
+            200,
+          ),
+        );
+
+        final apps = await service.fetchApprovedApps();
+        final badges = apps.where((app) => app.slug == 'badges').single;
+
+        expect(badges.allowedOrigins, ['https://badges.divine.video']);
+        expect(badges.allowedNavigationOrigins, [
+          'https://login.divine.video',
+        ]);
       },
     );
 
@@ -447,6 +484,7 @@ String _launchUrlForSlug(String slug) => switch (slug) {
   'shopstr' => 'https://shopstr.store/',
   'nostrnests' => 'https://nostrnests.com/',
   'ditto' => 'https://ditto.pub/',
+  'badges' => 'https://badges.divine.video/me',
   _ => 'https://$slug.example.com',
 };
 
