@@ -17,13 +17,31 @@ abstract class PerformanceTraceMonitor {
   void putAttribute(String traceName, String attribute, String value);
 }
 
+/// No-op [PerformanceTraceMonitor] used as the default when no real monitor is
+/// injected (e.g. in tests). Mirrors the prior behaviour of the uninitialised
+/// singleton, whose methods early-returned without touching Firebase.
+class NoOpPerformanceTraceMonitor implements PerformanceTraceMonitor {
+  const NoOpPerformanceTraceMonitor();
+
+  @override
+  Future<void> startTrace(String traceName) async {}
+
+  @override
+  Future<void> stopTrace(String traceName) async {}
+
+  @override
+  void incrementMetric(String traceName, String metricName, int value) {}
+
+  @override
+  void setMetric(String traceName, String metricName, int value) {}
+
+  @override
+  void putAttribute(String traceName, String attribute, String value) {}
+}
+
 /// Performance monitoring service for tracking app performance
 class PerformanceMonitoringService implements PerformanceTraceMonitor {
-  static PerformanceMonitoringService? _instance;
-  static PerformanceMonitoringService get instance =>
-      _instance ??= PerformanceMonitoringService._();
-
-  PerformanceMonitoringService._();
+  PerformanceMonitoringService();
 
   late final FirebasePerformance _performance;
   bool _initialized = false;

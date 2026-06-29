@@ -93,7 +93,6 @@ import 'package:openvine/services/notification_service.dart'
     show NotificationTapEvent;
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
-import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/pro_video_editor_log_forwarder.dart';
 import 'package:openvine/services/quick_actions_coordinator.dart';
 import 'package:openvine/services/secure_storage_options.dart';
@@ -780,7 +779,7 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
       await _runTimedStartupTask(
         phaseName: 'performance_monitoring',
         initializationStep: 'Initializing performance monitoring',
-        task: PerformanceMonitoringService.instance.initialize,
+        task: container.read(performanceMonitoringServiceProvider).initialize,
       );
     },
     optional: true,

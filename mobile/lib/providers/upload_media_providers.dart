@@ -10,6 +10,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
@@ -49,24 +50,22 @@ class _BlossomAuthAdapter implements BlossomAuthProvider {
   }
 }
 
-/// Adapts [PerformanceMonitoringService] to the package-level
+/// Adapts a [PerformanceTraceMonitor] to the package-level
 /// [BlossomPerformanceMonitor] interface.
 class _FirebasePerformanceAdapter implements BlossomPerformanceMonitor {
-  @override
-  Future<void> startTrace(String traceName) =>
-      PerformanceMonitoringService.instance.startTrace(traceName);
+  _FirebasePerformanceAdapter(this._monitor);
+
+  final PerformanceTraceMonitor _monitor;
 
   @override
-  Future<void> stopTrace(String traceName) =>
-      PerformanceMonitoringService.instance.stopTrace(traceName);
+  Future<void> startTrace(String traceName) => _monitor.startTrace(traceName);
+
+  @override
+  Future<void> stopTrace(String traceName) => _monitor.stopTrace(traceName);
 
   @override
   void setMetric(String traceName, String metricName, int value) =>
-      PerformanceMonitoringService.instance.setMetric(
-        traceName,
-        metricName,
-        value,
-      );
+      _monitor.setMetric(traceName, metricName, value);
 }
 
 /// Blossom BUD-01 authentication service for age-restricted content
@@ -126,7 +125,9 @@ BlossomUploadService blossomUploadService(Ref ref) {
   final env = ref.read(currentEnvironmentProvider);
   return BlossomUploadService(
     authProvider: _BlossomAuthAdapter(authService),
-    performanceMonitor: _FirebasePerformanceAdapter(),
+    performanceMonitor: _FirebasePerformanceAdapter(
+      ref.watch(performanceMonitoringServiceProvider),
+    ),
     defaultServerUrl: env.blossomUrl,
     // Backpressure: while a feed video is actively playing in the foreground,
     // pause briefly between chunks so the upload doesn't starve playback on a

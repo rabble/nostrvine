@@ -9,13 +9,7 @@ void main() {
     late PerformanceMonitoringService service;
 
     setUp(() {
-      service = PerformanceMonitoringService.instance;
-    });
-
-    test('should be a singleton', () {
-      final instance1 = PerformanceMonitoringService.instance;
-      final instance2 = PerformanceMonitoringService.instance;
-      expect(instance1, same(instance2));
+      service = PerformanceMonitoringService();
     });
 
     test('should initialize without error', () async {

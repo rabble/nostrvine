@@ -3,6 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/services/logging_config_service.dart';
+import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 
 /// Provides the app's [LoggingConfigService].
@@ -23,3 +24,13 @@ final loggingConfigServiceProvider = Provider<LoggingConfigService>(
 final topHashtagsServiceProvider = Provider<TopHashtagsService>(
   (ref) => TopHashtagsService(),
 );
+
+/// Provides the app's [PerformanceMonitoringService] (a [PerformanceTraceMonitor]).
+///
+/// Replaces the former `PerformanceMonitoringService.instance` singleton. A
+/// single shared instance is kept alive; consumers that only need the trace
+/// API depend on it through the [PerformanceTraceMonitor] interface.
+final performanceMonitoringServiceProvider =
+    Provider<PerformanceMonitoringService>(
+      (ref) => PerformanceMonitoringService(),
+    );

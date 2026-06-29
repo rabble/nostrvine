@@ -8,9 +8,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/view_event_publisher.dart'
     show ViewTrafficSource;
@@ -130,7 +130,7 @@ class _VideoMetricsTrackerState extends ConsumerState<VideoMetricsTracker> {
     if (!_hasStartedPlaybackTrace) {
       _hasStartedPlaybackTrace = true;
       final traceName = 'video_playback_${widget.video.id}';
-      PerformanceMonitoringService.instance.startTrace(traceName);
+      ref.read(performanceMonitoringServiceProvider).startTrace(traceName);
     }
 
     _addControllerListeners();
@@ -177,7 +177,7 @@ class _VideoMetricsTrackerState extends ConsumerState<VideoMetricsTracker> {
     if (!_hasCompletedPlaybackTrace && controller.value.isPlaying) {
       _hasCompletedPlaybackTrace = true;
       final traceName = 'video_playback_${widget.video.id}';
-      PerformanceMonitoringService.instance.stopTrace(traceName);
+      ref.read(performanceMonitoringServiceProvider).stopTrace(traceName);
       Log.debug(
         '⏱️ Video playback started for ${widget.video.id}',
         name: 'VideoMetricsTracker',

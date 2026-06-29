@@ -19,6 +19,7 @@ import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/saved_sounds_provider.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
@@ -118,6 +119,7 @@ VideoEventService videoEventService(Ref ref) {
     profileRepository: profileRepository,
     eventRouter: eventRouter,
     videoFilterBuilder: videoFilterBuilder,
+    performanceMonitor: ref.watch(performanceMonitoringServiceProvider),
   );
   var persistedDeletions = const <ContentDeletion>[];
   try {

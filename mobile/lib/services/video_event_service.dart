@@ -140,7 +140,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
        _connectionService = connectionService ?? ConnectionStatusService(),
        _ownsConnectionService = connectionService == null,
        _performanceMonitor =
-           performanceMonitor ?? PerformanceMonitoringService.instance {
+           performanceMonitor ?? const NoOpPerformanceTraceMonitor() {
     _initializePaginationStates();
     _initializeRepostResolver();
   }
