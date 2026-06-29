@@ -33,6 +33,7 @@ import 'package:openvine/screens/video_editor/voice_over_take_commit.dart';
 import 'package:openvine/screens/video_editor/voice_over_take_placement.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/await_push_transition.dart';
+import 'package:openvine/utils/mounted_post_frame.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
@@ -164,9 +165,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       _clipEditorBloc.add(ClipEditorInitialized(initialClips));
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-
+    addPostFrameCallbackIfMounted(() async {
       Log.debug(
         '🎬 Initializing video editor provider',
         name: 'VideoEditorScreen',

@@ -14,6 +14,7 @@ import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
 import 'package:openvine/blocs/video_editor/audio_timing/audio_timing_cubit.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/utils/mounted_post_frame.dart';
 import 'package:openvine/widgets/stereo_waveform_painter.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_chip.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
@@ -113,9 +114,7 @@ class _VideoAudioEditorTimingScreenState
     );
 
     // Delay initialization until after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-
+    addPostFrameCallbackIfMounted(() {
       // Sync fling controller with initial offset after cubit initializes
       _audioTimingCubit.initialize().then((_) {
         if (mounted) {

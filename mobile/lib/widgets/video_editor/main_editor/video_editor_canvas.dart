@@ -549,9 +549,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   void _scheduleVolumeHistoryWrite() {
     if (_isVolumeSavePending) return;
     _isVolumeSavePending = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    addPostFrameCallbackIfMounted(() {
       _isVolumeSavePending = false;
-      if (!mounted) return;
       VideoEditorScope.of(context).editor?.setVolumeState(
         clips: context.read<ClipEditorBloc>().state.clips,
         audioTracks: context.read<TimelineOverlayBloc>().state.audioTracks,

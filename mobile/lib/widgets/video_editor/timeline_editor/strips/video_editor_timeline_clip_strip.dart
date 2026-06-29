@@ -14,6 +14,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/utils/mounted_post_frame.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_transition_sheet.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_trim_handles.dart';
 
@@ -329,8 +330,8 @@ class _VideoEditorTimelineClipStripState
 
     // Trigger the width shrink in the next frame so AnimatedContainer can
     // interpolate from the full clip width to _reorderSize.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _isReordering) {
+    addPostFrameCallbackIfMounted(() {
+      if (_isReordering) {
         setState(() => _dragClipWidth = _reorderSize);
       }
     });
