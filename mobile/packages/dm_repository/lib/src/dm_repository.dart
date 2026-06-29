@@ -1763,6 +1763,13 @@ class DmRepository {
   /// collapses the wall-clock to roughly 1/N; the Keycast server does not
   /// serialize per-token decrypts, so the concurrency is real.
   ///
+  /// When the remote signer is Keycast (a [GiftWrapBatchUnwrapper]), the page
+  /// is FIRST run through [_serverBatchUnwrapGiftWraps] — one
+  /// `nip17_unwrap_batch` round trip per chunk that unwraps both NIP-59 layers
+  /// server-side (#5471). Only the wraps that path leaves behind — an older
+  /// keycast without the verb, a transient chunk error, or a per-item failure —
+  /// fall back to the bounded worker pool described above.
+  ///
   /// Returns a `{giftWrapId: rumor}` map of the SUCCESSFUL decrypts only, with
   /// the same contract as [_batchDecryptGiftWraps]: wraps that are already
   /// persisted, undecryptable, or fail are absent and fall through to the
@@ -1873,9 +1880,9 @@ class DmRepository {
   /// trip per chunk. Successful slots are written into [decrypted]; per-item
   /// error slots are left out so they fall through to the per-event path and
   /// the failed-decrypt retry queue (the lenient per-wrap path recovers the
-  /// rare sender mismatch the strict server rejects). Returns the wraps still
-  /// need the per-wrap fallback pool: every wrap from the chunk where the verb
-  /// turned out to be unsupported onward, plus any chunk a transient error
+  /// rare sender mismatch the strict server rejects). Returns the wraps that
+  /// still need the per-wrap fallback pool: every wrap from the chunk where the
+  /// verb turned out to be unsupported onward, plus any chunk a transient error
   /// (e.g. a timeout) skipped.
   Future<List<Event>> _serverBatchUnwrapGiftWraps(
     GiftWrapBatchUnwrapper unwrapper,
@@ -1947,20 +1954,39 @@ class DmRepository {
   }
 
   /// Builds the kind:14 rumor [Event] from a successful unwrap [slot],
-  /// attributing it to the server-authenticated [GiftWrapUnwrapSlot.sender] —
-  /// the same authority [GiftWrapUtil.getRumorEvent] applies locally. The
-  /// server already verified both the gift-wrap and seal signatures (#5471), so
-  /// the client does not re-verify. The event id is recomputed by the
-  /// constructor.
+  /// attributing it to the server-authenticated [GiftWrapUnwrapSlot.sender].
+  /// The server already verified both the gift-wrap and seal signatures and
+  /// rejects a rumor whose author disagrees with the seal signer (#5471), so
+  /// the client neither re-verifies nor re-checks the sender.
+  ///
+  /// Reads ONLY the fields it keeps — `kind`, `tags`, `content`, `created_at` —
+  /// straight from [GiftWrapUnwrapSlot.rumor], NOT via [Event.fromJson] (which
+  /// mandates `id` and `pubkey`). A NIP-59 rumor is unsigned, so its `id` is
+  /// derivable and a sender may legitimately omit it; keycast forwards the
+  /// rumor verbatim, so depending on those discarded fields would make such a
+  /// slot throw → fall silently to the per-wrap pool, quietly degrading the
+  /// batch verb to a no-op on prod while CI (which always injects `id`/`pubkey`)
+  /// stayed green.
+  ///
+  /// The id is recomputed by the constructor from [GiftWrapUnwrapSlot.sender] —
+  /// always the canonical NIP-01 id for the authenticated sender, the same
+  /// recompute [GiftWrapUtil.getRumorEvent] performs on its sender-mismatch
+  /// branch. For a well-formed sender (every diVine client embeds the canonical
+  /// id) it equals the claimed id, so there is no observable divergence; for a
+  /// non-canonical claimed id the recompute is the more correct, interoperable
+  /// choice (the DB primary key is the rumor id).
   Event? _rumorFromSlot(GiftWrapUnwrapSlot slot) {
     try {
-      final inner = Event.fromJson(slot.rumor!);
+      final rumor = slot.rumor!;
+      final tags = (rumor['tags'] as List<dynamic>)
+          .map((tag) => (tag as List<dynamic>).map((e) => e as String).toList())
+          .toList();
       return Event(
         slot.sender!,
-        inner.kind,
-        inner.tags,
-        inner.content,
-        createdAt: inner.createdAt,
+        rumor['kind'] as int,
+        tags,
+        rumor['content'] as String,
+        createdAt: rumor['created_at'] as int,
       );
     } on Object catch (e, stackTrace) {
       Log.error(

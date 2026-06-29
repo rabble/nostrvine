@@ -1964,6 +1964,133 @@ void main() {
             verifyInserted(3);
           },
         );
+
+        test(
+          'persists a rumor that omits the derivable id and pubkey '
+          'instead of degrading to the per-wrap path',
+          () async {
+            // #5471 review: a NIP-59 rumor is unsigned, so the sender may omit
+            // the derivable id (and keycast forwards it verbatim). The batch
+            // path must read only the fields it keeps (kind/tags/content/
+            // created_at) so such a slot still yields a usable rumor instead of
+            // throwing in Event.fromJson and silently falling to the per-wrap
+            // pool — which would quietly degrade the verb to a no-op on prod.
+            final wraps = buildWraps(2);
+            serveOnePage(wraps);
+
+            var decryptorCalls = 0;
+            final signer = _BatchUnwrapSigner(
+              (batch) async => [
+                for (var i = 0; i < batch.length; i++)
+                  GiftWrapUnwrapSlot.success(
+                    rumor: {
+                      'created_at': 1700000000 - i,
+                      'kind': EventKind.privateDirectMessage,
+                      'tags': [
+                        ['p', _validPubkeyA],
+                      ],
+                      'content': 'no-id-$i',
+                      // No 'id', no 'pubkey': both discarded by the unwrap.
+                    },
+                    sender: hex64(i, 'd'),
+                  ),
+              ],
+            );
+
+            final repository = batchRepository(
+              signer: signer,
+              rumorDecryptor: (_, _) async {
+                decryptorCalls++;
+                return null;
+              },
+            );
+
+            await repository.backfillHistoryIfNeeded();
+
+            expect(signer.batchCalls, 1);
+            expect(
+              decryptorCalls,
+              0,
+              reason:
+                  'a rumor lacking id/pubkey must still unwrap via the batch '
+                  'path, not fall back to the per-wrap decryptor',
+            );
+            verifyInserted(2);
+          },
+        );
+
+        test(
+          'recomputes the canonical rumor id rather than trusting the '
+          'claimed id',
+          () async {
+            // #5471 review: the batch path attributes the rumor to the
+            // server-authenticated sender and recomputes the id, so the
+            // persisted primary key is the canonical NIP-01 id, not whatever
+            // (possibly non-canonical) id the sender claimed.
+            final wraps = buildWraps(1);
+            serveOnePage(wraps);
+
+            final signer = _BatchUnwrapSigner(
+              (_) async => [
+                GiftWrapUnwrapSlot.success(
+                  rumor: rumorJsonFor(0),
+                  sender: hex64(0, 'd'),
+                ),
+              ],
+            );
+
+            final repository = batchRepository(
+              signer: signer,
+              rumorDecryptor: (_, _) async => null,
+            );
+
+            await repository.backfillHistoryIfNeeded();
+
+            final captured = verify(
+              () => mockDirectMessagesDao.insertMessage(
+                id: captureAny(named: 'id'),
+                conversationId: any(named: 'conversationId'),
+                senderPubkey: any(named: 'senderPubkey'),
+                content: any(named: 'content'),
+                createdAt: any(named: 'createdAt'),
+                giftWrapId: any(named: 'giftWrapId'),
+                messageKind: any(named: 'messageKind'),
+                replyToId: any(named: 'replyToId'),
+                subject: any(named: 'subject'),
+                fileType: any(named: 'fileType'),
+                encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+                decryptionKey: any(named: 'decryptionKey'),
+                decryptionNonce: any(named: 'decryptionNonce'),
+                fileHash: any(named: 'fileHash'),
+                originalFileHash: any(named: 'originalFileHash'),
+                fileSize: any(named: 'fileSize'),
+                dimensions: any(named: 'dimensions'),
+                blurhash: any(named: 'blurhash'),
+                thumbnailUrl: any(named: 'thumbnailUrl'),
+                ownerPubkey: any(named: 'ownerPubkey'),
+                tagsJson: any(named: 'tagsJson'),
+              ),
+            ).captured;
+
+            final claimedId = rumorJsonFor(0)['id'] as String;
+            final canonicalId = Event(
+              hex64(0, 'd'),
+              EventKind.privateDirectMessage,
+              [
+                ['p', _validPubkeyA],
+              ],
+              'msg-0',
+              createdAt: 1700000000,
+            ).id;
+
+            expect(captured.single, canonicalId);
+            expect(
+              captured.single,
+              isNot(claimedId),
+              reason: 'the claimed (non-canonical) id must be discarded',
+            );
+          },
+        );
       });
 
       test('successful gift-wrap persist advances sync boundaries', () async {
