@@ -29,7 +29,7 @@ void main() {
       CrashReportingService.instance.log('Test message');
 
       // Initialize logging config
-      await LoggingConfigService.instance.initialize();
+      await LoggingConfigService().initialize();
 
       final duration = DateTime.now().difference(startTime).inMilliseconds;
       expect(duration, greaterThanOrEqualTo(0));

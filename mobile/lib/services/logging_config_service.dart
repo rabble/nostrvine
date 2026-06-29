@@ -7,14 +7,8 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// Service for managing logging configuration
 class LoggingConfigService {
-  LoggingConfigService._();
+  LoggingConfigService();
   static const String _logLevelKey = 'log_level_preference';
-  static LoggingConfigService? _instance;
-
-  static LoggingConfigService get instance {
-    _instance ??= LoggingConfigService._();
-    return _instance!;
-  }
 
   /// Initialize logging configuration from stored preferences
   Future<void> initialize() async {
