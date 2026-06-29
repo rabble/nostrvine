@@ -84,7 +84,7 @@ fi
 # --- Start logcat capture (background, flutter/app logs with timestamps) ---
 echo "Starting logcat capture..." >&2
 adb -s "$DEVICE" logcat -c 2>/dev/null || true
-adb -s "$DEVICE" logcat -v UTC -v year flutter:I BandwidthTracker:I IndividualVideoController:I VideoLoadingMetrics:I C2PAManager:D OpenVineProofMode:D '*:S' > "$LOGCAT_LOG" 2>&1 &
+adb -s "$DEVICE" logcat -v UTC -v year flutter:I BandwidthTracker:I IndividualVideoController:I C2PAManager:D OpenVineProofMode:D '*:S' > "$LOGCAT_LOG" 2>&1 &
 LOGCAT_PID=$!
 
 # --- Run E2E test ---
