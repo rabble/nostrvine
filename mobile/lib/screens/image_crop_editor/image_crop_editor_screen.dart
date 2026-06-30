@@ -92,10 +92,10 @@ Future<Uint8List?> showImageCropEditor(
 /// Full-screen crop / rotate / flip editor wrapping `pro_image_editor`'s
 /// standalone [CropRotateEditor] with Vine chrome.
 ///
-/// The editor re-encodes the result to [ImageCropKind.maxOutputSize] as a
-/// fresh JPEG (`enableUseOriginalBytes: false`), which bounds the upload
-/// dimensions and drops the original EXIF as a side effect. Returns the bytes
-/// via `Navigator.pop`.
+/// The crop is captured as a fresh JPEG bounded by
+/// [ImageCropKind.maxOutputSize] — an upper bound that only ever downscales,
+/// never upscales. The canvas re-capture drops the original EXIF as a side
+/// effect. Returns the bytes via `Navigator.pop`.
 class ImageCropEditorScreen extends StatefulWidget {
   const ImageCropEditorScreen({
     required this.kind,
@@ -164,6 +164,9 @@ class _ImageCropEditorScreenState extends State<ImageCropEditorScreen> {
           ),
           imageGeneration: ImageGenerationConfigs(
             maxOutputSize: kind.maxOutputSize,
+            // Forward-compat: inert in the standalone capture path today, but
+            // set so the upcoming sub-editor wiring (which does read it) stays
+            // consistent.
             enableUseOriginalBytes: false,
             jpegQuality: _cropOutputJpegQuality,
           ),
