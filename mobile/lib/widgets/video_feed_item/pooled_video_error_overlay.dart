@@ -9,6 +9,7 @@ import 'package:infinite_video_feed/infinite_video_feed.dart'
     show VideoErrorType;
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
@@ -22,7 +23,7 @@ import 'package:openvine/widgets/vine_cached_image.dart';
 ///   Verify Age
 /// - [VideoErrorType.notFound]: Error icon + "Video not found" + Retry
 /// - [VideoErrorType.generic]: Error icon + "Video playback error" + Retry
-class PooledVideoErrorOverlay extends ConsumerWidget {
+class PooledVideoErrorOverlay extends ConsumerStatefulWidget {
   const PooledVideoErrorOverlay({
     required this.video,
     required this.onRetry,
@@ -54,25 +55,63 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
   /// viewport.
   final bool isSquare;
 
+  @override
+  ConsumerState<PooledVideoErrorOverlay> createState() =>
+      _PooledVideoErrorOverlayState();
+}
+
+class _PooledVideoErrorOverlayState
+    extends ConsumerState<PooledVideoErrorOverlay> {
+  bool _autoRetryAttempted = false;
+
+  @override
+  void didUpdateWidget(PooledVideoErrorOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.video.id != widget.video.id ||
+        oldWidget.errorType != widget.errorType) {
+      _autoRetryAttempted = false;
+    }
+  }
+
   BoxFit _resolveBoxFit() {
-    if (!shouldPortraitExpand) return BoxFit.contain;
-    return isSquare ? BoxFit.contain : BoxFit.cover;
+    if (!widget.shouldPortraitExpand) return BoxFit.contain;
+    return widget.isSquare ? BoxFit.contain : BoxFit.cover;
+  }
+
+  void _maybeAutoRetryAgeRestricted({required bool showVerifyAge}) {
+    if (!showVerifyAge ||
+        widget.isVerifying ||
+        _autoRetryAttempted ||
+        widget.onVerifyAge == null) {
+      return;
+    }
+
+    final mediaAuthInterceptor = ref.read(mediaAuthInterceptorProvider);
+    if (!mediaAuthInterceptor.shouldAutoAuthorizeAgeRestrictedMedia) {
+      return;
+    }
+
+    _autoRetryAttempted = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.onVerifyAge?.call();
+    });
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final type = errorType ?? VideoErrorType.generic;
+  Widget build(BuildContext context) {
+    final type = widget.errorType ?? VideoErrorType.generic;
     final shouldEnrichNotFoundWithModeration = type == VideoErrorType.notFound;
     final isDivineUrl = VideoModerationStatusService.shouldCheckModeration(
-      video.videoUrl,
+      widget.video.videoUrl,
     );
 
     // For divine URLs, check moderation status to enrich 404/notFound
     // errors with moderation context.
     final sha256 = isDivineUrl && shouldEnrichNotFoundWithModeration
         ? VideoModerationStatusService.resolveSha256(
-            explicitSha256: video.sha256,
-            videoUrl: video.videoUrl,
+            explicitSha256: widget.video.sha256,
+            videoUrl: widget.video.videoUrl,
           )
         : null;
 
@@ -124,18 +163,21 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
         : isModerationRestricted
         ? context.l10n.videoErrorContentRestrictedBody
         : null;
-    final showVerifyAge = isAgeRestricted && onVerifyAge != null;
+    final showVerifyAge = isAgeRestricted && widget.onVerifyAge != null;
     final showRetry = !isModerationRestricted && !showVerifyAge;
+    _maybeAutoRetryAgeRestricted(showVerifyAge: showVerifyAge);
 
     return Stack(
       fit: StackFit.expand,
       children: [
         ColoredBox(
           color: VineTheme.backgroundColor,
-          child: video.thumbnailUrl != null && video.thumbnailUrl!.isNotEmpty
+          child:
+              widget.video.thumbnailUrl != null &&
+                  widget.video.thumbnailUrl!.isNotEmpty
               ? SizedBox.expand(
                   child: VineCachedImage(
-                    imageUrl: video.thumbnailUrl!,
+                    imageUrl: widget.video.thumbnailUrl!,
                     fit: _resolveBoxFit(),
                     fadeInDuration: Duration.zero,
                     fadeOutDuration: Duration.zero,
@@ -173,15 +215,15 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
                     size: DivineButtonSize.small,
                     // Disabled while a retry is in flight so a second tap
                     // can't kick off a duplicate verification.
-                    onPressed: isVerifying ? null : onVerifyAge,
-                    isLoading: isVerifying,
+                    onPressed: widget.isVerifying ? null : widget.onVerifyAge,
+                    isLoading: widget.isVerifying,
                   ),
                 if (showRetry)
                   DivineButton(
                     label: context.l10n.videoErrorRetry,
                     type: DivineButtonType.tertiary,
                     size: DivineButtonSize.small,
-                    onPressed: onRetry,
+                    onPressed: widget.onRetry,
                   ),
               ],
             ),

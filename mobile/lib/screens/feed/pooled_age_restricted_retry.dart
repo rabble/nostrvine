@@ -27,11 +27,8 @@ Future<void> retryAgeRestrictedPooledVideo({
   required PooledAgeRestrictedSha256Resolver resolveSha256,
   required FutureOr<bool> Function(Map<String, String>) retryPlayback,
 }) async {
-  // The pooled overlays (ModeratedContentOverlay / PooledVideoErrorOverlay)
-  // emit no tap-time log of their own, so this is the only record that the
-  // user actually pressed "Verify age" on the native feed path.
   Log.info(
-    '🔐 [AGE-GATE] User tapped Verify age (pooled) for video ${video.id}',
+    '🔐 [AGE-GATE] Starting age-restricted pooled retry for video ${video.id}',
     name: _logName,
     category: LogCategory.video,
   );

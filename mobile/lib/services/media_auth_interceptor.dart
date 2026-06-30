@@ -22,10 +22,18 @@ class MediaAuthInterceptor {
   final ContentFilterService _contentFilterService;
   final MediaViewerAuthService _mediaViewerAuthService;
 
-  bool get canAutoAuthorizeAdultMedia =>
+  /// Whether an age-restricted media surface can retry with viewer auth without
+  /// asking the user to verify again.
+  ///
+  /// `hide` remains a hard block. Verified users with `warn` or `show`
+  /// preferences can reuse their existing verification for playback auth.
+  bool get shouldAutoAuthorizeAgeRestrictedMedia =>
+      _mediaViewerAuthService.canCreateHeaders &&
       _ageVerificationService.isAdultContentVerified &&
-      _contentFilterService.adultPlaybackPreference ==
-          ContentFilterPreference.show;
+      _contentFilterService.adultPlaybackPreference !=
+          ContentFilterPreference.hide;
+
+  bool get canAutoAuthorizeAdultMedia => shouldAutoAuthorizeAgeRestrictedMedia;
 
   /// Creates viewer-auth headers only when the user's existing adult-content
   /// preferences allow automatic playback.
@@ -101,11 +109,13 @@ class MediaAuthInterceptor {
         return const ViewerAuthUnavailable();
       }
 
-      // Auto-create auth headers only when the user is already verified and
-      // every adult category is configured to show.
-      if (canAutoAuthorizeAdultMedia) {
+      // Once the viewer has completed adult-content age verification, keep that
+      // verification durable for playback. `hide` remains a hard block above;
+      // `warn` means the category can be surfaced with a warning elsewhere, not
+      // that the user must re-verify for every media request.
+      if (isAdultContentVerified) {
         Log.debug(
-          '✅ Auto-showing adult content (user preference: always show)',
+          '✅ Auto-authorizing age-restricted media for verified user',
           name: 'MediaAuthInterceptor',
           category: LogCategory.system,
         );
@@ -150,6 +160,8 @@ class MediaAuthInterceptor {
         name: 'MediaAuthInterceptor',
         category: LogCategory.system,
       );
+
+      await _contentFilterService.unlockAdultCategories();
 
       // Create auth header after verification
       return await _mediaViewerAuthService.createAuthHeaders(

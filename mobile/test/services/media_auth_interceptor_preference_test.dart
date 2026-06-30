@@ -69,6 +69,9 @@ void main() {
         );
 
         when(
+          () => mockMediaViewerAuthService.canCreateHeaders,
+        ).thenReturn(true);
+        when(
           () => mockMediaViewerAuthService.createAuthHeaders(
             sha256Hash: any(named: 'sha256Hash'),
             url: any(named: 'url'),
@@ -86,6 +89,7 @@ void main() {
           realContentFilterService.adultPlaybackPreference,
           ContentFilterPreference.warn,
         );
+        expect(interceptor.shouldAutoAuthorizeAgeRestrictedMedia, isTrue);
 
         final result = await interceptor.handleUnauthorizedMedia(
           context: mockContext,
@@ -97,6 +101,9 @@ void main() {
         expect(
           result.headersOrNull,
           equals({'Authorization': 'Nostr unlockedToken'}),
+        );
+        verifyNever(
+          () => mockAgeVerificationService.verifyAdultContentAccess(any()),
         );
         verify(
           () => mockMediaViewerAuthService.createAuthHeaders(
@@ -115,6 +122,11 @@ void main() {
         when(
           () => mockAgeVerificationService.isAdultContentVerified,
         ).thenReturn(true);
+        when(
+          () => mockMediaViewerAuthService.canCreateHeaders,
+        ).thenReturn(true);
+
+        expect(interceptor.shouldAutoAuthorizeAgeRestrictedMedia, isFalse);
 
         final result = await interceptor.handleUnauthorizedMedia(
           context: mockContext,
@@ -150,6 +162,9 @@ void main() {
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
         ).thenAnswer((_) async => true);
         when(
+          () => mockContentFilterService.unlockAdultCategories(),
+        ).thenAnswer((_) async {});
+        when(
           () => mockMediaViewerAuthService.createAuthHeaders(
             sha256Hash: any(named: 'sha256Hash'),
             url: any(named: 'url'),
@@ -175,6 +190,9 @@ void main() {
         verify(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
         ).called(1);
+        verify(
+          () => mockContentFilterService.unlockAdultCategories(),
+        ).called(1);
       },
     );
 
@@ -187,6 +205,9 @@ void main() {
         ).thenReturn(ContentFilterPreference.show);
         when(
           () => mockAgeVerificationService.isAdultContentVerified,
+        ).thenReturn(true);
+        when(
+          () => mockMediaViewerAuthService.canCreateHeaders,
         ).thenReturn(true);
         when(
           () => mockMediaViewerAuthService.createAuthHeaders(
@@ -207,6 +228,7 @@ void main() {
         );
 
         // Assert - auto auth header created, no dialog shown
+        expect(interceptor.shouldAutoAuthorizeAgeRestrictedMedia, isTrue);
         expect(result, isA<ViewerAuthAuthorized>());
         expect(
           result.headersOrNull,
@@ -231,6 +253,9 @@ void main() {
         ).thenReturn(ContentFilterPreference.show);
         when(
           () => mockAgeVerificationService.isAdultContentVerified,
+        ).thenReturn(true);
+        when(
+          () => mockMediaViewerAuthService.canCreateHeaders,
         ).thenReturn(true);
         when(
           () => mockMediaViewerAuthService.createAuthHeaders(
@@ -265,7 +290,7 @@ void main() {
     );
 
     test(
-      'createAutoAuthHeadersForAdultMedia does not prompt when preference is warn',
+      'createAutoAuthHeadersForAdultMedia creates auth without prompting when preference is warn',
       () async {
         when(
           () => mockContentFilterService.adultPlaybackPreference,
@@ -273,39 +298,51 @@ void main() {
         when(
           () => mockAgeVerificationService.isAdultContentVerified,
         ).thenReturn(true);
-
-        final result = await interceptor.createAutoAuthHeadersForAdultMedia(
-          sha256Hash: 'abc123',
-        );
-
-        expect(result, isA<ViewerAuthUnavailable>());
-        verifyNever(
-          () => mockAgeVerificationService.verifyAdultContentAccess(any()),
-        );
-        verifyNever(
+        when(
+          () => mockMediaViewerAuthService.canCreateHeaders,
+        ).thenReturn(true);
+        when(
           () => mockMediaViewerAuthService.createAuthHeaders(
             sha256Hash: any(named: 'sha256Hash'),
             url: any(named: 'url'),
             serverUrl: any(named: 'serverUrl'),
           ),
+        ).thenAnswer(
+          (_) async => const ViewerAuthAuthorized({
+            'Authorization': 'Nostr warnToken',
+          }),
         );
+
+        final result = await interceptor.createAutoAuthHeadersForAdultMedia(
+          sha256Hash: 'abc123',
+        );
+
+        expect(result, isA<ViewerAuthAuthorized>());
+        expect(result.headersOrNull, {'Authorization': 'Nostr warnToken'});
+        verifyNever(
+          () => mockAgeVerificationService.verifyAdultContentAccess(any()),
+        );
+        verify(
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: 'abc123',
+          ),
+        ).called(1);
       },
     );
 
     test(
-      'handleUnauthorizedMedia shows dialog when askEachTime and verified',
+      'handleUnauthorizedMedia auto-creates auth when warn and verified',
       () async {
-        // Arrange - askEachTime preference, already verified for age
+        // Arrange - warn preference, already verified for age
         when(
           () => mockContentFilterService.adultPlaybackPreference,
         ).thenReturn(ContentFilterPreference.warn);
         when(
           () => mockAgeVerificationService.isAdultContentVerified,
         ).thenReturn(true);
-        when(() => mockContext.mounted).thenReturn(true);
         when(
-          () => mockAgeVerificationService.verifyAdultContentAccess(any()),
-        ).thenAnswer((_) async => true);
+          () => mockMediaViewerAuthService.canCreateHeaders,
+        ).thenReturn(true);
         when(
           () => mockMediaViewerAuthService.createAuthHeaders(
             sha256Hash: any(named: 'sha256Hash'),
@@ -325,15 +362,16 @@ void main() {
           category: 'nudity',
         );
 
-        // Assert - dialog was shown, auth header created after confirmation
+        // Assert - auth header created without re-verification
+        expect(interceptor.shouldAutoAuthorizeAgeRestrictedMedia, isTrue);
         expect(result, isA<ViewerAuthAuthorized>());
         expect(
           result.headersOrNull,
           equals({'Authorization': 'Nostr dialogToken'}),
         );
-        verify(
+        verifyNever(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
-        ).called(1);
+        );
         verify(
           () => mockMediaViewerAuthService.createAuthHeaders(
             sha256Hash: 'abc123',
@@ -345,13 +383,13 @@ void main() {
     test(
       'handleUnauthorizedMedia returns null when askEachTime and user declines',
       () async {
-        // Arrange - askEachTime preference, user declines in dialog
+        // Arrange - askEachTime preference, unverified user declines in dialog
         when(
           () => mockContentFilterService.adultPlaybackPreference,
         ).thenReturn(ContentFilterPreference.warn);
         when(
           () => mockAgeVerificationService.isAdultContentVerified,
-        ).thenReturn(true);
+        ).thenReturn(false);
         when(() => mockContext.mounted).thenReturn(true);
         when(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),

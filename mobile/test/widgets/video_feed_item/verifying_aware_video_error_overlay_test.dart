@@ -61,11 +61,14 @@ void main() {
       required VideoPlaybackStatusCubit cubit,
       MediaAuthInterceptor? interceptor,
     }) {
+      final authInterceptor = interceptor ?? _MockMediaAuthInterceptor();
+      when(
+        () => authInterceptor.shouldAutoAuthorizeAgeRestrictedMedia,
+      ).thenReturn(false);
       return tester.pumpWidget(
         ProviderScope(
           overrides: [
-            if (interceptor != null)
-              mediaAuthInterceptorProvider.overrideWithValue(interceptor),
+            mediaAuthInterceptorProvider.overrideWithValue(authInterceptor),
           ],
           child: BlocProvider<VideoPlaybackStatusCubit>.value(
             value: cubit,
@@ -92,9 +95,7 @@ void main() {
 
     testWidgets(
       'shows the Verify age spinner when the cubit reports verifying',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final cubit = VideoPlaybackStatusCubit();
         addTearDown(cubit.close);
 

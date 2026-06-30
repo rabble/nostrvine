@@ -136,11 +136,14 @@ void main() {
         // Arrange - warn preference uses the click-through verification path
         when(
           () => mockAgeVerificationService.isAdultContentVerified,
-        ).thenReturn(true);
+        ).thenReturn(false);
         when(() => mockContext.mounted).thenReturn(true);
         when(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
         ).thenAnswer((_) async => true);
+        when(
+          () => mockContentFilterService.unlockAdultCategories(),
+        ).thenAnswer((_) async {});
         when(
           () => mockMediaViewerAuthService.createAuthHeaders(
             sha256Hash: any(named: 'sha256Hash'),
@@ -168,6 +171,9 @@ void main() {
         );
         verify(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
+        ).called(1);
+        verify(
+          () => mockContentFilterService.unlockAdultCategories(),
         ).called(1);
         verify(
           () => mockMediaViewerAuthService.createAuthHeaders(

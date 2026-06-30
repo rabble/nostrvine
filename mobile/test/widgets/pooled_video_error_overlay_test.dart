@@ -8,8 +8,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart'
     show VideoErrorType;
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 
@@ -18,12 +21,15 @@ import '../builders/test_video_event_builder.dart';
 Finder _findDivineIcon(DivineIconName name) =>
     find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
+class _MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
+
 void main() {
   group(PooledVideoErrorOverlay, () {
     late VideoEvent divineVideo;
     late VideoEvent thirdPartyVideo;
     late bool retryPressed;
     late bool verifyAgePressed;
+    late MediaAuthInterceptor mediaAuthInterceptor;
     late AppLocalizations l10n;
 
     // Valid 64-char hex sha256 for moderation status resolution.
@@ -41,6 +47,10 @@ void main() {
       );
       retryPressed = false;
       verifyAgePressed = false;
+      mediaAuthInterceptor = _MockMediaAuthInterceptor();
+      when(
+        () => mediaAuthInterceptor.shouldAutoAuthorizeAgeRestrictedMedia,
+      ).thenReturn(false);
       l10n = lookupAppLocalizations(const Locale('en'));
     });
 
@@ -49,9 +59,13 @@ void main() {
       VideoEvent? video,
       VoidCallback? onVerifyAge,
       bool isVerifying = false,
+      MediaAuthInterceptor? authInterceptor,
     }) {
       return ProviderScope(
         overrides: [
+          mediaAuthInterceptorProvider.overrideWithValue(
+            authInterceptor ?? mediaAuthInterceptor,
+          ),
           videoModerationStatusProvider.overrideWith(
             (ref, sha256) async => null,
           ),
@@ -77,9 +91,13 @@ void main() {
       required VideoModerationStatus moderationStatus,
       VideoEvent? video,
       VoidCallback? onVerifyAge,
+      MediaAuthInterceptor? authInterceptor,
     }) {
       return ProviderScope(
         overrides: [
+          mediaAuthInterceptorProvider.overrideWithValue(
+            authInterceptor ?? mediaAuthInterceptor,
+          ),
           videoModerationStatusProvider.overrideWith(
             (ref, sha256) async => moderationStatus,
           ),
@@ -163,6 +181,38 @@ void main() {
           expect(verifyAgePressed, isFalse);
         },
       );
+
+      testWidgets('auto-runs Verify age for already-authorized viewers', (
+        tester,
+      ) async {
+        when(
+          () => mediaAuthInterceptor.shouldAutoAuthorizeAgeRestrictedMedia,
+        ).thenReturn(true);
+
+        await tester.pumpWidget(
+          buildWidget(
+            errorType: VideoErrorType.ageRestricted,
+            onVerifyAge: () => verifyAgePressed = true,
+          ),
+        );
+        await tester.pump();
+
+        expect(verifyAgePressed, isTrue);
+      });
+
+      testWidgets('does not auto-run Verify age when adult content is hidden', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            errorType: VideoErrorType.ageRestricted,
+            onVerifyAge: () => verifyAgePressed = true,
+          ),
+        );
+        await tester.pump();
+
+        expect(verifyAgePressed, isFalse);
+      });
     });
 
     group('notFound', () {
@@ -249,6 +299,33 @@ void main() {
           expect(find.text(l10n.videoErrorRetry), findsNothing);
 
           await tester.tap(find.text(l10n.videoErrorVerifyAgeButton));
+
+          expect(verifyAgePressed, isTrue);
+        },
+      );
+
+      testWidgets(
+        'auto-runs verify action for moderation age restriction when already authorized',
+        (tester) async {
+          when(
+            () => mediaAuthInterceptor.shouldAutoAuthorizeAgeRestrictedMedia,
+          ).thenReturn(true);
+
+          await tester.pumpWidget(
+            buildWidgetWithModeration(
+              errorType: VideoErrorType.notFound,
+              moderationStatus: const VideoModerationStatus(
+                moderated: true,
+                blocked: false,
+                quarantined: false,
+                ageRestricted: true,
+                needsReview: false,
+                aiGenerated: false,
+              ),
+              onVerifyAge: () => verifyAgePressed = true,
+            ),
+          );
+          await tester.pumpAndSettle();
 
           expect(verifyAgePressed, isTrue);
         },
