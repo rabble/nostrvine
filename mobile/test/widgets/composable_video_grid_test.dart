@@ -28,16 +28,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/broken_video_tracker.dart' as broken_tracker;
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('ComposableVideoGrid', () {
     late List<VideoEvent> testVideos;
     late broken_tracker.BrokenVideoTracker mockTracker;
+    late SharedPreferences prefs;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
       final now = DateTime.now();
       final nowTimestamp = now.millisecondsSinceEpoch ~/ 1000;
       testVideos = [
@@ -91,6 +96,7 @@ void main() {
         ProviderScope(
           overrides: [
             brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
+            sharedPreferencesProvider.overrideWithValue(prefs),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -123,6 +129,7 @@ void main() {
         ProviderScope(
           overrides: [
             brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
+            sharedPreferencesProvider.overrideWithValue(prefs),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -151,6 +158,7 @@ void main() {
         ProviderScope(
           overrides: [
             brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
+            sharedPreferencesProvider.overrideWithValue(prefs),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -180,6 +188,7 @@ void main() {
         ProviderScope(
           overrides: [
             brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
+            sharedPreferencesProvider.overrideWithValue(prefs),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -221,6 +230,7 @@ void main() {
         ProviderScope(
           overrides: [
             brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
+            sharedPreferencesProvider.overrideWithValue(prefs),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -260,6 +270,7 @@ void main() {
         ProviderScope(
           overrides: [
             brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
+            sharedPreferencesProvider.overrideWithValue(prefs),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -294,6 +305,7 @@ void main() {
         ProviderScope(
           overrides: [
             brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
+            sharedPreferencesProvider.overrideWithValue(prefs),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -326,6 +338,7 @@ void main() {
         ProviderScope(
           overrides: [
             brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
+            sharedPreferencesProvider.overrideWithValue(prefs),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -361,6 +374,7 @@ void main() {
           overrides: [
             brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
             subscribedListVideoCacheProvider.overrideWithValue(null),
+            sharedPreferencesProvider.overrideWithValue(prefs),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,

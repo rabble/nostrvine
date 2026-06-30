@@ -21,6 +21,7 @@ class VideoThumbnailWidget extends StatefulWidget {
     this.fit = BoxFit.cover,
     this.showPlayIcon = false,
     this.borderRadius,
+    this.onRenderedDimensions,
   });
   final VideoEvent video;
   final double? width;
@@ -28,6 +29,11 @@ class VideoThumbnailWidget extends StatefulWidget {
   final BoxFit fit;
   final bool showPlayIcon;
   final BorderRadius? borderRadius;
+
+  /// Called with the real pixel dimensions recovered from the loaded thumbnail
+  /// when the video's own metadata omits them. Lets the feed re-apply the
+  /// aspect-ratio filter on backend rows that ship without a `dim` tag (#3882).
+  final void Function(int width, int height)? onRenderedDimensions;
 
   @override
   State<VideoThumbnailWidget> createState() => _VideoThumbnailWidgetState();
@@ -81,6 +87,10 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
         height <= 0) {
       return;
     }
+
+    // Feed the real thumbnail dimensions back so the feed can re-apply the
+    // aspect-ratio filter on a backend row without `dim` metadata (#3882).
+    widget.onRenderedDimensions?.call(width, height);
 
     final aspectRatio = width / height;
     if (_resolvedAspectRatio == aspectRatio) return;

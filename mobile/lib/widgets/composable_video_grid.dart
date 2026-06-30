@@ -14,7 +14,10 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/services/broken_video_tracker.dart'
+    show BrokenVideoTracker;
 import 'package:openvine/services/content_deletion_service.dart';
+import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
 import 'package:openvine/utils/delete_failure_localization.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
@@ -114,6 +117,25 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
   Widget build(BuildContext context) {
     // Watch broken video tracker asynchronously
     final brokenTrackerAsync = ref.watch(brokenVideoTrackerProvider);
+    final aspectRatio = ref.watch(feedAspectRatioPreferenceServiceProvider);
+
+    // Re-filter in place when a thumbnail resolves a video's real dimensions
+    // (the backend omits them), so "square only" can drop now-known portrait
+    // videos without re-fetching the feed (#3882).
+    return ListenableBuilder(
+      listenable: aspectRatio.renderedDimensionsRevision,
+      builder: (context, _) =>
+          _buildWithTracker(context, brokenTrackerAsync, aspectRatio),
+    );
+  }
+
+  Widget _buildWithTracker(
+    BuildContext context,
+    AsyncValue<BrokenVideoTracker> brokenTrackerAsync,
+    FeedAspectRatioPreferenceService aspectRatio,
+  ) {
+    List<VideoEvent> withoutHidden(List<VideoEvent> videos) =>
+        videos.where((video) => !aspectRatio.shouldHideVideo(video)).toList();
 
     return brokenTrackerAsync.when(
       loading: () => const Center(
@@ -121,13 +143,15 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       ),
       error: (error, stack) {
         // Fallback: show all videos if tracker fails
-        return _buildGrid(context, widget.videos);
+        return _buildGrid(context, withoutHidden(widget.videos));
       },
       data: (tracker) {
-        // Filter out broken videos
-        final filteredVideos = widget.videos
-            .where((video) => !tracker.isVideoBroken(video.id))
-            .toList();
+        // Filter out broken and non-square (square-only) videos
+        final filteredVideos = withoutHidden(
+          widget.videos
+              .where((video) => !tracker.isVideoBroken(video.id))
+              .toList(),
+        );
 
         return _buildGrid(context, filteredVideos);
       },
@@ -168,6 +192,9 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
         displayedVideos: videosToShow,
         onLongPress: () => _showVideoContextMenu(context, video),
         isInSubscribedList: isInSubscribedList,
+        onRenderedDimensions: (width, height) => ref
+            .read(feedAspectRatioPreferenceServiceProvider)
+            .recordRenderedDimensions(video.id, width, height),
       );
     }
 
@@ -509,6 +536,7 @@ class _VideoItem extends StatelessWidget {
     required this.index,
     required this.displayedVideos,
     this.isInSubscribedList = false,
+    this.onRenderedDimensions,
   });
 
   final VideoEvent video;
@@ -518,6 +546,7 @@ class _VideoItem extends StatelessWidget {
   final int index;
   final List<VideoEvent> displayedVideos;
   final bool isInSubscribedList;
+  final void Function(int width, int height)? onRenderedDimensions;
 
   @override
   Widget build(BuildContext context) {
@@ -532,7 +561,10 @@ class _VideoItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(4),
           child: Stack(
             children: [
-              _VideoThumbnail(video: video),
+              _VideoThumbnail(
+                video: video,
+                onRenderedDimensions: onRenderedDimensions,
+              ),
               Positioned(
                 left: 0,
                 right: 0,
@@ -647,15 +679,19 @@ class _VideoInfoSection extends StatelessWidget {
 }
 
 class _VideoThumbnail extends StatelessWidget {
-  const _VideoThumbnail({required this.video});
+  const _VideoThumbnail({required this.video, this.onRenderedDimensions});
 
   final VideoEvent video;
+  final void Function(int width, int height)? onRenderedDimensions;
 
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
       color: VineTheme.cardBackground,
-      child: VideoThumbnailWidget(video: video),
+      child: VideoThumbnailWidget(
+        video: video,
+        onRenderedDimensions: onRenderedDimensions,
+      ),
     );
   }
 }
