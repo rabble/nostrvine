@@ -2960,19 +2960,19 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get authBunkerRejectedConnection =>
-      'Your signer app declined the connection.';
+      'Din sign-app nekade anslutningen.';
 
   @override
   String get authNostrConnectStartFailed =>
-      'Couldn\'t reach the signer. Check your connection and try again.';
+      'Kunde inte nå sign-appen. Kontrollera din anslutning och försök igen.';
 
   @override
   String get authNostrConnectInvalidSession =>
-      'This connection link is no longer valid. Start a new one.';
+      'Den här anslutningslänken är inte längre giltig. Starta en ny.';
 
   @override
   String get authNostrConnectSetupFailed =>
-      'Almost there — we couldn\'t finish signing you in. Try again.';
+      'Nästan klart — vi kunde inte slutföra inloggningen. Försök igen.';
 
   @override
   String get authUrlCopied => 'URL kopierad till urklipp';

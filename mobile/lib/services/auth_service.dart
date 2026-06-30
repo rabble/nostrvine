@@ -3403,21 +3403,30 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         // Timeout, cancellation, or a terminal session error.
         final state = session.state;
         _setAuthState(AuthState.unauthenticated);
-        return switch (state) {
-          NostrConnectState.cancelled => AuthResult.nostrConnectFailure(
-            NostrConnectFailureReason.cancelled,
-          ),
-          NostrConnectState.timeout => AuthResult.nostrConnectFailure(
-            NostrConnectFailureReason.timedOut,
-          ),
-          NostrConnectState.error => AuthResult.nostrConnectFailure(
+        final reason = switch (state) {
+          NostrConnectState.cancelled => NostrConnectFailureReason.cancelled,
+          NostrConnectState.timeout => NostrConnectFailureReason.timedOut,
+          NostrConnectState.error =>
             session.failureReason ??
                 NostrConnectFailureReason.postConnectFailed,
-          ),
-          _ => AuthResult.nostrConnectFailure(
-            NostrConnectFailureReason.postConnectFailed,
-          ),
+          _ => NostrConnectFailureReason.postConnectFailed,
         };
+        // `noExpectedSecret` is a programmer-invariant violation that "should
+        // never happen": the response handler was reached with no secret to
+        // validate against. Surface it to Crashlytics so a real break is
+        // visible instead of reading as a routine "link expired" to the user.
+        if (reason == NostrConnectFailureReason.noExpectedSecret) {
+          _reportAuthError(
+            StateError(
+              'nostrconnect response handling reached with no expected secret',
+            ),
+            StackTrace.current,
+            reason: 'NostrConnect.noExpectedSecret',
+            logMessage:
+                'nostrconnect invariant violated: no expected secret to validate',
+          );
+        }
+        return AuthResult.nostrConnectFailure(reason);
       }
 
       // Success! Create the bunker signer from the result

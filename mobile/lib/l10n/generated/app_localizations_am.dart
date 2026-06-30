@@ -2908,20 +2908,19 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authUnknownError => 'ያልታወቀ ስህተት ተከስቷል።';
 
   @override
-  String get authBunkerRejectedConnection =>
-      'Your signer app declined the connection.';
+  String get authBunkerRejectedConnection => 'ፈራሚ መተግበሪያዎ ግንኙነቱን አልተቀበለም።';
 
   @override
   String get authNostrConnectStartFailed =>
-      'Couldn\'t reach the signer. Check your connection and try again.';
+      'ፈራሚውን ማግኘት አልተቻለም። ግንኙነትዎን ያረጋግጡ እና እንደገና ይሞክሩ።';
 
   @override
   String get authNostrConnectInvalidSession =>
-      'This connection link is no longer valid. Start a new one.';
+      'ይህ የግንኙነት አገናኝ ከአሁን በኋላ የሚሰራ አይደለም። አዲስ ይጀምሩ።';
 
   @override
   String get authNostrConnectSetupFailed =>
-      'Almost there — we couldn\'t finish signing you in. Try again.';
+      'ጥቂት ቀርቷል — መግባትዎን ማጠናቀቅ አልቻልንም። እንደገና ይሞክሩ።';
 
   @override
   String get authUrlCopied => 'URL ወደ ቅንጥብ ሰሌዳ ተቀድቷል።';

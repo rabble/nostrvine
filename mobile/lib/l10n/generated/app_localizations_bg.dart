@@ -3008,19 +3008,19 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get authBunkerRejectedConnection =>
-      'Your signer app declined the connection.';
+      'Приложението ти за подписване отказа връзката.';
 
   @override
   String get authNostrConnectStartFailed =>
-      'Couldn\'t reach the signer. Check your connection and try again.';
+      'Не успяхме да се свържем с приложението за подписване. Провери връзката си и опитай пак.';
 
   @override
   String get authNostrConnectInvalidSession =>
-      'This connection link is no longer valid. Start a new one.';
+      'Тази връзка вече не е валидна. Започни нова.';
 
   @override
   String get authNostrConnectSetupFailed =>
-      'Almost there — we couldn\'t finish signing you in. Try again.';
+      'Почти готово — не успяхме да завършим влизането ти. Опитай пак.';
 
   @override
   String get authUrlCopied => 'URL адресът е копиран в клипборда';

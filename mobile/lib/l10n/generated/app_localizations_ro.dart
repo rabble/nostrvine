@@ -3052,19 +3052,19 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get authBunkerRejectedConnection =>
-      'Your signer app declined the connection.';
+      'Aplicația ta de semnare a refuzat conexiunea.';
 
   @override
   String get authNostrConnectStartFailed =>
-      'Couldn\'t reach the signer. Check your connection and try again.';
+      'N-am putut contacta aplicația de semnare. Verifică-ți conexiunea și încearcă din nou.';
 
   @override
   String get authNostrConnectInvalidSession =>
-      'This connection link is no longer valid. Start a new one.';
+      'Acest link de conexiune nu mai e valid. Începe unul nou.';
 
   @override
   String get authNostrConnectSetupFailed =>
-      'Almost there — we couldn\'t finish signing you in. Try again.';
+      'Aproape gata — n-am putut finaliza autentificarea. Încearcă din nou.';
 
   @override
   String get authUrlCopied => 'URL copiat în clipboard';

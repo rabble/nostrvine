@@ -260,7 +260,7 @@ class NostrConnectSession {
   void cancel() {
     if (_isClosed) return;
 
-    log('[NostrConnectSession] Session cancelled');
+    logger('[NostrConnectSession] Session cancelled');
     _setState(NostrConnectState.cancelled);
 
     if (_connectionCompleter != null && !_connectionCompleter!.isCompleted) {
@@ -277,7 +277,7 @@ class NostrConnectSession {
   Future<void> ensureConnected() async {
     if (_isClosed || _state != NostrConnectState.listening) return;
 
-    log(
+    logger(
       '[NostrConnectSession] ensureConnected: checking ${_relays.length} '
       'relays + ${relays.length} configured',
     );
@@ -391,14 +391,14 @@ class NostrConnectSession {
     if (!connected) {
       throw StateError('Relay connect returned false');
     }
-    log('[NostrConnectSession] Connected to $relayAddr');
+    logger('[NostrConnectSession] Connected to $relayAddr');
 
     return relay;
   }
 
   Future<void> _reconnectRelay(Relay relay) async {
     final addr = relay.relayStatus.addr;
-    log('[NostrConnectSession] Reconnecting to $addr');
+    logger('[NostrConnectSession] Reconnecting to $addr');
 
     try {
       // Re-add the subscription filter so it is sent on connect
@@ -435,7 +435,7 @@ class NostrConnectSession {
     final queryMsg = ['REQ', subscriptionId, filter.toJson()];
 
     relay.pendingMessages.add(queryMsg);
-    log(
+    logger(
       '[NostrConnectSession] Added subscription $subscriptionId for pubkey $pubkey',
     );
   }
@@ -479,7 +479,7 @@ class NostrConnectSession {
       return;
     }
 
-    log(
+    logger(
       '[NostrConnectSession] Decrypted response: id=${response.id}, '
       'hasResult=${response.result.isNotEmpty}, '
       'hasError=${(response.error ?? '').isNotEmpty}',
@@ -536,7 +536,7 @@ class NostrConnectSession {
 
     // Success! Extract remote signer pubkey from the event
     final remoteSignerPubkey = event.pubkey;
-    log('[NostrConnectSession] Connected to bunker: $remoteSignerPubkey');
+    logger('[NostrConnectSession] Connected to bunker: $remoteSignerPubkey');
 
     // Update info with the remote signer pubkey
     _info = NostrRemoteSignerInfo(

@@ -3034,19 +3034,19 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get authBunkerRejectedConnection =>
-      'Your signer app declined the connection.';
+      'Twoja aplikacja do podpisywania odrzuciła połączenie.';
 
   @override
   String get authNostrConnectStartFailed =>
-      'Couldn\'t reach the signer. Check your connection and try again.';
+      'Nie udało się połączyć z aplikacją do podpisywania. Sprawdź połączenie i spróbuj ponownie.';
 
   @override
   String get authNostrConnectInvalidSession =>
-      'This connection link is no longer valid. Start a new one.';
+      'Ten link do połączenia jest już nieważny. Utwórz nowy.';
 
   @override
   String get authNostrConnectSetupFailed =>
-      'Almost there — we couldn\'t finish signing you in. Try again.';
+      'Prawie gotowe — nie udało się dokończyć logowania. Spróbuj ponownie.';
 
   @override
   String get authUrlCopied => 'URL skopiowany do schowka';

@@ -819,12 +819,6 @@ const _knownUntranslatedDebt = {
   'feedTuningMoreLabel',
   'feedTuningLessLabel',
   'feedTuningUndo',
-  // Added by the #3761 nostrconnect reason-code migration. English ships;
-  // other locales fall back to English until the next translation pass.
-  'authBunkerRejectedConnection',
-  'authNostrConnectStartFailed',
-  'authNostrConnectInvalidSession',
-  'authNostrConnectSetupFailed',
 };
 
 Map<String, Object?> _readArb(File file) {

@@ -2995,19 +2995,19 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get authBunkerRejectedConnection =>
-      'Your signer app declined the connection.';
+      'La tua app signer ha rifiutato la connessione.';
 
   @override
   String get authNostrConnectStartFailed =>
-      'Couldn\'t reach the signer. Check your connection and try again.';
+      'Impossibile raggiungere il signer. Controlla la connessione e riprova.';
 
   @override
   String get authNostrConnectInvalidSession =>
-      'This connection link is no longer valid. Start a new one.';
+      'Questo link di connessione non è più valido. Avviane uno nuovo.';
 
   @override
   String get authNostrConnectSetupFailed =>
-      'Almost there — we couldn\'t finish signing you in. Try again.';
+      'Ci siamo quasi — non siamo riusciti a completare l\'accesso. Riprova.';
 
   @override
   String get authUrlCopied => 'URL copiato negli appunti';

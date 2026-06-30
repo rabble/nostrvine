@@ -2820,20 +2820,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get authUnknownError => '不明なエラーが起きた。';
 
   @override
-  String get authBunkerRejectedConnection =>
-      'Your signer app declined the connection.';
+  String get authBunkerRejectedConnection => '署名アプリが接続を拒否したよ。';
 
   @override
-  String get authNostrConnectStartFailed =>
-      'Couldn\'t reach the signer. Check your connection and try again.';
+  String get authNostrConnectStartFailed => '署名アプリにつながらなかった。接続を確認してもう一回試してみて。';
 
   @override
-  String get authNostrConnectInvalidSession =>
-      'This connection link is no longer valid. Start a new one.';
+  String get authNostrConnectInvalidSession => 'この接続リンクはもう使えないよ。新しいリンクで始めてね。';
 
   @override
-  String get authNostrConnectSetupFailed =>
-      'Almost there — we couldn\'t finish signing you in. Try again.';
+  String get authNostrConnectSetupFailed => 'あと少し——サインインを完了できなかったよ。もう一回試してみて。';
 
   @override
   String get authUrlCopied => 'URL をコピーしたよ';

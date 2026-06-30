@@ -76,17 +76,17 @@ void main() {
       },
     );
 
-    test('new keys fall back to English in an untranslated locale (de)', () {
+    test('new keys are localized, not left as English fallback (de)', () {
       final de = lookupAppLocalizations(const Locale('de'));
-      // These keys live in _knownUntranslatedDebt, so non-English locales
-      // resolve to the English source until a translation pass lands.
+      // The #3761 keys are now translated in every locale, so German must
+      // not resolve to the English source.
       expect(
         de.authBunkerRejectedConnection,
-        equals(en.authBunkerRejectedConnection),
+        isNot(equals(en.authBunkerRejectedConnection)),
       );
       expect(
         de.authNostrConnectSetupFailed,
-        equals(en.authNostrConnectSetupFailed),
+        isNot(equals(en.authNostrConnectSetupFailed)),
       );
     });
   });

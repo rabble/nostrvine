@@ -3008,19 +3008,19 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get authBunkerRejectedConnection =>
-      'Your signer app declined the connection.';
+      'Tinanggihan ng iyong signer app ang connection.';
 
   @override
   String get authNostrConnectStartFailed =>
-      'Couldn\'t reach the signer. Check your connection and try again.';
+      'Hindi maabot ang signer app. Pakitsek ang iyong connection at subukan ulit.';
 
   @override
   String get authNostrConnectInvalidSession =>
-      'This connection link is no longer valid. Start a new one.';
+      'Hindi na valid ang connection link na ito. Magsimula ng bago.';
 
   @override
   String get authNostrConnectSetupFailed =>
-      'Almost there — we couldn\'t finish signing you in. Try again.';
+      'Malapit na — hindi namin natapos ang pag-sign in sa iyo. Subukan ulit.';
 
   @override
   String get authUrlCopied => 'Nakopya ang URL sa clipboard';

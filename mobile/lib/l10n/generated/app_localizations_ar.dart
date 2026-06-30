@@ -2929,19 +2929,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get authBunkerRejectedConnection =>
-      'Your signer app declined the connection.';
+      'رفض تطبيق التوقيع الخاص بك الاتصال.';
 
   @override
   String get authNostrConnectStartFailed =>
-      'Couldn\'t reach the signer. Check your connection and try again.';
+      'تعذّر الوصول إلى تطبيق التوقيع. تحقّق من اتصالك وحاول مرّة أخرى.';
 
   @override
   String get authNostrConnectInvalidSession =>
-      'This connection link is no longer valid. Start a new one.';
+      'لم يعد رابط الاتصال هذا صالحًا. أنشئ رابطًا جديدًا.';
 
   @override
   String get authNostrConnectSetupFailed =>
-      'Almost there — we couldn\'t finish signing you in. Try again.';
+      'اقتربنا — لكن لم نتمكّن من إتمام تسجيل دخولك. حاول مرّة أخرى.';
 
   @override
   String get authUrlCopied => 'تم نسخ الرابط إلى الحافظة';

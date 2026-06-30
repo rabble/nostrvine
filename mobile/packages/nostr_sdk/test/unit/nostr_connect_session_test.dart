@@ -586,6 +586,19 @@ void main() {
 
         expect(result, isNotNull, reason: 'a matching secret should connect');
         expect(session.state, equals(NostrConnectState.connected));
+        // Guard the guard: the response-handling path must actually route
+        // through the injected logger, or the redaction assertion below
+        // passes vacuously. This `Decrypted response` line is precisely
+        // where `response.result` (== the secret on a match) would most
+        // plausibly be interpolated by a future edit, so it must be one of
+        // the lines `logs` captures.
+        expect(
+          logs.any((line) => line.contains('Decrypted response')),
+          isTrue,
+          reason:
+              '_handleResponse must log via the injected logger so the '
+              'secret-redaction assertion covers the response path',
+        );
         expect(
           logs.where((line) => line.contains(secret)),
           isEmpty,
@@ -626,6 +639,15 @@ void main() {
         ]);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
+        // Guard the guard: prove the mismatch path actually ran through the
+        // injected logger so the redaction assertion below is not vacuous.
+        expect(
+          logs.any((line) => line.contains('Decrypted response')),
+          isTrue,
+          reason:
+              '_handleResponse must log via the injected logger so the '
+              'redaction assertion covers the mismatch path',
+        );
         expect(
           logs.where(
             (line) => line.contains(junkResult) || line.contains(secret),

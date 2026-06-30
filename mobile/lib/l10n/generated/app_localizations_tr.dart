@@ -2945,19 +2945,19 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get authBunkerRejectedConnection =>
-      'Your signer app declined the connection.';
+      'İmzalama uygulaman bağlantıyı reddetti.';
 
   @override
   String get authNostrConnectStartFailed =>
-      'Couldn\'t reach the signer. Check your connection and try again.';
+      'İmzalama uygulamasına ulaşılamadı. Bağlantını kontrol et ve tekrar dene.';
 
   @override
   String get authNostrConnectInvalidSession =>
-      'This connection link is no longer valid. Start a new one.';
+      'Bu bağlantı artık geçerli değil. Yeni bir tane oluştur.';
 
   @override
   String get authNostrConnectSetupFailed =>
-      'Almost there — we couldn\'t finish signing you in. Try again.';
+      'Az kaldı — girişini tamamlayamadık. Tekrar dene.';
 
   @override
   String get authUrlCopied => 'URL panoya kopyalandı';
