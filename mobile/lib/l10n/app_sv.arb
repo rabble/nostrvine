@@ -3741,6 +3741,7 @@
     "dmReelReplyViewChatA11yLabel": "Öppna chatt",
     "dmReelReplySentAnnouncement": "Svar skickat",
     "dmReelReactionSentAnnouncement": "Reagerade {emoji}",
+    "dmReelReactionSentPill": "Reaktion skickad",
     "dmReelReplyFailed": "Det gick inte att skicka",
     "emojiPickerSearchHint": "Sök",
     "emojiCategoryRecent": "Senaste",

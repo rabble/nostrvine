@@ -2317,6 +2317,7 @@
     "dmReelReplyViewChatA11yLabel": "Buksan ang chat",
     "dmReelReplySentAnnouncement": "Naipadala ang tugon",
     "dmReelReactionSentAnnouncement": "Nag-react ng {emoji}",
+    "dmReelReactionSentPill": "Naipadala ang reaksyon",
     "dmReelReplyFailed": "Hindi maipadala",
     "emojiPickerSearchHint": "Maghanap",
     "emojiCategoryRecent": "Kamakailan",

@@ -3741,6 +3741,7 @@
     "dmReelReplyViewChatA11yLabel": "Ouvrir la discussion",
     "dmReelReplySentAnnouncement": "Réponse envoyée",
     "dmReelReactionSentAnnouncement": "Réaction {emoji} envoyée",
+    "dmReelReactionSentPill": "Réaction envoyée",
     "dmReelReplyFailed": "Échec de l'envoi",
     "emojiPickerSearchHint": "Rechercher",
     "emojiCategoryRecent": "Récents",

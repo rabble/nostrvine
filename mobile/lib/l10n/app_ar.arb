@@ -3741,6 +3741,7 @@
     "dmReelReplyViewChatA11yLabel": "فتح المحادثة",
     "dmReelReplySentAnnouncement": "تم إرسال الرد",
     "dmReelReactionSentAnnouncement": "تفاعلت بـ {emoji}",
+    "dmReelReactionSentPill": "تم إرسال التفاعل",
     "dmReelReplyFailed": "تعذّر الإرسال",
     "emojiPickerSearchHint": "بحث",
     "emojiCategoryRecent": "الأخيرة",

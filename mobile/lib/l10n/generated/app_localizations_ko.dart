@@ -5314,6 +5314,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get dmReelReactionSentPill => '반응을 보냈어요';
+
+  @override
   String get dmReelReplyFailed => '보내지 못했습니다';
 
   @override

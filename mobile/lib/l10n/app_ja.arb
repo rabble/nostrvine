@@ -3741,6 +3741,7 @@
     "dmReelReplyViewChatA11yLabel": "チャットを開く",
     "dmReelReplySentAnnouncement": "返信を送信しました",
     "dmReelReactionSentAnnouncement": "{emoji}でリアクションしました",
+    "dmReelReactionSentPill": "リアクションを送信しました",
     "dmReelReplyFailed": "送信できませんでした",
     "emojiPickerSearchHint": "検索",
     "emojiCategoryRecent": "最近使った絵文字",

@@ -3741,6 +3741,7 @@
     "dmReelReplyViewChatA11yLabel": "Otwórz czat",
     "dmReelReplySentAnnouncement": "Odpowiedź wysłana",
     "dmReelReactionSentAnnouncement": "Zareagowano {emoji}",
+    "dmReelReactionSentPill": "Wysłano reakcję",
     "dmReelReplyFailed": "Nie udało się wysłać",
     "emojiPickerSearchHint": "Szukaj",
     "emojiCategoryRecent": "Ostatnie",

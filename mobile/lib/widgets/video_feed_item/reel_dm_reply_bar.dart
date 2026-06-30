@@ -558,7 +558,7 @@ class _SendButton extends StatelessWidget {
   }
 }
 
-/// Horizontal quick-reaction row with an active-emoji highlight + "+" picker.
+/// Horizontal quick-reaction row of emoji buttons + a "+" picker.
 class _QuickReactionRow extends StatelessWidget {
   const _QuickReactionRow({
     required this.emojis,
@@ -611,21 +611,10 @@ class _ReactionEmojiButton extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isActive
-                ? VineTheme.primary.withValues(alpha: 0.18)
-                : Colors.transparent,
-            border: isActive
-                ? Border.all(color: VineTheme.primary, width: 1.5)
-                : null,
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            child: Center(
-              child: Text(emoji, style: const TextStyle(fontSize: 28)),
-            ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          child: Center(
+            child: Text(emoji, style: const TextStyle(fontSize: 28)),
           ),
         ),
       ),
@@ -641,8 +630,8 @@ class _MorePickerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 48×48 tap target, but a smaller (32) visible circle + 18px glyph so the
-    // "+" sits in proportion with the bare 28px emoji glyphs beside it.
+    // 48×48 tap target with a 40px visible circle + 22px glyph so the "+" reads
+    // at the same weight as the bare ~28px emoji glyphs beside it.
     return Semantics(
       button: true,
       label: label,
@@ -659,13 +648,13 @@ class _MorePickerButton extends StatelessWidget {
                 color: VineTheme.iconButtonBackground,
               ),
               child: SizedBox(
-                width: 32,
-                height: 32,
+                width: 40,
+                height: 40,
                 child: Center(
                   child: DivineIcon(
                     icon: DivineIconName.plus,
                     color: VineTheme.onSurfaceMuted,
-                    size: 18,
+                    size: 22,
                   ),
                 ),
               ),

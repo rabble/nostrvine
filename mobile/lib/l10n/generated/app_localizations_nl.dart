@@ -5540,6 +5540,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get dmReelReactionSentPill => 'Reactie verzonden';
+
+  @override
   String get dmReelReplyFailed => 'Verzenden mislukt';
 
   @override

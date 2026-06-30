@@ -5295,6 +5295,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get dmReelReactionSentPill => 'リアクションを送信しました';
+
+  @override
   String get dmReelReplyFailed => '送信できませんでした';
 
   @override

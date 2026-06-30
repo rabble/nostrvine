@@ -9716,6 +9716,12 @@ abstract class AppLocalizations {
   /// **'Reacted {emoji}'**
   String dmReelReactionSentAnnouncement(String emoji);
 
+  /// Centered confirmation pill shown over the reel for ~1s after a quick reaction is sent, alongside the emoji burst animation.
+  ///
+  /// In en, this message translates to:
+  /// **'Reaction sent'**
+  String get dmReelReactionSentPill;
+
   /// Transient toast shown in the reel player when a reply or reaction fails to send.
   ///
   /// In en, this message translates to:

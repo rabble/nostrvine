@@ -5517,6 +5517,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get dmReelReactionSentPill => 'Reaktion skickad';
+
+  @override
   String get dmReelReplyFailed => 'Det gick inte att skicka';
 
   @override

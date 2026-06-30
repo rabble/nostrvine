@@ -3065,6 +3065,7 @@
     "dmReelReplyViewChatA11yLabel": "채팅 열기",
     "dmReelReplySentAnnouncement": "답장을 보냈습니다",
     "dmReelReactionSentAnnouncement": "{emoji} 반응함",
+    "dmReelReactionSentPill": "반응을 보냈어요",
     "dmReelReplyFailed": "보내지 못했습니다",
     "emojiPickerSearchHint": "검색",
     "emojiCategoryRecent": "최근 사용",

@@ -3873,6 +3873,7 @@
     "dmReelReplyViewChatA11yLabel": "ውይይት ይክፈቱ",
     "dmReelReplySentAnnouncement": "መልስ ተልኳል",
     "dmReelReactionSentAnnouncement": "በ{emoji} ምላሽ ሰጥተዋል",
+    "dmReelReactionSentPill": "ምላሽ ተልኳል",
     "dmReelReplyFailed": "መላክ አልተቻለም",
     "emojiPickerSearchHint": "ፍለጋ",
     "emojiCategoryRecent": "የቅርብ ጊዜ",

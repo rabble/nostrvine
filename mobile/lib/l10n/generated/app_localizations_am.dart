@@ -5410,6 +5410,9 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get dmReelReactionSentPill => 'ምላሽ ተልኳል';
+
+  @override
   String get dmReelReplyFailed => 'መላክ አልተቻለም';
 
   @override

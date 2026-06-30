@@ -3741,6 +3741,7 @@
     "dmReelReplyViewChatA11yLabel": "Deschide conversația",
     "dmReelReplySentAnnouncement": "Răspuns trimis",
     "dmReelReactionSentAnnouncement": "Ai reacționat {emoji}",
+    "dmReelReactionSentPill": "Reacție trimisă",
     "dmReelReplyFailed": "Trimiterea a eșuat",
     "emojiPickerSearchHint": "Căutare",
     "emojiCategoryRecent": "Recente",

@@ -5584,6 +5584,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get dmReelReactionSentPill => 'Reaktion gesendet';
+
+  @override
   String get dmReelReplyFailed => 'Senden fehlgeschlagen';
 
   @override

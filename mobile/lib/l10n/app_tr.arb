@@ -3741,6 +3741,7 @@
     "dmReelReplyViewChatA11yLabel": "Sohbeti aç",
     "dmReelReplySentAnnouncement": "Yanıt gönderildi",
     "dmReelReactionSentAnnouncement": "{emoji} ile tepki verildi",
+    "dmReelReactionSentPill": "Tepki gönderildi",
     "dmReelReplyFailed": "Gönderilemedi",
     "emojiPickerSearchHint": "Ara",
     "emojiCategoryRecent": "Son Kullanılanlar",

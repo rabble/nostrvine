@@ -5664,6 +5664,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get dmReelReactionSentPill => 'Reacție trimisă';
+
+  @override
   String get dmReelReplyFailed => 'Trimiterea a eșuat';
 
   @override

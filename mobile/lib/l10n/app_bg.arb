@@ -3879,6 +3879,7 @@
     "dmReelReplyViewChatA11yLabel": "Отвори чата",
     "dmReelReplySentAnnouncement": "Отговорът е изпратен",
     "dmReelReactionSentAnnouncement": "Реагирахте с {emoji}",
+    "dmReelReactionSentPill": "Реакцията е изпратена",
     "dmReelReplyFailed": "Изпращането е неуспешно",
     "emojiPickerSearchHint": "Търсене",
     "emojiCategoryRecent": "Скорошни",
