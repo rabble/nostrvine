@@ -124,7 +124,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     try {
       result = await _blossomUploadService.uploadImageBytes(
         bytes: event.bytes,
-        filename: event.filename ?? 'avatar.jpg',
+        filename: event.filename,
         nostrPubkey: event.pubkey,
         mimeType: event.mimeType,
       );
@@ -289,7 +289,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     try {
       result = await _blossomUploadService.uploadImageBytes(
         bytes: event.bytes,
-        filename: event.filename ?? 'banner.jpg',
+        filename: event.filename,
         nostrPubkey: event.pubkey,
         mimeType: event.mimeType,
       );

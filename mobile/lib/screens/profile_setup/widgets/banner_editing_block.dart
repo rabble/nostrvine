@@ -275,6 +275,7 @@ class _BannerActionRow extends StatelessWidget {
     }
 
     if (cropped == null) return;
+    if (!context.mounted) return;
 
     editorBloc.add(
       ProfileBannerUploadRequested(

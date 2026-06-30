@@ -134,7 +134,7 @@ final class ProfilePictureUploadRequested extends ProfileEditorEvent {
   const ProfilePictureUploadRequested({
     required this.pubkey,
     required this.bytes,
-    this.filename,
+    required this.filename,
     this.mimeType = 'image/jpeg',
   });
 
@@ -147,7 +147,7 @@ final class ProfilePictureUploadRequested extends ProfileEditorEvent {
 
   /// Filename for the bytes payload. Used by the metadata stripper to
   /// preserve / normalize the extension.
-  final String? filename;
+  final String filename;
 
   /// MIME type. Defaults to `image/jpeg`.
   final String mimeType;
@@ -215,7 +215,7 @@ final class ProfileBannerUploadRequested extends ProfileEditorEvent {
   const ProfileBannerUploadRequested({
     required this.pubkey,
     required this.bytes,
-    this.filename,
+    required this.filename,
     this.mimeType = 'image/jpeg',
   });
 
@@ -227,7 +227,7 @@ final class ProfileBannerUploadRequested extends ProfileEditorEvent {
 
   /// Filename for the bytes payload. Used by the metadata stripper to
   /// preserve / normalize the extension.
-  final String? filename;
+  final String filename;
 
   /// MIME type. Defaults to `image/jpeg`.
   final String mimeType;
