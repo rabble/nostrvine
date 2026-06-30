@@ -78,11 +78,29 @@ void main() {
             "and hot-restart register can identify this engine's players.",
       );
       expect(
-        source,
-        contains('ObjectIdentifier(messenger as AnyObject)'),
+        _registrySetBody(),
+        contains('engines[id] = ObjectIdentifier(messenger as AnyObject)'),
         reason:
-            'Ownership is matched by object identity of the engine messenger, '
-            'which is stable across that engine, including hot restart.',
+            'The recording side must key the owner map on the engine messenger '
+            'identity. If set keys on anything else (e.g. self) while the '
+            'lookup keeps keying on the messenger, recording and lookup keys '
+            'never match, ownedIds is always empty, and no player is disposed '
+            'on teardown / hot-restart register — the #5371 zombie '
+            'CADisplayLink returns. A whole-source match is satisfied by the '
+            'lookup side alone, so pin the set body.',
+      );
+      expect(
+        _disposeForEngineBody(),
+        allOf(
+          contains('ObjectIdentifier(messenger as AnyObject)'),
+          contains(r'$0.value == engineId'),
+        ),
+        reason:
+            'The lookup side must derive the engine identity from the '
+            "messenger and filter the owner map to that engine's own players. "
+            'A body that blanket-disposes every player (without any literal '
+            'disposeAll token) would still reintroduce the #5397 cross-engine '
+            'teardown undetected, so pin the per-engine filter explicitly.',
       );
     });
 
@@ -180,6 +198,19 @@ String _detachBody() => _slice(
 /// Slices the `create` switch case, up to the `dispose` case.
 String _createBody() =>
     _slice(_pluginSource(), 'case "create":', 'case "dispose":');
+
+/// Slices the `PlayerRegistry.set(...)` body — the *recording* side of the
+/// owner map — up to the `remove` method (`@discardableResult`) that follows.
+String _registrySetBody() =>
+    _slice(_pluginSource(), 'func set(', '@discardableResult');
+
+/// Slices the `PlayerRegistry.disposeForEngine(_:)` body — the *lookup* and
+/// teardown side — up to the `forAll` method that follows it.
+String _disposeForEngineBody() => _slice(
+  _pluginSource(),
+  'func disposeForEngine(_ messenger: FlutterBinaryMessenger)',
+  'func forAll(',
+);
 
 String _slice(String source, String start, String end) {
   final from = source.indexOf(start);
