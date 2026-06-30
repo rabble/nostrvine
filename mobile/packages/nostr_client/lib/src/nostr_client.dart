@@ -1036,14 +1036,31 @@ class NostrClient {
   /// variants [sendProfile] returns, so both can be switched over
   /// identically:
   /// - [PublishSuccess] — at least one relay confirmed the event.
-  /// - [PublishNoRelays] — no relay was reached even after retry, so the
+  /// - [PublishNoRelays] — no relay was connected even after retry, so the
   ///   publish never left the device. Preserves the dedicated no-relays
   ///   signal callers branch on.
-  /// - [PublishFailed] — relays were reached but every one rejected the
-  ///   event or failed to respond before the confirmation timeout.
+  /// - [PublishFailed] — relays were connected but the event was not confirmed:
+  ///   every relay rejected it, none responded before the confirmation
+  ///   timeout, or the send failed before reaching them (e.g. the signer
+  ///   returned null).
   Future<PublishResult> sendProfileAwaitOk({
     required Map<String, dynamic> profileContent,
   }) async {
+    // Resolve the no-relays case up front. [publishEventAwaitOk] returns an
+    // all-empty [PublishOutcome] both when no relay was ever connected AND
+    // when the relay pool was connected but the send failed before any `OK`
+    // could arrive (e.g. the signer returned null) — the two are
+    // indistinguishable from its result. Only the former is [PublishNoRelays],
+    // so detect it here, mirroring [publishEvent]'s connectivity check. Any
+    // non-confirmed outcome afterwards means relays were reached but did not
+    // persist the event, which is [PublishFailed].
+    if (_relayManager.connectedRelays.isEmpty) {
+      await retryDisconnectedRelays();
+      if (_relayManager.connectedRelays.isEmpty) {
+        return const PublishNoRelays();
+      }
+    }
+
     final event = Event(
       publicKey,
       EventKind.metadata,
@@ -1055,13 +1072,6 @@ class NostrClient {
 
     if (outcome.confirmed) {
       return PublishSuccess(event: event);
-    }
-
-    // An outcome with no acceptances, rejections, or timeouts means the
-    // publish never reached a relay — keep that distinct from a relay-level
-    // rejection/timeout so the no-relays branch stays user-actionable.
-    if (outcome.rejectedBy.isEmpty && outcome.noResponseFrom.isEmpty) {
-      return const PublishNoRelays();
     }
 
     return const PublishFailed();

@@ -551,7 +551,8 @@ class ProfileRepository {
   ///
   /// Throws [NoRelaysConnectedException] when no relays are connected.
   /// Throws [ProfilePublishFailedException] when relays were reached but none
-  /// confirmed the event (rejection or timeout).
+  /// confirmed the event (rejection, timeout, or a send failure such as the
+  /// signer returning null).
   Future<UserProfile> saveProfileEvent({
     required String displayName,
     String? about,

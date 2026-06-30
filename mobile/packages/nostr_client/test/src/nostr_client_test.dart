@@ -2025,6 +2025,32 @@ void main() {
         },
       );
 
+      test(
+        'returns PublishFailed when relays are connected but the send fails '
+        'before any OK (SDK returns null, e.g. signer failure)',
+        () async {
+          // connectedRelays defaults to non-empty in setUp, so the no-relays
+          // connectivity check passes. The all-empty outcome here comes from
+          // the null-send fallback inside publishEventAwaitOk (signing failure
+          // with relays connected), which must surface as PublishFailed — not
+          // PublishNoRelays.
+          when(
+            () => mockNostr.sendEventAwaitOk(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          final result = await client.sendProfileAwaitOk(
+            profileContent: {'display_name': 'Alice'},
+          );
+
+          expect(result, isA<PublishFailed>());
+        },
+      );
+
       test('returns PublishNoRelays when no relay is reachable, without '
           'attempting a send', () async {
         when(() => mockRelayManager.connectedRelays).thenReturn([]);
