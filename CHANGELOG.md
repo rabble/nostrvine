@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved duration warning: shows exact seconds over limit instead of vague message
 
 ### Fixed
+- **Clip Splitting Reliability**: Splitting a clip now uses pro_video_editor's dedicated
+  frame-accurate `splitVideo` primitive (one cut) instead of running both halves through the
+  full render compositor. The dedicated split cannot hang (native watchdog plus a Dart-side
+  timeout), fixing the case where a stalled export left the editor stuck and silently dropped
+  every subsequent split tap (#4801).
+
 - **Moderated Content Filtering**: Moderated videos from the relay are now filtered from the home feed cache,
   unknown server-side moderation labels are preserved and treated as hide signals, and 401/403 playback failures
   display a full-screen overlay with skip and age-verification actions instead of a half-broken player card.

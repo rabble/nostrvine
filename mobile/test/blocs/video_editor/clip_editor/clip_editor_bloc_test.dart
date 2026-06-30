@@ -792,6 +792,47 @@ void main() {
         errors: () => [isA<StateError>()],
       );
 
+      test(
+        'a second split after the first completes still works (#4801)',
+        () async {
+          final bloc = buildBloc(splitClip: _fakeSplitClip);
+          bloc.emit(
+            ClipEditorState(
+              clips: [
+                _createClip(id: 'source', duration: const Duration(seconds: 4)),
+              ],
+              isEditing: true,
+              splitPosition: const Duration(seconds: 2),
+            ),
+          );
+
+          bloc.add(const ClipEditorSplitRequested());
+          await bloc.stream.firstWhere(
+            (s) => !s.isSplitting && s.clips.length == 2,
+          );
+
+          // The split future always resolves now, so isSplitting resets and the
+          // droppable() transformer no longer wedges the next split request.
+          bloc
+            ..emit(
+              bloc.state.copyWith(
+                currentClipIndex: 0,
+                isEditing: true,
+                splitPosition: const Duration(seconds: 1),
+              ),
+            )
+            ..add(const ClipEditorSplitRequested());
+          await bloc.stream.firstWhere(
+            (s) => !s.isSplitting && s.clips.length == 3,
+          );
+
+          expect(bloc.state.clips, hasLength(3));
+          expect(bloc.state.isSplitting, isFalse);
+
+          await bloc.close();
+        },
+      );
+
       test('validates using VideoEditorSplitService.isValidSplitPosition', () {
         final clip = _createClip(duration: const Duration(seconds: 2));
 

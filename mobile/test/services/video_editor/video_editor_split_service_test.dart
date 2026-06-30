@@ -22,8 +22,7 @@ class MockPathProviderPlatform extends Fake
 
 class MockProVideoEditor extends ProVideoEditor {
   bool shouldThrowError = false;
-  final List<String> renderedPaths = [];
-  final List<VideoRenderData> renderedData = [];
+  final List<SplitVideoModel> splitRequests = [];
 
   @override
   Stream<dynamic> initializeStream() {
@@ -31,19 +30,17 @@ class MockProVideoEditor extends ProVideoEditor {
   }
 
   @override
-  Future<String> renderVideoToFile(
-    String outputPath,
-    VideoRenderData renderData, {
+  Future<List<String>> splitVideo(
+    SplitVideoModel value, {
     NativeLogLevel? nativeLogLevel,
   }) async {
     if (shouldThrowError) {
-      throw Exception('Render failed');
+      throw Exception('Split failed');
     }
-    renderedPaths.add(outputPath);
-    renderedData.add(renderData);
-    // Simulate successful render
+    splitRequests.add(value);
+    // Simulate a frame-accurate split producing two files.
     await Future<void>.delayed(const Duration(milliseconds: 10));
-    return outputPath;
+    return [value.startOutputPath, value.endOutputPath];
   }
 }
 
@@ -60,8 +57,7 @@ void main() {
     PathProviderPlatform.instance = MockPathProviderPlatform();
     mockProVideoEditor = MockProVideoEditor();
     ProVideoEditor.instance = mockProVideoEditor;
-    mockProVideoEditor.renderedPaths.clear();
-    mockProVideoEditor.renderedData.clear();
+    mockProVideoEditor.splitRequests.clear();
   });
 
   tearDown(() {
@@ -271,7 +267,7 @@ void main() {
         expect(clipsCreatedFirst, isTrue);
       });
 
-      test('renders both clips in parallel', () async {
+      test('cuts the source with a single frame-accurate split', () async {
         final clip = DivineVideoClip(
           id: 'test-clip',
           video: EditorVideo.file('/test/video.mp4'),
@@ -289,16 +285,68 @@ void main() {
           onClipRendered: null,
         );
 
-        // Should have rendered 2 clips
-        expect(mockProVideoEditor.renderedPaths.length, 2);
-        expect(
-          mockProVideoEditor.renderedPaths.any((p) => p.contains('_start.mp4')),
-          isTrue,
+        // A single native split replaces the two full render passes.
+        expect(mockProVideoEditor.splitRequests, hasLength(1));
+        final request = mockProVideoEditor.splitRequests.single;
+        expect(request.splitPosition, const Duration(seconds: 2));
+        expect(request.startOutputPath, contains('_start.mp4'));
+        expect(request.endOutputPath, contains('_end.mp4'));
+        expect(request.startOutputPath, isNot(request.endOutputPath));
+      });
+
+      test('reports both halves as two distinct output files', () async {
+        final clip = DivineVideoClip(
+          id: 'test-clip',
+          video: EditorVideo.file('/test/video.mp4'),
+          duration: const Duration(seconds: 5),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
         );
-        expect(
-          mockProVideoEditor.renderedPaths.any((p) => p.contains('_end.mp4')),
-          isTrue,
+
+        final renderedVideos = <EditorVideo>[];
+        await VideoEditorSplitService.splitClip(
+          sourceClip: clip,
+          splitPosition: const Duration(seconds: 2),
+          onClipsCreated: null,
+          onThumbnailExtracted: null,
+          onClipRendered: (clip, video) => renderedVideos.add(video),
         );
+
+        expect(renderedVideos, hasLength(2));
+        final paths = renderedVideos.map((v) => v.file?.path).toList();
+        expect(paths.any((p) => p?.contains('_start.mp4') ?? false), isTrue);
+        expect(paths.any((p) => p?.contains('_end.mp4') ?? false), isTrue);
+        expect(paths.first, isNot(paths.last));
+      });
+
+      test('a second split immediately afterwards still works', () async {
+        final clip = DivineVideoClip(
+          id: 'test-clip',
+          video: EditorVideo.file('/test/video.mp4'),
+          duration: const Duration(seconds: 5),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
+        );
+
+        Future<int> runSplit() async {
+          var renderedCount = 0;
+          await VideoEditorSplitService.splitClip(
+            sourceClip: clip,
+            splitPosition: const Duration(seconds: 2),
+            onClipsCreated: null,
+            onThumbnailExtracted: null,
+            onClipRendered: (_, _) => renderedCount++,
+          );
+          return renderedCount;
+        }
+
+        // Regression for #4801: the split future always completes, so a
+        // back-to-back split is never silently dropped.
+        expect(await runSplit(), 2);
+        expect(await runSplit(), 2);
+        expect(mockProVideoEditor.splitRequests, hasLength(2));
       });
 
       test('calls onClipRendered for both clips', () async {

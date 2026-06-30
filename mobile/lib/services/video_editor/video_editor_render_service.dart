@@ -237,6 +237,13 @@ class VideoEditorRenderService {
   VideoEditorRenderService._();
 
   static const _logName = 'VideoEditorRenderService';
+
+  /// Defense-in-depth Dart-side cap on a single native split. The native split
+  /// already carries its own watchdog; this guards against an unexpected
+  /// Dart-side hang so a stalled split can never wedge the caller's loading
+  /// state (#4801).
+  static const Duration _splitWatchdogTimeout = Duration(seconds: 150);
+
   static final _compositeProgressController =
       StreamController<ProgressModel>.broadcast();
   static final Map<String, Object> _activeNativeRenderTokens =
@@ -1098,6 +1105,57 @@ class VideoEditorRenderService {
     } finally {
       if (identical(_activeNativeRenderTokens[task.id], token)) {
         _activeNativeRenderTokens.remove(task.id);
+      }
+    }
+  }
+
+  /// Splits [inputPath] into two files at [splitPosition] using the dedicated
+  /// frame-accurate `pro_video_editor` split primitive.
+  ///
+  /// Unlike [renderNativeVideoToFile], this does not run the full render
+  /// compositor (no effects, overlays or audio mixing), so it is considerably
+  /// faster and far less likely to stall. The task is tracked in
+  /// [_activeNativeRenderTokens] so a lifecycle-detach [cancelActiveNativeTasks]
+  /// also cancels an in-flight split.
+  ///
+  /// Returns the two output paths as `[startOutputPath, endOutputPath]`.
+  ///
+  /// Throws [RenderCanceledException] when cancelled — including when the
+  /// defensive [_splitWatchdogTimeout] fires — so callers can treat an
+  /// unexpected stall exactly like a user cancel.
+  static Future<List<String>> splitNativeVideoToFile({
+    required String inputPath,
+    required Duration splitPosition,
+    required String startOutputPath,
+    required String endOutputPath,
+    bool enableAudio = true,
+    NativeLogLevel? nativeLogLevel = NativeLogLevel.warning,
+  }) async {
+    final model = SplitVideoModel(
+      video: EditorVideo.file(inputPath),
+      splitPosition: splitPosition,
+      startOutputPath: startOutputPath,
+      endOutputPath: endOutputPath,
+      enableAudio: enableAudio,
+    );
+    final token = Object();
+    _activeNativeRenderTokens[model.id] = token;
+    try {
+      return await ProVideoEditor.instance
+          .splitVideo(model, nativeLogLevel: nativeLogLevel)
+          .timeout(
+            _splitWatchdogTimeout,
+            onTimeout: () {
+              // The native split has its own watchdog; if the Dart Future still
+              // never completes, cancel the native task and surface a cancel so
+              // the caller's loading state can never get stuck (#4801).
+              unawaited(cancelTask(model.id));
+              throw const RenderCanceledException();
+            },
+          );
+    } finally {
+      if (identical(_activeNativeRenderTokens[model.id], token)) {
+        _activeNativeRenderTokens.remove(model.id);
       }
     }
   }

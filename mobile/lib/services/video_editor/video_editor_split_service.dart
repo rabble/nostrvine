@@ -31,12 +31,12 @@ class VideoEditorSplitService {
   ///
   /// This method:
   /// 1. Creates two new clip objects with completers for tracking processing
-  /// 2. Generates output paths in the cache directory
+  /// 2. Generates output paths in the documents directory
   /// 3. Calls onClipsCreated callback to add clips to UI BEFORE rendering
-  /// 4. Extracts thumbnail for the end clip
-  /// 5. Renders both clips in parallel
+  /// 4. Extracts the end clip's thumbnail in parallel with the split
+  /// 5. Cuts the source into both halves with a single frame-accurate split
   ///
-  /// Throws if rendering fails or split position is invalid
+  /// Throws if the split fails/cancels or the split position is invalid.
   static Future<void> splitClip({
     required DivineVideoClip sourceClip,
     required Duration splitPosition,
@@ -118,8 +118,10 @@ class VideoEditorSplitService {
     // rendering)
     onClipsCreated?.call(startClip, previewEndClip);
 
-    // Extract thumbnail for the end clip at the absolute split position
-    await _extractThumbnailForClip(
+    // Extract the preview thumbnail for the end clip in parallel with the
+    // split, so the preview frame can appear while the re-encode runs. It owns
+    // its error handling internally, so awaiting it later never throws.
+    final thumbnailFuture = _extractThumbnailForClip(
       sourceClip,
       absoluteSplitPos,
       previewEndClip,
@@ -127,46 +129,56 @@ class VideoEditorSplitService {
     );
 
     Log.debug(
-      '🎬 Starting parallel render of both clips',
+      '🎬 Splitting source clip at absolute ${absoluteSplitPos.inSeconds}s',
       name: 'VideoEditorSplitService',
       category: .video,
     );
-    // Render both clips in parallel using absolute positions.
-    // Trim must be set on the VideoSegment, not on VideoRenderData —
-    // VideoRenderData.startTime/endTime only apply to the deprecated
-    // single-video field and are ignored when videoSegments is used.
-    await Future.wait([
-      _renderSplitClip(
-        clip: startClip,
-        outputPath: startClipPath,
-        sourceVideo: sourceClip.video,
-        renderData: VideoRenderData(
-          id: startClip.id,
-          videoSegments: [
-            VideoSegment(video: sourceClip.video, endTime: absoluteSplitPos),
-          ],
-        ),
-        onClipRendered: onClipRendered,
-      ),
-      _renderSplitClip(
-        clip: renderedEndClip,
-        outputPath: endClipPath,
-        sourceVideo: sourceClip.video,
-        renderData: VideoRenderData(
-          id: renderedEndClip.id,
-          videoSegments: [
-            VideoSegment(video: sourceClip.video, startTime: absoluteSplitPos),
-          ],
-        ),
-        onClipRendered: onClipRendered,
-      ),
-    ]);
 
-    Log.info(
-      '✅ Split complete - created 2 clips from ${sourceClip.id}',
-      name: 'VideoEditorSplitService',
-      category: .video,
-    );
+    // One frame-accurate native split instead of two full render passes. The
+    // two halves are exactly the previous segment renders: start covers the
+    // source from 0 → split, end covers split → end. Unlike the render
+    // pipeline, this primitive cannot hang (per-export watchdog + Dart-side
+    // timeout), so a stalled export can never wedge the editor again (#4801).
+    try {
+      final outPaths = await VideoEditorRenderService.splitNativeVideoToFile(
+        inputPath: await sourceClip.video.safeFilePath(),
+        splitPosition: absoluteSplitPos,
+        startOutputPath: startClipPath,
+        endOutputPath: endClipPath,
+      );
+
+      startClip.processingCompleter?.complete(true);
+      onClipRendered?.call(startClip, EditorVideo.file(outPaths[0]));
+
+      renderedEndClip.processingCompleter?.complete(true);
+      onClipRendered?.call(renderedEndClip, EditorVideo.file(outPaths[1]));
+
+      Log.info(
+        '✅ Split complete - created 2 clips from ${sourceClip.id}',
+        name: 'VideoEditorSplitService',
+        category: .video,
+      );
+    } on RenderCanceledException {
+      Log.info(
+        '🚫 Split cancelled for ${sourceClip.id}',
+        name: 'VideoEditorSplitService',
+        category: .video,
+      );
+      startClip.processingCompleter?.complete(false);
+      renderedEndClip.processingCompleter?.complete(false);
+      rethrow;
+    } catch (e) {
+      Log.error(
+        '❌ Split failed for ${sourceClip.id}: $e',
+        name: 'VideoEditorSplitService',
+        category: .video,
+      );
+      startClip.processingCompleter?.complete(false);
+      renderedEndClip.processingCompleter?.complete(false);
+      rethrow;
+    } finally {
+      await thumbnailFuture;
+    }
   }
 
   /// Extract a thumbnail for the split clip at the specified timestamp.
@@ -201,54 +213,6 @@ class VideoEditorSplitService {
         name: 'VideoEditorSplitService',
         category: .video,
       );
-    }
-  }
-
-  /// Render a single split clip segment to file.
-  static Future<void> _renderSplitClip({
-    required DivineVideoClip clip,
-    required String outputPath,
-    required EditorVideo sourceVideo,
-    required VideoRenderData renderData,
-    required void Function(DivineVideoClip clip, EditorVideo video)?
-    onClipRendered,
-  }) async {
-    try {
-      Log.debug(
-        '🎞️ Rendering ${clip.id} (${clip.duration.inSeconds}s) to $outputPath',
-        name: 'VideoEditorSplitService',
-        category: .video,
-      );
-
-      await VideoEditorRenderService.renderNativeVideoToFile(
-        outputPath,
-        renderData,
-      );
-
-      Log.info(
-        '✅ Render complete: ${clip.id}',
-        name: 'VideoEditorSplitService',
-        category: .video,
-      );
-
-      clip.processingCompleter?.complete(true);
-      onClipRendered?.call(clip, EditorVideo.file(outputPath));
-    } on RenderCanceledException {
-      Log.info(
-        '🚫 Render cancelled: ${clip.id}',
-        name: 'VideoEditorSplitService',
-        category: .video,
-      );
-      clip.processingCompleter?.complete(false);
-      rethrow;
-    } catch (e) {
-      Log.error(
-        '❌ Render failed for ${clip.id}: $e',
-        name: 'VideoEditorSplitService',
-        category: .video,
-      );
-      clip.processingCompleter?.complete(false);
-      rethrow;
     }
   }
 }

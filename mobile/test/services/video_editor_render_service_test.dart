@@ -18,7 +18,9 @@ import '../mocks/mock_path_provider_platform.dart';
 class _ProgressProVideoEditor extends ProVideoEditor {
   final _progressController = StreamController<ProgressModel>.broadcast();
   final renderStarts = StreamController<VideoRenderData>.broadcast();
+  final splitStarts = StreamController<SplitVideoModel>.broadcast();
   final _pendingRenders = <_PendingRender>[];
+  final _pendingSplits = <_PendingSplit>[];
   final cancelCalls = <String>[];
 
   @override
@@ -49,6 +51,18 @@ class _ProgressProVideoEditor extends ProVideoEditor {
   }
 
   @override
+  Future<List<String>> splitVideo(
+    SplitVideoModel value, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
+    final pending = _PendingSplit(model: value);
+    _pendingSplits.add(pending);
+    splitStarts.add(value);
+    await pending.completer.future;
+    return [value.startOutputPath, value.endOutputPath];
+  }
+
+  @override
   Future<void> cancel(String taskId) async {
     cancelCalls.add(taskId);
     final matchingRender = _pendingRenders.where(
@@ -56,6 +70,14 @@ class _ProgressProVideoEditor extends ProVideoEditor {
     );
     if (matchingRender.isNotEmpty) {
       matchingRender.first.completer.completeError(
+        const RenderCanceledException(),
+      );
+    }
+    final matchingSplit = _pendingSplits.where(
+      (pending) => pending.model.id == taskId && !pending.completer.isCompleted,
+    );
+    if (matchingSplit.isNotEmpty) {
+      matchingSplit.first.completer.completeError(
         const RenderCanceledException(),
       );
     }
@@ -80,6 +102,7 @@ class _ProgressProVideoEditor extends ProVideoEditor {
   Future<void> dispose() async {
     await _progressController.close();
     await renderStarts.close();
+    await splitStarts.close();
   }
 }
 
@@ -120,6 +143,13 @@ class _ImmediateRenderProVideoEditor extends ProVideoEditor {
   Future<void> cancel(String taskId) async {
     cancelCalls.add(taskId);
   }
+}
+
+class _PendingSplit {
+  _PendingSplit({required this.model});
+
+  final SplitVideoModel model;
+  final completer = Completer<void>();
 }
 
 Future<void> _flushStreamEvents() => Future<void>.delayed(Duration.zero);
@@ -379,6 +409,32 @@ void main() {
       await VideoEditorRenderService.cancelActiveNativeTasks();
 
       await secondCancellation;
+      expect(VideoEditorRenderService.activeNativeTaskIdsForTesting, isEmpty);
+    });
+
+    test('tracks a native split and cancels it on teardown', () async {
+      final splitStarted = proVideoEditor.splitStarts.stream.first;
+      final splitFuture = VideoEditorRenderService.splitNativeVideoToFile(
+        inputPath: '${Directory.systemTemp.path}/source.mp4',
+        splitPosition: const Duration(seconds: 1),
+        startOutputPath: '${Directory.systemTemp.path}/start.mp4',
+        endOutputPath: '${Directory.systemTemp.path}/end.mp4',
+      );
+
+      final startedModel = await splitStarted;
+      expect(
+        VideoEditorRenderService.activeNativeTaskIdsForTesting,
+        contains(startedModel.id),
+      );
+
+      final splitCancellation = expectLater(
+        splitFuture,
+        throwsA(isA<RenderCanceledException>()),
+      );
+      await VideoEditorRenderService.cancelActiveNativeTasks();
+
+      expect(proVideoEditor.cancelCalls, contains(startedModel.id));
+      await splitCancellation;
       expect(VideoEditorRenderService.activeNativeTaskIdsForTesting, isEmpty);
     });
   });
