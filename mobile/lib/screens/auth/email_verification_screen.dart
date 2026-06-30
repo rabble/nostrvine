@@ -14,7 +14,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
@@ -149,6 +148,9 @@ class _EmailVerificationScreenState
   Future<void> _initTokenModeWithPersistenceCheck() async {
     final pendingService = ref.read(pendingVerificationServiceProvider);
     final pending = await pendingService.load();
+    if (!mounted) {
+      return;
+    }
 
     if (pending != null) {
       Log.info(
@@ -159,25 +161,12 @@ class _EmailVerificationScreenState
         category: LogCategory.auth,
       );
 
-      // Verify the email first via OAuth client, then start polling to
-      // complete login
-      final oauth = ref.read(oauthClientProvider);
-      try {
-        final result = await oauth.verifyEmail(token: widget.token!);
-        if (!result.success) {
-          _handleVerifyEmailFailure(result, pendingEmail: pending.email);
-          return;
-        }
-      } catch (e) {
-        Log.error(
-          'Email verification error: $e',
-          name: 'EmailVerificationScreen',
-          category: LogCategory.auth,
-        );
-        _cubit.emitFailure(
-          EmailVerificationError.verificationConnectionError,
-          pendingEmail: pending.email,
-        );
+      // Verify the email first, then start polling to complete login.
+      final result = await _verifyEmailToken(
+        widget.token!,
+        pendingEmail: pending.email,
+      );
+      if (!mounted || !result.isSuccess) {
         return;
       }
 
@@ -197,36 +186,24 @@ class _EmailVerificationScreenState
     }
   }
 
-  EmailVerificationError _errorForVerifyEmailResult(VerifyEmailResult result) {
-    switch (result.failure) {
-      case KeycastAuthFailure.emailAlreadyRegistered:
-        return EmailVerificationError.emailAlreadyRegistered;
-      case KeycastAuthFailure.network:
-      case KeycastAuthFailure.temporary:
-        return EmailVerificationError.verificationConnectionError;
-      case KeycastAuthFailure.expiredVerification:
-      case KeycastAuthFailure.unknown:
-      case null:
-        return EmailVerificationError.verificationLinkExpired;
-    }
-  }
-
-  void _handleVerifyEmailFailure(
-    VerifyEmailResult result, {
+  Future<EmailTokenVerificationResult> _verifyEmailToken(
+    String token, {
     String? pendingEmail,
-  }) {
-    final errorCode = _errorForVerifyEmailResult(result);
-    Log.warning(
-      'Email verification failed: status=${result.statusCode}, '
-      'code=${result.errorCode}, failure=${result.failure}, '
-      'mappedError=$errorCode, error=${result.error}',
-      name: 'EmailVerificationScreen',
-      category: LogCategory.auth,
+    bool keepPollingOnTransient = false,
+  }) async {
+    final result = await _cubit.verifyEmailToken(
+      token: token,
+      pendingEmail: pendingEmail,
+      keepPollingOnTransient: keepPollingOnTransient,
     );
-    if (errorCode == EmailVerificationError.emailAlreadyRegistered) {
-      ref.read(pendingVerificationServiceProvider).clear();
+    if (!mounted) {
+      return result;
     }
-    _cubit.emitFailure(errorCode, pendingEmail: pendingEmail);
+
+    if (result.errorCode == EmailVerificationError.emailAlreadyRegistered) {
+      unawaited(ref.read(pendingVerificationServiceProvider).clear());
+    }
+    return result;
   }
 
   /// Verify email with token (standalone token mode without polling)
@@ -237,28 +214,42 @@ class _EmailVerificationScreenState
       category: LogCategory.auth,
     );
 
-    final oauth = ref.read(oauthClientProvider);
-    try {
-      final result = await oauth.verifyEmail(token: token);
-      if (result.success) {
-        Log.info(
-          'Email verification successful (token mode)',
-          name: 'EmailVerificationScreen',
-          category: LogCategory.auth,
-        );
-        // In token mode without polling, redirect to login
-        _handleTokenModeSuccess();
-      } else {
-        _handleVerifyEmailFailure(result);
-      }
-    } catch (e) {
-      Log.error(
-        'Email verification error: $e',
+    final result = await _verifyEmailToken(token);
+    if (!mounted) {
+      return;
+    }
+
+    if (result.isSuccess) {
+      Log.info(
+        'Email verification successful (token mode)',
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,
       );
-      _cubit.emitFailure(EmailVerificationError.verificationConnectionError);
+      // In token mode without polling, redirect to login
+      _handleTokenModeSuccess();
     }
+  }
+
+  Future<void> _verifyDeepLinkToken() async {
+    final token = widget.token;
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    final result = await _verifyEmailToken(
+      token,
+      pendingEmail: widget.email ?? _cubit.state.pendingEmail,
+      keepPollingOnTransient: true,
+    );
+    if (!mounted || !result.isSuccess) {
+      return;
+    }
+
+    Log.info(
+      'Email verification successful from token update',
+      name: 'EmailVerificationScreen',
+      category: LogCategory.auth,
+    );
   }
 
   @override
@@ -275,25 +266,7 @@ class _EmailVerificationScreenState
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,
       );
-      final oauth = ref.read(oauthClientProvider);
-      unawaited(() async {
-        try {
-          final result = await oauth.verifyEmail(token: widget.token!);
-          if (!result.success) {
-            _handleVerifyEmailFailure(result, pendingEmail: widget.email);
-          }
-        } catch (e) {
-          Log.error(
-            'verifyEmail failed from token update: $e',
-            name: 'EmailVerificationScreen',
-            category: LogCategory.auth,
-          );
-          _cubit.emitFailure(
-            EmailVerificationError.verificationConnectionError,
-            pendingEmail: widget.email,
-          );
-        }
-      }());
+      unawaited(_verifyDeepLinkToken());
     }
   }
 

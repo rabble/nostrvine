@@ -65,6 +65,13 @@ void main() {
     // Stub pending verification service
     when(() => mockPendingVerification.clear()).thenAnswer((_) async {});
     when(() => mockPendingVerification.load()).thenAnswer((_) async => null);
+    when(
+      () => mockCubit.verifyEmailToken(
+        token: any(named: 'token'),
+        pendingEmail: any(named: 'pendingEmail'),
+        keepPollingOnTransient: any(named: 'keepPollingOnTransient'),
+      ),
+    ).thenAnswer((_) async => const EmailTokenVerificationResult.success());
   });
 
   tearDown(() {
@@ -488,9 +495,6 @@ void main() {
           ),
         );
         when(
-          () => mockOAuth.verifyEmail(token: any(named: 'token')),
-        ).thenAnswer((_) async => VerifyEmailResult(success: true));
-        when(
           () => mockCubit.startPolling(
             deviceCode: any(named: 'deviceCode'),
             verifier: any(named: 'verifier'),
@@ -513,7 +517,12 @@ void main() {
 
         expect(logMessage, contains('u***@example.com'));
         expect(logMessage, isNot(contains('user@example.com')));
-        verify(() => mockOAuth.verifyEmail(token: 'persisted-token')).called(1);
+        verify(
+          () => mockCubit.verifyEmailToken(
+            token: 'persisted-token',
+            pendingEmail: 'user@example.com',
+          ),
+        ).called(1);
         verify(
           () => mockCubit.startPolling(
             deviceCode: 'persisted-device-code',
@@ -535,12 +544,14 @@ void main() {
             ),
           );
           when(
-            () => mockOAuth.verifyEmail(token: any(named: 'token')),
+            () => mockCubit.verifyEmailToken(
+              token: any(named: 'token'),
+              pendingEmail: any(named: 'pendingEmail'),
+              keepPollingOnTransient: any(named: 'keepPollingOnTransient'),
+            ),
           ).thenAnswer(
-            (_) async => VerifyEmailResult.error(
-              'This email is already registered.',
-              statusCode: 409,
-              failure: KeycastAuthFailure.emailAlreadyRegistered,
+            (_) async => const EmailTokenVerificationResult.terminalFailure(
+              EmailVerificationError.emailAlreadyRegistered,
             ),
           );
 
@@ -549,7 +560,10 @@ void main() {
           await tester.pump(const Duration(milliseconds: 10));
 
           verify(
-            () => mockOAuth.verifyEmail(token: 'persisted-token'),
+            () => mockCubit.verifyEmailToken(
+              token: 'persisted-token',
+              pendingEmail: 'user@example.com',
+            ),
           ).called(1);
           verifyNever(
             () => mockCubit.startPolling(
@@ -560,12 +574,6 @@ void main() {
             ),
           );
           verify(() => mockPendingVerification.clear()).called(greaterThan(0));
-          verify(
-            () => mockCubit.emitFailure(
-              EmailVerificationError.emailAlreadyRegistered,
-              pendingEmail: 'user@example.com',
-            ),
-          ).called(1);
         },
       );
 
@@ -573,7 +581,10 @@ void main() {
         're-verifies when token changes while already in token mode',
         (tester) async {
           final tokenNotifier = ValueNotifier<String>('token-1');
-          const initialState = EmailVerificationState();
+          const initialState = EmailVerificationState(
+            status: EmailVerificationStatus.polling,
+            pendingEmail: 'stored@example.com',
+          );
 
           when(() => mockCubit.state).thenReturn(initialState);
           whenListen(
@@ -581,12 +592,21 @@ void main() {
             const Stream<EmailVerificationState>.empty(),
             initialState: initialState,
           );
-
           when(
-            () => mockOAuth.verifyEmail(token: any(named: 'token')),
+            () => mockCubit.verifyEmailToken(token: 'token-1'),
           ).thenAnswer(
-            (_) async =>
-                VerifyEmailResult(success: false, error: 'Invalid token'),
+            (_) async => const EmailTokenVerificationResult.terminalFailure(
+              EmailVerificationError.verificationLinkExpired,
+            ),
+          );
+          when(
+            () => mockCubit.verifyEmailToken(
+              token: 'token-2',
+              pendingEmail: 'stored@example.com',
+              keepPollingOnTransient: true,
+            ),
+          ).thenAnswer(
+            (_) async => const EmailTokenVerificationResult.success(),
           );
 
           await tester.pumpWidget(
@@ -618,12 +638,20 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 10));
 
-          verify(() => mockOAuth.verifyEmail(token: 'token-1')).called(1);
+          verify(
+            () => mockCubit.verifyEmailToken(token: 'token-1'),
+          ).called(1);
 
           tokenNotifier.value = 'token-2';
           await tester.pump();
 
-          verify(() => mockOAuth.verifyEmail(token: 'token-2')).called(1);
+          verify(
+            () => mockCubit.verifyEmailToken(
+              token: 'token-2',
+              pendingEmail: 'stored@example.com',
+              keepPollingOnTransient: true,
+            ),
+          ).called(1);
         },
       );
     });

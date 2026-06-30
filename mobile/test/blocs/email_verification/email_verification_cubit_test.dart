@@ -162,6 +162,119 @@ void main() {
     });
 
     group('poll failures', () {
+      test('preserves stored email for duplicate-email token failure', () {
+        when(() => mockOAuth.verifyEmail(token: 'verify-token')).thenAnswer(
+          (_) async => VerifyEmailResult.error(
+            'This email is already registered.',
+            statusCode: 409,
+            failure: KeycastAuthFailure.emailAlreadyRegistered,
+          ),
+        );
+
+        fakeAsync((fake) {
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+          );
+
+          late EmailTokenVerificationResult verifyResult;
+          cubit
+              .verifyEmailToken(
+                token: 'verify-token',
+                keepPollingOnTransient: true,
+              )
+              .then((result) => verifyResult = result);
+          fake.flushMicrotasks();
+
+          expect(
+            verifyResult.status,
+            EmailTokenVerificationStatus.terminalFailure,
+          );
+          expect(
+            verifyResult.errorCode,
+            EmailVerificationError.emailAlreadyRegistered,
+          );
+          expect(cubit.state.status, EmailVerificationStatus.failure);
+          expect(
+            cubit.state.errorCode,
+            EmailVerificationError.emailAlreadyRegistered,
+          );
+          expect(cubit.state.pendingEmail, testEmail);
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test(
+        'retries transient token verification while polling stays active',
+        () {
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(() => mockAuthService.isRegistered).thenReturn(false);
+          when(() => mockOAuth.pollForCode(testDeviceCode)).thenAnswer(
+            (_) async => PollResult(status: PollStatus.pending),
+          );
+
+          var verifyCalls = 0;
+          when(() => mockOAuth.verifyEmail(token: 'verify-token')).thenAnswer((
+            _,
+          ) async {
+            verifyCalls++;
+            if (verifyCalls < 4) {
+              return VerifyEmailResult.error(
+                'Temporary verification failure',
+                statusCode: 503,
+                failure: KeycastAuthFailure.temporary,
+              );
+            }
+            return VerifyEmailResult(success: true);
+          });
+
+          fakeAsync((fake) {
+            final cubit = buildCubit();
+            cubit.startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+            );
+
+            late EmailTokenVerificationResult firstResult;
+            cubit
+                .verifyEmailToken(
+                  token: 'verify-token',
+                  keepPollingOnTransient: true,
+                )
+                .then((result) => firstResult = result);
+
+            fake.flushMicrotasks();
+            fake.elapse(const Duration(seconds: 4));
+            fake.flushMicrotasks();
+
+            expect(
+              firstResult.status,
+              EmailTokenVerificationStatus.transientFailure,
+            );
+            expect(cubit.state.status, EmailVerificationStatus.polling);
+            expect(cubit.state.errorCode, isNull);
+            expect(verifyCalls, 3);
+
+            fake.elapse(const Duration(seconds: 3));
+            fake.flushMicrotasks();
+
+            expect(verifyCalls, 4);
+            expect(cubit.state.status, EmailVerificationStatus.polling);
+            verify(
+              () => mockOAuth.pollForCode(testDeviceCode),
+            ).called(greaterThan(0));
+
+            cubit.close();
+            fake.flushMicrotasks();
+          });
+        },
+      );
+
       test('stops polling on duplicate email conflict', () {
         when(() => mockAuthService.isAuthenticated).thenReturn(false);
         when(() => mockAuthService.isRegistered).thenReturn(false);

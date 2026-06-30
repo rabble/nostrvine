@@ -15,6 +15,37 @@ import 'package:unified_logger/unified_logger.dart';
 
 part 'email_verification_state.dart';
 
+enum EmailTokenVerificationStatus {
+  success,
+  terminalFailure,
+  transientFailure,
+}
+
+final class EmailTokenVerificationResult extends Equatable {
+  const EmailTokenVerificationResult._(this.status, {this.errorCode});
+
+  const EmailTokenVerificationResult.success()
+    : this._(EmailTokenVerificationStatus.success);
+
+  const EmailTokenVerificationResult.terminalFailure(
+    EmailVerificationError errorCode,
+  ) : this._(
+        EmailTokenVerificationStatus.terminalFailure,
+        errorCode: errorCode,
+      );
+
+  const EmailTokenVerificationResult.transientFailure()
+    : this._(EmailTokenVerificationStatus.transientFailure);
+
+  final EmailTokenVerificationStatus status;
+  final EmailVerificationError? errorCode;
+
+  bool get isSuccess => status == EmailTokenVerificationStatus.success;
+
+  @override
+  List<Object?> get props => [status, errorCode];
+}
+
 /// Cubit for managing email verification polling independently of widget
 /// lifecycle.
 ///
@@ -53,6 +84,8 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   String? _pendingDeviceCode;
   String? _pendingVerifier;
   String? _pendingInviteCode;
+  String? _pendingVerificationToken;
+  bool _isVerifyingEmailToken = false;
 
   /// Cubit-internal backoff counter for [_schedulePoll]. Lives outside
   /// state because the UI never reads it — analogous to [_pollTimer] and
@@ -182,6 +215,173 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
     }
   }
 
+  EmailVerificationError _errorForVerifyEmailResult(VerifyEmailResult result) {
+    switch (result.failure) {
+      case KeycastAuthFailure.emailAlreadyRegistered:
+        return EmailVerificationError.emailAlreadyRegistered;
+      case KeycastAuthFailure.network:
+      case KeycastAuthFailure.temporary:
+        return EmailVerificationError.verificationConnectionError;
+      case KeycastAuthFailure.expiredVerification:
+      case KeycastAuthFailure.unknown:
+      case null:
+        return EmailVerificationError.verificationLinkExpired;
+    }
+  }
+
+  Future<EmailTokenVerificationResult> verifyEmailToken({
+    required String token,
+    String? pendingEmail,
+    bool keepPollingOnTransient = false,
+  }) async {
+    if (keepPollingOnTransient) {
+      _pendingVerificationToken = token;
+    }
+
+    return _verifyEmailTokenWithRetries(
+      token: token,
+      pendingEmail: pendingEmail,
+      keepPollingOnTransient: keepPollingOnTransient,
+    );
+  }
+
+  Future<EmailTokenVerificationResult> _verifyPendingTokenIfNeeded() async {
+    final token = _pendingVerificationToken;
+    if (token == null || _isVerifyingEmailToken) {
+      return const EmailTokenVerificationResult.success();
+    }
+
+    return _verifyEmailTokenWithRetries(
+      token: token,
+      pendingEmail: state.pendingEmail,
+      keepPollingOnTransient: true,
+    );
+  }
+
+  Future<EmailTokenVerificationResult> _verifyEmailTokenWithRetries({
+    required String token,
+    required String? pendingEmail,
+    required bool keepPollingOnTransient,
+  }) async {
+    _isVerifyingEmailToken = true;
+    try {
+      for (var attempt = 1; attempt <= _maxVerifyRetries; attempt++) {
+        try {
+          Log.info(
+            'Verifying email token (attempt $attempt/$_maxVerifyRetries)',
+            name: 'EmailVerificationCubit',
+            category: LogCategory.auth,
+          );
+          final result = await _oauthClient.verifyEmail(token: token);
+          if (result.success) {
+            if (_pendingVerificationToken == token) {
+              _pendingVerificationToken = null;
+            }
+            return const EmailTokenVerificationResult.success();
+          }
+
+          if (result.isTransientFailure) {
+            final transientResult = await _handleTransientVerifyFailure(
+              attempt: attempt,
+              error: result.error,
+              pendingEmail: pendingEmail,
+              keepPollingOnTransient: keepPollingOnTransient,
+            );
+            if (transientResult != null) {
+              return transientResult;
+            }
+            continue;
+          }
+
+          return _emitVerifyEmailFailure(result, pendingEmail: pendingEmail);
+        } catch (e) {
+          final transientResult = await _handleTransientVerifyFailure(
+            attempt: attempt,
+            error: e,
+            pendingEmail: pendingEmail,
+            keepPollingOnTransient: keepPollingOnTransient,
+          );
+          if (transientResult != null) {
+            return transientResult;
+          }
+        }
+      }
+    } finally {
+      _isVerifyingEmailToken = false;
+    }
+
+    return const EmailTokenVerificationResult.transientFailure();
+  }
+
+  Future<EmailTokenVerificationResult?> _handleTransientVerifyFailure({
+    required int attempt,
+    required Object? error,
+    required String? pendingEmail,
+    required bool keepPollingOnTransient,
+  }) async {
+    final isLastAttempt = attempt == _maxVerifyRetries;
+    Log.warning(
+      'Transient email-token verification failure '
+      '(attempt $attempt/$_maxVerifyRetries): $error',
+      name: 'EmailVerificationCubit',
+      category: LogCategory.auth,
+    );
+
+    if (!isLastAttempt) {
+      await Future<void>.delayed(_verifyRetryDelay);
+      return null;
+    }
+
+    if (keepPollingOnTransient) {
+      Log.warning(
+        'Keeping verification poll active after transient token failure',
+        name: 'EmailVerificationCubit',
+        category: LogCategory.auth,
+      );
+      return const EmailTokenVerificationResult.transientFailure();
+    }
+
+    emitFailure(
+      EmailVerificationError.verificationConnectionError,
+      pendingEmail: _pendingEmailForFailure(
+        EmailVerificationError.verificationConnectionError,
+        pendingEmail,
+      ),
+    );
+    return const EmailTokenVerificationResult.terminalFailure(
+      EmailVerificationError.verificationConnectionError,
+    );
+  }
+
+  EmailTokenVerificationResult _emitVerifyEmailFailure(
+    VerifyEmailResult result, {
+    required String? pendingEmail,
+  }) {
+    final errorCode = _errorForVerifyEmailResult(result);
+    Log.warning(
+      'Email verification failed: status=${result.statusCode}, '
+      'code=${result.errorCode}, failure=${result.failure}, '
+      'mappedError=$errorCode, error=${result.error}',
+      name: 'EmailVerificationCubit',
+      category: LogCategory.auth,
+    );
+    emitFailure(
+      errorCode,
+      pendingEmail: _pendingEmailForFailure(errorCode, pendingEmail),
+    );
+    return EmailTokenVerificationResult.terminalFailure(errorCode);
+  }
+
+  String? _pendingEmailForFailure(
+    EmailVerificationError errorCode,
+    String? pendingEmail,
+  ) {
+    if (errorCode != EmailVerificationError.emailAlreadyRegistered) {
+      return null;
+    }
+    return pendingEmail ?? state.pendingEmail;
+  }
+
   /// Reset to initial state unconditionally.
   ///
   /// Called when a new verification screen opens to clear stale state from
@@ -285,6 +485,11 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         name: 'EmailVerificationCubit',
         category: LogCategory.auth,
       );
+      final tokenResult = await _verifyPendingTokenIfNeeded();
+      if (tokenResult.status == EmailTokenVerificationStatus.terminalFailure) {
+        return;
+      }
+
       final result = await _oauthClient.pollForCode(_pendingDeviceCode!);
 
       Log.info(
@@ -382,8 +587,14 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   /// Maximum retries for token exchange on network errors
   static const _maxExchangeRetries = 3;
 
+  /// Maximum retries for token verification on network errors
+  static const _maxVerifyRetries = 3;
+
   /// Delay between exchange retries
   static const _exchangeRetryDelay = Duration(seconds: 2);
+
+  /// Delay between token verification retries
+  static const _verifyRetryDelay = Duration(seconds: 2);
 
   /// Maximum retries for invite consumption when the server returns
   /// HTTP 409 ("Another consumption is in progress; retry"). The conflict
@@ -533,6 +744,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
     _pendingDeviceCode = null;
     _pendingVerifier = null;
     _pendingInviteCode = null;
+    _pendingVerificationToken = null;
   }
 
   Future<void> _consumeInviteWithSessionIfNeeded(KeycastSession session) async {
