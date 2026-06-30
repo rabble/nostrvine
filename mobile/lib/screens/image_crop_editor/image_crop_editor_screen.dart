@@ -7,6 +7,7 @@ import 'package:openvine/screens/image_crop_editor/widgets/image_crop_editor_bot
 import 'package:openvine/screens/image_crop_editor/widgets/image_crop_editor_toolbar.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// What is being cropped. Determines the locked aspect ratio, the bounded
 /// output size of the re-encoded result, and the filename handed to the
@@ -114,7 +115,15 @@ class _ImageCropEditorScreenState extends State<ImageCropEditorScreen> {
         theme: Theme.of(context),
         convertToUint8List: true,
         callbacks: ProImageEditorCallbacks(
-          onImageEditingComplete: (bytes) async => _result = bytes,
+          onImageEditingComplete: (bytes) async {
+            _result = bytes;
+            Log.info(
+              'Cropped ${kind.name}: ${bytes.lengthInBytes} bytes '
+              '(${(bytes.lengthInBytes / 1024).toStringAsFixed(1)} KB)',
+              name: 'ImageCropEditor',
+              category: LogCategory.ui,
+            );
+          },
           onCloseEditor: (_) {
             if (mounted) Navigator.of(context).pop(_result);
           },
