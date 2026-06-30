@@ -12,13 +12,13 @@
     "package_manager": "pub",
     "type_checker": "dart analyzer",
     "ci": "GitHub Actions",
-    "git_hooks": null
+    "git_hooks": "scripts/install-hooks.sh via cd mobile && mise run setup_hooks"
   },
   "choices": {
     "external_tools": false,
     "visual_review": false,
     "ci_pipeline": false,
-    "git_hooks": false,
+    "git_hooks": true,
     "coverage_policy": "Use .claude/rules/testing.md and package-specific workflow min_coverage gates. No root .coverage-thresholds.json is configured for this repo."
   },
   "commands": {

@@ -155,7 +155,7 @@ Codex discovers skills by their SKILL.md `name` field. Invoke with `$name` synta
 
 ### Testing & Quality
 
-- **TDD is mandatory** -- Write tests first, watch them fail, then implement
+- **Test-backed changes** -- add or update tests with the change according to the repo policy above. For metaswarm-led implementation plans, prefer a red/green TDD loop when it is practical and keeps the task reviewable.
 - **Coverage policy** -- follow `.claude/rules/testing.md` and any package-specific `min_coverage` workflows. Run the relevant package tests and coverage checks called out by AGENTS.md.
 
 ### Workflow Enforcement
