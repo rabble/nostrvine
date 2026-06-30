@@ -93,6 +93,10 @@ class BackgroundUploadService : Service() {
         connection.outputStream.use { output ->
           val buffer = ByteArray(BUFFER_SIZE)
           var sent = 0L
+          // Throttle to one event per whole percent (≤101 per transfer) so the
+          // hot write loop doesn't flood the main thread / method channel and
+          // the pending-upload store with hundreds of progress updates.
+          var lastReportedPercent = -1
           while (true) {
             if (cancelledTaskIds.containsKey(taskId)) {
               postCancelled(taskId)
@@ -102,7 +106,13 @@ class BackgroundUploadService : Service() {
             if (read == -1) break
             output.write(buffer, 0, read)
             sent += read
-            if (length > 0) postProgress(taskId, sent.toDouble() / length)
+            if (length > 0) {
+              val percent = (sent * 100 / length).toInt()
+              if (percent != lastReportedPercent) {
+                lastReportedPercent = percent
+                postProgress(taskId, sent.toDouble() / length)
+              }
+            }
           }
         }
       }
@@ -254,7 +264,7 @@ class BackgroundUploadService : Service() {
 
     private const val CHANNEL_ID = "background_upload"
     private const val NOTIFICATION_ID = 0x42
-    private const val BUFFER_SIZE = 64 * 1024
+    private const val BUFFER_SIZE = 256 * 1024
     private const val CONNECT_TIMEOUT_MS = 30_000
     private const val READ_TIMEOUT_MS = 600_000
 
