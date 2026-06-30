@@ -1640,7 +1640,7 @@ void main() {
 
           final captured =
               verify(
-                    () => mockNostrClient.sendProfile(
+                    () => mockNostrClient.sendProfileAwaitOk(
                       profileContent: captureAny(named: 'profileContent'),
                     ),
                   ).captured.single
@@ -1679,7 +1679,7 @@ void main() {
 
         final captured =
             verify(
-                  () => mockNostrClient.sendProfile(
+                  () => mockNostrClient.sendProfileAwaitOk(
                     profileContent: captureAny(named: 'profileContent'),
                   ),
                 ).captured.single
@@ -1707,7 +1707,7 @@ void main() {
 
         final captured =
             verify(
-                  () => mockNostrClient.sendProfile(
+                  () => mockNostrClient.sendProfileAwaitOk(
                     profileContent: captureAny(named: 'profileContent'),
                   ),
                 ).captured.single

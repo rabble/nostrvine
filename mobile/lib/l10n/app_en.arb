@@ -5831,5 +5831,50 @@
   "profileSupportButtonLabel": "Support",
   "@profileSupportButtonLabel": {
     "description": "Compact button label on a profile that opens creator support links."
+  },
+  "monetizationTipsSettingsTitle": "Tips",
+  "@monetizationTipsSettingsTitle": {
+    "description": "App Store-safe title for the settings screen where creators configure optional tip links."
+  },
+  "monetizationTipsSettingsSubtitle": "Add optional tip links",
+  "@monetizationTipsSettingsSubtitle": {
+    "description": "App Store-safe subtitle for the settings row that opens optional tip link settings."
+  },
+  "monetizationTipsSettingsIntroTitle": "Optional tips only",
+  "@monetizationTipsSettingsIntroTitle": {
+    "description": "App Store-safe heading explaining tip links are optional user-to-user gifts."
+  },
+  "monetizationTipsSettingsIntroBody": "Tips are optional user-to-user gifts. They do not unlock content, subscriptions, features, ranking, visibility, or access in Divine.",
+  "@monetizationTipsSettingsIntroBody": {
+    "description": "App Store-safe body copy explaining tips do not unlock digital content or services."
+  },
+  "monetizationTipsSettingsConfiguredCount": "{count} active tip link(s) on your profile",
+  "@monetizationTipsSettingsConfiguredCount": {
+    "description": "App Store-safe summary of active tip links configured on the profile.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "monetizationTipsSettingsSave": "Save tip links",
+  "@monetizationTipsSettingsSave": {
+    "description": "App Store-safe button label to save optional tip links."
+  },
+  "monetizationTipsSettingsSaved": "Tip links updated",
+  "@monetizationTipsSettingsSaved": {
+    "description": "App Store-safe snackbar shown after optional tip links are saved."
+  },
+  "profileTipButtonLabel": "Tip",
+  "@profileTipButtonLabel": {
+    "description": "App Store-safe compact button label on a profile that opens optional creator tip links."
+  },
+  "profileTipSheetTitle": "Tip this creator",
+  "@profileTipSheetTitle": {
+    "description": "App Store-safe title for the profile tip links bottom sheet."
+  },
+  "profileTipSheetBody": "Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.",
+  "@profileTipSheetBody": {
+    "description": "App Store-safe policy copy in the profile tip links bottom sheet."
   }
 }

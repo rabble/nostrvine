@@ -13,6 +13,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
 import 'package:openvine/features/monetization/monetization_analytics.dart';
+import 'package:openvine/features/monetization/monetization_storefront_policy.dart';
 import 'package:openvine/features/people_lists/view/people_list_membership_indicator.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/analytics_providers.dart';
@@ -362,7 +363,9 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
             ),
           ),
           _ProfileSupportButton(
-            links: effectiveProfile?.enabledMonetizationLinks ?? const [],
+            links: monetizationLinksForCurrentStorefront(
+              effectiveProfile?.enabledMonetizationLinks ?? const [],
+            ),
           ),
           if (!widget.isOwnProfile) ...[
             PeopleListMembershipIndicator(pubkey: widget.userIdHex),
@@ -493,7 +496,9 @@ class _ProfileSupportButton extends ConsumerWidget {
           leadingIcon: .heart,
           type: .secondary,
           size: .tiny,
-          label: context.l10n.profileSupportButtonLabel,
+          label: usesAppleAppStoreTipPolicy
+              ? context.l10n.profileTipButtonLabel
+              : context.l10n.profileSupportButtonLabel,
           onPressed: () {
             trackMonetizationAffordanceTapped(
               analytics: analytics,

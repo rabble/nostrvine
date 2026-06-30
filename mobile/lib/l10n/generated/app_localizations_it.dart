@@ -9642,4 +9642,38 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get profileSupportButtonLabel => 'Support';
+
+  @override
+  String get monetizationTipsSettingsTitle => 'Tips';
+
+  @override
+  String get monetizationTipsSettingsSubtitle => 'Add optional tip links';
+
+  @override
+  String get monetizationTipsSettingsIntroTitle => 'Optional tips only';
+
+  @override
+  String get monetizationTipsSettingsIntroBody =>
+      'Tips are optional user-to-user gifts. They do not unlock content, subscriptions, features, ranking, visibility, or access in Divine.';
+
+  @override
+  String monetizationTipsSettingsConfiguredCount(int count) {
+    return '$count active tip link(s) on your profile';
+  }
+
+  @override
+  String get monetizationTipsSettingsSave => 'Save tip links';
+
+  @override
+  String get monetizationTipsSettingsSaved => 'Tip links updated';
+
+  @override
+  String get profileTipButtonLabel => 'Tip';
+
+  @override
+  String get profileTipSheetTitle => 'Tip this creator';
+
+  @override
+  String get profileTipSheetBody =>
+      'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.';
 }

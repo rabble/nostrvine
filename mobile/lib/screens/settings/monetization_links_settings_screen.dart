@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/monetization/monetization_analytics.dart';
+import 'package:openvine/features/monetization/monetization_storefront_policy.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -66,13 +67,26 @@ class _MonetizationLinksSettingsScreenState
         ? null
         : _profileSeed(pubkey: pubkey, cachedProfile: profile);
     final canSave = !_saving && repository != null && currentProfile != null;
+    final appStoreTipPolicy = usesAppleAppStoreTipPolicy;
+    final providers = monetizationProvidersForCurrentStorefront();
+    final tipProviders = providers
+        .where((provider) => provider.category == MonetizationLinkCategory.tip)
+        .toList(growable: false);
+    final subscriptionProviders = providers
+        .where(
+          (provider) =>
+              provider.category == MonetizationLinkCategory.subscription,
+        )
+        .toList(growable: false);
     if (profile != null && _hydratedEventId != profile.eventId) {
       _hydrate(profile);
     }
 
     return Scaffold(
       appBar: DiVineAppBar(
-        title: context.l10n.monetizationSettingsTitle,
+        title: appStoreTipPolicy
+            ? context.l10n.monetizationTipsSettingsTitle
+            : context.l10n.monetizationSettingsTitle,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -84,12 +98,13 @@ class _MonetizationLinksSettingsScreenState
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             children: [
-              _SectionIntro(profile: profile),
+              _SectionIntro(
+                profile: profile,
+                appStoreTipPolicy: appStoreTipPolicy,
+              ),
               const SizedBox(height: 20),
               _SectionHeader(context.l10n.monetizationSettingsTipSection),
-              for (final provider in MonetizationLinkProvider.values.where(
-                (provider) => provider.category == MonetizationLinkCategory.tip,
-              ))
+              for (final provider in tipProviders)
                 _ProviderEditor(
                   provider: provider,
                   controller: _controllers[provider]!,
@@ -101,25 +116,24 @@ class _MonetizationLinksSettingsScreenState
                     if (_errors.remove(provider) != null) setState(() {});
                   },
                 ),
-              const SizedBox(height: 16),
-              _SectionHeader(
-                context.l10n.monetizationSettingsSubscriptionSection,
-              ),
-              for (final provider in MonetizationLinkProvider.values.where(
-                (provider) =>
-                    provider.category == MonetizationLinkCategory.subscription,
-              ))
-                _ProviderEditor(
-                  provider: provider,
-                  controller: _controllers[provider]!,
-                  enabled: _enabled[provider] ?? false,
-                  errorText: _errors[provider],
-                  onEnabledChanged: (value) =>
-                      setState(() => _enabled[provider] = value),
-                  onChanged: (_) {
-                    if (_errors.remove(provider) != null) setState(() {});
-                  },
+              if (subscriptionProviders.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _SectionHeader(
+                  context.l10n.monetizationSettingsSubscriptionSection,
                 ),
+                for (final provider in subscriptionProviders)
+                  _ProviderEditor(
+                    provider: provider,
+                    controller: _controllers[provider]!,
+                    enabled: _enabled[provider] ?? false,
+                    errorText: _errors[provider],
+                    onEnabledChanged: (value) =>
+                        setState(() => _enabled[provider] = value),
+                    onChanged: (_) {
+                      if (_errors.remove(provider) != null) setState(() {});
+                    },
+                  ),
+              ],
             ],
           ),
         ),
@@ -140,6 +154,8 @@ class _MonetizationLinksSettingsScreenState
                 child: DivineButton(
                   label: _saving
                       ? context.l10n.monetizationSettingsSaving
+                      : appStoreTipPolicy
+                      ? context.l10n.monetizationTipsSettingsSave
                       : context.l10n.monetizationSettingsSave,
                   leadingIcon: .check,
                   expanded: true,
@@ -184,7 +200,7 @@ class _MonetizationLinksSettingsScreenState
     final links = <MonetizationLink>[];
     final errors = <MonetizationLinkProvider, String>{};
 
-    for (final provider in MonetizationLinkProvider.values) {
+    for (final provider in monetizationProvidersForCurrentStorefront()) {
       final input = _controllers[provider]!.text;
       if (input.trim().isEmpty) continue;
       if (!(_enabled[provider] ?? false)) continue;
@@ -243,7 +259,13 @@ class _MonetizationLinksSettingsScreenState
         trackMonetizationLinkConfigured(analytics: analytics, link: link);
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.monetizationSettingsSaved)),
+        SnackBar(
+          content: Text(
+            usesAppleAppStoreTipPolicy
+                ? context.l10n.monetizationTipsSettingsSaved
+                : context.l10n.monetizationSettingsSaved,
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -263,13 +285,19 @@ class _MonetizationLinksSettingsScreenState
 }
 
 class _SectionIntro extends StatelessWidget {
-  const _SectionIntro({required this.profile});
+  const _SectionIntro({
+    required this.profile,
+    required this.appStoreTipPolicy,
+  });
 
   final UserProfile? profile;
+  final bool appStoreTipPolicy;
 
   @override
   Widget build(BuildContext context) {
-    final configured = profile?.enabledMonetizationLinks.length ?? 0;
+    final configured = monetizationLinksForCurrentStorefront(
+      profile?.enabledMonetizationLinks ?? const [],
+    ).length;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: VineTheme.surfaceContainer,
@@ -283,17 +311,27 @@ class _SectionIntro extends StatelessWidget {
           spacing: 8,
           children: [
             Text(
-              context.l10n.monetizationSettingsIntroTitle,
+              appStoreTipPolicy
+                  ? context.l10n.monetizationTipsSettingsIntroTitle
+                  : context.l10n.monetizationSettingsIntroTitle,
               style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
             ),
             Text(
-              context.l10n.monetizationSettingsIntroBody,
+              appStoreTipPolicy
+                  ? context.l10n.monetizationTipsSettingsIntroBody
+                  : context.l10n.monetizationSettingsIntroBody,
               style: VineTheme.bodyMediumFont(
                 color: VineTheme.onSurfaceVariant,
               ),
             ),
             Text(
-              context.l10n.monetizationSettingsConfiguredCount(configured),
+              appStoreTipPolicy
+                  ? context.l10n.monetizationTipsSettingsConfiguredCount(
+                      configured,
+                    )
+                  : context.l10n.monetizationSettingsConfiguredCount(
+                      configured,
+                    ),
               style: VineTheme.bodySmallFont(color: VineTheme.primary),
             ),
           ],

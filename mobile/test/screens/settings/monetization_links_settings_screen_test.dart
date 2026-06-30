@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/features/monetization/monetization_storefront_policy.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -36,6 +37,10 @@ void main() {
       ),
     );
     registerFallbackValue(<MonetizationLink>[]);
+  });
+
+  tearDown(() {
+    debugUsesAppleAppStoreTipPolicyOverride = null;
   });
 
   testWidgets('can save monetization links before a profile is cached', (
@@ -196,6 +201,72 @@ void main() {
     expect(
       tester.widget<TextFormField>(find.byType(TextFormField).first).enabled,
       isFalse,
+    );
+  });
+
+  testWidgets('limits settings to tip providers on iOS storefronts', (
+    tester,
+  ) async {
+    debugUsesAppleAppStoreTipPolicyOverride = true;
+
+    final authService = _MockAuthService();
+    final repository = _MockProfileRepository();
+    final profileStream = StreamController<UserProfile?>();
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    when(() => authService.authState).thenReturn(AuthState.authenticated);
+    when(
+      () => authService.authStateStream,
+    ).thenAnswer((_) => Stream.value(AuthState.authenticated));
+    when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
+    when(() => authService.hasExistingProfile).thenReturn(false);
+
+    when(
+      () => repository.getCachedProfile(pubkey: pubkey),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.fetchFreshProfile(pubkey: pubkey),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.watchProfile(pubkey: pubkey),
+    ).thenAnswer((_) => profileStream.stream);
+
+    addTearDown(profileStream.close);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authServiceProvider.overrideWithValue(authService),
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          profileRepositoryProvider.overrideWithValue(repository),
+          analyticsEventSinkProvider.overrideWithValue(
+            const NoOpAnalyticsEventSink(),
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: const MonetizationLinksSettingsScreen(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    profileStream.add(null);
+    await tester.pump();
+
+    expect(find.text(l10n.monetizationTipsSettingsTitle), findsOneWidget);
+    expect(find.text('Cash App', skipOffstage: false), findsOneWidget);
+    expect(find.text('PayPal', skipOffstage: false), findsOneWidget);
+    expect(find.text('Venmo', skipOffstage: false), findsOneWidget);
+    expect(find.text('Patreon', skipOffstage: false), findsNothing);
+    expect(find.text('Substack', skipOffstage: false), findsNothing);
+    expect(find.text('Medium', skipOffstage: false), findsNothing);
+    expect(find.text('Open Collective', skipOffstage: false), findsNothing);
+    expect(
+      find.text(l10n.monetizationSettingsSubscriptionSection),
+      findsNothing,
     );
   });
 }

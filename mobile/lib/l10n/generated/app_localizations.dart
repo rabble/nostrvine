@@ -16527,6 +16527,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Support'**
   String get profileSupportButtonLabel;
+
+  /// App Store-safe title for the settings screen where creators configure optional tip links.
+  ///
+  /// In en, this message translates to:
+  /// **'Tips'**
+  String get monetizationTipsSettingsTitle;
+
+  /// App Store-safe subtitle for the settings row that opens optional tip link settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Add optional tip links'**
+  String get monetizationTipsSettingsSubtitle;
+
+  /// App Store-safe heading explaining tip links are optional user-to-user gifts.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional tips only'**
+  String get monetizationTipsSettingsIntroTitle;
+
+  /// App Store-safe body copy explaining tips do not unlock digital content or services.
+  ///
+  /// In en, this message translates to:
+  /// **'Tips are optional user-to-user gifts. They do not unlock content, subscriptions, features, ranking, visibility, or access in Divine.'**
+  String get monetizationTipsSettingsIntroBody;
+
+  /// App Store-safe summary of active tip links configured on the profile.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} active tip link(s) on your profile'**
+  String monetizationTipsSettingsConfiguredCount(int count);
+
+  /// App Store-safe button label to save optional tip links.
+  ///
+  /// In en, this message translates to:
+  /// **'Save tip links'**
+  String get monetizationTipsSettingsSave;
+
+  /// App Store-safe snackbar shown after optional tip links are saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip links updated'**
+  String get monetizationTipsSettingsSaved;
+
+  /// App Store-safe compact button label on a profile that opens optional creator tip links.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip'**
+  String get profileTipButtonLabel;
+
+  /// App Store-safe title for the profile tip links bottom sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip this creator'**
+  String get profileTipSheetTitle;
+
+  /// App Store-safe policy copy in the profile tip links bottom sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.'**
+  String get profileTipSheetBody;
 }
 
 class _AppLocalizationsDelegate

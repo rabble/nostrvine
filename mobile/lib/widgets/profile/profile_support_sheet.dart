@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/monetization/monetization_analytics.dart';
+import 'package:openvine/features/monetization/monetization_storefront_policy.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/external_link_launcher.dart';
 
@@ -14,10 +15,12 @@ Future<void> showProfileSupportSheet({
   required List<MonetizationLink> links,
   required AnalyticsEventSink analytics,
 }) {
-  final tipLinks = links
+  final appStoreTipPolicy = usesAppleAppStoreTipPolicy;
+  final visibleLinks = monetizationLinksForCurrentStorefront(links);
+  final tipLinks = visibleLinks
       .where((link) => link.category == MonetizationLinkCategory.tip)
       .toList(growable: false);
-  final subscriptionLinks = links
+  final subscriptionLinks = visibleLinks
       .where((link) => link.category == MonetizationLinkCategory.subscription)
       .toList(growable: false);
 
@@ -25,12 +28,16 @@ Future<void> showProfileSupportSheet({
     context: context,
     scrollable: false,
     expanded: false,
-    contentTitle: context.l10n.profileSupportSheetTitle,
+    contentTitle: appStoreTipPolicy
+        ? context.l10n.profileTipSheetTitle
+        : context.l10n.profileSupportSheetTitle,
     children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
         child: Text(
-          context.l10n.profileSupportSheetBody,
+          appStoreTipPolicy
+              ? context.l10n.profileTipSheetBody
+              : context.l10n.profileSupportSheetBody,
           style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
         ),
       ),

@@ -14,6 +14,7 @@ import 'package:openvine/blocs/settings_account/settings_account_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
+import 'package:openvine/features/monetization/monetization_storefront_policy.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -180,6 +181,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final monetizationLinksEnabled = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
     );
+    final appStoreTipPolicy = usesAppleAppStoreTipPolicy;
     return BlocProvider.value(
       value: _accountCubit,
       child: Scaffold(
@@ -225,9 +227,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 if (isAuthenticated && monetizationLinksEnabled)
                   _SettingsTile(
-                    title: context.l10n.monetizationSettingsTitle,
+                    title: appStoreTipPolicy
+                        ? context.l10n.monetizationTipsSettingsTitle
+                        : context.l10n.monetizationSettingsTitle,
                     divineIcon: DivineIconName.heart,
-                    subtitle: context.l10n.monetizationSettingsSubtitle,
+                    subtitle: appStoreTipPolicy
+                        ? context.l10n.monetizationTipsSettingsSubtitle
+                        : context.l10n.monetizationSettingsSubtitle,
                     onTap: () =>
                         context.push(MonetizationLinksSettingsScreen.path),
                   ),
