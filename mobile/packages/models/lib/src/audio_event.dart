@@ -15,7 +15,8 @@ const int audioEventKind = 1063;
 /// Used to pick the correct loading strategy: a bundled [asset], an
 /// on-disk [file] (imported audio), or a remote [network] URL.
 enum AudioSourceKind {
-  /// Bundled app asset (`asset://…`).
+  /// Bundled app asset. The resolved path is the bare asset path, with the
+  /// `asset://` scheme stripped.
   asset,
 
   /// Local file on disk (imported audio).

@@ -278,6 +278,38 @@ void main() {
         },
       );
 
+      test(
+        'resolves imported-audio duration from a file source, not a URL',
+        () async {
+          final editor = _MockProVideoEditor(
+            metadataDuration: const Duration(seconds: 12),
+          );
+          final cubit = buildCubit(
+            // No duration → forces metadata resolution.
+            sound: AudioEvent.fromLocalImport(
+              id: '${AudioEvent.localImportMarker}_1',
+              filePath: '/var/mobile/draft_audio/import.mp3',
+              createdAt: 0,
+              title: 'Imported',
+              mimeType: 'audio/mpeg',
+            ),
+            proVideoEditor: editor,
+          );
+
+          await cubit.initialize();
+
+          expect(editor.getMetadataCallCount, equals(1));
+          expect(editor.lastMetadataSource?.hasFile, isTrue);
+          expect(
+            editor.lastMetadataSource?.file?.path,
+            equals('/var/mobile/draft_audio/import.mp3'),
+          );
+          expect(cubit.state.audioDuration, equals(12));
+
+          await cubit.close();
+        },
+      );
+
       blocTest<AudioTimingCubit, AudioTimingState>(
         'handles bundled sound with asset path',
         build: () => buildCubit(sound: _createBundledSound()),

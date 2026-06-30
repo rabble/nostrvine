@@ -2,10 +2,11 @@
 // ABOUTME: Handles audio playback, clipping, and offset normalization.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:models/models.dart' show AudioEvent;
+import 'package:models/models.dart' show AudioEvent, AudioSourceKind;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:sound_service/sound_service.dart';
@@ -161,14 +162,17 @@ class AudioTimingCubit extends Cubit<AudioTimingState> {
   /// Returns 0 if the audio source is unavailable or metadata extraction
   /// fails.
   Future<double> _resolveAudioDurationSecs() async {
-    final EditorVideo source;
-    if (_sound.isBundled && _sound.assetPath != null) {
-      source = EditorVideo.asset(_sound.assetPath!);
-    } else if (_sound.url != null && _sound.url!.isNotEmpty) {
-      source = EditorVideo.network(_sound.url!);
-    } else {
-      return 0;
-    }
+    final resolved = _sound.resolvedSource;
+    if (resolved == null) return 0;
+
+    // Imported audio stores an on-disk path; probing it as a network URL
+    // throws "No host specified in URI" (issue #5579). resolvedSource picks
+    // the right loader so this mirrors the recorder and waveform paths.
+    final source = switch (resolved.kind) {
+      AudioSourceKind.asset => EditorVideo.asset(resolved.path),
+      AudioSourceKind.file => EditorVideo.file(File(resolved.path)),
+      AudioSourceKind.network => EditorVideo.network(resolved.path),
+    };
 
     try {
       final metadata = await _proVideoEditor.getMetadata(source);
