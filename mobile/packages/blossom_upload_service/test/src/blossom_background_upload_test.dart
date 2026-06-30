@@ -12,9 +12,10 @@ class _MockAuthProvider extends Mock implements BlossomAuthProvider {}
 /// Emits [emitOnEnqueue] as soon as [enqueue] is called, after the service has
 /// already subscribed — so the terminal event is never missed by a race.
 class _FakeTransport implements BlossomBackgroundTransport {
-  _FakeTransport({this.emitOnEnqueue = const []});
+  _FakeTransport({this.emitOnEnqueue = const [], this.throwOnEnqueue = false});
 
   final List<BlossomBackgroundTransferEvent> emitOnEnqueue;
+  final bool throwOnEnqueue;
   final StreamController<BlossomBackgroundTransferEvent> _controller =
       StreamController<BlossomBackgroundTransferEvent>.broadcast();
   final List<String> enqueued = <String>[];
@@ -32,6 +33,9 @@ class _FakeTransport implements BlossomBackgroundTransport {
     required String filePath,
   }) async {
     enqueued.add(taskId);
+    if (throwOnEnqueue) {
+      throw Exception('enqueue failed');
+    }
     emitOnEnqueue.forEach(_controller.add);
   }
 
@@ -210,5 +214,73 @@ void main() {
     expect(result.success, isTrue);
     expect(result.streamingMp4Url, 'https://media.divine.video/stream.mp4');
     expect(result.streamingStatus, 'processing');
+  });
+
+  test('attaches ProofMode headers when a manifest is provided', () async {
+    final transport = _FakeTransport(
+      emitOnEnqueue: const <BlossomBackgroundTransferEvent>[
+        BlossomBackgroundTransferEvent(
+          taskId: taskId,
+          status: BlossomBackgroundTransferStatus.completed,
+          progress: 1,
+          httpStatusCode: 200,
+        ),
+      ],
+    );
+
+    final result = await service(transport).uploadVideoInBackground(
+      videoFile: videoFile,
+      taskId: taskId,
+      proofManifestJson: '{"pgpSignature":"sig"}',
+    );
+
+    expect(result.success, isTrue);
+    expect(transport.enqueued, <String>[taskId]);
+  });
+
+  test('forwards intermediate progress for non-terminal events', () async {
+    final transport = _FakeTransport(
+      emitOnEnqueue: const <BlossomBackgroundTransferEvent>[
+        BlossomBackgroundTransferEvent(
+          taskId: taskId,
+          status: BlossomBackgroundTransferStatus.running,
+          progress: 0.5,
+        ),
+        BlossomBackgroundTransferEvent(
+          taskId: taskId,
+          status: BlossomBackgroundTransferStatus.completed,
+          progress: 1,
+          httpStatusCode: 200,
+        ),
+      ],
+    );
+    final progress = <double>[];
+
+    final result = await service(transport).uploadVideoInBackground(
+      videoFile: videoFile,
+      taskId: taskId,
+      proofManifestJson: null,
+      onProgress: progress.add,
+    );
+
+    expect(result.success, isTrue);
+    // The running event maps into the 0.2–0.9 reporting band, distinct from
+    // the final 1.0.
+    expect(progress.where((p) => p > 0.2 && p < 0.9), isNotEmpty);
+  });
+
+  test('returns failure when the transport rejects enqueue', () async {
+    final result = await service(_FakeTransport(throwOnEnqueue: true))
+        .uploadVideoInBackground(
+          videoFile: videoFile,
+          taskId: taskId,
+          proofManifestJson: null,
+        );
+
+    expect(result.success, isFalse);
+    expect(
+      result.errorMessage,
+      contains('Failed to enqueue background upload'),
+    );
   });
 }
