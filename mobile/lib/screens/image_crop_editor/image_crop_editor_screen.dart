@@ -17,16 +17,16 @@ enum ImageCropKind {
   avatar(
     aspectRatio: 1,
     maxOutputSize: Size(1024, 1024),
-    filename: 'avatar.png',
-    mimeType: 'image/png',
+    filename: 'avatar.jpg',
+    mimeType: 'image/jpeg',
   ),
 
   /// 3:1 banner, output capped at 1500x500.
   banner(
     aspectRatio: 3,
     maxOutputSize: Size(1500, 500),
-    filename: 'banner.png',
-    mimeType: 'image/png',
+    filename: 'banner.jpg',
+    mimeType: 'image/jpeg',
   );
 
   const ImageCropKind({
@@ -43,14 +43,14 @@ enum ImageCropKind {
   final Size maxOutputSize;
 
   /// Filename passed alongside the cropped bytes to the upload service. The
-  /// extension matches the editor's PNG output format.
+  /// extension matches the editor's JPEG output format.
   final String filename;
 
   /// MIME type of the cropped bytes, matching the editor's output format.
   final String mimeType;
 }
 
-/// Pushes the Vine-styled crop editor and resolves to the cropped PNG bytes,
+/// Pushes the Vine-styled crop editor and resolves to the cropped JPEG bytes,
 /// or `null` if the user cancelled.
 ///
 /// Exactly one of [file] / [bytes] must be supplied — [file] for native picks
@@ -78,7 +78,7 @@ Future<Uint8List?> showImageCropEditor(
 /// standalone [CropRotateEditor] with Vine chrome.
 ///
 /// The editor re-encodes the result to [ImageCropKind.maxOutputSize] as a
-/// fresh PNG (`enableUseOriginalBytes: false`), which bounds the upload
+/// fresh JPEG (`enableUseOriginalBytes: false`), which bounds the upload
 /// dimensions and drops the original EXIF as a side effect. Returns the bytes
 /// via `Navigator.pop`.
 class ImageCropEditorScreen extends StatefulWidget {
@@ -137,7 +137,6 @@ class _ImageCropEditorScreenState extends State<ImageCropEditorScreen> {
           imageGeneration: ImageGenerationConfigs(
             maxOutputSize: kind.maxOutputSize,
             enableUseOriginalBytes: false,
-            outputFormat: .png,
           ),
           cropRotateEditor: CropRotateEditorConfigs(
             initAspectRatio: kind.aspectRatio,

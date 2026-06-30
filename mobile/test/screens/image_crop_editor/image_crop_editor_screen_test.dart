@@ -7,18 +7,18 @@ import 'package:openvine/screens/image_crop_editor/image_crop_editor.dart';
 
 void main() {
   group(ImageCropKind, () {
-    test('avatar locks a 1:1 frame capped at 1024 as png', () {
+    test('avatar locks a 1:1 frame capped at 1024 as jpeg', () {
       expect(ImageCropKind.avatar.aspectRatio, 1);
       expect(ImageCropKind.avatar.maxOutputSize, const Size(1024, 1024));
-      expect(ImageCropKind.avatar.filename, 'avatar.png');
-      expect(ImageCropKind.avatar.mimeType, 'image/png');
+      expect(ImageCropKind.avatar.filename, 'avatar.jpg');
+      expect(ImageCropKind.avatar.mimeType, 'image/jpeg');
     });
 
-    test('banner locks a 3:1 frame capped at 1500x500 as png', () {
+    test('banner locks a 3:1 frame capped at 1500x500 as jpeg', () {
       expect(ImageCropKind.banner.aspectRatio, 3);
       expect(ImageCropKind.banner.maxOutputSize, const Size(1500, 500));
-      expect(ImageCropKind.banner.filename, 'banner.png');
-      expect(ImageCropKind.banner.mimeType, 'image/png');
+      expect(ImageCropKind.banner.filename, 'banner.jpg');
+      expect(ImageCropKind.banner.mimeType, 'image/jpeg');
     });
   });
 }

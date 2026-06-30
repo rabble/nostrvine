@@ -184,7 +184,7 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
   /// Native picks yield an [XFile] with a real filesystem path (wrapped in a
   /// `dart:io File`); web picks yield blob bytes read eagerly before the URL
   /// is revoked. Either way the image is handed to the Vine crop editor, and
-  /// the resulting cropped PNG bytes are uploaded via
+  /// the resulting cropped JPEG bytes are uploaded via
   /// `BlossomUploadService.uploadImageBytes`. The crop re-encode bounds the
   /// output dimensions and drops the original EXIF.
   Future<void> _pickImage(ImageSource source) async {

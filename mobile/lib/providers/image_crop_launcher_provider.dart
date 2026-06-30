@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/screens/image_crop_editor/image_crop_editor.dart';
 
 /// Signature of the function that launches the crop editor and resolves to the
-/// cropped PNG bytes (or `null` when cancelled).
+/// cropped JPEG bytes (or `null` when cancelled).
 typedef ImageCropLauncher =
     Future<Uint8List?> Function(
       BuildContext context, {
