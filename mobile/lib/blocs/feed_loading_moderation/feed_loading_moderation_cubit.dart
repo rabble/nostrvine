@@ -1,6 +1,5 @@
 // ABOUTME: Drives the moderation-check gate during video loading.
-// ABOUTME: Emits restricted when the moderation API confirms the video is
-// ABOUTME: blocked, quarantined, or age-restricted.
+// ABOUTME: Emits blocked/quarantined and age-restricted results separately.
 
 import 'dart:async';
 
@@ -11,9 +10,10 @@ import 'package:openvine/services/video_moderation_status_service.dart';
 /// Performs a moderation check during the video loading phase.
 ///
 /// Fetches the moderation status for the video's sha256. If the content is
-/// moderation-restricted (blocked, quarantined, or age-restricted), emits
-/// [FeedLoadingModerationStatus.restricted]; otherwise the state remains
-/// [FeedLoadingModerationStatus.loading] for the lifetime of the cubit.
+/// blocked/quarantined, emits [FeedLoadingModerationStatus.restricted]. If the
+/// content is age-restricted, emits [FeedLoadingModerationStatus.ageRestricted].
+/// Otherwise the state remains [FeedLoadingModerationStatus.loading] for the
+/// lifetime of the cubit.
 ///
 /// Call [start] immediately after the cubit is constructed.
 class FeedLoadingModerationCubit extends Cubit<FeedLoadingModerationState> {
@@ -57,8 +57,11 @@ class FeedLoadingModerationCubit extends Cubit<FeedLoadingModerationState> {
     try {
       final status = await _service.fetchStatus(sha256);
       if (isClosed) return;
-      if (status?.isUnavailableDueToModeration ?? false) {
+      if (status == null) return;
+      if (status.blocked || status.quarantined) {
         emit(state.copyWith(status: FeedLoadingModerationStatus.restricted));
+      } else if (status.ageRestricted) {
+        emit(state.copyWith(status: FeedLoadingModerationStatus.ageRestricted));
       }
     } catch (e, stackTrace) {
       addError(e, stackTrace);

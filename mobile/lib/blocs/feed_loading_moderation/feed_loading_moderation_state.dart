@@ -1,5 +1,5 @@
-// ABOUTME: State for FeedLoadingModerationCubit — whether a video was flagged
-// ABOUTME: as moderation-restricted during the feed loading phase.
+// ABOUTME: State for FeedLoadingModerationCubit — moderation result for a
+// ABOUTME: video that is still loading.
 
 import 'package:equatable/equatable.dart';
 
@@ -8,8 +8,11 @@ enum FeedLoadingModerationStatus {
   /// The check has not yet completed (or is not applicable for this video).
   loading,
 
-  /// The moderation service confirmed this video is restricted.
+  /// The moderation service confirmed this video is blocked or quarantined.
   restricted,
+
+  /// The moderation service confirmed this video requires adult access.
+  ageRestricted,
 }
 
 /// State for [FeedLoadingModerationCubit].
@@ -20,8 +23,12 @@ class FeedLoadingModerationState extends Equatable {
 
   final FeedLoadingModerationStatus status;
 
-  /// Whether the video was flagged as moderation-restricted.
+  /// Whether the video was flagged as blocked/quarantined by moderation.
   bool get isRestricted => status == FeedLoadingModerationStatus.restricted;
+
+  /// Whether the video is available to adult-verified viewers only.
+  bool get isAgeRestricted =>
+      status == FeedLoadingModerationStatus.ageRestricted;
 
   /// Returns a copy with the given fields replaced.
   FeedLoadingModerationState copyWith({FeedLoadingModerationStatus? status}) {

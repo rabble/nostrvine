@@ -224,6 +224,75 @@ void main() {
     );
 
     test(
+      'createAutoAuthHeadersForAdultMedia creates auth when alwaysShow and verified',
+      () async {
+        when(
+          () => mockContentFilterService.adultPlaybackPreference,
+        ).thenReturn(ContentFilterPreference.show);
+        when(
+          () => mockAgeVerificationService.isAdultContentVerified,
+        ).thenReturn(true);
+        when(
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const ViewerAuthAuthorized({'Authorization': 'Nostr autoToken'}),
+        );
+
+        final result = await interceptor.createAutoAuthHeadersForAdultMedia(
+          sha256Hash: 'abc123',
+          url: 'https://media.divine.video/abc123',
+          serverUrl: 'https://media.divine.video',
+        );
+
+        expect(result, isA<ViewerAuthAuthorized>());
+        expect(result.headersOrNull, {'Authorization': 'Nostr autoToken'});
+        verifyNever(
+          () => mockAgeVerificationService.verifyAdultContentAccess(any()),
+        );
+        verify(
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: 'abc123',
+            url: 'https://media.divine.video/abc123',
+            serverUrl: 'https://media.divine.video',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'createAutoAuthHeadersForAdultMedia does not prompt when preference is warn',
+      () async {
+        when(
+          () => mockContentFilterService.adultPlaybackPreference,
+        ).thenReturn(ContentFilterPreference.warn);
+        when(
+          () => mockAgeVerificationService.isAdultContentVerified,
+        ).thenReturn(true);
+
+        final result = await interceptor.createAutoAuthHeadersForAdultMedia(
+          sha256Hash: 'abc123',
+        );
+
+        expect(result, isA<ViewerAuthUnavailable>());
+        verifyNever(
+          () => mockAgeVerificationService.verifyAdultContentAccess(any()),
+        );
+        verifyNever(
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        );
+      },
+    );
+
+    test(
       'handleUnauthorizedMedia shows dialog when askEachTime and verified',
       () async {
         // Arrange - askEachTime preference, already verified for age

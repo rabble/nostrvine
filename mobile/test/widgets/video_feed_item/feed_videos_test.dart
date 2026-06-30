@@ -19,6 +19,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
@@ -26,6 +27,7 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
+import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/services/view_event_publisher.dart'
@@ -65,6 +67,8 @@ class _MockConnectionStatusService extends Mock
 
 class _MockVideoModerationStatusService extends Mock
     implements VideoModerationStatusService {}
+
+class _MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
 
 class _MockLikesRepository extends Mock implements LikesRepository {}
 
@@ -106,14 +110,20 @@ const _testVideoId =
 const _testPubkey =
     'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3';
 
-VideoEvent _makeVideo({String? id, List<String> warnLabels = const []}) {
+VideoEvent _makeVideo({
+  String? id,
+  String? videoUrl,
+  String? sha256,
+  List<String> warnLabels = const [],
+}) {
   return VideoEvent(
     id: id ?? _testVideoId,
     pubkey: _testPubkey,
     createdAt: 1704067200,
     content: 'Test video',
     timestamp: DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000),
-    videoUrl: 'https://example.com/video.mp4',
+    videoUrl: videoUrl ?? 'https://example.com/video.mp4',
+    sha256: sha256,
     warnLabels: warnLabels,
   );
 }
@@ -187,6 +197,7 @@ extension _RepostsRepoStub on _MockRepostsRepository {
 // ignore: strict_raw_type
 List _buildOverrides({
   VideoModerationStatusService? moderationService,
+  MediaAuthInterceptor? mediaAuthInterceptor,
   LikesRepository? likesRepository,
   CommentsRepository? commentsRepository,
   RepostsRepository? repostsRepository,
@@ -201,6 +212,8 @@ List _buildOverrides({
     videoModerationStatusServiceProvider.overrideWithValue(
       moderationService ?? _MockVideoModerationStatusService(),
     ),
+    if (mediaAuthInterceptor != null)
+      mediaAuthInterceptorProvider.overrideWithValue(mediaAuthInterceptor),
     subtitleVisibilityProvider.overrideWithValue(false),
     likesRepositoryProvider.overrideWithValue(
       likesRepository ?? (_MockLikesRepository()..stubAll()),
@@ -224,6 +237,7 @@ Future<void> _pumpFeedVideos(
   _MockFeedAutoAdvanceCubit? feedAutoAdvanceCubit,
   _MockVideoVolumeCubit? videoVolumeCubit,
   VideoModerationStatusService? moderationService,
+  MediaAuthInterceptor? mediaAuthInterceptor,
   _MockLikesRepository? likesRepository,
   _MockCommentsRepository? commentsRepository,
   _MockRepostsRepository? repostsRepository,
@@ -247,6 +261,7 @@ Future<void> _pumpFeedVideos(
   final container = ProviderContainer(
     overrides: _buildOverrides(
       moderationService: moderationService,
+      mediaAuthInterceptor: mediaAuthInterceptor,
       likesRepository: likesRepository,
       commentsRepository: commentsRepository,
       repostsRepository: repostsRepository,
@@ -380,6 +395,57 @@ void main() {
 
         expect(find.byType(PooledVideoErrorOverlay), findsOneWidget);
         expect(find.byType(VideoLoadingPlaceholder), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'auto-authorizes age-restricted loading media when preferences allow show',
+      (tester) async {
+        const sha256 =
+            '8ad13ea11bed00b086a4c93d1bbc43f85953cf05f7715bfb16200663b6e3c0ac';
+        final video = _makeVideo(
+          videoUrl: 'https://media.divine.video/$sha256',
+          sha256: sha256,
+        );
+        final moderationService = _MockVideoModerationStatusService();
+        when(() => moderationService.fetchStatus(sha256)).thenAnswer(
+          (_) async => const VideoModerationStatus(
+            moderated: true,
+            blocked: false,
+            quarantined: false,
+            ageRestricted: true,
+            needsReview: false,
+            aiGenerated: false,
+          ),
+        );
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        when(
+          () => mediaAuthInterceptor.createAutoAuthHeadersForAdultMedia(
+            sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        ).thenAnswer(
+          (_) async => const ViewerAuthAuthorized({
+            'Authorization': 'Nostr auto-token',
+          }),
+        );
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          moderationService: moderationService,
+          mediaAuthInterceptor: mediaAuthInterceptor,
+        );
+        await tester.pump();
+
+        verify(
+          () => mediaAuthInterceptor.createAutoAuthHeadersForAdultMedia(
+            sha256Hash: sha256,
+            url: 'https://media.divine.video/$sha256',
+            serverUrl: 'https://media.divine.video',
+          ),
+        ).called(1);
       },
     );
   });

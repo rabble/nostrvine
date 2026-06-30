@@ -114,10 +114,42 @@ void main() {
         },
       );
 
-      test('emits restricted when service returns age-restricted status', () {
-        const ageRestricted = VideoModerationStatus(
+      test(
+        'emits ageRestricted when service returns age-restricted status',
+        () {
+          const ageRestricted = VideoModerationStatus(
+            moderated: true,
+            blocked: false,
+            quarantined: false,
+            ageRestricted: true,
+            needsReview: false,
+            aiGenerated: false,
+          );
+          when(
+            () => mockService.fetchStatus(sha256),
+          ).thenAnswer((_) async => ageRestricted);
+
+          fakeAsync((fake) {
+            final cubit = buildCubit(videoUrl: divineUrl);
+            cubit.start();
+            fake.elapse(const Duration(seconds: 2));
+            fake.flushMicrotasks();
+            expect(cubit.state.isRestricted, isFalse);
+            expect(cubit.state.isAgeRestricted, isTrue);
+            expect(
+              cubit.state.status,
+              FeedLoadingModerationStatus.ageRestricted,
+            );
+            cubit.close();
+            fake.flushMicrotasks();
+          });
+        },
+      );
+
+      test('blocked status wins over age-restricted status', () {
+        const blockedAndAgeRestricted = VideoModerationStatus(
           moderated: true,
-          blocked: false,
+          blocked: true,
           quarantined: false,
           ageRestricted: true,
           needsReview: false,
@@ -125,14 +157,15 @@ void main() {
         );
         when(
           () => mockService.fetchStatus(sha256),
-        ).thenAnswer((_) async => ageRestricted);
+        ).thenAnswer((_) async => blockedAndAgeRestricted);
 
         fakeAsync((fake) {
           final cubit = buildCubit(videoUrl: divineUrl);
           cubit.start();
-          fake.elapse(const Duration(seconds: 2));
           fake.flushMicrotasks();
           expect(cubit.state.isRestricted, isTrue);
+          expect(cubit.state.isAgeRestricted, isFalse);
+          expect(cubit.state.status, FeedLoadingModerationStatus.restricted);
           cubit.close();
           fake.flushMicrotasks();
         });

@@ -10,12 +10,14 @@ import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/codec_heavy_surface/codec_heavy_surface_cubit.dart';
 import 'package:openvine/blocs/feed_loading_moderation/feed_loading_moderation_cubit.dart';
+import 'package:openvine/blocs/feed_loading_moderation/feed_loading_moderation_state.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/app_router.dart';
@@ -935,7 +937,7 @@ class _FeedLoadingOrRestrictedOverlay extends ConsumerWidget {
   }
 }
 
-class _FeedLoadingOrRestrictedOverlayView extends StatelessWidget {
+class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
   const _FeedLoadingOrRestrictedOverlayView({
     required this.video,
     required this.index,
@@ -951,36 +953,128 @@ class _FeedLoadingOrRestrictedOverlayView extends StatelessWidget {
   final bool shouldPortraitExpand;
 
   @override
-  Widget build(BuildContext context) {
-    final isRestricted = context.select(
-      (FeedLoadingModerationCubit c) => c.state.isRestricted,
-    );
+  Widget build(BuildContext context, WidgetRef ref) {
+    return BlocListener<FeedLoadingModerationCubit, FeedLoadingModerationState>(
+      listenWhen: (previous, current) =>
+          previous.status != current.status && current.isAgeRestricted,
+      listener: (context, state) {
+        unawaited(
+          _autoRetryAgeRestrictedPooledVideo(
+            context: context,
+            ref: ref,
+            video: video,
+            index: index,
+            retryPlayback: (httpHeaders) =>
+                context
+                    .findAncestorStateOfType<InfiniteVideoFeedState>()
+                    ?.retryAt(index, httpHeaders: httpHeaders) ??
+                Future.value(false),
+          ),
+        );
+      },
+      child:
+          BlocBuilder<FeedLoadingModerationCubit, FeedLoadingModerationState>(
+            builder: (context, state) {
+              if (state.isRestricted) {
+                return VerifyingAwareVideoErrorOverlay(
+                  video: video,
+                  index: index,
+                  // Retry is hidden for moderation-restricted content.
+                  onRetry: () {},
+                  retryPlayback: (httpHeaders) =>
+                      context
+                          .findAncestorStateOfType<InfiniteVideoFeedState>()
+                          ?.retryAt(index, httpHeaders: httpHeaders) ??
+                      Future.value(false),
+                  errorType: VideoErrorType.forbidden,
+                  shouldPortraitExpand: shouldPortraitExpand,
+                  isSquare: isSquare,
+                );
+              }
 
-    if (isRestricted) {
-      return VerifyingAwareVideoErrorOverlay(
-        video: video,
-        index: index,
-        // Retry is hidden for moderation-restricted content.
-        onRetry: () {},
-        retryPlayback: (httpHeaders) =>
-            context.findAncestorStateOfType<InfiniteVideoFeedState>()?.retryAt(
-              index,
-              httpHeaders: httpHeaders,
-            ) ??
-            Future.value(false),
-        errorType: VideoErrorType.notFound,
-        shouldPortraitExpand: shouldPortraitExpand,
-        isSquare: isSquare,
-      );
+              if (state.isAgeRestricted) {
+                return VerifyingAwareVideoErrorOverlay(
+                  video: video,
+                  index: index,
+                  // Retry is hidden while age-gated playback uses Verify age.
+                  onRetry: () {},
+                  retryPlayback: (httpHeaders) =>
+                      context
+                          .findAncestorStateOfType<InfiniteVideoFeedState>()
+                          ?.retryAt(index, httpHeaders: httpHeaders) ??
+                      Future.value(false),
+                  errorType: VideoErrorType.ageRestricted,
+                  shouldPortraitExpand: shouldPortraitExpand,
+                  isSquare: isSquare,
+                );
+              }
+
+              return VideoLoadingPlaceholder(
+                videoId: video.id,
+                index: index,
+                feedMode: feedMode,
+                thumbnailUrl: video.thumbnailUrl,
+                isSquare: isSquare,
+                shouldPortraitExpand: shouldPortraitExpand,
+              );
+            },
+          ),
+    );
+  }
+}
+
+Future<void> _autoRetryAgeRestrictedPooledVideo({
+  required BuildContext context,
+  required WidgetRef ref,
+  required VideoEvent video,
+  required int index,
+  required FutureOr<bool> Function(Map<String, String>) retryPlayback,
+}) async {
+  final videoUrl = video.videoUrl;
+  if (videoUrl == null || videoUrl.isEmpty) return;
+
+  final sha256 = VideoModerationStatusService.resolveSha256(
+    explicitSha256: video.sha256,
+    videoUrl: videoUrl,
+  );
+  if (sha256 == null) return;
+
+  final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
+  if (playbackStatusCubit.state.isVerifying(video.id)) return;
+
+  playbackStatusCubit.markVerifying(video.id);
+  try {
+    final authResult = await ref
+        .read(mediaAuthInterceptorProvider)
+        .createAutoAuthHeadersForAdultMedia(
+          sha256Hash: sha256,
+          url: videoUrl,
+          serverUrl: _extractServerUrl(videoUrl),
+        );
+    if (!context.mounted) return;
+
+    switch (authResult) {
+      case ViewerAuthAuthorized(:final headers):
+        final playbackSucceeded = await retryPlayback(headers);
+        if (!context.mounted || !playbackSucceeded) return;
+        playbackStatusCubit.report(video.id, PlaybackStatus.ready);
+      case ViewerAuthSignerUnreachable():
+      case ViewerAuthUnavailable():
+        break;
     }
+  } finally {
+    if (!playbackStatusCubit.isClosed) {
+      playbackStatusCubit.clearVerifying(video.id);
+    }
+  }
+}
 
-    return VideoLoadingPlaceholder(
-      videoId: video.id,
-      index: index,
-      feedMode: feedMode,
-      thumbnailUrl: video.thumbnailUrl,
-      isSquare: isSquare,
-      shouldPortraitExpand: shouldPortraitExpand,
-    );
+String? _extractServerUrl(String videoUrl) {
+  try {
+    final uri = Uri.parse(videoUrl);
+    final portSuffix = uri.hasPort ? ':${uri.port}' : '';
+    return '${uri.scheme}://${uri.host}$portSuffix';
+  } catch (_) {
+    return null;
   }
 }
