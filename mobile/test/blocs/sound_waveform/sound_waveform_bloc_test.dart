@@ -15,6 +15,11 @@ class _MockProVideoEditor extends ProVideoEditor {
   late Float32List leftChannel;
   Float32List? rightChannel;
 
+  /// The source the bloc built from the extract event's [AudioSourceKind].
+  /// Captured so tests can assert the file-vs-network mapping rather than
+  /// just the resulting state.
+  EditorVideo? lastWaveformSource;
+
   _MockProVideoEditor() {
     // Default waveform data
     leftChannel = Float32List.fromList([0.1, 0.5, 0.9, 0.3, 0.7]);
@@ -31,6 +36,7 @@ class _MockProVideoEditor extends ProVideoEditor {
     WaveformConfigs configs, {
     NativeLogLevel? nativeLogLevel,
   }) async {
+    lastWaveformSource = configs.video;
     if (shouldThrowError) {
       throw Exception('Waveform extraction failed');
     }
@@ -143,8 +149,12 @@ void main() {
         errors: () => [isA<Exception>()],
       );
 
+      // The mapping at sound_waveform_bloc.dart:36-40 turns each
+      // AudioSourceKind into the matching EditorVideo source. These tests
+      // assert the built source (not just the resulting state) so a regression
+      // that maps file → network (issue #5579) fails loudly.
       blocTest<SoundWaveformBloc, SoundWaveformState>(
-        'handles asset path extraction',
+        'builds an asset source for asset-kind extraction',
         build: buildBloc,
         act: (bloc) => bloc.add(
           const SoundWaveformExtract(
@@ -154,10 +164,17 @@ void main() {
           ),
         ),
         expect: () => [isA<SoundWaveformLoading>(), isA<SoundWaveformLoaded>()],
+        verify: (_) {
+          final source = mockProVideoEditor.lastWaveformSource;
+          expect(source?.hasAssetPath, isTrue);
+          expect(source?.assetPath, equals('assets/sounds/test.mp3'));
+          expect(source?.hasFile, isFalse);
+          expect(source?.hasNetworkUrl, isFalse);
+        },
       );
 
       blocTest<SoundWaveformBloc, SoundWaveformState>(
-        'handles local file path extraction',
+        'builds a file source for file-kind extraction',
         build: buildBloc,
         act: (bloc) => bloc.add(
           const SoundWaveformExtract(
@@ -167,6 +184,38 @@ void main() {
           ),
         ),
         expect: () => [isA<SoundWaveformLoading>(), isA<SoundWaveformLoaded>()],
+        verify: (_) {
+          final source = mockProVideoEditor.lastWaveformSource;
+          expect(source?.hasFile, isTrue);
+          expect(
+            source?.file?.path,
+            equals('/var/mobile/Containers/Data/draft_audio/import.mp3'),
+          );
+          expect(source?.hasNetworkUrl, isFalse);
+          expect(source?.hasAssetPath, isFalse);
+        },
+      );
+
+      blocTest<SoundWaveformBloc, SoundWaveformState>(
+        'builds a network source for network-kind extraction',
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const SoundWaveformExtract(
+            path: 'https://example.com/audio.mp3',
+            soundId: 'remote-sound-id',
+          ),
+        ),
+        expect: () => [isA<SoundWaveformLoading>(), isA<SoundWaveformLoaded>()],
+        verify: (_) {
+          final source = mockProVideoEditor.lastWaveformSource;
+          expect(source?.hasNetworkUrl, isTrue);
+          expect(
+            source?.networkUrl,
+            equals('https://example.com/audio.mp3'),
+          );
+          expect(source?.hasFile, isFalse);
+          expect(source?.hasAssetPath, isFalse);
+        },
       );
     });
 

@@ -292,8 +292,13 @@ class AudioEvent {
   /// Imported audio stores its on-disk path in [url]; it must be loaded as a
   /// file rather than parsed as a network URL (which fails with "No host
   /// specified in URI" / iOS "unsupported URL"). Bundled sounds expose a bare
-  /// asset path. Centralising this mapping keeps call sites from re-deriving
-  /// it and mis-handling local imports.
+  /// asset path. Bare absolute paths (`/var/mobile/...`) and `file://` URIs —
+  /// e.g. clip-extracted J-cut audio whose [url] is a raw on-disk path — are
+  /// also classified as files, matching the `#4395` file-vs-network guard used
+  /// at the duration/render/waveform call sites so this getter is a true
+  /// superset they can migrate onto without reintroducing that bug. Everything
+  /// else (`http(s)`, plus unhandled schemes like `content://`/`blob:`) is
+  /// network.
   ({AudioSourceKind kind, String path})? get resolvedSource {
     if (isBundled) {
       final path = assetPath;
@@ -307,10 +312,21 @@ class AudioEvent {
           ? null
           : (kind: AudioSourceKind.file, path: path);
     }
-    final path = url;
-    return path == null || path.isEmpty
-        ? null
-        : (kind: AudioSourceKind.network, path: path);
+    final rawUrl = url;
+    if (rawUrl == null || rawUrl.isEmpty) return null;
+    final parsed = Uri.tryParse(rawUrl);
+    final isLocalFile =
+        parsed == null ||
+        parsed.scheme.isEmpty ||
+        parsed.scheme == 'file' ||
+        rawUrl.startsWith('/');
+    if (isLocalFile) {
+      final filePath = parsed != null && parsed.scheme == 'file'
+          ? parsed.toFilePath()
+          : rawUrl;
+      return (kind: AudioSourceKind.file, path: filePath);
+    }
+    return (kind: AudioSourceKind.network, path: rawUrl);
   }
 
   /// The Nostr event ID (64-character hex string).

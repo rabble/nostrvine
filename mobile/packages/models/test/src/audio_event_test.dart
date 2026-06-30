@@ -468,6 +468,42 @@ void main() {
         );
       });
 
+      test('classifies a bare absolute path as a file source', () {
+        // Clip-extracted J-cut audio: not a `local_import_` id, `url` is a
+        // raw on-disk path (clip_editor_bloc writes `result.audioFilePath`).
+        const event = AudioEvent(
+          id: 'local_extracted_1700000000000',
+          pubkey: '',
+          createdAt: 0,
+          url: '/var/mobile/clip_audio/extracted.m4a',
+        );
+
+        expect(
+          event.resolvedSource,
+          equals((
+            kind: AudioSourceKind.file,
+            path: '/var/mobile/clip_audio/extracted.m4a',
+          )),
+        );
+      });
+
+      test('classifies a file:// URI as a file source', () {
+        const event = AudioEvent(
+          id: 'local_extracted_1700000000000',
+          pubkey: '',
+          createdAt: 0,
+          url: 'file:///var/mobile/clip_audio/extracted.m4a',
+        );
+
+        expect(
+          event.resolvedSource,
+          equals((
+            kind: AudioSourceKind.file,
+            path: '/var/mobile/clip_audio/extracted.m4a',
+          )),
+        );
+      });
+
       test('returns null when no source url is present', () {
         const event = AudioEvent(id: 'empty', pubkey: 'abc', createdAt: 0);
 
