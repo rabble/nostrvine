@@ -4015,5 +4015,10 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Usuń zaznaczone klipy",
     "videoEditorMergeProgressLabel": "Chwila, scalamy Twoje klipy",
     "videoEditorMergeFailed": "Nie udało się scalić klipów. Spróbuj ponownie.",
-  "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device."
+    "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
+    "imageCropEditorRotateLabel": "Obróć",
+    "imageCropEditorFlipLabel": "Odbij",
+    "imageCropEditorResetLabel": "Resetuj",
+    "imageCropEditorCloseSemanticLabel": "Anuluj kadrowanie",
+    "imageCropEditorDoneSemanticLabel": "Zastosuj kadrowanie"
 }

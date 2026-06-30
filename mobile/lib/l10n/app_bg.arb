@@ -4146,5 +4146,10 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Изтриване на избраните клипове",
     "videoEditorMergeProgressLabel": "Един момент, обединяваме клиповете ти",
     "videoEditorMergeFailed": "Клиповете не могат да бъдат обединени. Опитай отново.",
-  "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device."
+    "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
+    "imageCropEditorRotateLabel": "Завъртане",
+    "imageCropEditorFlipLabel": "Обръщане",
+    "imageCropEditorResetLabel": "Нулиране",
+    "imageCropEditorCloseSemanticLabel": "Отказ от изрязването",
+    "imageCropEditorDoneSemanticLabel": "Прилагане на изрязването"
 }

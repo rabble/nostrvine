@@ -9488,4 +9488,19 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get subtitleEditorCueHint => 'Caption text';
+
+  @override
+  String get imageCropEditorRotateLabel => 'Drehen';
+
+  @override
+  String get imageCropEditorFlipLabel => 'Spiegeln';
+
+  @override
+  String get imageCropEditorResetLabel => 'Zurücksetzen';
+
+  @override
+  String get imageCropEditorCloseSemanticLabel => 'Zuschneiden abbrechen';
+
+  @override
+  String get imageCropEditorDoneSemanticLabel => 'Zuschnitt übernehmen';
 }

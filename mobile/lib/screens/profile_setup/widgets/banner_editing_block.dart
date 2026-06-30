@@ -10,6 +10,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/image_crop_launcher_provider.dart';
+import 'package:openvine/screens/image_crop_editor/image_crop_editor.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -253,23 +255,35 @@ class _BannerActionRow extends StatelessWidget {
     }
     if (picked == null) return;
 
+    final cropLauncher = container.read(imageCropLauncherProvider);
+    Uint8List? cropped;
     if (kIsWeb) {
       final bytes = await picked.readAsBytes();
-      editorBloc.add(
-        ProfileBannerUploadRequested(
-          pubkey: pk,
-          bytes: bytes,
-          filename: picked.name,
-        ),
+      if (!context.mounted) return;
+      cropped = await cropLauncher(
+        context,
+        kind: ImageCropKind.banner,
+        bytes: bytes,
       );
     } else {
-      editorBloc.add(
-        ProfileBannerUploadRequested(
-          pubkey: pk,
-          file: File(picked.path),
-        ),
+      if (!context.mounted) return;
+      cropped = await cropLauncher(
+        context,
+        kind: ImageCropKind.banner,
+        file: File(picked.path),
       );
     }
+
+    if (cropped == null) return;
+
+    editorBloc.add(
+      ProfileBannerUploadRequested(
+        pubkey: pk,
+        bytes: cropped,
+        filename: ImageCropKind.banner.filename,
+        mimeType: ImageCropKind.banner.mimeType,
+      ),
+    );
   }
 }
 

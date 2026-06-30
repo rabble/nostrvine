@@ -9058,4 +9058,19 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get subtitleEditorCueHint => 'Caption text';
+
+  @override
+  String get imageCropEditorRotateLabel => '回転';
+
+  @override
+  String get imageCropEditorFlipLabel => '反転';
+
+  @override
+  String get imageCropEditorResetLabel => 'リセット';
+
+  @override
+  String get imageCropEditorCloseSemanticLabel => '切り抜きをキャンセル';
+
+  @override
+  String get imageCropEditorDoneSemanticLabel => '切り抜きを適用';
 }

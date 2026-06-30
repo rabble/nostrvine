@@ -9427,4 +9427,19 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get subtitleEditorCueHint => 'Caption text';
+
+  @override
+  String get imageCropEditorRotateLabel => 'Draaien';
+
+  @override
+  String get imageCropEditorFlipLabel => 'Spiegelen';
+
+  @override
+  String get imageCropEditorResetLabel => 'Resetten';
+
+  @override
+  String get imageCropEditorCloseSemanticLabel => 'Bijsnijden annuleren';
+
+  @override
+  String get imageCropEditorDoneSemanticLabel => 'Bijsnijden toepassen';
 }

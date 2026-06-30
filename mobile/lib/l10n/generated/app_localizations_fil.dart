@@ -9486,4 +9486,19 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get subtitleEditorCueHint => 'Caption text';
+
+  @override
+  String get imageCropEditorRotateLabel => 'Iikot';
+
+  @override
+  String get imageCropEditorFlipLabel => 'Baligtarin';
+
+  @override
+  String get imageCropEditorResetLabel => 'I-reset';
+
+  @override
+  String get imageCropEditorCloseSemanticLabel => 'Kanselahin ang pag-crop';
+
+  @override
+  String get imageCropEditorDoneSemanticLabel => 'Ilapat ang pag-crop';
 }

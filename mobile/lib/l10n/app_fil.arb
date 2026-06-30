@@ -2584,5 +2584,10 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Tanggalin ang mga napiling clip",
     "videoEditorMergeProgressLabel": "Sandali lang, pinagsasama namin ang iyong mga clip",
     "videoEditorMergeFailed": "Hindi mapagsama ang mga clip. Pakisubukang muli.",
-  "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device."
+    "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
+    "imageCropEditorRotateLabel": "Iikot",
+    "imageCropEditorFlipLabel": "Baligtarin",
+    "imageCropEditorResetLabel": "I-reset",
+    "imageCropEditorCloseSemanticLabel": "Kanselahin ang pag-crop",
+    "imageCropEditorDoneSemanticLabel": "Ilapat ang pag-crop"
 }

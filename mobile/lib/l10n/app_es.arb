@@ -4015,5 +4015,10 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Eliminar clips seleccionados",
     "videoEditorMergeProgressLabel": "Un momento, estamos combinando tus clips",
     "videoEditorMergeFailed": "No se pudieron combinar los clips. Inténtalo de nuevo.",
-  "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device."
+    "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
+    "imageCropEditorRotateLabel": "Girar",
+    "imageCropEditorFlipLabel": "Voltear",
+    "imageCropEditorResetLabel": "Restablecer",
+    "imageCropEditorCloseSemanticLabel": "Cancelar recorte",
+    "imageCropEditorDoneSemanticLabel": "Aplicar recorte"
 }

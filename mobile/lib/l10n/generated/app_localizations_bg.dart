@@ -9476,4 +9476,19 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get subtitleEditorCueHint => 'Caption text';
+
+  @override
+  String get imageCropEditorRotateLabel => 'Завъртане';
+
+  @override
+  String get imageCropEditorFlipLabel => 'Обръщане';
+
+  @override
+  String get imageCropEditorResetLabel => 'Нулиране';
+
+  @override
+  String get imageCropEditorCloseSemanticLabel => 'Отказ от изрязването';
+
+  @override
+  String get imageCropEditorDoneSemanticLabel => 'Прилагане на изрязването';
 }

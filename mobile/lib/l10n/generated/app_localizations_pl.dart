@@ -9546,4 +9546,19 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get subtitleEditorCueHint => 'Caption text';
+
+  @override
+  String get imageCropEditorRotateLabel => 'Obróć';
+
+  @override
+  String get imageCropEditorFlipLabel => 'Odbij';
+
+  @override
+  String get imageCropEditorResetLabel => 'Resetuj';
+
+  @override
+  String get imageCropEditorCloseSemanticLabel => 'Anuluj kadrowanie';
+
+  @override
+  String get imageCropEditorDoneSemanticLabel => 'Zastosuj kadrowanie';
 }

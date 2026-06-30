@@ -9468,4 +9468,19 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get subtitleEditorCueHint => 'Caption text';
+
+  @override
+  String get imageCropEditorRotateLabel => 'Ruota';
+
+  @override
+  String get imageCropEditorFlipLabel => 'Capovolgi';
+
+  @override
+  String get imageCropEditorResetLabel => 'Reimposta';
+
+  @override
+  String get imageCropEditorCloseSemanticLabel => 'Annulla ritaglio';
+
+  @override
+  String get imageCropEditorDoneSemanticLabel => 'Applica ritaglio';
 }

@@ -4015,5 +4015,10 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Șterge clipurile selectate",
     "videoEditorMergeProgressLabel": "Un moment, îți îmbinăm clipurile",
     "videoEditorMergeFailed": "Clipurile nu au putut fi îmbinate. Încearcă din nou.",
-  "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device."
+    "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
+    "imageCropEditorRotateLabel": "Rotește",
+    "imageCropEditorFlipLabel": "Întoarce",
+    "imageCropEditorResetLabel": "Resetează",
+    "imageCropEditorCloseSemanticLabel": "Anulează decuparea",
+    "imageCropEditorDoneSemanticLabel": "Aplică decuparea"
 }

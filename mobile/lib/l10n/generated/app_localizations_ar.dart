@@ -9304,4 +9304,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get subtitleEditorCueHint => 'Caption text';
+
+  @override
+  String get imageCropEditorRotateLabel => 'تدوير';
+
+  @override
+  String get imageCropEditorFlipLabel => 'قلب';
+
+  @override
+  String get imageCropEditorResetLabel => 'إعادة تعيين';
+
+  @override
+  String get imageCropEditorCloseSemanticLabel => 'إلغاء الاقتصاص';
+
+  @override
+  String get imageCropEditorDoneSemanticLabel => 'تطبيق الاقتصاص';
 }

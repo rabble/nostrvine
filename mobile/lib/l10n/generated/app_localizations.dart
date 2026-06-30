@@ -16271,6 +16271,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Caption text'**
   String get subtitleEditorCueHint;
+
+  /// Bottom-bar action in the image crop editor that rotates the image 90 degrees.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate'**
+  String get imageCropEditorRotateLabel;
+
+  /// Bottom-bar action in the image crop editor that mirrors the image horizontally.
+  ///
+  /// In en, this message translates to:
+  /// **'Flip'**
+  String get imageCropEditorFlipLabel;
+
+  /// Bottom-bar action in the image crop editor that reverts all crop, rotate and flip changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get imageCropEditorResetLabel;
+
+  /// Accessibility label for the close button in the image crop editor that discards changes and returns without uploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel cropping'**
+  String get imageCropEditorCloseSemanticLabel;
+
+  /// Accessibility label for the done button in the image crop editor that confirms the crop and proceeds with the upload.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply crop'**
+  String get imageCropEditorDoneSemanticLabel;
 }
 
 class _AppLocalizationsDelegate

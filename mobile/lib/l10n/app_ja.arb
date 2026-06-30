@@ -4015,5 +4015,10 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "選択したクリップを削除",
     "videoEditorMergeProgressLabel": "少々お待ちください。クリップを結合しています",
     "videoEditorMergeFailed": "クリップを結合できませんでした。もう一度お試しください。",
-  "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device."
+    "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
+    "imageCropEditorRotateLabel": "回転",
+    "imageCropEditorFlipLabel": "反転",
+    "imageCropEditorResetLabel": "リセット",
+    "imageCropEditorCloseSemanticLabel": "切り抜きをキャンセル",
+    "imageCropEditorDoneSemanticLabel": "切り抜きを適用"
 }

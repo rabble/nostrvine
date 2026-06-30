@@ -44,6 +44,14 @@ void main() {
       );
     });
 
+    test('flipHorizontal maps to the mirror glyph', () {
+      expect(DivineIconName.flipHorizontal.fileName, 'flip_horizontal');
+      expect(
+        DivineIconName.flipHorizontal.assetPath,
+        'assets/icon/flip_horizontal.svg',
+      );
+    });
+
     test('all enum values have non-empty file names', () {
       for (final icon in DivineIconName.values) {
         expect(

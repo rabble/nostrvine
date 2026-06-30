@@ -4015,5 +4015,10 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Seçili klipleri sil",
     "videoEditorMergeProgressLabel": "Bir saniye, kliplerini birleştiriyoruz",
     "videoEditorMergeFailed": "Klipler birleştirilemedi. Lütfen tekrar dene.",
-  "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device."
+    "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
+    "imageCropEditorRotateLabel": "Döndür",
+    "imageCropEditorFlipLabel": "Çevir",
+    "imageCropEditorResetLabel": "Sıfırla",
+    "imageCropEditorCloseSemanticLabel": "Kırpmayı iptal et",
+    "imageCropEditorDoneSemanticLabel": "Kırpmayı uygula"
 }

@@ -5430,5 +5430,25 @@
     "subtitleEditorSaveSuccess": "Subtitles updated",
     "subtitleEditorSaveError": "Couldn't save subtitles. Try again.",
     "subtitleEditorRetry": "Retry",
-    "subtitleEditorCueHint": "Caption text"
+    "subtitleEditorCueHint": "Caption text",
+    "imageCropEditorRotateLabel": "Rotate",
+    "@imageCropEditorRotateLabel": {
+        "description": "Bottom-bar action in the image crop editor that rotates the image 90 degrees."
+    },
+    "imageCropEditorFlipLabel": "Flip",
+    "@imageCropEditorFlipLabel": {
+        "description": "Bottom-bar action in the image crop editor that mirrors the image horizontally."
+    },
+    "imageCropEditorResetLabel": "Reset",
+    "@imageCropEditorResetLabel": {
+        "description": "Bottom-bar action in the image crop editor that reverts all crop, rotate and flip changes."
+    },
+    "imageCropEditorCloseSemanticLabel": "Cancel cropping",
+    "@imageCropEditorCloseSemanticLabel": {
+        "description": "Accessibility label for the close button in the image crop editor that discards changes and returns without uploading."
+    },
+    "imageCropEditorDoneSemanticLabel": "Apply crop",
+    "@imageCropEditorDoneSemanticLabel": {
+        "description": "Accessibility label for the done button in the image crop editor that confirms the crop and proceeds with the upload."
+    }
 }

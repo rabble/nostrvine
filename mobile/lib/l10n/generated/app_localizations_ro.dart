@@ -9575,4 +9575,19 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get subtitleEditorCueHint => 'Caption text';
+
+  @override
+  String get imageCropEditorRotateLabel => 'Rotește';
+
+  @override
+  String get imageCropEditorFlipLabel => 'Întoarce';
+
+  @override
+  String get imageCropEditorResetLabel => 'Resetează';
+
+  @override
+  String get imageCropEditorCloseSemanticLabel => 'Anulează decuparea';
+
+  @override
+  String get imageCropEditorDoneSemanticLabel => 'Aplică decuparea';
 }

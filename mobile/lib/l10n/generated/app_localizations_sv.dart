@@ -9393,4 +9393,19 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get subtitleEditorCueHint => 'Caption text';
+
+  @override
+  String get imageCropEditorRotateLabel => 'Rotera';
+
+  @override
+  String get imageCropEditorFlipLabel => 'Vänd';
+
+  @override
+  String get imageCropEditorResetLabel => 'Återställ';
+
+  @override
+  String get imageCropEditorCloseSemanticLabel => 'Avbryt beskärning';
+
+  @override
+  String get imageCropEditorDoneSemanticLabel => 'Använd beskärning';
 }

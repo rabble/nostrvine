@@ -10,6 +10,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/image_crop_launcher_provider.dart';
+import 'package:openvine/screens/image_crop_editor/image_crop_editor.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_image_picker.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -25,7 +27,6 @@ class ProfileAvatarSection extends ConsumerStatefulWidget {
 }
 
 class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
-  File? _selectedImage;
   Uint8List? _selectedImageBytes;
   final TextEditingController _pictureController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
@@ -163,7 +164,6 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
     //   4. Placeholder.
     if (editorState.pendingAvatarStatus == PendingAvatarStatus.uploading) {
       if (_selectedImageBytes != null) return MemoryImage(_selectedImageBytes!);
-      if (_selectedImage != null) return FileImage(_selectedImage!);
     }
 
     final pending = editorState.pendingPictureUrl;
@@ -179,17 +179,14 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
     return null;
   }
 
-  /// Platform-aware image selection.
+  /// Platform-aware image selection with an interactive crop step.
   ///
-  /// Native (mobile + desktop): selects an [XFile] with a real filesystem
-  /// path, wraps it in `dart:io File`, and routes through
-  /// `BlossomUploadService.uploadImage` so the platform-channel EXIF
-  /// stripper runs.
-  ///
-  /// Web: `image_picker` returns an [XFile] whose `.path` is a blob URL
-  /// that `dart:io` cannot resolve, so we read the bytes directly and
-  /// route through `BlossomUploadService.uploadImageBytes`, which strips
-  /// EXIF in pure Dart and uploads from memory.
+  /// Native picks yield an [XFile] with a real filesystem path (wrapped in a
+  /// `dart:io File`); web picks yield blob bytes read eagerly before the URL
+  /// is revoked. Either way the image is handed to the Vine crop editor, and
+  /// the resulting cropped PNG bytes are uploaded via
+  /// `BlossomUploadService.uploadImageBytes`. The crop re-encode bounds the
+  /// output dimensions and drops the original EXIF.
   Future<void> _pickImage(ImageSource source) async {
     try {
       Log.info(
@@ -224,35 +221,49 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
         return;
       }
 
+      final cropLauncher = ref.read(imageCropLauncherProvider);
+      Uint8List? cropped;
       if (kIsWeb) {
         // Resolve the blob synchronously here — once we navigate away from
         // the picker the URL can be revoked.
         final bytes = await picked.readAsBytes();
         if (!mounted) return;
-        setState(() {
-          _selectedImage = null;
-          _selectedImageBytes = bytes;
-          _pictureController.clear();
-        });
-        context.read<ProfileEditorBloc>().add(
-          ProfilePictureUploadRequested(
-            pubkey: pubkey,
-            bytes: bytes,
-            filename: picked.name,
-          ),
+        cropped = await cropLauncher(
+          context,
+          kind: ImageCropKind.avatar,
+          bytes: bytes,
         );
       } else {
         if (!mounted) return;
-        final file = File(picked.path);
-        setState(() {
-          _selectedImage = file;
-          _selectedImageBytes = null;
-          _pictureController.clear();
-        });
-        context.read<ProfileEditorBloc>().add(
-          ProfilePictureUploadRequested(pubkey: pubkey, file: file),
+        cropped = await cropLauncher(
+          context,
+          kind: ImageCropKind.avatar,
+          file: File(picked.path),
         );
       }
+
+      if (cropped == null) {
+        Log.info(
+          '❌ Avatar crop cancelled',
+          name: 'ProfileSetupScreen',
+          category: LogCategory.ui,
+        );
+        return;
+      }
+      if (!mounted) return;
+
+      setState(() {
+        _selectedImageBytes = cropped;
+        _pictureController.clear();
+      });
+      context.read<ProfileEditorBloc>().add(
+        ProfilePictureUploadRequested(
+          pubkey: pubkey,
+          bytes: cropped,
+          filename: ImageCropKind.avatar.filename,
+          mimeType: ImageCropKind.avatar.mimeType,
+        ),
+      );
     } catch (e) {
       Log.error(
         'Error picking image: $e',

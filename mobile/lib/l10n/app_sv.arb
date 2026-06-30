@@ -4015,5 +4015,10 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Ta bort markerade klipp",
     "videoEditorMergeProgressLabel": "Ett ögonblick, vi slår samman dina klipp",
     "videoEditorMergeFailed": "Det gick inte att slå samman klippen. Försök igen.",
-  "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device."
+    "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
+    "imageCropEditorRotateLabel": "Rotera",
+    "imageCropEditorFlipLabel": "Vänd",
+    "imageCropEditorResetLabel": "Återställ",
+    "imageCropEditorCloseSemanticLabel": "Avbryt beskärning",
+    "imageCropEditorDoneSemanticLabel": "Använd beskärning"
 }
