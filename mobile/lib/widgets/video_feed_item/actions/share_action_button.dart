@@ -591,6 +591,13 @@ class _UnifiedShareSheetView extends StatelessWidget {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         child: SafeArea(
           child: SingleChildScrollView(
+            // Lift the content above the keyboard so the message TextField
+            // stays visible when a recipient is selected. Without this the
+            // sheet is anchored at the screen bottom and the field hides
+            // behind the keyboard. Mirrors _ClipTitleSheet below.
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.viewInsetsOf(context).bottom,
+            ),
             child: BlocBuilder<ShareSheetBloc, ShareSheetState>(
               builder: (context, state) {
                 final bloc = context.read<ShareSheetBloc>();

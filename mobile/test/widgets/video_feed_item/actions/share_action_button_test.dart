@@ -4,10 +4,12 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/share_sheet/share_sheet_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/video_sharing_service.dart';
@@ -305,6 +307,67 @@ void main() {
         expect(find.text('Save to Gallery'), findsOneWidget);
         expect(find.text('Save with Watermark'), findsOneWidget);
       });
+
+      testWidgets(
+        'lifts message field above the keyboard when a recipient is selected',
+        (tester) async {
+          // Tall surface + dpr 1 so the short sheet stays bottom-anchored and
+          // logical pixels equal physical pixels for the inset math.
+          tester.view.devicePixelRatio = 1.0;
+          tester.view.physicalSize = const Size(1200, 6000);
+          addTearDown(tester.view.reset);
+
+          final mockAuth = createMockAuthService();
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: Scaffold(body: ShareActionButton(video: testVideo)),
+              additionalOverrides: [
+                videoSharingServiceProvider.overrideWith(
+                  (ref) => mockVideoSharingService,
+                ),
+              ],
+              mockAuthService: mockAuth,
+              mockProfileRepository: mockProfileRepository,
+            ),
+          );
+
+          await tester.tap(find.byType(GestureDetector));
+          await tester.pumpAndSettle();
+
+          // Select a recipient so the message TextField is shown.
+          final blocContext = tester.element(find.text('Share with'));
+          blocContext.read<ShareSheetBloc>().add(
+            const ShareSheetRecipientSelected(
+              ShareableUser(
+                pubkey:
+                    'fedcba9876543210fedcba9876543210'
+                    'fedcba9876543210fedcba9876543210',
+                displayName: 'Alice',
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(find.byType(TextField), findsOneWidget);
+
+          // Simulate the keyboard opening.
+          const keyboardHeight = 320.0;
+          tester.view.viewInsets = const FakeViewPadding(
+            bottom: keyboardHeight,
+          );
+          await tester.pumpAndSettle();
+
+          final logicalHeight =
+              tester.view.physicalSize.height / tester.view.devicePixelRatio;
+          final keyboardTop = logicalHeight - keyboardHeight;
+
+          // The field must sit above the keyboard, not behind it.
+          expect(
+            tester.getBottomLeft(find.byType(TextField)).dy,
+            lessThanOrEqualTo(keyboardTop),
+          );
+        },
+      );
     });
   });
 }
