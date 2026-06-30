@@ -17,7 +17,6 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/app_router.dart';
@@ -959,7 +958,7 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
           previous.status != current.status && current.isAgeRestricted,
       listener: (context, state) {
         unawaited(
-          _autoRetryAgeRestrictedPooledVideo(
+          autoRetryAgeRestrictedPooledVideo(
             context: context,
             ref: ref,
             video: video,
@@ -1020,61 +1019,5 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
             },
           ),
     );
-  }
-}
-
-Future<void> _autoRetryAgeRestrictedPooledVideo({
-  required BuildContext context,
-  required WidgetRef ref,
-  required VideoEvent video,
-  required int index,
-  required FutureOr<bool> Function(Map<String, String>) retryPlayback,
-}) async {
-  final videoUrl = video.videoUrl;
-  if (videoUrl == null || videoUrl.isEmpty) return;
-
-  final sha256 = VideoModerationStatusService.resolveSha256(
-    explicitSha256: video.sha256,
-    videoUrl: videoUrl,
-  );
-  if (sha256 == null) return;
-
-  final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
-  if (playbackStatusCubit.state.isVerifying(video.id)) return;
-
-  playbackStatusCubit.markVerifying(video.id);
-  try {
-    final authResult = await ref
-        .read(mediaAuthInterceptorProvider)
-        .createAutoAuthHeadersForAdultMedia(
-          sha256Hash: sha256,
-          url: videoUrl,
-          serverUrl: _extractServerUrl(videoUrl),
-        );
-    if (!context.mounted) return;
-
-    switch (authResult) {
-      case ViewerAuthAuthorized(:final headers):
-        final playbackSucceeded = await retryPlayback(headers);
-        if (!context.mounted || !playbackSucceeded) return;
-        playbackStatusCubit.report(video.id, PlaybackStatus.ready);
-      case ViewerAuthSignerUnreachable():
-      case ViewerAuthUnavailable():
-        break;
-    }
-  } finally {
-    if (!playbackStatusCubit.isClosed) {
-      playbackStatusCubit.clearVerifying(video.id);
-    }
-  }
-}
-
-String? _extractServerUrl(String videoUrl) {
-  try {
-    final uri = Uri.parse(videoUrl);
-    final portSuffix = uri.hasPort ? ':${uri.port}' : '';
-    return '${uri.scheme}://${uri.host}$portSuffix';
-  } catch (_) {
-    return null;
   }
 }

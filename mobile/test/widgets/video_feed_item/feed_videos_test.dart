@@ -420,6 +420,9 @@ void main() {
         );
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();
         when(
+          () => mediaAuthInterceptor.canAutoAuthorizeAdultMedia,
+        ).thenReturn(true);
+        when(
           () => mediaAuthInterceptor.createAutoAuthHeadersForAdultMedia(
             sha256Hash: any(named: 'sha256Hash'),
             url: any(named: 'url'),
@@ -446,6 +449,54 @@ void main() {
             serverUrl: 'https://media.divine.video',
           ),
         ).called(1);
+      },
+    );
+
+    testWidgets(
+      'does not mark verifying for age-restricted loading media when '
+      'preferences do not allow auto-show',
+      (tester) async {
+        const sha256 =
+            '8ad13ea11bed00b086a4c93d1bbc43f85953cf05f7715bfb16200663b6e3c0ac';
+        final video = _makeVideo(
+          videoUrl: 'https://media.divine.video/$sha256',
+          sha256: sha256,
+        );
+        final moderationService = _MockVideoModerationStatusService();
+        when(() => moderationService.fetchStatus(sha256)).thenAnswer(
+          (_) async => const VideoModerationStatus(
+            moderated: true,
+            blocked: false,
+            quarantined: false,
+            ageRestricted: true,
+            needsReview: false,
+            aiGenerated: false,
+          ),
+        );
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        when(
+          () => mediaAuthInterceptor.canAutoAuthorizeAdultMedia,
+        ).thenReturn(false);
+        final playbackStatusCubit = _MockVideoPlaybackStatusCubit()
+          ..stub(PlaybackStatus.ready, video.id);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          moderationService: moderationService,
+          mediaAuthInterceptor: mediaAuthInterceptor,
+          videoPlaybackStatusCubit: playbackStatusCubit,
+        );
+        await tester.pump();
+
+        verifyNever(() => playbackStatusCubit.markVerifying(video.id));
+        verifyNever(
+          () => mediaAuthInterceptor.createAutoAuthHeadersForAdultMedia(
+            sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        );
       },
     );
   });

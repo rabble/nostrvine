@@ -10,6 +10,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 const _logName = 'PooledAgeRestrictedRetry';
@@ -41,8 +42,8 @@ Future<void> retryAgeRestrictedPooledVideo({
   }
   playbackStatusCubit.markVerifying(video.id);
   try {
-    final videoUrl = video.videoUrl;
-    if (videoUrl == null || videoUrl.isEmpty) {
+    final retryInput = _resolveRetryInput(video);
+    if (retryInput == null) {
       Log.warning(
         'Skipping age-restricted retry: missing videoUrl for event '
         '${video.id}',
@@ -58,8 +59,7 @@ Future<void> retryAgeRestrictedPooledVideo({
     // to every resolved source. Without a sha256 the auth path falls back to
     // URL-bound NIP-98, which would only authenticate the bare event URL and
     // re-401 on the optimized/HLS variants — refuse the retry instead.
-    final sha256Hash = _resolveSha256(video);
-    if (sha256Hash == null) {
+    if (retryInput.sha256 == null) {
       Log.warning(
         'Skipping age-restricted retry: cannot resolve sha256 for event '
         '${video.id}',
@@ -74,9 +74,9 @@ Future<void> retryAgeRestrictedPooledVideo({
         .read(mediaAuthInterceptorProvider)
         .handleUnauthorizedMedia(
           context: context,
-          sha256Hash: sha256Hash,
-          url: videoUrl,
-          serverUrl: _extractServerUrl(videoUrl),
+          sha256Hash: retryInput.sha256,
+          url: retryInput.videoUrl,
+          serverUrl: retryInput.serverUrl,
           category: 'video',
         );
     if (!context.mounted) return;
@@ -115,6 +115,50 @@ Future<void> retryAgeRestrictedPooledVideo({
   }
 }
 
+/// Silently retries pooled age-restricted playback when the viewer's existing
+/// preferences already allow adult media to play without prompting.
+Future<void> autoRetryAgeRestrictedPooledVideo({
+  required BuildContext context,
+  required WidgetRef ref,
+  required VideoEvent video,
+  required int index,
+  required FutureOr<bool> Function(Map<String, String>) retryPlayback,
+}) async {
+  final mediaAuthInterceptor = ref.read(mediaAuthInterceptorProvider);
+  if (!mediaAuthInterceptor.canAutoAuthorizeAdultMedia) return;
+
+  final retryInput = _resolveRetryInput(video);
+  if (retryInput == null || retryInput.sha256 == null) return;
+
+  final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
+  if (playbackStatusCubit.state.isVerifying(video.id)) return;
+
+  playbackStatusCubit.markVerifying(video.id);
+  try {
+    final authResult = await mediaAuthInterceptor
+        .createAutoAuthHeadersForAdultMedia(
+          sha256Hash: retryInput.sha256,
+          url: retryInput.videoUrl,
+          serverUrl: retryInput.serverUrl,
+        );
+    if (!context.mounted) return;
+
+    switch (authResult) {
+      case ViewerAuthAuthorized(:final headers):
+        final playbackSucceeded = await retryPlayback(headers);
+        if (!context.mounted || !playbackSucceeded) return;
+        playbackStatusCubit.report(video.id, PlaybackStatus.ready);
+      case ViewerAuthSignerUnreachable():
+      case ViewerAuthUnavailable():
+        break;
+    }
+  } finally {
+    if (!playbackStatusCubit.isClosed) {
+      playbackStatusCubit.clearVerifying(video.id);
+    }
+  }
+}
+
 /// Surfaces a localized failure so a tapped "Verify age" button is never a
 /// silent no-op when verification can't complete.
 void _showVerifyAgeFailed(BuildContext context) {
@@ -136,35 +180,20 @@ void _showSignerUnreachable(BuildContext context) {
   );
 }
 
-String? _resolveSha256(VideoEvent video) {
-  final sha256 = video.sha256;
-  if (sha256 != null && sha256.isNotEmpty) {
-    return sha256;
-  }
-
+_PooledRetryInput? _resolveRetryInput(VideoEvent video) {
   final videoUrl = video.videoUrl;
   if (videoUrl == null || videoUrl.isEmpty) {
     return null;
   }
 
-  return _extractSha256FromUrl(videoUrl);
-}
-
-String? _extractSha256FromUrl(String url) {
-  try {
-    final uri = Uri.parse(url);
-    for (final segment in uri.pathSegments.reversed) {
-      final cleanSegment = segment.split('.').first;
-      if (cleanSegment.length == 64 &&
-          RegExp(r'^[a-fA-F0-9]+$').hasMatch(cleanSegment)) {
-        return cleanSegment.toLowerCase();
-      }
-    }
-  } catch (_) {
-    return null;
-  }
-
-  return null;
+  return _PooledRetryInput(
+    videoUrl: videoUrl,
+    sha256: VideoModerationStatusService.resolveSha256(
+      explicitSha256: video.sha256,
+      videoUrl: videoUrl,
+    ),
+    serverUrl: _extractServerUrl(videoUrl),
+  );
 }
 
 String? _extractServerUrl(String videoUrl) {
@@ -175,4 +204,16 @@ String? _extractServerUrl(String videoUrl) {
   } catch (_) {
     return null;
   }
+}
+
+class _PooledRetryInput {
+  const _PooledRetryInput({
+    required this.videoUrl,
+    required this.sha256,
+    required this.serverUrl,
+  });
+
+  final String videoUrl;
+  final String? sha256;
+  final String? serverUrl;
 }

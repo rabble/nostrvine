@@ -22,6 +22,11 @@ class MediaAuthInterceptor {
   final ContentFilterService _contentFilterService;
   final MediaViewerAuthService _mediaViewerAuthService;
 
+  bool get canAutoAuthorizeAdultMedia =>
+      _ageVerificationService.isAdultContentVerified &&
+      _contentFilterService.adultPlaybackPreference ==
+          ContentFilterPreference.show;
+
   /// Creates viewer-auth headers only when the user's existing adult-content
   /// preferences allow automatic playback.
   ///
@@ -34,11 +39,7 @@ class MediaAuthInterceptor {
     String? serverUrl,
   }) async {
     try {
-      final isAdultContentVerified =
-          _ageVerificationService.isAdultContentVerified;
-      final playbackPreference = _contentFilterService.adultPlaybackPreference;
-      if (!isAdultContentVerified ||
-          playbackPreference != ContentFilterPreference.show) {
+      if (!canAutoAuthorizeAdultMedia) {
         return const ViewerAuthUnavailable();
       }
 
@@ -102,8 +103,7 @@ class MediaAuthInterceptor {
 
       // Auto-create auth headers only when the user is already verified and
       // every adult category is configured to show.
-      if (isAdultContentVerified &&
-          playbackPreference == ContentFilterPreference.show) {
+      if (canAutoAuthorizeAdultMedia) {
         Log.debug(
           '✅ Auto-showing adult content (user preference: always show)',
           name: 'MediaAuthInterceptor',

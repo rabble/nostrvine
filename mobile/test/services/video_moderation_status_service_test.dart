@@ -83,6 +83,20 @@ void main() {
       );
     });
 
+    test('extracts the blob hash before later variant path hashes', () {
+      const blobHash =
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      const variantHash =
+          'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+
+      expect(
+        VideoModerationStatusService.extractSha256FromVideoUrl(
+          'https://media.divine.video/$blobHash/$variantHash/720p.mp4',
+        ),
+        blobHash,
+      );
+    });
+
     test('checks moderation only for known hosts', () {
       expect(
         VideoModerationStatusService.shouldCheckModeration(
