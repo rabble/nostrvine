@@ -1,20 +1,15 @@
 // ABOUTME: Action buttons widget for profile page (library, share, follow)
 // ABOUTME: Shows different buttons for own profile vs other user profiles
 
-import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:models/models.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
-import 'package:openvine/features/monetization/monetization_analytics.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/widgets/profile/follow_from_profile_button.dart';
-import 'package:openvine/widgets/profile/profile_support_sheet.dart';
 
 /// Action buttons shown on profile page.
 ///
@@ -35,7 +30,6 @@ class ProfileActionButtons extends ConsumerWidget {
     this.onMessageUser,
     this.onShareProfile,
     this.onBlockedTap,
-    this.monetizationLinks = const [],
     super.key,
   });
 
@@ -48,17 +42,15 @@ class ProfileActionButtons extends ConsumerWidget {
   final VoidCallback? onOpenClips;
   final VoidCallback? onMessageUser;
   final void Function(BuildContext context)? onShareProfile;
-  final List<MonetizationLink> monetizationLinks;
 
   /// Callback when the Blocked button is tapped.
   final VoidCallback? onBlockedTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final analytics = ref.watch(analyticsEventSinkProvider);
     if (isOwnProfile) {
       return _ActionButtonsRow(
-        children: _buildOwnProfileButtons(context, analytics),
+        children: _buildOwnProfileButtons(context),
       );
     }
 
@@ -90,17 +82,11 @@ class ProfileActionButtons extends ConsumerWidget {
         onMessageUser: onMessageUser,
         onShareProfile: onShareProfile,
         onBlockedTap: onBlockedTap,
-        monetizationLinks: monetizationLinks,
-        analytics: analytics,
       ),
     );
   }
 
-  List<Widget> _buildOwnProfileButtons(
-    BuildContext context,
-    AnalyticsEventSink analytics,
-  ) {
-    final supportButton = _supportButton(context, monetizationLinks, analytics);
+  List<Widget> _buildOwnProfileButtons(BuildContext context) {
     return [
       Expanded(
         child: DivineButton(
@@ -119,7 +105,6 @@ class ProfileActionButtons extends ConsumerWidget {
         size: .small,
         onPressed: onEditProfile,
       ),
-      ?supportButton,
       DivineIconButton(
         icon: .shareFat,
         type: .secondary,
@@ -161,8 +146,6 @@ class _OtherProfileButtons extends StatelessWidget {
     required this.onMessageUser,
     required this.onShareProfile,
     required this.onBlockedTap,
-    required this.monetizationLinks,
-    required this.analytics,
   });
 
   final String userIdHex;
@@ -178,8 +161,6 @@ class _OtherProfileButtons extends StatelessWidget {
   final VoidCallback? onMessageUser;
   final void Function(BuildContext context)? onShareProfile;
   final VoidCallback? onBlockedTap;
-  final List<MonetizationLink> monetizationLinks;
-  final AnalyticsEventSink analytics;
 
   @override
   Widget build(BuildContext context) {
@@ -204,12 +185,6 @@ class _OtherProfileButtons extends StatelessWidget {
               ? null
               : () => onShareProfile!(context),
         );
-        final supportButton = _supportButton(
-          context,
-          monetizationLinks,
-          analytics,
-        );
-
         final List<Widget> children;
 
         if (isFollowing) {
@@ -229,7 +204,6 @@ class _OtherProfileButtons extends StatelessWidget {
               followButton,
             ] else
               const Spacer(),
-            ?supportButton,
             shareButton,
           ];
         } else {
@@ -246,7 +220,6 @@ class _OtherProfileButtons extends StatelessWidget {
               ),
             ] else
               const Spacer(),
-            ?supportButton,
             shareButton,
           ];
         }
@@ -255,30 +228,4 @@ class _OtherProfileButtons extends StatelessWidget {
       },
     );
   }
-}
-
-Widget? _supportButton(
-  BuildContext context,
-  List<MonetizationLink> links,
-  AnalyticsEventSink analytics,
-) {
-  if (links.isEmpty) return null;
-  return Flexible(
-    child: DivineButton(
-      key: const Key('profile-support-button'),
-      leadingIcon: .heart,
-      type: .secondary,
-      size: .small,
-      expanded: true,
-      label: context.l10n.profileSupportSheetTitle,
-      onPressed: () {
-        trackMonetizationAffordanceTapped(analytics: analytics, links: links);
-        showProfileSupportSheet(
-          context: context,
-          links: links,
-          analytics: analytics,
-        );
-      },
-    ),
-  );
 }

@@ -5827,5 +5827,9 @@
   "profileSupportSubscriptionSection": "Subscribe / support",
   "@profileSupportSubscriptionSection": {
     "description": "Section header for subscription links in the profile support sheet."
+  },
+  "profileSupportButtonLabel": "Support",
+  "@profileSupportButtonLabel": {
+    "description": "Compact button label on a profile that opens creator support links."
   }
 }

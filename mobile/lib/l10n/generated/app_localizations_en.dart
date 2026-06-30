@@ -9523,4 +9523,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileSupportSubscriptionSection => 'Subscribe / support';
+
+  @override
+  String get profileSupportButtonLabel => 'Support';
 }

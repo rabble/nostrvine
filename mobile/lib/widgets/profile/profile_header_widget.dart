@@ -12,8 +12,10 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
+import 'package:openvine/features/monetization/monetization_analytics.dart';
 import 'package:openvine/features/people_lists/view/people_list_membership_indicator.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -33,6 +35,7 @@ import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
+import 'package:openvine/widgets/profile/profile_support_sheet.dart';
 import 'package:openvine/widgets/profile/profile_website_row.dart';
 import 'package:openvine/widgets/profile/verified_accounts_row.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -358,6 +361,9 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
               ],
             ),
           ),
+          _ProfileSupportButton(
+            links: effectiveProfile?.enabledMonetizationLinks ?? const [],
+          ),
           if (!widget.isOwnProfile) ...[
             PeopleListMembershipIndicator(pubkey: widget.userIdHex),
             const SizedBox(height: 16),
@@ -383,8 +389,6 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
             onMessageUser: widget.onMessageUser,
             onShareProfile: widget.onShareProfile,
             onBlockedTap: widget.onBlockedTap,
-            monetizationLinks:
-                effectiveProfile?.enabledMonetizationLinks ?? const [],
           ),
         ],
       ),
@@ -467,6 +471,42 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
       scrollable: false,
       showHeaderDivider: false,
       body: ProfileActionsSheetContent(actions: actions),
+    );
+  }
+}
+
+class _ProfileSupportButton extends ConsumerWidget {
+  const _ProfileSupportButton({required this.links});
+
+  final List<MonetizationLink> links;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (links.isEmpty) return const SizedBox.shrink();
+
+    final analytics = ref.watch(analyticsEventSinkProvider);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Align(
+        child: DivineButton(
+          key: const Key('profile-support-button'),
+          leadingIcon: .heart,
+          type: .secondary,
+          size: .tiny,
+          label: context.l10n.profileSupportButtonLabel,
+          onPressed: () {
+            trackMonetizationAffordanceTapped(
+              analytics: analytics,
+              links: links,
+            );
+            showProfileSupportSheet(
+              context: context,
+              links: links,
+              analytics: analytics,
+            );
+          },
+        ),
+      ),
     );
   }
 }

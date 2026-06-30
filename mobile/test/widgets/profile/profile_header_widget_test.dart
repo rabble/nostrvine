@@ -788,6 +788,7 @@ void main() {
     ) async {
       final creatorProfile = createTestProfile(
         displayName: 'Creator',
+        about: 'Creator bio',
         rawData: {
           divineMonetizationLinksKey: [
             const MonetizationLink(
@@ -810,6 +811,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('profile-support-button')), findsOneWidget);
+      expect(find.text('Support'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Support')).dy,
+        greaterThan(tester.getBottomLeft(find.text('Creator bio')).dy),
+      );
+      expect(
+        tester.getTopLeft(find.text('Support')).dy,
+        lessThan(tester.getTopLeft(find.text('Likes')).dy),
+      );
     });
 
     testWidgets('displays stats from ProfileStats when provided', (

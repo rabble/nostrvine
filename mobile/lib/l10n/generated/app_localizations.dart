@@ -16521,6 +16521,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Subscribe / support'**
   String get profileSupportSubscriptionSection;
+
+  /// Compact button label on a profile that opens creator support links.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get profileSupportButtonLabel;
 }
 
 class _AppLocalizationsDelegate
