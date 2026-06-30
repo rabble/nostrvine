@@ -109,37 +109,24 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           .where((pk) => !recentPubkeys.contains(pk))
           .toList();
 
-      // Batch-fetch uncached profiles
-      final allPubkeys = [...recentPubkeys, ...remainingFollows];
-      final cachedChecks = await Future.wait(
-        allPubkeys.map((pk) => _profileRepository.getCachedProfile(pubkey: pk)),
+      // One batched read (cache + bulk REST + relays, in the repository)
+      // instead of a per-pubkey DB/network storm fired on sheet open. The
+      // repository owns the source-selection strategy. Recents already carry
+      // their display data, so only the remaining follows need profiles.
+      // See #5391.
+      final profiles = await _profileRepository.fetchBatchProfiles(
+        pubkeys: remainingFollows,
       );
-      final uncached = <String>[];
-      for (var i = 0; i < allPubkeys.length; i++) {
-        if (cachedChecks[i] == null) uncached.add(allPubkeys[i]);
-      }
-      if (uncached.isNotEmpty) {
-        await Future.wait(
-          uncached.map(
-            (pk) => _profileRepository.fetchFreshProfile(pubkey: pk),
-          ),
-        );
-      }
 
-      final contacts = <ShareableUser>[...recentUsers];
-
-      for (final pubkey in remainingFollows) {
-        final profile = await _profileRepository.getCachedProfile(
-          pubkey: pubkey,
-        );
-        contacts.add(
+      final contacts = <ShareableUser>[
+        ...recentUsers,
+        for (final pubkey in remainingFollows)
           ShareableUser(
             pubkey: pubkey,
-            displayName: profile?.bestDisplayName,
-            picture: profile?.picture,
+            displayName: profiles[pubkey]?.bestDisplayName,
+            picture: profiles[pubkey]?.picture,
           ),
-        );
-      }
+      ];
 
       emit(
         state.copyWith(
