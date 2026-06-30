@@ -24,7 +24,6 @@ identity_manager_service
 immediate_completion_helper # noise: helper
 js_stub # noise: web/io shim
 js_util_stub # noise: web/io shim
-native_proofmode_service
 nip05_verification_service
 nip07_interop # noise: web/io conditional-import
 nip07_interop_stub # noise: web/io shim

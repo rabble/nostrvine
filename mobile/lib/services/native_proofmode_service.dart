@@ -98,9 +98,10 @@ class NativeProofModeService {
         // Read proof metadata from native library
         final metadata = await NativeProofModeService.readProofMetadata(
           proofHash,
+          warnIfMissing: false,
         );
         if (metadata == null) {
-          Log.warning(
+          Log.debug(
             '🔐 Could not read native proof metadata',
             name: 'VideoRecorderProofService',
             category: .video,
@@ -388,25 +389,24 @@ class NativeProofModeService {
   /// - 'hash': SHA256 hash of media file
   /// - 'timestamp': Timestamp data
   static Future<Map<String, String>?> readProofMetadata(
-    String proofHash,
-  ) async {
+    String proofHash, {
+    bool warnIfMissing = true,
+  }) async {
     try {
       final proofDir = await getProofDir(proofHash);
       if (proofDir == null) {
-        Log.warning(
+        _logMissingProofMetadata(
           '🔐 No proof directory found for hash: $proofHash',
-          name: 'NativeProofMode',
-          category: LogCategory.system,
+          warnIfMissing: warnIfMissing,
         );
         return null;
       }
 
       final dir = Directory(proofDir);
       if (!dir.existsSync()) {
-        Log.warning(
+        _logMissingProofMetadata(
           '🔐 Proof directory does not exist: $proofDir',
-          name: 'NativeProofMode',
-          category: LogCategory.system,
+          warnIfMissing: warnIfMissing,
         );
         return null;
       }
@@ -474,6 +474,22 @@ class NativeProofModeService {
       );
       return null;
     }
+  }
+
+  static void _logMissingProofMetadata(
+    String message, {
+    required bool warnIfMissing,
+  }) {
+    if (warnIfMissing) {
+      Log.warning(
+        message,
+        name: 'NativeProofMode',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    Log.debug(message, name: 'NativeProofMode', category: LogCategory.system);
   }
 
   /// Check if native ProofMode is available on this platform

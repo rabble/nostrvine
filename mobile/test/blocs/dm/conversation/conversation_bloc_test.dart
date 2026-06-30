@@ -52,6 +52,14 @@ OutgoingDm _outgoingDm({
   );
 }
 
+Future<void> _waitForConversationState(
+  ConversationBloc bloc,
+  bool Function(ConversationState state) matches,
+) async {
+  if (matches(bloc.state)) return;
+  await bloc.stream.firstWhere(matches);
+}
+
 void main() {
   // Full 64-char hex IDs per project rules
   const conversationId =
@@ -232,12 +240,15 @@ void main() {
         ],
       );
 
+      late StreamController<List<DmMessage>> messagesController;
+      late StreamController<List<OutgoingDm>> outgoingController;
+
       blocTest<ConversationBloc, ConversationState>(
         'does not re-mark read on an outgoing-queue-only tick, but does on a '
         'genuinely new message',
         setUp: () {
-          final messagesController = StreamController<List<DmMessage>>();
-          final outgoingController = StreamController<List<OutgoingDm>>();
+          messagesController = StreamController<List<DmMessage>>();
+          outgoingController = StreamController<List<OutgoingDm>>();
           when(
             () => mockDmRepository.markConversationAsRead(conversationId),
           ).thenAnswer((_) async {});
@@ -248,35 +259,63 @@ void main() {
             () => mockDmRepository.watchOutgoing(any()),
           ).thenAnswer((_) => outgoingController.stream);
 
-          Future<void>.delayed(Duration.zero).then((_) async {
-            // First message arrives: messages change -> marks read.
-            messagesController.add([testMessage]);
-            outgoingController.add(const <OutgoingDm>[]);
-            await Future<void>.delayed(const Duration(milliseconds: 10));
-            // Outgoing-queue status change only (e.g. pending -> delivered):
-            // combineLatest2 re-emits the SAME messages instance, so this tick
-            // must NOT re-mark the conversation read.
-            outgoingController.add([_outgoingDm(id: 'pending-rumor')]);
-            await Future<void>.delayed(const Duration(milliseconds: 10));
-            // A genuinely new incoming message: marks read again.
-            const secondMessage = DmMessage(
-              id: '7777777777777777777777777777777777777777777777777777777777777777',
-              conversationId: conversationId,
-              senderPubkey: recipientPubkey,
-              content: 'Reply message',
-              createdAt: 1700000100,
-              giftWrapId:
-                  '8888888888888888888888888888888888888888888888888888888888888888',
-            );
-            messagesController.add([testMessage, secondMessage]);
-            await Future<void>.delayed(const Duration(milliseconds: 10));
-            await messagesController.close();
-            await outgoingController.close();
+          addTearDown(() async {
+            if (!messagesController.isClosed) {
+              await messagesController.close();
+            }
+            if (!outgoingController.isClosed) {
+              await outgoingController.close();
+            }
           });
         },
         build: buildBloc,
-        act: (bloc) => bloc.add(const ConversationStarted()),
-        wait: const Duration(milliseconds: 80),
+        act: (bloc) async {
+          bloc.add(const ConversationStarted());
+          await untilCalled(
+            () => mockDmRepository.watchMessages(conversationId),
+          );
+
+          // First message arrives: messages change -> marks read.
+          messagesController.add([testMessage]);
+          outgoingController.add(const <OutgoingDm>[]);
+          await _waitForConversationState(
+            bloc,
+            (state) =>
+                state.status == ConversationStatus.loaded &&
+                state.messages.length == 1 &&
+                state.pendingOutgoing.isEmpty,
+          );
+
+          // Outgoing-queue status change only (e.g. pending -> delivered):
+          // combineLatest2 re-emits the SAME messages instance, so this tick
+          // must NOT re-mark the conversation read.
+          outgoingController.add([_outgoingDm(id: 'pending-rumor')]);
+          await _waitForConversationState(
+            bloc,
+            (state) =>
+                state.messages.length == 1 && state.pendingOutgoing.length == 1,
+          );
+
+          // A genuinely new incoming message: marks read again.
+          const secondMessage = DmMessage(
+            id: '7777777777777777777777777777777777777777777777777777777777777777',
+            conversationId: conversationId,
+            senderPubkey: recipientPubkey,
+            content: 'Reply message',
+            createdAt: 1700000100,
+            giftWrapId:
+                '8888888888888888888888888888888888888888888888888888888888888888',
+          );
+          messagesController.add([testMessage, secondMessage]);
+          await _waitForConversationState(
+            bloc,
+            (state) =>
+                state.messages.length == 2 && state.pendingOutgoing.length == 1,
+          );
+
+          await messagesController.close();
+          await outgoingController.close();
+        },
         verify: (bloc) {
           // The outgoing-only tick was processed (its row reached state)...
           expect(bloc.state.pendingOutgoing, hasLength(1));
