@@ -117,10 +117,12 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       // instead of a per-pubkey DB/network storm fired on sheet open. The
       // repository owns the source-selection strategy. Recents already carry
       // their display data, so only the remaining follows need profiles.
-      // See #5391.
-      final profiles = await _profileRepository.fetchBatchProfiles(
-        pubkeys: remainingFollows,
-      );
+      // Skip the call entirely when there are no follows to fetch. See #5391.
+      final profiles = remainingFollows.isEmpty
+          ? const <String, UserProfile>{}
+          : await _profileRepository.fetchBatchProfiles(
+              pubkeys: remainingFollows,
+            );
 
       final contacts = <ShareableUser>[
         ...recentUsers,

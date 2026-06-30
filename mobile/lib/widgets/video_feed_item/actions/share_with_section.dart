@@ -1,5 +1,13 @@
 part of 'share_action_button.dart';
 
+/// Placeholder rows shown (skeletonized) while the real contacts load, so the
+/// shimmer has the same avatar + name shape it dissolves into — instead of a
+/// spinner that pops. See #5391.
+final List<ShareableUser> _skeletonContacts = List.generate(
+  6,
+  (_) => const ShareableUser(pubkey: '', displayName: 'Username'),
+);
+
 // ---------------------------------------------------------------------------
 // "Share with" horizontal contact row
 // ---------------------------------------------------------------------------
@@ -28,6 +36,10 @@ class _ShareWithSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // While loading, render placeholder rows so the shimmer matches the real
+    // avatar + name layout it will dissolve into.
+    final displayContacts = contactsLoaded ? contacts : _skeletonContacts;
+
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 8),
       child: Column(
@@ -48,33 +60,48 @@ class _ShareWithSection extends StatelessWidget {
           ),
           SizedBox(
             height: _rowHeight,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              // +1 for Find People; when loading, +1 more for the spinner
-              itemCount: contactsLoaded
-                  ? contacts.length + 1
-                  : 2, // Find People + spinner
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return _FindPeopleItem(onTap: onFindPeople);
-                }
+            // Skeleton contacts shimmer, then dissolve into the real list when
+            // it loads (enableSwitchAnimation), instead of a spinner that pops.
+            child: IdentitySkeletonizer(
+              isLoading: !contactsLoaded,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                // +1 for the always-present "Find people" entry.
+                itemCount: displayContacts.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    // Keep "Find people" solid + tappable during the shimmer.
+                    return Skeleton.keep(
+                      child: _FindPeopleItem(onTap: onFindPeople),
+                    );
+                  }
 
-                if (!contactsLoaded) {
-                  return const _ContactsLoadingItem();
-                }
+                  final contact = displayContacts[index - 1];
+                  if (!contactsLoaded) {
+                    // Placeholder bone — not interactive, excluded from a11y.
+                    return ExcludeSemantics(
+                      child: _ContactItem(
+                        user: contact,
+                        isSelected: false,
+                        isSent: false,
+                        onTap: () {},
+                      ),
+                    );
+                  }
 
-                final contact = contacts[index - 1];
-                final isSelected = selectedRecipient?.pubkey == contact.pubkey;
-                final isSent = sentPubkeys.contains(contact.pubkey);
+                  final isSelected =
+                      selectedRecipient?.pubkey == contact.pubkey;
+                  final isSent = sentPubkeys.contains(contact.pubkey);
 
-                return _ContactItem(
-                  user: contact,
-                  isSelected: isSelected,
-                  isSent: isSent,
-                  onTap: () => onContactTapped(contact),
-                );
-              },
+                  return _ContactItem(
+                    user: contact,
+                    isSelected: isSelected,
+                    isSent: isSent,
+                    onTap: () => onContactTapped(contact),
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -129,28 +156,6 @@ class _FindPeopleItem extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Shown in the contacts row while contacts are still loading.
-class _ContactsLoadingItem extends StatelessWidget {
-  const _ContactsLoadingItem();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      width: _ShareWithSection._itemWidth,
-      child: Center(
-        child: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: VineTheme.vineGreen,
           ),
         ),
       ),

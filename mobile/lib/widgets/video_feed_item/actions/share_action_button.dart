@@ -38,6 +38,7 @@ import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'share_sheet_header.dart';
@@ -215,12 +216,16 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
           ),
         );
       case ShareSheetSendFailure():
-        messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            context.l10n.shareFailedToSend,
-            error: true,
-          ),
-        );
+        // Replace the optimistic "shared with" toast with the failure so the
+        // two don't stack when a quick-send is rolled back.
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              context.l10n.shareFailedToSend,
+              error: true,
+            ),
+          );
       case ShareSheetSaveResult(
         :final succeeded,
         :final removed,
