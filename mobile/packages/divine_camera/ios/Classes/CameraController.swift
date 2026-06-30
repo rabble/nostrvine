@@ -73,10 +73,12 @@ class CameraController: NSObject {
 
     /// Re-asserts the owning (UI) engine's diagnostics sink before emitting
     /// native-only diagnostics that fire without a method call — the
-    /// audio-session interruption observer and the sample-buffer delegate's
-    /// first-frame / writer-start breadcrumbs. iOS has no Activity-attachment
-    /// lifecycle to bind sink ownership to, so this keeps a background engine
-    /// that registered the plugin from stealing these UI-only events. See #5128.
+    /// audio-session interruption observer, the sample-buffer delegate's
+    /// first-frame / writer-start breadcrumbs, the frame watchdog and
+    /// init-timeout timers, and the max-duration auto-stop's recording-
+    /// finalization breadcrumbs. iOS has no Activity-attachment lifecycle to
+    /// bind sink ownership to, so this keeps a background engine that
+    /// registered the plugin from stealing these UI-only events. See #5128.
     private let reclaimLogSink: (() -> Void)?
 
     private var textureId: Int64 = -1
@@ -863,7 +865,11 @@ class CameraController: NSObject {
         // until it's restarted. This watchdog detects this condition and restarts the session.
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             guard let self = self else { return }
-            
+
+            // Native-only event (watchdog timer, no method call): reclaim the
+            // UI engine's diagnostics sink before the watchdog breadcrumbs.
+            self.reclaimLogSink?()
+
             self.pixelBufferLock.lock()
             let hasReceivedFrames = self.pixelBufferRef != nil
             self.pixelBufferLock.unlock()
@@ -909,6 +915,10 @@ class CameraController: NSObject {
         // Set a timeout in case frames don't arrive (fallback to complete anyway)
         DispatchQueue.main.async { [weak self] in
             self?.initializationTimeoutTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+                // Native-only entry (init-timeout timer, no method call): the
+                // first-frame caller reclaims at captureOutput, but the
+                // once-only guard means that never runs on the timeout path.
+                self?.reclaimLogSink?()
                 self?.completeInitializationIfNeeded(timedOut: true)
             }
         }
@@ -2219,7 +2229,14 @@ class CameraController: NSObject {
     /// Automatically stops recording when max duration is reached.
     private func autoStopRecording() {
         guard isRecording else { return }
-        
+
+        // Native-only entry (max-duration timer, no method call): reclaim the
+        // UI engine's diagnostics sink so the downstream recording-finalization
+        // breadcrumbs — including the #4779 "WITHOUT audio track" warning — are
+        // forwarded to the UI isolate. The sink is a process-wide singleton, so
+        // reclaiming here holds through the async finishWriting completion.
+        reclaimLogSink?()
+
         maxDurationTimer?.invalidate()
         maxDurationTimer = nil
         

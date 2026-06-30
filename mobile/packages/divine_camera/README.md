@@ -40,13 +40,18 @@ Ownership is bound to the UI lifecycle as closely as each platform allows:
 - **iOS** — `FlutterPlugin` has no Activity-attachment lifecycle, so the sink is
   re-asserted at every UI-bound entry point: each method call, plus the
   native-only callbacks that fire without one — the volume/Bluetooth and
-  suppression-timer callbacks (`VolumeKeyHandler`) and the audio-session
-  interruption observer plus the sample-buffer delegate's first-frame /
-  writer-start breadcrumbs (`CameraController`). Those native sources only ever
-  exist on the UI engine.
-- **macOS** — no remote-record / volume-key path and no audio-session
-  interruption observer, so there are no UI-only native camera events. Every
-  diagnostic is emitted inside a method call that already re-asserts the sink.
+  suppression-timer callbacks (`VolumeKeyHandler`) and, in `CameraController`,
+  the audio-session interruption observer, the sample-buffer delegate's
+  first-frame / writer-start breadcrumbs, the frame watchdog and init-timeout
+  timers, and the max-duration auto-stop's recording-finalization breadcrumbs
+  (including the #4779 "WITHOUT audio track" warning). Those native sources only
+  ever exist on the UI engine.
+- **macOS** — no native-only reclaim is needed, but not because every diagnostic
+  is method-driven (the init-timeout and max-duration auto-stop timers do emit
+  outside a method call). The reason is that desktop has no background
+  `FlutterEngine` (no FCM isolate) that could register the plugin and steal the
+  sink, so a single engine owns it from `register()` and re-asserting on each
+  method call is enough.
 
 Teardown is always ownership-guarded: a plugin instance only clears the sink
 when it still points at that instance, so one engine cannot silence another's

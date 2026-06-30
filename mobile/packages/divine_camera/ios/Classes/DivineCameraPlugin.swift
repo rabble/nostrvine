@@ -143,10 +143,13 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     /// at registration time. Instead the sink is re-asserted at every UI-bound
     /// entry point: each method call (`handle`), and — for events that fire
     /// without a method call — the native volume/Bluetooth and suppression-timer
-    /// callbacks (`VolumeKeyHandler`) and the audio-session interruption observer
-    /// plus the sample-buffer delegate's first-frame / writer-start breadcrumbs
-    /// (`CameraController`). Those native sources only ever exist on the UI
-    /// engine, so a background engine can't own these UI-only events. See #5128.
+    /// callbacks (`VolumeKeyHandler`) and, in `CameraController`, the audio-
+    /// session interruption observer, the sample-buffer delegate's first-frame /
+    /// writer-start breadcrumbs, the frame watchdog and init-timeout timers, and
+    /// the max-duration auto-stop's recording-finalization breadcrumbs (the
+    /// #4779 "WITHOUT audio track" warning). Those native sources only ever
+    /// exist on the UI engine, so a background engine can't own these UI-only
+    /// events. See #5128.
     private lazy var logSink: (String, String, String) -> Void = {
         [weak self] level, message, name in
         DispatchQueue.main.async {

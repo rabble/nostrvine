@@ -65,17 +65,19 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     }
 
     /// Per-instance forwarder pushing native diagnostics over THIS engine's
-    /// channel. `DivineCameraLog.shared.sink` is a process-wide singleton, so a
-    /// second FlutterEngine that registers the plugin would otherwise overwrite
-    /// it and route camera logs to the wrong isolate. We re-assert it in
-    /// `handle` — camera calls only ever reach the UI engine.
+    /// channel. `DivineCameraLog.shared.sink` is a process-wide singleton. We
+    /// re-assert it in `handle` — camera calls only ever reach the UI engine.
     ///
-    /// macOS has no UI-only native camera events to reclaim around: it exposes
-    /// no remote-record / volume-key path and registers no audio-session
-    /// interruption observer, so every diagnostic is emitted inside a method
-    /// call that already re-asserts the sink. (Android binds ownership to the
-    /// Activity lifecycle; iOS additionally reclaims in its native volume and
-    /// interruption callbacks.) See #5128.
+    /// macOS does emit some diagnostics from native-only timer callbacks (the
+    /// init-timeout and max-duration auto-stop timers fire without a method
+    /// call), so it is not structurally exempt the way "every diagnostic is
+    /// method-driven" would imply. The reason no native-only reclaim is needed
+    /// here is that desktop has no background `FlutterEngine` (no FCM isolate)
+    /// that could register the plugin and steal the sink — effectively one
+    /// engine owns it from `register()`, so re-asserting on each method call is
+    /// sufficient. (Android binds ownership to the Activity lifecycle; iOS
+    /// reclaims in its native callbacks because the background-engine steal
+    /// scenario does apply on mobile.) See #5128.
     private lazy var logSink: (String, String, String) -> Void = {
         [weak self] level, message, name in
         DispatchQueue.main.async {

@@ -178,8 +178,14 @@ internal class DivineCameraLogSinkOwnershipTest {
     fun attachingToActivity_claimsSink() {
         val plugin = DivineCameraPlugin()
         plugin.onAttachedToEngine(engineBinding())
+        // Guard the actual transition the fix introduces: engine attachment
+        // alone must NOT claim the sink (the old behavior claimed it here, so
+        // this assertion is what makes the test discriminate the fix).
+        assertNull(DivineCameraLog.sink)
+
         plugin.onAttachedToActivity(activityBinding())
 
+        // Only Activity attachment installs the sink.
         assertNotNull(DivineCameraLog.sink)
     }
 
