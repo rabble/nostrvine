@@ -18,6 +18,64 @@ import 'package:image_metadata_stripper/image_metadata_stripper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+bool _hasTransientDioSignal(DioException error) {
+  final statusCode = error.response?.statusCode;
+  if (statusCode != null && statusCode >= 500) return true;
+
+  return _hasTransientDioTransportSignal(error);
+}
+
+bool _hasTransientDioTransportSignal(DioException error) {
+  return _isTransientDioType(error.type) ||
+      _isRecoverableSocketCloseError(error);
+}
+
+bool _isTransientDioType(DioExceptionType type) {
+  return switch (type) {
+    DioExceptionType.connectionTimeout ||
+    DioExceptionType.sendTimeout ||
+    DioExceptionType.receiveTimeout ||
+    DioExceptionType.connectionError => true,
+    _ => false,
+  };
+}
+
+bool _isRecoverableSocketCloseError(DioException error) {
+  if (error.type != DioExceptionType.unknown &&
+      error.type != DioExceptionType.connectionError) {
+    return false;
+  }
+
+  final detail = _dioErrorDetail(error).toLowerCase();
+  return error.error is SocketException ||
+      detail.contains('bad file descriptor') ||
+      detail.contains('connection closed') ||
+      detail.contains('connection reset') ||
+      detail.contains('connection aborted') ||
+      detail.contains('broken pipe') ||
+      detail.contains('socket closed');
+}
+
+String _dioErrorDetail(DioException error) {
+  final parts = <String>[
+    if (error.message != null) error.message!,
+    if (error.error != null) error.error.toString(),
+  ];
+
+  final inner = error.error;
+  if (inner is HttpException) {
+    parts.add(inner.message);
+  } else if (inner is SocketException) {
+    parts
+      ..add(inner.message)
+      ..add(inner.osError?.message ?? '');
+  } else if (inner is OSError) {
+    parts.add(inner.message);
+  }
+
+  return parts.where((part) => part.isNotEmpty).join(' ');
+}
+
 /// Why a Blossom upload failed.
 ///
 /// Classification lives at the HTTP/service boundary so that callers
@@ -81,15 +139,12 @@ enum BlossomUploadFailureReason {
   ///
   /// [bad responses]: https://pub.dev/documentation/dio/latest/dio/DioExceptionType.html
   static BlossomUploadFailureReason fromDioException(DioException error) {
-    return switch (error.type) {
-      DioExceptionType.connectionTimeout ||
-      DioExceptionType.sendTimeout ||
-      DioExceptionType.receiveTimeout ||
-      DioExceptionType.connectionError => BlossomUploadFailureReason.network,
-      _ =>
-        fromStatusCode(error.response?.statusCode) ??
-            BlossomUploadFailureReason.unknown,
-    };
+    if (_hasTransientDioTransportSignal(error)) {
+      return BlossomUploadFailureReason.network;
+    }
+
+    return fromStatusCode(error.response?.statusCode) ??
+        BlossomUploadFailureReason.unknown;
   }
 }
 
@@ -213,6 +268,7 @@ class BlossomResumableUploadException implements Exception {
     this.message, {
     this.statusCode,
     this.failureReason,
+    this.isRecoverableResumableFailure = false,
   });
 
   /// The error message.
@@ -227,6 +283,15 @@ class BlossomResumableUploadException implements Exception {
   /// it apart from a missing-field/malformed-response throw. `null` lets
   /// the classifier fall back to [statusCode].
   final BlossomUploadFailureReason? failureReason;
+
+  /// Whether the session reached the resumable transfer phase and failed in a
+  /// way the caller can retry by querying/resuming that same session.
+  ///
+  /// This is deliberately separate from [failureReason]: a connection error
+  /// during `/upload/init` has no resumable state yet and can still use legacy
+  /// fallback, while the same connection error during chunk PUT should preserve
+  /// the session for resume.
+  final bool isRecoverableResumableFailure;
 
   @override
   String toString() => message;
@@ -608,31 +673,10 @@ class BlossomUploadService {
 
   /// Whether a [DioException] from a chunk PUT is safe to retry.
   /// Returns `true` for 5xx server errors and transient network issues.
-  bool _isTransientChunkError(DioException e) {
-    final statusCode = e.response?.statusCode;
-    if (statusCode != null && statusCode >= 500) return true;
+  bool _isTransientChunkError(DioException e) => _hasTransientDioSignal(e);
 
-    return switch (e.type) {
-      DioExceptionType.connectionTimeout ||
-      DioExceptionType.sendTimeout ||
-      DioExceptionType.receiveTimeout ||
-      DioExceptionType.connectionError => true,
-      _ => false,
-    };
-  }
-
-  bool _isTransientCapabilityDiscoveryError(DioException error) {
-    final statusCode = error.response?.statusCode;
-    if (statusCode != null && statusCode >= 500) return true;
-
-    return switch (error.type) {
-      DioExceptionType.connectionTimeout ||
-      DioExceptionType.sendTimeout || // coverage:ignore-line
-      DioExceptionType.receiveTimeout || // coverage:ignore-line
-      DioExceptionType.connectionError => true, // coverage:ignore-line
-      _ => false,
-    };
-  }
+  bool _isTransientCapabilityDiscoveryError(DioException error) =>
+      _hasTransientDioSignal(error);
 
   /// Whether an image-upload attempt threw a transient, retriable error.
   ///
@@ -657,16 +701,11 @@ class BlossomUploadService {
           _retriableUploadStatusCodes.contains(statusCode)) {
         return true;
       }
-      return switch (error.type) {
-        DioExceptionType.connectionTimeout ||
-        DioExceptionType.sendTimeout ||
-        DioExceptionType.receiveTimeout ||
-        DioExceptionType.connectionError => true,
-        _ => false,
-      };
+      return _hasTransientDioSignal(error);
     }
     if (error is BlossomResumableUploadException) {
-      if (error.failureReason == BlossomUploadFailureReason.authUnavailable) {
+      if (error.isRecoverableResumableFailure ||
+          error.failureReason == BlossomUploadFailureReason.authUnavailable) {
         return true;
       }
       final statusCode = error.statusCode;
@@ -862,6 +901,11 @@ class BlossomUploadService {
     }
 
     if (!isDivineOwnedHost || result.success) {
+      return result;
+    }
+
+    if (resumableError is BlossomResumableUploadException &&
+        resumableError.isRecoverableResumableFailure) {
       return result;
     }
 
@@ -1194,6 +1238,14 @@ class BlossomUploadService {
           } on DioException catch (e) {
             chunkAttempt++;
             if (chunkAttempt > _maxChunkRetries || !_isTransientChunkError(e)) {
+              if (_hasTransientDioSignal(e)) {
+                throw BlossomResumableUploadException(
+                  'Recoverable resumable upload failure: $e',
+                  statusCode: e.response?.statusCode,
+                  failureReason: BlossomUploadFailureReason.fromDioException(e),
+                  isRecoverableResumableFailure: true,
+                );
+              }
               rethrow;
             }
             Log.warning(

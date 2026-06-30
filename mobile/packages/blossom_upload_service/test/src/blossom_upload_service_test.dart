@@ -1236,6 +1236,160 @@ void main() {
         await tempDir.delete(recursive: true);
       });
 
+      test('does not fall back to legacy PUT when a resumable chunk fails '
+          'with an unknown bad file descriptor socket close', () async {
+        const testPublicKey = _testPublicKey;
+        final sessionUrl = Uri.parse(
+          'https://upload.divine.video/sessions/up_bad_fd',
+        );
+
+        expect(
+          BlossomUploadFailureReason.fromDioException(
+            DioException(
+              requestOptions: RequestOptions(path: sessionUrl.toString()),
+              error: HttpException('Bad file descriptor', uri: sessionUrl),
+            ),
+          ),
+          BlossomUploadFailureReason.network,
+        );
+
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => _signedEvent(
+            testPublicKey,
+            24242,
+            const [],
+            'Upload video to Blossom server',
+          ),
+        );
+
+        final tempDir = await Directory.systemTemp.createTemp(
+          'blossom_resumable_bad_fd_test_',
+        );
+        final videoFile = File('${tempDir.path}/video.mp4')
+          ..writeAsBytesSync(List<int>.generate(10, (index) => index + 1));
+        final sessionUpdates = <BlossomResumableUploadSession>[];
+
+        when(
+          () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+        ).thenAnswer((invocation) async {
+          final url = invocation.positionalArguments.first as String;
+          if (url == 'https://media.divine.video/upload') {
+            return Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.extensions: [
+                  DivineUploadExtensions.resumableSessions,
+                ],
+              }),
+            );
+          }
+
+          throw StateError('Unexpected HEAD url: $url');
+        });
+
+        when(
+          () => mockDio.post<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+          ),
+        ).thenAnswer((invocation) async {
+          final url = invocation.positionalArguments.first as String;
+
+          if (url == 'https://media.divine.video/upload/init') {
+            return Response(
+              requestOptions: RequestOptions(path: '/upload/init'),
+              statusCode: 200,
+              data: {
+                'uploadId': 'up_bad_fd',
+                'uploadUrl': sessionUrl.toString(),
+                'chunkSize': 5,
+                'nextOffset': 0,
+                'requiredHeaders': {'Authorization': 'Bearer session-token'},
+              },
+            );
+          }
+
+          throw StateError('Unexpected POST url: $url');
+        });
+
+        var failingChunkAttempts = 0;
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((invocation) async {
+          final url = invocation.positionalArguments.first as String;
+          final options = invocation.namedArguments[#options] as Options;
+
+          if (url == sessionUrl.toString()) {
+            final contentRange = options.headers?['Content-Range'] as String;
+            if (contentRange == 'bytes 0-4/10') {
+              return Response(
+                requestOptions: RequestOptions(path: '/sessions/up_bad_fd'),
+                statusCode: 204,
+                headers: Headers.fromMap({
+                  DivineUploadHeaders.uploadOffset: ['5'],
+                }),
+              );
+            }
+            if (contentRange == 'bytes 5-9/10') {
+              failingChunkAttempts++;
+              throw DioException(
+                requestOptions: RequestOptions(path: sessionUrl.toString()),
+                error: HttpException('Bad file descriptor', uri: sessionUrl),
+              );
+            }
+          }
+
+          throw StateError('Unexpected PUT url: $url');
+        });
+
+        final result = await service.uploadVideo(
+          videoFile: videoFile,
+          nostrPubkey: testPublicKey,
+          title: 'Recoverable Bad FD Video',
+          description: null,
+          hashtags: null,
+          proofManifestJson: null,
+          onResumableSessionUpdated: sessionUpdates.add,
+        );
+
+        expect(result.success, isFalse);
+        expect(result.failureReason, BlossomUploadFailureReason.network);
+        expect(failingChunkAttempts, equals(3));
+        expect(sessionUpdates.map((session) => session.nextOffset), [0, 5]);
+
+        verifyNever(
+          () => mockDio.put<dynamic>(
+            'https://media.divine.video/upload',
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        );
+        verifyNever(
+          () => mockDio.post<dynamic>(
+            'https://media.divine.video/upload/up_bad_fd/complete',
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+          ),
+        );
+
+        await tempDir.delete(recursive: true);
+      });
+
       test(
         'should send PUT request with raw bytes and NIP-98 auth header',
         () async {
@@ -2582,6 +2736,33 @@ void main() {
             expect(
               BlossomUploadFailureReason.fromDioException(
                 dioException(DioExceptionType.connectionError),
+              ),
+              equals(BlossomUploadFailureReason.network),
+            );
+          });
+
+          test('returns network for unknown SocketException', () {
+            expect(
+              BlossomUploadFailureReason.fromDioException(
+                DioException(
+                  requestOptions: RequestOptions(path: '/upload'),
+                  error: const SocketException(
+                    'Socket closed',
+                    osError: OSError('Broken pipe'),
+                  ),
+                ),
+              ),
+              equals(BlossomUploadFailureReason.network),
+            );
+          });
+
+          test('returns network for unknown OSError socket close detail', () {
+            expect(
+              BlossomUploadFailureReason.fromDioException(
+                DioException(
+                  requestOptions: RequestOptions(path: '/upload'),
+                  error: const OSError('Broken pipe'),
+                ),
               ),
               equals(BlossomUploadFailureReason.network),
             );

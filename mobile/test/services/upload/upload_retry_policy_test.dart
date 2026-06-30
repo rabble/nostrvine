@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for UploadRetryPolicy — covers isRetriableError,
 // ABOUTME: retryUpload, resumeInterruptedUpload, and enqueueSessionPersist.
 
+import 'dart:async';
+
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -177,10 +179,7 @@ void main() {
       });
 
       test('session expired string → false', () {
-        expect(
-          policy.isRetriableError(Exception('session expired')),
-          isFalse,
-        );
+        expect(policy.isRetriableError(Exception('session expired')), isFalse);
       });
 
       test('session is no longer available → false', () {
@@ -236,10 +235,7 @@ void main() {
       });
 
       test('"file not found" → false', () {
-        expect(
-          policy.isRetriableError(Exception('file not found')),
-          isFalse,
-        );
+        expect(policy.isRetriableError(Exception('file not found')), isFalse);
       });
 
       test('"permission denied" → false', () {
@@ -250,10 +246,7 @@ void main() {
       });
 
       test('"cancelled" → false', () {
-        expect(
-          policy.isRetriableError(Exception('upload cancelled')),
-          isFalse,
-        );
+        expect(policy.isRetriableError(Exception('upload cancelled')), isFalse);
       });
 
       test('"thumbnail upload failed" → false', () {
@@ -263,6 +256,56 @@ void main() {
         );
       });
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  group('performWithRetry', () {
+    test(
+      'drains queued session persistence before starting an attempt',
+      () async {
+        final upload = _makeUpload();
+        const session = BlossomResumableUploadSession(
+          uploadId: 'session-1',
+          uploadUrl: 'https://upload.divine.video/sessions/session-1',
+          chunkSize: 1024,
+          nextOffset: 512,
+        );
+        final persistStarted = Completer<void>();
+        final allowPersistToFinish = Completer<void>();
+
+        when(() => store.getUpload('upload-1')).thenReturn(upload);
+        when(() => store.update(any())).thenAnswer((invocation) async {
+          final updated = invocation.positionalArguments.first as PendingUpload;
+          if (updated.resumableSession != null) {
+            persistStarted.complete();
+            await allowPersistToFinish.future;
+          }
+        });
+
+        policy.enqueueSessionPersist('upload-1', session, 1024);
+
+        var executeCalled = false;
+        final retryFuture = policy.performWithRetry(upload, () async {
+          executeCalled = true;
+        }, isRetriable: (_) => false);
+
+        await persistStarted.future;
+        await Future<void>.delayed(Duration.zero);
+        expect(executeCalled, isFalse);
+
+        allowPersistToFinish.complete();
+        await retryFuture;
+
+        expect(executeCalled, isTrue);
+        final captured = verify(() => store.update(captureAny())).captured;
+        expect(captured, hasLength(2));
+        expect(
+          (captured.first as PendingUpload).resumableSession,
+          equals(session),
+        );
+        expect((captured.last as PendingUpload).status, UploadStatus.uploading);
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -440,10 +483,7 @@ void main() {
       () async {
         // createdAt defaults to 2024 (well over an hour ago) and completedAt
         // is null, so the reset window keys off createdAt and resets to 1.
-        final upload = _makeUpload(
-          status: UploadStatus.failed,
-          retryCount: 2,
-        );
+        final upload = _makeUpload(status: UploadStatus.failed, retryCount: 2);
         when(() => store.getUpload('upload-1')).thenReturn(upload);
         when(() => store.update(any())).thenAnswer((_) async {});
 

@@ -43,6 +43,7 @@ class UploadRetryPolicy {
     try {
       await AsyncUtils.retryWithBackoff(
         operation: () async {
+          await drainSessionPersist(upload.id);
           final currentUpload = _store.getUpload(upload.id) ?? upload;
 
           // autoAttempt is local to this performWithRetry invocation and is
@@ -89,7 +90,7 @@ class UploadRetryPolicy {
     int fileSizeBytes,
   ) {
     final previous = _sessionPersistFutures[uploadId] ?? Future<void>.value();
-    _sessionPersistFutures[uploadId] = previous.then((_) async {
+    final persistFuture = previous.then((_) async {
       try {
         await _storeResumableSessionProgress(uploadId, session, fileSizeBytes);
       } catch (e, s) {
@@ -102,6 +103,18 @@ class UploadRetryPolicy {
         );
       }
     });
+    _sessionPersistFutures[uploadId] = persistFuture;
+    unawaited(
+      persistFuture.whenComplete(() {
+        if (identical(_sessionPersistFutures[uploadId], persistFuture)) {
+          _sessionPersistFutures.remove(uploadId);
+        }
+      }),
+    );
+  }
+
+  Future<void> drainSessionPersist(String uploadId) async {
+    await (_sessionPersistFutures[uploadId] ?? Future<void>.value());
   }
 
   Future<void> retryUpload(
