@@ -122,7 +122,7 @@ void main() {
         );
 
         // Wait for the async generator to reach the await for loop
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Emit list events one at a time
         eventController.add(
@@ -133,7 +133,7 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         eventController.add(
           createListEvent(
@@ -143,7 +143,7 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         eventController.add(
           createListEvent(
@@ -153,7 +153,7 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Close the event controller first to complete the stream
         await eventController.close();
@@ -174,7 +174,7 @@ void main() {
         );
 
         // Wait for the async generator to reach the await for loop
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Emit a list WITH videos
         eventController.add(
@@ -185,14 +185,14 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Emit a list WITHOUT videos
         eventController.add(
           createEmptyListEvent(dTag: 'list_without_videos', name: 'Empty List'),
         );
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Emit another list WITH videos
         eventController.add(
@@ -203,7 +203,7 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Close the event controller first to complete the stream
         await eventController.close();
@@ -230,7 +230,7 @@ void main() {
             .listen((lists) => receivedLists.add(List.from(lists)));
 
         // Wait for the async generator to reach the await for loop
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Emit list1 - should be yielded
         eventController.add(
@@ -241,7 +241,7 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Emit list2 - should be SKIPPED (in excludeIds)
         eventController.add(
@@ -252,7 +252,7 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Emit list3 - should be yielded
         eventController.add(
@@ -263,7 +263,7 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Close the event controller first to complete the stream
         await eventController.close();
@@ -289,7 +289,7 @@ void main() {
         );
 
         // Wait for the async generator to reach the await for loop
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Emit older version of list1
         eventController.add(
@@ -301,7 +301,7 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Emit newer version of same list1
         eventController.add(
@@ -313,7 +313,7 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Close the event controller first to complete the stream
         await eventController.close();
@@ -346,7 +346,7 @@ void main() {
             .streamPublicListsFromRelays(limit: 200)
             .listen((_) {});
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Close the event controller first to complete the stream
         await eventController.close();
@@ -365,7 +365,7 @@ void main() {
         );
 
         // Wait for the async generator to reach the await for loop
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Emit list with 1 video
         eventController.add(
@@ -376,7 +376,7 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Emit list with 5 videos
         eventController.add(
@@ -387,7 +387,7 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Emit list with 3 videos
         eventController.add(
@@ -398,7 +398,7 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Close the event controller first to complete the stream
         await eventController.close();

@@ -9,6 +9,9 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 cd "$PROJECT_ROOT"
 
+GOLDEN_TEST_PATH="test/goldens/"
+GOLDEN_DART_DEFINE="--dart-define=DIVINE_GOLDEN_TESTS=true"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -44,11 +47,12 @@ update_goldens() {
     echo -e "${BLUE}Updating golden images...${NC}"
 
     if [ -z "$test_file" ]; then
-        echo "Running all golden tests with --update-goldens flag..."
-        flutter test --update-goldens --tags=golden || flutter test --update-goldens
+        require_golden_tests
+        echo "Running golden tests with --update-goldens flag..."
+        flutter test --no-pub "$GOLDEN_DART_DEFINE" --update-goldens "$GOLDEN_TEST_PATH"
     else
         echo "Updating goldens for: $test_file"
-        flutter test --update-goldens "$test_file"
+        flutter test --no-pub "$GOLDEN_DART_DEFINE" --update-goldens "$test_file"
     fi
 
     echo -e "${GREEN}✓ Golden images updated successfully${NC}"
@@ -60,11 +64,12 @@ verify_goldens() {
     echo -e "${BLUE}Verifying golden tests...${NC}"
 
     if [ -z "$test_file" ]; then
-        echo "Running all golden tests..."
-        flutter test --tags=golden || flutter test test/goldens/
+        require_golden_tests
+        echo "Running golden tests..."
+        flutter test --no-pub "$GOLDEN_DART_DEFINE" "$GOLDEN_TEST_PATH"
     else
         echo "Verifying: $test_file"
-        flutter test "$test_file"
+        flutter test --no-pub "$GOLDEN_DART_DEFINE" "$test_file"
     fi
 
     if [ $? -eq 0 ]; then
@@ -102,7 +107,7 @@ diff_goldens() {
 list_golden_tests() {
     echo -e "${BLUE}Golden test files:${NC}"
 
-    find test -name "*golden*.dart" -o -name "*_golden_test.dart" | sort
+    find "$GOLDEN_TEST_PATH" -name "*_test.dart" | sort
 
     echo ""
     echo -e "${BLUE}Golden image files:${NC}"
@@ -141,8 +146,8 @@ generate_golden_test() {
 ci_mode() {
     echo -e "${BLUE}Running golden tests in CI mode...${NC}"
 
-    # Run tests without updating
-    flutter test --tags=golden || flutter test test/goldens/
+    require_golden_tests
+    flutter test --no-pub "$GOLDEN_DART_DEFINE" "$GOLDEN_TEST_PATH"
 
     # Check for any uncommitted golden changes
     if git diff --exit-code test/goldens/ > /dev/null 2>&1; then
@@ -150,6 +155,14 @@ ci_mode() {
     else
         echo -e "${RED}✗ Golden images have uncommitted changes${NC}"
         git diff --stat test/goldens/
+        exit 1
+    fi
+}
+
+require_golden_tests() {
+    if ! find "$GOLDEN_TEST_PATH" -name "*_test.dart" -type f | grep -q .; then
+        echo -e "${RED}✗ No golden test files found under $GOLDEN_TEST_PATH${NC}"
+        echo -e "${YELLOW}Pass a specific golden test file or add tests under $GOLDEN_TEST_PATH.${NC}"
         exit 1
     fi
 }

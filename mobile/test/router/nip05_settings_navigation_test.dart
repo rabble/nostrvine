@@ -138,7 +138,13 @@ void main() {
       router.go(NostrSettingsScreen.path);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text(l10n.nostrSettingsNip05Address));
+      final nip05Tile = find.text(l10n.nostrSettingsNip05Address);
+      await tester.scrollUntilVisible(
+        nip05Tile,
+        250,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.tap(nip05Tile);
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.nostrSettingsNip05Address), findsWidgets);
@@ -197,7 +203,13 @@ void main() {
         router.go(NostrSettingsScreen.path);
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text(l10n.nostrSettingsNip05Address));
+        final nip05Tile = find.text(l10n.nostrSettingsNip05Address);
+        await tester.scrollUntilVisible(
+          nip05Tile,
+          250,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.tap(nip05Tile);
         await tester.pumpAndSettle();
 
         expect(find.byType(Nip05SettingsView), findsOneWidget);

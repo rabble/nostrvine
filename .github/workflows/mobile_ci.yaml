@@ -5,14 +5,73 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect App CI Scope
+    runs-on: ubuntu-24.04
+    outputs:
+      app: ${{ steps.scope.outputs.app }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Detect whether app CI is required
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
+            echo "app=true" >> "$GITHUB_OUTPUT"
+            echo "Non-PR event; running full app CI."
+            exit 0
+          fi
+
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > /tmp/mobile-ci-changed-files.txt
+          echo "Changed files:"
+          cat /tmp/mobile-ci-changed-files.txt
+
+          app=false
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/*)
+                app=true
+                ;;
+              *.md|docs/*|brand-guidelines/*|mobile/docs/*)
+                # Docs-only changes do not need the full app test matrix.
+                ;;
+              mobile/lib/*|mobile/test/*|mobile/integration_test/*|mobile/scripts/*)
+                app=true
+                ;;
+              mobile/android/*|mobile/ios/*|mobile/macos/*|mobile/web/*|mobile/assets/*|mobile/fonts/*|mobile/overrides/*|mobile/l10n/*)
+                app=true
+                ;;
+              mobile/pubspec.yaml|mobile/pubspec.lock|mobile/dart_test.yaml|mobile/analysis_options.yaml|mobile/build.yaml|mobile/l10n.yaml)
+                app=true
+                ;;
+              mobile/*)
+                app=true
+                ;;
+            esac
+          done < /tmp/mobile-ci-changed-files.txt
+
+          echo "app=$app" >> "$GITHUB_OUTPUT"
+          if [ "$app" = "true" ]; then
+            echo "App CI required."
+          else
+            echo "Package-only/docs-only change; app CI jobs may be skipped."
+          fi
+
   generated-files:
     name: Generated Files
+    needs: changes
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -124,6 +183,8 @@ jobs:
           fi
   format:
     name: Format
+    needs: changes
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -142,6 +203,8 @@ jobs:
         run: dart format --output=none --set-exit-if-changed lib test integration_test
   analyze:
     name: Analyze
+    needs: changes
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -160,6 +223,8 @@ jobs:
         run: flutter analyze lib test integration_test
   tests:
     name: Tests
+    needs: changes
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -186,6 +251,8 @@ jobs:
         run: very_good test --optimization --concurrency=4 --exclude-tags integration --test-randomize-ordering-seed random
   vgv-tag-gate:
     name: VGV Tag Gate
+    needs: changes
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -220,6 +287,7 @@ jobs:
     name: Mobile CI
     if: ${{ always() }}
     needs:
+      - changes
       - generated-files
       - format
       - analyze
@@ -234,18 +302,42 @@ jobs:
           ANALYZE_RESULT: ${{ needs.analyze.result }}
           TESTS_RESULT: ${{ needs.tests.result }}
           VGV_TAG_GATE_RESULT: ${{ needs.vgv-tag-gate.result }}
+          APP_CI_REQUIRED: ${{ needs.changes.outputs.app }}
         run: |
+          echo "app-ci-required: ${APP_CI_REQUIRED}"
           echo "generated-files: ${GENERATED_FILES_RESULT}"
           echo "format: ${FORMAT_RESULT}"
           echo "analyze: ${ANALYZE_RESULT}"
           echo "tests: ${TESTS_RESULT}"
           echo "vgv-tag-gate: ${VGV_TAG_GATE_RESULT}"
 
-          if [[ "${GENERATED_FILES_RESULT}" != "success" || \
-                "${FORMAT_RESULT}" != "success" || \
-                "${ANALYZE_RESULT}" != "success" || \
-                "${TESTS_RESULT}" != "success" || \
-                "${VGV_TAG_GATE_RESULT}" != "success" ]]; then
-            echo "One or more Mobile CI jobs failed."
+          results=(
+            "${GENERATED_FILES_RESULT}"
+            "${FORMAT_RESULT}"
+            "${ANALYZE_RESULT}"
+            "${TESTS_RESULT}"
+            "${VGV_TAG_GATE_RESULT}"
+          )
+
+          if [ "${APP_CI_REQUIRED}" = "false" ]; then
+            for result in "${results[@]}"; do
+              if [[ "${result}" != "success" && "${result}" != "skipped" ]]; then
+                echo "One or more Mobile CI jobs failed or were cancelled."
+                exit 1
+              fi
+            done
+            echo "App CI intentionally skipped for this PR."
+            exit 0
+          fi
+
+          for result in "${results[@]}"; do
+            if [ "${result}" != "success" ]; then
+              echo "One or more Mobile CI jobs failed."
+              exit 1
+            fi
+          done
+
+          if [ "${APP_CI_REQUIRED}" != "true" ]; then
+            echo "Could not determine Mobile CI scope."
             exit 1
           fi

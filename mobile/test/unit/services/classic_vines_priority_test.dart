@@ -177,20 +177,20 @@ void main() {
       await videoEventService.subscribeToVideoFeed(
         subscriptionType: SubscriptionType.discovery,
       );
-      await Future.delayed(const Duration(milliseconds: 10));
+      await pumpEventQueue();
 
       // Add events in random order
       eventStreamController.add(regularVideo);
-      await Future.delayed(const Duration(milliseconds: 10));
+      await pumpEventQueue();
 
       eventStreamController.add(classicVine1);
-      await Future.delayed(const Duration(milliseconds: 10));
+      await pumpEventQueue();
 
       eventStreamController.add(editorPick);
-      await Future.delayed(const Duration(milliseconds: 10));
+      await pumpEventQueue();
 
       eventStreamController.add(classicVine2);
-      await Future.delayed(const Duration(milliseconds: 10));
+      await pumpEventQueue();
 
       // Verify order: Classic vines should be first, despite being older
       expect(videoEventService.discoveryVideos.length, equals(4));
@@ -233,10 +233,10 @@ void main() {
         await videoEventService.subscribeToVideoFeed(
           subscriptionType: SubscriptionType.discovery,
         );
-        await Future.delayed(const Duration(milliseconds: 10));
+        await pumpEventQueue();
 
         eventStreamController.add(classicVine);
-        await Future.delayed(const Duration(milliseconds: 10));
+        await pumpEventQueue();
 
         // Add multiple new regular videos
         for (var i = 0; i < 5; i++) {
@@ -253,7 +253,7 @@ void main() {
           newVideo.id = 'new-$i';
 
           eventStreamController.add(newVideo);
-          await Future.delayed(const Duration(milliseconds: 10));
+          await pumpEventQueue();
         }
 
         // Classic vine should still be first despite being oldest
@@ -293,7 +293,7 @@ void main() {
         await videoEventService.subscribeToVideoFeed(
           subscriptionType: SubscriptionType.discovery,
         );
-        await Future.delayed(const Duration(milliseconds: 10));
+        await pumpEventQueue();
 
         // Add in random order
         eventStreamController.add(classicVines[2]);
@@ -302,7 +302,7 @@ void main() {
         eventStreamController.add(classicVines[1]);
         eventStreamController.add(classicVines[3]);
 
-        await Future.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // All should be classic vines
         expect(videoEventService.discoveryVideos.length, equals(5));
@@ -365,14 +365,14 @@ void main() {
       await videoEventService.subscribeToVideoFeed(
         subscriptionType: SubscriptionType.discovery,
       );
-      await Future.delayed(const Duration(milliseconds: 10));
+      await pumpEventQueue();
 
       // Add in reverse priority order
       eventStreamController.add(regularVideo);
       eventStreamController.add(editorPick);
       eventStreamController.add(classicVine);
 
-      await Future.delayed(const Duration(milliseconds: 30));
+      await pumpEventQueue();
 
       // Verify priority ordering
       expect(videoEventService.discoveryVideos.length, equals(3));

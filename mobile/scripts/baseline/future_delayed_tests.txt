@@ -24,7 +24,6 @@ test/services/curated_list_service_collaboration_test.dart
 test/services/curated_list_service_crud_test.dart
 test/services/curated_list_service_playlist_test.dart
 test/services/curated_list_service_query_test.dart
-test/services/curated_list_service_stream_test.dart
 test/services/curated_list_service_video_management_test.dart
 test/services/performance_monitoring_service_test.dart
 test/services/reactive_pagination_test.dart
@@ -37,7 +36,6 @@ test/services/video_event_service_pagination_test.dart
 test/services/video_event_service_repost_test.dart
 test/services/video_event_service_with_event_router_test.dart
 test/startup/startup_diagnostics_test.dart
-test/unit/services/classic_vines_priority_test.dart
 test/unit/services/video_event_service_force_refresh_test.dart
 test/unit/services/video_event_service_infinite_scroll_test.dart
 test/unit/services/video_event_service_subscription_test.dart
