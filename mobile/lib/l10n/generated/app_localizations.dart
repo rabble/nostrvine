@@ -5210,6 +5210,30 @@ abstract class AppLocalizations {
   /// **'An unknown error occurred.'**
   String get authUnknownError;
 
+  /// No description provided for @authBunkerRejectedConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Your signer app declined the connection.'**
+  String get authBunkerRejectedConnection;
+
+  /// No description provided for @authNostrConnectStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the signer. Check your connection and try again.'**
+  String get authNostrConnectStartFailed;
+
+  /// No description provided for @authNostrConnectInvalidSession.
+  ///
+  /// In en, this message translates to:
+  /// **'This connection link is no longer valid. Start a new one.'**
+  String get authNostrConnectInvalidSession;
+
+  /// No description provided for @authNostrConnectSetupFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost there — we couldn\'t finish signing you in. Try again.'**
+  String get authNostrConnectSetupFailed;
+
   /// No description provided for @authUrlCopied.
   ///
   /// In en, this message translates to:

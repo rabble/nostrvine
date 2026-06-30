@@ -2,6 +2,7 @@
 // ABOUTME: Tests state machine transitions and URL generation
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:nostr_sdk/nip46/nostr_remote_response.dart';
@@ -548,46 +549,157 @@ void main() {
     );
   });
 
-  group('nostr_connect_session.dart log redaction', () {
+  group('terminal failure reasons and log redaction', () {
     test(
-      'source file does not log the response.result or the expected secret',
-      () {
-        final sourceFile = _findNostrConnectSessionSource();
-        expect(
-          sourceFile.existsSync(),
-          isTrue,
-          reason: 'Test must resolve the nostr_sdk package source',
+      'never logs the matched secret while handling a successful response',
+      () async {
+        final relay = await _TestRelayServer.start();
+        addTearDown(relay.close);
+
+        final logs = <String>[];
+        final session = NostrConnectSession(
+          relays: [relay.url],
+          logger: logs.add,
         );
-        final source = sourceFile.readAsStringSync();
-        // The pre-fix code logged both `result=${response.result}` in the
-        // up-front decoded-response line and `"$expectedSecret"` in the
-        // mismatch warning. Pin the absence of those substrings so any
-        // future regression that re-introduces secret material into logs
-        // fails this test loudly.
-        expect(source, isNot(contains(r'result=${response.result}')));
-        expect(source, isNot(contains(r'"$expectedSecret"')));
+        addTearDown(session.dispose);
+
+        await session.start();
+        final info = session.info!;
+        final secret = info.optionalSecret!;
+        // The connect URL legitimately carries the secret and is logged at
+        // start(); drop those lines so the assertion only covers RESPONSE
+        // handling — the surface the #3760 redaction contract guards.
+        logs.clear();
+
+        final wait = session.waitForConnection(
+          timeout: const Duration(seconds: 5),
+        );
+        relay.push([
+          'EVENT',
+          'sub',
+          await _encryptedResponseEvent(
+            clientPubkey: info.clientPubkey!,
+            result: secret,
+          ),
+        ]);
+        final result = await wait;
+
+        expect(result, isNotNull, reason: 'a matching secret should connect');
+        expect(session.state, equals(NostrConnectState.connected));
+        expect(
+          logs.where((line) => line.contains(secret)),
+          isEmpty,
+          reason: 'the matched secret must never reach the logs',
+        );
       },
     );
+
+    test(
+      'logs neither the response result nor the expected secret on a mismatch',
+      () async {
+        final relay = await _TestRelayServer.start();
+        addTearDown(relay.close);
+
+        final logs = <String>[];
+        final session = NostrConnectSession(
+          relays: [relay.url],
+          logger: logs.add,
+        );
+        addTearDown(session.dispose);
+
+        await session.start();
+        final info = session.info!;
+        final secret = info.optionalSecret!;
+        const junkResult = 'junk-result-value-should-never-be-logged';
+        logs.clear();
+
+        unawaited(
+          session.waitForConnection(timeout: const Duration(seconds: 5)),
+        );
+        relay.push([
+          'EVENT',
+          'sub',
+          await _encryptedResponseEvent(
+            clientPubkey: info.clientPubkey!,
+            result: junkResult,
+          ),
+        ]);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(
+          logs.where(
+            (line) => line.contains(junkResult) || line.contains(secret),
+          ),
+          isEmpty,
+          reason: 'neither the result nor the expected secret may be logged',
+        );
+      },
+    );
+
+    test('reports bunkerRejected when the signer returns an error', () async {
+      final relay = await _TestRelayServer.start();
+      addTearDown(relay.close);
+
+      final session = NostrConnectSession(relays: [relay.url]);
+      addTearDown(session.dispose);
+
+      await session.start();
+      final info = session.info!;
+
+      final wait = session.waitForConnection(
+        timeout: const Duration(seconds: 5),
+      );
+      relay.push([
+        'EVENT',
+        'sub',
+        await _encryptedResponseEvent(
+          clientPubkey: info.clientPubkey!,
+          result: '',
+          error: 'user rejected',
+        ),
+      ]);
+      final result = await wait;
+
+      expect(result, isNull);
+      expect(session.state, equals(NostrConnectState.error));
+      expect(
+        session.failureReason,
+        equals(NostrConnectFailureReason.bunkerRejected),
+      );
+    });
+
+    test('reports startFailed when no relay can be reached', () async {
+      final deadPort = await _unusedLoopbackPort();
+      final session = NostrConnectSession(relays: ['ws://127.0.0.1:$deadPort']);
+      addTearDown(session.dispose);
+
+      await expectLater(session.start(), throwsA(isA<StateError>()));
+
+      expect(session.state, equals(NostrConnectState.error));
+      expect(
+        session.failureReason,
+        equals(NostrConnectFailureReason.startFailed),
+      );
+    });
   });
 }
 
-File _findNostrConnectSessionSource() {
-  var directory = Directory.current;
-  while (true) {
-    final packageRootFile = File(
-      '${directory.path}/lib/nip46/nostr_connect_session.dart',
-    );
-    if (packageRootFile.existsSync()) return packageRootFile;
-
-    final mobileRootFile = File(
-      '${directory.path}/packages/nostr_sdk/lib/nip46/nostr_connect_session.dart',
-    );
-    if (mobileRootFile.existsSync()) return mobileRootFile;
-
-    final parent = directory.parent;
-    if (parent.path == directory.path) return packageRootFile;
-    directory = parent;
-  }
+/// Builds a NIP-44-encrypted kind-24133 response event addressed to
+/// [clientPubkey], as a `nostrconnect://` signer would send it. The signer
+/// keypair is ephemeral; [Event.fromJson] does not verify signatures, so the
+/// event is left unsigned.
+Future<Map<String, dynamic>> _encryptedResponseEvent({
+  required String clientPubkey,
+  required String result,
+  String? error,
+}) async {
+  final signer = LocalNostrSigner(generatePrivateKey());
+  final remoteSignerPubkey = (await signer.getPublicKey())!;
+  final response = NostrRemoteResponse('test-request-id', result, error: error);
+  final ciphertext = (await response.encrypt(signer, clientPubkey))!;
+  return Event(remoteSignerPubkey, EventKind.nostrRemoteSigning, [
+    ['p', clientPubkey],
+  ], ciphertext).toJson();
 }
 
 Future<int> _unusedLoopbackPort() async {
@@ -609,6 +721,16 @@ class _TestRelayServer {
   bool _closed = false;
 
   String get url => 'ws://127.0.0.1:${_server.port}';
+
+  /// Sends a relay message (e.g. `['EVENT', subId, eventJson]`) to every
+  /// connected client. The session ignores the subscription id, so any value
+  /// works.
+  void push(Object message) {
+    final text = jsonEncode(message);
+    for (final socket in _sockets) {
+      socket.add(text);
+    }
+  }
 
   static Future<_TestRelayServer> start({int? port}) async {
     final server = await HttpServer.bind(

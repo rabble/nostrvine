@@ -35,7 +35,10 @@ class NostrConnectScreen extends ConsumerStatefulWidget {
 class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
   String? _connectUrl;
   NostrConnectState _sessionState = NostrConnectState.idle;
+  // Retained only for the out-of-scope bunker:// path (_showPasteBunkerDialog).
+  // The nostrconnect:// path uses _failureReason instead.
   String? _errorMessage;
+  NostrConnectFailureReason? _failureReason;
   StreamSubscription<NostrConnectState>? _stateSubscription;
   bool _isWaiting = false;
   bool _switchedToBunker = false;
@@ -106,6 +109,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       _connectUrl = activeUrl;
       _sessionState = activeState;
       _errorMessage = null;
+      _failureReason = null;
     });
 
     _stateSubscription = _authService.nostrConnectStateStream?.listen((state) {
@@ -143,6 +147,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       _connectUrl = null;
       _sessionState = NostrConnectState.generating;
       _errorMessage = null;
+      _failureReason = null;
     });
 
     try {
@@ -181,7 +186,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       if (!mounted || attempt != _sessionAttempt) return;
       setState(() {
         _sessionState = NostrConnectState.error;
-        _errorMessage = 'Failed to start session: $e';
+        _failureReason = NostrConnectFailureReason.startFailed;
       });
     }
   }
@@ -208,8 +213,16 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       // Navigate to home on success
       context.go(VideoFeedPage.pathForIndex(0));
     } else {
+      // Drive the UI state from the reason so the failure actually renders.
+      // timeout/cancelled keep their dedicated UI branches; everything else
+      // surfaces through the error branch.
       setState(() {
-        _errorMessage = result.errorMessage;
+        _failureReason = result.nostrConnectFailureReason;
+        _sessionState = switch (result.nostrConnectFailureReason) {
+          NostrConnectFailureReason.timedOut => NostrConnectState.timeout,
+          NostrConnectFailureReason.cancelled => NostrConnectState.cancelled,
+          _ => NostrConnectState.error,
+        };
       });
     }
   }
@@ -402,7 +415,12 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
           ),
           NostrConnectState.error => _ErrorContent(
             title: context.l10n.authConnectionFailed,
-            message: _errorMessage ?? context.l10n.authUnknownError,
+            message: _failureReason != null
+                ? resolveNostrConnectFailureMessage(
+                    context.l10n,
+                    _failureReason,
+                  )
+                : (_errorMessage ?? context.l10n.authUnknownError),
             onRetry: _retry,
             onBack: () => context.pop(),
           ),
@@ -410,6 +428,30 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       ),
     );
   }
+}
+
+/// Maps a [NostrConnectFailureReason] to a localized, user-facing message.
+///
+/// Lives at the UI layer so the nostr_sdk package never carries English copy.
+/// `timedOut`/`cancelled` are rendered via their own [NostrConnectState]
+/// branches, so they fall through to the generic message defensively.
+@visibleForTesting
+String resolveNostrConnectFailureMessage(
+  AppLocalizations l10n,
+  NostrConnectFailureReason? reason,
+) {
+  return switch (reason) {
+    NostrConnectFailureReason.bunkerRejected =>
+      l10n.authBunkerRejectedConnection,
+    NostrConnectFailureReason.startFailed => l10n.authNostrConnectStartFailed,
+    NostrConnectFailureReason.noExpectedSecret =>
+      l10n.authNostrConnectInvalidSession,
+    NostrConnectFailureReason.postConnectFailed =>
+      l10n.authNostrConnectSetupFailed,
+    NostrConnectFailureReason.timedOut ||
+    NostrConnectFailureReason.cancelled ||
+    null => l10n.authUnknownError,
+  };
 }
 
 /// Loading state with spinner and message.

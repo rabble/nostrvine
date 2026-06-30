@@ -47,6 +47,34 @@ enum NostrConnectState {
   error,
 }
 
+/// Why a `nostrconnect://` session terminated in failure.
+///
+/// The UI layer maps this to a localized string; this package never carries
+/// user-facing English. Mirrors the `InviteActivationFailureReason` pattern.
+enum NostrConnectFailureReason {
+  /// Programmer error: the response handler was reached with no expected
+  /// secret to validate against. Should never happen in practice.
+  noExpectedSecret,
+
+  /// The signer set `response.error` — a terminal signer-side error or
+  /// explicit rejection.
+  bunkerRejected,
+
+  /// The wait window elapsed without a valid response.
+  timedOut,
+
+  /// The user cancelled mid-flow.
+  cancelled,
+
+  /// The session failed to start (relay-connect failure, etc.).
+  startFailed,
+
+  /// The secret matched but post-connect setup failed (e.g. fetching the
+  /// user pubkey from the signer). Assigned by the auth layer, not the
+  /// session itself.
+  postConnectFailed,
+}
+
 /// Result of a successful nostrconnect:// connection.
 class NostrConnectResult {
   const NostrConnectResult({
@@ -95,6 +123,7 @@ class NostrConnectSession {
     this.permissions,
     this.callback,
     this.relayMode = RelayMode.baseMode,
+    this.logger = log,
   });
 
   /// Relays to use for the connection.
@@ -118,6 +147,10 @@ class NostrConnectSession {
   /// Relay mode to use (base or isolate).
   final int relayMode;
 
+  /// Sink for diagnostic log lines. Injectable so tests can assert that
+  /// secret material never reaches the logs (default: `dart:developer` log).
+  final void Function(String message) logger;
+
   /// Current session state.
   NostrConnectState _state = NostrConnectState.idle;
   NostrConnectState get state => _state;
@@ -134,9 +167,10 @@ class NostrConnectSession {
   NostrRemoteSignerInfo? get info => _info;
   NostrRemoteSignerInfo? _info;
 
-  /// Error message if state is error.
-  String? get errorMessage => _errorMessage;
-  String? _errorMessage;
+  /// Why the session terminated in failure, if any. The UI maps this to a
+  /// localized string; this package never carries user-facing English.
+  NostrConnectFailureReason? get failureReason => _failureReason;
+  NostrConnectFailureReason? _failureReason;
 
   // Internal state
   LocalNostrSigner? _localSigner;
@@ -176,15 +210,16 @@ class NostrConnectSession {
       // Create local signer from the ephemeral keypair
       _localSigner = LocalNostrSigner(Nip19.decode(_info!.nsec!));
 
-      log('[NostrConnectSession] Generated URL: $_connectUrl');
+      logger('[NostrConnectSession] Generated URL: $_connectUrl');
 
       // Connect to relays and start listening
       await _connectToRelays();
 
       _setState(NostrConnectState.listening);
-      log('[NostrConnectSession] Now listening for bunker response...');
+      logger('[NostrConnectSession] Now listening for bunker response...');
     } catch (e) {
-      _errorMessage = 'Failed to start session: $e';
+      logger('[NostrConnectSession] Failed to start session: $e');
+      _failureReason = NostrConnectFailureReason.startFailed;
       _setState(NostrConnectState.error);
       rethrow;
     }
@@ -212,7 +247,7 @@ class NostrConnectSession {
     // Start timeout timer
     _timeoutTimer = Timer(timeout, () {
       if (!_connectionCompleter!.isCompleted) {
-        log('[NostrConnectSession] Connection timed out');
+        logger('[NostrConnectSession] Connection timed out');
         _setState(NostrConnectState.timeout);
         _connectionCompleter!.complete(null);
       }
@@ -258,7 +293,9 @@ class NostrConnectSession {
 
     // If all relays were lost, try to reconnect from scratch
     if (_relays.isEmpty) {
-      log('[NostrConnectSession] All relays lost, reconnecting from scratch');
+      logger(
+        '[NostrConnectSession] All relays lost, reconnecting from scratch',
+      );
       await _connectToRelays();
     }
   }
@@ -282,9 +319,11 @@ class NostrConnectSession {
         return;
       }
       _relays.add(relay);
-      log('[NostrConnectSession] Added callback relay $relayUrl');
+      logger('[NostrConnectSession] Added callback relay $relayUrl');
     } catch (e) {
-      log('[NostrConnectSession] Failed to add callback relay $relayUrl: $e');
+      logger(
+        '[NostrConnectSession] Failed to add callback relay $relayUrl: $e',
+      );
     }
   }
 
@@ -320,7 +359,7 @@ class NostrConnectSession {
       try {
         return await _connectToRelay(url);
       } catch (e) {
-        log('[NostrConnectSession] Failed to connect to $url: $e');
+        logger('[NostrConnectSession] Failed to connect to $url: $e');
         return null;
       }
     });
@@ -341,7 +380,7 @@ class NostrConnectSession {
     relay.relayStatusCallback = () {
       if (_isClosed) return;
       if (relayStatus.connected == ClientConnected.disconnect) {
-        log('[NostrConnectSession] Relay $relayAddr disconnected');
+        logger('[NostrConnectSession] Relay $relayAddr disconnected');
       }
     };
 
@@ -366,12 +405,12 @@ class NostrConnectSession {
       await _addSubscription(relay);
       final connected = await relay.connect().timeout(_relayConnectTimeout);
       if (connected) {
-        log('[NostrConnectSession] Reconnected to $addr');
+        logger('[NostrConnectSession] Reconnected to $addr');
       } else {
-        log('[NostrConnectSession] Failed to reconnect to $addr');
+        logger('[NostrConnectSession] Failed to reconnect to $addr');
       }
     } catch (e) {
-      log('[NostrConnectSession] Reconnection error for $addr: $e');
+      logger('[NostrConnectSession] Reconnection error for $addr: $e');
     }
   }
 
@@ -409,7 +448,7 @@ class NostrConnectSession {
         relay.relayStatus.noteReceive();
         final event = Event.fromJson(json[2]);
 
-        log(
+        logger(
           '[NostrConnectSession] Received event kind=${event.kind} '
           'from ${event.pubkey}',
         );
@@ -418,12 +457,12 @@ class NostrConnectSession {
           await _handleResponse(event);
         }
       } catch (e, stack) {
-        log('[NostrConnectSession] Error handling event: $e\n$stack');
+        logger('[NostrConnectSession] Error handling event: $e\n$stack');
       }
     } else if (messageType == 'EOSE') {
-      log('[NostrConnectSession] EOSE from ${relay.relayStatus.addr}');
+      logger('[NostrConnectSession] EOSE from ${relay.relayStatus.addr}');
     } else if (messageType == 'NOTICE') {
-      log('[NostrConnectSession] NOTICE: ${json.length > 1 ? json[1] : ""}');
+      logger('[NostrConnectSession] NOTICE: ${json.length > 1 ? json[1] : ""}');
     }
   }
 
@@ -436,7 +475,7 @@ class NostrConnectSession {
     );
 
     if (response == null) {
-      log('[NostrConnectSession] Failed to decrypt response');
+      logger('[NostrConnectSession] Failed to decrypt response');
       return;
     }
 
@@ -459,17 +498,21 @@ class NostrConnectSession {
 
     switch (validation) {
       case NostrConnectResponseValidation.invalidSession:
-        log('[NostrConnectSession] No expected secret - cannot validate');
-        _errorMessage = 'Invalid session state: no secret to validate';
+        logger('[NostrConnectSession] No expected secret - cannot validate');
+        _failureReason = NostrConnectFailureReason.noExpectedSecret;
         _setState(NostrConnectState.error);
+        if (_connectionCompleter != null &&
+            !_connectionCompleter!.isCompleted) {
+          _connectionCompleter!.complete(null);
+        }
         return;
 
       case NostrConnectResponseValidation.rejectedByBunker:
-        log(
+        logger(
           '[NostrConnectSession] Bunker rejected connection from '
           '${event.pubkey}',
         );
-        _errorMessage = 'Bunker rejected connection';
+        _failureReason = NostrConnectFailureReason.bunkerRejected;
         _setState(NostrConnectState.error);
         if (_connectionCompleter != null &&
             !_connectionCompleter!.isCompleted) {
@@ -481,7 +524,7 @@ class NostrConnectSession {
         // Drop silently and keep listening; the hard timeout in
         // waitForConnection terminates the wait if no valid response
         // ever arrives.
-        log(
+        logger(
           '[NostrConnectSession] Ignoring response from ${event.pubkey}: '
           'result did not match the expected secret',
         );

@@ -151,6 +151,7 @@ class AuthResult {
     required this.success,
     this.errorMessage,
     this.keyContainer,
+    this.nostrConnectFailureReason,
   });
 
   factory AuthResult.success(SecureKeyContainer keyContainer) =>
@@ -159,9 +160,18 @@ class AuthResult {
   factory AuthResult.failure(String errorMessage) =>
       AuthResult(success: false, errorMessage: errorMessage);
 
+  /// Failure result for the nostrconnect:// flow, carrying a localizable
+  /// reason code instead of a raw English string. The UI maps the reason to a
+  /// `context.l10n.*` string.
+  factory AuthResult.nostrConnectFailure(NostrConnectFailureReason reason) =>
+      AuthResult(success: false, nostrConnectFailureReason: reason);
+
   final bool success;
   final String? errorMessage;
   final SecureKeyContainer? keyContainer;
+
+  /// Set only by the nostrconnect:// failure path; `null` for every other flow.
+  final NostrConnectFailureReason? nostrConnectFailureReason;
 }
 
 /// User profile information
@@ -3384,28 +3394,30 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // Check if session was cancelled while we were waiting
       if (_nostrConnectSession == null) {
         _setAuthState(AuthState.unauthenticated);
-        return AuthResult.failure('Connection cancelled');
+        return AuthResult.nostrConnectFailure(
+          NostrConnectFailureReason.cancelled,
+        );
       }
 
       if (result == null) {
-        // Timeout or cancelled
+        // Timeout, cancellation, or a terminal session error.
         final state = session.state;
-        if (state == NostrConnectState.cancelled) {
-          _setAuthState(AuthState.unauthenticated);
-          return AuthResult.failure('Connection cancelled');
-        } else if (state == NostrConnectState.timeout) {
-          _setAuthState(AuthState.unauthenticated);
-          return AuthResult.failure(
-            'Connection timed out. Make sure you approved in your signer app.',
-          );
-        } else if (state == NostrConnectState.error) {
-          _setAuthState(AuthState.unauthenticated);
-          return AuthResult.failure(
-            session.errorMessage ?? 'Connection failed',
-          );
-        }
         _setAuthState(AuthState.unauthenticated);
-        return AuthResult.failure('Connection failed');
+        return switch (state) {
+          NostrConnectState.cancelled => AuthResult.nostrConnectFailure(
+            NostrConnectFailureReason.cancelled,
+          ),
+          NostrConnectState.timeout => AuthResult.nostrConnectFailure(
+            NostrConnectFailureReason.timedOut,
+          ),
+          NostrConnectState.error => AuthResult.nostrConnectFailure(
+            session.failureReason ??
+                NostrConnectFailureReason.postConnectFailed,
+          ),
+          _ => AuthResult.nostrConnectFailure(
+            NostrConnectFailureReason.postConnectFailed,
+          ),
+        };
       }
 
       // Success! Create the bunker signer from the result
@@ -3470,7 +3482,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       _lastError = 'NostrConnect failed: $e';
       _setAuthState(AuthState.unauthenticated);
 
-      return AuthResult.failure(_lastError!);
+      return AuthResult.nostrConnectFailure(
+        NostrConnectFailureReason.postConnectFailed,
+      );
     }
   }
 

@@ -2832,6 +2832,22 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authUnknownError => '알 수 없는 오류가 발생했어요.';
 
   @override
+  String get authBunkerRejectedConnection =>
+      'Your signer app declined the connection.';
+
+  @override
+  String get authNostrConnectStartFailed =>
+      'Couldn\'t reach the signer. Check your connection and try again.';
+
+  @override
+  String get authNostrConnectInvalidSession =>
+      'This connection link is no longer valid. Start a new one.';
+
+  @override
+  String get authNostrConnectSetupFailed =>
+      'Almost there — we couldn\'t finish signing you in. Try again.';
+
+  @override
   String get authUrlCopied => 'URL을 클립보드에 복사했어요';
 
   @override
