@@ -1228,6 +1228,92 @@ void main() {
       });
     });
 
+    group('deferred orphan cleanup', () {
+      late Directory docsDir;
+
+      setUp(() {
+        docsDir = Directory(documentsPath)..createSync(recursive: true);
+      });
+
+      tearDown(() {
+        if (docsDir.existsSync()) docsDir.deleteSync(recursive: true);
+      });
+
+      File writeVideo(String name) {
+        final file = File(p.join(documentsPath, name));
+        file.writeAsBytesSync(const [0, 1, 2, 3]);
+        return file;
+      }
+
+      DivineVideoDraft draftWithClip(String videoPath) =>
+          DivineVideoDraft.create(
+            id: 'draft_defer',
+            clips: [
+              DivineVideoClip(
+                id: 'clip_${p.basenameWithoutExtension(videoPath)}',
+                video: EditorVideo.file(videoPath),
+                duration: const Duration(seconds: 6),
+                recordedAt: DateTime(2025),
+                targetAspectRatio: AspectRatio.square,
+                originalAspectRatio: 9 / 16,
+              ),
+            ],
+            title: 'Defer draft',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+          );
+
+      test(
+        'keeps an orphaned clip file alive and hands its path to the sink',
+        () async {
+          final oldVideo = writeVideo('old.mp4');
+          final newVideo = writeVideo('new.mp4');
+
+          await service.saveDraft(draftWithClip(oldVideo.path));
+
+          final deferred = <String>[];
+          await service.saveDraft(
+            draftWithClip(newVideo.path),
+            deferOrphanCleanup: (paths) =>
+                deferred.addAll(paths.whereType<String>()),
+          );
+
+          expect(
+            oldVideo.existsSync(),
+            isTrue,
+            reason:
+                'a deferred orphan must survive the save so undo can '
+                'restore the clip whose source it is',
+          );
+          expect(
+            deferred,
+            contains(oldVideo.path),
+            reason: 'the orphan path must reach the caller for later cleanup',
+          );
+        },
+      );
+
+      test('deletes the orphaned clip file when no sink is provided', () async {
+        final oldVideo = writeVideo('old.mp4');
+        final newVideo = writeVideo('new.mp4');
+
+        await service.saveDraft(draftWithClip(oldVideo.path));
+        await service.saveDraft(draftWithClip(newVideo.path));
+
+        expect(
+          oldVideo.existsSync(),
+          isFalse,
+          reason: 'without deferral the replaced clip file is reaped as before',
+        );
+        expect(
+          newVideo.existsSync(),
+          isTrue,
+          reason: 'the currently-referenced clip file must be kept',
+        );
+      });
+    });
+
     group('draft-local audio file hygiene', () {
       late Directory docsDir;
 

@@ -8,6 +8,8 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:characters/characters.dart';
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,17 +21,18 @@ import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_editor/video_editor_audio_render.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
+import 'package:path/path.dart' as p;
 import 'package:pro_image_editor/pro_image_editor.dart'
     show CompleteParameters, WidgetLayer, WidgetLayerExportConfigs;
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqlite3/sqlite3.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
@@ -1866,5 +1869,91 @@ void main() {
         );
       });
     });
+  });
+
+  group('VideoEditorProvider deferred file cleanup', () {
+    late _MockDraftStorageService mockDraftStorage;
+    late AppDatabase database;
+    late ProviderContainer container;
+    late Directory tempDir;
+
+    setUpAll(() {
+      registerFallbackValue(
+        DivineVideoDraft.create(
+          id: 'fallback',
+          clips: const [],
+          title: '',
+          description: '',
+          hashtags: const {},
+          selectedApproach: 'video',
+        ),
+      );
+    });
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      mockDraftStorage = _MockDraftStorageService();
+      database = AppDatabase.test(NativeDatabase.memory());
+      tempDir = Directory.systemTemp.createTempSync('editor_defer_test');
+      container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+          databaseProvider.overrideWithValue(database),
+        ],
+      );
+    });
+
+    tearDown(() async {
+      container.dispose();
+      await database.close();
+      if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+    });
+
+    test(
+      'an autosave keeps its orphaned files alive and reaps them on teardown',
+      () async {
+        final orphan = File(p.join(tempDir.path, 'orphan.mp4'))
+          ..writeAsBytesSync(const [0, 1, 2, 3]);
+
+        // The autosave hands the draft's now-unreferenced files to the deferral
+        // sink instead of deleting them — the editor's undo history may still
+        // need them.
+        when(
+          () => mockDraftStorage.saveDraft(
+            any(),
+            deferOrphanCleanup: any(named: 'deferOrphanCleanup'),
+          ),
+        ).thenAnswer((invocation) async {
+          final defer =
+              invocation.namedArguments[#deferOrphanCleanup]
+                  as void Function(List<String?>)?;
+          defer?.call([orphan.path]);
+        });
+
+        await container.read(videoEditorProvider.notifier).autosaveChanges();
+
+        expect(
+          orphan.existsSync(),
+          isTrue,
+          reason:
+              'a deferred orphan must survive the autosave so undo/redo can '
+              'still resolve the clip it backs',
+        );
+
+        final notifier = container.read(videoEditorProvider.notifier);
+        expect(notifier.deferredFileCleanupForTest, contains(orphan.path));
+
+        await notifier.flushDeferredFileCleanupForTest();
+
+        expect(
+          orphan.existsSync(),
+          isFalse,
+          reason: 'teardown reaps a deferred file once nothing references it',
+        );
+        expect(notifier.deferredFileCleanupForTest, isEmpty);
+      },
+    );
   });
 }

@@ -144,8 +144,15 @@ class DraftStorageService {
   }
 
   /// Save a draft to storage. If a draft with the same ID exists, it will be
-  /// updated. When updating, orphaned clip files (video/thumbnail) from the
-  /// old draft are deleted.
+  /// updated. When updating, clip/thumbnail files the old draft referenced but
+  /// the new one no longer does are orphaned.
+  ///
+  /// By default those orphans are deleted immediately. Pass
+  /// [deferOrphanCleanup] to instead hand the candidate paths to the caller —
+  /// the active editor session uses this to keep files that are still reachable
+  /// through its undo/redo history alive until teardown. Deleting them mid-
+  /// session would land undo/redo on a clip whose source file is gone
+  /// (`COMPOSITION_ERROR`); the session reaps them once that history is gone.
   ///
   /// Throws a `SqliteException` if the underlying Drift read/write fails —
   /// e.g. the database is locked, the disk is full, or the file is corrupt.
@@ -153,7 +160,10 @@ class DraftStorageService {
   /// per the reportability matrix they are expected rather than bugs. Orphaned
   /// clip-file deletions are best-effort: their failures are logged and
   /// swallowed, never thrown.
-  Future<void> saveDraft(DivineVideoDraft draft) async {
+  Future<void> saveDraft(
+    DivineVideoDraft draft, {
+    void Function(List<String?> orphanPaths)? deferOrphanCleanup,
+  }) async {
     Log.debug(
       '💾 Saving draft: ${draft.id}',
       name: 'DraftStorageService',
@@ -245,12 +255,19 @@ class DraftStorageService {
       ownerPubkey: ownerPubkey,
     );
 
-    // Delete orphaned files only after the new draft/clip rows are committed.
-    await FileCleanupService.deleteFilesIfUnreferenced(
-      orphanedFiles,
-      draftsDao: _draftsDao,
-      clipsDao: _clipsDao,
-    );
+    // Reap orphaned files only after the new draft/clip rows are committed, so
+    // this draft's old indexed references no longer protect them. When the
+    // caller defers, hand over the candidates instead — they may still be
+    // reachable through the editor's live undo/redo history.
+    if (deferOrphanCleanup != null) {
+      deferOrphanCleanup(orphanedFiles);
+    } else {
+      await FileCleanupService.deleteFilesIfUnreferenced(
+        orphanedFiles,
+        draftsDao: _draftsDao,
+        clipsDao: _clipsDao,
+      );
+    }
   }
 
   /// Get total count of drafts without loading their data.
