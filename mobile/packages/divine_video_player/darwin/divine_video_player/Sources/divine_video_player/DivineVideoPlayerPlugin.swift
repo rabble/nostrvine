@@ -43,12 +43,23 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
         DivineVideoPlayerLog.shared.sink = logSink
     }
 
-    public static func register(with registrar: FlutterPluginRegistrar) {
+    /// Resolves the binary messenger for `registrar`, bridging the iOS
+    /// `messenger()` method vs the macOS `messenger` property. Every
+    /// ownership key (`register`, `create`, `detachFromEngine`) derives from
+    /// this single resolution so all three always agree on the engine's
+    /// identity.
+    private static func messenger(
+        for registrar: FlutterPluginRegistrar
+    ) -> FlutterBinaryMessenger {
         #if os(iOS)
-        let messenger = registrar.messenger()
+        return registrar.messenger()
         #elseif os(macOS)
-        let messenger = registrar.messenger
+        return registrar.messenger
         #endif
+    }
+
+    public static func register(with registrar: FlutterPluginRegistrar) {
+        let messenger = Self.messenger(for: registrar)
 
         // Hot restart re-calls register(with:) on the SAME engine without
         // disposing the previous run's players, leaving zombie timers /
@@ -120,11 +131,7 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
             "Engine detaching — disposing this engine's players",
             name: "DivineVideoPlayer.Lifecycle"
         )
-        #if os(iOS)
-        let messenger = registrar.messenger()
-        #elseif os(macOS)
-        let messenger = registrar.messenger
-        #endif
+        let messenger = Self.messenger(for: registrar)
         PlayerRegistry.shared.disposeForEngine(messenger)
         NotificationCenter.default.removeObserver(self)
     }
@@ -166,11 +173,7 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
             // creating the new one to avoid leaking zombie players.
             PlayerRegistry.shared.remove(id)?.dispose()
 
-            #if os(iOS)
-            let messenger = registrar.messenger()
-            #elseif os(macOS)
-            let messenger = registrar.messenger
-            #endif
+            let messenger = Self.messenger(for: registrar)
             let instance = DivineVideoPlayerInstance(
                 messenger: messenger,
                 playerId: id
