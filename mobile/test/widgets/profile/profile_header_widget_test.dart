@@ -580,6 +580,105 @@ void main() {
     });
 
     testWidgets(
+      'avatar Hero flight scales the shuttle from the header size so the '
+      'corner radius stays proportional instead of clamping to a circle '
+      'mid-flight',
+      (tester) async {
+        final testProfile = createTestProfile(
+          displayName: 'Test User',
+          picture: 'https://example.com/avatar.jpg',
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Open the lightbox — this starts the Hero flight.
+        await tester.tap(find.byType(UserAvatar));
+        await tester.pump(); // push the route, start the flight at t=0
+        await tester.pump(const Duration(milliseconds: 150)); // mid-flight
+
+        // During the flight both the header (144px) and lightbox (288px)
+        // Heroes render size-preserving placeholders, so the only UserAvatar
+        // in the tree is the flight shuttle. The fix drives the shuttle's size
+        // and corner radius from the live flight box, so mid-flight the size
+        // sits strictly between the two ends. The old default shuttle painted
+        // the fixed 288px/112px destination avatar, whose 112px radius clamped
+        // to a full circle while the flight box was below 224px.
+        final shuttles = tester
+            .widgetList<UserAvatar>(find.byType(UserAvatar))
+            .where((a) => a.size > 144 && a.size < 288)
+            .toList();
+        expect(
+          shuttles,
+          hasLength(1),
+          reason: 'mid-flight the only avatar is the scaling Hero shuttle',
+        );
+
+        final shuttle = shuttles.single;
+        expect(shuttle.cornerRadius, isNotNull);
+        // Radius never exceeds half the box → never renders as a full circle.
+        expect(shuttle.cornerRadius! * 2, lessThan(shuttle.size));
+        // Radius tracks the 112/288 ratio shared by both ends of the flight.
+        expect(
+          shuttle.cornerRadius,
+          closeTo(shuttle.size * (112 / 288), 0.001),
+        );
+
+        // Let the flight finish so teardown is clean.
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets('tapping the opened avatar lightbox pops the route', (
+      tester,
+    ) async {
+      final testProfile = createTestProfile(
+        displayName: 'Test User',
+        picture: 'https://example.com/avatar.jpg',
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: true,
+          profile: testProfile,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(UserAvatar));
+      await tester.pumpAndSettle();
+
+      // Lightbox is open: the 288px avatar is present.
+      expect(
+        tester
+            .widgetList<UserAvatar>(find.byType(UserAvatar))
+            .where((a) => a.size == 288),
+        hasLength(1),
+      );
+
+      // Tapping the lightbox dismisses it via Navigator.pop.
+      await tester.tap(
+        find.byWidgetPredicate((w) => w is UserAvatar && w.size == 288),
+      );
+      await tester.pumpAndSettle();
+
+      // Route popped: only the 144px header avatar remains.
+      expect(
+        tester
+            .widgetList<UserAvatar>(find.byType(UserAvatar))
+            .where((a) => a.size == 288),
+        isEmpty,
+      );
+    });
+
+    testWidgets(
       'uses parent-supplied profile for other users while fallback provider is unresolved',
       (tester) async {
         final suppliedProfile = createTestProfile(

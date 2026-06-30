@@ -1,5 +1,15 @@
 part of 'profile_header_widget.dart';
 
+const _heroAnimationTag = 'profile_hero_tag';
+
+/// Corner-radius-to-size ratio shared by the 144px header avatar (56px radius)
+/// and the 288px lightbox avatar (112px radius). The Hero flight reproduces
+/// this ratio at every interpolated size so the corner stays proportional.
+/// The default flight shuttle instead paints the destination's fixed 112px
+/// radius onto the shrinking flight box, which clamps to a full circle while
+/// the box is smaller than 224px and makes the avatar briefly round mid-flight.
+const double _avatarHeroCornerRatio = 112 / 288;
+
 class _AboutText extends StatefulWidget {
   const _AboutText({required this.about});
 
@@ -331,7 +341,23 @@ class _ProfileAvatarWithColor extends StatelessWidget {
               imageUrl: imageUrl,
               userIdHex: userIdHex,
             ),
-            child: avatarWidget,
+            child: Hero(
+              tag: _heroAnimationTag,
+              flightShuttleBuilder: (_, _, _, _, _) {
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final boxSize = constraints.biggest.shortestSide;
+                    return UserAvatar(
+                      imageUrl: imageUrl,
+                      placeholderSeed: userIdHex,
+                      size: boxSize,
+                      cornerRadius: boxSize * _avatarHeroCornerRatio,
+                    );
+                  },
+                );
+              },
+              child: avatarWidget,
+            ),
           )
         : avatarWidget;
 
@@ -450,13 +476,20 @@ void _showAvatarLightbox(
   required String userIdHex,
   String? imageUrl,
 }) {
-  showGeneralDialog<void>(
-    context: context,
-    barrierColor: VineTheme.transparent,
-    barrierDismissible: true,
-    barrierLabel: context.l10n.profileAvatarLightboxBarrierLabel,
-    pageBuilder: (context, _, _) =>
-        _AvatarLightbox(imageUrl: imageUrl, userIdHex: userIdHex),
+  // A PageRoute (not a PopupRoute like showGeneralDialog) is required for the
+  // Hero flight between the avatar and the lightbox to animate — the
+  // HeroController only drives transitions between PageRoutes.
+  Navigator.of(context).push<void>(
+    PageRouteBuilder<void>(
+      opaque: false,
+      barrierColor: VineTheme.transparent,
+      barrierDismissible: true,
+      barrierLabel: context.l10n.profileAvatarLightboxBarrierLabel,
+      pageBuilder: (context, _, _) =>
+          _AvatarLightbox(imageUrl: imageUrl, userIdHex: userIdHex),
+      transitionsBuilder: (context, animation, _, child) =>
+          FadeTransition(opacity: animation, child: child),
+    ),
   );
 }
 
@@ -486,11 +519,14 @@ class _AvatarLightbox extends StatelessWidget {
               child: Stack(
                 children: [
                   Center(
-                    child: UserAvatar(
-                      imageUrl: imageUrl,
-                      placeholderSeed: userIdHex,
-                      size: 288,
-                      cornerRadius: 112,
+                    child: Hero(
+                      tag: _heroAnimationTag,
+                      child: UserAvatar(
+                        imageUrl: imageUrl,
+                        placeholderSeed: userIdHex,
+                        size: 288,
+                        cornerRadius: 112,
+                      ),
                     ),
                   ),
                   Positioned(
