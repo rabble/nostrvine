@@ -278,7 +278,13 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
             feedTuningRepository: feedTuningRepository,
           )..add(const FullscreenFeedStarted()),
         ),
-        BlocProvider(create: (_) => VideoPlaybackStatusCubit()),
+        BlocProvider(
+          create: (_) => VideoPlaybackStatusCubit(
+            canAutoAuthorizeAgeRestrictedMedia: () => ref
+                .read(mediaAuthInterceptorProvider)
+                .shouldAutoAuthorizeAgeRestrictedMedia,
+          ),
+        ),
       ],
       child: FullscreenFeedContent(
         contextTitle: contextTitle,

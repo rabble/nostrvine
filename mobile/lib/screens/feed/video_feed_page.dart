@@ -94,7 +94,13 @@ class VideoFeedPage extends ConsumerWidget {
             ),
           )..add(VideoFeedStarted(mode: initialMode)),
         ),
-        BlocProvider(create: (_) => VideoPlaybackStatusCubit()),
+        BlocProvider(
+          create: (_) => VideoPlaybackStatusCubit(
+            canAutoAuthorizeAgeRestrictedMedia: () => ref
+                .read(mediaAuthInterceptorProvider)
+                .shouldAutoAuthorizeAgeRestrictedMedia,
+          ),
+        ),
       ],
       child: VideoFeedView(initialIndex: initialIndex),
     );

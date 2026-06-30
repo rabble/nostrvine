@@ -175,6 +175,90 @@ void main() {
 
         expect(cubit.state.hasAutoRetryAttempted(id1), isFalse);
       });
+
+      test(
+        'auto retry eligibility requires age restriction and verify action',
+        () {
+          final cubit = VideoPlaybackStatusCubit(
+            canAutoAuthorizeAgeRestrictedMedia: () => true,
+          );
+
+          expect(
+            cubit.consumeAgeRestrictedAutoRetryIfEligible(
+              id1,
+              isAgeRestricted: false,
+              hasVerifyAction: true,
+            ),
+            isFalse,
+          );
+          expect(
+            cubit.consumeAgeRestrictedAutoRetryIfEligible(
+              id1,
+              isAgeRestricted: true,
+              hasVerifyAction: false,
+            ),
+            isFalse,
+          );
+          expect(cubit.state.hasAutoRetryAttempted(id1), isFalse);
+        },
+      );
+
+      test('auto retry eligibility requires an auto-authorized viewer', () {
+        final cubit = VideoPlaybackStatusCubit(
+          canAutoAuthorizeAgeRestrictedMedia: () => false,
+        );
+
+        expect(
+          cubit.consumeAgeRestrictedAutoRetryIfEligible(
+            id1,
+            isAgeRestricted: true,
+            hasVerifyAction: true,
+          ),
+          isFalse,
+        );
+        expect(cubit.state.hasAutoRetryAttempted(id1), isFalse);
+      });
+
+      test('auto retry eligibility is blocked while verifying', () {
+        final cubit = VideoPlaybackStatusCubit(
+          canAutoAuthorizeAgeRestrictedMedia: () => true,
+        );
+        cubit.markVerifying(id1);
+
+        expect(
+          cubit.consumeAgeRestrictedAutoRetryIfEligible(
+            id1,
+            isAgeRestricted: true,
+            hasVerifyAction: true,
+          ),
+          isFalse,
+        );
+        expect(cubit.state.hasAutoRetryAttempted(id1), isFalse);
+      });
+
+      test('auto retry eligibility spends the per-video budget once', () {
+        final cubit = VideoPlaybackStatusCubit(
+          canAutoAuthorizeAgeRestrictedMedia: () => true,
+        );
+
+        expect(
+          cubit.consumeAgeRestrictedAutoRetryIfEligible(
+            id1,
+            isAgeRestricted: true,
+            hasVerifyAction: true,
+          ),
+          isTrue,
+        );
+        expect(cubit.state.hasAutoRetryAttempted(id1), isTrue);
+        expect(
+          cubit.consumeAgeRestrictedAutoRetryIfEligible(
+            id1,
+            isAgeRestricted: true,
+            hasVerifyAction: true,
+          ),
+          isFalse,
+        );
+      });
     });
 
     group('playbackStatusFromError', () {

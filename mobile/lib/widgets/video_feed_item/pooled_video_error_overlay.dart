@@ -11,7 +11,6 @@ import 'package:infinite_video_feed/infinite_video_feed.dart'
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
@@ -74,19 +73,14 @@ class _PooledVideoErrorOverlayState
       return;
     }
 
-    final mediaAuthInterceptor = ref.read(mediaAuthInterceptorProvider);
-    if (!mediaAuthInterceptor.shouldAutoAuthorizeAgeRestrictedMedia) {
-      return;
-    }
-
-    final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
-    if (playbackStatusCubit.state.hasAutoRetryAttempted(widget.video.id)) {
-      return;
-    }
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (!playbackStatusCubit.consumeAutoRetryAttempt(widget.video.id)) {
+      final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
+      if (!playbackStatusCubit.consumeAgeRestrictedAutoRetryIfEligible(
+        widget.video.id,
+        isAgeRestricted: showVerifyAge,
+        hasVerifyAction: widget.onVerifyAge != null,
+      )) {
         return;
       }
       widget.onVerifyAge?.call();

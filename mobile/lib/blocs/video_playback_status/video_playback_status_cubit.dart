@@ -12,12 +12,17 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 class VideoPlaybackStatusCubit extends Cubit<VideoPlaybackStatusState> {
   /// Creates a cubit. [maxEntries] caps the internal LRU map; defaults
   /// to the [VideoPlaybackStatusState] default when null.
-  VideoPlaybackStatusCubit({int? maxEntries})
-    : super(
-        maxEntries == null
-            ? VideoPlaybackStatusState()
-            : VideoPlaybackStatusState(maxEntries: maxEntries),
-      );
+  VideoPlaybackStatusCubit({
+    int? maxEntries,
+    bool Function()? canAutoAuthorizeAgeRestrictedMedia,
+  }) : _canAutoAuthorizeAgeRestrictedMedia = canAutoAuthorizeAgeRestrictedMedia,
+       super(
+         maxEntries == null
+             ? VideoPlaybackStatusState()
+             : VideoPlaybackStatusState(maxEntries: maxEntries),
+       );
+
+  final bool Function()? _canAutoAuthorizeAgeRestrictedMedia;
 
   /// Reports [status] for the video with [eventId].
   ///
@@ -52,6 +57,23 @@ class VideoPlaybackStatusCubit extends Cubit<VideoPlaybackStatusState> {
     if (state.hasAutoRetryAttempted(eventId)) return false;
     emit(state.withAutoRetryAttempted(eventId));
     return true;
+  }
+
+  /// Consumes one automatic age-verification retry when the current playback
+  /// state and viewer policy allow it.
+  ///
+  /// This keeps the retry/fallback decision in the cubit rather than in the
+  /// error overlay. The caller still owns invoking the UI callback after this
+  /// method grants the attempt.
+  bool consumeAgeRestrictedAutoRetryIfEligible(
+    String eventId, {
+    required bool isAgeRestricted,
+    required bool hasVerifyAction,
+  }) {
+    if (!isAgeRestricted || !hasVerifyAction) return false;
+    if (state.isVerifying(eventId)) return false;
+    if (!(_canAutoAuthorizeAgeRestrictedMedia?.call() ?? false)) return false;
+    return consumeAutoRetryAttempt(eventId);
   }
 
   /// Clears all tracked statuses (call on feed-mode change).

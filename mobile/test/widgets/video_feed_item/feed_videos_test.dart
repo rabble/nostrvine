@@ -140,6 +140,13 @@ extension _PlaybackCubitStub on _MockVideoPlaybackStatusCubit {
           ? baseState
           : baseState.withStatus(videoId, status),
     );
+    when(
+      () => consumeAgeRestrictedAutoRetryIfEligible(
+        any(),
+        isAgeRestricted: any(named: 'isAgeRestricted'),
+        hasVerifyAction: any(named: 'hasVerifyAction'),
+      ),
+    ).thenReturn(false);
     whenListen(this, const Stream<VideoPlaybackStatusState>.empty());
   }
 }
