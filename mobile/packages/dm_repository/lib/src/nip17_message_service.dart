@@ -3,6 +3,8 @@
 // ABOUTME: (kind 14 rumor → kind 13 seal → kind 1059 gift wrap)
 // ABOUTME: Works with any NostrSigner (local keys, Keycast RPC, Amber, etc.)
 
+import 'package:dm_repository/src/gift_wrap_build_worker.dart';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:meta/meta.dart';
 import 'package:models/models.dart' show NIP17SendResult;
 import 'package:nostr_client/nostr_client.dart';
@@ -11,6 +13,7 @@ import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/relay/relay.dart';
+import 'package:nostr_sdk/signer/isolate_decrypt_signer.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -30,6 +33,15 @@ typedef GiftWrapBuilder =
       String recipientPubkey,
     );
 
+/// Builds NIP-17 gift wraps off the main isolate for local-key signers.
+///
+/// Defaults to running [buildGiftWrapBatch] in a [compute] isolate; injectable
+/// for tests so the offload branch can be exercised inline without spawning a
+/// real isolate.
+@internal
+typedef IsolateGiftWrapBatchBuilder =
+    Future<List<BuiltGiftWrapResult>> Function(BuildGiftWrapRequest request);
+
 /// Service for sending encrypted private messages using NIP-17 gift wrapping.
 ///
 /// Accepts any [NostrSigner] implementation, supporting both local key
@@ -41,18 +53,79 @@ class NIP17MessageService {
     required String senderPublicKey,
     required NostrClient nostrService,
     @visibleForTesting GiftWrapBuilder? giftWrapBuilder,
+    @visibleForTesting IsolateGiftWrapBatchBuilder? isolateGiftWrapBatchBuilder,
   }) : _signer = signer,
        _senderPublicKey = senderPublicKey,
        _nostrService = nostrService,
-       _giftWrapBuilder = giftWrapBuilder ?? GiftWrapUtil.getGiftWrapEvent;
+       _giftWrapBuilder = giftWrapBuilder ?? GiftWrapUtil.getGiftWrapEvent,
+       _isolateGiftWrapBatchBuilder =
+           isolateGiftWrapBatchBuilder ?? _computeGiftWrapBatch;
 
   final NostrSigner _signer;
   final String _senderPublicKey;
   final NostrClient _nostrService;
   final GiftWrapBuilder _giftWrapBuilder;
+  final IsolateGiftWrapBatchBuilder _isolateGiftWrapBatchBuilder;
+
+  /// Default off-main-isolate builder: runs [buildGiftWrapBatch] in a
+  /// [compute] isolate. Kept as a static tear-off so the constructor's
+  /// default does not capture instance state.
+  static Future<List<BuiltGiftWrapResult>> _computeGiftWrapBatch(
+    BuildGiftWrapRequest request,
+  ) => compute(buildGiftWrapBatch, request);
 
   /// Access to the underlying NostrService for relay management
   NostrClient get nostrService => _nostrService;
+
+  /// Builds a single NIP-17 gift wrap for [receiverPublicKey] from
+  /// [rumorEvent].
+  ///
+  /// Routes through a [compute] isolate when the signer can safely expose its
+  /// private key bytes (local-key signers), keeping the CPU-bound pure-Dart
+  /// secp256k1 work off the UI isolate. Remote signers (Amber, Keycast RPC,
+  /// NIP-46) cannot cross a `SendPort`, so they fall back to the
+  /// on-main-isolate [_giftWrapBuilder] — already async RPC/IPC, not a block.
+  ///
+  /// Any failure of the isolate path (thrown error, null/failed result) falls
+  /// back to the main-isolate builder, mirroring the receive-side decrypt
+  /// offload in DmRepository. See #5391.
+  Future<Event?> _buildWrap({
+    required Nostr nostr,
+    required Event rumorEvent,
+    required String receiverPublicKey,
+  }) async {
+    final signer = _signer;
+    if (signer is IsolateDecryptSigner && signer.canDecryptInIsolate) {
+      try {
+        final hex = signer.withPrivateKeyHex((k) => k);
+        final results = await _isolateGiftWrapBatchBuilder(
+          BuildGiftWrapRequest(
+            privateKeyHex: hex,
+            rumorJson: rumorEvent.toJson(),
+            receiverPublicKeys: [receiverPublicKey],
+          ),
+        );
+        final result = results.single;
+        if (result.isSuccess) {
+          return Event.fromJson(result.giftWrap!);
+        }
+        Log.debug(
+          'Isolate gift-wrap build returned failure for rumor '
+          '${rumorEvent.id}: ${result.error}; falling back to main isolate',
+          category: LogCategory.system,
+        );
+      } on Object catch (e, stackTrace) {
+        Log.error(
+          'Isolate gift-wrap build threw for rumor ${rumorEvent.id}: $e',
+          category: LogCategory.system,
+          error: e,
+          stackTrace: stackTrace,
+        );
+        // Fall through to the main-isolate builder below.
+      }
+    }
+    return _giftWrapBuilder(nostr, rumorEvent, receiverPublicKey);
+  }
 
   /// Build the unsigned NIP-17 rumor event for a 1:1 send.
   ///
@@ -119,10 +192,10 @@ class NIP17MessageService {
       );
 
       // Create gift wrap for the recipient
-      final giftWrapEvent = await _giftWrapBuilder(
-        nostr,
-        rumorEvent,
-        recipientPubkey,
+      final giftWrapEvent = await _buildWrap(
+        nostr: nostr,
+        rumorEvent: rumorEvent,
+        receiverPublicKey: recipientPubkey,
       );
 
       if (giftWrapEvent == null) {
@@ -258,10 +331,10 @@ class NIP17MessageService {
     required Event rumorEvent,
   }) async {
     try {
-      final selfWrapEvent = await _giftWrapBuilder(
-        nostr,
-        rumorEvent,
-        _senderPublicKey,
+      final selfWrapEvent = await _buildWrap(
+        nostr: nostr,
+        rumorEvent: rumorEvent,
+        receiverPublicKey: _senderPublicKey,
       );
       if (selfWrapEvent == null) {
         Log.warning(
@@ -312,10 +385,10 @@ class NIP17MessageService {
       final nostr = Nostr(_signer, [], _dummyRelayGenerator);
       await nostr.refreshPublicKey();
       final rumor = Event(_senderPublicKey, eventKind, tags, content);
-      final selfWrapEvent = await _giftWrapBuilder(
-        nostr,
-        rumor,
-        _senderPublicKey,
+      final selfWrapEvent = await _buildWrap(
+        nostr: nostr,
+        rumorEvent: rumor,
+        receiverPublicKey: _senderPublicKey,
       );
       if (selfWrapEvent == null) return false;
       final published = (targetRelays != null && targetRelays.isNotEmpty)

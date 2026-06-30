@@ -7,4 +7,6 @@ export 'src/dm_repository.dart';
 export 'src/dm_repository_reportable_sites.dart';
 export 'src/dm_sync_state.dart';
 export 'src/dm_verify_isolate.dart';
-export 'src/nip17_message_service.dart' hide GiftWrapBuilder;
+export 'src/gift_wrap_build_worker.dart';
+export 'src/nip17_message_service.dart'
+    hide GiftWrapBuilder, IsolateGiftWrapBatchBuilder;

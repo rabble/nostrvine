@@ -186,3 +186,71 @@ class GiftWrapUtil {
     return giftWrapEvent;
   }
 }
+
+/// Isolate-safe NIP-59 gift-wrap build over a raw private key hex.
+///
+/// Functionally identical to [GiftWrapUtil.getGiftWrapEvent] for a local-key
+/// sender, but takes the sender's private key hex directly instead of a
+/// [Nostr]/signer object, so it can run inside a `compute()` isolate — a remote
+/// signer's RPC/IPC handle cannot cross a `SendPort`, but a hex string can.
+/// This is the send-side counterpart of the receive-side decrypt offload.
+///
+/// The seal's pubkey is DERIVED from [senderPrivateKeyHex] rather than passed
+/// in: it must correspond to the signing key, or both the recipient's NIP-44
+/// ECDH (which keys on the seal pubkey) and the seal's Schnorr verification
+/// fail. [rumorJson] is the unsigned kind-14 rumor as [Event.toJson]; its `sig`
+/// is stripped before sealing and its id is preserved (receiver-side gift-wrap
+/// dedup keys on it).
+///
+/// Returns the signed kind-1059 gift wrap. Pure (no I/O, no signer object),
+/// so it is safe to run inside an isolate — the same crypto primitives already
+/// run inside the receive-side decrypt isolate.
+Future<Event?> buildGiftWrapFromHex({
+  required String senderPrivateKeyHex,
+  required Map<String, dynamic> rumorJson,
+  required String receiverPublicKey,
+}) async {
+  final baseCreatedAt = rumorJson['created_at'] as int;
+  final sealCreatedAt = GiftWrapUtil._randomizedPastTimestamp(baseCreatedAt);
+  final giftEventCreatedAt = GiftWrapUtil._randomizedPastTimestamp(
+    baseCreatedAt,
+  );
+
+  final rumorEventMap = Map<String, dynamic>.from(rumorJson)..remove('sig');
+
+  final senderPublicKey = getPublicKey(senderPrivateKeyHex);
+  final sealKey = NIP44V2.shareSecret(senderPrivateKeyHex, receiverPublicKey);
+  final sealEventContent = await NIP44V2.encrypt(
+    jsonEncode(rumorEventMap),
+    sealKey,
+  );
+
+  final sealEvent = Event(
+    senderPublicKey,
+    EventKind.sealEventKind,
+    [],
+    sealEventContent,
+    createdAt: sealCreatedAt,
+  );
+  sealEvent.sign(senderPrivateKeyHex);
+
+  final randomPrivateKey = generatePrivateKey();
+  final randomPubkey = getPublicKey(randomPrivateKey);
+  final randomKey = NIP44V2.shareSecret(randomPrivateKey, receiverPublicKey);
+  final giftWrapEventContent = await NIP44V2.encrypt(
+    jsonEncode(sealEvent.toJson()),
+    randomKey,
+  );
+  final giftWrapEvent = Event(
+    randomPubkey,
+    EventKind.giftWrap,
+    [
+      ['p', receiverPublicKey],
+    ],
+    giftWrapEventContent,
+    createdAt: giftEventCreatedAt,
+  );
+  giftWrapEvent.sign(randomPrivateKey);
+
+  return giftWrapEvent;
+}
