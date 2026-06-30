@@ -1201,10 +1201,20 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   /// [direction] tells the orphan-only reconciliation which way an undo/redo
   /// navigated (see [VideoEditorCanvas.resolveClipSnapshotSync]); it defaults
   /// to [ClipHistoryDirection.none] for non-navigation calls.
+  ///
+  /// [allowOrphanStep] gates whether this pass may step the editor history
+  /// past an orphan-only entry. The directional `onUndo`/`onRedo` callbacks
+  /// and the post-import sync own the step. The generic `onStateHistoryChange`
+  /// reconcile must pass `false`: `undoAction()`/`redoAction()` fire
+  /// `onStateHistoryChange` (with no direction) *before* `onUndo`/`onRedo`, so
+  /// every navigation schedules this method twice. If the directionless pass
+  /// also stepped, its backward bias would preempt a forward (redo) recovery
+  /// and both passes would race the shared [_orphanStepDidReverse] flag.
   void _syncMainCapabilities(
     VideoEditorScope scope,
     VideoEditorMainBloc bloc, {
     ClipHistoryDirection direction = ClipHistoryDirection.none,
+    bool allowOrphanStep = true,
   }) {
     final editor = scope.editor;
     if (editor == null) return;
@@ -1250,20 +1260,29 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         didReverse: _orphanStepDidReverse,
       );
 
-      switch (decision.op) {
-        case ClipSnapshotSyncOp.skip:
-          _orphanStepDidReverse = false;
-          return;
-        case ClipSnapshotSyncOp.stepBackward:
-          _orphanStepDidReverse = _orphanStepDidReverse || decision.reversed;
-          editor.undoAction();
-          return;
-        case ClipSnapshotSyncOp.stepForward:
-          _orphanStepDidReverse = _orphanStepDidReverse || decision.reversed;
-          editor.redoAction();
-          return;
-        case ClipSnapshotSyncOp.sync:
-          _orphanStepDidReverse = false;
+      if (!allowOrphanStep) {
+        // Generic history-change reconcile: it fires alongside the directional
+        // onUndo/onRedo on every navigation, so it neither steps nor touches
+        // the walk's reverse-once flag — the directional pass (scheduled in the
+        // same frame) owns resolving an orphan-only entry. We only mirror a
+        // resolvable entry; an orphan-only or empty one is left to that pass.
+        if (decision.op != ClipSnapshotSyncOp.sync) return;
+      } else {
+        switch (decision.op) {
+          case ClipSnapshotSyncOp.skip:
+            _orphanStepDidReverse = false;
+            return;
+          case ClipSnapshotSyncOp.stepBackward:
+            _orphanStepDidReverse = _orphanStepDidReverse || decision.reversed;
+            editor.undoAction();
+            return;
+          case ClipSnapshotSyncOp.stepForward:
+            _orphanStepDidReverse = _orphanStepDidReverse || decision.reversed;
+            editor.redoAction();
+            return;
+          case ClipSnapshotSyncOp.sync:
+            _orphanStepDidReverse = false;
+        }
       }
 
       final clips = decision.resolvableClips;
@@ -1328,7 +1347,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   ) async {
     if (_isImportingHistory || !_isInitialized) return;
 
-    _syncMainCapabilities(scope, bloc);
+    // Directionless: the directional onUndo/onRedo pass owns stepping past an
+    // orphan-only entry (this callback fires first, before onUndo/onRedo).
+    _syncMainCapabilities(scope, bloc, allowOrphanStep: false);
     final result = await scope.requireEditor.exportStateHistory(
       configs: const ExportEditorConfigs(
         historySpan: .currentAndBackward,
