@@ -42,8 +42,10 @@ Before writing a new helper, utility, or formatter, search `mobile/packages/` fo
 ## Code Quality
 
 ### Line Length
-Dart source lines should be 80 characters or fewer. This matches the
-`dart format` default and the `very_good_analysis` lint.
+Dart source lines should use `dart format`'s default 80-character page
+width. In this repo, the `very_good_analysis`
+`lines_longer_than_80_chars` lint is disabled, so formatting checks enforce
+this rule, not `flutter analyze`.
 
 The 80-character limit applies **only to Dart code**. Other file types are
 not bound by it and should follow their own formatter and conventions:

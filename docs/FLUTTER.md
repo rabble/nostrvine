@@ -74,7 +74,9 @@ mobile platforms.
 * **Error Handling:** Anticipate and handle potential errors. Don't let your
   code fail silently.
 * **Styling:**
-    * Line length: Lines should be 80 characters or fewer.
+    * Line length: Dart source should use `dart format`'s default
+      80-character page width. Other file types should follow their own
+      formatter and conventions.
     * Use `PascalCase` for classes, `camelCase` for
       members/variables/functions/enums, and `snake_case` for files.
 * **Functions:**
