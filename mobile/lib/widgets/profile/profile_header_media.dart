@@ -352,19 +352,10 @@ class _ProfileAvatarWithColor extends StatelessWidget {
             ),
             child: Hero(
               tag: _avatarHeroTag(userIdHex),
-              flightShuttleBuilder: (_, _, _, _, _) {
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    final boxSize = constraints.biggest.shortestSide;
-                    return UserAvatar(
-                      imageUrl: imageUrl,
-                      placeholderSeed: userIdHex,
-                      size: boxSize,
-                      cornerRadius: boxSize * _avatarHeroCornerRatio,
-                    );
-                  },
-                );
-              },
+              flightShuttleBuilder: (_, _, _, _, _) => _AvatarHeroFlightShuttle(
+                imageUrl: imageUrl,
+                userIdHex: userIdHex,
+              ),
               child: avatarWidget,
             ),
           )
@@ -479,6 +470,28 @@ class _ProfileActionLabel extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Avatar lightbox
 // ---------------------------------------------------------------------------
+
+class _AvatarHeroFlightShuttle extends StatelessWidget {
+  const _AvatarHeroFlightShuttle({required this.userIdHex, this.imageUrl});
+
+  final String? imageUrl;
+  final String userIdHex;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final boxSize = constraints.biggest.shortestSide;
+        return UserAvatar(
+          imageUrl: imageUrl,
+          placeholderSeed: userIdHex,
+          size: boxSize,
+          cornerRadius: boxSize * _avatarHeroCornerRatio,
+        );
+      },
+    );
+  }
+}
 
 void _showAvatarLightbox(
   BuildContext context, {

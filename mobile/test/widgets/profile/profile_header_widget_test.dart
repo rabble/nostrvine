@@ -580,6 +580,46 @@ void main() {
     });
 
     testWidgets(
+      'header avatar default corner radius matches the Hero flight ratio',
+      (tester) async {
+        final testProfile = createTestProfile(
+          displayName: 'Test User',
+          picture: 'https://example.com/avatar.jpg',
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final headerAvatar = tester.widget<UserAvatar>(
+          find.byType(UserAvatar),
+        );
+        expect(headerAvatar.cornerRadius, isNull);
+
+        final avatarClip = tester.widget<ClipRRect>(
+          find.descendant(
+            of: find.byType(UserAvatar),
+            matching: find.byType(ClipRRect),
+          ),
+        );
+        final borderRadius = avatarClip.borderRadius as BorderRadius;
+
+        // Mirrors the lightbox constants in profile_header_media.dart:
+        // _lightboxAvatarCornerRadius / _lightboxAvatarSize == 112 / 288.
+        // If the header size or UserAvatar's default radius formula changes,
+        // this catches the resulting jump at the start of the Hero flight.
+        final expectedRadius = headerAvatar.size * (112 / 288);
+        expect(borderRadius.topLeft.x, closeTo(expectedRadius, 0.001));
+        expect(borderRadius.topLeft.y, closeTo(expectedRadius, 0.001));
+      },
+    );
+
+    testWidgets(
       'avatar Hero flight scales the shuttle from the header size so the '
       'corner radius stays proportional instead of clamping to a circle '
       'mid-flight',
