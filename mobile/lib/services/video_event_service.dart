@@ -41,6 +41,7 @@ import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/effective_content_labels.dart';
 import 'package:openvine/services/event_router.dart';
+import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/repost_resolver.dart';
@@ -241,6 +242,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   ContentFilterService? _contentFilterService;
   ModerationLabelService? _moderationLabelService;
   DivineHostFilterService? _divineHostFilterService;
+  FeedAspectRatioPreferenceService? _feedAspectRatioPreference;
   BrokenVideoTracker? _brokenVideoTracker;
   final SubscriptionManager _subscriptionManager;
 
@@ -468,6 +470,17 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     );
   }
 
+  /// Set the feed aspect-ratio ("square only") preference used by
+  /// [filterVideoList] to drop non-square videos from feed lists.
+  void setFeedAspectRatioPreference(FeedAspectRatioPreferenceService service) {
+    _feedAspectRatioPreference = service;
+    Log.debug(
+      'Feed aspect-ratio preference attached to VideoEventService',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+  }
+
   /// Set the broken-video tracker used to filter videos confirmed unavailable
   /// (hard 404). Marked entries are persisted by the tracker, so this keeps
   /// videos that 404'd in the fullscreen player out of every list surface
@@ -630,11 +643,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   List<VideoEvent> filterVideoList(List<VideoEvent> videos) {
     final service = _contentFilterService;
     final tracker = _brokenVideoTracker;
+    final aspectRatio = _feedAspectRatioPreference;
     final baseVideos = videos
         .where(
           (video) =>
               !shouldHideVideo(video) &&
-              !(tracker?.isVideoBroken(video.id) ?? false),
+              !(tracker?.isVideoBroken(video.id) ?? false) &&
+              !(aspectRatio?.shouldHideVideo(video) ?? false),
         )
         .toList();
     if (service == null) {

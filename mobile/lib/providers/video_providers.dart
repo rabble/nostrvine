@@ -139,6 +139,9 @@ VideoEventService videoEventService(Ref ref) {
   service.setContentFilterService(ref.watch(contentFilterServiceProvider));
   service.setModerationLabelService(moderationLabelService);
   service.setDivineHostFilterService(divineHostFilterService);
+  service.setFeedAspectRatioPreference(
+    ref.watch(feedAspectRatioPreferenceServiceProvider),
+  );
 
   // Attach the broken-video tracker (async init) so videos confirmed
   // unavailable (hard 404) stay filtered out of every list surface across
