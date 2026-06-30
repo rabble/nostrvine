@@ -4,10 +4,12 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart'
     show VideoErrorType;
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
@@ -62,27 +64,13 @@ class PooledVideoErrorOverlay extends ConsumerStatefulWidget {
 
 class _PooledVideoErrorOverlayState
     extends ConsumerState<PooledVideoErrorOverlay> {
-  bool _autoRetryAttempted = false;
-
-  @override
-  void didUpdateWidget(PooledVideoErrorOverlay oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.video.id != widget.video.id ||
-        oldWidget.errorType != widget.errorType) {
-      _autoRetryAttempted = false;
-    }
-  }
-
   BoxFit _resolveBoxFit() {
     if (!widget.shouldPortraitExpand) return BoxFit.contain;
     return widget.isSquare ? BoxFit.contain : BoxFit.cover;
   }
 
   void _maybeAutoRetryAgeRestricted({required bool showVerifyAge}) {
-    if (!showVerifyAge ||
-        widget.isVerifying ||
-        _autoRetryAttempted ||
-        widget.onVerifyAge == null) {
+    if (!showVerifyAge || widget.isVerifying || widget.onVerifyAge == null) {
       return;
     }
 
@@ -91,9 +79,16 @@ class _PooledVideoErrorOverlayState
       return;
     }
 
-    _autoRetryAttempted = true;
+    final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
+    if (playbackStatusCubit.state.hasAutoRetryAttempted(widget.video.id)) {
+      return;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      if (!playbackStatusCubit.consumeAutoRetryAttempt(widget.video.id)) {
+        return;
+      }
       widget.onVerifyAge?.call();
     });
   }

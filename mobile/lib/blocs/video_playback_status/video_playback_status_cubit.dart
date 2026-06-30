@@ -44,6 +44,16 @@ class VideoPlaybackStatusCubit extends Cubit<VideoPlaybackStatusState> {
     emit(state.withVerifying(eventId, false));
   }
 
+  /// Marks the automatic age-verification retry as spent for [eventId].
+  ///
+  /// Returns `true` when this call consumed the attempt budget, or `false`
+  /// when an automatic retry was already attempted for the video.
+  bool consumeAutoRetryAttempt(String eventId) {
+    if (state.hasAutoRetryAttempted(eventId)) return false;
+    emit(state.withAutoRetryAttempted(eventId));
+    return true;
+  }
+
   /// Clears all tracked statuses (call on feed-mode change).
   void clear() {
     emit(state.cleared());

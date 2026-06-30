@@ -4,12 +4,14 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart'
     show VideoErrorType;
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
@@ -60,7 +62,15 @@ void main() {
       VoidCallback? onVerifyAge,
       bool isVerifying = false,
       MediaAuthInterceptor? authInterceptor,
+      VideoPlaybackStatusCubit? playbackStatusCubit,
     }) {
+      final overlay = PooledVideoErrorOverlay(
+        video: video ?? divineVideo,
+        onRetry: () => retryPressed = true,
+        onVerifyAge: onVerifyAge,
+        errorType: errorType,
+        isVerifying: isVerifying,
+      );
       return ProviderScope(
         overrides: [
           mediaAuthInterceptorProvider.overrideWithValue(
@@ -74,13 +84,15 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: PooledVideoErrorOverlay(
-              video: video ?? divineVideo,
-              onRetry: () => retryPressed = true,
-              onVerifyAge: onVerifyAge,
-              errorType: errorType,
-              isVerifying: isVerifying,
-            ),
+            body: playbackStatusCubit == null
+                ? BlocProvider(
+                    create: (_) => VideoPlaybackStatusCubit(),
+                    child: overlay,
+                  )
+                : BlocProvider<VideoPlaybackStatusCubit>.value(
+                    value: playbackStatusCubit,
+                    child: overlay,
+                  ),
           ),
         ),
       );
@@ -92,7 +104,14 @@ void main() {
       VideoEvent? video,
       VoidCallback? onVerifyAge,
       MediaAuthInterceptor? authInterceptor,
+      VideoPlaybackStatusCubit? playbackStatusCubit,
     }) {
+      final overlay = PooledVideoErrorOverlay(
+        video: video ?? divineVideo,
+        onRetry: () => retryPressed = true,
+        onVerifyAge: onVerifyAge,
+        errorType: errorType,
+      );
       return ProviderScope(
         overrides: [
           mediaAuthInterceptorProvider.overrideWithValue(
@@ -106,12 +125,15 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: PooledVideoErrorOverlay(
-              video: video ?? divineVideo,
-              onRetry: () => retryPressed = true,
-              onVerifyAge: onVerifyAge,
-              errorType: errorType,
-            ),
+            body: playbackStatusCubit == null
+                ? BlocProvider(
+                    create: (_) => VideoPlaybackStatusCubit(),
+                    child: overlay,
+                  )
+                : BlocProvider<VideoPlaybackStatusCubit>.value(
+                    value: playbackStatusCubit,
+                    child: overlay,
+                  ),
           ),
         ),
       );
@@ -199,6 +221,45 @@ void main() {
 
         expect(verifyAgePressed, isTrue);
       });
+
+      testWidgets(
+        'auto-runs Verify age only once across overlay teardown and rebuild',
+        (tester) async {
+          when(
+            () => mediaAuthInterceptor.shouldAutoAuthorizeAgeRestrictedMedia,
+          ).thenReturn(true);
+          final playbackStatusCubit = VideoPlaybackStatusCubit();
+          var verifyAgeCalls = 0;
+
+          await tester.pumpWidget(
+            buildWidget(
+              errorType: VideoErrorType.ageRestricted,
+              onVerifyAge: () => verifyAgeCalls++,
+              playbackStatusCubit: playbackStatusCubit,
+            ),
+          );
+          await tester.pump();
+
+          expect(verifyAgeCalls, 1);
+
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await tester.pumpWidget(
+            buildWidget(
+              errorType: VideoErrorType.ageRestricted,
+              onVerifyAge: () => verifyAgeCalls++,
+              playbackStatusCubit: playbackStatusCubit,
+            ),
+          );
+          await tester.pump();
+
+          expect(verifyAgeCalls, 1);
+
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await playbackStatusCubit.close();
+        },
+      );
 
       testWidgets('does not auto-run Verify age when adult content is hidden', (
         tester,

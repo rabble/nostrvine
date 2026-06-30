@@ -40,12 +40,16 @@ class VideoPlaybackStatusState extends Equatable {
     this.maxEntries = _defaultMaxEntries,
     LinkedHashMap<String, PlaybackStatus>? statuses,
     Set<String>? verifyingIds,
+    Set<String>? autoRetryAttemptedIds,
   }) : _statuses = statuses == null
            ? LinkedHashMap<String, PlaybackStatus>()
            : LinkedHashMap<String, PlaybackStatus>.from(statuses),
        _verifyingIds = verifyingIds == null
            ? <String>{}
-           : Set<String>.from(verifyingIds);
+           : Set<String>.from(verifyingIds),
+       _autoRetryAttemptedIds = autoRetryAttemptedIds == null
+           ? <String>{}
+           : Set<String>.from(autoRetryAttemptedIds);
 
   static const int _defaultMaxEntries = 100;
 
@@ -58,6 +62,11 @@ class VideoPlaybackStatusState extends Equatable {
   /// and small (usually 0-1 entries); not LRU-bounded.
   final Set<String> _verifyingIds;
 
+  /// Event IDs whose automatic age-verification retry has already been spent
+  /// for this feed session. Kept above the overlay so retry teardown/rebuild
+  /// cannot reset the attempt budget.
+  final Set<String> _autoRetryAttemptedIds;
+
   /// Returns the status for [eventId], or [PlaybackStatus.ready] when no
   /// status has been recorded.
   PlaybackStatus statusFor(String eventId) =>
@@ -66,6 +75,11 @@ class VideoPlaybackStatusState extends Equatable {
   /// Whether an age-verification retry is currently in flight for [eventId].
   /// Drives the "Verify age" button's loading state.
   bool isVerifying(String eventId) => _verifyingIds.contains(eventId);
+
+  /// Whether the automatic age-verification retry has already been attempted
+  /// for [eventId].
+  bool hasAutoRetryAttempted(String eventId) =>
+      _autoRetryAttemptedIds.contains(eventId);
 
   /// Returns a new state with [status] recorded for [eventId].
   ///
@@ -83,6 +97,7 @@ class VideoPlaybackStatusState extends Equatable {
       maxEntries: maxEntries,
       statuses: next,
       verifyingIds: _verifyingIds,
+      autoRetryAttemptedIds: _autoRetryAttemptedIds,
     );
   }
 
@@ -98,6 +113,18 @@ class VideoPlaybackStatusState extends Equatable {
       maxEntries: maxEntries,
       statuses: _statuses,
       verifyingIds: next,
+      autoRetryAttemptedIds: _autoRetryAttemptedIds,
+    );
+  }
+
+  /// Returns a new state with [eventId]'s automatic retry attempt marked.
+  VideoPlaybackStatusState withAutoRetryAttempted(String eventId) {
+    final next = Set<String>.from(_autoRetryAttemptedIds)..add(eventId);
+    return VideoPlaybackStatusState(
+      maxEntries: maxEntries,
+      statuses: _statuses,
+      verifyingIds: _verifyingIds,
+      autoRetryAttemptedIds: next,
     );
   }
 
@@ -115,7 +142,13 @@ class VideoPlaybackStatusState extends Equatable {
     // `_statuses.keys.toList()` catches those insertion-order changes.
     // Removing either would silently suppress a whole class of state
     // updates — do not "simplify" this.
-    return [_statuses, _statuses.keys.toList(), maxEntries, _verifyingIds];
+    return [
+      _statuses,
+      _statuses.keys.toList(),
+      maxEntries,
+      _verifyingIds,
+      _autoRetryAttemptedIds,
+    ];
   }
 }
 
