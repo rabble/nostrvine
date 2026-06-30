@@ -2,6 +2,8 @@
 // ABOUTME: Covers reactor listing and own-row remove / retry dispatch through
 // ABOUTME: the cubit re-provided above the modal via contentWrapper.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -167,6 +169,89 @@ void main() {
       // Sheet dismissed after removal.
       expect(find.text(l10n.dmReactionsSheetTitle), findsNothing);
     });
+
+    testWidgets(
+      'removing your only reaction closes the sheet without navigating back',
+      (tester) async {
+        // Reproduces the double-pop: tapping the own row pops the sheet in
+        // `_onOwnTap`, then the cubit emits an empty list (the optimistic
+        // removal) which made the empty-state auto-close pop a SECOND time —
+        // falling through to dismiss the conversation screen underneath.
+        final controller =
+            StreamController<ConversationReactionsState>.broadcast();
+        addTearDown(controller.close);
+
+        final initial = ConversationReactionsState(
+          reactionsByMessageId: {
+            messageId: [
+              makeReaction(id: 'own1', reactorPubkey: ownerPubkey, emoji: '🔥'),
+            ],
+          },
+        );
+        when(() => cubit.state).thenReturn(initial);
+        whenListen(cubit, controller.stream, initialState: initial);
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: Builder(
+              builder: (homeContext) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(homeContext).push(
+                      MaterialPageRoute<void>(
+                        builder: (pageContext) => Scaffold(
+                          body: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('conversation'),
+                                ElevatedButton(
+                                  onPressed: () => ReactionsDetailSheet.show(
+                                    context: pageContext,
+                                    cubit: cubit,
+                                    conversationId: conversationId,
+                                    messageId: messageId,
+                                    messageAuthorPubkey: otherPubkey,
+                                    ownerPubkey: ownerPubkey,
+                                  ),
+                                  child: const Text('open'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    child: const Text('go'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('go'));
+        await tester.pumpAndSettle();
+        expect(find.text('conversation'), findsOneWidget);
+
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.dmReactionsSheetTitle), findsOneWidget);
+
+        // Tap own remove → `_onOwnTap` pops the sheet + dispatches the toggle.
+        await tester.tap(find.text(l10n.dmReactionRemoveAction));
+        await tester.pump();
+
+        // The real cubit then emits the optimistic-removed (now empty) state.
+        controller.add(const ConversationReactionsState());
+        await tester.pumpAndSettle();
+
+        // Sheet is dismissed, but the conversation screen stays put — no
+        // spurious back-navigation.
+        expect(find.text(l10n.dmReactionsSheetTitle), findsNothing);
+        expect(find.text('conversation'), findsOneWidget);
+      },
+    );
 
     testWidgets('tapping own failed row dispatches a retry request', (
       tester,

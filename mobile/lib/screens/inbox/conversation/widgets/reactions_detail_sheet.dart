@@ -88,9 +88,16 @@ class _ReactionsDetailBody extends StatelessWidget {
               ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
         if (reactions.isEmpty) {
-          // The last reaction was just removed — close the sheet.
+          // The last reaction was just removed — close the sheet, but only
+          // when this sheet is still the topmost route. Removing your own
+          // (only) reaction already pops the sheet in `_onOwnTap`; without the
+          // `isCurrent` guard the post-frame pop below would fall through and
+          // dismiss the conversation screen too — a spurious back-navigation.
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (context.mounted) Navigator.of(context).maybePop();
+            if (!context.mounted) return;
+            if (ModalRoute.of(context)?.isCurrent ?? false) {
+              Navigator.of(context).maybePop();
+            }
           });
           return const SizedBox.shrink();
         }
