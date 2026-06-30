@@ -151,7 +151,11 @@ class VideoSharingService {
 
     if (result.success) {
       _shareHistory[recipientPubkey] = DateTime.now();
-      await _updateRecentlySharedWith(recipientPubkey);
+      // Fire-and-forget: this only refreshes the in-memory recents list for
+      // the next share-sheet open. Awaiting it kept the success toast waiting
+      // on a 5s-timeout profile fetch for no user-visible benefit. It
+      // self-catches its own errors. See #5391.
+      unawaited(_updateRecentlySharedWith(recipientPubkey));
 
       final participants = [dmRepo.userPubkey, recipientPubkey]..sort();
       final conversationId = DmRepository.computeConversationId(participants);
