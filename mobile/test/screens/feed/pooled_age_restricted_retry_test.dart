@@ -491,6 +491,7 @@ class _RetryHarness extends StatelessWidget {
                     ref: ref,
                     video: video ?? _video,
                     index: 0,
+                    resolveSha256: _resolveSha256,
                     retryPlayback: retryPlayback,
                   ),
                   child: const Text('Verify'),
@@ -513,3 +514,10 @@ final _video = VideoEvent(
   videoUrl: _videoUrl,
   sha256: _sha256,
 );
+
+String? _resolveSha256({String? explicitSha256, String? videoUrl}) {
+  if (explicitSha256 != null && explicitSha256.isNotEmpty) {
+    return explicitSha256;
+  }
+  return null;
+}

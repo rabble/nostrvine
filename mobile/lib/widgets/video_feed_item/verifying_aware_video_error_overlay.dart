@@ -25,6 +25,7 @@ class VerifyingAwareVideoErrorOverlay extends ConsumerWidget {
   const VerifyingAwareVideoErrorOverlay({
     required this.video,
     required this.index,
+    required this.resolveSha256,
     required this.onRetry,
     required this.retryPlayback,
     required this.errorType,
@@ -35,6 +36,8 @@ class VerifyingAwareVideoErrorOverlay extends ConsumerWidget {
 
   final VideoEvent video;
   final int index;
+
+  final PooledAgeRestrictedSha256Resolver resolveSha256;
 
   /// Called when the user taps Retry. Hidden for moderation-restricted content.
   final VoidCallback onRetry;
@@ -62,6 +65,7 @@ class VerifyingAwareVideoErrorOverlay extends ConsumerWidget {
           ref: ref,
           video: video,
           index: index,
+          resolveSha256: resolveSha256,
           retryPlayback: retryPlayback,
         ),
         errorType: errorType,

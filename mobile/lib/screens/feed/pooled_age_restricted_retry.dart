@@ -10,10 +10,12 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 const _logName = 'PooledAgeRestrictedRetry';
+
+typedef PooledAgeRestrictedSha256Resolver =
+    String? Function({String? explicitSha256, String? videoUrl});
 
 /// Verifies access to an age-restricted pooled video, then retries playback
 /// with viewer auth headers on the active pooled controller item.
@@ -22,6 +24,7 @@ Future<void> retryAgeRestrictedPooledVideo({
   required WidgetRef ref,
   required VideoEvent video,
   required int index,
+  required PooledAgeRestrictedSha256Resolver resolveSha256,
   required FutureOr<bool> Function(Map<String, String>) retryPlayback,
 }) async {
   // The pooled overlays (ModeratedContentOverlay / PooledVideoErrorOverlay)
@@ -42,7 +45,7 @@ Future<void> retryAgeRestrictedPooledVideo({
   }
   playbackStatusCubit.markVerifying(video.id);
   try {
-    final retryInput = _resolveRetryInput(video);
+    final retryInput = _resolveRetryInput(video, resolveSha256);
     if (retryInput == null) {
       Log.warning(
         'Skipping age-restricted retry: missing videoUrl for event '
@@ -122,12 +125,13 @@ Future<void> autoRetryAgeRestrictedPooledVideo({
   required WidgetRef ref,
   required VideoEvent video,
   required int index,
+  required PooledAgeRestrictedSha256Resolver resolveSha256,
   required FutureOr<bool> Function(Map<String, String>) retryPlayback,
 }) async {
   final mediaAuthInterceptor = ref.read(mediaAuthInterceptorProvider);
   if (!mediaAuthInterceptor.canAutoAuthorizeAdultMedia) return;
 
-  final retryInput = _resolveRetryInput(video);
+  final retryInput = _resolveRetryInput(video, resolveSha256);
   if (retryInput == null || retryInput.sha256 == null) return;
 
   final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
@@ -180,7 +184,10 @@ void _showSignerUnreachable(BuildContext context) {
   );
 }
 
-_PooledRetryInput? _resolveRetryInput(VideoEvent video) {
+_PooledRetryInput? _resolveRetryInput(
+  VideoEvent video,
+  PooledAgeRestrictedSha256Resolver resolveSha256,
+) {
   final videoUrl = video.videoUrl;
   if (videoUrl == null || videoUrl.isEmpty) {
     return null;
@@ -188,7 +195,7 @@ _PooledRetryInput? _resolveRetryInput(VideoEvent video) {
 
   return _PooledRetryInput(
     videoUrl: videoUrl,
-    sha256: VideoModerationStatusService.resolveSha256(
+    sha256: resolveSha256(
       explicitSha256: video.sha256,
       videoUrl: videoUrl,
     ),

@@ -369,6 +369,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
           return VerifyingAwareVideoErrorOverlay(
             video: video,
             index: index,
+            resolveSha256: VideoModerationStatusService.resolveSha256,
             onRetry: onRetry,
             retryPlayback: (httpHeaders) =>
                 _retryPooledVideoAt(index, httpHeaders),
@@ -535,6 +536,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
       ref: ref,
       video: widget.video,
       index: widget.index,
+      resolveSha256: VideoModerationStatusService.resolveSha256,
       retryPlayback: (httpHeaders) =>
           _feedState?.retryAt(widget.index, httpHeaders: httpHeaders) ??
           Future.value(false),
@@ -963,6 +965,7 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
             ref: ref,
             video: video,
             index: index,
+            resolveSha256: VideoModerationStatusService.resolveSha256,
             retryPlayback: (httpHeaders) =>
                 context
                     .findAncestorStateOfType<InfiniteVideoFeedState>()
@@ -978,6 +981,7 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
                 return VerifyingAwareVideoErrorOverlay(
                   video: video,
                   index: index,
+                  resolveSha256: VideoModerationStatusService.resolveSha256,
                   // Retry is hidden for moderation-restricted content.
                   onRetry: () {},
                   retryPlayback: (httpHeaders) =>
@@ -995,6 +999,7 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
                 return VerifyingAwareVideoErrorOverlay(
                   video: video,
                   index: index,
+                  resolveSha256: VideoModerationStatusService.resolveSha256,
                   // Retry is hidden while age-gated playback uses Verify age.
                   onRetry: () {},
                   retryPlayback: (httpHeaders) =>

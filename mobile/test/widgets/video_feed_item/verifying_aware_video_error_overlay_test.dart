@@ -20,6 +20,13 @@ import 'package:openvine/widgets/video_feed_item/verifying_aware_video_error_ove
 
 class _MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
 
+String? _resolveSha256({String? explicitSha256, String? videoUrl}) {
+  if (explicitSha256 != null && explicitSha256.isNotEmpty) {
+    return explicitSha256;
+  }
+  return null;
+}
+
 class _FakeBuildContext extends Fake implements BuildContext {}
 
 const _videoId =
@@ -69,6 +76,7 @@ void main() {
                 body: VerifyingAwareVideoErrorOverlay(
                   video: _video,
                   index: 0,
+                  resolveSha256: _resolveSha256,
                   onRetry: () {},
                   retryPlayback: (_) => true,
                   errorType: VideoErrorType.ageRestricted,
