@@ -15,6 +15,12 @@ import 'package:unified_logger/unified_logger.dart';
 class VideoEditorSplitService {
   static const minClipDuration = Duration(milliseconds: 30);
 
+  /// Defensive cap on awaiting the preview thumbnail after the split settles.
+  /// The native thumbnail decode has no watchdog of its own; without this a
+  /// stalled decode would hold [splitClip] open and re-wedge the editor's
+  /// loading state exactly like the render stall did (#4801).
+  static const _thumbnailWatchdogTimeout = Duration(seconds: 30);
+
   /// Validates if the split position is valid for the given clip.
   ///
   /// [splitPosition] is relative to the trimmed clip (0 to trimmedDuration).
@@ -177,7 +183,14 @@ class VideoEditorSplitService {
       renderedEndClip.processingCompleter?.complete(false);
       rethrow;
     } finally {
-      await thumbnailFuture;
+      // Bound the wait so a stalled native thumbnail decode can't hold
+      // splitClip open and re-wedge the editor (#4801). The thumbnail owns its
+      // error handling internally, so this await only ever completes or times
+      // out — it never throws.
+      await thumbnailFuture.timeout(
+        _thumbnailWatchdogTimeout,
+        onTimeout: () {},
+      );
     }
   }
 

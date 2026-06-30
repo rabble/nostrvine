@@ -557,10 +557,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           splitStartClipId = startClip.id;
           splitEndClipId = endClip.id;
 
-          // splitClip's render phase awaits Future.wait on parallel
-          // video renders. If the bloc is closed mid-render (user
-          // navigates away from the editor), the late callbacks fire
-          // on a done emitter — guard each one.
+          // splitClip awaits a single native split (plus the parallel
+          // thumbnail). If the bloc is closed mid-split (user navigates
+          // away from the editor), the late callbacks fire on a done
+          // emitter — guard each one.
           if (emit.isDone) return;
           final clips = state.clips;
           final index = clips.indexWhere((c) => c.id == selectedClip.id);
