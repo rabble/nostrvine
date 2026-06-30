@@ -5450,5 +5450,9 @@
     "imageCropEditorDoneSemanticLabel": "Apply crop",
     "@imageCropEditorDoneSemanticLabel": {
         "description": "Accessibility label for the done button in the image crop editor that confirms the crop and proceeds with the upload."
+    },
+    "imageCropEditorProcessing": "Applying crop…",
+    "@imageCropEditorProcessing": {
+        "description": "Loading message shown while the image crop editor generates the final cropped image after the user taps done."
     }
 }

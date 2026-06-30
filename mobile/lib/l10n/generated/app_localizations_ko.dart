@@ -9097,4 +9097,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => '자르기 적용';
+
+  @override
+  String get imageCropEditorProcessing => '자르기 적용 중…';
 }

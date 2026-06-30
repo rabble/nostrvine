@@ -4020,5 +4020,6 @@
     "imageCropEditorFlipLabel": "قلب",
     "imageCropEditorResetLabel": "إعادة تعيين",
     "imageCropEditorCloseSemanticLabel": "إلغاء الاقتصاص",
-    "imageCropEditorDoneSemanticLabel": "تطبيق الاقتصاص"
+    "imageCropEditorDoneSemanticLabel": "تطبيق الاقتصاص",
+    "imageCropEditorProcessing": "جارٍ تطبيق الاقتصاص…"
 }

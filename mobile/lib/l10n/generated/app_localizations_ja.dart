@@ -9073,4 +9073,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => '切り抜きを適用';
+
+  @override
+  String get imageCropEditorProcessing => '切り抜きを適用中…';
 }

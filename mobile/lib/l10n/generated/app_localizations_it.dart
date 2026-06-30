@@ -9483,4 +9483,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => 'Applica ritaglio';
+
+  @override
+  String get imageCropEditorProcessing => 'Applicazione del ritaglio…';
 }

@@ -9387,4 +9387,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => 'Apply crop';
+
+  @override
+  String get imageCropEditorProcessing => 'Applying crop…';
 }

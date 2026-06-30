@@ -4020,5 +4020,6 @@
     "imageCropEditorFlipLabel": "Retourner",
     "imageCropEditorResetLabel": "Réinitialiser",
     "imageCropEditorCloseSemanticLabel": "Annuler le recadrage",
-    "imageCropEditorDoneSemanticLabel": "Appliquer le recadrage"
+    "imageCropEditorDoneSemanticLabel": "Appliquer le recadrage",
+    "imageCropEditorProcessing": "Application du recadrage…"
 }

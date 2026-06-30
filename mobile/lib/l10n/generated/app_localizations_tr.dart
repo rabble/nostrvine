@@ -9375,4 +9375,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => 'Kırpmayı uygula';
+
+  @override
+  String get imageCropEditorProcessing => 'Kırpma uygulanıyor…';
 }

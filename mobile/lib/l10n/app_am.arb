@@ -4145,5 +4145,6 @@
     "imageCropEditorFlipLabel": "ግልብጥ",
     "imageCropEditorResetLabel": "ዳግም አስጀምር",
     "imageCropEditorCloseSemanticLabel": "መከርከምን ሰርዝ",
-    "imageCropEditorDoneSemanticLabel": "መከርከምን ተግብር"
+    "imageCropEditorDoneSemanticLabel": "መከርከምን ተግብር",
+    "imageCropEditorProcessing": "መከርከም በመተግበር ላይ…"
 }

@@ -9501,4 +9501,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => 'Ilapat ang pag-crop';
+
+  @override
+  String get imageCropEditorProcessing => 'Inilalapat ang pag-crop…';
 }

@@ -4020,5 +4020,6 @@
     "imageCropEditorFlipLabel": "Spiegelen",
     "imageCropEditorResetLabel": "Resetten",
     "imageCropEditorCloseSemanticLabel": "Bijsnijden annuleren",
-    "imageCropEditorDoneSemanticLabel": "Bijsnijden toepassen"
+    "imageCropEditorDoneSemanticLabel": "Bijsnijden toepassen",
+    "imageCropEditorProcessing": "Bijsnijden toepassen…"
 }

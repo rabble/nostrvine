@@ -4020,5 +4020,6 @@
     "imageCropEditorFlipLabel": "Inverter",
     "imageCropEditorResetLabel": "Redefinir",
     "imageCropEditorCloseSemanticLabel": "Cancelar recorte",
-    "imageCropEditorDoneSemanticLabel": "Aplicar recorte"
+    "imageCropEditorDoneSemanticLabel": "Aplicar recorte",
+    "imageCropEditorProcessing": "Aplicando recorte…"
 }

@@ -9319,4 +9319,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => 'تطبيق الاقتصاص';
+
+  @override
+  String get imageCropEditorProcessing => 'جارٍ تطبيق الاقتصاص…';
 }

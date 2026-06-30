@@ -9408,4 +9408,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => 'Använd beskärning';
+
+  @override
+  String get imageCropEditorProcessing => 'Tillämpar beskärning…';
 }

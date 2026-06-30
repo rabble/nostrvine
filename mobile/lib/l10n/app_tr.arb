@@ -4020,5 +4020,6 @@
     "imageCropEditorFlipLabel": "Çevir",
     "imageCropEditorResetLabel": "Sıfırla",
     "imageCropEditorCloseSemanticLabel": "Kırpmayı iptal et",
-    "imageCropEditorDoneSemanticLabel": "Kırpmayı uygula"
+    "imageCropEditorDoneSemanticLabel": "Kırpmayı uygula",
+    "imageCropEditorProcessing": "Kırpma uygulanıyor…"
 }

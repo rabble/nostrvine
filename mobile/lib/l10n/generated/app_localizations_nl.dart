@@ -9442,4 +9442,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => 'Bijsnijden toepassen';
+
+  @override
+  String get imageCropEditorProcessing => 'Bijsnijden toepassen…';
 }

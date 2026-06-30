@@ -9226,4 +9226,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => 'መከርከምን ተግብር';
+
+  @override
+  String get imageCropEditorProcessing => 'መከርከም በመተግበር ላይ…';
 }

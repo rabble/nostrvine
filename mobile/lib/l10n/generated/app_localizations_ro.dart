@@ -9590,4 +9590,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => 'Aplică decuparea';
+
+  @override
+  String get imageCropEditorProcessing => 'Se aplică decuparea…';
 }

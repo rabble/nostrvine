@@ -4020,5 +4020,6 @@
     "imageCropEditorFlipLabel": "Odbij",
     "imageCropEditorResetLabel": "Resetuj",
     "imageCropEditorCloseSemanticLabel": "Anuluj kadrowanie",
-    "imageCropEditorDoneSemanticLabel": "Zastosuj kadrowanie"
+    "imageCropEditorDoneSemanticLabel": "Zastosuj kadrowanie",
+    "imageCropEditorProcessing": "Stosowanie kadrowania…"
 }

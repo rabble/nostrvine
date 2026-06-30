@@ -3337,5 +3337,6 @@
     "imageCropEditorFlipLabel": "뒤집기",
     "imageCropEditorResetLabel": "초기화",
     "imageCropEditorCloseSemanticLabel": "자르기 취소",
-    "imageCropEditorDoneSemanticLabel": "자르기 적용"
+    "imageCropEditorDoneSemanticLabel": "자르기 적용",
+    "imageCropEditorProcessing": "자르기 적용 중…"
 }

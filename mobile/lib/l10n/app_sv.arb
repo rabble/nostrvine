@@ -4020,5 +4020,6 @@
     "imageCropEditorFlipLabel": "Vänd",
     "imageCropEditorResetLabel": "Återställ",
     "imageCropEditorCloseSemanticLabel": "Avbryt beskärning",
-    "imageCropEditorDoneSemanticLabel": "Använd beskärning"
+    "imageCropEditorDoneSemanticLabel": "Använd beskärning",
+    "imageCropEditorProcessing": "Tillämpar beskärning…"
 }

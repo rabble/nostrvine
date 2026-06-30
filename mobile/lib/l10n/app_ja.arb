@@ -4020,5 +4020,6 @@
     "imageCropEditorFlipLabel": "反転",
     "imageCropEditorResetLabel": "リセット",
     "imageCropEditorCloseSemanticLabel": "切り抜きをキャンセル",
-    "imageCropEditorDoneSemanticLabel": "切り抜きを適用"
+    "imageCropEditorDoneSemanticLabel": "切り抜きを適用",
+    "imageCropEditorProcessing": "切り抜きを適用中…"
 }

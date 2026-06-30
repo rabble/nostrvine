@@ -9561,4 +9561,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => 'Zastosuj kadrowanie';
+
+  @override
+  String get imageCropEditorProcessing => 'Stosowanie kadrowania…';
 }

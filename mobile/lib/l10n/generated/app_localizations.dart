@@ -16301,6 +16301,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apply crop'**
   String get imageCropEditorDoneSemanticLabel;
+
+  /// Loading message shown while the image crop editor generates the final cropped image after the user taps done.
+  ///
+  /// In en, this message translates to:
+  /// **'Applying crop…'**
+  String get imageCropEditorProcessing;
 }
 
 class _AppLocalizationsDelegate

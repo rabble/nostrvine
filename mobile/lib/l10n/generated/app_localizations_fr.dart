@@ -9527,4 +9527,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => 'Appliquer le recadrage';
+
+  @override
+  String get imageCropEditorProcessing => 'Application du recadrage…';
 }

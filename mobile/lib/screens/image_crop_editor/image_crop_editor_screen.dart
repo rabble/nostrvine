@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/image_crop_editor/widgets/image_crop_editor_bottom_bar.dart';
 import 'package:openvine/screens/image_crop_editor/widgets/image_crop_editor_toolbar.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -129,6 +130,9 @@ class _ImageCropEditorScreenState extends State<ImageCropEditorScreen> {
           },
         ),
         configs: ProImageEditorConfigs(
+          i18n: I18n(
+            doneLoadingMsg: context.l10n.imageCropEditorProcessing,
+          ),
           progressIndicatorConfigs: const ProgressIndicatorConfigs(
             widgets: ProgressIndicatorWidgets(
               circularProgressIndicator: BrandedLoadingIndicator(size: 64),

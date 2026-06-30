@@ -4020,5 +4020,6 @@
     "imageCropEditorFlipLabel": "Întoarce",
     "imageCropEditorResetLabel": "Resetează",
     "imageCropEditorCloseSemanticLabel": "Anulează decuparea",
-    "imageCropEditorDoneSemanticLabel": "Aplică decuparea"
+    "imageCropEditorDoneSemanticLabel": "Aplică decuparea",
+    "imageCropEditorProcessing": "Se aplică decuparea…"
 }

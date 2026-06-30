@@ -9503,4 +9503,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => 'Zuschnitt übernehmen';
+
+  @override
+  String get imageCropEditorProcessing => 'Zuschnitt wird angewendet…';
 }

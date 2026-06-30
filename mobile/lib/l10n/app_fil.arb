@@ -2589,5 +2589,6 @@
     "imageCropEditorFlipLabel": "Baligtarin",
     "imageCropEditorResetLabel": "I-reset",
     "imageCropEditorCloseSemanticLabel": "Kanselahin ang pag-crop",
-    "imageCropEditorDoneSemanticLabel": "Ilapat ang pag-crop"
+    "imageCropEditorDoneSemanticLabel": "Ilapat ang pag-crop",
+    "imageCropEditorProcessing": "Inilalapat ang pag-crop…"
 }

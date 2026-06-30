@@ -4020,5 +4020,6 @@
     "imageCropEditorFlipLabel": "Capovolgi",
     "imageCropEditorResetLabel": "Reimposta",
     "imageCropEditorCloseSemanticLabel": "Annulla ritaglio",
-    "imageCropEditorDoneSemanticLabel": "Applica ritaglio"
+    "imageCropEditorDoneSemanticLabel": "Applica ritaglio",
+    "imageCropEditorProcessing": "Applicazione del ritaglio…"
 }

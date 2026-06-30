@@ -4020,5 +4020,6 @@
     "imageCropEditorFlipLabel": "Spiegeln",
     "imageCropEditorResetLabel": "Zurücksetzen",
     "imageCropEditorCloseSemanticLabel": "Zuschneiden abbrechen",
-    "imageCropEditorDoneSemanticLabel": "Zuschnitt übernehmen"
+    "imageCropEditorDoneSemanticLabel": "Zuschnitt übernehmen",
+    "imageCropEditorProcessing": "Zuschnitt wird angewendet…"
 }

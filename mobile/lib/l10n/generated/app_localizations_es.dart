@@ -9485,4 +9485,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => 'Aplicar recorte';
+
+  @override
+  String get imageCropEditorProcessing => 'Aplicando recorte…';
 }

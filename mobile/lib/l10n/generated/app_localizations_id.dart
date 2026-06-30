@@ -9378,4 +9378,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => 'Terapkan pemangkasan';
+
+  @override
+  String get imageCropEditorProcessing => 'Menerapkan pemangkasan…';
 }

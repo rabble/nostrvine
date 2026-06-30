@@ -9491,4 +9491,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get imageCropEditorDoneSemanticLabel => 'Прилагане на изрязването';
+
+  @override
+  String get imageCropEditorProcessing => 'Прилагане на изрязването…';
 }
