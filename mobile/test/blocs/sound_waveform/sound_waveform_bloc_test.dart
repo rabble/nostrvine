@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -149,11 +150,80 @@ void main() {
           const SoundWaveformExtract(
             path: 'assets/sounds/test.mp3',
             soundId: 'bundled-sound-id',
-            isAsset: true,
+            kind: AudioSourceKind.asset,
           ),
         ),
         expect: () => [isA<SoundWaveformLoading>(), isA<SoundWaveformLoaded>()],
       );
+
+      blocTest<SoundWaveformBloc, SoundWaveformState>(
+        'handles local file path extraction',
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const SoundWaveformExtract(
+            path: '/var/mobile/Containers/Data/draft_audio/import.mp3',
+            soundId: 'local_import_1',
+            kind: AudioSourceKind.file,
+          ),
+        ),
+        expect: () => [isA<SoundWaveformLoading>(), isA<SoundWaveformLoaded>()],
+      );
+    });
+
+    group('$SoundWaveformExtract.forSound', () {
+      test('returns a file-kind event for imported audio', () {
+        final sound = AudioEvent.fromLocalImport(
+          id: '${AudioEvent.localImportMarker}_1',
+          filePath: '/var/mobile/Containers/Data/draft_audio/import.mp3',
+          createdAt: 0,
+          title: 'Imported',
+          mimeType: 'audio/mpeg',
+        );
+
+        final event = SoundWaveformExtract.forSound(sound);
+
+        expect(event, isNotNull);
+        expect(event!.kind, AudioSourceKind.file);
+        expect(event.path, sound.localFilePath);
+      });
+
+      test('returns an asset-kind event for bundled sounds', () {
+        final sound = AudioEvent.fromBundledSound(
+          VineSound(
+            id: 'wednesday',
+            title: 'Wednesday',
+            assetPath: 'assets/sounds/wednesday.mp3',
+            duration: const Duration(seconds: 6),
+          ),
+        );
+
+        final event = SoundWaveformExtract.forSound(sound);
+
+        expect(event, isNotNull);
+        expect(event!.kind, AudioSourceKind.asset);
+        expect(event.path, sound.assetPath);
+      });
+
+      test('returns a network-kind event for remote sounds', () {
+        const sound = AudioEvent(
+          id: 'remote',
+          pubkey: 'abc',
+          createdAt: 0,
+          url: 'https://example.com/audio.mp3',
+        );
+
+        final event = SoundWaveformExtract.forSound(sound);
+
+        expect(event, isNotNull);
+        expect(event!.kind, AudioSourceKind.network);
+        expect(event.path, 'https://example.com/audio.mp3');
+      });
+
+      test('returns null when the sound has no usable source', () {
+        const sound = AudioEvent(id: 'no-source', pubkey: 'abc', createdAt: 0);
+
+        expect(SoundWaveformExtract.forSound(sound), isNull);
+      });
     });
 
     group(SoundWaveformClear, () {
@@ -214,12 +284,12 @@ void main() {
       expect(event1, isNot(equals(event2)));
     });
 
-    test('$SoundWaveformExtract isAsset prop affects equality', () {
+    test('$SoundWaveformExtract kind prop affects equality', () {
       const event1 = SoundWaveformExtract(path: 'test.mp3', soundId: 'sound-1');
       const event2 = SoundWaveformExtract(
         path: 'test.mp3',
         soundId: 'sound-1',
-        isAsset: true,
+        kind: AudioSourceKind.asset,
       );
       expect(event1, isNot(equals(event2)));
     });

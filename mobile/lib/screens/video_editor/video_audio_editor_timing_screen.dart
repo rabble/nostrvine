@@ -178,20 +178,9 @@ class _VideoAudioEditorTimingScreenState
   }
 
   void _extractWaveform() {
-    final sound = widget.sound;
-
-    if (sound.isBundled && sound.assetPath != null) {
-      _waveformBloc.add(
-        SoundWaveformExtract(
-          path: sound.assetPath!,
-          soundId: sound.id,
-          isAsset: true,
-        ),
-      );
-    } else if (sound.url != null) {
-      _waveformBloc.add(
-        SoundWaveformExtract(path: sound.url!, soundId: sound.id),
-      );
+    final event = SoundWaveformExtract.forSound(widget.sound);
+    if (event != null) {
+      _waveformBloc.add(event);
     }
   }
 

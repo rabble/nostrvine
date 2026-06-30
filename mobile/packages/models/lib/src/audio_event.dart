@@ -10,6 +10,21 @@ import 'package:nostr_sdk/event.dart';
 /// Kind number for audio file metadata events (NIP-94)
 const int audioEventKind = 1063;
 
+/// The kind of underlying media source backing an [AudioEvent].
+///
+/// Used to pick the correct loading strategy: a bundled [asset], an
+/// on-disk [file] (imported audio), or a remote [network] URL.
+enum AudioSourceKind {
+  /// Bundled app asset (`asset://…`).
+  asset,
+
+  /// Local file on disk (imported audio).
+  file,
+
+  /// Remote `http`/`https` URL.
+  network,
+}
+
 /// Represents an audio file metadata event (Kind 1063)
 /// for the audio reuse feature.
 ///
@@ -268,6 +283,33 @@ class AudioEvent {
       return url!.substring(prefix.length);
     }
     return null;
+  }
+
+  /// Classifies the playable source for this audio and returns the matching
+  /// path, or `null` when no usable source exists.
+  ///
+  /// Imported audio stores its on-disk path in [url]; it must be loaded as a
+  /// file rather than parsed as a network URL (which fails with "No host
+  /// specified in URI" / iOS "unsupported URL"). Bundled sounds expose a bare
+  /// asset path. Centralising this mapping keeps call sites from re-deriving
+  /// it and mis-handling local imports.
+  ({AudioSourceKind kind, String path})? get resolvedSource {
+    if (isBundled) {
+      final path = assetPath;
+      return path == null || path.isEmpty
+          ? null
+          : (kind: AudioSourceKind.asset, path: path);
+    }
+    if (isLocalImport) {
+      final path = localFilePath;
+      return path == null || path.isEmpty
+          ? null
+          : (kind: AudioSourceKind.file, path: path);
+    }
+    final path = url;
+    return path == null || path.isEmpty
+        ? null
+        : (kind: AudioSourceKind.network, path: path);
   }
 
   /// The Nostr event ID (64-character hex string).

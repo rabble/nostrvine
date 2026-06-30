@@ -1,11 +1,13 @@
 // ABOUTME: BLoC for extracting audio waveform data from sounds.
 // ABOUTME: Uses ProVideoEditor to extract amplitude samples for visualization.
 
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:models/models.dart' show AudioEvent, AudioSourceKind;
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -31,9 +33,11 @@ class SoundWaveformBloc extends Bloc<SoundWaveformEvent, SoundWaveformState> {
     emit(const SoundWaveformLoading());
 
     try {
-      final video = event.isAsset
-          ? EditorVideo.asset(event.path)
-          : EditorVideo.network(event.path);
+      final video = switch (event.kind) {
+        AudioSourceKind.asset => EditorVideo.asset(event.path),
+        AudioSourceKind.file => EditorVideo.file(File(event.path)),
+        AudioSourceKind.network => EditorVideo.network(event.path),
+      };
 
       final configs = WaveformConfigs(video: video);
 

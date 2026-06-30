@@ -350,29 +350,9 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
       return;
     }
 
-    // Handle bundled sounds (from app assets)
-    if (sound.isBundled) {
-      final assetPath = sound.assetPath;
-      Log.info(
-        '🎵 Bundled sound assetPath: $assetPath',
-        name: 'VideoRecorderScreen',
-        category: LogCategory.video,
-      );
-      if (assetPath != null) {
-        bloc.add(
-          SoundWaveformExtract(
-            path: assetPath,
-            soundId: sound.id,
-            isAsset: true,
-          ),
-        );
-      }
-      return;
-    }
-
-    // Handle network sounds
-    if (sound.url != null) {
-      bloc.add(SoundWaveformExtract(path: sound.url!, soundId: sound.id));
+    final event = SoundWaveformExtract.forSound(sound);
+    if (event != null) {
+      bloc.add(event);
     }
   }
 

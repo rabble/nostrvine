@@ -19,7 +19,7 @@ import 'package:divine_video_player/divine_video_player.dart'
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:models/models.dart' as model show AspectRatio;
+import 'package:models/models.dart' as model show AspectRatio, AudioSourceKind;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
@@ -1598,7 +1598,8 @@ class VideoRecorderBloc
 
   Future<void> _prepareSoundForPlayback() async {
     final selectedSound = _readVideoEditorState().selectedSound;
-    if (selectedSound == null || selectedSound.url == null) {
+    final source = selectedSound?.resolvedSource;
+    if (selectedSound == null || source == null) {
       await _audioPlaybackService?.dispose();
       _audioPlaybackService = null;
       return;
@@ -1608,7 +1609,13 @@ class VideoRecorderBloc
       _audioPlaybackService ??= _audioPlaybackServiceFactory();
 
       await _audioPlaybackService!.configureForRecording();
-      await _audioPlaybackService!.loadAudio(selectedSound.url!);
+      // Imported audio is an on-disk file; loading it via loadAudio would
+      // parse the path as a URL and fail with iOS "unsupported URL".
+      if (source.kind == model.AudioSourceKind.file) {
+        await _audioPlaybackService!.loadAudioFromFile(source.path);
+      } else {
+        await _audioPlaybackService!.loadAudio(selectedSound.url!);
+      }
 
       final clipManager = _readClipManager();
       final startPosition =

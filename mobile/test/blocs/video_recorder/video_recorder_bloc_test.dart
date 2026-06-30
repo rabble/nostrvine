@@ -7,7 +7,7 @@ import 'package:divine_camera/divine_camera.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart' as model show AspectRatio;
+import 'package:models/models.dart' as model show AspectRatio, AudioEvent;
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
@@ -22,6 +22,7 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sound_service/sound_service.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:wakelock_plus_platform_interface/wakelock_plus_platform_interface.dart';
 
@@ -81,6 +82,8 @@ class _GatedWakelockPlatform extends WakelockPlusPlatformInterface {
 class _MockProVideoEditor extends Mock
     with MockPlatformInterfaceMixin
     implements ProVideoEditor {}
+
+class _MockAudioPlaybackService extends Mock implements AudioPlaybackService {}
 
 void main() {
   late _MockCameraService cameraService;
@@ -725,6 +728,81 @@ void main() {
               maxDuration: any(named: 'maxDuration'),
             ),
           );
+        },
+      );
+    });
+
+    group('sound playback source selection', () {
+      late _MockAudioPlaybackService audioService;
+
+      setUp(() {
+        audioService = _MockAudioPlaybackService();
+        when(audioService.configureForRecording).thenAnswer((_) async {});
+        when(
+          () => audioService.loadAudio(any()),
+        ).thenAnswer((_) async => const Duration(seconds: 5));
+        when(
+          () => audioService.loadAudioFromFile(any()),
+        ).thenAnswer((_) async => const Duration(seconds: 5));
+        when(audioService.play).thenAnswer((_) async {});
+        when(audioService.dispose).thenAnswer((_) async {});
+        when(
+          () => cameraService.startRecording(
+            maxDuration: any(named: 'maxDuration'),
+          ),
+        ).thenAnswer((_) async => true);
+      });
+
+      VideoRecorderBloc buildBlocWithSound(model.AudioEvent sound) {
+        return VideoRecorderBloc(
+          readClipManager: () => clipManager,
+          readVideoEditor: () => videoEditor,
+          readVideoEditorState: () =>
+              VideoEditorProviderState(selectedSound: sound),
+          readSharedPreferences: () => prefs,
+          cameraService: cameraService,
+          audioPlaybackServiceFactory: () => audioService,
+        );
+      }
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'loads imported audio from file instead of parsing it as a URL',
+        build: () => buildBlocWithSound(
+          model.AudioEvent.fromLocalImport(
+            id: '${model.AudioEvent.localImportMarker}_1',
+            filePath: '/var/mobile/draft_audio/import.mp3',
+            createdAt: 0,
+            title: 'Imported',
+            mimeType: 'audio/mpeg',
+          ),
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderRecordingStartRequested()),
+        verify: (_) {
+          verify(
+            () => audioService.loadAudioFromFile(
+              '/var/mobile/draft_audio/import.mp3',
+            ),
+          ).called(1);
+          verifyNever(() => audioService.loadAudio(any()));
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'loads remote audio via loadAudio',
+        build: () => buildBlocWithSound(
+          const model.AudioEvent(
+            id: 'remote',
+            pubkey: 'abc',
+            createdAt: 0,
+            url: 'https://example.com/audio.mp3',
+          ),
+        ),
+        act: (bloc) => bloc.add(const VideoRecorderRecordingStartRequested()),
+        verify: (_) {
+          verify(
+            () => audioService.loadAudio('https://example.com/audio.mp3'),
+          ).called(1);
+          verifyNever(() => audioService.loadAudioFromFile(any()));
         },
       );
     });
