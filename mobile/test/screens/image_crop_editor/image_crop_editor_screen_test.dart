@@ -1,6 +1,8 @@
 // ABOUTME: Tests the ImageCropKind config contract used by the crop editor.
 // ABOUTME: Locks the per-kind aspect ratio, output cap, filename and mime type.
 
+import 'dart:typed_data';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/screens/image_crop_editor/image_crop_editor.dart';
@@ -19,6 +21,17 @@ void main() {
       expect(ImageCropKind.banner.maxOutputSize, const Size(1500, 500));
       expect(ImageCropKind.banner.filename, 'banner.jpg');
       expect(ImageCropKind.banner.mimeType, 'image/jpeg');
+    });
+  });
+
+  group('croppedBytesOrNull', () {
+    test('returns null for empty bytes (failed capture)', () {
+      expect(croppedBytesOrNull(Uint8List(0)), isNull);
+    });
+
+    test('returns the bytes unchanged when non-empty', () {
+      final bytes = Uint8List.fromList([1, 2, 3]);
+      expect(croppedBytesOrNull(bytes), same(bytes));
     });
   });
 }

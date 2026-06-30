@@ -51,6 +51,20 @@ enum ImageCropKind {
   final String mimeType;
 }
 
+/// JPEG quality for the re-encoded crop output. Matches the picker's
+/// `imageQuality: 85` so the bounded re-encode doesn't inflate an
+/// already-compressed source back toward a 100%-quality file.
+const int _cropOutputJpegQuality = 85;
+
+/// Maps the editor's emitted bytes to the value to pop with.
+///
+/// `pro_image_editor` hands back an **empty** list (not `null`) when its
+/// screenshot capture fails after all retries. Treat that as a failed crop —
+/// return `null` so the caller's cancel path runs instead of uploading a
+/// zero-byte image.
+@visibleForTesting
+Uint8List? croppedBytesOrNull(Uint8List bytes) => bytes.isEmpty ? null : bytes;
+
 /// Pushes the Vine-styled crop editor and resolves to the cropped JPEG bytes,
 /// or `null` if the user cancelled.
 ///
@@ -117,10 +131,20 @@ class _ImageCropEditorScreenState extends State<ImageCropEditorScreen> {
         convertToUint8List: true,
         callbacks: ProImageEditorCallbacks(
           onImageEditingComplete: (bytes) async {
-            _result = bytes;
+            final result = croppedBytesOrNull(bytes);
+            if (result == null) {
+              Log.error(
+                'Crop produced empty bytes for ${kind.name}; '
+                'treating as cancel',
+                name: 'ImageCropEditor',
+                category: LogCategory.ui,
+              );
+              return;
+            }
+            _result = result;
             Log.info(
-              'Cropped ${kind.name}: ${bytes.lengthInBytes} bytes '
-              '(${(bytes.lengthInBytes / 1024).toStringAsFixed(1)} KB)',
+              'Cropped ${kind.name}: ${result.lengthInBytes} bytes '
+              '(${(result.lengthInBytes / 1024).toStringAsFixed(1)} KB)',
               name: 'ImageCropEditor',
               category: LogCategory.ui,
             );
@@ -141,6 +165,7 @@ class _ImageCropEditorScreenState extends State<ImageCropEditorScreen> {
           imageGeneration: ImageGenerationConfigs(
             maxOutputSize: kind.maxOutputSize,
             enableUseOriginalBytes: false,
+            jpegQuality: _cropOutputJpegQuality,
           ),
           cropRotateEditor: CropRotateEditorConfigs(
             initAspectRatio: kind.aspectRatio,
