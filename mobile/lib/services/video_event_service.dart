@@ -2081,6 +2081,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             _handleNewVideoEvent(event, subscriptionType);
           },
           onError: (error) {
+            feedLoadingTimeout?.cancel();
             Log.error(
               '❌ Subscription error for $subscriptionType after $eventCount events: $error',
               name: 'VideoEventService',
@@ -2090,6 +2091,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             _handleSubscriptionError(error, subscriptionType);
           },
           onDone: () {
+            feedLoadingTimeout?.cancel();
             final totalDuration = DateTime.now().difference(
               subscriptionStartTime,
             );
@@ -4194,6 +4196,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
     if (_relayReadyRetrySubscription != null) return;
 
+    // Deliberately event-bounded rather than attempt-bounded: pending types are
+    // enum-bounded, and each retry is triggered only by a relay status update.
+    // A hard cap here can leave a feed dead forever after relay flapping.
     _relayReadyRetrySubscription = _nostrService.relayStatusStream.listen((
       statuses,
     ) {
@@ -4317,6 +4322,15 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
               name: 'VideoEventService',
               category: LogCategory.video,
             );
+            if (e is RelayNotReadyException) {
+              _typesAwaitingRetry.remove(type);
+              if (_typesAwaitingRetry.isEmpty) {
+                timer.cancel();
+                _retryAttempts = 0;
+              }
+              _scheduleRetryWhenRelayReady(type);
+              return;
+            }
             if (_retryAttempts >= _maxRetryAttempts) {
               _typesAwaitingRetry.clear();
               timer.cancel();

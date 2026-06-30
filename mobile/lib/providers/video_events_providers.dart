@@ -9,7 +9,6 @@ import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/seen_videos_notifier.dart';
-import 'package:openvine/providers/tab_visibility_provider.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -457,41 +456,6 @@ class VideoEvents extends _$VideoEvents {
       if (a[i].id != b[i].id) return false;
     }
     return true;
-  }
-
-  /// Start discovery subscription when Explore tab is visible
-  void startDiscoverySubscription() {
-    final isExploreActive = ref.read(isExploreTabActiveProvider);
-    if (!isExploreActive) {
-      Log.debug(
-        'VideoEvents: Ignoring discovery start; Explore inactive',
-        name: 'VideoEventsProvider',
-        category: LogCategory.video,
-      );
-      return;
-    }
-    final videoEventService = ref.read(videoEventServiceProvider);
-    // Avoid noisy re-requests if already subscribed
-    if (videoEventService.isSubscribed(SubscriptionType.discovery)) {
-      Log.debug(
-        'VideoEvents: Discovery already active; skipping start',
-        name: 'VideoEventsProvider',
-        category: LogCategory.video,
-      );
-      return;
-    }
-
-    Log.info(
-      'VideoEvents: Starting discovery subscription on demand with NIP-50 search (sort:hot)',
-      name: 'VideoEventsProvider',
-      category: LogCategory.video,
-    );
-
-    // Subscribe to discovery videos using NIP-50 search for trending/popular
-    // NostrService now handles deduplication automatically
-    videoEventService.subscribeToDiscovery(
-      nip50Sort: NIP50SortMode.hot, // Recent events with high engagement
-    );
   }
 
   /// Load more historical events

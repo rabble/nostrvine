@@ -326,6 +326,67 @@ void main() {
       });
     });
 
+    test('online retry waits for relay-ready retry when relays are down', () {
+      fakeAsync((fake) {
+        unawaited(
+          service.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.homeFeed,
+            authors: [followedAuthor],
+          ),
+        );
+        fake.flushMicrotasks();
+        expect(subscribeCalls, hasLength(1));
+
+        streamControllers.first.addError(
+          Exception('websocket connection failed'),
+        );
+        fake.flushMicrotasks();
+
+        connectedRelayCount = 0;
+        fake
+          ..elapse(const Duration(seconds: 10))
+          ..flushMicrotasks();
+
+        expect(
+          subscribeCalls,
+          hasLength(1),
+          reason:
+              'online retry must not create a relay REQ while relays are down',
+        );
+
+        fake
+          ..elapse(const Duration(seconds: 30))
+          ..flushMicrotasks();
+        expect(
+          subscribeCalls,
+          hasLength(1),
+          reason:
+              'RelayNotReadyException should hand off to relay-ready retry '
+              'instead of burning the online retry budget',
+        );
+
+        connectedRelayCount = 1;
+        relayStatusController.add({
+          'wss://relay.divine.video': RelayConnectionStatus.connected(
+            'wss://relay.divine.video',
+          ),
+        });
+        fake.flushMicrotasks();
+
+        expect(subscribeCalls, hasLength(2));
+        expect(
+          subscribeCalls.last.any(
+            (filter) => filter.authors?.contains(followedAuthor) ?? false,
+          ),
+          isTrue,
+          reason: subscribeCalls.last
+              .map((filter) => filter.toJson())
+              .toList()
+              .toString(),
+        );
+      });
+    });
+
     test('exhausted retry entries do not leak into a later retry cycle', () {
       fakeAsync((fake) {
         unawaited(
