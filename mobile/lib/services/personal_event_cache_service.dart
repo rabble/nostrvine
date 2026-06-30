@@ -25,6 +25,14 @@ class PersonalEventCacheService {
   /// Check if the cache service is initialized
   bool get isInitialized => _isInitialized;
 
+  /// Reset the active user session without deleting the shared on-disk cache.
+  void resetCurrentUser() {
+    _initializationToken++;
+    _isInitialized = false;
+    _currentUserPubkey = null;
+    _pendingEventWrites.clear();
+  }
+
   /// Initialize the personal event cache
   Future<void> initialize(String userPubkey) async {
     _isDisposed = false;
@@ -260,6 +268,9 @@ class PersonalEventCacheService {
         final rawEventData = _eventsBox!.get(eventId);
         if (rawEventData != null) {
           final eventData = Map<String, dynamic>.from(rawEventData as Map);
+          if (!_eventDataBelongsToCurrentUser(eventData)) {
+            continue;
+          }
           final event = _eventDataToEvent(eventData);
           if (event != null) {
             events.add(event);
@@ -298,6 +309,9 @@ class PersonalEventCacheService {
       for (final rawEventData in _eventsBox!.values) {
         if (rawEventData == null) continue;
         final eventData = Map<String, dynamic>.from(rawEventData as Map);
+        if (!_eventDataBelongsToCurrentUser(eventData)) {
+          continue;
+        }
         final event = _eventDataToEvent(eventData);
         if (event != null) {
           events.add(event);
@@ -334,6 +348,9 @@ class PersonalEventCacheService {
       final rawEventData = _eventsBox!.get(eventId);
       if (rawEventData != null) {
         final eventData = Map<String, dynamic>.from(rawEventData as Map);
+        if (!_eventDataBelongsToCurrentUser(eventData)) {
+          return null;
+        }
         return _eventDataToEvent(eventData);
       }
     } catch (e) {
@@ -352,7 +369,22 @@ class PersonalEventCacheService {
     if (!_isInitialized || _eventsBox == null) {
       return false;
     }
-    return _eventsBox!.containsKey(eventId);
+
+    try {
+      final rawEventData = _eventsBox!.get(eventId);
+      if (rawEventData == null) {
+        return false;
+      }
+      final eventData = Map<String, dynamic>.from(rawEventData as Map);
+      return _eventDataBelongsToCurrentUser(eventData);
+    } catch (e) {
+      Log.error(
+        'Failed to check event by ID $eventId: $e',
+        name: 'PersonalEventCache',
+        category: LogCategory.storage,
+      );
+      return false;
+    }
   }
 
   /// Get cache statistics
@@ -362,7 +394,7 @@ class PersonalEventCacheService {
     }
 
     final stats = <String, dynamic>{
-      'total_events': _eventsBox!.length,
+      'total_events': 0,
       'by_kind': <String, int>{},
       'user_pubkey': _currentUserPubkey,
     };
@@ -375,7 +407,22 @@ class PersonalEventCacheService {
         final kindEvents = rawKindEvents != null
             ? Map<String, dynamic>.from(rawKindEvents as Map)
             : <String, dynamic>{};
-        (stats['by_kind'] as Map<String, int>)[kind] = kindEvents.length;
+        var currentUserEventCount = 0;
+        for (final eventId in kindEvents.keys) {
+          final rawEventData = _eventsBox!.get(eventId);
+          if (rawEventData == null) {
+            continue;
+          }
+          final eventData = Map<String, dynamic>.from(rawEventData as Map);
+          if (_eventDataBelongsToCurrentUser(eventData)) {
+            currentUserEventCount++;
+          }
+        }
+        if (currentUserEventCount > 0) {
+          (stats['by_kind'] as Map<String, int>)[kind] = currentUserEventCount;
+          stats['total_events'] =
+              (stats['total_events'] as int) + currentUserEventCount;
+        }
       }
     }
 
@@ -417,6 +464,12 @@ class PersonalEventCacheService {
         );
       }
     }
+  }
+
+  bool _eventDataBelongsToCurrentUser(Map<String, dynamic> eventData) {
+    final currentUserPubkey = _currentUserPubkey;
+    return currentUserPubkey != null &&
+        eventData['pubkey'] == currentUserPubkey;
   }
 
   /// Convert stored event data back to Event object

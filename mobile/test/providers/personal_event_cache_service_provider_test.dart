@@ -92,10 +92,38 @@ void main() {
       authStateController.add(AuthState.authenticated);
     }
 
+    void unauthenticate() {
+      when(() => authService.authState).thenReturn(AuthState.unauthenticated);
+      when(() => authService.isAuthenticated).thenReturn(false);
+      when(() => authService.currentPublicKeyHex).thenReturn(null);
+
+      authStateController.add(AuthState.unauthenticated);
+    }
+
+    void emitChecking() {
+      when(() => authService.authState).thenReturn(AuthState.checking);
+      when(() => authService.isAuthenticated).thenReturn(false);
+      when(() => authService.currentPublicKeyHex).thenReturn(null);
+
+      authStateController.add(AuthState.checking);
+    }
+
     Future<void> waitForInitialized(PersonalEventCacheService service) async {
       for (var attempt = 0; attempt < 20; attempt++) {
         await pumpEventQueue();
         if (service.isInitialized) {
+          return;
+        }
+      }
+    }
+
+    Future<void> waitForCachedEvent(
+      PersonalEventCacheService service,
+      String eventId,
+    ) async {
+      for (var attempt = 0; attempt < 20; attempt++) {
+        await pumpEventQueue();
+        if (service.hasEvent(eventId)) {
           return;
         }
       }
@@ -146,6 +174,58 @@ void main() {
         expect(service.getEventById(ownEvent.id)?.id, ownEvent.id);
         expect(service.hasEvent(otherEvent.id), isFalse);
         expect(service.getEventById(otherEvent.id), isNull);
+      },
+    );
+
+    test(
+      'keeps queued events through transient non-auth states',
+      () async {
+        final container = buildContainer();
+        final subscription = container.listen(
+          personalEventCacheServiceProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        final ownEvent = _createEvent(pubkey: _userPubkey, id: _hexId(3));
+
+        final service = subscription.read();
+        service.cacheUserEvent(ownEvent);
+
+        emitChecking();
+        await authenticate();
+        await waitForInitialized(service);
+
+        expect(service.hasEvent(ownEvent.id), isTrue);
+        expect(service.getEventById(ownEvent.id)?.id, ownEvent.id);
+      },
+    );
+
+    test(
+      'resets active cache session when auth becomes unauthenticated',
+      () async {
+        final container = buildContainer();
+        final subscription = container.listen(
+          personalEventCacheServiceProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        final ownEvent = _createEvent(pubkey: _userPubkey, id: _hexId(4));
+
+        final service = subscription.read();
+        await authenticate();
+        await waitForInitialized(service);
+        service.cacheUserEvent(ownEvent);
+        await waitForCachedEvent(service, ownEvent.id);
+        expect(service.hasEvent(ownEvent.id), isTrue);
+
+        unauthenticate();
+        await pumpEventQueue();
+
+        expect(service.isInitialized, isFalse);
+        expect(service.hasEvent(ownEvent.id), isFalse);
+        expect(service.getEventById(ownEvent.id), isNull);
       },
     );
   });

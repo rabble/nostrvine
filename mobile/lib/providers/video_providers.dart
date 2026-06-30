@@ -64,7 +64,13 @@ PersonalEventCacheService personalEventCacheService(Ref ref) {
   ref.onDispose(service.dispose);
 
   String? initializingPubkey;
-  void initializeIfReady() {
+  void syncWithAuthState(AuthState authState) {
+    if (authState == AuthState.unauthenticated) {
+      initializingPubkey = null;
+      service.resetCurrentUser();
+      return;
+    }
+
     final pubkey = authService.currentPublicKeyHex;
     if (!authService.isAuthenticated || pubkey == null) {
       return;
@@ -91,11 +97,11 @@ PersonalEventCacheService personalEventCacheService(Ref ref) {
     );
   }
 
-  final authSubscription = authService.authStateStream.listen((_) {
-    initializeIfReady();
-  });
+  final authSubscription = authService.authStateStream.listen(
+    syncWithAuthState,
+  );
   ref.onDispose(authSubscription.cancel);
-  initializeIfReady();
+  syncWithAuthState(authService.authState);
 
   return service;
 }

@@ -167,5 +167,53 @@ void main() {
         expect(service.getEventById(event.id), isNull);
       },
     );
+
+    test('reads only return events for the current initialized user', () async {
+      final userEvent = createEvent(pubkey: userPubkey, id: hexId(201));
+      final otherUserEvent = createEvent(pubkey: otherPubkey, id: hexId(202));
+
+      await service.initialize(userPubkey);
+      service.cacheUserEvent(userEvent);
+      await pumpEventQueue();
+
+      await service.initialize(otherPubkey);
+      service.cacheUserEvent(otherUserEvent);
+      await pumpEventQueue();
+
+      expect(service.hasEvent(userEvent.id), isFalse);
+      expect(service.getEventById(userEvent.id), isNull);
+      expect(service.hasEvent(otherUserEvent.id), isTrue);
+      expect(service.getEventById(otherUserEvent.id)?.id, otherUserEvent.id);
+      expect(
+        service.getEventsByKind(32222).map((event) => event.id),
+        containsAll(<String>[otherUserEvent.id]),
+      );
+      expect(
+        service.getEventsByKind(32222).map((event) => event.id),
+        isNot(contains(userEvent.id)),
+      );
+    });
+
+    test(
+      'resetCurrentUser makes cached events unreadable until reauth',
+      () async {
+        final event = createEvent(pubkey: userPubkey, id: hexId(203));
+
+        await service.initialize(userPubkey);
+        service.cacheUserEvent(event);
+        await pumpEventQueue();
+        expect(service.hasEvent(event.id), isTrue);
+
+        service.resetCurrentUser();
+
+        expect(service.isInitialized, isFalse);
+        expect(service.hasEvent(event.id), isFalse);
+        expect(service.getEventById(event.id), isNull);
+
+        await service.initialize(userPubkey);
+
+        expect(service.hasEvent(event.id), isTrue);
+      },
+    );
   });
 }
