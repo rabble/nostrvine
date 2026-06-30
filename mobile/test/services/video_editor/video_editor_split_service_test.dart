@@ -312,12 +312,17 @@ void main() {
           onThumbnailExtracted: null,
           onClipRendered: (clip, video) => renderedVideos.add(video),
         );
-
         expect(renderedVideos, hasLength(2));
         final paths = renderedVideos.map((v) => v.file?.path).toList();
         expect(paths.any((p) => p?.contains('_start.mp4') ?? false), isTrue);
         expect(paths.any((p) => p?.contains('_end.mp4') ?? false), isTrue);
         expect(paths.first, isNot(paths.last));
+
+        // Regression: the clip id already ends in `_start` / `_end`, so the
+        // filename must not double that suffix (`_start_start.mp4`).
+        final request = mockProVideoEditor.splitRequests.single;
+        expect(request.startOutputPath, isNot(contains('_start_start')));
+        expect(request.endOutputPath, isNot(contains('_end_end')));
       });
 
       test('a second split immediately afterwards still works', () async {

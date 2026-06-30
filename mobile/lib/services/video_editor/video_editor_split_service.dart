@@ -110,8 +110,11 @@ class VideoEditorSplitService {
     );
 
     final documentsPath = await getDocumentsPath();
-    final startClipPath = p.join(documentsPath, '${startClipId}_start.mp4');
-    final endClipPath = p.join(documentsPath, '${endClipId}_end.mp4');
+    // startClipId / endClipId already carry the `_start` / `_end` suffix, so
+    // the filename is just `<id>.mp4` — appending another suffix produced the
+    // doubled `_start_start.mp4` / `_end_end.mp4` names.
+    final startClipPath = p.join(documentsPath, '$startClipId.mp4');
+    final endClipPath = p.join(documentsPath, '$endClipId.mp4');
 
     Log.debug(
       '📁 Created split clips - Start: ${splitPosition.inSeconds}s, '
