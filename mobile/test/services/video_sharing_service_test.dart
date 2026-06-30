@@ -2,6 +2,8 @@
 // ABOUTME: Covers NIP-17 share path, NIP-04 fallback, getShareableUsers,
 // ABOUTME: searchUsersToShareWith, shareVideoWithUser, and sharing utilities.
 
+import 'dart:async';
+
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -103,6 +105,9 @@ void main() {
         video: testVideo,
         recipientPubkey: _recipientPubkey,
       );
+      // The recents update is now fire-and-forget (see #5391); drain the
+      // event loop so the background insert completes before asserting.
+      await Future<void>.delayed(Duration.zero);
 
       final result = await service.getShareableUsers();
 
@@ -153,6 +158,10 @@ void main() {
           recipientPubkey: hexI,
         );
       }
+
+      // The recents update is now fire-and-forget (see #5391); drain the
+      // event loop so all background inserts complete before asserting.
+      await Future<void>.delayed(Duration.zero);
 
       // Act - request with limit 3
       final result = await service.getShareableUsers(limit: 3);
@@ -421,6 +430,55 @@ void main() {
         ),
       );
     });
+
+    test(
+      'returns success without waiting on the recents profile fetch (#5391)',
+      () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockDmRepository.sendSharedVideo(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            baseContent: any(named: 'baseContent'),
+            videoKind: any(named: 'videoKind'),
+            videoAuthorPubkey: any(named: 'videoAuthorPubkey'),
+            videoDTag: any(named: 'videoDTag'),
+            videoEventId: any(named: 'videoEventId'),
+            relayHint: any(named: 'relayHint'),
+          ),
+        ).thenAnswer(
+          (_) async => NIP17SendResult.success(
+            rumorEventId: 'nip17-rumor-id',
+            messageEventId: 'nip17-msg-id',
+            recipientPubkey: _recipientPubkey,
+          ),
+        );
+        // The post-send recents refresh must be fire-and-forget: a hung
+        // profile fetch must NOT delay the success result (the toast).
+        final neverCompletes = Completer<UserProfile?>();
+        when(
+          () => mockProfileRepository.fetchFreshProfile(
+            pubkey: any(named: 'pubkey'),
+          ),
+        ).thenAnswer((_) => neverCompletes.future);
+
+        final now = DateTime.now();
+        final result = await nip17Service
+            .shareVideoWithUser(
+              video: VideoEvent(
+                id: _testVideoId,
+                pubkey: _testPubkey,
+                createdAt: now.millisecondsSinceEpoch ~/ 1000,
+                timestamp: now,
+                content: 'Test',
+              ),
+              recipientPubkey: _recipientPubkey,
+            )
+            .timeout(const Duration(seconds: 2));
+
+        expect(result.success, isTrue);
+        expect(result.messageEventId, equals('nip17-msg-id'));
+      },
+    );
 
     test('returns failure when NIP-17 send fails', () async {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
