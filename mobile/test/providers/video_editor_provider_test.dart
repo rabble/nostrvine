@@ -1876,6 +1876,13 @@ void main() {
     late AppDatabase database;
     late ProviderContainer container;
     late Directory tempDir;
+    var containerDisposed = false;
+
+    void disposeContainer() {
+      if (containerDisposed) return;
+      containerDisposed = true;
+      container.dispose();
+    }
 
     setUpAll(() {
       registerFallbackValue(
@@ -1896,6 +1903,7 @@ void main() {
       mockDraftStorage = _MockDraftStorageService();
       database = AppDatabase.test(NativeDatabase.memory());
       tempDir = Directory.systemTemp.createTempSync('editor_defer_test');
+      containerDisposed = false;
       container = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
@@ -1906,54 +1914,83 @@ void main() {
     });
 
     tearDown(() async {
-      container.dispose();
+      disposeContainer();
+      // Let any fire-and-forget onDispose flush finish querying the DB before
+      // we close it, so a still-deferred file doesn't race a closed database.
+      await pumpEventQueue();
       await database.close();
       if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
     });
 
-    test(
-      'an autosave keeps its orphaned files alive and reaps them on teardown',
-      () async {
-        final orphan = File(p.join(tempDir.path, 'orphan.mp4'))
-          ..writeAsBytesSync(const [0, 1, 2, 3]);
+    // Stubs the next autosave to hand [orphan] to the deferral sink instead of
+    // deleting it — the editor's undo history may still need it — and returns
+    // the file it created on disk.
+    File stubDeferringAutosave() {
+      final orphan = File(p.join(tempDir.path, 'orphan.mp4'))
+        ..writeAsBytesSync(const [0, 1, 2, 3]);
+      when(
+        () => mockDraftStorage.saveDraft(
+          any(),
+          deferOrphanCleanup: any(named: 'deferOrphanCleanup'),
+        ),
+      ).thenAnswer((invocation) async {
+        final defer =
+            invocation.namedArguments[#deferOrphanCleanup]
+                as void Function(List<String?>)?;
+        defer?.call([orphan.path]);
+      });
+      return orphan;
+    }
 
-        // The autosave hands the draft's now-unreferenced files to the deferral
-        // sink instead of deleting them — the editor's undo history may still
-        // need them.
-        when(
-          () => mockDraftStorage.saveDraft(
-            any(),
-            deferOrphanCleanup: any(named: 'deferOrphanCleanup'),
-          ),
-        ).thenAnswer((invocation) async {
-          final defer =
-              invocation.namedArguments[#deferOrphanCleanup]
-                  as void Function(List<String?>)?;
-          defer?.call([orphan.path]);
-        });
+    test('an autosave keeps its orphaned files alive', () async {
+      final orphan = stubDeferringAutosave();
+      final notifier = container.read(videoEditorProvider.notifier);
 
-        await container.read(videoEditorProvider.notifier).autosaveChanges();
+      await notifier.autosaveChanges();
 
-        expect(
-          orphan.existsSync(),
-          isTrue,
-          reason:
-              'a deferred orphan must survive the autosave so undo/redo can '
-              'still resolve the clip it backs',
-        );
+      expect(
+        orphan.existsSync(),
+        isTrue,
+        reason:
+            'a deferred orphan must survive the autosave so undo/redo can '
+            'still resolve the clip it backs',
+      );
+      expect(notifier.deferredFileCleanupForTest, contains(orphan.path));
+    });
 
-        final notifier = container.read(videoEditorProvider.notifier);
-        expect(notifier.deferredFileCleanupForTest, contains(orphan.path));
+    test('reset reaps deferred files at editor-session end', () async {
+      final orphan = stubDeferringAutosave();
+      final notifier = container.read(videoEditorProvider.notifier);
+      await notifier.autosaveChanges();
 
-        await notifier.flushDeferredFileCleanupForTest();
+      // reset() is the real session-end hook (publish / discard / start-over),
+      // not the @visibleForTesting flush — this exercises the wiring an app
+      // actually hits when the editor closes.
+      await notifier.reset(keepAutosavedDraft: true);
+      await pumpEventQueue();
 
-        expect(
-          orphan.existsSync(),
-          isFalse,
-          reason: 'teardown reaps a deferred file once nothing references it',
-        );
-        expect(notifier.deferredFileCleanupForTest, isEmpty);
-      },
-    );
+      expect(
+        orphan.existsSync(),
+        isFalse,
+        reason: 'session end reaps a deferred file once nothing references it',
+      );
+      expect(notifier.deferredFileCleanupForTest, isEmpty);
+    });
+
+    test('container teardown reaps deferred files as a safety net', () async {
+      final orphan = stubDeferringAutosave();
+      await container.read(videoEditorProvider.notifier).autosaveChanges();
+      expect(orphan.existsSync(), isTrue);
+
+      // Drives the real ref.onDispose wiring, not the @visibleForTesting flush.
+      disposeContainer();
+      await pumpEventQueue();
+
+      expect(
+        orphan.existsSync(),
+        isFalse,
+        reason: 'onDispose reaps deferred files left when reset never ran',
+      );
+    });
   });
 }
