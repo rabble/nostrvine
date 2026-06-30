@@ -996,45 +996,16 @@ class NostrClient {
     return null;
   }
 
-  /// Sends a user profile (Kind 0 metadata event).
-  ///
-  /// Delegates to [publishEvent], which handles relay connectivity checks,
-  /// retry, caching, and statistics. Kind 0 is replaceable, so it is cached
-  /// only on successful publish (not optimistically).
-  ///
-  /// Returns a [PublishResult] that callers can switch exhaustively over:
-  /// - [PublishSuccess] — the event was broadcast to at least one relay.
-  /// - [PublishNoRelays] — no relays were connected even after retry.
-  /// - [PublishFailed] — the relay pool was reachable but the send
-  ///   returned null (e.g. a serialisation error).
-  Future<PublishResult> sendProfile({
-    required Map<String, dynamic> profileContent,
-  }) {
-    final event = Event(
-      publicKey,
-      EventKind.metadata,
-      [],
-      jsonEncode(profileContent),
-    );
-
-    return publishEvent(event);
-  }
-
   /// Sends a user profile (Kind 0 metadata event), waiting for relay
   /// confirmation before reporting success.
   ///
-  /// Unlike [sendProfile] — which delegates to [publishEvent] and reports
-  /// success as soon as the relay pool accepts the WebSocket frame — this
-  /// routes through [publishEventAwaitOk] and only reports [PublishSuccess]
-  /// once at least one relay has returned `OK true` (NIP-20). A Kind 0 that
-  /// is accepted at the socket layer but then rejected by every relay
-  /// (rate limit, PoW, auth required) is reported as [PublishFailed] here,
-  /// where [sendProfile] would have reported success. Kind 0 is replaceable,
+  /// Routes through [publishEventAwaitOk] and only reports [PublishSuccess]
+  /// once at least one relay has returned `OK true` (NIP-20). A Kind 0 that is
+  /// accepted at the socket layer but then rejected by every relay (rate limit,
+  /// PoW, auth required) is reported as [PublishFailed]. Kind 0 is replaceable,
   /// so [publishEventAwaitOk] caches it only after confirmation.
   ///
-  /// The underlying [PublishOutcome] is mapped onto the same [PublishResult]
-  /// variants [sendProfile] returns, so both can be switched over
-  /// identically:
+  /// The underlying [PublishOutcome] is mapped onto [PublishResult]:
   /// - [PublishSuccess] — at least one relay confirmed the event.
   /// - [PublishNoRelays] — no relay was connected even after retry, so the
   ///   publish never left the device. Preserves the dedicated no-relays

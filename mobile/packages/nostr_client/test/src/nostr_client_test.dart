@@ -1834,107 +1834,6 @@ void main() {
       });
     });
 
-    group('sendProfile', () {
-      test('returns PublishSuccess with Kind 0 event on success', () async {
-        final profileContent = {'display_name': 'Alice', 'about': 'Hello'};
-        final sentEvent = _createTestEvent(kind: EventKind.metadata);
-
-        when(
-          () => mockNostr.sendEvent(
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        ).thenAnswer((_) async => sentEvent);
-
-        final result = await client.sendProfile(profileContent: profileContent);
-
-        expect(result, isA<PublishSuccess>());
-        expect((result as PublishSuccess).event, equals(sentEvent));
-        verify(
-          () => mockNostr.sendEvent(
-            any(
-              that: isA<Event>()
-                  .having((e) => e.kind, 'kind', EventKind.metadata)
-                  .having(
-                    (e) => e.content,
-                    'content',
-                    jsonEncode(profileContent),
-                  ),
-            ),
-          ),
-        ).called(1);
-      });
-
-      test(
-        'returns PublishNoRelays when no relays connected and retry fails',
-        () async {
-          when(() => mockRelayManager.connectedRelays).thenReturn([]);
-          when(
-            mockRelayManager.retryDisconnectedRelays,
-          ).thenAnswer((_) async {});
-
-          final result = await client.sendProfile(
-            profileContent: {'display_name': 'Alice'},
-          );
-
-          expect(result, isA<PublishNoRelays>());
-          verify(mockRelayManager.retryDisconnectedRelays).called(1);
-          verifyNever(
-            () => mockNostr.sendEvent(
-              any(),
-              tempRelays: any(named: 'tempRelays'),
-              targetRelays: any(named: 'targetRelays'),
-            ),
-          );
-        },
-      );
-
-      test('retries disconnected relays and returns PublishSuccess', () async {
-        final sentEvent = _createTestEvent(kind: EventKind.metadata);
-        final connectedRelays = ['wss://relay1.example.com'];
-
-        when(() => mockRelayManager.connectedRelays).thenReturn([]);
-        when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {
-          when(
-            () => mockRelayManager.connectedRelays,
-          ).thenReturn(connectedRelays);
-        });
-        when(
-          () => mockNostr.sendEvent(
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        ).thenAnswer((_) async => sentEvent);
-
-        final result = await client.sendProfile(
-          profileContent: {'display_name': 'Alice'},
-        );
-
-        expect(result, isA<PublishSuccess>());
-        expect((result as PublishSuccess).event, equals(sentEvent));
-        verify(mockRelayManager.retryDisconnectedRelays).called(1);
-        verify(() => mockNostr.sendEvent(any())).called(1);
-      });
-
-      test('returns PublishFailed when sendEvent returns null', () async {
-        when(
-          () => mockNostr.sendEvent(
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        final result = await client.sendProfile(
-          profileContent: {'display_name': 'Alice'},
-        );
-
-        expect(result, isA<PublishFailed>());
-      });
-    });
-
     group('sendProfileAwaitOk', () {
       PublishOutcome accepted() => const PublishOutcome(
         eventId: 'kind0',
@@ -1999,6 +1898,41 @@ void main() {
         );
 
         expect(result, isA<PublishSuccess>());
+      });
+
+      test('retries disconnected relays and returns PublishSuccess when '
+          'a relay confirms', () async {
+        var connectedRelays = <String>[];
+        when(
+          () => mockRelayManager.connectedRelays,
+        ).thenAnswer((_) => connectedRelays);
+        when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {
+          connectedRelays = ['wss://relay.test'];
+        });
+        stubAwaitOk(accepted());
+
+        final result = await client.sendProfileAwaitOk(
+          profileContent: {'display_name': 'Alice'},
+        );
+
+        expect(result, isA<PublishSuccess>());
+        verify(mockRelayManager.retryDisconnectedRelays).called(1);
+        verify(
+          () => mockNostr.sendEventAwaitOk(
+            any(
+              that: isA<Event>()
+                  .having((e) => e.kind, 'kind', EventKind.metadata)
+                  .having(
+                    (e) => e.content,
+                    'content',
+                    jsonEncode({'display_name': 'Alice'}),
+                  ),
+            ),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).called(1);
       });
 
       test('returns PublishFailed when every relay rejects the event '
