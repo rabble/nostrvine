@@ -45,6 +45,28 @@ import 'package:pro_image_editor/pro_image_editor.dart'
     hide AudioTrack, VideoClip;
 import 'package:unified_logger/unified_logger.dart';
 
+/// Direction an undo/redo navigation moved, used to bias which way
+/// [VideoEditorCanvas.resolveClipSnapshotSync] steps past an orphan-only
+/// history entry. [none] is for non-navigation syncs (init, add/remove layer).
+enum ClipHistoryDirection { undo, redo, none }
+
+/// What `_VideoEditorState._syncMainCapabilities` should do with the clip
+/// snapshot read from the editor's current undo/redo history entry.
+enum ClipSnapshotSyncOp {
+  /// Mirror the resolvable clips into the app clip state (normal path).
+  sync,
+
+  /// The entry carries no clip metadata at all — nothing to reconcile.
+  skip,
+
+  /// The entry's clips are all orphaned; step the editor history backward to
+  /// the nearest state whose media still exists.
+  stepBackward,
+
+  /// As [stepBackward], but step forward.
+  stepForward,
+}
+
 /// The main canvas area for the video editor.
 ///
 /// Wraps [ProImageEditor] and configures it for video editing with custom
@@ -161,6 +183,96 @@ class VideoEditorCanvas extends StatelessWidget {
       );
       return false;
     }
+  }
+
+  /// Decides how to reconcile the clip [snapshot] read from the editor's
+  /// current undo/redo history entry with the app clip state.
+  ///
+  /// An undo/redo can land on a state whose clips were all removed earlier in
+  /// the session — [FileCleanupService] has since deleted their source files,
+  /// so handing them to the native player fails the whole composition
+  /// (`COMPOSITION_ERROR`) and freezes the editor. Such an *orphan-only* entry
+  /// must neither sync into the app (the player would diverge from the
+  /// timeline) nor be left as the resting state (app clip state and editor
+  /// history would silently diverge). Instead the editor steps its own history
+  /// past it: [direction] biases which way to step, falling back to the
+  /// opposite direction once at a history boundary; [didReverse] records that a
+  /// reversal already happened so an all-orphan history can't ping-pong
+  /// forever.
+  ///
+  /// Returns the [ClipSnapshotSyncOp] to perform, the resolvable clips to
+  /// mirror (only meaningful for [ClipSnapshotSyncOp.sync]), and whether the
+  /// chosen step reverses the requested [direction].
+  @visibleForTesting
+  static ({
+    ClipSnapshotSyncOp op,
+    List<DivineVideoClip> resolvableClips,
+    bool reversed,
+  })
+  resolveClipSnapshotSync({
+    required List<DivineVideoClip> snapshot,
+    required ClipHistoryDirection direction,
+    required bool canUndo,
+    required bool canRedo,
+    required bool didReverse,
+  }) {
+    final resolvable = snapshot
+        .where((clip) => clip.hasResolvableVideoFile)
+        .toList();
+    if (resolvable.isNotEmpty) {
+      return (
+        op: ClipSnapshotSyncOp.sync,
+        resolvableClips: resolvable,
+        reversed: false,
+      );
+    }
+    if (snapshot.isEmpty) {
+      return (
+        op: ClipSnapshotSyncOp.skip,
+        resolvableClips: resolvable,
+        reversed: false,
+      );
+    }
+
+    // Orphan-only entry: prefer the navigated direction, fall back to the
+    // opposite direction once (at a history boundary), then give up so an
+    // all-orphan history can't loop forever.
+    final preferBackward = direction != ClipHistoryDirection.redo;
+    if (preferBackward && canUndo) {
+      return (
+        op: ClipSnapshotSyncOp.stepBackward,
+        resolvableClips: resolvable,
+        reversed: false,
+      );
+    }
+    if (!preferBackward && canRedo) {
+      return (
+        op: ClipSnapshotSyncOp.stepForward,
+        resolvableClips: resolvable,
+        reversed: false,
+      );
+    }
+    if (!didReverse) {
+      if (preferBackward && canRedo) {
+        return (
+          op: ClipSnapshotSyncOp.stepForward,
+          resolvableClips: resolvable,
+          reversed: true,
+        );
+      }
+      if (!preferBackward && canUndo) {
+        return (
+          op: ClipSnapshotSyncOp.stepBackward,
+          resolvableClips: resolvable,
+          reversed: true,
+        );
+      }
+    }
+    return (
+      op: ClipSnapshotSyncOp.skip,
+      resolvableClips: resolvable,
+      reversed: false,
+    );
   }
 
   @override
@@ -310,6 +422,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   /// Consumed (cleared) by the clip-snapshot listener on its next pass.
   bool _skipNextClipSnapshotSync = false;
 
+  /// Set while stepping the editor history past an orphan-only undo/redo state
+  /// (see [VideoEditorCanvas.resolveClipSnapshotSync]). Permits reversing the
+  /// step direction exactly once at a history boundary so the search can't
+  /// ping-pong forever when every neighbour is also orphaned. Cleared once a
+  /// state with resolvable media (or a genuinely clip-less entry) is reached.
+  bool _orphanStepDidReverse = false;
+
   /// Guards against duplicate [addHistory] calls when both
   /// [ClipEditorBloc.clipsVolumeRevision] and
   /// [TimelineOverlayBloc.audioTracksRevision] change in the same frame
@@ -423,9 +542,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         .read<VideoEditorMainBloc>()
         .state
         .currentPosition;
-    unawaited(
-      _swapComposition(clips, timelineStartPosition: currentPosition),
-    );
+    unawaited(_swapComposition(clips, timelineStartPosition: currentPosition));
   }
 
   /// Reloads the player composition while suppressing the stale position
@@ -904,9 +1021,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     if (!mounted || !identical(_videoPlayer, player)) return;
     final loaded = await _setClipsSafely(
       player,
-      [
-        ...buildSeamAwarePlayerClips(clips, _seamService),
-      ],
+      [...buildSeamAwarePlayerClips(clips, _seamService)],
       startPosition: startPosition != null && startPosition > Duration.zero
           ? _timelineToPlayer(startPosition)
           : null,
@@ -1080,7 +1195,17 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     );
   }
 
-  void _syncMainCapabilities(VideoEditorScope scope, VideoEditorMainBloc bloc) {
+  /// Mirrors the main editor's capabilities, overlay items and clip snapshot
+  /// into the BLoCs / providers after an editor change.
+  ///
+  /// [direction] tells the orphan-only reconciliation which way an undo/redo
+  /// navigated (see [VideoEditorCanvas.resolveClipSnapshotSync]); it defaults
+  /// to [ClipHistoryDirection.none] for non-navigation calls.
+  void _syncMainCapabilities(
+    VideoEditorScope scope,
+    VideoEditorMainBloc bloc, {
+    ClipHistoryDirection direction = ClipHistoryDirection.none,
+  }) {
     final editor = scope.editor;
     if (editor == null) return;
 
@@ -1107,19 +1232,41 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         ),
       );
 
-      // Drop clips whose source file no longer exists on disk before they
-      // reach the live timeline and the native player. Undo/redo can resurrect
-      // a clip that was removed earlier in the session — its media was already
-      // deleted by FileCleanupService, and handing that dead path to the
-      // player fails the whole composition (COMPOSITION_ERROR) and freezes the
-      // editor. Dropping it here also keeps the orphan out of the autosaved
-      // draft, so a later reopen can't reintroduce the freeze.
-      final clips = List<DivineVideoClip>.from(
-        editor.stateManager
-            .clipSnapshots(await _documentsPath)
-            .where((clip) => clip.hasResolvableVideoFile),
+      // Reconcile the editor's current history entry with the app clip state.
+      // Undo/redo can resurrect a clip removed earlier in the session — its
+      // media was already deleted by FileCleanupService, and handing that dead
+      // path to the player fails the whole composition (COMPOSITION_ERROR) and
+      // freezes the editor. Orphaned clips are filtered out, and an entry whose
+      // clips are *all* orphaned is stepped over (rather than left to diverge
+      // from, or empty the, native player).
+      final snapshot = editor.stateManager.clipSnapshots(await _documentsPath);
+      if (!mounted || _isImportingHistory) return;
+
+      final decision = VideoEditorCanvas.resolveClipSnapshotSync(
+        snapshot: snapshot,
+        direction: direction,
+        canUndo: editor.canUndo,
+        canRedo: editor.canRedo,
+        didReverse: _orphanStepDidReverse,
       );
-      if (!mounted || clips.isEmpty || _isImportingHistory) return;
+
+      switch (decision.op) {
+        case ClipSnapshotSyncOp.skip:
+          _orphanStepDidReverse = false;
+          return;
+        case ClipSnapshotSyncOp.stepBackward:
+          _orphanStepDidReverse = _orphanStepDidReverse || decision.reversed;
+          editor.undoAction();
+          return;
+        case ClipSnapshotSyncOp.stepForward:
+          _orphanStepDidReverse = _orphanStepDidReverse || decision.reversed;
+          editor.redoAction();
+          return;
+        case ClipSnapshotSyncOp.sync:
+          _orphanStepDidReverse = false;
+      }
+
+      final clips = decision.resolvableClips;
 
       if (_skipNextClipSnapshotSync) {
         _skipNextClipSnapshotSync = false;
@@ -2066,8 +2213,16 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
               );
               _syncMainCapabilities(scope, bloc);
             },
-            onRedo: () => _syncMainCapabilities(scope, bloc),
-            onUndo: () => _syncMainCapabilities(scope, bloc),
+            onRedo: () => _syncMainCapabilities(
+              scope,
+              bloc,
+              direction: ClipHistoryDirection.redo,
+            ),
+            onUndo: () => _syncMainCapabilities(
+              scope,
+              bloc,
+              direction: ClipHistoryDirection.undo,
+            ),
             onCreateTextLayer: scope.onAddEditTextLayer,
             onEditTextLayer: scope.onAddEditTextLayer,
             helperLines: HelperLinesCallbacks(

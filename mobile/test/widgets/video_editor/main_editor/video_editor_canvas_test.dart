@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -74,53 +76,44 @@ void main() {
       await mainBloc.close();
     });
 
-    test(
-      'dispatches VideoEditorPositionChanged(startPosition) and updates '
-      'playTime when the trim-end position was not pre-dispatched',
-      () {
-        const startPosition = Duration(seconds: 2);
+    test('dispatches VideoEditorPositionChanged(startPosition) and updates '
+        'playTime when the trim-end position was not pre-dispatched', () {
+      const startPosition = Duration(seconds: 2);
 
-        VideoEditorCanvas.syncPositionAfterTrimRelease(
-          mainBloc: mainBloc,
-          proVideoController: controller,
-          startPosition: startPosition,
-          trimEndAlreadyDispatched: false,
-        );
+      VideoEditorCanvas.syncPositionAfterTrimRelease(
+        mainBloc: mainBloc,
+        proVideoController: controller,
+        startPosition: startPosition,
+        trimEndAlreadyDispatched: false,
+      );
 
-        expect(
-          mainBloc.events,
-          contains(
-            isA<VideoEditorPositionChanged>().having(
-              (e) => e.position,
-              'position',
-              startPosition,
-            ),
+      expect(
+        mainBloc.events,
+        contains(
+          isA<VideoEditorPositionChanged>().having(
+            (e) => e.position,
+            'position',
+            startPosition,
           ),
-        );
-        expect(controller.playTimeNotifier.value, equals(startPosition));
-      },
-    );
+        ),
+      );
+      expect(controller.playTimeNotifier.value, equals(startPosition));
+    });
 
-    test(
-      'skips the bloc dispatch but still updates playTime when the '
-      'trim-end position was already pushed pre-await',
-      () {
-        const startPosition = Duration(milliseconds: 1500);
+    test('skips the bloc dispatch but still updates playTime when the '
+        'trim-end position was already pushed pre-await', () {
+      const startPosition = Duration(milliseconds: 1500);
 
-        VideoEditorCanvas.syncPositionAfterTrimRelease(
-          mainBloc: mainBloc,
-          proVideoController: controller,
-          startPosition: startPosition,
-          trimEndAlreadyDispatched: true,
-        );
+      VideoEditorCanvas.syncPositionAfterTrimRelease(
+        mainBloc: mainBloc,
+        proVideoController: controller,
+        startPosition: startPosition,
+        trimEndAlreadyDispatched: true,
+      );
 
-        expect(
-          mainBloc.events.whereType<VideoEditorPositionChanged>(),
-          isEmpty,
-        );
-        expect(controller.playTimeNotifier.value, equals(startPosition));
-      },
-    );
+      expect(mainBloc.events.whereType<VideoEditorPositionChanged>(), isEmpty);
+      expect(controller.playTimeNotifier.value, equals(startPosition));
+    });
   });
 
   group('VideoEditorCanvas.shouldSeedSelectedSoundAsAudioTrack', () {
@@ -155,10 +148,7 @@ void main() {
       final start = _createClip(id: 'start');
       final previewEnd = _createClip(id: 'end');
 
-      final previous = ClipEditorState(
-        clips: [source],
-        isSplitting: true,
-      );
+      final previous = ClipEditorState(clips: [source], isSplitting: true);
       final current = ClipEditorState(
         clips: [start, previewEnd],
         isSplitting: true,
@@ -412,12 +402,144 @@ void main() {
       );
     });
   });
+
+  group('VideoEditorCanvas.resolveClipSnapshotSync', () {
+    late Directory tempDir;
+
+    setUp(() async {
+      tempDir = await Directory.systemTemp.createTemp('canvas_orphan_sync');
+    });
+
+    tearDown(() async {
+      if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+    });
+
+    DivineVideoClip resolvableClip(String id) {
+      final path = '${tempDir.path}/$id.mp4';
+      File(path).writeAsBytesSync(const [0]);
+      return _createClip(id: id, videoPath: path);
+    }
+
+    DivineVideoClip orphanClip(String id) =>
+        _createClip(id: id, videoPath: '${tempDir.path}/$id-missing.mp4');
+
+    test('syncs only the clips whose source files still exist', () {
+      final resolvable = resolvableClip('a');
+      final decision = VideoEditorCanvas.resolveClipSnapshotSync(
+        snapshot: [resolvable, orphanClip('b')],
+        direction: ClipHistoryDirection.undo,
+        canUndo: true,
+        canRedo: false,
+        didReverse: false,
+      );
+
+      expect(decision.op, ClipSnapshotSyncOp.sync);
+      expect(decision.resolvableClips, equals([resolvable]));
+      expect(decision.reversed, isFalse);
+    });
+
+    test('skips a history entry that carries no clips', () {
+      final decision = VideoEditorCanvas.resolveClipSnapshotSync(
+        snapshot: const [],
+        direction: ClipHistoryDirection.none,
+        canUndo: true,
+        canRedo: true,
+        didReverse: false,
+      );
+
+      expect(decision.op, ClipSnapshotSyncOp.skip);
+      expect(decision.resolvableClips, isEmpty);
+    });
+
+    test('steps backward when undo restores only deleted-source clips', () {
+      final decision = VideoEditorCanvas.resolveClipSnapshotSync(
+        snapshot: [orphanClip('a'), orphanClip('b')],
+        direction: ClipHistoryDirection.undo,
+        canUndo: true,
+        canRedo: false,
+        didReverse: false,
+      );
+
+      expect(decision.op, ClipSnapshotSyncOp.stepBackward);
+      expect(decision.resolvableClips, isEmpty);
+      expect(decision.reversed, isFalse);
+    });
+
+    test('steps forward when redo restores only deleted-source clips', () {
+      final decision = VideoEditorCanvas.resolveClipSnapshotSync(
+        snapshot: [orphanClip('a')],
+        direction: ClipHistoryDirection.redo,
+        canUndo: false,
+        canRedo: true,
+        didReverse: false,
+      );
+
+      expect(decision.op, ClipSnapshotSyncOp.stepForward);
+      expect(decision.reversed, isFalse);
+    });
+
+    test(
+      'reverses to redo once when an orphan-only state is at the undo boundary',
+      () {
+        final decision = VideoEditorCanvas.resolveClipSnapshotSync(
+          snapshot: [orphanClip('a')],
+          direction: ClipHistoryDirection.undo,
+          canUndo: false,
+          canRedo: true,
+          didReverse: false,
+        );
+
+        expect(decision.op, ClipSnapshotSyncOp.stepForward);
+        expect(decision.reversed, isTrue);
+      },
+    );
+
+    test(
+      'reverses to undo once when an orphan-only state is at the redo boundary',
+      () {
+        final decision = VideoEditorCanvas.resolveClipSnapshotSync(
+          snapshot: [orphanClip('a')],
+          direction: ClipHistoryDirection.redo,
+          canUndo: true,
+          canRedo: false,
+          didReverse: false,
+        );
+
+        expect(decision.op, ClipSnapshotSyncOp.stepBackward);
+        expect(decision.reversed, isTrue);
+      },
+    );
+
+    test('does not reverse a second time once a reversal already happened', () {
+      final decision = VideoEditorCanvas.resolveClipSnapshotSync(
+        snapshot: [orphanClip('a')],
+        direction: ClipHistoryDirection.undo,
+        canUndo: false,
+        canRedo: true,
+        didReverse: true,
+      );
+
+      expect(decision.op, ClipSnapshotSyncOp.skip);
+    });
+
+    test('skips when an orphan-only history has no reachable neighbour', () {
+      final decision = VideoEditorCanvas.resolveClipSnapshotSync(
+        snapshot: [orphanClip('a')],
+        direction: ClipHistoryDirection.none,
+        canUndo: false,
+        canRedo: false,
+        didReverse: false,
+      );
+
+      expect(decision.op, ClipSnapshotSyncOp.skip);
+    });
+  });
 }
 
-DivineVideoClip _createClip({required String id}) {
+DivineVideoClip _createClip({required String id, String? videoPath}) {
   return DivineVideoClip(
     id: id,
-    video: EditorVideo.file('/test/$id.mp4'),
+    video: EditorVideo.file(videoPath ?? '/test/$id.mp4'),
     duration: const Duration(seconds: 2),
     recordedAt: DateTime(2024),
     targetAspectRatio: model.AspectRatio.vertical,
