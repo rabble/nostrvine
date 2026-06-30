@@ -127,6 +127,90 @@ class NIP17MessageService {
     return _giftWrapBuilder(nostr, rumorEvent, receiverPublicKey);
   }
 
+  /// Builds the recipient and self-addressed gift wraps in a single isolate
+  /// hop for local-key signers (one [compute] spawn covers both receivers,
+  /// halving the spawn cost vs two separate [_buildWrap] calls).
+  ///
+  /// Returns `(recipientWrap, selfWrap?)`. For remote signers — or if the
+  /// batch isolate call fails — only the recipient wrap is built here and
+  /// `selfWrap` is `null`; [_publishSelfWrap] then builds the self-wrap
+  /// lazily after the recipient publish confirms delivery (avoids an extra
+  /// signing round-trip on publish failure).
+  ///
+  /// Security: `withPrivateKeyHex((k) => k)` copies the raw private-key hex
+  /// out of its scoped callback so it can be serialised across the [compute]
+  /// isolate boundary. This matches the receive-side pattern in
+  /// `DmRepository._decryptRumor`. The key is already in the main-isolate
+  /// heap; the threat model for this copy is identical to the attacker who
+  /// can already read the heap. The isolate is short-lived and the key does
+  /// not persist beyond the call.
+  Future<(Event?, Event?)> _buildBothWraps({
+    required Nostr nostr,
+    required Event rumorEvent,
+    required String recipientPubkey,
+  }) async {
+    final signer = _signer;
+    if (signer is IsolateDecryptSigner && signer.canDecryptInIsolate) {
+      try {
+        final hex = signer.withPrivateKeyHex((k) => k);
+        final results = await _isolateGiftWrapBatchBuilder(
+          BuildGiftWrapRequest(
+            privateKeyHex: hex,
+            rumorJson: rumorEvent.toJson(),
+            receiverPublicKeys: [recipientPubkey, _senderPublicKey],
+          ),
+        );
+        if (results.length == 2) {
+          final r = results[0];
+          final s = results[1];
+          if (!r.isSuccess) {
+            Log.debug(
+              'Batch gift-wrap: recipient slot failed (${r.error}); '
+              'falling back to main-isolate builder',
+              category: LogCategory.system,
+            );
+          }
+          if (!s.isSuccess) {
+            Log.debug(
+              'Batch gift-wrap: self-wrap slot failed (${s.error}); '
+              '_publishSelfWrap will rebuild on the main isolate',
+              category: LogCategory.system,
+            );
+          }
+          return (
+            r.isSuccess ? Event.fromJson(r.giftWrap!) : null,
+            s.isSuccess ? Event.fromJson(s.giftWrap!) : null,
+          );
+        }
+        Log.debug(
+          'Batch gift-wrap returned unexpected result count '
+          '(${results.length}); falling back to main-isolate builder',
+          category: LogCategory.system,
+        );
+      } on Object catch (e, stackTrace) {
+        Log.error(
+          'Batch gift-wrap build threw for rumor ${rumorEvent.id}: $e; '
+          'falling back to main-isolate builder',
+          category: LogCategory.system,
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+    // Remote signer or batch failed: build only the recipient wrap. The
+    // self-wrap is built lazily by _publishSelfWrap after the recipient
+    // publish confirms delivery — avoids an extra signing round-trip for
+    // remote signers when the recipient publish fails.
+    return (
+      await _buildWrap(
+        nostr: nostr,
+        rumorEvent: rumorEvent,
+        receiverPublicKey: recipientPubkey,
+      ),
+      null,
+    );
+  }
+
   /// Build the unsigned NIP-17 rumor event for a 1:1 send.
   ///
   /// Pure construction — does not touch relays or the signer. Exposed
@@ -191,11 +275,14 @@ class NIP17MessageService {
         category: LogCategory.system,
       );
 
-      // Create gift wrap for the recipient
-      final giftWrapEvent = await _buildWrap(
+      // Build recipient and self-addressed gift wraps. For local-key signers
+      // both are built in one isolate hop (half the spawn cost vs two separate
+      // calls); for remote signers the self-wrap is deferred to
+      // _publishSelfWrap after the recipient publish confirms delivery.
+      final (giftWrapEvent, prebuiltSelfWrap) = await _buildBothWraps(
         nostr: nostr,
         rumorEvent: rumorEvent,
-        receiverPublicKey: recipientPubkey,
+        recipientPubkey: recipientPubkey,
       );
 
       if (giftWrapEvent == null) {
@@ -242,6 +329,7 @@ class NIP17MessageService {
       final selfWrapPublished = await _publishSelfWrap(
         nostr: nostr,
         rumorEvent: rumorEvent,
+        prebuiltSelfWrap: prebuiltSelfWrap,
       );
 
       Log.info(
@@ -322,6 +410,11 @@ class NIP17MessageService {
   /// [rumorEvent]. Returns `true` when the wrap reached at least one
   /// relay.
   ///
+  /// When [prebuiltSelfWrap] is non-null (supplied by [_buildBothWraps] on
+  /// the local-key-signer path), the build step is skipped and the prebuilt
+  /// event is published directly. Otherwise the wrap is built via
+  /// [_buildWrap] on the main isolate.
+  ///
   /// Catches every error — used by both the happy-path send (where the
   /// recipient has already received the message and an exception must
   /// not crash the result) and the recovery path (where an exception
@@ -329,13 +422,16 @@ class NIP17MessageService {
   Future<bool> _publishSelfWrap({
     required Nostr nostr,
     required Event rumorEvent,
+    Event? prebuiltSelfWrap,
   }) async {
     try {
-      final selfWrapEvent = await _buildWrap(
-        nostr: nostr,
-        rumorEvent: rumorEvent,
-        receiverPublicKey: _senderPublicKey,
-      );
+      final selfWrapEvent =
+          prebuiltSelfWrap ??
+          await _buildWrap(
+            nostr: nostr,
+            rumorEvent: rumorEvent,
+            receiverPublicKey: _senderPublicKey,
+          );
       if (selfWrapEvent == null) {
         Log.warning(
           'Self-wrap creation returned null — the sender will not see '

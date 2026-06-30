@@ -70,20 +70,21 @@ void main() {
     );
     final rumorJson = rumor.toJson();
 
-    BuildGiftWrapRequest requestFor(String receiver) => BuildGiftWrapRequest(
-      privateKeyHex: senderPrivateKey,
-      rumorJson: rumorJson,
-      receiverPublicKeys: [receiver],
-    );
-
     final view = PlatformDispatcher.instance.views.first;
     final refreshHz = view.display.refreshRate;
     final frameBudgetMs = refreshHz > 0 ? 1000.0 / refreshHz : 16.67;
 
+    // The shipped send path: one combined batch for recipient + self wrap.
+    final combinedRequest = BuildGiftWrapRequest(
+      privateKeyHex: senderPrivateKey,
+      rumorJson: rumorJson,
+      receiverPublicKeys: [recipientPubkey, senderPubkey],
+    );
+
     // Warm up both paths (JIT + first-isolate spawn) so the measured windows
     // reflect steady-state cost rather than one-off initialization.
     await GiftWrapUtil.getGiftWrapEvent(senderNostr, rumor, recipientPubkey);
-    await compute(buildGiftWrapBatch, requestFor(recipientPubkey));
+    await compute(buildGiftWrapBatch, combinedRequest);
 
     // OLD: build recipient + self wrap on the main isolate (today's path).
     final oldStallMs = await _maxEventLoopStallMs(() async {
@@ -91,11 +92,9 @@ void main() {
       await GiftWrapUtil.getGiftWrapEvent(senderNostr, rumor, senderPubkey);
     });
 
-    // NEW: build each wrap off the main isolate via compute() — two sequential
-    // hops, matching the shipped send path.
+    // NEW: build both wraps off the main isolate in one combined compute() hop.
     final newStallMs = await _maxEventLoopStallMs(() async {
-      await compute(buildGiftWrapBatch, requestFor(recipientPubkey));
-      await compute(buildGiftWrapBatch, requestFor(senderPubkey));
+      await compute(buildGiftWrapBatch, combinedRequest);
     });
 
     debugPrint(
@@ -110,12 +109,15 @@ void main() {
       greaterThan(frameBudgetMs),
       reason: 'on-main-isolate build should blow the frame budget',
     );
-    // The offloaded path keeps the UI isolate responsive: its stall is a small
-    // fraction of the old one.
+    // The offloaded path keeps the UI isolate under one frame budget — an
+    // absolute bound that is device-speed-independent, unlike a relative
+    // fraction of the old-path stall. This is precisely what "the freeze is
+    // gone" means to the user: the UI stays responsive across every frame.
     expect(
       newStallMs,
-      lessThan(oldStallMs * 0.5),
-      reason: 'compute() offload should remove most of the stall',
+      lessThan(frameBudgetMs),
+      reason:
+          'compute() offload should keep the UI isolate under one frame budget',
     );
   });
 }

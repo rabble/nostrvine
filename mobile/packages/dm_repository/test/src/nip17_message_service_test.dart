@@ -1133,8 +1133,8 @@ void main() {
           );
 
           expect(result.success, isTrue);
-          // One hop for the recipient wrap, one for the self wrap (sequential).
-          expect(isolateSeamCalls, equals(2));
+          // One combined batch hop builds both the recipient and self wraps.
+          expect(isolateSeamCalls, equals(1));
           expect(mainBuilderCalls, equals(0));
         },
       );

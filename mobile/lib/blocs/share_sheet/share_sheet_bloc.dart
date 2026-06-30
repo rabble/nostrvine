@@ -116,7 +116,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       // One batched read (cache + bulk REST + relays, in the repository)
       // instead of a per-pubkey DB/network storm fired on sheet open. The
       // repository owns the source-selection strategy. Recents already carry
-      // their display data, so only the remaining follows need profiles.
+      // their display data snapshotted at last-send time, so only the
+      // remaining follows need profiles. Staleness is session-bounded:
+      // VideoSharingService._recentlySharedWith is in-memory only and resets
+      // to empty on app restart, so a stale avatar or name is visible at most
+      // within the same session until the user shares with that contact again.
       // Skip the call entirely when there are no follows to fetch. See #5391.
       final profiles = remainingFollows.isEmpty
           ? const <String, UserProfile>{}
