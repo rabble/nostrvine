@@ -112,7 +112,6 @@ void main() {
         final upload = event as ProfileBannerUploadRequested;
         expect(upload.pubkey, testPubkeyHex);
         expect(upload.bytes, equals(croppedBytes));
-        expect(upload.file, isNull);
         expect(upload.filename, ImageCropKind.banner.filename);
         expect(upload.mimeType, ImageCropKind.banner.mimeType);
       },

@@ -5,7 +5,6 @@
 // ABOUTME: avatar upload for the current edit session; Save remains the
 // ABOUTME: only publish point.
 
-import 'dart:io' show File;
 import 'dart:typed_data';
 import 'dart:ui' show Color;
 
@@ -123,20 +122,12 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
 
     BlossomUploadResult result;
     try {
-      if (event.bytes != null) {
-        result = await _blossomUploadService.uploadImageBytes(
-          bytes: event.bytes!,
-          filename: event.filename ?? 'avatar.jpg',
-          nostrPubkey: event.pubkey,
-          mimeType: event.mimeType,
-        );
-      } else {
-        result = await _blossomUploadService.uploadImage(
-          imageFile: event.file!,
-          nostrPubkey: event.pubkey,
-          mimeType: event.mimeType,
-        );
-      }
+      result = await _blossomUploadService.uploadImageBytes(
+        bytes: event.bytes,
+        filename: event.filename ?? 'avatar.jpg',
+        nostrPubkey: event.pubkey,
+        mimeType: event.mimeType,
+      );
     } on Object catch (error, stackTrace) {
       Log.error(
         'Avatar upload threw: $error',
@@ -296,20 +287,12 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
 
     BlossomUploadResult result;
     try {
-      if (event.bytes != null) {
-        result = await _blossomUploadService.uploadImageBytes(
-          bytes: event.bytes!,
-          filename: event.filename ?? 'banner.jpg',
-          nostrPubkey: event.pubkey,
-          mimeType: event.mimeType,
-        );
-      } else {
-        result = await _blossomUploadService.uploadImage(
-          imageFile: event.file!,
-          nostrPubkey: event.pubkey,
-          mimeType: event.mimeType,
-        );
-      }
+      result = await _blossomUploadService.uploadImageBytes(
+        bytes: event.bytes,
+        filename: event.filename ?? 'banner.jpg',
+        nostrPubkey: event.pubkey,
+        mimeType: event.mimeType,
+      );
     } on Object catch (error, stackTrace) {
       Log.error(
         'Banner upload threw: $error',

@@ -125,34 +125,28 @@ final class InitialPersistedPictureSet extends ProfileEditorEvent {
 
 /// Request to upload a new profile picture for the current edit session.
 ///
-/// Exactly one of [file] or [bytes] must be supplied. The bloc handles the
-/// upload via the injected `BlossomUploadService` and stages the resulting
-/// CDN URL on success. Save remains the only path that publishes a kind 0
-/// — this event does **not** trigger publish.
+/// [bytes] are the cropped JPEG produced by the crop editor — every pick
+/// (native and web) is cropped to bounded bytes before dispatch. The bloc
+/// handles the upload via the injected `BlossomUploadService` and stages the
+/// resulting CDN URL on success. Save remains the only path that publishes a
+/// kind 0 — this event does **not** trigger publish.
 final class ProfilePictureUploadRequested extends ProfileEditorEvent {
   const ProfilePictureUploadRequested({
     required this.pubkey,
-    this.file,
-    this.bytes,
+    required this.bytes,
     this.filename,
     this.mimeType = 'image/jpeg',
-  }) : assert(
-         (file == null) != (bytes == null),
-         'Exactly one of file or bytes must be supplied',
-       );
+  });
 
   /// User's public key in hex format. Required by the upload service for
   /// the BUD-01 auth event.
   final String pubkey;
 
-  /// Native file payload (iOS / Android / desktop).
-  final File? file;
+  /// In-memory cropped JPEG bytes to upload.
+  final Uint8List bytes;
 
-  /// In-memory bytes payload (web).
-  final Uint8List? bytes;
-
-  /// Filename for the bytes payload (web only). Used by the metadata
-  /// stripper to preserve / normalize the extension.
+  /// Filename for the bytes payload. Used by the metadata stripper to
+  /// preserve / normalize the extension.
   final String? filename;
 
   /// MIME type. Defaults to `image/jpeg`.
@@ -212,32 +206,27 @@ final class InitialPersistedBannerSet extends ProfileEditorEvent {
 
 /// Request to upload a new banner image for the current edit session.
 ///
-/// Exactly one of [file] or [bytes] must be supplied. The bloc handles the
-/// upload via the injected `BlossomUploadService` and stages the resulting
-/// CDN URL on success. Save remains the only path that publishes a kind 0
-/// — this event does **not** trigger publish.
+/// [bytes] are the cropped JPEG produced by the crop editor — every pick
+/// (native and web) is cropped to bounded bytes before dispatch. The bloc
+/// handles the upload via the injected `BlossomUploadService` and stages the
+/// resulting CDN URL on success. Save remains the only path that publishes a
+/// kind 0 — this event does **not** trigger publish.
 final class ProfileBannerUploadRequested extends ProfileEditorEvent {
   const ProfileBannerUploadRequested({
     required this.pubkey,
-    this.file,
-    this.bytes,
+    required this.bytes,
     this.filename,
     this.mimeType = 'image/jpeg',
-  }) : assert(
-         (file == null) != (bytes == null),
-         'Exactly one of file or bytes must be supplied',
-       );
+  });
 
   /// User's public key in hex format.
   final String pubkey;
 
-  /// Native file payload (iOS / Android / desktop).
-  final File? file;
+  /// In-memory cropped JPEG bytes to upload.
+  final Uint8List bytes;
 
-  /// In-memory bytes payload (web).
-  final Uint8List? bytes;
-
-  /// Filename for the bytes payload (web only).
+  /// Filename for the bytes payload. Used by the metadata stripper to
+  /// preserve / normalize the extension.
   final String? filename;
 
   /// MIME type. Defaults to `image/jpeg`.

@@ -168,7 +168,6 @@ void main() {
             final upload = event as ProfilePictureUploadRequested;
             expect(upload.pubkey, testPubkeyHex);
             expect(upload.bytes, equals(croppedBytes));
-            expect(upload.file, isNull);
             expect(upload.filename, ImageCropKind.avatar.filename);
             expect(upload.mimeType, ImageCropKind.avatar.mimeType);
           } finally {
