@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -47,6 +48,10 @@ class _FakeKeyManagementAuthService extends Fake implements AuthService {
 
 void main() {
   group(KeyManagementScreen, () {
+    setUpAll(() async {
+      await loadAppFonts();
+    });
+
     const testNpub =
         'npub1abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz';
 

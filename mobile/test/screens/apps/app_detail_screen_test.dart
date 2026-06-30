@@ -2,6 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -18,6 +19,10 @@ class _MockNostrAppDirectoryService extends Mock
 
 void main() {
   group('AppDetailScreen', () {
+    setUpAll(() async {
+      await loadAppFonts();
+    });
+
     late _MockNostrAppDirectoryService mockDirectoryService;
 
     setUp(() {

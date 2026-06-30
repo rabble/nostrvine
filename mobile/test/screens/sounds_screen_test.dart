@@ -7,6 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -94,6 +95,10 @@ Widget createTestWidget({required Widget child, List<dynamic>? overrides}) {
 }
 
 void main() {
+  setUpAll(() async {
+    await loadAppFonts();
+  });
+
   group('SoundsScreen', () {
     group('Widget Structure', () {
       testWidgets('renders with correct title', (tester) async {

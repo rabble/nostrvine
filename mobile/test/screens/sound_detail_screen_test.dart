@@ -7,6 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -129,6 +130,10 @@ Finder _divineIcon(DivineIconName name) =>
     find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
+  setUpAll(() async {
+    await loadAppFonts();
+  });
+
   group('SoundDetailScreen', () {
     late _MockAudioPlaybackService mockAudioService;
     late _MockNostrClient mockNostrClient;
