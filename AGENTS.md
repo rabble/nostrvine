@@ -9,13 +9,12 @@
 
 ## Divine Context And Brain
 
-- Before starting any task in this repo, read `${DIVINE_CONTEXT_ROOT:-../divine-context}/AGENT_CONTEXT.md`. If it is missing, clone `divinevideo/divine-context` as a sibling repo next to `divine-mobile`, or set `DIVINE_CONTEXT_ROOT` to the local clone.
+- Before starting broad product, architecture, protocol, or cross-repo work, read `${DIVINE_CONTEXT_ROOT:-../divine-context}/AGENT_CONTEXT.md` if it exists. If it is unavailable, rely on this repo's focused docs and ask before making cross-repo assumptions.
 - `divine-context` is the cross-repo handbook for product goals, architecture, terminology, Nostr usage, and the service catalog. Use it before inventing a new service, protocol shape, or product assumption.
-- Divine Brain is a major knowledge store for company context that is not visible in the local working tree: Slack decisions, Drive docs, GitHub history, Gmail threads, Figma context, Cloudflare Workers, Fastly services, incidents, customer themes, and prior implementation rationale.
-- When a task would benefit from company memory, use the `using-divine-brain` skill and the `mcp__divine_brain__*` tools. Prefer `mcp__divine_brain__search` for raw engineering/context retrieval, `mcp__divine_brain__ask` for synthesized answers, `mcp__divine_brain__world` for typed entity lookup, and `mcp__divine_brain__sql` for allow-listed rollups.
+- Divine Brain is an optional developer-local knowledge source for company context that is not visible in the local working tree: Slack decisions, Drive docs, GitHub history, Gmail threads, Figma context, Cloudflare Workers, Fastly services, incidents, customer themes, and prior implementation rationale.
+- When Divine Brain MCP tools are configured and a task would benefit from company memory, prefer `mcp__divine_brain__search` for raw engineering/context retrieval, `mcp__divine_brain__ask` for synthesized answers, `mcp__divine_brain__world` for typed entity lookup, and `mcp__divine_brain__sql` for allow-listed rollups.
 - Cite Brain results back to the user or PR text when they influence the answer. If Brain is unavailable, say that directly and continue only from local evidence; do not guess missing company context.
 - Do not commit Divine Brain CF Access headers, service tokens, nsecs, or other credentials to this repo. Brain auth belongs in developer-local/global MCP configuration. The repo `.mcp.json` may list non-secret public MCP servers only.
-- Metaswarm agents and subagents must load this section, read Divine Context, prime `.beads/knowledge` when available, and use Divine Brain as the first stop for non-local company knowledge before planning, implementation, review, or PR handoff.
 
 ## Worktree-First Task Workflow
 
@@ -126,7 +125,7 @@
 
 ## metaswarm
 
-This project uses [metaswarm](https://github.com/dsifry/metaswarm) for multi-agent orchestration. It provides specialized agents, structured development workflows, and quality gates for test-backed, spec-driven development.
+This repo includes a portable metaswarm project profile for agents that have the metaswarm plugin installed. Metaswarm is optional local orchestration; it does not replace this repo's GitHub Actions, review, test, or coverage policies.
 
 ### Workflow
 
@@ -159,9 +158,8 @@ Codex discovers skills by their SKILL.md `name` field. Invoke with `$name` synta
 - **TDD is mandatory** -- Write tests first, watch them fail, then implement
 - **Coverage policy** -- follow `.claude/rules/testing.md` and any package-specific `min_coverage` workflows. Run the relevant package tests and coverage checks called out by AGENTS.md.
 
-### Workflow Enforcement (MANDATORY)
+### Workflow Enforcement
 
-- **After brainstorming** -> MUST run `$design-review-gate` before planning or implementation
-- **After any plan is created** -> MUST run `$plan-review-gate` before presenting to user
-- **Verification** -> run the smallest relevant verification first, then broaden when the change is cross-cutting.
-- **Agent discipline** -> NEVER use `--no-verify`, NEVER `git push --force` without approval, NEVER self-certify, ALWAYS follow TDD, STAY within file scope
+- Use design and plan review gates when a task is complex enough to warrant metaswarm orchestration.
+- Run the smallest relevant verification first, then broaden when the change is cross-cutting.
+- Follow the repo guardrails above: never use `--no-verify`, never `git push --force` without approval, never self-certify, and stay within file scope.

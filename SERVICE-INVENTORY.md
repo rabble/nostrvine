@@ -1,7 +1,6 @@
 # Service Inventory
 
-> Updated by the orchestrator after each work unit commit.
-> Coder agents MUST read this before implementing to avoid duplicating existing services.
+This is a lightweight repo inventory for agents and contributors. Current code, focused docs, and tests remain the source of truth when this file drifts.
 
 ## App Surfaces
 
@@ -15,10 +14,9 @@
 
 | Source | Path / Tool | Responsibility |
 |--------|-------------|----------------|
-| Repo instructions | `AGENTS.md` | Task workflow, Divine Context and Brain requirements, verification rules, metaswarm usage |
-| Divine Context | `${DIVINE_CONTEXT_ROOT:-../divine-context}/AGENT_CONTEXT.md` | Cross-repo product goals, architecture, Nostr assumptions, terminology, and service catalog |
-| Divine Brain | `mcp__divine_brain__search`, `mcp__divine_brain__ask`, `mcp__divine_brain__world`, `mcp__divine_brain__sql` | Company world model for decisions, Slack/Drive/GitHub/Gmail/Figma context, infra inventory, incidents, and customer themes |
-| BEADS knowledge | `.beads/knowledge/*.jsonl` | Local metaswarm priming facts and durable project learnings |
+| Repo instructions | `AGENTS.md` | Task workflow, verification rules, and optional metaswarm usage |
+| Divine Context | `${DIVINE_CONTEXT_ROOT:-../divine-context}/AGENT_CONTEXT.md` | Optional sibling repo with cross-repo product goals, architecture, Nostr assumptions, terminology, and service catalog |
+| Divine Brain | developer-local MCP tools when configured | Optional company memory for decisions, Slack/Drive/GitHub/Gmail/Figma context, infra inventory, incidents, and customer themes |
 
 ## Packages
 
@@ -37,5 +35,5 @@
 - Prefer the layered flow `UI -> BLoC/Cubit -> Repository -> Client`.
 - Shared reusable logic belongs in the owning package under `mobile/packages/`.
 - Do not truncate Nostr IDs in code, logs, tests, analytics, or debug output.
-- For non-local company context, use Divine Brain before guessing or inventing rationale.
+- For non-local company context, use Divine Brain when it is configured before guessing or inventing rationale.
 - Keep Divine Brain credentials out of repo files; auth belongs in developer-local/global MCP configuration.

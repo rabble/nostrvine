@@ -2,7 +2,7 @@
   "metaswarm_version": "0.12.0",
   "distribution": "plugin",
   "installed_at": "2026-06-29T17:42:52Z",
-  "updated_at": "2026-06-29T18:30:00Z",
+  "updated_at": "2026-06-29T18:45:00Z",
   "detection": {
     "language": "Dart / Flutter",
     "framework": "Flutter",
@@ -30,12 +30,14 @@
   },
   "knowledge_sources": {
     "divine_context": {
-      "required": true,
-      "path": "${DIVINE_CONTEXT_ROOT:-../divine-context}/AGENT_CONTEXT.md",
-      "purpose": "Cross-repo product, architecture, Nostr, terminology, and service catalog context for every divine-* task."
+      "required": false,
+      "path_candidates": [
+        "${DIVINE_CONTEXT_ROOT:-../divine-context}/AGENT_CONTEXT.md"
+      ],
+      "purpose": "Optional cross-repo product, architecture, Nostr, terminology, and service catalog context for broad divine-* tasks."
     },
     "divine_brain": {
-      "required": true,
+      "required": false,
       "mcp_server": "divine-brain",
       "mcp_tools": [
         "mcp__divine_brain__search",
@@ -45,12 +47,6 @@
       ],
       "purpose": "Major company knowledge store for Slack, Drive, GitHub, Gmail, Figma, Cloudflare, Fastly, incidents, customer themes, and prior decisions not visible in the local checkout.",
       "auth_policy": "Do not commit CF Access headers or service tokens. Configure Divine Brain MCP credentials in developer-local/global MCP config."
-    },
-    "beads": {
-      "required_for_metaswarm_priming": true,
-      "prime_command": "bd prime",
-      "knowledge_path": ".beads/knowledge",
-      "fallback": "If bd is unavailable, read AGENTS.md and the relevant .beads/knowledge/*.jsonl files directly before starting metaswarm work."
     }
   }
 }
