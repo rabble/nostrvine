@@ -94,13 +94,19 @@ void main() {
         allOf(
           contains('ObjectIdentifier(messenger as AnyObject)'),
           contains(r'$0.value == engineId'),
+          contains('remove(id)?.dispose()'),
         ),
         reason:
             'The lookup side must derive the engine identity from the '
-            "messenger and filter the owner map to that engine's own players. "
-            'A body that blanket-disposes every player (without any literal '
+            "messenger and filter the owner map to that engine's own players, "
+            'then dispose each matched id through remove(id) so the owner-map '
+            'entry is cleared in lockstep with the player. Open-coding the '
+            'removal (or dropping the engines[id] cleanup) lets stale ids '
+            'accumulate and re-process on every later disposeForEngine. A '
+            'body that blanket-disposes every player (without any literal '
             'disposeAll token) would still reintroduce the #5397 cross-engine '
-            'teardown undetected, so pin the per-engine filter explicitly.',
+            'teardown undetected, so pin the per-engine filter and the '
+            'remove() call explicitly.',
       );
     });
 
@@ -178,7 +184,12 @@ void main() {
   });
 }
 
-String _pluginSource() => _pluginSourceFile().readAsStringSync();
+String? _cachedPluginSource;
+
+/// The Swift source is static for the duration of the run, so read it once and
+/// reuse it across all helpers/tests instead of re-reading on every call.
+String _pluginSource() =>
+    _cachedPluginSource ??= _pluginSourceFile().readAsStringSync();
 
 /// Slices the `register(with:)` body, which runs from the function signature
 /// up to the first app-lifecycle selector that follows it.
@@ -201,8 +212,14 @@ String _createBody() =>
 
 /// Slices the `PlayerRegistry.set(...)` body — the *recording* side of the
 /// owner map — up to the `remove` method (`@discardableResult`) that follows.
-String _registrySetBody() =>
-    _slice(_pluginSource(), 'func set(', '@discardableResult');
+/// Anchored on the unique `engine messenger:` parameter label rather than the
+/// generic `func set(`, so a future `func set(` on any earlier class can't
+/// silently redirect the slice to the wrong body.
+String _registrySetBody() => _slice(
+  _pluginSource(),
+  'engine messenger: FlutterBinaryMessenger',
+  '@discardableResult',
+);
 
 /// Slices the `PlayerRegistry.disposeForEngine(_:)` body — the *lookup* and
 /// teardown side — up to the `forAll` method that follows it.

@@ -329,8 +329,7 @@ final class PlayerRegistry {
         let engineId = ObjectIdentifier(messenger as AnyObject)
         let ownedIds = engines.compactMap { $0.value == engineId ? $0.key : nil }
         for id in ownedIds {
-            players.removeValue(forKey: id)?.dispose()
-            engines[id] = nil
+            remove(id)?.dispose()
         }
     }
     func forAll(_ action: (DivineVideoPlayerInstance) -> Void) {
