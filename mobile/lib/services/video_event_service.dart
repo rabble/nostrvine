@@ -184,10 +184,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   bool _isLoading = false;
   String? _error;
   Timer? _retryTimer;
+  StreamSubscription<Map<String, RelayConnectionStatus>>?
+  _relayReadyRetrySubscription;
 
   // Feed types whose relay subscription failed on a connection error and
   // should be re-established by the online-retry cycle.
   final Set<SubscriptionType> _typesAwaitingRetry = {};
+  final Set<SubscriptionType> _typesAwaitingRelayReady = {};
   int _retryAttempts = 0;
 
   // Track subscription parameters per type
@@ -1388,11 +1391,29 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     }
 
     if (_nostrService.connectedRelayCount == 0) {
+      _isLoading = false;
+
       Log.warning(
-        'WARNING: No relays connected - subscription will likely fail',
+        'No relays connected, will retry when relay connection is restored',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
+      if (scheduleOnlineRetry) {
+        _storeSubscriptionParams(
+          subscriptionType: subscriptionType,
+          authors: authors,
+          hashtags: hashtags,
+          group: group,
+          since: since,
+          until: until,
+          limit: limit,
+          includeReposts: includeReposts,
+          sortBy: sortBy,
+          nip50Sort: nip50Sort,
+        );
+        _scheduleRetryWhenRelayReady(subscriptionType);
+      }
+      throw const RelayNotReadyException('No connected relays');
     }
 
     // Avoid churn: if params match existing subscription, skip re-subscribe
@@ -1643,15 +1664,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           category: LogCategory.video,
         );
         throw Exception('NostrService not initialized');
-      }
-
-      if (_nostrService.connectedRelayCount == 0) {
-        Log.error(
-          '❌ No connected relays - cannot create subscription',
-          name: 'VideoEventService',
-          category: LogCategory.video,
-        );
-        throw Exception('No connected relays');
       }
 
       // BYPASS SubscriptionManager for main video feed - go directly to NostrService
@@ -4164,6 +4176,78 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         errorString.contains('unreachable');
   }
 
+  bool _hasConnectedRelay(Map<String, RelayConnectionStatus> statuses) {
+    return statuses.values.any((status) => status.isConnected);
+  }
+
+  /// Schedule retry of [subscriptionType] when at least one relay reconnects.
+  ///
+  /// This is intentionally separate from [_scheduleRetryWhenOnline]: the device
+  /// can have network connectivity while every Nostr relay is disconnected.
+  void _scheduleRetryWhenRelayReady(SubscriptionType subscriptionType) {
+    _typesAwaitingRelayReady.add(subscriptionType);
+
+    if (_nostrService.connectedRelayCount > 0) {
+      _retrySubscriptionsAwaitingRelayReady();
+      return;
+    }
+
+    if (_relayReadyRetrySubscription != null) return;
+
+    _relayReadyRetrySubscription = _nostrService.relayStatusStream.listen((
+      statuses,
+    ) {
+      if (_hasConnectedRelay(statuses)) {
+        _retrySubscriptionsAwaitingRelayReady();
+      }
+    });
+  }
+
+  void _retrySubscriptionsAwaitingRelayReady() {
+    final pendingTypes = Set<SubscriptionType>.of(_typesAwaitingRelayReady);
+    _typesAwaitingRelayReady.clear();
+    _cancelRelayReadyRetrySubscription();
+
+    if (pendingTypes.isEmpty) {
+      return;
+    }
+
+    Log.warning(
+      'Retrying video subscriptions after relay connection restored: '
+      '${pendingTypes.map((type) => type.name).join(", ")}',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+
+    for (final type in pendingTypes) {
+      unawaited(
+        _resubscribeWithStoredParams(type)
+            .then((_) {
+              Log.info(
+                'Successfully resubscribed to ${type.name} feed after relay reconnect',
+                name: 'VideoEventService',
+                category: LogCategory.video,
+              );
+            })
+            .catchError((Object e) {
+              Log.error(
+                'Relay-ready retry for ${type.name} failed: $e',
+                name: 'VideoEventService',
+                category: LogCategory.video,
+              );
+              if (e is RelayNotReadyException) {
+                _scheduleRetryWhenRelayReady(type);
+              }
+            }),
+      );
+    }
+  }
+
+  void _cancelRelayReadyRetrySubscription() {
+    unawaited(_relayReadyRetrySubscription?.cancel());
+    _relayReadyRetrySubscription = null;
+  }
+
   /// Schedule retry of [subscriptionType] when the device is back online.
   ///
   /// The failed type is recorded so the retry re-establishes the feed
@@ -4213,22 +4297,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// parameters, forcing past duplicate detection (the dead subscription
   /// is still registered after an onError, so a non-forced call no-ops).
   void _retrySubscription(SubscriptionType type, Timer timer) {
-    final params = _subscriptionParams[type];
     unawaited(
-      subscribeToVideoFeed(
-            subscriptionType: type,
-            authors: params?['authors'] as List<String>?,
-            hashtags: params?['hashtags'] as List<String>?,
-            group: params?['group'] as String?,
-            since: params?['since'] as int?,
-            until: params?['until'] as int?,
-            limit: (params?['limit'] as int?) ?? 200,
-            includeReposts: (params?['includeReposts'] as bool?) ?? false,
-            sortBy: params?['sortBy'] as VideoSortField?,
-            nip50Sort: params?['nip50Sort'] as NIP50SortMode?,
-            force: true,
-            scheduleOnlineRetry: false,
-          )
+      _resubscribeWithStoredParams(type)
           .then((_) {
             _typesAwaitingRetry.remove(type);
             Log.info(
@@ -4257,6 +4327,24 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
               );
             }
           }),
+    );
+  }
+
+  Future<void> _resubscribeWithStoredParams(SubscriptionType type) {
+    final params = _subscriptionParams[type];
+    return subscribeToVideoFeed(
+      subscriptionType: type,
+      authors: params?['authors'] as List<String>?,
+      hashtags: params?['hashtags'] as List<String>?,
+      group: params?['group'] as String?,
+      since: params?['since'] as int?,
+      until: params?['until'] as int?,
+      limit: (params?['limit'] as int?) ?? 200,
+      includeReposts: (params?['includeReposts'] as bool?) ?? false,
+      sortBy: params?['sortBy'] as VideoSortField?,
+      nip50Sort: params?['nip50Sort'] as NIP50SortMode?,
+      force: true,
+      scheduleOnlineRetry: false,
     );
   }
 
@@ -5259,6 +5347,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     LogBatcher.flush();
 
     _retryTimer?.cancel();
+    _cancelRelayReadyRetrySubscription();
     _likeCountBatchTimer?.cancel();
     _authStateSubscription?.cancel();
     unawaited(_blocklistChangesSubscription?.cancel());
@@ -5958,6 +6047,11 @@ class VideoEventServiceException implements Exception {
 
   @override
   String toString() => 'VideoEventServiceException: $message';
+}
+
+/// Exception thrown when video subscriptions must wait for relay connectivity.
+class RelayNotReadyException extends VideoEventServiceException {
+  const RelayNotReadyException(super.message);
 }
 
 extension _VideoEventSortingExtension on List<VideoEvent> {

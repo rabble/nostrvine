@@ -293,8 +293,22 @@ class VideoEvents extends _$VideoEvents {
         category: LogCategory.video,
       );
       // Use NIP-50 search for trending/popular discovery (otherstuff-relay)
-      service.subscribeToDiscovery(
-        nip50Sort: NIP50SortMode.hot, // Recent events with high engagement
+      unawaited(
+        service
+            .subscribeToDiscovery(
+              nip50Sort:
+                  NIP50SortMode.hot, // Recent events with high engagement
+            )
+            .catchError((Object error) {
+              if (error is! RelayNotReadyException) {
+                throw error;
+              }
+              Log.warning(
+                'VideoEvents: Discovery subscription deferred until relay connection is ready',
+                name: 'VideoEventsProvider',
+                category: LogCategory.video,
+              );
+            }),
       );
       // NOTE: We don't set a local _isSubscribed flag here because we rely on
       // service.isSubscribed() which accurately tracks actual subscription state

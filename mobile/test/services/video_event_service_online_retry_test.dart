@@ -58,6 +58,9 @@ void main() {
     late VideoEventService service;
     late List<List<Filter>> subscribeCalls;
     late List<StreamController<Event>> streamControllers;
+    late StreamController<Map<String, RelayConnectionStatus>>
+    relayStatusController;
+    late int connectedRelayCount;
 
     setUp(() {
       mockNostrService = _MockNostrClient();
@@ -66,10 +69,17 @@ void main() {
       connectionService = _FakeConnectionStatusService();
       subscribeCalls = [];
       streamControllers = [];
+      relayStatusController = StreamController.broadcast();
+      connectedRelayCount = 1;
 
       when(() => mockNostrService.isInitialized).thenReturn(true);
       when(() => mockNostrService.publicKey).thenReturn('');
-      when(() => mockNostrService.connectedRelayCount).thenReturn(1);
+      when(
+        () => mockNostrService.connectedRelayCount,
+      ).thenAnswer((_) => connectedRelayCount);
+      when(
+        () => mockNostrService.relayStatusStream,
+      ).thenAnswer((_) => relayStatusController.stream);
       when(
         () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((invocation) {
@@ -109,6 +119,7 @@ void main() {
 
     tearDown(() {
       service.dispose();
+      unawaited(relayStatusController.close());
       connectionService.dispose();
     });
 
@@ -191,6 +202,127 @@ void main() {
           ),
           isTrue,
         );
+      });
+    });
+
+    test('first subscribe with zero relays retries after relay reconnect with '
+        'the original authors', () {
+      fakeAsync((fake) {
+        connectedRelayCount = 0;
+        Object? caughtError;
+
+        unawaited(
+          service
+              .subscribeToVideoFeed(
+                subscriptionType: SubscriptionType.profile,
+                authors: [followedAuthor],
+              )
+              .catchError((Object error) {
+                caughtError = error;
+              }),
+        );
+        fake.flushMicrotasks();
+
+        expect(caughtError, isA<RelayNotReadyException>());
+        expect(subscribeCalls, isEmpty);
+
+        relayStatusController.add({
+          'wss://relay.divine.video': RelayConnectionStatus.disconnected(
+            'wss://relay.divine.video',
+          ),
+        });
+        fake.flushMicrotasks();
+        expect(subscribeCalls, isEmpty);
+
+        connectedRelayCount = 1;
+        relayStatusController.add({
+          'wss://relay.divine.video': RelayConnectionStatus.connected(
+            'wss://relay.divine.video',
+          ),
+        });
+        fake.flushMicrotasks();
+
+        expect(subscribeCalls, hasLength(1));
+        expect(
+          subscribeCalls.single.any(
+            (filter) => filter.authors?.contains(followedAuthor) ?? false,
+          ),
+          isTrue,
+        );
+
+        relayStatusController.add({
+          'wss://relay.divine.video': RelayConnectionStatus.connected(
+            'wss://relay.divine.video',
+          ),
+        });
+        fake.flushMicrotasks();
+
+        expect(
+          subscribeCalls,
+          hasLength(1),
+          reason: 'relay-ready retry must cancel after a successful retry',
+        );
+      });
+    });
+
+    test('relay-ready retry preserves each pending subscription params without '
+        'creating a retry storm', () {
+      fakeAsync((fake) {
+        connectedRelayCount = 0;
+
+        unawaited(
+          service
+              .subscribeToVideoFeed(
+                subscriptionType: SubscriptionType.profile,
+                authors: [followedAuthor],
+              )
+              .catchError((_) {}),
+        );
+        unawaited(
+          service
+              .subscribeToVideoFeed(
+                subscriptionType: SubscriptionType.hashtag,
+                hashtags: const ['Fresh'],
+              )
+              .catchError((_) {}),
+        );
+        fake.flushMicrotasks();
+
+        expect(subscribeCalls, isEmpty);
+
+        connectedRelayCount = 1;
+        relayStatusController.add({
+          'wss://relay.divine.video': RelayConnectionStatus.connected(
+            'wss://relay.divine.video',
+          ),
+        });
+        fake.flushMicrotasks();
+
+        expect(subscribeCalls, hasLength(2));
+        expect(
+          subscribeCalls.any(
+            (filters) => filters.any(
+              (filter) => filter.authors?.contains(followedAuthor) ?? false,
+            ),
+          ),
+          isTrue,
+        );
+        expect(
+          subscribeCalls.any(
+            (filters) =>
+                filters.any((filter) => filter.t?.contains('fresh') ?? false),
+          ),
+          isTrue,
+        );
+
+        relayStatusController.add({
+          'wss://relay.divine.video': RelayConnectionStatus.connected(
+            'wss://relay.divine.video',
+          ),
+        });
+        fake.flushMicrotasks();
+
+        expect(subscribeCalls, hasLength(2));
       });
     });
 

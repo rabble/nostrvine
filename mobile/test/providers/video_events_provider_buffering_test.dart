@@ -1,6 +1,8 @@
 // ABOUTME: Tests for videoEventsProvider buffering behavior
 // ABOUTME: Validates new video buffering system and banner functionality
 
+import 'dart:async';
+
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,6 +33,8 @@ void main() {
     late VideoEventService videoEventService;
     late ProviderContainer container;
     late SharedPreferences sharedPreferences;
+    late StreamController<Map<String, RelayConnectionStatus>>
+    relayStatusController;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
@@ -38,10 +42,14 @@ void main() {
       mockNostrService = _MockNostrClient();
       mockSubscriptionManager = _MockSubscriptionManager();
       mockBlocklistRepository = _MockContentBlocklistRepository();
+      relayStatusController = StreamController.broadcast();
 
       // Stub necessary methods
       when(() => mockNostrService.isInitialized).thenReturn(true);
       when(() => mockNostrService.connectedRelayCount).thenReturn(0);
+      when(
+        () => mockNostrService.relayStatusStream,
+      ).thenAnswer((_) => relayStatusController.stream);
       when(
         () => mockBlocklistRepository.shouldFilterFromFeeds(any()),
       ).thenReturn(false);
@@ -70,6 +78,8 @@ void main() {
 
     tearDown(() {
       container.dispose();
+      videoEventService.dispose();
+      unawaited(relayStatusController.close());
     });
 
     test('buffering API exists and starts with zero buffered videos', () async {
