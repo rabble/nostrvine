@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/blocs/background_publish/publish_foreground_session.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
@@ -12,6 +13,28 @@ class _MockVineDraft extends Mock implements DivineVideoDraft {}
 class _MockVideoPublishService extends Mock implements VideoPublishService {}
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
+
+/// Records begin/end calls; optionally throws to prove the session is
+/// best-effort and never breaks the publish.
+class _FakeForegroundSession implements PublishForegroundSession {
+  _FakeForegroundSession({this.throws = false});
+
+  final bool throws;
+  final List<String> beginCalls = [];
+  final List<String> endCalls = [];
+
+  @override
+  Future<void> begin(String sessionId) async {
+    beginCalls.add(sessionId);
+    if (throws) throw Exception('begin failed');
+  }
+
+  @override
+  Future<void> end(String sessionId) async {
+    endCalls.add(sessionId);
+    if (throws) throw Exception('end failed');
+  }
+}
 
 void main() {
   late _MockDraftStorageService mockDraftStorageService;
@@ -541,6 +564,83 @@ void main() {
           ),
         ),
         expect: () => <BackgroundPublishState>[],
+      );
+    });
+
+    group('foreground session', () {
+      late _MockVineDraft draft;
+      late _FakeForegroundSession session;
+
+      const draftId = '1';
+
+      setUp(() {
+        draft = _MockVineDraft();
+        session = _FakeForegroundSession();
+        when(() => draft.id).thenReturn(draftId);
+        when(() => draft.sourceDraftId).thenReturn(null);
+      });
+
+      blocTest<BackgroundPublishBloc, BackgroundPublishState>(
+        'begins and ends the session around a successful publish',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+          foregroundSession: session,
+        ),
+        act: (bloc) => bloc.add(
+          BackgroundPublishRequested(
+            draft: draft,
+            publishmentProcess: Future.value(const PublishSuccess()),
+          ),
+        ),
+        verify: (_) {
+          expect(session.beginCalls, [draftId]);
+          expect(session.endCalls, [draftId]);
+        },
+      );
+
+      blocTest<BackgroundPublishBloc, BackgroundPublishState>(
+        'ends the session even when the publish fails',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+          foregroundSession: session,
+        ),
+        act: (bloc) => bloc.add(
+          BackgroundPublishRequested(
+            draft: draft,
+            publishmentProcess: Future.value(
+              const PublishError(PublishErrorKind.generic),
+            ),
+          ),
+        ),
+        verify: (_) {
+          expect(session.beginCalls, [draftId]);
+          expect(session.endCalls, [draftId]);
+        },
+      );
+
+      blocTest<BackgroundPublishBloc, BackgroundPublishState>(
+        'a session failure does not abort the publish',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+          foregroundSession: _FakeForegroundSession(throws: true),
+        ),
+        act: (bloc) => bloc.add(
+          BackgroundPublishRequested(
+            draft: draft,
+            publishmentProcess: Future.value(const PublishSuccess()),
+          ),
+        ),
+        expect: () => [
+          BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draft, result: null, progress: 0),
+            ],
+          ),
+          const BackgroundPublishState(recentlySucceededIds: {draftId}),
+        ],
       );
     });
 

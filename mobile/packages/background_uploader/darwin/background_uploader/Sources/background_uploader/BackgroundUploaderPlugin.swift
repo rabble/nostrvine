@@ -21,6 +21,11 @@ public class BackgroundUploaderPlugin: NSObject, FlutterPlugin {
   /// events; called once those events have been delivered. iOS-only — macOS
   /// apps are not relaunched to finish background sessions.
   private var backgroundCompletionHandler: (() -> Void)?
+
+  /// Background-task assertions keyed by session id, so the app keeps running
+  /// long enough to finish in-process publish steps (signing, relay broadcast)
+  /// after the background URLSession upload completes while suspended.
+  private var backgroundTasks: [String: UIBackgroundTaskIdentifier] = [:]
   #endif
 
   /// Response bodies accumulated per task identifier. URLSession delivers
@@ -81,10 +86,68 @@ public class BackgroundUploaderPlugin: NSObject, FlutterPlugin {
       cancel(call.arguments, result: result)
     case "activeTaskIds":
       activeTaskIds(result: result)
+    case "beginForegroundSession":
+      beginForegroundSession(call.arguments, result: result)
+    case "endForegroundSession":
+      endForegroundSession(call.arguments, result: result)
     default:
       result(FlutterMethodNotImplemented)
     }
   }
+
+  /// Begins a background-task assertion on iOS so in-process work survives a
+  /// brief suspension; a no-op on macOS, which does not background-restrict
+  /// network the way iOS does.
+  private func beginForegroundSession(
+    _ arguments: Any?,
+    result: @escaping FlutterResult
+  ) {
+    #if os(iOS)
+    guard
+      let args = arguments as? [String: Any],
+      let sessionId = args["sessionId"] as? String, !sessionId.isEmpty
+    else {
+      result(
+        FlutterError(
+          code: "invalid_arguments",
+          message: "beginForegroundSession requires a sessionId",
+          details: nil
+        )
+      )
+      return
+    }
+    endBackgroundTask(sessionId)
+    let task = UIApplication.shared.beginBackgroundTask(
+      withName: "co.openvine.background_uploader.\(sessionId)"
+    ) { [weak self] in
+      self?.endBackgroundTask(sessionId)
+    }
+    backgroundTasks[sessionId] = task
+    #endif
+    result(nil)
+  }
+
+  private func endForegroundSession(
+    _ arguments: Any?,
+    result: @escaping FlutterResult
+  ) {
+    #if os(iOS)
+    if let args = arguments as? [String: Any],
+      let sessionId = args["sessionId"] as? String {
+      endBackgroundTask(sessionId)
+    }
+    #endif
+    result(nil)
+  }
+
+  #if os(iOS)
+  private func endBackgroundTask(_ sessionId: String) {
+    guard let task = backgroundTasks.removeValue(forKey: sessionId),
+      task != .invalid
+    else { return }
+    UIApplication.shared.endBackgroundTask(task)
+  }
+  #endif
 
   private func enqueue(_ arguments: Any?, result: @escaping FlutterResult) {
     guard

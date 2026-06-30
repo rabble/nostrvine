@@ -67,6 +67,33 @@ class BackgroundUploader {
   /// Cancels the upload identified by [taskId], if it is still in flight.
   Future<void> cancel(String taskId) => _platform.cancel(taskId);
 
+  /// Starts an OS foreground session that keeps the app process foregrounded
+  /// (and its network usable) until [endForegroundSession] is called with the
+  /// same [sessionId].
+  ///
+  /// Unlike [enqueue], this carries no transfer of its own. It exists so a
+  /// caller can keep the process out of the background-network restrictions
+  /// across in-process work that must not be network-starved — e.g. signing a
+  /// follow-up event with a remote signer and broadcasting it to relays after
+  /// a background upload completes while the app is suspended.
+  ///
+  /// Must be called while the app is in the foreground: Android forbids
+  /// starting a foreground service from the background. On Apple platforms the
+  /// session maps to a background-task assertion (iOS) or is a no-op (macOS).
+  ///
+  /// Throws [ArgumentError] if [sessionId] is empty.
+  Future<void> beginForegroundSession(String sessionId) {
+    if (sessionId.isEmpty) {
+      throw ArgumentError.value(sessionId, 'sessionId', 'must not be empty');
+    }
+    return _platform.beginForegroundSession(sessionId);
+  }
+
+  /// Ends the foreground session started by [beginForegroundSession] for
+  /// [sessionId]. Safe to call when no matching session is active.
+  Future<void> endForegroundSession(String sessionId) =>
+      _platform.endForegroundSession(sessionId);
+
   /// Task ids the OS still has in flight, for startup reconciliation.
   Future<List<String>> activeTaskIds() => _platform.activeTaskIds();
 }

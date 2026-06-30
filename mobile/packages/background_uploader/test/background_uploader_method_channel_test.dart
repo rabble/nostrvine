@@ -63,6 +63,20 @@ void main() {
     expect(calls.single.arguments, <String, Object?>{'taskId': 'upload-1'});
   });
 
+  test('beginForegroundSession passes the session id to native', () async {
+    await platform.beginForegroundSession('publish-1');
+
+    expect(calls.single.method, 'beginForegroundSession');
+    expect(calls.single.arguments, <String, Object?>{'sessionId': 'publish-1'});
+  });
+
+  test('endForegroundSession passes the session id to native', () async {
+    await platform.endForegroundSession('publish-1');
+
+    expect(calls.single.method, 'endForegroundSession');
+    expect(calls.single.arguments, <String, Object?>{'sessionId': 'publish-1'});
+  });
+
   test('activeTaskIds returns the native list', () async {
     expect(await platform.activeTaskIds(), <String>['task-a', 'task-b']);
   });

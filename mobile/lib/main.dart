@@ -2445,6 +2445,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               create: (_) => BackgroundPublishBloc(
                 videoPublishServiceFactory: createPublishService,
                 draftStorageService: ref.read(draftStorageServiceProvider),
+                foregroundSession: ref.read(publishForegroundSessionProvider),
               ),
             ),
             BlocProvider(

@@ -38,6 +38,12 @@ class BackgroundUploadService : Service() {
         intent.getStringExtra(EXTRA_TASK_ID)?.let { cancelledTaskIds[it] = true }
         stopIfIdle()
       }
+      ACTION_BEGIN_SESSION ->
+        intent.getStringExtra(EXTRA_SESSION_ID)?.let { activeSessions.add(it) }
+      ACTION_END_SESSION -> {
+        intent.getStringExtra(EXTRA_SESSION_ID)?.let { activeSessions.remove(it) }
+        stopIfIdle()
+      }
       else -> stopIfIdle()
     }
     return START_NOT_STICKY
@@ -178,7 +184,7 @@ class BackgroundUploadService : Service() {
   }
 
   private fun stopIfIdle() {
-    if (activeTaskIds.isEmpty()) {
+    if (activeTaskIds.isEmpty() && activeSessions.isEmpty()) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
         stopForeground(STOP_FOREGROUND_REMOVE)
       } else {
@@ -237,11 +243,14 @@ class BackgroundUploadService : Service() {
   companion object {
     const val ACTION_ENQUEUE = "co.openvine.background_uploader.ENQUEUE"
     const val ACTION_CANCEL = "co.openvine.background_uploader.CANCEL"
+    const val ACTION_BEGIN_SESSION = "co.openvine.background_uploader.BEGIN_SESSION"
+    const val ACTION_END_SESSION = "co.openvine.background_uploader.END_SESSION"
     const val EXTRA_TASK_ID = "taskId"
     const val EXTRA_URL = "url"
     const val EXTRA_FILE_PATH = "filePath"
     const val EXTRA_METHOD = "method"
     const val EXTRA_HEADERS = "headers"
+    const val EXTRA_SESSION_ID = "sessionId"
 
     private const val CHANNEL_ID = "background_upload"
     private const val NOTIFICATION_ID = 0x42
@@ -251,6 +260,13 @@ class BackgroundUploadService : Service() {
 
     private val activeTaskIds = ConcurrentHashMap.newKeySet<String>()
     private val cancelledTaskIds = ConcurrentHashMap<String, Boolean>()
+
+    /// Foreground sessions that keep the service alive beyond any in-flight
+    /// upload, so the process stays foregrounded (network usable) across the
+    /// caller's follow-up work — e.g. signing and broadcasting an event after a
+    /// background upload completes. The service stops only when both the
+    /// upload set and this set are empty.
+    private val activeSessions = ConcurrentHashMap.newKeySet<String>()
 
     fun activeTaskIds(): List<String> = activeTaskIds.toList()
   }

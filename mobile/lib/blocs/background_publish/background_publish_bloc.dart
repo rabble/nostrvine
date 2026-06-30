@@ -1,6 +1,7 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/background_publish/publish_foreground_session.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
@@ -18,8 +19,10 @@ class BackgroundPublishBloc
     })
     videoPublishServiceFactory,
     required DraftStorageService draftStorageService,
+    PublishForegroundSession? foregroundSession,
   }) : _videoPublishServiceFactory = videoPublishServiceFactory,
        _draftStorageService = draftStorageService,
+       _foregroundSession = foregroundSession,
        super(const BackgroundPublishState()) {
     on<BackgroundPublishRequested>(
       _onBackgroundPublishRequested,
@@ -37,6 +40,11 @@ class BackgroundPublishBloc
   _videoPublishServiceFactory;
 
   final DraftStorageService _draftStorageService;
+
+  /// Keeps the process foregrounded for the whole publish so the in-process
+  /// steps after the OS-backed upload (signing, relay broadcast) survive app
+  /// suspension. Null disables the behaviour (e.g. in tests).
+  final PublishForegroundSession? _foregroundSession;
 
   Future<void> _onBackgroundPublishRequested(
     BackgroundPublishRequested event,
@@ -56,6 +64,7 @@ class BackgroundPublishBloc
     }
 
     PublishResult result;
+    await _beginForegroundSession(event.draft.id);
     try {
       result = await event.publishmentProcess;
     } catch (e, stackTrace) {
@@ -67,6 +76,8 @@ class BackgroundPublishBloc
       );
       addError(e, stackTrace);
       result = const PublishError(PublishErrorKind.generic);
+    } finally {
+      await _endForegroundSession(event.draft.id);
     }
 
     // Remove the upload if it was successful
@@ -103,6 +114,30 @@ class BackgroundPublishBloc
         draftId: event.draft.id,
         status: PublishStatus.failed,
         publishError: publishError,
+      );
+    }
+  }
+
+  /// Best-effort: keeping the process foregrounded is an optimisation, so a
+  /// failure here must never abort the publish itself.
+  Future<void> _beginForegroundSession(String sessionId) async {
+    try {
+      await _foregroundSession?.begin(sessionId);
+    } catch (e) {
+      Log.warning(
+        'Failed to begin publish foreground session: $e',
+        category: LogCategory.video,
+      );
+    }
+  }
+
+  Future<void> _endForegroundSession(String sessionId) async {
+    try {
+      await _foregroundSession?.end(sessionId);
+    } catch (e) {
+      Log.warning(
+        'Failed to end publish foreground session: $e',
+        category: LogCategory.video,
       );
     }
   }

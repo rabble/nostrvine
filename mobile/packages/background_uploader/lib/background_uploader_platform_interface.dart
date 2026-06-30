@@ -51,6 +51,21 @@ abstract class BackgroundUploaderPlatform extends PlatformInterface {
     throw UnimplementedError('cancel() has not been implemented.');
   }
 
+  /// Starts an OS foreground session keyed by [sessionId] that keeps the
+  /// process foregrounded until [endForegroundSession] is called.
+  Future<void> beginForegroundSession(String sessionId) {
+    throw UnimplementedError(
+      'beginForegroundSession() has not been implemented.',
+    );
+  }
+
+  /// Ends the foreground session for [sessionId].
+  Future<void> endForegroundSession(String sessionId) {
+    throw UnimplementedError(
+      'endForegroundSession() has not been implemented.',
+    );
+  }
+
   /// Returns the task ids the OS still has in flight.
   ///
   /// Used to reconcile state after the app is relaunched: an upload may have

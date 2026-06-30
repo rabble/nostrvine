@@ -61,6 +61,22 @@ class MethodChannelBackgroundUploader extends BackgroundUploaderPlatform {
   }
 
   @override
+  Future<void> beginForegroundSession(String sessionId) {
+    return methodChannel.invokeMethod<void>(
+      'beginForegroundSession',
+      <String, Object?>{'sessionId': sessionId},
+    );
+  }
+
+  @override
+  Future<void> endForegroundSession(String sessionId) {
+    return methodChannel.invokeMethod<void>(
+      'endForegroundSession',
+      <String, Object?>{'sessionId': sessionId},
+    );
+  }
+
+  @override
   Future<List<String>> activeTaskIds() async {
     final result = await methodChannel.invokeListMethod<String>(
       'activeTaskIds',

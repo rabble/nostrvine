@@ -4,6 +4,7 @@
 import 'package:background_uploader/background_uploader.dart';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/background_publish/publish_foreground_session.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -107,6 +108,23 @@ class _BackgroundUploadTransportAdapter implements BlossomBackgroundTransport {
   }
 }
 
+/// Adapts the [BackgroundUploader] plugin to the [PublishForegroundSession]
+/// port, so the background-publish bloc can keep the process foregrounded for
+/// the whole publish without depending on the plugin directly.
+class _BackgroundUploaderForegroundSession implements PublishForegroundSession {
+  const _BackgroundUploaderForegroundSession(this._uploader);
+
+  final BackgroundUploader _uploader;
+
+  @override
+  Future<void> begin(String sessionId) =>
+      _uploader.beginForegroundSession(sessionId);
+
+  @override
+  Future<void> end(String sessionId) =>
+      _uploader.endForegroundSession(sessionId);
+}
+
 /// Adapts a [PerformanceTraceMonitor] to the package-level
 /// [BlossomPerformanceMonitor] interface.
 class _FirebasePerformanceAdapter implements BlossomPerformanceMonitor {
@@ -179,6 +197,13 @@ final uploadBackpressureActiveProvider = Provider<bool>((ref) {
 /// foreground service on Android), adapted to the Blossom transport port.
 final backgroundUploadTransportProvider = Provider<BlossomBackgroundTransport>(
   (ref) => _BackgroundUploadTransportAdapter(BackgroundUploader.instance),
+);
+
+/// Foreground session used by the background-publish bloc to keep the process
+/// network alive across the whole publish (upload + signing + relay), not just
+/// the OS-backed blob transfer.
+final publishForegroundSessionProvider = Provider<PublishForegroundSession>(
+  (ref) => _BackgroundUploaderForegroundSession(BackgroundUploader.instance),
 );
 
 /// Blossom upload service (uses user-configured Blossom server)

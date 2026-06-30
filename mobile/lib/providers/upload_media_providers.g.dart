@@ -165,7 +165,7 @@ final class BlossomUploadServiceProvider
 }
 
 String _$blossomUploadServiceHash() =>
-    r'c57d4fd1c6b33a1ad1ae1383332051f9aefde433';
+    r'6295420ba4f79375be8e906aa843dd2b6394877e';
 
 /// Upload manager uses only Blossom upload service
 

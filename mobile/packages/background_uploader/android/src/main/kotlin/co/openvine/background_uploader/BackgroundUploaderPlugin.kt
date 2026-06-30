@@ -13,6 +13,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import java.util.concurrent.ConcurrentHashMap
 
 class BackgroundUploaderPlugin : FlutterPlugin, MethodCallHandler {
   private lateinit var channel: MethodChannel
@@ -22,12 +23,12 @@ class BackgroundUploaderPlugin : FlutterPlugin, MethodCallHandler {
     context = binding.applicationContext
     channel = MethodChannel(binding.binaryMessenger, "background_uploader")
     channel.setMethodCallHandler(this)
-    active = this
+    instances.add(this)
   }
 
   override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     channel.setMethodCallHandler(null)
-    if (active === this) active = null
+    instances.remove(this)
   }
 
   override fun onMethodCall(call: MethodCall, result: Result) {
@@ -55,6 +56,28 @@ class BackgroundUploaderPlugin : FlutterPlugin, MethodCallHandler {
         result.success(null)
       }
       "activeTaskIds" -> result.success(BackgroundUploadService.activeTaskIds())
+      "beginForegroundSession" -> {
+        val intent = Intent(context, BackgroundUploadService::class.java).apply {
+          action = BackgroundUploadService.ACTION_BEGIN_SESSION
+          putExtra(
+            BackgroundUploadService.EXTRA_SESSION_ID,
+            call.argument<String>("sessionId"),
+          )
+        }
+        startUploadService(intent)
+        result.success(null)
+      }
+      "endForegroundSession" -> {
+        val intent = Intent(context, BackgroundUploadService::class.java).apply {
+          action = BackgroundUploadService.ACTION_END_SESSION
+          putExtra(
+            BackgroundUploadService.EXTRA_SESSION_ID,
+            call.argument<String>("sessionId"),
+          )
+        }
+        startUploadService(intent)
+        result.success(null)
+      }
       else -> result.notImplemented()
     }
   }
@@ -70,16 +93,27 @@ class BackgroundUploaderPlugin : FlutterPlugin, MethodCallHandler {
   companion object {
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    /// The currently-attached plugin instance, used by the service to deliver
-    /// events. Null while no Flutter engine is attached; events emitted then
-    /// are dropped and reconciled on the next launch via `activeTaskIds`.
-    @Volatile
-    private var active: BackgroundUploaderPlugin? = null
+    /// Every attached plugin instance — one per Flutter engine in the process.
+    /// A process can host more than one engine (e.g. the Firebase-messaging or
+    /// flutter_local_notifications background engine), and each one registers
+    /// this plugin. Events fan out to all of them; only the engine whose Dart
+    /// isolate set an `onUploadEvent` handler acts on it, the rest ignore it.
+    /// A single last-write-wins reference would point at whichever engine
+    /// attached last and silently drop events destined for the UI isolate.
+    private val instances =
+      ConcurrentHashMap.newKeySet<BackgroundUploaderPlugin>()
 
     /// Called from the upload service (on a worker thread) to deliver an event.
     fun postEvent(event: Map<String, Any?>) {
       mainHandler.post {
-        active?.channel?.invokeMethod("onUploadEvent", event)
+        for (plugin in instances) {
+          try {
+            plugin.channel.invokeMethod("onUploadEvent", event)
+          } catch (ignored: Exception) {
+            // Best-effort fan-out: an engine detaching concurrently can reject
+            // the call; the engine that owns the upload still receives it.
+          }
+        }
       }
     }
 

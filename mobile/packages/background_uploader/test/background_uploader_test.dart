@@ -9,6 +9,8 @@ class _FakeBackgroundUploaderPlatform extends BackgroundUploaderPlatform
     with MockPlatformInterfaceMixin {
   final List<BackgroundUploadRequest> enqueued = <BackgroundUploadRequest>[];
   final List<String> cancelled = <String>[];
+  final List<String> sessionsBegun = <String>[];
+  final List<String> sessionsEnded = <String>[];
 
   @override
   Stream<BackgroundUploadEvent> get events =>
@@ -26,6 +28,14 @@ class _FakeBackgroundUploaderPlatform extends BackgroundUploaderPlatform
 
   @override
   Future<List<String>> activeTaskIds() async => const <String>[];
+
+  @override
+  Future<void> beginForegroundSession(String sessionId) async =>
+      sessionsBegun.add(sessionId);
+
+  @override
+  Future<void> endForegroundSession(String sessionId) async =>
+      sessionsEnded.add(sessionId);
 }
 
 void main() {
@@ -75,6 +85,24 @@ void main() {
     test('cancel forwards the task id', () async {
       await BackgroundUploader.instance.cancel('task-9');
       expect(fake.cancelled.single, 'task-9');
+    });
+
+    test('beginForegroundSession forwards the session id', () async {
+      await BackgroundUploader.instance.beginForegroundSession('publish-1');
+      expect(fake.sessionsBegun.single, 'publish-1');
+    });
+
+    test('beginForegroundSession rejects an empty session id', () async {
+      await expectLater(
+        () => BackgroundUploader.instance.beginForegroundSession(''),
+        throwsArgumentError,
+      );
+      expect(fake.sessionsBegun, isEmpty);
+    });
+
+    test('endForegroundSession forwards the session id', () async {
+      await BackgroundUploader.instance.endForegroundSession('publish-1');
+      expect(fake.sessionsEnded.single, 'publish-1');
     });
   });
 
