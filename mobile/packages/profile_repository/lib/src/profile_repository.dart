@@ -543,11 +543,15 @@ class ProfileRepository {
   /// [clearNip05] as `true` to explicitly remove the NIP-05 from the profile
   /// (overriding any value in `currentProfile.rawData`).
   ///
-  /// After successful publish, the profile is cached locally for immediate
-  /// subsequent reads.
+  /// Publishes through [NostrClient.sendProfileAwaitOk], so success means at
+  /// least one relay confirmed the Kind 0 with an `OK true` (NIP-20) — a save
+  /// that is accepted at the socket layer but then rejected by every relay
+  /// surfaces as a failure rather than a false success. After a confirmed
+  /// publish, the profile is cached locally for immediate subsequent reads.
   ///
   /// Throws [NoRelaysConnectedException] when no relays are connected.
-  /// Throws [ProfilePublishFailedException] for other send failures.
+  /// Throws [ProfilePublishFailedException] when relays were reached but none
+  /// confirmed the event (rejection or timeout).
   Future<UserProfile> saveProfileEvent({
     required String displayName,
     String? about,
@@ -614,7 +618,9 @@ class ProfileRepository {
     // custom client fields, future NIPs — flows through from the seed
     // untouched. Adding new editable fields here MUST keep that invariant.
 
-    final result = await _nostrClient.sendProfile(profileContent: newContent);
+    final result = await _nostrClient.sendProfileAwaitOk(
+      profileContent: newContent,
+    );
 
     // Switch exhaustively over the typed result — no post-failure
     // connectedRelays snapshot needed.
@@ -626,7 +632,7 @@ class ProfileRepository {
 
       case PublishNoRelays():
         Log.error(
-          'sendProfile: no connected relays after retry',
+          'sendProfileAwaitOk: no connected relays after retry',
           name: 'ProfileRepository.saveProfileEvent',
           category: LogCategory.relay,
         );
@@ -636,7 +642,7 @@ class ProfileRepository {
 
       case PublishFailed():
         Log.error(
-          'sendProfile: relay rejected the event or send failed',
+          'sendProfileAwaitOk: relay rejected the event or no relay confirmed',
           name: 'ProfileRepository.saveProfileEvent',
           category: LogCategory.relay,
         );

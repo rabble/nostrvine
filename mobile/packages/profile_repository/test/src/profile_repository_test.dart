@@ -102,7 +102,7 @@ void main() {
       ).thenAnswer((_) async => <Event>[]);
 
       when(
-        () => mockNostrClient.sendProfile(
+        () => mockNostrClient.sendProfileAwaitOk(
           profileContent: any(named: 'profileContent'),
         ),
       ).thenAnswer((_) async => PublishSuccess(event: mockProfileEvent));
@@ -1439,7 +1439,7 @@ void main() {
         expect(profile.picture, equals('https://example.com/new.png'));
 
         verify(
-          () => mockNostrClient.sendProfile(
+          () => mockNostrClient.sendProfileAwaitOk(
             profileContent: {
               'display_name': 'New Name',
               'about': 'New bio',
@@ -1458,7 +1458,7 @@ void main() {
         );
 
         verify(
-          () => mockNostrClient.sendProfile(
+          () => mockNostrClient.sendProfileAwaitOk(
             profileContent: {
               'display_name': 'Test',
               'nip05': '_@alice.divine.video',
@@ -1474,7 +1474,7 @@ void main() {
         );
 
         verify(
-          () => mockNostrClient.sendProfile(
+          () => mockNostrClient.sendProfileAwaitOk(
             profileContent: {
               'display_name': 'Test',
               'nip05': '_@alice.divine.video',
@@ -1494,7 +1494,7 @@ void main() {
         );
 
         verify(
-          () => mockNostrClient.sendProfile(
+          () => mockNostrClient.sendProfileAwaitOk(
             profileContent: {
               'display_name': 'Test',
               'nip05': 'alice@example.com',
@@ -1515,7 +1515,7 @@ void main() {
         );
 
         verify(
-          () => mockNostrClient.sendProfile(
+          () => mockNostrClient.sendProfileAwaitOk(
             profileContent: {
               'display_name': 'Test',
               'nip05': 'alice@example.com',
@@ -1530,7 +1530,7 @@ void main() {
           await profileRepository.saveProfileEvent(displayName: 'Only Name');
 
           verify(
-            () => mockNostrClient.sendProfile(
+            () => mockNostrClient.sendProfileAwaitOk(
               profileContent: {'display_name': 'Only Name'},
             ),
           ).called(1);
@@ -1542,7 +1542,7 @@ void main() {
 
         final captured =
             verify(
-                  () => mockNostrClient.sendProfile(
+                  () => mockNostrClient.sendProfileAwaitOk(
                     profileContent: captureAny(named: 'profileContent'),
                   ),
                 ).captured.single
@@ -1561,7 +1561,7 @@ void main() {
         );
 
         verify(
-          () => mockNostrClient.sendProfile(
+          () => mockNostrClient.sendProfileAwaitOk(
             profileContent: {'display_name': 'Test User', 'banner': '0x33ccbf'},
           ),
         ).called(1);
@@ -1575,7 +1575,7 @@ void main() {
 
         final captured =
             verify(
-                  () => mockNostrClient.sendProfile(
+                  () => mockNostrClient.sendProfileAwaitOk(
                     profileContent: captureAny(named: 'profileContent'),
                   ),
                 ).captured.single
@@ -1597,7 +1597,7 @@ void main() {
 
         final captured =
             verify(
-                  () => mockNostrClient.sendProfile(
+                  () => mockNostrClient.sendProfileAwaitOk(
                     profileContent: captureAny(named: 'profileContent'),
                   ),
                 ).captured.single
@@ -1606,10 +1606,11 @@ void main() {
       });
 
       test(
-        'throws ProfilePublishFailedException when sendProfile fails',
+        'throws ProfilePublishFailedException when no relay confirms '
+        '(rejection or timeout)',
         () async {
           when(
-            () => mockNostrClient.sendProfile(
+            () => mockNostrClient.sendProfileAwaitOk(
               profileContent: any(named: 'profileContent'),
             ),
           ).thenAnswer((_) async => const PublishFailed());
@@ -1626,7 +1627,7 @@ void main() {
         'throws NoRelaysConnectedException when no relays are connected',
         () async {
           when(
-            () => mockNostrClient.sendProfile(
+            () => mockNostrClient.sendProfileAwaitOk(
               profileContent: any(named: 'profileContent'),
             ),
           ).thenAnswer((_) async => const PublishNoRelays());
@@ -1654,7 +1655,7 @@ void main() {
           );
 
           verify(
-            () => mockNostrClient.sendProfile(
+            () => mockNostrClient.sendProfileAwaitOk(
               profileContent: {
                 'display_name': 'New Name',
                 'website': 'https://old.com',
@@ -1680,7 +1681,7 @@ void main() {
           );
 
           verify(
-            () => mockNostrClient.sendProfile(
+            () => mockNostrClient.sendProfileAwaitOk(
               profileContent: {
                 'display_name': 'New Name',
                 'nip05': '_@newuser.divine.video',
@@ -1712,7 +1713,7 @@ void main() {
             );
 
             verify(
-              () => mockNostrClient.sendProfile(
+              () => mockNostrClient.sendProfileAwaitOk(
                 profileContent: {'display_name': 'New Name'},
               ),
             ).called(1);
@@ -1733,7 +1734,7 @@ void main() {
             );
 
             verify(
-              () => mockNostrClient.sendProfile(
+              () => mockNostrClient.sendProfileAwaitOk(
                 profileContent: {
                   'display_name': 'New Name',
                   'nip05': 'alice@example.com',
@@ -1758,7 +1759,7 @@ void main() {
           );
 
           verify(
-            () => mockNostrClient.sendProfile(
+            () => mockNostrClient.sendProfileAwaitOk(
               profileContent: {'display_name': 'New Name', 'about': 'Bio'},
             ),
           ).called(1);
@@ -1795,7 +1796,7 @@ void main() {
           );
 
           verify(
-            () => mockNostrClient.sendProfile(
+            () => mockNostrClient.sendProfileAwaitOk(
               profileContent: {
                 'display_name': 'New Name',
                 'nip05': '_@ike.divine.video',
@@ -1825,7 +1826,7 @@ void main() {
           );
 
           verify(
-            () => mockNostrClient.sendProfile(
+            () => mockNostrClient.sendProfileAwaitOk(
               profileContent: {'display_name': 'New Name'},
             ),
           ).called(1);
@@ -1854,7 +1855,7 @@ void main() {
             );
 
             verify(
-              () => mockNostrClient.sendProfile(
+              () => mockNostrClient.sendProfileAwaitOk(
                 profileContent: {
                   'display_name': 'New Name',
                   'nip05': 'new@example.com',
@@ -1925,7 +1926,7 @@ void main() {
 
             final captured =
                 verify(
-                      () => mockNostrClient.sendProfile(
+                      () => mockNostrClient.sendProfileAwaitOk(
                         profileContent: captureAny(named: 'profileContent'),
                       ),
                     ).captured.single
@@ -1971,7 +1972,7 @@ void main() {
             );
 
             verify(
-              () => mockNostrClient.sendProfile(
+              () => mockNostrClient.sendProfileAwaitOk(
                 profileContent: {
                   'display_name': 'New Name',
                   'lud16': 'alice@strike.me',

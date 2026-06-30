@@ -1020,6 +1020,53 @@ class NostrClient {
     return publishEvent(event);
   }
 
+  /// Sends a user profile (Kind 0 metadata event), waiting for relay
+  /// confirmation before reporting success.
+  ///
+  /// Unlike [sendProfile] — which delegates to [publishEvent] and reports
+  /// success as soon as the relay pool accepts the WebSocket frame — this
+  /// routes through [publishEventAwaitOk] and only reports [PublishSuccess]
+  /// once at least one relay has returned `OK true` (NIP-20). A Kind 0 that
+  /// is accepted at the socket layer but then rejected by every relay
+  /// (rate limit, PoW, auth required) is reported as [PublishFailed] here,
+  /// where [sendProfile] would have reported success. Kind 0 is replaceable,
+  /// so [publishEventAwaitOk] caches it only after confirmation.
+  ///
+  /// The underlying [PublishOutcome] is mapped onto the same [PublishResult]
+  /// variants [sendProfile] returns, so both can be switched over
+  /// identically:
+  /// - [PublishSuccess] — at least one relay confirmed the event.
+  /// - [PublishNoRelays] — no relay was reached even after retry, so the
+  ///   publish never left the device. Preserves the dedicated no-relays
+  ///   signal callers branch on.
+  /// - [PublishFailed] — relays were reached but every one rejected the
+  ///   event or failed to respond before the confirmation timeout.
+  Future<PublishResult> sendProfileAwaitOk({
+    required Map<String, dynamic> profileContent,
+  }) async {
+    final event = Event(
+      publicKey,
+      EventKind.metadata,
+      [],
+      jsonEncode(profileContent),
+    );
+
+    final outcome = await publishEventAwaitOk(event);
+
+    if (outcome.confirmed) {
+      return PublishSuccess(event: event);
+    }
+
+    // An outcome with no acceptances, rejections, or timeouts means the
+    // publish never reached a relay — keep that distinct from a relay-level
+    // rejection/timeout so the no-relays branch stays user-actionable.
+    if (outcome.rejectedBy.isEmpty && outcome.noResponseFrom.isEmpty) {
+      return const PublishNoRelays();
+    }
+
+    return const PublishFailed();
+  }
+
   /// Sends a repost
   ///
   /// Successfully sent events are cached locally with 1-day expiry.

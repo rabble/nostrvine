@@ -1935,6 +1935,117 @@ void main() {
       });
     });
 
+    group('sendProfileAwaitOk', () {
+      PublishOutcome accepted() => const PublishOutcome(
+        eventId: 'kind0',
+        acceptedBy: ['wss://relay.test'],
+        rejectedBy: {},
+        noResponseFrom: [],
+      );
+
+      PublishOutcome rejected() => const PublishOutcome(
+        eventId: 'kind0',
+        acceptedBy: [],
+        rejectedBy: {'wss://relay.test': 'rate-limited: slow down'},
+        noResponseFrom: [],
+      );
+
+      PublishOutcome timedOut() => const PublishOutcome(
+        eventId: 'kind0',
+        acceptedBy: [],
+        rejectedBy: {},
+        noResponseFrom: ['wss://relay.test'],
+      );
+
+      void stubAwaitOk(PublishOutcome outcome) {
+        when(
+          () => mockNostr.sendEventAwaitOk(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => outcome);
+      }
+
+      test('returns PublishSuccess with the Kind 0 event when a relay '
+          'confirms', () async {
+        final profileContent = {'display_name': 'Alice', 'about': 'Hello'};
+        stubAwaitOk(accepted());
+
+        final result = await client.sendProfileAwaitOk(
+          profileContent: profileContent,
+        );
+
+        expect(result, isA<PublishSuccess>());
+        final event = (result as PublishSuccess).event;
+        expect(event.kind, equals(EventKind.metadata));
+        expect(event.content, equals(jsonEncode(profileContent)));
+      });
+
+      test('returns PublishSuccess when at least one relay confirms even if '
+          'another rejects', () async {
+        stubAwaitOk(
+          const PublishOutcome(
+            eventId: 'kind0',
+            acceptedBy: ['wss://relay.ok'],
+            rejectedBy: {'wss://relay.bad': 'blocked: policy'},
+            noResponseFrom: [],
+          ),
+        );
+
+        final result = await client.sendProfileAwaitOk(
+          profileContent: {'display_name': 'Alice'},
+        );
+
+        expect(result, isA<PublishSuccess>());
+      });
+
+      test('returns PublishFailed when every relay rejects the event '
+          '(accepted at socket, OK false)', () async {
+        stubAwaitOk(rejected());
+
+        final result = await client.sendProfileAwaitOk(
+          profileContent: {'display_name': 'Alice'},
+        );
+
+        expect(result, isA<PublishFailed>());
+      });
+
+      test(
+        'returns PublishFailed when no relay responds before timeout',
+        () async {
+          stubAwaitOk(timedOut());
+
+          final result = await client.sendProfileAwaitOk(
+            profileContent: {'display_name': 'Alice'},
+          );
+
+          expect(result, isA<PublishFailed>());
+        },
+      );
+
+      test('returns PublishNoRelays when no relay is reachable, without '
+          'attempting a send', () async {
+        when(() => mockRelayManager.connectedRelays).thenReturn([]);
+        when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {});
+
+        final result = await client.sendProfileAwaitOk(
+          profileContent: {'display_name': 'Alice'},
+        );
+
+        expect(result, isA<PublishNoRelays>());
+        verifyNever(
+          () => mockNostr.sendEventAwaitOk(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        );
+      });
+    });
+
     group('sendRepost', () {
       test('sends repost successfully', () async {
         const eventId = 'event-to-repost';
