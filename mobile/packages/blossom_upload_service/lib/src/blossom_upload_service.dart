@@ -2253,6 +2253,7 @@ class BlossomUploadService {
     String mimeType = 'image/jpeg',
     void Function(double)? onProgress,
     int maxAttempts = _defaultUploadImageMaxAttempts,
+    bool allowResumable = true,
   }) async {
     assert(maxAttempts >= 1, 'maxAttempts must be at least 1');
     try {
@@ -2296,6 +2297,7 @@ class BlossomUploadService {
         fileSize: fileSize,
         contentType: mimeType,
         maxAttempts: maxAttempts,
+        allowResumable: allowResumable,
         onProgress: onProgress,
       );
     } on Object catch (e) {
@@ -2397,6 +2399,7 @@ class BlossomUploadService {
     required int fileSize,
     required String contentType,
     required int maxAttempts,
+    bool allowResumable = true,
     void Function(double)? onProgress,
   }) async {
     // Get ordered list of servers to try
@@ -2423,7 +2426,7 @@ class BlossomUploadService {
 
         final result = await _uploadWithRetry(
           attempt: () {
-            if (capability.supportsResumable) {
+            if (capability.supportsResumable && allowResumable) {
               return _uploadWithSingleLegacyFallback(
                 serverUrl: serverUrl,
                 uploadResumable: () => _uploadToServerResumable(

@@ -5526,6 +5526,94 @@ void main() {
       );
 
       test(
+        'skips the resumable handshake when allowResumable is false, even on '
+        'a resumable-capable server',
+        () async {
+          when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthProvider.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async =>
+                _signedEvent(_testPublicKey, 24242, const [], 'upload'),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp(
+            'image_single_put_test_',
+          );
+          final imageFile = File('${tempDir.path}/image.jpg')
+            ..writeAsBytesSync([0xFF, 0xD8, 0xFF]);
+
+          // The server advertises resumable support...
+          when(
+            () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.extensions: [
+                  DivineUploadExtensions.resumableSessions,
+                ],
+                DivineUploadHeaders.dataHost: ['https://upload.divine.video'],
+              }),
+            ),
+          );
+
+          // ...but with allowResumable: false the init endpoint must not run.
+          var initCalled = false;
+          when(
+            () => mockDio.post<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer((invocation) async {
+            initCalled = true;
+            throw StateError(
+              'Unexpected resumable POST: '
+              '${invocation.positionalArguments.first}',
+            );
+          });
+
+          final putUrls = <String>[];
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer((invocation) async {
+            putUrls.add(invocation.positionalArguments.first as String);
+            return Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              data: {
+                'url': 'https://media.divine.video/hash',
+                'fallbackUrl': 'https://media.divine.video/hash',
+              },
+            );
+          });
+
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+            allowResumable: false,
+          );
+
+          expect(result.success, isTrue);
+          expect(initCalled, isFalse);
+          expect(putUrls, contains('https://media.divine.video/upload'));
+
+          await tempDir.delete(recursive: true);
+        },
+      );
+
+      test(
         'falls back to legacy upload when Divine image resumable init fails',
         () async {
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);

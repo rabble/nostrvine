@@ -1517,6 +1517,10 @@ class UploadManager {
       final uploadResult = await _blossomService.uploadImage(
         imageFile: thumbnailFile,
         nostrPubkey: nostrPubkey,
+        // A thumbnail is a few KB — a single PUT avoids the resumable
+        // init/chunk/complete handshake (two extra round-trips plus extra auth
+        // signings) that otherwise dominated short-clip publish time.
+        allowResumable: false,
         onProgress: (progress) {
           // Map thumbnail progress to 85%-100% of total upload
           _reporter.updateProgress(upload.id, 0.85 + (progress * 0.15));
