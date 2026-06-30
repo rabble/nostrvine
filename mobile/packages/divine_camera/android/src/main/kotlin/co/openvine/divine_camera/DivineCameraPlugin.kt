@@ -35,9 +35,17 @@ class DivineCameraPlugin :
     // Per-instance forwarder that pushes native diagnostics over THIS engine's
     // channel. `DivineCameraLog.sink` is a process-wide singleton, so a second
     // FlutterEngine (e.g. the FCM background isolate that also runs
-    // GeneratedPluginRegistrant) would otherwise overwrite it and route camera
-    // logs to the wrong isolate. We re-assert this in onMethodCall — camera
-    // calls only ever reach the UI engine — so the sink always points back here.
+    // GeneratedPluginRegistrant) could otherwise overwrite it and route camera
+    // logs to the wrong isolate.
+    //
+    // Ownership is bound to the UI activity lifecycle: we claim the sink in
+    // onAttachedToActivity / onReattachedToActivityForConfigChanges and release
+    // it (ownership-guarded) in onDetachedFromActivity. A background engine
+    // attaches to the engine but never to an Activity, so it can never own the
+    // sink — not even in the narrow window before the next UI camera method
+    // call, which is the gap a purely native event (e.g. a volume-key callback)
+    // could otherwise fall into. onMethodCall re-claims as defense-in-depth,
+    // since camera calls only ever reach the UI engine.
     private val logSink: (String, String, String) -> Unit = { level, message, name ->
         mainHandler.post {
             channel.invokeMethod(
@@ -47,12 +55,29 @@ class DivineCameraPlugin :
         }
     }
 
+    // Claim the process-wide diagnostics sink for THIS engine. Only the UI
+    // engine reaches these call sites (activity attachment + camera method
+    // calls), so a background engine can never become the owner.
+    private fun claimLogSink() {
+        DivineCameraLog.sink = logSink
+    }
+
+    // Relinquish the shared sink only if it still points at this instance, so
+    // one engine's teardown can't silence another engine's diagnostics.
+    private fun releaseLogSinkIfOwned() {
+        if (DivineCameraLog.sink === logSink) {
+            DivineCameraLog.sink = null
+        }
+    }
+
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "divine_camera")
         channel.setMethodCallHandler(this)
         context = flutterPluginBinding.applicationContext
         textureRegistry = flutterPluginBinding.textureRegistry
-        DivineCameraLog.sink = logSink
+        // Intentionally NOT claiming DivineCameraLog.sink here. Engine
+        // attachment happens for background engines too; the sink is claimed on
+        // activity attachment so only the UI engine can own it.
     }
 
     // Session-lifecycle operations worth leaving a breadcrumb for. High-
@@ -76,7 +101,9 @@ class DivineCameraPlugin :
 
     override fun onMethodCall(call: MethodCall, result: Result) {
         // Re-claim the shared sink in case another FlutterEngine overwrote it.
-        DivineCameraLog.sink = logSink
+        // Camera calls only ever reach the UI engine, so this keeps the sink
+        // pointing back here as defense-in-depth alongside activity binding.
+        claimLogSink()
         logLifecycleCall(call)
         val oneShotResult = OneShotMethodResult(result)
         when (call.method) {
@@ -490,11 +517,7 @@ class DivineCameraPlugin :
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
-        // Only relinquish the shared sink if it still points at this instance,
-        // so a background-engine teardown can't silence the UI engine's logs.
-        if (DivineCameraLog.sink === logSink) {
-            DivineCameraLog.sink = null
-        }
+        releaseLogSinkIfOwned()
         volumeKeyHandler?.release()
         volumeKeyHandler = null
         cameraController?.release()
@@ -503,18 +526,29 @@ class DivineCameraPlugin :
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         activity = binding.activity
+        // The UI engine is the one that attaches to an Activity, so this is
+        // where diagnostics-sink ownership belongs.
+        claimLogSink()
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
         activity = null
+        // Keep the sink: the engine and its method channel survive a config
+        // change, and the same UI engine re-attaches via
+        // onReattachedToActivityForConfigChanges.
     }
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
         activity = binding.activity
+        claimLogSink()
     }
 
     override fun onDetachedFromActivity() {
         activity = null
+        // Activity is gone (not a config change), so the UI engine no longer
+        // owns the diagnostics sink. Ownership-guarded so a background engine's
+        // sink — if one had somehow been installed — isn't cleared here.
+        releaseLogSinkIfOwned()
     }
 }
 

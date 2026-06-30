@@ -136,8 +136,16 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     /// Per-instance forwarder pushing native diagnostics over THIS engine's
     /// channel. `DivineCameraLog.shared.sink` is a process-wide singleton, so a
     /// second FlutterEngine that registers the plugin would otherwise overwrite
-    /// it and route camera logs to the wrong isolate. We re-assert it in
-    /// `handle` — camera calls only ever reach the UI engine.
+    /// it and route camera logs to the wrong isolate.
+    ///
+    /// Unlike Android, iOS `FlutterPlugin` has no Activity-attachment lifecycle
+    /// to bind sink ownership to, so we cannot scope ownership to the UI engine
+    /// at registration time. Instead the sink is re-asserted at every UI-bound
+    /// entry point: each method call (`handle`), and — for events that fire
+    /// without a method call — the native volume/Bluetooth callbacks
+    /// (`VolumeKeyHandler`) and the audio-session interruption observer
+    /// (`CameraController`). Those native sources only ever exist on the UI
+    /// engine, so a background engine can't own these UI-only events. See #5128.
     private lazy var logSink: (String, String, String) -> Void = {
         [weak self] level, message, name in
         DispatchQueue.main.async {
@@ -268,8 +276,11 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         }
         
         cameraController?.release()
-        cameraController = CameraController(textureRegistry: registry)
-        
+        cameraController = CameraController(
+            textureRegistry: registry,
+            reclaimLogSink: { [weak self] in self?.installLogSink() }
+        )
+
         cameraController?.initialize(lens: lens, videoQuality: videoQuality, enableScreenFlash: enableScreenFlash, mirrorFrontCameraOutput: mirrorFrontCameraOutput, enableAutoLensSwitch: enableAutoLensSwitch) { [weak self] state, error in
             DispatchQueue.main.async {
                 if let error = error {
@@ -301,7 +312,9 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     private func setRemoteRecordControlEnabled(enabled: Bool, result: @escaping FlutterResult) {
         if enabled {
             if volumeKeyHandler == nil {
-                volumeKeyHandler = VolumeKeyHandler { [weak self] triggerType in
+                volumeKeyHandler = VolumeKeyHandler(
+                    reclaimLogSink: { [weak self] in self?.installLogSink() }
+                ) { [weak self] triggerType in
                     // Send trigger event to Flutter on main thread
                     DispatchQueue.main.async {
                         self?.methodChannel?.invokeMethod("onRemoteRecordTrigger", arguments: triggerType)

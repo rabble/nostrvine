@@ -1,11 +1,20 @@
 package co.openvine.divine_camera
 
+import android.app.Activity
+import android.content.Context
 import android.hardware.camera2.CameraMetadata
 import androidx.camera.video.Quality
+import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.view.TextureRegistry
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito
 import org.robolectric.RobolectricTestRunner
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -13,7 +22,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /*
@@ -114,6 +125,139 @@ internal class DivineCameraPluginTest {
         override fun notImplemented() {
             notImplementedCount += 1
         }
+    }
+}
+
+/**
+ * Verifies that the process-wide [DivineCameraLog.sink] is owned by the UI
+ * engine and bound to the Activity attachment lifecycle, so a background
+ * FlutterEngine (e.g. the FCM isolate that runs GeneratedPluginRegistrant)
+ * can never own camera diagnostics — not even transiently for a native-only
+ * event such as a volume-key callback. Regression coverage for #5128.
+ */
+@RunWith(RobolectricTestRunner::class)
+internal class DivineCameraLogSinkOwnershipTest {
+    @Before
+    fun resetBefore() {
+        DivineCameraLog.sink = null
+    }
+
+    @After
+    fun resetAfter() {
+        DivineCameraLog.sink = null
+    }
+
+    private fun engineBinding(): FlutterPlugin.FlutterPluginBinding {
+        val binding = Mockito.mock(FlutterPlugin.FlutterPluginBinding::class.java)
+        Mockito.`when`(binding.binaryMessenger)
+            .thenReturn(Mockito.mock(BinaryMessenger::class.java))
+        Mockito.`when`(binding.applicationContext)
+            .thenReturn(Mockito.mock(Context::class.java))
+        Mockito.`when`(binding.textureRegistry)
+            .thenReturn(Mockito.mock(TextureRegistry::class.java))
+        return binding
+    }
+
+    private fun activityBinding(): ActivityPluginBinding {
+        val binding = Mockito.mock(ActivityPluginBinding::class.java)
+        Mockito.`when`(binding.activity).thenReturn(Mockito.mock(Activity::class.java))
+        return binding
+    }
+
+    @Test
+    fun attachingToEngine_doesNotClaimSink() {
+        val plugin = DivineCameraPlugin()
+        plugin.onAttachedToEngine(engineBinding())
+
+        // Engine attachment alone (the only lifecycle a background engine
+        // reaches) must not install the sink.
+        assertNull(DivineCameraLog.sink)
+    }
+
+    @Test
+    fun attachingToActivity_claimsSink() {
+        val plugin = DivineCameraPlugin()
+        plugin.onAttachedToEngine(engineBinding())
+        plugin.onAttachedToActivity(activityBinding())
+
+        assertNotNull(DivineCameraLog.sink)
+    }
+
+    @Test
+    fun backgroundEngineAttach_cannotStealUiOwnership() {
+        val ui = DivineCameraPlugin()
+        ui.onAttachedToEngine(engineBinding())
+        ui.onAttachedToActivity(activityBinding())
+        val uiSink = DivineCameraLog.sink
+        assertNotNull(uiSink)
+
+        // A second engine that only ever attaches to the engine (never an
+        // Activity) must not overwrite the UI engine's sink.
+        val background = DivineCameraPlugin()
+        background.onAttachedToEngine(engineBinding())
+
+        assertSame(uiSink, DivineCameraLog.sink)
+    }
+
+    @Test
+    fun detachFromActivity_relinquishesOwnedSink() {
+        val ui = DivineCameraPlugin()
+        ui.onAttachedToEngine(engineBinding())
+        ui.onAttachedToActivity(activityBinding())
+        assertNotNull(DivineCameraLog.sink)
+
+        ui.onDetachedFromActivity()
+
+        assertNull(DivineCameraLog.sink)
+    }
+
+    @Test
+    fun detachFromActivity_doesNotClearAnotherOwnersSink() {
+        val ui = DivineCameraPlugin()
+        ui.onAttachedToEngine(engineBinding())
+        ui.onAttachedToActivity(activityBinding())
+        val uiSink = DivineCameraLog.sink
+        assertNotNull(uiSink)
+
+        // A different instance that never owned the sink must not be able to
+        // clear it on teardown.
+        val other = DivineCameraPlugin()
+        other.onAttachedToEngine(engineBinding())
+        other.onDetachedFromActivity()
+
+        assertSame(uiSink, DivineCameraLog.sink)
+    }
+
+    @Test
+    fun configChangeDetach_keepsSink() {
+        val ui = DivineCameraPlugin()
+        ui.onAttachedToEngine(engineBinding())
+        ui.onAttachedToActivity(activityBinding())
+        val uiSink = DivineCameraLog.sink
+        assertNotNull(uiSink)
+
+        ui.onDetachedFromActivityForConfigChanges()
+
+        // The engine and its channel survive a config change, so the sink
+        // stays installed across it.
+        assertSame(uiSink, DivineCameraLog.sink)
+    }
+
+    @Test
+    fun reattachAfterConfigChange_reclaimsSink() {
+        val ui = DivineCameraPlugin()
+        ui.onAttachedToEngine(engineBinding())
+        ui.onAttachedToActivity(activityBinding())
+        val uiSink = DivineCameraLog.sink
+        assertNotNull(uiSink)
+
+        ui.onDetachedFromActivityForConfigChanges()
+        // Simulate the sink being lost while detached, then prove reattach
+        // restores UI ownership.
+        DivineCameraLog.sink = null
+        ui.onReattachedToActivityForConfigChanges(activityBinding())
+
+        assertSame(uiSink, DivineCameraLog.sink)
     }
 }
 

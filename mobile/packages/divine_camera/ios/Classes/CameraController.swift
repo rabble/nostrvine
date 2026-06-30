@@ -70,6 +70,14 @@ class CameraController: NSObject {
     }
     
     private var textureRegistry: FlutterTextureRegistry
+
+    /// Re-asserts the owning (UI) engine's diagnostics sink before emitting
+    /// native-only diagnostics (the audio-session interruption observer fires
+    /// without a method call). iOS has no Activity-attachment lifecycle to bind
+    /// sink ownership to, so this keeps a background engine that registered the
+    /// plugin from stealing these UI-only events. See #5128.
+    private let reclaimLogSink: (() -> Void)?
+
     private var textureId: Int64 = -1
     private var pixelBufferRef: CVPixelBuffer?
     private var latestSampleBuffer: CMSampleBuffer?
@@ -190,8 +198,12 @@ class CameraController: NSObject {
     private let sessionQueue = DispatchQueue(label: "com.divine_camera.session")
     private let videoOutputQueue = DispatchQueue(label: "com.divine_camera.videoOutput")
     
-    init(textureRegistry: FlutterTextureRegistry) {
+    init(
+        textureRegistry: FlutterTextureRegistry,
+        reclaimLogSink: (() -> Void)? = nil
+    ) {
         self.textureRegistry = textureRegistry
+        self.reclaimLogSink = reclaimLogSink
         super.init()
         checkCameraAvailability()
         registerAudioSessionInterruptionObserver()
@@ -369,6 +381,10 @@ class CameraController: NSObject {
             let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
             let type = AVAudioSession.InterruptionType(rawValue: typeValue)
         else { return }
+
+        // Native-only event: reclaim the UI engine's diagnostics sink before
+        // any logging below.
+        reclaimLogSink?()
 
         switch type {
         case .began:

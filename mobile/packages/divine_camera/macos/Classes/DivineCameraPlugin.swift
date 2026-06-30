@@ -69,6 +69,13 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     /// second FlutterEngine that registers the plugin would otherwise overwrite
     /// it and route camera logs to the wrong isolate. We re-assert it in
     /// `handle` — camera calls only ever reach the UI engine.
+    ///
+    /// macOS has no UI-only native camera events to reclaim around: it exposes
+    /// no remote-record / volume-key path and registers no audio-session
+    /// interruption observer, so every diagnostic is emitted inside a method
+    /// call that already re-asserts the sink. (Android binds ownership to the
+    /// Activity lifecycle; iOS additionally reclaims in its native volume and
+    /// interruption callbacks.) See #5128.
     private lazy var logSink: (String, String, String) -> Void = {
         [weak self] level, message, name in
         DispatchQueue.main.async {
