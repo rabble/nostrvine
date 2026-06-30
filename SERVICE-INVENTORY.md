@@ -16,7 +16,7 @@
 | Source | Path / Tool | Responsibility |
 |--------|-------------|----------------|
 | Repo instructions | `AGENTS.md` | Task workflow, Divine Context and Brain requirements, verification rules, metaswarm usage |
-| Divine Context | `/Users/rabble/code/divine/divine-context/AGENT_CONTEXT.md` | Cross-repo product goals, architecture, Nostr assumptions, terminology, and service catalog |
+| Divine Context | `${DIVINE_CONTEXT_ROOT:-../divine-context}/AGENT_CONTEXT.md` | Cross-repo product goals, architecture, Nostr assumptions, terminology, and service catalog |
 | Divine Brain | `mcp__divine_brain__search`, `mcp__divine_brain__ask`, `mcp__divine_brain__world`, `mcp__divine_brain__sql` | Company world model for decisions, Slack/Drive/GitHub/Gmail/Figma context, infra inventory, incidents, and customer themes |
 | BEADS knowledge | `.beads/knowledge/*.jsonl` | Local metaswarm priming facts and durable project learnings |
 

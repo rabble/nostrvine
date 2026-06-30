@@ -15,11 +15,11 @@
     "git_hooks": null
   },
   "choices": {
-    "coverage_threshold": 80,
     "external_tools": false,
     "visual_review": false,
     "ci_pipeline": false,
-    "git_hooks": false
+    "git_hooks": false,
+    "coverage_policy": "Use .claude/rules/testing.md and package-specific workflow min_coverage gates. No root .coverage-thresholds.json is configured for this repo."
   },
   "commands": {
     "test": "cd mobile && flutter test",
@@ -31,7 +31,7 @@
   "knowledge_sources": {
     "divine_context": {
       "required": true,
-      "path": "/Users/rabble/code/divine/divine-context/AGENT_CONTEXT.md",
+      "path": "${DIVINE_CONTEXT_ROOT:-../divine-context}/AGENT_CONTEXT.md",
       "purpose": "Cross-repo product, architecture, Nostr, terminology, and service catalog context for every divine-* task."
     },
     "divine_brain": {

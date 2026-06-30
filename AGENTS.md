@@ -9,7 +9,7 @@
 
 ## Divine Context And Brain
 
-- Before starting any task in this repo, read `/Users/rabble/code/divine/divine-context/AGENT_CONTEXT.md`. If it is missing, clone `divinevideo/divine-context` as a sibling repo under `/Users/rabble/code/divine/`.
+- Before starting any task in this repo, read `${DIVINE_CONTEXT_ROOT:-../divine-context}/AGENT_CONTEXT.md`. If it is missing, clone `divinevideo/divine-context` as a sibling repo next to `divine-mobile`, or set `DIVINE_CONTEXT_ROOT` to the local clone.
 - `divine-context` is the cross-repo handbook for product goals, architecture, terminology, Nostr usage, and the service catalog. Use it before inventing a new service, protocol shape, or product assumption.
 - Divine Brain is a major knowledge store for company context that is not visible in the local working tree: Slack decisions, Drive docs, GitHub history, Gmail threads, Figma context, Cloudflare Workers, Fastly services, incidents, customer themes, and prior implementation rationale.
 - When a task would benefit from company memory, use the `using-divine-brain` skill and the `mcp__divine_brain__*` tools. Prefer `mcp__divine_brain__search` for raw engineering/context retrieval, `mcp__divine_brain__ask` for synthesized answers, `mcp__divine_brain__world` for typed entity lookup, and `mcp__divine_brain__sql` for allow-listed rollups.
@@ -126,7 +126,7 @@
 
 ## metaswarm
 
-This project uses [metaswarm](https://github.com/dsifry/metaswarm) for multi-agent orchestration. It provides 18 specialized agents, a 9-phase development workflow, and quality gates that enforce TDD, coverage thresholds, and spec-driven development.
+This project uses [metaswarm](https://github.com/dsifry/metaswarm) for multi-agent orchestration. It provides specialized agents, structured development workflows, and quality gates for test-backed, spec-driven development.
 
 ### Workflow
 
@@ -152,17 +152,16 @@ Codex discovers skills by their SKILL.md `name` field. Invoke with `$name` synta
 
 - **Design Review Gate** -- 5-reviewer design review after design is drafted (`$design-review-gate`)
 - **Plan Review Gate** -- 3 adversarial reviewers (Feasibility, Completeness, Scope & Alignment) -- ALL must PASS
-- **Coverage Gate** -- `.coverage-thresholds.json` defines thresholds. BLOCKING gate before PR creation
+- **Testing Gate** -- use the existing repo policy in `.claude/rules/testing.md` plus package-specific workflow coverage gates. Do not invent a root coverage threshold for this repo.
 
 ### Testing & Quality
 
 - **TDD is mandatory** -- Write tests first, watch them fail, then implement
-- **80% test coverage required** -- Enforced via `.coverage-thresholds.json`
-- **Coverage source of truth** -- `.coverage-thresholds.json` defines thresholds. The orchestrator reads it during validation.
+- **Coverage policy** -- follow `.claude/rules/testing.md` and any package-specific `min_coverage` workflows. Run the relevant package tests and coverage checks called out by AGENTS.md.
 
 ### Workflow Enforcement (MANDATORY)
 
 - **After brainstorming** -> MUST run `$design-review-gate` before planning or implementation
 - **After any plan is created** -> MUST run `$plan-review-gate` before presenting to user
-- **Coverage** -> `.coverage-thresholds.json` is the single source of truth. All skills must check it.
+- **Verification** -> run the smallest relevant verification first, then broaden when the change is cross-cutting.
 - **Agent discipline** -> NEVER use `--no-verify`, NEVER `git push --force` without approval, NEVER self-certify, ALWAYS follow TDD, STAY within file scope
