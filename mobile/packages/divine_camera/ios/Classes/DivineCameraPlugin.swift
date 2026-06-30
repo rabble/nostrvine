@@ -142,8 +142,9 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     /// to bind sink ownership to, so we cannot scope ownership to the UI engine
     /// at registration time. Instead the sink is re-asserted at every UI-bound
     /// entry point: each method call (`handle`), and — for events that fire
-    /// without a method call — the native volume/Bluetooth callbacks
-    /// (`VolumeKeyHandler`) and the audio-session interruption observer
+    /// without a method call — the native volume/Bluetooth and suppression-timer
+    /// callbacks (`VolumeKeyHandler`) and the audio-session interruption observer
+    /// plus the sample-buffer delegate's first-frame / writer-start breadcrumbs
     /// (`CameraController`). Those native sources only ever exist on the UI
     /// engine, so a background engine can't own these UI-only events. See #5128.
     private lazy var logSink: (String, String, String) -> Void = {

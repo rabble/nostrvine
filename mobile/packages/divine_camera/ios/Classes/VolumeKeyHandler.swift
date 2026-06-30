@@ -76,6 +76,9 @@ class VolumeKeyHandler: NSObject {
         isSuppressed = true
         DispatchQueue.main.asyncAfter(deadline: .now() + activationCooldownSeconds) { [weak self] in
             self?.isSuppressed = false
+            // Native-only event (timer callback, no method call): reclaim the
+            // UI engine's diagnostics sink first.
+            self?.reclaimLogSink?()
             DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Initial suppression ended")
         }
         DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Enabled (suppressed for \(activationCooldownSeconds)s)")
@@ -119,6 +122,9 @@ class VolumeKeyHandler: NSObject {
         DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Suppressed for \(duration)s")
         DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
             self?.isSuppressed = false
+            // Native-only event (timer callback, no method call): reclaim the
+            // UI engine's diagnostics sink first.
+            self?.reclaimLogSink?()
             DivineCameraLog.shared.debug("DivineCameraVolumeKeyHandler: Suppression ended")
         }
     }

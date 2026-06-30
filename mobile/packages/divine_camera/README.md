@@ -39,9 +39,11 @@ Ownership is bound to the UI lifecycle as closely as each platform allows:
   the sink — not even transiently. `onMethodCall` re-claims as defense-in-depth.
 - **iOS** — `FlutterPlugin` has no Activity-attachment lifecycle, so the sink is
   re-asserted at every UI-bound entry point: each method call, plus the
-  native-only callbacks that fire without one — volume/Bluetooth events
-  (`VolumeKeyHandler`) and the audio-session interruption observer
-  (`CameraController`). Those native sources only ever exist on the UI engine.
+  native-only callbacks that fire without one — the volume/Bluetooth and
+  suppression-timer callbacks (`VolumeKeyHandler`) and the audio-session
+  interruption observer plus the sample-buffer delegate's first-frame /
+  writer-start breadcrumbs (`CameraController`). Those native sources only ever
+  exist on the UI engine.
 - **macOS** — no remote-record / volume-key path and no audio-session
   interruption observer, so there are no UI-only native camera events. Every
   diagnostic is emitted inside a method call that already re-asserts the sink.

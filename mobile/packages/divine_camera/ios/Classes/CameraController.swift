@@ -72,10 +72,11 @@ class CameraController: NSObject {
     private var textureRegistry: FlutterTextureRegistry
 
     /// Re-asserts the owning (UI) engine's diagnostics sink before emitting
-    /// native-only diagnostics (the audio-session interruption observer fires
-    /// without a method call). iOS has no Activity-attachment lifecycle to bind
-    /// sink ownership to, so this keeps a background engine that registered the
-    /// plugin from stealing these UI-only events. See #5128.
+    /// native-only diagnostics that fire without a method call — the
+    /// audio-session interruption observer and the sample-buffer delegate's
+    /// first-frame / writer-start breadcrumbs. iOS has no Activity-attachment
+    /// lifecycle to bind sink ownership to, so this keeps a background engine
+    /// that registered the plugin from stealing these UI-only events. See #5128.
     private let reclaimLogSink: (() -> Void)?
 
     private var textureId: Int64 = -1
@@ -2586,6 +2587,9 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
                 if !isWriterSessionStarted && writer.status == .writing {
                     writer.startSession(atSourceTime: timestamp)
                     isWriterSessionStarted = true
+                    // Native-only event (sample-buffer delegate, no method
+                    // call): reclaim the UI engine's diagnostics sink first.
+                    reclaimLogSink?()
                     DivineCameraLog.shared.debug("DivineCamera: Writer session started at \(timestamp.seconds)")
                 }
 
@@ -2640,6 +2644,9 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
         pixelBufferLock.unlock()
 
         if isFirstFrame {
+            // Native-only event (sample-buffer delegate, no method call):
+            // reclaim the UI engine's diagnostics sink first.
+            reclaimLogSink?()
             DivineCameraLog.shared.debug("DivineCamera: First frame received! Pixel buffer dimensions: \(CVPixelBufferGetWidth(pixelBuffer))x\(CVPixelBufferGetHeight(pixelBuffer))")
 
             // Complete initialization now that we know frames are flowing
