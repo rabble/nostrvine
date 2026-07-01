@@ -50,9 +50,11 @@ class BackgroundUploadService : Service() {
   }
 
   private fun handleEnqueue(intent: Intent) {
-    val taskId = intent.getStringExtra(EXTRA_TASK_ID) ?: return
-    val urlString = intent.getStringExtra(EXTRA_URL) ?: return
-    val filePath = intent.getStringExtra(EXTRA_FILE_PATH) ?: return
+    // A malformed intent must not leave the just-started foreground service
+    // running with nothing to do, so bail out through stopIfIdle().
+    val taskId = intent.getStringExtra(EXTRA_TASK_ID) ?: return stopIfIdle()
+    val urlString = intent.getStringExtra(EXTRA_URL) ?: return stopIfIdle()
+    val filePath = intent.getStringExtra(EXTRA_FILE_PATH) ?: return stopIfIdle()
     val method = intent.getStringExtra(EXTRA_METHOD) ?: "PUT"
 
     @Suppress("UNCHECKED_CAST")

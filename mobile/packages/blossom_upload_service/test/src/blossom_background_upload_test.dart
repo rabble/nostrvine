@@ -283,4 +283,129 @@ void main() {
       contains('Failed to enqueue background upload'),
     );
   });
+
+  test(
+    'resolves the success URL from the server actually used, not the '
+    'injected default server',
+    () async {
+      // With no custom server stored, the upload targets the constant Divine
+      // media host; the success URL must reflect that host, not a differing
+      // injected default (e.g. staging).
+      final transport = _FakeTransport(
+        emitOnEnqueue: const <BlossomBackgroundTransferEvent>[
+          BlossomBackgroundTransferEvent(
+            taskId: taskId,
+            status: BlossomBackgroundTransferStatus.completed,
+            httpStatusCode: 200,
+          ),
+        ],
+      );
+      final svc = BlossomUploadService(
+        authProvider: auth,
+        defaultServerUrl: 'https://staging.divine.video',
+        backgroundTransport: transport,
+      );
+
+      final result = await svc.uploadVideoInBackground(
+        videoFile: videoFile,
+        taskId: taskId,
+        proofManifestJson: null,
+      );
+
+      expect(result.success, isTrue);
+      expect(result.url, startsWith('$server/'));
+      expect(result.url, isNot(contains('staging')));
+      expect(result.fallbackUrl, startsWith('$server/'));
+    },
+  );
+
+  test('prefers the server-returned url over the content-addressed '
+      'fallback', () async {
+    final body = jsonEncode(<String, dynamic>{
+      'url': 'https://media.divine.video/hls/master.m3u8',
+      'fallbackUrl': 'https://media.divine.video/mp4/video.mp4',
+    });
+    final transport = _FakeTransport(
+      emitOnEnqueue: <BlossomBackgroundTransferEvent>[
+        BlossomBackgroundTransferEvent(
+          taskId: taskId,
+          status: BlossomBackgroundTransferStatus.completed,
+          httpStatusCode: 200,
+          responseBody: body,
+        ),
+      ],
+    );
+
+    final result = await service(transport).uploadVideoInBackground(
+      videoFile: videoFile,
+      taskId: taskId,
+      proofManifestJson: null,
+    );
+
+    expect(result.url, 'https://media.divine.video/hls/master.m3u8');
+    expect(result.fallbackUrl, 'https://media.divine.video/mp4/video.mp4');
+  });
+
+  test('signs the background auth header with an extended TTL', () async {
+    final transport = _FakeTransport(
+      emitOnEnqueue: const <BlossomBackgroundTransferEvent>[
+        BlossomBackgroundTransferEvent(
+          taskId: taskId,
+          status: BlossomBackgroundTransferStatus.completed,
+          httpStatusCode: 200,
+        ),
+      ],
+    );
+    final before = DateTime.now();
+
+    await service(transport).uploadVideoInBackground(
+      videoFile: videoFile,
+      taskId: taskId,
+      proofManifestJson: null,
+    );
+
+    final captured = verify(
+      () => auth.createAndSignEvent(
+        kind: any(named: 'kind'),
+        content: any(named: 'content'),
+        tags: captureAny(named: 'tags'),
+      ),
+    ).captured;
+    final tags = (captured.single as List).cast<List<dynamic>>();
+    final expirationTag = tags.firstWhere((tag) => tag.first == 'expiration');
+    final expiresAt = DateTime.fromMillisecondsSinceEpoch(
+      int.parse(expirationTag[1] as String) * 1000,
+    );
+
+    // The background TTL (6h) must be well beyond the 5-minute in-process TTL,
+    // so an OS-deferred transfer isn't rejected as expired.
+    expect(expiresAt.isAfter(before.add(const Duration(hours: 1))), isTrue);
+  });
+
+  test('times out and releases its listener when no terminal event '
+      'arrives', () async {
+    final transport = _FakeTransport(); // emits nothing after enqueue
+
+    final result = await service(transport).uploadVideoInBackground(
+      videoFile: videoFile,
+      taskId: taskId,
+      proofManifestJson: null,
+      timeout: const Duration(milliseconds: 50),
+    );
+
+    expect(transport.enqueued, <String>[taskId]);
+    expect(result.success, isFalse);
+    expect(result.failureReason, BlossomUploadFailureReason.network);
+    expect(result.isTransientNetworkFailure, isTrue);
+    // The subscription is cancelled on timeout, so a late terminal event is
+    // ignored rather than throwing "Future already completed".
+    transport._controller.add(
+      const BlossomBackgroundTransferEvent(
+        taskId: taskId,
+        status: BlossomBackgroundTransferStatus.completed,
+        httpStatusCode: 200,
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+  });
 }

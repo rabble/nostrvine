@@ -9,12 +9,32 @@ import FlutterMacOS
 #endif
 import Foundation
 
-public class BackgroundUploaderPlugin: NSObject, FlutterPlugin {
+/// Owns the process-wide background `URLSession` and fans its delegate events
+/// out to every attached Flutter engine's method channel.
+///
+/// A process can host more than one Flutter engine (e.g. the Firebase-messaging
+/// background engine), and each one registers this plugin. iOS forbids creating
+/// two `URLSession`s that share one background identifier — doing so is
+/// undefined behavior and historically crashes — so the session must be a
+/// single process-wide instance rather than one per plugin. Events are
+/// delivered to every attached channel; only the engine whose Dart isolate set
+/// an `onUploadEvent` handler acts on it, the rest ignore it (mirroring the
+/// Android multi-engine handling).
+private final class BackgroundUploadCoordinator: NSObject {
+  static let shared = BackgroundUploadCoordinator()
+
   /// Identifier of the shared background session. Must be stable across
   /// launches so the OS can re-attach in-flight tasks after a relaunch.
-  private static let sessionIdentifier = "co.openvine.background_uploader.session"
+  fileprivate static let sessionIdentifier =
+    "co.openvine.background_uploader.session"
 
-  private let channel: FlutterMethodChannel
+  /// Channels for every attached engine. Mutated and read only on the main
+  /// queue.
+  private var channels: [FlutterMethodChannel] = []
+
+  /// Response bodies accumulated per task identifier. URLSession delivers
+  /// delegate callbacks for one session serially, so this needs no locking.
+  private var responseData: [Int: Data] = [:]
 
   #if os(iOS)
   /// Held while the OS relaunches us in the background to drain session
@@ -28,13 +48,9 @@ public class BackgroundUploaderPlugin: NSObject, FlutterPlugin {
   private var backgroundTasks: [String: UIBackgroundTaskIdentifier] = [:]
   #endif
 
-  /// Response bodies accumulated per task identifier. URLSession delivers
-  /// delegate callbacks for one session serially, so this needs no locking.
-  private var responseData: [Int: Data] = [:]
-
   private lazy var session: URLSession = {
     let configuration = URLSessionConfiguration.background(
-      withIdentifier: BackgroundUploaderPlugin.sessionIdentifier
+      withIdentifier: BackgroundUploadCoordinator.sessionIdentifier
     )
     #if os(iOS)
     configuration.sessionSendsLaunchEvents = true
@@ -47,13 +63,153 @@ public class BackgroundUploaderPlugin: NSObject, FlutterPlugin {
     )
   }()
 
+  func attach(_ channel: FlutterMethodChannel) {
+    channels.append(channel)
+    // Touch the lazy session so its delegate is connected immediately. This
+    // lets tasks that completed while the app was dead deliver their terminal
+    // events as soon as an engine attaches.
+    _ = session
+  }
+
+  func detach(_ channel: FlutterMethodChannel) {
+    channels.removeAll { $0 === channel }
+  }
+
+  func enqueue(taskId: String, request: URLRequest, fileURL: URL) {
+    let task = session.uploadTask(with: request, fromFile: fileURL)
+    task.taskDescription = taskId
+    task.resume()
+  }
+
+  func cancel(taskId: String, completion: @escaping () -> Void) {
+    session.getAllTasks { tasks in
+      for task in tasks where task.taskDescription == taskId {
+        task.cancel()
+      }
+      DispatchQueue.main.async { completion() }
+    }
+  }
+
+  func activeTaskIds(completion: @escaping ([String]) -> Void) {
+    session.getAllTasks { tasks in
+      let ids = tasks.compactMap { $0.taskDescription }
+      DispatchQueue.main.async { completion(ids) }
+    }
+  }
+
+  #if os(iOS)
+  func beginForegroundSession(_ sessionId: String) {
+    endForegroundSession(sessionId)
+    let task = UIApplication.shared.beginBackgroundTask(
+      withName: "co.openvine.background_uploader.\(sessionId)"
+    ) { [weak self] in
+      self?.endForegroundSession(sessionId)
+    }
+    backgroundTasks[sessionId] = task
+  }
+
+  func endForegroundSession(_ sessionId: String) {
+    guard let task = backgroundTasks.removeValue(forKey: sessionId),
+      task != .invalid
+    else { return }
+    UIApplication.shared.endBackgroundTask(task)
+  }
+
+  func handleBackgroundEvents(completionHandler: @escaping () -> Void) {
+    backgroundCompletionHandler = completionHandler
+    // Ensure the session (and its delegate) exists to drain pending events.
+    _ = session
+  }
+  #endif
+
+  private func sendEvent(_ payload: [String: Any?]) {
+    DispatchQueue.main.async {
+      for channel in self.channels {
+        channel.invokeMethod("onUploadEvent", arguments: payload)
+      }
+    }
+  }
+}
+
+extension BackgroundUploadCoordinator: URLSessionDataDelegate {
+  func urlSession(
+    _ session: URLSession,
+    task: URLSessionTask,
+    didSendBodyData bytesSent: Int64,
+    totalBytesSent: Int64,
+    totalBytesExpectedToSend: Int64
+  ) {
+    guard
+      let taskId = task.taskDescription,
+      totalBytesExpectedToSend > 0
+    else { return }
+    let progress = Double(totalBytesSent) / Double(totalBytesExpectedToSend)
+    sendEvent([
+      "taskId": taskId,
+      "status": "running",
+      "progress": min(max(progress, 0), 1),
+    ])
+  }
+
+  func urlSession(
+    _ session: URLSession,
+    dataTask: URLSessionDataTask,
+    didReceive data: Data
+  ) {
+    responseData[dataTask.taskIdentifier, default: Data()].append(data)
+  }
+
+  func urlSession(
+    _ session: URLSession,
+    task: URLSessionTask,
+    didCompleteWithError error: Error?
+  ) {
+    let taskId = task.taskDescription ?? ""
+    let body = responseData.removeValue(forKey: task.taskIdentifier)
+    let responseBody = body.flatMap { String(data: $0, encoding: .utf8) }
+
+    if let error = error {
+      let isCancelled = (error as NSError).code == NSURLErrorCancelled
+      sendEvent([
+        "taskId": taskId,
+        "status": isCancelled ? "cancelled" : "failed",
+        "progress": 0,
+        "error": error.localizedDescription,
+      ])
+      return
+    }
+
+    let statusCode = (task.response as? HTTPURLResponse)?.statusCode
+    let isSuccess = statusCode.map { (200..<300).contains($0) } ?? false
+    sendEvent([
+      "taskId": taskId,
+      "status": isSuccess ? "completed" : "failed",
+      "progress": isSuccess ? 1 : 0,
+      "httpStatusCode": statusCode,
+      "responseBody": responseBody,
+    ])
+  }
+
+  #if os(iOS)
+  func urlSessionDidFinishEvents(
+    forBackgroundURLSession session: URLSession
+  ) {
+    DispatchQueue.main.async {
+      let handler = self.backgroundCompletionHandler
+      self.backgroundCompletionHandler = nil
+      handler?()
+    }
+  }
+  #endif
+}
+
+public class BackgroundUploaderPlugin: NSObject, FlutterPlugin {
+  private let channel: FlutterMethodChannel
+
   init(channel: FlutterMethodChannel) {
     self.channel = channel
     super.init()
-    // Touch the lazy session so its delegate is connected immediately. This
-    // lets tasks that completed while the app was dead deliver their terminal
-    // events as soon as the engine attaches.
-    _ = session
+    BackgroundUploadCoordinator.shared.attach(channel)
   }
 
   public static func register(with registrar: FlutterPluginRegistrar) {
@@ -71,6 +227,10 @@ public class BackgroundUploaderPlugin: NSObject, FlutterPlugin {
     #if os(iOS)
     registrar.addApplicationDelegate(instance)
     #endif
+  }
+
+  public func detachFromEngine(for registrar: FlutterPluginRegistrar) {
+    BackgroundUploadCoordinator.shared.detach(channel)
   }
 
   public func handle(
@@ -116,13 +276,7 @@ public class BackgroundUploaderPlugin: NSObject, FlutterPlugin {
       )
       return
     }
-    endBackgroundTask(sessionId)
-    let task = UIApplication.shared.beginBackgroundTask(
-      withName: "co.openvine.background_uploader.\(sessionId)"
-    ) { [weak self] in
-      self?.endBackgroundTask(sessionId)
-    }
-    backgroundTasks[sessionId] = task
+    BackgroundUploadCoordinator.shared.beginForegroundSession(sessionId)
     #endif
     result(nil)
   }
@@ -134,20 +288,11 @@ public class BackgroundUploaderPlugin: NSObject, FlutterPlugin {
     #if os(iOS)
     if let args = arguments as? [String: Any],
       let sessionId = args["sessionId"] as? String {
-      endBackgroundTask(sessionId)
+      BackgroundUploadCoordinator.shared.endForegroundSession(sessionId)
     }
     #endif
     result(nil)
   }
-
-  #if os(iOS)
-  private func endBackgroundTask(_ sessionId: String) {
-    guard let task = backgroundTasks.removeValue(forKey: sessionId),
-      task != .invalid
-    else { return }
-    UIApplication.shared.endBackgroundTask(task)
-  }
-  #endif
 
   private func enqueue(_ arguments: Any?, result: @escaping FlutterResult) {
     guard
@@ -187,9 +332,11 @@ public class BackgroundUploaderPlugin: NSObject, FlutterPlugin {
       }
     }
 
-    let task = session.uploadTask(with: request, fromFile: fileURL)
-    task.taskDescription = taskId
-    task.resume()
+    BackgroundUploadCoordinator.shared.enqueue(
+      taskId: taskId,
+      request: request,
+      fileURL: fileURL
+    )
     result(nil)
   }
 
@@ -208,85 +355,15 @@ public class BackgroundUploaderPlugin: NSObject, FlutterPlugin {
       return
     }
 
-    session.getAllTasks { tasks in
-      for task in tasks where task.taskDescription == taskId {
-        task.cancel()
-      }
-      DispatchQueue.main.async { result(nil) }
+    BackgroundUploadCoordinator.shared.cancel(taskId: taskId) {
+      result(nil)
     }
   }
 
   private func activeTaskIds(result: @escaping FlutterResult) {
-    session.getAllTasks { tasks in
-      let ids = tasks.compactMap { $0.taskDescription }
-      DispatchQueue.main.async { result(ids) }
+    BackgroundUploadCoordinator.shared.activeTaskIds { ids in
+      result(ids)
     }
-  }
-
-  private func sendEvent(_ payload: [String: Any?]) {
-    DispatchQueue.main.async {
-      self.channel.invokeMethod("onUploadEvent", arguments: payload)
-    }
-  }
-}
-
-extension BackgroundUploaderPlugin: URLSessionDataDelegate {
-  public func urlSession(
-    _ session: URLSession,
-    task: URLSessionTask,
-    didSendBodyData bytesSent: Int64,
-    totalBytesSent: Int64,
-    totalBytesExpectedToSend: Int64
-  ) {
-    guard
-      let taskId = task.taskDescription,
-      totalBytesExpectedToSend > 0
-    else { return }
-    let progress = Double(totalBytesSent) / Double(totalBytesExpectedToSend)
-    sendEvent([
-      "taskId": taskId,
-      "status": "running",
-      "progress": min(max(progress, 0), 1),
-    ])
-  }
-
-  public func urlSession(
-    _ session: URLSession,
-    dataTask: URLSessionDataTask,
-    didReceive data: Data
-  ) {
-    responseData[dataTask.taskIdentifier, default: Data()].append(data)
-  }
-
-  public func urlSession(
-    _ session: URLSession,
-    task: URLSessionTask,
-    didCompleteWithError error: Error?
-  ) {
-    let taskId = task.taskDescription ?? ""
-    let body = responseData.removeValue(forKey: task.taskIdentifier)
-    let responseBody = body.flatMap { String(data: $0, encoding: .utf8) }
-
-    if let error = error {
-      let isCancelled = (error as NSError).code == NSURLErrorCancelled
-      sendEvent([
-        "taskId": taskId,
-        "status": isCancelled ? "cancelled" : "failed",
-        "progress": 0,
-        "error": error.localizedDescription,
-      ])
-      return
-    }
-
-    let statusCode = (task.response as? HTTPURLResponse)?.statusCode
-    let isSuccess = statusCode.map { (200..<300).contains($0) } ?? false
-    sendEvent([
-      "taskId": taskId,
-      "status": isSuccess ? "completed" : "failed",
-      "progress": isSuccess ? 1 : 0,
-      "httpStatusCode": statusCode,
-      "responseBody": responseBody,
-    ])
   }
 }
 
@@ -297,21 +374,13 @@ extension BackgroundUploaderPlugin {
     handleEventsForBackgroundURLSession identifier: String,
     completionHandler: @escaping () -> Void
   ) -> Bool {
-    guard identifier == BackgroundUploaderPlugin.sessionIdentifier else {
+    guard identifier == BackgroundUploadCoordinator.sessionIdentifier else {
       return false
     }
-    backgroundCompletionHandler = completionHandler
-    // Ensure the session (and its delegate) exists to drain pending events.
-    _ = session
+    BackgroundUploadCoordinator.shared.handleBackgroundEvents(
+      completionHandler: completionHandler
+    )
     return true
-  }
-
-  public func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
-    DispatchQueue.main.async {
-      let handler = self.backgroundCompletionHandler
-      self.backgroundCompletionHandler = nil
-      handler?()
-    }
   }
 }
 #endif
