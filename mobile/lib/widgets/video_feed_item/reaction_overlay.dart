@@ -335,6 +335,7 @@ class _FloatPainter extends CustomPainter {
 
     for (var i = 0; i < particles.length; i++) {
       final p = particles[i];
+      final base = i * 4;
       final localT = elapsed - p.birthTime;
       final life = _FloatConfig.durationSeconds - p.birthTime;
       final lp = life <= 0 ? 1.0 : (localT / life).clamp(0.0, 1.0);
@@ -343,10 +344,10 @@ class _FloatPainter extends CustomPainter {
       if (opacity <= 0) {
         // Not born yet or already gone: contribute an invisible sprite.
         colors[i] = 0;
-        rstTransforms[i * 4] = 0;
-        rstTransforms[i * 4 + 1] = 0;
-        rstTransforms[i * 4 + 2] = 0;
-        rstTransforms[i * 4 + 3] = 0;
+        rstTransforms[base] = 0;
+        rstTransforms[base + 1] = 0;
+        rstTransforms[base + 2] = 0;
+        rstTransforms[base + 3] = 0;
         continue;
       }
 
@@ -376,10 +377,10 @@ class _FloatPainter extends CustomPainter {
       final scos = s * cos(rot);
       final ssin = s * sin(rot);
 
-      rstTransforms[i * 4] = scos;
-      rstTransforms[i * 4 + 1] = ssin;
-      rstTransforms[i * 4 + 2] = cx - (scos * halfW - ssin * halfH);
-      rstTransforms[i * 4 + 3] = cy - (ssin * halfW + scos * halfH);
+      rstTransforms[base] = scos;
+      rstTransforms[base + 1] = ssin;
+      rstTransforms[base + 2] = cx - (scos * halfW - ssin * halfH);
+      rstTransforms[base + 3] = cy - (ssin * halfW + scos * halfH);
 
       // Pack alpha into all four channels so `modulate` scales the premultiplied
       // glyph uniformly — a clean fade with no edge halo.
