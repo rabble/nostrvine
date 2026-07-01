@@ -538,11 +538,16 @@ class _ThumbnailImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Reuse the plain FileImage cache key that the clip poster and grid
+    // (video_editor_thumbnail.dart, video_clip_thumbnail_card.dart) already
+    // warmed, so the fallback paints instantly on first open. A cacheHeight
+    // here would key a separate cold resized decode, leaving the slot black
+    // for a frame. Strip thumbnails below keep cacheHeight — they are unique
+    // per slot with no warm entry to share.
     final fallback = thumbnailPath != null
         ? Image.file(
             File(thumbnailPath!),
             fit: BoxFit.cover,
-            cacheHeight: cacheHeight,
             excludeFromSemantics: true,
             errorBuilder: (_, _, _) =>
                 const ColoredBox(color: VineTheme.surfaceContainerHigh),

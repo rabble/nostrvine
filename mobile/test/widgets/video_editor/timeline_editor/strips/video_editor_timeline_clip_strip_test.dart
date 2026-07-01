@@ -197,6 +197,48 @@ void main() {
       });
     });
 
+    group('thumbnail fallback', () {
+      // Regression: on first open the timeline slots flashed black for a
+      // frame while the poster preview showed instantly. The preview and the
+      // clip grid render the thumbnail as a plain FileImage, warming that
+      // cache key before the editor opens. The strip fallback used
+      // `cacheHeight`, which keys a separate ResizeImage — a cold decode that
+      // paints nothing (black) until it finishes. It must reuse the plain
+      // FileImage key so the warm entry paints on the first frame.
+      testWidgets(
+        'poster fallback reuses the plain FileImage key (no resize)',
+        (tester) async {
+          final clips = [
+            _createTestClip(
+              id: 'a',
+              thumbnailPath: '/tmp/nonexistent_thumb_a.jpg',
+            ),
+          ];
+
+          await tester.pumpWidget(buildWidget(clips: clips, totalWidth: 400));
+
+          // Before strip thumbnails stream in, every slot renders the poster
+          // fallback. Each must be a plain FileImage on the thumbnail path.
+          final images = tester.widgetList<Image>(find.byType(Image)).toList();
+          expect(images, isNotEmpty);
+          for (final image in images) {
+            expect(
+              image.image,
+              isA<FileImage>().having(
+                (provider) => provider.file.path,
+                'file.path',
+                '/tmp/nonexistent_thumb_a.jpg',
+              ),
+              reason:
+                  'Fallback must use a plain FileImage (not a cacheHeight-keyed '
+                  'ResizeImage) so it hits the warm poster cache entry and '
+                  'paints instantly instead of flashing black.',
+            );
+          }
+        },
+      );
+    });
+
     group('empty state', () {
       testWidgets('renders with empty clip list', (tester) async {
         await tester.pumpWidget(buildWidget(clips: [], totalWidth: 0));
@@ -344,6 +386,7 @@ DivineVideoClip _createTestClip({
   int seconds = 2,
   int trimStartMs = 0,
   int trimEndMs = 0,
+  String? thumbnailPath,
 }) {
   return DivineVideoClip(
     id: id,
@@ -354,5 +397,6 @@ DivineVideoClip _createTestClip({
     targetAspectRatio: .vertical,
     trimStart: Duration(milliseconds: trimStartMs),
     trimEnd: Duration(milliseconds: trimEndMs),
+    thumbnailPath: thumbnailPath,
   );
 }
