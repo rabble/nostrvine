@@ -1585,6 +1585,20 @@ void main() {
         expect(item.type, equals(NotificationKind.repost));
       });
 
+      test(
+        'kind 16 generic repost with no type falls back to repost',
+        () async {
+          stubNotifications([
+            makeNotification(notificationType: '', sourceKind: 16),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.repost));
+        },
+      );
+
       test('mention maps to mention ($ActorNotification)', () async {
         stubNotifications([
           makeNotification(

@@ -1629,6 +1629,7 @@ class NotificationRepository {
       'mention' => NotificationKind.mention,
       'follow' || 'contact' => NotificationKind.follow,
       _ when n.sourceKind == 6 => NotificationKind.repost,
+      _ when n.sourceKind == 16 => NotificationKind.repost,
       _ when n.sourceKind == 3 => NotificationKind.follow,
       _ when n.sourceKind == 1 => NotificationKind.comment,
       _ => NotificationKind.system,
