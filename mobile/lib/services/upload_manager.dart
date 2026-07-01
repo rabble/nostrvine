@@ -1151,8 +1151,12 @@ class UploadManager {
       category: LogCategory.video,
     );
 
-    // Cancel the active upload (Blossom uploads are canceled by stopping the request)
-    // No additional cleanup needed for Blossom uploads
+    // Stop the OS-owned background transfer while paused so it doesn't keep
+    // uploading in the background; resuming re-enqueues it. The in-process
+    // path is torn down by its request timeout.
+    if (useBackgroundUpload) {
+      await _blossomService.cancelBackgroundUpload(uploadId);
+    }
 
     // Update status to paused instead of failed
     final pausedUpload = upload.copyWith(
@@ -1250,9 +1254,11 @@ class UploadManager {
       category: LogCategory.video,
     );
 
-    // Cancel any active upload
-    if (upload.cloudinaryPublicId != null) {
-      // Blossom upload cancellation handled by request timeout
+    // Stop the OS-owned background transfer if this upload used one; the
+    // in-process path is torn down by its request timeout. Without this the OS
+    // keeps uploading a video the user already cancelled.
+    if (useBackgroundUpload) {
+      await _blossomService.cancelBackgroundUpload(uploadId);
     }
 
     // Update status to failed so it can be retried later

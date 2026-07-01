@@ -2194,6 +2194,16 @@ class BlossomUploadService {
     }
   }
 
+  /// Stops an in-flight OS background upload previously enqueued via
+  /// [uploadVideoInBackground] under [taskId].
+  ///
+  /// Without this the OS keeps streaming the file to completion even after the
+  /// user cancels, wasting bandwidth on a video that will never be published.
+  /// A no-op when no [backgroundTransport] is configured.
+  Future<void> cancelBackgroundUpload(String taskId) async {
+    await backgroundTransport?.cancel(taskId);
+  }
+
   /// Maps a terminal [BlossomBackgroundTransferEvent] to a
   /// [BlossomUploadResult].
   ///

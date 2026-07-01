@@ -75,10 +75,24 @@ private final class BackgroundUploadCoordinator: NSObject {
     channels.removeAll { $0 === channel }
   }
 
-  func enqueue(taskId: String, request: URLRequest, fileURL: URL) {
-    let task = session.uploadTask(with: request, fromFile: fileURL)
-    task.taskDescription = taskId
-    task.resume()
+  func enqueue(
+    taskId: String,
+    request: URLRequest,
+    fileURL: URL,
+    completion: @escaping () -> Void
+  ) {
+    // Dedupe: a retry/timeout can re-enqueue the same taskId while the first
+    // transfer is still in flight (or was restored by the OS after a
+    // relaunch). Skip starting a second parallel upload of the same file.
+    session.getAllTasks { tasks in
+      let alreadyRunning = tasks.contains { $0.taskDescription == taskId }
+      if !alreadyRunning {
+        let task = self.session.uploadTask(with: request, fromFile: fileURL)
+        task.taskDescription = taskId
+        task.resume()
+      }
+      DispatchQueue.main.async { completion() }
+    }
   }
 
   func cancel(taskId: String, completion: @escaping () -> Void) {
@@ -336,8 +350,9 @@ public class BackgroundUploaderPlugin: NSObject, FlutterPlugin {
       taskId: taskId,
       request: request,
       fileURL: fileURL
-    )
-    result(nil)
+    ) {
+      result(nil)
+    }
   }
 
   private func cancel(_ arguments: Any?, result: @escaping FlutterResult) {

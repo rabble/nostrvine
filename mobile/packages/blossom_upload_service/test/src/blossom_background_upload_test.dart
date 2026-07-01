@@ -408,4 +408,20 @@ void main() {
     );
     await Future<void>.delayed(Duration.zero);
   });
+
+  test(
+    'cancelBackgroundUpload stops the OS transfer via the transport',
+    () async {
+      final transport = _FakeTransport();
+
+      await service(transport).cancelBackgroundUpload(taskId);
+
+      expect(transport.cancelled, <String>[taskId]);
+    },
+  );
+
+  test('cancelBackgroundUpload is a no-op without a transport', () async {
+    // Must not throw when background uploads are disabled.
+    await expectLater(service(null).cancelBackgroundUpload(taskId), completes);
+  });
 }

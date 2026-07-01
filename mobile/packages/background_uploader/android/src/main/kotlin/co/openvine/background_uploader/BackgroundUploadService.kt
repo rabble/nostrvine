@@ -62,7 +62,11 @@ class BackgroundUploadService : Service() {
       (intent.getSerializableExtra(EXTRA_HEADERS) as? HashMap<String, String>)
         ?: HashMap()
 
-    activeTaskIds.add(taskId)
+    // Dedupe: a retry/timeout can re-enqueue the same taskId while the first
+    // transfer is still in flight. add() returns false when already present, so
+    // skip starting a second parallel upload of the same file. The service
+    // stays foregrounded because activeTaskIds is non-empty.
+    if (!activeTaskIds.add(taskId)) return
     executor.execute { runUpload(taskId, urlString, filePath, method, headers) }
   }
 
