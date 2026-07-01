@@ -496,10 +496,12 @@ void main() {
                 }
                 return null;
               });
-          addTearDown(() {
-            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-                .setMockMethodCallHandler(secureStorageChannel, null);
-          });
+          // Restore the shared handler installed by setupTestEnvironment()
+          // rather than nulling it: this channel is global, and clearing it
+          // strands later suites (e.g. nostr_key_manager_profile_fetch_test)
+          // with MissingPluginException under CI's --optimization
+          // single-isolate run with shuffled ordering.
+          addTearDown(setupTestEnvironment);
 
           fakeAsync((async) {
             when(() => mockKeyStorage.clearCache()).thenReturn(null);
