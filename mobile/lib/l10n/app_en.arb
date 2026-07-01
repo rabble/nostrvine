@@ -3129,7 +3129,7 @@
   },
   "dmReelReactionSentPill": "Reaction sent",
   "@dmReelReactionSentPill": {
-    "description": "Centered confirmation pill shown over the reel for ~1s after a quick reaction is sent, alongside the emoji burst animation."
+    "description": "Centered confirmation pill shown over the reel for ~1s after a quick reaction is sent, alongside the emoji float animation."
   },
   "dmReelReplyFailed": "Couldn't send",
   "@dmReelReplyFailed": {

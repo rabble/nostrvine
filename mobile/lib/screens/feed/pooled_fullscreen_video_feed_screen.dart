@@ -863,7 +863,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                           ),
                       ],
                     ),
-                    // Full-screen Instagram-style reaction fountain over the
+                    // Full-screen Instagram-style reaction float over the
                     // reel.
                     if (_reactionEmoji != null)
                       Positioned.fill(
