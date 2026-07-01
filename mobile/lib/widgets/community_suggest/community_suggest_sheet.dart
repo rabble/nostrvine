@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/community_suggest/community_suggest_cubit.dart';
 import 'package:openvine/blocs/community_suggest/community_suggest_state.dart';
@@ -79,7 +78,7 @@ class CommunitySuggestView extends StatelessWidget {
               icon: .x,
               type: .secondary,
               size: .small,
-              onPressed: context.pop,
+              onPressed: () => Navigator.of(context).maybePop(),
             ),
             title: const _HeaderTitle(),
           ),

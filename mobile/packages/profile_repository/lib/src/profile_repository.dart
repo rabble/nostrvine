@@ -147,8 +147,13 @@ class ProfileRepository {
 
   /// Cache of Divine-identity determinations keyed by lowercase pubkey,
   /// with the timestamp of the lookup. Entries expire after
-  /// [_divineIdentityCacheTtl].
+  /// [_divineIdentityCacheTtl]. Bounded to [_divineIdentityCacheMax] entries
+  /// (oldest-inserted evicted first) so a long session can't grow it without
+  /// limit.
   final _divineIdentityCache = <String, ({bool value, DateTime at})>{};
+
+  /// Maximum number of cached Divine-identity determinations.
+  static const _divineIdentityCacheMax = 500;
 
   /// Searches cached profiles from local storage only.
   ///
@@ -1343,6 +1348,10 @@ class ProfileRepository {
       found = false;
     }
 
+    if (_divineIdentityCache.length >= _divineIdentityCacheMax &&
+        !_divineIdentityCache.containsKey(normalized)) {
+      _divineIdentityCache.remove(_divineIdentityCache.keys.first);
+    }
     _divineIdentityCache[normalized] = (value: found, at: DateTime.now());
     return found;
   }

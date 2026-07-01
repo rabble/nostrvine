@@ -153,6 +153,18 @@ void main() {
         expect(result, equals({'nudity'}));
       });
 
+      test('ignores label values outside the known ContentLabel set', () async {
+        stubQuery([
+          _labelEvent(authorA, ['banana'], videoId: videoId),
+          _labelEvent(authorB, ['banana'], videoId: videoId),
+          _labelEvent(authorC, ['banana'], videoId: videoId),
+        ]);
+
+        final result = await repository.communityLabelsForVideo(video);
+
+        expect(result, isEmpty);
+      });
+
       test('returns empty set when the query throws', () async {
         when(
           () => nostrClient.queryEvents(any()),
@@ -195,35 +207,43 @@ void main() {
     });
 
     group('suggestLabels', () {
-      test('publishes a kind 1985 event with L/l/e/a/p tags', () async {
-        when(() => nostrClient.publicKey).thenReturn(authorA);
-        final captured = <Event>[];
-        when(() => nostrClient.publishEvent(captureAny())).thenAnswer((
-          invocation,
-        ) async {
-          captured.add(invocation.positionalArguments.first as Event);
-          return PublishSuccess(
-            event: Event(_placeholderPubkey, EventKind.label, const [], ''),
+      test(
+        'publishes a kind 1985 event with L/l/e/a tags (no p target)',
+        () async {
+          when(() => nostrClient.publicKey).thenReturn(authorA);
+          final captured = <Event>[];
+          when(() => nostrClient.publishEvent(captureAny())).thenAnswer((
+            invocation,
+          ) async {
+            captured.add(invocation.positionalArguments.first as Event);
+            return PublishSuccess(
+              event: Event(_placeholderPubkey, EventKind.label, const [], ''),
+            );
+          });
+
+          await repository.suggestLabels(
+            video: video,
+            labels: {ContentLabel.gambling},
           );
-        });
 
-        await repository.suggestLabels(
-          video: video,
-          labels: {ContentLabel.gambling},
-        );
-
-        expect(captured, hasLength(1));
-        final event = captured.single;
-        expect(event.kind, equals(EventKind.label));
-        expect(event.tags, contains(equals(['L', 'content-warning'])));
-        expect(
-          event.tags,
-          contains(equals(['l', 'gambling', 'content-warning'])),
-        );
-        expect(event.tags, contains(equals(['e', videoId])));
-        expect(event.tags, contains(equals(['a', addressableId])));
-        expect(event.tags, contains(equals(['p', creatorPubkey])));
-      });
+          expect(captured, hasLength(1));
+          final event = captured.single;
+          expect(event.kind, equals(EventKind.label));
+          expect(event.tags, contains(equals(['L', 'content-warning'])));
+          expect(
+            event.tags,
+            contains(equals(['l', 'gambling', 'content-warning'])),
+          );
+          expect(event.tags, contains(equals(['e', videoId])));
+          expect(event.tags, contains(equals(['a', addressableId])));
+          // No `p` target: a p-scoped 1985 label would flag the creator's
+          // account, not the video (NIP-32). Video-scoped e/a only.
+          expect(
+            event.tags.any((tag) => tag.isNotEmpty && tag[0] == 'p'),
+            isFalse,
+          );
+        },
+      );
 
       test('throws ArgumentError when no labels are provided', () async {
         expect(

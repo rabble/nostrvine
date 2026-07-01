@@ -6,7 +6,6 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Event, EventKind, Filter;
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/community_content_warning_constants.dart';
-import 'package:openvine/services/effective_content_labels.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -91,6 +90,11 @@ class CommunityContentLabelRepository {
       throw ArgumentError.value(labels, 'labels', 'must not be empty');
     }
 
+    // Targets are the VIDEO (`e` + `a`) only. We deliberately do NOT add a
+    // `p` target: per NIP-32 a `p` label targets the *pubkey*, which would
+    // publish a signed, account-level content-warning claim about the creator
+    // derived from a single video (a reputation-affecting assertion other
+    // labelers ingest). The video-scoped targets carry all the intent needed.
     final addressableId = video.addressableId;
     final tags = <List<String>>[
       ['L', CommunityContentWarningConstants.namespace],
@@ -99,7 +103,6 @@ class CommunityContentLabelRepository {
       ['e', video.id],
       if (addressableId != null && addressableId.isNotEmpty)
         ['a', addressableId],
-      ['p', video.pubkey],
     ];
 
     final event = Event(
@@ -168,8 +171,11 @@ class CommunityContentLabelRepository {
       if (tag.length >= 3 &&
           tag[0] == 'l' &&
           tag[2] == CommunityContentWarningConstants.namespace) {
-        final normalized = normalizeModerationLabelValue(tag[1]);
-        if (normalized != null) yield normalized;
+        // Constrain community-surfaced warnings to the known ContentLabel set.
+        // The suggest UI only offers those, and this stops a few authors from
+        // surfacing an arbitrary free-text string as a "community" warning.
+        final label = ContentLabel.fromValue(tag[1]);
+        if (label != null) yield label.value;
       }
     }
   }
