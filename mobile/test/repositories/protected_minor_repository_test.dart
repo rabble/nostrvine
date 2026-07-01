@@ -1,5 +1,5 @@
 // ABOUTME: Tests the protected-minor repository: token gating, mapping, and
-// ABOUTME: fail-closed-to-not-protected behavior on errors (#174)
+// ABOUTME: fail-open-to-not-protected behavior on errors (#174)
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
