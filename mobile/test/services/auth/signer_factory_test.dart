@@ -234,7 +234,7 @@ void main() {
         expect(reported, isEmpty);
       });
 
-      test('kind 0 events get the expiration tag first', () async {
+      test('kind 0 events preserve caller tags before expiration', () async {
         final event = await factory.createAndSignEvent(
           identity: localIdentity(),
           authSource: AuthenticationSource.importedKeys,
@@ -246,7 +246,7 @@ void main() {
         );
 
         expect(event, isNotNull);
-        // Caller tags come first, expiration is appended before signing —
+        // Caller tags come first; expiration is appended before signing,
         // preserving the exact pre-extraction tag construction order.
         expect(event!.tags.first, equals(['p', otherPublicKey]));
         final expiration = event.tags.where((t) => t.first == 'expiration');

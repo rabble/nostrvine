@@ -160,8 +160,8 @@ class SignerFactory {
       // CRITICAL: Divine relays require specific tags for storage
       final eventTags = List<List<String>>.from(tags ?? []);
 
-      // CRITICAL: Kind 0 events require expiration tag FIRST (matching Python
-      // script order)
+      // CRITICAL: Kind 0 events require an expiration tag appended before
+      // signing (matching the pre-extraction tag construction order).
       if (kind == 0) {
         final expirationTimestamp =
             (DateTime.now().millisecondsSinceEpoch ~/ 1000) +
