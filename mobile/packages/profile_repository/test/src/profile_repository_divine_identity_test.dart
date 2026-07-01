@@ -95,6 +95,29 @@ void main() {
       },
     );
 
+    test('evicts the oldest entry once the cache is full', () async {
+      when(() => mockHttpClient.get(any())).thenAnswer(
+        (_) async => Response('{"ok":true,"found":false}', 200),
+      );
+
+      // Fill past the 500-entry cap (indices 0..500 = 501 distinct pubkeys)
+      // so the oldest entry (index 0) is evicted.
+      String pubkeyForIndex(int i) => i.toRadixString(16).padLeft(64, '0');
+      for (var i = 0; i <= 500; i++) {
+        await repository.hasDivineIdentity(pubkeyForIndex(i));
+      }
+
+      final evictedUri = Uri.parse(
+        'https://names.divine.video/api/username/by-pubkey/'
+        '${pubkeyForIndex(0)}',
+      );
+      // Index 0 was evicted, so looking it up again hits the network a
+      // second time rather than returning a cached value.
+      await repository.hasDivineIdentity(pubkeyForIndex(0));
+
+      verify(() => mockHttpClient.get(evictedUri)).called(2);
+    });
+
     test('normalizes the pubkey to lowercase before querying', () async {
       when(() => mockHttpClient.get(byPubkeyUri)).thenAnswer(
         (_) async => Response('{"ok":true,"found":true,"name":"alice"}', 200),
