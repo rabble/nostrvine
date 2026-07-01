@@ -20,6 +20,9 @@ void main() {
 
       storage = SecureKeyStorage();
       await storage.initialize();
+      // Clear any key a prior/aborted run left in the device keychain so the
+      // migration's hasKeys() guard can't spuriously short-circuit.
+      await storage.deleteKeys();
     });
 
     tearDown(() async {
