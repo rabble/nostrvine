@@ -21,5 +21,5 @@ class ProtectedMinorOverrideService {
   Future<void> setOverride(bool isProtectedMinor) =>
       _prefs.setBool(_prefsKey, isProtectedMinor);
 
-  Future<void> clear() => _prefs.remove(_prefsKey);
+  Future<void> clearOverride() => _prefs.remove(_prefsKey);
 }

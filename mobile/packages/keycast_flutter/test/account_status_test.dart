@@ -36,6 +36,19 @@ void main() {
       expect(status.verifiedMinor, isFalse);
       expect(status.verifiedMinorAt, isNull);
     });
+
+    test('keeps verified_minor true but null timestamp on a bad date', () {
+      final status = KeycastAccountStatus.fromJson({
+        'email': 'a@b.com',
+        'email_verified': true,
+        'public_key': 'abc',
+        'verified_minor': true,
+        'verified_minor_at': 'not-a-date',
+      });
+
+      expect(status.verifiedMinor, isTrue);
+      expect(status.verifiedMinorAt, isNull);
+    });
   });
 
   group('KeycastOAuth.getAccountStatus', () {

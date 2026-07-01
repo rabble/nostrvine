@@ -20,7 +20,7 @@ void main() {
     await service.setOverride(false);
     expect(service.getOverride(), isFalse);
 
-    await service.clear();
+    await service.clearOverride();
     expect(service.getOverride(), isNull);
   });
 }

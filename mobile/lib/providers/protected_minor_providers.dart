@@ -34,6 +34,16 @@ final protectedMinorRepositoryProvider = Provider<ProtectedMinorRepository>((
 /// Unauthenticated accounts are never protected. In debug builds a local
 /// override short-circuits the real fetch. Otherwise the repository reads the
 /// Keycast flag, failing to not-protected on any error (#174 is detection-only).
+///
+/// Notes for consumers (#175/#176):
+/// - Resolving this may trigger a Keycast token refresh via
+///   `getSessionOrRefresh()` (a network call + storage write) when the cached
+///   session is stale. In the common case a valid session is reused with no
+///   refresh.
+/// - This only recomputes when auth state changes. An account approved as a
+///   minor mid-session (no auth-state transition) will not refetch until the
+///   provider is invalidated — call `ref.invalidate(protectedMinorStatusProvider)`
+///   when fresh state is required.
 final protectedMinorStatusProvider = FutureProvider<ProtectedMinorStatus>((
   ref,
 ) async {
