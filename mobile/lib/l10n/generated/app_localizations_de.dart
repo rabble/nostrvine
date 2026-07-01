@@ -1399,6 +1399,29 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wir blenden Beiträge wie diesen ab jetzt aus.';
 
   @override
+  String get contentWarningCommunitySource => 'Suggested by the community';
+
+  @override
+  String get communitySuggestTitle => 'Help classify this';
+
+  @override
+  String get communitySuggestSubtitle =>
+      'Missing a content warning? Suggest one so other viewers know what to expect.';
+
+  @override
+  String get communitySuggestSubmit => 'Suggest';
+
+  @override
+  String get communitySuggestSuccess => 'Thanks. Your suggestion was sent.';
+
+  @override
+  String get communitySuggestFailure =>
+      'Couldn\'t send your suggestion. Try again.';
+
+  @override
+  String get communitySuggestAlready => 'You suggested this';
+
+  @override
   String get videoErrorNotFound => 'Video nicht gefunden';
 
   @override

@@ -672,6 +672,22 @@
   "contentWarningHideAllLikeThis": "Hide all content like this",
   "contentWarningNoFilterYet": "No saved filter for this warning yet.",
   "contentWarningHiddenConfirmation": "We'll hide posts like this from now on.",
+  "contentWarningCommunitySource": "Suggested by the community",
+  "@contentWarningCommunitySource": {
+    "description": "Provenance line shown on a content warning that was surfaced by community suggestions rather than the creator or a trusted labeler."
+  },
+  "communitySuggestTitle": "Help classify this",
+  "@communitySuggestTitle": {
+    "description": "Title of the sheet where a viewer suggests content-warning labels for someone else's video."
+  },
+  "communitySuggestSubtitle": "Missing a content warning? Suggest one so other viewers know what to expect.",
+  "communitySuggestSubmit": "Suggest",
+  "communitySuggestSuccess": "Thanks. Your suggestion was sent.",
+  "communitySuggestFailure": "Couldn't send your suggestion. Try again.",
+  "communitySuggestAlready": "You suggested this",
+  "@communitySuggestAlready": {
+    "description": "Badge shown next to a label the current viewer has already suggested for this video."
+  },
   "videoErrorNotFound": "Video not found",
   "videoErrorNetwork": "Network error",
   "videoErrorTimeout": "Loading timeout",

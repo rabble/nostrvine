@@ -2464,6 +2464,48 @@ abstract class AppLocalizations {
   /// **'We\'ll hide posts like this from now on.'**
   String get contentWarningHiddenConfirmation;
 
+  /// Provenance line shown on a content warning that was surfaced by community suggestions rather than the creator or a trusted labeler.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested by the community'**
+  String get contentWarningCommunitySource;
+
+  /// Title of the sheet where a viewer suggests content-warning labels for someone else's video.
+  ///
+  /// In en, this message translates to:
+  /// **'Help classify this'**
+  String get communitySuggestTitle;
+
+  /// No description provided for @communitySuggestSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing a content warning? Suggest one so other viewers know what to expect.'**
+  String get communitySuggestSubtitle;
+
+  /// No description provided for @communitySuggestSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest'**
+  String get communitySuggestSubmit;
+
+  /// No description provided for @communitySuggestSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks. Your suggestion was sent.'**
+  String get communitySuggestSuccess;
+
+  /// No description provided for @communitySuggestFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send your suggestion. Try again.'**
+  String get communitySuggestFailure;
+
+  /// Badge shown next to a label the current viewer has already suggested for this video.
+  ///
+  /// In en, this message translates to:
+  /// **'You suggested this'**
+  String get communitySuggestAlready;
+
   /// No description provided for @videoErrorNotFound.
   ///
   /// In en, this message translates to:
