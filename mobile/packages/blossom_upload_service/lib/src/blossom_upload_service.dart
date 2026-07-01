@@ -2269,14 +2269,17 @@ class BlossomUploadService {
         if (decoded != null) {
           responseUrl = decoded['url']?.toString();
           responseFallbackUrl = decoded['fallbackUrl']?.toString();
-          thumbnailUrl = decoded['thumbnail']?.toString();
+          thumbnailUrl =
+              decoded['thumbnail']?.toString() ?? responseFallbackUrl;
           final streaming = decoded['streaming'];
           if (streaming is Map) {
             streamingMp4Url = streaming['mp4Url']?.toString();
             streamingHlsUrl = streaming['hlsUrl']?.toString();
             streamingStatus = streaming['status']?.toString();
             thumbnailUrl =
-                streaming['thumbnailUrl']?.toString() ?? thumbnailUrl;
+                streaming['thumbnailUrl']?.toString() ??
+                streaming['thumbnail']?.toString() ??
+                thumbnailUrl;
           }
         }
         return BlossomUploadResult(
@@ -2303,6 +2306,19 @@ class BlossomUploadService {
       case BlossomBackgroundTransferStatus.running:
       case BlossomBackgroundTransferStatus.failed:
         final statusCode = event.httpStatusCode;
+        // A 409 means the blob is already stored (BUD dedup convention);
+        // mirror the in-process parse and treat it as success at the
+        // content-addressed URL on the server the file was actually uploaded
+        // to (not necessarily the default when a custom server is configured).
+        if (statusCode == 409) {
+          final existingUrl = '$serverUrl/$fileHash';
+          return BlossomUploadResult(
+            success: true,
+            url: existingUrl,
+            fallbackUrl: existingUrl,
+            videoId: fileHash,
+          );
+        }
         return BlossomUploadResult(
           success: false,
           statusCode: statusCode,

@@ -176,6 +176,30 @@ void main() {
     expect(result.failureReason, BlossomUploadFailureReason.server);
   });
 
+  test('treats HTTP 409 (already stored) as success with the '
+      'content-addressed URL', () async {
+    final transport = _FakeTransport(
+      emitOnEnqueue: const <BlossomBackgroundTransferEvent>[
+        BlossomBackgroundTransferEvent(
+          taskId: taskId,
+          status: BlossomBackgroundTransferStatus.failed,
+          httpStatusCode: 409,
+        ),
+      ],
+    );
+
+    final result = await service(transport).uploadVideoInBackground(
+      videoFile: videoFile,
+      taskId: taskId,
+      proofManifestJson: null,
+    );
+
+    expect(result.success, isTrue);
+    expect(result.url, startsWith('$server/'));
+    expect(result.fallbackUrl, startsWith('$server/'));
+    expect(result.videoId, isNotEmpty);
+  });
+
   test(
     'maps a transport error (no status) to a transient network failure',
     () async {

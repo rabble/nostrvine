@@ -37,7 +37,13 @@ class BackgroundUploadService : Service() {
     when (intent?.action) {
       ACTION_ENQUEUE -> handleEnqueue(intent)
       ACTION_CANCEL -> {
-        intent.getStringExtra(EXTRA_TASK_ID)?.let { cancelledTaskIds[it] = true }
+        intent.getStringExtra(EXTRA_TASK_ID)?.let { taskId ->
+          cancelledTaskIds[taskId] = true
+          // Abort a transfer already blocked reading the response so a cancel
+          // that lands after the body is fully sent terminates as `cancelled`
+          // instead of running to `completed` (matching iOS `task.cancel()`).
+          runCatching { activeConnections[taskId]?.disconnect() }
+        }
         stopIfIdle()
       }
       ACTION_BEGIN_SESSION ->
@@ -104,6 +110,9 @@ class BackgroundUploadService : Service() {
         readTimeout = READ_TIMEOUT_MS
         headers.forEach { (key, value) -> setRequestProperty(key, value) }
       }
+      // Register the connection so ACTION_CANCEL can abort a transfer that is
+      // already blocked reading the response (see onStartCommand).
+      activeConnections[taskId] = connection
 
       FileInputStream(file).use { input ->
         connection.outputStream.use { output ->
@@ -133,6 +142,14 @@ class BackgroundUploadService : Service() {
         }
       }
 
+      // A cancel can land after the last chunk is written but before the
+      // response is read; without this re-check the transfer would report
+      // `completed` even though the caller asked to cancel.
+      if (cancelledTaskIds.containsKey(taskId)) {
+        postCancelled(taskId)
+        return
+      }
+
       val statusCode = connection.responseCode
       val body = readBody(connection)
       val success = statusCode in 200..299
@@ -151,6 +168,7 @@ class BackgroundUploadService : Service() {
       }
     } finally {
       connection?.disconnect()
+      activeConnections.remove(taskId)
       activeTaskIds.remove(taskId)
       cancelledTaskIds.remove(taskId)
       stopIfIdle()
@@ -207,6 +225,19 @@ class BackgroundUploadService : Service() {
     BackgroundUploaderPlugin.postEvent(
       mapOf("taskId" to taskId, "status" to "cancelled", "progress" to 0.0),
     )
+  }
+
+  // On Android 15+ (API 35) a `dataSync` foreground service that exhausts its
+  // cumulative daily runtime budget receives onTimeout; the default no-op never
+  // stops the service, so the platform raises a foreground-service-timeout
+  // crash. Comply by aborting any in-flight transfers and stopping.
+  override fun onTimeout(startId: Int, fgsType: Int) {
+    activeConnections.values.forEach { runCatching { it.disconnect() } }
+    activeConnections.clear()
+    activeTaskIds.clear()
+    cancelledTaskIds.clear()
+    activeSessions.clear()
+    stopIfIdle()
   }
 
   private fun stopIfIdle() {
@@ -272,6 +303,7 @@ class BackgroundUploadService : Service() {
     // each fresh service starts from a clean slate.
     activeTaskIds.clear()
     cancelledTaskIds.clear()
+    activeConnections.clear()
     activeSessions.clear()
     super.onDestroy()
   }
@@ -307,6 +339,10 @@ class BackgroundUploadService : Service() {
 
     private val activeTaskIds = ConcurrentHashMap.newKeySet<String>()
     private val cancelledTaskIds = ConcurrentHashMap<String, Boolean>()
+
+    /// Live connections keyed by task, so an ACTION_CANCEL delivered while a
+    /// transfer is blocked reading the response can `disconnect()` to abort it.
+    private val activeConnections = ConcurrentHashMap<String, HttpURLConnection>()
 
     /// Foreground sessions that keep the service alive beyond any in-flight
     /// upload, so the process stays foregrounded (network usable) across the
