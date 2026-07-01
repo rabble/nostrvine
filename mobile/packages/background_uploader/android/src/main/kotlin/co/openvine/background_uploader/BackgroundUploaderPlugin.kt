@@ -47,8 +47,7 @@ class BackgroundUploaderPlugin : FlutterPlugin, MethodCallHandler {
           val headers = call.argument<Map<String, String>>("headers") ?: emptyMap()
           putExtra(BackgroundUploadService.EXTRA_HEADERS, HashMap(headers))
         }
-        startForegroundUploadService(intent)
-        result.success(null)
+        startForegroundUploadService(intent, result)
       }
       "cancel" -> {
         deliverToRunningService(BackgroundUploadService.ACTION_CANCEL) {
@@ -65,8 +64,7 @@ class BackgroundUploaderPlugin : FlutterPlugin, MethodCallHandler {
             call.argument<String>("sessionId"),
           )
         }
-        startForegroundUploadService(intent)
-        result.success(null)
+        startForegroundUploadService(intent, result)
       }
       "endForegroundSession" -> {
         deliverToRunningService(BackgroundUploadService.ACTION_END_SESSION) {
@@ -85,11 +83,20 @@ class BackgroundUploaderPlugin : FlutterPlugin, MethodCallHandler {
   /// itself is foregrounded — Android 12+ forbids starting a foreground service
   /// from the background. `enqueue` and `beginForegroundSession` both run at
   /// publish time (foreground), so this is safe for them.
-  private fun startForegroundUploadService(intent: Intent) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      context.startForegroundService(intent)
-    } else {
-      context.startService(intent)
+  private fun startForegroundUploadService(intent: Intent, result: Result) {
+    try {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        context.startForegroundService(intent)
+      } else {
+        context.startService(intent)
+      }
+      result.success(null)
+    } catch (e: Exception) {
+      result.error(
+        "foreground_service_start_failed",
+        e.message ?: e.javaClass.simpleName,
+        null,
+      )
     }
   }
 

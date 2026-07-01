@@ -28,6 +28,9 @@ class _FakeTransport implements BlossomBackgroundTransport {
   final StreamController<BlossomBackgroundTransferEvent> _controller =
       StreamController<BlossomBackgroundTransferEvent>.broadcast();
   final List<String> enqueued = <String>[];
+  final List<Map<String, String>> enqueuedHeaders = <Map<String, String>>[];
+  final List<String> enqueuedMethods = <String>[];
+  final List<String> enqueuedUrls = <String>[];
   final List<String> cancelled = <String>[];
 
   @override
@@ -42,6 +45,9 @@ class _FakeTransport implements BlossomBackgroundTransport {
     required String filePath,
   }) async {
     enqueued.add(taskId);
+    enqueuedUrls.add(url);
+    enqueuedMethods.add(method);
+    enqueuedHeaders.add(Map<String, String>.from(headers));
     if (throwOnEnqueue) {
       throw Exception('enqueue failed');
     }
@@ -254,7 +260,7 @@ void main() {
     expect(result.streamingStatus, 'processing');
   });
 
-  test('attaches ProofMode headers when a manifest is provided', () async {
+  test('attaches auth, content type, and ProofMode headers', () async {
     final transport = _FakeTransport(
       emitOnEnqueue: const <BlossomBackgroundTransferEvent>[
         BlossomBackgroundTransferEvent(
@@ -274,6 +280,30 @@ void main() {
 
     expect(result.success, isTrue);
     expect(transport.enqueued, <String>[taskId]);
+    expect(transport.enqueuedUrls, <String>['$server/upload']);
+    expect(transport.enqueuedMethods, <String>['PUT']);
+    expect(
+      transport.enqueuedHeaders.single['Authorization'],
+      startsWith('Nostr '),
+    );
+    expect(transport.enqueuedHeaders.single['Content-Type'], 'video/mp4');
+    expect(transport.enqueuedHeaders.single['Content-Length'], '64');
+    expect(
+      utf8.decode(
+        base64.decode(
+          transport.enqueuedHeaders.single['X-ProofMode-Manifest']!,
+        ),
+      ),
+      '{"pgpSignature":"sig"}',
+    );
+    expect(
+      utf8.decode(
+        base64.decode(
+          transport.enqueuedHeaders.single['X-ProofMode-Signature']!,
+        ),
+      ),
+      'sig',
+    );
   });
 
   test('forwards intermediate progress for non-terminal events', () async {

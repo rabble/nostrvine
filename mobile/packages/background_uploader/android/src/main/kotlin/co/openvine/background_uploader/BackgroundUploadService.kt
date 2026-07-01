@@ -32,7 +32,18 @@ class BackgroundUploadService : Service() {
   }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-    startForegroundCompat()
+    try {
+      startForegroundCompat()
+    } catch (e: Exception) {
+      intent?.getStringExtra(EXTRA_TASK_ID)?.let { taskId ->
+        postFailure(
+          taskId,
+          error = e.message ?: e.javaClass.simpleName,
+        )
+      }
+      stopSelf()
+      return START_NOT_STICKY
+    }
 
     when (intent?.action) {
       ACTION_ENQUEUE -> handleEnqueue(intent)
@@ -69,7 +80,7 @@ class BackgroundUploadService : Service() {
       if (title != notificationTitle) {
         notificationTitle = title
         // Refresh the ongoing notification with the caller-supplied title.
-        startForegroundCompat()
+        runCatching { startForegroundCompat() }
       }
     }
 
@@ -83,6 +94,7 @@ class BackgroundUploadService : Service() {
     // skip starting a second parallel upload of the same file. The service
     // stays foregrounded because activeTaskIds is non-empty.
     if (!activeTaskIds.add(taskId)) return
+    cancelledTaskIds.remove(taskId)
     executor.execute { runUpload(taskId, urlString, filePath, method, headers) }
   }
 
