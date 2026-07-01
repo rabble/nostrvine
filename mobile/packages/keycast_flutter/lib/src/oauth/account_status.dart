@@ -1,7 +1,7 @@
-// ABOUTME: Parsed GET /user/account response from Keycast, including the
+// ABOUTME: Parsed GET /api/user/account response from Keycast, including the
 // ABOUTME: durable approved-minor flag (verified_minor, keycast#263).
 
-/// Account status returned by Keycast's `GET /user/account`.
+/// Account status returned by Keycast's `GET /api/user/account`.
 ///
 /// [verifiedMinor] is the durable approved-minor (13-15) flag and is always
 /// present; [verifiedMinorAt] is set only when the account was flagged.

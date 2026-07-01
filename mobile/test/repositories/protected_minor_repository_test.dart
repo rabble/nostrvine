@@ -68,7 +68,7 @@ void main() {
       expect(s.isProtectedMinor, isFalse);
     });
 
-    test('not protected (fails safe) when reading the token throws', () async {
+    test('not protected (fails open) when reading the token throws', () async {
       final repo = ProtectedMinorRepository(
         oauthClient: _oauthReturning(_minorBody, 200),
         readAccessToken: () async => throw Exception('boom'),
