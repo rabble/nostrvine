@@ -198,13 +198,9 @@ void main() {
     });
 
     group('thumbnail fallback', () {
-      // Regression: on first open the timeline slots flashed black for a
-      // frame while the poster preview showed instantly. The preview and the
-      // clip grid render the thumbnail as a plain FileImage, warming that
-      // cache key before the editor opens. The strip fallback used
-      // `cacheHeight`, which keys a separate ResizeImage — a cold decode that
-      // paints nothing (black) until it finishes. It must reuse the plain
-      // FileImage key so the warm entry paints on the first frame.
+      // Regression: the fallback must be a plain FileImage (not a
+      // cacheHeight-keyed ResizeImage) so it hits the warm poster cache entry
+      // instead of a cold decode that flashes black on first open.
       testWidgets(
         'poster fallback reuses the plain FileImage key (no resize)',
         (tester) async {
