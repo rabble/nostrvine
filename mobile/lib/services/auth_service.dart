@@ -4667,12 +4667,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     return false;
   }
 
-  /// Fast path: reuse the already-loaded PRIMARY key when it matches the
-  /// last-used npub, avoiding a redundant per-identity storage read.
+  /// Fast path: reuse the PRIMARY key when it matches the last-used npub,
+  /// avoiding a redundant per-identity storage read.
   ///
-  /// Reads the primary container straight from [SecureKeyStorage] (its own
-  /// cache) rather than a separate NostrKeyManager cache; both resolve to the
-  /// same primary key, and the npub guard keeps the reuse correct.
+  /// Reads the primary container from [SecureKeyStorage] — a cache hit when it
+  /// was already loaded during init, otherwise a single platform read. The
+  /// npub guard keeps the reuse correct.
   Future<SecureKeyContainer?> _restoreFromLoadedPrimaryIdentity(
     String lastNpub,
   ) async {
