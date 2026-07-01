@@ -46,64 +46,70 @@ class AuthServiceChannelMocks {
   /// AuthService reaches during sign-in / restore.
   static AuthServiceChannelMocks install() {
     final mocks = AuthServiceChannelMocks._();
-    final messenger =
-        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-
-    messenger.setMockMethodCallHandler(_secureStorageChannel, (call) async {
-      switch (call.method) {
-        case 'read':
-          return mocks.secureStorage[call.arguments['key'] as String?];
-        case 'write':
-          final key = call.arguments['key'] as String?;
-          final value = call.arguments['value'] as String?;
-          if (key != null && value != null) mocks.secureStorage[key] = value;
+    _installSecureStorageHandlers(mocks.secureStorage);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(_androidPluginChannel, (call) async {
+          if (call.method == 'existAndroidNostrSigner') {
+            return mocks.androidSignerInstalled;
+          }
           return null;
-        case 'delete':
-          mocks.secureStorage.remove(call.arguments['key'] as String?);
-          return null;
-        case 'deleteAll':
-          mocks.secureStorage.clear();
-          return null;
-        case 'readAll':
-          return mocks.secureStorage;
-        case 'containsKey':
-          return mocks.secureStorage.containsKey(
-            call.arguments['key'] as String?,
-          );
-        case 'getCapabilities':
-          return {'basicSecureStorage': true};
-        default:
-          return null;
-      }
-    });
-
-    messenger.setMockMethodCallHandler(_capabilityChannel, (call) async {
-      if (call.method == 'getCapabilities') {
-        return {
-          'hasHardwareSecurity': false,
-          'hasBiometrics': false,
-          'hasKeychain': true,
-        };
-      }
-      return null;
-    });
-
-    messenger.setMockMethodCallHandler(_androidPluginChannel, (call) async {
-      if (call.method == 'existAndroidNostrSigner') {
-        return mocks.androidSignerInstalled;
-      }
-      return null;
-    });
-
+        });
     return mocks;
   }
 
-  /// Removes every handler installed by [install]. Call from `tearDown`.
+  /// Tears the test's handlers down. Call from `tearDown`.
+  ///
+  /// The secure-storage and capability channels are shared: `setupTestEnvironment()`
+  /// installs them once at collection time and other suites (e.g.
+  /// `nostr_key_manager_profile_fetch_test`) rely on them without re-installing.
+  /// Under CI's `--optimization` single-isolate run with shuffled ordering,
+  /// nulling those channels here would strand a later suite with no handler
+  /// (MissingPluginException on `flutter_secure_storage`). So we restore a fresh
+  /// working default rather than clearing them; only the auth-only native-signer
+  /// channel is removed.
   static void remove() {
+    _installSecureStorageHandlers(<String, String>{});
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      ..setMockMethodCallHandler(_secureStorageChannel, null)
-      ..setMockMethodCallHandler(_capabilityChannel, null)
-      ..setMockMethodCallHandler(_androidPluginChannel, null);
+        .setMockMethodCallHandler(_androidPluginChannel, null);
+  }
+
+  static void _installSecureStorageHandlers(Map<String, String> store) {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      ..setMockMethodCallHandler(_secureStorageChannel, (call) async {
+        switch (call.method) {
+          case 'read':
+            return store[call.arguments['key'] as String?];
+          case 'write':
+            final key = call.arguments['key'] as String?;
+            final value = call.arguments['value'] as String?;
+            if (key != null && value != null) store[key] = value;
+            return null;
+          case 'delete':
+            store.remove(call.arguments['key'] as String?);
+            return null;
+          case 'deleteAll':
+            store.clear();
+            return null;
+          case 'readAll':
+            return store;
+          case 'containsKey':
+            return store.containsKey(call.arguments['key'] as String?);
+          case 'getCapabilities':
+            return {'basicSecureStorage': true};
+          default:
+            return null;
+        }
+      })
+      ..setMockMethodCallHandler(_capabilityChannel, (call) async {
+        if (call.method == 'getCapabilities') {
+          return {
+            'hasHardwareSecurity': false,
+            'hasBiometrics': false,
+            'hasKeychain': true,
+          };
+        }
+        return null;
+      });
   }
 }
 
