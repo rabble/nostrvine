@@ -287,9 +287,13 @@ class _SearchInput extends StatelessWidget {
         decoration: InputDecoration(
           hintText: context.l10n.soundsSearchHint,
           hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
-          prefixIcon: const DivineIcon(
-            icon: DivineIconName.search,
-            color: VineTheme.onSurfaceMuted,
+          prefixIconConstraints: const BoxConstraints(),
+          prefixIcon: const Padding(
+            padding: EdgeInsetsDirectional.only(start: 12, end: 8),
+            child: DivineIcon(
+              icon: DivineIconName.search,
+              color: VineTheme.onSurfaceMuted,
+            ),
           ),
           filled: true,
           fillColor: VineTheme.surfaceContainer,

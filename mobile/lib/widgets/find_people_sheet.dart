@@ -89,9 +89,13 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
                 decoration: InputDecoration(
                   hintText: context.l10n.shareFindPeople,
                   hintStyle: const TextStyle(color: VineTheme.secondaryText),
-                  prefixIcon: const DivineIcon(
-                    icon: DivineIconName.search,
-                    color: VineTheme.secondaryText,
+                  prefixIconConstraints: const BoxConstraints(),
+                  prefixIcon: const Padding(
+                    padding: EdgeInsetsDirectional.only(start: 12, end: 8),
+                    child: DivineIcon(
+                      icon: DivineIconName.search,
+                      color: VineTheme.secondaryText,
+                    ),
                   ),
                   filled: true,
                   fillColor: VineTheme.containerLow,
