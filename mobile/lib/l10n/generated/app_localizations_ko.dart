@@ -9107,4 +9107,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => '자르기 적용 중…';
+
+  @override
+  String get backgroundUploadNotificationTitle => '동영상 업로드 중';
 }

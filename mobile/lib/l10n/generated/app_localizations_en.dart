@@ -9397,4 +9397,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => 'Applying crop…';
+
+  @override
+  String get backgroundUploadNotificationTitle => 'Uploading video';
 }

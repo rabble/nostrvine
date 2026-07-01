@@ -4154,5 +4154,6 @@
     "imageCropEditorResetLabel": "Нулиране",
     "imageCropEditorCloseSemanticLabel": "Отказ от изрязването",
     "imageCropEditorDoneSemanticLabel": "Прилагане на изрязването",
-    "imageCropEditorProcessing": "Прилагане на изрязването…"
+    "imageCropEditorProcessing": "Прилагане на изрязването…",
+    "backgroundUploadNotificationTitle": "Качване на видео"
 }

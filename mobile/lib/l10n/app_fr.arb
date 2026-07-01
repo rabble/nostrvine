@@ -4023,5 +4023,6 @@
     "imageCropEditorResetLabel": "Réinitialiser",
     "imageCropEditorCloseSemanticLabel": "Annuler le recadrage",
     "imageCropEditorDoneSemanticLabel": "Appliquer le recadrage",
-    "imageCropEditorProcessing": "Application du recadrage…"
+    "imageCropEditorProcessing": "Application du recadrage…",
+    "backgroundUploadNotificationTitle": "Envoi de la vidéo"
 }

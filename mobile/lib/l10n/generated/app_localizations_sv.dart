@@ -9418,4 +9418,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => 'Tillämpar beskärning…';
+
+  @override
+  String get backgroundUploadNotificationTitle => 'Laddar upp video';
 }

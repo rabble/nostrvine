@@ -4023,5 +4023,6 @@
     "imageCropEditorResetLabel": "Sıfırla",
     "imageCropEditorCloseSemanticLabel": "Kırpmayı iptal et",
     "imageCropEditorDoneSemanticLabel": "Kırpmayı uygula",
-    "imageCropEditorProcessing": "Kırpma uygulanıyor…"
+    "imageCropEditorProcessing": "Kırpma uygulanıyor…",
+    "backgroundUploadNotificationTitle": "Video yükleniyor"
 }

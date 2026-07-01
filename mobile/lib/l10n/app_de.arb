@@ -4023,5 +4023,6 @@
     "imageCropEditorResetLabel": "Zurücksetzen",
     "imageCropEditorCloseSemanticLabel": "Zuschneiden abbrechen",
     "imageCropEditorDoneSemanticLabel": "Zuschnitt übernehmen",
-    "imageCropEditorProcessing": "Zuschnitt wird angewendet…"
+    "imageCropEditorProcessing": "Zuschnitt wird angewendet…",
+    "backgroundUploadNotificationTitle": "Video wird hochgeladen"
 }

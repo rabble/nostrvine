@@ -173,6 +173,15 @@ class UploadManager {
   // a disposed manager for up to 5 minutes.
   final Map<String, Timer> _processingPollTimers = {};
 
+  // Uploads the user paused or cancelled while their transfer was still in
+  // flight. Cancelling an OS background transfer emits a `cancelled` terminal
+  // event that resolves the in-flight [_performUpload] future as a failure; a
+  // marker here lets that path recognise a user-initiated stop and skip
+  // [_handleUploadFailure], so a pause is not overwritten with `failed` and a
+  // cancel does not emit a spurious failure crash report. Cleared when the
+  // owning [_performUpload] run settles.
+  final Set<String> _userStoppedUploadIds = <String>{};
+
   bool _isInitialized = false;
 
   /// Check if the upload manager is initialized
@@ -737,12 +746,26 @@ class UploadManager {
       );
       await _performUploadWithRetry(upload, videoFile, onProgress);
     } catch (e) {
+      // A user-initiated pause/cancel tears down the in-flight transfer, which
+      // surfaces here as a failure. pauseUpload/cancelUpload already wrote the
+      // authoritative status, so don't overwrite it or report the stop as a
+      // crash — see [_userStoppedUploadIds].
+      if (_userStoppedUploadIds.contains(upload.id)) {
+        Log.info(
+          'Upload ${upload.id} stopped by user; skipping failure handling',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+        return;
+      }
       Log.error(
         '❌ Upload failed: $e',
         name: 'UploadManager',
         category: LogCategory.video,
       );
       await _handleUploadFailure(upload, e);
+    } finally {
+      _userStoppedUploadIds.remove(upload.id);
     }
   }
 
@@ -1151,6 +1174,11 @@ class UploadManager {
       category: LogCategory.video,
     );
 
+    // Mark before tearing down the transfer: cancelling it emits a terminal
+    // event that would otherwise drive the in-flight upload into
+    // [_handleUploadFailure] and overwrite the paused status below.
+    _userStoppedUploadIds.add(uploadId);
+
     // Stop the OS-owned background transfer while paused so it doesn't keep
     // uploading in the background. A background transfer is a single OS-owned
     // PUT with no resumable checkpoint, so resuming re-enqueues it from byte 0
@@ -1255,6 +1283,17 @@ class UploadManager {
       name: 'UploadManager',
       category: LogCategory.video,
     );
+
+    // Only mark an in-flight transfer: tearing it down emits a terminal event
+    // that would otherwise reach [_handleUploadFailure] and report a spurious
+    // failure for this user-initiated cancel. A marker for an already-terminal
+    // upload would never be cleared (no [_performUpload] run owns it).
+    final isInFlight =
+        upload.status == UploadStatus.uploading ||
+        upload.status == UploadStatus.retrying;
+    if (isInFlight) {
+      _userStoppedUploadIds.add(uploadId);
+    }
 
     // Stop the OS-owned background transfer if this upload used one; the
     // in-process path is torn down by its request timeout. Without this the OS

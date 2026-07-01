@@ -4023,5 +4023,6 @@
     "imageCropEditorResetLabel": "Reimposta",
     "imageCropEditorCloseSemanticLabel": "Annulla ritaglio",
     "imageCropEditorDoneSemanticLabel": "Applica ritaglio",
-    "imageCropEditorProcessing": "Applicazione del ritaglio…"
+    "imageCropEditorProcessing": "Applicazione del ritaglio…",
+    "backgroundUploadNotificationTitle": "Caricamento del video"
 }

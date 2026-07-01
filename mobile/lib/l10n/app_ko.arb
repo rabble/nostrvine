@@ -3340,5 +3340,6 @@
     "imageCropEditorResetLabel": "초기화",
     "imageCropEditorCloseSemanticLabel": "자르기 취소",
     "imageCropEditorDoneSemanticLabel": "자르기 적용",
-    "imageCropEditorProcessing": "자르기 적용 중…"
+    "imageCropEditorProcessing": "자르기 적용 중…",
+    "backgroundUploadNotificationTitle": "동영상 업로드 중"
 }

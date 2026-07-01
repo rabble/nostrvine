@@ -4023,5 +4023,6 @@
     "imageCropEditorResetLabel": "Redefinir",
     "imageCropEditorCloseSemanticLabel": "Cancelar recorte",
     "imageCropEditorDoneSemanticLabel": "Aplicar recorte",
-    "imageCropEditorProcessing": "Aplicando recorte…"
+    "imageCropEditorProcessing": "Aplicando recorte…",
+    "backgroundUploadNotificationTitle": "Enviando vídeo"
 }

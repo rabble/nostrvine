@@ -9511,4 +9511,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => 'Inilalapat ang pag-crop…';
+
+  @override
+  String get backgroundUploadNotificationTitle => 'Ina-upload ang video';
 }

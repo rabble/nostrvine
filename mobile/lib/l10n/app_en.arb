@@ -5459,5 +5459,9 @@
     "imageCropEditorProcessing": "Applying crop…",
     "@imageCropEditorProcessing": {
         "description": "Loading message shown while the image crop editor generates the final cropped image after the user taps done."
+    },
+    "backgroundUploadNotificationTitle": "Uploading video",
+    "@backgroundUploadNotificationTitle": {
+        "description": "Title of the Android foreground-service notification shown while a video uploads in the background so the transfer survives app suspension."
     }
 }

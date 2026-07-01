@@ -9501,4 +9501,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => 'Прилагане на изрязването…';
+
+  @override
+  String get backgroundUploadNotificationTitle => 'Качване на видео';
 }

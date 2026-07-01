@@ -9388,4 +9388,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => 'Menerapkan pemangkasan…';
+
+  @override
+  String get backgroundUploadNotificationTitle => 'Mengunggah video';
 }

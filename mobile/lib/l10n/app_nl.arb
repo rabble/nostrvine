@@ -4023,5 +4023,6 @@
     "imageCropEditorResetLabel": "Resetten",
     "imageCropEditorCloseSemanticLabel": "Bijsnijden annuleren",
     "imageCropEditorDoneSemanticLabel": "Bijsnijden toepassen",
-    "imageCropEditorProcessing": "Bijsnijden toepassen…"
+    "imageCropEditorProcessing": "Bijsnijden toepassen…",
+    "backgroundUploadNotificationTitle": "Video uploaden"
 }

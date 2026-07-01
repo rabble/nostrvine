@@ -4148,5 +4148,6 @@
     "imageCropEditorResetLabel": "ዳግም አስጀምር",
     "imageCropEditorCloseSemanticLabel": "መከርከምን ሰርዝ",
     "imageCropEditorDoneSemanticLabel": "መከርከምን ተግብር",
-    "imageCropEditorProcessing": "መከርከም በመተግበር ላይ…"
+    "imageCropEditorProcessing": "መከርከም በመተግበር ላይ…",
+    "backgroundUploadNotificationTitle": "ቪዲዮ በመስቀል ላይ"
 }

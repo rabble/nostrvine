@@ -5,6 +5,7 @@ import 'package:background_uploader/background_uploader.dart';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/background_publish/publish_foreground_session.dart';
+import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -13,6 +14,7 @@ import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
@@ -52,18 +54,22 @@ class _BlossomAuthAdapter implements BlossomAuthProvider {
   }
 }
 
-/// Title shown on the Android background-upload foreground-service
-/// notification. Owned by the app layer because the `background_uploader`
-/// plugin is intentionally domain-agnostic and l10n-free.
-const _backgroundUploadNotificationTitle = 'Uploading video';
-
 /// Adapts the [BackgroundUploader] plugin to the package-level
 /// [BlossomBackgroundTransport] port, so the Blossom service can hand a single
 /// PUT to the OS without depending on the plugin directly.
 class _BackgroundUploadTransportAdapter implements BlossomBackgroundTransport {
-  const _BackgroundUploadTransportAdapter(this._uploader);
+  const _BackgroundUploadTransportAdapter(
+    this._uploader, {
+    required String Function() notificationTitle,
+  }) : _notificationTitle = notificationTitle;
 
   final BackgroundUploader _uploader;
+
+  /// Resolves the Android foreground-service notification title in the app's
+  /// current locale. Owned by the app layer because the `background_uploader`
+  /// plugin is intentionally domain-agnostic and l10n-free. Called per enqueue
+  /// so a locale change between uploads is picked up.
+  final String Function() _notificationTitle;
 
   @override
   Stream<BlossomBackgroundTransferEvent> get events =>
@@ -84,7 +90,7 @@ class _BackgroundUploadTransportAdapter implements BlossomBackgroundTransport {
         filePath: filePath,
         method: method,
         headers: headers,
-        notificationTitle: _backgroundUploadNotificationTitle,
+        notificationTitle: _notificationTitle(),
       ),
     );
   }
@@ -210,7 +216,14 @@ final uploadBackpressureActiveProvider = Provider<bool>((ref) {
 /// OS-backed background upload transport (URLSession on iOS/macOS, a
 /// foreground service on Android), adapted to the Blossom transport port.
 final backgroundUploadTransportProvider = Provider<BlossomBackgroundTransport>(
-  (ref) => _BackgroundUploadTransportAdapter(BackgroundUploader.instance),
+  (ref) {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return _BackgroundUploadTransportAdapter(
+      BackgroundUploader.instance,
+      notificationTitle: () =>
+          currentAppL10n(prefs).backgroundUploadNotificationTitle,
+    );
+  },
 );
 
 /// Foreground session used by the background-publish bloc to keep the process
@@ -244,11 +257,10 @@ BlossomUploadService blossomUploadService(Ref ref) {
 }
 
 /// Whether video publishing routes through the OS background uploader so the
-/// transfer survives app suspension. Flip to `false` to fall back to the
-/// in-process chunked/resumable upload path.
-///
-/// NOTE: the background path requires on-device verification (iOS/macOS
-/// URLSession + Android foreground service) before being relied on.
+/// transfer survives app suspension. Kept as a kill-switch: flip to `false` to
+/// fall back to the in-process chunked/resumable upload path if a regression
+/// surfaces in the OS-backed path (iOS/macOS URLSession + Android foreground
+/// service).
 const _backgroundUploadEnabled = true;
 
 /// Upload manager uses only Blossom upload service

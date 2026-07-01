@@ -9513,4 +9513,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => 'Zuschnitt wird angewendet…';
+
+  @override
+  String get backgroundUploadNotificationTitle => 'Video wird hochgeladen';
 }

@@ -4023,5 +4023,6 @@
     "imageCropEditorResetLabel": "リセット",
     "imageCropEditorCloseSemanticLabel": "切り抜きをキャンセル",
     "imageCropEditorDoneSemanticLabel": "切り抜きを適用",
-    "imageCropEditorProcessing": "切り抜きを適用中…"
+    "imageCropEditorProcessing": "切り抜きを適用中…",
+    "backgroundUploadNotificationTitle": "動画をアップロード中"
 }

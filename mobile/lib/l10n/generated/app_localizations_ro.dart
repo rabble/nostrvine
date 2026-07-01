@@ -9600,4 +9600,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => 'Se aplică decuparea…';
+
+  @override
+  String get backgroundUploadNotificationTitle => 'Se încarcă videoclipul';
 }

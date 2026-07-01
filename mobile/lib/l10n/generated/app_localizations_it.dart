@@ -9493,4 +9493,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => 'Applicazione del ritaglio…';
+
+  @override
+  String get backgroundUploadNotificationTitle => 'Caricamento del video';
 }

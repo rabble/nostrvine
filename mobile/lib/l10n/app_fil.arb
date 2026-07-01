@@ -2592,5 +2592,6 @@
     "imageCropEditorResetLabel": "I-reset",
     "imageCropEditorCloseSemanticLabel": "Kanselahin ang pag-crop",
     "imageCropEditorDoneSemanticLabel": "Ilapat ang pag-crop",
-    "imageCropEditorProcessing": "Inilalapat ang pag-crop…"
+    "imageCropEditorProcessing": "Inilalapat ang pag-crop…",
+    "backgroundUploadNotificationTitle": "Ina-upload ang video"
 }

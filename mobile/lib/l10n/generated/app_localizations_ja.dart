@@ -9083,4 +9083,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => '切り抜きを適用中…';
+
+  @override
+  String get backgroundUploadNotificationTitle => '動画をアップロード中';
 }

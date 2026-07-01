@@ -9329,4 +9329,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => 'جارٍ تطبيق الاقتصاص…';
+
+  @override
+  String get backgroundUploadNotificationTitle => 'جارٍ رفع الفيديو';
 }

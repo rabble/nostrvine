@@ -9385,4 +9385,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => 'Kırpma uygulanıyor…';
+
+  @override
+  String get backgroundUploadNotificationTitle => 'Video yükleniyor';
 }

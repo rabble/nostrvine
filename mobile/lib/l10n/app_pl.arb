@@ -4023,5 +4023,6 @@
     "imageCropEditorResetLabel": "Resetuj",
     "imageCropEditorCloseSemanticLabel": "Anuluj kadrowanie",
     "imageCropEditorDoneSemanticLabel": "Zastosuj kadrowanie",
-    "imageCropEditorProcessing": "Stosowanie kadrowania…"
+    "imageCropEditorProcessing": "Stosowanie kadrowania…",
+    "backgroundUploadNotificationTitle": "Przesyłanie wideo"
 }

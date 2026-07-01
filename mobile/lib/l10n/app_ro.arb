@@ -4023,5 +4023,6 @@
     "imageCropEditorResetLabel": "Resetează",
     "imageCropEditorCloseSemanticLabel": "Anulează decuparea",
     "imageCropEditorDoneSemanticLabel": "Aplică decuparea",
-    "imageCropEditorProcessing": "Se aplică decuparea…"
+    "imageCropEditorProcessing": "Se aplică decuparea…",
+    "backgroundUploadNotificationTitle": "Se încarcă videoclipul"
 }

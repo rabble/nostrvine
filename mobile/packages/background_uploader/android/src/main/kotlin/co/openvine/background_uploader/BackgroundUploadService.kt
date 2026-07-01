@@ -264,6 +264,15 @@ class BackgroundUploadService : Service() {
   override fun onDestroy() {
     running = false
     executor.shutdown()
+    // These sets are process-static, so a destroyed service would otherwise
+    // leak stale entries into the next service instance: a leftover
+    // activeSessions/activeTaskIds entry keeps stopIfIdle() from ever firing
+    // (permanent foreground notification), and a leftover activeTaskIds entry
+    // makes a later re-enqueue of the same taskId a silent no-op. Reset them so
+    // each fresh service starts from a clean slate.
+    activeTaskIds.clear()
+    cancelledTaskIds.clear()
+    activeSessions.clear()
     super.onDestroy()
   }
 

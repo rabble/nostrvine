@@ -4023,5 +4023,6 @@
     "imageCropEditorResetLabel": "Atur ulang",
     "imageCropEditorCloseSemanticLabel": "Batalkan pemangkasan",
     "imageCropEditorDoneSemanticLabel": "Terapkan pemangkasan",
-    "imageCropEditorProcessing": "Menerapkan pemangkasan…"
+    "imageCropEditorProcessing": "Menerapkan pemangkasan…",
+    "backgroundUploadNotificationTitle": "Mengunggah video"
 }

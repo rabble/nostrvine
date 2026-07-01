@@ -9537,4 +9537,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => 'Application du recadrage…';
+
+  @override
+  String get backgroundUploadNotificationTitle => 'Envoi de la vidéo';
 }

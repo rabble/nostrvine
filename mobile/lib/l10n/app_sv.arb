@@ -4023,5 +4023,6 @@
     "imageCropEditorResetLabel": "Återställ",
     "imageCropEditorCloseSemanticLabel": "Avbryt beskärning",
     "imageCropEditorDoneSemanticLabel": "Använd beskärning",
-    "imageCropEditorProcessing": "Tillämpar beskärning…"
+    "imageCropEditorProcessing": "Tillämpar beskärning…",
+    "backgroundUploadNotificationTitle": "Laddar upp video"
 }

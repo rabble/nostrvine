@@ -4023,5 +4023,6 @@
     "imageCropEditorResetLabel": "إعادة تعيين",
     "imageCropEditorCloseSemanticLabel": "إلغاء الاقتصاص",
     "imageCropEditorDoneSemanticLabel": "تطبيق الاقتصاص",
-    "imageCropEditorProcessing": "جارٍ تطبيق الاقتصاص…"
+    "imageCropEditorProcessing": "جارٍ تطبيق الاقتصاص…",
+    "backgroundUploadNotificationTitle": "جارٍ رفع الفيديو"
 }

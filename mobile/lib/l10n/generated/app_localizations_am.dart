@@ -9236,4 +9236,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => 'መከርከም በመተግበር ላይ…';
+
+  @override
+  String get backgroundUploadNotificationTitle => 'ቪዲዮ በመስቀል ላይ';
 }

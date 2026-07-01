@@ -9452,4 +9452,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => 'Bijsnijden toepassen…';
+
+  @override
+  String get backgroundUploadNotificationTitle => 'Video uploaden';
 }

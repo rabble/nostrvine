@@ -16319,6 +16319,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Applying crop…'**
   String get imageCropEditorProcessing;
+
+  /// Title of the Android foreground-service notification shown while a video uploads in the background so the transfer survives app suspension.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading video'**
+  String get backgroundUploadNotificationTitle;
 }
 
 class _AppLocalizationsDelegate

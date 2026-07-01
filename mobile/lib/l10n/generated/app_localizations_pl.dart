@@ -9571,4 +9571,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get imageCropEditorProcessing => 'Stosowanie kadrowania…';
+
+  @override
+  String get backgroundUploadNotificationTitle => 'Przesyłanie wideo';
 }
