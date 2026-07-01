@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:cache_sync/cache_sync.dart';
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -480,6 +481,26 @@ void main() {
       test(
         'callbacks share one timeout budget but later callbacks still run',
         () {
+          // signOut's OAuth cleanup falls back to a real FlutterSecureStorage
+          // when none is injected; without a channel handler it throws
+          // MissingPluginException and retries via real async, which races
+          // fakeAsync's virtual time (flaky under parallel CI load). Stub the
+          // channel so cleanup returns synchronously and stays virtualizable.
+          const secureStorageChannel = MethodChannel(
+            'plugins.it_nomads.com/flutter_secure_storage',
+          );
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(secureStorageChannel, (call) async {
+                if (call.method == 'getCapabilities') {
+                  return <String, bool>{'basicSecureStorage': true};
+                }
+                return null;
+              });
+          addTearDown(() {
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+                .setMockMethodCallHandler(secureStorageChannel, null);
+          });
+
           fakeAsync((async) {
             when(() => mockKeyStorage.clearCache()).thenReturn(null);
             final events = <String>[];
