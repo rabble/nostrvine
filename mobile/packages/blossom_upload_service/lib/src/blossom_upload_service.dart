@@ -372,9 +372,6 @@ abstract class BlossomBackgroundTransport {
   /// Progress and terminal events for all enqueued uploads, keyed by taskId.
   Stream<BlossomBackgroundTransferEvent> get events;
 
-  /// Task ids the OS still has in flight, for startup reconciliation.
-  Future<List<String>> activeTaskIds();
-
   /// Claims a terminal event for [taskId] that the OS delivered while nothing
   /// was listening on [events] — e.g. an upload finished while the app was
   /// dead — or `null` when none is buffered. Claiming removes it.
@@ -2232,15 +2229,6 @@ class BlossomUploadService {
   Future<void> cancelBackgroundUpload(String taskId) async {
     await backgroundTransport?.cancel(taskId);
   }
-
-  /// Task ids the OS still has in flight for background uploads.
-  ///
-  /// Startup reconciliation uses this to tell an upload that is still running
-  /// apart from one that has already finished (whose terminal event is claimed
-  /// via [uploadVideoInBackground]). Empty when no [backgroundTransport] is
-  /// configured.
-  Future<List<String>> activeBackgroundUploadIds() async =>
-      (await backgroundTransport?.activeTaskIds()) ?? const <String>[];
 
   /// Maps a terminal [BlossomBackgroundTransferEvent] to a
   /// [BlossomUploadResult].

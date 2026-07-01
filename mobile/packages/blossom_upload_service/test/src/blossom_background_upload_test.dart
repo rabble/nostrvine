@@ -16,7 +16,6 @@ class _FakeTransport implements BlossomBackgroundTransport {
     this.emitOnEnqueue = const [],
     this.throwOnEnqueue = false,
     Map<String, BlossomBackgroundTransferEvent>? bufferedTerminals,
-    this.active = const <String>[],
   }) : bufferedTerminals =
            bufferedTerminals ?? <String, BlossomBackgroundTransferEvent>{};
 
@@ -26,7 +25,6 @@ class _FakeTransport implements BlossomBackgroundTransport {
   /// Terminal events the OS delivered while nothing was listening, keyed by
   /// taskId. Claimed (and removed) by [takeBufferedTerminalEvent].
   final Map<String, BlossomBackgroundTransferEvent> bufferedTerminals;
-  final List<String> active;
   final StreamController<BlossomBackgroundTransferEvent> _controller =
       StreamController<BlossomBackgroundTransferEvent>.broadcast();
   final List<String> enqueued = <String>[];
@@ -52,9 +50,6 @@ class _FakeTransport implements BlossomBackgroundTransport {
 
   @override
   Future<void> cancel(String taskId) async => cancelled.add(taskId);
-
-  @override
-  Future<List<String>> activeTaskIds() async => active;
 
   @override
   Future<BlossomBackgroundTransferEvent?> takeBufferedTerminalEvent(
@@ -508,20 +503,4 @@ void main() {
       expect(transport.enqueued, <String>[taskId], reason: 're-uploaded');
     },
   );
-
-  test(
-    'activeBackgroundUploadIds forwards the transport in-flight ids',
-    () async {
-      final transport = _FakeTransport(active: <String>[taskId]);
-
-      expect(
-        await service(transport).activeBackgroundUploadIds(),
-        <String>[taskId],
-      );
-    },
-  );
-
-  test('activeBackgroundUploadIds is empty without a transport', () async {
-    expect(await service(null).activeBackgroundUploadIds(), isEmpty);
-  });
 }
