@@ -20,6 +20,7 @@ import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/observability/reportable_error.dart';
+import 'package:openvine/services/auth/signer_secure_store.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/local_key_signer.dart';
@@ -49,18 +50,6 @@ const _kLastUsedNpubKey = 'last_used_npub';
 // a confirmation banner before silently completing a switch. Cleared by
 // _setupUserSession() once the user has explicitly signed back in.
 const _kSessionRecoveryAnchorKey = 'session_recovery_anchor_npub';
-
-// Keys for bunker connection persistence
-const _kBunkerInfoKey = 'bunker_info';
-
-// Keys for Amber (NIP-55) connection persistence
-const _kAmberPubkeyKey = 'amber_pubkey';
-const _kAmberPackageKey = 'amber_package';
-
-// Keys for Keycast OAuth persistence
-const _kKeycastRefreshTokenKey = 'keycast_refresh_token';
-const _kKeycastAuthHandleKey = 'keycast_auth_handle';
-String _keycastSessionKey(String pubkeyHex) => 'keycast_session_$pubkeyHex';
 
 /// Authentication state for the user
 enum AuthState {
@@ -287,6 +276,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   final UserDataCleanupService _userDataCleanupService;
   final KeycastOAuth? _oauthClient;
   final FlutterSecureStorage? _flutterSecureStorage;
+  late final SignerSecureStore _signerStore = SignerSecureStore(
+    _flutterSecureStorage,
+  );
   final PreFetchFollowingCallback? _preFetchFollowing;
   final String? _profileCheckIndexerUrl;
   final RemoteSignerFactory _remoteSignerFactory;
@@ -1816,203 +1808,22 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   ///
   /// Called during non-destructive sign-out so the signer info can be
   /// restored when the user picks this account from the welcome screen.
-  Future<void> _archiveSignerInfo(String pubkeyHex) async {
-    if (_flutterSecureStorage == null) return;
-    try {
-      // Archive Amber info
-      final amberInfo = await _loadAmberInfo();
-      if (amberInfo != null) {
-        await _flutterSecureStorage.write(
-          key: '${_kAmberPubkeyKey}_$pubkeyHex',
-          value: amberInfo.pubkey,
-        );
-        if (amberInfo.package != null) {
-          await _flutterSecureStorage.write(
-            key: '${_kAmberPackageKey}_$pubkeyHex',
-            value: amberInfo.package,
-          );
-        }
-      }
-
-      // Archive Bunker info
-      final bunkerUrl = await _flutterSecureStorage.read(key: _kBunkerInfoKey);
-      if (bunkerUrl != null && bunkerUrl.isNotEmpty) {
-        await _flutterSecureStorage.write(
-          key: '${_kBunkerInfoKey}_$pubkeyHex',
-          value: bunkerUrl,
-        );
-      }
-
-      // Archive OAuth session — only if it has a bound userPubkey
-      // matching this account. Null userPubkey means the session was
-      // created before pubkey binding (legacy) and cannot be verified
-      // as belonging to any specific account; archiving an unverifiable
-      // session risks cross-contamination (Bug 2). A fresh OAuth
-      // sign-in via signInWithDivineOAuth always binds userPubkey.
-      final oauthSession = await KeycastSession.load(_flutterSecureStorage);
-      final oauthOwnerMatches =
-          oauthSession?.userPubkey != null &&
-          oauthSession?.userPubkey == pubkeyHex;
-      final archiveOauth = oauthSession != null && oauthOwnerMatches;
-      if (archiveOauth) {
-        await _flutterSecureStorage.write(
-          key: _keycastSessionKey(pubkeyHex),
-          value: jsonEncode(oauthSession.toJson()),
-        );
-      } else if (oauthSession != null) {
-        Log.warning(
-          '_archiveSignerInfo: skipping OAuth archive for $pubkeyHex — '
-          'global session pubkey='
-          '${oauthSession.userPubkey ?? "null (legacy)"} '
-          '(cannot verify ownership, not archiving to avoid corruption)',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-      }
-
-      Log.info(
-        '_archiveSignerInfo: archived for $pubkeyHex — '
-        'amber=${amberInfo != null}, '
-        'bunker=${bunkerUrl != null && bunkerUrl.isNotEmpty}, '
-        'oauth=$archiveOauth',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    } catch (e) {
-      Log.warning(
-        '_archiveSignerInfo: failed for $pubkeyHex: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-  }
+  Future<void> _archiveSignerInfo(String pubkeyHex) =>
+      _signerStore.archive(pubkeyHex);
 
   /// Restores per-account signer keys to the active-session keys.
   ///
   /// Called before sign-in when switching to a previously used account.
+  /// Delegates the secure-storage swap to [SignerSecureStore] and keeps the
+  /// auth-source SharedPreferences write here so `initialize()` picks the
+  /// right path.
   Future<void> _restoreSignerInfo(
     String pubkeyHex,
     AuthenticationSource source,
   ) async {
     if (_flutterSecureStorage == null) return;
     try {
-      switch (source) {
-        case AuthenticationSource.amber:
-          final pubkey = await _flutterSecureStorage.read(
-            key: '${_kAmberPubkeyKey}_$pubkeyHex',
-          );
-          Log.debug(
-            '_restoreSignerInfo: amber archive lookup — '
-            'found=${pubkey != null}',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
-          if (pubkey != null) {
-            await _flutterSecureStorage.write(
-              key: _kAmberPubkeyKey,
-              value: pubkey,
-            );
-            final package = await _flutterSecureStorage.read(
-              key: '${_kAmberPackageKey}_$pubkeyHex',
-            );
-            if (package != null) {
-              await _flutterSecureStorage.write(
-                key: _kAmberPackageKey,
-                value: package,
-              );
-            }
-          }
-
-        case AuthenticationSource.bunker:
-          final bunkerUrl = await _flutterSecureStorage.read(
-            key: '${_kBunkerInfoKey}_$pubkeyHex',
-          );
-          Log.debug(
-            '_restoreSignerInfo: bunker archive lookup — '
-            'found=${bunkerUrl != null && bunkerUrl.isNotEmpty}',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
-          if (bunkerUrl != null) {
-            await _flutterSecureStorage.write(
-              key: _kBunkerInfoKey,
-              value: bunkerUrl,
-            );
-          }
-
-        case AuthenticationSource.divineOAuth:
-          final sessionJson = await _flutterSecureStorage.read(
-            key: _keycastSessionKey(pubkeyHex),
-          );
-          Log.debug(
-            '_restoreSignerInfo: OAuth session archive lookup — '
-            'found=${sessionJson != null}',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
-          if (sessionJson != null) {
-            final sessionMap = jsonDecode(sessionJson) as Map<String, dynamic>;
-            final session = KeycastSession.fromJson(sessionMap);
-
-            // Validate archive ownership. If the archive's userPubkey
-            // is set and does NOT match the requested account, the
-            // archive is corrupt (e.g., from pre-fix cross-contamination).
-            // Delete it so Bug 1's recovery cascade can handle the
-            // fallback via SessionExpiredException → login options.
-            // Corrupt if userPubkey is null (legacy, unverifiable) or
-            // mismatches the requested account (cross-contamination).
-            final archivePubkey = session.userPubkey;
-            final corrupt = archivePubkey == null || archivePubkey != pubkeyHex;
-            if (corrupt) {
-              Log.warning(
-                '_restoreSignerInfo: corrupt OAuth archive for '
-                '$pubkeyHex — archive pubkey='
-                '${archivePubkey ?? "null (legacy)"}. '
-                'Deleting corrupt archive.',
-                name: 'AuthService',
-                category: LogCategory.auth,
-              );
-              await _flutterSecureStorage.delete(
-                key: _keycastSessionKey(pubkeyHex),
-              );
-            } else {
-              await session.save(_flutterSecureStorage);
-              // Also restore the refresh token and auth handle to
-              // their standalone keys — KeycastOAuth.refreshSession()
-              // reads these separately from the session JSON, and
-              // _oauthClient.logout() clears them. Without this,
-              // expired restored sessions can never be refreshed.
-              if (session.refreshToken != null) {
-                await _flutterSecureStorage.write(
-                  key: _kKeycastRefreshTokenKey,
-                  value: session.refreshToken,
-                );
-              }
-              if (session.authorizationHandle != null) {
-                await _flutterSecureStorage.write(
-                  key: _kKeycastAuthHandleKey,
-                  value: session.authorizationHandle,
-                );
-              }
-            }
-          }
-
-        case AuthenticationSource.automatic:
-        case AuthenticationSource.importedKeys:
-        case AuthenticationSource.none:
-        case AuthenticationSource.nip07:
-          // Clear any stale global signer keys so they don't hijack signing
-          // operations for the non-bunker/non-keycast account.
-          await _clearBunkerInfo();
-          await _clearAmberInfo();
-          await KeycastSession.clear(_flutterSecureStorage);
-          Log.debug(
-            '_restoreSignerInfo: local key-based auth — '
-            'cleared stale signer keys',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
-      }
+      await _signerStore.restoreActiveKeys(pubkeyHex, source);
 
       // Set the auth source so initialize() picks the right path
       final prefs = await SharedPreferences.getInstance();
@@ -2033,28 +1844,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   }
 
   /// Deletes all per-account archived signer keys for a given pubkey.
-  Future<void> _clearArchivedSignerInfo(String pubkeyHex) async {
-    if (_flutterSecureStorage == null) return;
-    Log.info(
-      '_clearArchivedSignerInfo: removing all archives for $pubkeyHex',
-      name: 'AuthService',
-      category: LogCategory.auth,
-    );
-    try {
-      await _flutterSecureStorage.delete(key: '${_kAmberPubkeyKey}_$pubkeyHex');
-      await _flutterSecureStorage.delete(
-        key: '${_kAmberPackageKey}_$pubkeyHex',
-      );
-      await _flutterSecureStorage.delete(key: '${_kBunkerInfoKey}_$pubkeyHex');
-      await _flutterSecureStorage.delete(key: _keycastSessionKey(pubkeyHex));
-    } catch (e) {
-      Log.warning(
-        '_clearArchivedSignerInfo: failed for $pubkeyHex: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-  }
+  Future<void> _clearArchivedSignerInfo(String pubkeyHex) =>
+      _signerStore.clearArchive(pubkeyHex);
 
   // ---------------------------------------------------------------------------
   // Multi-account sign-in
@@ -2326,98 +2117,19 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   }
 
   /// Save bunker connection info to secure storage
-  Future<void> _saveBunkerInfo(NostrRemoteSignerInfo info) async {
-    if (_flutterSecureStorage == null) return;
-    try {
-      // Serialize bunker info as bunker URL (includes all needed data)
-      final bunkerUrl = info.toString();
-      await _flutterSecureStorage.write(key: _kBunkerInfoKey, value: bunkerUrl);
-      Log.info(
-        'Saved bunker info to secure storage',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to save bunker info: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-  }
+  Future<void> _saveBunkerInfo(NostrRemoteSignerInfo info) =>
+      _signerStore.saveBunker(info);
 
-  /// Load bunker connection info from secure storage
-  Future<NostrRemoteSignerInfo?> _loadBunkerInfo() async {
-    if (_flutterSecureStorage == null) return null;
-    try {
-      final bunkerUrl = await _flutterSecureStorage.read(key: _kBunkerInfoKey);
-      if (bunkerUrl == null || bunkerUrl.isEmpty) return null;
+  Future<NostrRemoteSignerInfo?> _loadBunkerInfo() => _signerStore.loadBunker();
 
-      final info = NostrRemoteSignerInfo.parseBunkerUrl(bunkerUrl);
-      Log.info(
-        'Loaded bunker info from secure storage',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      return info;
-    } catch (e) {
-      Log.error(
-        'Failed to load bunker info: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      return null;
-    }
-  }
-
-  /// Clear bunker connection info from secure storage
-  Future<void> _clearBunkerInfo() async {
-    if (_flutterSecureStorage == null) return;
-    try {
-      await _flutterSecureStorage.delete(key: _kBunkerInfoKey);
-      Log.info(
-        'Cleared bunker info from secure storage',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to clear bunker info: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-  }
+  Future<void> _clearBunkerInfo() => _signerStore.clearBunker();
 
   /// Clears the global Keycast session, refresh token, and auth handle.
   ///
   /// Used when a stale or ambiguous OAuth session must be discarded
   /// (e.g., during initialization tiebreaker branches).
-  Future<void> _clearKeycastSessionAndTokens() async {
-    Object? firstError;
-    StackTrace? firstStack;
-
-    Future<void> deleteKey(Future<void> Function() delete) async {
-      try {
-        await delete();
-      } catch (e, stack) {
-        firstError ??= e;
-        firstStack ??= stack;
-      }
-    }
-
-    await deleteKey(() => KeycastSession.clear(_flutterSecureStorage));
-    await deleteKey(() async {
-      await _flutterSecureStorage?.delete(key: _kKeycastRefreshTokenKey);
-    });
-    await deleteKey(() async {
-      await _flutterSecureStorage?.delete(key: _kKeycastAuthHandleKey);
-    });
-
-    if (firstError != null) {
-      Error.throwWithStackTrace(firstError!, firstStack!);
-    }
-  }
+  Future<void> _clearKeycastSessionAndTokens() =>
+      _signerStore.clearKeycastSessionAndTokens();
 
   Future<void> _runSignOutCleanupWithRetry(
     String operation,
@@ -2737,73 +2449,13 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   }
 
   /// Save Amber connection info to secure storage
-  Future<void> _saveAmberInfo(String pubkey, String? package) async {
-    if (_flutterSecureStorage == null) return;
-    try {
-      await _flutterSecureStorage.write(key: _kAmberPubkeyKey, value: pubkey);
-      if (package != null) {
-        await _flutterSecureStorage.write(
-          key: _kAmberPackageKey,
-          value: package,
-        );
-      }
-      Log.info(
-        'Saved Amber info to secure storage',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to save Amber info: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-  }
+  Future<void> _saveAmberInfo(String pubkey, String? package) =>
+      _signerStore.saveAmber(pubkey, package);
 
-  /// Load Amber connection info from secure storage
-  Future<({String pubkey, String? package})?> _loadAmberInfo() async {
-    if (_flutterSecureStorage == null) return null;
-    try {
-      final pubkey = await _flutterSecureStorage.read(key: _kAmberPubkeyKey);
-      if (pubkey == null || pubkey.isEmpty) return null;
+  Future<({String pubkey, String? package})?> _loadAmberInfo() =>
+      _signerStore.loadAmber();
 
-      final package = await _flutterSecureStorage.read(key: _kAmberPackageKey);
-      Log.info(
-        'Loaded Amber info from secure storage',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      return (pubkey: pubkey, package: package);
-    } catch (e) {
-      Log.error(
-        'Failed to load Amber info: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      return null;
-    }
-  }
-
-  /// Clear Amber connection info from secure storage
-  Future<void> _clearAmberInfo() async {
-    if (_flutterSecureStorage == null) return;
-    try {
-      await _flutterSecureStorage.delete(key: _kAmberPubkeyKey);
-      await _flutterSecureStorage.delete(key: _kAmberPackageKey);
-      Log.info(
-        'Cleared Amber info from secure storage',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to clear Amber info: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-  }
+  Future<void> _clearAmberInfo() => _signerStore.clearAmber();
 
   /// Silent NIP-07 reconnect at startup.
   ///
@@ -4288,44 +3940,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     return false;
   }
 
-  Future<bool> _hasRestorableSignerArchive(KnownAccount account) async {
-    if (_flutterSecureStorage == null) return false;
-    try {
-      switch (account.authSource) {
-        case AuthenticationSource.amber:
-          final pubkey = await _flutterSecureStorage.read(
-            key: '${_kAmberPubkeyKey}_${account.pubkeyHex}',
-          );
-          return pubkey != null && pubkey.isNotEmpty;
-        case AuthenticationSource.bunker:
-          final bunkerUrl = await _flutterSecureStorage.read(
-            key: '${_kBunkerInfoKey}_${account.pubkeyHex}',
-          );
-          return bunkerUrl != null && bunkerUrl.isNotEmpty;
-        case AuthenticationSource.divineOAuth:
-          final sessionJson = await _flutterSecureStorage.read(
-            key: _keycastSessionKey(account.pubkeyHex),
-          );
-          if (sessionJson == null || sessionJson.isEmpty) return false;
-          final sessionMap = jsonDecode(sessionJson) as Map<String, dynamic>;
-          final session = KeycastSession.fromJson(sessionMap);
-          return session.userPubkey == account.pubkeyHex;
-        case AuthenticationSource.automatic:
-        case AuthenticationSource.importedKeys:
-        case AuthenticationSource.none:
-        case AuthenticationSource.nip07:
-          return false;
-      }
-    } catch (e) {
-      Log.warning(
-        'signOut: failed to verify signer archive for '
-        '${account.pubkeyHex}: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      return false;
-    }
-  }
+  Future<bool> _hasRestorableSignerArchive(KnownAccount account) =>
+      _signerStore.hasArchive(account.pubkeyHex, account.authSource);
 
   /// Export nsec for backup purposes
   Future<String?> exportNsec({String? biometricPrompt}) async {
