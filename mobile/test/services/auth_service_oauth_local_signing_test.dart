@@ -17,8 +17,6 @@ import '../test_setup.dart';
 
 class _MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
 
-class _MockNostrKeyManager extends Mock implements NostrKeyManager {}
-
 class _MockUserDataCleanupService extends Mock
     implements UserDataCleanupService {}
 
@@ -97,7 +95,6 @@ void main() {
   setupTestEnvironment();
 
   late _MockSecureKeyStorage mockKeyStorage;
-  late _MockNostrKeyManager mockNostrKeyManager;
   late _MockUserDataCleanupService mockCleanupService;
   late _MockKeycastOAuth mockOAuthClient;
   late _FakeFlutterSecureStorage fakeSecureStorage;
@@ -113,7 +110,6 @@ void main() {
 
   setUp(() {
     mockKeyStorage = _MockSecureKeyStorage();
-    mockNostrKeyManager = _MockNostrKeyManager();
     mockCleanupService = _MockUserDataCleanupService();
     mockOAuthClient = _MockKeycastOAuth();
     fakeSecureStorage = _FakeFlutterSecureStorage();
@@ -146,9 +142,6 @@ void main() {
       () => mockKeyStorage.storeIdentityKeyContainer(any(), any()),
     ).thenAnswer((_) async {});
 
-    when(() => mockNostrKeyManager.publicKey).thenReturn(null);
-    when(() => mockNostrKeyManager.privateKey).thenReturn(null);
-
     when(
       () => mockCleanupService.shouldClearDataForUser(any()),
     ).thenReturn(false);
@@ -176,7 +169,6 @@ void main() {
     return AuthService(
       userDataCleanupService: mockCleanupService,
       keyStorage: mockKeyStorage,
-      nostrKeyManager: mockNostrKeyManager,
       flutterSecureStorage: fakeSecureStorage,
       oauthClient: mockOAuthClient,
       oauthConfig: const OAuthConfig(

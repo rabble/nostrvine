@@ -124,7 +124,6 @@ NostrKeyManager nostrKeyManager(Ref ref) {
 @Riverpod(keepAlive: true)
 AuthService authService(Ref ref) {
   final keyStorage = ref.watch(secureKeyStorageProvider);
-  final nostrKeyManager = ref.watch(nostrKeyManagerProvider);
   final userDataCleanupService = ref.watch(userDataCleanupServiceProvider);
   final oauthClient = ref.watch(oauthClientProvider);
   final flutterSecureStorage = ref.watch(flutterSecureStorageProvider);
@@ -137,7 +136,6 @@ AuthService authService(Ref ref) {
   return AuthService(
     userDataCleanupService: userDataCleanupService,
     keyStorage: keyStorage,
-    nostrKeyManager: nostrKeyManager,
     oauthClient: oauthClient,
     flutterSecureStorage: flutterSecureStorage,
     oauthConfig: oauthConfig,

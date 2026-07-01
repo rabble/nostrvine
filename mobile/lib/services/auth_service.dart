@@ -13,11 +13,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_client/nostr_client.dart' show Nip89ClientTag;
 import 'package:nostr_key_manager/nostr_key_manager.dart'
-    show
-        NostrKeyManager,
-        SecureKeyContainer,
-        SecureKeyStorage,
-        SecureKeyStorageException;
+    show SecureKeyContainer, SecureKeyStorage, SecureKeyStorageException;
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
@@ -254,7 +250,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   AuthService({
     required UserDataCleanupService userDataCleanupService,
     SecureKeyStorage? keyStorage,
-    NostrKeyManager? nostrKeyManager,
     KeycastOAuth? oauthClient,
     FlutterSecureStorage? flutterSecureStorage,
     OAuthConfig? oauthConfig,
@@ -269,7 +264,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     Duration expiredSessionRefreshTimeout = defaultExpiredSessionRefreshTimeout,
     Duration? startupNetworkOperationTimeout,
   }) : _keyStorage = keyStorage ?? SecureKeyStorage(),
-       _nostrKeyManager = nostrKeyManager,
        _userDataCleanupService = userDataCleanupService,
        _oauthClient = oauthClient,
        _flutterSecureStorage = flutterSecureStorage,
@@ -290,7 +284,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
            startupNetworkOperationTimeout ??
            defaultStartupNetworkOperationTimeout;
   final SecureKeyStorage _keyStorage;
-  final NostrKeyManager? _nostrKeyManager;
   final UserDataCleanupService _userDataCleanupService;
   final KeycastOAuth? _oauthClient;
   final FlutterSecureStorage? _flutterSecureStorage;
@@ -4543,7 +4536,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        final cachedPrimaryIdentity = _restoreFromLoadedPrimaryIdentity(
+        final cachedPrimaryIdentity = await _restoreFromLoadedPrimaryIdentity(
           lastNpub,
         );
         if (cachedPrimaryIdentity != null) {
@@ -4674,22 +4667,45 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     return false;
   }
 
-  SecureKeyContainer? _restoreFromLoadedPrimaryIdentity(String lastNpub) {
-    final keyManager = _nostrKeyManager;
-    final publicKeyHex = keyManager?.publicKey;
-    final privateKeyHex = keyManager?.privateKey;
-
-    if (publicKeyHex == null || privateKeyHex == null) {
+  /// Fast path: reuse the already-loaded PRIMARY key when it matches the
+  /// last-used npub, avoiding a redundant per-identity storage read.
+  ///
+  /// Reads the primary container straight from [SecureKeyStorage] (its own
+  /// cache) rather than a separate NostrKeyManager cache; both resolve to the
+  /// same primary key, and the npub guard keeps the reuse correct.
+  Future<SecureKeyContainer?> _restoreFromLoadedPrimaryIdentity(
+    String lastNpub,
+  ) async {
+    final SecureKeyContainer? primary;
+    try {
+      primary = await _keyStorage.getKeyContainer();
+    } catch (e) {
+      Log.warning(
+        '_restoreFromLoadedPrimaryIdentity: failed to load primary identity: '
+        '$e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
       return null;
     }
 
-    final primaryNpub = NostrKeyUtils.encodePubKey(publicKeyHex);
+    if (primary == null || !primary.hasPrivateKey) {
+      return null;
+    }
+
+    final primaryNpub = NostrKeyUtils.encodePubKey(primary.publicKeyHex);
     if (primaryNpub != lastNpub) {
       return null;
     }
 
+    String? privateKeyHex;
+    primary.withPrivateKey<void>((hex) => privateKeyHex = hex);
+    if (privateKeyHex == null || privateKeyHex!.isEmpty) {
+      return null;
+    }
+
     try {
-      return SecureKeyContainer.fromPrivateKeyHex(privateKeyHex);
+      return SecureKeyContainer.fromPrivateKeyHex(privateKeyHex!);
     } catch (e) {
       Log.warning(
         '_restoreFromLoadedPrimaryIdentity: failed to reuse loaded identity: '

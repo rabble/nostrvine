@@ -19,8 +19,6 @@ import '../test_setup.dart';
 
 class _MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
 
-class _MockNostrKeyManager extends Mock implements NostrKeyManager {}
-
 class _MockUserDataCleanupService extends Mock
     implements UserDataCleanupService {}
 
@@ -63,7 +61,6 @@ void main() {
   setupTestEnvironment();
 
   late _MockSecureKeyStorage mockKeyStorage;
-  late _MockNostrKeyManager mockNostrKeyManager;
   late _MockUserDataCleanupService mockCleanupService;
   late _MockFlutterSecureStorage mockSecureStorage;
   late _MockKeycastOAuth mockOAuthClient;
@@ -77,7 +74,6 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({kKnownAccountsKey: '[]'});
     mockKeyStorage = _MockSecureKeyStorage();
-    mockNostrKeyManager = _MockNostrKeyManager();
     mockCleanupService = _MockUserDataCleanupService();
     mockSecureStorage = _MockFlutterSecureStorage();
     mockOAuthClient = _MockKeycastOAuth();
@@ -116,8 +112,6 @@ void main() {
         biometricPrompt: any(named: 'biometricPrompt'),
       ),
     ).thenAnswer((_) async => true);
-    when(() => mockNostrKeyManager.publicKey).thenReturn(null);
-    when(() => mockNostrKeyManager.privateKey).thenReturn(null);
 
     when(
       () => mockCleanupService.shouldClearDataForUser(any()),
@@ -155,7 +149,6 @@ void main() {
     authService = AuthService(
       userDataCleanupService: mockCleanupService,
       keyStorage: mockKeyStorage,
-      nostrKeyManager: mockNostrKeyManager,
       flutterSecureStorage: mockSecureStorage,
     );
   });
@@ -1804,15 +1797,20 @@ void main() {
         authService.currentPublicKeyHex,
         equals(accountBContainer.publicKeyHex),
       );
-      verifyNever(() => mockKeyStorage.getKeyContainer());
+      // The consolidated fast path reads the primary via getKeyContainer to
+      // check for a match; here it does NOT match last_used_npub, so the
+      // per-identity key is restored via getIdentityKeyContainer.
+      verify(
+        () => mockKeyStorage.getIdentityKeyContainer(
+          accountBContainer.npub,
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      ).called(1);
     });
 
     test(
-      'reuses loaded primary identity when last_used_npub matches key manager',
+      'reuses loaded primary identity when last_used_npub matches primary key',
       () async {
-        final accountBPrivateKey = accountBContainer.withPrivateKey(
-          (privateKeyHex) => privateKeyHex,
-        );
         SharedPreferences.setMockInitialValues({
           'authentication_source': 'automatic',
           'last_used_npub': accountBContainer.npub,
@@ -1820,11 +1818,8 @@ void main() {
         });
 
         when(
-          () => mockNostrKeyManager.publicKey,
-        ).thenReturn(accountBContainer.publicKeyHex);
-        when(
-          () => mockNostrKeyManager.privateKey,
-        ).thenReturn(accountBPrivateKey);
+          () => mockKeyStorage.getKeyContainer(),
+        ).thenAnswer((_) async => accountBContainer);
 
         await _ignoringDiscoveryErrors(authService.initialize);
 
@@ -2056,7 +2051,6 @@ void main() {
         authService = AuthService(
           userDataCleanupService: mockCleanupService,
           keyStorage: mockKeyStorage,
-          nostrKeyManager: mockNostrKeyManager,
           oauthClient: mockOAuthClient,
           flutterSecureStorage: mockSecureStorage,
         );
@@ -2164,7 +2158,6 @@ void main() {
         authService = AuthService(
           userDataCleanupService: mockCleanupService,
           keyStorage: mockKeyStorage,
-          nostrKeyManager: mockNostrKeyManager,
           flutterSecureStorage: mockSecureStorage,
           preFetchFollowing: (_) async {
             prefetchCalls++;
@@ -2196,7 +2189,6 @@ void main() {
       authService = AuthService(
         userDataCleanupService: mockCleanupService,
         keyStorage: mockKeyStorage,
-        nostrKeyManager: mockNostrKeyManager,
         flutterSecureStorage: mockSecureStorage,
         preFetchFollowing: (pubkeyHex) async {
           prefetchedPubkeys.add(pubkeyHex);
@@ -2815,7 +2807,6 @@ void main() {
         final localAuthService = AuthService(
           userDataCleanupService: mockCleanupService,
           keyStorage: mockKeyStorage,
-          nostrKeyManager: mockNostrKeyManager,
           flutterSecureStorage: mockSecureStorage,
           oauthClient: mockOAuthClient,
         );
