@@ -2,6 +2,6 @@
 /// and block-list sync via Nostr kind 30000 events).
 library;
 
-export 'src/block_list_signer.dart' show BlockListSigner;
+export 'package:nostr_client/nostr_client.dart' show BlockListSigner;
 export 'src/blocklist_change.dart' show BlocklistChange, BlocklistOp;
 export 'src/content_blocklist_repository.dart' show ContentBlocklistRepository;

@@ -7,11 +7,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cache_sync/cache_sync.dart';
-import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
-import 'package:nostr_client/nostr_client.dart' show Nip89ClientTag;
+import 'package:nostr_client/nostr_client.dart'
+    show BlockListSigner, Nip89ClientTag;
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show
         NostrKeyManager,

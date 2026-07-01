@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:content_blocklist_repository/src/block_list_signer.dart';
 import 'package:content_blocklist_repository/src/blocklist_change.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:models/models.dart';
