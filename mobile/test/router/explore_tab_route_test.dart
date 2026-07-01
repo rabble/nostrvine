@@ -134,10 +134,12 @@ void main() {
     });
 
     test(
-      'production app_router.dart validates :name before threading it into '
+      'production shell.dart validates :name before threading it into '
       'ExploreScreen.initialTabName',
       () {
-        final source = File('lib/router/app_router.dart').readAsStringSync();
+        final source = File(
+          'lib/router/routes/shell.dart',
+        ).readAsStringSync();
 
         final tabRouteOffset = source.indexOf(
           'path: ExploreScreen.pathTabSubpath',
@@ -146,7 +148,7 @@ void main() {
           tabRouteOffset,
           isNonNegative,
           reason:
-              'app_router.dart must register a GoRoute at '
+              'shell.dart must register a GoRoute at '
               'ExploreScreen.pathTabSubpath so /explore/tab/<name> is '
               'a valid URL.',
         );

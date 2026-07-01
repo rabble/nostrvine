@@ -263,13 +263,15 @@ void main() {
   // 489d5ebc7bd571dfd29e4701e92abdf6. The round-trip tests above assert
   // the encode/decode contract holds when callers use pathForTag /
   // pathForQuery, but they use a synthetic GoRoute builder and so do not
-  // exercise the production builders in lib/router/app_router.dart. This
-  // guard reads the production source and fails if the hashtag or search
+  // exercise the production builders in lib/router/routes/search_routes.dart.
+  // This guard reads the production source and fails if the hashtag or search
   // builder regions reintroduce Uri.decodeComponent — the exact regression
   // that originally caused the crash.
   group('Builder regression guard (#3413)', () {
     test('hashtag and search builders do not call Uri.decodeComponent', () {
-      final source = File('lib/router/app_router.dart').readAsStringSync();
+      final source = File(
+        'lib/router/routes/search_routes.dart',
+      ).readAsStringSync();
 
       final hashtagPathOffset = source.indexOf(
         'path: HashtagScreenRouter.path',
@@ -279,7 +281,7 @@ void main() {
         hashtagPathOffset,
         isNonNegative,
         reason:
-            'Hashtag GoRoute marker not found in app_router.dart. '
+            'Hashtag GoRoute marker not found in search_routes.dart. '
             'Update this regression test to match the new marker.',
       );
       expect(
