@@ -3,6 +3,12 @@
 
 import 'package:keycast_flutter/keycast_flutter.dart';
 
+enum ProtectedMinorStatusKind {
+  unknown,
+  notProtected,
+  protected,
+}
+
 /// Client-side "protected minor" state for an approved 13-15 account.
 ///
 /// This is deliberately separate from [AccountRestrictionStatus] /
@@ -11,26 +17,41 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 /// protections (#175/#176) consume this state.
 class ProtectedMinorStatus {
   const ProtectedMinorStatus({
-    required this.isProtectedMinor,
+    required this.kind,
     this.verifiedMinorAt,
   });
 
+  factory ProtectedMinorStatus.unknown() =>
+      const ProtectedMinorStatus(kind: ProtectedMinorStatusKind.unknown);
+
   factory ProtectedMinorStatus.notProtected() =>
-      const ProtectedMinorStatus(isProtectedMinor: false);
+      const ProtectedMinorStatus(kind: ProtectedMinorStatusKind.notProtected);
+
+  factory ProtectedMinorStatus.protected({DateTime? verifiedMinorAt}) =>
+      ProtectedMinorStatus(
+        kind: ProtectedMinorStatusKind.protected,
+        verifiedMinorAt: verifiedMinorAt,
+      );
 
   /// Maps a Keycast account status to protected-minor state. A null status
-  /// (fetch failed / unavailable) or `verified_minor == false` is treated as
-  /// not protected — #174 is detection-only, so it fails to not-protected.
+  /// (fetch failed / unavailable) is preserved as unknown so enforcement
+  /// layers can choose their own fail-safe behavior; `verified_minor == false`
+  /// is the only confirmed not-protected response.
   factory ProtectedMinorStatus.fromKeycast(KeycastAccountStatus? status) {
-    if (status == null || !status.verifiedMinor) {
+    if (status == null) {
+      return ProtectedMinorStatus.unknown();
+    }
+    if (!status.verifiedMinor) {
       return ProtectedMinorStatus.notProtected();
     }
-    return ProtectedMinorStatus(
-      isProtectedMinor: true,
+    return ProtectedMinorStatus.protected(
       verifiedMinorAt: status.verifiedMinorAt,
     );
   }
 
-  final bool isProtectedMinor;
+  final ProtectedMinorStatusKind kind;
   final DateTime? verifiedMinorAt;
+
+  bool get isProtectedMinor => kind == ProtectedMinorStatusKind.protected;
+  bool get isKnown => kind != ProtectedMinorStatusKind.unknown;
 }

@@ -1,10 +1,11 @@
 // ABOUTME: Tests the protected-minor repository: token gating, mapping, and
-// ABOUTME: fail-open-to-not-protected behavior on errors (#174)
+// ABOUTME: unknown status on Keycast fetch errors (#174)
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:openvine/models/protected_minor_status.dart';
 import 'package:openvine/repositories/protected_minor_repository.dart';
 
 KeycastOAuth _oauthReturning(String body, int status) {
@@ -46,7 +47,7 @@ void main() {
       expect(s.isProtectedMinor, isFalse);
     });
 
-    test('not protected on server error', () async {
+    test('unknown on server error', () async {
       final repo = ProtectedMinorRepository(
         oauthClient: _oauthReturning('err', 500),
         readAccessToken: () async => 'tok',
@@ -54,6 +55,8 @@ void main() {
 
       final s = await repo.fetchCurrentStatus();
 
+      expect(s.kind, ProtectedMinorStatusKind.unknown);
+      expect(s.isKnown, isFalse);
       expect(s.isProtectedMinor, isFalse);
     });
 
@@ -68,7 +71,7 @@ void main() {
       expect(s.isProtectedMinor, isFalse);
     });
 
-    test('not protected (fails open) when reading the token throws', () async {
+    test('unknown when reading the token throws', () async {
       final repo = ProtectedMinorRepository(
         oauthClient: _oauthReturning(_minorBody, 200),
         readAccessToken: () async => throw Exception('boom'),
@@ -76,6 +79,8 @@ void main() {
 
       final s = await repo.fetchCurrentStatus();
 
+      expect(s.kind, ProtectedMinorStatusKind.unknown);
+      expect(s.isKnown, isFalse);
       expect(s.isProtectedMinor, isFalse);
     });
   });

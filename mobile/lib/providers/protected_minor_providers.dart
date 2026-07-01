@@ -33,7 +33,8 @@ final protectedMinorRepositoryProvider = Provider<ProtectedMinorRepository>((
 ///
 /// Unauthenticated accounts are never protected. In debug builds a local
 /// override short-circuits the real fetch. Otherwise the repository reads the
-/// Keycast flag, failing to not-protected on any error (#174 is detection-only).
+/// Keycast flag, preserving fetch failures as unknown so #175/#176 can choose
+/// their own enforcement posture.
 ///
 /// Notes for consumers (#175/#176):
 /// - Resolving this may trigger a Keycast token refresh via
@@ -58,7 +59,7 @@ final protectedMinorStatusProvider = FutureProvider<ProtectedMinorStatus>((
         .getOverride();
     if (override != null) {
       return override
-          ? const ProtectedMinorStatus(isProtectedMinor: true)
+          ? ProtectedMinorStatus.protected()
           : ProtectedMinorStatus.notProtected();
     }
   }
@@ -68,15 +69,15 @@ final protectedMinorStatusProvider = FutureProvider<ProtectedMinorStatus>((
 
 /// Convenience boolean seam for the protections (#175/#176).
 ///
-/// Reads the last-known status via `.value`, so a protected minor stays protected
-/// through a refetch (AsyncLoading) instead of flickering to not-protected —
-/// matching the blocking review gate, which reads `reviewStatusAsync.value`
-/// (`app_router.dart`). `false` only until the first resolution.
+/// Reads the last-known status via `.value`, so a protected minor stays
+/// protected through a refetch (AsyncLoading) instead of flickering to
+/// not-protected — matching the blocking review gate, which reads
+/// `reviewStatusAsync.value` (`app_router.dart`). `false` only until the first
+/// resolution.
 ///
-/// Note: the data layer still fails *open* to not-protected on a transient fetch
-/// error (a decided #174 detection behavior — a network blip resolves to
-/// not-protected). The enforcement fail-safe (retain protection across a
-/// transient error) is #175's to add on top of this seam.
+/// Note: unknown/error status is still exposed on [protectedMinorStatusProvider]
+/// for consumers that need to distinguish an unavailable check from confirmed
+/// not-protected.
 final isProtectedMinorProvider = Provider<bool>((ref) {
   return ref.watch(protectedMinorStatusProvider).value?.isProtectedMinor ??
       false;

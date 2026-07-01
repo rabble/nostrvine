@@ -20,17 +20,28 @@ KeycastAccountStatus _status({
 
 void main() {
   group('ProtectedMinorStatus', () {
-    test('notProtected() is not a protected minor', () {
-      final s = ProtectedMinorStatus.notProtected();
+    test('unknown() is not known and not a protected minor', () {
+      final s = ProtectedMinorStatus.unknown();
+      expect(s.kind, ProtectedMinorStatusKind.unknown);
+      expect(s.isKnown, isFalse);
       expect(s.isProtectedMinor, isFalse);
       expect(s.verifiedMinorAt, isNull);
     });
 
-    test('fromKeycast(null) -> not protected', () {
-      expect(
-        ProtectedMinorStatus.fromKeycast(null).isProtectedMinor,
-        isFalse,
-      );
+    test('notProtected() is known and not a protected minor', () {
+      final s = ProtectedMinorStatus.notProtected();
+      expect(s.kind, ProtectedMinorStatusKind.notProtected);
+      expect(s.isKnown, isTrue);
+      expect(s.isProtectedMinor, isFalse);
+      expect(s.verifiedMinorAt, isNull);
+    });
+
+    test('fromKeycast(null) -> unknown', () {
+      final status = ProtectedMinorStatus.fromKeycast(null);
+
+      expect(status.kind, ProtectedMinorStatusKind.unknown);
+      expect(status.isKnown, isFalse);
+      expect(status.isProtectedMinor, isFalse);
     });
 
     test('verified_minor true -> protected, carries timestamp', () {
@@ -38,17 +49,20 @@ void main() {
       final s = ProtectedMinorStatus.fromKeycast(
         _status(verifiedMinor: true, verifiedMinorAt: at),
       );
+      expect(s.kind, ProtectedMinorStatusKind.protected);
+      expect(s.isKnown, isTrue);
       expect(s.isProtectedMinor, isTrue);
       expect(s.verifiedMinorAt, at);
     });
 
     test('verified_minor false -> not protected', () {
-      expect(
-        ProtectedMinorStatus.fromKeycast(
-          _status(verifiedMinor: false),
-        ).isProtectedMinor,
-        isFalse,
+      final status = ProtectedMinorStatus.fromKeycast(
+        _status(verifiedMinor: false),
       );
+
+      expect(status.kind, ProtectedMinorStatusKind.notProtected);
+      expect(status.isKnown, isTrue);
+      expect(status.isProtectedMinor, isFalse);
     });
   });
 }

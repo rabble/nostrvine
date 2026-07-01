@@ -1,5 +1,5 @@
 // ABOUTME: Fetches the protected-minor state from Keycast (verified_minor) and
-// ABOUTME: maps it to ProtectedMinorStatus. Fails to not-protected on any error.
+// ABOUTME: maps it to ProtectedMinorStatus, preserving fetch failures as unknown.
 
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/models/protected_minor_status.dart';
@@ -8,9 +8,9 @@ import 'package:openvine/models/protected_minor_status.dart';
 /// (via [KeycastOAuth.getAccountStatus]) and maps it to [ProtectedMinorStatus].
 ///
 /// [readAccessToken] supplies the current Keycast bearer token; a null/empty
-/// token (e.g. a non-OAuth signer session) yields not-protected. Any failure
-/// fails to not-protected — detection-only for #174; #175/#176 will decide
-/// their own fail-safe posture when they attach real protections.
+/// token (e.g. a non-OAuth signer session) yields not-protected. Keycast fetch
+/// failure yields unknown so #175/#176 can decide their own fail-safe posture
+/// when they attach real protections.
 class ProtectedMinorRepository {
   ProtectedMinorRepository({
     required KeycastOAuth oauthClient,
@@ -30,7 +30,7 @@ class ProtectedMinorRepository {
       final status = await _oauthClient.getAccountStatus(token);
       return ProtectedMinorStatus.fromKeycast(status);
     } catch (_) {
-      return ProtectedMinorStatus.notProtected();
+      return ProtectedMinorStatus.unknown();
     }
   }
 }
