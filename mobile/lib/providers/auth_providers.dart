@@ -33,6 +33,7 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 part 'auth_providers.g.dart';
 
@@ -136,6 +137,13 @@ AuthService authService(Ref ref) {
     profileCheckIndexerUrl: authEnv.indexerRelays.first,
     indexerRelays: authEnv.indexerRelays,
     primaryRelayUrl: authEnv.relayUrl,
+    launchAuthUrl: (uri) async {
+      // Preserves the pre-port behavior exactly: only the canLaunchUrl gate
+      // decides launchability; launchUrl's own result stays ignored.
+      if (!await canLaunchUrl(uri)) return false;
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return true;
+    },
     preFetchFollowing: (pubkeyHex) async {
       // Pre-fetch following list from funnelcake REST API during login
       // setup. This populates SharedPreferences BEFORE auth state is

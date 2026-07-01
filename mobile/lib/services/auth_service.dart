@@ -30,7 +30,6 @@ import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 export 'package:openvine/models/authentication_source.dart';
 
@@ -166,6 +165,14 @@ class UserProfile {
 /// router redirect has accurate following data before it fires synchronously.
 typedef PreFetchFollowingCallback = Future<void> Function(String pubkeyHex);
 
+/// Port for launching the NIP-46 bunker auth URL in an external browser.
+///
+/// Returns whether the URL could be launched. Wired in the app layer to
+/// url_launcher so this service carries no Flutter-plugin dependency for the
+/// launch; when unset (tests), the auth URL is logged as unlaunchable instead
+/// of hitting a platform channel.
+typedef AuthUrlLauncher = Future<bool> Function(Uri url);
+
 /// Callback invoked when NIP-65 relay discovery completes with a non-empty list.
 /// Used by NostrService to add discovered relays to the current client without
 /// blocking app startup.
@@ -213,6 +220,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     FlutterSecureStorage? flutterSecureStorage,
     OAuthConfig? oauthConfig,
     PreFetchFollowingCallback? preFetchFollowing,
+    AuthUrlLauncher? launchAuthUrl,
     String? profileCheckIndexerUrl,
     List<String>? indexerRelays,
     String? primaryRelayUrl,
@@ -227,6 +235,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
        _oauthClient = oauthClient,
        _flutterSecureStorage = flutterSecureStorage,
        _preFetchFollowing = preFetchFollowing,
+       _launchAuthUrl = launchAuthUrl,
        _profileCheckIndexerUrl = profileCheckIndexerUrl,
        _primaryRelayUrl = primaryRelayUrl ?? AppConstants.defaultRelayUrl,
        _relayDiscoveryService =
@@ -255,6 +264,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     crashReporter: _reportAuthError,
   );
   final PreFetchFollowingCallback? _preFetchFollowing;
+  final AuthUrlLauncher? _launchAuthUrl;
   final String? _profileCheckIndexerUrl;
   final RemoteSignerFactory _remoteSignerFactory;
   final Duration _startupNetworkOperationTimeout;
@@ -2166,9 +2176,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         category: LogCategory.auth,
       );
       final uri = Uri.parse(authUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
+      final launched = await _launchAuthUrl?.call(uri) ?? false;
+      if (!launched) {
         Log.error(
           'Could not launch auth URL: $authUrl',
           name: 'AuthService',

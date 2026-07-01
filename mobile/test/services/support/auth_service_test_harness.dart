@@ -136,6 +136,7 @@ void stubUserDataCleanupSuccess(UserDataCleanupService cleanupService) {
 AuthService buildTestAuthService({
   required UserDataCleanupService cleanupService,
   RemoteSignerFactory? remoteSignerFactory,
+  AuthUrlLauncher? launchAuthUrl,
 }) {
   return AuthService(
     userDataCleanupService: cleanupService,
@@ -144,6 +145,7 @@ AuthService buildTestAuthService({
     ),
     flutterSecureStorage: const FlutterSecureStorage(),
     remoteSignerFactory: remoteSignerFactory,
+    launchAuthUrl: launchAuthUrl,
   );
 }
 
