@@ -467,6 +467,16 @@ void main() {
             ),
             'SecurePass123!',
           );
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(
+                DivineAuthTextField,
+                'Confirm password',
+              ),
+              matching: find.byType(TextField),
+            ),
+            'SecurePass123!',
+          );
 
           await tester.tap(
             find.widgetWithText(DivineButton, 'Secure account'),
