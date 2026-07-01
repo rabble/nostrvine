@@ -232,6 +232,7 @@ void main() {
         expect(state.props, [
           FullscreenFeedStatus.ready,
           [video],
+          <String, List<VideoEvent>>{},
           [
             '${video.id}|${video.stableId}|${video.videoUrl ?? ''}|${video.thumbnailUrl ?? ''}|${video.originalLoops ?? ''}|${video.rawTags['views'] ?? ''}',
           ],

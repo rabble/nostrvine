@@ -359,6 +359,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                   children: [
                     FeedVideos(
                       videos: state.videos,
+                      seriesSegments: state.seriesSegments,
                       contextTitle: state.feedContextTitle,
                       currentIndex: clampedIndex,
                       isActive: _isNewFeedActive,

@@ -334,6 +334,7 @@ class VideoEditorRenderService {
     required Map<String, dynamic> editorStateHistory,
     CompleteParameters? parameters,
     String? taskId,
+    Duration? maxOutputDuration = VideoEditorConstants.maxDuration,
   }) async {
     if (renderVideoToClipOverride != null) {
       return renderVideoToClipOverride!(
@@ -366,6 +367,7 @@ class VideoEditorRenderService {
         usePersistentStorage: true,
         parameters: parameters,
         taskId: effectiveTaskId,
+        maxOutputDuration: maxOutputDuration,
       );
 
       if (outputPath == null) return null;
@@ -587,6 +589,103 @@ class VideoEditorRenderService {
       unawaited(_cleanupTempFiles(tempFilePaths));
       return null;
     }
+  }
+
+  /// Computes the ordered `[start, end)` windows that tile
+  /// `[0, totalDuration)` in chunks of at most [maxSegmentDuration].
+  ///
+  /// The final window is shorter when [totalDuration] isn't an exact multiple.
+  /// Pure and native-free so the segmentation math is unit-testable.
+  static List<({Duration start, Duration end})> computeSegmentWindows({
+    required Duration totalDuration,
+    required Duration maxSegmentDuration,
+  }) {
+    assert(
+      maxSegmentDuration > Duration.zero,
+      'maxSegmentDuration must be positive',
+    );
+    final windows = <({Duration start, Duration end})>[];
+    var start = Duration.zero;
+    while (start < totalDuration) {
+      var end = start + maxSegmentDuration;
+      if (end > totalDuration) end = totalDuration;
+      windows.add((start: start, end: end));
+      start = end;
+    }
+    return windows;
+  }
+
+  /// Splits [sourcePath] into ordered segment files of at most
+  /// [maxSegmentDuration] each, covering `[0, totalDuration)`.
+  ///
+  /// Each segment is rendered from the source's `[start, end)` window via the
+  /// native renderer, used to publish a longer recording as a series of short
+  /// videos each within the per-video limit. Returns the segment file paths in
+  /// playback order (a single-element list when the source already fits).
+  static Future<List<String>> splitVideoIntoSegments({
+    required String sourcePath,
+    required Duration totalDuration,
+    required Duration maxSegmentDuration,
+  }) async {
+    final windows = computeSegmentWindows(
+      totalDuration: totalDuration,
+      maxSegmentDuration: maxSegmentDuration,
+    );
+    final tempDir = await getTemporaryDirectory();
+    final source = EditorVideo.file(sourcePath);
+    final segmentPaths = <String>[];
+    for (var index = 0; index < windows.length; index++) {
+      final (:start, :end) = windows[index];
+      final outputPath = path.join(
+        tempDir.path,
+        'segment_${DateTime.now().microsecondsSinceEpoch}_$index.mp4',
+      );
+      await renderNativeVideoToFile(
+        outputPath,
+        VideoRenderData(
+          videoSegments: [
+            VideoSegment(
+              video: source,
+              startTime: start == Duration.zero ? null : start,
+              endTime: end,
+            ),
+          ],
+          shouldOptimizeForNetworkUse: true,
+        ),
+      );
+      segmentPaths.add(outputPath);
+    }
+    return segmentPaths;
+  }
+
+  /// Renders a single `[start, end)` window of [sourcePath] to a temp file.
+  ///
+  /// Used to preview or pick a cover for one series segment on demand, without
+  /// splitting the whole recording. Returns the segment file path.
+  static Future<String> renderSegmentToFile({
+    required String sourcePath,
+    required Duration start,
+    required Duration end,
+  }) async {
+    final tempDir = await getTemporaryDirectory();
+    final outputPath = path.join(
+      tempDir.path,
+      'segment_preview_${DateTime.now().microsecondsSinceEpoch}.mp4',
+    );
+    await renderNativeVideoToFile(
+      outputPath,
+      VideoRenderData(
+        videoSegments: [
+          VideoSegment(
+            video: EditorVideo.file(sourcePath),
+            startTime: start == Duration.zero ? null : start,
+            endTime: end,
+          ),
+        ],
+        shouldOptimizeForNetworkUse: true,
+      ),
+    );
+    return outputPath;
   }
 
   /// Limits a clip's duration to a specified length.

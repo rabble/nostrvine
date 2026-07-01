@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/series_metadata_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_collaborators_input.dart';
@@ -50,10 +51,41 @@ class _VideoMetadataFormFieldsState
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      _seedControllers();
+    });
+  }
+
+  /// Seeds the title/description fields from the active segment (series) or the
+  /// shared editor metadata (single video).
+  void _seedControllers() {
+    final series = ref.read(seriesMetadataProvider);
+    if (series.isSeries) {
+      final active = series.active;
+      _titleController.text = active?.title ?? '';
+      _descriptionController.text = active?.description ?? '';
+    } else {
       final editorState = ref.read(videoEditorProvider);
       _titleController.text = editorState.title;
       _descriptionController.text = editorState.description;
-    });
+    }
+  }
+
+  void _onTitleChanged(String value) {
+    if (ref.read(seriesMetadataProvider).isSeries) {
+      ref.read(seriesMetadataProvider.notifier).updateActive(title: value);
+    } else {
+      ref.read(videoEditorProvider.notifier).updateMetadata(title: value);
+    }
+  }
+
+  void _onDescriptionChanged(String value) {
+    if (ref.read(seriesMetadataProvider).isSeries) {
+      ref
+          .read(seriesMetadataProvider.notifier)
+          .updateActive(description: value);
+    } else {
+      ref.read(videoEditorProvider.notifier).updateMetadata(description: value);
+    }
   }
 
   @override
@@ -67,6 +99,11 @@ class _VideoMetadataFormFieldsState
 
   @override
   Widget build(BuildContext context) {
+    // Re-seed the fields when the user switches series segments.
+    ref.listen(
+      seriesMetadataProvider.select((s) => s.activeIndex),
+      (_, _) => _seedControllers(),
+    );
     return Padding(
       padding: const .symmetric(horizontal: 16),
       child: Column(
@@ -86,11 +123,7 @@ class _VideoMetadataFormFieldsState
               primaryWhenFilled: true,
               minLines: 1,
               maxLines: 5,
-              onChanged: (value) {
-                ref
-                    .read(videoEditorProvider.notifier)
-                    .updateMetadata(title: value);
-              },
+              onChanged: _onTitleChanged,
               onSubmitted: (_) => _descriptionFocusNode.requestFocus(),
             ),
           ),
@@ -113,11 +146,7 @@ class _VideoMetadataFormFieldsState
                       VideoEditorConstants.descriptionLimit,
                     ),
                   ],
-                  onChanged: (value) {
-                    ref
-                        .read(videoEditorProvider.notifier)
-                        .updateMetadata(description: value);
-                  },
+                  onChanged: _onDescriptionChanged,
                 ),
                 Positioned(
                   // Align the counter to the field's content padding so a

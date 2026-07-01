@@ -1,12 +1,13 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_volume_mute_toggle.dart';
 import 'package:time_formatter/time_formatter.dart';
@@ -151,7 +152,7 @@ class _VolumeButton extends StatelessWidget {
   }
 }
 
-class _TimeDisplay extends StatelessWidget {
+class _TimeDisplay extends ConsumerWidget {
   const _TimeDisplay({required this.playheadPosition});
 
   final ValueNotifier<Duration> playheadPosition;
@@ -161,13 +162,18 @@ class _TimeDisplay extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // The editor timeline draws clips at full length, but an overlap transition
     // (dissolve/slide/push/wipe) blends two clips so the rendered output is
     // shorter. Show the output length — and the playhead mapped onto it — so the
     // header reflects the final video, not the editing space. The timeline
     // layout itself stays on the editor axis.
     final clips = context.select((ClipEditorBloc b) => b.state.clips);
+    // Session cap (60s in the 60s mode); the position only warns past this,
+    // not past the standard 6.3s.
+    final maxDuration = ref.watch(
+      clipManagerProvider.select((s) => s.maxDuration),
+    );
     final timelineMap = TransitionTimelineMap.fromClips(clips);
     final outputDuration = timelineMap.outputDuration;
 
@@ -176,8 +182,7 @@ class _TimeDisplay extends StatelessWidget {
       builder: (context, position, _) {
         final outputPosition = timelineMap.editorToOutput(position);
         final isOver =
-            outputPosition.inMilliseconds >
-            VideoEditorConstants.maxDuration.inMilliseconds;
+            outputPosition.inMilliseconds > maxDuration.inMilliseconds;
         final positionText = TextSpan(
           text: TimeFormatter.formatCompactDuration(outputPosition),
           style: isOver

@@ -14,6 +14,7 @@ import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/video_feed/home_feed_cache.dart';
 import 'package:openvine/blocs/video_feed/home_feed_resume_manager.dart';
+import 'package:openvine/blocs/video_feed/video_series_grouping.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -404,9 +405,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       final mergedListOnly = {...state.listOnlyVideoIds}
         ..addAll(result.listOnlyVideoIds);
 
+      final grouped = groupVideoSeries(updatedVideos);
       emit(
         state.copyWith(
-          videos: updatedVideos,
+          videos: grouped.items,
+          seriesSegments: grouped.seriesSegments,
           // Only stop pagination when the server returns nothing.
           // Fewer than _pageSize can happen due to server-side filtering.
           hasMore: _hasMoreForSource(
@@ -676,10 +679,14 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         displayedVideos.length,
       );
 
+      // Collapse series segments for display; persist/enrich the raw list
+      // below so the cache keeps every segment.
+      final grouped = groupVideoSeries(displayedVideos);
       emit(
         state.copyWith(
           status: VideoFeedStatus.success,
-          videos: displayedVideos,
+          videos: grouped.items,
+          seriesSegments: grouped.seriesSegments,
           // Only stop pagination when no results at all.
           // Fewer than _pageSize can happen due to server-side filtering.
           hasMore: _hasMoreForSource(
@@ -768,10 +775,13 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     // The cached window already starts at the resume position (already-watched
     // videos were dropped on write), so it is served at index 0.
     _feedTracker?.markFirstVideosReceived(mode, cachedValid.length);
+    // The persisted window is raw (every segment); collapse series for display.
+    final grouped = groupVideoSeries(cachedValid);
     emit(
       state.copyWith(
         status: VideoFeedStatus.success,
-        videos: cachedValid,
+        videos: grouped.items,
+        seriesSegments: grouped.seriesSegments,
         currentIndex: 0,
         hasMore: true,
         clearPaginationCursor: true,

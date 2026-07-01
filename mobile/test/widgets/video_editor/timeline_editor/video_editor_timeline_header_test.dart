@@ -5,6 +5,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
@@ -85,34 +86,36 @@ void main() {
         playheadPosition.value = position;
       }
 
-      return MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: VideoEditorScope(
-            editorKey: GlobalKey<ProImageEditorState>(),
-            removeAreaKey: GlobalKey(),
-            originalClipAspectRatio: 9 / 16,
-            bodySizeNotifier: ValueNotifier(const Size(400, 600)),
-            zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
-            fromLibrary: false,
-            onOpenCamera: () {},
-            onOpenClipsEditor: () {},
-            onAddStickers: () {},
-            onOpenMusicLibrary: () {},
-            onOpenVoiceOver: () {},
-            onAddEditTextLayer: ([layer]) async => null,
-            child: MultiBlocProvider(
-              providers: [
-                BlocProvider<VideoEditorMainBloc>.value(value: mockMainBloc),
-                BlocProvider<ClipEditorBloc>.value(value: mockClipBloc),
-                BlocProvider<TimelineOverlayBloc>.value(
-                  value: mockTimelineOverlayBloc,
+      return ProviderScope(
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: VideoEditorScope(
+              editorKey: GlobalKey<ProImageEditorState>(),
+              removeAreaKey: GlobalKey(),
+              originalClipAspectRatio: 9 / 16,
+              bodySizeNotifier: ValueNotifier(const Size(400, 600)),
+              zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
+              fromLibrary: false,
+              onOpenCamera: () {},
+              onOpenClipsEditor: () {},
+              onAddStickers: () {},
+              onOpenMusicLibrary: () {},
+              onOpenVoiceOver: () {},
+              onAddEditTextLayer: ([layer]) async => null,
+              child: MultiBlocProvider(
+                providers: [
+                  BlocProvider<VideoEditorMainBloc>.value(value: mockMainBloc),
+                  BlocProvider<ClipEditorBloc>.value(value: mockClipBloc),
+                  BlocProvider<TimelineOverlayBloc>.value(
+                    value: mockTimelineOverlayBloc,
+                  ),
+                ],
+                child: VideoEditorTimelineHeader(
+                  playheadPosition: playheadPosition,
+                  volumePreviewNotifier: volumePreviewNotifier,
                 ),
-              ],
-              child: VideoEditorTimelineHeader(
-                playheadPosition: playheadPosition,
-                volumePreviewNotifier: volumePreviewNotifier,
               ),
             ),
           ),

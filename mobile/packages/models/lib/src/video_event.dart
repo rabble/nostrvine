@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:meta/meta.dart';
 import 'package:models/src/nip71_video_kinds.dart';
 import 'package:models/src/video_attribution.dart';
+import 'package:models/src/video_series.dart';
 import 'package:models/src/video_url_resolver.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:text_sanitizer/text_sanitizer.dart';
@@ -202,6 +203,7 @@ class VideoEvent {
     this.proofSummary,
     this.eventKind,
     this.sourceRelay,
+    this.series,
   });
 
   /// Reconstructs a [VideoEvent] from a map produced by [toJson].
@@ -297,6 +299,7 @@ class VideoEvent {
           : ProofVerificationSummary.fromJson(
               json['proofSummary'] as Map<String, dynamic>,
             ),
+      series: VideoSeries.fromJson(json['series'] as Map<String, dynamic>?),
     );
   }
 
@@ -344,6 +347,7 @@ class VideoEvent {
     String? audioEventRelay;
     String? sourceRelay;
     final collaboratorPubkeys = <String>[];
+    VideoSeries? series;
     InspiredByInfo? inspiredByVideo;
     final textTrackRefsLocal = <String>[];
     final contentWarningLabels = <String>[];
@@ -482,6 +486,9 @@ class VideoEvent {
         case 'blurhash':
           // Blurhash for progressive image loading
           blurhash = tagValue as String?;
+        case 'series':
+          // Divine series membership: [series, <id>, <index>, <total>]
+          series = VideoSeries.fromTag(tag);
         case 'loops':
           // Original loop count from classic Vine
           originalLoops = int.tryParse(tagValue);
@@ -709,6 +716,7 @@ class VideoEvent {
       collaboratorPubkeys: collaboratorPubkeys,
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: inspiredByNpub,
+      series: series,
       nostrEventTags: event.tags
           .map((t) => (t as List).map((e) => e.toString()).toList())
           .toList(),
@@ -763,6 +771,10 @@ class VideoEvent {
   /// received. Prefers an `r` tag when present, then falls back to SDK
   /// receive-source metadata. Used as a relay hint when citing the video.
   final String? sourceRelay;
+
+  /// Series membership when this video is one segment of a published series,
+  /// parsed from a `["series", "<id>", "<index>", "<total>"]` tag.
+  final VideoSeries? series;
 
   // Repost metadata fields
   final bool isRepost;
@@ -1541,6 +1553,7 @@ class VideoEvent {
     ProofVerificationSummary? proofSummary,
     int? eventKind,
     String? sourceRelay,
+    VideoSeries? series,
   }) => VideoEvent(
     id: id ?? this.id,
     pubkey: pubkey ?? this.pubkey,
@@ -1603,6 +1616,7 @@ class VideoEvent {
     proofSummary: proofSummary ?? this.proofSummary,
     eventKind: eventKind ?? this.eventKind,
     sourceRelay: sourceRelay ?? this.sourceRelay,
+    series: series ?? this.series,
   );
 
   @override
@@ -1683,6 +1697,7 @@ class VideoEvent {
     'proofSummary': proofSummary?.toJson(),
     'eventKind': eventKind,
     'sourceRelay': sourceRelay,
+    'series': series?.toJson(),
   };
 
   /// Create a VideoEvent instance representing a repost

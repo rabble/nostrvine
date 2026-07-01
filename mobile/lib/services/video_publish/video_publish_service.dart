@@ -7,7 +7,9 @@ import 'dart:io';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
+import 'package:models/models.dart' show VideoSeries;
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
@@ -17,10 +19,12 @@ import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Result of a publish operation.
@@ -185,7 +189,21 @@ class VideoPublishService {
 
   /// Publishes a video draft.
   /// Returns [PublishSuccess] on success, [PublishError] on failure.
-  Future<PublishResult> publishVideo({required DivineVideoDraft draft}) async {
+  Future<PublishResult> publishVideo({
+    required DivineVideoDraft draft,
+    VideoSeries? series,
+    String? dTagOverride,
+    List<({String title, String description})>? segmentTexts,
+  }) async {
+    // A rendered clip longer than the per-video limit is published as a series
+    // of short videos (each within the limit), one per segment, plus a
+    // container linking them. Per-segment text (from the metadata tabs) is
+    // applied per segment; a blank segment falls back to the shared draft text.
+    final split = await _splitIntoSegmentDrafts(draft, segmentTexts);
+    if (split != null) {
+      return _publishSeries(split.seriesId, split.drafts);
+    }
+
     // Check if we have a background upload ID and its status
     if (_backgroundUploadId != null) {
       final error = await _handleActiveUpload(draft.id);
@@ -259,6 +277,8 @@ class VideoPublishService {
 
       final published = await videoEventPublisher.publishVideoEvent(
         upload: pendingUpload,
+        series: series,
+        dTagOverride: dTagOverride,
         title: draft.title,
         description: draft.description,
         hashtags: draft.hashtags.toList(),
@@ -306,6 +326,109 @@ class VideoPublishService {
     } catch (e, stackTrace) {
       return _handleUploadError(e, stackTrace, draft);
     }
+  }
+
+  /// Splits [draft]'s final rendered clip into a sequence of segment drafts
+  /// when it exceeds the per-video limit, so a longer recording publishes as a
+  /// series of short videos. Returns null when no split is needed (the normal
+  /// single-video publish).
+  Future<({String seriesId, List<DivineVideoDraft> drafts})?>
+  _splitIntoSegmentDrafts(
+    DivineVideoDraft draft,
+    List<({String title, String description})>? segmentTexts,
+  ) async {
+    final rendered = draft.finalRenderedClip;
+    if (rendered == null) return null;
+    const perVideoLimit = VideoEditorConstants.maxDuration;
+    if (rendered.duration <= perVideoLimit) return null;
+
+    final sourcePath = await rendered.video.safeFilePath();
+    if (!File(sourcePath).existsSync()) return null;
+
+    final segmentPaths = await VideoEditorRenderService.splitVideoIntoSegments(
+      sourcePath: sourcePath,
+      totalDuration: rendered.duration,
+      maxSegmentDuration: perVideoLimit,
+    );
+    if (segmentPaths.length <= 1) return null;
+
+    final windows = VideoEditorRenderService.computeSegmentWindows(
+      totalDuration: rendered.duration,
+      maxSegmentDuration: perVideoLimit,
+    );
+    final drafts = <DivineVideoDraft>[];
+    for (var i = 0; i < segmentPaths.length; i++) {
+      final text = segmentTexts != null && i < segmentTexts.length
+          ? segmentTexts[i]
+          : null;
+      drafts.add(
+        draft.copyWith(
+          id: '${draft.id}_seg$i',
+          // Blank per-segment text falls back to the shared draft text.
+          title: text != null && text.title.isNotEmpty ? text.title : null,
+          description: text != null && text.description.isNotEmpty
+              ? text.description
+              : null,
+          finalRenderedClip: rendered.copyWith(
+            id: '${rendered.id}_seg$i',
+            video: EditorVideo.file(segmentPaths[i]),
+            duration: windows[i].end - windows[i].start,
+          ),
+        ),
+      );
+    }
+    Log.info(
+      '✂️ Split ${rendered.duration.inSeconds}s render into '
+      '${drafts.length} segments for series publish',
+      category: .video,
+    );
+    return (seriesId: draft.id, drafts: drafts);
+  }
+
+  /// Publishes each segment draft sequentially through the single-video path.
+  ///
+  /// Each recurses into [publishVideo]; being within the per-video limit, the
+  /// segment takes the normal single-video path. Aborts on the first failure;
+  /// returns the last segment's result on full success.
+  Future<PublishResult> _publishSeries(
+    String seriesId,
+    List<DivineVideoDraft> drafts,
+  ) async {
+    final total = drafts.length;
+    final pubkey = authService.currentPublicKeyHex;
+    final kind = NIP71VideoKinds.getPreferredAddressableKind();
+    final segmentAddresses = <String>[];
+    PublishResult? last;
+    for (var i = 0; i < total; i++) {
+      Log.info(
+        '📤 Publishing series segment ${i + 1}/$total',
+        category: .video,
+      );
+      _backgroundUploadId = null;
+      final dTag = 'series-$seriesId-$i';
+      last = await publishVideo(
+        draft: drafts[i],
+        series: VideoSeries(id: seriesId, index: i, total: total),
+        dTagOverride: dTag,
+      );
+      if (last is PublishError) {
+        Log.error(
+          '❌ Series publish aborted at segment ${i + 1}/$total',
+          category: .video,
+        );
+        return last;
+      }
+      if (pubkey != null) segmentAddresses.add('$kind:$pubkey:$dTag');
+    }
+    // Link the published segments into a NIP-51 container (best-effort).
+    if (segmentAddresses.isNotEmpty) {
+      await videoEventPublisher.publishSeriesContainer(
+        seriesId: seriesId,
+        segmentAddresses: segmentAddresses,
+        title: drafts.first.title,
+      );
+    }
+    return last ?? const PublishError(PublishErrorKind.noRetry);
   }
 
   Future<List<String>> _resolveMentionedPubkeys(

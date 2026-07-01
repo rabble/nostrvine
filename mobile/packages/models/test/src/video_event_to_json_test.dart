@@ -98,6 +98,7 @@ VideoEvent _fullVideo() => VideoEvent(
   ),
   eventKind: 34236,
   sourceRelay: 'wss://relay.divine.video',
+  series: const VideoSeries(id: 'series-abc123', index: 2, total: 5),
 );
 
 const _expectedKeys = <String>{
@@ -152,6 +153,7 @@ const _expectedKeys = <String>{
   'proofSummary',
   'eventKind',
   'sourceRelay',
+  'series',
 };
 
 const _excludedDerivedGetters = <String>{
@@ -370,6 +372,7 @@ void main() {
         equals(original.contentWarningLabels),
       );
       expect(restored.proofSummary, equals(original.proofSummary));
+      expect(restored.series, equals(original.series));
     });
 
     test('round-trips a minimal video with only required fields', () {

@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/providers/series_metadata_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -37,6 +38,7 @@ class VideoMetadataCoverScreen extends ConsumerStatefulWidget {
   const VideoMetadataCoverScreen({
     required this.clip,
     this.thumbnailUrl,
+    this.editSeriesSegment = false,
     super.key,
   });
 
@@ -45,6 +47,11 @@ class VideoMetadataCoverScreen extends ConsumerStatefulWidget {
 
   /// Optional thumbnail URL shown while the player is not yet ready.
   final String? thumbnailUrl;
+
+  /// When `true`, [clip] is a single 60s-series segment: the picked position
+  /// (relative to the segment) is stored on the active segment's metadata
+  /// instead of the shared editor cover.
+  final bool editSeriesSegment;
 
   @override
   ConsumerState<VideoMetadataCoverScreen> createState() =>
@@ -207,29 +214,20 @@ class _VideoMetadataCoverScreenState
 
     var didSucceed = false;
     try {
-      final videoPath = await widget.clip.video.safeFilePath();
-      if (videoPath.isNotEmpty) {
-        final result = await VideoThumbnailService.extractThumbnail(
-          videoPath: videoPath,
-          targetTimestamp: _selectedPosition,
-        );
-        if (result != null && mounted) {
-          if (widget.clip.video.networkUrl != null) {
-            // Published video — return the local path to the caller.
-            // The Blossom upload and republish happen when the user presses Update.
-            Navigator.of(context).pop(result.path);
-            return;
-          } else {
-            // Draft video — update via videoEditorProvider.
-            ref
-                .read(videoEditorProvider.notifier)
-                .updateCover(
-                  thumbnailPath: result.path,
-                  thumbnailTimestamp: _selectedPosition,
-                );
-            didSucceed = true;
-          }
-        }
+      if (widget.editSeriesSegment) {
+        // The clip is a single segment; store the pick (relative to the
+        // segment) on the active segment. The inline preview re-derives its
+        // cover frame from this offset.
+        ref
+            .read(seriesMetadataProvider.notifier)
+            .updateActive(thumbnailTimestamp: _selectedPosition);
+        didSucceed = true;
+      } else {
+        final outcome = await _saveEditorCover();
+        // A null outcome means the published-edit flow already popped with the
+        // extracted path; nothing more to do here.
+        if (outcome == null) return;
+        didSucceed = outcome;
       }
     } catch (e, stackTrace) {
       Log.error(
@@ -262,6 +260,37 @@ class _VideoMetadataCoverScreenState
       context,
     ).showSnackBar(DivineSnackbarContainer.snackBar(message));
     setState(() => _isConfirming = false);
+  }
+
+  /// Extracts the cover at [_selectedPosition] and applies it to the shared
+  /// editor clip. Returns `true` when the draft cover was updated, `false` on
+  /// failure, or `null` when the published-edit flow already popped with the
+  /// extracted path.
+  Future<bool?> _saveEditorCover() async {
+    final videoPath = await widget.clip.video.safeFilePath();
+    if (videoPath.isEmpty) return false;
+
+    final result = await VideoThumbnailService.extractThumbnail(
+      videoPath: videoPath,
+      targetTimestamp: _selectedPosition,
+    );
+    if (result == null || !mounted) return false;
+
+    if (widget.clip.video.networkUrl != null) {
+      // Published video — return the local path to the caller. The Blossom
+      // upload and republish happen when the user presses Update.
+      Navigator.of(context).pop(result.path);
+      return null;
+    }
+
+    // Draft video — update via videoEditorProvider.
+    ref
+        .read(videoEditorProvider.notifier)
+        .updateCover(
+          thumbnailPath: result.path,
+          thumbnailTimestamp: _selectedPosition,
+        );
+    return true;
   }
 
   @override

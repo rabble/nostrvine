@@ -478,7 +478,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       milliseconds: (durationSecs * 1000).toInt(),
     );
     final clipDuration = _clipEditorBloc.state.totalDuration;
-    const maxDuration = VideoEditorConstants.maxDuration;
+    final maxDuration = ref.read(clipManagerProvider).maxDuration;
     final endTime = [
       audioDuration,
       clipDuration,
@@ -510,7 +510,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   Future<void> _openVoiceOver({required VideoEditorMainBloc mainBloc}) async {
     final availableDuration = resolveVoiceOverAvailableDuration(
       clipDuration: _clipEditorBloc.state.totalDuration,
-      maxDuration: VideoEditorConstants.maxDuration,
+      maxDuration: ref.read(clipManagerProvider).maxDuration,
     );
 
     // Count voice-over already on the timeline so the take numbering continues
@@ -648,7 +648,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     if (editor == null) return;
 
     final clipDuration = _clipEditorBloc.state.totalDuration;
-    const maxDuration = VideoEditorConstants.maxDuration;
+    final maxDuration = ref.read(clipManagerProvider).maxDuration;
     final healed = editor.stateManager.audioTracks.map((track) {
       final secs = resolved[track.id];
       if (secs == null) return track;
@@ -692,7 +692,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
               Duration(
                 milliseconds:
                     ((audio.duration ??
-                                VideoEditorConstants.maxDuration.inSeconds) *
+                                ref
+                                    .read(clipManagerProvider)
+                                    .maxDuration
+                                    .inSeconds) *
                             1000)
                         .toInt(),
               ),

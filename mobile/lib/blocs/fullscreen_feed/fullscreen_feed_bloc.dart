@@ -13,6 +13,7 @@ import 'package:feed_tuning_repository/feed_tuning_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/video_feed/video_series_grouping.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/media_availability_checker.dart';
 import 'package:openvine/utils/video_identity.dart';
@@ -264,7 +265,11 @@ class FullscreenFeedBloc
         // (e.g. the liked-videos like-change subscription / load-more, which
         // never re-filter) can't re-introduce an author who is blocked under
         // the current blocklist. Idempotent for sources that already filter.
-        final videos = _applyUnavailableFilter(_applyBlockFilter(incoming));
+        final filtered = _applyUnavailableFilter(_applyBlockFilter(incoming));
+        // Collapse series segments into one anchor per series so a longer
+        // recording shows as a single horizontally-swipeable card.
+        final grouped = groupVideoSeries(filtered);
+        final videos = grouped.items;
 
         Log.debug(
           'FullscreenFeedBloc: Videos updated, count=${videos.length}',
@@ -272,11 +277,15 @@ class FullscreenFeedBloc
           category: LogCategory.video,
         );
 
-        final indexResolution = _nextIndexForVideos(videos);
+        final indexResolution = _nextIndexForVideos(
+          videos,
+          grouped.seriesSegments,
+        );
 
         return state.copyWith(
           status: FullscreenFeedStatus.ready,
           videos: videos,
+          seriesSegments: grouped.seriesSegments,
           currentIndex: indexResolution.index,
           isLoadingMore: false,
           initialTargetResolved:
@@ -298,17 +307,24 @@ class FullscreenFeedBloc
 
   ({int index, bool initialTargetResolved}) _nextIndexForVideos(
     List<VideoEvent> videos,
+    Map<String, List<VideoEvent>> seriesSegments,
   ) {
     if (videos.isEmpty) {
       return (index: state.currentIndex, initialTargetResolved: false);
     }
 
     if (!state.userChangedIndex && !state.initialTargetResolved) {
-      final initialTargetIndex = indexOfVideoIdentity(
+      var initialTargetIndex = indexOfVideoIdentity(
         videos,
         videoId: _initialVideoId,
         stableId: _initialStableId,
       );
+      // The launch target may be a non-anchor segment that was collapsed into
+      // its series anchor; resolve to the anchor's position so tapping any
+      // segment in a grid opens that series card.
+      if (initialTargetIndex < 0) {
+        initialTargetIndex = _anchorIndexForSegment(videos, seriesSegments);
+      }
       if (initialTargetIndex >= 0) {
         Log.debug(
           'FullscreenFeedBloc: resolved initial target '
@@ -349,6 +365,25 @@ class FullscreenFeedBloc
       index: state.currentIndex.clamp(0, videos.length - 1),
       initialTargetResolved: false,
     );
+  }
+
+  /// Finds the [videos] (grouped) index of the anchor whose series contains the
+  /// launch target segment, or -1 when the target isn't a collapsed segment.
+  int _anchorIndexForSegment(
+    List<VideoEvent> videos,
+    Map<String, List<VideoEvent>> seriesSegments,
+  ) {
+    for (final entry in seriesSegments.entries) {
+      final match = indexOfVideoIdentity(
+        entry.value,
+        videoId: _initialVideoId,
+        stableId: _initialStableId,
+      );
+      if (match >= 0) {
+        return videos.indexWhere((video) => video.series?.id == entry.key);
+      }
+    }
+    return -1;
   }
 
   void _onHasMoreChanged(

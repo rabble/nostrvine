@@ -1101,6 +1101,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       parameters: renderParameters,
       editorStateHistory: state.editorStateHistory,
       taskId: draftId,
+      // Render the full session length so a 60s recording isn't truncated to
+      // the per-video limit; the publish step splits it into segments.
+      maxOutputDuration: ref.read(clipManagerProvider).maxDuration,
     );
 
     // A newer render was started while this one was running — discard.

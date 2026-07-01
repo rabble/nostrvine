@@ -4,12 +4,14 @@ import 'dart:typed_data';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strips.dart';
@@ -17,7 +19,7 @@ import 'package:openvine/widgets/video_editor/timeline_editor/utils/hit_expanded
 import 'package:openvine/widgets/video_editor/timeline_editor/utils/vertical_only_clipper.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_rules_indicator.dart';
 
-class VideoEditorTimelineBody extends StatelessWidget {
+class VideoEditorTimelineBody extends ConsumerWidget {
   const VideoEditorTimelineBody({
     required this.totalDuration,
     required this.pixelsPerSecond,
@@ -79,9 +81,12 @@ class VideoEditorTimelineBody extends StatelessWidget {
   final ValueNotifier<Duration> playheadPosition;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final (isReordering) = context.select(
       (VideoEditorMainBloc b) => b.state.isReordering,
+    );
+    final maxDuration = ref.watch(
+      clipManagerProvider.select((s) => s.maxDuration),
     );
     final isVolumeEditMode = context.select(
       (VideoEditorMainBloc b) => b.state.isVolumeEditMode,
@@ -103,7 +108,7 @@ class VideoEditorTimelineBody extends StatelessWidget {
         ? clipTrimExpand
         : overlayTrimExpand;
     final showMaxDurationOverlays =
-        !isReordering && totalDuration > VideoEditorConstants.maxDuration;
+        !isReordering && totalDuration > maxDuration;
     final outsideExtendWidth = MediaQuery.sizeOf(context).width / 2;
 
     return HitExpandedBox(
@@ -118,6 +123,7 @@ class VideoEditorTimelineBody extends StatelessWidget {
             pixelsPerSecond: pixelsPerSecond,
             visible: showMaxDurationOverlays,
             outsideExtendWidth: outsideExtendWidth,
+            maxDuration: maxDuration,
           ),
 
           Column(
@@ -207,7 +213,19 @@ class VideoEditorTimelineBody extends StatelessWidget {
             pixelsPerSecond: pixelsPerSecond,
             visible: showMaxDurationOverlays,
             outsideExtendWidth: outsideExtendWidth,
+            maxDuration: maxDuration,
           ),
+          // Series mode: show a scissors cut marker at each per-segment
+          // boundary so the user sees where the recording will be split.
+          if (maxDuration > VideoEditorConstants.maxDuration)
+            Positioned.fill(
+              child: _SeriesCutMarkers(
+                pixelsPerSecond: pixelsPerSecond,
+                totalDuration: totalDuration,
+                maxDuration: maxDuration,
+                segmentDuration: VideoEditorConstants.maxDuration,
+              ),
+            ),
         ],
       ),
     );
@@ -310,19 +328,18 @@ class _TimelineMaxDurationStripeOverlay extends StatelessWidget {
     required this.pixelsPerSecond,
     required this.visible,
     required this.outsideExtendWidth,
+    required this.maxDuration,
   });
 
   final double pixelsPerSecond;
   final bool visible;
   final double outsideExtendWidth;
+  final Duration maxDuration;
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      left:
-          VideoEditorConstants.maxDuration.inMilliseconds /
-          1000 *
-          pixelsPerSecond,
+      left: maxDuration.inMilliseconds / 1000 * pixelsPerSecond,
       top: 0,
       bottom: 0,
       right: -outsideExtendWidth,
@@ -346,19 +363,18 @@ class _TimelineMaxDurationDimOverlay extends StatelessWidget {
     required this.pixelsPerSecond,
     required this.visible,
     required this.outsideExtendWidth,
+    required this.maxDuration,
   });
 
   final double pixelsPerSecond;
   final bool visible;
   final double outsideExtendWidth;
+  final Duration maxDuration;
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      left:
-          VideoEditorConstants.maxDuration.inMilliseconds /
-          1000 *
-          pixelsPerSecond,
+      left: maxDuration.inMilliseconds / 1000 * pixelsPerSecond,
       top: 0,
       bottom: 0,
       right: -outsideExtendWidth,
@@ -371,6 +387,63 @@ class _TimelineMaxDurationDimOverlay extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Scissors markers at each per-segment cut boundary (every [segmentDuration]),
+/// shown in series mode so the user sees where the recording will be split into
+/// separate videos.
+class _SeriesCutMarkers extends StatelessWidget {
+  const _SeriesCutMarkers({
+    required this.pixelsPerSecond,
+    required this.totalDuration,
+    required this.maxDuration,
+    required this.segmentDuration,
+  });
+
+  final double pixelsPerSecond;
+  final Duration totalDuration;
+  final Duration maxDuration;
+  final Duration segmentDuration;
+
+  @override
+  Widget build(BuildContext context) {
+    final stepMs = segmentDuration.inMilliseconds;
+    if (stepMs <= 0) return const SizedBox.shrink();
+    // Only mark cuts within the content that survives the session cap; content
+    // beyond maxDuration is truncated, not split into further segments.
+    final limitMs = totalDuration < maxDuration
+        ? totalDuration.inMilliseconds
+        : maxDuration.inMilliseconds;
+    final markers = <Widget>[];
+    for (var boundaryMs = stepMs; boundaryMs < limitMs; boundaryMs += stepMs) {
+      final x = boundaryMs / 1000 * pixelsPerSecond;
+      markers
+        ..add(
+          Positioned(
+            left: x - 0.75,
+            top: 0,
+            bottom: 0,
+            width: 1.5,
+            child: const ColoredBox(color: VineTheme.primary),
+          ),
+        )
+        ..add(
+          Positioned(
+            left: x - 8,
+            top: -2,
+            child: const DivineIcon(
+              icon: .scissors,
+              color: VineTheme.primary,
+              size: 16,
+            ),
+          ),
+        );
+    }
+    if (markers.isEmpty) return const SizedBox.shrink();
+    return IgnorePointer(
+      child: Stack(clipBehavior: Clip.none, children: markers),
     );
   }
 }

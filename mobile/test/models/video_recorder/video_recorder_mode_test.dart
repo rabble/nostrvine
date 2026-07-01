@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 
 void main() {
@@ -20,6 +21,10 @@ void main() {
       test('upload returns "Upload" label', () {
         expect(VideoRecorderMode.upload.label, equals('Upload'));
       });
+
+      test('sixtySeconds has label "60s"', () {
+        expect(VideoRecorderMode.sixtySeconds.label, equals('60s'));
+      });
     });
 
     group('hasRecordingLimit', () {
@@ -37,6 +42,10 @@ void main() {
 
       test('upload has no recording limit', () {
         expect(VideoRecorderMode.upload.hasRecordingLimit, isFalse);
+      });
+
+      test('sixtySeconds has no recording limit (mirrors capture)', () {
+        expect(VideoRecorderMode.sixtySeconds.hasRecordingLimit, isFalse);
       });
     });
 
@@ -56,6 +65,10 @@ void main() {
       test('upload has no video editor', () {
         expect(VideoRecorderMode.upload.hasVideoEditor, isFalse);
       });
+
+      test('sixtySeconds has video editor', () {
+        expect(VideoRecorderMode.sixtySeconds.hasVideoEditor, isTrue);
+      });
     });
 
     group('supportGridLines', () {
@@ -73,6 +86,10 @@ void main() {
 
       test('upload does not support grid lines', () {
         expect(VideoRecorderMode.upload.supportGridLines, isFalse);
+      });
+
+      test('sixtySeconds does not support grid lines', () {
+        expect(VideoRecorderMode.sixtySeconds.supportGridLines, isFalse);
       });
     });
 
@@ -102,6 +119,36 @@ void main() {
         expect(
           VideoRecorderMode.upload.defaultAspectRatio,
           equals(model.AspectRatio.vertical),
+        );
+      });
+
+      test('sixtySeconds defaults to vertical', () {
+        expect(
+          VideoRecorderMode.sixtySeconds.defaultAspectRatio,
+          equals(model.AspectRatio.vertical),
+        );
+      });
+    });
+
+    group('maxRecordingDuration', () {
+      test('sixtySeconds allows 60 seconds', () {
+        expect(
+          VideoRecorderMode.sixtySeconds.maxRecordingDuration,
+          equals(const Duration(seconds: 60)),
+        );
+      });
+
+      test('capture keeps the standard default duration', () {
+        expect(
+          VideoRecorderMode.capture.maxRecordingDuration,
+          equals(VideoEditorConstants.maxDuration),
+        );
+      });
+
+      test('classic keeps the standard default duration', () {
+        expect(
+          VideoRecorderMode.classic.maxRecordingDuration,
+          equals(VideoEditorConstants.maxDuration),
         );
       });
     });

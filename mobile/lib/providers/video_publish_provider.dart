@@ -25,6 +25,7 @@ import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
+import 'package:openvine/providers/series_metadata_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
@@ -364,6 +365,10 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
             parameters: parameters,
             editorStateHistory: draft.editorStateHistory,
             taskId: draft.id,
+            // Render the full session length (60s mode) instead of the 6.3s
+            // default, so the preview isn't truncated and the publish step can
+            // split it into segments.
+            maxOutputDuration: ref.read(clipManagerProvider).maxDuration,
           );
 
           if (result == null) {
@@ -429,8 +434,15 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         },
       );
 
+      final segmentMeta = ref.read(seriesMetadataProvider);
       final publishmentProcess = publishService.publishVideo(
         draft: publishDraft,
+        segmentTexts: segmentMeta.isSeries
+            ? [
+                for (final segment in segmentMeta.segments)
+                  (title: segment.title, description: segment.description),
+              ]
+            : null,
       );
       final videoReplyContext = publishDraft.videoReplyContext;
       final isVideoReply = videoReplyContext != null;

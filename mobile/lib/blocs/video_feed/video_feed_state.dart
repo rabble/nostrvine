@@ -158,6 +158,7 @@ final class VideoFeedBlocState extends Equatable {
     this.error,
     this.videoListSources = const {},
     this.listOnlyVideoIds = const {},
+    this.seriesSegments = const {},
     this.creatorProfiles = const {},
     this.paginationCursor,
     this.currentIndex = 0,
@@ -177,6 +178,10 @@ final class VideoFeedBlocState extends Equatable {
 
   /// The list of videos for the current feed mode.
   final List<VideoEvent> videos;
+
+  /// Ordered segment lists keyed by series id, for videos in [videos] that are
+  /// series anchors. Lets the feed render a swipeable card per series.
+  final Map<String, List<VideoEvent>> seriesSegments;
 
   /// The active feed source.
   final VideoFeedSource source;
@@ -261,6 +266,7 @@ final class VideoFeedBlocState extends Equatable {
     bool clearError = false,
     Map<String, Set<String>>? videoListSources,
     Set<String>? listOnlyVideoIds,
+    Map<String, List<VideoEvent>>? seriesSegments,
     Map<String, UserProfile>? creatorProfiles,
     String? paginationCursor,
     bool clearPaginationCursor = false,
@@ -279,6 +285,7 @@ final class VideoFeedBlocState extends Equatable {
       error: clearError ? null : (error ?? this.error),
       videoListSources: videoListSources ?? this.videoListSources,
       listOnlyVideoIds: listOnlyVideoIds ?? this.listOnlyVideoIds,
+      seriesSegments: seriesSegments ?? this.seriesSegments,
       creatorProfiles: creatorProfiles ?? this.creatorProfiles,
       paginationCursor: clearPaginationCursor
           ? null
@@ -299,6 +306,7 @@ final class VideoFeedBlocState extends Equatable {
     error,
     videoListSources,
     listOnlyVideoIds,
+    seriesSegments,
     creatorProfiles,
     paginationCursor,
     currentIndex,

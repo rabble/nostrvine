@@ -50,10 +50,10 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
 
   /// Calculates the remaining recording time available.
   ///
-  /// Returns the difference between [maxDuration] and the sum of all clip
-  /// durations.
+  /// Returns the difference between the session cap (`state.maxDuration`) and
+  /// the sum of all clip durations.
   Duration get remainingDuration {
-    return VideoEditorConstants.maxDuration - totalDuration;
+    return state.maxDuration - totalDuration;
   }
 
   /// Calculates the total duration of all recorded clips.
@@ -62,6 +62,15 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       Duration.zero,
       (sum, clip) => sum + clip.duration,
     );
+  }
+
+  /// Sets the maximum recording/editing duration for the current session.
+  ///
+  /// Called by the recorder when the mode changes (the 60s mode raises the
+  /// cap). No-ops when unchanged so it doesn't churn state.
+  void setMaxDuration(Duration maxDuration) {
+    if (state.maxDuration == maxDuration) return;
+    state = state.copyWith(maxDuration: maxDuration);
   }
 
   @override
@@ -800,7 +809,10 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       name: 'ClipManagerNotifier',
       category: .video,
     );
-    state = ClipManagerState();
+    // Preserve the session recording/editing cap: clearing clips must not reset
+    // the mode-derived maxDuration (a later reset cascade would clobber the 60s
+    // set by the recorder otherwise).
+    state = ClipManagerState(maxDuration: state.maxDuration);
   }
 
   /// Remove all clips and reset state.
@@ -819,7 +831,10 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       name: 'ClipManagerNotifier',
       category: .video,
     );
-    state = ClipManagerState();
+    // Preserve the session recording/editing cap: clearing clips must not reset
+    // the mode-derived maxDuration (a later reset cascade would clobber the 60s
+    // set by the recorder otherwise).
+    state = ClipManagerState(maxDuration: state.maxDuration);
 
     // Delete autosave draft and its associated files
     if (!keepAutosavedDraft) {

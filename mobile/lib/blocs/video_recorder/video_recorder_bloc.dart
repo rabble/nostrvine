@@ -1369,6 +1369,10 @@ class VideoRecorderBloc
       _readVideoEditor().reset(keepAutosavedDraft: keepAutosavedDraft);
     }
 
+    // Raise/lower the session recording-and-editing cap to match the new mode.
+    // Set after any clearAll above, which resets state to the default cap.
+    _readClipManager().setMaxDuration(mode.maxRecordingDuration);
+
     Log.debug(
       '🎬 Recorder mode changed to: ${mode.name}',
       name: 'VideoRecorderBloc',

@@ -4,6 +4,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
@@ -55,83 +56,85 @@ void main() {
         addTearDown(volumePreview.dispose);
 
         await tester.pumpWidget(
-          MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => MediaQuery(
-                  data: MediaQuery.of(context).copyWith(
-                    padding: const EdgeInsets.only(bottom: 34),
-                  ),
-                  child: SizedBox(
-                    width: 400,
-                    height: 800,
-                    child: MultiBlocProvider(
-                      providers: [
-                        BlocProvider<VideoEditorMainBloc>.value(
-                          value: mainBloc,
+          ProviderScope(
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => MediaQuery(
+                    data: MediaQuery.of(context).copyWith(
+                      padding: const EdgeInsets.only(bottom: 34),
+                    ),
+                    child: SizedBox(
+                      width: 400,
+                      height: 800,
+                      child: MultiBlocProvider(
+                        providers: [
+                          BlocProvider<VideoEditorMainBloc>.value(
+                            value: mainBloc,
+                          ),
+                          BlocProvider<TimelineOverlayBloc>.value(
+                            value: overlayBloc,
+                          ),
+                        ],
+                        child: VideoEditorTimelineInteractiveBody(
+                          playheadPosition: playhead,
+                          totalDuration: const Duration(seconds: 12),
+                          formatPosition: (_) => '',
+                          onStepPosition: (_, _, _) {},
+                          onPointerDown: (_) {},
+                          onPointerMove: (_) {},
+                          onPointerUp: (_) {},
+                          onPointerCancel: (_) {},
+                          onScrollNotification: (_) => false,
+                          scrollController: scrollController,
+                          isPinching: false,
+                          isTrimming: false,
+                          halfScreen: 200,
+                          pixelsPerSecond: 80,
+                          clips: const <DivineVideoClip>[],
+                          totalWidth: 960,
+                          isInteracting: false,
+                          onReorder: (_) {},
+                          onReorderChanged: (_) {},
+                          trimmingClipId: null,
+                          onTrimChanged:
+                              ({
+                                required clipId,
+                                required isStart,
+                                required trimStart,
+                                required trimEnd,
+                              }) {},
+                          onTrimDragChanged: (_) {},
+                          onClipTapped: (_) {},
+                          isMultiSelectMode: false,
+                          selectedClipIds: const <String>{},
+                          onOverlayItemMoved:
+                              ({
+                                required item,
+                                required startTime,
+                                required row,
+                                required insertAbove,
+                              }) {},
+                          onOverlayItemMoving:
+                              ({required item, required startTime}) {},
+                          onOverlayItemTrimmed:
+                              ({
+                                required item,
+                                required startTime,
+                                required endTime,
+                                required isStart,
+                              }) {},
+                          onOverlayTrimDragChanged: (_) {},
+                          onOverlayItemTapped: (_) {},
+                          onOverlayDragStarted: (_) {},
+                          onOverlayDragEnded: () {},
+                          verticalScrollController: verticalScrollController,
+                          overlayStripsScrollController:
+                              overlayStripsScrollController,
+                          volumePreviewNotifier: volumePreview,
                         ),
-                        BlocProvider<TimelineOverlayBloc>.value(
-                          value: overlayBloc,
-                        ),
-                      ],
-                      child: VideoEditorTimelineInteractiveBody(
-                        playheadPosition: playhead,
-                        totalDuration: const Duration(seconds: 12),
-                        formatPosition: (_) => '',
-                        onStepPosition: (_, _, _) {},
-                        onPointerDown: (_) {},
-                        onPointerMove: (_) {},
-                        onPointerUp: (_) {},
-                        onPointerCancel: (_) {},
-                        onScrollNotification: (_) => false,
-                        scrollController: scrollController,
-                        isPinching: false,
-                        isTrimming: false,
-                        halfScreen: 200,
-                        pixelsPerSecond: 80,
-                        clips: const <DivineVideoClip>[],
-                        totalWidth: 960,
-                        isInteracting: false,
-                        onReorder: (_) {},
-                        onReorderChanged: (_) {},
-                        trimmingClipId: null,
-                        onTrimChanged:
-                            ({
-                              required clipId,
-                              required isStart,
-                              required trimStart,
-                              required trimEnd,
-                            }) {},
-                        onTrimDragChanged: (_) {},
-                        onClipTapped: (_) {},
-                        isMultiSelectMode: false,
-                        selectedClipIds: const <String>{},
-                        onOverlayItemMoved:
-                            ({
-                              required item,
-                              required startTime,
-                              required row,
-                              required insertAbove,
-                            }) {},
-                        onOverlayItemMoving:
-                            ({required item, required startTime}) {},
-                        onOverlayItemTrimmed:
-                            ({
-                              required item,
-                              required startTime,
-                              required endTime,
-                              required isStart,
-                            }) {},
-                        onOverlayTrimDragChanged: (_) {},
-                        onOverlayItemTapped: (_) {},
-                        onOverlayDragStarted: (_) {},
-                        onOverlayDragEnded: () {},
-                        verticalScrollController: verticalScrollController,
-                        overlayStripsScrollController:
-                            overlayStripsScrollController,
-                        volumePreviewNotifier: volumePreview,
                       ),
                     ),
                   ),

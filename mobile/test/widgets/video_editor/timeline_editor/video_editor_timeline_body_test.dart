@@ -5,6 +5,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model;
@@ -77,28 +78,30 @@ void main() {
       addTearDown(playhead.dispose);
 
       await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: MultiBlocProvider(
-            providers: [
-              BlocProvider<VideoEditorMainBloc>.value(value: mainBloc),
-              BlocProvider<TimelineOverlayBloc>.value(value: overlayBloc),
-            ],
-            child: SizedBox(
-              height: 120000,
-              child: VideoEditorTimelineBody(
-                totalDuration: totalDuration,
-                pixelsPerSecond: 80,
-                scrollController: scrollController,
-                overlayStripsScrollController: overlayStripsScrollController,
-                scrollPadding: 16,
-                clips: clips,
-                totalWidth: 960,
-                isInteracting: false,
-                onReorder: (_) {},
-                onReorderChanged: (_) {},
-                playheadPosition: playhead,
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<VideoEditorMainBloc>.value(value: mainBloc),
+                BlocProvider<TimelineOverlayBloc>.value(value: overlayBloc),
+              ],
+              child: SizedBox(
+                height: 120000,
+                child: VideoEditorTimelineBody(
+                  totalDuration: totalDuration,
+                  pixelsPerSecond: 80,
+                  scrollController: scrollController,
+                  overlayStripsScrollController: overlayStripsScrollController,
+                  scrollPadding: 16,
+                  clips: clips,
+                  totalWidth: 960,
+                  isInteracting: false,
+                  onReorder: (_) {},
+                  onReorderChanged: (_) {},
+                  playheadPosition: playhead,
+                ),
               ),
             ),
           ),

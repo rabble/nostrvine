@@ -791,6 +791,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                                         // keyboard.
                                         isActive: !_replyComposerFocused,
                                         videos: state.videos,
+                                        seriesSegments: state.seriesSegments,
                                         contextTitle: widget.contextTitle,
                                         currentIndex: state.currentIndex,
                                         hasMore: state.canLoadMore,

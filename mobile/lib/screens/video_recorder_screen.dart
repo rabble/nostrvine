@@ -442,6 +442,9 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
                         .capture => VideoRecorderCaptureStack(
                           fromEditor: widget.fromEditor,
                         ),
+                        .sixtySeconds => VideoRecorderCaptureStack(
+                          fromEditor: widget.fromEditor,
+                        ),
                         .lipSync => const VideoRecorderLipSyncStack(),
                         .classic => const VideoRecorderClassicStack(),
                       },

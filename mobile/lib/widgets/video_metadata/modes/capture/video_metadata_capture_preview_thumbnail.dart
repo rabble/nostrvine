@@ -10,9 +10,17 @@ import 'package:pro_image_editor/features/filter_editor/widgets/filter_generator
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 class VideoMetadataCapturePreviewThumbnail extends ConsumerWidget {
-  const VideoMetadataCapturePreviewThumbnail({required this.clip, super.key});
+  const VideoMetadataCapturePreviewThumbnail({
+    required this.clip,
+    this.thumbnailPathOverride,
+    super.key,
+  });
 
   final DivineVideoClip clip;
+
+  /// Cover path for the active series segment; falls back to the clip's own
+  /// thumbnail when null (single-video case).
+  final String? thumbnailPathOverride;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,13 +28,14 @@ class VideoMetadataCapturePreviewThumbnail extends ConsumerWidget {
       videoEditorProvider.select((s) => s.editorEditingParameters),
     );
 
-    if (clip.thumbnailPath == null) {
+    final thumbnailPath = thumbnailPathOverride ?? clip.thumbnailPath;
+    if (thumbnailPath == null) {
       return const Center(
         child: DivineIcon(icon: .warning, size: 32, color: VineTheme.lightText),
       );
     }
 
-    final thumbnail = Image.file(File(clip.thumbnailPath!), fit: .cover);
+    final thumbnail = Image.file(File(thumbnailPath), fit: .cover);
 
     return Stack(
       fit: .expand,

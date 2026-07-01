@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/segment_thumbnail_provider.dart';
+import 'package:openvine/providers/series_metadata_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_cover_screen.dart';
 import 'package:openvine/widgets/video_editor/video_editor_processing_overlay.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_preview_thumbnail.dart';
+import 'package:openvine/widgets/video_metadata/segment_clip_loader.dart';
 
 /// Video clip preview widget with thumbnail and play button.
 ///
@@ -20,11 +22,14 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
   const VideoMetadataCaptureClipPreview({super.key});
 
   /// Opens the cover selection screen.
-  Future<void> _openCoverEditor(
-    BuildContext context,
-    DivineVideoClip clip,
-  ) async {
+  ///
+  /// For a multi-segment series this picks a cover for the active segment
+  /// (rendering it on demand); for a single video it edits the whole clip.
+  Future<void> _openCoverEditor(BuildContext context, WidgetRef ref) async {
     FocusManager.instance.primaryFocus?.unfocus();
+    final isSeries = ref.read(seriesMetadataProvider).isSeries;
+    final clip = await resolveActiveSegmentClip(context, ref);
+    if (clip == null || !context.mounted) return;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final duration = reduceMotion
         ? Duration.zero
@@ -34,7 +39,10 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
       PageRouteBuilder<void>(
         transitionDuration: duration,
         reverseTransitionDuration: duration,
-        pageBuilder: (_, _, _) => VideoMetadataCoverScreen(clip: clip),
+        pageBuilder: (_, _, _) => VideoMetadataCoverScreen(
+          clip: clip,
+          editSeriesSegment: isSeries,
+        ),
         transitionsBuilder: (_, animation, _, child) {
           if (reduceMotion) return child;
           return FadeTransition(opacity: animation, child: child);
@@ -60,6 +68,19 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
     final clip = state.finalRenderedClip ?? clips.first;
     final isReady = state.finalRenderedClip != null;
 
+    // For a multi-segment series, the preview shows the active segment's cover
+    // pulled from its own window of the shared clip. While it resolves, fall
+    // back to the clip's own thumbnail (segment 0's frame).
+    final series = ref.watch(
+      seriesMetadataProvider.select(
+        (s) => (isSeries: s.isSeries, activeIndex: s.activeIndex),
+      ),
+    );
+    final segmentThumbnailPath = series.isSeries
+        ? ref.watch(segmentThumbnailProvider(series.activeIndex)).value
+        : null;
+    final displayedThumbnailPath = segmentThumbnailPath ?? clip.thumbnailPath;
+
     return Center(
       child: SizedBox(
         height: 200,
@@ -77,10 +98,7 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
                 enabled: isReady,
                 label: context.l10n.videoMetadataOpenPreviewSemanticLabel,
                 child: GestureDetector(
-                  onTap: isReady
-                      ? () =>
-                            _openCoverEditor(context, state.finalRenderedClip!)
-                      : null,
+                  onTap: isReady ? () => _openCoverEditor(context, ref) : null,
                   child: Stack(
                     children: [
                       // Video thumbnail or placeholder
@@ -93,9 +111,14 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
                             ),
 
                         duration: const Duration(milliseconds: 150),
-                        child: clip.thumbnailPath != null
-                            ? // Video thumbnail image
-                              VideoMetadataCapturePreviewThumbnail(clip: clip)
+                        child: displayedThumbnailPath != null
+                            ? // Video thumbnail image; keyed on the segment path
+                              // so switching tabs cross-fades to the new cover.
+                              VideoMetadataCapturePreviewThumbnail(
+                                key: ValueKey(displayedThumbnailPath),
+                                clip: clip,
+                                thumbnailPathOverride: segmentThumbnailPath,
+                              )
                             : // Fallback placeholder
                               const ColoredBox(
                                 color: VineTheme.onSurfaceMuted,
@@ -121,10 +144,7 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
                               icon: .pencilSimpleLine,
                               type: .ghostSecondary,
                               size: .small,
-                              onPressed: () => _openCoverEditor(
-                                context,
-                                state.finalRenderedClip!,
-                              ),
+                              onPressed: () => _openCoverEditor(context, ref),
                             ),
                           ),
                         ),

@@ -821,6 +821,8 @@ class VideoEventPublisher {
     String? contentWarning,
     VideoReplyContext? replyContext,
     bool addReplyToFeed = false,
+    VideoSeries? series,
+    String? dTagOverride,
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -846,7 +848,42 @@ class VideoEventPublisher {
       thumbnailTimestamp: thumbnailTimestamp,
       replyContext: replyContext,
       addReplyToFeed: addReplyToFeed,
+      series: series,
+      dTagOverride: dTagOverride,
     );
+  }
+
+  /// Publishes a NIP-51 kind-30005 container linking the ordered segments of a
+  /// series, so clients can reconstruct or deeplink the whole series.
+  ///
+  /// [segmentAddresses] are `<kind>:<pubkey>:<d-tag>` coordinates in order.
+  Future<bool> publishSeriesContainer({
+    required String seriesId,
+    required List<String> segmentAddresses,
+    String? title,
+  }) async {
+    final authService = _authService;
+    if (authService == null) return false;
+    final tags = <List<String>>[
+      ['d', 'series-$seriesId'],
+      if (title != null && title.isNotEmpty) ['title', title],
+      for (final address in segmentAddresses) ['a', address],
+    ];
+    // NIP-51 curation set (kind 30005) reused as the series container.
+    final event = await authService.createAndSignEvent(
+      kind: 30005,
+      content: '',
+      tags: tags,
+    );
+    if (event == null) {
+      Log.error(
+        'Failed to sign series container event',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return false;
+    }
+    return _publishEventToNostr(event);
   }
 
   /// Publish a video directly without polling (for direct upload)
@@ -867,6 +904,8 @@ class VideoEventPublisher {
     String? contentWarning,
     VideoReplyContext? replyContext,
     bool addReplyToFeed = false,
+    VideoSeries? series,
+    String? dTagOverride,
   }) async {
     if (upload.videoId == null || upload.cdnUrl == null) {
       Log.error(
@@ -909,9 +948,13 @@ class VideoEventPublisher {
       // Generate unique identifier for the addressable event
       // Use videoId if available, otherwise generate from timestamp and upload ID
       final dTag =
+          dTagOverride ??
           upload.videoId ??
           '${DateTime.now().millisecondsSinceEpoch}_${upload.id}';
       tags.add(['d', dTag]);
+      if (series != null) {
+        tags.add(['series', series.id, '${series.index}', '${series.total}']);
+      }
 
       if (replyContext != null) {
         _addReplyTags(tags, replyContext);

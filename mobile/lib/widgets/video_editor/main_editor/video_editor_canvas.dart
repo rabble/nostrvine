@@ -1470,6 +1470,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       clipManagerProvider.select((s) => s.firstClipOrNull),
     );
     if (clip == null) return const SizedBox.shrink();
+    // Session cap (60s in the 60s mode) for the over-limit indicator.
+    final maxDurationMs = ref
+        .watch(clipManagerProvider.select((s) => s.maxDuration))
+        .inMilliseconds;
 
     final editorStateHistory = ref.read(
       videoEditorProvider.select((s) => s.editorStateHistory),
@@ -1991,7 +1995,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
                           selector: (state) => (
                             isOver:
                                 state.currentPosition.inMilliseconds >
-                                VideoEditorConstants.maxDuration.inMilliseconds,
+                                maxDurationMs,
                             isReordering: state.isReordering,
                             isSubEditorOpen: state.isSubEditorOpen,
                           ),

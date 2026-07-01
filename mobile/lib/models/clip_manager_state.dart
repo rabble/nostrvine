@@ -48,6 +48,7 @@ class ClipManagerState {
     this.activeRecordingDuration = .zero,
     this.mergeOutputPath,
     this.pendingDeletion,
+    this.maxDuration = VideoEditorConstants.maxDuration,
   });
 
   /// List of all recorded clips in order.
@@ -85,6 +86,14 @@ class ClipManagerState {
   /// library trash; UI uses this to drive the Undo snackbar.
   final ClipPendingDeletion? pendingDeletion;
 
+  /// Maximum total recording/editing duration allowed for this session.
+  ///
+  /// Defaults to [VideoEditorConstants.maxDuration] (6.3s). The 60s recorder
+  /// mode raises this; the recorder, editor, and export paths read the cap
+  /// from here rather than the constant so the whole session honours one
+  /// limit.
+  final Duration maxDuration;
+
   /// Total combined duration of all clips.
   Duration get totalDuration {
     return clips.fold(Duration.zero, (sum, clip) => sum + clip.duration);
@@ -94,7 +103,7 @@ class ClipManagerState {
   ///
   /// Returns zero if max duration has been reached or exceeded.
   Duration get remainingDuration {
-    final remaining = VideoEditorConstants.maxDuration - totalDuration;
+    final remaining = maxDuration - totalDuration;
     return remaining.isNegative ? Duration.zero : remaining;
   }
 
@@ -152,6 +161,7 @@ class ClipManagerState {
     bool clearMergeOutputPath = false,
     ClipPendingDeletion? pendingDeletion,
     bool clearPendingDeletion = false,
+    Duration? maxDuration,
   }) {
     return ClipManagerState(
       clips: clips ?? this.clips,
@@ -173,6 +183,7 @@ class ClipManagerState {
       pendingDeletion: clearPendingDeletion
           ? null
           : (pendingDeletion ?? this.pendingDeletion),
+      maxDuration: maxDuration ?? this.maxDuration,
     );
   }
 }

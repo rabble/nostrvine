@@ -7,9 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
+import 'package:openvine/widgets/video_metadata/segment_clip_loader.dart';
 
 /// A custom header widget for video metadata screens.
 /// Unlike AppBar, this provides full control over layout and positioning.
@@ -22,8 +22,13 @@ class VideoMetadataCaptureAppBar extends ConsumerWidget
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   /// Opens the full-screen video preview with a fade transition.
-  Future<void> _openPreview(BuildContext context, DivineVideoClip clip) async {
+  ///
+  /// For a multi-segment series this previews the active segment (rendering it
+  /// on demand); for a single video it previews the whole clip.
+  Future<void> _openPreview(BuildContext context, WidgetRef ref) async {
     FocusManager.instance.primaryFocus?.unfocus();
+    final clip = await resolveActiveSegmentClip(context, ref);
+    if (clip == null || !context.mounted) return;
     await Navigator.push(
       context,
       PageRouteBuilder<void>(
@@ -77,9 +82,7 @@ class VideoMetadataCaptureAppBar extends ConsumerWidget
               type: .ghostSecondary,
               size: .small,
               semanticLabel: context.l10n.videoMetadataOpenPreviewSemanticLabel,
-              onPressed: isReady
-                  ? () => _openPreview(context, state.finalRenderedClip!)
-                  : null,
+              onPressed: isReady ? () => _openPreview(context, ref) : null,
             ),
           ],
         ),

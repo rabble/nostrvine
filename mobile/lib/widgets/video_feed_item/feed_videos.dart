@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart'
     hide PlaybackStatus;
 import 'package:flutter/foundation.dart' show ValueListenable;
@@ -56,10 +57,15 @@ class FeedVideos extends ConsumerStatefulWidget {
     this.onActiveVideoChanged,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
+    this.seriesSegments = const {},
     super.key,
   });
 
   final List<VideoEvent> videos;
+
+  /// Ordered segment lists keyed by series id, for videos in [videos] that are
+  /// series anchors. Drives the nested horizontal swipe feed for a series.
+  final Map<String, List<VideoEvent>> seriesSegments;
   final VoidCallback onNearEnd;
   final int currentIndex;
   final String? contextTitle;
@@ -129,14 +135,27 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   /// playback — a warned video must stay paused until revealed.
   final Set<String> _revealedContentWarningVideoIds = <String>{};
 
+  /// Whether [video] is a series anchor rendered as a nested horizontal swipe
+  /// feed (its segments played by that nested feed, not the outer pool).
+  bool _isSeriesAnchor(VideoEvent video) {
+    final series = video.series;
+    if (series == null) return false;
+    final segments = widget.seriesSegments[series.id];
+    return segments != null && segments.length > 1;
+  }
+
   /// Whether [video] may start playing: either it has no content-warning
   /// gate, or the user already chose "View Anyway" for it.
-  bool _canAutoPlayVideo(VideoEvent video) =>
-      !shouldShowContentWarningOverlay(
-        contentWarningLabels: video.contentWarningLabels,
-        warnLabels: video.warnLabels,
-      ) ||
-      _revealedContentWarningVideoIds.contains(video.id);
+  bool _canAutoPlayVideo(VideoEvent video) {
+    // Series anchors are played by the nested horizontal series feed, not the
+    // outer pool, so the outer must not also play them (avoids double audio).
+    if (_isSeriesAnchor(video)) return false;
+    return !shouldShowContentWarningOverlay(
+          contentWarningLabels: video.contentWarningLabels,
+          warnLabels: video.warnLabels,
+        ) ||
+        _revealedContentWarningVideoIds.contains(video.id);
+  }
 
   /// Marks [videoId] as revealed and starts playback of the active video.
   void _revealContentWarning(String videoId) {
@@ -314,6 +333,19 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
           }
           final video = widget.videos[index];
 
+          // Series anchor: render the ordered segments as a horizontal swipe
+          // feed (its own pooled controllers) instead of a single video.
+          final series = video.series;
+          final seriesSegments = series != null
+              ? widget.seriesSegments[series.id]
+              : null;
+          if (seriesSegments != null && seriesSegments.length > 1) {
+            return _SeriesSwipeFeed(
+              segments: seriesSegments,
+              shouldPortraitExpand: widget.shouldPortraitExpand,
+            );
+          }
+
           final thumbnailUrl = video.thumbnailUrl;
           final showBlurBackdrop =
               !video.isPortrait &&
@@ -325,6 +357,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
               if (showBlurBackdrop)
                 Positioned.fill(child: BlurredVideoBackdrop(url: thumbnailUrl)),
               child,
+              if (video.series != null) _SeriesBadge(series: video.series!),
             ],
           );
         },
@@ -394,6 +427,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
               video: video,
               index: index,
               isActive: isActive,
+              isSeriesAnchor: _isSeriesAnchor(video),
               contextTitle: widget.contextTitle,
               contentWarningRevealed: _revealedContentWarningVideoIds.contains(
                 video.id,
@@ -416,6 +450,7 @@ class _Overlay extends ConsumerStatefulWidget {
     required this.video,
     required this.index,
     required this.isActive,
+    required this.isSeriesAnchor,
     required this.contentWarningRevealed,
     required this.onContentWarningRevealed,
     this.onToggleAutoAdvance,
@@ -427,6 +462,11 @@ class _Overlay extends ConsumerStatefulWidget {
   final VideoEvent video;
   final int index;
   final bool isActive;
+
+  /// Whether this item is a series anchor whose segments are played by the
+  /// nested horizontal feed. The outer paused-video overlay is suppressed for
+  /// it, since the outer controller is intentionally kept paused.
+  final bool isSeriesAnchor;
 
   /// Whether the user already dismissed this video's content warning.
   /// Owned by [FeedVideosState] so the autoplay gate can read it too.
@@ -686,7 +726,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
                         : null,
                     child: Stack(
                       children: [
-                        if (widget.controller != null)
+                        if (widget.controller != null && !widget.isSeriesAnchor)
                           PausedVideoOverlay(
                             controller: widget.controller!,
                             isVisible: widget.isActive,
@@ -721,6 +761,132 @@ class __OverlayState extends ConsumerState<_Overlay> {
           ),
         );
     }
+  }
+}
+
+/// Overlay marking a feed card as one segment of a series (`x/N` + dots).
+///
+/// Driven by [VideoEvent.series] on the collapsed anchor, so the user sees a
+/// single card per series rather than a flooded feed. Full per-segment
+/// horizontal swipe playback is a follow-up (nested horizontal feed).
+class _SeriesBadge extends StatelessWidget {
+  const _SeriesBadge({required this.series});
+
+  final VideoSeries series;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: MediaQuery.paddingOf(context).top + 12,
+      left: 0,
+      right: 0,
+      child: IgnorePointer(
+        child: MediaQuery.withNoTextScaling(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: VineTheme.scrim65,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  child: Text(
+                    series.positionLabel,
+                    style: VineTheme.captionPillFont(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              _SeriesDots(index: series.index, total: series.total),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SeriesDots extends StatelessWidget {
+  const _SeriesDots({required this.index, required this.total});
+
+  final int index;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    // Cap rendered dots so a long series doesn't overflow the row.
+    const maxDots = 10;
+    final count = total > maxDots ? maxDots : total;
+    final activeDot = total > maxDots ? (index * maxDots ~/ total) : index;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < count; i++)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: i == activeDot
+                    ? VineTheme.whiteText
+                    : VineTheme.whiteText.withValues(alpha: 0.4),
+              ),
+              child: const SizedBox.square(dimension: 5),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// A series rendered as a horizontal swipe of its segments, each played by its
+/// own pooled controller via a nested horizontal [InfiniteVideoFeed].
+///
+/// The outer feed does not auto-play series anchors (see [_canAutoPlayVideo]),
+/// so only this nested feed drives series playback — avoiding double audio.
+class _SeriesSwipeFeed extends ConsumerWidget {
+  const _SeriesSwipeFeed({
+    required this.segments,
+    required this.shouldPortraitExpand,
+  });
+
+  final List<VideoEvent> segments;
+  final bool shouldPortraitExpand;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return InfiniteVideoFeed(
+      videos: segments,
+      cache: ref.read(mediaCacheProvider),
+      urlResolver: (video) => video.getOptimalVideoUrlForPlatform(),
+      scrollDirection: Axis.horizontal,
+      shouldPortraitExpand: shouldPortraitExpand,
+      videoBuilder: (context, child, index, controller) {
+        if (index < 0 || index >= segments.length) {
+          return const SizedBox.shrink();
+        }
+        final video = segments[index];
+        final thumbnailUrl = video.thumbnailUrl;
+        final showBlurBackdrop =
+            !video.isPortrait &&
+            thumbnailUrl != null &&
+            thumbnailUrl.isNotEmpty;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            if (showBlurBackdrop)
+              Positioned.fill(child: BlurredVideoBackdrop(url: thumbnailUrl)),
+            child,
+            if (video.series != null) _SeriesBadge(series: video.series!),
+          ],
+        );
+      },
+    );
   }
 }
 

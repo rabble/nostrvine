@@ -22,7 +22,10 @@ void main() {
         home: Scaffold(
           body: Center(
             child: SizedBox(
-              width: 400,
+              // Wide enough for the horizontal picker to lay out all mode
+              // labels at once (5 modes × 96px item extent). In production the
+              // wheel is a scrollable picker, so not all fit on a phone width.
+              width: 700,
               child: VideoRecorderModeSelectorWheel(
                 selectedMode: mode ?? selectedMode,
                 onModeChanged: (m) => modeChanges.add(m),

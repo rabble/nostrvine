@@ -37,7 +37,12 @@ class VideoEditorConstants {
   /// Whether to enforce the tag limit in the UI.
   static const bool enableTagLimit = false;
 
-  /// Maximum recording duration for videos.
+  /// Standard maximum recording duration for videos (the classic 6s loop).
+  ///
+  /// This is the default cap only. The active, per-session cap lives in
+  /// `ClipManagerState.maxDuration`, which the 60s recorder mode raises. Read
+  /// the clip-manager value (not this constant) wherever a session-aware
+  /// limit is needed; this constant is the fallback/default seed.
   static const maxDuration = Duration(seconds: 6, milliseconds: 300);
 
   /// Default time offset for extracting video thumbnails.

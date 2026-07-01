@@ -1,8 +1,10 @@
 import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/constants/video_editor_constants.dart';
 
 enum VideoRecorderMode {
   upload,
   capture,
+  sixtySeconds,
   lipSync,
   classic,
   ;
@@ -21,6 +23,7 @@ enum VideoRecorderMode {
   String get label => switch (this) {
     .upload => 'Upload',
     .capture => 'Capture',
+    .sixtySeconds => '60s',
     .lipSync => 'Lip Sync',
     .classic => 'Classic',
   };
@@ -28,6 +31,7 @@ enum VideoRecorderMode {
   bool get hasRecordingLimit => switch (this) {
     .upload => false,
     .capture => false,
+    .sixtySeconds => false,
     .lipSync => true,
     .classic => true,
   };
@@ -35,6 +39,7 @@ enum VideoRecorderMode {
   bool get hasVideoEditor => switch (this) {
     .upload => false,
     .capture => true,
+    .sixtySeconds => true,
     .lipSync => true,
     .classic => false,
   };
@@ -42,6 +47,7 @@ enum VideoRecorderMode {
   bool get supportGridLines => switch (this) {
     .upload => false,
     .capture => false,
+    .sixtySeconds => false,
     .lipSync => false,
     .classic => true,
   };
@@ -49,6 +55,7 @@ enum VideoRecorderMode {
   bool get supportsCountdownTimer => switch (this) {
     .upload => false,
     .capture => true,
+    .sixtySeconds => true,
     .lipSync => true,
     .classic => false,
   };
@@ -56,7 +63,22 @@ enum VideoRecorderMode {
   model.AspectRatio get defaultAspectRatio => switch (this) {
     .upload => .vertical,
     .capture => .vertical,
+    .sixtySeconds => .vertical,
     .lipSync => .vertical,
     .classic => .square,
+  };
+
+  /// Maximum total recording and editing duration for this mode.
+  ///
+  /// The 60s mode raises the cap; every other mode keeps the standard
+  /// [VideoEditorConstants.defaultMaxDuration]. The recorder applies this to
+  /// the runtime [VideoEditorConstants.maxDuration] on mode change so the
+  /// recorder, editor, render and upload paths all honour the same limit.
+  Duration get maxRecordingDuration => switch (this) {
+    .sixtySeconds => const Duration(seconds: 60),
+    .upload ||
+    .capture ||
+    .lipSync ||
+    .classic => VideoEditorConstants.maxDuration,
   };
 }

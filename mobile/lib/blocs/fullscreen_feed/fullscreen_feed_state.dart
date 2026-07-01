@@ -50,6 +50,7 @@ final class FullscreenFeedState extends Equatable {
   const FullscreenFeedState({
     this.status = FullscreenFeedStatus.initial,
     this.videos = const [],
+    this.seriesSegments = const {},
     this.currentIndex = 0,
     this.isLoadingMore = false,
     this.canLoadMore = false,
@@ -63,8 +64,13 @@ final class FullscreenFeedState extends Equatable {
   /// The current status.
   final FullscreenFeedStatus status;
 
-  /// The list of videos from the source.
+  /// The list of videos from the source, with each series collapsed to one
+  /// anchor item.
   final List<VideoEvent> videos;
+
+  /// Maps a series id to its full, index-ordered segment list, so a series
+  /// anchor in [videos] can render a horizontal swipe of its segments.
+  final Map<String, List<VideoEvent>> seriesSegments;
 
   /// The currently displayed video index.
   final int currentIndex;
@@ -131,6 +137,7 @@ final class FullscreenFeedState extends Equatable {
   FullscreenFeedState copyWith({
     FullscreenFeedStatus? status,
     List<VideoEvent>? videos,
+    Map<String, List<VideoEvent>>? seriesSegments,
     int? currentIndex,
     bool? isLoadingMore,
     bool? canLoadMore,
@@ -144,6 +151,7 @@ final class FullscreenFeedState extends Equatable {
     return FullscreenFeedState(
       status: status ?? this.status,
       videos: videos ?? this.videos,
+      seriesSegments: seriesSegments ?? this.seriesSegments,
       currentIndex: currentIndex ?? this.currentIndex,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       canLoadMore: canLoadMore ?? this.canLoadMore,
@@ -162,6 +170,7 @@ final class FullscreenFeedState extends Equatable {
   List<Object?> get props => [
     status,
     videos,
+    seriesSegments,
     videoUpdateSignature,
     currentIndex,
     isLoadingMore,
