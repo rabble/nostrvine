@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:keycast_flutter/src/crypto/key_utils.dart';
 import 'package:keycast_flutter/src/models/exceptions.dart';
 import 'package:keycast_flutter/src/models/keycast_session.dart';
+import 'package:keycast_flutter/src/oauth/account_status.dart';
 import 'package:keycast_flutter/src/oauth/callback_result.dart';
 import 'package:keycast_flutter/src/oauth/headless_models.dart';
 import 'package:keycast_flutter/src/oauth/oauth_config.dart';
@@ -718,6 +719,32 @@ class KeycastOAuth {
         'Network error: $e',
         failure: KeycastAuthFailure.network,
       );
+    }
+  }
+
+  /// Fetch the current account status from Keycast, including the durable
+  /// approved-minor flag (`verified_minor`, keycast#263).
+  ///
+  /// Requires an active bearer [token]. Returns the parsed
+  /// [KeycastAccountStatus], or null on any non-200 response, timeout, or
+  /// network/parse error — callers treat null as "unknown / not a minor".
+  Future<KeycastAccountStatus?> getAccountStatus(String token) async {
+    try {
+      final response = await _client
+          .get(
+            Uri.parse('${config.serverUrl}/api/user/account'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(requestTimeout);
+
+      if (response.statusCode != 200) return null;
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return KeycastAccountStatus.fromJson(json);
+    } catch (_) {
+      return null;
     }
   }
 

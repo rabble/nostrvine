@@ -4,6 +4,7 @@
 export 'src/crypto/key_utils.dart';
 export 'src/models/exceptions.dart';
 export 'src/models/keycast_session.dart';
+export 'src/oauth/account_status.dart';
 export 'src/oauth/callback_result.dart';
 export 'src/oauth/headless_models.dart';
 export 'src/oauth/oauth_client.dart';
