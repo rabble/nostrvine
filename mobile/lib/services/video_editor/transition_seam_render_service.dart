@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:openvine/extensions/divine_video_clip_player_mapping.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
+import 'package:openvine/services/video_editor/clip_speed_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart'
@@ -525,10 +526,17 @@ Duration _maxDur(Duration a, Duration b) => a > b ? a : b;
 /// Transitions are taken from [clampTransitions] so the
 /// preview consumes exactly what the export will, and a clip touched by
 /// transitions on both sides is split between them rather than replayed.
+///
+/// When [speedRenders] is provided, a clip that runs at a non-1× speed and is
+/// **not** consumed by an adjacent seam plays its pre-rendered normal-rate file
+/// (speed baked in) at 1× instead of retiming live — smoother on both
+/// platforms. Until that render lands (or for a seam-consumed clip) it falls
+/// back to live per-clip retiming, so playback is never blocked on a render.
 List<player.VideoClip> buildSeamAwarePlayerClips(
   List<DivineVideoClip> clips,
-  TransitionSeamRenderService seams,
-) {
+  TransitionSeamRenderService seams, {
+  ClipSpeedRenderService? speedRenders,
+}) {
   final clamped = clampTransitions(clips);
   final result = <player.VideoClip>[];
   for (var i = 0; i < clips.length; i++) {
@@ -553,8 +561,20 @@ List<player.VideoClip> buildSeamAwarePlayerClips(
     final bodyStart = clip.trimStart + headConsumed;
     final bodyEnd = clip.duration - clip.trimEnd - tailConsumed;
     if (bodyEnd > bodyStart) {
-      final bodyClip = clip.toPlayerVideoClip(start: bodyStart, end: bodyEnd);
-      if (bodyClip != null) result.add(bodyClip);
+      // A pre-rendered normal-rate body is only used when no seam consumes part
+      // of this clip — the rendered file spans the full trimmed body, so a
+      // partial seam trim can't be expressed against it. Seam-consumed clips
+      // therefore stay on live retiming.
+      final rendered =
+          headConsumed == Duration.zero && tailConsumed == Duration.zero
+          ? speedRenders?.cached(clip)
+          : null;
+      if (rendered != null) {
+        result.add(player.VideoClip.file(rendered.path, volume: clip.volume));
+      } else {
+        final bodyClip = clip.toPlayerVideoClip(start: bodyStart, end: bodyEnd);
+        if (bodyClip != null) result.add(bodyClip);
+      }
     }
 
     if (outgoingSeam != null) {

@@ -192,10 +192,13 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 self.firstFrameRendered = false
 
                 let playerItem = AVPlayerItem(asset: composition)
-                // Prevent pitch distortion when clips play at a speed
-                // other than 1×. .spectral (phase vocoder) preserves
-                // pitch across the full speed range.
-                playerItem.audioTimePitchAlgorithm = .spectral
+                // Prevent pitch distortion when clips play at a speed other
+                // than 1×. .timeDomain preserves pitch across the editor's
+                // 0.25×–3× range at a fraction of .spectral's (phase vocoder)
+                // CPU cost — the phase vocoder is a real-time hog that steals
+                // cycles from video decode/render on weaker devices, showing up
+                // as dropped or stuttering frames during sped-up preview.
+                playerItem.audioTimePitchAlgorithm = .timeDomain
                 if let videoComposition {
                     playerItem.videoComposition = videoComposition
                 }

@@ -30,6 +30,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
+import 'package:openvine/services/video_editor/clip_speed_render_service.dart';
 import 'package:openvine/services/video_editor/transition_seam_render_service.dart';
 import 'package:openvine/utils/await_push_transition.dart';
 import 'package:openvine/utils/mounted_post_frame.dart';
@@ -482,6 +483,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   /// "rendering transition" overlay so the wait isn't silent.
   final _pendingSeamRenders = ValueNotifier<int>(0);
 
+  /// Renders and caches per-clip normal-rate speed bodies so a non-1× clip can
+  /// play its pre-rendered file at 1× instead of retiming live — smoother on
+  /// both platforms. Rendered in the background; the preview shows the instant
+  /// live-retimed clip until the render swaps in (no overlay, no wait).
+  final _speedRenderService = ClipSpeedRenderService();
+
   @override
   void dispose() {
     Log.info(
@@ -497,6 +504,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     _videoPlayer = null;
     _isPlayerReadyNotifier.dispose();
     _seamService.clear();
+    _speedRenderService.clear();
     _pendingSeamRenders.dispose();
     super.dispose();
   }
@@ -529,6 +537,22 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
             _pendingSeamRenders.value--;
             if (seam != null) _resyncPlayerClips();
           });
+    }
+  }
+
+  /// Kicks off background renders of the normal-rate body for any non-1× clip,
+  /// then swaps the player onto the rendered file when each finishes. Idempotent
+  /// — cached / in-flight clips are skipped — so it is safe to call on every
+  /// clip, trim or speed change. The preview keeps playing the instant
+  /// live-retimed clip until the swap lands.
+  void _ensureSpeedClipsRendered(List<DivineVideoClip> clips) {
+    for (final clip in clips) {
+      if (_speedRenderService.cached(clip) != null) continue;
+      if (_speedRenderService.isRendering(clip)) continue;
+      _speedRenderService.render(clip).then((rendered) {
+        if (!mounted) return;
+        if (rendered != null) _resyncPlayerClips();
+      });
     }
   }
 
@@ -572,7 +596,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     final ownerEpoch = _seekEpoch;
     try {
       final loaded = await _setClipsSafely(_videoPlayer, [
-        ...buildSeamAwarePlayerClips(clips, _seamService),
+        ...buildSeamAwarePlayerClips(
+          clips,
+          _seamService,
+          speedRenders: _speedRenderService,
+        ),
       ], startPosition: _timelineToPlayer(timelineStartPosition));
       if (!loaded) return;
       // Only pin the restored position if no newer swap took over during the
@@ -912,10 +940,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     _pendingSeekTarget = currentPosition;
     unawaited(
       _setClipsSafely(_videoPlayer, [
-        ...buildSeamAwarePlayerClips(clips, _seamService),
+        ...buildSeamAwarePlayerClips(
+          clips,
+          _seamService,
+          speedRenders: _speedRenderService,
+        ),
       ], startPosition: _timelineToPlayer(currentPosition)),
     );
     _ensureSeamsRendered(clips);
+    _ensureSpeedClipsRendered(clips);
   }
 
   /// Creates the [ProVideoController] (only once, not tied to a file).
@@ -1021,7 +1054,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     if (!mounted || !identical(_videoPlayer, player)) return;
     final loaded = await _setClipsSafely(
       player,
-      [...buildSeamAwarePlayerClips(clips, _seamService)],
+      [
+        ...buildSeamAwarePlayerClips(
+          clips,
+          _seamService,
+          speedRenders: _speedRenderService,
+        ),
+      ],
       startPosition: startPosition != null && startPosition > Duration.zero
           ? _timelineToPlayer(startPosition)
           : null,
@@ -1033,6 +1072,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
 
     if (clips.isEmpty) return;
     _ensureSeamsRendered(clips);
+    _ensureSpeedClipsRendered(clips);
     await player.setLooping(looping: true);
     if (!mounted || !identical(_videoPlayer, player)) return;
 
@@ -1524,10 +1564,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         _pendingSeekTarget = currentPosition;
         unawaited(
           _setClipsSafely(_videoPlayer, [
-            ...buildSeamAwarePlayerClips(clips, _seamService),
+            ...buildSeamAwarePlayerClips(
+              clips,
+              _seamService,
+              speedRenders: _speedRenderService,
+            ),
           ], startPosition: _timelineToPlayer(currentPosition)),
         );
         _ensureSeamsRendered(clips);
+        _ensureSpeedClipsRendered(clips);
       },
     );
 
@@ -1551,10 +1596,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         _pendingSeekTarget = currentPosition;
         unawaited(
           _setClipsSafely(_videoPlayer, [
-            ...buildSeamAwarePlayerClips(clips, _seamService),
+            ...buildSeamAwarePlayerClips(
+              clips,
+              _seamService,
+              speedRenders: _speedRenderService,
+            ),
           ], startPosition: _timelineToPlayer(currentPosition)),
         );
         _ensureSeamsRendered(clips);
+        _ensureSpeedClipsRendered(clips);
       },
     );
 
@@ -1579,6 +1629,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
           _swapComposition(clips, timelineStartPosition: currentPosition),
         );
         _ensureSeamsRendered(clips);
+        _ensureSpeedClipsRendered(clips);
       },
     );
 
@@ -1805,7 +1856,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
 
             try {
               final loaded = await _setClipsSafely(_videoPlayer, [
-                ...buildSeamAwarePlayerClips(state.clips, _seamService),
+                ...buildSeamAwarePlayerClips(
+                  state.clips,
+                  _seamService,
+                  speedRenders: _speedRenderService,
+                ),
               ], startPosition: _timelineToPlayer(currentPosition));
               if (!loaded) return;
 
@@ -1860,7 +1915,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
 
             try {
               final loaded = await _setClipsSafely(_videoPlayer, [
-                ...buildSeamAwarePlayerClips(state.clips, _seamService),
+                ...buildSeamAwarePlayerClips(
+                  state.clips,
+                  _seamService,
+                  speedRenders: _speedRenderService,
+                ),
               ], startPosition: _timelineToPlayer(startPosition));
               if (!loaded) return;
               if (mounted) {
