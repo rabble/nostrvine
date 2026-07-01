@@ -733,10 +733,7 @@ class KeycastOAuth {
       final response = await _client
           .get(
             Uri.parse('${config.serverUrl}/api/user/account'),
-            headers: {
-              'Authorization': 'Bearer $token',
-              'Content-Type': 'application/json',
-            },
+            headers: {'Authorization': 'Bearer $token'},
           )
           .timeout(requestTimeout);
 

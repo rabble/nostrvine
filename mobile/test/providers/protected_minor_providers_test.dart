@@ -97,4 +97,29 @@ void main() {
       expect(status.verifiedMinorAt, DateTime.utc(2026, 6, 30, 12));
     },
   );
+
+  test(
+    'isProtectedMinorProvider: false until resolved, true once protected',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'protected_minor_override': true,
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Before the async status resolves, the seam reads false (safe default).
+      expect(container.read(isProtectedMinorProvider), isFalse);
+
+      // After resolution (override forces protected) it reads true, and reading
+      // via `.value` means it won't flicker back to false on a later refetch.
+      await container.read(protectedMinorStatusProvider.future);
+      expect(container.read(isProtectedMinorProvider), isTrue);
+    },
+  );
 }

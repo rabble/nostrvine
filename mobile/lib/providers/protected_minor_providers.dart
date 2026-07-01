@@ -66,10 +66,18 @@ final protectedMinorStatusProvider = FutureProvider<ProtectedMinorStatus>((
   return ref.watch(protectedMinorRepositoryProvider).fetchCurrentStatus();
 });
 
-/// Convenience boolean for widgets/protections: true only once the status has
-/// resolved to a protected minor (loading/error read as not protected).
+/// Convenience boolean seam for the protections (#175/#176).
+///
+/// Reads the last-known status via `.value`, so a protected minor stays protected
+/// through a refetch (AsyncLoading) instead of flickering to not-protected —
+/// matching the blocking review gate, which reads `reviewStatusAsync.value`
+/// (`app_router.dart`). `false` only until the first resolution.
+///
+/// Note: the data layer still fails *open* to not-protected on a transient fetch
+/// error (a decided #174 detection behavior — a network blip resolves to
+/// not-protected). The enforcement fail-safe (retain protection across a
+/// transient error) is #175's to add on top of this seam.
 final isProtectedMinorProvider = Provider<bool>((ref) {
-  return ref
-      .watch(protectedMinorStatusProvider)
-      .maybeWhen(data: (s) => s.isProtectedMinor, orElse: () => false);
+  return ref.watch(protectedMinorStatusProvider).value?.isProtectedMinor ??
+      false;
 });
