@@ -412,9 +412,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Current user profile (null if not authenticated)
   UserProfile? get currentProfile => _currentProfile;
 
-  /// Stream of profile changes
-  Stream<UserProfile?> get profileStream => _profileController.stream;
-
   /// Current public key (npub format).
   ///
   /// Reads from [currentIdentity] when available (post-authentication),
@@ -431,13 +428,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       _currentIdentity?.pubkey ??
       _currentKeyContainer?.publicKeyHex ??
       _currentProfile?.publicKeyHex;
-
-  /// Current secure key container (null if not authenticated).
-  ///
-  /// Production code should use [currentIdentity] instead. This getter
-  /// exists for tests that need direct access to the key container.
-  @visibleForTesting
-  SecureKeyContainer? get currentKeyContainer => _currentKeyContainer;
 
   /// Check if user is authenticated
   @override
@@ -1209,46 +1199,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
   }
 
-  /// Check if there are saved keys on device (without authenticating)
-  ///
-  /// Useful for showing different UI on welcome screen when user has
-  /// previously used the app vs fresh install.
-  Future<bool> hasSavedKeys() async {
-    try {
-      return await _keyStorage.hasKeys();
-    } catch (e, stack) {
-      Log.error(
-        'Secure storage error checking for saved keys: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      _reportStorageError(e, stack, 'hasSavedKeys()');
-      return false;
-    }
-  }
-
-  /// Get the saved npub from storage (without authenticating)
-  ///
-  /// Returns null if no keys are saved. Used to show which identity
-  /// will be resumed on welcome screen.
-  Future<String?> getSavedNpub() async {
-    try {
-      final hasKeys = await _keyStorage.hasKeys();
-      if (!hasKeys) return null;
-
-      final keyContainer = await _keyStorage.getKeyContainer();
-      return keyContainer?.npub;
-    } catch (e, stack) {
-      Log.error(
-        'Secure storage error loading saved npub: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      _reportStorageError(e, stack, 'getSavedNpub()');
-      return null;
-    }
-  }
-
   /// Initialize the authentication service
   Future<void> initialize() async {
     Log.debug(
@@ -1864,32 +1814,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Set this before calling [signOut] when the user picks a different account
   /// from the account-switcher. [WelcomeBloc] reads and clears this on start.
   String? pendingAccountSwitchPubkey;
-
-  /// Updates [lastUsedAt] for an existing known account without signing in.
-  ///
-  /// Use this before [signOut] when the user explicitly selects a different
-  /// account from the account-switcher, so the welcome screen presents that
-  /// account as the pre-selected returning user.
-  Future<void> touchKnownAccount(String pubkeyHex) async {
-    final accounts = await getKnownAccounts();
-    final index = accounts.indexWhere((a) => a.pubkeyHex == pubkeyHex);
-    if (index < 0) return;
-    final updated = accounts[index].copyWith(lastUsedAt: DateTime.now());
-    accounts[index] = updated;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        kKnownAccountsKey,
-        jsonEncode(accounts.map((a) => a.toJson()).toList()),
-      );
-    } catch (e) {
-      Log.warning(
-        'touchKnownAccount: failed to persist for $pubkeyHex: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-  }
 
   // ---------------------------------------------------------------------------
   // Per-account signer info archival
@@ -4407,25 +4331,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         category: LogCategory.auth,
       );
       return false;
-    }
-  }
-
-  /// Get the private key for signing operations
-  Future<String?> getPrivateKeyForSigning({String? biometricPrompt}) async {
-    if (!isAuthenticated) return null;
-
-    try {
-      return await _keyStorage.withPrivateKey<String?>(
-        (privateKeyHex) => privateKeyHex,
-        biometricPrompt: biometricPrompt,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to get private key: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      return null;
     }
   }
 
