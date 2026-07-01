@@ -1,0 +1,60 @@
+// ABOUTME: Tests the protected-minor repository: token gating, mapping, and
+// ABOUTME: fail-closed-to-not-protected behavior on errors (#174)
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:openvine/repositories/protected_minor_repository.dart';
+
+KeycastOAuth _oauthReturning(String body, int status) {
+  return KeycastOAuth(
+    config: const OAuthConfig(
+      serverUrl: 'https://login.divine.video',
+      clientId: 'c',
+      redirectUri: 'divine://cb',
+    ),
+    httpClient: MockClient((_) async => http.Response(body, status)),
+  );
+}
+
+const _minorBody =
+    '{"email":"a","email_verified":true,"public_key":"p",'
+    '"verified_minor":true,"verified_minor_at":"2026-06-30T12:00:00Z"}';
+
+void main() {
+  group('ProtectedMinorRepository.fetchCurrentStatus', () {
+    test('protected when keycast reports verified_minor true', () async {
+      final repo = ProtectedMinorRepository(
+        oauthClient: _oauthReturning(_minorBody, 200),
+        readAccessToken: () async => 'tok',
+      );
+
+      final s = await repo.fetchCurrentStatus();
+
+      expect(s.isProtectedMinor, isTrue);
+    });
+
+    test('not protected when there is no access token', () async {
+      final repo = ProtectedMinorRepository(
+        oauthClient: _oauthReturning(_minorBody, 200),
+        readAccessToken: () async => null,
+      );
+
+      final s = await repo.fetchCurrentStatus();
+
+      expect(s.isProtectedMinor, isFalse);
+    });
+
+    test('not protected on server error', () async {
+      final repo = ProtectedMinorRepository(
+        oauthClient: _oauthReturning('err', 500),
+        readAccessToken: () async => 'tok',
+      );
+
+      final s = await repo.fetchCurrentStatus();
+
+      expect(s.isProtectedMinor, isFalse);
+    });
+  });
+}
