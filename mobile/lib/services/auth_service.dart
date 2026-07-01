@@ -10,8 +10,7 @@ import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
-import 'package:nostr_client/nostr_client.dart'
-    show BlockListSigner, Nip89ClientTag;
+import 'package:nostr_client/nostr_client.dart' show BlockListSigner;
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer, SecureKeyStorage, SecureKeyStorageException;
 import 'package:nostr_sdk/nostr_sdk.dart';
@@ -19,19 +18,16 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
-import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
+import 'package:openvine/services/auth/signer_factory.dart';
 import 'package:openvine/services/auth/signer_secure_store.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
-import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/services/nip07_service.dart';
-import 'package:openvine/services/nip07_signer_adapter.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -67,32 +63,6 @@ enum AuthState {
 
   /// Authentication is in progress (generating/importing keys)
   authenticating,
-}
-
-/// Thrown when a signer returns an event whose author public key does not
-/// match the active identity.
-///
-/// A signing-layer invariant violation: a signer must never produce an event
-/// for a different account than the one that requested signing. Reported to
-/// Crashlytics via [Reportable] (YES on the error-handling matrix), and the
-/// caller fails the publish closed. Carries hex pubkeys only (no npub/nsec),
-/// so it is safe for the [Reportable] sanitizer.
-class EventSignerAccountMismatchException implements Exception {
-  const EventSignerAccountMismatchException({
-    required this.expectedPubkey,
-    required this.actualPubkey,
-  });
-
-  /// The active identity's public key (hex) the event was created with.
-  final String expectedPubkey;
-
-  /// The public key (hex) the signer returned on the signed event.
-  final String actualPubkey;
-
-  @override
-  String toString() =>
-      'EventSignerAccountMismatchException: signer returned an event for '
-      '$actualPubkey but the active identity is $expectedPubkey';
 }
 
 /// Thrown by [AuthService.signInForAccount] when a returning-user sign-in
@@ -278,6 +248,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   final FlutterSecureStorage? _flutterSecureStorage;
   late final SignerSecureStore _signerStore = SignerSecureStore(
     _flutterSecureStorage,
+  );
+  // Tear-off keeps the Crashlytics `auth_source` custom key reading live
+  // state at report time (see _reportAuthError).
+  late final SignerFactory _signerFactory = SignerFactory(
+    crashReporter: _reportAuthError,
   );
   final PreFetchFollowingCallback? _preFetchFollowing;
   final String? _profileCheckIndexerUrl;
@@ -3996,6 +3971,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
   /// Create and sign a Nostr event
   /// Handles both local SecureKeyStorage and remote KeycastRpc signing
+  ///
+  /// Delegates to [SignerFactory.createAndSignEvent]; this facade keeps the
+  /// authenticated/identity guard and the public signature ([biometricPrompt]
+  /// is retained for the 29 existing call sites but unused by the core).
   @override
   Future<Event?> createAndSignEvent({
     required int kind,
@@ -4014,126 +3993,14 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       return null;
     }
 
-    try {
-      // 1. Prepare event metadata and tags
-      // CRITICAL: Divine relays require specific tags for storage
-      final eventTags = List<List<String>>.from(tags ?? []);
-
-      // CRITICAL: Kind 0 events require expiration tag FIRST (matching Python
-      // script order)
-      if (kind == 0) {
-        final expirationTimestamp =
-            (DateTime.now().millisecondsSinceEpoch ~/ 1000) +
-            (72 * 60 * 60); // 72 hours
-        eventTags.add(['expiration', expirationTimestamp.toString()]);
-      }
-
-      if (!Nip89ClientTag.shouldSkipKind(kind) &&
-          !Nip89ClientTag.hasClientTag(eventTags) &&
-          await Nip89ClientTag.isEnabled()) {
-        eventTags.add(Nip89ClientTag.tag);
-      }
-
-      // Create the unsigned event with the identity's pubkey — both the
-      // pubkey and the signing key come from the same identity instance,
-      // structurally preventing the PRIMARY-slot desync bug (#2233).
-      final driftTolerance = NostrTimestamp.getDriftToleranceForKind(kind);
-      final event = Event(
-        identity.pubkey,
-        kind,
-        eventTags,
-        content,
-        createdAt:
-            createdAt ?? NostrTimestamp.now(driftTolerance: driftTolerance),
-      );
-
-      // 2. Sign via the identity — delegates to the correct signer
-      Log.info(
-        'Signing kind $kind via ${identity.runtimeType} '
-        '(authSource=${_authSource.name}, '
-        'eventPubkey=${event.pubkey})',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      final signedEvent = await identity.signEvent(event);
-
-      // 3. Post-Signing Validation
-      if (signedEvent == null) {
-        Log.error('Signing failed: Signer returned null', name: 'AuthService');
-        return null;
-      }
-
-      // Guard against a signer returning an event bound to a different
-      // account than the active identity (e.g. a remote signer whose
-      // backend swapped the authorized key). isSigned/isValid only prove
-      // the signature and id are self-consistent for the event's own
-      // pubkey — not that it is the account we intended to sign as. Cheap
-      // string compare; runs for every signer, local or remote. Throwing
-      // (rather than returning null) keeps this off the frozen sentinel
-      // ceiling and surfaces the invariant violation via Reportable in the
-      // catch below. #5450.
-      if (signedEvent.pubkey != identity.pubkey) {
-        throw EventSignerAccountMismatchException(
-          expectedPubkey: identity.pubkey,
-          actualPubkey: signedEvent.pubkey,
-        );
-      }
-
-      // Re-verifying a signature we just produced with our own in-process
-      // key only exercises the crypto library and costs a full schnorr
-      // verification per event (hot on the feed-scroll signing path). Skip
-      // it for local signers; remote/external signers cross a trust
-      // boundary, so their returned signature is still verified. The cheap
-      // structural check (isValid: id == hash) below always runs.
-      if (!identity.signsWithLocalKey && !signedEvent.isSigned) {
-        Log.error(
-          'Event signature validation FAILED! '
-          'kind=$kind, eventPubkey=${signedEvent.pubkey}, '
-          'authSource=${_authSource.name}, '
-          'identityPubkey=${identity.pubkey}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        return null;
-      }
-
-      if (!signedEvent.isValid) {
-        Log.error(
-          'Event structure validation FAILED! '
-          'Event ID does not match computed hash',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        return null;
-      }
-
-      Log.info(
-        'Event signed and validated: ${signedEvent.id}',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-
-      return signedEvent;
-    } catch (e, stackTrace) {
-      Log.error(
-        'Failed to create or sign event: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      // An event signed for a different account is an invariant violation
-      // (YES on the Reportable matrix), not an expected domain/network
-      // failure — surface it to Crashlytics. Other errors keep the existing
-      // log-only behavior to avoid flooding the dashboard.
-      if (e is EventSignerAccountMismatchException) {
-        _reportAuthError(
-          Reportable(e, context: 'createAndSignEvent'),
-          stackTrace,
-          reason: 'Signer returned an event for a different account',
-          logMessage: 'Signer account mismatch during createAndSignEvent',
-        );
-      }
-      return null;
-    }
+    return _signerFactory.createAndSignEvent(
+      identity: identity,
+      authSource: _authSource,
+      kind: kind,
+      content: content,
+      tags: tags,
+      createdAt: createdAt,
+    );
   }
 
   /// Restores the last-used account's per-identity key, falling back to
@@ -4471,61 +4338,20 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Must be called AFTER signer fields (_keycastSigner, _bunkerSigner,
   /// _amberSigner) and _currentKeyContainer have been set for the session.
   ///
+  /// Delegates to [SignerFactory.buildIdentity] with a per-call snapshot of
+  /// the session fields, so the factory never holds a stale signer reference.
+  ///
   /// Throws [StateError] if no valid identity can be constructed — this
   /// indicates a programming error in the auth flow, not a user-facing
   /// condition.
   NostrIdentity _buildIdentity() {
-    final keyContainer = _currentKeyContainer;
-    if (keyContainer == null) {
-      throw StateError(
-        '_buildIdentity called with no key container. '
-        'Auth flow must set _currentKeyContainer before building identity.',
-      );
-    }
-
-    final pubkey = keyContainer.publicKeyHex;
-
-    // Priority: Amber > NIP-07 > Bunker > Keycast > Local
-    if (_amberSigner case final signer?) {
-      return AmberNostrIdentity(pubkey: pubkey, amberSigner: signer);
-    }
-    if (_nip07Service case final service?) {
-      return Nip07NostrIdentity(
-        pubkey: pubkey,
-        nip07Signer: Nip07SignerAdapter(service),
-      );
-    }
-    if (_bunkerSigner case final signer?) {
-      return BunkerNostrIdentity(pubkey: pubkey, remoteSigner: signer);
-    }
-    if (_keycastSigner case final rpc?) {
-      // When a matching local nsec exists, sign locally for speed.
-      LocalKeySigner? localSigner;
-      if (keyContainer.hasPrivateKey) {
-        localSigner = LocalKeySigner(keyContainer);
-      }
-      return KeycastNostrIdentity(
-        pubkey: pubkey,
-        rpcSigner: rpc,
-        localSigner: localSigner,
-      );
-    }
-    // Local keys only — private key required.
-    if (keyContainer.hasPrivateKey) {
-      if (_authSource == AuthenticationSource.divineOAuth) {
-        Log.warning(
-          '_buildIdentity: falling back to LocalNostrIdentity for '
-          'divineOAuth source — OAuth session likely expired',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-      }
-      return LocalNostrIdentity(keyContainer: keyContainer);
-    }
-    // Pub-key-only container with no remote signer — cannot sign.
-    throw StateError(
-      '_buildIdentity: pub-key-only container with no remote signer. '
-      'source=${_authSource.name}, pubkey=$pubkey',
+    return _signerFactory.buildIdentity(
+      keyContainer: _currentKeyContainer,
+      authSource: _authSource,
+      amberSigner: _amberSigner,
+      nip07Service: _nip07Service,
+      bunkerSigner: _bunkerSigner,
+      keycastSigner: _keycastSigner,
     );
   }
 
