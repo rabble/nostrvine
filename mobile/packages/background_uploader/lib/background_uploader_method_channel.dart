@@ -23,6 +23,18 @@ class MethodChannelBackgroundUploader extends BackgroundUploaderPlatform {
   final StreamController<BackgroundUploadEvent> _eventController =
       StreamController<BackgroundUploadEvent>.broadcast();
 
+  /// Most-recent terminal event per taskId, retained until claimed via
+  /// [takeBufferedTerminalEvent]. The OS (notably an iOS background
+  /// `URLSession`) delivers terminal events for uploads that finished while
+  /// the app was dead as soon as the engine attaches — often before any Dart
+  /// listener has subscribed to the broadcast [events] stream, which would
+  /// silently drop them. Buffering lets startup reconciliation recover them.
+  /// Bounded to [_maxBufferedTerminals] with oldest-first eviction.
+  final Map<String, BackgroundUploadEvent> _bufferedTerminals =
+      <String, BackgroundUploadEvent>{};
+
+  static const int _maxBufferedTerminals = 64;
+
   @override
   Stream<BackgroundUploadEvent> get events => _eventController.stream;
 
@@ -33,6 +45,9 @@ class MethodChannelBackgroundUploader extends BackgroundUploaderPlatform {
         if (arguments is Map<dynamic, dynamic>) {
           final event = BackgroundUploadEvent.tryFromMap(arguments);
           if (event != null) {
+            if (event.isTerminal) {
+              _bufferTerminal(event);
+            }
             _eventController.add(event);
           }
         }
@@ -40,6 +55,23 @@ class MethodChannelBackgroundUploader extends BackgroundUploaderPlatform {
       default:
         return null;
     }
+  }
+
+  void _bufferTerminal(BackgroundUploadEvent event) {
+    // Re-insert so the freshest entry is last for oldest-first eviction.
+    _bufferedTerminals
+      ..remove(event.taskId)
+      ..[event.taskId] = event;
+    while (_bufferedTerminals.length > _maxBufferedTerminals) {
+      _bufferedTerminals.remove(_bufferedTerminals.keys.first);
+    }
+  }
+
+  @override
+  Future<BackgroundUploadEvent?> takeBufferedTerminalEvent(
+    String taskId,
+  ) async {
+    return _bufferedTerminals.remove(taskId);
   }
 
   @override

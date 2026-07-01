@@ -12,10 +12,21 @@ class _MockAuthProvider extends Mock implements BlossomAuthProvider {}
 /// Emits [emitOnEnqueue] as soon as [enqueue] is called, after the service has
 /// already subscribed — so the terminal event is never missed by a race.
 class _FakeTransport implements BlossomBackgroundTransport {
-  _FakeTransport({this.emitOnEnqueue = const [], this.throwOnEnqueue = false});
+  _FakeTransport({
+    this.emitOnEnqueue = const [],
+    this.throwOnEnqueue = false,
+    Map<String, BlossomBackgroundTransferEvent>? bufferedTerminals,
+    this.active = const <String>[],
+  }) : bufferedTerminals =
+           bufferedTerminals ?? <String, BlossomBackgroundTransferEvent>{};
 
   final List<BlossomBackgroundTransferEvent> emitOnEnqueue;
   final bool throwOnEnqueue;
+
+  /// Terminal events the OS delivered while nothing was listening, keyed by
+  /// taskId. Claimed (and removed) by [takeBufferedTerminalEvent].
+  final Map<String, BlossomBackgroundTransferEvent> bufferedTerminals;
+  final List<String> active;
   final StreamController<BlossomBackgroundTransferEvent> _controller =
       StreamController<BlossomBackgroundTransferEvent>.broadcast();
   final List<String> enqueued = <String>[];
@@ -41,6 +52,14 @@ class _FakeTransport implements BlossomBackgroundTransport {
 
   @override
   Future<void> cancel(String taskId) async => cancelled.add(taskId);
+
+  @override
+  Future<List<String>> activeTaskIds() async => active;
+
+  @override
+  Future<BlossomBackgroundTransferEvent?> takeBufferedTerminalEvent(
+    String taskId,
+  ) async => bufferedTerminals.remove(taskId);
 }
 
 void main() {
@@ -423,5 +442,86 @@ void main() {
   test('cancelBackgroundUpload is a no-op without a transport', () async {
     // Must not throw when background uploads are disabled.
     await expectLater(service(null).cancelBackgroundUpload(taskId), completes);
+  });
+
+  test('skips re-upload when a completed terminal was buffered', () async {
+    // Simulates relaunch after the OS finished the blob while the app was dead:
+    // the terminal event is waiting in the buffer, so the retry must not
+    // re-enqueue the file.
+    final body = jsonEncode(<String, dynamic>{
+      'url': 'https://media.divine.video/hls/master.m3u8',
+      'fallbackUrl': 'https://media.divine.video/mp4/video.mp4',
+    });
+    final transport = _FakeTransport(
+      bufferedTerminals: <String, BlossomBackgroundTransferEvent>{
+        taskId: BlossomBackgroundTransferEvent(
+          taskId: taskId,
+          status: BlossomBackgroundTransferStatus.completed,
+          httpStatusCode: 200,
+          responseBody: body,
+        ),
+      },
+    );
+    final progress = <double>[];
+
+    final result = await service(transport).uploadVideoInBackground(
+      videoFile: videoFile,
+      taskId: taskId,
+      proofManifestJson: null,
+      onProgress: progress.add,
+    );
+
+    expect(result.success, isTrue);
+    expect(result.url, 'https://media.divine.video/hls/master.m3u8');
+    expect(transport.enqueued, isEmpty, reason: 'must not re-upload');
+    expect(transport.bufferedTerminals, isEmpty, reason: 'event consumed');
+    expect(progress.last, 1.0);
+  });
+
+  test(
+    'a buffered failed terminal does not skip; the upload retries',
+    () async {
+      final transport = _FakeTransport(
+        bufferedTerminals: <String, BlossomBackgroundTransferEvent>{
+          taskId: const BlossomBackgroundTransferEvent(
+            taskId: taskId,
+            status: BlossomBackgroundTransferStatus.failed,
+            httpStatusCode: 500,
+          ),
+        },
+        emitOnEnqueue: const <BlossomBackgroundTransferEvent>[
+          BlossomBackgroundTransferEvent(
+            taskId: taskId,
+            status: BlossomBackgroundTransferStatus.completed,
+            httpStatusCode: 200,
+          ),
+        ],
+      );
+
+      final result = await service(transport).uploadVideoInBackground(
+        videoFile: videoFile,
+        taskId: taskId,
+        proofManifestJson: null,
+      );
+
+      expect(result.success, isTrue);
+      expect(transport.enqueued, <String>[taskId], reason: 're-uploaded');
+    },
+  );
+
+  test(
+    'activeBackgroundUploadIds forwards the transport in-flight ids',
+    () async {
+      final transport = _FakeTransport(active: <String>[taskId]);
+
+      expect(
+        await service(transport).activeBackgroundUploadIds(),
+        <String>[taskId],
+      );
+    },
+  );
+
+  test('activeBackgroundUploadIds is empty without a transport', () async {
+    expect(await service(null).activeBackgroundUploadIds(), isEmpty);
   });
 }

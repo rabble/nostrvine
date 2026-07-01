@@ -96,4 +96,11 @@ class BackgroundUploader {
 
   /// Task ids the OS still has in flight, for startup reconciliation.
   Future<List<String>> activeTaskIds() => _platform.activeTaskIds();
+
+  /// Claims a terminal event for [taskId] that arrived while nothing was
+  /// listening on [events] — e.g. an upload the OS finished while the app was
+  /// dead — or `null` when none is buffered. Claiming removes it, so a given
+  /// terminal event is handed out at most once.
+  Future<BackgroundUploadEvent?> takeBufferedTerminalEvent(String taskId) =>
+      _platform.takeBufferedTerminalEvent(taskId);
 }

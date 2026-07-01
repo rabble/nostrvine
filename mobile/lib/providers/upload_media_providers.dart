@@ -86,6 +86,17 @@ class _BackgroundUploadTransportAdapter implements BlossomBackgroundTransport {
   @override
   Future<void> cancel(String taskId) => _uploader.cancel(taskId);
 
+  @override
+  Future<List<String>> activeTaskIds() => _uploader.activeTaskIds();
+
+  @override
+  Future<BlossomBackgroundTransferEvent?> takeBufferedTerminalEvent(
+    String taskId,
+  ) async {
+    final event = await _uploader.takeBufferedTerminalEvent(taskId);
+    return event == null ? null : _toTransferEvent(event);
+  }
+
   static BlossomBackgroundTransferEvent _toTransferEvent(
     BackgroundUploadEvent event,
   ) {

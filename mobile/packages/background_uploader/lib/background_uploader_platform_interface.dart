@@ -73,4 +73,16 @@ abstract class BackgroundUploaderPlatform extends PlatformInterface {
   Future<List<String>> activeTaskIds() {
     throw UnimplementedError('activeTaskIds() has not been implemented.');
   }
+
+  /// Claims a buffered terminal event for [taskId], or `null` if none.
+  ///
+  /// A terminal event delivered while no [events] listener was attached (e.g.
+  /// an upload the OS finished while the app was dead) is retained until
+  /// claimed here, so startup reconciliation can recover it. Claiming removes
+  /// it from the buffer.
+  Future<BackgroundUploadEvent?> takeBufferedTerminalEvent(String taskId) {
+    throw UnimplementedError(
+      'takeBufferedTerminalEvent() has not been implemented.',
+    );
+  }
 }

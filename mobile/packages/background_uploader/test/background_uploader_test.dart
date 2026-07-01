@@ -26,8 +26,18 @@ class _FakeBackgroundUploaderPlatform extends BackgroundUploaderPlatform
   @override
   Future<void> cancel(String taskId) async => cancelled.add(taskId);
 
+  final List<String> activeTaskIdsResult = <String>[];
+
   @override
-  Future<List<String>> activeTaskIds() async => const <String>[];
+  Future<List<String>> activeTaskIds() async => activeTaskIdsResult;
+
+  final Map<String, BackgroundUploadEvent> bufferedTerminals =
+      <String, BackgroundUploadEvent>{};
+
+  @override
+  Future<BackgroundUploadEvent?> takeBufferedTerminalEvent(
+    String taskId,
+  ) async => bufferedTerminals.remove(taskId);
 
   @override
   Future<void> beginForegroundSession(String sessionId) async =>
@@ -103,6 +113,30 @@ void main() {
     test('endForegroundSession forwards the session id', () async {
       await BackgroundUploader.instance.endForegroundSession('publish-1');
       expect(fake.sessionsEnded.single, 'publish-1');
+    });
+
+    test('activeTaskIds forwards the platform result', () async {
+      fake.activeTaskIdsResult.add('task-7');
+      expect(await BackgroundUploader.instance.activeTaskIds(), <String>[
+        'task-7',
+      ]);
+    });
+
+    test('takeBufferedTerminalEvent forwards the platform result', () async {
+      fake.bufferedTerminals['task-7'] = const BackgroundUploadEvent(
+        taskId: 'task-7',
+        status: BackgroundUploadStatus.completed,
+        httpStatusCode: 200,
+      );
+
+      final claimed = await BackgroundUploader.instance
+          .takeBufferedTerminalEvent('task-7');
+
+      expect(claimed?.taskId, 'task-7');
+      expect(
+        await BackgroundUploader.instance.takeBufferedTerminalEvent('x'),
+        isNull,
+      );
     });
   });
 

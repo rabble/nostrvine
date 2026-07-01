@@ -129,4 +129,47 @@ void main() {
     expect(emitted, isEmpty);
     await subscription.cancel();
   });
+
+  test('a terminal event with no listener is buffered and claimable', () async {
+    // No events subscription: the terminal would be dropped by the broadcast
+    // stream, but reconciliation can still recover it from the buffer.
+    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .handlePlatformMessage(
+          channel.name,
+          channel.codec.encodeMethodCall(
+            const MethodCall('onUploadEvent', <String, Object?>{
+              'taskId': 'buffered-task',
+              'status': 'completed',
+              'progress': 1.0,
+              'httpStatusCode': 200,
+            }),
+          ),
+          (_) {},
+        );
+
+    final claimed = await platform.takeBufferedTerminalEvent('buffered-task');
+    expect(claimed, isNotNull);
+    expect(claimed!.taskId, 'buffered-task');
+    expect(claimed.status, BackgroundUploadStatus.completed);
+
+    // Claiming removes it, so a given terminal is handed out at most once.
+    expect(await platform.takeBufferedTerminalEvent('buffered-task'), isNull);
+  });
+
+  test('running (non-terminal) events are not buffered', () async {
+    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .handlePlatformMessage(
+          channel.name,
+          channel.codec.encodeMethodCall(
+            const MethodCall('onUploadEvent', <String, Object?>{
+              'taskId': 'running-task',
+              'status': 'running',
+              'progress': 0.5,
+            }),
+          ),
+          (_) {},
+        );
+
+    expect(await platform.takeBufferedTerminalEvent('running-task'), isNull);
+  });
 }
