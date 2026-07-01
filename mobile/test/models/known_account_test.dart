@@ -2,8 +2,8 @@
 // ABOUTME: Verifies JSON serialization, equality, and copyWith behavior
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
-import 'package:openvine/services/auth_service.dart' show AuthenticationSource;
 
 void main() {
   group(KnownAccount, () {

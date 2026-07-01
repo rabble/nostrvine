@@ -3,7 +3,7 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
-import 'package:openvine/services/auth_service.dart' show AuthenticationSource;
+import 'package:openvine/models/authentication_source.dart';
 
 /// Key used to persist the known accounts list in SharedPreferences.
 const kKnownAccountsKey = 'known_accounts';
