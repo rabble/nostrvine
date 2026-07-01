@@ -27,6 +27,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart' show Intl;
 import 'package:invite_api_client/invite_api_client.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
@@ -1423,10 +1424,12 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
     category: LogCategory.system,
   );
 
-  // Initialize key manager first (needed for NIP-17 bug reports and auth)
-  await container.read(nostrKeyManagerProvider).initialize();
+  // Migrate any pre-secure-storage identity key into SecureKeyStorage before
+  // the auth layer reads it. Runs on the shared storage instance so
+  // AuthService's subsequent read is a warm cache hit.
+  await migrateLegacyNostrKeys(container.read(secureKeyStorageProvider));
   Log.info(
-    '[INIT] ✅ NostrKeyManager initialized',
+    '[INIT] ✅ Legacy key migration checked',
     name: 'Main',
     category: LogCategory.system,
   );
@@ -1440,21 +1443,6 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
     name: 'Main',
     category: LogCategory.system,
   );
-
-  // Re-initialize NostrKeyManager after AuthService, because AuthService may
-  // have imported/restored keys into PlatformSecureStorage during its own
-  // initialization (e.g. nsec import, key generation, session restore).
-  // NostrKeyManager ran first and found no keys; re-running picks them up.
-  final keyManager = container.read(nostrKeyManagerProvider);
-  if (!keyManager.hasKeys) {
-    await keyManager.initialize();
-    Log.info(
-      '[INIT] NostrKeyManager re-initialized after auth — '
-      'hasKeys=${keyManager.hasKeys}',
-      name: 'Main',
-      category: LogCategory.system,
-    );
-  }
 
   Log.info(
     '[INIT] ✅ Core services initialized',

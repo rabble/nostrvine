@@ -56,7 +56,6 @@ test/services/curated_list_service_query_test.dart
 test/services/feature_flag_service_test.dart
 test/services/m3u8_resolver_service_test.dart
 test/services/nostr_key_manager_contacts_fetch_test.dart
-test/services/nostr_key_manager_profile_fetch_test.dart
 test/services/profile_editing_test.dart
 test/services/reactive_pagination_test.dart
 test/services/upload_manager_thumbnail_test.dart

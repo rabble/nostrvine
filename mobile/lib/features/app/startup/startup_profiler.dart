@@ -20,8 +20,7 @@ class StartupPhaseMapper {
     // exists, but they no longer need to gate first paint.
     if (providerName.contains('Auth') ||
         providerName.contains('KeyStorage') ||
-        providerName.contains('SecureKey') ||
-        providerName.contains('NostrKeyManager')) {
+        providerName.contains('SecureKey')) {
       return StartupPhase.essential;
     }
 

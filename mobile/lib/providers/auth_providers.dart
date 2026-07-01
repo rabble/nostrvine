@@ -114,12 +114,6 @@ WebAuthService webAuthService(Ref ref) {
   return WebAuthService();
 }
 
-/// Nostr key manager for cryptographic operations
-@Riverpod(keepAlive: true)
-NostrKeyManager nostrKeyManager(Ref ref) {
-  return NostrKeyManager();
-}
-
 /// Authentication service
 @Riverpod(keepAlive: true)
 AuthService authService(Ref ref) {

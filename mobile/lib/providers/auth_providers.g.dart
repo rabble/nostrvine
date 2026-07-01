@@ -428,53 +428,6 @@ final class WebAuthServiceProvider
 
 String _$webAuthServiceHash() => r'53411c0f6a62bb9b59f90a0d7fc738a553a0b575';
 
-/// Nostr key manager for cryptographic operations
-
-@ProviderFor(nostrKeyManager)
-final nostrKeyManagerProvider = NostrKeyManagerProvider._();
-
-/// Nostr key manager for cryptographic operations
-
-final class NostrKeyManagerProvider
-    extends
-        $FunctionalProvider<NostrKeyManager, NostrKeyManager, NostrKeyManager>
-    with $Provider<NostrKeyManager> {
-  /// Nostr key manager for cryptographic operations
-  NostrKeyManagerProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'nostrKeyManagerProvider',
-        isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$nostrKeyManagerHash();
-
-  @$internal
-  @override
-  $ProviderElement<NostrKeyManager> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
-
-  @override
-  NostrKeyManager create(Ref ref) {
-    return nostrKeyManager(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(NostrKeyManager value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<NostrKeyManager>(value),
-    );
-  }
-}
-
-String _$nostrKeyManagerHash() => r'a0d67b6d79af5ecdc42bc6616542249200a24b64';
-
 /// Authentication service
 
 @ProviderFor(authService)

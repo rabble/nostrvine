@@ -1,171 +1,14 @@
 // ABOUTME: Integration tests for secure key storage with hardware security
-// ABOUTME: Tests NostrKeyManager, SecureKeyStorage, migration
-
-import 'dart:convert';
+// ABOUTME: Tests SecureKeyStorage storage, import, and security config
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Nip19;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../test_setup.dart';
 
 void main() {
-  group('NostrKeyManager with SecureKeyStorage Integration', () {
-    late NostrKeyManager keyManager;
-
-    setUp(() async {
-      setupTestEnvironment();
-      keyManager = NostrKeyManager();
-    });
-
-    tearDown(() async {
-      await keyManager.clearKeys();
-    });
-
-    test('should initialize with secure storage', () async {
-      // Act
-      await keyManager.initialize();
-
-      // Assert
-      expect(keyManager.isInitialized, isTrue);
-      expect(keyManager.hasKeys, isFalse);
-    });
-
-    test('should generate and store keys securely', () async {
-      // Arrange
-      await keyManager.initialize();
-
-      // Act
-      final keyPair = await keyManager.generateKeys();
-
-      // Assert
-      expect(keyManager.hasKeys, isTrue);
-      expect(keyPair, isNotNull);
-      expect(keyPair.private, isNotEmpty);
-      expect(keyPair.public, isNotEmpty);
-      expect(keyPair.private.length, equals(64)); // Hex format
-      expect(keyPair.public.length, equals(64));
-    });
-
-    test('should import private key to secure storage', () async {
-      // Arrange
-      await keyManager.initialize();
-      const testPrivateKey =
-          '5dab4a6cf3b8c9b8d3c5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7';
-
-      // Act
-      final keyPair = await keyManager.importPrivateKey(testPrivateKey);
-
-      // Assert
-      expect(keyManager.hasKeys, isTrue);
-      expect(keyPair.private, equals(testPrivateKey));
-      expect(keyPair.public, isNotEmpty);
-    });
-
-    test('should migrate legacy keys from SharedPreferences', () async {
-      // Arrange - Set up legacy keys in SharedPreferences
-      // Use a valid private key and derive the correct public key
-      const testPrivateKey =
-          '5dab4a6cf3b8c9b8d3c5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7';
-
-      // Import nostr_sdk to get the correct public key derivation
-      final testPublicKey = getPublicKey(testPrivateKey);
-
-      final legacyKeyData = {
-        'private': testPrivateKey,
-        'public': testPublicKey,
-        'created_at': DateTime.now().millisecondsSinceEpoch,
-        'version': 1,
-      };
-
-      SharedPreferences.setMockInitialValues({
-        'nostr_keypair': jsonEncode(legacyKeyData),
-        'nostr_key_version': 1,
-      });
-
-      // Act
-      await keyManager.initialize();
-
-      // Assert
-      expect(keyManager.hasKeys, isTrue);
-      expect(keyManager.privateKey, equals(legacyKeyData['private']));
-      expect(keyManager.publicKey, equals(legacyKeyData['public']));
-
-      // Verify legacy keys are removed after migration
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('nostr_keypair'), isNull);
-    });
-
-    test('should clear keys from secure storage', () async {
-      // Arrange
-      await keyManager.initialize();
-      await keyManager.generateKeys();
-      expect(keyManager.hasKeys, isTrue);
-
-      // Act
-      await keyManager.clearKeys();
-
-      // Assert
-      expect(keyManager.hasKeys, isFalse);
-      expect(keyManager.privateKey, isNull);
-      expect(keyManager.publicKey, isNull);
-    });
-
-    test('should handle key export for backup', () async {
-      // Arrange
-      await keyManager.initialize();
-      await keyManager.generateKeys();
-
-      // Act
-      final exportedKey = keyManager.exportPrivateKey();
-
-      // Assert
-      expect(exportedKey, isNotNull);
-      expect(exportedKey.length, equals(64));
-      expect(exportedKey, equals(keyManager.privateKey));
-    });
-
-    test('should validate private key format', () async {
-      // Arrange
-      await keyManager.initialize();
-
-      // Act & Assert - Invalid formats
-      expect(
-        () => keyManager.importPrivateKey('invalid'),
-        throwsA(isA<NostrKeyException>()),
-      );
-
-      expect(
-        () => keyManager.importPrivateKey('xyz123'),
-        throwsA(isA<NostrKeyException>()),
-      );
-
-      expect(
-        () => keyManager.importPrivateKey('5dab4a6cf3b8c9b8'), // Too short
-        throwsA(isA<NostrKeyException>()),
-      );
-    });
-
-    test('should maintain key consistency after reload', () async {
-      // Arrange
-      await keyManager.initialize();
-      final originalKeyPair = await keyManager.generateKeys();
-      final originalPrivate = originalKeyPair.private;
-      final originalPublic = originalKeyPair.public;
-
-      // Act - Create new instance and reload
-      final newKeyManager = NostrKeyManager();
-      await newKeyManager.initialize();
-
-      // Assert
-      expect(newKeyManager.hasKeys, isTrue);
-      expect(newKeyManager.privateKey, equals(originalPrivate));
-      expect(newKeyManager.publicKey, equals(originalPublic));
-    });
-  });
-
   group('SecureKeyStorage Integration', () {
     late SecureKeyStorage storageService;
 
@@ -244,6 +87,65 @@ void main() {
 
       // Assert
       expect(await storageService.hasKeys(), isFalse);
+    });
+
+    test('imports keys from hex and retrieves them', () async {
+      await storageService.initialize();
+      final privateKeyHex = generatePrivateKey();
+
+      final imported = await storageService.importFromHex(privateKeyHex);
+      final importedNpub = imported.npub;
+      imported.dispose();
+
+      expect(await storageService.hasKeys(), isTrue);
+      final retrieved = await storageService.getKeyContainer();
+      expect(retrieved, isNotNull);
+      expect(retrieved!.npub, equals(importedNpub));
+      retrieved.dispose();
+    });
+
+    test('importFromHex rejects an invalid private key', () async {
+      await storageService.initialize();
+
+      expect(
+        () => storageService.importFromHex('not-a-valid-hex-key'),
+        throwsA(isA<SecureKeyStorageException>()),
+      );
+    });
+
+    test(
+      'exposes public key, nsec, and private key of the stored key',
+      () async {
+        await storageService.initialize();
+        final container = await storageService.generateAndStoreKeys();
+        final npub = container.npub;
+        container.dispose();
+
+        expect(await storageService.getPublicKey(), equals(npub));
+        expect(await storageService.exportNsec(), startsWith('nsec1'));
+
+        final privateKeyLength = await storageService.withPrivateKey(
+          (privateKeyHex) => privateKeyHex.length,
+        );
+        expect(privateKeyLength, equals(64));
+      },
+    );
+
+    test('backup key lifecycle: save, detect, retrieve, delete', () async {
+      await storageService.initialize();
+      expect(await storageService.hasBackupKey(), isFalse);
+
+      final backupPrivateKey = generatePrivateKey();
+      await storageService.saveBackupKey(backupPrivateKey);
+      expect(await storageService.hasBackupKey(), isTrue);
+
+      final backup = await storageService.getBackupKeyContainer();
+      expect(backup, isNotNull);
+      expect(backup!.publicKeyHex, equals(getPublicKey(backupPrivateKey)));
+      backup.dispose();
+
+      await storageService.deleteBackupKey();
+      expect(await storageService.hasBackupKey(), isFalse);
     });
 
     test('importFromNsec archives previous identity in PRIMARY', () async {

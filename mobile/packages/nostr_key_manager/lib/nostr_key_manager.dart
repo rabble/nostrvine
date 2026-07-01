@@ -7,7 +7,8 @@
 /// - `Nip19` class from `nostr_sdk/nip19/nip19.dart` for encoding/decoding
 library;
 
-export 'src/nostr_key_manager.dart';
+export 'src/keychain.dart';
+export 'src/migrate_legacy_nostr_keys.dart';
 export 'src/nsec_bunker_client.dart';
 export 'src/platform_secure_storage.dart';
 export 'src/secure_key_container.dart';

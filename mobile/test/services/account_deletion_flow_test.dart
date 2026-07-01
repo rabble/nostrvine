@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -19,10 +18,6 @@ class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockAuthService extends Mock implements AuthService {}
 
-class _MockNostrKeyManager extends Mock implements NostrKeyManager {}
-
-class _MockKeychain extends Mock implements Keychain {}
-
 /// Fake [Event] for use with registerFallbackValue.
 class _FakeEvent extends Fake implements Event {}
 
@@ -34,8 +29,6 @@ void main() {
   group('Account Deletion Flow Integration', () {
     late _MockNostrClient mockNostrService;
     late _MockAuthService mockAuthService;
-    late _MockNostrKeyManager mockKeyManager;
-    late _MockKeychain mockKeychain;
     late String testPrivateKey;
     late String testPublicKey;
 
@@ -46,13 +39,6 @@ void main() {
 
       mockNostrService = _MockNostrClient();
       mockAuthService = _MockAuthService();
-      mockKeyManager = _MockNostrKeyManager();
-      mockKeychain = _MockKeychain();
-
-      // Setup common mocks with valid keys
-      when(() => mockKeyManager.keyPair).thenReturn(mockKeychain);
-      when(() => mockKeychain.public).thenReturn(testPublicKey);
-      when(() => mockKeychain.private).thenReturn(testPrivateKey);
     });
 
     testWidgets('complete deletion flow from settings to sign out', (
