@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
-import 'package:openvine/services/nostr_identity.dart';
+import 'package:openvine/services/auth/nostr_identity.dart';
 
 @immutable
 class CreatorSocialHandle {

@@ -12,8 +12,8 @@ import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/notification_preferences.dart';
+import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/notification_helpers.dart'
     show localNotificationTapPayload;
 import 'package:openvine/services/notification_service.dart';

@@ -16,8 +16,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 

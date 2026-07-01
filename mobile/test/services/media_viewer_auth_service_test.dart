@@ -6,10 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
+import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
-import 'package:openvine/services/nostr_identity.dart';
 
 class MockAuthService extends Mock implements AuthService {}
 

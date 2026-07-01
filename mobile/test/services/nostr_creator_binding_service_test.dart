@@ -6,8 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
-import 'package:openvine/services/nostr_identity.dart';
 
 class _MockSecureKeyContainer extends Mock implements SecureKeyContainer {}
 

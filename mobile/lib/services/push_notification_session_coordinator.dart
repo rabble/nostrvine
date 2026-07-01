@@ -7,8 +7,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Event;
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/push_notification_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 

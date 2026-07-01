@@ -5,8 +5,8 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/local_key_signer.dart';
-import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 
 class _MockSecureKeyContainer extends Mock implements SecureKeyContainer {}
