@@ -21,11 +21,13 @@ import java.util.concurrent.Executors
 
 class BackgroundUploadService : Service() {
   private val executor = Executors.newCachedThreadPool()
+  private var notificationTitle: String = DEFAULT_NOTIFICATION_TITLE
 
   override fun onBind(intent: Intent?): IBinder? = null
 
   override fun onCreate() {
     super.onCreate()
+    running = true
     createNotificationChannel()
   }
 
@@ -56,6 +58,14 @@ class BackgroundUploadService : Service() {
     val urlString = intent.getStringExtra(EXTRA_URL) ?: return stopIfIdle()
     val filePath = intent.getStringExtra(EXTRA_FILE_PATH) ?: return stopIfIdle()
     val method = intent.getStringExtra(EXTRA_METHOD) ?: "PUT"
+
+    intent.getStringExtra(EXTRA_NOTIFICATION_TITLE)?.let { title ->
+      if (title != notificationTitle) {
+        notificationTitle = title
+        // Refresh the ongoing notification with the caller-supplied title.
+        startForegroundCompat()
+      }
+    }
 
     @Suppress("UNCHECKED_CAST")
     val headers =
@@ -232,7 +242,7 @@ class BackgroundUploadService : Service() {
       Notification.Builder(this)
     }
     return builder
-      .setContentTitle("Uploading")
+      .setContentTitle(notificationTitle)
       .setSmallIcon(android.R.drawable.stat_sys_upload)
       .setOngoing(true)
       .build()
@@ -252,6 +262,7 @@ class BackgroundUploadService : Service() {
   }
 
   override fun onDestroy() {
+    running = false
     executor.shutdown()
     super.onDestroy()
   }
@@ -267,12 +278,23 @@ class BackgroundUploadService : Service() {
     const val EXTRA_METHOD = "method"
     const val EXTRA_HEADERS = "headers"
     const val EXTRA_SESSION_ID = "sessionId"
+    const val EXTRA_NOTIFICATION_TITLE = "notificationTitle"
 
     private const val CHANNEL_ID = "background_upload"
     private const val NOTIFICATION_ID = 0x42
     private const val BUFFER_SIZE = 256 * 1024
     private const val CONNECT_TIMEOUT_MS = 30_000
     private const val READ_TIMEOUT_MS = 600_000
+    private const val DEFAULT_NOTIFICATION_TITLE = "Uploading"
+
+    /// Whether a service instance is currently alive. The plugin checks this so
+    /// control commands (cancel / end-session) are only delivered to a live
+    /// service via `startService`, never by starting a foreground service from
+    /// the background. Set in [onCreate] / cleared in [onDestroy].
+    @Volatile
+    private var running = false
+
+    fun isRunning(): Boolean = running
 
     private val activeTaskIds = ConcurrentHashMap.newKeySet<String>()
     private val cancelledTaskIds = ConcurrentHashMap<String, Boolean>()

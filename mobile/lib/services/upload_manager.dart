@@ -1152,8 +1152,10 @@ class UploadManager {
     );
 
     // Stop the OS-owned background transfer while paused so it doesn't keep
-    // uploading in the background; resuming re-enqueues it. The in-process
-    // path is torn down by its request timeout.
+    // uploading in the background. A background transfer is a single OS-owned
+    // PUT with no resumable checkpoint, so resuming re-enqueues it from byte 0
+    // (unlike the in-process path, which resumes from its resumable session).
+    // The in-process path is torn down by its request timeout.
     if (useBackgroundUpload) {
       await _blossomService.cancelBackgroundUpload(uploadId);
     }

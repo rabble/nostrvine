@@ -69,10 +69,15 @@ under SPM when the app has it enabled and falls back to CocoaPods otherwise.
   request the OS owns; it cannot drive a multi-step resumable chunk protocol
   whose every step needs a freshly-signed header while the app is suspended.
   Pair this with a single-PUT endpoint (e.g. Blossom BUD-01 `PUT /upload`).
-- **Events while Dart is dead are dropped.** If the OS completes a transfer
-  while no Flutter engine is attached, the live event is lost — reconcile with
-  `activeTaskIds()` (and, on the caller side, by checking the resource the
-  upload would have created). The `taskId` is the stable correlation handle.
+- **Terminal events are buffered until claimed.** When the OS reports a
+  transfer's terminal event before any `events` listener has subscribed — e.g.
+  it finished while the app was dead and the engine has only just attached — the
+  event is retained (bounded, keyed by `taskId`) and recoverable via
+  `takeBufferedTerminalEvent(taskId)` during startup reconciliation, rather than
+  being silently dropped by the broadcast stream. If the OS completes a transfer
+  while *no* Flutter engine is attached at all, reconcile with `activeTaskIds()`
+  (and, on the caller side, by checking the resource the upload would have
+  created). The `taskId` is the stable correlation handle.
 - **Auth-header expiry.** A signed header is built at enqueue time; if the OS
   defers the transfer for a long time the header can expire. Keep the header's
   lifetime comfortably longer than expected queueing, or re-enqueue on failure.

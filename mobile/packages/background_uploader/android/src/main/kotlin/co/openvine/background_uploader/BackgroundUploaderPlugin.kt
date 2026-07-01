@@ -41,18 +41,19 @@ class BackgroundUploaderPlugin : FlutterPlugin, MethodCallHandler {
           putExtra(BackgroundUploadService.EXTRA_URL, call.argument<String>("url"))
           putExtra(BackgroundUploadService.EXTRA_FILE_PATH, call.argument<String>("filePath"))
           putExtra(BackgroundUploadService.EXTRA_METHOD, call.argument<String>("method") ?: "PUT")
+          call.argument<String>("notificationTitle")?.let {
+            putExtra(BackgroundUploadService.EXTRA_NOTIFICATION_TITLE, it)
+          }
           val headers = call.argument<Map<String, String>>("headers") ?: emptyMap()
           putExtra(BackgroundUploadService.EXTRA_HEADERS, HashMap(headers))
         }
-        startUploadService(intent)
+        startForegroundUploadService(intent)
         result.success(null)
       }
       "cancel" -> {
-        val intent = Intent(context, BackgroundUploadService::class.java).apply {
-          action = BackgroundUploadService.ACTION_CANCEL
+        deliverToRunningService(BackgroundUploadService.ACTION_CANCEL) {
           putExtra(BackgroundUploadService.EXTRA_TASK_ID, call.argument<String>("taskId"))
         }
-        startUploadService(intent)
         result.success(null)
       }
       "activeTaskIds" -> result.success(BackgroundUploadService.activeTaskIds())
@@ -64,30 +65,51 @@ class BackgroundUploaderPlugin : FlutterPlugin, MethodCallHandler {
             call.argument<String>("sessionId"),
           )
         }
-        startUploadService(intent)
+        startForegroundUploadService(intent)
         result.success(null)
       }
       "endForegroundSession" -> {
-        val intent = Intent(context, BackgroundUploadService::class.java).apply {
-          action = BackgroundUploadService.ACTION_END_SESSION
+        deliverToRunningService(BackgroundUploadService.ACTION_END_SESSION) {
           putExtra(
             BackgroundUploadService.EXTRA_SESSION_ID,
             call.argument<String>("sessionId"),
           )
         }
-        startUploadService(intent)
         result.success(null)
       }
       else -> result.notImplemented()
     }
   }
 
-  private fun startUploadService(intent: Intent) {
+  /// Starts the upload service in the foreground. Only callable while the app
+  /// itself is foregrounded — Android 12+ forbids starting a foreground service
+  /// from the background. `enqueue` and `beginForegroundSession` both run at
+  /// publish time (foreground), so this is safe for them.
+  private fun startForegroundUploadService(intent: Intent) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       context.startForegroundService(intent)
     } else {
       context.startService(intent)
     }
+  }
+
+  /// Delivers a control command (cancel / end-session) to the service *only if
+  /// it is already running*, via a plain `startService` — which the OS allows
+  /// from the background for a live service. When no service is running there is
+  /// nothing to cancel or stop, so this is a no-op. This deliberately never
+  /// calls `startForegroundService`: doing so from the background (e.g. the
+  /// publish `finally` running after the app was suspended) is both forbidden on
+  /// Android 12+ and pointless — starting a service just to stop it.
+  private fun deliverToRunningService(
+    serviceAction: String,
+    configure: Intent.() -> Unit,
+  ) {
+    if (!BackgroundUploadService.isRunning()) return
+    val intent = Intent(context, BackgroundUploadService::class.java).apply {
+      action = serviceAction
+      configure()
+    }
+    context.startService(intent)
   }
 
   companion object {

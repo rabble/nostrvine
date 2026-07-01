@@ -54,14 +54,31 @@ class BackgroundUploader {
         'HTTP method must not be empty.',
       );
     }
-    if (!request.url.hasScheme || !request.url.isScheme('https')) {
+    if (!_isAllowedUploadUrl(request.url)) {
       throw ArgumentError.value(
         request.url.toString(),
         'request.url',
-        'Background uploads require an absolute https URL.',
+        'Background uploads require an absolute https URL '
+            '(cleartext http is permitted only to loopback hosts).',
       );
     }
     return _platform.enqueue(request);
+  }
+
+  /// Loopback hosts the local Docker stack serves over cleartext http. Both
+  /// native platforms already permit cleartext to these (Android
+  /// network-security-config, iOS `NSAllowsLocalNetworking`), so mirror that
+  /// here rather than rejecting local-stack uploads.
+  static const _localCleartextHosts = <String>{
+    '10.0.2.2',
+    'localhost',
+    '127.0.0.1',
+  };
+
+  bool _isAllowedUploadUrl(Uri url) {
+    if (!url.hasScheme) return false;
+    if (url.isScheme('https')) return true;
+    return url.isScheme('http') && _localCleartextHosts.contains(url.host);
   }
 
   /// Cancels the upload identified by [taskId], if it is still in flight.

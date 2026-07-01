@@ -82,7 +82,7 @@ void main() {
       expect(fake.enqueued, isEmpty);
     });
 
-    test('rejects a non-https URL', () async {
+    test('rejects a remote non-https URL', () async {
       await expectLater(
         () => BackgroundUploader.instance.enqueue(
           request(url: 'http://media.divine.video/upload'),
@@ -90,6 +90,19 @@ void main() {
         throwsArgumentError,
       );
       expect(fake.enqueued, isEmpty);
+    });
+
+    test('allows cleartext http to loopback hosts (local stack)', () async {
+      await BackgroundUploader.instance.enqueue(
+        request(url: 'http://10.0.2.2:3000/upload'),
+      );
+      await BackgroundUploader.instance.enqueue(
+        request(url: 'http://localhost/upload'),
+      );
+      await BackgroundUploader.instance.enqueue(
+        request(url: 'http://127.0.0.1:8080/upload'),
+      );
+      expect(fake.enqueued, hasLength(3));
     });
 
     test('cancel forwards the task id', () async {
@@ -136,6 +149,36 @@ void main() {
       expect(
         await BackgroundUploader.instance.takeBufferedTerminalEvent('x'),
         isNull,
+      );
+    });
+  });
+
+  group('BackgroundUploadRequest', () {
+    BackgroundUploadRequest request({String? notificationTitle}) {
+      return BackgroundUploadRequest(
+        taskId: 'task-1',
+        url: Uri.parse('https://media.divine.video/upload'),
+        filePath: '/tmp/video.mp4',
+        notificationTitle: notificationTitle ?? 'Uploading',
+      );
+    }
+
+    test('defaults the notification title and serializes it', () {
+      final serialized = BackgroundUploadRequest(
+        taskId: 'task-1',
+        url: Uri.parse('https://media.divine.video/upload'),
+        filePath: '/tmp/video.mp4',
+      );
+      expect(serialized.notificationTitle, 'Uploading');
+      expect(serialized.toMap()['notificationTitle'], 'Uploading');
+    });
+
+    test('carries a custom notification title through toMap', () {
+      expect(
+        request(
+          notificationTitle: 'Uploading video',
+        ).toMap()['notificationTitle'],
+        'Uploading video',
       );
     });
   });

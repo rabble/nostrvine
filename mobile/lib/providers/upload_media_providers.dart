@@ -52,6 +52,11 @@ class _BlossomAuthAdapter implements BlossomAuthProvider {
   }
 }
 
+/// Title shown on the Android background-upload foreground-service
+/// notification. Owned by the app layer because the `background_uploader`
+/// plugin is intentionally domain-agnostic and l10n-free.
+const _backgroundUploadNotificationTitle = 'Uploading video';
+
 /// Adapts the [BackgroundUploader] plugin to the package-level
 /// [BlossomBackgroundTransport] port, so the Blossom service can hand a single
 /// PUT to the OS without depending on the plugin directly.
@@ -79,6 +84,7 @@ class _BackgroundUploadTransportAdapter implements BlossomBackgroundTransport {
         filePath: filePath,
         method: method,
         headers: headers,
+        notificationTitle: _backgroundUploadNotificationTitle,
       ),
     );
   }

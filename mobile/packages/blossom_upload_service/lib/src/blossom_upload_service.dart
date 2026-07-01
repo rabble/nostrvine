@@ -2097,7 +2097,15 @@ class BlossomUploadService {
       );
     }
 
+    var traceRunning = false;
+    Future<void> stopTraceOnce() async {
+      if (!traceRunning) return;
+      traceRunning = false;
+      await _performanceMonitor.stopTrace('video_upload');
+    }
+
     await _performanceMonitor.startTrace('video_upload');
+    traceRunning = true;
     try {
       onProgress?.call(0.1);
       final hashResult = await HashUtil.sha256File(videoFile);
@@ -2201,6 +2209,10 @@ class BlossomUploadService {
           }
         }
 
+        // Setup + enqueue are the only in-process work; stop the trace here so
+        // it doesn't span the OS-owned transfer wait (which can include a long
+        // app suspension and would otherwise pollute the perf metric).
+        await stopTraceOnce();
         return await completer.future.timeout(
           timeout,
           onTimeout: () => BlossomUploadResult(
@@ -2216,7 +2228,7 @@ class BlossomUploadService {
         await sub.cancel();
       }
     } finally {
-      await _performanceMonitor.stopTrace('video_upload');
+      await stopTraceOnce();
     }
   }
 

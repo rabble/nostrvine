@@ -22,6 +22,7 @@ class BackgroundUploadRequest extends Equatable {
     required this.url,
     required this.filePath,
     this.method = 'PUT',
+    this.notificationTitle = 'Uploading',
     Map<String, String> headers = const <String, String>{},
   }) : assert(taskId != '', 'taskId must not be empty'),
        assert(filePath != '', 'filePath must not be empty'),
@@ -39,6 +40,12 @@ class BackgroundUploadRequest extends Equatable {
   /// HTTP method for the upload. Defaults to `PUT` (Blossom BUD-01).
   final String method;
 
+  /// Title shown on the Android foreground-service notification while this
+  /// upload runs. Ignored on Apple platforms, which use no notification. The
+  /// caller owns this copy so the plugin stays free of app/localization
+  /// concerns.
+  final String notificationTitle;
+
   /// Request headers (e.g. the signed authorization header).
   final Map<String, String> headers;
 
@@ -49,10 +56,18 @@ class BackgroundUploadRequest extends Equatable {
       'url': url.toString(),
       'filePath': filePath,
       'method': method,
+      'notificationTitle': notificationTitle,
       'headers': headers,
     };
   }
 
   @override
-  List<Object?> get props => <Object?>[taskId, url, filePath, method, headers];
+  List<Object?> get props => <Object?>[
+    taskId,
+    url,
+    filePath,
+    method,
+    notificationTitle,
+    headers,
+  ];
 }
