@@ -51,7 +51,7 @@ the client can defer to it.
 
 - **Who counts as "community":** distinct pubkeys that resolve to a
   **Divine NIP-05 identity** via the public, no-auth, CORS-enabled
-  name-server endpoint `GET https://api.divine.video/by-pubkey/<hex>`
+  name-server endpoint `GET https://names.divine.video/api/username/by-pubkey/<hex>`
   (`found: true`). This is the only authoritative, client-checkable
   "real Divine user" signal — keycast membership is not publicly
   queryable, the NIP-89 client tag is spoofable, and the relay does not
@@ -74,7 +74,7 @@ the client can defer to it.
 - **Divine identity check.** Extend `ProfileRepository` (already the
   name-server client, hosts `claimUsername`) with
   `Future<bool> hasDivineIdentity(String pubkey)` backed by
-  `GET /by-pubkey/<hex>`. Results are cached with the **same 24h TTL**
+  `GET /api/username/by-pubkey/<hex>`. Results are cached with the **same 24h TTL**
   the existing moderation NIP-05 resolution uses
   (`ModerationLabelService._resolvedPubkeyTtl = Duration(hours: 24)`) —
   reuse that constant / value rather than inventing a new window, so the
