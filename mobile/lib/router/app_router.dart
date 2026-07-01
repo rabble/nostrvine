@@ -78,6 +78,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     errorBuilder: (context, state) =>
         RouteErrorScreen(message: context.l10n.routeUnknownPath),
     redirect: (context, state) => appRouterRedirect(ref, state),
+    // go_router matches same-segment-count routes top-to-bottom, so spread
+    // order below is load-bearing whenever two routes share a literal first
+    // path segment. It's match-safe today because every module's
+    // parameterized routes (`:id`, `:listId`, etc.) sit under a first segment
+    // no other module uses. The one same-prefix case in this app
+    // (`/people-lists/new` vs. `/people-lists/:listId`) is contained inside
+    // `lists_routes.dart`, which orders the literal route first and is
+    // guarded by `people_lists_route_order_test.dart`. If you add a bare
+    // `/:slug`-style route or a route that shares a first segment with
+    // another module, place it deliberately and add a similar order guard —
+    // don't rely on this spread order by accident.
     routes: [
       ...videoRoutes(),
       ...shellRoutes(),
