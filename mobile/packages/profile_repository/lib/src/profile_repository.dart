@@ -25,6 +25,25 @@ const _usernameByPubkeyUrl =
     'https://names.divine.video/api/username/by-pubkey';
 const _keycastNip05Url = 'https://login.divine.video/.well-known/nostr.json';
 
+// Public name-server reverse lookup: pubkey -> Divine identity
+// (name@divine.video). Returns {"ok": true, "found": true|false, ...}.
+// No auth, CORS-enabled.
+const _byPubkeyUrlBase = 'https://names.divine.video/api/username/by-pubkey';
+
+// How long a Divine-identity determination is trusted before re-querying.
+//
+// Kept equal to ModerationLabelService._resolvedPubkeyTtl (24h) so the app
+// has one consistent "how long a NIP-05-derived identity is trusted" window.
+//
+// Trust posture note (#4948): this reverse lookup rides the same unpinned
+// name-server HTTPS surface as the moderation-identity NIP-05 resolution.
+// That issue owns the pin-vs-NIP-05 decision for that surface; this feature
+// aligns to whatever #4948 lands on rather than making an independent call.
+// Stakes here are lower (a compromise inflates community vote counts /
+// surfaces a false content warning, mitigated by "View Anyway"), not the
+// redirection of report DMs #4948 is primarily concerned with.
+const _divineIdentityCacheTtl = Duration(hours: 24);
+
 // Caps name-server HTTP calls so a slow or unreachable endpoint surfaces a
 // fast UsernameClaimError / UsernameCheckError instead of waiting on the
 // platform's TCP timeout (~20s on Android).
@@ -125,6 +144,11 @@ class ProfileRepository {
   /// Enables synchronous [hasProfile] checks for subscription
   /// manager filtering.
   final _knownCached = <String>{};
+
+  /// Cache of Divine-identity determinations keyed by lowercase pubkey,
+  /// with the timestamp of the lookup. Entries expire after
+  /// [_divineIdentityCacheTtl].
+  final _divineIdentityCache = <String, ({bool value, DateTime at})>{};
 
   /// Searches cached profiles from local storage only.
   ///
@@ -1277,6 +1301,50 @@ class ProfileRepository {
       );
       return null;
     }
+  }
+
+  /// Whether [pubkey] resolves to a Divine identity (a `name@divine.video`
+  /// NIP-05 registered with the name server).
+  ///
+  /// Used to bound "community" membership for viewer-suggested content
+  /// warnings (#4771): only suggestions from pubkeys with a Divine identity
+  /// count toward the display threshold. Anyone can still publish a label;
+  /// this only decides which authors the app counts.
+  ///
+  /// Results are cached for [_divineIdentityCacheTtl] (24h). Returns `false`
+  /// on any network or parse failure — a documented sentinel, not a throw,
+  /// so callers degrade gracefully (an uncounted author, never an error
+  /// state). See the `_divineIdentityCacheTtl` note for the #4948 alignment.
+  Future<bool> hasDivineIdentity(String pubkey) async {
+    final normalized = pubkey.trim().toLowerCase();
+    if (normalized.isEmpty) return false;
+
+    final cached = _divineIdentityCache[normalized];
+    if (cached != null &&
+        DateTime.now().difference(cached.at) < _divineIdentityCacheTtl) {
+      return cached.value;
+    }
+
+    var found = false;
+    try {
+      final response = await _httpClient
+          .get(Uri.parse('$_byPubkeyUrlBase/$normalized'))
+          .timeout(_nameServerHttpTimeout);
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        found = body['found'] == true;
+      }
+    } on Exception catch (e) {
+      Log.warning(
+        'by-pubkey lookup failed: $e',
+        name: 'ProfileRepository.hasDivineIdentity',
+        category: LogCategory.api,
+      );
+      found = false;
+    }
+
+    _divineIdentityCache[normalized] = (value: found, at: DateTime.now());
+    return found;
   }
 
   /// Checks if a username is available for registration.
