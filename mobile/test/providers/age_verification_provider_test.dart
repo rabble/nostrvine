@@ -4,6 +4,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -11,6 +13,22 @@ void main() {
     setUp(() {
       SharedPreferences.setMockInitialValues({});
     });
+
+    // ageVerificationServiceProvider now consults isProtectedMinorProvider,
+    // which needs sharedPreferencesProvider and an auth state. Pin auth to
+    // unauthenticated so the protected-minor signal resolves to false, leaving
+    // these tests' adult-content assertions unaffected.
+    Future<ProviderContainer> buildContainer() async {
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          currentAuthStateProvider.overrideWithValue(AuthState.unauthenticated),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
 
     test('provider should have keepAlive configuration', () async {
       // This test verifies the provider is configured with keepAlive: true
@@ -25,8 +43,7 @@ void main() {
       // by checking that the provider returns the same instance across multiple reads
       // within the same container lifecycle.
 
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = await buildContainer();
 
       // Get the service and verify adult content
       final service = container.read(ageVerificationServiceProvider);
@@ -65,8 +82,7 @@ void main() {
             DateTime.now().millisecondsSinceEpoch,
       });
 
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = await buildContainer();
 
       final service = container.read(ageVerificationServiceProvider);
 
@@ -86,8 +102,7 @@ void main() {
     });
 
     test('should be a singleton across multiple reads', () async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = await buildContainer();
 
       final service1 = container.read(ageVerificationServiceProvider);
       final service2 = container.read(ageVerificationServiceProvider);
@@ -100,8 +115,7 @@ void main() {
     test('verification state survives widget lifecycle changes', () async {
       // Simulates: User verifies age -> widget disposes -> widget rebuilds -> state should persist
 
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+      final container = await buildContainer();
 
       // User verifies age
       final service = container.read(ageVerificationServiceProvider);

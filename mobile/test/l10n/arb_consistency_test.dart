@@ -174,6 +174,9 @@ const _knownUntranslatedDebt = {
   'contentFiltersFilterOut',
   'safetySettingsWhatYouSee',
   'safetySettingsWhatYouPublish',
+  // Protected-minor adult-content lock (#175). Falls back to English until the
+  // next translation pass.
+  'safetySettingsAgeLockedForMinor',
   'relaySettingsExternalRelay',
   'relaySettingsNotConnected',
   'relaySettingsDisconnectedAgo',
