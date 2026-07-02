@@ -150,9 +150,13 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    context.l10n.contentPreferencesAccountContentLabels,
-                    style: VineTheme.titleLargeFont(),
+                  Expanded(
+                    child: Text(
+                      context.l10n.contentPreferencesAccountContentLabels,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: VineTheme.titleLargeFont(),
+                    ),
                   ),
                   if (_selected.isNotEmpty)
                     TextButton(
