@@ -580,9 +580,6 @@ class LikesRepository {
     final cached = _likeCountCache[eventId];
     if (cached != null) return cached;
 
-    // Query relays for count of Kind 7 reactions on this event
-    final filterByE = Filter(kinds: const [EventKind.reaction], e: [eventId]);
-
     int count;
 
     if (addressableId != null && addressableId.isNotEmpty) {
@@ -592,6 +589,8 @@ class LikesRepository {
       );
       count = likersByEvent[eventId]?.length ?? 0;
     } else {
+      // Query relays for the count of Kind 7 reactions on this event.
+      final filterByE = Filter(kinds: const [EventKind.reaction], e: [eventId]);
       final result = await _nostrClient.countEvents([filterByE]);
       count = result.count;
     }
@@ -652,10 +651,9 @@ class LikesRepository {
         addressableIds: uncachedAddressableIds,
       );
       for (final id in uncachedIds) {
-        counts[id] = likersByEvent[id]?.length ?? 0;
-      }
-      for (final id in uncachedIds) {
-        _likeCountCache[id] = counts[id]!;
+        final count = likersByEvent[id]?.length ?? 0;
+        counts[id] = count;
+        _likeCountCache[id] = count;
       }
       return counts;
     }
