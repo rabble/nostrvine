@@ -1844,6 +1844,115 @@ void main() {
         expect(counts[eventId], equals(4));
       });
 
+      test(
+        'applies resolved-liker semantics to non-addressable ids in a mixed '
+        'batch',
+        () async {
+          // Production shape: addressableIds covers only the addressable subset
+          // (video_event_service.dart:4809). When any uncached id is
+          // addressable, ALL uncached ids resolve through the distinct-liker
+          // path — so the non-addressable id here must be deduped + filtered
+          // too, not raw-tallied.
+          const addrEvent = 'addr_event_1234567890abcdef01234567890abcdef';
+          const plainEvent = 'plain_event_1234567890abcdef01234567890abcdef';
+          const aTag = '34236:author:d-tag';
+          const likerA = 'liker_a_pubkey_1234567890abcdef';
+          const likerB = 'liker_b_pubkey_1234567890abcdef';
+          const likerC = 'liker_c_pubkey_1234567890abcdef';
+
+          // plainEvent: same liker reacts twice (dedupe to 1) + a downvote
+          // (excluded) => resolved count 1; a raw tally would give 3.
+          final plainReaction1 = createMockReaction(
+            id: 'plain_reaction_1',
+            targetEventId: plainEvent,
+            authorPubkey: likerA,
+          );
+          final plainReactionDuplicatePubkey = createMockReaction(
+            id: 'plain_reaction_2',
+            targetEventId: plainEvent,
+            authorPubkey: likerA,
+          );
+          final plainDownvote = createMockReaction(
+            id: 'plain_reaction_downvote',
+            targetEventId: plainEvent,
+            authorPubkey: likerB,
+            content: '-',
+          );
+          // addrEvent: one e-tag liker + one a-tag liker => 2 distinct.
+          final addrReactionByE = createMockReaction(
+            id: 'addr_reaction_e',
+            targetEventId: addrEvent,
+            authorPubkey: likerB,
+          );
+          final addrReactionByA = createMockReaction(
+            id: 'addr_reaction_a',
+            targetEventId: addrEvent,
+            authorPubkey: likerC,
+            tags: [
+              ['a', aTag],
+            ],
+          );
+
+          mockQueryEventsSequence([
+            [
+              plainReaction1,
+              plainReactionDuplicatePubkey,
+              plainDownvote,
+              addrReactionByE,
+            ],
+            [addrReactionByA],
+            <Event>[],
+          ]);
+
+          repository = createRepository();
+          final counts = await repository.getLikeCounts(
+            [addrEvent, plainEvent],
+            addressableIds: {addrEvent: aTag},
+          );
+
+          expect(counts[plainEvent], equals(1));
+          expect(counts[addrEvent], equals(2));
+          verify(() => mockNostrClient.queryEvents(any())).called(3);
+        },
+      );
+
+      test(
+        'caches resolved addressable counts so a repeat batch skips relays',
+        () async {
+          const eventId = 'cached_addr_event_1234567890abcdef0123456789';
+          const aTag = '34236:author:d-tag';
+          const likerA = 'liker_a_pubkey_1234567890abcdef';
+
+          final reactionByE = createMockReaction(
+            id: 'reaction_e',
+            targetEventId: eventId,
+            authorPubkey: likerA,
+          );
+
+          mockQueryEventsSequence([
+            [reactionByE],
+            <Event>[],
+            <Event>[],
+          ]);
+
+          repository = createRepository();
+          final first = await repository.getLikeCounts(
+            [eventId],
+            addressableIds: {eventId: aTag},
+          );
+          final second = await repository.getLikeCounts(
+            [eventId],
+            addressableIds: {eventId: aTag},
+          );
+
+          expect(first[eventId], equals(1));
+          expect(second[eventId], equals(1));
+          // First batch: e + a + deletion = 3 queries; the second is served
+          // from _likeCountCache with no further relay calls.
+          verify(() => mockNostrClient.queryEvents(any())).called(3);
+        },
+      );
+
       test('skips relay query for already-cached event IDs', () async {
         const eventId1 = 'event_id_1_1234567890abcdef01234567890abcdef';
         const eventId2 = 'event_id_2_1234567890abcdef01234567890abcdef';

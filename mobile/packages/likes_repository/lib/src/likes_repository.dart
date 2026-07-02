@@ -573,7 +573,9 @@ class LikesRepository {
   /// queries relays for the count of Kind 7 reactions on the event.
   /// When [addressableId] is provided, resolves the same active distinct liker
   /// set used by [fetchEventLikers], so the visible count and "Liked by" list
-  /// cannot diverge for addressable videos.
+  /// cannot diverge at fetch time for addressable videos. (A cached count is
+  /// served as-is and is not re-resolved, so likes from others arriving after
+  /// the first fetch show up in the live list but not in a cache-served count.)
   ///
   /// Note: This counts all likes, not just the current user's.
   Future<int> getLikeCount(String eventId, {String? addressableId}) async {
@@ -583,6 +585,11 @@ class LikesRepository {
     int count;
 
     if (addressableId != null && addressableId.isNotEmpty) {
+      // Resolve the count from the same filtered event fetch as the "Liked by"
+      // list (not NIP-45 COUNT) so the two can't diverge. Trade-off: it shares
+      // the list's relay cap and query timeout, so a video with more reactions
+      // than the relay returns shows count == list, both capped below the true
+      // total. Keep it a fetch (not COUNT) to preserve that equality.
       final likersByEvent = await _fetchResolvedLikersByEvent(
         [eventId],
         addressableIds: {eventId: addressableId},
@@ -610,6 +617,13 @@ class LikesRepository {
   /// - [addressableIds]: Optional map of event ID to addressable ID for
   ///   Kind 30000+ events. When provided, also queries by 'a' tag and
   ///   counts the active distinct liker set used by [fetchEventLikers].
+  ///
+  /// Note: when any uncached id in the batch has an addressable id, *all*
+  /// uncached ids in that batch are counted via the resolved distinct-liker
+  /// path (deduped + filtered); a batch with no addressable ids uses the raw
+  /// e-tag tally. So a non-addressable id can get either count depending on
+  /// batch composition, and whichever result lands first is cached for the
+  /// session.
   ///
   /// Returns a map of event ID to like count. Events with zero likes
   /// are included with a count of 0.
@@ -1215,12 +1229,19 @@ class LikesRepository {
         .map((event) => event.pubkey)
         .toSet()
         .toList();
+    // Scope the deletion query to the reaction ids we actually fetched, in
+    // addition to their authors. The consumer below only honors a Kind 5 whose
+    // `e` tag points at a fetched reaction *and* whose author matches, so
+    // `#e`-scoping is semantics-preserving; without it the query pulls every
+    // deletion these (possibly prolific) authors ever published, inflating the
+    // response and risking crowd-out under the relay's per-REQ cap.
     final deletionEvents = reactionAuthors.isEmpty
         ? const <Event>[]
         : await _nostrClient.queryEvents([
             Filter(
               kinds: const [EventKind.eventDeletion],
               authors: reactionAuthors,
+              e: allReactionsById.keys.toList(),
             ),
           ]);
 
