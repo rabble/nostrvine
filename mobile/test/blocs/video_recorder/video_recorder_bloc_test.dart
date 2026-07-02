@@ -1411,6 +1411,44 @@ void main() {
           verify(() => cameraService.dispose());
         },
       );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'completes the navigation completer after the camera is disposed — the '
+        'audio-session handoff must run strictly after dispose',
+        build: buildBloc,
+        act: (bloc) {
+          // act awaits the returned future, so a completer that never resolves
+          // fails the test by timing out.
+          final completion = Completer<void>();
+          bloc.add(
+            VideoRecorderCameraPausedForNavigation(completion: completion),
+          );
+          return completion.future;
+        },
+        verify: (_) {
+          // Disposed by the pause handler (the bloc also disposes on close()).
+          verify(() => cameraService.dispose());
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'still completes the navigation completer when camera dispose throws — '
+        'the finally must unblock the caller even on failure',
+        setUp: () {
+          when(
+            () => cameraService.dispose(),
+          ).thenThrow(Exception('dispose failed'));
+        },
+        build: buildBloc,
+        act: (bloc) {
+          final completion = Completer<void>();
+          bloc.add(
+            VideoRecorderCameraPausedForNavigation(completion: completion),
+          );
+          return completion.future;
+        },
+        errors: () => [isA<Exception>()],
+      );
     });
 
     group('VideoRecorderRecordingLockedForNavigation → recording lock', () {

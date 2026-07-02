@@ -22,6 +22,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_navigation.dart';
 import 'package:sound_service/sound_service.dart';
@@ -77,6 +78,7 @@ void main() {
     fakeClipManager = _FakeClipManagerNotifier();
 
     when(() => recorderBloc.state).thenReturn(const VideoRecorderBlocState());
+    when(() => recorderBloc.isClosed).thenReturn(false);
     when(() => recorderBloc.add(any())).thenAnswer((invocation) {
       final event = invocation.positionalArguments.single as VideoRecorderEvent;
       if (event is VideoRecorderCameraPausedForNavigation) {
@@ -108,6 +110,10 @@ void main() {
         GoRoute(
           path: VideoEditorScreen.path,
           builder: (_, _) => const _StubScreen(label: 'editor'),
+        ),
+        GoRoute(
+          path: VideoMetadataScreen.path,
+          builder: (_, _) => const _StubScreen(label: 'metadata'),
         ),
         GoRoute(
           path: '/library-clips',
@@ -217,6 +223,23 @@ void main() {
         expect(fakeClipManager.muteAllClipsCalled, isFalse);
         expect(find.text('editor'), findsOneWidget);
         verify(() => audioSessionService.configureForMixedPlayback()).called(1);
+      });
+
+      testWidgets('openVideoEditorFromRecorder resets the session for a mode '
+          'without a video editor (routes to metadata)', (tester) async {
+        when(() => recorderBloc.state).thenReturn(
+          const VideoRecorderBlocState(recorderMode: VideoRecorderMode.classic),
+        );
+
+        await tester.pumpWidget(buildHarness());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('open-editor')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('metadata'), findsOneWidget);
+        verify(() => audioSessionService.resetAudioSession()).called(1);
+        verifyNever(() => audioSessionService.configureForMixedPlayback());
       });
     });
 

@@ -213,6 +213,9 @@ final class VideoRecorderCameraPausedForNavigation extends VideoRecorderEvent {
 
   /// Optional completion signal for callers that must run after camera dispose.
   final Completer<void>? completion;
+
+  @override
+  List<Object?> get props => [completion];
 }
 
 /// Locks recording and detaches the remote (volume / Bluetooth) trigger the

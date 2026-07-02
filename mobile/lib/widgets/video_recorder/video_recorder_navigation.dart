@@ -111,6 +111,9 @@ Future<void> openRecorderLibrary(BuildContext context, WidgetRef ref) async {
 }
 
 Future<void> _pauseCameraForNavigation(VideoRecorderBloc bloc) {
+  // A closed bloc drops the event, so the completion would never resolve and
+  // the awaiting caller would hang. Skip the handoff instead.
+  if (bloc.isClosed) return Future<void>.value();
   final completion = Completer<void>();
   bloc.add(VideoRecorderCameraPausedForNavigation(completion: completion));
   return completion.future;
