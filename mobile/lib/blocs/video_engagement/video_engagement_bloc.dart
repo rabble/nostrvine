@@ -9,6 +9,7 @@ import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:reposts_repository/reposts_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'video_engagement_event.dart';
 part 'video_engagement_state.dart';
@@ -69,6 +70,12 @@ class VideoEngagementBloc
   ) async {
     emit(state.copyWith(status: VideoEngagementStatus.loading));
     try {
+      Log.info(
+        'Loading video engagement list: type=${type.name}, '
+        'eventId=$eventId, addressableId=${addressableId ?? '(none)'}',
+        name: 'VideoEngagementBloc',
+        category: LogCategory.video,
+      );
       final pubkeys = await _fetch();
 
       // Pre-warm the profile cache so UserProfileTile widgets render real
@@ -84,10 +91,7 @@ class VideoEngagementBloc
       }
 
       emit(
-        state.copyWith(
-          status: VideoEngagementStatus.success,
-          pubkeys: pubkeys,
-        ),
+        state.copyWith(status: VideoEngagementStatus.success, pubkeys: pubkeys),
       );
     } catch (e, stackTrace) {
       addError(e, stackTrace);

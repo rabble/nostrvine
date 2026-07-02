@@ -40,16 +40,22 @@ void main() {
     MockEvent createMockReaction({
       required String id,
       required String targetEventId,
+      String authorPubkey = 'reaction_author_pubkey_1234567890abcdef',
       String content = '+',
       int createdAt = defaultTimestamp,
+      List<List<String>>? tags,
     }) {
       final event = MockEvent();
       when(() => event.id).thenReturn(id);
+      when(() => event.pubkey).thenReturn(authorPubkey);
       when(() => event.content).thenReturn(content);
       when(() => event.createdAt).thenReturn(createdAt);
-      when(() => event.tags).thenReturn([
-        ['e', targetEventId],
-      ]);
+      when(() => event.tags).thenReturn(
+        tags ??
+            [
+              ['e', targetEventId],
+            ],
+      );
       return event;
     }
 
@@ -1392,18 +1398,40 @@ void main() {
       });
 
       test(
-        'queries by both e and a tags when addressableId provided',
+        'counts active likers across e and a tags',
         () async {
           const testAddressableId = '34236:$testAuthorPubkey:test-d-tag';
+          const likerA = 'liker_a_pubkey_1234567890abcdef';
+          const likerB = 'liker_b_pubkey_1234567890abcdef';
 
-          // First call returns e-tag count, second call returns a-tag count
-          var callCount = 0;
-          when(() => mockNostrClient.countEvents(any())).thenAnswer((_) async {
-            callCount++;
-            return callCount == 1
-                ? const CountResult(count: 10)
-                : const CountResult(count: 15);
-          });
+          final eTagReaction = createMockReaction(
+            id: 'reaction_e',
+            targetEventId: testEventId,
+            authorPubkey: likerA,
+          );
+          final duplicateFromATag = createMockReaction(
+            id: 'reaction_e',
+            targetEventId: testEventId,
+            authorPubkey: likerA,
+            tags: [
+              ['e', testEventId],
+              ['a', testAddressableId],
+            ],
+          );
+          final aTagOnlyReaction = createMockReaction(
+            id: 'reaction_a',
+            targetEventId: testEventId,
+            authorPubkey: likerB,
+            tags: [
+              ['a', testAddressableId],
+            ],
+          );
+
+          mockQueryEventsSequence([
+            [eTagReaction],
+            [duplicateFromATag, aTagOnlyReaction],
+            <Event>[],
+          ]);
 
           repository = createRepository();
           final count = await repository.getLikeCount(
@@ -1411,31 +1439,80 @@ void main() {
             addressableId: testAddressableId,
           );
 
-          // Should return the max of both counts
-          expect(count, equals(15));
-          verify(() => mockNostrClient.countEvents(any())).called(2);
+          expect(count, equals(2));
+          verify(() => mockNostrClient.queryEvents(any())).called(3);
         },
       );
 
-      test('returns max count when e-tag count is higher', () async {
-        const testAddressableId = '34236:$testAuthorPubkey:test-d-tag';
+      test(
+        'applies the same active liker filters as fetchEventLikers',
+        () async {
+          const testAddressableId = '34236:$testAuthorPubkey:test-d-tag';
+          const likerA = 'liker_a_pubkey_1234567890abcdef';
+          const likerB = 'liker_b_pubkey_1234567890abcdef';
+          const likerC = 'liker_c_pubkey_1234567890abcdef';
+          const blockedLiker = 'blocked_liker_pubkey_1234567890abcdef';
 
-        var callCount = 0;
-        when(() => mockNostrClient.countEvents(any())).thenAnswer((_) async {
-          callCount++;
-          return callCount == 1
-              ? const CountResult(count: 20) // e-tag count
-              : const CountResult(count: 5); // a-tag count
-        });
+          final deletedReaction = createMockReaction(
+            id: 'reaction_deleted',
+            targetEventId: testEventId,
+            authorPubkey: likerA,
+          );
+          final downvote = createMockReaction(
+            id: 'reaction_downvote',
+            targetEventId: testEventId,
+            authorPubkey: likerB,
+            content: '-',
+          );
+          final liveReaction = createMockReaction(
+            id: 'reaction_live',
+            targetEventId: testEventId,
+            authorPubkey: likerC,
+            tags: [
+              ['a', testAddressableId],
+            ],
+          );
+          final blockedReaction = createMockReaction(
+            id: 'reaction_blocked',
+            targetEventId: testEventId,
+            authorPubkey: blockedLiker,
+            tags: [
+              ['a', testAddressableId],
+            ],
+          );
+          final deletion = MockEvent();
+          when(() => deletion.pubkey).thenReturn(likerA);
+          when(() => deletion.tags).thenReturn([
+            ['e', 'reaction_deleted'],
+          ]);
 
-        repository = createRepository();
-        final count = await repository.getLikeCount(
-          testEventId,
-          addressableId: testAddressableId,
-        );
+          mockQueryEventsSequence([
+            [deletedReaction, downvote],
+            [liveReaction, blockedReaction],
+            [deletion],
+            [deletedReaction, downvote],
+            [liveReaction, blockedReaction],
+            [deletion],
+          ]);
 
-        expect(count, equals(20));
-      });
+          repository = createRepository(
+            blockFilter: (pubkey) {
+              return pubkey == blockedLiker;
+            },
+          );
+          final count = await repository.getLikeCount(
+            testEventId,
+            addressableId: testAddressableId,
+          );
+          final likers = await repository.fetchEventLikers(
+            eventId: testEventId,
+            addressableId: testAddressableId,
+          );
+
+          expect(count, equals(likers.length));
+          expect(likers, [likerC]);
+        },
+      );
 
       test('ignores empty addressableId', () async {
         when(
@@ -1657,30 +1734,41 @@ void main() {
           const eventId2 = 'event_id_2_1234567890abcdef01234567890abcdef';
           const aTag1 = '34236:author1:d1';
           const aTag2 = '34236:author2:d2';
+          const likerA = 'liker_a_pubkey_1234567890abcdef';
+          const likerB = 'liker_b_pubkey_1234567890abcdef';
+          const likerC = 'liker_c_pubkey_1234567890abcdef';
 
           // Reaction found via e-tag for event1
-          final mockReactionByE = MockEvent();
-          when(() => mockReactionByE.tags).thenReturn([
-            ['e', eventId1],
-          ]);
+          final mockReactionByE = createMockReaction(
+            id: 'reaction_e_event1',
+            targetEventId: eventId1,
+            authorPubkey: likerA,
+          );
 
           // Reactions found via a-tag for event2
-          final mockReactionByA1 = MockEvent();
-          when(() => mockReactionByA1.tags).thenReturn([
-            ['a', aTag2],
-          ]);
-          final mockReactionByA2 = MockEvent();
-          when(() => mockReactionByA2.tags).thenReturn([
-            ['a', aTag2],
-          ]);
+          final mockReactionByA1 = createMockReaction(
+            id: 'reaction_a_event2_1',
+            targetEventId: eventId2,
+            authorPubkey: likerB,
+            tags: [
+              ['a', aTag2],
+            ],
+          );
+          final mockReactionByA2 = createMockReaction(
+            id: 'reaction_a_event2_2',
+            targetEventId: eventId2,
+            authorPubkey: likerC,
+            tags: [
+              ['a', aTag2],
+            ],
+          );
 
           var callCount = 0;
           when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
             callCount++;
-            // First call is e-tag query, second is a-tag query
-            return callCount == 1
-                ? [mockReactionByE]
-                : [mockReactionByA1, mockReactionByA2];
+            if (callCount == 1) return [mockReactionByE];
+            if (callCount == 2) return [mockReactionByA1, mockReactionByA2];
+            return <Event>[];
           });
 
           repository = createRepository();
@@ -1691,44 +1779,60 @@ void main() {
 
           // event1 has 1 from e-tag, event2 has 2 from a-tag
           expect(counts, {eventId1: 1, eventId2: 2});
-          verify(() => mockNostrClient.queryEvents(any())).called(2);
+          verify(() => mockNostrClient.queryEvents(any())).called(3);
         },
       );
 
-      test('returns max count when merging e and a tag results', () async {
+      test('counts distinct likers when merging e and a tag results', () async {
         const eventId = 'event_id_1234567890abcdef01234567890abcdef';
         const aTag = '34236:author:d-tag';
+        const likerA = 'liker_a_pubkey_1234567890abcdef';
+        const likerB = 'liker_b_pubkey_1234567890abcdef';
+        const likerC = 'liker_c_pubkey_1234567890abcdef';
+        const likerD = 'liker_d_pubkey_1234567890abcdef';
 
-        // 3 reactions via e-tag
-        final mockReactionByE1 = MockEvent();
-        when(() => mockReactionByE1.tags).thenReturn([
-          ['e', eventId],
-        ]);
-        final mockReactionByE2 = MockEvent();
-        when(() => mockReactionByE2.tags).thenReturn([
-          ['e', eventId],
-        ]);
-        final mockReactionByE3 = MockEvent();
-        when(() => mockReactionByE3.tags).thenReturn([
-          ['e', eventId],
-        ]);
+        final mockReactionByE1 = createMockReaction(
+          id: 'reaction_e_1',
+          targetEventId: eventId,
+          authorPubkey: likerA,
+        );
+        final mockReactionByE2 = createMockReaction(
+          id: 'reaction_e_2',
+          targetEventId: eventId,
+          authorPubkey: likerB,
+        );
+        final mockReactionByE3 = createMockReaction(
+          id: 'reaction_e_3',
+          targetEventId: eventId,
+          authorPubkey: likerC,
+        );
 
-        // 2 reactions via a-tag
-        final mockReactionByA1 = MockEvent();
-        when(() => mockReactionByA1.tags).thenReturn([
-          ['a', aTag],
-        ]);
-        final mockReactionByA2 = MockEvent();
-        when(() => mockReactionByA2.tags).thenReturn([
-          ['a', aTag],
-        ]);
+        // One a-tag reaction is from an e-tag liker; only likerD is new.
+        final mockReactionByA1 = createMockReaction(
+          id: 'reaction_a_duplicate_pubkey',
+          targetEventId: eventId,
+          authorPubkey: likerC,
+          tags: [
+            ['a', aTag],
+          ],
+        );
+        final mockReactionByA2 = createMockReaction(
+          id: 'reaction_a_new_pubkey',
+          targetEventId: eventId,
+          authorPubkey: likerD,
+          tags: [
+            ['a', aTag],
+          ],
+        );
 
         var callCount = 0;
         when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
           callCount++;
-          return callCount == 1
-              ? [mockReactionByE1, mockReactionByE2, mockReactionByE3]
-              : [mockReactionByA1, mockReactionByA2];
+          if (callCount == 1) {
+            return [mockReactionByE1, mockReactionByE2, mockReactionByE3];
+          }
+          if (callCount == 2) return [mockReactionByA1, mockReactionByA2];
+          return <Event>[];
         });
 
         repository = createRepository();
@@ -1737,8 +1841,7 @@ void main() {
           addressableIds: {eventId: aTag},
         );
 
-        // Should return 3 (max of 3 from e-tag and 2 from a-tag)
-        expect(counts[eventId], equals(3));
+        expect(counts[eventId], equals(4));
       });
 
       test('skips relay query for already-cached event IDs', () async {
@@ -2340,42 +2443,39 @@ void main() {
         },
       );
 
-      test(
-        'ignores Kind 5 deletions whose author does not match the reaction '
-        'author',
-        () async {
-          // likerA reacted, but likerB publishes a Kind 5 referencing likerA's
-          // reaction id. Without the same-author guard this would suppress
-          // likerA's like.
-          final reactionA = createReaction(
-            id: 'reaction_a',
-            authorPubkey: likerA,
-            createdAt: 1700000050,
-          );
-          final reactionB = createReaction(
-            id: 'reaction_b',
-            authorPubkey: likerB,
-            createdAt: 1700000100,
-          );
+      test('ignores Kind 5 deletions whose author does not match the reaction '
+          'author', () async {
+        // likerA reacted, but likerB publishes a Kind 5 referencing likerA's
+        // reaction id. Without the same-author guard this would suppress
+        // likerA's like.
+        final reactionA = createReaction(
+          id: 'reaction_a',
+          authorPubkey: likerA,
+          createdAt: 1700000050,
+        );
+        final reactionB = createReaction(
+          id: 'reaction_b',
+          authorPubkey: likerB,
+          createdAt: 1700000100,
+        );
 
-          final spoofedDeletion = MockEvent();
-          when(() => spoofedDeletion.pubkey).thenReturn(likerB);
-          when(() => spoofedDeletion.tags).thenReturn([
-            ['e', 'reaction_a'],
-          ]);
+        final spoofedDeletion = MockEvent();
+        when(() => spoofedDeletion.pubkey).thenReturn(likerB);
+        when(() => spoofedDeletion.tags).thenReturn([
+          ['e', 'reaction_a'],
+        ]);
 
-          mockQueryEventsSequence([
-            [reactionA, reactionB],
-            [spoofedDeletion],
-          ]);
+        mockQueryEventsSequence([
+          [reactionA, reactionB],
+          [spoofedDeletion],
+        ]);
 
-          repository = createRepository();
-          expect(await repository.fetchEventLikers(eventId: targetEventId), [
-            likerB,
-            likerA,
-          ]);
-        },
-      );
+        repository = createRepository();
+        expect(await repository.fetchEventLikers(eventId: targetEventId), [
+          likerB,
+          likerA,
+        ]);
+      });
 
       test('throws FetchLikersFailedException when relay query fails', () {
         when(

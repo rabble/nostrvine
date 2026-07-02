@@ -571,8 +571,9 @@ class LikesRepository {
   /// Returns a cached count when available to avoid redundant relay queries
   /// (e.g. when scrolling back to a previously viewed video). Otherwise
   /// queries relays for the count of Kind 7 reactions on the event.
-  /// When [addressableId] is provided, queries by both 'e' and 'a' tags
-  /// and returns the maximum count (since relays may index differently).
+  /// When [addressableId] is provided, resolves the same active distinct liker
+  /// set used by [fetchEventLikers], so the visible count and "Liked by" list
+  /// cannot diverge for addressable videos.
   ///
   /// Note: This counts all likes, not just the current user's.
   Future<int> getLikeCount(String eventId, {String? addressableId}) async {
@@ -584,21 +585,12 @@ class LikesRepository {
 
     int count;
 
-    // If addressable ID provided, query by both e and a tags
     if (addressableId != null && addressableId.isNotEmpty) {
-      final filterByA = Filter(
-        kinds: const [EventKind.reaction],
-        a: [addressableId],
+      final likersByEvent = await _fetchResolvedLikersByEvent(
+        [eventId],
+        addressableIds: {eventId: addressableId},
       );
-
-      // Query both filters in parallel and return the maximum count
-      // Some relays may index by e-tag, others by a-tag
-      final results = await Future.wait([
-        _nostrClient.countEvents([filterByE]),
-        _nostrClient.countEvents([filterByA]),
-      ]);
-
-      count = max(results[0].count, results[1].count);
+      count = likersByEvent[eventId]?.length ?? 0;
     } else {
       final result = await _nostrClient.countEvents([filterByE]);
       count = result.count;
@@ -618,7 +610,7 @@ class LikesRepository {
   /// - [eventIds]: List of event IDs to get counts for
   /// - [addressableIds]: Optional map of event ID to addressable ID for
   ///   Kind 30000+ events. When provided, also queries by 'a' tag and
-  ///   merges results (taking max count per event).
+  ///   counts the active distinct liker set used by [fetchEventLikers].
   ///
   /// Returns a map of event ID to like count. Events with zero likes
   /// are included with a count of 0.
@@ -644,6 +636,30 @@ class LikesRepository {
 
     if (uncachedIds.isEmpty) return counts;
 
+    final uncachedAddressableIds = <String, String>{};
+    if (addressableIds != null && addressableIds.isNotEmpty) {
+      for (final id in uncachedIds) {
+        final aId = addressableIds[id];
+        if (aId != null && aId.isNotEmpty) {
+          uncachedAddressableIds[id] = aId;
+        }
+      }
+    }
+
+    if (uncachedAddressableIds.isNotEmpty) {
+      final likersByEvent = await _fetchResolvedLikersByEvent(
+        uncachedIds,
+        addressableIds: uncachedAddressableIds,
+      );
+      for (final id in uncachedIds) {
+        counts[id] = likersByEvent[id]?.length ?? 0;
+      }
+      for (final id in uncachedIds) {
+        _likeCountCache[id] = counts[id]!;
+      }
+      return counts;
+    }
+
     // Query relays for count of Kind 7 reactions on uncached events
     final filterByE = Filter(kinds: const [EventKind.reaction], e: uncachedIds);
 
@@ -664,51 +680,6 @@ class LikesRepository {
           if (uncachedIdSet.contains(targetId)) {
             counts[targetId] = (counts[targetId] ?? 0) + 1;
           }
-        }
-      }
-    }
-
-    // If addressable IDs provided, also query by a-tag and merge results
-    if (addressableIds != null && addressableIds.isNotEmpty) {
-      final uncachedAddressableIds = <String, String>{};
-      for (final id in uncachedIds) {
-        final aId = addressableIds[id];
-        if (aId != null) uncachedAddressableIds[id] = aId;
-      }
-
-      if (uncachedAddressableIds.isNotEmpty) {
-        final aTagValues = uncachedAddressableIds.values.toList();
-        final filterByA = Filter(
-          kinds: const [EventKind.reaction],
-          a: aTagValues,
-        );
-
-        final eventsByA = await _nostrClient.queryEvents([filterByA]);
-
-        final aTagToEventId = <String, String>{};
-        for (final entry in uncachedAddressableIds.entries) {
-          aTagToEventId[entry.value] = entry.key;
-        }
-
-        final countsFromA = <String, int>{};
-        for (final id in uncachedIds) {
-          countsFromA[id] = 0;
-        }
-
-        for (final event in eventsByA) {
-          for (final tag in event.tags) {
-            if (tag.isNotEmpty && tag[0] == 'a' && tag.length > 1) {
-              final aTagValue = tag[1];
-              final eventId = aTagToEventId[aTagValue];
-              if (eventId != null && countsFromA.containsKey(eventId)) {
-                countsFromA[eventId] = countsFromA[eventId]! + 1;
-              }
-            }
-          }
-        }
-
-        for (final id in uncachedIds) {
-          counts[id] = max(counts[id]!, countsFromA[id] ?? 0);
         }
       }
     }
@@ -1184,82 +1155,142 @@ class LikesRepository {
     String? addressableId,
   }) async {
     try {
-      final filterByE = Filter(kinds: const [EventKind.reaction], e: [eventId]);
-
-      final List<Event> reactions;
-      if (addressableId != null && addressableId.isNotEmpty) {
-        final filterByA = Filter(
-          kinds: const [EventKind.reaction],
-          a: [addressableId],
-        );
-        final results = await Future.wait([
-          _nostrClient.queryEvents([filterByE]),
-          _nostrClient.queryEvents([filterByA]),
-        ]);
-        reactions = [...results[0], ...results[1]];
-      } else {
-        reactions = await _nostrClient.queryEvents([filterByE]);
-      }
-
-      if (reactions.isEmpty) return <String>[];
-
-      // Deduplicate reactions by id first (the e-tag and a-tag queries can
-      // return the same event twice when both tags are present).
-      final reactionsById = <String, Event>{};
-      for (final event in reactions) {
-        reactionsById[event.id] = event;
-      }
-
-      // Fetch deletions authored by anyone who reacted, so we can drop
-      // reactions whose author later deleted them via Kind 5.
-      final reactionAuthors = reactionsById.values
-          .map((event) => event.pubkey)
-          .toSet()
-          .toList();
-      final deletionEvents = await _nostrClient.queryEvents([
-        Filter(
-          kinds: const [EventKind.eventDeletion],
-          authors: reactionAuthors,
-        ),
-      ]);
-
-      // Only honor a Kind 5 deletion when its author matches the reaction's
-      // author — otherwise anyone could suppress someone else's like by
-      // publishing a deletion that references the other user's reaction id.
-      final deletedReactionIds = <String>{};
-      for (final deletion in deletionEvents) {
-        for (final tag in deletion.tags) {
-          if (tag.length > 1 && tag[0] == 'e') {
-            final targetId = tag[1];
-            final target = reactionsById[targetId];
-            if (target != null && target.pubkey == deletion.pubkey) {
-              deletedReactionIds.add(targetId);
-            }
-          }
-        }
-      }
-
-      final survivors =
-          reactionsById.values
-              .where((event) => event.content != _downvoteContent)
-              .where((event) => !deletedReactionIds.contains(event.id))
-              .toList()
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-      final likerPubkeys = <String>[];
-      final seenPubkeys = <String>{};
-      for (final event in survivors) {
-        if (_blockFilter?.call(event.pubkey) ?? false) continue;
-        if (seenPubkeys.add(event.pubkey)) {
-          likerPubkeys.add(event.pubkey);
-        }
-      }
-      return likerPubkeys;
+      final likersByEvent = await _fetchResolvedLikersByEvent(
+        [eventId],
+        addressableIds: addressableId == null || addressableId.isEmpty
+            ? null
+            : {eventId: addressableId},
+      );
+      return likersByEvent[eventId] ?? <String>[];
     } catch (e) {
       throw FetchLikersFailedException(
         'Failed to fetch likers for event $eventId: $e',
       );
     }
+  }
+
+  Future<Map<String, List<String>>> _fetchResolvedLikersByEvent(
+    List<String> eventIds, {
+    Map<String, String>? addressableIds,
+  }) async {
+    if (eventIds.isEmpty) return const {};
+
+    final eventIdSet = eventIds.toSet();
+    final aTagToEventId = <String, String>{
+      for (final entry in (addressableIds ?? const <String, String>{}).entries)
+        if (entry.value.isNotEmpty) entry.value: entry.key,
+    };
+
+    final filterByE = Filter(kinds: const [EventKind.reaction], e: eventIds);
+    final eEventsFuture = _nostrClient.queryEvents([filterByE]);
+    final aEventsFuture = aTagToEventId.isEmpty
+        ? Future<List<Event>>.value(const <Event>[])
+        : _nostrClient.queryEvents([
+            Filter(
+              kinds: const [EventKind.reaction],
+              a: aTagToEventId.keys.toList(),
+            ),
+          ]);
+    final queryResults = await Future.wait([eEventsFuture, aEventsFuture]);
+
+    final reactionsByTarget = {
+      for (final eventId in eventIds) eventId: <String, Event>{},
+    };
+    final allReactionsById = <String, Event>{};
+    for (final event in [...queryResults[0], ...queryResults[1]]) {
+      allReactionsById[event.id] = event;
+      final targetIds = _reactionTargetEventIds(
+        event,
+        eventIdSet: eventIdSet,
+        aTagToEventId: aTagToEventId,
+      );
+      for (final targetId in targetIds) {
+        reactionsByTarget[targetId]?[event.id] = event;
+      }
+    }
+
+    if (allReactionsById.isEmpty) {
+      return {for (final eventId in eventIds) eventId: <String>[]};
+    }
+
+    final reactionAuthors = allReactionsById.values
+        .map((event) => event.pubkey)
+        .toSet()
+        .toList();
+    final deletionEvents = reactionAuthors.isEmpty
+        ? const <Event>[]
+        : await _nostrClient.queryEvents([
+            Filter(
+              kinds: const [EventKind.eventDeletion],
+              authors: reactionAuthors,
+            ),
+          ]);
+
+    // Only honor a Kind 5 deletion when its author matches the reaction's
+    // author — otherwise anyone could suppress someone else's like by
+    // publishing a deletion that references the other user's reaction id.
+    final deletedReactionIds = <String>{};
+    for (final deletion in deletionEvents) {
+      for (final tag in deletion.tags) {
+        if (tag.length > 1 && tag[0] == 'e') {
+          final targetId = tag[1];
+          final target = allReactionsById[targetId];
+          if (target != null && target.pubkey == deletion.pubkey) {
+            deletedReactionIds.add(targetId);
+          }
+        }
+      }
+    }
+
+    return {
+      for (final entry in reactionsByTarget.entries)
+        entry.key: _activeLikerPubkeys(
+          entry.value.values,
+          deletedReactionIds: deletedReactionIds,
+        ),
+    };
+  }
+
+  Set<String> _reactionTargetEventIds(
+    Event event, {
+    required Set<String> eventIdSet,
+    required Map<String, String> aTagToEventId,
+  }) {
+    final targetIds = <String>{};
+    for (final tag in event.tags) {
+      if (tag.length <= 1) continue;
+      final marker = tag[0];
+      final value = tag[1];
+      if (marker == 'e' && eventIdSet.contains(value)) {
+        targetIds.add(value);
+      } else if (marker == 'a') {
+        final eventId = aTagToEventId[value];
+        if (eventId != null) targetIds.add(eventId);
+      }
+    }
+    return targetIds;
+  }
+
+  List<String> _activeLikerPubkeys(
+    Iterable<Event> reactions, {
+    required Set<String> deletedReactionIds,
+  }) {
+    final survivors =
+        reactions
+            .where((event) => event.content != _downvoteContent)
+            .where((event) => !deletedReactionIds.contains(event.id))
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    final likerPubkeys = <String>[];
+    final seenPubkeys = <String>{};
+    for (final event in survivors) {
+      if (_blockFilter?.call(event.pubkey) ?? false) continue;
+      if (seenPubkeys.add(event.pubkey)) {
+        likerPubkeys.add(event.pubkey);
+      }
+    }
+    return likerPubkeys;
   }
 
   /// Builds a [LikesSyncResult] from the current in-memory cache.
