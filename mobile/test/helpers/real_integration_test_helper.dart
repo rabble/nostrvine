@@ -157,10 +157,4 @@ class RealIntegrationTestHelper {
           return null;
         });
   }
-
-  /// Clean up after tests
-  static Future<void> cleanup() async {
-    // Reset static state if needed
-    _isSetup = false;
-  }
 }

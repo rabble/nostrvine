@@ -291,13 +291,17 @@ jobs:
         # inside the merged CI suite. A file-level integration tag is only
         # meaningful together with skip_very_good_optimization (run as a
         # separate suite, which -x integration then excludes).
+        # Matching is whitespace-normalized so a dart-format-wrapped
+        # multi-line @Tags([...]) cannot slip past as a false negative.
         run: |
           violations=""
           while IFS= read -r f; do
-            if ! grep -qE "^[[:space:]]*@Tags\([^)]*skip_very_good_optimization" "$f"; then
+            flat=$(tr -d '[:space:]' < "$f")
+            if grep -qE "@Tags\(\[[^]]*['\"]integration['\"]" <<<"$flat" \
+              && ! grep -qE "@Tags\(\[[^]]*['\"]skip_very_good_optimization['\"]" <<<"$flat"; then
               violations="$violations  $f"$'\n'
             fi
-          done < <(grep -rlE "^[[:space:]]*@Tags\([^)]*['\"]integration['\"]" test --include='*.dart' || true)
+          done < <(grep -rl "@Tags(" test --include='*.dart' || true)
           if [ -n "$violations" ]; then
             echo "❌ File-level @Tags(['integration']) without skip_very_good_optimization:"
             printf '%s' "$violations"
