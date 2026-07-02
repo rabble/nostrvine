@@ -52,6 +52,33 @@ void main() {
       );
     });
 
+    test('rejects http provider urls', () {
+      final result = normalizeMonetizationLinkInput(
+        provider: MonetizationLinkProvider.venmo,
+        input: 'http://venmo.com/u/alice',
+        enabled: true,
+      );
+
+      expect(result, isA<MonetizationLinkInputInvalid>());
+      expect(
+        (result as MonetizationLinkInputInvalid).reason,
+        MonetizationLinkInputInvalidReason.invalidFormat,
+      );
+    });
+
+    test('ignores http provider urls parsed from kind 0 metadata', () {
+      final links = parseMonetizationLinks([
+        {
+          'provider': 'venmo',
+          'category': 'tip',
+          'url': 'http://venmo.com/u/alice',
+          'enabled': true,
+        },
+      ]);
+
+      expect(links, isEmpty);
+    });
+
     test('deduplicates encoded links by provider in provider order', () {
       final encoded = encodeMonetizationLinks([
         const MonetizationLink(

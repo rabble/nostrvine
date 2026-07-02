@@ -369,6 +369,9 @@ class ProfileRepository {
             // User exists but has no Kind 0. Cache stats and skip relay
             // fallback — the profile genuinely does not exist yet.
             await _cacheProfileStatsFromResult(pubkey, result);
+            if (requireRawKind0) {
+              break;
+            }
             _confirmedMissing.add(pubkey);
             return null;
           case null:
@@ -387,7 +390,10 @@ class ProfileRepository {
     // Step 2: Fire connected relays and indexer relays concurrently.
     // Return the first valid profile immediately, then let slower
     // sources upgrade the cache if they have a newer kind 0 event.
-    final relayProfile = await _fetchFromRelaysParallel(pubkey);
+    final relayProfile = await _fetchFromRelaysParallel(
+      pubkey,
+      requireRawKind0: requireRawKind0,
+    );
     if (relayProfile != null) {
       await _cacheProfileIfNewer(relayProfile);
       return relayProfile;
@@ -442,7 +448,10 @@ class ProfileRepository {
   /// kind 0 profile event. Returns the first valid profile immediately,
   /// then upgrades the cache if a slower source yields a newer event.
   /// Falls back to null only when every source completes without a result.
-  Future<UserProfile?> _fetchFromRelaysParallel(String pubkey) async {
+  Future<UserProfile?> _fetchFromRelaysParallel(
+    String pubkey, {
+    required bool requireRawKind0,
+  }) async {
     final completer = Completer<UserProfile?>();
     UserProfile? newestProfile;
     var remaining = 2;
@@ -473,15 +482,27 @@ class ProfileRepository {
       }
     }
 
-    unawaited(handleSource(_fetchFromConnectedRelays(pubkey)));
+    unawaited(
+      handleSource(
+        _fetchFromConnectedRelays(
+          pubkey,
+          useCache: requireRawKind0 ? false : null,
+        ),
+      ),
+    );
     unawaited(handleSource(_fetchFromIndexerRelays(pubkey)));
 
     return completer.future;
   }
 
-  Future<UserProfile?> _fetchFromConnectedRelays(String pubkey) async {
+  Future<UserProfile?> _fetchFromConnectedRelays(
+    String pubkey, {
+    required bool? useCache,
+  }) async {
     try {
-      final event = await _nostrClient.fetchProfile(pubkey);
+      final event = useCache == null
+          ? await _nostrClient.fetchProfile(pubkey)
+          : await _nostrClient.fetchProfile(pubkey, useCache: useCache);
       if (event != null) {
         final profile = UserProfile.fromNostrEvent(event);
         Log.debug(
@@ -641,9 +662,15 @@ class ProfileRepository {
     // custom client fields, future NIPs — flows through from the seed
     // untouched. Adding new editable fields here MUST keep that invariant.
 
-    final result = await _nostrClient.sendProfileAwaitOk(
-      profileContent: newContent,
-    );
+    final rawTags = (seed?.rawTags.isNotEmpty ?? false)
+        ? seed!.rawTags
+        : currentProfile?.rawTags ?? const <List<String>>[];
+    final result = rawTags.isEmpty
+        ? await _nostrClient.sendProfileAwaitOk(profileContent: newContent)
+        : await _nostrClient.sendProfileAwaitOk(
+            profileContent: newContent,
+            tags: rawTags,
+          );
 
     // Switch exhaustively over the typed result — no post-failure
     // connectedRelays snapshot needed.
@@ -694,6 +721,7 @@ class ProfileRepository {
     }
     final fresh = await fetchFreshProfile(
       pubkey: currentProfile.pubkey,
+      requireRawKind0: true,
     ).timeout(_publishSeedRelayTimeout, onTimeout: () => null);
     if (fresh == null) {
       return currentProfile;
@@ -1214,11 +1242,7 @@ class ProfileRepository {
       final phase3Watch = Stopwatch()..start();
       try {
         final events = await _nostrClient
-            .queryUsers(
-              trimmed,
-              limit: limit,
-              timeout: _nip50RelayQueryTimeout,
-            )
+            .queryUsers(trimmed, limit: limit, timeout: _nip50RelayQueryTimeout)
             .timeout(_nip50SearchTimeout);
         for (final event in events) {
           final profile = UserProfile.fromNostrEvent(event);

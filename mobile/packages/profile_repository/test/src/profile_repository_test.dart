@@ -60,6 +60,7 @@ void main() {
       registerFallbackValue(Uri.parse('https://example.com'));
       registerFallbackValue(<Filter>[]);
       registerFallbackValue(Duration.zero);
+      registerFallbackValue(<List<String>>[]);
     });
 
     setUp(() {
@@ -90,6 +91,12 @@ void main() {
 
       when(
         () => mockNostrClient.fetchProfile(testPubkey),
+      ).thenAnswer((_) async => mockProfileEvent);
+      when(
+        () => mockNostrClient.fetchProfile(
+          testPubkey,
+          useCache: any(named: 'useCache'),
+        ),
       ).thenAnswer((_) async => mockProfileEvent);
 
       // Default stub for parallel indexer queries.
@@ -650,7 +657,9 @@ void main() {
           verify(
             () => mockFunnelcakeClient.getUserProfile(testPubkey),
           ).called(1);
-          verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+          verify(
+            () => mockNostrClient.fetchProfile(testPubkey, useCache: false),
+          ).called(1);
         });
 
         test('falls back to relay when Funnelcake throws', () async {
@@ -1737,23 +1746,20 @@ void main() {
         expect(captured.containsKey('website'), isFalse);
       });
 
-      test(
-        'throws ProfilePublishFailedException when no relay confirms '
-        '(rejection or timeout)',
-        () async {
-          when(
-            () => mockNostrClient.sendProfileAwaitOk(
-              profileContent: any(named: 'profileContent'),
-            ),
-          ).thenAnswer((_) async => const PublishFailed());
+      test('throws ProfilePublishFailedException when no relay confirms '
+          '(rejection or timeout)', () async {
+        when(
+          () => mockNostrClient.sendProfileAwaitOk(
+            profileContent: any(named: 'profileContent'),
+          ),
+        ).thenAnswer((_) async => const PublishFailed());
 
-          await expectLater(
-            profileRepository.saveProfileEvent(displayName: 'Test'),
-            throwsA(isA<ProfilePublishFailedException>()),
-          );
-          verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
-        },
-      );
+        await expectLater(
+          profileRepository.saveProfileEvent(displayName: 'Test'),
+          throwsA(isA<ProfilePublishFailedException>()),
+        );
+        verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
+      });
 
       test(
         'throws NoRelaysConnectedException when no relays are connected',
@@ -1773,6 +1779,100 @@ void main() {
       );
 
       group('with currentProfile', () {
+        test('requires raw Kind 0 when resolving the publish seed', () async {
+          final funnelcakeApiClient = MockFunnelcakeApiClient();
+          final repository = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: funnelcakeApiClient,
+          );
+          when(() => funnelcakeApiClient.isAvailable).thenReturn(true);
+          when(() => funnelcakeApiClient.getUserProfile(testPubkey)).thenAnswer(
+            (_) async => UserProfileFound(
+              profile: UserProfileData(
+                pubkey: testPubkey,
+                displayName: 'REST Name',
+                createdAt: DateTime(2026, 1, 2),
+              ),
+            ),
+          );
+
+          final rawKind0 = Event(
+            testPubkey,
+            0,
+            const [],
+            jsonEncode({
+              'display_name': 'Relay Name',
+              'relay_only_field': 'preserved',
+            }),
+            createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+          );
+          when(
+            () => mockNostrClient.fetchProfile(
+              testPubkey,
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => rawKind0);
+
+          await repository.saveProfileEvent(
+            displayName: 'New Name',
+            currentProfile: UserProfile(
+              pubkey: testPubkey,
+              displayName: 'Current Name',
+              rawData: const {'display_name': 'Current Name'},
+              createdAt: DateTime(2025),
+              eventId: 'rest-$testPubkey',
+            ),
+          );
+
+          final captured =
+              verify(
+                    () => mockNostrClient.sendProfileAwaitOk(
+                      profileContent: captureAny(named: 'profileContent'),
+                    ),
+                  ).captured.single
+                  as Map<String, dynamic>;
+          expect(captured['display_name'], 'New Name');
+          expect(captured['relay_only_field'], 'preserved');
+        });
+
+        test('preserves raw Kind 0 tags when republishing', () async {
+          final rawTags = [
+            ['i', 'github:alice', 'proof'],
+            ['alt', 'profile metadata'],
+          ];
+          final currentProfile = UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Old Name',
+            rawData: const {'display_name': 'Old Name'},
+            rawTags: rawTags,
+            createdAt: DateTime(2026),
+            eventId: 'kind0-$testPubkey',
+          );
+          when(
+            () => mockNostrClient.sendProfileAwaitOk(
+              profileContent: any(named: 'profileContent'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => PublishSuccess(event: mockProfileEvent));
+
+          await profileRepository.saveProfileEvent(
+            displayName: 'New Name',
+            currentProfile: currentProfile,
+          );
+
+          final captured =
+              verify(
+                    () => mockNostrClient.sendProfileAwaitOk(
+                      profileContent: captureAny(named: 'profileContent'),
+                      tags: rawTags,
+                    ),
+                  ).captured.single
+                  as Map<String, dynamic>;
+          expect(captured['display_name'], 'New Name');
+        });
+
         test('preserves unrelated fields from currentProfile', () async {
           final currentProfile = await createCurrentProfile({
             'display_name': 'Old Name',

@@ -196,7 +196,7 @@ List<MonetizationLink> parseMonetizationLinks(Object? raw) {
       );
       final uri = Uri.tryParse(link.url);
       if (uri == null ||
-          (uri.scheme != 'https' && uri.scheme != 'http') ||
+          uri.scheme != 'https' ||
           !link.provider.allowsHost(uri.host)) {
         continue;
       }
@@ -237,7 +237,7 @@ MonetizationLinkInputResult normalizeMonetizationLinkInput({
 
   final normalized = _normalizedUrlForProvider(provider, trimmed);
   final uri = Uri.tryParse(normalized);
-  if (uri == null || (uri.scheme != 'https' && uri.scheme != 'http')) {
+  if (uri == null || uri.scheme != 'https') {
     return const MonetizationLinkInputInvalid(
       MonetizationLinkInputInvalidReason.invalidFormat,
     );

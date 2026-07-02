@@ -197,10 +197,12 @@ class _MonetizationLinksSettingsScreenState
   }
 
   Future<void> _save(UserProfile currentProfile) async {
-    final links = <MonetizationLink>[];
+    final visibleProviders = monetizationProvidersForCurrentStorefront();
+    final visibleProviderSet = visibleProviders.toSet();
+    final visibleLinks = <MonetizationLink>[];
     final errors = <MonetizationLinkProvider, String>{};
 
-    for (final provider in monetizationProvidersForCurrentStorefront()) {
+    for (final provider in visibleProviders) {
       final input = _controllers[provider]!.text;
       if (input.trim().isEmpty) continue;
       if (!(_enabled[provider] ?? false)) continue;
@@ -211,7 +213,7 @@ class _MonetizationLinksSettingsScreenState
       );
       switch (result) {
         case MonetizationLinkInputValid(:final link):
-          links.add(link);
+          visibleLinks.add(link);
         case MonetizationLinkInputInvalid(:final reason):
           errors[provider] = _errorTextFor(reason);
       }
@@ -225,6 +227,13 @@ class _MonetizationLinksSettingsScreenState
       });
       return;
     }
+
+    final links = [
+      ...currentProfile.monetizationLinks.where(
+        (link) => !visibleProviderSet.contains(link.provider),
+      ),
+      ...visibleLinks,
+    ];
 
     setState(() => _saving = true);
     try {
@@ -255,7 +264,7 @@ class _MonetizationLinksSettingsScreenState
         category: LogCategory.system,
       );
       final analytics = ref.read(analyticsEventSinkProvider);
-      for (final link in links) {
+      for (final link in visibleLinks) {
         trackMonetizationLinkConfigured(analytics: analytics, link: link);
       }
       ScaffoldMessenger.of(context).showSnackBar(
@@ -285,10 +294,7 @@ class _MonetizationLinksSettingsScreenState
 }
 
 class _SectionIntro extends StatelessWidget {
-  const _SectionIntro({
-    required this.profile,
-    required this.appStoreTipPolicy,
-  });
+  const _SectionIntro({required this.profile, required this.appStoreTipPolicy});
 
   final UserProfile? profile;
   final bool appStoreTipPolicy;

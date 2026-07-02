@@ -1882,6 +1882,37 @@ void main() {
         expect(event.content, equals(jsonEncode(profileContent)));
       });
 
+      test('includes supplied tags on the Kind 0 event', () async {
+        final tags = [
+          ['i', 'github:alice', 'proof'],
+          ['alt', 'profile metadata'],
+        ];
+        stubAwaitOk(accepted());
+
+        final result = await client.sendProfileAwaitOk(
+          profileContent: {'display_name': 'Alice'},
+          tags: tags,
+        );
+
+        expect(result, isA<PublishSuccess>());
+        final event = (result as PublishSuccess).event;
+        expect(event.tags.take(tags.length).toList(), equals(tags));
+        verify(
+          () => mockNostr.sendEventAwaitOk(
+            any(
+              that: isA<Event>().having(
+                (e) => e.tags.take(tags.length).toList(),
+                'leading tags',
+                equals(tags),
+              ),
+            ),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).called(1);
+      });
+
       test('returns PublishSuccess when at least one relay confirms even if '
           'another rejects', () async {
         stubAwaitOk(

@@ -1016,6 +1016,7 @@ class NostrClient {
   ///   returned null).
   Future<PublishResult> sendProfileAwaitOk({
     required Map<String, dynamic> profileContent,
+    List<List<String>> tags = const [],
   }) async {
     // Resolve the no-relays case up front. [publishEventAwaitOk] returns an
     // all-empty [PublishOutcome] both when no relay was ever connected AND
@@ -1035,7 +1036,7 @@ class NostrClient {
     final event = Event(
       publicKey,
       EventKind.metadata,
-      [],
+      tags.map(List<String>.from).toList(growable: false),
       jsonEncode(profileContent),
     );
 

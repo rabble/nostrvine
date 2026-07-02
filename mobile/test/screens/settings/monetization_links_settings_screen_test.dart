@@ -269,4 +269,127 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets('preserves hidden subscription links on iOS storefront save', (
+    tester,
+  ) async {
+    debugUsesAppleAppStoreTipPolicyOverride = true;
+
+    final authService = _MockAuthService();
+    final repository = _MockProfileRepository();
+    final profileStream = StreamController<UserProfile?>();
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    List<MonetizationLink>? capturedLinks;
+
+    final currentProfile = UserProfile(
+      pubkey: pubkey,
+      displayName: 'Creator',
+      rawData: {
+        'display_name': 'Creator',
+        divineMonetizationLinksKey: [
+          const MonetizationLink(
+            provider: MonetizationLinkProvider.cashApp,
+            category: MonetizationLinkCategory.tip,
+            url: r'https://cash.app/$old',
+            enabled: true,
+          ).toJson(),
+          const MonetizationLink(
+            provider: MonetizationLinkProvider.patreon,
+            category: MonetizationLinkCategory.subscription,
+            url: 'https://www.patreon.com/creator',
+            enabled: true,
+          ).toJson(),
+        ],
+      },
+      createdAt: DateTime(2026),
+      eventId:
+          'current123456789012345678901234567890123456789012345678901234567',
+    );
+
+    when(() => authService.authState).thenReturn(AuthState.authenticated);
+    when(
+      () => authService.authStateStream,
+    ).thenAnswer((_) => Stream.value(AuthState.authenticated));
+    when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
+    when(() => authService.hasExistingProfile).thenReturn(true);
+
+    when(
+      () => repository.getCachedProfile(pubkey: pubkey),
+    ).thenAnswer((_) async => currentProfile);
+    when(
+      () => repository.fetchFreshProfile(pubkey: pubkey),
+    ).thenAnswer((_) async => currentProfile);
+    when(
+      () => repository.watchProfile(pubkey: pubkey),
+    ).thenAnswer((_) => profileStream.stream);
+    when(
+      () => repository.saveProfileEvent(
+        displayName: any(named: 'displayName'),
+        about: any(named: 'about'),
+        website: any(named: 'website'),
+        picture: any(named: 'picture'),
+        banner: any(named: 'banner'),
+        monetizationLinks: any(named: 'monetizationLinks'),
+        currentProfile: any(named: 'currentProfile'),
+      ),
+    ).thenAnswer((invocation) async {
+      capturedLinks =
+          (invocation.namedArguments[#monetizationLinks]
+                  as Iterable<MonetizationLink>)
+              .toList();
+      return currentProfile.copyWith(
+        rawData: {
+          ...currentProfile.rawData,
+          divineMonetizationLinksKey: capturedLinks!
+              .map((link) => link.toJson())
+              .toList(growable: false),
+        },
+      );
+    });
+
+    addTearDown(profileStream.close);
+    profileStream.add(currentProfile);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authServiceProvider.overrideWithValue(authService),
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          profileRepositoryProvider.overrideWithValue(repository),
+          analyticsEventSinkProvider.overrideWithValue(
+            const NoOpAnalyticsEventSink(),
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: const MonetizationLinksSettingsScreen(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.pump();
+
+    await tester.ensureVisible(find.text(l10n.monetizationTipsSettingsSave));
+    await tester.tap(find.text(l10n.monetizationTipsSettingsSave));
+    await tester.pump();
+    await tester.pump();
+
+    expect(capturedLinks, hasLength(2));
+    final byProvider = {
+      for (final link in capturedLinks!) link.provider: link,
+    };
+    expect(
+      byProvider[MonetizationLinkProvider.cashApp]?.url,
+      r'https://cash.app/$old',
+    );
+    expect(byProvider[MonetizationLinkProvider.cashApp]?.enabled, isTrue);
+    expect(
+      byProvider[MonetizationLinkProvider.patreon]?.url,
+      'https://www.patreon.com/creator',
+    );
+    expect(byProvider[MonetizationLinkProvider.patreon]?.enabled, isTrue);
+  });
 }
