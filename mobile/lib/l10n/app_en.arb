@@ -913,6 +913,50 @@
   "metadataLikesLabel": "Likes",
   "metadataCommentsLabel": "Comments",
   "metadataRepostsLabel": "Reposts",
+  "metadataVineStatsLabel": "On Vine",
+  "@metadataVineStatsLabel": {
+    "description": "Row label in the video info sheet for the archival engagement a classic Vine earned on the original Vine platform."
+  },
+  "metadataVineStatsLine": "{loops} loops · {likes} likes · {comments} comments · {reposts} reposts",
+  "@metadataVineStatsLine": {
+    "description": "Archival engagement summary for a classic Vine. Each placeholder is a pre-formatted compact count, e.g. '142.7M'.",
+    "placeholders": {
+      "loops": {
+        "type": "String"
+      },
+      "likes": {
+        "type": "String"
+      },
+      "comments": {
+        "type": "String"
+      },
+      "reposts": {
+        "type": "String"
+      }
+    }
+  },
+  "metadataDivineStatsLabel": "On Divine",
+  "@metadataDivineStatsLabel": {
+    "description": "Row label in the video info sheet for the engagement a classic Vine has earned from Divine viewers."
+  },
+  "metadataDivineStatsLine": "{views} views · {likes} likes · {comments} comments · {reposts} reposts",
+  "@metadataDivineStatsLine": {
+    "description": "Live Divine engagement summary for a classic Vine. Each placeholder is a pre-formatted compact count, e.g. '3K'.",
+    "placeholders": {
+      "views": {
+        "type": "String"
+      },
+      "likes": {
+        "type": "String"
+      },
+      "comments": {
+        "type": "String"
+      },
+      "reposts": {
+        "type": "String"
+      }
+    }
+  },
   "metadataPostedDateSemantics": "Posted on {date}",
   "@metadataPostedDateSemantics": {
     "description": "Screen reader label for the publish date in the video info sheet. {date} is the locale-formatted absolute date, e.g. 'Apr 22, 2003'.",

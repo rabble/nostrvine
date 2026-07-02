@@ -1599,6 +1599,32 @@ class AppLocalizationsKo extends AppLocalizations {
   String get metadataRepostsLabel => '리포스트';
 
   @override
+  String get metadataVineStatsLabel => 'On Vine';
+
+  @override
+  String metadataVineStatsLine(
+    String loops,
+    String likes,
+    String comments,
+    String reposts,
+  ) {
+    return '$loops loops · $likes likes · $comments comments · $reposts reposts';
+  }
+
+  @override
+  String get metadataDivineStatsLabel => 'On Divine';
+
+  @override
+  String metadataDivineStatsLine(
+    String views,
+    String likes,
+    String comments,
+    String reposts,
+  ) {
+    return '$views views · $likes likes · $comments comments · $reposts reposts';
+  }
+
+  @override
   String metadataPostedDateSemantics(String date) {
     return '$date에 게시됨';
   }

@@ -31,3 +31,19 @@ int? liveRepostCountSeed(VideoEvent video) {
   final liveCount = _maxNullableCounts(liveRepostCount, visibleReposterCount);
   return _sumNullableCounts(video.originalReposts, liveCount);
 }
+
+/// Divine-only portion of a combined display count.
+///
+/// Display counts are seeded as archival + live (see the seeds above) and
+/// then adjusted by optimistic taps, so subtracting the archival baseline
+/// back out keeps a per-source breakdown consistent with the combined
+/// number. Falls back to [liveCount] when the display count is unknown.
+int divineOnlyCount({
+  required int? displayCount,
+  required int? archivedCount,
+  int? liveCount,
+}) {
+  if (displayCount == null) return liveCount ?? 0;
+  final live = displayCount - (archivedCount ?? 0);
+  return live < 0 ? 0 : live;
+}

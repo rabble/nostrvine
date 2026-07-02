@@ -102,4 +102,42 @@ void main() {
       },
     );
   });
+
+  group('divineOnlyCount', () {
+    test('backs the archival baseline out of the display count', () {
+      expect(
+        divineOnlyCount(displayCount: 459878 + 387, archivedCount: 459878),
+        equals(387),
+      );
+    });
+
+    test('tracks optimistic taps applied to the display count', () {
+      expect(
+        divineOnlyCount(displayCount: 459878 + 388, archivedCount: 459878),
+        equals(388),
+      );
+    });
+
+    test('falls back to the raw live count when display count is unknown', () {
+      expect(
+        divineOnlyCount(
+          displayCount: null,
+          archivedCount: 459878,
+          liveCount: 387,
+        ),
+        equals(387),
+      );
+      expect(
+        divineOnlyCount(displayCount: null, archivedCount: 459878),
+        equals(0),
+      );
+    });
+
+    test('clamps to zero when the display count dips below archival', () {
+      expect(
+        divineOnlyCount(displayCount: 100, archivedCount: 459878),
+        equals(0),
+      );
+    });
+  });
 }

@@ -451,6 +451,77 @@ void main() {
       // Likes, Comments, Reposts show dash; Loops is static.
       expect(find.text('—'), findsNWidgets(3));
     });
+
+    testWidgetsWithSurfaceSize(
+      'shows Vine and Divine breakdown for classic Vines',
+      (tester) async {
+        // Combined display counts in the mock bloc state are 250/42/15;
+        // the archival baselines below leave 50/12/5 as the Divine share.
+        final video = _makeVideo(
+          rawTags: const {'platform': 'vine', 'views': '3020'},
+        ).copyWith(originalLikes: 200, originalComments: 30);
+
+        await tester.pumpWidget(
+          buildSubject(
+            child: MetadataStatsRow(
+              video: video.copyWith(originalReposts: 10),
+            ),
+          ),
+        );
+
+        final l10n = _l10n(tester);
+        expect(find.text(l10n.metadataVineStatsLabel), findsOneWidget);
+        expect(
+          find.text(l10n.metadataVineStatsLine('1.5K', '200', '30', '10')),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.metadataDivineStatsLabel), findsOneWidget);
+        expect(
+          find.text(l10n.metadataDivineStatsLine('3.02K', '50', '12', '5')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'falls back to live nostr counts in the breakdown while loading',
+      (tester) async {
+        when(() => mockInteractionsBloc.state).thenReturn(
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.loading,
+          ),
+        );
+
+        final video = _makeVideo(
+          rawTags: const {'platform': 'vine', 'views': '3020'},
+        ).copyWith(originalLikes: 200, nostrLikeCount: 50);
+
+        await tester.pumpWidget(
+          buildSubject(child: MetadataStatsRow(video: video)),
+        );
+
+        final l10n = _l10n(tester);
+        expect(
+          find.text(l10n.metadataDivineStatsLine('3.02K', '50', '0', '0')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'hides the per-source breakdown for non-Vine videos',
+      (tester) async {
+        final video = _makeVideo();
+
+        await tester.pumpWidget(
+          buildSubject(child: MetadataStatsRow(video: video)),
+        );
+
+        final l10n = _l10n(tester);
+        expect(find.text(l10n.metadataVineStatsLabel), findsNothing);
+        expect(find.text(l10n.metadataDivineStatsLabel), findsNothing);
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------

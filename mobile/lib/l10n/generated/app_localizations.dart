@@ -3004,6 +3004,40 @@ abstract class AppLocalizations {
   /// **'Reposts'**
   String get metadataRepostsLabel;
 
+  /// Row label in the video info sheet for the archival engagement a classic Vine earned on the original Vine platform.
+  ///
+  /// In en, this message translates to:
+  /// **'On Vine'**
+  String get metadataVineStatsLabel;
+
+  /// Archival engagement summary for a classic Vine. Each placeholder is a pre-formatted compact count, e.g. '142.7M'.
+  ///
+  /// In en, this message translates to:
+  /// **'{loops} loops · {likes} likes · {comments} comments · {reposts} reposts'**
+  String metadataVineStatsLine(
+    String loops,
+    String likes,
+    String comments,
+    String reposts,
+  );
+
+  /// Row label in the video info sheet for the engagement a classic Vine has earned from Divine viewers.
+  ///
+  /// In en, this message translates to:
+  /// **'On Divine'**
+  String get metadataDivineStatsLabel;
+
+  /// Live Divine engagement summary for a classic Vine. Each placeholder is a pre-formatted compact count, e.g. '3K'.
+  ///
+  /// In en, this message translates to:
+  /// **'{views} views · {likes} likes · {comments} comments · {reposts} reposts'**
+  String metadataDivineStatsLine(
+    String views,
+    String likes,
+    String comments,
+    String reposts,
+  );
+
   /// Screen reader label for the publish date in the video info sheet. {date} is the locale-formatted absolute date, e.g. 'Apr 22, 2003'.
   ///
   /// In en, this message translates to:
