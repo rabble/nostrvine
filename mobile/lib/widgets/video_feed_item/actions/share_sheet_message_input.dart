@@ -92,12 +92,18 @@ class _SendButton extends StatelessWidget {
                   color: VineTheme.onPrimary,
                 ),
               )
-            // 20 matches the DM conversation composer's send icon
-            // (message_input_bar.dart) and the sending spinner above.
-            : const DivineIcon(
-                icon: DivineIconName.arrowUp,
-                size: 20,
-                color: VineTheme.onPrimary,
+            // Center loosens the Container's tight 40x40 constraints —
+            // without it the SvgPicture is forced to fill the circle and
+            // the size below is silently ignored. The arrow glyph fills
+            // only ~66%x78% of its SVG viewBox, so 26.667 renders the
+            // ~18x20pt glyph the Figma spec shows — the same value the
+            // reel-reply and comment composers use for this asset.
+            : const Center(
+                child: DivineIcon(
+                  icon: DivineIconName.arrowUp,
+                  size: 26.667,
+                  color: VineTheme.onPrimary,
+                ),
               ),
       ),
     );
