@@ -442,6 +442,15 @@
     "shareContactFallback": "Contact",
     "shareUserFallback": "User",
     "shareSendingTo": "Ipinapadala kay {name}",
+    "shareSelectedRecipientAnnouncement": "Napili si {name}",
+    "@shareSelectedRecipientAnnouncement": {
+        "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
     "shareMessageHint": "Magdagdag ng optional na mensahe...",
     "videoActionUnlike": "I-unlike ang video",
     "videoActionLike": "I-like ang video",

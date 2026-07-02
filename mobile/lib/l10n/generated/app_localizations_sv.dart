@@ -1511,6 +1511,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String shareSelectedRecipientAnnouncement(String name) {
+    return '$name vald';
+  }
+
+  @override
   String get shareMessageHint => 'Lägg till valfritt meddelande...';
 
   @override

@@ -1477,6 +1477,11 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String shareSelectedRecipientAnnouncement(String name) {
+    return '$name ተመርጧል';
+  }
+
+  @override
   String get shareMessageHint => 'አማራጭ መልእክት አክል...';
 
   @override

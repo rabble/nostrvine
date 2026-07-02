@@ -1537,6 +1537,11 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String shareSelectedRecipientAnnouncement(String name) {
+    return 'Избран е $name';
+  }
+
+  @override
   String get shareMessageHint => 'Добави съобщение (по избор)...';
 
   @override

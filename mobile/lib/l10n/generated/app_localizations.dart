@@ -2692,6 +2692,12 @@ abstract class AppLocalizations {
   /// **'Sending to {name}'**
   String shareSendingTo(String name);
 
+  /// Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected {name}'**
+  String shareSelectedRecipientAnnouncement(String name);
+
   /// No description provided for @shareMessageHint.
   ///
   /// In en, this message translates to:

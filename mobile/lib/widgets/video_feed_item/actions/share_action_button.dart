@@ -205,7 +205,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
             listener: (context, state) {
               SemanticsService.sendAnnouncement(
                 View.of(context),
-                context.l10n.shareSendingTo(
+                context.l10n.shareSelectedRecipientAnnouncement(
                   state.selectedRecipient!.displayName ??
                       context.l10n.shareUserFallback,
                 ),

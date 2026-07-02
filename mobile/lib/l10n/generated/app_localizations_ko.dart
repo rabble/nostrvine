@@ -1432,6 +1432,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String shareSelectedRecipientAnnouncement(String name) {
+    return '$name님 선택됨';
+  }
+
+  @override
   String get shareMessageHint => '메시지 추가 (선택)...';
 
   @override

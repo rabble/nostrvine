@@ -1491,6 +1491,11 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String shareSelectedRecipientAnnouncement(String name) {
+    return '$name dipilih';
+  }
+
+  @override
   String get shareMessageHint => 'Tambahkan pesan opsional...';
 
   @override

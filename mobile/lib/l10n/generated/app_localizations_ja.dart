@@ -1424,6 +1424,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String shareSelectedRecipientAnnouncement(String name) {
+    return '$nameを選択しました';
+  }
+
+  @override
   String get shareMessageHint => 'メッセージを追加 (任意)...';
 
   @override

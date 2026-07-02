@@ -1552,6 +1552,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String shareSelectedRecipientAnnouncement(String name) {
+    return '$name selectat';
+  }
+
+  @override
   String get shareMessageHint => 'Adaugă un mesaj opțional...';
 
   @override

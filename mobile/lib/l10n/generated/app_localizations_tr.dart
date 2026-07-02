@@ -1497,6 +1497,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String shareSelectedRecipientAnnouncement(String name) {
+    return '$name seçildi';
+  }
+
+  @override
   String get shareMessageHint => 'Opsiyonel mesaj ekle...';
 
   @override

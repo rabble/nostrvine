@@ -1536,6 +1536,11 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String shareSelectedRecipientAnnouncement(String name) {
+    return 'Wybrano $name';
+  }
+
+  @override
   String get shareMessageHint => 'Dodaj opcjonalną wiadomość...';
 
   @override

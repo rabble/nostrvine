@@ -658,6 +658,15 @@
             }
         }
     },
+    "shareSelectedRecipientAnnouncement": "Избран е {name}",
+    "@shareSelectedRecipientAnnouncement": {
+        "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
     "shareMessageHint": "Добави съобщение (по избор)...",
     "videoActionUnlike": "Премахни харесването",
     "videoActionLike": "Харесай видеото",

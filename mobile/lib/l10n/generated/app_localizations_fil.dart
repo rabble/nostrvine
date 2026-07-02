@@ -1542,6 +1542,11 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String shareSelectedRecipientAnnouncement(String name) {
+    return 'Napili si $name';
+  }
+
+  @override
   String get shareMessageHint => 'Magdagdag ng optional na mensahe...';
 
   @override

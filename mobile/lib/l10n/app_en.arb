@@ -789,6 +789,15 @@
       }
     }
   },
+  "shareSelectedRecipientAnnouncement": "Selected {name}",
+  "@shareSelectedRecipientAnnouncement": {
+    "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "shareMessageHint": "Add optional message...",
   "videoActionUnlike": "Unlike video",
   "videoActionLike": "Like video",
