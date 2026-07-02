@@ -170,6 +170,17 @@ void main() {
             const MethodChannel('divine_video_player/player_0'),
             (call) async => null,
           );
+          addTearDown(() {
+            messenger
+              ..setMockMethodCallHandler(
+                const MethodChannel('divine_video_player'),
+                null,
+              )
+              ..setMockMethodCallHandler(
+                const MethodChannel('divine_video_player/player_0'),
+                null,
+              );
+          });
 
           final mockGoRouter = MockGoRouter();
           when(() => mockGoRouter.pop<Object?>(any())).thenReturn(null);
@@ -218,15 +229,6 @@ void main() {
 
           expect(find.byType(VideoClipPreview), findsNothing);
           verify(() => mockBloc.add(ClipsLibraryDeleteClip(clip1))).called(1);
-
-          messenger.setMockMethodCallHandler(
-            const MethodChannel('divine_video_player'),
-            null,
-          );
-          messenger.setMockMethodCallHandler(
-            const MethodChannel('divine_video_player/player_0'),
-            null,
-          );
         },
       );
     });

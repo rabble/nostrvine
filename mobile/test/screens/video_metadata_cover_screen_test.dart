@@ -75,18 +75,6 @@ void main() {
     originalProVideoEditor = ProVideoEditor.instance;
     ProVideoEditor.instance = _NoopInitProVideoEditor();
 
-    _setHandler(const MethodChannel('plugins.flutter.io/path_provider'), (
-      call,
-    ) async {
-      if (call.method == 'getApplicationDocumentsDirectory') {
-        return '/tmp/documents';
-      }
-      if (call.method == 'getTemporaryDirectory') {
-        return '/tmp';
-      }
-      return null;
-    });
-
     _setHandler(const MethodChannel('divine_video_player'), (call) async {
       if (call.method == 'create') return <String, Object?>{'textureId': 1};
       return null;
@@ -113,7 +101,6 @@ void main() {
     ProVideoEditor.instance = originalProVideoEditor;
     _clearHandler(const MethodChannel('divine_video_player'));
     _clearHandler(const MethodChannel('pro_video_editor'));
-    _clearHandler(const MethodChannel('plugins.flutter.io/path_provider'));
   });
 
   group(VideoMetadataCoverScreen, () {

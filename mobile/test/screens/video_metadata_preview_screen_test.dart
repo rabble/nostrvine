@@ -135,6 +135,13 @@ void main() {
             const MethodChannel('divine_video_player/player_0'),
             (call) async => null,
           );
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player/player_0'),
+              null,
+            );
+      });
 
       await tester.pumpWidget(buildTestWidget());
       // Pump past the 350ms hero animation timer in initState
@@ -142,12 +149,6 @@ void main() {
 
       expect(find.byType(VideoMetadataPreviewScreen), findsOneWidget);
       expect(find.byType(Scaffold), findsOneWidget);
-
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            const MethodChannel('divine_video_player/player_0'),
-            null,
-          );
     });
 
     testWidgets('renders $DivineVideoPlayer widget', (tester) async {
@@ -156,17 +157,18 @@ void main() {
             const MethodChannel('divine_video_player/player_0'),
             (call) async => null,
           );
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player/player_0'),
+              null,
+            );
+      });
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.byType(DivineVideoPlayer), findsOneWidget);
-
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            const MethodChannel('divine_video_player/player_0'),
-            null,
-          );
     });
 
     testWidgets('renders close button', (tester) async {
@@ -175,17 +177,18 @@ void main() {
             const MethodChannel('divine_video_player/player_0'),
             (call) async => null,
           );
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player/player_0'),
+              null,
+            );
+      });
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.byType(DivineIconButton), findsOneWidget);
-
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            const MethodChannel('divine_video_player/player_0'),
-            null,
-          );
     });
 
     testWidgets('hides bottom bar and overlay in preview-only mode', (
@@ -196,18 +199,19 @@ void main() {
             const MethodChannel('divine_video_player/player_0'),
             (call) async => null,
           );
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player/player_0'),
+              null,
+            );
+      });
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pump(const Duration(milliseconds: 400));
 
       // Post button and overlay should not be present in previewOnly mode
       expect(find.text('Post'), findsNothing);
-
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            const MethodChannel('divine_video_player/player_0'),
-            null,
-          );
     });
   });
 }

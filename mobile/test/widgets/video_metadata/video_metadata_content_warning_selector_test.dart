@@ -138,7 +138,7 @@ void main() {
     });
 
     testWidgets('bottom sheet shows all ContentLabel options', (tester) async {
-      addTearDown(() => tester.view.resetPhysicalSize());
+      addTearDown(tester.view.reset);
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1;
 
@@ -159,7 +159,7 @@ void main() {
     testWidgets('tapping confirm button pops with selected labels', (
       tester,
     ) async {
-      addTearDown(() => tester.view.resetPhysicalSize());
+      addTearDown(tester.view.reset);
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1;
 
@@ -198,7 +198,7 @@ void main() {
     });
 
     testWidgets('can clear all selected content warnings', (tester) async {
-      addTearDown(() => tester.view.resetPhysicalSize());
+      addTearDown(tester.view.reset);
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1;
 
@@ -243,7 +243,7 @@ void main() {
     });
 
     testWidgets('tapping an option toggles its checkbox state', (tester) async {
-      addTearDown(() => tester.view.resetPhysicalSize());
+      addTearDown(tester.view.reset);
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1;
 

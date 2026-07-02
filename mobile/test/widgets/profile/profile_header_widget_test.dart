@@ -1095,7 +1095,7 @@ void main() {
         // Set a phone-like screen size to ensure text wraps
         tester.view.physicalSize = const Size(400, 800);
         tester.view.devicePixelRatio = 1.0;
-        addTearDown(() => tester.view.resetPhysicalSize());
+        addTearDown(tester.view.reset);
 
         final testProfile = createTestProfile(
           displayName: 'Test User',
@@ -1122,7 +1122,7 @@ void main() {
         // Set a phone-like screen size to ensure text wraps
         tester.view.physicalSize = const Size(400, 800);
         tester.view.devicePixelRatio = 1.0;
-        addTearDown(() => tester.view.resetPhysicalSize());
+        addTearDown(tester.view.reset);
 
         final testProfile = createTestProfile(
           displayName: 'Test User',
@@ -1154,7 +1154,7 @@ void main() {
         // Use a taller viewport so expanded bio content stays in bounds
         tester.view.physicalSize = const Size(400, 1200);
         tester.view.devicePixelRatio = 1.0;
-        addTearDown(() => tester.view.resetPhysicalSize());
+        addTearDown(tester.view.reset);
 
         final testProfile = createTestProfile(
           displayName: 'Test User',
