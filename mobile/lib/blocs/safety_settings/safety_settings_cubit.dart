@@ -39,7 +39,9 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
     required ModerationLabelService moderationLabelService,
     required FollowRepository followRepository,
     required ContentBlocklistRepository contentBlocklistRepository,
-  }) : _ageVerificationService = ageVerificationService,
+    bool isAdultContentLocked = false,
+  }) : _isAdultContentLocked = isAdultContentLocked,
+       _ageVerificationService = ageVerificationService,
        _contentFilterService = contentFilterService,
        _videoEventService = videoEventService,
        _divineHostFilterService = divineHostFilterService,
@@ -55,6 +57,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
   final ModerationLabelService _moderationLabelService;
   final FollowRepository _followRepository;
   final ContentBlocklistRepository _contentBlocklistRepository;
+  final bool _isAdultContentLocked;
 
   StreamSubscription<ContentPolicyState>? _blocklistSub;
 
@@ -68,6 +71,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
       state.copyWith(
         status: SafetySettingsStatus.ready,
         isAgeVerified: _ageVerificationService.isAdultContentVerified,
+        isAdultContentLocked: _isAdultContentLocked,
         isPeopleIFollowEnabled:
             _moderationLabelService.isFollowingModerationEnabled,
         showDivineHostedOnly: _divineHostFilterService.showDivineHostedOnly,
@@ -91,6 +95,7 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
   /// On un-confirm: persist + lock adult categories + filter the existing
   /// feed (kept to mirror `_setAgeVerified` pre-migration behavior).
   Future<void> setAgeVerified(bool value) async {
+    if (_isAdultContentLocked) return; // protected minors cannot toggle
     await _ageVerificationService.setAdultContentVerified(value);
     if (value) {
       await _contentFilterService.unlockAdultCategories();

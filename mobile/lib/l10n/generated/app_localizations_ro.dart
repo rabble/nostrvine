@@ -2488,6 +2488,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Necesar pentru a vedea conținut pentru adulți';
 
   @override
+  String get safetySettingsAgeLockedForMinor => 'Locked for your account';
+
+  @override
   String get safetySettingsDivine => 'Divine';
 
   @override

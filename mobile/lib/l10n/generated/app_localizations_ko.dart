@@ -2293,6 +2293,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get safetySettingsAgeRequired => '성인 콘텐츠를 보려면 필요해요';
 
   @override
+  String get safetySettingsAgeLockedForMinor => 'Locked for your account';
+
+  @override
   String get safetySettingsDivine => 'Divine';
 
   @override

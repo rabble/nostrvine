@@ -2443,6 +2443,9 @@ class AppLocalizationsBg extends AppLocalizations {
       'Изисква се за гледане на съдържание за възрастни';
 
   @override
+  String get safetySettingsAgeLockedForMinor => 'Locked for your account';
+
+  @override
   String get safetySettingsDivine => 'Divine';
 
   @override

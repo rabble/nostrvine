@@ -2441,6 +2441,9 @@ class AppLocalizationsFil extends AppLocalizations {
       'Kailangan para makita ang adult content';
 
   @override
+  String get safetySettingsAgeLockedForMinor => 'Locked for your account';
+
+  @override
   String get safetySettingsDivine => 'Divine';
 
   @override

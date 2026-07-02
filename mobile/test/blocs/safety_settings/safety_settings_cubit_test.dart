@@ -113,14 +113,41 @@ void main() {
       await blocklistStream.close();
     });
 
-    SafetySettingsCubit buildCubit() => SafetySettingsCubit(
-      ageVerificationService: ageService,
-      contentFilterService: filterService,
-      videoEventService: videoEventService,
-      divineHostFilterService: divineHostFilterService,
-      moderationLabelService: moderationLabelService,
-      followRepository: followRepository,
-      contentBlocklistRepository: blocklistRepository,
+    SafetySettingsCubit buildCubit({bool isAdultContentLocked = false}) =>
+        SafetySettingsCubit(
+          ageVerificationService: ageService,
+          contentFilterService: filterService,
+          videoEventService: videoEventService,
+          divineHostFilterService: divineHostFilterService,
+          moderationLabelService: moderationLabelService,
+          followRepository: followRepository,
+          contentBlocklistRepository: blocklistRepository,
+          isAdultContentLocked: isAdultContentLocked,
+        );
+
+    blocTest<SafetySettingsCubit, SafetySettingsState>(
+      'load() surfaces isAdultContentLocked for a protected minor',
+      build: () => buildCubit(isAdultContentLocked: true),
+      act: (cubit) => cubit.load(),
+      expect: () => [
+        isA<SafetySettingsState>().having(
+          (s) => s.status,
+          'status',
+          SafetySettingsStatus.loading,
+        ),
+        isA<SafetySettingsState>()
+            .having((s) => s.status, 'status', SafetySettingsStatus.ready)
+            .having((s) => s.isAdultContentLocked, 'locked', true),
+      ],
+    );
+
+    blocTest<SafetySettingsCubit, SafetySettingsState>(
+      'setAgeVerified is a no-op when adult content is locked',
+      build: () => buildCubit(isAdultContentLocked: true),
+      act: (cubit) => cubit.setAgeVerified(true),
+      verify: (_) {
+        verifyNever(() => ageService.setAdultContentVerified(true));
+      },
     );
 
     blocTest<SafetySettingsCubit, SafetySettingsState>(

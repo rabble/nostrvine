@@ -2385,6 +2385,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'Yetişkin içeriği görüntülemek için gereklidir';
 
   @override
+  String get safetySettingsAgeLockedForMinor => 'Locked for your account';
+
+  @override
   String get safetySettingsDivine => 'Divine';
 
   @override

@@ -10,6 +10,7 @@ import 'package:openvine/blocs/safety_settings/safety_settings_cubit.dart';
 import 'package:openvine/blocs/safety_settings/safety_settings_state.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/settings/account_content_labels_tile.dart';
@@ -38,6 +39,7 @@ class SafetySettingsScreen extends ConsumerWidget {
     final contentBlocklistRepository = ref.watch(
       contentBlocklistRepositoryProvider,
     );
+    final isAdultContentLocked = ref.watch(isProtectedMinorProvider);
     return BlocProvider(
       // Auth-flippable services are re-keyed so the Cubit reloads with the
       // fresh instances rather than operating on stale ones.
@@ -49,6 +51,7 @@ class SafetySettingsScreen extends ConsumerWidget {
         moderationLabelService,
         followRepository,
         contentBlocklistRepository,
+        isAdultContentLocked,
       )),
       create: (_) => SafetySettingsCubit(
         ageVerificationService: ageVerificationService,
@@ -58,6 +61,7 @@ class SafetySettingsScreen extends ConsumerWidget {
         moderationLabelService: moderationLabelService,
         followRepository: followRepository,
         contentBlocklistRepository: contentBlocklistRepository,
+        isAdultContentLocked: isAdultContentLocked,
       )..load(),
       child: const SafetySettingsView(),
     );
@@ -172,19 +176,26 @@ class _AgeVerificationTile extends StatelessWidget {
     final isAgeVerified = context.select(
       (SafetySettingsCubit cubit) => cubit.state.isAgeVerified,
     );
+    final isLocked = context.select(
+      (SafetySettingsCubit cubit) => cubit.state.isAdultContentLocked,
+    );
     return CheckboxListTile(
-      value: isAgeVerified,
-      onChanged: (value) {
-        if (value != null) {
-          context.read<SafetySettingsCubit>().setAgeVerified(value);
-        }
-      },
+      value: !isLocked && isAgeVerified,
+      onChanged: isLocked
+          ? null
+          : (value) {
+              if (value != null) {
+                context.read<SafetySettingsCubit>().setAgeVerified(value);
+              }
+            },
       title: Text(
         context.l10n.safetySettingsAgeConfirmation,
         style: const TextStyle(color: VineTheme.whiteText),
       ),
       subtitle: Text(
-        context.l10n.safetySettingsAgeRequired,
+        isLocked
+            ? context.l10n.safetySettingsAgeLockedForMinor
+            : context.l10n.safetySettingsAgeRequired,
         style: const TextStyle(color: VineTheme.secondaryText),
       ),
       activeColor: VineTheme.vineGreen,

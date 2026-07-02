@@ -2398,6 +2398,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get safetySettingsAgeRequired => 'Krävs för att se vuxeninnehåll';
 
   @override
+  String get safetySettingsAgeLockedForMinor => 'Locked for your account';
+
+  @override
   String get safetySettingsDivine => 'Divine';
 
   @override

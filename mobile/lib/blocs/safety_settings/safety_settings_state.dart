@@ -20,6 +20,7 @@ class SafetySettingsState extends Equatable {
   const SafetySettingsState({
     this.status = SafetySettingsStatus.loading,
     this.isAgeVerified = false,
+    this.isAdultContentLocked = false,
     this.isPeopleIFollowEnabled = false,
     this.showDivineHostedOnly = true,
     this.customLabelers = const <String>{},
@@ -28,6 +29,10 @@ class SafetySettingsState extends Equatable {
 
   final SafetySettingsStatus status;
   final bool isAgeVerified;
+
+  /// True when the account is a protected minor: the adult-content toggle is
+  /// locked off and cannot be enabled (#175).
+  final bool isAdultContentLocked;
   final bool isPeopleIFollowEnabled;
   final bool showDivineHostedOnly;
 
@@ -41,6 +46,7 @@ class SafetySettingsState extends Equatable {
   SafetySettingsState copyWith({
     SafetySettingsStatus? status,
     bool? isAgeVerified,
+    bool? isAdultContentLocked,
     bool? isPeopleIFollowEnabled,
     bool? showDivineHostedOnly,
     Set<String>? customLabelers,
@@ -49,6 +55,7 @@ class SafetySettingsState extends Equatable {
     return SafetySettingsState(
       status: status ?? this.status,
       isAgeVerified: isAgeVerified ?? this.isAgeVerified,
+      isAdultContentLocked: isAdultContentLocked ?? this.isAdultContentLocked,
       isPeopleIFollowEnabled:
           isPeopleIFollowEnabled ?? this.isPeopleIFollowEnabled,
       showDivineHostedOnly: showDivineHostedOnly ?? this.showDivineHostedOnly,
@@ -61,6 +68,7 @@ class SafetySettingsState extends Equatable {
   List<Object?> get props => [
     status,
     isAgeVerified,
+    isAdultContentLocked,
     isPeopleIFollowEnabled,
     showDivineHostedOnly,
     customLabelers,

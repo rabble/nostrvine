@@ -2377,6 +2377,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get safetySettingsAgeRequired => 'مطلوب لعرض المحتوى للبالغين';
 
   @override
+  String get safetySettingsAgeLockedForMinor => 'Locked for your account';
+
+  @override
   String get safetySettingsDivine => 'Divine';
 
   @override

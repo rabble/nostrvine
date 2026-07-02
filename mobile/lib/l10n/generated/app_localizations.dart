@@ -4232,6 +4232,12 @@ abstract class AppLocalizations {
   /// **'Required to view adult content'**
   String get safetySettingsAgeRequired;
 
+  /// Subtitle on the disabled adult-content toggle for protected minors
+  ///
+  /// In en, this message translates to:
+  /// **'Locked for your account'**
+  String get safetySettingsAgeLockedForMinor;
+
   /// No description provided for @safetySettingsDivine.
   ///
   /// In en, this message translates to:

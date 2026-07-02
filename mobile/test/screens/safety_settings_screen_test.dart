@@ -12,6 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -157,7 +158,7 @@ void main() {
       ).thenAnswer((_) => const Stream<List<String>>.empty());
     });
 
-    Widget createTestWidget() {
+    Widget createTestWidget({bool isProtectedMinor = false}) {
       final container = ProviderContainer(
         overrides: [
           contentBlocklistRepositoryProvider.overrideWithValue(
@@ -184,6 +185,7 @@ void main() {
           divineHostFilterServiceProvider.overrideWithValue(
             divineHostFilterService,
           ),
+          isProtectedMinorProvider.overrideWithValue(isProtectedMinor),
         ],
       );
 
@@ -323,6 +325,24 @@ void main() {
         ).called(1);
         verify(mockContentFilterService.unlockAdultCategories).called(1);
         verifyNever(() => mockContentFilterService.lockAdultCategories());
+      },
+    );
+
+    testWidgets(
+      'adult-content toggle is disabled and locked for a protected minor',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(isProtectedMinor: true));
+        await tester.pumpAndSettle();
+
+        final tile = tester.widget<CheckboxListTile>(
+          find.byType(CheckboxListTile),
+        );
+        expect(tile.onChanged, isNull); // disabled: cannot be toggled
+        expect(tile.value, isFalse);
+        expect(
+          find.text(l10n.safetySettingsAgeLockedForMinor),
+          findsOneWidget,
+        );
       },
     );
 

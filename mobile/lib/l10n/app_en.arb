@@ -1333,6 +1333,10 @@
   "safetySettingsAgeVerification": "AGE VERIFICATION",
   "safetySettingsAgeConfirmation": "I confirm I am 18 years or older",
   "safetySettingsAgeRequired": "Required to view adult content",
+  "safetySettingsAgeLockedForMinor": "Locked for your account",
+  "@safetySettingsAgeLockedForMinor": {
+    "description": "Subtitle on the disabled adult-content toggle for protected minors"
+  },
   "safetySettingsDivine": "Divine",
   "safetySettingsDivineSubtitle": "Official moderation service (on by default)",
   "safetySettingsPeopleIFollow": "People I follow",

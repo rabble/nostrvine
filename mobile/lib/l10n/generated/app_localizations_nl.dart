@@ -2411,6 +2411,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Vereist om inhoud voor volwassenen te bekijken';
 
   @override
+  String get safetySettingsAgeLockedForMinor => 'Locked for your account';
+
+  @override
   String get safetySettingsDivine => 'Divine';
 
   @override

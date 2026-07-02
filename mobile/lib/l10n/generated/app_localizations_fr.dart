@@ -2435,6 +2435,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Requis pour voir du contenu pour adultes';
 
   @override
+  String get safetySettingsAgeLockedForMinor => 'Locked for your account';
+
+  @override
   String get safetySettingsDivine => 'Divine';
 
   @override
