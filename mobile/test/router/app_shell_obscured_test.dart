@@ -195,4 +195,51 @@ void main() {
       expect(container.read(shellObscuredProvider), isFalse);
     },
   );
+
+  testWidgets(
+    'shell stops resizing for the keyboard while a modal (e.g. the share '
+    'sheet) is on top, so the home feed does not re-layout (#5758)',
+    (tester) async {
+      await tester.pumpWidget(
+        _buildSubject(
+          mockAuthService: mockAuthService,
+          sharedPreferences: sharedPreferences,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      Scaffold shellScaffold() => tester.widget<Scaffold>(
+        find
+            .descendant(
+              of: find.byType(AppShell),
+              matching: find.byType(Scaffold),
+            )
+            .first,
+      );
+
+      // Shell is the topmost route: keep resizing so keyboard-driven UI on the
+      // active tab still lifts above the keyboard.
+      expect(shellScaffold().resizeToAvoidBottomInset, isTrue);
+
+      // Open a modal over the shell — the share sheet is one of these. Its own
+      // keyboard avoidance lifts it above the keyboard; the shell must NOT also
+      // shrink, which would re-layout the full-screen feed video + overlay
+      // (the Galaxy S10 lag reported on #5758).
+      final shellContext = tester.element(find.byType(AppShell));
+      unawaited(
+        showModalBottomSheet<void>(
+          context: shellContext,
+          isScrollControlled: true,
+          builder: (_) => const SizedBox(height: 200),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(shellScaffold().resizeToAvoidBottomInset, isFalse);
+
+      // Restored once the modal closes.
+      Navigator.of(shellContext).pop();
+      await tester.pumpAndSettle();
+      expect(shellScaffold().resizeToAvoidBottomInset, isTrue);
+    },
+  );
 }

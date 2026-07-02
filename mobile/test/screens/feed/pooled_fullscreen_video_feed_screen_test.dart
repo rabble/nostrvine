@@ -432,6 +432,57 @@ void main() {
         expect(find.byType(InfiniteVideoFeed), findsOneWidget);
       });
 
+      testWidgets(
+        'stops resizing for the keyboard while a modal (e.g. the share sheet) '
+        'is on top, so the reel does not re-layout (#5758)',
+        (tester) async {
+          final videos = createTestVideos();
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+            ),
+          );
+
+          Scaffold feedScaffold() =>
+              tester.widget<Scaffold>(find.byType(Scaffold).first);
+
+          // Feed is the topmost route: keep resizing so its own bottom
+          // composers can lift above the keyboard.
+          expect(feedScaffold().resizeToAvoidBottomInset, isTrue);
+
+          // Open a modal over the feed (the share sheet is one of these).
+          // The feed keeps videos animating, so pumpAndSettle never quiesces;
+          // pump fixed frames past the modal's transition instead.
+          final feedContext = tester.element(find.byType(FeedVideos));
+          unawaited(
+            showModalBottomSheet<void>(
+              context: feedContext,
+              isScrollControlled: true,
+              builder: (_) => const SizedBox(height: 200),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+
+          // The modal owns its keyboard avoidance; the feed must not also
+          // shrink (which would re-layout the full-screen reel + overlay).
+          expect(feedScaffold().resizeToAvoidBottomInset, isFalse);
+
+          // Restored once the modal closes.
+          final navigator = tester.state<NavigatorState>(
+            find.byType(Navigator).first,
+          );
+          navigator.pop();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          expect(feedScaffold().resizeToAvoidBottomInset, isTrue);
+        },
+      );
+
       testWidgets('passes route traffic attribution to FeedVideos', (
         tester,
       ) async {

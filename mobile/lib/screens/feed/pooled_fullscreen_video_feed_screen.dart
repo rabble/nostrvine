@@ -723,6 +723,17 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               );
 
               return Scaffold(
+                // Keep resizing for our OWN bottom composers (inline comment
+                // bar, DM reply bar) while this feed is the topmost route, but
+                // stop resizing when a modal is on top (e.g. the share sheet's
+                // message composer). The modal lifts itself above the keyboard;
+                // letting this Scaffold also shrink re-lays-out the full-screen
+                // reel + overlay every keyboard frame — very laggy on older
+                // devices (Galaxy S10, #5758). isCurrent flips reactively when
+                // the modal pushes/pops, so the composer behaviour above is
+                // unchanged.
+                resizeToAvoidBottomInset:
+                    ModalRoute.of(context)?.isCurrent ?? true,
                 // Paint the Scaffold with [VineTheme.surfaceBackground]
                 // (`#00150D`, the same green the comment bar uses).
                 // This is what shows wherever the Scaffold body leaks

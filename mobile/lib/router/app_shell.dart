@@ -345,6 +345,14 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
     final environment = ref.watch(currentEnvironmentProvider);
 
     return Scaffold(
+      // Don't resize the shell body for the keyboard when a modal route is on
+      // top (e.g. the share sheet's message composer). The modal handles its
+      // own keyboard avoidance; letting the shell also shrink re-lays-out the
+      // full-screen feed video + overlay every keyboard frame, which is very
+      // laggy on older devices (Galaxy S10, reported on #5758). While the feed
+      // is the topmost route the default resize behaviour is preserved so its
+      // own bottom composers still lift above the keyboard.
+      resizeToAvoidBottomInset: ModalRoute.of(context)?.isCurrent ?? true,
       // Home tab uses FeedModeSwitch overlay (menu + mode dropdown + search)
       // instead of the standard AppBar, for full-screen video UX.
       // Inbox uses its own segmented toggle header.
