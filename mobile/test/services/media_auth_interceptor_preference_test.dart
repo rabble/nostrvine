@@ -211,7 +211,8 @@ void main() {
     );
 
     test(
-      'handleUnauthorizedMedia prompts when unverified user preference resolves to hide',
+      'handleUnauthorizedMedia keeps adult media blocked after verification '
+      'when preferences still hide it',
       () async {
         when(
           () => mockContentFilterService.adultPlaybackPreference,
@@ -226,17 +227,6 @@ void main() {
         when(
           () => mockContentFilterService.unlockAdultCategories(),
         ).thenAnswer((_) async {});
-        when(
-          () => mockMediaViewerAuthService.createAuthHeaders(
-            sha256Hash: any(named: 'sha256Hash'),
-            url: any(named: 'url'),
-            serverUrl: any(named: 'serverUrl'),
-          ),
-        ).thenAnswer(
-          (_) async => const ViewerAuthAuthorized({
-            'Authorization': 'Nostr dialogToken',
-          }),
-        );
 
         final result = await interceptor.handleUnauthorizedMedia(
           context: mockContext,
@@ -244,17 +234,20 @@ void main() {
           category: 'nudity',
         );
 
-        expect(result, isA<ViewerAuthAuthorized>());
-        expect(
-          result.headersOrNull,
-          equals({'Authorization': 'Nostr dialogToken'}),
-        );
+        expect(result, isA<ViewerAuthBlockedByPreference>());
         verify(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
         ).called(1);
         verify(
           () => mockContentFilterService.unlockAdultCategories(),
         ).called(1);
+        verifyNever(
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        );
       },
     );
 

@@ -165,6 +165,16 @@ class MediaAuthInterceptor {
 
       await _contentFilterService.unlockAdultCategories();
 
+      if (_contentFilterService.adultPlaybackPreference ==
+          ContentFilterPreference.hide) {
+        Log.debug(
+          '🚫 Adult content remains hidden after verification',
+          name: 'MediaAuthInterceptor',
+          category: LogCategory.system,
+        );
+        return const ViewerAuthBlockedByPreference();
+      }
+
       // Create auth header after verification
       return await _mediaViewerAuthService.createAuthHeaders(
         sha256Hash: sha256Hash,
