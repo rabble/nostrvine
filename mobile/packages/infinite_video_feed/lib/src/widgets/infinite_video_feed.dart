@@ -621,6 +621,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     return i;
   }
 
+  /// Clears terminal errors for the changed tail (index >= [startIndex]) from
+  /// both the old and new lists, so a video id reused at a new position gets a
+  /// fresh playback attempt instead of inheriting a stale terminal error.
   void _clearTerminalErrorsFromChangedTail(
     InfiniteVideoFeed oldWidget,
     InfiniteVideoFeed newWidget,
@@ -1510,6 +1513,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _scheduleAutoRetryIfEligible(index);
   }
 
+  /// Like [_stopAndMarkError] but records the failure as terminal for this
+  /// video id, so it will not auto-retry and is restored on revisit.
   void _stopAndMarkTerminalError(int index, VideoErrorType type) {
     final videoId = _videoIdAt(index);
     if (videoId != null) {
