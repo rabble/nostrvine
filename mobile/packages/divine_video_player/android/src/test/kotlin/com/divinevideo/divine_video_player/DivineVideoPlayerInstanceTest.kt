@@ -503,6 +503,28 @@ class DivineVideoPlayerInstanceTest {
     }
 
     @Test
+    fun `setClips restores the decoder retry budget after exhaustion`() {
+        val listener = capturePlayerListener()
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+        instance.onMethodCall(setClipsCall(), result)
+
+        // Exhaust the budget without ever rendering a frame.
+        listener.onPlayerError(decoderInitError())
+        listener.onPlayerError(decoderInitError())
+        listener.onPlayerError(decoderInitError("gave up"))
+        verify(exactly = 1) { result.error("PLAYER_ERROR", "gave up", null) }
+
+        // A new clip load gets the full budget: the next decoder error is
+        // retried instead of immediately failing the new pending result.
+        val nextResult = mockk<MethodChannel.Result>(relaxed = true)
+        instance.onMethodCall(setClipsCall(), nextResult)
+        listener.onPlayerError(decoderInitError())
+
+        verify(exactly = 0) { nextResult.error(any(), any(), any()) }
+        verify(exactly = 3) { mockHandler.postDelayed(any(), 350L) }
+    }
+
+    @Test
     fun `superseding setClips completes the previous result with CANCELLED`() {
         capturePlayerListener()
         val first = mockk<MethodChannel.Result>(relaxed = true)

@@ -27,6 +27,22 @@ class VideoThumbnailService {
   /// perceived timeline fill across clips.
   static Future<void> _stripBatchQueue = Future<void>.value();
 
+  /// Resets the strip-batch serial queue between tests.
+  ///
+  /// A widget test that tears down while a strip generator is awaiting the
+  /// queue strands a forever-pending future in that test's dead FakeAsync
+  /// zone; the next test would inherit it and deadlock before its first
+  /// batch.
+  ///
+  /// Call this from inside the `testWidgets` body, not from `setUp`: the
+  /// replacement future must be created in the test's FakeAsync zone or its
+  /// completion lands on the real event loop, which a widget test never
+  /// reaches until it ends.
+  @visibleForTesting
+  static void resetStripBatchQueueForTesting() {
+    _stripBatchQueue = Future<void>.value();
+  }
+
   /// Extract a thumbnail from a video file at a specific timestamp
   ///
   /// [videoPath] - Path to the video file

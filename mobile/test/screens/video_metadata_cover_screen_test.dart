@@ -15,6 +15,8 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_cover_screen.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:pro_video_editor/core/platform/native_method_channel.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -341,5 +343,84 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'a permanently failed preview still generates the cover strip, hides '
+      'the loading indicator, and keeps the picker scrubbable',
+      (tester) async {
+        addTearDown(tearDownPlayerChannel);
+        _setHandler(const MethodChannel('divine_video_player/player_0'), (
+          call,
+        ) async {
+          if (call.method == 'setClips') {
+            throw PlatformException(
+              code: 'PLAYER_ERROR',
+              message: 'decoder init failed',
+            );
+          }
+          return null;
+        });
+        _setHandler(
+          const MethodChannel('divine_video_player/player_0/events'),
+          (call) async => null,
+        );
+
+        var stripRequested = false;
+        _setHandler(const MethodChannel('pro_video_editor'), (call) async {
+          if (call.method == 'getThumbnails') {
+            stripRequested = true;
+            return <Object?>[];
+          }
+          if (call.method == 'getMetadata') {
+            return <String, Object?>{
+              'duration': 3000000,
+              'extension': 'mp4',
+              'fileSize': 1024000,
+              'width': 1920,
+              'height': 1080,
+              'rotation': 0,
+              'bitrate': 3000000,
+            };
+          }
+          return null;
+        });
+        final semanticsHandle = tester.ensureSemantics();
+
+        // A previous test tearing down mid-generation strands the static
+        // strip queue on a future from its dead FakeAsync zone; reset it
+        // here — inside this test's zone, so the replacement future's
+        // completion is flushed by pumps — or the batch loop never runs.
+        VideoThumbnailService.resetStripBatchQueueForTesting();
+
+        await tester.pumpWidget(buildWidget());
+        await tester.pump(const Duration(milliseconds: 400));
+        for (var i = 0; i < 10; i++) {
+          await tester.pump();
+        }
+
+        expect(stripRequested, isTrue);
+        expect(find.byType(BrandedLoadingIndicator), findsNothing);
+
+        // Scrubbing must still move the selection cursor without a player.
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final stripFinder = find.bySemanticsLabel(
+          l10n.videoMetadataEditCoverStripSemanticLabel,
+        );
+        final before = tester.getSemantics(stripFinder).getSemanticsData();
+        final stripSemantics = find.semantics.byAction(
+          SemanticsAction.increase,
+        );
+        // Two steps with a rebuild in between: a single 500 ms step from the
+        // 210 ms default lands at 710 ms, which formats to the same "0:00".
+        tester.semantics.increase(stripSemantics);
+        await tester.pump();
+        tester.semantics.increase(stripSemantics);
+        await tester.pump();
+        final after = tester.getSemantics(stripFinder).getSemanticsData();
+        expect(after.value, isNot(equals(before.value)));
+
+        semanticsHandle.dispose();
+      },
+    );
   });
 }

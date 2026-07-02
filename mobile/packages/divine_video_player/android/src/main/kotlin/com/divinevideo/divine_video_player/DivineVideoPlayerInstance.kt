@@ -127,8 +127,9 @@ internal class DivineVideoPlayerInstance(
 
     /**
      * Consecutive re-prepare attempts made after a transient decoder error,
-     * reset once a frame renders. Bounds [maybeRecoverFromDecoderError] so a
-     * genuinely undecodable clip can't spin in a prepare/error loop.
+     * reset once a frame renders or a new clip list is loaded. Bounds
+     * [maybeRecoverFromDecoderError] so a genuinely undecodable clip can't
+     * spin in a prepare/error loop.
      */
     private var decoderRetryCount = 0
     private var videoWidth = 0
@@ -459,6 +460,9 @@ internal class DivineVideoPlayerInstance(
         httpHeadersByUri = headersByUri
         httpHeadersByHash = headersByHash
         firstFrameRendered = false
+        // New media gets the full retry budget — exhaustion belonged to the
+        // previous clip list.
+        decoderRetryCount = 0
 
         // Resolve the optional global start position to (clipIndex, localMs)
         // so ExoPlayer begins buffering at the right point immediately.
