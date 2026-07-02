@@ -21,6 +21,7 @@ class _NativePlayerHarness {
   final List<String> methodCalls = <String>[];
   final Map<int, Completer<void>> setClipsDelays = <int, Completer<void>>{};
   final Map<int, int> failSetClipsAfter = <int, int>{};
+  final Map<int, List<Exception>> setClipsFailures = <int, List<Exception>>{};
   final Set<int> _installedPlayerIds = <int>{};
   static const _globalChannel = MethodChannel('divine_video_player');
   static const _codec = StandardMethodCodec();
@@ -60,6 +61,10 @@ class _NativePlayerHarness {
                 code: 'stale_set_clips',
                 message: 'stale player_$playerId setClips',
               );
+            }
+            final failures = setClipsFailures[playerId];
+            if (failures != null && failures.isNotEmpty) {
+              throw failures.removeAt(0);
             }
           }
           return null;
@@ -2731,6 +2736,109 @@ void main() {
           await harness.dispose();
         }
       });
+
+      testWidgets(
+        'does not auto-retry terminal no-video-track failover failures',
+        (tester) async {
+          DivineVideoPlayerController.resetIdCounterForTesting();
+          final harness = _NativePlayerHarness(tester);
+          await harness.install(playerIds: const <int>[0, 1, 2, 3, 4, 5]);
+          final key = GlobalKey<InfiniteVideoFeedState>();
+          final videos = [
+            _makeVideo(
+              'terminal',
+              videoUrl:
+                  'https://media.divine.video/10fe4777d60fa224878fd9be348a3410e6b70ba2d865e5ae82526a8f1d053326/720p.mp4',
+            ),
+            _makeVideo('next'),
+          ];
+
+          try {
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  key: key,
+                  videos: videos,
+                  cache: cache,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                  autoRetryBaseDelay: const Duration(milliseconds: 200),
+                  errorBuilder: (_, _, _, _) => const Text('VIDEO_ERROR'),
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump();
+
+            harness.setClipsFailures[0] = <Exception>[
+              PlatformException(
+                code: 'COMPOSITION_ERROR',
+                message: 'No playable video tracks found.',
+              ),
+            ];
+
+            await harness.sendEvent(0, const <Object?, Object?>{
+              'status': 'error',
+              'errorCode': 'parse_error',
+              'errorMessage': 'parse failed',
+            });
+            await tester.pump();
+            await tester.pump();
+
+            expect(find.text('VIDEO_ERROR'), findsOneWidget);
+            expect(
+              key.currentState!.debugTerminalErrorVideoIds,
+              equals(<String>{'terminal'}),
+            );
+            final setClipsAfterTerminalFailure = harness.countCalls('setClips');
+
+            await tester.pump(const Duration(milliseconds: 400));
+            await tester.pump();
+
+            expect(
+              harness.countCalls('setClips'),
+              equals(setClipsAfterTerminalFailure),
+            );
+
+            unawaited(key.currentState!.animateToPage(1));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 400));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 1));
+            await tester.pump();
+            expect(key.currentState!.currentIndex, equals(1));
+
+            unawaited(key.currentState!.animateToPage(0));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 400));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 1));
+            await tester.pump();
+            expect(key.currentState!.currentIndex, equals(0));
+
+            expect(find.text('VIDEO_ERROR'), findsOneWidget);
+            expect(
+              harness.countCalls('setClips'),
+              equals(setClipsAfterTerminalFailure),
+            );
+
+            await key.currentState!.retryAt(0);
+            await tester.pump();
+            await tester.pump();
+
+            expect(key.currentState!.debugTerminalErrorVideoIds, isEmpty);
+            expect(find.text('VIDEO_ERROR'), findsNothing);
+            expect(
+              harness.countCalls('setClips'),
+              greaterThan(setClipsAfterTerminalFailure),
+            );
+          } finally {
+            await tester.pumpWidget(const SizedBox.shrink());
+            await tester.pump();
+            await harness.dispose();
+          }
+        },
+      );
 
       testWidgets('cancels a scheduled auto-retry when the feed deactivates', (
         tester,

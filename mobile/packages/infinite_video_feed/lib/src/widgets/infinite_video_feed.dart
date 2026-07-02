@@ -345,6 +345,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // UI-facing state — drives build(). Stays on the State.
   final _errors = <int>{};
   final _errorTypes = <int, VideoErrorType>{};
+  final _terminalErrorTypesByVideoId = <String, VideoErrorType>{};
   final _loopSeekInProgress = <int>{};
   // Viewer auth headers per index, applied to every resolved playback source
   // for that index. The age-gate token is a hash-bound BUD-01 (kind 24242)
@@ -410,6 +411,14 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   /// [InfiniteVideoFeed.releaseNeighboursWhenInactive]).
   @visibleForTesting
   Set<int> get debugLiveControllerIndices => _controllers.keys.toSet();
+
+  /// Video ids with terminal playback failures that should not auto-retry.
+  ///
+  /// Exposed for tests that assert a confirmed unplayable video remains an
+  /// error even after its off-screen controller is disposed.
+  @visibleForTesting
+  Set<String> get debugTerminalErrorVideoIds =>
+      _terminalErrorTypesByVideoId.keys.toSet();
 
   int _clampIndex(int index) {
     if (widget.videos.isEmpty) return 0;
@@ -540,6 +549,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     // that falls inside the live window; out-of-window ones it disposes itself.
     if (commonPrefix > _currentIndex) {
       _prefetcher.cancelActive();
+      _clearTerminalErrorsFromChangedTail(oldWidget, widget, commonPrefix);
       _controllers.keys
           .where((index) => index >= commonPrefix)
           .toList()
@@ -558,6 +568,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       '(old=${oldWidget.videos.length} new=${widget.videos.length})',
     );
 
+    _terminalErrorTypesByVideoId.clear();
     _teardownAllControllers();
 
     _currentIndex = _clampIndex(widget.initialIndex);
@@ -608,6 +619,19 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       i++;
     }
     return i;
+  }
+
+  void _clearTerminalErrorsFromChangedTail(
+    InfiniteVideoFeed oldWidget,
+    InfiniteVideoFeed newWidget,
+    int startIndex,
+  ) {
+    for (var i = startIndex; i < oldWidget.videos.length; i++) {
+      _terminalErrorTypesByVideoId.remove(oldWidget.videos[i].id);
+    }
+    for (var i = startIndex; i < newWidget.videos.length; i++) {
+      _terminalErrorTypesByVideoId.remove(newWidget.videos[i].id);
+    }
   }
 
   @override
@@ -846,7 +870,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         .forEach(_disposeAt);
 
     // Initialize the current index first for instant playback.
-    if (!_controllers.containsKey(index)) {
+    if (!_controllers.containsKey(index) && !_restoreTerminalErrorAt(index)) {
       await _initController(index);
     }
 
@@ -855,7 +879,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     if (widget.keepNextAlive &&
         keepNeighbours &&
         index + 1 <= lastIndex &&
-        !_controllers.containsKey(index + 1)) {
+        !_controllers.containsKey(index + 1) &&
+        !_restoreTerminalErrorAt(index + 1)) {
       unawaited(_initController(index + 1));
     }
 
@@ -873,7 +898,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     if (widget.keepPreviousAlive &&
         keepNeighbours &&
         index - 1 >= 0 &&
-        !_controllers.containsKey(index - 1)) {
+        !_controllers.containsKey(index - 1) &&
+        !_restoreTerminalErrorAt(index - 1)) {
       unawaited(_initController(index - 1));
     }
   }
@@ -1007,10 +1033,13 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   Future<void> _initController(int index, {bool skipCache = false}) async {
     if (index < 0 || index >= widget.videos.length) return;
 
+    if (_restoreTerminalErrorAt(index)) return;
+
+    final video = widget.videos[index];
+
     final initGeneration = (_controllerInitGenerations[index] ?? 0) + 1;
     _controllerInitGenerations[index] = initGeneration;
 
-    final video = widget.videos[index];
     final cachedFile = skipCache
         ? null
         : widget.cache.getCachedFileSync(video.id);
@@ -1235,6 +1264,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _errorTypes.remove(index);
     _processingRetryInFlight.remove(index);
     _processingRetryAttempts.remove(index);
+    final videoId = _videoIdAt(index);
+    if (videoId != null) {
+      _terminalErrorTypesByVideoId.remove(videoId);
+    }
     if (httpHeaders.isEmpty) {
       _httpHeadersByIndex.remove(index);
     } else {
@@ -1313,7 +1346,14 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         error: e,
         stackTrace: stackTrace,
       );
-      _onVideoStalled(index);
+      _onVideoStalled(
+        index,
+        isTerminal: _isTerminalPlaybackFailure(e),
+        errorType: classifyVideoError(
+          errorMessage: e.toString(),
+          source: nextSource,
+        ),
+      );
     } finally {
       _failoverInFlight.remove(index);
     }
@@ -1430,9 +1470,17 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // coverage:ignore-start
   // Stall recovery is only reached from watchdog / stale-detector callbacks
   // tied to native playback state streams.
-  void _onVideoStalled(int index) {
+  void _onVideoStalled(
+    int index, {
+    bool isTerminal = false,
+    VideoErrorType errorType = VideoErrorType.generic,
+  }) {
     _log('Video stalled index $index — marking error');
-    _stopAndMarkError(index, VideoErrorType.generic);
+    if (isTerminal) {
+      _stopAndMarkTerminalError(index, errorType);
+    } else {
+      _stopAndMarkError(index, errorType);
+    }
     widget.onVideoStalled?.call(index);
   }
 
@@ -1462,6 +1510,50 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _scheduleAutoRetryIfEligible(index);
   }
 
+  void _stopAndMarkTerminalError(int index, VideoErrorType type) {
+    final videoId = _videoIdAt(index);
+    if (videoId != null) {
+      _terminalErrorTypesByVideoId[videoId] = type;
+    }
+    _cancelAutoRetry(index);
+    unawaited(_controllers[index]?.stop());
+    _errors.add(index);
+    _errorTypes[index] = type;
+    _rebuild();
+  }
+
+  String? _videoIdAt(int index) {
+    if (index < 0 || index >= widget.videos.length) return null;
+    return widget.videos[index].id;
+  }
+
+  bool _hasTerminalError(int index) {
+    final videoId = _videoIdAt(index);
+    return videoId != null && _terminalErrorTypesByVideoId.containsKey(videoId);
+  }
+
+  bool _restoreTerminalErrorAt(int index) {
+    final videoId = _videoIdAt(index);
+    if (videoId == null) return false;
+    final terminalType = _terminalErrorTypesByVideoId[videoId];
+    if (terminalType == null) return false;
+    _errors.add(index);
+    _errorTypes[index] = terminalType;
+    _rebuild();
+    return true;
+  }
+
+  VideoErrorType? _terminalErrorTypeAt(int index) {
+    final videoId = _videoIdAt(index);
+    return videoId == null ? null : _terminalErrorTypesByVideoId[videoId];
+  }
+
+  bool _isTerminalPlaybackFailure(Object? error) {
+    final message = error?.toString().toLowerCase() ?? '';
+    return message.contains('no playable video tracks') ||
+        message.contains('no video track');
+  }
+
   void _seekKick(int index, int positionMs) {
     final controller = _controllers[index];
     if (controller == null) return;
@@ -1477,6 +1569,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   /// [InfiniteVideoFeed.autoRetryMaxAttempts]; manual retry still works.
   void _scheduleAutoRetryIfEligible(int index) {
     if (index != _currentIndex || !_isActive) return;
+    if (_hasTerminalError(index)) return;
+    if ((_errorTypes[index] ?? VideoErrorType.generic) !=
+        VideoErrorType.generic) {
+      return;
+    }
     final attempt = _autoRetryAttempts[index] ?? 0;
     final delay = InfiniteVideoFeed.autoRetryDelay(
       attempt: attempt,
@@ -1525,6 +1622,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         controller,
         isAlreadyError: () =>
             _errors.contains(index) ||
+            _hasTerminalError(index) ||
             _failoverInFlight.contains(index) ||
             _processingRetryInFlight.contains(index),
         onError: (errorCode, errorMessage) {
@@ -1554,13 +1652,15 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             return;
           }
 
-          _stopAndMarkError(
-            index,
-            classifyVideoError(
-              errorMessage: errorMessage,
-              source: _resolveUrl(widget.videos[index]),
-            ),
+          final errorType = classifyVideoError(
+            errorMessage: errorMessage,
+            source: _resolveUrl(widget.videos[index]),
           );
+          if (_isTerminalPlaybackFailure(errorMessage)) {
+            _stopAndMarkTerminalError(index, errorType);
+          } else {
+            _stopAndMarkError(index, errorType);
+          }
         },
       );
 
@@ -1678,7 +1778,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       onPageChanged: _onPageChanged,
       itemCount: widget.videos.length,
       itemBuilder: (context, index) {
-        final hasError = _errors.contains(index);
+        final hasError = _errors.contains(index) || _hasTerminalError(index);
         final controller = _controllers[index];
 
         final overlay = widget.overlayBuilder?.call(
@@ -1727,8 +1827,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
               ?widget.errorBuilder?.call(
                 context,
                 index,
-                () => unawaited(_retryController(index).then((_) {})),
-                _errorTypes[index] ?? VideoErrorType.generic,
+                () => unawaited(retryAt(index).then((_) {})),
+                _terminalErrorTypeAt(index) ??
+                    _errorTypes[index] ??
+                    VideoErrorType.generic,
               ),
             // coverage:ignore-end
           ],
