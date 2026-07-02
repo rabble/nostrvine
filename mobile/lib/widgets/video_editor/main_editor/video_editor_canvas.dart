@@ -489,6 +489,14 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   /// live-retimed clip until the render swaps in (no overlay, no wait).
   final _speedRenderService = ClipSpeedRenderService();
 
+  /// Set when a finished speed render's composition swap was deferred because
+  /// the player was playing; applied on the next pause (see
+  /// [_onPlayerStateChanged]). A `setClips` reload mid-playback is inherently
+  /// disruptive (Android setMediaItems + prepare, iOS AVQueuePlayer reload) and
+  /// restarts the current clip instead of advancing, so the swap must wait for
+  /// an idle player.
+  bool _speedResyncPendingWhilePlaying = false;
+
   @override
   void dispose() {
     Log.info(
@@ -551,9 +559,22 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       if (_speedRenderService.isRendering(clip)) continue;
       _speedRenderService.render(clip).then((rendered) {
         if (!mounted) return;
-        if (rendered != null) _resyncPlayerClips();
+        if (rendered != null) _resyncSpeedClipsWhenIdle();
       });
     }
+  }
+
+  /// Swaps the composition onto a finished speed render — but only while the
+  /// player is idle. A `setClips` reload mid-playback restarts the current clip
+  /// instead of advancing to the next, so if playback is running the swap is
+  /// deferred to the next pause ([_onPlayerStateChanged]); the preview keeps
+  /// playing the live-retimed clip until then.
+  void _resyncSpeedClipsWhenIdle() {
+    if (_videoPlayer?.state.isPlaying ?? false) {
+      _speedResyncPendingWhilePlaying = true;
+      return;
+    }
+    _resyncPlayerClips();
   }
 
   /// Reloads the player with the current clips, splicing in rendered seams,
@@ -826,6 +847,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     if (isPlaying != _lastIsPlaying) {
       _lastIsPlaying = isPlaying;
       bloc.add(VideoEditorPlaybackChanged(isPlaying: isPlaying));
+      // Playback just stopped: apply any speed-render swap deferred while
+      // playing, now that the reload can happen without restarting a clip.
+      if (!isPlaying && _speedResyncPendingWhilePlaying) {
+        _speedResyncPendingWhilePlaying = false;
+        _resyncPlayerClips();
+      }
     }
 
     // Once playback resumes it owns the play time, so release any scrub / swap
