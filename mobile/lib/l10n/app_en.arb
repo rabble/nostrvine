@@ -3640,13 +3640,7 @@
   "commentsInputSemanticLabelEdit": "Edit input",
   "commentsInputSemanticLabelReply": "Reply input",
   "classicVinersViewProfileSemanticLabel": "View profile for {displayName}",
-  "@classicVinersViewProfileSemanticLabel": {
-    "placeholders": {
-      "displayName": {
-        "type": "String"
-      }
-    }
-  },
+  "@classicVinersViewProfileSemanticLabel": {"placeholders": {"displayName": {"type": "String"}}},
   "classicsEmptyDescription": "The Classics archive is being loaded",
   "classicsEmptyTitle": "No Classics Found",
   "classicsErrorTitle": "Failed to load Classics",
@@ -3655,22 +3649,10 @@
   "classicsUnavailableTitle": "Classics Unavailable",
   "hashtagFeedEmptySubtitle": "Be the first to post a video with this hashtag!",
   "hashtagFeedEmptyTitle": "No videos found for #{hashtag}",
-  "@hashtagFeedEmptyTitle": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
+  "@hashtagFeedEmptyTitle": {"placeholders": {"hashtag": {"type": "String"}}},
   "hashtagFeedLoadingSubtitle": "This may take a few moments",
   "hashtagFeedLoadingTitle": "Loading videos about #{hashtag}...",
-  "@hashtagFeedLoadingTitle": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
+  "@hashtagFeedLoadingTitle": {"placeholders": {"hashtag": {"type": "String"}}},
   "hashtagInputHint": "Add hashtags... #vine #nostr",
   "newVideosTabEmptySubtitle": "Check back later for new content",
   "newVideosTabEmptyTitle": "No videos in New Videos",
@@ -3681,29 +3663,11 @@
   "popularVideosFeedSourceLabel": "Popular feed source",
   "trendingHashtagsLoading": "Loading hashtags...",
   "trendingHashtagsViewVideosTagged": "View videos tagged {hashtag}",
-  "@trendingHashtagsViewVideosTagged": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
+  "@trendingHashtagsViewVideosTagged": {"placeholders": {"hashtag": {"type": "String"}}},
   "videoGridAuthorSemanticLabel": "Video author: {name}",
-  "@videoGridAuthorSemanticLabel": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
+  "@videoGridAuthorSemanticLabel": {"placeholders": {"name": {"type": "String"}}},
   "videoGridDescriptionSemanticLabel": "Video description: {description}",
-  "@videoGridDescriptionSemanticLabel": {
-    "placeholders": {
-      "description": {
-        "type": "String"
-      }
-    }
-  },
+  "@videoGridDescriptionSemanticLabel": {"placeholders": {"description": {"type": "String"}}},
   "forYouAlgorithmChoiceBody": "Divine's vision is to give you true algorithmic choice. Instead of being locked into a single black-box algorithm, you'll be able to choose from multiple recommendation approaches:",
   "forYouAlgorithmChoiceChronological": "Chronological timeline from creators you follow",
   "forYouAlgorithmChoiceClosing": "This puts you in control of your attention rather than leaving it up to the platform. You should know how your feed is curated and have the power to change it whenever you want.",
@@ -3711,21 +3675,21 @@
   "forYouAlgorithmChoicePersonalizedFeed": "Personalized \"For You\" feed",
   "forYouAlgorithmChoiceTitle": "Your Algorithm, Your Choice",
   "forYouAlgorithmChoiceTrending": "Trending and popular content",
-  "forYouAlgorithmCommentsDescription": "Strong signal — you were engaged enough to respond",
+  "forYouAlgorithmCommentsDescription": "Strong signal \u2014 you were engaged enough to respond",
   "forYouAlgorithmHowItWorksBody": "Divine pays attention to how you interact with content to understand what you enjoy. Every time you watch a video, give it a reaction, leave a comment, or repost it, the system takes note.",
   "forYouAlgorithmHowItWorksTitle": "How It Works",
   "forYouAlgorithmInteractionsIntro": "Different actions signal different levels of interest:",
   "forYouAlgorithmNewToDivineBody1": "If you haven't built up a viewing history yet, we show a mix of what's currently popular and trending alongside recent uploads. This gives you a great starting point to explore.",
   "forYouAlgorithmNewToDivineBody2": "As you watch, like, and engage with content, recommendations gradually become more personalized. Over time, your For You feed surfaces videos from creators you might never have discovered on your own.",
   "forYouAlgorithmNewToDivineTitle": "New to Divine?",
-  "forYouAlgorithmOpenSourceBody": "We're building an open system where developers can implement their own algorithms, and you can choose which ones to use — or opt out entirely.",
+  "forYouAlgorithmOpenSourceBody": "We're building an open system where developers can implement their own algorithms, and you can choose which ones to use \u2014 or opt out entirely.",
   "forYouAlgorithmOpenSourceTitle": "Open Source & Transparent",
-  "forYouAlgorithmReactionsDescription": "Medium signal — a quick way to show appreciation",
+  "forYouAlgorithmReactionsDescription": "Medium signal \u2014 a quick way to show appreciation",
   "forYouAlgorithmReactionsTitle": "Reactions",
-  "forYouAlgorithmRepostsDescription": "Strongest signal — sharing with your followers is a powerful endorsement",
+  "forYouAlgorithmRepostsDescription": "Strongest signal \u2014 sharing with your followers is a powerful endorsement",
   "forYouAlgorithmSubtitle": "Powered by Gorse, an open-source recommendation engine",
   "forYouAlgorithmTitle": "The Divine Algorithm",
-  "forYouAlgorithmViewsDescription": "Light signal — indicates basic interest",
+  "forYouAlgorithmViewsDescription": "Light signal \u2014 indicates basic interest",
   "forYouEmptyDescription": "Watch and like some videos to get personalized recommendations.",
   "forYouEmptyTitle": "No Recommendations Yet",
   "forYouErrorTitle": "Failed to load recommendations",
@@ -3735,83 +3699,35 @@
   "inboxConversationViewProfileButton": "View profile",
   "inboxMessageRequestsEmpty": "No message requests",
   "inboxMessageRequestsSemanticLabel": "Message requests, {requestCount} pending",
-  "@inboxMessageRequestsSemanticLabel": {
-    "placeholders": {
-      "requestCount": {
-        "type": "int"
-      }
-    }
-  },
+  "@inboxMessageRequestsSemanticLabel": {"placeholders": {"requestCount": {"type": "int"}}},
   "inboxMessageRequestsTitle": "Message requests",
   "inboxMessagesTab": "Messages",
   "inboxRequestTileLabel": "{displayName} message request",
-  "@inboxRequestTileLabel": {
-    "placeholders": {
-      "displayName": {
-        "type": "String"
-      }
-    }
-  },
+  "@inboxRequestTileLabel": {"placeholders": {"displayName": {"type": "String"}}},
   "inboxRequestTileSubtitle": "Sent a message request",
   "inboxRequestsMarkAllRead": "Mark all requests as read",
   "inboxRequestsRemoveAll": "Remove all requests",
   "messageRequestDeclineAndRemoveButton": "Decline and remove",
   "messageRequestFollowersCount": "{count} Followers",
-  "@messageRequestFollowersCount": {
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
-  },
+  "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},
   "messageRequestVideosCount": "{count} videos",
-  "@messageRequestVideosCount": {
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
-  },
+  "@messageRequestVideosCount": {"placeholders": {"count": {"type": "String"}}},
   "messageRequestMessageCount": "{count, plural, =1{1 message} other{{count} messages}}",
-  "@messageRequestMessageCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "@messageRequestMessageCount": {"placeholders": {"count": {"type": "int"}}},
   "messageRequestViewMessagesButton": "View messages",
   "messageRequestViewProfileButton": "View profile",
   "messageRequestWantsToMessageYou": "{displayName} wants to message you, they've sent {messageText}.",
-  "@messageRequestWantsToMessageYou": {
-    "placeholders": {
-      "displayName": {
-        "type": "String"
-      },
-      "messageText": {
-        "type": "String"
-      }
-    }
-  },
+  "@messageRequestWantsToMessageYou": {"placeholders": {"displayName": {"type": "String"}, "messageText": {"type": "String"}}},
   "deleteAccountConfirmationHint": "Type DELETE",
   "deleteAccountContentDeletionFailed": "Failed to delete content from relays",
   "deleteAccountDeleteAllContentButton": "Delete All Content",
   "deleteAccountFinalConfirmationBody": "To confirm permanent deletion of ALL your content from Nostr relays, type:",
-  "deleteAccountFinalConfirmationTitle": "⚠️ Final Confirmation",
-  "deleteAccountKeyDeletionWarning": "Account deleted, but your keys may not have been fully removed from this device. Go to Settings → Nostr Keys → Remove Keys to retry.",
+  "deleteAccountFinalConfirmationTitle": "\u26a0\ufe0f Final Confirmation",
+  "deleteAccountKeyDeletionWarning": "Account deleted, but your keys may not have been fully removed from this device. Go to Settings \u2192 Nostr Keys \u2192 Remove Keys to retry.",
   "deleteAccountLocalDataDeletionFailed": "Account deleted and signed out, but some local data could not be removed from this device.",
   "deleteAccountPreparingDeletion": "Preparing deletion...",
   "deleteAccountProgressEvents": "{current} / {total} events",
-  "@deleteAccountProgressEvents": {
-    "placeholders": {
-      "current": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
+  "@deleteAccountProgressEvents": {"placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}},
   "deleteAccountRemoveKeysBody": "This removes the local login for this account from this device. It won't delete your Divine account or Nostr identity.\n\nYour drafts and clips stay saved on this device for this account. If this is your last local account, you'll return to the login screen.",
   "deleteAccountRemoveKeysConfirm": "Remove from device",
   "deleteAccountRemoveKeysTitle": "Remove this account from this device?",
@@ -3835,7 +3751,7 @@
   "likedVideosInvalidRoute": "Invalid route",
   "likedVideosTitle": "Liked Videos",
   "ogVinerBadgeSemanticLabel": "OG Viner",
-  "uploadFailureSheetRetryingSnackbar": "Retrying upload…",
+  "uploadFailureSheetRetryingSnackbar": "Retrying upload\u2026",
   "uploadFailureSheetSaveToDraftsButton": "Save to Drafts",
   "uploadFailureSheetSavedToDraftsSnackbar": "Saved to drafts",
   "uploadFailureSheetTitle": "Upload Failed",
@@ -3844,13 +3760,7 @@
   "videoEditorAudioImportFailed": "Audio import failed.",
   "videoIconPlaceholderLabel": "Video",
   "videoInspiredByAttributionSemanticLabel": "Inspired by {creatorName}. Tap to view their profile.",
-  "@videoInspiredByAttributionSemanticLabel": {
-    "placeholders": {
-      "creatorName": {
-        "type": "String"
-      }
-    }
-  },
+  "@videoInspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
   "proofmodeBadgeAiScanPending": "AI scan pending",
   "proofmodeBadgeHumanMade": "Human Made",
   "proofmodeBadgeNotDivineHosted": "Not Divine Hosted",
@@ -3872,33 +3782,12 @@
   "publishErrorTimeout": "The upload timed out. Try a stronger connection or a smaller video.",
   "publishErrorTls": "Secure connection failed. Check your network — public Wi-Fi can block uploads.",
   "publishErrorServerNotFound": "The media server ({serverName}) is not available. You can choose another in your settings.",
-  "@publishErrorServerNotFound": {
-    "description": "Shown when the media (Blossom) server returns 404. {serverName} is the server host.",
-    "placeholders": {
-      "serverName": {
-        "type": "String"
-      }
-    }
-  },
+  "@publishErrorServerNotFound": {"description": "Shown when the media (Blossom) server returns 404. {serverName} is the server host.", "placeholders": {"serverName": {"type": "String"}}},
   "publishErrorFileTooLarge": "The video file is too large for the server. Try trimming it or lowering the quality.",
   "publishErrorServerInternalError": "The media server ({serverName}) had an internal error. You can choose another in your settings.",
-  "@publishErrorServerInternalError": {
-    "description": "Shown when the media (Blossom) server returns 500. {serverName} is the server host.",
-    "placeholders": {
-      "serverName": {
-        "type": "String"
-      }
-    }
-  },
+  "@publishErrorServerInternalError": {"description": "Shown when the media (Blossom) server returns 500. {serverName} is the server host.", "placeholders": {"serverName": {"type": "String"}}},
   "publishErrorServerDown": "The media server ({serverName}) is temporarily down. Try again shortly or choose another in your settings.",
-  "@publishErrorServerDown": {
-    "description": "Shown when the media (Blossom) server returns 502/503. {serverName} is the server host.",
-    "placeholders": {
-      "serverName": {
-        "type": "String"
-      }
-    }
-  },
+  "@publishErrorServerDown": {"description": "Shown when the media (Blossom) server returns 502/503. {serverName} is the server host.", "placeholders": {"serverName": {"type": "String"}}},
   "publishErrorForbidden": "You don’t have permission to upload to this server.",
   "publishErrorFileNotFound": "The video file could not be found. It may have been deleted. Re-record and try again.",
   "publishErrorLowStorage": "Not enough storage on your device. Free up some space and try again.",
@@ -3912,124 +3801,40 @@
   "publishErrorOutOfMemory": "Your device is low on memory. Close some apps and try again.",
   "publishErrorUnknownServer": "Unknown server",
   "searchFilterPillSemanticLabel": "Filter: {filter}",
-  "@searchFilterPillSemanticLabel": {
-    "placeholders": {
-      "filter": {
-        "type": "String"
-      }
-    }
-  },
+  "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
   "searchNoResultsFound": "No results found for \"{query}\"",
-  "@searchNoResultsFound": {
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
-  },
+  "@searchNoResultsFound": {"placeholders": {"query": {"type": "String"}}},
   "searchTagChipViewVideosTaggedLabel": "View videos tagged {tag}",
-  "@searchTagChipViewVideosTaggedLabel": {
-    "placeholders": {
-      "tag": {
-        "type": "String"
-      }
-    }
-  },
+  "@searchTagChipViewVideosTaggedLabel": {"placeholders": {"tag": {"type": "String"}}},
   "audioAttributionRowSemanticLabel": "Sound: {soundName} by {creatorName}. Tap to view sound details.",
-  "@audioAttributionRowSemanticLabel": {
-    "placeholders": {
-      "soundName": {
-        "type": "String"
-      },
-      "creatorName": {
-        "type": "String"
-      }
-    }
-  },
+  "@audioAttributionRowSemanticLabel": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
   "metadataSoundsOriginalSoundSemantics": "Original sound by {creatorName}. Tap to use this sound.",
-  "@metadataSoundsOriginalSoundSemantics": {
-    "placeholders": {
-      "creatorName": {
-        "type": "String"
-      }
-    }
-  },
+  "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
   "metadataSoundsSharedSoundSemantics": "Sound: {soundName} by {creatorName}. Tap to view details.",
-  "@metadataSoundsSharedSoundSemantics": {
-    "placeholders": {
-      "soundName": {
-        "type": "String"
-      },
-      "creatorName": {
-        "type": "String"
-      }
-    }
-  },
+  "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
   "soundDetailLoadError": "Failed to load sound: {error}",
-  "@soundDetailLoadError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
   "soundDetailNotFoundMessage": "This sound could not be found",
   "soundDetailNotFoundTitle": "Sound Not Found",
   "videoFeedDescriptionSemanticLabel": "Video description",
-  "videoFeedLoopCountLabel": "🔁 {count} loops",
-  "@videoFeedLoopCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "videoFeedLoopCountLabel": "\ud83d\udd01 {count} loops",
+  "@videoFeedLoopCountLabel": {"placeholders": {"count": {"type": "int"}}},
   "videoFeedLoopCountSemanticLabel": "Video loop count",
   "originalSoundUnavailableBody": "Audio from this video is not available separately.",
   "originalSoundByCreator": "Original sound - {creatorName}",
-  "@originalSoundByCreator": {
-    "placeholders": {
-      "creatorName": {
-        "type": "String"
-      }
-    }
-  },
+  "@originalSoundByCreator": {"placeholders": {"creatorName": {"type": "String"}}},
   "globalUploadPendingCount": "Pending Uploads ({count})",
-  "@globalUploadPendingCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
   "ogVinerBadgeLabel": "OG Viner",
   "shareVideoInListsCount": "{count, plural, =1{In 1 list} other{In {count} lists}}",
-  "@shareVideoInListsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
+  "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
   "unfollowConfirmButton": "Unfollow",
   "videoClipSaveFailed": "Failed to save clip",
   "videoClipSaveTo": "Save to {destination}",
-  "@videoClipSaveTo": {
-    "placeholders": {
-      "destination": {
-        "type": "String"
-      }
-    }
-  },
+  "@videoClipSaveTo": {"placeholders": {"destination": {"type": "String"}}},
   "videoClipDelete": "Delete clip",
   "inspiredByAttributionSemanticLabel": "Inspired by {creatorName}. Tap to view their profile.",
-  "@inspiredByAttributionSemanticLabel": {
-    "placeholders": {
-      "creatorName": {
-        "type": "String"
-      }
-    }
-  },
+  "@inspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
   "bugReportSendReport": "Send Report",
   "supportSubjectRequiredLabel": "Subject *",
   "supportRequiredHelper": "Required",
@@ -4791,9 +4596,7 @@
   "@videoEditorVoiceOverTakeName": {
     "description": "Title for a single recorded voice-over take, numbered by capture position.",
     "placeholders": {
-      "number": {
-        "type": "int"
-      }
+      "number": { "type": "int" }
     }
   },
   "videoEditorOpenVoiceOverSemanticLabel": "Record a voice over",
@@ -4804,9 +4607,7 @@
   "@videoEditorVoiceOverRecordingsCount": {
     "description": "Counts the voice-over takes recorded so far in the recorder screen.",
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "videoEditorVoiceOverDeleteLast": "Delete last recording",
@@ -5011,9 +4812,7 @@
   "@videoEditorTransitionCurveOptionSemanticLabel": {
     "description": "Accessibility label for an easing-curve option in the transition picker, identified by its position. The curve shape is shown visually as a glyph; screen readers announce the option number instead.",
     "placeholders": {
-      "number": {
-        "type": "int"
-      }
+      "number": { "type": "int" }
     }
   },
   "videoEditorLayerAnimationLabel": "Animation",
@@ -5623,258 +5422,180 @@
     "description": "Inline green call-to-action on the welcome screen that opens the family-guidance flow for under-16 users."
   },
   "minorAccountReviewUnder13WhyTitle": "Here's why",
-  "generalSettingsHoldToRecord": "Hold to record",
-  "generalSettingsHoldToRecordSubtitle": "Start recording when you press and hold, then stop when you release",
-  "soundsPreviewFailedGeneric": "Failed to play preview",
-  "uploadPublishedCountMessage": "{count, plural, =1{Video published to your profile} other{{count} videos published to your profile}}",
-  "@uploadPublishedCountMessage": {
-    "description": "Snackbar shown after one or more background uploads succeed, e.g. after a re-auth redirect during which uploads completed.",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "2"
-      }
-    }
-  },
-  "dmMessageSendLabel": "Send message",
-  "@dmMessageSendLabel": {
-    "description": "Screen-reader label for the send button at the bottom of a DM conversation."
-  },
-  "emojiPickerSearchHint": "Search",
-  "@emojiPickerSearchHint": {
-    "description": "Hint text in the search field of the full emoji picker opened from the DM reaction '+' button."
-  },
-  "emojiCategoryRecent": "Recent",
-  "@emojiCategoryRecent": {
-    "description": "Title for the 'Recent' category in the full emoji picker."
-  },
-  "emojiCategorySmileys": "Smileys & People",
-  "@emojiCategorySmileys": {
-    "description": "Title for the 'Smileys & People' category in the full emoji picker."
-  },
-  "emojiCategoryAnimals": "Animals & Nature",
-  "@emojiCategoryAnimals": {
-    "description": "Title for the 'Animals & Nature' category in the full emoji picker."
-  },
-  "emojiCategoryFood": "Food & Drink",
-  "@emojiCategoryFood": {
-    "description": "Title for the 'Food & Drink' category in the full emoji picker."
-  },
-  "emojiCategoryActivities": "Activities",
-  "@emojiCategoryActivities": {
-    "description": "Title for the 'Activities' category in the full emoji picker."
-  },
-  "emojiCategoryTravel": "Travel & Places",
-  "@emojiCategoryTravel": {
-    "description": "Title for the 'Travel & Places' category in the full emoji picker."
-  },
-  "emojiCategoryObjects": "Objects",
-  "@emojiCategoryObjects": {
-    "description": "Title for the 'Objects' category in the full emoji picker."
-  },
-  "emojiCategorySymbols": "Symbols",
-  "@emojiCategorySymbols": {
-    "description": "Title for the 'Symbols' category in the full emoji picker."
-  },
-  "emojiCategoryFlags": "Flags",
-  "@emojiCategoryFlags": {
-    "description": "Title for the 'Flags' category in the full emoji picker."
-  },
-  "videoEditorMarkerLabel": "Marker",
-  "videoEditorAddTimelineMarkerSemanticLabel": "Add timeline marker",
-  "videoEditorRemoveTimelineMarkerSemanticLabel": "Remove timeline marker",
-  "videoEditorDeleteTimelineMarkerTitle": "Delete marker?",
-  "videoEditorDeleteTimelineMarkerSubtitle": "This removes the marker from the timeline. Your edit stays intact.",
-  "videoEditorVolumeLongPressHint": "Mute or unmute all tracks",
-  "@videoEditorVolumeLongPressHint": {
-    "description": "Semantic long-press hint for a volume arc control. Screen readers announce this as the long-press affordance, which mutes or unmutes all timeline tracks at once."
-  },
-  "videoEditorSplitFailed": "Split failed. Please try again.",
-  "videoEditEditSubtitles": "Edit subtitles",
-  "subtitleEditorTitle": "Edit subtitles",
-  "subtitleEditorSave": "Save",
-  "subtitleEditorProcessing": "Subtitles are still being generated. Check back in a moment.",
-  "subtitleEditorLoadError": "Couldn't load subtitles. Try again.",
-  "subtitleEditorSaveSuccess": "Subtitles updated",
-  "subtitleEditorSaveError": "Couldn't save subtitles. Try again.",
-  "subtitleEditorRetry": "Retry",
-  "subtitleEditorCueHint": "Caption text",
-  "imageCropEditorRotateLabel": "Rotate",
-  "@imageCropEditorRotateLabel": {
-    "description": "Bottom-bar action in the image crop editor that rotates the image 90 degrees."
-  },
-  "imageCropEditorFlipLabel": "Flip",
-  "@imageCropEditorFlipLabel": {
-    "description": "Bottom-bar action in the image crop editor that mirrors the image horizontally."
-  },
-  "imageCropEditorResetLabel": "Reset",
-  "@imageCropEditorResetLabel": {
-    "description": "Bottom-bar action in the image crop editor that reverts all crop, rotate and flip changes."
-  },
-  "imageCropEditorCloseSemanticLabel": "Cancel cropping",
-  "@imageCropEditorCloseSemanticLabel": {
-    "description": "Accessibility label for the close button in the image crop editor that discards changes and returns without uploading."
-  },
-  "imageCropEditorDoneSemanticLabel": "Apply crop",
-  "@imageCropEditorDoneSemanticLabel": {
-    "description": "Accessibility label for the done button in the image crop editor that confirms the crop and proceeds with the upload."
-  },
-  "imageCropEditorProcessing": "Applying crop…",
-  "@imageCropEditorProcessing": {
-    "description": "Loading message shown while the image crop editor generates the final cropped image after the user taps done."
-  },
-  "backgroundUploadNotificationTitle": "Uploading video",
-  "@backgroundUploadNotificationTitle": {
-    "description": "Title of the Android foreground-service notification shown while a video uploads in the background so the transfer survives app suspension."
-  },
-  "monetizationSettingsTitle": "Creator Support",
-  "@monetizationSettingsTitle": {
-    "description": "Title for the settings screen where creators configure outbound support links."
-  },
-  "monetizationSettingsSubtitle": "Add tip and subscription links",
-  "@monetizationSettingsSubtitle": {
-    "description": "Subtitle for the settings row that opens creator support link settings."
-  },
-  "monetizationSettingsIntroTitle": "Outbound links only",
-  "@monetizationSettingsIntroTitle": {
-    "description": "Heading explaining monetization links do not create in-app payments."
-  },
-  "monetizationSettingsIntroBody": "Add creator-controlled destinations. Divine never handles the payment or unlocks in-app content from these links.",
-  "@monetizationSettingsIntroBody": {
-    "description": "Body copy explaining profile monetization links are external only."
-  },
-  "monetizationSettingsConfiguredCount": "{count} active link(s) on your profile",
-  "@monetizationSettingsConfiguredCount": {
-    "description": "Summary of active monetization links configured on the profile.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "monetizationSettingsTipSection": "Send a tip",
-  "@monetizationSettingsTipSection": {
-    "description": "Section header for one-time tip link providers."
-  },
-  "monetizationSettingsSubscriptionSection": "Subscribe / support",
-  "@monetizationSettingsSubscriptionSection": {
-    "description": "Section header for recurring or creator-support link providers."
-  },
-  "monetizationSettingsSave": "Save support links",
-  "@monetizationSettingsSave": {
-    "description": "Button label to save profile monetization links."
-  },
-  "monetizationSettingsSaving": "Saving...",
-  "@monetizationSettingsSaving": {
-    "description": "Button label while profile monetization links are saving."
-  },
-  "monetizationSettingsSaved": "Support links updated",
-  "@monetizationSettingsSaved": {
-    "description": "Snackbar shown after monetization links are saved."
-  },
-  "monetizationSettingsErrorEmpty": "Add a handle or URL.",
-  "@monetizationSettingsErrorEmpty": {
-    "description": "Validation error for an empty monetization link input."
-  },
-  "monetizationSettingsErrorInvalid": "That link does not look right.",
-  "@monetizationSettingsErrorInvalid": {
-    "description": "Validation error for a malformed monetization link input."
-  },
-  "monetizationSettingsErrorWrongProvider": "Use a link for this provider.",
-  "@monetizationSettingsErrorWrongProvider": {
-    "description": "Validation error when a monetization link uses the wrong provider domain."
-  },
-  "monetizationSettingsHintCashApp": "$cashtag or cash.app link",
-  "@monetizationSettingsHintCashApp": {
-    "description": "Input hint for Cash App monetization link."
-  },
-  "monetizationSettingsHintPayPal": "PayPal.me handle or link",
-  "@monetizationSettingsHintPayPal": {
-    "description": "Input hint for PayPal monetization link."
-  },
-  "monetizationSettingsHintVenmo": "Venmo handle or link",
-  "@monetizationSettingsHintVenmo": {
-    "description": "Input hint for Venmo monetization link."
-  },
-  "monetizationSettingsHintPatreon": "Patreon handle or link",
-  "@monetizationSettingsHintPatreon": {
-    "description": "Input hint for Patreon monetization link."
-  },
-  "monetizationSettingsHintSubstack": "Substack domain or link",
-  "@monetizationSettingsHintSubstack": {
-    "description": "Input hint for Substack monetization link."
-  },
-  "monetizationSettingsHintMedium": "Medium handle or link",
-  "@monetizationSettingsHintMedium": {
-    "description": "Input hint for Medium monetization link."
-  },
-  "monetizationSettingsHintOpenCollective": "Open Collective slug or link",
-  "@monetizationSettingsHintOpenCollective": {
-    "description": "Input hint for Open Collective monetization link."
-  },
-  "profileSupportSheetTitle": "Support this creator",
-  "@profileSupportSheetTitle": {
-    "description": "Title for the profile support links bottom sheet."
-  },
-  "profileSupportSheetBody": "These links open outside Divine. Nothing here unlocks content in the app.",
-  "@profileSupportSheetBody": {
-    "description": "Policy copy in the profile support links bottom sheet."
-  },
-  "profileSupportTipSection": "Send a tip",
-  "@profileSupportTipSection": {
-    "description": "Section header for tip links in the profile support sheet."
-  },
-  "profileSupportSubscriptionSection": "Subscribe / support",
-  "@profileSupportSubscriptionSection": {
-    "description": "Section header for subscription links in the profile support sheet."
-  },
-  "profileSupportButtonLabel": "Support",
-  "@profileSupportButtonLabel": {
-    "description": "Compact button label on a profile that opens creator support links."
-  },
-  "monetizationTipsSettingsTitle": "Tips",
-  "@monetizationTipsSettingsTitle": {
-    "description": "App Store-safe title for the settings screen where creators configure optional tip links."
-  },
-  "monetizationTipsSettingsSubtitle": "Add optional tip links",
-  "@monetizationTipsSettingsSubtitle": {
-    "description": "App Store-safe subtitle for the settings row that opens optional tip link settings."
-  },
-  "monetizationTipsSettingsIntroTitle": "Optional tips only",
-  "@monetizationTipsSettingsIntroTitle": {
-    "description": "App Store-safe heading explaining tip links are optional user-to-user gifts."
-  },
-  "monetizationTipsSettingsIntroBody": "Tips are optional user-to-user gifts. They do not unlock content, subscriptions, features, ranking, visibility, or access in Divine.",
-  "@monetizationTipsSettingsIntroBody": {
-    "description": "App Store-safe body copy explaining tips do not unlock digital content or services."
-  },
-  "monetizationTipsSettingsConfiguredCount": "{count} active tip link(s) on your profile",
-  "@monetizationTipsSettingsConfiguredCount": {
-    "description": "App Store-safe summary of active tip links configured on the profile.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "monetizationTipsSettingsSave": "Save tip links",
-  "@monetizationTipsSettingsSave": {
-    "description": "App Store-safe button label to save optional tip links."
-  },
-  "monetizationTipsSettingsSaved": "Tip links updated",
-  "@monetizationTipsSettingsSaved": {
-    "description": "App Store-safe snackbar shown after optional tip links are saved."
-  },
-  "profileTipButtonLabel": "Tip",
-  "@profileTipButtonLabel": {
-    "description": "App Store-safe compact button label on a profile that opens optional creator tip links."
-  },
-  "profileTipSheetTitle": "Tip this creator",
-  "@profileTipSheetTitle": {
-    "description": "App Store-safe title for the profile tip links bottom sheet."
-  },
-  "profileTipSheetBody": "Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.",
-  "@profileTipSheetBody": {
-    "description": "App Store-safe policy copy in the profile tip links bottom sheet."
-  }
+    "generalSettingsHoldToRecord": "Hold to record",
+    "generalSettingsHoldToRecordSubtitle": "Start recording when you press and hold, then stop when you release",
+    "soundsPreviewFailedGeneric": "Failed to play preview",
+    "uploadPublishedCountMessage": "{count, plural, =1{Video published to your profile} other{{count} videos published to your profile}}",
+    "@uploadPublishedCountMessage": {
+        "description": "Snackbar shown after one or more background uploads succeed, e.g. after a re-auth redirect during which uploads completed.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "dmMessageSendLabel": "Send message",
+    "@dmMessageSendLabel": {
+        "description": "Screen-reader label for the send button at the bottom of a DM conversation."
+    },
+    "emojiPickerSearchHint": "Search",
+    "@emojiPickerSearchHint": {
+        "description": "Hint text in the search field of the full emoji picker opened from the DM reaction '+' button."
+    },
+    "emojiCategoryRecent": "Recent",
+    "@emojiCategoryRecent": {
+        "description": "Title for the 'Recent' category in the full emoji picker."
+    },
+    "emojiCategorySmileys": "Smileys & People",
+    "@emojiCategorySmileys": {
+        "description": "Title for the 'Smileys & People' category in the full emoji picker."
+    },
+    "emojiCategoryAnimals": "Animals & Nature",
+    "@emojiCategoryAnimals": {
+        "description": "Title for the 'Animals & Nature' category in the full emoji picker."
+    },
+    "emojiCategoryFood": "Food & Drink",
+    "@emojiCategoryFood": {
+        "description": "Title for the 'Food & Drink' category in the full emoji picker."
+    },
+    "emojiCategoryActivities": "Activities",
+    "@emojiCategoryActivities": {
+        "description": "Title for the 'Activities' category in the full emoji picker."
+    },
+    "emojiCategoryTravel": "Travel & Places",
+    "@emojiCategoryTravel": {
+        "description": "Title for the 'Travel & Places' category in the full emoji picker."
+    },
+    "emojiCategoryObjects": "Objects",
+    "@emojiCategoryObjects": {
+        "description": "Title for the 'Objects' category in the full emoji picker."
+    },
+    "emojiCategorySymbols": "Symbols",
+    "@emojiCategorySymbols": {
+        "description": "Title for the 'Symbols' category in the full emoji picker."
+    },
+    "emojiCategoryFlags": "Flags",
+    "@emojiCategoryFlags": {
+        "description": "Title for the 'Flags' category in the full emoji picker."
+    },
+    "videoEditorMarkerLabel": "Marker",
+    "videoEditorAddTimelineMarkerSemanticLabel": "Add timeline marker",
+    "videoEditorRemoveTimelineMarkerSemanticLabel": "Remove timeline marker",
+    "videoEditorDeleteTimelineMarkerTitle": "Delete marker?",
+    "videoEditorDeleteTimelineMarkerSubtitle": "This removes the marker from the timeline. Your edit stays intact.",
+    "videoEditorVolumeLongPressHint": "Mute or unmute all tracks",
+    "@videoEditorVolumeLongPressHint": {
+        "description": "Semantic long-press hint for a volume arc control. Screen readers announce this as the long-press affordance, which mutes or unmutes all timeline tracks at once."
+    },
+    "videoEditorSplitFailed": "Split failed. Please try again.",
+    "videoEditEditSubtitles": "Edit subtitles",
+    "subtitleEditorTitle": "Edit subtitles",
+    "subtitleEditorSave": "Save",
+    "subtitleEditorProcessing": "Subtitles are still being generated. Check back in a moment.",
+    "subtitleEditorLoadError": "Couldn't load subtitles. Try again.",
+    "subtitleEditorSaveSuccess": "Subtitles updated",
+    "subtitleEditorSaveError": "Couldn't save subtitles. Try again.",
+    "subtitleEditorRetry": "Retry",
+    "subtitleEditorCueHint": "Caption text",
+    "imageCropEditorRotateLabel": "Rotate",
+    "@imageCropEditorRotateLabel": {
+        "description": "Bottom-bar action in the image crop editor that rotates the image 90 degrees."
+    },
+    "imageCropEditorFlipLabel": "Flip",
+    "@imageCropEditorFlipLabel": {
+        "description": "Bottom-bar action in the image crop editor that mirrors the image horizontally."
+    },
+    "imageCropEditorResetLabel": "Reset",
+    "@imageCropEditorResetLabel": {
+        "description": "Bottom-bar action in the image crop editor that reverts all crop, rotate and flip changes."
+    },
+    "imageCropEditorCloseSemanticLabel": "Cancel cropping",
+    "@imageCropEditorCloseSemanticLabel": {
+        "description": "Accessibility label for the close button in the image crop editor that discards changes and returns without uploading."
+    },
+    "imageCropEditorDoneSemanticLabel": "Apply crop",
+    "@imageCropEditorDoneSemanticLabel": {
+        "description": "Accessibility label for the done button in the image crop editor that confirms the crop and proceeds with the upload."
+    },
+    "imageCropEditorProcessing": "Applying crop…",
+    "@imageCropEditorProcessing": {
+        "description": "Loading message shown while the image crop editor generates the final cropped image after the user taps done."
+    },
+    "backgroundUploadNotificationTitle": "Uploading video",
+    "@backgroundUploadNotificationTitle": {
+        "description": "Title of the Android foreground-service notification shown while a video uploads in the background so the transfer survives app suspension."
+    },
+    "monetizationSettingsTitle": "Creator Support",
+    "@monetizationSettingsTitle": {"description": "Title for the settings screen where creators configure outbound support links."},
+    "monetizationSettingsSubtitle": "Add tip and subscription links",
+    "@monetizationSettingsSubtitle": {"description": "Subtitle for the settings row that opens creator support link settings."},
+    "monetizationSettingsIntroTitle": "Outbound links only",
+    "@monetizationSettingsIntroTitle": {"description": "Heading explaining monetization links do not create in-app payments."},
+    "monetizationSettingsIntroBody": "Add creator-controlled destinations. Divine never handles the payment or unlocks in-app content from these links.",
+    "@monetizationSettingsIntroBody": {"description": "Body copy explaining profile monetization links are external only."},
+    "monetizationSettingsConfiguredCount": "{count} active link(s) on your profile",
+    "@monetizationSettingsConfiguredCount": {"description": "Summary of active monetization links configured on the profile.", "placeholders": {"count": {"type": "int"}}},
+    "monetizationSettingsTipSection": "Send a tip",
+    "@monetizationSettingsTipSection": {"description": "Section header for one-time tip link providers."},
+    "monetizationSettingsSubscriptionSection": "Subscribe / support",
+    "@monetizationSettingsSubscriptionSection": {"description": "Section header for recurring or creator-support link providers."},
+    "monetizationSettingsSave": "Save support links",
+    "@monetizationSettingsSave": {"description": "Button label to save profile monetization links."},
+    "monetizationSettingsSaving": "Saving...",
+    "@monetizationSettingsSaving": {"description": "Button label while profile monetization links are saving."},
+    "monetizationSettingsSaved": "Support links updated",
+    "@monetizationSettingsSaved": {"description": "Snackbar shown after monetization links are saved."},
+    "monetizationSettingsSaveFailed": "Could not save support links. Check your connection and try again.",
+    "@monetizationSettingsSaveFailed": {"description": "Snackbar shown when profile monetization links fail to save."},
+    "monetizationSettingsErrorEmpty": "Add a handle or URL.",
+    "@monetizationSettingsErrorEmpty": {"description": "Validation error for an empty monetization link input."},
+    "monetizationSettingsErrorInvalid": "That link does not look right.",
+    "@monetizationSettingsErrorInvalid": {"description": "Validation error for a malformed monetization link input."},
+    "monetizationSettingsErrorWrongProvider": "Use a link for this provider.",
+    "@monetizationSettingsErrorWrongProvider": {"description": "Validation error when a monetization link uses the wrong provider domain."},
+    "monetizationSettingsHintCashApp": "$cashtag or cash.app link",
+    "@monetizationSettingsHintCashApp": {"description": "Input hint for Cash App monetization link."},
+    "monetizationSettingsHintPayPal": "PayPal.me handle or link",
+    "@monetizationSettingsHintPayPal": {"description": "Input hint for PayPal monetization link."},
+    "monetizationSettingsHintVenmo": "Venmo handle or link",
+    "@monetizationSettingsHintVenmo": {"description": "Input hint for Venmo monetization link."},
+    "monetizationSettingsHintPatreon": "Patreon handle or link",
+    "@monetizationSettingsHintPatreon": {"description": "Input hint for Patreon monetization link."},
+    "monetizationSettingsHintSubstack": "Substack domain or link",
+    "@monetizationSettingsHintSubstack": {"description": "Input hint for Substack monetization link."},
+    "monetizationSettingsHintMedium": "Medium handle or link",
+    "@monetizationSettingsHintMedium": {"description": "Input hint for Medium monetization link."},
+    "monetizationSettingsHintOpenCollective": "Open Collective slug or link",
+    "@monetizationSettingsHintOpenCollective": {"description": "Input hint for Open Collective monetization link."},
+    "profileSupportSheetTitle": "Support this creator",
+    "@profileSupportSheetTitle": {"description": "Title for the profile support links bottom sheet."},
+    "profileSupportSheetBody": "These links open outside Divine. Nothing here unlocks content in the app.",
+    "@profileSupportSheetBody": {"description": "Policy copy in the profile support links bottom sheet."},
+    "profileSupportTipSection": "Send a tip",
+    "@profileSupportTipSection": {"description": "Section header for tip links in the profile support sheet."},
+    "profileSupportSubscriptionSection": "Subscribe / support",
+    "@profileSupportSubscriptionSection": {"description": "Section header for subscription links in the profile support sheet."},
+    "profileSupportButtonLabel": "Support",
+    "@profileSupportButtonLabel": {"description": "Compact button label on a profile that opens creator support links."},
+    "monetizationTipsSettingsTitle": "Tips",
+    "@monetizationTipsSettingsTitle": {"description": "App Store-safe title for the settings screen where creators configure optional tip links."},
+    "monetizationTipsSettingsSubtitle": "Add optional tip links",
+    "@monetizationTipsSettingsSubtitle": {"description": "App Store-safe subtitle for the settings row that opens optional tip link settings."},
+    "monetizationTipsSettingsIntroTitle": "Optional tips only",
+    "@monetizationTipsSettingsIntroTitle": {"description": "App Store-safe heading explaining tip links are optional user-to-user gifts."},
+    "monetizationTipsSettingsIntroBody": "Tips are optional user-to-user gifts. They do not unlock content, subscriptions, features, ranking, visibility, or access in Divine.",
+    "@monetizationTipsSettingsIntroBody": {"description": "App Store-safe body copy explaining tips do not unlock digital content or services."},
+    "monetizationTipsSettingsConfiguredCount": "{count} active tip link(s) on your profile",
+    "@monetizationTipsSettingsConfiguredCount": {"description": "App Store-safe summary of active tip links configured on the profile.", "placeholders": {"count": {"type": "int"}}},
+    "monetizationTipsSettingsSave": "Save tip links",
+    "@monetizationTipsSettingsSave": {"description": "App Store-safe button label to save optional tip links."},
+    "monetizationTipsSettingsSaved": "Tip links updated",
+    "@monetizationTipsSettingsSaved": {"description": "App Store-safe snackbar shown after optional tip links are saved."},
+    "profileTipButtonLabel": "Tip",
+    "@profileTipButtonLabel": {"description": "App Store-safe compact button label on a profile that opens optional creator tip links."},
+    "profileTipSheetTitle": "Tip this creator",
+    "@profileTipSheetTitle": {"description": "App Store-safe title for the profile tip links bottom sheet."},
+    "profileTipSheetBody": "Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.",
+    "@profileTipSheetBody": {"description": "App Store-safe policy copy in the profile tip links bottom sheet."}
 }

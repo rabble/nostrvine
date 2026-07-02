@@ -298,6 +298,7 @@ void main() {
       Stream<BackgroundPublishState>? backgroundPublishStream,
       List<ProfileBadgeViewData> acceptedProfileBadges = const [],
       MockGoRouter? goRouter,
+      bool monetizationLinksEnabled = false,
     }) {
       final authService = MockAuthService(
         isAnonymousValue: isAnonymous,
@@ -402,6 +403,9 @@ void main() {
           isFeatureEnabledProvider(
             FeatureFlag.curatedLists,
           ).overrideWith((ref) => curatedListsEnabled),
+          isFeatureEnabledProvider(
+            FeatureFlag.profileMonetizationLinks,
+          ).overrideWith((ref) => monetizationLinksEnabled),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -780,6 +784,7 @@ void main() {
             isOwnProfile: true,
             profile: staleProfile,
             suppliedProfile: savedProfile,
+            monetizationLinksEnabled: true,
           ),
         );
         await tester.pumpAndSettle();
@@ -811,6 +816,7 @@ void main() {
           userIdHex: testUserHex,
           isOwnProfile: false,
           suppliedProfile: creatorProfile,
+          monetizationLinksEnabled: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -825,6 +831,35 @@ void main() {
         tester.getTopLeft(find.text('Support')).dy,
         lessThan(tester.getTopLeft(find.text('Likes')).dy),
       );
+    });
+
+    testWidgets('hides support affordance when monetization flag is off', (
+      tester,
+    ) async {
+      final creatorProfile = createTestProfile(
+        displayName: 'Creator',
+        rawData: {
+          divineMonetizationLinksKey: [
+            const MonetizationLink(
+              provider: MonetizationLinkProvider.cashApp,
+              category: MonetizationLinkCategory.tip,
+              url: r'https://cash.app/$creator',
+              enabled: true,
+            ).toJson(),
+          ],
+        },
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: creatorProfile,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('profile-support-button')), findsNothing);
     });
 
     testWidgets(
@@ -852,6 +887,7 @@ void main() {
             userIdHex: testUserHex,
             isOwnProfile: false,
             suppliedProfile: creatorProfile,
+            monetizationLinksEnabled: true,
           ),
         );
         await tester.pumpAndSettle();
@@ -883,6 +919,7 @@ void main() {
           userIdHex: testUserHex,
           isOwnProfile: false,
           suppliedProfile: creatorProfile,
+          monetizationLinksEnabled: true,
         ),
       );
       await tester.pumpAndSettle();

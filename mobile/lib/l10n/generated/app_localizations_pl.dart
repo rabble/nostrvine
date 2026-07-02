@@ -9685,6 +9685,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get monetizationSettingsSaved => 'Support links updated';
 
   @override
+  String get monetizationSettingsSaveFailed =>
+      'Could not save support links. Check your connection and try again.';
+
+  @override
   String get monetizationSettingsErrorEmpty => 'Add a handle or URL.';
 
   @override

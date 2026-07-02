@@ -16438,6 +16438,12 @@ abstract class AppLocalizations {
   /// **'Support links updated'**
   String get monetizationSettingsSaved;
 
+  /// Snackbar shown when profile monetization links fail to save.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save support links. Check your connection and try again.'**
+  String get monetizationSettingsSaveFailed;
+
   /// Validation error for an empty monetization link input.
   ///
   /// In en, this message translates to:

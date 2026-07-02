@@ -3,9 +3,12 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/monetization_links_settings/monetization_links_settings_cubit.dart';
+import 'package:openvine/blocs/monetization_links_settings/monetization_links_settings_state.dart';
 import 'package:openvine/features/monetization/monetization_analytics.dart';
 import 'package:openvine/features/monetization/monetization_storefront_policy.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -13,9 +16,8 @@ import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:unified_logger/unified_logger.dart';
 
-class MonetizationLinksSettingsScreen extends ConsumerStatefulWidget {
+class MonetizationLinksSettingsScreen extends ConsumerWidget {
   static const routeName = 'monetization-links-settings';
   static const subpath = 'monetization-links';
   static const path = '/settings/monetization-links';
@@ -23,17 +25,60 @@ class MonetizationLinksSettingsScreen extends ConsumerStatefulWidget {
   const MonetizationLinksSettingsScreen({super.key});
 
   @override
-  ConsumerState<MonetizationLinksSettingsScreen> createState() =>
-      _MonetizationLinksSettingsScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
+    final profileAsync = pubkey == null
+        ? const AsyncValue<UserProfile?>.data(null)
+        : ref.watch(userProfileReactiveProvider(pubkey));
+    final profile = profileAsync.asData?.value;
+    final repository = ref.watch(profileRepositoryProvider);
+    final appStoreTipPolicy = usesAppleAppStoreTipPolicy;
+    final providers = monetizationProvidersForCurrentStorefront();
+    final analytics = ref.watch(analyticsEventSinkProvider);
+
+    return BlocProvider(
+      key: ValueKey((
+        pubkey,
+        profile?.eventId,
+        repository,
+        appStoreTipPolicy,
+      )),
+      create: (_) => MonetizationLinksSettingsCubit(
+        repository: repository,
+        pubkey: pubkey,
+        profile: profile,
+        visibleProviders: providers,
+        trackConfiguredLink: (link) =>
+            trackMonetizationLinkConfigured(analytics: analytics, link: link),
+        onProfileSaved: (saved) {
+          ref
+            ..invalidate(userProfileReactiveProvider(saved.pubkey))
+            ..invalidate(fetchUserProfileProvider(saved.pubkey));
+        },
+      ),
+      child: MonetizationLinksSettingsView(
+        appStoreTipPolicy: appStoreTipPolicy,
+      ),
+    );
+  }
 }
 
-class _MonetizationLinksSettingsScreenState
-    extends ConsumerState<MonetizationLinksSettingsScreen> {
+class MonetizationLinksSettingsView extends StatefulWidget {
+  const MonetizationLinksSettingsView({
+    required this.appStoreTipPolicy,
+    super.key,
+  });
+
+  final bool appStoreTipPolicy;
+
+  @override
+  State<MonetizationLinksSettingsView> createState() =>
+      _MonetizationLinksSettingsViewState();
+}
+
+class _MonetizationLinksSettingsViewState
+    extends State<MonetizationLinksSettingsView> {
   late final Map<MonetizationLinkProvider, TextEditingController> _controllers;
-  late final Map<MonetizationLinkProvider, bool> _enabled;
-  final _errors = <MonetizationLinkProvider, String>{};
-  String? _hydratedEventId;
-  bool _saving = false;
 
   @override
   void initState() {
@@ -41,9 +86,6 @@ class _MonetizationLinksSettingsScreenState
     _controllers = {
       for (final provider in MonetizationLinkProvider.values)
         provider: TextEditingController(),
-    };
-    _enabled = {
-      for (final provider in MonetizationLinkProvider.values) provider: false,
     };
   }
 
@@ -57,18 +99,27 @@ class _MonetizationLinksSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
-    final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
-    final profileAsync = pubkey == null
-        ? const AsyncValue<UserProfile?>.data(null)
-        : ref.watch(userProfileReactiveProvider(pubkey));
-    final profile = profileAsync.asData?.value;
-    final repository = ref.watch(profileRepositoryProvider);
-    final currentProfile = pubkey == null
-        ? null
-        : _profileSeed(pubkey: pubkey, cachedProfile: profile);
-    final canSave = !_saving && repository != null && currentProfile != null;
-    final appStoreTipPolicy = usesAppleAppStoreTipPolicy;
-    final providers = monetizationProvidersForCurrentStorefront();
+    return BlocConsumer<
+      MonetizationLinksSettingsCubit,
+      MonetizationLinksSettingsState
+    >(
+      listenWhen: (previous, current) =>
+          previous.status != current.status ||
+          previous.savedProfile?.eventId != current.savedProfile?.eventId,
+      listener: _onStateChanged,
+      builder: (context, state) {
+        _syncControllers(state);
+        return _buildScaffold(context, state);
+      },
+    );
+  }
+
+  Widget _buildScaffold(
+    BuildContext context,
+    MonetizationLinksSettingsState state,
+  ) {
+    final appStoreTipPolicy = widget.appStoreTipPolicy;
+    final providers = state.visibleProviders;
     final tipProviders = providers
         .where((provider) => provider.category == MonetizationLinkCategory.tip)
         .toList(growable: false);
@@ -78,9 +129,6 @@ class _MonetizationLinksSettingsScreenState
               provider.category == MonetizationLinkCategory.subscription,
         )
         .toList(growable: false);
-    if (profile != null && _hydratedEventId != profile.eventId) {
-      _hydrate(profile);
-    }
 
     return Scaffold(
       appBar: DiVineAppBar(
@@ -99,7 +147,7 @@ class _MonetizationLinksSettingsScreenState
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             children: [
               _SectionIntro(
-                profile: profile,
+                profile: state.currentProfile,
                 appStoreTipPolicy: appStoreTipPolicy,
               ),
               const SizedBox(height: 20),
@@ -108,13 +156,14 @@ class _MonetizationLinksSettingsScreenState
                 _ProviderEditor(
                   provider: provider,
                   controller: _controllers[provider]!,
-                  enabled: _enabled[provider] ?? false,
-                  errorText: _errors[provider],
-                  onEnabledChanged: (value) =>
-                      setState(() => _enabled[provider] = value),
-                  onChanged: (_) {
-                    if (_errors.remove(provider) != null) setState(() {});
-                  },
+                  enabled: state.isEnabled(provider),
+                  errorText: _errorTextFor(context, state.errorFor(provider)),
+                  onEnabledChanged: (value) => context
+                      .read<MonetizationLinksSettingsCubit>()
+                      .setEnabled(provider, value),
+                  onChanged: (value) => context
+                      .read<MonetizationLinksSettingsCubit>()
+                      .setValue(provider, value),
                 ),
               if (subscriptionProviders.isNotEmpty) ...[
                 const SizedBox(height: 16),
@@ -125,13 +174,17 @@ class _MonetizationLinksSettingsScreenState
                   _ProviderEditor(
                     provider: provider,
                     controller: _controllers[provider]!,
-                    enabled: _enabled[provider] ?? false,
-                    errorText: _errors[provider],
-                    onEnabledChanged: (value) =>
-                        setState(() => _enabled[provider] = value),
-                    onChanged: (_) {
-                      if (_errors.remove(provider) != null) setState(() {});
-                    },
+                    enabled: state.isEnabled(provider),
+                    errorText: _errorTextFor(
+                      context,
+                      state.errorFor(provider),
+                    ),
+                    onEnabledChanged: (value) => context
+                        .read<MonetizationLinksSettingsCubit>()
+                        .setEnabled(provider, value),
+                    onChanged: (value) => context
+                        .read<MonetizationLinksSettingsCubit>()
+                        .setValue(provider, value),
                   ),
               ],
             ],
@@ -152,14 +205,18 @@ class _MonetizationLinksSettingsScreenState
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 640),
                 child: DivineButton(
-                  label: _saving
+                  label: state.isSaving
                       ? context.l10n.monetizationSettingsSaving
                       : appStoreTipPolicy
                       ? context.l10n.monetizationTipsSettingsSave
                       : context.l10n.monetizationSettingsSave,
                   leadingIcon: .check,
                   expanded: true,
-                  onPressed: canSave ? () => _save(currentProfile) : null,
+                  onPressed: state.canSave
+                      ? () => context
+                            .read<MonetizationLinksSettingsCubit>()
+                            .save()
+                      : null,
                 ),
               ),
             ),
@@ -169,119 +226,45 @@ class _MonetizationLinksSettingsScreenState
     );
   }
 
-  UserProfile _profileSeed({
-    required String pubkey,
-    required UserProfile? cachedProfile,
-  }) {
-    if (cachedProfile != null) return cachedProfile;
-    return UserProfile(
-      pubkey: pubkey,
-      displayName: '',
-      rawData: const {},
-      createdAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
-      eventId: 'local-profile-seed-$pubkey',
-    );
-  }
-
-  void _hydrate(UserProfile profile) {
-    _hydratedEventId = profile.eventId;
-    final byProvider = {
-      for (final link in profile.monetizationLinks) link.provider: link,
-    };
+  void _syncControllers(MonetizationLinksSettingsState state) {
     for (final provider in MonetizationLinkProvider.values) {
-      final link = byProvider[provider];
-      _controllers[provider]!.text = link?.url ?? '';
-      _enabled[provider] = link?.enabled ?? false;
+      final controller = _controllers[provider]!;
+      final value = state.valueFor(provider);
+      if (controller.text != value) {
+        controller.text = value;
+      }
     }
-    _errors.clear();
   }
 
-  Future<void> _save(UserProfile currentProfile) async {
-    final visibleProviders = monetizationProvidersForCurrentStorefront();
-    final visibleProviderSet = visibleProviders.toSet();
-    final visibleLinks = <MonetizationLink>[];
-    final errors = <MonetizationLinkProvider, String>{};
-
-    for (final provider in visibleProviders) {
-      final input = _controllers[provider]!.text;
-      if (input.trim().isEmpty) continue;
-      if (!(_enabled[provider] ?? false)) continue;
-      final result = normalizeMonetizationLinkInput(
-        provider: provider,
-        input: input,
-        enabled: true,
-      );
-      switch (result) {
-        case MonetizationLinkInputValid(:final link):
-          visibleLinks.add(link);
-        case MonetizationLinkInputInvalid(:final reason):
-          errors[provider] = _errorTextFor(reason);
-      }
-    }
-
-    if (errors.isNotEmpty) {
-      setState(() {
-        _errors
-          ..clear()
-          ..addAll(errors);
-      });
-      return;
-    }
-
-    final links = [
-      ...currentProfile.monetizationLinks.where(
-        (link) => !visibleProviderSet.contains(link.provider),
-      ),
-      ...visibleLinks,
-    ];
-
-    setState(() => _saving = true);
-    try {
-      final repository = ref.read(profileRepositoryProvider);
-      if (repository == null) return;
-      Log.info(
-        'Saving monetization links: count=${links.length}',
-        name: 'MonetizationLinksSettingsScreen',
-        category: LogCategory.system,
-      );
-      final saved = await repository.saveProfileEvent(
-        displayName: currentProfile.displayName ?? currentProfile.name ?? '',
-        about: currentProfile.about,
-        website: currentProfile.website,
-        picture: currentProfile.picture,
-        banner: currentProfile.banner,
-        currentProfile: currentProfile,
-        monetizationLinks: links,
-      );
-      if (!mounted) return;
-      _hydrate(saved);
-      ref
-        ..invalidate(userProfileReactiveProvider(currentProfile.pubkey))
-        ..invalidate(fetchUserProfileProvider(currentProfile.pubkey));
-      Log.info(
-        'Saved monetization links: count=${saved.enabledMonetizationLinks.length}',
-        name: 'MonetizationLinksSettingsScreen',
-        category: LogCategory.system,
-      );
-      final analytics = ref.read(analyticsEventSinkProvider);
-      for (final link in visibleLinks) {
-        trackMonetizationLinkConfigured(analytics: analytics, link: link);
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            usesAppleAppStoreTipPolicy
-                ? context.l10n.monetizationTipsSettingsSaved
-                : context.l10n.monetizationSettingsSaved,
+  void _onStateChanged(
+    BuildContext context,
+    MonetizationLinksSettingsState state,
+  ) {
+    switch (state.status) {
+      case MonetizationLinksSettingsSaveStatus.success:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.appStoreTipPolicy
+                  ? context.l10n.monetizationTipsSettingsSaved
+                  : context.l10n.monetizationSettingsSaved,
+            ),
           ),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _saving = false);
+        );
+      case MonetizationLinksSettingsSaveStatus.failure:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_failureTextFor(context, state.failure))),
+        );
+      case MonetizationLinksSettingsSaveStatus.idle:
+      case MonetizationLinksSettingsSaveStatus.saving:
+        break;
     }
   }
 
-  String _errorTextFor(MonetizationLinkInputInvalidReason reason) {
+  String? _errorTextFor(
+    BuildContext context,
+    MonetizationLinkInputInvalidReason? reason,
+  ) {
     return switch (reason) {
       MonetizationLinkInputInvalidReason.empty =>
         context.l10n.monetizationSettingsErrorEmpty,
@@ -289,6 +272,19 @@ class _MonetizationLinksSettingsScreenState
         context.l10n.monetizationSettingsErrorInvalid,
       MonetizationLinkInputInvalidReason.wrongProvider =>
         context.l10n.monetizationSettingsErrorWrongProvider,
+      null => null,
+    };
+  }
+
+  String _failureTextFor(
+    BuildContext context,
+    MonetizationLinksSettingsSaveFailure? failure,
+  ) {
+    return switch (failure) {
+      MonetizationLinksSettingsSaveFailure.noRelays =>
+        context.l10n.profileSetupNoRelaysConnected,
+      MonetizationLinksSettingsSaveFailure.publishFailed ||
+      null => context.l10n.monetizationSettingsSaveFailed,
     };
   }
 }

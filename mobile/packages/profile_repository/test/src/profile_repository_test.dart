@@ -1873,6 +1873,57 @@ void main() {
           expect(captured['display_name'], 'New Name');
         });
 
+        test('preserves raw Kind 0 tags from the relay seed', () async {
+          final rawTags = [
+            ['i', 'github:alice', 'proof'],
+            ['alt', 'profile metadata'],
+          ];
+          final rawKind0 = Event(
+            testPubkey,
+            0,
+            rawTags,
+            jsonEncode({
+              'display_name': 'Relay Name',
+              'relay_only_field': 'preserved',
+            }),
+            createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+          );
+          when(
+            () => mockNostrClient.fetchProfile(
+              testPubkey,
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => rawKind0);
+          when(
+            () => mockNostrClient.sendProfileAwaitOk(
+              profileContent: any(named: 'profileContent'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => PublishSuccess(event: mockProfileEvent));
+
+          await profileRepository.saveProfileEvent(
+            displayName: 'New Name',
+            currentProfile: UserProfile(
+              pubkey: testPubkey,
+              displayName: 'Current Name',
+              rawData: const {'display_name': 'Current Name'},
+              createdAt: DateTime(2025),
+              eventId: 'current-$testPubkey',
+            ),
+          );
+
+          final captured =
+              verify(
+                    () => mockNostrClient.sendProfileAwaitOk(
+                      profileContent: captureAny(named: 'profileContent'),
+                      tags: rawTags,
+                    ),
+                  ).captured.single
+                  as Map<String, dynamic>;
+          expect(captured['display_name'], 'New Name');
+          expect(captured['relay_only_field'], 'preserved');
+        });
+
         test('preserves unrelated fields from currentProfile', () async {
           final currentProfile = await createCurrentProfile({
             'display_name': 'Old Name',
