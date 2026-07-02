@@ -9,6 +9,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/protected_minor_repository.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/protected_minor_override_service.dart';
+import 'package:openvine/services/protected_minor_sticky_store.dart';
 
 /// Developer-only override service (debug builds).
 final protectedMinorOverrideServiceProvider =
@@ -78,7 +79,32 @@ final protectedMinorStatusProvider = FutureProvider<ProtectedMinorStatus>((
 /// Note: unknown/error status is still exposed on [protectedMinorStatusProvider]
 /// for consumers that need to distinguish an unavailable check from confirmed
 /// not-protected.
+/// Persisted last-known protected-minor state (fail-safe backing, #175).
+final protectedMinorStickyStoreProvider = Provider<ProtectedMinorStickyStore>((
+  ref,
+) {
+  return ProtectedMinorStickyStore(prefs: ref.watch(sharedPreferencesProvider));
+});
+
+/// Effective protected-minor seam for the protections (#175/#176), fail-safe.
+///
+/// The effective value is the live status when known, else the persisted
+/// last-known (sticky). A known live status is also persisted for the next
+/// cold start. Unknown/error never weakens protection: an account confirmed a
+/// protected minor stays protected offline and at cold start, and lifts only on
+/// a positive not-a-minor signal (age-up / revocation).
 final isProtectedMinorProvider = Provider<bool>((ref) {
-  return ref.watch(protectedMinorStatusProvider).value?.isProtectedMinor ??
-      false;
+  ref.watch(currentAuthStateProvider); // reactivity on account changes
+  final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
+  final store = ref.watch(protectedMinorStickyStoreProvider);
+  final live = ref.watch(protectedMinorStatusProvider).value;
+
+  if (live != null) {
+    // Persist for future cold starts (fire-and-forget).
+    store.applyLiveStatus(pubkey, live);
+    if (live.kind == ProtectedMinorStatusKind.protected) return true;
+    if (live.kind == ProtectedMinorStatusKind.notProtected) return false;
+  }
+  // Unknown / no live result yet -> last-known persisted value (sticky).
+  return store.isProtectedMinorFor(pubkey);
 });
