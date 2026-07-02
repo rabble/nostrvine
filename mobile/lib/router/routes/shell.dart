@@ -28,9 +28,18 @@ List<RouteBase> shellRoutes() {
     // pageContextProvider per branch so each tab sees *its own* route context
     // (not the active tab's) and keeps rendering real content while inactive.
     StatefulShellRoute(
-      builder: (context, state, navigationShell) => AppShell(
-        currentIndex: navigationShell.currentIndex,
-        child: navigationShell,
+      // Transition-free on purpose: the shell replaces `/welcome` on the root
+      // navigator when the authenticated redirect lands (startup restore,
+      // login), and the startup splash lifts at the *start* of that
+      // navigation. A default MaterialPage here plays a ~400ms slide that
+      // shows the welcome screen exiting — the "sign-in page glimpse" of
+      // #5242 in its post-splash form. Pinned by shell_transition_test.
+      pageBuilder: (context, state, navigationShell) => NoTransitionPage<void>(
+        key: state.pageKey,
+        child: AppShell(
+          currentIndex: navigationShell.currentIndex,
+          child: navigationShell,
+        ),
       ),
       navigatorContainerBuilder: (context, navigationShell, children) =>
           AppShellBranchContainer(
