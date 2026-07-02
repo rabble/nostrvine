@@ -60,6 +60,7 @@ class RelayDiscoveryOrchestrator {
     userRelaysDiscoveredCallback,
     required BootstrapRelayListCallback? Function() bootstrapRelayListCallback,
     String? profileCheckIndexerUrl,
+    WebSocketChannelFactory? profileCheckChannelFactory,
   }) : _relayDiscoveryService = relayDiscoveryService,
        _primaryRelayUrl = primaryRelayUrl,
        _isSessionCurrent = isSessionCurrent,
@@ -68,7 +69,8 @@ class RelayDiscoveryOrchestrator {
        _onHasExistingProfile = onHasExistingProfile,
        _userRelaysDiscoveredCallback = userRelaysDiscoveredCallback,
        _bootstrapRelayListCallback = bootstrapRelayListCallback,
-       _profileCheckIndexerUrl = profileCheckIndexerUrl;
+       _profileCheckIndexerUrl = profileCheckIndexerUrl,
+       _profileCheckChannelFactory = profileCheckChannelFactory;
 
   final RelayDiscoveryService _relayDiscoveryService;
   final String _primaryRelayUrl;
@@ -79,6 +81,10 @@ class RelayDiscoveryOrchestrator {
   final UserRelaysDiscoveredCallback? Function() _userRelaysDiscoveredCallback;
   final BootstrapRelayListCallback? Function() _bootstrapRelayListCallback;
   final String? _profileCheckIndexerUrl;
+
+  /// Test seam: injects the WebSocket transport used by [checkExistingProfile].
+  /// Null in production, where [RelayBase] falls back to the platform socket.
+  final WebSocketChannelFactory? _profileCheckChannelFactory;
 
   /// Discover user relays via NIP-65 using direct WebSocket to indexers.
   ///
@@ -319,7 +325,11 @@ class RelayDiscoveryOrchestrator {
           _profileCheckIndexerUrl ?? IndexerRelayConfig.defaultIndexers.first;
 
       final relayStatus = RelayStatus(indexerUrl);
-      final relay = RelayBase(indexerUrl, relayStatus);
+      final relay = RelayBase(
+        indexerUrl,
+        relayStatus,
+        channelFactory: _profileCheckChannelFactory,
+      );
       final completer = Completer<bool>();
       final subscriptionId = 'pc_${DateTime.now().millisecondsSinceEpoch}';
 

@@ -1,6 +1,9 @@
 // ABOUTME: Tests for RelayDiscoveryOrchestrator — NIP-65 discovery write-backs,
 // ABOUTME: stale-session guard, fallback relays, and bootstrap kind:10002.
 
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
@@ -10,9 +13,88 @@ import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth/relay_discovery_orchestrator.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 class _MockRelayDiscoveryService extends Mock
     implements RelayDiscoveryService {}
+
+/// In-memory [WebSocketSink] that records frames and never touches a socket.
+class _FakeWebSocketSink implements WebSocketSink {
+  final List<dynamic> added = [];
+  final Completer<void> _done = Completer<void>();
+
+  @override
+  void add(dynamic data) => added.add(data);
+
+  @override
+  void addError(Object error, [StackTrace? stackTrace]) {}
+
+  @override
+  Future<void> addStream(Stream<dynamic> stream) async {
+    await for (final data in stream) {
+      add(data);
+    }
+  }
+
+  @override
+  Future<void> close([int? closeCode, String? closeReason]) async {
+    if (!_done.isCompleted) _done.complete();
+  }
+
+  @override
+  Future<void> get done => _done.future;
+}
+
+/// In-memory [WebSocketChannel] whose inbound stream is driven by the test via
+/// [simulateMessage], so the profile-check REQ/EVENT/EOSE exchange runs with no
+/// real socket. Mirrors the fake in `nostr_sdk`'s connection-manager tests.
+class _FakeWebSocketChannel implements WebSocketChannel {
+  _FakeWebSocketChannel({Future<void>? readyFuture})
+    : _ready = readyFuture ?? Future<void>.value();
+
+  final _FakeWebSocketSink _sink = _FakeWebSocketSink();
+  final StreamController<dynamic> _controller =
+      StreamController<dynamic>.broadcast();
+  final Future<void> _ready;
+
+  /// Push a raw server frame down to the connected client.
+  void simulateMessage(dynamic message) => _controller.add(message);
+
+  @override
+  WebSocketSink get sink => _sink;
+
+  @override
+  Stream<dynamic> get stream => _controller.stream;
+
+  @override
+  Future<void> get ready => _ready;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName} is not mocked');
+}
+
+/// Hands out [_FakeWebSocketChannel]s and, when [readyError] is set, makes the
+/// handshake fail so `RelayBase.connect()` reports a dead connection.
+class _FakeWebSocketChannelFactory implements WebSocketChannelFactory {
+  _FakeWebSocketChannelFactory({this.readyError});
+
+  final Object? readyError;
+  final List<_FakeWebSocketChannel> createdChannels = [];
+
+  _FakeWebSocketChannel get lastChannel => createdChannels.last;
+
+  @override
+  WebSocketChannel create(Uri uri) {
+    final channel = _FakeWebSocketChannel(
+      readyFuture: readyError != null
+          ? Future<void>.error(readyError!)
+          : Future<void>.value(),
+    );
+    createdChannels.add(channel);
+    return channel;
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -44,18 +126,22 @@ void main() {
       bootstrapCallback = null;
     });
 
-    RelayDiscoveryOrchestrator buildOrchestrator() =>
-        RelayDiscoveryOrchestrator(
-          relayDiscoveryService: discoveryService,
-          primaryRelayUrl: primaryRelayUrl,
-          isSessionCurrent: (_) => sessionCurrent,
-          currentIdentity: () => identity,
-          onUserRelays: userRelaysWrites.add,
-          onHasExistingProfile: hasProfileWrites.add,
-          userRelaysDiscoveredCallback: () =>
-              (pubkey, urls) => externalRelayCalls.add((pubkey, urls)),
-          bootstrapRelayListCallback: () => bootstrapCallback,
-        );
+    RelayDiscoveryOrchestrator buildOrchestrator({
+      WebSocketChannelFactory? profileCheckChannelFactory,
+      String? profileCheckIndexerUrl,
+    }) => RelayDiscoveryOrchestrator(
+      relayDiscoveryService: discoveryService,
+      primaryRelayUrl: primaryRelayUrl,
+      isSessionCurrent: (_) => sessionCurrent,
+      currentIdentity: () => identity,
+      onUserRelays: userRelaysWrites.add,
+      onHasExistingProfile: hasProfileWrites.add,
+      userRelaysDiscoveredCallback: () =>
+          (pubkey, urls) => externalRelayCalls.add((pubkey, urls)),
+      bootstrapRelayListCallback: () => bootstrapCallback,
+      profileCheckChannelFactory: profileCheckChannelFactory,
+      profileCheckIndexerUrl: profileCheckIndexerUrl,
+    );
 
     group('discoverUserRelays', () {
       test('reports discovered relays and notifies the external callback '
@@ -232,10 +318,73 @@ void main() {
     });
 
     group('checkExistingProfile', () {
+      const indexerUrl = 'wss://indexer.test.divine.video';
+
       test(
         'reports false without network when no pubkey is available',
         () async {
           await buildOrchestrator().checkExistingProfile(null);
+
+          expect(hasProfileWrites, equals([false]));
+        },
+      );
+
+      test('reports true when the indexer returns a kind:0 EVENT', () async {
+        final channelFactory = _FakeWebSocketChannelFactory();
+
+        final future = buildOrchestrator(
+          profileCheckChannelFactory: channelFactory,
+          profileCheckIndexerUrl: indexerUrl,
+        ).checkExistingProfile(testPubkey);
+
+        // Let connect() finish so the inbound stream listener is attached
+        // before the frame is pushed — the channel stream is broadcast and
+        // drops events that arrive with no listener.
+        await pumpEventQueue();
+        channelFactory.lastChannel.simulateMessage(
+          jsonEncode(<dynamic>[
+            'EVENT',
+            'sub',
+            <String, dynamic>{'kind': 0, 'pubkey': testPubkey},
+          ]),
+        );
+        await future;
+
+        expect(hasProfileWrites, equals([true]));
+        expect(channelFactory.createdChannels, hasLength(1));
+      });
+
+      test(
+        'reports false when the indexer returns EOSE with no event',
+        () async {
+          final channelFactory = _FakeWebSocketChannelFactory();
+
+          final future = buildOrchestrator(
+            profileCheckChannelFactory: channelFactory,
+            profileCheckIndexerUrl: indexerUrl,
+          ).checkExistingProfile(testPubkey);
+
+          await pumpEventQueue();
+          channelFactory.lastChannel.simulateMessage(
+            jsonEncode(<dynamic>['EOSE', 'sub']),
+          );
+          await future;
+
+          expect(hasProfileWrites, equals([false]));
+        },
+      );
+
+      test(
+        'reports false when the indexer connection cannot be established',
+        () async {
+          final channelFactory = _FakeWebSocketChannelFactory(
+            readyError: Exception('handshake failed'),
+          );
+
+          await buildOrchestrator(
+            profileCheckChannelFactory: channelFactory,
+            profileCheckIndexerUrl: indexerUrl,
+          ).checkExistingProfile(testPubkey);
 
           expect(hasProfileWrites, equals([false]));
         },
