@@ -1212,12 +1212,17 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         error: e,
         stackTrace: stackTrace,
       );
-      _errorTypes[index] = classifyVideoError(
+      final errorType = classifyVideoError(
         errorMessage: e.toString(),
         source: _resolveUrl(video),
       );
       unawaited(_controllers.remove(index)?.dispose());
-      _errors.add(index);
+      if (_isTerminalPlaybackFailure(e)) {
+        _stopAndMarkTerminalError(index, errorType);
+      } else {
+        _errorTypes[index] = errorType;
+        _errors.add(index);
+      }
     }
     // coverage:ignore-end
 
@@ -1575,10 +1580,6 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   void _scheduleAutoRetryIfEligible(int index) {
     if (index != _currentIndex || !_isActive) return;
     if (_hasTerminalError(index)) return;
-    if ((_errorTypes[index] ?? VideoErrorType.generic) !=
-        VideoErrorType.generic) {
-      return;
-    }
     final attempt = _autoRetryAttempts[index] ?? 0;
     final delay = InfiniteVideoFeed.autoRetryDelay(
       attempt: attempt,

@@ -2738,6 +2738,66 @@ void main() {
       });
 
       testWidgets(
+        'auto-retries opaque transient failures on canonical Divine URLs',
+        (tester) async {
+          DivineVideoPlayerController.resetIdCounterForTesting();
+          final harness = _NativePlayerHarness(tester);
+          await harness.install(playerIds: const <int>[0, 1, 2, 3]);
+          final key = GlobalKey<InfiniteVideoFeedState>();
+
+          try {
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  key: key,
+                  videos: [
+                    _makeVideo(
+                      'divine_transient',
+                      videoUrl:
+                          'https://media.divine.video/10fe4777d60fa224878fd9be348a3410e6b70ba2d865e5ae82526a8f1d053326/720p.mp4',
+                    ),
+                  ],
+                  cache: cache,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                  autoRetryBaseDelay: const Duration(milliseconds: 200),
+                  errorBuilder: (_, _, _, _) => const Text('VIDEO_ERROR'),
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump();
+
+            await harness.sendEvent(0, const <Object?, Object?>{
+              'status': 'error',
+              'errorCode': 'network_error',
+              'errorMessage': 'connection dropped',
+            });
+            await tester.pump();
+            await tester.pump();
+
+            expect(find.text('VIDEO_ERROR'), findsOneWidget);
+            expect(key.currentState!.debugTerminalErrorVideoIds, isEmpty);
+            final setClipsBeforeRetry = harness.countCalls('setClips');
+
+            await tester.pump(const Duration(milliseconds: 250));
+            await tester.pump();
+            await tester.pump();
+
+            expect(
+              harness.countCalls('setClips'),
+              greaterThan(setClipsBeforeRetry),
+            );
+            expect(find.text('VIDEO_ERROR'), findsNothing);
+          } finally {
+            await tester.pumpWidget(const SizedBox.shrink());
+            await tester.pump();
+            await harness.dispose();
+          }
+        },
+      );
+
+      testWidgets(
         'does not auto-retry terminal no-video-track failover failures',
         (tester) async {
           DivineVideoPlayerController.resetIdCounterForTesting();
@@ -2831,6 +2891,82 @@ void main() {
             expect(
               harness.countCalls('setClips'),
               greaterThan(setClipsAfterTerminalFailure),
+            );
+          } finally {
+            await tester.pumpWidget(const SizedBox.shrink());
+            await tester.pump();
+            await harness.dispose();
+          }
+        },
+      );
+
+      testWidgets(
+        'persists terminal no-video-track init failures across revisit',
+        (tester) async {
+          DivineVideoPlayerController.resetIdCounterForTesting();
+          final harness = _NativePlayerHarness(tester);
+          await harness.install(playerIds: const <int>[0, 1, 2, 3, 4, 5]);
+          final key = GlobalKey<InfiniteVideoFeedState>();
+          final videos = [_makeVideo('terminal_init'), _makeVideo('next')];
+          harness.setClipsFailures[0] = <Exception>[
+            PlatformException(
+              code: 'COMPOSITION_ERROR',
+              message: 'No playable video tracks found.',
+            ),
+          ];
+
+          try {
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  key: key,
+                  videos: videos,
+                  cache: cache,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                  autoRetryBaseDelay: const Duration(milliseconds: 200),
+                  errorBuilder: (_, _, _, _) => const Text('VIDEO_ERROR'),
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump();
+
+            expect(find.text('VIDEO_ERROR'), findsOneWidget);
+            expect(
+              key.currentState!.debugTerminalErrorVideoIds,
+              equals(<String>{'terminal_init'}),
+            );
+            final setClipsAfterTerminalFailure = harness.countCalls('setClips');
+
+            await tester.pump(const Duration(milliseconds: 400));
+            await tester.pump();
+
+            expect(
+              harness.countCalls('setClips'),
+              equals(setClipsAfterTerminalFailure),
+            );
+
+            unawaited(key.currentState!.animateToPage(1));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 400));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 1));
+            await tester.pump();
+            expect(key.currentState!.currentIndex, equals(1));
+
+            unawaited(key.currentState!.animateToPage(0));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 400));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 1));
+            await tester.pump();
+            expect(key.currentState!.currentIndex, equals(0));
+
+            expect(find.text('VIDEO_ERROR'), findsOneWidget);
+            expect(
+              harness.countCalls('setClips'),
+              equals(setClipsAfterTerminalFailure),
             );
           } finally {
             await tester.pumpWidget(const SizedBox.shrink());

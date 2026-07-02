@@ -172,6 +172,16 @@ void main() {
       );
     });
 
+    test('returns notFound for explicit HTTP 404 on a Divine blob URL', () {
+      expect(
+        classifyVideoError(
+          errorMessage: 'HTTP 404 Not Found',
+          source: 'https://media.divine.video/$_hash/720p.mp4',
+        ),
+        equals(VideoErrorType.notFound),
+      );
+    });
+
     test('returns generic for Android response-code 202 messages', () {
       expect(
         classifyVideoError(
