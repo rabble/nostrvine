@@ -2653,6 +2653,10 @@ class DmRepository {
   /// citation can't be built, falls back to a plain-text [sendMessage] so the
   /// share still goes through (the URL remains in [baseContent]).
   ///
+  /// [skipNip04Fallback] forwards to [sendMessage]: pass `true` to suppress the
+  /// legacy plaintext kind-4 copy (recommended for shares — see the caller in
+  /// `VideoSharingService`).
+  ///
   /// Throws the same errors as [sendMessage].
   Future<NIP17SendResult> sendSharedVideo({
     required String recipientPubkey,
@@ -2663,6 +2667,7 @@ class DmRepository {
     String? videoEventId,
     String? relayHint,
     String? replyToId,
+    bool skipNip04Fallback = false,
   }) async {
     final citation = DmSharedVideoCitation.build(
       videoKind: videoKind,
@@ -2689,6 +2694,7 @@ class DmRepository {
         recipientPubkey: recipientPubkey,
         content: baseContent,
         replyToId: replyToId,
+        skipNip04Fallback: skipNip04Fallback,
       );
     }
 
@@ -2697,6 +2703,7 @@ class DmRepository {
       content: '$baseContent\n${citation.nostrUri}',
       additionalTags: [citation.qTag],
       replyToId: replyToId,
+      skipNip04Fallback: skipNip04Fallback,
     );
   }
 

@@ -108,9 +108,12 @@ class VideoSharingService {
 
       final dmContent = _createShareMessage(video, personalMessage);
 
-      // Prefer NIP-17 when DmRepository is available
+      // Prefer NIP-17 when DmRepository is available. `await` (not a bare
+      // `return`) so an async throw from the send is caught here and mapped
+      // to a ShareResult.failure instead of escaping to the fan-out loop and
+      // aborting the remaining recipients.
       if (_dmRepository != null) {
-        return _shareViaNip17(
+        return await _shareViaNip17(
           video: video,
           recipientPubkey: recipientPubkey,
           content: dmContent,
@@ -118,7 +121,7 @@ class VideoSharingService {
       }
 
       // Fallback to NIP-04 (legacy)
-      return _shareViaNip04(
+      return await _shareViaNip04(
         video: video,
         recipientPubkey: recipientPubkey,
         content: dmContent,
@@ -147,6 +150,12 @@ class VideoSharingService {
       videoDTag: video.vineId,
       videoEventId: video.id,
       relayHint: video.sourceRelay,
+      // A shared video is a NIP-17-native action. Skip the plaintext kind-4
+      // fallback so we don't publish the sender↔recipient link and real
+      // timestamp in the clear on the (unauthenticated) relay — which would
+      // defeat NIP-17's metadata protection for exactly this message — and so
+      // NIP-17 and NIP-04 copies can't render as a duplicate on the recipient.
+      skipNip04Fallback: true,
     );
 
     if (result.success) {
@@ -228,13 +237,25 @@ class VideoSharingService {
   }) async {
     final results = <String, ShareResult>{};
 
+    // Sequential (not parallel) so N recipients' gift-wrap publishes are spaced
+    // out under the relay's per-connection burst limit. Each iteration is
+    // guarded so one recipient's failure — or an unexpected throw — becomes a
+    // failure entry for that recipient instead of aborting the remaining sends.
     for (final pubkey in recipientPubkeys) {
-      final result = await shareVideoWithUser(
-        video: video,
-        recipientPubkey: pubkey,
-        personalMessage: personalMessage,
-      );
-      results[pubkey] = result;
+      try {
+        results[pubkey] = await shareVideoWithUser(
+          video: video,
+          recipientPubkey: pubkey,
+          personalMessage: personalMessage,
+        );
+      } catch (e) {
+        Log.error(
+          'Failed to share video with $pubkey: $e',
+          name: 'VideoSharingService',
+          category: LogCategory.video,
+        );
+        results[pubkey] = ShareResult.failure('Error sharing video: $e');
+      }
     }
 
     return results;

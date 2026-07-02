@@ -204,7 +204,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     if (state.selectedRecipients.isEmpty || state.isSending) return;
 
     // Deliberate compose-then-send: the awaited flow keeps a visible
-    // "sending" spinner (isSending) and surfaces failures in-sheet.
+    // "sending" spinner (isSending) and reports the outcome in-sheet.
     emit(state.copyWith(isSending: true, clearActionResult: true));
 
     try {
@@ -218,24 +218,41 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         personalMessage: message?.isEmpty == true ? null : message,
       );
 
+      if (isClosed) return;
+
       final delivered = [
         for (final r in recipients)
           if (results[r.pubkey]?.success ?? false) r,
       ];
-      final failed = [
-        for (final r in recipients)
-          if (!(results[r.pubkey]?.success ?? false)) r,
-      ];
+      final failedCount = recipients.length - delivered.length;
 
-      if (failed.isEmpty) {
-        final single = recipients.length == 1 ? recipients.single : null;
+      // The send is dismiss-and-forget: a recipient publish that fails is
+      // already durably enqueued (VideoSharingService -> DmRepository.
+      // sendMessage enqueues before publish) and OutgoingDmRetryService
+      // replays the SAME rumor id on the next app-foreground. Re-sending from
+      // the sheet would mint a NEW rumor id the receiver can't dedup against
+      // that replay, double-delivering — so we never keep recipients selected
+      // for a manual retry. We report what was delivered and let the queue
+      // finish the rest.
+      if (delivered.isNotEmpty) {
+        if (failedCount > 0) {
+          Log.warning(
+            'Partial share: ${delivered.length} delivered, $failedCount '
+            'queued for background retry',
+            name: 'ShareSheetBloc',
+            category: LogCategory.ui,
+          );
+        }
+        final single = delivered.length == 1 && recipients.length == 1
+            ? delivered.single
+            : null;
         emit(
           state.copyWith(
             isSending: false,
             selectedRecipients: const [],
             actionResult: ShareSheetSendSuccess(
               recipientNames: [
-                for (final r in recipients) r.displayName ?? 'user',
+                for (final r in delivered) r.displayName ?? 'user',
               ],
               recipientPubkey: single?.pubkey,
               conversationId: single == null
@@ -245,23 +262,13 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           ),
         );
       } else {
-        // Keep only the failed recipients selected so a retry doesn't
-        // re-send to people who already received the video.
         emit(
           state.copyWith(
             isSending: false,
-            selectedRecipients: failed,
+            selectedRecipients: const [],
             actionResult: ShareSheetSendFailure(),
           ),
         );
-        if (delivered.isNotEmpty) {
-          Log.warning(
-            'Partial share failure: ${delivered.length} delivered, '
-            '${failed.length} failed',
-            name: 'ShareSheetBloc',
-            category: LogCategory.ui,
-          );
-        }
       }
     } catch (e, stackTrace) {
       _addUnexpectedError(
@@ -274,8 +281,13 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );
+      if (isClosed) return;
       emit(
-        state.copyWith(isSending: false, actionResult: ShareSheetSendFailure()),
+        state.copyWith(
+          isSending: false,
+          selectedRecipients: const [],
+          actionResult: ShareSheetSendFailure(),
+        ),
       );
     }
   }

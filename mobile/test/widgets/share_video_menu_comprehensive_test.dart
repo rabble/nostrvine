@@ -655,8 +655,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.shareFailedToSend), findsOneWidget);
-      // The sheet stays open so the user can retry.
-      expect(find.text(l10n.shareWithTitle), findsOneWidget);
+      // The sheet dismisses on failure: the send is durably queued and
+      // retried in the background, so there is no in-sheet manual retry.
+      expect(find.text(l10n.shareWithTitle), findsNothing);
     });
   });
 

@@ -547,7 +547,8 @@ void main() {
       );
 
       blocTest<ShareSheetBloc, ShareSheetState>(
-        'keeps only failed recipients selected on partial failure',
+        'on partial failure reports the delivered recipients and clears the '
+        'selection (durable queue retries the rest, no manual re-send)',
         setUp: () => stubMultiSend({
           testRecipient.pubkey: ShareResult.createSuccess('msg-1'),
           otherRecipient.pubkey: ShareResult.failure('Relay offline'),
@@ -567,10 +568,42 @@ void main() {
           isA<ShareSheetState>()
               .having((s) => s.isSending, 'isSending', isFalse)
               .having(
-                (s) => s.selectedRecipients.map((r) => r.pubkey),
-                'only the failed recipient stays selected',
-                [otherRecipient.pubkey],
+                (s) => s.selectedRecipients,
+                'selection cleared',
+                isEmpty,
               )
+              .having(
+                (s) => s.actionResult,
+                'actionResult',
+                // Reports only the delivered recipient; no View chat because
+                // more than one recipient was targeted.
+                isA<ShareSheetSendSuccess>()
+                    .having((r) => r.recipientNames, 'names', ['Alice'])
+                    .having((r) => r.conversationId, 'conversationId', isNull),
+              ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'emits failure and clears the selection when every recipient fails',
+        setUp: () => stubMultiSend({
+          testRecipient.pubkey: ShareResult.failure('Relay offline'),
+          otherRecipient.pubkey: ShareResult.failure('Relay offline'),
+        }),
+        seed: () => const ShareSheetState(
+          status: ShareSheetStatus.ready,
+          selectedRecipients: [testRecipient, otherRecipient],
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetSendRequested()),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.isSending,
+            'isSending',
+            isTrue,
+          ),
+          isA<ShareSheetState>()
+              .having((s) => s.selectedRecipients, 'selection cleared', isEmpty)
               .having(
                 (s) => s.actionResult,
                 'actionResult',
@@ -629,6 +662,7 @@ void main() {
           ),
           isA<ShareSheetState>()
               .having((s) => s.isSending, 'isSending', isFalse)
+              .having((s) => s.selectedRecipients, 'selection cleared', isEmpty)
               .having(
                 (s) => s.actionResult,
                 'actionResult',

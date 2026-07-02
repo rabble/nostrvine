@@ -380,6 +380,7 @@ void main() {
           videoDTag: any(named: 'videoDTag'),
           videoEventId: any(named: 'videoEventId'),
           relayHint: any(named: 'relayHint'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -410,7 +411,8 @@ void main() {
       expect(result.messageEventId, equals('nip17-msg-id'));
       expect(result.conversationId, isNotNull);
 
-      // Verify NIP-17 was used, NOT NIP-04
+      // Verify NIP-17 was used, NOT NIP-04, and that the plaintext kind-4
+      // fallback is suppressed for shares (no sender↔recipient metadata leak).
       verify(
         () => mockDmRepository.sendSharedVideo(
           recipientPubkey: _recipientPubkey,
@@ -420,6 +422,7 @@ void main() {
           videoDTag: any(named: 'videoDTag'),
           videoEventId: any(named: 'videoEventId'),
           relayHint: any(named: 'relayHint'),
+          skipNip04Fallback: true,
         ),
       ).called(1);
       verifyNever(
@@ -430,6 +433,75 @@ void main() {
         ),
       );
     });
+
+    test(
+      'shareVideoWithMultipleUsers: one recipient failing does not abort the '
+      'rest, and each outcome is reported',
+      () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockProfileRepository.fetchFreshProfile(
+            pubkey: any(named: 'pubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final goodA = 'a' * 64;
+        final bad = 'b' * 64;
+        final goodC = 'c' * 64;
+
+        when(
+          () => mockDmRepository.sendSharedVideo(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            baseContent: any(named: 'baseContent'),
+            videoKind: any(named: 'videoKind'),
+            videoAuthorPubkey: any(named: 'videoAuthorPubkey'),
+            videoDTag: any(named: 'videoDTag'),
+            videoEventId: any(named: 'videoEventId'),
+            relayHint: any(named: 'relayHint'),
+            skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          ),
+        ).thenAnswer((invocation) async {
+          final pubkey = invocation.namedArguments[#recipientPubkey] as String;
+          if (pubkey == bad) throw StateError('boom');
+          return NIP17SendResult.success(
+            rumorEventId: 'rumor-$pubkey',
+            messageEventId: 'msg-$pubkey',
+            recipientPubkey: pubkey,
+          );
+        });
+
+        final now = DateTime.now();
+        final results = await nip17Service.shareVideoWithMultipleUsers(
+          video: VideoEvent(
+            id: _testVideoId,
+            pubkey: _testPubkey,
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            timestamp: now,
+            content: 'Test',
+          ),
+          recipientPubkeys: [goodA, bad, goodC],
+        );
+
+        // The middle recipient threw, but the loop still attempted all three
+        // and reports a per-recipient result for each.
+        expect(results.keys, containsAll(<String>[goodA, bad, goodC]));
+        expect(results[goodA]!.success, isTrue);
+        expect(results[bad]!.success, isFalse);
+        expect(results[goodC]!.success, isTrue);
+        verify(
+          () => mockDmRepository.sendSharedVideo(
+            recipientPubkey: goodC,
+            baseContent: any(named: 'baseContent'),
+            videoKind: any(named: 'videoKind'),
+            videoAuthorPubkey: any(named: 'videoAuthorPubkey'),
+            videoDTag: any(named: 'videoDTag'),
+            videoEventId: any(named: 'videoEventId'),
+            relayHint: any(named: 'relayHint'),
+            skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          ),
+        ).called(1);
+      },
+    );
 
     test(
       'returns success without waiting on the recents profile fetch (#5391)',
@@ -444,6 +516,7 @@ void main() {
             videoDTag: any(named: 'videoDTag'),
             videoEventId: any(named: 'videoEventId'),
             relayHint: any(named: 'relayHint'),
+            skipNip04Fallback: any(named: 'skipNip04Fallback'),
           ),
         ).thenAnswer(
           (_) async => NIP17SendResult.success(
@@ -491,6 +564,7 @@ void main() {
           videoDTag: any(named: 'videoDTag'),
           videoEventId: any(named: 'videoEventId'),
           relayHint: any(named: 'relayHint'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).thenAnswer(
         (_) async => const NIP17SendResult.failure('Relay rejected'),
@@ -523,6 +597,7 @@ void main() {
           videoDTag: any(named: 'videoDTag'),
           videoEventId: any(named: 'videoEventId'),
           relayHint: any(named: 'relayHint'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -559,6 +634,7 @@ void main() {
           videoDTag: any(named: 'videoDTag'),
           videoEventId: any(named: 'videoEventId'),
           relayHint: any(named: 'relayHint'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).captured;
 
@@ -576,6 +652,7 @@ void main() {
           videoDTag: any(named: 'videoDTag'),
           videoEventId: any(named: 'videoEventId'),
           relayHint: any(named: 'relayHint'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -614,6 +691,7 @@ void main() {
           videoDTag: any(named: 'videoDTag'),
           videoEventId: any(named: 'videoEventId'),
           relayHint: any(named: 'relayHint'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).captured;
 
@@ -633,6 +711,7 @@ void main() {
           videoDTag: any(named: 'videoDTag'),
           videoEventId: any(named: 'videoEventId'),
           relayHint: any(named: 'relayHint'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -670,6 +749,7 @@ void main() {
           videoDTag: any(named: 'videoDTag'),
           videoEventId: any(named: 'videoEventId'),
           relayHint: any(named: 'relayHint'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).captured;
 
@@ -689,6 +769,7 @@ void main() {
           videoDTag: any(named: 'videoDTag'),
           videoEventId: any(named: 'videoEventId'),
           relayHint: any(named: 'relayHint'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -732,6 +813,7 @@ void main() {
           videoDTag: any(named: 'videoDTag'),
           videoEventId: any(named: 'videoEventId'),
           relayHint: any(named: 'relayHint'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(

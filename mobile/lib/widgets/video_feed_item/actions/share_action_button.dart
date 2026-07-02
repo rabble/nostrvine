@@ -266,6 +266,9 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
           ),
         );
       case ShareSheetSendFailure():
+        // Dismiss too: the send is durably queued and retried in the
+        // background, so there is no in-sheet manual retry to keep open for.
+        _safePop(context);
         messenger
           ..hideCurrentSnackBar()
           ..showSnackBar(
