@@ -370,6 +370,7 @@
     "listAttributionFallback": "리스트",
     "shareVideoLabel": "영상 공유",
     "sharePostSharedWith": "{recipientName}님과 게시물을 공유했어요",
+    "sharePostSharedWithCount": "{count, plural, other{{count}명과 게시물을 공유했어요}}",
     "shareFailedToSend": "영상을 보내지 못했어요",
     "shareAddedToBookmarks": "북마크에 추가했어요",
     "shareRemovedFromBookmarks": "북마크에서 뺐어요",

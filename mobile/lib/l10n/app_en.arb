@@ -756,6 +756,15 @@
   "listAttributionFallback": "List",
   "shareVideoLabel": "Share video",
   "sharePostSharedWith": "Post shared with {recipientName}",
+  "sharePostSharedWithCount": "{count, plural, one{Post shared with {count} person} other{Post shared with {count} people}}",
+  "@sharePostSharedWithCount": {
+    "description": "Snackbar after sharing a video to two or more people at once. Only used for count >= 2.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "@sharePostSharedWith": {
     "placeholders": {
       "recipientName": {

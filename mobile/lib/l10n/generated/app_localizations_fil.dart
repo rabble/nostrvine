@@ -1501,6 +1501,17 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String sharePostSharedWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Naipadala ang post sa $count tao',
+      one: 'Naipadala ang post sa $count tao',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get shareFailedToSend => 'Nabigong ipadala ang video';
 
   @override

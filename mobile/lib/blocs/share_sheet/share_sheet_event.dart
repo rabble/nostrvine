@@ -18,12 +18,13 @@ class ShareSheetContactsLoadRequested extends ShareSheetEvent {
   const ShareSheetContactsLoadRequested();
 }
 
-/// A recipient was selected (contact-row tap or Find People pick).
+/// A recipient was toggled (contact-row tap or Find People pick).
 ///
-/// Selection never sends — it reveals the message composer; the send
-/// happens only on an explicit [ShareSheetSendRequested].
-class ShareSheetRecipientSelected extends ShareSheetEvent {
-  const ShareSheetRecipientSelected(this.recipient);
+/// Adds the user to the selection, or removes them when already
+/// selected. Selection never sends — it reveals the message composer;
+/// the send happens only on an explicit [ShareSheetSendRequested].
+class ShareSheetRecipientToggled extends ShareSheetEvent {
+  const ShareSheetRecipientToggled(this.recipient);
 
   final ShareableUser recipient;
 
@@ -31,12 +32,7 @@ class ShareSheetRecipientSelected extends ShareSheetEvent {
   List<Object?> get props => [recipient.pubkey];
 }
 
-/// Recipient selection was cleared.
-class ShareSheetRecipientCleared extends ShareSheetEvent {
-  const ShareSheetRecipientCleared();
-}
-
-/// Send video with an optional message to the selected recipient.
+/// Send video with an optional message to all selected recipients.
 class ShareSheetSendRequested extends ShareSheetEvent {
   const ShareSheetSendRequested({this.message});
 

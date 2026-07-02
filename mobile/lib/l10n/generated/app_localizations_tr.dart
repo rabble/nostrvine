@@ -1456,6 +1456,17 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String sharePostSharedWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Gönderi $count kişiyle paylaşıldı',
+      one: 'Gönderi $count kişiyle paylaşıldı',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get shareFailedToSend => 'Video gönderilemedi';
 
   @override

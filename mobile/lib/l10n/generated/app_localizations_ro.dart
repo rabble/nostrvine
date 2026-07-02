@@ -1510,6 +1510,18 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String sharePostSharedWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Postare partajată cu $count de persoane',
+      few: 'Postare partajată cu $count persoane',
+      one: 'Postare partajată cu $count persoană',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get shareFailedToSend => 'N-am putut trimite videoclipul';
 
   @override

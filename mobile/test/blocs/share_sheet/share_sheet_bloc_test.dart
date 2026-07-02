@@ -139,7 +139,7 @@ void main() {
       final bloc = createBloc();
       expect(bloc.state.status, equals(ShareSheetStatus.initial));
       expect(bloc.state.contacts, isEmpty);
-      expect(bloc.state.selectedRecipient, isNull);
+      expect(bloc.state.selectedRecipients, isEmpty);
       expect(bloc.state.isSending, isFalse);
       expect(bloc.state.actionResult, isNull);
       bloc.close();
@@ -322,44 +322,98 @@ void main() {
     // Recipient selection
     // -----------------------------------------------------------------------
 
-    group('ShareSheetRecipientSelected', () {
+    group('ShareSheetRecipientToggled', () {
+      const otherRecipient = ShareableUser(
+        pubkey:
+            'bbbb456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        displayName: 'Bob',
+      );
+
       blocTest<ShareSheetBloc, ShareSheetState>(
-        'sets selected recipient and adds to front of contacts',
-        seed: () => const ShareSheetState(status: ShareSheetStatus.ready),
+        'adds an unselected contact to the selection without reordering '
+        'contacts',
+        seed: () => const ShareSheetState(
+          status: ShareSheetStatus.ready,
+          contacts: [otherRecipient, testRecipient],
+        ),
         build: createBloc,
         act: (bloc) =>
-            bloc.add(const ShareSheetRecipientSelected(testRecipient)),
+            bloc.add(const ShareSheetRecipientToggled(testRecipient)),
         expect: () => [
           isA<ShareSheetState>()
               .having(
-                (s) => s.selectedRecipient?.pubkey,
-                'selected pubkey',
-                testRecipient.pubkey,
+                (s) => s.selectedRecipients.map((r) => r.pubkey),
+                'selected pubkeys',
+                [testRecipient.pubkey],
               )
               .having(
                 (s) => s.contacts.first.pubkey,
-                'first contact',
-                testRecipient.pubkey,
+                'first contact unchanged',
+                otherRecipient.pubkey,
               ),
         ],
       );
-    });
 
-    group('ShareSheetRecipientCleared', () {
       blocTest<ShareSheetBloc, ShareSheetState>(
-        'clears selected recipient',
+        'accumulates multiple selected recipients in tap order',
         seed: () => const ShareSheetState(
           status: ShareSheetStatus.ready,
-          selectedRecipient: testRecipient,
+          contacts: [testRecipient, otherRecipient],
         ),
         build: createBloc,
-        act: (bloc) => bloc.add(const ShareSheetRecipientCleared()),
+        act: (bloc) => bloc
+          ..add(const ShareSheetRecipientToggled(testRecipient))
+          ..add(const ShareSheetRecipientToggled(otherRecipient)),
+        skip: 1,
         expect: () => [
           isA<ShareSheetState>().having(
-            (s) => s.selectedRecipient,
-            'selectedRecipient',
-            isNull,
+            (s) => s.selectedRecipients.map((r) => r.pubkey),
+            'selected pubkeys',
+            [testRecipient.pubkey, otherRecipient.pubkey],
           ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'removes an already-selected recipient, keeping the others',
+        seed: () => const ShareSheetState(
+          status: ShareSheetStatus.ready,
+          contacts: [testRecipient, otherRecipient],
+          selectedRecipients: [testRecipient, otherRecipient],
+        ),
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(const ShareSheetRecipientToggled(testRecipient)),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.selectedRecipients.map((r) => r.pubkey),
+            'selected pubkeys',
+            [otherRecipient.pubkey],
+          ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'inserts a Find People pick missing from contacts at the front',
+        seed: () => const ShareSheetState(
+          status: ShareSheetStatus.ready,
+          contacts: [otherRecipient],
+        ),
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(const ShareSheetRecipientToggled(testRecipient)),
+        expect: () => [
+          isA<ShareSheetState>()
+              .having(
+                (s) => s.selectedRecipients.map((r) => r.pubkey),
+                'selected pubkeys',
+                [testRecipient.pubkey],
+              )
+              .having(
+                (s) => s.contacts.map((c) => c.pubkey),
+                'contacts',
+                [testRecipient.pubkey, otherRecipient.pubkey],
+              ),
         ],
       );
     });
@@ -369,25 +423,33 @@ void main() {
     // -----------------------------------------------------------------------
 
     group('ShareSheetSendRequested', () {
+      const otherRecipient = ShareableUser(
+        pubkey:
+            'bbbb456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        displayName: 'Bob',
+      );
+
+      void stubMultiSend(Map<String, ShareResult> results) {
+        when(
+          () => mockSharingService.shareVideoWithMultipleUsers(
+            video: any(named: 'video'),
+            recipientPubkeys: any(named: 'recipientPubkeys'),
+            personalMessage: any(named: 'personalMessage'),
+          ),
+        ).thenAnswer((_) async => results);
+      }
+
       blocTest<ShareSheetBloc, ShareSheetState>(
-        'emits success carrying the conversation id when send succeeds',
-        setUp: () {
-          when(
-            () => mockSharingService.shareVideoWithUser(
-              video: any(named: 'video'),
-              recipientPubkey: any(named: 'recipientPubkey'),
-              personalMessage: any(named: 'personalMessage'),
-            ),
-          ).thenAnswer(
-            (_) async => ShareResult.createSuccess(
-              'msg-event-id',
-              conversationId: 'conversation-1',
-            ),
-          );
-        },
+        'emits success carrying the conversation id for a single recipient',
+        setUp: () => stubMultiSend({
+          testRecipient.pubkey: ShareResult.createSuccess(
+            'msg-event-id',
+            conversationId: 'conversation-1',
+          ),
+        }),
         seed: () => const ShareSheetState(
           status: ShareSheetStatus.ready,
-          selectedRecipient: testRecipient,
+          selectedRecipients: [testRecipient],
         ),
         build: createBloc,
         act: (bloc) =>
@@ -401,10 +463,15 @@ void main() {
           isA<ShareSheetState>()
               .having((s) => s.isSending, 'isSending', isFalse)
               .having(
+                (s) => s.selectedRecipients,
+                'selection cleared',
+                isEmpty,
+              )
+              .having(
                 (s) => s.actionResult,
                 'actionResult',
                 isA<ShareSheetSendSuccess>()
-                    .having((r) => r.recipientName, 'name', 'Alice')
+                    .having((r) => r.recipientNames, 'names', ['Alice'])
                     .having(
                       (r) => r.recipientPubkey,
                       'recipientPubkey',
@@ -420,19 +487,74 @@ void main() {
       );
 
       blocTest<ShareSheetBloc, ShareSheetState>(
-        'emits success with null conversation id on the legacy NIP-04 path',
-        setUp: () {
-          when(
-            () => mockSharingService.shareVideoWithUser(
-              video: any(named: 'video'),
-              recipientPubkey: any(named: 'recipientPubkey'),
-              personalMessage: any(named: 'personalMessage'),
-            ),
-          ).thenAnswer((_) async => ShareResult.createSuccess('msg-event-id'));
-        },
+        'fans out to every selected recipient with no View chat target',
+        setUp: () => stubMultiSend({
+          testRecipient.pubkey: ShareResult.createSuccess('msg-1'),
+          otherRecipient.pubkey: ShareResult.createSuccess('msg-2'),
+        }),
         seed: () => const ShareSheetState(
           status: ShareSheetStatus.ready,
-          selectedRecipient: testRecipient,
+          selectedRecipients: [testRecipient, otherRecipient],
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetSendRequested(message: 'yo')),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.isSending,
+            'isSending',
+            isTrue,
+          ),
+          isA<ShareSheetState>()
+              .having(
+                (s) => s.selectedRecipients,
+                'selection cleared',
+                isEmpty,
+              )
+              .having(
+                (s) => s.actionResult,
+                'actionResult',
+                isA<ShareSheetSendSuccess>()
+                    .having((r) => r.recipientNames, 'names', [
+                      'Alice',
+                      'Bob',
+                    ])
+                    .having(
+                      (r) => r.conversationId,
+                      'conversationId',
+                      isNull,
+                    )
+                    .having(
+                      (r) => r.recipientPubkey,
+                      'recipientPubkey',
+                      isNull,
+                    ),
+              ),
+        ],
+        verify: (_) {
+          final captured = verify(
+            () => mockSharingService.shareVideoWithMultipleUsers(
+              video: any(named: 'video'),
+              recipientPubkeys: captureAny(named: 'recipientPubkeys'),
+              personalMessage: captureAny(named: 'personalMessage'),
+            ),
+          ).captured;
+          expect(
+            captured[0],
+            equals([testRecipient.pubkey, otherRecipient.pubkey]),
+          );
+          expect(captured[1], equals('yo'));
+        },
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'keeps only failed recipients selected on partial failure',
+        setUp: () => stubMultiSend({
+          testRecipient.pubkey: ShareResult.createSuccess('msg-1'),
+          otherRecipient.pubkey: ShareResult.failure('Relay offline'),
+        }),
+        seed: () => const ShareSheetState(
+          status: ShareSheetStatus.ready,
+          selectedRecipients: [testRecipient, otherRecipient],
         ),
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSendRequested()),
@@ -442,62 +564,59 @@ void main() {
             'isSending',
             isTrue,
           ),
-          isA<ShareSheetState>().having(
-            (s) => s.actionResult,
-            'actionResult',
-            isA<ShareSheetSendSuccess>().having(
-              (r) => r.conversationId,
-              'conversationId',
-              isNull,
-            ),
-          ),
+          isA<ShareSheetState>()
+              .having((s) => s.isSending, 'isSending', isFalse)
+              .having(
+                (s) => s.selectedRecipients.map((r) => r.pubkey),
+                'only the failed recipient stays selected',
+                [otherRecipient.pubkey],
+              )
+              .having(
+                (s) => s.actionResult,
+                'actionResult',
+                isA<ShareSheetSendFailure>(),
+              ),
         ],
       );
 
       blocTest<ShareSheetBloc, ShareSheetState>(
         'sends null personalMessage when message is whitespace only',
-        setUp: () {
-          when(
-            () => mockSharingService.shareVideoWithUser(
-              video: any(named: 'video'),
-              recipientPubkey: any(named: 'recipientPubkey'),
-              personalMessage: any(named: 'personalMessage'),
-            ),
-          ).thenAnswer((_) async => ShareResult.createSuccess('msg-event-id'));
-        },
+        setUp: () => stubMultiSend({
+          testRecipient.pubkey: ShareResult.createSuccess('msg-event-id'),
+        }),
         seed: () => const ShareSheetState(
           status: ShareSheetStatus.ready,
-          selectedRecipient: testRecipient,
+          selectedRecipients: [testRecipient],
         ),
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSendRequested(message: '   ')),
         verify: (_) {
           final captured = verify(
-            () => mockSharingService.shareVideoWithUser(
+            () => mockSharingService.shareVideoWithMultipleUsers(
               video: any(named: 'video'),
-              recipientPubkey: captureAny(named: 'recipientPubkey'),
+              recipientPubkeys: captureAny(named: 'recipientPubkeys'),
               personalMessage: captureAny(named: 'personalMessage'),
             ),
           ).captured;
-          expect(captured[0], equals(testRecipient.pubkey));
+          expect(captured[0], equals([testRecipient.pubkey]));
           expect(captured[1], isNull, reason: 'whitespace trimmed to null');
         },
       );
 
       blocTest<ShareSheetBloc, ShareSheetState>(
-        'emits failure when shareVideoWithUser throws an exception',
+        'emits failure when the sharing service throws an exception',
         setUp: () {
           when(
-            () => mockSharingService.shareVideoWithUser(
+            () => mockSharingService.shareVideoWithMultipleUsers(
               video: any(named: 'video'),
-              recipientPubkey: any(named: 'recipientPubkey'),
+              recipientPubkeys: any(named: 'recipientPubkeys'),
               personalMessage: any(named: 'personalMessage'),
             ),
           ).thenThrow(Exception('Unexpected error'));
         },
         seed: () => const ShareSheetState(
           status: ShareSheetStatus.ready,
-          selectedRecipient: testRecipient,
+          selectedRecipients: [testRecipient],
         ),
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSendRequested()),
@@ -530,7 +649,7 @@ void main() {
         'does nothing when already sending',
         seed: () => const ShareSheetState(
           status: ShareSheetStatus.ready,
-          selectedRecipient: testRecipient,
+          selectedRecipients: [testRecipient],
           isSending: true,
         ),
         build: createBloc,

@@ -596,6 +596,7 @@
     "listAttributionFallback": "Liste",
     "shareVideoLabel": "Video teilen",
     "sharePostSharedWith": "Beitrag mit {recipientName} geteilt",
+    "sharePostSharedWithCount": "{count, plural, one{Beitrag mit {count} Person geteilt} other{Beitrag mit {count} Personen geteilt}}",
     "@sharePostSharedWith": {
         "placeholders": {
             "recipientName": {

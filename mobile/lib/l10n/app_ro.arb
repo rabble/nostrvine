@@ -596,6 +596,7 @@
     "listAttributionFallback": "Listă",
     "shareVideoLabel": "Partajează videoclipul",
     "sharePostSharedWith": "Postare partajată cu {recipientName}",
+    "sharePostSharedWithCount": "{count, plural, one{Postare partajată cu {count} persoană} few{Postare partajată cu {count} persoane} other{Postare partajată cu {count} de persoane}}",
     "@sharePostSharedWith": {
         "placeholders": {
             "recipientName": {

@@ -1436,6 +1436,17 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String sharePostSharedWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ልጥፍ ለ$count ሰዎች ተጋርቷል።',
+      one: 'ልጥፍ ለ$count ሰው ተጋርቷል።',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get shareFailedToSend => 'ቪዲዮ መላክ አልተሳካም።';
 
   @override

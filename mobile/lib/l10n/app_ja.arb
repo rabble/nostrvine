@@ -596,6 +596,7 @@
     "listAttributionFallback": "リスト",
     "shareVideoLabel": "動画を共有",
     "sharePostSharedWith": "{recipientName}に投稿を共有したよ",
+    "sharePostSharedWithCount": "{count, plural, other{{count}人に投稿を共有したよ}}",
     "@sharePostSharedWith": {
         "placeholders": {
             "recipientName": {

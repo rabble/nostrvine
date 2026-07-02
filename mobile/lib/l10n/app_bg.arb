@@ -625,6 +625,7 @@
     "listAttributionFallback": "Списък",
     "shareVideoLabel": "Сподели видео",
     "sharePostSharedWith": "Публикация, споделена с {recipientName}",
+    "sharePostSharedWithCount": "{count, plural, one{Публикация, споделена с {count} човек} other{Публикация, споделена с {count} души}}",
     "@sharePostSharedWith": {
         "placeholders": {
             "recipientName": {

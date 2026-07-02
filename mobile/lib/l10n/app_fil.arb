@@ -429,6 +429,7 @@
     "listAttributionFallback": "List",
     "shareVideoLabel": "I-share ang video",
     "sharePostSharedWith": "Naipadala ang post kay {recipientName}",
+    "sharePostSharedWithCount": "{count, plural, one{Naipadala ang post sa {count} tao} other{Naipadala ang post sa {count} tao}}",
     "shareFailedToSend": "Nabigong ipadala ang video",
     "shareAddedToBookmarks": "Naidagdag sa bookmarks",
     "shareRemovedFromBookmarks": "Tinanggal sa bookmarks",

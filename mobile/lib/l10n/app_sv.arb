@@ -596,6 +596,7 @@
     "listAttributionFallback": "Lista",
     "shareVideoLabel": "Dela video",
     "sharePostSharedWith": "Inlägg delat med {recipientName}",
+    "sharePostSharedWithCount": "{count, plural, one{Inlägg delat med {count} person} other{Inlägg delat med {count} personer}}",
     "@sharePostSharedWith": {
         "placeholders": {
             "recipientName": {

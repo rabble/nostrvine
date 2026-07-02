@@ -559,9 +559,9 @@ void main() {
       expect(find.text(l10n.shareMessageHint), findsOneWidget);
       expect(find.text(l10n.shareSheetMoreActions), findsNothing);
       verifyNever(
-        () => mockVideoSharingService.shareVideoWithUser(
+        () => mockVideoSharingService.shareVideoWithMultipleUsers(
           video: any(named: 'video'),
-          recipientPubkey: any(named: 'recipientPubkey'),
+          recipientPubkeys: any(named: 'recipientPubkeys'),
           personalMessage: any(named: 'personalMessage'),
         ),
       );
@@ -571,15 +571,17 @@ void main() {
       tester,
     ) async {
       when(
-        () => mockVideoSharingService.shareVideoWithUser(
+        () => mockVideoSharingService.shareVideoWithMultipleUsers(
           video: any(named: 'video'),
-          recipientPubkey: any(named: 'recipientPubkey'),
+          recipientPubkeys: any(named: 'recipientPubkeys'),
           personalMessage: any(named: 'personalMessage'),
         ),
       ).thenAnswer(
-        (_) async => ShareResult.createSuccess(
-          '2222222222222222222222222222222222222222222222222222222222222222',
-        ),
+        (_) async => {
+          testContact.pubkey: ShareResult.createSuccess(
+            '2222222222222222222222222222222222222222222222222222222222222222',
+          ),
+        },
       );
 
       await tester.pumpWidget(buildSubjectWithContacts());
@@ -592,13 +594,13 @@ void main() {
       await tester.pumpAndSettle();
 
       final captured = verify(
-        () => mockVideoSharingService.shareVideoWithUser(
+        () => mockVideoSharingService.shareVideoWithMultipleUsers(
           video: any(named: 'video'),
-          recipientPubkey: captureAny(named: 'recipientPubkey'),
+          recipientPubkeys: captureAny(named: 'recipientPubkeys'),
           personalMessage: any(named: 'personalMessage'),
         ),
       ).captured;
-      expect(captured.single, equals(testContact.pubkey));
+      expect(captured.single, equals([testContact.pubkey]));
 
       // Sheet dismissed, success snackbar shown
       expect(find.text(l10n.shareWithTitle), findsNothing);
@@ -622,9 +624,9 @@ void main() {
       expect(find.text(l10n.shareMessageHint), findsNothing);
       expect(find.text(l10n.shareSheetMoreActions), findsOneWidget);
       verifyNever(
-        () => mockVideoSharingService.shareVideoWithUser(
+        () => mockVideoSharingService.shareVideoWithMultipleUsers(
           video: any(named: 'video'),
-          recipientPubkey: any(named: 'recipientPubkey'),
+          recipientPubkeys: any(named: 'recipientPubkeys'),
           personalMessage: any(named: 'personalMessage'),
         ),
       );
@@ -632,12 +634,16 @@ void main() {
 
     testWidgets('send shows failure snackbar on error', (tester) async {
       when(
-        () => mockVideoSharingService.shareVideoWithUser(
+        () => mockVideoSharingService.shareVideoWithMultipleUsers(
           video: any(named: 'video'),
-          recipientPubkey: any(named: 'recipientPubkey'),
+          recipientPubkeys: any(named: 'recipientPubkeys'),
           personalMessage: any(named: 'personalMessage'),
         ),
-      ).thenAnswer((_) async => ShareResult.failure('Network timeout'));
+      ).thenAnswer(
+        (_) async => {
+          testContact.pubkey: ShareResult.failure('Network timeout'),
+        },
+      );
 
       await tester.pumpWidget(buildSubjectWithContacts());
       await tester.tap(find.byType(ShareActionButton));

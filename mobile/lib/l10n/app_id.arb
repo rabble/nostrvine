@@ -596,6 +596,7 @@
     "listAttributionFallback": "Daftar",
     "shareVideoLabel": "Bagikan video",
     "sharePostSharedWith": "Postingan dibagikan dengan {recipientName}",
+    "sharePostSharedWithCount": "{count, plural, other{Postingan dibagikan dengan {count} orang}}",
     "@sharePostSharedWith": {
         "placeholders": {
             "recipientName": {

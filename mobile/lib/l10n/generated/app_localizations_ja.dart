@@ -1383,6 +1383,16 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String sharePostSharedWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count人に投稿を共有したよ',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get shareFailedToSend => '動画の送信がうまくいかなかった';
 
   @override

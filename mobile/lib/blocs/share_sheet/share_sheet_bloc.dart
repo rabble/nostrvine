@@ -53,8 +53,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
        _videoClipImportService = videoClipImportService,
        super(const ShareSheetState()) {
     on<ShareSheetContactsLoadRequested>(_onContactsLoadRequested);
-    on<ShareSheetRecipientSelected>(_onRecipientSelected);
-    on<ShareSheetRecipientCleared>(_onRecipientCleared);
+    on<ShareSheetRecipientToggled>(_onRecipientToggled);
     on<ShareSheetSendRequested>(_onSendRequested, transformer: droppable());
     on<ShareSheetSaveRequested>(_onSaveRequested, transformer: droppable());
     on<ShareSheetAddVideoToClipsRequested>(
@@ -162,28 +161,36 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   // Recipient selection
   // --------------------------------------------------------------------------
 
-  void _onRecipientSelected(
-    ShareSheetRecipientSelected event,
+  void _onRecipientToggled(
+    ShareSheetRecipientToggled event,
     Emitter<ShareSheetState> emit,
   ) {
-    final updatedContacts = List<ShareableUser>.from(state.contacts)
-      ..removeWhere((c) => c.pubkey == event.recipient.pubkey)
-      ..insert(0, event.recipient);
+    final recipient = event.recipient;
+    final updatedSelection = state.isSelected(recipient)
+        ? [
+            for (final r in state.selectedRecipients)
+              if (r.pubkey != recipient.pubkey) r,
+          ]
+        : [...state.selectedRecipients, recipient];
+
+    // Find People can pick someone who isn't in the contacts row yet —
+    // surface them at the front so their selection tick is visible.
+    // Existing contacts stay in place: reordering under the user's
+    // finger while multi-selecting is disorienting.
+    final inContacts = state.contacts.any(
+      (c) => c.pubkey == recipient.pubkey,
+    );
+    final updatedContacts = inContacts
+        ? state.contacts
+        : [recipient, ...state.contacts];
 
     emit(
       state.copyWith(
-        selectedRecipient: event.recipient,
+        selectedRecipients: updatedSelection,
         contacts: updatedContacts,
         clearActionResult: true,
       ),
     );
-  }
-
-  void _onRecipientCleared(
-    ShareSheetRecipientCleared event,
-    Emitter<ShareSheetState> emit,
-  ) {
-    emit(state.copyWith(clearRecipient: true, clearActionResult: true));
   }
 
   // --------------------------------------------------------------------------
@@ -194,41 +201,67 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     ShareSheetSendRequested event,
     Emitter<ShareSheetState> emit,
   ) async {
-    if (state.selectedRecipient == null || state.isSending) return;
+    if (state.selectedRecipients.isEmpty || state.isSending) return;
 
     // Deliberate compose-then-send: the awaited flow keeps a visible
     // "sending" spinner (isSending) and surfaces failures in-sheet.
     emit(state.copyWith(isSending: true, clearActionResult: true));
 
     try {
-      final recipient = state.selectedRecipient!;
+      final recipients = state.selectedRecipients;
       final message = event.message?.trim();
 
-      final result = await _videoSharingService.shareVideoWithUser(
+      // Fans out one DM per recipient (each gets its own gift wrap).
+      final results = await _videoSharingService.shareVideoWithMultipleUsers(
         video: _video,
-        recipientPubkey: recipient.pubkey,
+        recipientPubkeys: [for (final r in recipients) r.pubkey],
         personalMessage: message?.isEmpty == true ? null : message,
       );
 
-      final recipientName = recipient.displayName ?? 'user';
-      if (result.success) {
+      final delivered = [
+        for (final r in recipients)
+          if (results[r.pubkey]?.success ?? false) r,
+      ];
+      final failed = [
+        for (final r in recipients)
+          if (!(results[r.pubkey]?.success ?? false)) r,
+      ];
+
+      if (failed.isEmpty) {
+        final single = recipients.length == 1 ? recipients.single : null;
         emit(
           state.copyWith(
             isSending: false,
+            selectedRecipients: const [],
             actionResult: ShareSheetSendSuccess(
-              recipientName,
-              recipientPubkey: recipient.pubkey,
-              conversationId: result.conversationId,
+              recipientNames: [
+                for (final r in recipients) r.displayName ?? 'user',
+              ],
+              recipientPubkey: single?.pubkey,
+              conversationId: single == null
+                  ? null
+                  : results[single.pubkey]?.conversationId,
             ),
           ),
         );
       } else {
+        // Keep only the failed recipients selected so a retry doesn't
+        // re-send to people who already received the video.
         emit(
           state.copyWith(
             isSending: false,
+            selectedRecipients: failed,
             actionResult: ShareSheetSendFailure(),
           ),
         );
+        if (delivered.isNotEmpty) {
+          Log.warning(
+            'Partial share failure: ${delivered.length} delivered, '
+            '${failed.length} failed',
+            name: 'ShareSheetBloc',
+            category: LogCategory.ui,
+          );
+        }
       }
     } catch (e, stackTrace) {
       _addUnexpectedError(

@@ -28,21 +28,23 @@ sealed class ShareSheetActionResult {
 }
 
 class ShareSheetSendSuccess extends ShareSheetActionResult {
-  ShareSheetSendSuccess(
-    this.recipientName, {
-    required this.recipientPubkey,
+  ShareSheetSendSuccess({
+    required this.recipientNames,
+    this.recipientPubkey,
     this.conversationId,
   });
 
-  final String recipientName;
+  /// Display names of everyone the video was sent to, in selection order.
+  final List<String> recipientNames;
 
   /// Recipient pubkey, passed as the conversation participant when the
   /// success snackbar's "View chat" action navigates to the DM thread.
-  final String recipientPubkey;
+  /// Set only for a single-recipient send.
+  final String? recipientPubkey;
 
-  /// NIP-17 conversation ID for "View chat" navigation. Null when the send
-  /// went over the legacy NIP-04 path, which has no conversation ID — the
-  /// snackbar then shows no action.
+  /// NIP-17 conversation ID for "View chat" navigation. Set only for a
+  /// single-recipient NIP-17 send — multi-recipient sends and legacy
+  /// NIP-04 sends have no single thread to open, so no action is shown.
   final String? conversationId;
 }
 
@@ -130,7 +132,7 @@ class ShareSheetState extends Equatable {
   const ShareSheetState({
     this.status = ShareSheetStatus.initial,
     this.contacts = const [],
-    this.selectedRecipient,
+    this.selectedRecipients = const [],
     this.isSending = false,
     this.actionResult,
   });
@@ -141,8 +143,8 @@ class ShareSheetState extends Equatable {
   /// Loaded contacts (recent + followed users).
   final List<ShareableUser> contacts;
 
-  /// Currently selected recipient for message-send flow.
-  final ShareableUser? selectedRecipient;
+  /// Recipients selected for the message-send flow, in selection order.
+  final List<ShareableUser> selectedRecipients;
 
   /// Whether a send operation is in progress.
   final bool isSending;
@@ -154,21 +156,22 @@ class ShareSheetState extends Equatable {
   /// Whether contacts have finished loading.
   bool get contactsLoaded => status == ShareSheetStatus.ready;
 
+  /// Whether [user] is currently selected.
+  bool isSelected(ShareableUser user) =>
+      selectedRecipients.any((r) => r.pubkey == user.pubkey);
+
   ShareSheetState copyWith({
     ShareSheetStatus? status,
     List<ShareableUser>? contacts,
-    ShareableUser? selectedRecipient,
+    List<ShareableUser>? selectedRecipients,
     bool? isSending,
     ShareSheetActionResult? actionResult,
-    bool clearRecipient = false,
     bool clearActionResult = false,
   }) {
     return ShareSheetState(
       status: status ?? this.status,
       contacts: contacts ?? this.contacts,
-      selectedRecipient: clearRecipient
-          ? null
-          : (selectedRecipient ?? this.selectedRecipient),
+      selectedRecipients: selectedRecipients ?? this.selectedRecipients,
       isSending: isSending ?? this.isSending,
       actionResult: clearActionResult
           ? null
@@ -180,7 +183,7 @@ class ShareSheetState extends Equatable {
   List<Object?> get props => [
     status,
     contacts,
-    selectedRecipient,
+    selectedRecipients,
     isSending,
     actionResult,
   ];

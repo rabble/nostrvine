@@ -596,6 +596,7 @@
     "listAttributionFallback": "قائمة",
     "shareVideoLabel": "مشاركة الفيديو",
     "sharePostSharedWith": "تمت مشاركة المنشور مع {recipientName}",
+    "sharePostSharedWithCount": "{count, plural, one{تمت مشاركة المنشور مع شخص واحد} two{تمت مشاركة المنشور مع شخصين} few{تمت مشاركة المنشور مع {count} أشخاص} many{تمت مشاركة المنشور مع {count} شخصًا} other{تمت مشاركة المنشور مع {count} شخص}}",
     "@sharePostSharedWith": {
         "placeholders": {
             "recipientName": {

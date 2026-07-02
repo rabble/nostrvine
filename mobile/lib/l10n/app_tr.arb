@@ -596,6 +596,7 @@
     "listAttributionFallback": "Liste",
     "shareVideoLabel": "Videoyu paylaş",
     "sharePostSharedWith": "Gönderi {recipientName} ile paylaşıldı",
+    "sharePostSharedWithCount": "{count, plural, one{Gönderi {count} kişiyle paylaşıldı} other{Gönderi {count} kişiyle paylaşıldı}}",
     "@sharePostSharedWith": {
         "placeholders": {
             "recipientName": {

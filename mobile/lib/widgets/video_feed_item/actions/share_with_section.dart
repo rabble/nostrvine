@@ -16,14 +16,14 @@ class _ShareWithSection extends StatelessWidget {
   const _ShareWithSection({
     required this.contacts,
     required this.contactsLoaded,
-    required this.selectedRecipient,
+    required this.selectedPubkeys,
     required this.onFindPeople,
     required this.onContactTapped,
   });
 
   final List<ShareableUser> contacts;
   final bool contactsLoaded;
-  final ShareableUser? selectedRecipient;
+  final Set<String> selectedPubkeys;
   final VoidCallback onFindPeople;
   final ValueChanged<ShareableUser> onContactTapped;
 
@@ -89,7 +89,7 @@ class _ShareWithSection extends StatelessWidget {
 
                   return _ContactItem(
                     user: contact,
-                    isSelected: selectedRecipient?.pubkey == contact.pubkey,
+                    isSelected: selectedPubkeys.contains(contact.pubkey),
                     onTap: () => onContactTapped(contact),
                   );
                 },

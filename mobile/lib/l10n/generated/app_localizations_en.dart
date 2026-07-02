@@ -1474,6 +1474,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String sharePostSharedWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Post shared with $count people',
+      one: 'Post shared with $count person',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get shareFailedToSend => 'Failed to send video';
 
   @override

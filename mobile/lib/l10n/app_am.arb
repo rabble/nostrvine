@@ -678,6 +678,7 @@
     "listAttributionFallback": "ዝርዝር",
     "shareVideoLabel": "ቪዲዮ አጋራ",
     "sharePostSharedWith": "ልጥፍ ለ{recipientName} ተጋርቷል።",
+    "sharePostSharedWithCount": "{count, plural, one{ልጥፍ ለ{count} ሰው ተጋርቷል።} other{ልጥፍ ለ{count} ሰዎች ተጋርቷል።}}",
     "@sharePostSharedWith": {
         "placeholders": {
             "recipientName": {
