@@ -3,6 +3,7 @@ package com.divinevideo.divine_video_player
 import android.content.Context
 import android.graphics.SurfaceTexture
 import android.os.Handler
+import android.os.SystemClock
 import android.view.Surface
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
@@ -17,9 +18,11 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkConstructor
+import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.unmockkConstructor
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyOrder
 import org.junit.Assert.assertEquals
@@ -441,6 +444,62 @@ class DivineVideoPlayerInstanceTest {
 
         verify(exactly = 1) { result.error("PLAYER_ERROR", "boom", null) }
         verify(exactly = 0) { result.success(any()) }
+    }
+
+    /**
+     * Builds a real [PlaybackException] carrying [ERROR_CODE_DECODER_INIT_FAILED]
+     * — the `errorCode` is a public field mockk can't stub, so a genuine
+     * instance is needed. Its public constructor reads `Clock.DEFAULT`
+     * (→ `android.os.SystemClock`), unmocked on the plain-JVM test runtime, so
+     * that static is stubbed only for construction.
+     */
+    private fun decoderInitError(message: String = "decoder boom"): PlaybackException {
+        mockkStatic(SystemClock::class)
+        every { SystemClock.elapsedRealtime() } returns 0L
+        return PlaybackException(
+            message,
+            null,
+            PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
+        ).also { unmockkStatic(SystemClock::class) }
+    }
+
+    @Test
+    fun `onPlayerError re-prepares after a decoder init failure instead of failing the pending result`() {
+        val listener = capturePlayerListener()
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+        instance.onMethodCall(setClipsCall(), result)
+        // Drop the prepare() that setClips itself issued.
+        clearMocks(mockPlayer, answers = false, recordedCalls = true)
+
+        val scheduled = slot<Runnable>()
+        every { mockHandler.postDelayed(capture(scheduled), 350L) } returns true
+
+        listener.onPlayerError(decoderInitError())
+
+        // The pending result stays open for the retry; a delayed re-prepare is queued.
+        verify(exactly = 0) { result.error(any(), any(), any()) }
+        verify(exactly = 1) { mockHandler.postDelayed(any(), 350L) }
+
+        // Running the queued task re-prepares the same player.
+        scheduled.captured.run()
+        verify(exactly = 1) { mockPlayer.prepare() }
+    }
+
+    @Test
+    fun `onPlayerError fails the pending result after exhausting decoder retries`() {
+        val listener = capturePlayerListener()
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+        instance.onMethodCall(setClipsCall(), result)
+
+        // The first two errors each queue a re-prepare (MAX_DECODER_RETRIES = 2).
+        listener.onPlayerError(decoderInitError())
+        listener.onPlayerError(decoderInitError())
+        verify(exactly = 0) { result.error(any(), any(), any()) }
+        verify(exactly = 2) { mockHandler.postDelayed(any(), 350L) }
+
+        // The third gives up and surfaces the error to Dart.
+        listener.onPlayerError(decoderInitError("final boom"))
+        verify(exactly = 1) { result.error("PLAYER_ERROR", "final boom", null) }
     }
 
     @Test
