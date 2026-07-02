@@ -86,25 +86,47 @@ final protectedMinorStickyStoreProvider = Provider<ProtectedMinorStickyStore>((
   return ProtectedMinorStickyStore(prefs: ref.watch(sharedPreferencesProvider));
 });
 
+/// Whether a live protected-minor status may be trusted as a fresh signal for
+/// the current account, or `null` to fall back to the persisted sticky value.
+///
+/// A status is only trustworthy when the session is **authenticated** and the
+/// value is **freshly resolved** (`AsyncData`). This rejects two fail-safe
+/// hazards: the `notProtected()` the #174 seam emits merely because auth has
+/// not completed (cold start / session restore), and a stale value retained
+/// from a previous account during a refetch (`AsyncLoading`/`AsyncError`).
+ProtectedMinorStatus? trustedProtectedMinorStatus({
+  required bool authenticated,
+  required AsyncValue<ProtectedMinorStatus> live,
+}) {
+  if (!authenticated) return null;
+  if (live is! AsyncData<ProtectedMinorStatus>) return null;
+  return live.value;
+}
+
 /// Effective protected-minor seam for the protections (#175/#176), fail-safe.
 ///
-/// The effective value is the live status when known, else the persisted
-/// last-known (sticky). A known live status is also persisted for the next
-/// cold start. Unknown/error never weakens protection: an account confirmed a
-/// protected minor stays protected offline and at cold start, and lifts only on
-/// a positive not-a-minor signal (age-up / revocation).
+/// The effective value is a trusted live status when available, else the
+/// persisted last-known (sticky). A trusted status is also persisted for the
+/// next cold start. Unknown/error and any untrusted status never weaken
+/// protection: an account confirmed a protected minor stays protected offline
+/// and at cold start, and lifts only on a positive not-a-minor signal from an
+/// authenticated check (age-up / revocation).
 final isProtectedMinorProvider = Provider<bool>((ref) {
-  ref.watch(currentAuthStateProvider); // reactivity on account changes
+  final authState = ref.watch(currentAuthStateProvider);
   final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
   final store = ref.watch(protectedMinorStickyStoreProvider);
-  final live = ref.watch(protectedMinorStatusProvider).value;
+  final live = ref.watch(protectedMinorStatusProvider);
 
-  if (live != null) {
-    // Persist for future cold starts (fire-and-forget).
-    store.applyLiveStatus(pubkey, live);
-    if (live.kind == ProtectedMinorStatusKind.protected) return true;
-    if (live.kind == ProtectedMinorStatusKind.notProtected) return false;
+  final trusted = trustedProtectedMinorStatus(
+    authenticated: authState == AuthState.authenticated,
+    live: live,
+  );
+  if (trusted != null) {
+    // Persist trusted transitions for future cold starts (fire-and-forget).
+    store.applyLiveStatus(pubkey, trusted);
+    if (trusted.kind == ProtectedMinorStatusKind.protected) return true;
+    if (trusted.kind == ProtectedMinorStatusKind.notProtected) return false;
   }
-  // Unknown / no live result yet -> last-known persisted value (sticky).
+  // Untrusted / unknown -> last-known persisted value (sticky).
   return store.isProtectedMinorFor(pubkey);
 });

@@ -22,19 +22,21 @@ class ProtectedMinorStickyStore {
       pubkey != null && (_prefs.getBool(_key(pubkey)) ?? false);
 
   /// Apply a live keycast status: confirmed protected -> persist true;
-  /// confirmed not-protected -> persist false; unknown -> retain.
+  /// confirmed not-protected -> persist false; unknown -> retain. A write is
+  /// skipped when the persisted value already matches (avoids redundant I/O on
+  /// every rebuild).
   Future<void> applyLiveStatus(
     String? pubkey,
     ProtectedMinorStatus status,
   ) async {
     if (pubkey == null) return;
-    switch (status.kind) {
-      case ProtectedMinorStatusKind.protected:
-        await _prefs.setBool(_key(pubkey), true);
-      case ProtectedMinorStatusKind.notProtected:
-        await _prefs.setBool(_key(pubkey), false);
-      case ProtectedMinorStatusKind.unknown:
-        break;
-    }
+    final bool? next = switch (status.kind) {
+      ProtectedMinorStatusKind.protected => true,
+      ProtectedMinorStatusKind.notProtected => false,
+      ProtectedMinorStatusKind.unknown => null, // retain last-known
+    };
+    if (next == null) return;
+    if (_prefs.getBool(_key(pubkey)) == next) return;
+    await _prefs.setBool(_key(pubkey), next);
   }
 }
