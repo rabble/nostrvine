@@ -413,6 +413,15 @@ class RelayPool {
         final eventJson = _mapAt(relay, json, 2, 'EVENT payload');
         if (eventJson == null) return;
 
+        final event = Event.fromJson(eventJson);
+        if (!event.isValid || !event.isSigned) {
+          log(
+            'Dropping relay event with invalid id or signature '
+            'from ${relay.url}: eventId=${event.id}',
+          );
+          return;
+        }
+
         if ((relay.relayStatus.relayType != RelayType.cache)) {
           var event = Map<String, dynamic>.from(eventJson);
           var kind = event["kind"];
@@ -421,8 +430,6 @@ class RelayPool {
             _broadcaseToCache(event);
           }
         }
-
-        final event = Event.fromJson(eventJson);
 
         if (event.kind == EventKind.giftWrap) {
           log(

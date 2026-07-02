@@ -1,43 +1,25 @@
 // ABOUTME: Tests for NIP-50 full-text search functionality
 // ABOUTME: Tests search queries using mock relays that simulate NIP-50 responses
 
-import 'dart:convert';
-
-import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/relay/client_connected.dart';
 
-/// A test pubkey (valid 64-char hex).
-const _testPubkey =
-    'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+const _testPrivateKey =
+    '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12';
 
-/// Creates a fake event JSON map with a deterministic id.
-Map<String, dynamic> _fakeEventJson({
+/// Creates a signed event JSON map that RelayPool will accept.
+Future<Map<String, dynamic>> _fakeEventJson({
   required String content,
   int kind = 1,
   int? createdAt,
-}) {
+}) async {
   final created = createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
-  final tags = <List<String>>[];
-  final serialized = json.encode([
-    0,
-    _testPubkey,
-    created,
-    kind,
-    tags,
-    content,
-  ]);
-  final id = sha256.convert(utf8.encode(serialized)).toString();
-  return {
-    'id': id,
-    'pubkey': _testPubkey,
-    'created_at': created,
-    'kind': kind,
-    'tags': tags,
-    'content': content,
-    'sig': '',
-  };
+  final signer = LocalNostrSigner(_testPrivateKey);
+  final pubkey = await signer.getPublicKey();
+  final event = Event(pubkey!, kind, [], content, createdAt: created);
+  await signer.signEvent(event);
+  return event.toJson();
 }
 
 /// Mock relay that captures sent messages and can simulate EVENT responses.
@@ -92,11 +74,8 @@ void main() {
     late LocalNostrSigner signer;
     late _MockRelay mockRelay;
 
-    const testPrivateKey =
-        '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12';
-
     setUp(() async {
-      signer = LocalNostrSigner(testPrivateKey);
+      signer = LocalNostrSigner(_testPrivateKey);
       nostr = Nostr(signer, [], (url) => _MockRelay(url));
       await nostr.refreshPublicKey();
 
@@ -106,8 +85,8 @@ void main() {
     test('Should search for text content in events', () async {
       // Configure mock relay to return events containing 'bitcoin'
       mockRelay.eventsToReturn = [
-        _fakeEventJson(content: 'I love bitcoin and crypto'),
-        _fakeEventJson(content: 'bitcoin is the future'),
+        await _fakeEventJson(content: 'I love bitcoin and crypto'),
+        await _fakeEventJson(content: 'bitcoin is the future'),
       ];
       await nostr.relayPool.add(mockRelay);
 
@@ -153,11 +132,11 @@ void main() {
           1000;
 
       mockRelay.eventsToReturn = [
-        _fakeEventJson(
+        await _fakeEventJson(
           content: 'The nostr protocol is amazing',
           createdAt: sinceTimestamp + 3600,
         ),
-        _fakeEventJson(
+        await _fakeEventJson(
           content: 'Building on nostr protocol today',
           createdAt: sinceTimestamp + 7200,
         ),
@@ -229,8 +208,8 @@ void main() {
 
     test('Search API should provide convenient method', () async {
       mockRelay.eventsToReturn = [
-        _fakeEventJson(content: 'bitcoin price is rising'),
-        _fakeEventJson(content: 'bitcoin fundamentals are strong'),
+        await _fakeEventJson(content: 'bitcoin price is rising'),
+        await _fakeEventJson(content: 'bitcoin fundamentals are strong'),
       ];
       await nostr.relayPool.add(mockRelay);
 
