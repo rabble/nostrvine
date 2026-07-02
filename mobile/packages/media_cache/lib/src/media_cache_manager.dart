@@ -308,7 +308,8 @@ class MediaCacheManager extends CacheManager {
   Future<void> _aliasWriteQueue = Future<void>.value();
 
   /// Tracks keys currently being cached to prevent duplicate requests.
-  final Map<String, Completer<File?>> _pendingCacheOperations = {};
+  final Map<String, Completer<CancellableDownloadResult>>
+  _pendingCacheOperations = {};
 
   /// Tracks cancellable operations currently in-flight.
   final Set<CancellableCacheOperation> _activeCancellableOperations = {};
@@ -542,11 +543,13 @@ class MediaCacheManager extends CacheManager {
 
     // Check if already being cached
     if (_pendingCacheOperations.containsKey(key)) {
-      return _pendingCacheOperations[key]!.future;
+      return _pendingCacheOperations[key]!.future.then(
+        (result) => result.file,
+      );
     }
 
     // Start caching
-    final completer = Completer<File?>();
+    final completer = Completer<CancellableDownloadResult>();
     _pendingCacheOperations[key] = completer;
 
     unawaited(() async {
@@ -567,7 +570,9 @@ class MediaCacheManager extends CacheManager {
             // Best-effort cleanup; the cache metadata has already been
             // removed so the processing response cannot be replayed.
           }
-          if (!completer.isCompleted) completer.complete(null);
+          if (!completer.isCompleted) {
+            completer.complete(const CancellableDownloadResult(file: null));
+          }
           return;
         }
 
@@ -577,16 +582,20 @@ class MediaCacheManager extends CacheManager {
         }
 
         if (!completer.isCompleted) {
-          completer.complete(_isClosed ? null : fileInfo.file);
+          completer.complete(
+            CancellableDownloadResult(file: _isClosed ? null : fileInfo.file),
+          );
         }
       } on Exception {
-        if (!completer.isCompleted) completer.complete(null);
+        if (!completer.isCompleted) {
+          completer.complete(const CancellableDownloadResult(file: null));
+        }
       } finally {
         _pendingCacheOperations.remove(key);
       }
     }());
 
-    return completer.future;
+    return completer.future.then((result) => result.file);
   }
 
   /// Downloads and caches a file with the ability to cancel mid-download.
@@ -644,11 +653,15 @@ class MediaCacheManager extends CacheManager {
     if (_pendingCacheOperations.containsKey(key)) {
       final sharedFuture = _pendingCacheOperations[key]!.future;
       var localCancelled = false;
-      final localCompleter = Completer<File?>();
+      final localCompleter = Completer<CancellableDownloadResult>();
       unawaited(
-        sharedFuture.then((file) {
+        sharedFuture.then((result) {
           if (!localCompleter.isCompleted) {
-            localCompleter.complete(localCancelled ? null : file);
+            localCompleter.complete(
+              localCancelled
+                  ? const CancellableDownloadResult(file: null)
+                  : result,
+            );
           }
         }),
       );
@@ -658,7 +671,11 @@ class MediaCacheManager extends CacheManager {
           cancel: () {
             if (localCancelled) return;
             localCancelled = true;
-            if (!localCompleter.isCompleted) localCompleter.complete();
+            if (!localCompleter.isCompleted) {
+              localCompleter.complete(
+                const CancellableDownloadResult(file: null),
+              );
+            }
           },
           // coverage:ignore-start
           isCancelledGetter: () => localCancelled,
@@ -681,7 +698,7 @@ class MediaCacheManager extends CacheManager {
     }
 
     final relativePath = _relativePathFor(key, url);
-    final completer = Completer<File?>();
+    final completer = Completer<CancellableDownloadResult>();
     // Register before the async download starts so any concurrent caller
     // (cacheFile or another cacheFileCancellable) for the same key joins
     // this operation instead of issuing a second download.
@@ -693,7 +710,9 @@ class MediaCacheManager extends CacheManager {
       try {
         final baseDir = await _resolveBaseCacheDir();
         if (cancelledBeforeStart) {
-          if (!completer.isCompleted) completer.complete();
+          if (!completer.isCompleted) {
+            completer.complete(const CancellableDownloadResult(file: null));
+          }
           return;
         }
         final targetFile = File(path.join(baseDir, relativePath));
@@ -731,14 +750,16 @@ class MediaCacheManager extends CacheManager {
             }
           }
         }
-        if (!completer.isCompleted) completer.complete(file);
+        if (!completer.isCompleted) completer.complete(downloadResult);
       } on Object catch (error) {
         Log.warning(
           'MediaCacheManager: download setup failed for $url: $error',
           name: 'MediaCache',
           category: LogCategory.video,
         );
-        if (!completer.isCompleted) completer.complete();
+        if (!completer.isCompleted) {
+          completer.complete(const CancellableDownloadResult(file: null));
+        }
       } finally {
         _pendingCacheOperations.remove(key);
       }
@@ -974,7 +995,9 @@ class MediaCacheManager extends CacheManager {
 
     final pending = _pendingCacheOperations.values.toList(growable: false);
     for (final completer in pending) {
-      if (!completer.isCompleted) completer.complete();
+      if (!completer.isCompleted) {
+        completer.complete(const CancellableDownloadResult(file: null));
+      }
     }
     _pendingCacheOperations.clear();
 
@@ -989,20 +1012,19 @@ class MediaCacheManager extends CacheManager {
 /// expected by [CancellableCacheOperation.fromDownload].
 class _DeferredDownload extends CancellableDownload {
   _DeferredDownload({
-    required Future<File?> future,
+    required Future<CancellableDownloadResult> future,
     required void Function() cancel,
     required bool Function() isCancelledGetter,
   }) : _future = future,
        _cancel = cancel,
        _isCancelledGetter = isCancelledGetter;
 
-  final Future<File?> _future;
+  final Future<CancellableDownloadResult> _future;
   final void Function() _cancel;
   final bool Function() _isCancelledGetter;
 
   @override
-  Future<CancellableDownloadResult> get result async =>
-      CancellableDownloadResult(file: await _future);
+  Future<CancellableDownloadResult> get result => _future;
 
   // coverage:ignore-start
   @override

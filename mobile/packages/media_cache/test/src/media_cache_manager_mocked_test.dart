@@ -696,6 +696,41 @@ void main() {
       });
 
       test(
+        'preserves downloader status and headers for non-file results',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final downloader = FakeCancellableDownloader();
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: 'cancellable_status_$timestamp',
+              enableSyncManifest: true,
+            ),
+            downloaderOverride: downloader,
+          );
+
+          final op = cacheManager.cacheFileCancellable(
+            'https://example.com/processing.mp4',
+            key: 'processing_key',
+          );
+
+          await pumpDownloads(downloader);
+          downloader.downloads.single.completeResult(
+            const CancellableDownloadResult(
+              file: null,
+              statusCode: 202,
+              headers: {'retry-after': '30'},
+            ),
+          );
+
+          final result = await op.result;
+
+          expect(result.file, isNull);
+          expect(result.statusCode, equals(202));
+          expect(result.headers['retry-after'], equals('30'));
+        },
+      );
+
+      test(
         'manifest is NOT updated when enableSyncManifest is false',
         () async {
           final timestamp = DateTime.now().millisecondsSinceEpoch;

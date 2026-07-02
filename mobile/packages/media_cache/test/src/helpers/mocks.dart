@@ -148,15 +148,14 @@ class FakeCancellableDownload implements CancellableDownload {
   final io.File targetFile;
   final Map<String, String>? headers;
 
-  final _completer = Completer<io.File?>();
+  final _completer = Completer<CancellableDownloadResult>();
   bool _isCancelled = false;
 
   @override
-  Future<io.File?> get file => _completer.future;
+  Future<io.File?> get file async => (await _completer.future).file;
 
   @override
-  Future<CancellableDownloadResult> get result async =>
-      CancellableDownloadResult(file: await file);
+  Future<CancellableDownloadResult> get result => _completer.future;
 
   @override
   bool get isCancelled => _isCancelled;
@@ -165,19 +164,25 @@ class FakeCancellableDownload implements CancellableDownload {
   void cancel() {
     if (_isCancelled || _completer.isCompleted) return;
     _isCancelled = true;
-    _completer.complete();
+    _completer.complete(const CancellableDownloadResult(file: null));
   }
 
   /// Completes the download with [file] (typically a pre-created test file).
   void completeWith(io.File file) {
     if (_completer.isCompleted) return;
-    _completer.complete(file);
+    _completer.complete(CancellableDownloadResult(file: file));
+  }
+
+  /// Completes the download with an explicit [result].
+  void completeResult(CancellableDownloadResult result) {
+    if (_completer.isCompleted) return;
+    _completer.complete(result);
   }
 
   /// Completes the download with `null` (failure / no body).
   void completeNull() {
     if (_completer.isCompleted) return;
-    _completer.complete();
+    _completer.complete(const CancellableDownloadResult(file: null));
   }
 }
 
