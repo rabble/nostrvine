@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/preferences_providers.dart';
+import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/account_label_service.dart';
@@ -78,7 +79,9 @@ final divineHostFilterVersionProvider = Provider<int>((ref) {
 /// even when widgets that watch it dispose and rebuild
 @Riverpod(keepAlive: true)
 AgeVerificationService ageVerificationService(Ref ref) {
-  final service = AgeVerificationService();
+  final service = AgeVerificationService(
+    isProtectedMinor: () => ref.read(isProtectedMinorProvider),
+  );
   service.initialize(); // Initialize asynchronously
   return service;
 }

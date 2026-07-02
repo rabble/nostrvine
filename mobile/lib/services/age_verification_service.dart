@@ -7,6 +7,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class AgeVerificationService {
+  AgeVerificationService({bool Function()? isProtectedMinor})
+    : _isProtectedMinor = isProtectedMinor ?? _notProtected;
+
+  static bool _notProtected() => false;
+
+  /// Whether the current account is a protected minor. When true, adult content
+  /// is force-locked off and the self-attestation bypass is unavailable (#175).
+  final bool Function() _isProtectedMinor;
+
   static const String _ageVerifiedKey = 'age_verified';
   static const String _verificationDateKey = 'age_verification_date';
   static const String _adultContentVerifiedKey = 'adult_content_verified';
@@ -20,7 +29,8 @@ class AgeVerificationService {
 
   bool get isAgeVerified => _isAgeVerified ?? false;
   DateTime? get verificationDate => _verificationDate;
-  bool get isAdultContentVerified => _isAdultContentVerified ?? false;
+  bool get isAdultContentVerified =>
+      !_isProtectedMinor() && (_isAdultContentVerified ?? false);
   DateTime? get adultContentVerificationDate => _adultContentVerificationDate;
 
   Future<void> initialize() async {
@@ -93,6 +103,14 @@ class AgeVerificationService {
   }
 
   Future<void> setAdultContentVerified(bool verified) async {
+    if (verified && _isProtectedMinor()) {
+      Log.warning(
+        'Blocked adult-content verification for a protected minor',
+        name: 'AgeVerificationService',
+        category: LogCategory.system,
+      );
+      return;
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
 
@@ -136,6 +154,8 @@ class AgeVerificationService {
 
   /// Check if user can view adult content, showing verification dialog if needed
   Future<bool> verifyAdultContentAccess(BuildContext context) async {
+    // Protected minors can never unlock adult content; no dialog.
+    if (_isProtectedMinor()) return false;
     // First check if already verified
     if (await checkAdultContentVerification()) {
       return true;
