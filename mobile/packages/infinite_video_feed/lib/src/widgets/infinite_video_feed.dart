@@ -635,10 +635,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     for (var i = startIndex; i < newWidget.videos.length; i++) {
       _terminalErrorTypesByVideoId.remove(newWidget.videos[i].id);
     }
-    final maxLength = oldWidget.videos.length > newWidget.videos.length
-        ? oldWidget.videos.length
-        : newWidget.videos.length;
-    for (var i = startIndex; i < maxLength; i++) {
+    for (var i = startIndex; i < oldWidget.videos.length; i++) {
       _errors.remove(i);
       _errorTypes.remove(i);
       _cancelAutoRetry(i);
@@ -1222,7 +1219,6 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       );
       final errorType = classifyVideoError(
         errorMessage: e.toString(),
-        source: _resolveUrl(video),
       );
       unawaited(_controllers.remove(index)?.dispose());
       if (_isTerminalPlaybackFailure(e)) {
