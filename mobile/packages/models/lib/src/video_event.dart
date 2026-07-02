@@ -1029,6 +1029,16 @@ class VideoEvent {
       rawTags.containsKey('loops') ||
       rawTags.containsKey('views');
 
+  /// Whether this video carries any archival Vine-era engagement metrics.
+  ///
+  /// Used by the metadata sheet to decide whether to show the per-source
+  /// (Vine vs Divine) engagement breakdown for classic Vines.
+  bool get hasOriginalVineMetrics =>
+      originalLoops != null ||
+      originalLikes != null ||
+      originalComments != null ||
+      originalReposts != null;
+
   /// Returns true if this video has an audio reference (Kind 1063).
   bool get hasAudioReference => audioEventId != null;
 

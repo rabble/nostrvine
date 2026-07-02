@@ -62,5 +62,20 @@ void main() {
         expect(video.hasLoopMetadata, isTrue);
       });
     });
+
+    group('hasOriginalVineMetrics', () {
+      test('is false when no archival metric is present', () {
+        expect(_video().hasOriginalVineMetrics, isFalse);
+      });
+
+      test('is true when originalLoops is present (even if 0)', () {
+        expect(_video(originalLoops: 0).hasOriginalVineMetrics, isTrue);
+      });
+
+      test('is true when an archival engagement count is present', () {
+        final video = _video().copyWith(originalLikes: 459878);
+        expect(video.hasOriginalVineMetrics, isTrue);
+      });
+    });
   });
 }

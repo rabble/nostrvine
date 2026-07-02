@@ -15,6 +15,7 @@ class BulkVideoStatsEntry {
     required this.reposts,
     this.loops,
     this.views,
+    this.embeddedLoops,
   });
 
   /// Creates a [BulkVideoStatsEntry] from JSON response.
@@ -48,6 +49,8 @@ class BulkVideoStatsEntry {
         json,
         const {'reposts', 'repost_count', 'total_reposts'},
       ),
+      // `loops` is the live computed count; the archival Vine-era count
+      // arrives separately as `embedded_loops` and must not be conflated.
       loops: _findInt(
         statsData,
         json,
@@ -55,9 +58,13 @@ class BulkVideoStatsEntry {
           'loops',
           'loop_count',
           'total_loops',
-          'embedded_loops',
           'computed_loops',
         },
+      ),
+      embeddedLoops: _findInt(
+        statsData,
+        json,
+        const {'embedded_loops'},
       ),
       views: _findInt(
         statsData,
@@ -85,11 +92,14 @@ class BulkVideoStatsEntry {
   /// Repost count.
   final int reposts;
 
-  /// Loop/play count (if available).
+  /// Live loop/play count (if available).
   final int? loops;
 
   /// View count (if available).
   final int? views;
+
+  /// Archival Vine-era loop count from the archive import (if available).
+  final int? embeddedLoops;
 
   @override
   bool operator ==(Object other) {

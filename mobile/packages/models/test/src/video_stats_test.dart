@@ -273,10 +273,7 @@ void main() {
         expect(
           stats.createdAt,
           equals(
-            DateTime.fromMillisecondsSinceEpoch(
-              1700000000 * 1000,
-              isUtc: true,
-            ),
+            DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
           ),
         );
       });
@@ -448,7 +445,7 @@ void main() {
         expect(stats.description, equals('Content description'));
       });
 
-      test('handles alternative field names for reactions', () {
+      test('keeps embedded_likes out of live reactions', () {
         final jsonWithEmbeddedLikes = {
           'id': 'test-id',
           'pubkey': 'test-pubkey',
@@ -466,8 +463,101 @@ void main() {
 
         final stats = VideoStats.fromJson(jsonWithEmbeddedLikes);
 
-        expect(stats.reactions, equals(42));
+        expect(stats.reactions, equals(0));
+        expect(stats.embeddedLikes, equals(42));
       });
+
+      test('parses archival embedded_* counts separately from live counts', () {
+        final json = {
+          'id': 'test-id',
+          'pubkey': 'test-pubkey',
+          'created_at': 1457922740,
+          'kind': 34236,
+          'd_tag': 'iwKm6wppIIH',
+          'title': 'Classic vine',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'loops': 142678928,
+          'embedded_likes': 459878,
+          'embedded_comments': 15227,
+          'embedded_reposts': 179996,
+          'platform': 'vine',
+          'reactions': 387,
+          'comments': 10,
+          'reposts': 42,
+          'views': 3020,
+          'engagement_score': 533,
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.loops, equals(142678928));
+        expect(stats.embeddedLikes, equals(459878));
+        expect(stats.embeddedComments, equals(15227));
+        expect(stats.embeddedReposts, equals(179996));
+        expect(stats.reactions, equals(387));
+        expect(stats.comments, equals(10));
+        expect(stats.reposts, equals(42));
+        expect(stats.views, equals(3020));
+      });
+
+      test(
+        'prefers embedded_loops over live loops in nested stats objects',
+        () {
+          final json = {
+            'event': {
+              'id': 'test-id',
+              'pubkey': 'test-pubkey',
+              'created_at': 1457922740,
+              'kind': 34236,
+              'tags': [
+                ['d', 'video-1'],
+                ['url', 'https://example.com/video.mp4'],
+              ],
+            },
+            'stats': {
+              'reactions': 387,
+              'comments': 10,
+              'reposts': 42,
+              'engagement_score': 533,
+              'views': 3020,
+              'loops': 1538,
+              'embedded_loops': 142678928,
+            },
+          };
+
+          final stats = VideoStats.fromJson(json);
+
+          expect(stats.loops, equals(142678928));
+          expect(stats.views, equals(3020));
+        },
+      );
+
+      test(
+        'keeps embedded_comments and embedded_reposts out of live counts',
+        () {
+          final json = {
+            'id': 'test-id',
+            'pubkey': 'test-pubkey',
+            'created_at': 1700000000,
+            'kind': 34236,
+            'd_tag': 'video-1',
+            'title': 'Test',
+            'thumbnail': 'https://example.com/thumb.jpg',
+            'video_url': 'https://example.com/video.mp4',
+            'embedded_comments': 15227,
+            'embedded_reposts': 179996,
+            'engagement_score': 0,
+          };
+
+          final stats = VideoStats.fromJson(json);
+
+          expect(stats.comments, equals(0));
+          expect(stats.reposts, equals(0));
+          expect(stats.embeddedComments, equals(15227));
+          expect(stats.embeddedReposts, equals(179996));
+        },
+      );
 
       test('handles loops in different formats', () {
         // As int
@@ -775,10 +865,7 @@ void main() {
 
       test('ignores empty blurhash value in imeta', () {
         final stats = VideoStats.fromJson(
-          jsonWithImetaTag([
-            'imeta',
-            'blurhash ',
-          ]),
+          jsonWithImetaTag(['imeta', 'blurhash ']),
         );
 
         expect(stats.blurhash, isNull);
@@ -1008,16 +1095,11 @@ void main() {
         expect(stats.moderationLabels, contains('graphic-media'));
       });
 
-      test(
-        'preserves unknown moderation labels instead of dropping them',
-        () {
-          final stats = VideoStats.fromJson(
-            buildJson(['some-new-server-label']),
-          );
+      test('preserves unknown moderation labels instead of dropping them', () {
+        final stats = VideoStats.fromJson(buildJson(['some-new-server-label']));
 
-          expect(stats.moderationLabels, equals(['some-new-server-label']));
-        },
-      );
+        expect(stats.moderationLabels, equals(['some-new-server-label']));
+      });
 
       test('still applies known aliases', () {
         final stats = VideoStats.fromJson(
@@ -1030,17 +1112,13 @@ void main() {
       });
 
       test('maps sexual-content alias to canonical sexual label', () {
-        final stats = VideoStats.fromJson(
-          buildJson(['sexual-content']),
-        );
+        final stats = VideoStats.fromJson(buildJson(['sexual-content']));
 
         expect(stats.moderationLabels, equals(['sexual']));
       });
 
       test('drops empty strings', () {
-        final stats = VideoStats.fromJson(
-          buildJson(['', '   ', 'nudity']),
-        );
+        final stats = VideoStats.fromJson(buildJson(['', '   ', 'nudity']));
 
         expect(stats.moderationLabels, equals(['nudity']));
       });
@@ -1532,6 +1610,76 @@ void main() {
         expect(videoEvent.nostrCommentCount, equals(2));
         expect(videoEvent.originalReposts, equals(122059));
         expect(videoEvent.nostrRepostCount, equals(3));
+      });
+
+      test(
+        'maps embedded_* counts to original fields when tags are absent',
+        () {
+          final stats = VideoStats.fromJson(const {
+            'id': 'test-id',
+            'pubkey': 'test-pubkey',
+            'created_at': 1457922740,
+            'kind': 34236,
+            'd_tag': 'video-1',
+            'title': 'Classic vine',
+            'thumbnail': 'https://example.com/thumb.jpg',
+            'video_url': 'https://example.com/video.mp4',
+            'loops': 142678928,
+            'embedded_likes': 459878,
+            'embedded_comments': 15227,
+            'embedded_reposts': 179996,
+            'reactions': 387,
+            'comments': 10,
+            'reposts': 42,
+            'views': 3020,
+            'engagement_score': 533,
+          });
+
+          final videoEvent = stats.toVideoEvent();
+
+          expect(videoEvent.originalLikes, equals(459878));
+          expect(videoEvent.nostrLikeCount, equals(387));
+          expect(videoEvent.originalComments, equals(15227));
+          expect(videoEvent.nostrCommentCount, equals(10));
+          expect(videoEvent.originalReposts, equals(179996));
+          expect(videoEvent.nostrRepostCount, equals(42));
+          expect(videoEvent.originalLoops, equals(142678928));
+          expect(videoEvent.totalLoops, equals(142678928 + 3020));
+          expect(videoEvent.totalLikes, equals(459878 + 387));
+        },
+      );
+
+      test('prefers embedded_* fields over archival event tags', () {
+        final stats = VideoStats.fromJson(const {
+          'event': {
+            'id': 'test-id',
+            'pubkey': 'test-pubkey',
+            'created_at': 1457922740,
+            'kind': 34236,
+            'tags': [
+              ['d', 'video-1'],
+              ['url', 'https://example.com/video.mp4'],
+              ['likes', '111'],
+              ['comments', '222'],
+              ['reposts', '333'],
+            ],
+          },
+          'stats': {
+            'reactions': 5,
+            'comments': 2,
+            'reposts': 3,
+            'engagement_score': 10,
+            'embedded_likes': 459878,
+            'embedded_comments': 15227,
+            'embedded_reposts': 179996,
+          },
+        });
+
+        final videoEvent = stats.toVideoEvent();
+
+        expect(videoEvent.originalLikes, equals(459878));
+        expect(videoEvent.originalComments, equals(15227));
+        expect(videoEvent.originalReposts, equals(179996));
       });
     });
 

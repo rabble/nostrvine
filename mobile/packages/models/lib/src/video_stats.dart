@@ -37,6 +37,9 @@ class VideoStats {
     this.trendingScore,
     this.loops,
     this.views,
+    this.embeddedLikes,
+    this.embeddedComments,
+    this.embeddedReposts,
     this.rawTags = const {},
     this.contentWarningLabels = const [],
     this.textTrackRef,
@@ -99,18 +102,20 @@ class VideoStats {
       createdAt = DateTime.now().toUtc();
     }
 
-    // Parse loops from multiple possible sources
+    // Parse archival loops from multiple possible sources. embedded_loops /
+    // original_loops come first because nested stats objects also carry a
+    // live computed `loops` value that must not shadow the Vine-era count.
     int? loops;
     final directLoops =
+        statsData['embedded_loops'] ??
+        json['embedded_loops'] ??
+        json['original_loops'] ??
         statsData['loops'] ??
         statsData['total_loops'] ??
         statsData['computed_loops'] ??
-        statsData['embedded_loops'] ??
         json['loops'] ??
-        json['original_loops'] ??
         json['total_loops'] ??
-        json['computed_loops'] ??
-        json['embedded_loops'];
+        json['computed_loops'];
     if (directLoops is int) {
       loops = directLoops;
     } else if (directLoops is double) {
@@ -322,27 +327,22 @@ class VideoStats {
       blurhashFromTag,
     ].firstWhere((s) => s != null && s.isNotEmpty, orElse: () => null);
 
-    // Parse reactions/likes - check multiple field names
-    final reactions =
-        statsData['reactions'] ??
-        json['reactions'] ??
-        json['embedded_likes'] ??
-        json['likes'] ??
-        0;
+    // Live Divine engagement. embedded_* archival counts are parsed into
+    // their own fields below so the two sources can be summed for display
+    // without double-counting (classic Vines carry both).
+    final reactions = statsData['reactions'] ?? json['reactions'] ?? 0;
+    final comments = statsData['comments'] ?? json['comments'] ?? 0;
+    final reposts = statsData['reposts'] ?? json['reposts'] ?? 0;
 
-    // Parse comments - check multiple field names
-    final comments =
-        statsData['comments'] ??
-        json['comments'] ??
-        json['embedded_comments'] ??
-        0;
-
-    // Parse reposts - check multiple field names
-    final reposts =
-        statsData['reposts'] ??
-        json['reposts'] ??
-        json['embedded_reposts'] ??
-        0;
+    final embeddedLikes = tryParseEngagementCount(
+      statsData['embedded_likes'] ?? json['embedded_likes'] ?? json['likes'],
+    );
+    final embeddedComments = tryParseEngagementCount(
+      statsData['embedded_comments'] ?? json['embedded_comments'],
+    );
+    final embeddedReposts = tryParseEngagementCount(
+      statsData['embedded_reposts'] ?? json['embedded_reposts'],
+    );
 
     // Parse platform from Funnelcake (server-controlled, not user-settable).
     // "vine" indicates a genuine Vine archive import.
@@ -385,6 +385,9 @@ class VideoStats {
       ),
       loops: loops,
       views: views,
+      embeddedLikes: embeddedLikes,
+      embeddedComments: embeddedComments,
+      embeddedReposts: embeddedReposts,
       rawTags: rawTags,
       categories: categories,
       contentWarningLabels: contentWarningLabels,
@@ -465,6 +468,15 @@ class VideoStats {
   /// Live/new view count from Funnelcake analytics.
   final int? views;
 
+  /// Original like count embedded from the Vine archive import.
+  final int? embeddedLikes;
+
+  /// Original comment count embedded from the Vine archive import.
+  final int? embeddedComments;
+
+  /// Original repost count embedded from the Vine archive import.
+  final int? embeddedReposts;
+
   /// VLM-classified category names from Funnelcake (e.g., "animals", "music").
   ///
   /// Empty until the API includes a `categories` field in video responses.
@@ -519,9 +531,13 @@ class VideoStats {
         publishedAt ?? createdAt.millisecondsSinceEpoch ~/ 1000;
     final normalizedDTag = dTag.isNotEmpty ? dTag : id;
     final expirationTimestamp = int.tryParse(rawTags['expiration'] ?? '');
-    final originalLikes = int.tryParse(rawTags['likes'] ?? '');
-    final originalComments = int.tryParse(rawTags['comments'] ?? '');
-    final originalReposts = int.tryParse(rawTags['reposts'] ?? '');
+    // Archival Vine counts: prefer the server-resolved embedded_* fields,
+    // fall back to the archive-import event tags for relay-shaped payloads.
+    final originalLikes = embeddedLikes ?? int.tryParse(rawTags['likes'] ?? '');
+    final originalComments =
+        embeddedComments ?? int.tryParse(rawTags['comments'] ?? '');
+    final originalReposts =
+        embeddedReposts ?? int.tryParse(rawTags['reposts'] ?? '');
     return VideoEvent(
       id: id,
       pubkey: pubkey,

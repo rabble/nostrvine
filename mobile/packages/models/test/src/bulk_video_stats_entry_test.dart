@@ -97,6 +97,33 @@ void main() {
         expect(entry.loops, equals(5000));
       });
 
+      test('keeps live loops and archival embedded_loops separate', () {
+        // Real bulk-stats payload shape for a classic Vine: `loops` is a
+        // live computed value while `embedded_loops` is the Vine-era count.
+        final entry = BulkVideoStatsEntry.fromJson(const {
+          'event_id': 'test',
+          'views': 3020,
+          'reactions': 387,
+          'comments': 10,
+          'reposts': 42,
+          'loops': 1538.46,
+          'embedded_loops': 142678928,
+        });
+
+        expect(entry.loops, equals(1538));
+        expect(entry.embeddedLoops, equals(142678928));
+      });
+
+      test('embedded_loops does not fill live loops', () {
+        final entry = BulkVideoStatsEntry.fromJson(const {
+          'event_id': 'test',
+          'embedded_loops': 142678928,
+        });
+
+        expect(entry.loops, isNull);
+        expect(entry.embeddedLoops, equals(142678928));
+      });
+
       test('finds views under view_count', () {
         final entry = BulkVideoStatsEntry.fromJson(const {
           'event_id': 'test',
