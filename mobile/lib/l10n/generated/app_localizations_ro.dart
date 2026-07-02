@@ -1443,6 +1443,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Timpul de verificare a expirat. Verifică-ți conexiunea sau încearcă din nou în scurt timp.';
 
   @override
+  String get videoErrorAdultContentHidden =>
+      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+
+  @override
   String get videoFollowButtonFollowing => 'Urmărit';
 
   @override

@@ -1386,6 +1386,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'انتهت مهلة التحقق. تحقّق من اتصالك أو حاول مرّة أخرى بعد قليل.';
 
   @override
+  String get videoErrorAdultContentHidden =>
+      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+
+  @override
   String get videoFollowButtonFollowing => 'متابع';
 
   @override

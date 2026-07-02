@@ -2524,6 +2524,12 @@ abstract class AppLocalizations {
   /// **'Verification timed out. Check your connection or try again shortly.'**
   String get videoErrorVerifyAgeSignerUnreachable;
 
+  /// Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age.
+  ///
+  /// In en, this message translates to:
+  /// **'Adult content is switched off. You can turn it on in Settings → Content Filters.'**
+  String get videoErrorAdultContentHidden;
+
   /// No description provided for @videoFollowButtonFollowing.
   ///
   /// In en, this message translates to:

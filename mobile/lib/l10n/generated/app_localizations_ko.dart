@@ -1325,6 +1325,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '확인 시간이 초과되었습니다. 연결을 확인하거나 잠시 후 다시 시도해보세요';
 
   @override
+  String get videoErrorAdultContentHidden =>
+      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+
+  @override
   String get videoFollowButtonFollowing => '팔로잉';
 
   @override

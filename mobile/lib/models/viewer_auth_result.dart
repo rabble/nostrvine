@@ -12,6 +12,7 @@ sealed class ViewerAuthResult {
   Map<String, String>? get headersOrNull => switch (this) {
     ViewerAuthAuthorized(:final headers) => headers,
     ViewerAuthSignerUnreachable() => null,
+    ViewerAuthBlockedByPreference() => null,
     ViewerAuthUnavailable() => null,
   };
 }
@@ -28,6 +29,13 @@ class ViewerAuthAuthorized extends ViewerAuthResult {
 /// re-verifying age — so this surfaces its own user-facing message.
 class ViewerAuthSignerUnreachable extends ViewerAuthResult {
   const ViewerAuthSignerUnreachable();
+}
+
+/// The viewer is age-verified but their Content Filters keep adult content
+/// hidden. The remedy is opting in via Settings → Content Filters, not
+/// re-verifying age — so this surfaces its own user-facing message.
+class ViewerAuthBlockedByPreference extends ViewerAuthResult {
+  const ViewerAuthBlockedByPreference();
 }
 
 /// No viewer-auth headers could be created for any other reason: the user is not

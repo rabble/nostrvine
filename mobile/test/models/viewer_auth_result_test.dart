@@ -20,6 +20,12 @@ void main() {
       expect(result.headersOrNull, isNull);
     });
 
+    test('ViewerAuthBlockedByPreference has no headers', () {
+      const result = ViewerAuthBlockedByPreference();
+
+      expect(result.headersOrNull, isNull);
+    });
+
     test('ViewerAuthUnavailable has no headers', () {
       const result = ViewerAuthUnavailable();
 

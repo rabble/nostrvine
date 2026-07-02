@@ -1415,6 +1415,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Verificatie duurde te lang. Controleer je verbinding of probeer het straks opnieuw.';
 
   @override
+  String get videoErrorAdultContentHidden =>
+      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+
+  @override
   String get videoFollowButtonFollowing => 'Volgend';
 
   @override

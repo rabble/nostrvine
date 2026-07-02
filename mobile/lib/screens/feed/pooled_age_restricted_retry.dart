@@ -97,6 +97,11 @@ Future<void> retryAgeRestrictedPooledVideo({
         // A remote signer timed out — distinct from a verify failure, since the
         // remedy is checking the connection rather than re-verifying.
         _showSignerUnreachable(context);
+      case ViewerAuthBlockedByPreference():
+        // The viewer is verified but adult content is switched off in their
+        // Content Filters (the default). Point them at the setting instead of
+        // implying verification failed.
+        _showAdultContentHidden(context);
       case ViewerAuthUnavailable():
         // Unavailable covers both a deliberate decline (stay silent) and an
         // accept-then-no-header case (surface feedback). Distinguish the two by
@@ -150,6 +155,7 @@ Future<void> autoRetryAgeRestrictedPooledVideo({
         if (!context.mounted || !playbackSucceeded) return;
         playbackStatusCubit.report(video.id, PlaybackStatus.ready);
       case ViewerAuthSignerUnreachable():
+      case ViewerAuthBlockedByPreference():
       case ViewerAuthUnavailable():
         break;
     }
@@ -166,6 +172,15 @@ void _showVerifyAgeFailed(BuildContext context) {
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
     DivineSnackbarContainer.snackBar(context.l10n.videoErrorVerifyAgeFailed),
+  );
+}
+
+/// Tells an age-verified viewer that adult content is switched off in their
+/// Content Filters, so they know where to opt in rather than re-verifying.
+void _showAdultContentHidden(BuildContext context) {
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    DivineSnackbarContainer.snackBar(context.l10n.videoErrorAdultContentHidden),
   );
 }
 

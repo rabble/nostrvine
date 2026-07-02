@@ -1317,6 +1317,10 @@ class AppLocalizationsJa extends AppLocalizations {
       '確認がタイムアウトしました。接続を確認するか、少し時間をおいてもう一回試してみて';
 
   @override
+  String get videoErrorAdultContentHidden =>
+      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+
+  @override
   String get videoFollowButtonFollowing => 'フォロー中';
 
   @override

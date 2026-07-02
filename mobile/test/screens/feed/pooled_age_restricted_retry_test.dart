@@ -40,6 +40,9 @@ String get _signerUnreachableText => lookupAppLocalizations(
   const Locale('en'),
 ).videoErrorVerifyAgeSignerUnreachable;
 
+String get _adultContentHiddenText =>
+    lookupAppLocalizations(const Locale('en')).videoErrorAdultContentHidden;
+
 AgeVerificationService _ageService({required bool verified}) {
   final service = _MockAgeVerificationService();
   when(() => service.isAdultContentVerified).thenReturn(verified);
@@ -344,6 +347,56 @@ void main() {
       );
       expect(find.text(_failureText), findsOneWidget);
     });
+
+    testWidgets(
+      'surfaces the Content Filters message when playback is blocked by '
+      'preference',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        final playbackStatusCubit = VideoPlaybackStatusCubit();
+        var retryCount = 0;
+        addTearDown(playbackStatusCubit.close);
+
+        // A verified viewer whose Content Filters keep adult content hidden
+        // (the default) is blocked; the remedy is opting in via settings.
+        when(
+          () => mediaAuthInterceptor.handleUnauthorizedMedia(
+            context: any(named: 'context'),
+            sha256Hash: _sha256,
+            url: _videoUrl,
+            serverUrl: 'https://media.divine.video',
+            category: 'video',
+          ),
+        ).thenAnswer((_) async => const ViewerAuthBlockedByPreference());
+
+        await tester.pumpWidget(
+          _RetryHarness(
+            mediaAuthInterceptor: mediaAuthInterceptor,
+            playbackStatusCubit: playbackStatusCubit,
+            ageVerificationService: _ageService(verified: true),
+            retryPlayback: (_) {
+              retryCount++;
+              return true;
+            },
+          ),
+        );
+
+        playbackStatusCubit.report(_videoId, PlaybackStatus.ageRestricted);
+
+        await tester.tap(find.text('Verify'));
+        await tester.pump();
+        await tester.pump();
+
+        expect(retryCount, 0);
+        expect(
+          playbackStatusCubit.state.statusFor(_videoId),
+          PlaybackStatus.ageRestricted,
+        );
+        // The settings-specific copy, not the generic verify failure.
+        expect(find.text(_adultContentHiddenText), findsOneWidget);
+        expect(find.text(_failureText), findsNothing);
+      },
+    );
 
     testWidgets(
       'surfaces the connectivity message when the remote signer is unreachable',

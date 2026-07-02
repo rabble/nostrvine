@@ -1434,6 +1434,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Nag-timeout ang pag-verify. I-check ang koneksyon mo o subukan ulit mamaya.';
 
   @override
+  String get videoErrorAdultContentHidden =>
+      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+
+  @override
   String get videoFollowButtonFollowing => 'Sinusundan';
 
   @override

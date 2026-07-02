@@ -1369,6 +1369,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'ማረጋገጡ ጊዜው አልፎበታል። ግንኙነትህን አረጋግጥ ወይም ትንሽ ቆይተህ እንደገና ሞክር።';
 
   @override
+  String get videoErrorAdultContentHidden =>
+      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+
+  @override
   String get videoFollowButtonFollowing => 'በመከተል ላይ';
 
   @override

@@ -1429,6 +1429,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Потвърждаването изтече. Провери връзката си или опитай пак след малко.';
 
   @override
+  String get videoErrorAdultContentHidden =>
+      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+
+  @override
   String get videoFollowButtonFollowing => 'Следване';
 
   @override

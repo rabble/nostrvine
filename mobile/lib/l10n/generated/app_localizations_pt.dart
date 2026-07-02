@@ -1425,6 +1425,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Tempo de verificação esgotado. Verifique sua conexão ou tente novamente em breve.';
 
   @override
+  String get videoErrorAdultContentHidden =>
+      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+
+  @override
   String get videoFollowButtonFollowing => 'Seguindo';
 
   @override

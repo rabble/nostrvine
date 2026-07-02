@@ -82,8 +82,6 @@ void main() {
         await ageService.setAdultContentVerified(true);
 
         for (final label in [
-          ContentLabel.nudity,
-          ContentLabel.sexual,
           ContentLabel.alcohol,
           ContentLabel.tobacco,
           ContentLabel.gambling,
@@ -96,6 +94,22 @@ void main() {
             service.getPreference(label),
             equals(ContentFilterPreference.warn),
             reason: '${label.displayName} should default to warn',
+          );
+        }
+      });
+
+      test('adult categories default to hide even when age verified', () async {
+        await service.initialize();
+        await ageService.initialize();
+        await ageService.setAdultContentVerified(true);
+
+        for (final label in ContentFilterService.adultCategories) {
+          expect(
+            service.getPreference(label),
+            equals(ContentFilterPreference.hide),
+            reason:
+                '${label.displayName} should stay hidden until the user '
+                'opts in via Content Filters',
           );
         }
       });
@@ -343,35 +357,35 @@ void main() {
     });
 
     group('unlockAdultCategories', () {
-      test(
-        'visible adult categories default to warn after verification',
-        () async {
-          await ageService.initialize();
-          await ageService.setAdultContentVerified(true);
-          await service.initialize();
+      test('non-adult age-restricted categories default to warn after '
+          'verification while adult categories stay hidden', () async {
+        await ageService.initialize();
+        await ageService.setAdultContentVerified(true);
+        await service.initialize();
 
-          for (final label in [
-            ContentLabel.nudity,
-            ContentLabel.sexual,
-            ContentLabel.alcohol,
-            ContentLabel.tobacco,
-            ContentLabel.profanity,
-            ContentLabel.gambling,
-          ]) {
-            expect(
-              service.getPreference(label),
-              equals(ContentFilterPreference.warn),
-              reason: '${label.displayName} should default to warn',
-            );
-          }
+        for (final label in [
+          ContentLabel.alcohol,
+          ContentLabel.tobacco,
+          ContentLabel.profanity,
+          ContentLabel.gambling,
+        ]) {
           expect(
-            service.getPreference(ContentLabel.porn),
-            equals(ContentFilterPreference.hide),
+            service.getPreference(label),
+            equals(ContentFilterPreference.warn),
+            reason: '${label.displayName} should default to warn',
           );
-        },
-      );
+        }
+        for (final label in ContentFilterService.adultCategories) {
+          expect(
+            service.getPreference(label),
+            equals(ContentFilterPreference.hide),
+            reason: '${label.displayName} should stay hidden',
+          );
+        }
+      });
 
-      test('promotes locked visible adult categories back to warn', () async {
+      test('promotes locked non-adult categories back to warn but leaves '
+          'adult categories hidden', () async {
         await ageService.initialize();
         await ageService.setAdultContentVerified(true);
         await service.initialize();
@@ -380,8 +394,6 @@ void main() {
         await service.unlockAdultCategories();
 
         for (final label in [
-          ContentLabel.nudity,
-          ContentLabel.sexual,
           ContentLabel.alcohol,
           ContentLabel.tobacco,
           ContentLabel.profanity,
@@ -393,10 +405,13 @@ void main() {
             reason: '${label.displayName} should be promoted from hide to warn',
           );
         }
-        expect(
-          service.getPreference(ContentLabel.porn),
-          equals(ContentFilterPreference.hide),
-        );
+        for (final label in ContentFilterService.adultCategories) {
+          expect(
+            service.getPreference(label),
+            equals(ContentFilterPreference.hide),
+            reason: '${label.displayName} requires explicit opt-in',
+          );
+        }
       });
 
       test('does not overwrite an existing warn preference', () async {
@@ -455,11 +470,12 @@ void main() {
           service.getPreference(ContentLabel.nudity),
           equals(ContentFilterPreference.show),
         );
-        // sexual was hide, so it is promoted to warn. Pornography remains
-        // locked to hide because it is always filtered out.
+        // sexual is an adult category: unlock never promotes it, so it
+        // stays hidden until the user opts in. Pornography remains locked
+        // to hide because it is always filtered out.
         expect(
           service.getPreference(ContentLabel.sexual),
-          equals(ContentFilterPreference.warn),
+          equals(ContentFilterPreference.hide),
         );
         expect(
           service.getPreference(ContentLabel.porn),
@@ -484,8 +500,6 @@ void main() {
         // age-verified so the gate is lifted; persisted warn should be visible
         await newAgeService.setAdultContentVerified(true);
         for (final label in [
-          ContentLabel.nudity,
-          ContentLabel.sexual,
           ContentLabel.alcohol,
           ContentLabel.tobacco,
           ContentLabel.profanity,
@@ -497,29 +511,49 @@ void main() {
             reason: '${label.displayName} should survive restart',
           );
         }
+        for (final label in ContentFilterService.adultCategories) {
+          expect(
+            newService.getPreference(label),
+            equals(ContentFilterPreference.hide),
+            reason: '${label.displayName} should stay hidden after restart',
+          );
+        }
+      });
+
+      test('adultPlaybackPreference stays hide after unlock until the user '
+          'opts in', () async {
+        await ageService.initialize();
+        await ageService.setAdultContentVerified(true);
+        await service.initialize();
+
+        await service.unlockAdultCategories();
+
         expect(
-          newService.getPreference(ContentLabel.porn),
+          service.adultPlaybackPreference,
           equals(ContentFilterPreference.hide),
         );
       });
 
-      test(
-        'adultPlaybackPreference is warn after unlock from all-hide',
-        () async {
-          await ageService.initialize();
-          await ageService.setAdultContentVerified(true);
-          await service.initialize();
+      test('adultPlaybackPreference is warn after an explicit per-category '
+          'opt-in', () async {
+        await ageService.initialize();
+        await ageService.setAdultContentVerified(true);
+        await service.initialize();
 
-          // Starts as hide (not verified initially wouldn't matter here,
-          // but we need verified to read through the age gate)
-          await service.unlockAdultCategories();
+        await service.setPreference(
+          ContentLabel.nudity,
+          ContentFilterPreference.warn,
+        );
+        await service.setPreference(
+          ContentLabel.sexual,
+          ContentFilterPreference.warn,
+        );
 
-          expect(
-            service.adultPlaybackPreference,
-            equals(ContentFilterPreference.warn),
-          );
-        },
-      );
+        expect(
+          service.adultPlaybackPreference,
+          equals(ContentFilterPreference.warn),
+        );
+      });
     });
 
     group('adultPlaybackPreference', () {
@@ -540,10 +574,7 @@ void main() {
           await ageService.setAdultContentVerified(true);
           await service.initialize();
 
-          for (final label in [
-            ContentLabel.nudity,
-            ContentLabel.sexual,
-          ]) {
+          for (final label in [ContentLabel.nudity, ContentLabel.sexual]) {
             await service.setPreference(label, ContentFilterPreference.show);
           }
 
@@ -693,10 +724,7 @@ void main() {
         );
         await restartedService.initialize();
 
-        for (final label in [
-          ContentLabel.nudity,
-          ContentLabel.sexual,
-        ]) {
+        for (final label in [ContentLabel.nudity, ContentLabel.sexual]) {
           expect(
             restartedService.getPreference(label),
             equals(ContentFilterPreference.show),

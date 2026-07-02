@@ -1425,6 +1425,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Zeitüberschreitung bei der Überprüfung. Prüf deine Verbindung oder versuch es gleich nochmal.';
 
   @override
+  String get videoErrorAdultContentHidden =>
+      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+
+  @override
   String get videoFollowButtonFollowing => 'Gefolgt';
 
   @override

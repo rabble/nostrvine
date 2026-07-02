@@ -1434,6 +1434,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Délai de vérification dépassé. Vérifie ta connexion ou réessaie dans un instant.';
 
   @override
+  String get videoErrorAdultContentHidden =>
+      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+
+  @override
   String get videoFollowButtonFollowing => 'Abonné';
 
   @override

@@ -1389,6 +1389,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Doğrulama zaman aşımına uğradı. Bağlantını kontrol et ya da birazdan tekrar dene.';
 
   @override
+  String get videoErrorAdultContentHidden =>
+      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+
+  @override
   String get videoFollowButtonFollowing => 'Takip ediliyor';
 
   @override

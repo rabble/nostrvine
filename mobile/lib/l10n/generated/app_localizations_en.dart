@@ -1407,6 +1407,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Verification timed out. Check your connection or try again shortly.';
 
   @override
+  String get videoErrorAdultContentHidden =>
+      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+
+  @override
   String get videoFollowButtonFollowing => 'Following';
 
   @override

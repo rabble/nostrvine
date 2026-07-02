@@ -677,6 +677,10 @@
   "@videoErrorVerifyAgeSignerUnreachable": {
     "description": "Snackbar shown when tapping Verify age on an age-restricted video and the remote signer didn't respond in time (timeout). Distinct from videoErrorVerifyAgeFailed because the remedy is checking connectivity, not re-verifying age."
   },
+  "videoErrorAdultContentHidden": "Adult content is switched off. You can turn it on in Settings → Content Filters.",
+  "@videoErrorAdultContentHidden": {
+    "description": "Snackbar shown when an age-verified viewer taps Verify age on an age-restricted video but their Content Filters keep adult content hidden. The remedy is opting in via Settings → Content Filters, not re-verifying age."
+  },
   "videoFollowButtonFollowing": "Following",
   "videoFollowButtonFollow": "Follow",
   "audioAttributionOriginalSound": "Original sound",

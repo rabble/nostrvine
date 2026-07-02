@@ -148,6 +148,9 @@ const _knownUntranslatedDebt = {
   'notificationRepliedToYourComment',
   'notificationAndConnector',
   'notificationOthersCount',
+  // Added by the adult-content opt-in default change. Translators will pick
+  // this up in the next pass; until then it falls back to English.
+  'videoErrorAdultContentHidden',
   // Added while localizing the settings taxonomy and related settings flows
   // for Amharic. Existing locales fall back to English until the next
   // full translation pass.

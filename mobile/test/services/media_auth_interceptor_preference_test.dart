@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
@@ -48,7 +49,8 @@ void main() {
 
   group('MediaAuthInterceptor - preference handling', () {
     test(
-      'handleUnauthorizedMedia still creates auth headers after unlock sets verified users to warn',
+      'handleUnauthorizedMedia blocks verified users at default preferences '
+      'even after unlock',
       () async {
         SharedPreferences.setMockInitialValues({});
 
@@ -61,6 +63,65 @@ void main() {
         );
         await realContentFilterService.initialize();
         await realContentFilterService.unlockAdultCategories();
+
+        final interceptor = MediaAuthInterceptor(
+          ageVerificationService: realAgeVerificationService,
+          contentFilterService: realContentFilterService,
+          mediaViewerAuthService: mockMediaViewerAuthService,
+        );
+
+        when(
+          () => mockMediaViewerAuthService.canCreateHeaders,
+        ).thenReturn(true);
+        when(() => mockContext.mounted).thenReturn(true);
+
+        // Adult categories stay hidden after unlock; playback stays blocked
+        // until the user opts in via Content Filters.
+        expect(
+          realContentFilterService.adultPlaybackPreference,
+          ContentFilterPreference.hide,
+        );
+        expect(interceptor.shouldAutoAuthorizeAgeRestrictedMedia, isFalse);
+
+        final result = await interceptor.handleUnauthorizedMedia(
+          context: mockContext,
+          sha256Hash: 'abc123',
+          category: 'nudity',
+        );
+
+        expect(result, isA<ViewerAuthBlockedByPreference>());
+        verifyNever(
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'handleUnauthorizedMedia creates auth headers after an explicit '
+      'per-category opt-in',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+
+        final realAgeVerificationService = AgeVerificationService();
+        await realAgeVerificationService.initialize();
+        await realAgeVerificationService.setAdultContentVerified(true);
+
+        final realContentFilterService = ContentFilterService(
+          ageVerificationService: realAgeVerificationService,
+        );
+        await realContentFilterService.initialize();
+        await realContentFilterService.setPreference(
+          ContentLabel.nudity,
+          ContentFilterPreference.warn,
+        );
+        await realContentFilterService.setPreference(
+          ContentLabel.sexual,
+          ContentFilterPreference.warn,
+        );
 
         final interceptor = MediaAuthInterceptor(
           ageVerificationService: realAgeVerificationService,
@@ -114,7 +175,8 @@ void main() {
     );
 
     test(
-      'handleUnauthorizedMedia returns null when verified user preference is hide',
+      'handleUnauthorizedMedia reports a preference block when verified user '
+      'preference is hide',
       () async {
         when(
           () => mockContentFilterService.adultPlaybackPreference,
@@ -134,7 +196,7 @@ void main() {
           category: 'nudity',
         );
 
-        expect(result, isA<ViewerAuthUnavailable>());
+        expect(result, isA<ViewerAuthBlockedByPreference>());
         verifyNever(
           () => mockMediaViewerAuthService.createAuthHeaders(
             sha256Hash: any(named: 'sha256Hash'),

@@ -1384,6 +1384,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Waktu verifikasi habis. Periksa koneksi kamu atau coba lagi sebentar lagi.';
 
   @override
+  String get videoErrorAdultContentHidden =>
+      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+
+  @override
   String get videoFollowButtonFollowing => 'Mengikuti';
 
   @override

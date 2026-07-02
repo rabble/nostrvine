@@ -75,8 +75,9 @@ class MediaAuthInterceptor {
   ///
   /// Returns [ViewerAuthAuthorized] with request headers when the viewer can
   /// see adult content, [ViewerAuthSignerUnreachable] when a remote signer
-  /// timed out, or [ViewerAuthUnavailable] when the viewer declined / is
-  /// blocked by preference / no headers could be created.
+  /// timed out, [ViewerAuthBlockedByPreference] when a verified viewer's
+  /// Content Filters keep adult content hidden, or [ViewerAuthUnavailable]
+  /// when the viewer declined / no headers could be created.
   Future<ViewerAuthResult> handleUnauthorizedMedia({
     required BuildContext context,
     String? sha256Hash,
@@ -96,8 +97,9 @@ class MediaAuthInterceptor {
       final isAdultContentVerified =
           _ageVerificationService.isAdultContentVerified;
 
-      // Verified users with all adult categories set to hide should be
-      // blocked immediately. Unverified users still go through the existing
+      // Verified users with all adult categories at hide (the default —
+      // opting in happens per category in Content Filters) are blocked
+      // immediately. Unverified users still go through the existing
       // verify-on-play path below.
       if (isAdultContentVerified &&
           playbackPreference == ContentFilterPreference.hide) {
@@ -106,7 +108,7 @@ class MediaAuthInterceptor {
           name: 'MediaAuthInterceptor',
           category: LogCategory.system,
         );
-        return const ViewerAuthUnavailable();
+        return const ViewerAuthBlockedByPreference();
       }
 
       // Once the viewer has completed adult-content age verification, keep that
