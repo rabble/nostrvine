@@ -6,6 +6,7 @@ import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path/path.dart' as p;
+import 'package:unified_logger/unified_logger.dart';
 
 /// Manages thumbnail loading and cleanup for a set of clips.
 ///
@@ -226,6 +227,11 @@ class ClipThumbnailManager {
     for (final sub in _subscriptions.values) {
       if (!sub.isPaused) sub.pause();
     }
+    Log.warning(
+      '⏸️ Thumbnail extraction paused (${_subscriptions.length} sub(s))',
+      name: 'ClipThumbnailManager',
+      category: LogCategory.video,
+    );
   }
 
   /// Resumes thumbnail extraction paused by [pauseAll].
@@ -234,6 +240,11 @@ class ClipThumbnailManager {
     for (final sub in _subscriptions.values) {
       if (sub.isPaused) sub.resume();
     }
+    Log.warning(
+      '▶️ Thumbnail extraction resumed (${_subscriptions.length} sub(s))',
+      name: 'ClipThumbnailManager',
+      category: LogCategory.video,
+    );
   }
 
   static void _deleteFiles(List<StripThumbnail> thumbnails) {
