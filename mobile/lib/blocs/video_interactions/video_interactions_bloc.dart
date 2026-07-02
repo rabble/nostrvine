@@ -165,9 +165,10 @@ class VideoInteractionsBloc
           ? _repostsRepository.getRepostCount(_addressableId)
           : _repostsRepository.getRepostCountByEventId(_eventId);
 
-      // Fetch a relay count for blocs that were not seeded from the feed
-      // payload. Seeded counts stay authoritative below because relay COUNT
-      // results can include unrelated historical reactions.
+      // Fetch a fallback like count for blocs that were not seeded from the
+      // feed payload. Addressable videos resolve the same filtered liker set as
+      // the "Liked by" list; non-addressable videos still use relay COUNT,
+      // whose results can include unrelated historical reactions.
       final likeCountFuture = _likesRepository.getLikeCount(
         _eventId,
         addressableId: _addressableId,
@@ -187,10 +188,10 @@ class VideoInteractionsBloc
       final fetchedCommentCount = results[1];
       final fetchedRepostCount = results[2];
 
-      // Feed/Funnelcake counts are the display baseline. Relay COUNT queries
-      // are still useful when a bloc has no seeded count, but they must not
-      // replace counts we already rendered from the video payload: the relay
-      // can aggregate unrelated historical reactions and surface bogus spikes.
+      // Feed/Funnelcake counts remain the display baseline pending the
+      // canonical stats decision tracked in #5751. The fallback count is useful
+      // when there is no seed, but should not replace a count already rendered
+      // from the video payload.
       final likeCount = preFetchLikeCount ?? fetchedLikeCount;
       final commentCount = preFetchCommentCount ?? fetchedCommentCount;
       final repostCount = preFetchRepostCount ?? fetchedRepostCount;
