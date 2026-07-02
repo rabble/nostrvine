@@ -1292,16 +1292,23 @@ class VideoRecorderBloc
     VideoRecorderCameraPausedForNavigation event,
     Emitter<VideoRecorderBlocState> emit,
   ) async {
-    Log.info(
-      '📹 Camera paused for navigation - disposing',
-      name: 'VideoRecorderBloc',
-      category: LogCategory.video,
-    );
-    // Idempotent with VideoRecorderRecordingLockedForNavigation (which the View
-    // dispatches first, before the push transition). Re-asserting here keeps
-    // the recorder safe even if only the pause event is dispatched.
-    _lockRecordingForNavigation(emit);
-    await _cameraService.dispose();
+    try {
+      Log.info(
+        '📹 Camera paused for navigation - disposing',
+        name: 'VideoRecorderBloc',
+        category: LogCategory.video,
+      );
+      // Idempotent with VideoRecorderRecordingLockedForNavigation (which the
+      // View dispatches first, before the push transition). Re-asserting here
+      // keeps the recorder safe even if only the pause event is dispatched.
+      _lockRecordingForNavigation(emit);
+      await _cameraService.dispose();
+    } finally {
+      final completion = event.completion;
+      if (completion != null && !completion.isCompleted) {
+        completion.complete();
+      }
+    }
   }
 
   /// Locks recording for a navigation push: sets the lock, detaches the remote

@@ -24,12 +24,15 @@ import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_navigation.dart';
+import 'package:sound_service/sound_service.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
 class _MockVideoRecorderBloc
     extends MockBloc<VideoRecorderEvent, VideoRecorderBlocState>
     implements VideoRecorderBloc {}
+
+class _MockAudioSessionService extends Mock implements AudioSessionService {}
 
 class _FakeVideoEditorNotifier extends VideoEditorNotifier {
   bool saveAsDraftCalled = false;
@@ -58,16 +61,34 @@ void main() {
 
   late _MockAuthService mockAuthService;
   late _MockVideoRecorderBloc recorderBloc;
+  late _MockAudioSessionService audioSessionService;
   late _FakeVideoEditorNotifier fakeEditor;
   late _FakeClipManagerNotifier fakeClipManager;
+
+  setUpAll(() {
+    registerFallbackValue(const VideoRecorderCameraPausedForNavigation());
+  });
 
   setUp(() {
     mockAuthService = _MockAuthService();
     recorderBloc = _MockVideoRecorderBloc();
+    audioSessionService = _MockAudioSessionService();
     fakeEditor = _FakeVideoEditorNotifier();
     fakeClipManager = _FakeClipManagerNotifier();
 
     when(() => recorderBloc.state).thenReturn(const VideoRecorderBlocState());
+    when(() => recorderBloc.add(any())).thenAnswer((invocation) {
+      final event = invocation.positionalArguments.single as VideoRecorderEvent;
+      if (event is VideoRecorderCameraPausedForNavigation) {
+        event.completion?.complete();
+      }
+    });
+    when(
+      () => audioSessionService.configureForMixedPlayback(),
+    ).thenAnswer((_) async {});
+    when(
+      () => audioSessionService.resetAudioSession(),
+    ).thenAnswer((_) async {});
     when(
       () => mockAuthService.authStateStream,
     ).thenAnswer((_) => const Stream<AuthState>.empty());
@@ -105,6 +126,7 @@ void main() {
         authServiceProvider.overrideWithValue(mockAuthService),
         videoEditorProvider.overrideWith(() => fakeEditor),
         clipManagerProvider.overrideWith(() => fakeClipManager),
+        audioSessionServiceProvider.overrideWithValue(audioSessionService),
       ],
       child: MaterialApp.router(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -132,6 +154,8 @@ void main() {
 
         expect(find.text('editor'), findsOneWidget);
         expect(fakeEditor.saveAsDraftCalled, isFalse);
+        verify(() => audioSessionService.configureForMixedPlayback()).called(1);
+        verifyNever(() => audioSessionService.resetAudioSession());
         // The lock guards the camera against a volume / BLE trigger racing the
         // push — it is the feature's only production trigger, so assert it
         // fired (deleting it would silently disable the lock).
@@ -152,6 +176,8 @@ void main() {
 
         expect(find.text('library'), findsOneWidget);
         expect(fakeEditor.saveAsDraftCalled, isFalse);
+        verify(() => audioSessionService.resetAudioSession()).called(1);
+        verifyNever(() => audioSessionService.configureForMixedPlayback());
         // The lock guards the camera against a volume / BLE trigger racing the
         // push — it is the feature's only production trigger, so assert it
         // fired (deleting it would silently disable the lock).
@@ -177,6 +203,7 @@ void main() {
 
         expect(fakeClipManager.muteAllClipsCalled, isTrue);
         expect(find.text('editor'), findsOneWidget);
+        verify(() => audioSessionService.configureForMixedPlayback()).called(1);
       });
 
       testWidgets('openVideoEditorFromRecorder does not mute clips in '
@@ -189,6 +216,7 @@ void main() {
 
         expect(fakeClipManager.muteAllClipsCalled, isFalse);
         expect(find.text('editor'), findsOneWidget);
+        verify(() => audioSessionService.configureForMixedPlayback()).called(1);
       });
     });
 

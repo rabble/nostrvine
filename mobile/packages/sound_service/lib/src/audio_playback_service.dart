@@ -12,6 +12,7 @@ import 'package:audio_session/audio_session.dart' as audio_session;
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:sound_service/src/audio_session_service.dart';
 import 'package:sound_service/src/audio_session_wrapper.dart';
 import 'package:sound_service/src/audio_source_config.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -39,12 +40,16 @@ class AudioPlaybackService {
            ),
        _audioSessionWrapper =
            audioSessionWrapper ?? DefaultAudioSessionWrapper() {
+    _audioSessionService = AudioSessionService(
+      audioSessionWrapper: _audioSessionWrapper,
+    );
     unawaited(_initializeHeadphoneDetection());
   }
   // coverage:ignore-end
 
   final AudioPlayer _audioPlayer;
   final AudioSessionWrapper _audioSessionWrapper;
+  late final AudioSessionService _audioSessionService;
 
   /// BehaviorSubject for headphone connection state.
   /// Starts with false (no headphones) until actual state is determined.
@@ -445,42 +450,7 @@ class AudioPlaybackService {
   /// "call started/ended" sounds on Bluetooth headsets.
   Future<void> configureForRecording() async {
     if (_isDisposed) return;
-    try {
-      await _audioSessionWrapper.configure(
-        audio_session.AudioSessionConfiguration(
-          avAudioSessionCategory:
-              audio_session.AVAudioSessionCategory.playAndRecord,
-          avAudioSessionCategoryOptions:
-              audio_session.AVAudioSessionCategoryOptions.defaultToSpeaker |
-              audio_session.AVAudioSessionCategoryOptions.allowBluetoothA2dp,
-          avAudioSessionMode: audio_session.AVAudioSessionMode.defaultMode,
-          avAudioSessionRouteSharingPolicy:
-              audio_session.AVAudioSessionRouteSharingPolicy.defaultPolicy,
-          avAudioSessionSetActiveOptions:
-              audio_session.AVAudioSessionSetActiveOptions.none,
-          androidAudioAttributes: const audio_session.AndroidAudioAttributes(
-            contentType: audio_session.AndroidAudioContentType.music,
-            usage: audio_session.AndroidAudioUsage.media,
-          ),
-          androidAudioFocusGainType:
-              audio_session.AndroidAudioFocusGainType.gainTransientMayDuck,
-          androidWillPauseWhenDucked: false,
-        ),
-      );
-
-      Log.debug(
-        'Configured audio session for recording mode',
-        name: 'AudioPlaybackService',
-        category: LogCategory.video,
-      );
-    } on Exception catch (e) {
-      Log.warning(
-        'Failed to configure audio session for recording: $e',
-        name: 'AudioPlaybackService',
-        category: LogCategory.video,
-      );
-      // Don't rethrow - allow playback to continue even if session config fails
-    }
+    await _audioSessionService.configureForRecording();
   }
 
   /// Configures the audio session for mixed playback.
@@ -490,40 +460,7 @@ class AudioPlaybackService {
   /// the audio from pausing the video.
   Future<void> configureForMixedPlayback() async {
     if (_isDisposed) return;
-    try {
-      await _audioSessionWrapper.configure(
-        const audio_session.AudioSessionConfiguration(
-          avAudioSessionCategory: audio_session.AVAudioSessionCategory.playback,
-          avAudioSessionCategoryOptions:
-              audio_session.AVAudioSessionCategoryOptions.mixWithOthers,
-          avAudioSessionMode: audio_session.AVAudioSessionMode.defaultMode,
-          avAudioSessionRouteSharingPolicy:
-              audio_session.AVAudioSessionRouteSharingPolicy.defaultPolicy,
-          avAudioSessionSetActiveOptions:
-              audio_session.AVAudioSessionSetActiveOptions.none,
-          androidAudioAttributes: audio_session.AndroidAudioAttributes(
-            contentType: audio_session.AndroidAudioContentType.music,
-            usage: audio_session.AndroidAudioUsage.media,
-          ),
-          androidAudioFocusGainType:
-              audio_session.AndroidAudioFocusGainType.gainTransientMayDuck,
-          androidWillPauseWhenDucked: false,
-        ),
-      );
-
-      Log.debug(
-        'Configured audio session for mixed playback',
-        name: 'AudioPlaybackService',
-        category: LogCategory.video,
-      );
-    } on Exception catch (e) {
-      Log.warning(
-        'Failed to configure audio session for mixed playback: $e',
-        name: 'AudioPlaybackService',
-        category: LogCategory.video,
-      );
-      // Don't rethrow - allow playback to continue even if session config fails
-    }
+    await _audioSessionService.configureForMixedPlayback();
   }
 
   /// Resets the audio session to default configuration.
@@ -531,36 +468,7 @@ class AudioPlaybackService {
   /// Call this when exiting recording mode.
   Future<void> resetAudioSession() async {
     if (_isDisposed) return;
-    try {
-      await _audioSessionWrapper.configure(
-        const audio_session.AudioSessionConfiguration(
-          avAudioSessionCategory: audio_session.AVAudioSessionCategory.playback,
-          avAudioSessionCategoryOptions:
-              audio_session.AVAudioSessionCategoryOptions.none,
-          avAudioSessionMode: audio_session.AVAudioSessionMode.defaultMode,
-          avAudioSessionRouteSharingPolicy:
-              audio_session.AVAudioSessionRouteSharingPolicy.defaultPolicy,
-          androidAudioFocusGainType:
-              audio_session.AndroidAudioFocusGainType.gainTransientMayDuck,
-          avAudioSessionSetActiveOptions:
-              audio_session.AVAudioSessionSetActiveOptions.none,
-          androidAudioAttributes: audio_session.AndroidAudioAttributes(
-            contentType: audio_session.AndroidAudioContentType.music,
-            usage: audio_session.AndroidAudioUsage.media,
-          ),
-          androidWillPauseWhenDucked: true,
-        ),
-      );
-
-      Log.debug('Reset audio session to default', name: 'AudioPlaybackService');
-    } on Exception catch (e) {
-      Log.warning(
-        'Failed to reset audio session: $e',
-        name: 'AudioPlaybackService',
-        category: LogCategory.video,
-      );
-      // Don't rethrow - allow continued operation even if reset fails
-    }
+    await _audioSessionService.resetAudioSession();
   }
 
   /// Disposes of all resources used by this service.

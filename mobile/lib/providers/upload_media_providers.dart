@@ -314,3 +314,12 @@ AudioPlaybackService audioPlaybackService(Ref ref) {
 
   return service;
 }
+
+/// Audio-session-only configuration used by recorder/editor route handoffs.
+///
+/// Kept separate from [audioPlaybackServiceProvider] so playback routes can
+/// restore `AVAudioSession` without constructing a player or starting headphone
+/// detection.
+final audioSessionServiceProvider = Provider<AudioSessionService>((ref) {
+  return AudioSessionService();
+});
