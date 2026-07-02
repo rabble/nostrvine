@@ -117,6 +117,13 @@ final isProtectedMinorProvider = Provider<bool>((ref) {
   final store = ref.watch(protectedMinorStickyStoreProvider);
   final live = ref.watch(protectedMinorStatusProvider);
 
+  // Account-switch safety relies on the invariant that every account swap
+  // transits a non-authenticated authState (authenticating/checking), which
+  // invalidates protectedMinorStatusProvider (it watches currentAuthStateProvider)
+  // back into AsyncLoading before authState returns to authenticated for the new
+  // account. That is why a stale AsyncData from a previous account can never be
+  // trusted here. A future silent same-authState pubkey swap would need to also
+  // invalidate the status provider to preserve this guarantee.
   final trusted = trustedProtectedMinorStatus(
     authenticated: authState == AuthState.authenticated,
     live: live,

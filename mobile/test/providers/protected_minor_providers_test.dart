@@ -8,11 +8,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/models/protected_minor_status.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockAuthService extends Mock implements AuthService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -116,10 +120,77 @@ void main() {
       // Before the async status resolves, the seam reads false (safe default).
       expect(container.read(isProtectedMinorProvider), isFalse);
 
-      // After resolution (override forces protected) it reads true, and reading
-      // via `.value` means it won't flicker back to false on a later refetch.
+      // After resolution (override forces protected) an authenticated, freshly
+      // resolved status is trusted, so it reads true.
       await container.read(protectedMinorStatusProvider.future);
       expect(container.read(isProtectedMinorProvider), isTrue);
+    },
+  );
+
+  test(
+    'isProtectedMinorProvider: unauthenticated notProtected does NOT wipe a '
+    'confirmed minor (fail-safe)',
+    () async {
+      const minorPubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      SharedPreferences.setMockInitialValues({
+        'protected_minor_sticky_$minorPubkey': true,
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final authService = _MockAuthService();
+      when(() => authService.currentPublicKeyHex).thenReturn(minorPubkey);
+
+      final container = ProviderContainer(
+        overrides: [
+          // Auth still restoring: the #174 seam emits notProtected() here.
+          currentAuthStateProvider.overrideWithValue(AuthState.checking),
+          authServiceProvider.overrideWithValue(authService),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          protectedMinorStatusProvider.overrideWith(
+            (ref) async => ProtectedMinorStatus.notProtected(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(protectedMinorStatusProvider.future);
+
+      // Must stay protected (sticky), and the store must not be wiped to false.
+      expect(container.read(isProtectedMinorProvider), isTrue);
+      expect(prefs.getBool('protected_minor_sticky_$minorPubkey'), isTrue);
+    },
+  );
+
+  test(
+    'isProtectedMinorProvider: authenticated notProtected lifts and persists '
+    'the lift',
+    () async {
+      const pubkey =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      SharedPreferences.setMockInitialValues({
+        'protected_minor_sticky_$pubkey': true,
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final authService = _MockAuthService();
+      when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
+
+      final container = ProviderContainer(
+        overrides: [
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          authServiceProvider.overrideWithValue(authService),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          protectedMinorStatusProvider.overrideWith(
+            (ref) async => ProtectedMinorStatus.notProtected(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(protectedMinorStatusProvider.future);
+
+      // A real (authenticated, resolved) not-protected signal lifts protection.
+      expect(container.read(isProtectedMinorProvider), isFalse);
+      expect(prefs.getBool('protected_minor_sticky_$pubkey'), isFalse);
     },
   );
 }
