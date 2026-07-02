@@ -546,10 +546,13 @@ class DivineVideoPlayerInstanceTest {
     }
 
     @Test
-    fun `stopForActivityDetach cancels a pending decoder retry`() {
+    fun `stopForActivityDetach cancels a pending decoder retry before clearing the surface`() {
         val listener = capturePlayerListener()
-        instance.onMethodCall(setClipsCall(), mockk(relaxed = true))
-        clearMocks(mockHandler, answers = false, recordedCalls = true)
+        instance.onMethodCall(
+            setClipsCall("file:///tmp/a.mp4"),
+            mockk(relaxed = true),
+        )
+        clearMocks(mockHandler, mockPlayer, answers = false, recordedCalls = true)
 
         val scheduled = slot<Runnable>()
         every { mockHandler.postDelayed(capture(scheduled), 350L) } returns true
@@ -557,10 +560,11 @@ class DivineVideoPlayerInstanceTest {
 
         instance.stopForActivityDetach()
 
-        // The queued re-prepare is cancelled so it can't call prepare() on the
-        // surface stopForActivityDetach just cleared — the player is not nulled
-        // here, so its `player === recoveringPlayer` guard would otherwise pass.
-        verify { mockHandler.removeCallbacks(scheduled.captured) }
+        verifyOrder {
+            mockHandler.removeCallbacks(scheduled.captured)
+            mockPlayer.stop()
+            mockPlayer.clearVideoSurface()
+        }
     }
 
     @Test
