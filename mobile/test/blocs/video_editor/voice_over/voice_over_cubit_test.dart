@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/video_editor/voice_over/voice_over_cubit.dart';
 import 'package:openvine/services/video_editor/voice_over_recorder_service.dart';
 import 'package:permissions_service/permissions_service.dart';
+import 'package:sound_service/sound_service.dart';
 
 class _FakeRecorder implements VoiceOverRecorderService {
   final StreamController<double> _controller =
@@ -17,6 +18,7 @@ class _FakeRecorder implements VoiceOverRecorderService {
   int stopCount = 0;
   bool disposed = false;
   bool throwOnStart = false;
+  bool throwOnStop = false;
   String? lastPath;
 
   @override
@@ -35,6 +37,7 @@ class _FakeRecorder implements VoiceOverRecorderService {
   @override
   Future<String?> stop() async {
     stopCount++;
+    if (throwOnStop) throw StateError('stop failed');
     return lastPath;
   }
 
@@ -45,6 +48,15 @@ class _FakeRecorder implements VoiceOverRecorderService {
   }
 
   void emitAmplitude(double value) => _controller.add(value);
+}
+
+class _FakeAudioSessionService extends AudioSessionService {
+  int configureForMixedPlaybackCount = 0;
+
+  @override
+  Future<void> configureForMixedPlayback() async {
+    configureForMixedPlaybackCount++;
+  }
 }
 
 class _FakePermissions implements PermissionsService {
@@ -120,12 +132,14 @@ void main() {
 
   group(VoiceOverCubit, () {
     late _FakeRecorder recorder;
+    late _FakeAudioSessionService audioSessionService;
     late Directory tempDir;
 
     String takeTitle(int number) => 'Recording $number';
 
     setUp(() {
       recorder = _FakeRecorder();
+      audioSessionService = _FakeAudioSessionService();
       tempDir = Directory.systemTemp.createTempSync('voice_over_test');
     });
 
@@ -136,6 +150,7 @@ void main() {
     VoiceOverCubit buildCubit(PermissionsService permissions) {
       return VoiceOverCubit(
         recorder: recorder,
+        audioSessionService: audioSessionService,
         permissionsService: permissions,
         takeTitleBuilder: takeTitle,
         storageDirectoryProvider: () async => tempDir,
@@ -269,6 +284,7 @@ void main() {
         expect(take.duration, closeTo(0.3, 0.0001));
         expect(cubit.state.currentDuration, equals(Duration.zero));
         expect(cubit.state.waveformBars, isEmpty);
+        expect(audioSessionService.configureForMixedPlaybackCount, equals(1));
 
         await cubit.close();
       });
@@ -281,6 +297,22 @@ void main() {
 
         expect(cubit.state.takes, isEmpty);
         expect(cubit.state.status, equals(VoiceOverStatus.idle));
+        expect(audioSessionService.configureForMixedPlaybackCount, equals(1));
+
+        await cubit.close();
+      });
+
+      test('restores mixed playback when recorder stop fails', () async {
+        recorder.throwOnStop = true;
+        final cubit = buildCubit(_FakePermissions(PermissionStatus.granted));
+        await cubit.requestPermissionAndStart();
+        recorder.emitAmplitude(0.5);
+        await flush();
+
+        await cubit.stop();
+
+        expect(cubit.state.status, equals(VoiceOverStatus.error));
+        expect(audioSessionService.configureForMixedPlaybackCount, equals(1));
 
         await cubit.close();
       });
@@ -405,6 +437,7 @@ void main() {
         () async {
           final cubit = VoiceOverCubit(
             recorder: recorder,
+            audioSessionService: audioSessionService,
             permissionsService: _FakePermissions(PermissionStatus.granted),
             takeTitleBuilder: takeTitle,
             priorTakeCount: 2,
@@ -447,6 +480,7 @@ void main() {
 
         expect(cubit.state.takes, isEmpty);
         expect(cubit.state.status, equals(VoiceOverStatus.idle));
+        expect(audioSessionService.configureForMixedPlaybackCount, equals(1));
 
         await cubit.close();
       });
@@ -501,6 +535,7 @@ void main() {
         () async {
           final cubit = VoiceOverCubit(
             recorder: recorder,
+            audioSessionService: audioSessionService,
             permissionsService: _FakePermissions(PermissionStatus.granted),
             takeTitleBuilder: takeTitle,
             availableDuration: const Duration(milliseconds: 150),
@@ -555,6 +590,15 @@ void main() {
     });
 
     group('close', () {
+      test('restores mixed playback when closed during recording', () async {
+        final cubit = buildCubit(_FakePermissions(PermissionStatus.granted));
+        await cubit.requestPermissionAndStart();
+
+        await cubit.close();
+
+        expect(audioSessionService.configureForMixedPlaybackCount, equals(1));
+      });
+
       test('discards uncommitted take files', () async {
         final cubit = buildCubit(_FakePermissions(PermissionStatus.granted));
         await cubit.requestPermissionAndStart();
@@ -590,9 +634,7 @@ void main() {
 
     group('openSettings', () {
       test('delegates to the permissions service', () async {
-        final permissions = _FakePermissions(
-          PermissionStatus.requiresSettings,
-        );
+        final permissions = _FakePermissions(PermissionStatus.requiresSettings);
         final cubit = buildCubit(permissions);
 
         await cubit.openSettings();
@@ -609,6 +651,18 @@ void main() {
       await cubit.close();
 
       expect(recorder.disposed, isTrue);
+    });
+
+    test('restores mixed playback when recorder start fails', () async {
+      recorder.throwOnStart = true;
+      final cubit = buildCubit(_FakePermissions(PermissionStatus.granted));
+
+      await cubit.requestPermissionAndStart();
+
+      expect(cubit.state.status, equals(VoiceOverStatus.error));
+      expect(audioSessionService.configureForMixedPlaybackCount, equals(1));
+
+      await cubit.close();
     });
   });
 }

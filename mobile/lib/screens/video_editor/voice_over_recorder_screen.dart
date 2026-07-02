@@ -5,9 +5,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/video_editor/voice_over/voice_over_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 import 'package:permissions_service/permissions_service.dart';
 
@@ -17,7 +19,7 @@ import 'package:permissions_service/permissions_service.dart';
 /// Returns the recorded takes (as draft-local [AudioEvent]s) via
 /// [Navigator.pop] when the user taps Done, or `null` when they close the
 /// screen (in which case the recordings are discarded).
-class VoiceOverRecorderScreen extends StatelessWidget {
+class VoiceOverRecorderScreen extends ConsumerWidget {
   /// Creates the voice-over recorder screen.
   const VoiceOverRecorderScreen({
     required this.availableDuration,
@@ -38,7 +40,7 @@ class VoiceOverRecorderScreen extends StatelessWidget {
   static const routeName = 'voice-over-recorder';
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Resolve l10n here (a valid place) and capture the AppLocalizations
     // instance — `create` runs in a one-time lifecycle that cannot listen to
     // the AppLocalizations InheritedWidget, but the captured object can be
@@ -47,6 +49,7 @@ class VoiceOverRecorderScreen extends StatelessWidget {
     return BlocProvider<VoiceOverCubit>(
       create: (_) => VoiceOverCubit(
         permissionsService: const PermissionHandlerPermissionsService(),
+        audioSessionService: ref.read(audioSessionServiceProvider),
         takeTitleBuilder: l10n.videoEditorVoiceOverTakeName,
         availableDuration: availableDuration,
         priorTakeCount: priorTakeCount,
@@ -93,10 +96,8 @@ class VoiceOverRecorderView extends StatelessWidget {
           BlocListener<VoiceOverCubit, VoiceOverState>(
             listenWhen: (previous, current) =>
                 !previous.isOverAvailable && current.isOverAvailable,
-            listener: (context, _) => _announce(
-              context,
-              context.l10n.videoEditorVoiceOverTooLong,
-            ),
+            listener: (context, _) =>
+                _announce(context, context.l10n.videoEditorVoiceOverTooLong),
           ),
         ],
         child: const Column(

@@ -12,6 +12,7 @@ import 'package:openvine/services/video_editor/voice_over_recorder_service.dart'
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:permissions_service/permissions_service.dart';
+import 'package:sound_service/sound_service.dart';
 
 part 'voice_over_state.dart';
 
@@ -39,10 +40,12 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
     required PermissionsService permissionsService,
     required String Function(int takeNumber) takeTitleBuilder,
     VoiceOverRecorderService? recorder,
+    AudioSessionService? audioSessionService,
     Duration availableDuration = Duration.zero,
     int priorTakeCount = 0,
     Future<Directory> Function()? storageDirectoryProvider,
   }) : _recorder = recorder ?? RecordVoiceOverRecorderService(),
+       _audioSessionService = audioSessionService ?? AudioSessionService(),
        _permissionsService = permissionsService,
        _takeTitleBuilder = takeTitleBuilder,
        _storageDirectoryProvider =
@@ -66,6 +69,7 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
       VoiceOverRecorderService.amplitudeInterval;
 
   final VoiceOverRecorderService _recorder;
+  final AudioSessionService _audioSessionService;
   final PermissionsService _permissionsService;
   final String Function(int takeNumber) _takeTitleBuilder;
   final Future<Directory> Function() _storageDirectoryProvider;
@@ -155,6 +159,7 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
     try {
       await _recorder.start(path);
     } catch (_) {
+      await _restoreMixedPlayback();
       // start() may have created a partial file before throwing; delete it and
       // clear the field so the failed take can't strand an orphan or be
       // overwritten (and leaked) by the next successful start.
@@ -216,6 +221,7 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
 
     try {
       final path = await _recorder.stop() ?? _currentPath;
+      await _restoreMixedPlayback();
       final duration = state.currentDuration;
       _currentPath = null;
 
@@ -264,6 +270,7 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
         ),
       );
     } catch (e, stackTrace) {
+      await _restoreMixedPlayback();
       addError(e, stackTrace);
       if (!isClosed) emit(state.copyWith(status: VoiceOverStatus.error));
     } finally {
@@ -294,6 +301,7 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
     if (state.isRecording) {
       await _stopMetering();
       await _safeStopRecorder();
+      await _restoreMixedPlayback();
     }
     await _deleteTakeFiles(state.takes);
     if (_currentPath != null) {
@@ -320,6 +328,9 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
     }
   }
 
+  Future<void> _restoreMixedPlayback() =>
+      _audioSessionService.configureForMixedPlayback();
+
   Future<void> _deleteTakeFiles(List<AudioEvent> takes) async {
     for (final take in takes) {
       await _deleteFile(take.localFilePath);
@@ -344,7 +355,11 @@ class VoiceOverCubit extends Cubit<VoiceOverState> {
     // system-back / swipe-close exit (which never runs discardAll) doesn't
     // leave orphaned recordings behind.
     if (!_committed) {
+      final wasRecording = state.isRecording;
       await _safeStopRecorder();
+      if (wasRecording) {
+        await _restoreMixedPlayback();
+      }
       await _deleteTakeFiles(state.takes);
       await _deleteFile(_currentPath);
       _currentPath = null;
