@@ -9,9 +9,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/auth_service_test_harness.dart';
 
 class _MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
 
@@ -21,6 +25,9 @@ class _MockUserDataCleanupService extends Mock
 class _MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
 class _MockNostrRemoteSigner extends Mock implements NostrRemoteSigner {}
+
+class _MockBackgroundActivityManager extends Mock
+    implements BackgroundActivityManager {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -98,72 +105,116 @@ void main() {
     });
   });
 
+  group('AuthService BackgroundActivityManager registration (#4743 B3)', () {
+    test(
+      'initialize registers the service and dispose unregisters it',
+      () async {
+        final manager = _MockBackgroundActivityManager();
+        final service = AuthService(
+          userDataCleanupService: mockCleanupService,
+          keyStorage: mockKeyStorage,
+          flutterSecureStorage: mockFlutterSecureStorage,
+          backgroundActivityManager: manager,
+        );
+
+        await service.initialize();
+        verify(() => manager.registerService(service)).called(1);
+
+        await service.dispose();
+        verify(() => manager.unregisterService(service)).called(1);
+      },
+    );
+  });
+
   group('AuthService bunker signer lifecycle', () {
     late _MockNostrRemoteSigner mockBunkerSigner;
 
     setUp(() {
+      AuthServiceChannelMocks.install();
+      SharedPreferences.setMockInitialValues({kKnownAccountsKey: '[]'});
+      stubUserDataCleanupSuccess(mockCleanupService);
       mockBunkerSigner = _MockNostrRemoteSigner();
       when(() => mockBunkerSigner.pause()).thenReturn(null);
       when(() => mockBunkerSigner.resume()).thenReturn(null);
       when(() => mockBunkerSigner.close()).thenReturn(null);
     });
 
-    // Note: These tests document expected behavior.
-    // Full integration would require injecting the bunker signer,
-    // which is created internally during connectWithBunker().
+    tearDown(AuthServiceChannelMocks.remove);
 
-    test('onAppBackgrounded should pause bunker signer when active', () {
-      // This test documents the expected behavior:
-      // When app goes to background and bunker signer is active,
-      // authService.onAppBackgrounded() should call _bunkerSigner.pause()
-      //
-      // Code path:
-      //   void onAppBackgrounded() {
-      //     if (_bunkerSigner != null) {
-      //       _bunkerSigner!.pause();
-      //     }
-      //   }
-      expect(true, isTrue); // Documentation test
+    String bunkerUrl() =>
+        'bunker://${freshPubkeyHex()}'
+        '?relay=wss%3A%2F%2Frelay.example.com&secret=testsecret';
+
+    /// Connects a bunker through [mockBunkerSigner] so the returned service
+    /// holds it as the active signer.
+    Future<AuthService> connectedService() async {
+      final url = bunkerUrl();
+      when(
+        () => mockBunkerSigner.info,
+      ).thenReturn(NostrRemoteSignerInfo.parseBunkerUrl(url));
+      when(() => mockBunkerSigner.connect()).thenAnswer((_) async => 'ack');
+      when(
+        () => mockBunkerSigner.pullPubkey(),
+      ).thenAnswer((_) async => freshPubkeyHex());
+
+      final service = buildTestAuthService(
+        cleanupService: mockCleanupService,
+        remoteSignerFactory: (_, _) => mockBunkerSigner,
+      );
+      final result = await ignoringDiscoveryErrors(
+        () => service.connectWithBunker(url),
+      );
+      expect(result.success, isTrue);
+      return service;
+    }
+
+    test('onAppBackgrounded pauses the active bunker signer', () async {
+      final service = await connectedService();
+      addTearDown(service.dispose);
+
+      service.onAppBackgrounded();
+
+      verify(() => mockBunkerSigner.pause()).called(1);
     });
 
-    test('onAppResumed should resume bunker signer when active', () {
-      // This test documents the expected behavior:
-      // When app returns to foreground and bunker signer is active,
-      // authService.onAppResumed() should call _bunkerSigner.resume()
-      //
-      // Code path:
-      //   void onAppResumed() {
-      //     if (_bunkerSigner != null) {
-      //       _bunkerSigner!.resume();
-      //     }
-      //   }
-      expect(true, isTrue); // Documentation test
+    test('onAppResumed resumes the active bunker signer', () async {
+      final service = await connectedService();
+      addTearDown(service.dispose);
+
+      service.onAppResumed();
+
+      verify(() => mockBunkerSigner.resume()).called(1);
     });
 
-    test('dispose should close bunker signer when active', () {
-      // This test documents the expected behavior:
-      // When authService is disposed and bunker signer is active,
-      // it should call _bunkerSigner.close() before nulling the reference
-      //
-      // Code path:
-      //   Future<void> dispose() async {
-      //     _bunkerSigner?.close();
-      //     _bunkerSigner = null;
-      //   }
-      expect(true, isTrue); // Documentation test
+    test('dispose closes the active bunker signer', () async {
+      final service = await connectedService();
+
+      await service.dispose();
+
+      verify(() => mockBunkerSigner.close()).called(1);
     });
 
     test(
-      'connectWithBunker failure should close signer before setting to null',
-      () {
-        // This test documents the expected behavior:
-        // When bunker connection fails, we should call close() on the signer
-        // before setting _bunkerSigner = null to clean up WebSocket connections
-        //
-        // Code path (in catch block):
-        //   _bunkerSigner?.close();
-        //   _bunkerSigner = null;
-        expect(true, isTrue); // Documentation test
+      'connectWithBunker failure closes the signer before clearing it',
+      () async {
+        final url = bunkerUrl();
+        when(
+          () => mockBunkerSigner.info,
+        ).thenReturn(NostrRemoteSignerInfo.parseBunkerUrl(url));
+        when(
+          () => mockBunkerSigner.connect(),
+        ).thenThrow(Exception('relay unreachable'));
+
+        final service = buildTestAuthService(
+          cleanupService: mockCleanupService,
+          remoteSignerFactory: (_, _) => mockBunkerSigner,
+        );
+        addTearDown(service.dispose);
+
+        final result = await service.connectWithBunker(url);
+
+        expect(result.success, isFalse);
+        verify(() => mockBunkerSigner.close()).called(1);
       },
     );
 

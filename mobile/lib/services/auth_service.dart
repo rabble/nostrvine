@@ -19,6 +19,7 @@ import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
+import 'package:openvine/services/auth/relay_discovery_orchestrator.dart';
 import 'package:openvine/services/auth/signer_factory.dart';
 import 'package:openvine/services/auth/signer_secure_store.dart';
 import 'package:openvine/services/background_activity_manager.dart';
@@ -32,6 +33,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 export 'package:openvine/models/authentication_source.dart';
+// Discovery callback contracts moved with the orchestrator (#4741); external
+// consumers (NostrService wiring) keep importing them from this facade.
+export 'package:openvine/services/auth/relay_discovery_orchestrator.dart'
+    show BootstrapRelayListCallback, UserRelaysDiscoveredCallback;
 
 // Key for persisted authentication source
 const _kAuthSourceKey = 'authentication_source';
@@ -173,21 +178,6 @@ typedef PreFetchFollowingCallback = Future<void> Function(String pubkeyHex);
 /// of hitting a platform channel.
 typedef AuthUrlLauncher = Future<bool> Function(Uri url);
 
-/// Callback invoked when NIP-65 relay discovery completes with a non-empty list.
-/// Used by NostrService to add discovered relays to the current client without
-/// blocking app startup.
-typedef UserRelaysDiscoveredCallback =
-    void Function(String pubkey, List<String> relayUrls);
-
-/// Callback invoked when AuthService wants to publish a bootstrap kind:10002
-/// relay list on behalf of the user (because indexer discovery returned empty).
-///
-/// The event is already signed. The implementer publishes it through the
-/// active [NostrClient] to [targetRelays] and reports success/failure via the
-/// returned future.
-typedef BootstrapRelayListCallback =
-    Future<bool> Function(Event event, List<String> targetRelays);
-
 /// Callback invoked before AuthService clears the outgoing session identity.
 typedef BeforeSessionTeardownCallback = Future<void> Function();
 
@@ -195,16 +185,6 @@ typedef BeforeSessionTeardownCallback = Future<void> Function();
 /// exercise unreachable signer behavior without opening relay sockets.
 typedef RemoteSignerFactory =
     NostrRemoteSigner Function(int relayMode, NostrRemoteSignerInfo info);
-
-/// SharedPreferences key prefix for the per-pubkey one-shot flag that records
-/// whether we have already published a bootstrap kind:10002 on this device.
-const _kBootstrapKind10002Prefix = 'bootstrap_kind10002_published_';
-
-/// Upper bound on how long to wait for the signer when producing the
-/// bootstrap kind:10002 event. If the signer does not respond within this
-/// window (hung Keycast RPC, unreachable Amber, etc.) we abandon the publish
-/// and leave the flag unset so the next login retries. See #3174 / #3162.
-const _kBootstrapSignTimeout = Duration(seconds: 10);
 
 /// Total time budget for pre-teardown callbacks during sign-out.
 const _kBeforeSessionTeardownTimeout = Duration(seconds: 5);
@@ -221,6 +201,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     OAuthConfig? oauthConfig,
     PreFetchFollowingCallback? preFetchFollowing,
     AuthUrlLauncher? launchAuthUrl,
+    BackgroundActivityManager? backgroundActivityManager,
     String? profileCheckIndexerUrl,
     List<String>? indexerRelays,
     String? primaryRelayUrl,
@@ -236,6 +217,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
        _flutterSecureStorage = flutterSecureStorage,
        _preFetchFollowing = preFetchFollowing,
        _launchAuthUrl = launchAuthUrl,
+       // Defaults to the process-global singleton; injectable per #4743 (B3)
+       // so lifecycle tests can verify register/unregister with a fake.
+       _backgroundActivityManager =
+           backgroundActivityManager ?? BackgroundActivityManager(),
        _profileCheckIndexerUrl = profileCheckIndexerUrl,
        _primaryRelayUrl = primaryRelayUrl ?? AppConstants.defaultRelayUrl,
        _relayDiscoveryService =
@@ -263,8 +248,23 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   late final SignerFactory _signerFactory = SignerFactory(
     crashReporter: _reportAuthError,
   );
+  // Tear-offs/closures read live session state at execution time; the
+  // write-backs land results in the facade fields external consumers read.
+  late final RelayDiscoveryOrchestrator _discoveryOrchestrator =
+      RelayDiscoveryOrchestrator(
+        relayDiscoveryService: _relayDiscoveryService,
+        primaryRelayUrl: _primaryRelayUrl,
+        profileCheckIndexerUrl: _profileCheckIndexerUrl,
+        isSessionCurrent: _isRelayDiscoveryCurrent,
+        currentIdentity: () => _currentIdentity,
+        onUserRelays: (relays) => _userRelays = relays,
+        onHasExistingProfile: (hasProfile) => _hasExistingProfile = hasProfile,
+        userRelaysDiscoveredCallback: () => _onUserRelaysDiscovered,
+        bootstrapRelayListCallback: () => _onBootstrapRelayListRequested,
+      );
   final PreFetchFollowingCallback? _preFetchFollowing;
   final AuthUrlLauncher? _launchAuthUrl;
+  final BackgroundActivityManager _backgroundActivityManager;
   final String? _profileCheckIndexerUrl;
   final RemoteSignerFactory _remoteSignerFactory;
   final Duration _startupNetworkOperationTimeout;
@@ -1075,7 +1075,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   ///
   /// AuthService builds + signs the event; the callback owner is expected to
   /// broadcast it via the current [NostrClient]. See
-  /// [_publishBootstrapRelayList] and #3174.
+  /// [RelayDiscoveryOrchestrator.publishBootstrapRelayList] and #3174.
   void registerBootstrapRelayListCallback(
     BootstrapRelayListCallback? callback,
   ) {
@@ -1181,7 +1181,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _setAuthState(AuthState.checking);
 
     // Register with BackgroundActivityManager for lifecycle callbacks
-    BackgroundActivityManager().registerService(this);
+    _backgroundActivityManager.registerService(this);
 
     try {
       // Initialize secure key storage
@@ -4610,6 +4610,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// index kind 0 events.
   ///
   /// For returning users, this runs in background via unawaited().
+  ///
+  /// Delegates to [RelayDiscoveryOrchestrator]; results land back in
+  /// [_userRelays]/[_hasExistingProfile] via its write-back callbacks.
   Future<void> _performDiscovery() async {
     if (_currentKeyContainer == null) return;
 
@@ -4627,8 +4630,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       final targetPubkey =
           _currentIdentity?.pubkey ?? _currentKeyContainer?.publicKeyHex;
       await Future.wait([
-        _discoverUserRelays(npub, targetPubkey),
-        _checkExistingProfile(),
+        _discoveryOrchestrator.discoverUserRelays(npub, targetPubkey),
+        _discoveryOrchestrator.checkExistingProfile(
+          _currentKeyContainer?.publicKeyHex,
+        ),
       ]);
     } catch (e) {
       Log.warning(
@@ -4648,225 +4653,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     );
   }
 
-  /// Discover user relays via NIP-65 using direct WebSocket to indexers.
-  ///
-  /// Always runs discovery (with 24h cache to avoid redundant indexer queries).
-  /// Discovered relays are ADDED to the main client's existing connections,
-  /// so user's manual relay edits are preserved (addRelay skips duplicates).
-  ///
-  /// When discovery returns empty or fails (e.g. imported account that
-  /// never published a kind 10002 list), [IndexerRelayConfig.safeFallbackRelays]
-  /// is added to the client's connected pool so DM reachability degrades
-  /// gracefully instead of leaving the client connected only to the Divine
-  /// relay. The fallback set is NOT stored in [userRelays] — that getter
-  /// continues to report only the user's own published relays so embedded
-  /// Nostr apps querying via the bridge see accurate data. See #2931.
-  Future<void> _discoverUserRelays(String npub, String? targetPubkey) async {
-    try {
-      final result = await _relayDiscoveryService.discoverRelays(npub);
-      if (!_isRelayDiscoveryCurrent(targetPubkey)) {
-        Log.info(
-          'Ignoring relay discovery result for stale session',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        return;
-      }
-
-      if (result.success && result.hasRelays) {
-        _userRelays = result.relays;
-
-        Log.info(
-          '✅ Discovered ${_userRelays.length} user relays from '
-          '${result.foundOnIndexer ?? "cache"}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-
-        // Log relay details
-        for (final relay in _userRelays) {
-          Log.info(
-            '  - ${relay.url} (read: ${relay.read}, write: ${relay.write})',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
-        }
-
-        // Notify NostrService so it can add these relays to the current client
-        final urls = _userRelays.map((r) => r.url).toList();
-        _onUserRelaysDiscovered?.call(targetPubkey ?? npub, urls);
-      } else {
-        _userRelays = [];
-
-        Log.warning(
-          '⚠️ No relay list found for user on any indexer — '
-          'connecting to safe DM-friendly fallback relay set',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        _connectToFallbackRelays(targetPubkey ?? npub);
-        await _publishBootstrapRelayList();
-      }
-    } catch (e) {
-      if (!_isRelayDiscoveryCurrent(targetPubkey)) {
-        Log.info(
-          'Ignoring relay discovery failure for stale session',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        return;
-      }
-      _userRelays = [];
-
-      Log.error(
-        '❌ Relay discovery failed: $e — '
-        'connecting to safe DM-friendly fallback relay set',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      _connectToFallbackRelays(targetPubkey ?? npub);
-      await _publishBootstrapRelayList();
-    }
-  }
-
   bool _isRelayDiscoveryCurrent(String? targetPubkey) =>
       targetPubkey == null || _currentIdentity?.pubkey == targetPubkey;
-
-  /// Publish a bootstrap kind:10002 relay list for the signed-in user when
-  /// indexer discovery returned empty.
-  ///
-  /// Divine/Keycast-provisioned accounts are created without a published
-  /// NIP-65 relay list, which leaves them invisible to the indexers the
-  /// mobile client queries (`purplepag.es`, `user.kindpag.es`,
-  /// `relay.nos.social`). That in turn degrades reachability for every
-  /// downstream publish operation (profile save, likes, comments) because
-  /// the client can only connect to the fallback relay set. This method
-  /// self-publishes a minimal kind:10002 pointing at [_primaryRelayUrl] (the
-  /// current environment's primary relay, injected from
-  /// [EnvironmentConfig.relayUrl]) so subsequent logins on this or any other
-  /// client can discover it.
-  ///
-  /// Guards:
-  /// - fires at most once per (device, pubkey): tracked via
-  ///   [SharedPreferences] flag `bootstrap_kind10002_published_<hexpubkey>`.
-  /// - no-op if no [currentIdentity] (read-only / unauthenticated sessions).
-  /// - no-op if no bootstrap callback has been registered.
-  /// - flag is set ONLY on callback success, so failures (signer unreachable,
-  ///   publish rejected) remain retriable on next login.
-  ///
-  /// The proper server-side fix lives in divinevideo/keycast#94; this is a
-  /// client-side safety net + backfill for pre-existing accounts. See
-  /// divinevideo/divine-mobile#3174.
-  Future<void> _publishBootstrapRelayList() async {
-    final identity = _currentIdentity;
-    if (identity == null) {
-      return;
-    }
-    final callback = _onBootstrapRelayListRequested;
-    if (callback == null) {
-      return;
-    }
-    final pubkeyHex = identity.pubkey;
-    final flagKey = '$_kBootstrapKind10002Prefix$pubkeyHex';
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      if (prefs.getBool(flagKey) ?? false) {
-        return;
-      }
-
-      final unsigned = Event(
-        pubkeyHex,
-        EventKind.relayListMetadata,
-        <List<String>>[
-          <String>['r', _primaryRelayUrl],
-        ],
-        '',
-      );
-
-      // Cap how long we wait for the signer. A hung Keycast RPC would
-      // otherwise block first-login past the existing NIP-65 discovery
-      // timeout. On timeout we leave the flag unset so the next login retries.
-      final Event? signed;
-      try {
-        signed = await identity
-            .signEvent(unsigned)
-            .timeout(_kBootstrapSignTimeout);
-      } on TimeoutException {
-        Log.warning(
-          'Bootstrap kind:10002: signer timed out after '
-          '${_kBootstrapSignTimeout.inSeconds}s — will retry on next login',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        return;
-      }
-
-      if (signed == null || signed.sig.isEmpty) {
-        Log.warning(
-          'Bootstrap kind:10002: signer returned null / unsigned — will retry '
-          'on next login',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        return;
-      }
-
-      final targetRelays = <String>[
-        _primaryRelayUrl,
-        ...IndexerRelayConfig.defaultIndexers,
-      ];
-
-      final published = await callback(signed, targetRelays);
-      if (!published) {
-        Log.warning(
-          'Bootstrap kind:10002: NostrClient reported no relay accepted the '
-          'event — will retry on next login',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        return;
-      }
-
-      await prefs.setBool(flagKey, true);
-      Log.info(
-        '✅ Published bootstrap kind:10002 for $pubkeyHex to '
-        '${targetRelays.length} relays',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    } catch (e) {
-      Log.error(
-        'Bootstrap kind:10002 publish failed: $e — will retry on next login',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-  }
-
-  /// Notify the NostrService callback to connect the client to
-  /// [IndexerRelayConfig.safeFallbackRelays].
-  ///
-  /// Used when NIP-65 discovery returns empty or fails. Without this, the
-  /// client stays connected only to the Divine relay, which silently
-  /// breaks NIP-17 DM delivery for peers writing on other relays.
-  ///
-  /// Intentionally does NOT mutate [_userRelays]: that field semantically
-  /// represents the user's *own* published relay list (kind 10002) and is
-  /// surfaced to embedded Nostr apps via the bridge. The fallback set is a
-  /// reachability mechanism, not a relay list the user has chosen. See #2931.
-  void _connectToFallbackRelays(String targetPubkey) {
-    Log.info(
-      'Fallback relays: '
-      '${IndexerRelayConfig.safeFallbackRelays.join(', ')}',
-      name: 'AuthService',
-      category: LogCategory.auth,
-    );
-    _onUserRelaysDiscovered?.call(
-      targetPubkey,
-      IndexerRelayConfig.safeFallbackRelays,
-    );
-  }
 
   /// Test seam exposing the private NIP-65 discovery routine so unit
   /// tests can drive the fallback path with a mocked discovery service.
@@ -4874,11 +4662,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// of the normal sign-in flow via [_setupUserSession].
   @visibleForTesting
   Future<void> debugDiscoverUserRelays(String npub) =>
-      _discoverUserRelays(npub, _currentIdentity?.pubkey);
+      _discoveryOrchestrator.discoverUserRelays(npub, _currentIdentity?.pubkey);
 
   /// Test seam that lets unit tests install a [NostrIdentity] without
   /// going through the full sign-in pipeline. Used by tests that exercise
-  /// code paths (e.g. [_publishBootstrapRelayList]) which depend on
+  /// code paths (e.g. the bootstrap kind:10002 publish) which depend on
   /// [currentIdentity] being set.
   @visibleForTesting
   void debugSetIdentity(NostrIdentity? identity) {
@@ -4899,88 +4687,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   @visibleForTesting
   void debugSetCurrentKeyContainer(SecureKeyContainer? container) {
     _currentKeyContainer = container;
-  }
-
-  /// Check if user has an existing profile (kind 0) on indexer relays.
-  ///
-  /// Uses a direct WebSocket connection to an indexer relay (purplepag.es
-  /// indexes kind 0 events) to check for existing profiles.
-  Future<void> _checkExistingProfile() async {
-    if (_currentKeyContainer == null) {
-      _hasExistingProfile = false;
-      return;
-    }
-
-    Log.info(
-      '👤 Checking for existing profile (kind 0)...',
-      name: 'AuthService',
-      category: LogCategory.auth,
-    );
-
-    try {
-      final pubkeyHex = _currentKeyContainer!.publicKeyHex;
-      final indexerUrl =
-          _profileCheckIndexerUrl ?? IndexerRelayConfig.defaultIndexers.first;
-
-      final relayStatus = RelayStatus(indexerUrl);
-      final relay = RelayBase(indexerUrl, relayStatus);
-      final completer = Completer<bool>();
-      final subscriptionId = 'pc_${DateTime.now().millisecondsSinceEpoch}';
-
-      relay.onMessage = (relay, json) async {
-        if (json.isEmpty) return;
-        final messageType = json[0] as String;
-        if (messageType == 'EVENT' && json.length >= 3) {
-          if (!completer.isCompleted) {
-            completer.complete(true);
-          }
-        } else if (messageType == 'EOSE') {
-          if (!completer.isCompleted) {
-            completer.complete(false);
-          }
-        }
-      };
-
-      final filter = <String, dynamic>{
-        'kinds': <int>[0],
-        'authors': <String>[pubkeyHex],
-        'limit': 1,
-      };
-      relay.pendingMessages.add(<dynamic>['REQ', subscriptionId, filter]);
-
-      final connected = await relay.connect();
-      if (!connected) {
-        _hasExistingProfile = false;
-        return;
-      }
-
-      try {
-        _hasExistingProfile = await completer.future.timeout(
-          const Duration(seconds: 10),
-          onTimeout: () => false,
-        );
-        await relay.send(<dynamic>['CLOSE', subscriptionId]);
-      } finally {
-        try {
-          await relay.disconnect();
-        } catch (_) {}
-      }
-
-      Log.info(
-        '${_hasExistingProfile ? "✅" : "📝"} Profile check: '
-        'hasExistingProfile=$_hasExistingProfile',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    } catch (e) {
-      _hasExistingProfile = false;
-
-      Log.warning(
-        '⚠️ Profile check failed: $e - assuming no existing profile',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
   }
 
   /// Update authentication state and notify listeners
@@ -5143,7 +4849,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     );
 
     // Unregister from BackgroundActivityManager
-    BackgroundActivityManager().unregisterService(this);
+    _backgroundActivityManager.unregisterService(this);
 
     // Close bunker signer if active
     _bunkerSigner?.close();
