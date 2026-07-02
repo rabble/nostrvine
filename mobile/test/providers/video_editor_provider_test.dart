@@ -1425,38 +1425,35 @@ void main() {
         },
       );
 
-      test(
-        'returns false when every clip has a missing source file',
-        () async {
-          final draft = DivineVideoDraft.create(
-            id: 'draft-1',
-            clips: [
-              DivineVideoClip(
-                id: 'orphan',
-                video: EditorVideo.file('${tempDir.path}/deleted.mp4'),
-                duration: const Duration(seconds: 3),
-                recordedAt: DateTime.now(),
-                targetAspectRatio: .vertical,
-                originalAspectRatio: 9 / 16,
-              ),
-            ],
-            title: 'Title',
-            description: '',
-            hashtags: const {},
-            selectedApproach: 'video',
-          );
-          when(
-            () => mockDraftStorage.getDraftById('draft-1'),
-          ).thenAnswer((_) async => draft);
+      test('returns false when every clip has a missing source file', () async {
+        final draft = DivineVideoDraft.create(
+          id: 'draft-1',
+          clips: [
+            DivineVideoClip(
+              id: 'orphan',
+              video: EditorVideo.file('${tempDir.path}/deleted.mp4'),
+              duration: const Duration(seconds: 3),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: .vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Title',
+          description: '',
+          hashtags: const {},
+          selectedApproach: 'video',
+        );
+        when(
+          () => mockDraftStorage.getDraftById('draft-1'),
+        ).thenAnswer((_) async => draft);
 
-          final result = await container
-              .read(videoEditorProvider.notifier)
-              .restoreDraft('draft-1');
+        final result = await container
+            .read(videoEditorProvider.notifier)
+            .restoreDraft('draft-1');
 
-          expect(result, isFalse);
-          expect(container.read(clipManagerProvider).clips, isEmpty);
-        },
-      );
+        expect(result, isFalse);
+        expect(container.read(clipManagerProvider).clips, isEmpty);
+      });
 
       test('restores the saved cover position onto state', () async {
         final draft = DivineVideoDraft.create(
@@ -1991,6 +1988,105 @@ void main() {
         isFalse,
         reason: 'onDispose reaps deferred files left when reset never ran',
       );
+    });
+
+    test('container teardown reaps a replaced final rendered file', () async {
+      final suffix = DateTime.now().microsecondsSinceEpoch;
+      final documentsDir = Directory('/tmp/documents')
+        ..createSync(recursive: true);
+      final source = File(p.join(documentsDir.path, 'source-$suffix.mp4'))
+        ..writeAsBytesSync(const [1, 2, 3]);
+      final oldRendered = File(
+        p.join(documentsDir.path, 'old-rendered-$suffix.mp4'),
+      )..writeAsBytesSync(const [4, 5, 6]);
+      final newRendered = File(
+        p.join(documentsDir.path, 'new-rendered-$suffix.mp4'),
+      )..writeAsBytesSync(const [7, 8, 9]);
+      addTearDown(() async {
+        for (final file in [source, oldRendered, newRendered]) {
+          if (file.existsSync()) {
+            await file.delete();
+          }
+        }
+      });
+      final realDraftStorage = DraftStorageService(
+        draftsDao: database.draftsDao,
+        clipsDao: database.clipsDao,
+      );
+
+      DivineVideoClip timelineClip() => DivineVideoClip(
+        id: 'timeline',
+        video: EditorVideo.file(source.path),
+        duration: const Duration(seconds: 6),
+        recordedAt: DateTime(2025),
+        targetAspectRatio: AspectRatio.square,
+        originalAspectRatio: 9 / 16,
+      );
+
+      DivineVideoClip renderedClip(String id, File file) => DivineVideoClip(
+        id: id,
+        video: EditorVideo.file(file.path),
+        duration: const Duration(seconds: 6),
+        recordedAt: DateTime(2025),
+        targetAspectRatio: AspectRatio.square,
+        originalAspectRatio: 9 / 16,
+      );
+
+      await realDraftStorage.saveDraft(
+        DivineVideoDraft.create(
+          id: VideoEditorConstants.autoSaveId,
+          clips: [timelineClip()],
+          title: '',
+          description: '',
+          hashtags: const {},
+          selectedApproach: 'video',
+          finalRenderedClip: renderedClip('old-rendered', oldRendered),
+        ),
+      );
+
+      when(
+        () => mockDraftStorage.saveDraft(
+          any(),
+          deferOrphanCleanup: any(named: 'deferOrphanCleanup'),
+        ),
+      ).thenAnswer((invocation) async {
+        await realDraftStorage.saveDraft(
+          invocation.positionalArguments.first as DivineVideoDraft,
+          deferOrphanCleanup:
+              invocation.namedArguments[#deferOrphanCleanup]
+                  as void Function(List<String?>)?,
+        );
+      });
+
+      final notifier = container.read(videoEditorProvider.notifier);
+      container
+          .read(clipManagerProvider.notifier)
+          .addClip(
+            limitClipDuration: false,
+            video: EditorVideo.file(source.path),
+            targetAspectRatio: AspectRatio.square,
+            originalAspectRatio: 9 / 16,
+            duration: const Duration(seconds: 6),
+          );
+      notifier.state = notifier.state.copyWith(
+        finalRenderedClip: renderedClip('new-rendered', newRendered),
+      );
+
+      await notifier.autosaveChanges();
+      expect(oldRendered.existsSync(), isTrue);
+      expect(notifier.deferredFileCleanupForTest, contains(oldRendered.path));
+
+      disposeContainer();
+      await pumpEventQueue();
+
+      expect(
+        oldRendered.existsSync(),
+        isFalse,
+        reason:
+            'onDispose must reap a replaced rendered export once the new '
+            'draft row no longer references it',
+      );
+      expect(newRendered.existsSync(), isTrue);
     });
   });
 }

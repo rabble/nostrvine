@@ -38,6 +38,7 @@ class RenderedSpeedClip {
 class ClipSpeedRenderService {
   final _cache = <String, RenderedSpeedClip>{};
   final _inFlight = <String, Future<RenderedSpeedClip?>>{};
+  int _clearGeneration = 0;
 
   /// Monotonic counter bumped on every cache mutation, so consumers can detect
   /// when the player composition needs rebuilding without diffing the cache.
@@ -61,7 +62,16 @@ class ClipSpeedRenderService {
     final key = _key(clip);
     final cached = _cache[key];
     if (cached != null) return Future<RenderedSpeedClip?>.value(cached);
-    return _inFlight[key] ??= _render(clip, key);
+    final inFlight = _inFlight[key];
+    if (inFlight != null) return inFlight;
+    final render = _render(clip, key);
+    _inFlight[key] = render;
+    render.whenComplete(() {
+      if (identical(_inFlight[key], render)) {
+        _inFlight.remove(key);
+      }
+    });
+    return render;
   }
 
   bool _needsRender(DivineVideoClip clip) {
@@ -70,18 +80,27 @@ class ClipSpeedRenderService {
   }
 
   Future<RenderedSpeedClip?> _render(DivineVideoClip clip, String key) async {
+    final renderGeneration = _clearGeneration;
+    String? tempOutput;
+    String? tempPath;
+    String? cachePath;
     try {
       // Wait for a still-processing recording to finish before rendering.
       await clip.processingCompleter?.future;
 
       final hash = sha256.convert(utf8.encode(key)).toString();
-      final persistentPath = await _persistentPath(hash);
+      cachePath = await _cachePath(hash);
+      if (_isStale(renderGeneration)) return null;
 
-      // Reuse a file rendered in a previous session; a truncated file left by a
-      // kill mid-write is detected and dropped so it re-renders.
-      if (File(persistentPath).existsSync()) {
-        final existing = await _fromPersistedFile(persistentPath);
+      // Reuse a file rendered earlier in this temp-cache lifetime; a truncated
+      // file left by a kill mid-write is detected and dropped so it re-renders.
+      if (File(cachePath).existsSync()) {
+        final existing = await _fromPersistedFile(cachePath);
         if (existing != null) {
+          if (_isStale(renderGeneration)) {
+            await _deleteQuietly(existing.path);
+            return null;
+          }
           _cache[key] = existing;
           _version++;
           return existing;
@@ -89,7 +108,7 @@ class ClipSpeedRenderService {
       }
 
       final tempDir = await getTemporaryDirectory();
-      final tempOutput =
+      tempOutput =
           '${tempDir.path}/speed_${DateTime.now().microsecondsSinceEpoch}.mp4';
 
       // Render only the trimmed body at the target speed, with no crop/transform
@@ -112,19 +131,35 @@ class ClipSpeedRenderService {
           shouldOptimizeForNetworkUse: true,
         ),
       );
+      if (_isStale(renderGeneration)) {
+        await _deleteQuietly(tempOutput);
+        return null;
+      }
 
-      // Publish atomically within the documents dir (temp→copy→rename) so a
+      // Publish atomically within the temp cache (temp→copy→rename) so a
       // crash mid-copy can only leave a stray `.tmp`, never a truncated keyed
       // file that would resolve to a corrupt render forever.
-      final tempPath = '$persistentPath.tmp';
+      tempPath = '$cachePath.tmp';
+      File(cachePath).parent.createSync(recursive: true);
       await File(tempOutput).copy(tempPath);
-      await File(tempPath).rename(persistentPath);
+      await File(tempPath).rename(cachePath);
       await _deleteQuietly(tempOutput);
+      if (_isStale(renderGeneration)) {
+        await _deleteQuietly(cachePath);
+        await _deleteEmptyParent(cachePath);
+        return null;
+      }
 
-      final rendered = await _fromPersistedFile(persistentPath);
+      final rendered = await _fromPersistedFile(cachePath);
       if (rendered == null) return null;
+      if (_isStale(renderGeneration)) {
+        await _deleteQuietly(rendered.path);
+        await _deleteEmptyParent(rendered.path);
+        return null;
+      }
       _cache[key] = rendered;
       _version++;
+      await _evictOldCacheFiles(protectedPath: rendered.path);
       Log.info(
         '🎬 Speed body rendered: ${clip.id} @${clip.playbackSpeed}× '
         '→ ${rendered.duration.inMilliseconds}ms',
@@ -142,9 +177,15 @@ class ClipSpeedRenderService {
       );
       return null;
     } finally {
-      _inFlight.remove(key);
+      if (_isStale(renderGeneration)) {
+        if (tempOutput != null) await _deleteQuietly(tempOutput);
+        if (tempPath != null) await _deleteQuietly(tempPath);
+        if (cachePath != null) await _deleteEmptyParent(cachePath);
+      }
     }
   }
+
+  bool _isStale(int renderGeneration) => renderGeneration != _clearGeneration;
 
   /// Loads a previously-rendered file from [path], or `null` (deleting it) when
   /// it can't be read or has no duration — e.g. a truncated file from a kill
@@ -185,10 +226,77 @@ class ClipSpeedRenderService {
     }
   }
 
+  Future<void> _deleteEmptyParent(String path) async {
+    try {
+      final parent = File(path).parent;
+      if (parent.existsSync() && parent.listSync().isEmpty) {
+        await parent.delete();
+      }
+    } catch (_) {
+      // Best-effort cleanup; temp cache can be reaped by the OS later.
+    }
+  }
+
+  void _deleteCachedFilesSync(Iterable<RenderedSpeedClip> clips) {
+    final parents = <String>{};
+    for (final clip in clips) {
+      parents.add(File(clip.path).parent.path);
+      try {
+        final file = File(clip.path);
+        if (file.existsSync()) file.deleteSync();
+      } catch (_) {
+        // Best-effort cleanup; temp cache can be reaped by the OS later.
+      }
+      try {
+        final tempFile = File('${clip.path}.tmp');
+        if (tempFile.existsSync()) tempFile.deleteSync();
+      } catch (_) {
+        // Best-effort cleanup; temp cache can be reaped by the OS later.
+      }
+    }
+    for (final parent in parents) {
+      try {
+        final dir = Directory(parent);
+        if (dir.existsSync() && dir.listSync().isEmpty) {
+          dir.deleteSync();
+        }
+      } catch (_) {
+        // Best-effort cleanup; temp cache can be reaped by the OS later.
+      }
+    }
+  }
+
+  static const _maxCachedFiles = 32;
+
+  Future<void> _evictOldCacheFiles({required String protectedPath}) async {
+    try {
+      final dir = File(protectedPath).parent;
+      if (!dir.existsSync()) return;
+      final files =
+          dir
+              .listSync()
+              .whereType<File>()
+              .where((file) => file.path.endsWith('.mp4'))
+              .toList()
+            ..sort(
+              (a, b) => a.statSync().modified.compareTo(b.statSync().modified),
+            );
+      var remainingCount = files.length;
+      if (remainingCount <= _maxCachedFiles) return;
+      for (final file in files) {
+        if (file.path == protectedPath) continue;
+        await _deleteQuietly(file.path);
+        remainingCount--;
+        if (remainingCount <= _maxCachedFiles) return;
+      }
+    } catch (_) {
+      // Best-effort bounded cache eviction.
+    }
+  }
+
   /// Bumped whenever the render inputs baked into the file change shape, so
   /// files rendered by an older algorithm are re-rendered after an app upgrade
-  /// instead of replayed stale (the keyed files live in the documents dir and
-  /// survive upgrades).
+  /// instead of replayed stale if the OS keeps temp cache files around.
   static const _cacheVersion = 1;
 
   String _key(DivineVideoClip clip) =>
@@ -197,19 +305,24 @@ class ClipSpeedRenderService {
       '${clip.trimEnd.inMicroseconds}:${clip.playbackSpeed ?? 1.0}';
 
   /// Deterministic on-disk path for a rendered body, keyed by [hash] so the same
-  /// clip + trims + speed reuse the file across editor sessions (like seams).
-  Future<String> _persistentPath(String hash) async {
-    final dir = await getApplicationDocumentsDirectory();
+  /// clip + trims + speed can reuse a temp-cache file while it remains valid.
+  Future<String> _cachePath(String hash) async {
+    final dir = await getTemporaryDirectory();
     final speedDir = Directory('${dir.path}/speed_clips');
     if (!speedDir.existsSync()) speedDir.createSync(recursive: true);
     return '${speedDir.path}/$hash.mp4';
   }
 
-  /// Drops the in-memory cache (e.g. when the editor closes). On-disk files stay
-  /// for the next session.
+  /// Drops the in-memory cache (e.g. when the editor closes) and deletes the
+  /// derived speed files it owns. In-flight renders are generation-invalidated
+  /// so a late native completion cleans itself up instead of repopulating disk.
   void clear() {
+    _clearGeneration++;
+    final cachedClips = _cache.values.toList();
     _cache.clear();
+    _inFlight.clear();
     _version++;
+    _deleteCachedFilesSync(cachedClips);
   }
 
   /// Seeds the cache directly so [buildSeamAwarePlayerClips] can be exercised

@@ -1,12 +1,98 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_editor/clip_speed_render_service.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' as editor;
 
+class _FakePathProviderPlatform extends Fake
+    with MockPlatformInterfaceMixin
+    implements PathProviderPlatform {
+  _FakePathProviderPlatform({
+    required this.temporaryPath,
+    required this.documentsPath,
+  });
+
+  final String temporaryPath;
+  final String documentsPath;
+
+  @override
+  Future<String?> getTemporaryPath() async => temporaryPath;
+
+  @override
+  Future<String?> getApplicationDocumentsPath() async => documentsPath;
+
+  @override
+  Future<String?> getApplicationCachePath() async =>
+      p.join(p.dirname(temporaryPath), 'cache');
+}
+
+class _FakeProVideoEditor extends editor.ProVideoEditor {
+  final renderStarted = <Completer<void>>[];
+  final allowRenderToFinish = <Completer<void>>[];
+  int renderCount = 0;
+
+  Completer<void> renderStartedAt(int index) {
+    while (renderStarted.length <= index) {
+      renderStarted.add(Completer<void>());
+    }
+    return renderStarted[index];
+  }
+
+  Completer<void> allowRenderToFinishAt(int index) {
+    while (allowRenderToFinish.length <= index) {
+      allowRenderToFinish.add(Completer<void>());
+    }
+    return allowRenderToFinish[index];
+  }
+
+  @override
+  void initializeStream() {}
+
+  @override
+  Future<void> cancel(String taskId) async {}
+
+  @override
+  Future<String> renderVideoToFile(
+    String filePath,
+    editor.VideoRenderData value, {
+    editor.NativeLogLevel? nativeLogLevel,
+  }) async {
+    final renderIndex = renderCount++;
+    renderStartedAt(renderIndex).complete();
+    await allowRenderToFinishAt(renderIndex).future;
+    await File(filePath).writeAsString('rendered speed body');
+    return filePath;
+  }
+
+  @override
+  Future<editor.VideoMetadata> getMetadata(
+    editor.EditorVideo value, {
+    bool checkStreamingOptimization = false,
+    editor.NativeLogLevel? nativeLogLevel,
+  }) async {
+    return editor.VideoMetadata(
+      duration: const Duration(milliseconds: 1500),
+      extension: 'mp4',
+      fileSize: 1024,
+      resolution: const Size(1080, 1920),
+      rotation: 0,
+      bitrate: 1_000_000,
+    );
+  }
+}
+
 void main() {
+  late Directory tempDir;
+  late PathProviderPlatform originalPathProvider;
+  late editor.ProVideoEditor originalProVideoEditor;
+
   DivineVideoClip clip(
     String id, {
     double? playbackSpeed,
@@ -31,6 +117,29 @@ void main() {
   );
 
   group(ClipSpeedRenderService, () {
+    setUp(() async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      originalPathProvider = PathProviderPlatform.instance;
+      originalProVideoEditor = editor.ProVideoEditor.instance;
+      tempDir = await Directory.systemTemp.createTemp(
+        'clip_speed_render_service_test_',
+      );
+      PathProviderPlatform.instance = _FakePathProviderPlatform(
+        temporaryPath: p.join(tempDir.path, 'tmp'),
+        documentsPath: p.join(tempDir.path, 'documents'),
+      );
+      await Directory(p.join(tempDir.path, 'tmp')).create(recursive: true);
+      await Directory(
+        p.join(tempDir.path, 'documents'),
+      ).create(recursive: true);
+    });
+
+    tearDown(() async {
+      PathProviderPlatform.instance = originalPathProvider;
+      editor.ProVideoEditor.instance = originalProVideoEditor;
+      if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+    });
+
     group('cached', () {
       test('returns the seeded render for a non-1× clip', () {
         final c = clip('a', playbackSpeed: 2);
@@ -114,6 +223,123 @@ void main() {
         expect(service.version, greaterThan(afterSeed));
         expect(service.cached(c), isNull);
       });
+    });
+
+    group('disk cleanup', () {
+      test(
+        'renders speed files under temporary cache instead of documents',
+        () async {
+          final c = clip(
+            'a',
+            playbackSpeed: 2,
+            path: p.join(tempDir.path, 'source.mp4'),
+          );
+          File(c.video.file!.path).writeAsStringSync('source');
+          final fakeEditor = _FakeProVideoEditor();
+          editor.ProVideoEditor.instance = fakeEditor;
+          final service = ClipSpeedRenderService();
+
+          final render = service.render(c);
+          await fakeEditor.renderStartedAt(0).future;
+          fakeEditor.allowRenderToFinishAt(0).complete();
+          final rendered = await render;
+
+          expect(rendered, isNotNull);
+          expect(
+            p.isWithin(
+              p.join(tempDir.path, 'tmp', 'speed_clips'),
+              rendered!.path,
+            ),
+            isTrue,
+          );
+          expect(
+            Directory(
+              p.join(tempDir.path, 'documents', 'speed_clips'),
+            ).existsSync(),
+            isFalse,
+          );
+        },
+      );
+
+      test('clear removes cached rendered speed files from disk', () {
+        final c = clip('a', playbackSpeed: 2);
+        final file = File(p.join(tempDir.path, 'tmp', 'speed_clips', 'a.mp4'))
+          ..createSync(recursive: true)
+          ..writeAsStringSync('rendered speed body');
+        final service = ClipSpeedRenderService()
+          ..cacheForTest(
+            c,
+            RenderedSpeedClip(
+              path: file.path,
+              duration: const Duration(milliseconds: 1500),
+            ),
+          );
+
+        service.clear();
+
+        expect(file.existsSync(), isFalse);
+        expect(service.cached(c), isNull);
+      });
+
+      test(
+        'clear prevents an in-flight render from publishing a file',
+        () async {
+          final c = clip(
+            'a',
+            playbackSpeed: 2,
+            path: p.join(tempDir.path, 'source.mp4'),
+          );
+          File(c.video.file!.path).writeAsStringSync('source');
+          final fakeEditor = _FakeProVideoEditor();
+          editor.ProVideoEditor.instance = fakeEditor;
+          final service = ClipSpeedRenderService();
+
+          final render = service.render(c);
+          await fakeEditor.renderStartedAt(0).future;
+          service.clear();
+
+          fakeEditor.allowRenderToFinishAt(0).complete();
+          final rendered = await render;
+
+          expect(rendered, isNull);
+          expect(service.cached(c), isNull);
+          expect(
+            Directory(p.join(tempDir.path, 'tmp', 'speed_clips')).existsSync(),
+            isFalse,
+          );
+        },
+      );
+
+      test(
+        'a stale render does not unregister the replacement in-flight render',
+        () async {
+          final c = clip(
+            'a',
+            playbackSpeed: 2,
+            path: p.join(tempDir.path, 'source.mp4'),
+          );
+          File(c.video.file!.path).writeAsStringSync('source');
+          final fakeEditor = _FakeProVideoEditor();
+          editor.ProVideoEditor.instance = fakeEditor;
+          final service = ClipSpeedRenderService();
+
+          final staleRender = service.render(c);
+          await fakeEditor.renderStartedAt(0).future;
+          service.clear();
+
+          final replacementRender = service.render(c);
+          await fakeEditor.renderStartedAt(1).future;
+          fakeEditor.allowRenderToFinishAt(0).complete();
+          await staleRender;
+
+          expect(service.isRendering(c), isTrue);
+          expect(service.render(c), same(replacementRender));
+
+          fakeEditor.allowRenderToFinishAt(1).complete();
+          expect(await replacementRender, isNotNull);
+          expect(service.isRendering(c), isFalse);
+        },
+      );
     });
   });
 }
