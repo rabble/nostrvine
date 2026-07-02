@@ -1,4 +1,3 @@
-@Tags(['integration'])
 // ABOUTME: Regression coverage for concurrent thumbnail loading through VineCachedImage
 // ABOUTME: Ensures placeholders and transport settings stay stable under load
 import 'package:flutter/material.dart';

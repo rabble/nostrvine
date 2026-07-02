@@ -8,12 +8,18 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 
+import '../test_setup.dart' as app_harness;
+
 /// Setup real integration test environment with minimal mocking
 /// Only mocks platform channels that can't be tested, uses real Nostr connections
 class RealIntegrationTestHelper {
   static bool _isSetup = false;
 
   /// Setup test environment with platform channel mocks and real Nostr
+  ///
+  /// Must be called from a running test, `setUp`, or `setUpAll` (it registers
+  /// an [addTearDown] restore). From a `setUpAll` the restore becomes a
+  /// group-scoped `tearDownAll`.
   static Future<void> setupTestEnvironment() async {
     if (_isSetup) return;
 
@@ -22,7 +28,29 @@ class RealIntegrationTestHelper {
     // Mock platform channels that can't run in test environment
     _setupPlatformChannelMocks();
 
+    // The handlers above overwrite shared channels owned by the app-wide
+    // harness (test_setup.dart) with degraded ones (secure-storage reads
+    // return null). Under very_good --optimization every suite shares one
+    // isolate, so leaving them installed strands later suites — the
+    // #5713→#5725 failure class (#5738).
+    addTearDown(_restoreSharedChannelDefaults);
+
     _isSetup = true;
+  }
+
+  static void _restoreSharedChannelDefaults() {
+    app_harness.setupTestEnvironment();
+    // Helper-local channels the app harness does not own: clear outright.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      ..setMockMethodCallHandler(
+        const MethodChannel('plugins.flutter.io/shared_preferences'),
+        null,
+      )
+      ..setMockMethodCallHandler(
+        const MethodChannel('dev.fluttercommunity.plus/connectivity'),
+        null,
+      );
+    _isSetup = false;
   }
 
   /// Create a real NostrService with embedded relay

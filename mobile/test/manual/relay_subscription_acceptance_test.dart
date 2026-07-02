@@ -18,10 +18,12 @@
 // which this protocol-level test needs. Mirrors the self-contained shape of
 // nip98_relay_acceptance_test.dart (#5111).
 
-// Manual, Docker-dependent real-network acceptance test (raw WS to
-// localhost:47777). The integration tag keeps it out of normal VGV unit-test
-// runs unless explicitly requested.
-@Tags(['integration'])
+// Permanent: a manual, Docker-dependent real-network acceptance test whose
+// setUpAll opens a real Socket.connect probe to localhost:47777. File-level
+// @Tags are dropped inside the merged VGV bundle, so 'integration' alone
+// cannot keep this file out of CI (#5340 regression, #5738); the skip tag
+// runs it as a separate suite, which --exclude-tags integration then skips.
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';

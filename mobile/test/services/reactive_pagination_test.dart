@@ -1,4 +1,3 @@
-@Tags(['integration'])
 // ABOUTME: Integration test to verify reactive pagination works correctly
 // ABOUTME: Tests VideoEventService ChangeNotifier behavior and loadMoreEvents functionality
 import 'package:flutter/foundation.dart';

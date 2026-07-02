@@ -1,4 +1,3 @@
-@Tags(['integration'])
 // ABOUTME: Integration test for video playback stopping behavior
 // ABOUTME: Verifies videos stop on route changes and background
 import 'dart:async';

@@ -283,6 +283,34 @@ jobs:
             exit 1
           fi
           echo "✅ VGV tag count OK: current=$current, baseline=$baseline"
+      - name: 🏷️ Verify no integration-only file-level @Tags
+        # Guards the #5340 regression class (#5738). The generated
+        # .test_optimizer.dart drops file-level @Tags, so
+        # `--exclude-tags integration` CANNOT exclude a bundled file — an
+        # 'integration'-only file tag is a dead letter that silently runs
+        # inside the merged CI suite. A file-level integration tag is only
+        # meaningful together with skip_very_good_optimization (run as a
+        # separate suite, which -x integration then excludes).
+        run: |
+          violations=""
+          while IFS= read -r f; do
+            if ! grep -qE "^[[:space:]]*@Tags\([^)]*skip_very_good_optimization" "$f"; then
+              violations="$violations  $f"$'\n'
+            fi
+          done < <(grep -rlE "^[[:space:]]*@Tags\([^)]*['\"]integration['\"]" test --include='*.dart' || true)
+          if [ -n "$violations" ]; then
+            echo "❌ File-level @Tags(['integration']) without skip_very_good_optimization:"
+            printf '%s' "$violations"
+            echo ""
+            echo "File-level @Tags are dropped inside the merged VGV bundle, so these"
+            echo "files RUN in CI despite --exclude-tags integration. Either:"
+            echo "  (a) remove the dead-letter 'integration' tag, or"
+            echo "  (b) add 'skip_very_good_optimization' to the same @Tags annotation"
+            echo "      (with a '// Permanent: <reason>' comment) and bump"
+            echo "      mobile/test/vgv_tag_baseline.txt."
+            exit 1
+          fi
+          echo "✅ No integration-only file-level @Tags"
   mobile-ci:
     name: Mobile CI
     if: ${{ always() }}

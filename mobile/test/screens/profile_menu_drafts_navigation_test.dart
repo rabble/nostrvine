@@ -1,4 +1,3 @@
-@Tags(['integration'])
 // ABOUTME: TDD integration test for navigating to VineDraftsScreen from profile menu
 // ABOUTME: Ensures users can access their drafts from the profile screen
 import 'package:flutter/material.dart';

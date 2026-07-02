@@ -1,4 +1,3 @@
-@Tags(['integration'])
 // ABOUTME: Integration test for complete account deletion flow
 // ABOUTME: Tests end-to-end deletion from Settings through sign out
 import 'package:flutter/material.dart';

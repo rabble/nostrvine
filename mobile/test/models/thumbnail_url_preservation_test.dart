@@ -1,6 +1,3 @@
-@Tags(['integration'])
-// Initializes Hive's process-wide box registry; the integration tag keeps this
-// test out of the merged VGV optimizer run.
 // ABOUTME: Integration test verifying thumbnail URL is preserved through upload success flow
 // ABOUTME: Tests the fix for race condition where thumbnail URL was lost during _handleUploadSuccess()
 import 'package:flutter_riverpod/flutter_riverpod.dart';

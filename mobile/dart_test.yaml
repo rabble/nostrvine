@@ -1,13 +1,11 @@
 # ABOUTME: Dart test configuration for Flutter tests
-# ABOUTME: Excludes old/deprecated test files and configures test behavior
+# ABOUTME: Configures timeouts, platforms, and registered test tags
 
-# Exclude patterns - don't run tests in these directories
-exclude:
-  - test/old_files/**
-  - test/**/old_files/**
-  - test/manual/**        # Manual/debug scripts that hit real endpoints
-  - test/**/*.mocks.dart  # Mock files are generated, not run
-  - test/**/*.g.dart      # Generated files
+# NOTE: package:test has no `exclude:` or `shuffle:` config keys — unknown
+# keys are silently ignored — and the very_good --optimization bundler
+# collects every *_test.dart under test/ regardless of this file (#5738).
+# The only mechanism that removes a file from the merged CI suite is a
+# file-level @Tags(['skip_very_good_optimization']) annotation.
 
 # Test timeouts (in seconds)
 # Default timeout for all tests
@@ -30,6 +28,4 @@ tags:
   service:
     timeout: 10m
 
-# Test randomization
-shuffle: false
 chain_stack_traces: true
