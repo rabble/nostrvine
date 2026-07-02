@@ -8,6 +8,8 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/router/app_router.dart';
+import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -35,6 +37,8 @@ void main() {
       bool isInteracting = false,
       ValueChanged<List<DivineVideoClip>>? onReorder,
       ValueChanged<bool>? onReorderChanged,
+      ClipThumbnailManager? thumbnailManager,
+      List<NavigatorObserver> navigatorObservers = const <NavigatorObserver>[],
     }) {
       final testClips =
           clips ??
@@ -44,6 +48,7 @@ void main() {
           ];
 
       return MaterialApp(
+        navigatorObservers: navigatorObservers,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
@@ -60,6 +65,7 @@ void main() {
                 isInteracting: isInteracting,
                 onReorder: onReorder,
                 onReorderChanged: onReorderChanged,
+                thumbnailManager: thumbnailManager,
               ),
             ),
           ),
@@ -158,6 +164,42 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(reorderTriggered, isFalse);
+      });
+
+      testWidgets('pauses thumbnails while another route covers the strip', (
+        tester,
+      ) async {
+        final thumbnailManager = _RecordingClipThumbnailManager();
+
+        await tester.pumpWidget(
+          buildWidget(
+            thumbnailManager: thumbnailManager,
+            navigatorObservers: <NavigatorObserver>[routeObserver],
+          ),
+        );
+        await tester.pump();
+
+        final context = tester.element(
+          find.byType(VideoEditorTimelineClipStrip),
+        );
+        final push = Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => const Scaffold(body: SizedBox.shrink()),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(thumbnailManager.pauseCount, equals(1));
+        expect(thumbnailManager.resumeCount, isZero);
+
+        Navigator.of(context).pop();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await push;
+
+        expect(thumbnailManager.pauseCount, equals(1));
+        expect(thumbnailManager.resumeCount, equals(1));
       });
     });
 
@@ -375,6 +417,23 @@ void main() {
       );
     });
   });
+}
+
+class _RecordingClipThumbnailManager extends ClipThumbnailManager {
+  int pauseCount = 0;
+  int resumeCount = 0;
+
+  @override
+  void pauseAll() {
+    pauseCount++;
+    super.pauseAll();
+  }
+
+  @override
+  void resumeAll() {
+    resumeCount++;
+    super.resumeAll();
+  }
 }
 
 DivineVideoClip _createTestClip({

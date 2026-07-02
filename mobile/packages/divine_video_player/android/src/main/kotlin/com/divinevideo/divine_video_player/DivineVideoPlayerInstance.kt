@@ -132,6 +132,7 @@ internal class DivineVideoPlayerInstance(
      * spin in a prepare/error loop.
      */
     private var decoderRetryCount = 0
+    private var decoderRetryRunnable: Runnable? = null
     private var videoWidth = 0
     private var videoHeight = 0
     private var rotationDegrees = 0
@@ -462,6 +463,7 @@ internal class DivineVideoPlayerInstance(
         firstFrameRendered = false
         // New media gets the full retry budget — exhaustion belonged to the
         // previous clip list.
+        cancelDecoderRetry()
         decoderRetryCount = 0
 
         // Resolve the optional global start position to (clipIndex, localMs)
@@ -1072,15 +1074,23 @@ internal class DivineVideoPlayerInstance(
                 "in ${DECODER_RETRY_DELAY_MS}ms",
             name = "DivineVideoPlayer.Playback",
         )
-        mainHandler.postDelayed(
-            {
+        cancelDecoderRetry()
+        val retryRunnable = object : Runnable {
+            override fun run() {
+                if (decoderRetryRunnable === this) decoderRetryRunnable = null
                 // The player may have been released or replaced while waiting;
                 // only re-prepare the exact instance that errored.
                 if (player === recoveringPlayer) recoveringPlayer.prepare()
-            },
-            DECODER_RETRY_DELAY_MS,
-        )
+            }
+        }
+        decoderRetryRunnable = retryRunnable
+        mainHandler.postDelayed(retryRunnable, DECODER_RETRY_DELAY_MS)
         return true
+    }
+
+    private fun cancelDecoderRetry() {
+        decoderRetryRunnable?.let { mainHandler.removeCallbacks(it) }
+        decoderRetryRunnable = null
     }
 
     // -- lifecycle --
@@ -1163,6 +1173,7 @@ internal class DivineVideoPlayerInstance(
         mainHandler.removeCallbacks(seekTimeoutRunnable)
         mainHandler.removeCallbacks(setClipsTimeoutRunnable)
         mainHandler.removeCallbacks(bufferingWatchdogRunnable)
+        cancelDecoderRetry()
         seekCompletionResult?.success(null)
         seekCompletionResult = null
         pendingSetClipsResult?.success(null)

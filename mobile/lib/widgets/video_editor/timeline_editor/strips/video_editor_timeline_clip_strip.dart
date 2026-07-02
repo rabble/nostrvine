@@ -48,6 +48,7 @@ class VideoEditorTimelineClipStrip extends StatefulWidget {
     this.onTrimDragChanged,
     this.isMultiSelectMode = false,
     this.selectedClipIds = const {},
+    @visibleForTesting this.thumbnailManager,
     super.key,
   });
 
@@ -64,6 +65,11 @@ class VideoEditorTimelineClipStrip extends StatefulWidget {
 
   /// IDs of the clips currently selected in multi-select mode.
   final Set<String> selectedClipIds;
+
+  /// Test seam for asserting route-aware thumbnail pausing without invoking the
+  /// native thumbnail extractor.
+  @visibleForTesting
+  final ClipThumbnailManager? thumbnailManager;
 
   /// When `true` the user is scrolling or pinch-zooming — long press
   /// must not start a reorder drag.
@@ -122,7 +128,7 @@ class _VideoEditorTimelineClipStripState
   /// Thumbnail data keyed by clip ID — survives reordering.
   /// Each notifier is updated independently so only the affected
   /// clip tile rebuilds, not the entire strip.
-  final _thumbnails = ClipThumbnailManager();
+  late final ClipThumbnailManager _thumbnails;
 
   /// Identity of the last split event we already seeded thumbnails
   /// for. Used to ensure each split is processed exactly once.
@@ -150,6 +156,7 @@ class _VideoEditorTimelineClipStripState
   @override
   void initState() {
     super.initState();
+    _thumbnails = widget.thumbnailManager ?? ClipThumbnailManager();
     _reorderAnimController = AnimationController(
       vsync: this,
       duration: _animDuration,

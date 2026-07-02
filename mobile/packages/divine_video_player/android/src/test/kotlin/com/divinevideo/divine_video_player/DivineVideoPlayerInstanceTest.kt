@@ -525,6 +525,27 @@ class DivineVideoPlayerInstanceTest {
     }
 
     @Test
+    fun `superseding setClips cancels a pending decoder retry`() {
+        val listener = capturePlayerListener()
+        instance.onMethodCall(
+            setClipsCall("file:///tmp/a.mp4"),
+            mockk(relaxed = true),
+        )
+        clearMocks(mockHandler, answers = false, recordedCalls = true)
+
+        val scheduled = slot<Runnable>()
+        every { mockHandler.postDelayed(capture(scheduled), 350L) } returns true
+        listener.onPlayerError(decoderInitError())
+
+        instance.onMethodCall(
+            setClipsCall("file:///tmp/b.mp4"),
+            mockk(relaxed = true),
+        )
+
+        verify { mockHandler.removeCallbacks(scheduled.captured) }
+    }
+
+    @Test
     fun `superseding setClips completes the previous result with CANCELLED`() {
         capturePlayerListener()
         val first = mockk<MethodChannel.Result>(relaxed = true)
