@@ -126,10 +126,7 @@ void main() {
         expect(thumbnails[0].timestamp, equals(Duration.zero));
         // 2 s thumbnail shifted by −1 s → 1 s
         expect(thumbnails[1].path, equals('/t/2.jpg'));
-        expect(
-          thumbnails[1].timestamp,
-          equals(const Duration(seconds: 1)),
-        );
+        expect(thumbnails[1].timestamp, equals(const Duration(seconds: 1)));
       });
 
       test('excludes thumbnails outside the requested range', () {
@@ -161,10 +158,7 @@ void main() {
         final thumbnails = manager['tgt'].value;
         expect(thumbnails, hasLength(1));
         expect(thumbnails.first.path, equals('/t/5.jpg'));
-        expect(
-          thumbnails.first.timestamp,
-          equals(const Duration(seconds: 1)),
-        );
+        expect(thumbnails.first.timestamp, equals(const Duration(seconds: 1)));
       });
 
       test('is a no-op when source notifier does not exist', () {
@@ -200,10 +194,7 @@ void main() {
           currentSourcePath: '/video/src.mp4',
         );
 
-        expect(
-          manager['tgt'],
-          isA<ValueNotifier<List<StripThumbnail>>>(),
-        );
+        expect(manager['tgt'], isA<ValueNotifier<List<StripThumbnail>>>());
         expect(manager['tgt'].value, hasLength(1));
       });
 
@@ -239,10 +230,7 @@ void main() {
 
         // Re-sync with target added. targetClip uses a network URL so
         // _loadThumbnails exits early and never overwrites the notifier.
-        manager.sync(
-          clips: [sourceClip, targetClip],
-          devicePixelRatio: 1,
-        );
+        manager.sync(clips: [sourceClip, targetClip], devicePixelRatio: 1);
 
         expect(manager['tgt'].value, equals(seededValue));
       });
@@ -363,6 +351,33 @@ void main() {
         expect(thumbnails[0].timestamp, equals(const Duration(seconds: 3)));
         expect(thumbnails[1].path, equals('/t/4.jpg'));
         expect(thumbnails[1].timestamp, equals(const Duration(seconds: 4)));
+      });
+    });
+
+    group('pauseAll / resumeAll', () {
+      test('are safe on an idle manager with no active subscriptions', () {
+        expect(manager.pauseAll, returnsNormally);
+        expect(manager.resumeAll, returnsNormally);
+      });
+
+      test('are safe after syncing clips', () {
+        manager.sync(clips: [_createTestClip(id: 'a')], devicePixelRatio: 1);
+
+        expect(manager.pauseAll, returnsNormally);
+        expect(manager.resumeAll, returnsNormally);
+      });
+
+      test('pausing before a sync keeps that sync safe', () {
+        manager.pauseAll();
+
+        expect(
+          () => manager.sync(
+            clips: [_createTestClip(id: 'a')],
+            devicePixelRatio: 1,
+          ),
+          returnsNormally,
+        );
+        expect(manager.resumeAll, returnsNormally);
       });
     });
 

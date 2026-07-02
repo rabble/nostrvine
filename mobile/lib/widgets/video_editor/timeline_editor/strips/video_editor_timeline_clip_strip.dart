@@ -12,6 +12,7 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/mounted_post_frame.dart';
@@ -87,7 +88,7 @@ class VideoEditorTimelineClipStrip extends StatefulWidget {
 
 class _VideoEditorTimelineClipStripState
     extends State<VideoEditorTimelineClipStrip>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, RouteAware {
   static const _animDuration = Duration(milliseconds: 250);
 
   /// Drives reorder shrink/grow timing so we can react to completion
@@ -159,6 +160,13 @@ class _VideoEditorTimelineClipStripState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Pause thumbnail extraction while the editor is obscured (e.g. after
+    // pushing the metadata/preview screen) so its MediaMetadataRetriever
+    // frames stop competing for hardware decoders with the render/preview.
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      routeObserver.subscribe(this, route);
+    }
     _maybeSeedSplit();
     _syncThumbnails();
   }
@@ -174,7 +182,14 @@ class _VideoEditorTimelineClipStripState
   }
 
   @override
+  void didPushNext() => _thumbnails.pauseAll();
+
+  @override
+  void didPopNext() => _thumbnails.resumeAll();
+
+  @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _stopAutoScroll();
     _volumeExitTimer?.cancel();
     _reorderAnimController.dispose();
@@ -212,9 +227,7 @@ class _VideoEditorTimelineClipStripState
     final startClipIdx = widget.clips.indexWhere(
       (c) => c.id == split.startClipId,
     );
-    final endClipIdx = widget.clips.indexWhere(
-      (c) => c.id == split.endClipId,
-    );
+    final endClipIdx = widget.clips.indexWhere((c) => c.id == split.endClipId);
     if (startClipIdx == -1 || endClipIdx == -1) return;
     final startClip = widget.clips[startClipIdx];
     final endClip = widget.clips[endClipIdx];

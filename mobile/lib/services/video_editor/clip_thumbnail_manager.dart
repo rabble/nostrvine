@@ -27,6 +27,10 @@ class ClipThumbnailManager {
   // (still un-trimmed) source video.
   final Set<String> _seeded = {};
 
+  /// When true, newly started subscriptions begin paused and existing ones are
+  /// held. See [pauseAll].
+  bool _paused = false;
+
   /// Returns the thumbnail notifier for the given [clipId].
   ValueNotifier<List<StripThumbnail>> operator [](String clipId) =>
       _notifiers[clipId]!;
@@ -196,7 +200,7 @@ class ClipThumbnailManager {
                 TimelineConstants.thumbnailWidth)
             .ceil();
 
-    _subscriptions[clip.id] =
+    final subscription =
         VideoThumbnailService.generateStripThumbnails(
           videoPath: videoPath,
           clipId: clip.id,
@@ -207,6 +211,29 @@ class ClipThumbnailManager {
         ).listen((thumbnails) {
           _notifiers[clip.id]?.value = thumbnails;
         });
+    // If the owner paused while this clip was (re)synced, keep the new
+    // subscription paused too so it doesn't start extracting off-screen.
+    if (_paused) subscription.pause();
+    _subscriptions[clip.id] = subscription;
+  }
+
+  /// Pauses all in-flight thumbnail subscriptions — e.g. while the editor is
+  /// obscured by another route — so the native frame extraction stops
+  /// contending for hardware decoders and CPU. Lossless: the batch stream
+  /// generators suspend at the next batch boundary and continue on [resumeAll].
+  void pauseAll() {
+    _paused = true;
+    for (final sub in _subscriptions.values) {
+      if (!sub.isPaused) sub.pause();
+    }
+  }
+
+  /// Resumes thumbnail extraction paused by [pauseAll].
+  void resumeAll() {
+    _paused = false;
+    for (final sub in _subscriptions.values) {
+      if (sub.isPaused) sub.resume();
+    }
   }
 
   static void _deleteFiles(List<StripThumbnail> thumbnails) {

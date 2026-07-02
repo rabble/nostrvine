@@ -90,7 +90,6 @@ class _VideoMetadataCoverScreenState
     );
     if (!mounted) return;
     _videoDuration = metadata.duration;
-    _startStripGeneration(localPath);
 
     final controller = DivineVideoPlayerController(useTexture: true);
     await controller.initialize();
@@ -109,6 +108,12 @@ class _VideoMetadataCoverScreenState
         _pendingSeekPosition = null;
       });
     }
+
+    // Start strip extraction only after the player has acquired its decoder.
+    // Both read the same file; the MediaMetadataRetriever strip frames would
+    // otherwise contend with the player's decoder init and can leave the
+    // preview stuck on DECODER_INIT_FAILED (a scarce hardware-decoder pool).
+    if (mounted) _startStripGeneration(localPath);
   }
 
   Future<void> _startStripGeneration(String videoPath) async {
@@ -604,9 +609,7 @@ class _ThumbnailStripState extends State<_ThumbnailStrip> {
 
   Duration _clampPosition(Duration position) {
     final maxMs = widget.clipDuration.inMilliseconds;
-    return Duration(
-      milliseconds: position.inMilliseconds.clamp(0, maxMs),
-    );
+    return Duration(milliseconds: position.inMilliseconds.clamp(0, maxMs));
   }
 
   void _seekBySemanticsDelta(Duration delta) {
@@ -673,19 +676,14 @@ class _ThumbnailStripState extends State<_ThumbnailStrip> {
           final count = (stripWidth / _stripThumbWidth).ceil().clamp(1, 500);
           _updateSlotCache(count);
           final slotWidth = stripWidth / count;
-          final cursorDx = _dxFromPosition(
-            widget.selectedPosition,
-            stripWidth,
-          );
+          final cursorDx = _dxFromPosition(widget.selectedPosition, stripWidth);
 
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTapDown: (d) => widget.onSeek(
-              _positionFromDx(d.localPosition.dx, stripWidth),
-            ),
-            onHorizontalDragUpdate: (d) => widget.onSeek(
-              _positionFromDx(d.localPosition.dx, stripWidth),
-            ),
+            onTapDown: (d) =>
+                widget.onSeek(_positionFromDx(d.localPosition.dx, stripWidth)),
+            onHorizontalDragUpdate: (d) =>
+                widget.onSeek(_positionFromDx(d.localPosition.dx, stripWidth)),
             child: SizedBox(
               width: stripWidth,
               height: _stripHeight,
@@ -752,23 +750,15 @@ class _SlotImage extends StatelessWidget {
         ? ExcludeSemantics(
             child: VineCachedImage(
               imageUrl: thumbnail!.networkUrl!,
-              placeholder: (_, _) => const ColoredBox(
-                color: VineTheme.surfaceContainerHigh,
-              ),
-              errorWidget: (_, _, _) => const ColoredBox(
-                color: VineTheme.surfaceContainerHigh,
-              ),
+              placeholder: (_, _) =>
+                  const ColoredBox(color: VineTheme.surfaceContainerHigh),
+              errorWidget: (_, _, _) =>
+                  const ColoredBox(color: VineTheme.surfaceContainerHigh),
             ),
           )
         : thumbnail?.file != null
-        ? Image.file(
-            thumbnail!.file!,
-            fit: .cover,
-            excludeFromSemantics: true,
-          )
-        : const ColoredBox(
-            color: VineTheme.surfaceContainerHigh,
-          );
+        ? Image.file(thumbnail!.file!, fit: .cover, excludeFromSemantics: true)
+        : const ColoredBox(color: VineTheme.surfaceContainerHigh);
 
     if (stripThumbnailPath == null) return fallback;
 
