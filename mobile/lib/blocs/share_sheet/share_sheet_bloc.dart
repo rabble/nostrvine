@@ -27,8 +27,8 @@ part 'share_sheet_state.dart';
 ///
 /// Manages:
 /// - Contact loading (recent + followed users)
-/// - Recipient selection
-/// - Quick-send and send-with-message flows
+/// - Recipient selection (select-then-send: tapping a contact only selects;
+///   the DM goes out on an explicit [ShareSheetSendRequested])
 /// - One-shot actions (save, copy link, copy JSON, copy event ID, share via)
 ///
 /// Emits [ShareSheetActionResult] as one-shot side effects for the UI
@@ -53,14 +53,6 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
        _videoClipImportService = videoClipImportService,
        super(const ShareSheetState()) {
     on<ShareSheetContactsLoadRequested>(_onContactsLoadRequested);
-    on<ShareSheetQuickSendRequested>(
-      _onQuickSendRequested,
-      // Concurrent (not droppable): each tap gives instant optimistic feedback
-      // and its send runs in the background, so tapping several people in a row
-      // confirms each immediately instead of dropping taps during an in-flight
-      // send. See #5391.
-      transformer: concurrent(),
-    );
     on<ShareSheetRecipientSelected>(_onRecipientSelected);
     on<ShareSheetRecipientCleared>(_onRecipientCleared);
     on<ShareSheetSendRequested>(_onSendRequested, transformer: droppable());
@@ -195,68 +187,6 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   }
 
   // --------------------------------------------------------------------------
-  // Quick-send (tap contact → send immediately, no message)
-  // --------------------------------------------------------------------------
-
-  Future<void> _onQuickSendRequested(
-    ShareSheetQuickSendRequested event,
-    Emitter<ShareSheetState> emit,
-  ) async {
-    final user = event.recipient;
-    if (state.sentPubkeys.contains(user.pubkey)) return;
-
-    final recipientName = user.displayName ?? 'user';
-
-    // Optimistic: confirm instantly (checkmark + toast) and clear any selected
-    // recipient so More Actions stays visible. The actual NIP-17 send (crypto +
-    // relay publish) runs in the background below — the rumor is enqueued
-    // durably before publishing, so the send survives a crash and is retried.
-    // This is what removes the felt wait-for-network lag. See #5391.
-    emit(
-      state.copyWith(
-        sentPubkeys: {...state.sentPubkeys, user.pubkey},
-        clearRecipient: true,
-        actionResult: ShareSheetSendSuccess(recipientName),
-      ),
-    );
-
-    try {
-      final result = await _videoSharingService.shareVideoWithUser(
-        video: _video,
-        recipientPubkey: user.pubkey,
-      );
-      // Success was already shown optimistically; nothing more to emit. If the
-      // sheet was dismissed mid-send, the bloc is closed — don't emit.
-      if (result.success || isClosed) return;
-      // Roll back the optimistic checkmark and surface the failure.
-      emit(
-        state.copyWith(
-          sentPubkeys: {...state.sentPubkeys}..remove(user.pubkey),
-          actionResult: ShareSheetSendFailure(),
-        ),
-      );
-    } catch (e, stackTrace) {
-      _addUnexpectedError(
-        e,
-        stackTrace,
-        ShareSheetBlocReportableSites.onQuickSendRequested,
-      );
-      Log.error(
-        'Failed to quick-send video: $e',
-        name: 'ShareSheetBloc',
-        category: LogCategory.ui,
-      );
-      if (isClosed) return;
-      emit(
-        state.copyWith(
-          sentPubkeys: {...state.sentPubkeys}..remove(user.pubkey),
-          actionResult: ShareSheetSendFailure(),
-        ),
-      );
-    }
-  }
-
-  // --------------------------------------------------------------------------
   // Send with optional message
   // --------------------------------------------------------------------------
 
@@ -266,9 +196,8 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   ) async {
     if (state.selectedRecipient == null || state.isSending) return;
 
-    // Send-with-message is a deliberate compose-then-send: it keeps the
-    // awaited flow with a visible "sending" spinner (isSending) and surfaces
-    // failures in-sheet. Only the no-feedback quick-send tap is optimistic.
+    // Deliberate compose-then-send: the awaited flow keeps a visible
+    // "sending" spinner (isSending) and surfaces failures in-sheet.
     emit(state.copyWith(isSending: true, clearActionResult: true));
 
     try {
@@ -288,7 +217,8 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
             isSending: false,
             actionResult: ShareSheetSendSuccess(
               recipientName,
-              shouldDismiss: true,
+              recipientPubkey: recipient.pubkey,
+              conversationId: result.conversationId,
             ),
           ),
         );

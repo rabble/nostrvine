@@ -28,13 +28,22 @@ sealed class ShareSheetActionResult {
 }
 
 class ShareSheetSendSuccess extends ShareSheetActionResult {
-  ShareSheetSendSuccess(this.recipientName, {this.shouldDismiss = false});
+  ShareSheetSendSuccess(
+    this.recipientName, {
+    required this.recipientPubkey,
+    this.conversationId,
+  });
 
   final String recipientName;
 
-  /// Whether the UI should dismiss the sheet after this success.
-  /// True for send-with-message, false for quick-send.
-  final bool shouldDismiss;
+  /// Recipient pubkey, passed as the conversation participant when the
+  /// success snackbar's "View chat" action navigates to the DM thread.
+  final String recipientPubkey;
+
+  /// NIP-17 conversation ID for "View chat" navigation. Null when the send
+  /// went over the legacy NIP-04 path, which has no conversation ID — the
+  /// snackbar then shows no action.
+  final String? conversationId;
 }
 
 class ShareSheetSendFailure extends ShareSheetActionResult {
@@ -122,7 +131,6 @@ class ShareSheetState extends Equatable {
     this.status = ShareSheetStatus.initial,
     this.contacts = const [],
     this.selectedRecipient,
-    this.sentPubkeys = const {},
     this.isSending = false,
     this.actionResult,
   });
@@ -135,9 +143,6 @@ class ShareSheetState extends Equatable {
 
   /// Currently selected recipient for message-send flow.
   final ShareableUser? selectedRecipient;
-
-  /// Pubkeys that have already been sent to (quick-send).
-  final Set<String> sentPubkeys;
 
   /// Whether a send operation is in progress.
   final bool isSending;
@@ -153,7 +158,6 @@ class ShareSheetState extends Equatable {
     ShareSheetStatus? status,
     List<ShareableUser>? contacts,
     ShareableUser? selectedRecipient,
-    Set<String>? sentPubkeys,
     bool? isSending,
     ShareSheetActionResult? actionResult,
     bool clearRecipient = false,
@@ -165,7 +169,6 @@ class ShareSheetState extends Equatable {
       selectedRecipient: clearRecipient
           ? null
           : (selectedRecipient ?? this.selectedRecipient),
-      sentPubkeys: sentPubkeys ?? this.sentPubkeys,
       isSending: isSending ?? this.isSending,
       actionResult: clearActionResult
           ? null
@@ -178,7 +181,6 @@ class ShareSheetState extends Equatable {
     status,
     contacts,
     selectedRecipient,
-    sentPubkeys,
     isSending,
     actionResult,
   ];

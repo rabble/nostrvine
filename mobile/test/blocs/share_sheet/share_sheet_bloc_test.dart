@@ -1,5 +1,5 @@
 // ABOUTME: Tests for ShareSheetBloc
-// ABOUTME: Verifies contact loading, quick-send, send-with-message,
+// ABOUTME: Verifies contact loading, recipient selection, send-with-message,
 // ABOUTME: save, copy, and share-via action flows
 
 import 'package:bloc_test/bloc_test.dart';
@@ -140,7 +140,6 @@ void main() {
       expect(bloc.state.status, equals(ShareSheetStatus.initial));
       expect(bloc.state.contacts, isEmpty);
       expect(bloc.state.selectedRecipient, isNull);
-      expect(bloc.state.sentPubkeys, isEmpty);
       expect(bloc.state.isSending, isFalse);
       expect(bloc.state.actionResult, isNull);
       bloc.close();
@@ -366,136 +365,12 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
-    // Quick-send
-    // -----------------------------------------------------------------------
-
-    group('ShareSheetQuickSendRequested', () {
-      const otherRecipient = ShareableUser(
-        pubkey:
-            'ffff456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-        displayName: 'Bob',
-      );
-
-      blocTest<ShareSheetBloc, ShareSheetState>(
-        'optimistically marks sent and emits success immediately, no wait',
-        setUp: () {
-          when(
-            () => mockSharingService.shareVideoWithUser(
-              video: any(named: 'video'),
-              recipientPubkey: any(named: 'recipientPubkey'),
-            ),
-          ).thenAnswer((_) async => ShareResult.createSuccess('msg-event-id'));
-        },
-        seed: () => const ShareSheetState(status: ShareSheetStatus.ready),
-        build: createBloc,
-        act: (bloc) =>
-            bloc.add(const ShareSheetQuickSendRequested(testRecipient)),
-        // A single optimistic emit: marked sent + success toast, no isSending
-        // step. The background send succeeds, so nothing more is emitted.
-        expect: () => [
-          isA<ShareSheetState>()
-              .having((s) => s.isSending, 'isSending', isFalse)
-              .having((s) => s.selectedRecipient, 'selectedRecipient', isNull)
-              .having(
-                (s) => s.sentPubkeys.contains(testRecipient.pubkey),
-                'sentPubkeys contains recipient',
-                isTrue,
-              )
-              .having(
-                (s) => s.actionResult,
-                'actionResult',
-                isA<ShareSheetSendSuccess>()
-                    .having((r) => r.recipientName, 'name', 'Alice')
-                    .having((r) => r.shouldDismiss, 'shouldDismiss', isFalse),
-              ),
-        ],
-      );
-
-      blocTest<ShareSheetBloc, ShareSheetState>(
-        'rolls back the optimistic mark and emits failure when send fails',
-        setUp: () {
-          when(
-            () => mockSharingService.shareVideoWithUser(
-              video: any(named: 'video'),
-              recipientPubkey: any(named: 'recipientPubkey'),
-            ),
-          ).thenAnswer((_) async => ShareResult.failure('Relay offline'));
-        },
-        seed: () => const ShareSheetState(status: ShareSheetStatus.ready),
-        build: createBloc,
-        act: (bloc) =>
-            bloc.add(const ShareSheetQuickSendRequested(testRecipient)),
-        expect: () => [
-          // Optimistic success first…
-          isA<ShareSheetState>()
-              .having(
-                (s) => s.sentPubkeys.contains(testRecipient.pubkey),
-                'optimistically sent',
-                isTrue,
-              )
-              .having(
-                (s) => s.actionResult,
-                'actionResult',
-                isA<ShareSheetSendSuccess>(),
-              ),
-          // …then rolled back with a failure once the background send fails.
-          isA<ShareSheetState>()
-              .having(
-                (s) => s.sentPubkeys.contains(testRecipient.pubkey),
-                'rolled back',
-                isFalse,
-              )
-              .having(
-                (s) => s.actionResult,
-                'actionResult',
-                isA<ShareSheetSendFailure>(),
-              ),
-        ],
-      );
-
-      blocTest<ShareSheetBloc, ShareSheetState>(
-        'confirms multiple recipients tapped in a row (concurrent)',
-        setUp: () {
-          when(
-            () => mockSharingService.shareVideoWithUser(
-              video: any(named: 'video'),
-              recipientPubkey: any(named: 'recipientPubkey'),
-            ),
-          ).thenAnswer((_) async => ShareResult.createSuccess('msg-event-id'));
-        },
-        seed: () => const ShareSheetState(status: ShareSheetStatus.ready),
-        build: createBloc,
-        act: (bloc) => bloc
-          ..add(const ShareSheetQuickSendRequested(testRecipient))
-          ..add(const ShareSheetQuickSendRequested(otherRecipient)),
-        verify: (bloc) {
-          expect(
-            bloc.state.sentPubkeys,
-            containsAll([testRecipient.pubkey, otherRecipient.pubkey]),
-          );
-        },
-      );
-
-      blocTest<ShareSheetBloc, ShareSheetState>(
-        'ignores event when pubkey already sent',
-        seed: () => ShareSheetState(
-          status: ShareSheetStatus.ready,
-          sentPubkeys: {testRecipient.pubkey},
-        ),
-        build: createBloc,
-        act: (bloc) =>
-            bloc.add(const ShareSheetQuickSendRequested(testRecipient)),
-        expect: () => <ShareSheetState>[],
-      );
-    });
-
-    // -----------------------------------------------------------------------
     // Send with message
     // -----------------------------------------------------------------------
 
     group('ShareSheetSendRequested', () {
       blocTest<ShareSheetBloc, ShareSheetState>(
-        'emits success with shouldDismiss true when send succeeds',
+        'emits success carrying the conversation id when send succeeds',
         setUp: () {
           when(
             () => mockSharingService.shareVideoWithUser(
@@ -503,7 +378,12 @@ void main() {
               recipientPubkey: any(named: 'recipientPubkey'),
               personalMessage: any(named: 'personalMessage'),
             ),
-          ).thenAnswer((_) async => ShareResult.createSuccess('msg-event-id'));
+          ).thenAnswer(
+            (_) async => ShareResult.createSuccess(
+              'msg-event-id',
+              conversationId: 'conversation-1',
+            ),
+          );
         },
         seed: () => const ShareSheetState(
           status: ShareSheetStatus.ready,
@@ -523,12 +403,54 @@ void main() {
               .having(
                 (s) => s.actionResult,
                 'actionResult',
-                isA<ShareSheetSendSuccess>().having(
-                  (r) => r.shouldDismiss,
-                  'shouldDismiss',
-                  isTrue,
-                ),
+                isA<ShareSheetSendSuccess>()
+                    .having((r) => r.recipientName, 'name', 'Alice')
+                    .having(
+                      (r) => r.recipientPubkey,
+                      'recipientPubkey',
+                      testRecipient.pubkey,
+                    )
+                    .having(
+                      (r) => r.conversationId,
+                      'conversationId',
+                      'conversation-1',
+                    ),
               ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'emits success with null conversation id on the legacy NIP-04 path',
+        setUp: () {
+          when(
+            () => mockSharingService.shareVideoWithUser(
+              video: any(named: 'video'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              personalMessage: any(named: 'personalMessage'),
+            ),
+          ).thenAnswer((_) async => ShareResult.createSuccess('msg-event-id'));
+        },
+        seed: () => const ShareSheetState(
+          status: ShareSheetStatus.ready,
+          selectedRecipient: testRecipient,
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetSendRequested()),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.isSending,
+            'isSending',
+            isTrue,
+          ),
+          isA<ShareSheetState>().having(
+            (s) => s.actionResult,
+            'actionResult',
+            isA<ShareSheetSendSuccess>().having(
+              (r) => r.conversationId,
+              'conversationId',
+              isNull,
+            ),
+          ),
         ],
       );
 

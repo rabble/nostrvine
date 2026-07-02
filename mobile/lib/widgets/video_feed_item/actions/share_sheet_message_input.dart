@@ -7,13 +7,11 @@ part of 'share_action_button.dart';
 class _MessageInput extends StatelessWidget {
   const _MessageInput({
     required this.controller,
-    required this.recipient,
     required this.isSending,
     required this.onSend,
   });
 
   final TextEditingController controller;
-  final ShareableUser recipient;
   final bool isSending;
   final VoidCallback onSend;
 
@@ -21,71 +19,46 @@ class _MessageInput extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
+        spacing: 8,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              spacing: 8,
-              children: [
-                UserAvatar(
-                  imageUrl: recipient.picture,
-                  name: recipient.displayName,
-                  size: 24,
+          Expanded(
+            child: TextField(
+              controller: controller,
+              // Selection reveals the composer; pop the keyboard right away
+              // so compose-and-send is a single uninterrupted gesture.
+              autofocus: true,
+              style: const TextStyle(
+                color: VineTheme.whiteText,
+                fontSize: 14,
+              ),
+              decoration: InputDecoration(
+                hintText: context.l10n.shareMessageHint,
+                hintStyle: const TextStyle(color: VineTheme.secondaryText),
+                filled: true,
+                fillColor: VineTheme.containerLow,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
                 ),
-                Text(
-                  context.l10n.shareSendingTo(
-                    recipient.displayName ?? context.l10n.shareUserFallback,
-                  ),
-                  style: const TextStyle(
-                    color: VineTheme.secondaryText,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Row(
-            spacing: 8,
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 14,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: context.l10n.shareMessageHint,
-                    hintStyle: const TextStyle(color: VineTheme.secondaryText),
-                    filled: true,
-                    fillColor: VineTheme.containerLow,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 16,
-                    ),
-                  ),
-                  maxLines: 4,
-                  minLines: 1,
-                  maxLength: 500,
-                  buildCounter:
-                      (
-                        context, {
-                        required currentLength,
-                        required isFocused,
-                        required maxLength,
-                      }) => null,
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 16,
                 ),
               ),
-              _SendButton(isSending: isSending, onTap: onSend),
-            ],
+              maxLines: 4,
+              minLines: 1,
+              maxLength: 500,
+              buildCounter:
+                  (
+                    context, {
+                    required currentLength,
+                    required isFocused,
+                    required maxLength,
+                  }) => null,
+            ),
           ),
+          _SendButton(isSending: isSending, onTap: onSend),
         ],
       ),
     );

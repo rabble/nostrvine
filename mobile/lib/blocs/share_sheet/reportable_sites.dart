@@ -6,7 +6,6 @@
 /// [ShareSheetBloc].
 abstract class ShareSheetBlocReportableSites {
   static const String onContactsLoadRequested = '_onContactsLoadRequested';
-  static const String onQuickSendRequested = '_onQuickSendRequested';
   static const String onSendRequested = '_onSendRequested';
   static const String onSaveRequested = '_onSaveRequested';
   static const String onAddVideoToClipsRequested =

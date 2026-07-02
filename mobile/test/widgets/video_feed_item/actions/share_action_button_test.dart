@@ -308,6 +308,199 @@ void main() {
         expect(find.text('Save with Watermark'), findsOneWidget);
       });
 
+      group('recipient selection', () {
+        const alice = ShareableUser(
+          pubkey:
+              'fedcba9876543210fedcba9876543210'
+              'fedcba9876543210fedcba9876543210',
+          displayName: 'Alice',
+        );
+        const bob = ShareableUser(
+          pubkey:
+              '11111111111111111111111111111111'
+              '11111111111111111111111111111111',
+          displayName: 'Bob',
+        );
+
+        late AppLocalizations l10n;
+
+        setUp(() {
+          l10n = lookupAppLocalizations(const Locale('en'));
+          when(
+            () => mockVideoSharingService.recentlySharedWith,
+          ).thenReturn([alice, bob]);
+        });
+
+        Future<void> pumpOpenSheet(WidgetTester tester) async {
+          final mockAuth = createMockAuthService();
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: Scaffold(body: ShareActionButton(video: testVideo)),
+              additionalOverrides: [
+                videoSharingServiceProvider.overrideWith(
+                  (ref) => mockVideoSharingService,
+                ),
+              ],
+              mockAuthService: mockAuth,
+              mockProfileRepository: mockProfileRepository,
+              mockFollowRepository: mockFollowRepository,
+            ),
+          );
+
+          await tester.tap(find.byType(ShareActionButton));
+          await tester.pumpAndSettle();
+        }
+
+        testWidgets(
+          'tapping a contact selects it and swaps more actions for the '
+          'message composer without sending',
+          (tester) async {
+            await pumpOpenSheet(tester);
+            expect(find.text('More actions'), findsOneWidget);
+
+            await tester.tap(find.text('Alice'));
+            await tester.pumpAndSettle();
+
+            expect(find.byType(TextField), findsOneWidget);
+            expect(find.text('More actions'), findsNothing);
+            verifyNever(
+              () => mockVideoSharingService.shareVideoWithUser(
+                video: any(named: 'video'),
+                recipientPubkey: any(named: 'recipientPubkey'),
+                personalMessage: any(named: 'personalMessage'),
+              ),
+            );
+          },
+        );
+
+        testWidgets(
+          'tapping the selected contact again deselects, restores more '
+          'actions, and drops the draft',
+          (tester) async {
+            await pumpOpenSheet(tester);
+
+            await tester.tap(find.text('Alice'));
+            await tester.pumpAndSettle();
+            await tester.enterText(find.byType(TextField), 'draft text');
+
+            await tester.tap(find.text('Alice'));
+            await tester.pumpAndSettle();
+
+            expect(find.byType(TextField), findsNothing);
+            expect(find.text('More actions'), findsOneWidget);
+
+            // Re-selecting shows an empty composer — the draft was dropped.
+            await tester.tap(find.text('Alice'));
+            await tester.pumpAndSettle();
+            final field = tester.widget<TextField>(find.byType(TextField));
+            expect(field.controller!.text, isEmpty);
+          },
+        );
+
+        testWidgets(
+          'tapping a different contact switches the selection and keeps '
+          'the draft',
+          (tester) async {
+            await pumpOpenSheet(tester);
+
+            await tester.tap(find.text('Alice'));
+            await tester.pumpAndSettle();
+            await tester.enterText(find.byType(TextField), 'draft text');
+
+            await tester.tap(find.text('Bob'));
+            await tester.pumpAndSettle();
+
+            final blocContext = tester.element(find.text('Share with'));
+            expect(
+              blocContext.read<ShareSheetBloc>().state.selectedRecipient,
+              isA<ShareableUser>().having(
+                (u) => u.pubkey,
+                'pubkey',
+                bob.pubkey,
+              ),
+            );
+            final field = tester.widget<TextField>(find.byType(TextField));
+            expect(field.controller!.text, equals('draft text'));
+          },
+        );
+
+        testWidgets(
+          'send success dismisses the sheet and shows a snackbar with a '
+          'View chat action',
+          (tester) async {
+            when(
+              () => mockVideoSharingService.shareVideoWithUser(
+                video: any(named: 'video'),
+                recipientPubkey: any(named: 'recipientPubkey'),
+                personalMessage: any(named: 'personalMessage'),
+              ),
+            ).thenAnswer(
+              (_) async => ShareResult.createSuccess(
+                'msg-event-id',
+                conversationId: 'conversation-1',
+              ),
+            );
+
+            await pumpOpenSheet(tester);
+
+            await tester.tap(find.text('Alice'));
+            await tester.pumpAndSettle();
+
+            await tester.tap(
+              find.byWidgetPredicate(
+                (widget) =>
+                    widget is DivineIcon &&
+                    widget.icon == DivineIconName.arrowUp,
+              ),
+            );
+            await tester.pumpAndSettle();
+
+            expect(find.text('Share with'), findsNothing);
+            expect(
+              find.text(l10n.sharePostSharedWith('Alice')),
+              findsOneWidget,
+            );
+            expect(find.text(l10n.dmReelReplyViewChat), findsOneWidget);
+          },
+        );
+
+        testWidgets(
+          'send success without a conversation id shows no View chat action',
+          (tester) async {
+            when(
+              () => mockVideoSharingService.shareVideoWithUser(
+                video: any(named: 'video'),
+                recipientPubkey: any(named: 'recipientPubkey'),
+                personalMessage: any(named: 'personalMessage'),
+              ),
+            ).thenAnswer(
+              (_) async => ShareResult.createSuccess('msg-event-id'),
+            );
+
+            await pumpOpenSheet(tester);
+
+            await tester.tap(find.text('Alice'));
+            await tester.pumpAndSettle();
+
+            await tester.tap(
+              find.byWidgetPredicate(
+                (widget) =>
+                    widget is DivineIcon &&
+                    widget.icon == DivineIconName.arrowUp,
+              ),
+            );
+            await tester.pumpAndSettle();
+
+            expect(
+              find.text(l10n.sharePostSharedWith('Alice')),
+              findsOneWidget,
+            );
+            expect(find.text(l10n.dmReelReplyViewChat), findsNothing);
+          },
+        );
+      });
+
       testWidgets(
         'lifts message field above the keyboard when a recipient is selected',
         (tester) async {

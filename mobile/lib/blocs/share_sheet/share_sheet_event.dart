@@ -18,17 +18,10 @@ class ShareSheetContactsLoadRequested extends ShareSheetEvent {
   const ShareSheetContactsLoadRequested();
 }
 
-/// A contact was tapped for quick-send (no message).
-class ShareSheetQuickSendRequested extends ShareSheetEvent {
-  const ShareSheetQuickSendRequested(this.recipient);
-
-  final ShareableUser recipient;
-
-  @override
-  List<Object?> get props => [recipient.pubkey];
-}
-
-/// A recipient was selected (from Find People or contact tap for message).
+/// A recipient was selected (contact-row tap or Find People pick).
+///
+/// Selection never sends — it reveals the message composer; the send
+/// happens only on an explicit [ShareSheetSendRequested].
 class ShareSheetRecipientSelected extends ShareSheetEvent {
   const ShareSheetRecipientSelected(this.recipient);
 

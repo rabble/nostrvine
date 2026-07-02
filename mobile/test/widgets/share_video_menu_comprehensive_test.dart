@@ -496,17 +496,19 @@ void main() {
     );
   });
 
-  group('Quick-send behavior', () {
+  group('Select-then-send behavior', () {
     const testContact = ShareableUser(
       pubkey:
           '1111111111111111111111111111111111111111111111111111111111111111',
       displayName: 'Alice',
     );
     late _MockFollowRepository mockFollowRepository;
+    late AppLocalizations l10n;
 
     setUp(() {
       mockFollowRepository = _MockFollowRepository();
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+      l10n = lookupAppLocalizations(const Locale('en'));
     });
 
     Widget buildSubjectWithContacts() {
@@ -538,19 +540,11 @@ void main() {
       );
     }
 
-    testWidgets('tapping contact quick-sends video', (tester) async {
-      when(
-        () => mockVideoSharingService.shareVideoWithUser(
-          video: any(named: 'video'),
-          recipientPubkey: any(named: 'recipientPubkey'),
-          personalMessage: any(named: 'personalMessage'),
-        ),
-      ).thenAnswer(
-        (_) async => ShareResult.createSuccess(
-          '2222222222222222222222222222222222222222222222222222222222222222',
-        ),
-      );
+    Finder sendButton() => find.byWidgetPredicate(
+      (widget) => widget is DivineIcon && widget.icon == DivineIconName.arrowUp,
+    );
 
+    testWidgets('tapping contact selects it and never sends', (tester) async {
       await tester.pumpWidget(buildSubjectWithContacts());
       await tester.tap(find.byType(ShareActionButton));
       await tester.pumpAndSettle();
@@ -558,24 +552,24 @@ void main() {
       // Verify contact appears in horizontal row
       expect(find.text('Alice'), findsOneWidget);
 
-      // Tap contact — should quick-send immediately
+      // Tap contact — selects and reveals the message composer
       await tester.tap(find.text('Alice'));
       await tester.pumpAndSettle();
 
-      // Verify shareVideoWithUser was called
-      verify(
+      expect(find.text(l10n.shareMessageHint), findsOneWidget);
+      expect(find.text(l10n.shareSheetMoreActions), findsNothing);
+      verifyNever(
         () => mockVideoSharingService.shareVideoWithUser(
           video: any(named: 'video'),
           recipientPubkey: any(named: 'recipientPubkey'),
           personalMessage: any(named: 'personalMessage'),
         ),
-      ).called(1);
-
-      // Verify success snackbar
-      expect(find.text('Post shared with Alice'), findsOneWidget);
+      );
     });
 
-    testWidgets('sent contact shows Sent label', (tester) async {
+    testWidgets('explicit send delivers to the selected contact', (
+      tester,
+    ) async {
       when(
         () => mockVideoSharingService.shareVideoWithUser(
           video: any(named: 'video'),
@@ -594,48 +588,49 @@ void main() {
 
       await tester.tap(find.text('Alice'));
       await tester.pumpAndSettle();
+      await tester.tap(sendButton());
+      await tester.pumpAndSettle();
 
-      // Contact label replaced with 'Sent'
-      expect(find.text('Sent'), findsOneWidget);
-      expect(find.text('Alice'), findsNothing);
-    });
-
-    testWidgets('sent contact ignores subsequent taps', (tester) async {
-      when(
+      final captured = verify(
         () => mockVideoSharingService.shareVideoWithUser(
           video: any(named: 'video'),
-          recipientPubkey: any(named: 'recipientPubkey'),
+          recipientPubkey: captureAny(named: 'recipientPubkey'),
           personalMessage: any(named: 'personalMessage'),
         ),
-      ).thenAnswer(
-        (_) async => ShareResult.createSuccess(
-          '2222222222222222222222222222222222222222222222222222222222222222',
-        ),
-      );
+      ).captured;
+      expect(captured.single, equals(testContact.pubkey));
 
+      // Sheet dismissed, success snackbar shown
+      expect(find.text(l10n.shareWithTitle), findsNothing);
+      expect(find.text(l10n.sharePostSharedWith('Alice')), findsOneWidget);
+    });
+
+    testWidgets('tapping the selected contact again deselects it', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubjectWithContacts());
       await tester.tap(find.byType(ShareActionButton));
       await tester.pumpAndSettle();
 
-      // First tap — sends
+      await tester.tap(find.text('Alice'));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.shareMessageHint), findsOneWidget);
+
       await tester.tap(find.text('Alice'));
       await tester.pumpAndSettle();
 
-      // Second tap on 'Sent' — should be ignored
-      await tester.tap(find.text('Sent'));
-      await tester.pumpAndSettle();
-
-      // shareVideoWithUser only called once
-      verify(
+      expect(find.text(l10n.shareMessageHint), findsNothing);
+      expect(find.text(l10n.shareSheetMoreActions), findsOneWidget);
+      verifyNever(
         () => mockVideoSharingService.shareVideoWithUser(
           video: any(named: 'video'),
           recipientPubkey: any(named: 'recipientPubkey'),
           personalMessage: any(named: 'personalMessage'),
         ),
-      ).called(1);
+      );
     });
 
-    testWidgets('quick-send shows failure snackbar on error', (tester) async {
+    testWidgets('send shows failure snackbar on error', (tester) async {
       when(
         () => mockVideoSharingService.shareVideoWithUser(
           video: any(named: 'video'),
@@ -650,8 +645,12 @@ void main() {
 
       await tester.tap(find.text('Alice'));
       await tester.pumpAndSettle();
+      await tester.tap(sendButton());
+      await tester.pumpAndSettle();
 
-      expect(find.text('Failed to send video'), findsOneWidget);
+      expect(find.text(l10n.shareFailedToSend), findsOneWidget);
+      // The sheet stays open so the user can retry.
+      expect(find.text(l10n.shareWithTitle), findsOneWidget);
     });
   });
 
