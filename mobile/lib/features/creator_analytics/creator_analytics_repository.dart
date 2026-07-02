@@ -197,8 +197,11 @@ class FunnelcakeCreatorAnalyticsRepository
 
       final mergedTags = <String, String>{...video.rawTags};
       var updated = false;
-      if (stats.loops != null) {
-        mergedTags['loops'] = stats.loops!.toString();
+      // rawTags['loops'] / originalLoops mean "archival Vine loop count";
+      // only embedded_loops qualifies — bulk `loops` is a live computed
+      // value that would clobber the Vine-era count.
+      if (stats.embeddedLoops != null) {
+        mergedTags['loops'] = stats.embeddedLoops!.toString();
         updated = true;
       }
       if (stats.views != null) {
@@ -209,7 +212,7 @@ class FunnelcakeCreatorAnalyticsRepository
 
       return video.copyWith(
         rawTags: mergedTags,
-        originalLoops: stats.loops ?? video.originalLoops,
+        originalLoops: stats.embeddedLoops ?? video.originalLoops,
       );
     }).toList();
 

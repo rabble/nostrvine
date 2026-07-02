@@ -119,6 +119,7 @@ void main() {
               reposts: 0,
               views: 14,
               loops: 7,
+              embeddedLoops: 142678928,
             ),
           },
         ),
@@ -128,13 +129,46 @@ void main() {
       final result = await repository.getAuthorFeed(authorPubkey: _author);
 
       final video = result.videos.single;
-      expect(video.originalLoops, equals(7));
-      expect(video.rawTags['loops'], equals('7'));
+      expect(video.originalLoops, equals(142678928));
+      expect(video.rawTags['loops'], equals('142678928'));
       // Bulk-stats supplied the view count, so the per-video views endpoint is
       // skipped (the value is preserved verbatim, not overwritten with 0).
       expect(video.rawTags['views'], equals('14'));
       verifyNever(() => funnelcake.getVideoViews(any()));
     });
+
+    test(
+      'live bulk loops never fill the archival originalLoops baseline',
+      () async {
+        // Bulk stats return a live computed `loops` alongside `views` for
+        // native diVine videos. Writing it into originalLoops would both
+        // double-count against views in totalLoops and, for classic Vines
+        // hydrated from the relay, clobber the multi-million archival count.
+        when(() => funnelcake.getBulkVideoStats(any())).thenAnswer(
+          (_) async => const BulkVideoStatsResponse(
+            stats: {
+              'a': BulkVideoStatsEntry(
+                eventId: 'a',
+                reactions: 6,
+                comments: 1,
+                reposts: 0,
+                views: 14,
+                loops: 7,
+              ),
+            },
+          ),
+        );
+        stubAuthor(VideosByAuthorResponse(videos: [_stats(id: 'a')]));
+
+        final result = await repository.getAuthorFeed(authorPubkey: _author);
+
+        final video = result.videos.single;
+        expect(video.originalLoops, isNull);
+        expect(video.rawTags['loops'], isNull);
+        expect(video.rawTags['views'], equals('14'));
+        expect(video.totalLoops, equals(14));
+      },
+    );
 
     test(
       'keeps live counts in nostr* fields so the display seed cannot '

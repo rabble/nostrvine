@@ -402,7 +402,10 @@ class VideosRepository {
         if (stats == null) return video;
 
         return video.copyWith(
-          originalLoops: stats.loops ?? video.originalLoops,
+          // Only the archival embedded_loops may seed originalLoops; the
+          // live computed stats.loops would clobber the Vine-era count and
+          // double-count against the views tag in totalLoops.
+          originalLoops: stats.embeddedLoops ?? video.originalLoops,
           originalLikes: video.originalLikes,
           originalComments: video.originalComments,
           originalReposts: video.originalReposts,
@@ -2210,8 +2213,10 @@ class VideosRepository {
       if (stats == null) return video;
 
       final mergedTags = <String, String>{...video.rawTags};
-      if (stats.loops != null) {
-        mergedTags['loops'] = stats.loops!.toString();
+      // rawTags['loops'] means "archival Vine loop count"; only the
+      // embedded_loops value qualifies — live computed loops do not.
+      if (stats.embeddedLoops != null) {
+        mergedTags['loops'] = stats.embeddedLoops!.toString();
       }
       if (stats.views != null) {
         mergedTags['views'] = stats.views!.toString();
@@ -2219,7 +2224,7 @@ class VideosRepository {
 
       return video.copyWith(
         rawTags: mergedTags,
-        originalLoops: stats.loops ?? video.originalLoops,
+        originalLoops: stats.embeddedLoops ?? video.originalLoops,
         originalLikes: video.originalLikes,
         originalComments: video.originalComments,
         originalReposts: video.originalReposts,

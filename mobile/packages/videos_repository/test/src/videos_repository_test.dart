@@ -1013,7 +1013,9 @@ void main() {
 
             expect(result, hasLength(1));
             expect(result.first.rawTags['views'], equals('14'));
-            expect(result.first.totalLoops, equals(21));
+            // Live computed loops (7) must not inflate totalLoops; only
+            // views (14) and archival embedded loops count.
+            expect(result.first.totalLoops, equals(14));
             verify(
               () => mockFunnelcakeClient.getBulkVideoStats(['event-1']),
             ).called(1);
@@ -1375,7 +1377,7 @@ void main() {
                     reactions: 0,
                     comments: 0,
                     reposts: 0,
-                    loops: 5,
+                    embeddedLoops: 5,
                     views: 42,
                   ),
                 },
@@ -5638,7 +5640,7 @@ void main() {
                     reactions: 1,
                     comments: 2,
                     reposts: 3,
-                    loops: 42,
+                    embeddedLoops: 42,
                   ),
                 },
               ),
@@ -5959,7 +5961,7 @@ void main() {
                     reactions: 0,
                     comments: 0,
                     reposts: 0,
-                    loops: 99,
+                    embeddedLoops: 99,
                   ),
                 },
               ),
@@ -9122,7 +9124,7 @@ void main() {
                   reactions: 7,
                   comments: 5,
                   reposts: 3,
-                  loops: 42,
+                  embeddedLoops: 42,
                   views: 100,
                 ),
               },
