@@ -8,11 +8,32 @@ import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:unified_logger/unified_logger.dart';
 
+/// Signature of [VideoThumbnailService.generateStripThumbnails], injectable
+/// so tests can assert pause/resume behaviour on the produced subscriptions
+/// without touching the native extractor.
+typedef StripThumbnailStreamFactory =
+    Stream<List<StripThumbnail>> Function({
+      required String videoPath,
+      required String clipId,
+      required Duration duration,
+      required Size outputSize,
+      required int thumbsPerSecond,
+      List<Duration>? priorityTimestamps,
+    });
+
 /// Manages thumbnail loading and cleanup for a set of clips.
 ///
 /// Each clip gets an independent [ValueNotifier] so only the affected
 /// tile rebuilds when new thumbnails arrive.
 class ClipThumbnailManager {
+  ClipThumbnailManager({
+    StripThumbnailStreamFactory? stripThumbnailStreamFactory,
+  }) : _generateStripThumbnails =
+           stripThumbnailStreamFactory ??
+           VideoThumbnailService.generateStripThumbnails;
+
+  final StripThumbnailStreamFactory _generateStripThumbnails;
+
   final Map<String, ValueNotifier<List<StripThumbnail>>> _notifiers = {};
   final Map<String, StreamSubscription<List<StripThumbnail>>> _subscriptions =
       {};
@@ -202,7 +223,7 @@ class ClipThumbnailManager {
             .ceil();
 
     final subscription =
-        VideoThumbnailService.generateStripThumbnails(
+        _generateStripThumbnails(
           videoPath: videoPath,
           clipId: clip.id,
           duration: clip.duration,
@@ -227,7 +248,7 @@ class ClipThumbnailManager {
     for (final sub in _subscriptions.values) {
       if (!sub.isPaused) sub.pause();
     }
-    Log.warning(
+    Log.info(
       '⏸️ Thumbnail extraction paused (${_subscriptions.length} sub(s))',
       name: 'ClipThumbnailManager',
       category: LogCategory.video,
@@ -240,7 +261,7 @@ class ClipThumbnailManager {
     for (final sub in _subscriptions.values) {
       if (sub.isPaused) sub.resume();
     }
-    Log.warning(
+    Log.info(
       '▶️ Thumbnail extraction resumed (${_subscriptions.length} sub(s))',
       name: 'ClipThumbnailManager',
       category: LogCategory.video,
