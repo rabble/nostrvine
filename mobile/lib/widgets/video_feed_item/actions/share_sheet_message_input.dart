@@ -92,9 +92,11 @@ class _SendButton extends StatelessWidget {
                   color: VineTheme.onPrimary,
                 ),
               )
+            // 20 matches the DM conversation composer's send icon
+            // (message_input_bar.dart) and the sending spinner above.
             : const DivineIcon(
                 icon: DivineIconName.arrowUp,
-                size: 22,
+                size: 20,
                 color: VineTheme.onPrimary,
               ),
       ),
