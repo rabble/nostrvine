@@ -549,7 +549,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     // that falls inside the live window; out-of-window ones it disposes itself.
     if (commonPrefix > _currentIndex) {
       _prefetcher.cancelActive();
-      _clearTerminalErrorsFromChangedTail(oldWidget, widget, commonPrefix);
+      _clearChangedTailPlaybackState(oldWidget, widget, commonPrefix);
       _controllers.keys
           .where((index) => index >= commonPrefix)
           .toList()
@@ -621,10 +621,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     return i;
   }
 
-  /// Clears terminal errors for the changed tail (index >= [startIndex]) from
-  /// both the old and new lists, so a video id reused at a new position gets a
-  /// fresh playback attempt instead of inheriting a stale terminal error.
-  void _clearTerminalErrorsFromChangedTail(
+  /// Clears playback failure state for the changed tail (index >=
+  /// [startIndex]), so fresh videos do not inherit stale index-scoped errors
+  /// or terminal errors from videos that used to occupy those slots.
+  void _clearChangedTailPlaybackState(
     InfiniteVideoFeed oldWidget,
     InfiniteVideoFeed newWidget,
     int startIndex,
@@ -634,6 +634,14 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     }
     for (var i = startIndex; i < newWidget.videos.length; i++) {
       _terminalErrorTypesByVideoId.remove(newWidget.videos[i].id);
+    }
+    final maxLength = oldWidget.videos.length > newWidget.videos.length
+        ? oldWidget.videos.length
+        : newWidget.videos.length;
+    for (var i = startIndex; i < maxLength; i++) {
+      _errors.remove(i);
+      _errorTypes.remove(i);
+      _cancelAutoRetry(i);
     }
   }
 
@@ -1580,6 +1588,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   void _scheduleAutoRetryIfEligible(int index) {
     if (index != _currentIndex || !_isActive) return;
     if (_hasTerminalError(index)) return;
+    if (!_isAutoRetryableErrorType(_errorTypes[index])) return;
     final attempt = _autoRetryAttempts[index] ?? 0;
     final delay = InfiniteVideoFeed.autoRetryDelay(
       attempt: attempt,
@@ -1605,6 +1614,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         ),
       );
     });
+  }
+
+  bool _isAutoRetryableErrorType(VideoErrorType? type) {
+    return type == null || type == VideoErrorType.generic;
   }
 
   /// Cancels a pending auto-retry and clears the attempt budget for [index].
@@ -1660,7 +1673,6 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
           final errorType = classifyVideoError(
             errorMessage: errorMessage,
-            source: _resolveUrl(widget.videos[index]),
           );
           if (_isTerminalPlaybackFailure(errorMessage)) {
             _stopAndMarkTerminalError(index, errorType);

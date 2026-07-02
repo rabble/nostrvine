@@ -1577,6 +1577,93 @@ void main() {
           expect(pageView.controller!.page?.round(), equals(1));
         },
       );
+
+      testWidgets(
+        'tail replacement clears stale index-scoped error state',
+        (tester) async {
+          DivineVideoPlayerController.resetIdCounterForTesting();
+          final harness = _NativePlayerHarness(tester);
+          await harness.install(playerIds: const <int>[0, 1, 2, 3]);
+          final key = GlobalKey<InfiniteVideoFeedState>();
+          final videos1 = List.generate(4, (i) => _makeVideo('old$i'));
+
+          harness.setClipsFailures[2] = <Exception>[
+            PlatformException(
+              code: 'HTTP_ERROR',
+              message: 'HTTP 403 Forbidden',
+            ),
+          ];
+          harness.setClipsDelays[3] = Completer<void>();
+
+          try {
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  key: key,
+                  videos: videos1,
+                  cache: cache,
+                  preloadGracePeriod: Duration.zero,
+                  prefetchCount: 0,
+                  errorBuilder: (_, _, _, errorType) =>
+                      Text('ERROR:${errorType.name}'),
+                  loadingBuilder: (_, index, {required isSquare}) =>
+                      Text('LOADING:$index'),
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump();
+
+            unawaited(key.currentState!.animateToPage(1));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 400));
+            await tester.pump();
+            expect(key.currentState!.currentIndex, equals(1));
+
+            // Index 2 failed during neighbor init and has no live controller,
+            // leaving only index-scoped error state behind.
+            expect(find.text('ERROR:forbidden'), findsNothing);
+
+            final videos2 = [
+              videos1[0],
+              videos1[1],
+              _makeVideo('fresh2'),
+              _makeVideo('fresh3'),
+            ];
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  key: key,
+                  videos: videos2,
+                  cache: cache,
+                  preloadGracePeriod: Duration.zero,
+                  prefetchCount: 0,
+                  errorBuilder: (_, _, _, errorType) =>
+                      Text('ERROR:${errorType.name}'),
+                  loadingBuilder: (_, index, {required isSquare}) =>
+                      Text('LOADING:$index'),
+                ),
+              ),
+            );
+            await tester.pump();
+
+            unawaited(key.currentState!.animateToPage(2));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 400));
+
+            expect(key.currentState!.currentIndex, equals(2));
+            expect(find.text('ERROR:forbidden'), findsNothing);
+            expect(find.textContaining('ERROR:'), findsNothing);
+          } finally {
+            if (harness.setClipsDelays[3]?.isCompleted == false) {
+              harness.setClipsDelays[3]!.complete();
+            }
+            await tester.pumpWidget(const SizedBox.shrink());
+            await tester.pump();
+            await harness.dispose();
+          }
+        },
+      );
     });
 
     group('overlayBuilder', () {
@@ -2796,6 +2883,90 @@ void main() {
           }
         },
       );
+
+      const permanentErrorScenarios =
+          <
+            ({
+              String name,
+              String message,
+              String typeName,
+            })
+          >[
+            (
+              name: '403 forbidden',
+              message: 'HTTP 403 Forbidden',
+              typeName: 'forbidden',
+            ),
+            (
+              name: '404 not found',
+              message: 'HTTP 404 Not Found',
+              typeName: 'notFound',
+            ),
+            (
+              name: '401 age gate',
+              message: 'HTTP 401 Unauthorized',
+              typeName: 'ageRestricted',
+            ),
+          ];
+
+      for (final scenario in permanentErrorScenarios) {
+        testWidgets(
+          'does not auto-retry typed permanent ${scenario.name} failures',
+          (tester) async {
+            DivineVideoPlayerController.resetIdCounterForTesting();
+            final harness = _NativePlayerHarness(tester);
+            await harness.install(playerIds: const <int>[0, 1, 2, 3]);
+
+            try {
+              await tester.pumpWidget(
+                _wrapFeed(
+                  InfiniteVideoFeed(
+                    videos: [_makeVideo('permanent_${scenario.typeName}')],
+                    cache: cache,
+                    prefetchCount: 0,
+                    preloadGracePeriod: Duration.zero,
+                    autoRetryBaseDelay: const Duration(milliseconds: 200),
+                    errorBuilder: (_, _, _, errorType) =>
+                        Text('VIDEO_ERROR:${errorType.name}'),
+                  ),
+                ),
+              );
+              await tester.pump();
+              await tester.pump();
+
+              await harness.sendEvent(0, <Object?, Object?>{
+                'status': 'error',
+                'errorCode': 'network_error',
+                'errorMessage': scenario.message,
+              });
+              await tester.pump();
+              await tester.pump();
+
+              expect(
+                find.text('VIDEO_ERROR:${scenario.typeName}'),
+                findsOneWidget,
+              );
+              final setClipsAfterError = harness.countCalls('setClips');
+
+              await tester.pump(const Duration(milliseconds: 400));
+              await tester.pump();
+
+              expect(
+                harness.countCalls('setClips'),
+                equals(setClipsAfterError),
+              );
+              expect(
+                find.text('VIDEO_ERROR:${scenario.typeName}'),
+                findsOneWidget,
+              );
+            } finally {
+              await tester.pumpWidget(const SizedBox.shrink());
+              await tester.pump();
+              await harness.dispose();
+            }
+          },
+        );
+      }
 
       testWidgets(
         'does not auto-retry terminal no-video-track failover failures',
