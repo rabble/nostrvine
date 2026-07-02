@@ -1,6 +1,8 @@
 // ABOUTME: Tests for VideoPublishService
 // ABOUTME: Uses mocked dependencies to test publish flow without real uploads
 
+import 'dart:io';
+
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -435,6 +437,50 @@ void main() {
         ).called(1);
       });
 
+      test('collaborator invites use the effective published d-tag', () async {
+        _setupSuccessfulPublish(
+          mockAuthService: mockAuthService,
+          mockUploadManager: mockUploadManager,
+          mockDraftService: mockDraftService,
+          mockVideoEventPublisher: mockVideoEventPublisher,
+        );
+        when(
+          () => mockCollaboratorInviteService.sendInvites(
+            collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+            creatorPubkey: any(named: 'creatorPubkey'),
+            videoAddress: any(named: 'videoAddress'),
+            title: any(named: 'title'),
+            thumbnailUrl: any(named: 'thumbnailUrl'),
+            relayHint: any(named: 'relayHint'),
+          ),
+        ).thenAnswer(
+          (_) async => const CollaboratorInviteBatchResult(results: {}),
+        );
+
+        final draft = _createTestDraft(
+          collaboratorPubkeys: {
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          },
+        );
+
+        final result = await service.publishVideo(
+          draft: draft,
+          dTagOverride: 'published-d-tag',
+        );
+
+        expect(result, isA<PublishSuccess>());
+        verify(
+          () => mockCollaboratorInviteService.sendInvites(
+            collaboratorPubkeys: draft.collaboratorPubkeys,
+            creatorPubkey: 'test_pubkey',
+            videoAddress: '34236:test_pubkey:published-d-tag',
+            title: 'Test Video',
+            thumbnailUrl: _defaultThumbnailPath,
+            relayHint: 'wss://relay.divine.video',
+          ),
+        ).called(1);
+      });
+
       test('collaborator invites include the uploaded thumbnail URL', () async {
         const thumbnailUrl = 'https://cdn.divine.video/thumbs/test_video.jpg';
         final readyUpload = _createPendingUpload(
@@ -713,6 +759,154 @@ void main() {
             'wss://relay.divine.video',
           );
           expect(success.inviteWarnings.single.error, 'relay unavailable');
+        },
+      );
+
+      test(
+        'series publish deletes the original long draft after the container '
+        'publishes',
+        () async {
+          final tempDir = Directory.systemTemp.createTempSync(
+            'video_publish_series_success_',
+          );
+          addTearDown(() async {
+            if (tempDir.existsSync()) {
+              await tempDir.delete(recursive: true);
+            }
+          });
+          final sourceFile = File('${tempDir.path}/source.mp4')
+            ..writeAsStringSync('source');
+          final segmentFiles = [
+            File('${tempDir.path}/segment-0.mp4')..writeAsStringSync('seg0'),
+            File('${tempDir.path}/segment-1.mp4')..writeAsStringSync('seg1'),
+          ];
+
+          _setupSeriesPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          when(
+            () => mockVideoEventPublisher.publishSeriesContainer(
+              seriesId: any(named: 'seriesId'),
+              segmentAddresses: any(named: 'segmentAddresses'),
+              title: any(named: 'title'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          final service = VideoPublishService(
+            uploadManager: mockUploadManager,
+            authService: mockAuthService,
+            videoEventPublisher: mockVideoEventPublisher,
+            blossomService: mockBlossomService,
+            draftService: mockDraftService,
+            collaboratorInviteService: mockCollaboratorInviteService,
+            mentionResolutionService: mockMentionResolutionService,
+            splitVideoIntoSegments:
+                ({
+                  required maxSegmentDuration,
+                  required sourcePath,
+                  required totalDuration,
+                }) async {
+                  expect(sourcePath, sourceFile.path);
+                  return segmentFiles.map((file) => file.path).toList();
+                },
+            onProgressChanged:
+                ({required double progress, required String draftId}) =>
+                    progressChanges.add(progress),
+          );
+
+          final draft = _createTestDraft(
+            finalRenderedClip: _createTestClip(
+              path: sourceFile.path,
+              duration: const Duration(seconds: 13),
+            ),
+          );
+
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishSuccess>());
+          verifyInOrder([
+            () => mockVideoEventPublisher.publishSeriesContainer(
+              seriesId: draft.id,
+              segmentAddresses: [
+                '34236:test_pubkey:series-${draft.id}-0',
+                '34236:test_pubkey:series-${draft.id}-1',
+              ],
+              title: 'Test Video',
+            ),
+            () => mockDraftService.deleteDraft(draft.id),
+          ]);
+        },
+      );
+
+      test(
+        'series publish does not delete the original long draft when the '
+        'container publish fails',
+        () async {
+          final tempDir = Directory.systemTemp.createTempSync(
+            'video_publish_series_container_failure_',
+          );
+          addTearDown(() async {
+            if (tempDir.existsSync()) {
+              await tempDir.delete(recursive: true);
+            }
+          });
+          final sourceFile = File('${tempDir.path}/source.mp4')
+            ..writeAsStringSync('source');
+          final segmentFiles = [
+            File('${tempDir.path}/segment-0.mp4')..writeAsStringSync('seg0'),
+            File('${tempDir.path}/segment-1.mp4')..writeAsStringSync('seg1'),
+          ];
+
+          _setupSeriesPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          when(
+            () => mockVideoEventPublisher.publishSeriesContainer(
+              seriesId: any(named: 'seriesId'),
+              segmentAddresses: any(named: 'segmentAddresses'),
+              title: any(named: 'title'),
+            ),
+          ).thenAnswer((_) async => false);
+
+          final service = VideoPublishService(
+            uploadManager: mockUploadManager,
+            authService: mockAuthService,
+            videoEventPublisher: mockVideoEventPublisher,
+            blossomService: mockBlossomService,
+            draftService: mockDraftService,
+            collaboratorInviteService: mockCollaboratorInviteService,
+            mentionResolutionService: mockMentionResolutionService,
+            splitVideoIntoSegments:
+                ({
+                  required maxSegmentDuration,
+                  required sourcePath,
+                  required totalDuration,
+                }) async {
+                  expect(sourcePath, sourceFile.path);
+                  return segmentFiles.map((file) => file.path).toList();
+                },
+            onProgressChanged:
+                ({required double progress, required String draftId}) =>
+                    progressChanges.add(progress),
+          );
+
+          final draft = _createTestDraft(
+            finalRenderedClip: _createTestClip(
+              path: sourceFile.path,
+              duration: const Duration(seconds: 13),
+            ),
+          );
+
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishError>());
+          verifyNever(() => mockDraftService.deleteDraft(draft.id));
         },
       );
 
@@ -1602,11 +1796,14 @@ void _stubFailedUpload({
 
 // Helper functions
 
-DivineVideoClip _createTestClip() {
+DivineVideoClip _createTestClip({
+  String path = '/test/video.mp4',
+  Duration duration = const Duration(seconds: 10),
+}) {
   return DivineVideoClip(
     id: 'test_clip',
-    video: EditorVideo.file('/test/video.mp4'),
-    duration: const Duration(seconds: 10),
+    video: EditorVideo.file(path),
+    duration: duration,
     recordedAt: DateTime.now(),
     targetAspectRatio: AspectRatio.square,
     originalAspectRatio: 9 / 16,
@@ -1617,6 +1814,7 @@ DivineVideoDraft _createTestDraft({
   String description = 'Test description',
   Map<String, dynamic> editorStateHistory = const {},
   Set<String> collaboratorPubkeys = const {},
+  DivineVideoClip? finalRenderedClip,
 }) {
   return DivineVideoDraft.create(
     clips: [_createTestClip()],
@@ -1627,6 +1825,7 @@ DivineVideoDraft _createTestDraft({
     id: 'test_draft_id',
     editorStateHistory: editorStateHistory,
     collaboratorPubkeys: collaboratorPubkeys,
+    finalRenderedClip: finalRenderedClip,
   );
 }
 
@@ -1634,16 +1833,19 @@ PendingUpload _createPendingUpload({
   required UploadStatus status,
   String? errorMessage,
   Object? thumbnailPath = _defaultThumbnailPath,
+  String id = 'test_upload_id',
+  String videoId = 'test_video_id',
+  String localVideoPath = '/test/video.mp4',
 }) {
   return PendingUpload(
-    id: 'test_upload_id',
-    localVideoPath: '/test/video.mp4',
+    id: id,
+    localVideoPath: localVideoPath,
     nostrPubkey: 'test_pubkey',
     status: status,
     createdAt: DateTime.now(),
     errorMessage: errorMessage,
     uploadProgress: status == UploadStatus.readyToPublish ? 1.0 : 0.5,
-    videoId: 'test_video_id',
+    videoId: videoId,
     cdnUrl: 'https://test.cdn/video.mp4',
     thumbnailPath: thumbnailPath as String?,
   );
@@ -1694,6 +1896,68 @@ void _setupSuccessfulPublish({
       thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
       replyContext: any(named: 'replyContext'),
       addReplyToFeed: any(named: 'addReplyToFeed'),
+      series: any(named: 'series'),
+      dTagOverride: any(named: 'dTagOverride'),
+    ),
+  ).thenAnswer((_) async => true);
+}
+
+void _setupSeriesPublish({
+  required MockAuthService mockAuthService,
+  required MockUploadManager mockUploadManager,
+  required MockDraftStorageService mockDraftService,
+  required MockVideoEventPublisher mockVideoEventPublisher,
+}) {
+  final uploadsById = <String, PendingUpload>{};
+  when(() => mockAuthService.isAuthenticated).thenReturn(true);
+  when(() => mockAuthService.currentPublicKeyHex).thenReturn('test_pubkey');
+  when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
+  when(() => mockDraftService.deleteDraft(any())).thenAnswer((_) async {});
+  when(() => mockUploadManager.isInitialized).thenReturn(true);
+  when(
+    () => mockUploadManager.startUploadFromDraft(
+      draft: any(named: 'draft'),
+      nostrPubkey: any(named: 'nostrPubkey'),
+      onProgress: any(named: 'onProgress'),
+    ),
+  ).thenAnswer((invocation) async {
+    final draft = invocation.namedArguments[#draft] as DivineVideoDraft;
+    final upload = _createPendingUpload(
+      id: 'upload-${draft.id}',
+      videoId: 'upload-video-${draft.id}',
+      localVideoPath: await draft.finalRenderedClip!.video.safeFilePath(),
+      status: UploadStatus.readyToPublish,
+    );
+    uploadsById[upload.id] = upload;
+    return upload;
+  });
+  when(() => mockUploadManager.getUpload(any())).thenAnswer((invocation) {
+    final uploadId = invocation.positionalArguments.single as String;
+    return uploadsById[uploadId];
+  });
+  when(
+    () => mockVideoEventPublisher.publishVideoEvent(
+      upload: any(named: 'upload'),
+      title: any(named: 'title'),
+      description: any(named: 'description'),
+      hashtags: any(named: 'hashtags'),
+      expirationTimestamp: any(named: 'expirationTimestamp'),
+      allowAudioReuse: any(named: 'allowAudioReuse'),
+      collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+      mentionedPubkeys: any(named: 'mentionedPubkeys'),
+      inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
+      inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
+      inspiredByNpub: any(named: 'inspiredByNpub'),
+      selectedAudio: any(named: 'selectedAudio'),
+      selectedAudioEventId: any(named: 'selectedAudioEventId'),
+      selectedAudioRelay: any(named: 'selectedAudioRelay'),
+      language: any(named: 'language'),
+      contentWarning: any(named: 'contentWarning'),
+      thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+      replyContext: any(named: 'replyContext'),
+      addReplyToFeed: any(named: 'addReplyToFeed'),
+      series: any(named: 'series'),
+      dTagOverride: any(named: 'dTagOverride'),
     ),
   ).thenAnswer((_) async => true);
 }

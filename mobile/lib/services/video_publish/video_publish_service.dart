@@ -143,6 +143,12 @@ class CollaboratorInviteWarning extends Equatable {
 typedef OnStateChanged = void Function(VideoPublishState state);
 typedef OnProgressChanged =
     void Function({required String draftId, required double progress});
+typedef SplitVideoIntoSegments =
+    Future<List<String>> Function({
+      required String sourcePath,
+      required Duration totalDuration,
+      required Duration maxSegmentDuration,
+    });
 
 class VideoPublishService {
   VideoPublishService({
@@ -155,7 +161,10 @@ class VideoPublishService {
     this.collaboratorInviteService,
     this.languagePreferenceService,
     this.mentionResolutionService,
-  });
+    SplitVideoIntoSegments? splitVideoIntoSegments,
+  }) : _splitVideoIntoSegments =
+           splitVideoIntoSegments ??
+           VideoEditorRenderService.splitVideoIntoSegments;
 
   /// Manages background video uploads.
   final UploadManager uploadManager;
@@ -184,6 +193,8 @@ class VideoPublishService {
   /// Resolves typed mentions before publishing Nostr video events.
   final MentionResolutionService? mentionResolutionService;
 
+  final SplitVideoIntoSegments _splitVideoIntoSegments;
+
   /// Tracks the current background upload ID.
   String? _backgroundUploadId;
 
@@ -201,7 +212,11 @@ class VideoPublishService {
     // applied per segment; a blank segment falls back to the shared draft text.
     final split = await _splitIntoSegmentDrafts(draft, segmentTexts);
     if (split != null) {
-      return _publishSeries(split.seriesId, split.drafts);
+      return _publishSeries(
+        seriesId: split.seriesId,
+        sourceDraft: draft,
+        drafts: split.drafts,
+      );
     }
 
     // Check if we have a background upload ID and its status
@@ -315,6 +330,7 @@ class VideoPublishService {
         draft: draft,
         upload: pendingUpload,
         creatorPubkey: pubkey,
+        videoDTag: dTagOverride ?? pendingUpload.videoId,
       );
 
       // Success: delete draft
@@ -345,7 +361,7 @@ class VideoPublishService {
     final sourcePath = await rendered.video.safeFilePath();
     if (!File(sourcePath).existsSync()) return null;
 
-    final segmentPaths = await VideoEditorRenderService.splitVideoIntoSegments(
+    final segmentPaths = await _splitVideoIntoSegments(
       sourcePath: sourcePath,
       totalDuration: rendered.duration,
       maxSegmentDuration: perVideoLimit,
@@ -389,11 +405,12 @@ class VideoPublishService {
   ///
   /// Each recurses into [publishVideo]; being within the per-video limit, the
   /// segment takes the normal single-video path. Aborts on the first failure;
-  /// returns the last segment's result on full success.
-  Future<PublishResult> _publishSeries(
-    String seriesId,
-    List<DivineVideoDraft> drafts,
-  ) async {
+  /// returns success only after the series container links all segments.
+  Future<PublishResult> _publishSeries({
+    required String seriesId,
+    required DivineVideoDraft sourceDraft,
+    required List<DivineVideoDraft> drafts,
+  }) async {
     final total = drafts.length;
     final pubkey = authService.currentPublicKeyHex;
     final kind = NIP71VideoKinds.getPreferredAddressableKind();
@@ -420,14 +437,31 @@ class VideoPublishService {
       }
       if (pubkey != null) segmentAddresses.add('$kind:$pubkey:$dTag');
     }
-    // Link the published segments into a NIP-51 container (best-effort).
+
+    // Link the published segments into a NIP-51 container before removing the
+    // source long-form draft. If the container fails, leave the source draft so
+    // the user can retry without losing their original edit.
     if (segmentAddresses.isNotEmpty) {
-      await videoEventPublisher.publishSeriesContainer(
-        seriesId: seriesId,
-        segmentAddresses: segmentAddresses,
-        title: drafts.first.title,
-      );
+      final containerPublished = await videoEventPublisher
+          .publishSeriesContainer(
+            seriesId: seriesId,
+            segmentAddresses: segmentAddresses,
+            title: drafts.first.title,
+          );
+      if (!containerPublished) {
+        Log.error(
+          '❌ Failed to publish series container for $seriesId',
+          category: .video,
+        );
+        return const PublishError(PublishErrorKind.nostrPublishFailed);
+      }
     }
+
+    await draftService.deleteDraft(sourceDraft.id);
+    Log.debug(
+      '🗑️ Deleted source draft after series publish: ${sourceDraft.id}',
+      category: .video,
+    );
     return last ?? const PublishError(PublishErrorKind.noRetry);
   }
 
@@ -463,18 +497,18 @@ class VideoPublishService {
     required DivineVideoDraft draft,
     required PendingUpload upload,
     required String creatorPubkey,
+    required String? videoDTag,
   }) async {
     final inviteService = collaboratorInviteService;
-    final videoId = upload.videoId;
     if (inviteService == null ||
         draft.collaboratorPubkeys.isEmpty ||
-        videoId == null ||
-        videoId.isEmpty) {
+        videoDTag == null ||
+        videoDTag.isEmpty) {
       return const [];
     }
 
     final videoKind = NIP71VideoKinds.getPreferredAddressableKind();
-    final videoAddress = '$videoKind:$creatorPubkey:$videoId';
+    final videoAddress = '$videoKind:$creatorPubkey:$videoDTag';
     final thumbnailUrl = _uploadedThumbnailUrl(upload);
     const relayHint = 'wss://relay.divine.video';
 
