@@ -1150,10 +1150,16 @@ internal class DivineVideoPlayerInstance(
      * `ImageReaderSurfaceProducer`. The full [dispose] runs later, on
      * engine detach.
      *
+     * Cancels any pending decoder-retry re-prepare: the player is not nulled
+     * here (only [dispose] does that), so a scheduled retry's
+     * `player === recoveringPlayer` guard would still pass and call
+     * `prepare()` on the just-cleared surface after detach began.
+     *
      * Asymmetric with [onAppBackgrounded] by design: no resume is expected
      * after Activity detach, so [wasPlayingBeforePause] is not set.
      */
     fun stopForActivityDetach() {
+        cancelDecoderRetry()
         player?.let {
             it.stop()
             it.clearVideoSurface()
