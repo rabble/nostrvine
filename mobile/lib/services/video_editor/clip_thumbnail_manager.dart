@@ -120,14 +120,17 @@ class ClipThumbnailManager {
           priorityTimestamps: priorityTimestamps[clip.id],
         );
       } else if (newPath != null && newPath != currentPath) {
-        // Source file changed (e.g. clip was rendered to a trimmed
-        // file after a split). Restart against the new file, but keep
-        // the current frames on screen — clearing them here would
-        // flash black until the first fresh batch arrives. The old
+        // Source file of an already-subscribed clip changed (e.g. it was
+        // re-rendered to a trimmed file). Restart against the new file
+        // but keep the current frames on screen — clearing them here
+        // would flash black until the first fresh batch arrives. The old
         // files are deleted once the new subscription replaces them.
+        //
+        // Seeded split halves never reach this branch: they carry no
+        // subscription until their rendered path arrives via the
+        // !hasSubscription branch above, which is where _seeded and any
+        // pending rebase are consumed.
         _subscriptions.remove(clip.id)?.cancel();
-        _seeded.remove(clip.id);
-        _rebaseThumbnails(clip.id);
         _loadThumbnails(
           clip,
           devicePixelRatio,
@@ -250,12 +253,19 @@ class ClipThumbnailManager {
           if (notifier == null) return;
           final replaced = notifier.value;
           notifier.value = thumbnails;
+          if (replaced.isEmpty) return;
           // Frames carried over across a restart (seeded split frames,
           // pre-render frames) are superseded now — delete their files
-          // unless another clip still shows them. During normal
-          // accumulation each batch contains the previous paths, so
-          // nothing is deleted.
-          _deleteUnreferencedFiles(replaced);
+          // unless another clip still shows them. Each batch is a
+          // superset of the previous (the generator accumulates), so in
+          // steady state every replaced path is still in [thumbnails];
+          // filtering to the genuinely dropped paths first skips the
+          // cross-notifier scan on every normal accumulation batch.
+          final currentPaths = {for (final thumb in thumbnails) thumb.path};
+          _deleteUnreferencedFiles([
+            for (final thumb in replaced)
+              if (!currentPaths.contains(thumb.path)) thumb,
+          ]);
         });
     // If the owner paused while this clip was (re)synced, keep the new
     // subscription paused too so it doesn't start extracting off-screen.

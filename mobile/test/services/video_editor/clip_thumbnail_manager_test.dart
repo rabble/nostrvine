@@ -532,6 +532,48 @@ void main() {
           expect(second.existsSync(), isTrue);
         },
       );
+
+      test(
+        'restart keeps a dropped frame whose file a sibling clip still shows',
+        () async {
+          final shared = File('${tempDir.path}/shared.jpg')
+            ..writeAsStringSync('shared');
+          final freshA = File('${tempDir.path}/fresh_a.jpg')
+            ..writeAsStringSync('fresh-a');
+
+          fakeStreamManager.sync(
+            clips: [
+              _createFileClip(id: 'a', videoPath: '${tempDir.path}/a.mp4'),
+              _createFileClip(id: 'b', videoPath: '${tempDir.path}/b.mp4'),
+            ],
+            devicePixelRatio: 1,
+          );
+          expect(controllers, hasLength(2));
+
+          // Both clips end up showing the same file (an overlapping
+          // borrow). A fresh batch on 'a' that drops the shared path must
+          // not delete the file while 'b' still references it.
+          controllers[0].add([
+            StripThumbnail(path: shared.path, timestamp: Duration.zero),
+          ]);
+          controllers[1].add([
+            StripThumbnail(path: shared.path, timestamp: Duration.zero),
+          ]);
+          await pumpEventQueue();
+
+          controllers[0].add([
+            StripThumbnail(path: freshA.path, timestamp: Duration.zero),
+          ]);
+          await pumpEventQueue();
+
+          expect(
+            fakeStreamManager['a'].value.single.path,
+            equals(freshA.path),
+          );
+          expect(shared.existsSync(), isTrue);
+          expect(freshA.existsSync(), isTrue);
+        },
+      );
     });
 
     group('pauseAll / resumeAll', () {
