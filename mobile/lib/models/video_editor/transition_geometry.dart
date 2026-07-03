@@ -199,6 +199,12 @@ class TransitionTimelineMap {
 
   final List<_Blend> _blends;
 
+  /// Null-safe [editorToOutput]: maps [position] onto the output axis, or
+  /// returns `null` when [position] is `null` (a layer/effect with no explicit
+  /// time anchor — e.g. one that spans the whole video).
+  Duration? editorToOutputOrNull(Duration? position) =>
+      position == null ? null : editorToOutput(position);
+
   /// Maps an editor-axis [position] onto the output axis.
   Duration editorToOutput(Duration position) {
     var removed = Duration.zero;
