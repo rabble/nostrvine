@@ -1,6 +1,7 @@
 // ABOUTME: Widget tests for VideoEditorTimeline.
 // ABOUTME: Validates timeline rendering, scroll content, playhead, and empty state.
 
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:bloc_test/bloc_test.dart';
@@ -18,6 +19,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_body.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_header.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_playhead.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_rules_indicator.dart';
@@ -344,6 +346,115 @@ void main() {
 
         expect(find.byType(SingleChildScrollView), findsWidgets);
       });
+    });
+
+    group('scrub pause', () {
+      Finder timelineScrollView() => find.ancestor(
+        of: find.byType(VideoEditorTimelineBody),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is SingleChildScrollView &&
+              widget.scrollDirection == Axis.horizontal,
+        ),
+      );
+
+      testWidgets('pauses playback when the user drags the timeline', (
+        tester,
+      ) async {
+        final clips = [_createTestClip(id: 'a', seconds: 20)];
+
+        await tester.pumpWidget(
+          buildWidget(clipState: ClipEditorState(clips: clips)),
+        );
+
+        await tester.drag(
+          timelineScrollView(),
+          const Offset(-100, 0),
+        );
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockMainBloc.add(
+            const VideoEditorExternalPauseRequested(isPaused: true),
+          ),
+        ).called(1);
+      });
+
+      testWidgets(
+        'pauses playback when a drag grabs the timeline while a '
+        'playback-sync animation restarts mid touch-down',
+        (tester) async {
+          // Regression: while playing, every position update animates the
+          // timeline to follow the playhead. When the finger lands in the
+          // idle gap between two follow animations and the next animateTo
+          // restarts during the touch-down hold, the drag then begins from
+          // an already-scrolling activity, so Flutter emits no
+          // ScrollStartNotification — the scrub used to go undetected and
+          // the video kept playing, fighting the user's drag.
+          final clips = [_createTestClip(id: 'a', seconds: 20)];
+          final states = StreamController<VideoEditorMainState>.broadcast();
+          addTearDown(states.close);
+          whenListen(
+            mockMainBloc,
+            states.stream,
+            initialState: const VideoEditorMainState(),
+          );
+
+          await tester.pumpWidget(
+            buildWidget(clipState: ClipEditorState(clips: clips)),
+          );
+
+          // Playback position update → follow animation runs to completion,
+          // leaving the scroll position idle.
+          states.add(
+            const VideoEditorMainState(
+              currentPosition: Duration(seconds: 2),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 250));
+          await tester.pump(const Duration(milliseconds: 50));
+
+          // Touch down on the clip strip while idle. The clip's tap /
+          // long-press recognizers join the gesture arena, so the scroll
+          // drag only wins after touch slop — as with a real finger on a
+          // clip. (Mid animation the viewport ignores pointers, so the
+          // scroll drag would win the arena instantly at touch-down, which
+          // sidesteps the race.)
+          final strip = find.byType(VideoEditorTimelineClipStrip);
+          final touchPoint =
+              tester.getTopLeft(strip) +
+              Offset(60, tester.getSize(strip).height / 2);
+          final gesture = await tester.startGesture(touchPoint);
+
+          // The next position update restarts the follow animation while
+          // the finger is down, swallowing the upcoming
+          // ScrollStartNotification.
+          states.add(
+            const VideoEditorMainState(
+              currentPosition: Duration(milliseconds: 2200),
+            ),
+          );
+          await tester.pump();
+
+          // First move wins the arena and starts the drag mid animation
+          // (no start notification); the second move emits the first
+          // drag-driven ScrollUpdateNotification.
+          await gesture.moveBy(const Offset(-40, 0));
+          await tester.pump();
+          await gesture.moveBy(const Offset(-40, 0));
+          await tester.pump();
+
+          verify(
+            () => mockMainBloc.add(
+              const VideoEditorExternalPauseRequested(isPaused: true),
+            ),
+          ).called(1);
+
+          await gesture.up();
+          await tester.pumpAndSettle();
+        },
+      );
     });
   });
 }

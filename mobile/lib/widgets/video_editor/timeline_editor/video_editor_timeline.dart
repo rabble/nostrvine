@@ -315,20 +315,29 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
-    if (notification is ScrollStartNotification &&
-        notification.dragDetails != null) {
+    // A drag that grabs the timeline during playback can start without a
+    // ScrollStartNotification: when a playback-sync animateTo restarts
+    // between touch-down and drag-start, the framework sees a
+    // scrolling→scrolling activity transition and skips didStartScroll.
+    // Drag-driven updates always carry dragDetails, so they detect the
+    // scrub too.
+    final isUserDrag = switch (notification) {
+      ScrollStartNotification(:final dragDetails) => dragDetails != null,
+      ScrollUpdateNotification(:final dragDetails) => dragDetails != null,
+      _ => false,
+    };
+    if (isUserDrag && !_isUserScrolling) {
       _isUserScrolling = true;
       // Explicitly pause video while scrubbing so seekTo shows each frame.
       context.read<VideoEditorMainBloc>().add(
         const VideoEditorExternalPauseRequested(isPaused: true),
       );
-    } else if (notification is ScrollUpdateNotification && _isUserScrolling) {
+    }
+    if (notification is ScrollUpdateNotification && _isUserScrolling) {
       _syncPositionFromScroll();
-    } else if (notification is ScrollEndNotification) {
-      if (_isUserScrolling) {
-        _isUserScrolling = false;
-        _syncPositionFromScroll(force: true);
-      }
+    } else if (notification is ScrollEndNotification && _isUserScrolling) {
+      _isUserScrolling = false;
+      _syncPositionFromScroll(force: true);
     }
     return false;
   }
