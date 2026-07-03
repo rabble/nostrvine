@@ -4,7 +4,6 @@
 // with secure storage
 
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter/foundation.dart';
@@ -18,6 +17,7 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
+import 'package:openvine/services/auth/known_accounts_registry.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth/oauth_session_coordinator.dart';
 import 'package:openvine/services/auth/relay_discovery_orchestrator.dart';
@@ -243,6 +243,14 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   final FlutterSecureStorage? _flutterSecureStorage;
   late final SignerSecureStore _signerStore = SignerSecureStore(
     _flutterSecureStorage,
+  );
+  // Owns the persisted known-accounts registry (CRUD, one-time legacy
+  // migration, restorable-account filter); the facade keeps all session state
+  // and restore orchestration, calling in for the pure storage rules.
+  late final KnownAccountsRegistry _knownAccounts = KnownAccountsRegistry(
+    keyStorage: _keyStorage,
+    signerStore: _signerStore,
+    flutterSecureStorage: _flutterSecureStorage,
   );
   // Tear-off keeps the Crashlytics `auth_source` custom key reading live
   // state at report time (see _reportAuthError).
@@ -1382,303 +1390,14 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// the `known_accounts` key will be absent (`null`). In that case we run a
   /// one-time migration that checks for a legacy session and persists the
   /// result so the migration never runs again.
-  Future<List<KnownAccount>> getKnownAccounts() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(kKnownAccountsKey);
-      Log.info(
-        'getKnownAccounts: raw=${raw == null ? 'null' : '${raw.length} chars'}',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-
-      // null  → key never written → run one-time migration
-      // empty → key was written but all accounts removed → no migration
-      if (raw == null) {
-        return _migrateLegacyAccount(prefs);
-      }
-      if (raw.isEmpty) return [];
-
-      final decoded = (jsonDecode(raw) as List<dynamic>)
-          .cast<Map<String, dynamic>>();
-      final accounts = decoded.map(KnownAccount.fromJson).toList()
-        ..sort((a, b) => b.lastUsedAt.compareTo(a.lastUsedAt));
-      return accounts;
-    } catch (e) {
-      Log.warning(
-        'Failed to load known accounts: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      return [];
-    }
-  }
-
-  /// One-time migration from the old single-account auth system.
-  ///
-  /// Checks for a legacy session stored under the old `authentication_source`
-  /// key and, if found, creates a [KnownAccount] entry for it.
-  ///
-  /// Additionally, always checks [SecureKeyStorage] for an automatic/anonymous
-  /// identity. A user may have started with an automatic account and later
-  /// switched to bunker/OAuth — the old automatic keys are still in storage
-  /// even though `authentication_source` was overwritten.
-  ///
-  /// The result is persisted to [kKnownAccountsKey] so this migration never
-  /// runs again.
-  Future<List<KnownAccount>> _migrateLegacyAccount(
-    SharedPreferences prefs,
-  ) async {
-    Log.info(
-      'known_accounts key absent — running one-time legacy migration',
-      name: 'AuthService',
-      category: LogCategory.auth,
-    );
-
-    final rawAuthSource = prefs.getString(_kAuthSourceKey);
-    final source = AuthenticationSource.fromCode(rawAuthSource);
-    Log.info(
-      'Legacy migration: rawAuthSource=$rawAuthSource, '
-      'resolved=${source.name}',
-      name: 'AuthService',
-      category: LogCategory.auth,
-    );
-
-    if (source == AuthenticationSource.none) {
-      // Fresh install or explicit logout — still check for automatic keys.
-      Log.info(
-        'Legacy migration: source=none, checking automatic keys...',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      final accounts = await _migrateAutomaticKeys([]);
-      Log.info(
-        'Legacy migration: source=none, automatic keys check '
-        'returned ${accounts.length} account(s)',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      await _persistMigrationResult(prefs, accounts);
-      return accounts;
-    }
-
-    final accounts = <KnownAccount>[];
-
-    // 1. Recover the account matching the persisted auth source.
-    String? pubkeyHex;
-    try {
-      switch (source) {
-        case AuthenticationSource.automatic:
-        case AuthenticationSource.importedKeys:
-          final keyContainer = await _keyStorage.getKeyContainer();
-          pubkeyHex = keyContainer?.publicKeyHex;
-
-        case AuthenticationSource.amber:
-          final amberInfo = await _loadAmberInfo();
-          pubkeyHex = amberInfo?.pubkey;
-
-        case AuthenticationSource.bunker:
-          final bunkerInfo = await _loadBunkerInfo();
-          pubkeyHex = bunkerInfo?.userPubkey;
-
-        case AuthenticationSource.divineOAuth:
-          final session = await KeycastSession.load(_flutterSecureStorage);
-          pubkeyHex = session?.userPubkey;
-
-        case AuthenticationSource.nip07:
-          // NIP-07 was introduced after the legacy migration; no archived
-          // hint to recover. Leave pubkeyHex null so this path is skipped.
-          break;
-
-        case AuthenticationSource.none:
-          break;
-      }
-    } catch (e) {
-      Log.warning(
-        'Legacy migration failed to read old session: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-
-    if (pubkeyHex != null && pubkeyHex.length == 64) {
-      final now = DateTime.now();
-      accounts.add(
-        KnownAccount(
-          pubkeyHex: pubkeyHex,
-          authSource: source,
-          addedAt: now,
-          lastUsedAt: now,
-        ),
-      );
-      Log.info(
-        'Legacy migration: created entry for '
-        'pubkey=$pubkeyHex, source=${source.name}',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-
-    // 2. Always check for automatic keys that may belong to a different
-    //    identity than the current auth source (e.g. user started with an
-    //    anonymous account, then later logged in via bunker/OAuth).
-    if (source != AuthenticationSource.automatic &&
-        source != AuthenticationSource.importedKeys) {
-      await _migrateAutomaticKeys(accounts);
-    }
-
-    if (accounts.isEmpty) {
-      Log.info(
-        'Legacy migration: no recoverable session found',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-
-    await _persistMigrationResult(prefs, accounts);
-    return accounts;
-  }
-
-  /// Checks [SecureKeyStorage] for automatic/anonymous keys and adds a
-  /// [KnownAccount] entry if found and not already in [accounts].
-  ///
-  /// Returns [accounts] for convenience (mutates in place).
-  Future<List<KnownAccount>> _migrateAutomaticKeys(
-    List<KnownAccount> accounts,
-  ) async {
-    try {
-      Log.info(
-        'Legacy migration: _migrateAutomaticKeys — '
-        'calling _keyStorage.getKeyContainer()...',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      final keyContainer = await _keyStorage.getKeyContainer();
-      final hex = keyContainer?.publicKeyHex;
-      Log.info(
-        'Legacy migration: _migrateAutomaticKeys — '
-        'keyContainer=${keyContainer != null}, '
-        'hex=${hex != null ? '${hex.length} chars' : 'null'}',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      if (hex != null &&
-          hex.length == 64 &&
-          !accounts.any((a) => a.pubkeyHex == hex)) {
-        final now = DateTime.now();
-        accounts.add(
-          KnownAccount(
-            pubkeyHex: hex,
-            authSource: AuthenticationSource.automatic,
-            addedAt: now,
-            lastUsedAt: now,
-          ),
-        );
-        Log.info(
-          'Legacy migration: recovered automatic keys — pubkey=$hex',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-      }
-    } catch (e) {
-      Log.warning(
-        'Legacy migration: failed to check automatic keys: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-    return accounts;
-  }
-
-  /// Persists the migration result to seal it permanently.
-  Future<void> _persistMigrationResult(
-    SharedPreferences prefs,
-    List<KnownAccount> accounts,
-  ) async {
-    await prefs.setString(
-      kKnownAccountsKey,
-      jsonEncode(accounts.map((a) => a.toJson()).toList()),
-    );
-  }
-
-  /// Adds or updates an account in the known accounts registry.
-  ///
-  /// Called after successful authentication to record which pubkey was used
-  /// and which [AuthenticationSource] authenticated it.
-  Future<void> _addToKnownAccounts(
-    String pubkeyHex,
-    AuthenticationSource source,
-  ) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final accounts = await getKnownAccounts();
-      final now = DateTime.now();
-
-      final index = accounts.indexWhere((a) => a.pubkeyHex == pubkeyHex);
-      if (index >= 0) {
-        accounts[index] = accounts[index].copyWith(
-          authSource: source,
-          lastUsedAt: now,
-        );
-      } else {
-        accounts.add(
-          KnownAccount(
-            pubkeyHex: pubkeyHex,
-            authSource: source,
-            addedAt: now,
-            lastUsedAt: now,
-          ),
-        );
-      }
-
-      final json = jsonEncode(accounts.map((a) => a.toJson()).toList());
-      await prefs.setString(kKnownAccountsKey, json);
-
-      Log.info(
-        'Updated known accounts registry '
-        '(total=${accounts.length}, pubkey=$pubkeyHex, source=${source.name})',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    } catch (e) {
-      Log.warning(
-        'Failed to update known accounts: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-  }
-
-  /// Removes an account from the known accounts registry.
-  Future<void> _removeFromKnownAccounts(String pubkeyHex) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final accounts = await getKnownAccounts();
-      accounts.removeWhere((a) => a.pubkeyHex == pubkeyHex);
-
-      final json = jsonEncode(accounts.map((a) => a.toJson()).toList());
-      await prefs.setString(kKnownAccountsKey, json);
-
-      Log.info(
-        'Removed $pubkeyHex from known accounts '
-        '(remaining=${accounts.length})',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    } catch (e) {
-      Log.warning(
-        'Failed to remove from known accounts: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-  }
+  Future<List<KnownAccount>> getKnownAccounts() =>
+      _knownAccounts.getKnownAccounts();
 
   /// Removes an account from the known accounts list and cleans up its
   /// archived signer info. Called from the welcome screen when the user
   /// long-presses to remove an account.
   Future<void> removeKnownAccount(String pubkeyHex) async {
-    await _removeFromKnownAccounts(pubkeyHex);
+    await _knownAccounts.remove(pubkeyHex);
     await _clearArchivedSignerInfo(pubkeyHex);
   }
 
@@ -2155,7 +1874,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       _profileController.add(_currentProfile);
 
       // Register in known accounts
-      await _addToKnownAccounts(userPubkey, AuthenticationSource.bunker);
+      await _knownAccounts.upsert(userPubkey, AuthenticationSource.bunker);
 
       // Run discovery in background - not needed for home feed
       unawaited(_performDiscovery());
@@ -2437,7 +2156,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       _profileController.add(_currentProfile);
 
       // Register in known accounts
-      await _addToKnownAccounts(pubkey, AuthenticationSource.amber);
+      await _knownAccounts.upsert(pubkey, AuthenticationSource.amber);
 
       // Run discovery in background - not needed for home feed
       unawaited(_performDiscovery());
@@ -3358,7 +3077,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
       // On destructive sign-out, remove this device's local login for the
       // current account and then return to the welcome/account-picker surface.
-      // Deferred: remaining-account cleanup runs after _removeFromKnownAccounts
+      // Deferred: remaining-account cleanup runs after _knownAccounts.remove
       // so the deleted account is excluded from the remaining list.
       // Non-destructive sign-out (switch account) preserves these so that
       // initialize() can reconnect to the same external signer.
@@ -3422,7 +3141,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       if (deleteKeys) {
         // Destructive sign-out: remove from known accounts and clean up
         if (currentPubkey != null) {
-          await _removeFromKnownAccounts(currentPubkey);
+          await _knownAccounts.remove(currentPubkey);
           await _clearArchivedSignerInfo(currentPubkey);
         }
 
@@ -3677,7 +3396,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
     if (removedPubkey != null) {
       try {
-        await _removeFromKnownAccounts(removedPubkey);
+        await _knownAccounts.remove(removedPubkey);
         await _clearArchivedSignerInfo(removedPubkey);
       } catch (e) {
         Log.warning(
@@ -3732,14 +3451,16 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   ) async {
     try {
       final remaining = await getKnownAccounts();
-      final restorableAccounts = await _restorableAccounts(remaining);
+      final restorableAccounts = await _knownAccounts.restorableAccounts(
+        remaining,
+      );
 
       _authSource = AuthenticationSource.none;
       await prefs.setString(_kAuthSourceKey, AuthenticationSource.none.code);
       await prefs.remove(_kLastUsedNpubKey);
 
       if (restorableAccounts.isEmpty) {
-        await prefs.setString(kKnownAccountsKey, jsonEncode(<Object>[]));
+        await _knownAccounts.persist(const <KnownAccount>[]);
         Log.info(
           'signOut: no restorable local accounts — reset to fresh welcome',
           name: 'AuthService',
@@ -3749,10 +3470,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       }
 
       restorableAccounts.sort((a, b) => b.lastUsedAt.compareTo(a.lastUsedAt));
-      await prefs.setString(
-        kKnownAccountsKey,
-        jsonEncode(restorableAccounts.map((a) => a.toJson()).toList()),
-      );
+      await _knownAccounts.persist(restorableAccounts);
 
       Log.info(
         'signOut: kept ${restorableAccounts.length} restorable local '
@@ -3771,61 +3489,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       _authSource = AuthenticationSource.none;
       await prefs.setString(_kAuthSourceKey, AuthenticationSource.none.code);
       await prefs.remove(_kLastUsedNpubKey);
-      await prefs.setString(kKnownAccountsKey, jsonEncode(<Object>[]));
+      await _knownAccounts.persist(const <KnownAccount>[]);
     }
   }
-
-  Future<List<KnownAccount>> _restorableAccounts(
-    List<KnownAccount> accounts,
-  ) async {
-    final restorable = <KnownAccount>[];
-    for (final account in accounts) {
-      switch (account.authSource) {
-        case AuthenticationSource.automatic:
-        case AuthenticationSource.importedKeys:
-          if (await _hasRestorableLocalKey(account)) {
-            restorable.add(account);
-          }
-        case AuthenticationSource.amber:
-        case AuthenticationSource.bunker:
-        case AuthenticationSource.divineOAuth:
-          if (await _hasRestorableSignerArchive(account)) {
-            restorable.add(account);
-          }
-        case AuthenticationSource.none:
-        case AuthenticationSource.nip07:
-          break;
-      }
-    }
-    return restorable;
-  }
-
-  Future<bool> _hasRestorableLocalKey(KnownAccount account) async {
-    final npub = NostrKeyUtils.encodePubKey(account.pubkeyHex);
-    try {
-      final identityContainer = await _keyStorage.getIdentityKeyContainer(npub);
-      if (identityContainer?.publicKeyHex == account.pubkeyHex) {
-        return true;
-      }
-
-      if (await _keyStorage.hasKeys()) {
-        final primaryContainer = await _keyStorage.getKeyContainer();
-        if (primaryContainer?.publicKeyHex == account.pubkeyHex) {
-          return true;
-        }
-      }
-    } catch (e) {
-      Log.warning(
-        'signOut: failed to verify local nsec for ${account.pubkeyHex}: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-    return false;
-  }
-
-  Future<bool> _hasRestorableSignerArchive(KnownAccount account) =>
-      _signerStore.hasArchive(account.pubkeyHex, account.authSource);
 
   /// Export nsec for backup purposes
   Future<String?> exportNsec({String? biometricPrompt}) async {
@@ -4443,7 +4109,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       _setAuthState(AuthState.authenticated);
 
       // Register this account in the known accounts list
-      await _addToKnownAccounts(keyContainer.publicKeyHex, source);
+      await _knownAccounts.upsert(keyContainer.publicKeyHex, source);
 
       // Store identity keys for multi-account switching
       try {
