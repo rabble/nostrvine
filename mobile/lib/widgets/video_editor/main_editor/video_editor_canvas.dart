@@ -20,6 +20,7 @@ import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.d
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/blocs/video_editor/tune_editor/video_editor_tune_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
@@ -1341,6 +1342,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         TimelineOverlayItemsUpdate(
           layers: editor.activeLayers,
           filters: editor.stateManager.activeFilters,
+          tuneAdjustments: editor.stateManager.activeTuneAdjustments,
           totalVideoDuration: videoDuration,
           audioTracks: editor.stateManager.audioTracks,
           timelineMarkers: editor.stateManager.timelineMarkers,
@@ -2157,6 +2159,17 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
               bottomBar: (_, _) => null,
             ),
           ),
+          tuneEditor: TuneEditorConfigs(
+            safeArea: const EditorSafeArea.none(),
+            tuneAdjustmentOptions: VideoEditorConstants.tuneAdjustments,
+            style: const TuneEditorStyle(
+              background: VineTheme.backgroundCamera,
+            ),
+            widgets: TuneEditorWidgets(
+              appBar: (_, _) => null,
+              bottomBar: (_, _) => null,
+            ),
+          ),
           helperLines: HelperLineConfigs(
             style: HelperLineStyle(
               // 1.25 is the pro_image_editor default; we divide by fittedBoxScale
@@ -2268,6 +2281,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
                 .paint => .draw,
                 .text => .text,
                 .filter => .filter,
+                .tune => .tune,
                 .sticker => .stickers,
                 _ => null,
               };
@@ -2382,6 +2396,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
               final filterBloc = context.read<VideoEditorFilterBloc>();
               filterBloc.add(const VideoEditorFilterEditorInitialized());
             },
+          ),
+          tuneEditorCallbacks: TuneEditorCallbacks(
+            // Each Adjust session starts neutral and produces a new timeline
+            // set on done (see VideoEditorTuneOverlayControls._commit), so the
+            // bottom-bar sliders always begin at zero rather than pre-filling
+            // the values of an existing set.
+            onInit: () => context.read<VideoEditorTuneBloc>().add(
+              const VideoEditorTuneEditorInitialized([]),
+            ),
           ),
         ),
       ),

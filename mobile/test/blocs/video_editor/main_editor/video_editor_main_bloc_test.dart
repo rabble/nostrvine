@@ -751,8 +751,8 @@ void main() {
   });
 
   group(SubEditorType, () {
-    test('has 6 values', () {
-      expect(SubEditorType.values, hasLength(6));
+    test('has 7 values', () {
+      expect(SubEditorType.values, hasLength(7));
     });
 
     test('contains expected types', () {
@@ -762,6 +762,7 @@ void main() {
           SubEditorType.text,
           SubEditorType.draw,
           SubEditorType.filter,
+          SubEditorType.tune,
           SubEditorType.stickers,
           SubEditorType.music,
           SubEditorType.clips,

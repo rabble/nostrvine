@@ -7987,6 +7987,40 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorFilterLabel => 'Filter';
 
   @override
+  String get videoEditorTuneLabel => 'Isaayos';
+
+  @override
+  String get videoEditorOpenTuneSemanticLabel =>
+      'Buksan ang editor ng pagsasaayos';
+
+  @override
+  String get videoEditorTuneBrightness => 'Liwanag';
+
+  @override
+  String get videoEditorTuneContrast => 'Kontrast';
+
+  @override
+  String get videoEditorTuneSaturation => 'Saturation';
+
+  @override
+  String get videoEditorTuneExposure => 'Exposure';
+
+  @override
+  String get videoEditorTuneHue => 'Hue';
+
+  @override
+  String get videoEditorTuneTemperature => 'Temperatura';
+
+  @override
+  String get videoEditorTuneSharpness => 'Talas';
+
+  @override
+  String get videoEditorTuneLuminance => 'Luminance';
+
+  @override
+  String get videoEditorTuneFade => 'Fade';
+
+  @override
   String get videoEditorAudioLabel => 'Audio';
 
   @override

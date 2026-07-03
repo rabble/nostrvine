@@ -13680,6 +13680,72 @@ abstract class AppLocalizations {
   /// **'Filter'**
   String get videoEditorFilterLabel;
 
+  /// No description provided for @videoEditorTuneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust'**
+  String get videoEditorTuneLabel;
+
+  /// No description provided for @videoEditorOpenTuneSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open adjustments editor'**
+  String get videoEditorOpenTuneSemanticLabel;
+
+  /// No description provided for @videoEditorTuneBrightness.
+  ///
+  /// In en, this message translates to:
+  /// **'Brightness'**
+  String get videoEditorTuneBrightness;
+
+  /// No description provided for @videoEditorTuneContrast.
+  ///
+  /// In en, this message translates to:
+  /// **'Contrast'**
+  String get videoEditorTuneContrast;
+
+  /// No description provided for @videoEditorTuneSaturation.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturation'**
+  String get videoEditorTuneSaturation;
+
+  /// No description provided for @videoEditorTuneExposure.
+  ///
+  /// In en, this message translates to:
+  /// **'Exposure'**
+  String get videoEditorTuneExposure;
+
+  /// No description provided for @videoEditorTuneHue.
+  ///
+  /// In en, this message translates to:
+  /// **'Hue'**
+  String get videoEditorTuneHue;
+
+  /// No description provided for @videoEditorTuneTemperature.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature'**
+  String get videoEditorTuneTemperature;
+
+  /// No description provided for @videoEditorTuneSharpness.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharpness'**
+  String get videoEditorTuneSharpness;
+
+  /// No description provided for @videoEditorTuneLuminance.
+  ///
+  /// In en, this message translates to:
+  /// **'Luminance'**
+  String get videoEditorTuneLuminance;
+
+  /// No description provided for @videoEditorTuneFade.
+  ///
+  /// In en, this message translates to:
+  /// **'Fade'**
+  String get videoEditorTuneFade;
+
   /// No description provided for @videoEditorAudioLabel.
   ///
   /// In en, this message translates to:

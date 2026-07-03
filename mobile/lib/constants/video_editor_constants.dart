@@ -25,6 +25,16 @@ class VideoEditorConstants {
   /// Unique history key for timeline marker positions.
   static const String timelineMarkersStateHistoryKey = 'timelineMarkers';
 
+  /// `TuneAdjustmentMatrix.meta` key grouping the adjustments produced by one
+  /// tune-editor session into a single timeline "set" (one bar per set, sharing
+  /// a time window).
+  static const String tuneSetIdMetaKey = 'tuneSetId';
+
+  /// `TuneAdjustmentMatrix.meta` key recording the adjustment kind
+  /// (`brightness`, `contrast`, …) so its label / toMatrix can be resolved
+  /// after the matrix is given a unique per-instance id.
+  static const String tuneKindMetaKey = 'tuneKind';
+
   /// Maximum number of tags allowed per video.
   static const int tagLimit = 1 << 30; // ~1 billion
 
@@ -335,6 +345,96 @@ class VideoEditorConstants {
     FilterModel(
       name: 'Arctic',
       filters: [ColorFilterAddons.addictiveColor(0, 30, 60)],
+    ),
+  ];
+
+  /// Tune adjustment options exposed by the tune sub-editor.
+  ///
+  /// Mirrors pro_image_editor's `tunePresets` (which is not part of the
+  /// package's public API) so the same list can be passed to both the editor
+  /// config and the custom bottom bar, guaranteeing the `TuneEditorState`'s
+  /// `selectedIndex` maps to the same adjustment our UI shows. The `icon` /
+  /// `label` fields are never rendered — the custom bar draws its own
+  /// localized text chips — so their values only matter as fallbacks.
+  static const List<TuneAdjustmentItem> tuneAdjustments = [
+    TuneAdjustmentItem(
+      id: 'brightness',
+      icon: Icons.brightness_6_rounded,
+      label: 'Brightness',
+      min: -0.5,
+      max: 0.5,
+      labelMultiplier: 200,
+      toMatrix: ColorFilterAddons.brightness,
+    ),
+    TuneAdjustmentItem(
+      id: 'contrast',
+      icon: Icons.contrast_rounded,
+      label: 'Contrast',
+      min: -0.5,
+      max: 0.5,
+      labelMultiplier: 200,
+      toMatrix: ColorFilterAddons.contrast,
+    ),
+    TuneAdjustmentItem(
+      id: 'saturation',
+      icon: Icons.water_drop_rounded,
+      label: 'Saturation',
+      min: -0.5,
+      max: 0.5,
+      labelMultiplier: 200,
+      toMatrix: ColorFilterAddons.saturation,
+    ),
+    TuneAdjustmentItem(
+      id: 'exposure',
+      icon: Icons.exposure_rounded,
+      label: 'Exposure',
+      min: -1,
+      max: 1,
+      toMatrix: ColorFilterAddons.exposure,
+    ),
+    TuneAdjustmentItem(
+      id: 'hue',
+      icon: Icons.colorize_rounded,
+      label: 'Hue',
+      min: -0.25,
+      max: 0.25,
+      divisions: 400,
+      labelMultiplier: 400,
+      toMatrix: ColorFilterAddons.hue,
+    ),
+    TuneAdjustmentItem(
+      id: 'temperature',
+      icon: Icons.thermostat_rounded,
+      label: 'Temperature',
+      min: -0.5,
+      max: 0.5,
+      labelMultiplier: 200,
+      toMatrix: ColorFilterAddons.temperature,
+    ),
+    TuneAdjustmentItem(
+      id: 'sharpness',
+      icon: Icons.deblur_rounded,
+      label: 'Sharpness',
+      min: 0,
+      max: 1,
+      divisions: 100,
+      toMatrix: ColorFilterAddons.sharpness,
+    ),
+    TuneAdjustmentItem(
+      id: 'luminance',
+      icon: Icons.light_mode_rounded,
+      label: 'Luminance',
+      min: -1,
+      max: 1,
+      toMatrix: ColorFilterAddons.luminance,
+    ),
+    TuneAdjustmentItem(
+      id: 'fade',
+      icon: Icons.gradient_rounded,
+      label: 'Fade',
+      min: -1,
+      max: 1,
+      toMatrix: ColorFilterAddons.fade,
     ),
   ];
 }

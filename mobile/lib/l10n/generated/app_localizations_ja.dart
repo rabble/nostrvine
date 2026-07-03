@@ -7578,6 +7578,39 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorFilterLabel => 'フィルター';
 
   @override
+  String get videoEditorTuneLabel => '調整';
+
+  @override
+  String get videoEditorOpenTuneSemanticLabel => '調整エディターを開く';
+
+  @override
+  String get videoEditorTuneBrightness => '明るさ';
+
+  @override
+  String get videoEditorTuneContrast => 'コントラスト';
+
+  @override
+  String get videoEditorTuneSaturation => '彩度';
+
+  @override
+  String get videoEditorTuneExposure => '露出';
+
+  @override
+  String get videoEditorTuneHue => '色相';
+
+  @override
+  String get videoEditorTuneTemperature => '色温度';
+
+  @override
+  String get videoEditorTuneSharpness => 'シャープネス';
+
+  @override
+  String get videoEditorTuneLuminance => '輝度';
+
+  @override
+  String get videoEditorTuneFade => 'フェード';
+
+  @override
   String get videoEditorAudioLabel => 'オーディオ';
 
   @override

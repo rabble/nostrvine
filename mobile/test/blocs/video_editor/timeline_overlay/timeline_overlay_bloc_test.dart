@@ -106,6 +106,200 @@ void main() {
       );
 
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'maps non-neutral tune adjustments into tune overlay items',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
+            tuneAdjustments: [
+              TuneAdjustmentMatrix(
+                id: 'brightness',
+                value: 0.2,
+                matrix: const [],
+                startTime: const Duration(seconds: 1),
+                endTime: const Duration(seconds: 3),
+              ),
+            ],
+            audioTracks: const <AudioEvent>[],
+            totalVideoDuration: const Duration(seconds: 12),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>().having(
+            (s) => s.items,
+            'items',
+            [
+              isA<TimelineOverlayItem>()
+                  .having((i) => i.id, 'id', 'brightness')
+                  .having((i) => i.type, 'type', TimelineOverlayType.tune)
+                  .having(
+                    (i) => i.startTime,
+                    'startTime',
+                    const Duration(seconds: 1),
+                  )
+                  .having(
+                    (i) => i.endTime,
+                    'endTime',
+                    const Duration(seconds: 3),
+                  )
+                  .having((i) => i.label, 'label', 'Brightness'),
+            ],
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'skips neutral (value 0) tune adjustments',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
+            tuneAdjustments: [
+              TuneAdjustmentMatrix(
+                id: 'brightness',
+                value: 0,
+                matrix: const [],
+              ),
+              TuneAdjustmentMatrix(
+                id: 'contrast',
+                value: -0.3,
+                matrix: const [],
+              ),
+            ],
+            audioTracks: const <AudioEvent>[],
+            totalVideoDuration: const Duration(seconds: 12),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>().having(
+            (s) => s.items.map((i) => i.id).toList(),
+            'item ids',
+            ['contrast'],
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'defaults a tune adjustment without a window to full duration',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
+            tuneAdjustments: [
+              TuneAdjustmentMatrix(
+                id: 'saturation',
+                value: 0.4,
+                matrix: const [],
+              ),
+            ],
+            audioTracks: const <AudioEvent>[],
+            totalVideoDuration: const Duration(seconds: 8),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>().having(
+            (s) => (s.items.first.startTime, s.items.first.endTime),
+            'window',
+            (Duration.zero, const Duration(seconds: 8)),
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'groups adjustments sharing a set id into one bar with joined labels',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
+            tuneAdjustments: [
+              TuneAdjustmentMatrix(
+                id: 'brightness__set-1',
+                value: 0.2,
+                matrix: const [],
+                startTime: const Duration(seconds: 1),
+                endTime: const Duration(seconds: 3),
+                meta: const {
+                  VideoEditorConstants.tuneSetIdMetaKey: 'set-1',
+                  VideoEditorConstants.tuneKindMetaKey: 'brightness',
+                },
+              ),
+              TuneAdjustmentMatrix(
+                id: 'contrast__set-1',
+                value: -0.1,
+                matrix: const [],
+                startTime: const Duration(seconds: 1),
+                endTime: const Duration(seconds: 3),
+                meta: const {
+                  VideoEditorConstants.tuneSetIdMetaKey: 'set-1',
+                  VideoEditorConstants.tuneKindMetaKey: 'contrast',
+                },
+              ),
+            ],
+            audioTracks: const <AudioEvent>[],
+            totalVideoDuration: const Duration(seconds: 12),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>().having((s) => s.items, 'items', [
+            isA<TimelineOverlayItem>()
+                .having((i) => i.id, 'id (set id)', 'set-1')
+                .having((i) => i.type, 'type', TimelineOverlayType.tune)
+                .having(
+                  (i) => i.startTime,
+                  'startTime',
+                  const Duration(seconds: 1),
+                )
+                .having((i) => i.endTime, 'endTime', const Duration(seconds: 3))
+                .having((i) => i.label, 'label', 'Brightness, Contrast'),
+          ]),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'keeps separate set ids as separate bars',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
+            tuneAdjustments: [
+              TuneAdjustmentMatrix(
+                id: 'brightness__set-1',
+                value: 0.2,
+                matrix: const [],
+                meta: const {
+                  VideoEditorConstants.tuneSetIdMetaKey: 'set-1',
+                  VideoEditorConstants.tuneKindMetaKey: 'brightness',
+                },
+              ),
+              TuneAdjustmentMatrix(
+                id: 'brightness__set-2',
+                value: -0.2,
+                matrix: const [],
+                meta: const {
+                  VideoEditorConstants.tuneSetIdMetaKey: 'set-2',
+                  VideoEditorConstants.tuneKindMetaKey: 'brightness',
+                },
+              ),
+            ],
+            audioTracks: const <AudioEvent>[],
+            totalVideoDuration: const Duration(seconds: 12),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>().having(
+            (s) => s.items.map((i) => i.id).toList(),
+            'set ids',
+            ['set-1', 'set-2'],
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
         'maxDuration equals track duration when longer than VideoEditorConstants.maxDuration',
         build: TimelineOverlayBloc.new,
         act: (bloc) => bloc.add(

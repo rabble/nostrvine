@@ -3,9 +3,12 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/tune_editor/open_tune_editor.dart';
 
 /// Bottom action bar for the video editor.
 ///
@@ -58,6 +61,14 @@ class VideoEditorMainBottomBar extends StatelessWidget {
                       label: context.l10n.videoEditorFilterLabel,
                       icon: .fadersHorizontal,
                       onTap: () => scope.editor?.openFilterEditor(),
+                    ),
+                    _ActionButton(
+                      label: context.l10n.videoEditorTuneLabel,
+                      icon: .slidersHorizontal,
+                      onTap: () => openTuneEditor(
+                        context.read<VideoEditorMainBloc>(),
+                        scope,
+                      ),
                     ),
                   ],
                 ),

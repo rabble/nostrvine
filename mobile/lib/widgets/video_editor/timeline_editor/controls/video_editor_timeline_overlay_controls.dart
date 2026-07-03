@@ -14,6 +14,7 @@ import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_edi
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
 import 'package:pro_image_editor/core/models/layers/layer.dart';
 import 'package:pro_image_editor/features/filter_editor/types/filter_state.dart';
+import 'package:pro_image_editor/features/tune_editor/models/tune_adjustment_matrix.dart';
 
 /// Controls shown when an overlay item is selected.
 /// Adapts buttons based on the overlay type (layer vs filter).
@@ -27,6 +28,7 @@ class TimelineOverlayControls extends StatelessWidget {
     return switch (item.type) {
       .sound => _SoundOverlayControls(item: item),
       .filter => _FilterOverlayControls(item: item),
+      .tune => _TuneOverlayControls(item: item),
       .layer => _LayerOverlayControls(item: item),
     };
   }
@@ -223,6 +225,121 @@ class _FilterOverlayControls extends StatelessWidget {
       TimelineOverlayItemSelected(second.id),
     );
   }
+}
+
+/// Controls for a tune-adjustment *set* overlay: delete, duplicate, split,
+/// and done.
+///
+/// Each bar bundles one Adjust session's adjustments (a set sharing one
+/// window). Delete removes every member; duplicate copies the whole set into a
+/// new set (overlapping until moved); split cuts every member at the playhead,
+/// leaving the tail as a new set. All new sets get a fresh set id so they
+/// render as their own bar.
+class _TuneOverlayControls extends StatelessWidget {
+  const _TuneOverlayControls({required this.item});
+
+  final TimelineOverlayItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return VideoEditorTimelineControls(
+      onDelete: () => _removeTuneSet(context: context),
+      onDuplicated: () => _duplicateTuneSet(context: context),
+      onSplit: () => _splitTuneSet(context: context),
+      onDone: () => TimelineOverlayControls._deselect(context),
+    );
+  }
+
+  void _removeTuneSet({required BuildContext context}) {
+    final editor = VideoEditorScope.of(context).editor;
+    if (editor == null) return;
+
+    final updated = editor.stateManager.activeTuneAdjustments
+        .where((t) => _tuneSetId(t) != item.id)
+        .map((e) => e.copy())
+        .toList();
+
+    editor.addHistory(tuneAdjustments: updated);
+
+    context.read<TimelineOverlayBloc>().add(
+      const TimelineOverlayItemSelected(null),
+    );
+  }
+
+  void _duplicateTuneSet({required BuildContext context}) {
+    final editor = VideoEditorScope.of(context).editor;
+    if (editor == null) return;
+
+    final tunes = editor.stateManager.activeTuneAdjustments;
+    final members = tunes.where((t) => _tuneSetId(t) == item.id);
+    if (members.isEmpty) return;
+
+    final newSetId = _newTuneSetId();
+    final copies = members
+        .map((m) => _reSet(m, newSetId))
+        .toList(growable: false);
+
+    editor.addHistory(
+      tuneAdjustments: [...tunes.map((e) => e.copy()), ...copies],
+    );
+    context.read<TimelineOverlayBloc>().add(
+      TimelineOverlayItemSelected(newSetId),
+    );
+  }
+
+  void _splitTuneSet({required BuildContext context}) {
+    final editor = VideoEditorScope.of(context).editor;
+    if (editor == null) return;
+
+    final splitAt = _validSplitPosition(context, item);
+    if (splitAt == null) return;
+
+    final newSetId = _newTuneSetId();
+    final updated = <TuneAdjustmentMatrix>[];
+    for (final m in editor.stateManager.activeTuneAdjustments) {
+      if (_tuneSetId(m) != item.id) {
+        updated.add(m.copy());
+        continue;
+      }
+      // Head keeps the set id and ends at the split; tail becomes a new set.
+      updated
+        ..add(m.copyWith(endTime: splitAt))
+        ..add(
+          _reSet(m, newSetId).copyWith(
+            startTime: splitAt,
+            endTime: item.endTime,
+          ),
+        );
+    }
+
+    editor.addHistory(tuneAdjustments: updated);
+    context.read<TimelineOverlayBloc>().add(
+      TimelineOverlayItemSelected(newSetId),
+    );
+  }
+}
+
+/// The set id an adjustment belongs to (falls back to its own id for legacy
+/// adjustments written before sets existed).
+String _tuneSetId(TuneAdjustmentMatrix m) =>
+    m.meta[VideoEditorConstants.tuneSetIdMetaKey] as String? ?? m.id;
+
+/// The adjustment kind (`brightness`, …) recorded on an adjustment.
+String _tuneKind(TuneAdjustmentMatrix m) =>
+    m.meta[VideoEditorConstants.tuneKindMetaKey] as String? ?? m.id;
+
+String _newTuneSetId() => 'set_${DateTime.now().microsecondsSinceEpoch}';
+
+/// Copies [m] into the set [setId] with a fresh per-instance id.
+TuneAdjustmentMatrix _reSet(TuneAdjustmentMatrix m, String setId) {
+  final kind = _tuneKind(m);
+  return m.copyWith(
+    id: '${kind}__$setId',
+    meta: {
+      VideoEditorConstants.tuneSetIdMetaKey: setId,
+      VideoEditorConstants.tuneKindMetaKey: kind,
+    },
+  );
 }
 
 /// Controls for sound overlays: delete, edit, duplicate, split, and done.

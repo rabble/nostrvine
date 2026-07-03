@@ -15,11 +15,13 @@ class TimelineOverlayItemsUpdate extends TimelineOverlayEvent {
     required this.filters,
     required this.audioTracks,
     required this.totalVideoDuration,
+    this.tuneAdjustments = const [],
     this.timelineMarkers = const [],
   });
 
   final List<Layer> layers;
   final List<FilterState> filters;
+  final List<TuneAdjustmentMatrix> tuneAdjustments;
   final List<AudioEvent> audioTracks;
   final List<Duration> timelineMarkers;
 
@@ -29,6 +31,7 @@ class TimelineOverlayItemsUpdate extends TimelineOverlayEvent {
   List<Object?> get props => [
     layers,
     filters,
+    tuneAdjustments,
     audioTracks,
     totalVideoDuration,
     timelineMarkers,

@@ -7736,6 +7736,39 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorFilterLabel => 'አጣራ';
 
   @override
+  String get videoEditorTuneLabel => 'አስተካክል';
+
+  @override
+  String get videoEditorOpenTuneSemanticLabel => 'የማስተካከያ አርታዒን ክፈት';
+
+  @override
+  String get videoEditorTuneBrightness => 'ብሩህነት';
+
+  @override
+  String get videoEditorTuneContrast => 'ንፅፅር';
+
+  @override
+  String get videoEditorTuneSaturation => 'ሙሌት';
+
+  @override
+  String get videoEditorTuneExposure => 'ተጋላጭነት';
+
+  @override
+  String get videoEditorTuneHue => 'ቀለም';
+
+  @override
+  String get videoEditorTuneTemperature => 'ሙቀት';
+
+  @override
+  String get videoEditorTuneSharpness => 'ስለት';
+
+  @override
+  String get videoEditorTuneLuminance => 'ብርሃን';
+
+  @override
+  String get videoEditorTuneFade => 'መደብዘዝ';
+
+  @override
   String get videoEditorAudioLabel => 'ኦዲዮ';
 
   @override

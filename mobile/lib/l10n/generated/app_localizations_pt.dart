@@ -7949,6 +7949,39 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorFilterLabel => 'Filtro';
 
   @override
+  String get videoEditorTuneLabel => 'Ajustar';
+
+  @override
+  String get videoEditorOpenTuneSemanticLabel => 'Abrir editor de ajustes';
+
+  @override
+  String get videoEditorTuneBrightness => 'Brilho';
+
+  @override
+  String get videoEditorTuneContrast => 'Contraste';
+
+  @override
+  String get videoEditorTuneSaturation => 'Saturação';
+
+  @override
+  String get videoEditorTuneExposure => 'Exposição';
+
+  @override
+  String get videoEditorTuneHue => 'Matiz';
+
+  @override
+  String get videoEditorTuneTemperature => 'Temperatura';
+
+  @override
+  String get videoEditorTuneSharpness => 'Nitidez';
+
+  @override
+  String get videoEditorTuneLuminance => 'Luminância';
+
+  @override
+  String get videoEditorTuneFade => 'Esmaecer';
+
+  @override
   String get videoEditorAudioLabel => 'Áudio';
 
   @override

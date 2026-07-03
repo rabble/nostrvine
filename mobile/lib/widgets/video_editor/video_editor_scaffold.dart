@@ -22,6 +22,8 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_over
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
+import 'package:openvine/widgets/video_editor/tune_editor/video_editor_tune_bottom_bar.dart';
+import 'package:openvine/widgets/video_editor/tune_editor/video_editor_tune_overlay_controls.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// A scaffold widget that provides the standard layout for the video editor.
@@ -417,7 +419,7 @@ class _TimelineSectionState extends State<_TimelineSection>
   late final CurvedAnimation _animation;
 
   static bool _shouldHide(SubEditorType? type) =>
-      type == .draw || type == .filter;
+      type == .draw || type == .filter || type == .tune;
 
   @override
   void initState() {
@@ -498,6 +500,12 @@ class _OverlayControls extends StatelessWidget {
           key: ValueKey('Filter-Overlay-Controls'),
           padding: .only(bottom: VideoEditorConstants.bottomBarHeight),
           child: VideoEditorFilterOverlayControls(),
+        ),
+        // Tune-Editor
+        VideoEditorMainState(openSubEditor: .tune) => const Padding(
+          key: ValueKey('Tune-Overlay-Controls'),
+          padding: .only(bottom: VideoEditorConstants.bottomBarHeight),
+          child: VideoEditorTuneOverlayControls(),
         ),
         // Fallback
         _ => const VideoEditorMainOverlayActions(),
@@ -736,8 +744,15 @@ class _BottomActions extends StatelessWidget {
             key: ValueKey('Filter-Editor-Bottom-Bar'),
           ),
         ),
+        // Tune-Bar
+        SubEditorType.tune => Padding(
+          padding: .only(bottom: systemNavigationBarHeight),
+          child: const VideoEditorTuneBottomBar(
+            key: ValueKey('Tune-Editor-Bottom-Bar'),
+          ),
+        ),
         // Fallback — should not happen since _BottomActions is only
-        // rendered for draw/filter, but handle gracefully.
+        // rendered for draw/filter/tune, but handle gracefully.
         _ => const SizedBox.shrink(),
       },
     );

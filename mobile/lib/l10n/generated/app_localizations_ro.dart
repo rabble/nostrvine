@@ -8074,6 +8074,40 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorFilterLabel => 'Filtru';
 
   @override
+  String get videoEditorTuneLabel => 'Ajustează';
+
+  @override
+  String get videoEditorOpenTuneSemanticLabel =>
+      'Deschide editorul de ajustări';
+
+  @override
+  String get videoEditorTuneBrightness => 'Luminozitate';
+
+  @override
+  String get videoEditorTuneContrast => 'Contrast';
+
+  @override
+  String get videoEditorTuneSaturation => 'Saturație';
+
+  @override
+  String get videoEditorTuneExposure => 'Expunere';
+
+  @override
+  String get videoEditorTuneHue => 'Nuanță';
+
+  @override
+  String get videoEditorTuneTemperature => 'Temperatură';
+
+  @override
+  String get videoEditorTuneSharpness => 'Claritate';
+
+  @override
+  String get videoEditorTuneLuminance => 'Luminanță';
+
+  @override
+  String get videoEditorTuneFade => 'Estompare';
+
+  @override
   String get videoEditorAudioLabel => 'Audio';
 
   @override

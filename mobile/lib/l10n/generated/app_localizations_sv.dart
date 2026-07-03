@@ -7897,6 +7897,39 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorFilterLabel => 'Filter';
 
   @override
+  String get videoEditorTuneLabel => 'Justera';
+
+  @override
+  String get videoEditorOpenTuneSemanticLabel => 'Öppna justeringsredigeraren';
+
+  @override
+  String get videoEditorTuneBrightness => 'Ljusstyrka';
+
+  @override
+  String get videoEditorTuneContrast => 'Kontrast';
+
+  @override
+  String get videoEditorTuneSaturation => 'Mättnad';
+
+  @override
+  String get videoEditorTuneExposure => 'Exponering';
+
+  @override
+  String get videoEditorTuneHue => 'Nyans';
+
+  @override
+  String get videoEditorTuneTemperature => 'Temperatur';
+
+  @override
+  String get videoEditorTuneSharpness => 'Skärpa';
+
+  @override
+  String get videoEditorTuneLuminance => 'Luminans';
+
+  @override
+  String get videoEditorTuneFade => 'Uttoning';
+
+  @override
   String get videoEditorAudioLabel => 'Ljud';
 
   @override

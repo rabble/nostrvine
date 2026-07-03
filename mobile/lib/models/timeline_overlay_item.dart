@@ -15,6 +15,9 @@ enum TimelineOverlayType {
   /// Filter effect applied to the video.
   filter,
 
+  /// Tune adjustment (brightness, contrast, …) applied to the video.
+  tune,
+
   /// Audio track added on top of the original video audio.
   sound,
 }

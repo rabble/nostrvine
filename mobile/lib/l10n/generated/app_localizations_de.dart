@@ -7990,6 +7990,39 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoEditorFilterLabel => 'Filter';
 
   @override
+  String get videoEditorTuneLabel => 'Anpassen';
+
+  @override
+  String get videoEditorOpenTuneSemanticLabel => 'Anpassungseditor öffnen';
+
+  @override
+  String get videoEditorTuneBrightness => 'Helligkeit';
+
+  @override
+  String get videoEditorTuneContrast => 'Kontrast';
+
+  @override
+  String get videoEditorTuneSaturation => 'Sättigung';
+
+  @override
+  String get videoEditorTuneExposure => 'Belichtung';
+
+  @override
+  String get videoEditorTuneHue => 'Farbton';
+
+  @override
+  String get videoEditorTuneTemperature => 'Temperatur';
+
+  @override
+  String get videoEditorTuneSharpness => 'Schärfe';
+
+  @override
+  String get videoEditorTuneLuminance => 'Luminanz';
+
+  @override
+  String get videoEditorTuneFade => 'Verblassen';
+
+  @override
   String get videoEditorAudioLabel => 'Audio';
 
   @override

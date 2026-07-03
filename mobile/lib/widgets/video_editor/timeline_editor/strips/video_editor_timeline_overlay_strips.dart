@@ -55,9 +55,11 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
   // -- cached bucket-split results -----------------------------------------
   var _soundItems = const <TimelineOverlayItem>[];
   var _filterItems = const <TimelineOverlayItem>[];
+  var _tuneItems = const <TimelineOverlayItem>[];
   var _layerItems = const <TimelineOverlayItem>[];
   var _soundRowCount = 0;
   var _filterRowCount = 0;
+  var _tuneRowCount = 0;
   var _layerRowCount = 0;
 
   // -- cached snap-point list -----------------------------------------------
@@ -66,9 +68,11 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
   void _rebuildBuckets(List<TimelineOverlayItem> items) {
     final soundItems = <TimelineOverlayItem>[];
     final filterItems = <TimelineOverlayItem>[];
+    final tuneItems = <TimelineOverlayItem>[];
     final layerItems = <TimelineOverlayItem>[];
     var maxSoundRow = -1;
     var maxFilterRow = -1;
+    var maxTuneRow = -1;
     var maxLayerRow = -1;
 
     for (final item in items) {
@@ -79,6 +83,9 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
         case TimelineOverlayType.filter:
           filterItems.add(item);
           if (item.row > maxFilterRow) maxFilterRow = item.row;
+        case TimelineOverlayType.tune:
+          tuneItems.add(item);
+          if (item.row > maxTuneRow) maxTuneRow = item.row;
         case TimelineOverlayType.layer:
           layerItems.add(item);
           if (item.row > maxLayerRow) maxLayerRow = item.row;
@@ -87,9 +94,11 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
 
     _soundItems = soundItems;
     _filterItems = filterItems;
+    _tuneItems = tuneItems;
     _layerItems = layerItems;
     _soundRowCount = maxSoundRow + 1;
     _filterRowCount = maxFilterRow + 1;
+    _tuneRowCount = maxTuneRow + 1;
     _layerRowCount = maxLayerRow + 1;
   }
 
@@ -180,6 +189,14 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
         isCollapsed: collapsedTypes.contains(TimelineOverlayType.filter),
         type: TimelineOverlayType.filter,
         color: VineTheme.success,
+        rowHeight: TimelineConstants.overlayRowHeight,
+      ),
+      (
+        items: _tuneItems,
+        rowCount: _tuneRowCount,
+        isCollapsed: collapsedTypes.contains(TimelineOverlayType.tune),
+        type: TimelineOverlayType.tune,
+        color: VineTheme.accentBlueBackground,
         rowHeight: TimelineConstants.overlayRowHeight,
       ),
       (

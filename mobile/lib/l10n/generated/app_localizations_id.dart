@@ -7870,6 +7870,39 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorFilterLabel => 'Filter';
 
   @override
+  String get videoEditorTuneLabel => 'Sesuaikan';
+
+  @override
+  String get videoEditorOpenTuneSemanticLabel => 'Buka editor penyesuaian';
+
+  @override
+  String get videoEditorTuneBrightness => 'Kecerahan';
+
+  @override
+  String get videoEditorTuneContrast => 'Kontras';
+
+  @override
+  String get videoEditorTuneSaturation => 'Saturasi';
+
+  @override
+  String get videoEditorTuneExposure => 'Eksposur';
+
+  @override
+  String get videoEditorTuneHue => 'Rona';
+
+  @override
+  String get videoEditorTuneTemperature => 'Suhu';
+
+  @override
+  String get videoEditorTuneSharpness => 'Ketajaman';
+
+  @override
+  String get videoEditorTuneLuminance => 'Luminansi';
+
+  @override
+  String get videoEditorTuneFade => 'Pudar';
+
+  @override
   String get videoEditorAudioLabel => 'Audio';
 
   @override
