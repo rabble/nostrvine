@@ -9,13 +9,13 @@ class AppLocalizationsBg extends AppLocalizations {
   AppLocalizationsBg([String locale = 'bg']) : super(locale);
 
   @override
-  String get feedTuningMoreLabel => 'More like this';
+  String get feedTuningMoreLabel => 'Повече такива';
 
   @override
-  String get feedTuningLessLabel => 'Less like this';
+  String get feedTuningLessLabel => 'По-малко такива';
 
   @override
-  String get feedTuningUndo => 'Undo';
+  String get feedTuningUndo => 'Отмени';
 
   @override
   String get dmMessageBubbleVideoReplyHint => 'Отваряне на посочения видеоклип';
@@ -397,39 +397,39 @@ class AppLocalizationsBg extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count collaborator invites still need to send',
-      one: '1 collaborator invite still needs to send',
+      other: '$count покани за сътрудници още чакат да бъдат изпратени',
+      one: '1 покана за сътрудник още чака да бъде изпратена',
     );
     return '$_temp0';
   }
 
   @override
   String get profileCollaboratorInvitePendingDetail =>
-      'We kept the invite queued. Retry it here.';
+      'Задържахме поканата на опашката. Опитай пак оттук.';
 
   @override
   String profileCollaboratorInvitePendingDetailWithTitle(String title) {
-    return 'For \"$title\". Retry it here.';
+    return 'За „$title“. Опитай пак оттук.';
   }
 
   @override
-  String get profileCollaboratorInviteRetryAction => 'Retry';
+  String get profileCollaboratorInviteRetryAction => 'Опитай пак';
 
   @override
-  String get profileCollaboratorInviteRetryingAction => 'Retrying';
+  String get profileCollaboratorInviteRetryingAction => 'Опитване';
 
   @override
   String get profileCollaboratorInviteRetryUnavailable =>
-      'Collaborator invite retry is unavailable right now.';
+      'Повторното изпращане на покани за сътрудници не е налично в момента.';
 
   @override
   String profileCollaboratorInviteRetryResult(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count collaborator invites still need to send.',
-      one: '1 collaborator invite still needs to send.',
-      zero: 'Collaborator invites sent.',
+      other: '$count покани за сътрудници още чакат да бъдат изпратени.',
+      one: '1 покана за сътрудник още чака да бъде изпратена.',
+      zero: 'Поканите за сътрудници са изпратени.',
     );
     return '$_temp0';
   }
@@ -1430,7 +1430,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoErrorAdultContentHidden =>
-      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+      'Съдържанието за възрастни е изключено. Можеш да го включиш от Настройки → Филтри за съдържание.';
 
   @override
   String get videoFollowButtonFollowing => 'Следване';
@@ -1485,7 +1485,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String metadataHashtagChipTapHint(String hashtag) {
-    return '#$hashtag. Tap to view videos with this hashtag.';
+    return '#$hashtag. Докосни, за да видиш видеа с този хаштаг.';
   }
 
   @override
@@ -1629,19 +1629,20 @@ class AppLocalizationsBg extends AppLocalizations {
       'Отвори подробностите за видеото';
 
   @override
-  String get videoOverlayCommentBarHint => 'Add comment...';
+  String get videoOverlayCommentBarHint => 'Добави коментар...';
 
   @override
-  String get videoOverlayCommentBarSemanticLabel => 'Add a comment';
+  String get videoOverlayCommentBarSemanticLabel => 'Добави коментар';
 
   @override
-  String get videoOverlayCommentBarSendLabel => 'Send comment';
+  String get videoOverlayCommentBarSendLabel => 'Изпрати коментар';
 
   @override
-  String get videoOverlayCommentPostedSnackbar => 'Comment posted';
+  String get videoOverlayCommentPostedSnackbar => 'Коментарът е публикуван';
 
   @override
-  String get videoOverlayCommentPostFailedSnackbar => 'Couldn\'t post comment';
+  String get videoOverlayCommentPostFailedSnackbar =>
+      'Коментарът не можа да се публикува';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -2473,7 +2474,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Изисква се за гледане на съдържание за възрастни';
 
   @override
-  String get safetySettingsAgeLockedForMinor => 'Locked for your account';
+  String get safetySettingsAgeLockedForMinor => 'Заключено за твоя акаунт';
 
   @override
   String get safetySettingsDivine => 'Divine';
@@ -3254,25 +3255,25 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareSheetAddToClips => 'Добави към клипове';
 
   @override
-  String get shareSheetNameClipTitle => 'Name this clip';
+  String get shareSheetNameClipTitle => 'Дай име на този клип';
 
   @override
   String get shareSheetNameClipSubtitle =>
-      'Pick a name you\'ll recognize in your library.';
+      'Избери име, което ще разпознаеш в библиотеката си.';
 
   @override
-  String get shareSheetClipTitleLabel => 'Clip title';
+  String get shareSheetClipTitleLabel => 'Заглавие на клипа';
 
   @override
-  String get shareSheetSaveClip => 'Save clip';
+  String get shareSheetSaveClip => 'Запази клипа';
 
   @override
   String shareSheetSavedClipToClips(String title) {
-    return 'Saved \"$title\" to clips';
+    return '„$title“ е запазен в клиповете';
   }
 
   @override
-  String get shareSheetUntitledClip => 'Untitled clip';
+  String get shareSheetUntitledClip => 'Клип без заглавие';
 
   @override
   String get shareSheetAddToClipsFailed => 'Не можа да се добави към клипове';
@@ -4145,8 +4146,8 @@ class AppLocalizationsBg extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count unread notifications',
-      one: '1 unread notification',
+      other: '$count непрочетени известия',
+      one: '1 непрочетено известие',
     );
     return '$_temp0';
   }
@@ -4249,7 +4250,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get feedSkip => 'Пропускане';
 
   @override
-  String get feedLoadingMore => 'Loading more videos…';
+  String get feedLoadingMore => 'Зареждане на още видеа…';
 
   @override
   String get uploadWaitingToUpload => 'Чака качване';
@@ -4681,11 +4682,11 @@ class AppLocalizationsBg extends AppLocalizations {
       'Подвеждащи или неверни твърдения';
 
   @override
-  String get reportReasonChildSafety => 'Child Safety Violation';
+  String get reportReasonChildSafety => 'Нарушение на безопасността на децата';
 
   @override
   String get reportReasonChildSafetySubtitle =>
-      'General concerns about minors\' safety';
+      'Общи притеснения за безопасността на непълнолетни';
 
   @override
   String get reportReasonCsam => 'Нарушение на безопасността на детето';
@@ -4695,11 +4696,11 @@ class AppLocalizationsBg extends AppLocalizations {
       'Съдържание, което експлоатира или застрашава непълнолетни';
 
   @override
-  String get reportReasonUnderageUser => 'User Appears Under 16';
+  String get reportReasonUnderageUser => 'Потребителят изглежда под 16 г.';
 
   @override
   String get reportReasonUnderageUserSubtitle =>
-      'Account holder appears to be underage';
+      'Собственикът на акаунта изглежда непълнолетен';
 
   @override
   String get reportReasonAiGenerated => 'AI-генерирано съдържание';
@@ -4733,10 +4734,10 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get reportModerationDmDelayed =>
-      'We couldn\'t reach the moderation team directly just now, but your report was received and will be reviewed.';
+      'Точно сега не успяхме да се свържем директно с екипа по модерация, но докладът ти е получен и ще бъде прегледан.';
 
   @override
-  String get reportContactModeration => 'Message the moderation team';
+  String get reportContactModeration => 'Пиши на екипа по модерация';
 
   @override
   String get reportLearnMore => 'Научи повече';
@@ -5530,10 +5531,10 @@ class AppLocalizationsBg extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count collaborator invites did not send.',
-      one: '1 collaborator invite did not send.',
+      other: '$count покани за сътрудници не се изпратиха.',
+      one: '1 покана за сътрудник не се изпрати.',
     );
-    return 'Video posted, but $_temp0';
+    return 'Видеото е публикувано, но $_temp0';
   }
 
   @override
@@ -5553,25 +5554,25 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmMessageInputHint => 'Say something…';
 
   @override
-  String get dmMessageBubbleSentHint => 'Sent message';
+  String get dmMessageBubbleSentHint => 'Изпратено съобщение';
 
   @override
-  String get dmMessageBubbleReceivedHint => 'Received message';
+  String get dmMessageBubbleReceivedHint => 'Получено съобщение';
 
   @override
-  String get dmMessageBubbleLongPressHint => 'Message actions';
+  String get dmMessageBubbleLongPressHint => 'Действия за съобщението';
 
   @override
-  String get dmMessageActionCopyText => 'Copy text';
+  String get dmMessageActionCopyText => 'Копирай текста';
 
   @override
-  String get dmMessageActionCopyVideoUrl => 'Copy video URL';
+  String get dmMessageActionCopyVideoUrl => 'Копирай URL на видеото';
 
   @override
-  String get dmMessageActionDeleteForEveryone => 'Delete for everyone';
+  String get dmMessageActionDeleteForEveryone => 'Изтрий за всички';
 
   @override
-  String get dmMessageActionReport => 'Report';
+  String get dmMessageActionReport => 'Докладвай';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5664,15 +5665,16 @@ class AppLocalizationsBg extends AppLocalizations {
       'Доставено. Няма да се синхронизира с другите ти устройства.';
 
   @override
-  String get inboxConversationActionsSheetLabel => 'Conversation actions';
+  String get inboxConversationActionsSheetLabel => 'Действия за разговора';
 
   @override
   String inboxConversationTileLabel(String displayName) {
-    return '$displayName conversation';
+    return 'Разговор с $displayName';
   }
 
   @override
-  String get inboxConversationTileLongPressHint => 'Show conversation actions';
+  String get inboxConversationTileLongPressHint =>
+      'Покажи действията за разговора';
 
   @override
   String get reportDialogCancel => 'Отказ';
@@ -5750,45 +5752,45 @@ class AppLocalizationsBg extends AppLocalizations {
   String get curatedListVideoNotAvailable => 'Видеото не е налично';
 
   @override
-  String get curatedListActionsTooltip => 'List actions';
+  String get curatedListActionsTooltip => 'Действия за списъка';
 
   @override
-  String get curatedListUnfollowAction => 'Unfollow list';
+  String get curatedListUnfollowAction => 'Спри да следваш списъка';
 
   @override
-  String get curatedListUnfollowedSnack => 'Unfollowed list';
+  String get curatedListUnfollowedSnack => 'Спря да следваш списъка';
 
   @override
-  String get curatedListUnfollowFailed => 'Couldn\'t unfollow list';
+  String get curatedListUnfollowFailed => 'Списъкът не можа да бъде отписан';
 
   @override
-  String get curatedListDeleteConfirmTitle => 'Delete list?';
+  String get curatedListDeleteConfirmTitle => 'Да изтрием списъка?';
 
   @override
   String get curatedListDeleteConfirmBody =>
-      'This removes the list from relays. Videos in the list will not be deleted.';
+      'Това премахва списъка от релетата. Видеата в списъка няма да бъдат изтрити.';
 
   @override
-  String get curatedListDeletedSnack => 'Deleted list';
+  String get curatedListDeletedSnack => 'Списъкът е изтрит';
 
   @override
-  String get curatedListDeleteFailed => 'Couldn\'t delete list';
+  String get curatedListDeleteFailed => 'Списъкът не можа да бъде изтрит';
 
   @override
-  String get peopleListsActionsTooltip => 'List actions';
+  String get peopleListsActionsTooltip => 'Действия за списъка';
 
   @override
-  String get listDeleteAction => 'Delete list';
+  String get listDeleteAction => 'Изтрий списъка';
 
   @override
-  String get peopleListsDeleteConfirmTitle => 'Delete list?';
+  String get peopleListsDeleteConfirmTitle => 'Да изтрием списъка?';
 
   @override
   String get peopleListsDeleteConfirmBody =>
-      'This removes the list for everyone. The people in it will not be unfollowed.';
+      'Това премахва списъка за всички. Хората в него няма да бъдат отписани.';
 
   @override
-  String get peopleListsDeleteFailed => 'Couldn\'t delete list';
+  String get peopleListsDeleteFailed => 'Списъкът не можа да бъде изтрит';
 
   @override
   String get commonRetry => 'Опитай пак';
@@ -6146,157 +6148,160 @@ class AppLocalizationsBg extends AppLocalizations {
   String get nostrAppPermissionAllow => 'Позволи';
 
   @override
-  String get appsDetailDefaultTitle => 'Integrated App';
+  String get appsDetailDefaultTitle => 'Свързано приложение';
 
   @override
-  String get appsDetailNotFoundTitle => 'Integration not found';
+  String get appsDetailNotFoundTitle => 'Интеграцията не е намерена';
 
   @override
   String get appsDetailNotFoundSubtitle =>
-      'This approved integration is no longer available in Divine.';
+      'Тази одобрена интеграция вече не е налична в Divine.';
 
   @override
-  String get appsDetailHowItWorksTitle => 'How it works';
+  String get appsDetailHowItWorksTitle => 'Как работи';
 
   @override
   String get appsDetailHowItWorksBody =>
-      'This is an approved third-party app that runs inside Divine. Divine only grants reviewed capabilities for this integration, and blocks navigation outside its approved origins.';
+      'Това е одобрено външно приложение, което работи в Divine. Divine предоставя само прегледани възможности за тази интеграция и блокира навигацията извън одобрените ѝ адреси.';
 
   @override
-  String get appsDetailAboutTitle => 'About';
+  String get appsDetailAboutTitle => 'Относно';
 
   @override
-  String get appsDetailPrimaryOriginTitle => 'Primary origin';
+  String get appsDetailPrimaryOriginTitle => 'Основен адрес';
 
   @override
-  String get appsDetailApprovedOriginsTitle => 'Approved origins';
+  String get appsDetailApprovedOriginsTitle => 'Одобрени адреси';
 
   @override
-  String get appsDetailCapabilitiesTitle => 'Available capabilities';
+  String get appsDetailCapabilitiesTitle => 'Налични възможности';
 
   @override
-  String get appsDetailAskBeforeTitle => 'Ask before';
+  String get appsDetailAskBeforeTitle => 'Питай преди';
 
   @override
-  String get appsDetailOpenButton => 'Open Integration';
+  String get appsDetailOpenButton => 'Отвори интеграцията';
 
   @override
-  String get appsDetailNoneDeclared => 'None declared yet';
+  String get appsDetailNoneDeclared => 'Още няма декларирани';
 
   @override
-  String get appsDirectoryTitle => 'Integrated Apps';
+  String get appsDirectoryTitle => 'Свързани приложения';
 
   @override
-  String get appsDirectoryIntroTitle => 'Approved third-party apps';
+  String get appsDirectoryIntroTitle => 'Одобрени външни приложения';
 
   @override
   String get appsDirectoryIntroBody =>
-      'Approved third-party apps that run inside Divine';
+      'Одобрени външни приложения, които работят в Divine';
 
   @override
-  String get appsDirectoryErrorTitle => 'Could not load integrated apps';
+  String get appsDirectoryErrorTitle =>
+      'Свързаните приложения не можаха да се заредят';
 
   @override
   String get appsDirectoryErrorSubtitle =>
-      'Pull to try the approved integrations again.';
+      'Дръпни, за да опиташ пак с одобрените интеграции.';
 
   @override
-  String get appsDirectoryEmptyTitle => 'No approved integrations yet';
+  String get appsDirectoryEmptyTitle => 'Още няма одобрени интеграции';
 
   @override
   String get appsDirectoryEmptySubtitle =>
-      'Approved third-party apps will appear here as Divine adds them.';
+      'Одобрените външни приложения ще се появят тук, щом Divine ги добави.';
 
   @override
-  String get appsDirectoryRefresh => 'Refresh';
+  String get appsDirectoryRefresh => 'Опресни';
 
   @override
   String get appsDirectoryUnsupportedTitle =>
-      'Integrated Apps run in Divine mobile';
+      'Свързаните приложения работят в Divine mobile';
 
   @override
   String get appsDirectoryUnsupportedSubtitle =>
-      'Approved integrations are only available on mobile for now.';
+      'Одобрените интеграции засега са налични само на мобилно устройство.';
 
   @override
-  String get appsSandboxUnavailableTitle => 'Integration unavailable';
+  String get appsSandboxUnavailableTitle => 'Интеграцията не е налична';
 
   @override
   String get appsSandboxUnavailableBody =>
-      'Open approved integrations from the Integrated Apps tab so Divine can apply the right access policy.';
+      'Отваряй одобрените интеграции от раздела Свързани приложения, за да може Divine да приложи правилната политика за достъп.';
 
   @override
-  String get appsSandboxLoadingTitle => 'Loading integration';
+  String get appsSandboxLoadingTitle => 'Зареждане на интеграцията';
 
   @override
   String get appsSandboxLoadingSubtitle =>
-      'Checking the approved integration before launch.';
+      'Проверяваме одобрената интеграция преди стартиране.';
 
   @override
-  String get appsSandboxBlockedTitle => 'Blocked for safety';
+  String get appsSandboxBlockedTitle => 'Блокирано за безопасност';
 
   @override
   String appsSandboxBlockedSubtitle(String uri) {
-    return 'This integration tried to leave its approved origin.\n\n$uri';
+    return 'Тази интеграция се опита да напусне одобрения си адрес.\n\n$uri';
   }
 
   @override
-  String get shareCopiedPostLink => 'Link to post copied to clipboard';
+  String get shareCopiedPostLink =>
+      'Връзката към публикацията е копирана в клипборда';
 
   @override
-  String get shareCopiedEventJson => 'Nostr event JSON copied to clipboard';
+  String get shareCopiedEventJson =>
+      'JSON на Nostr събитието е копиран в клипборда';
 
   @override
-  String get shareCopiedEventId => 'Nostr event ID copied to clipboard';
+  String get shareCopiedEventId =>
+      'ID на Nostr събитието е копирано в клипборда';
 
   @override
-  String get authHeroTaglineAuthentic => 'Authentic moments.';
+  String get authHeroTaglineAuthentic => 'Автентични моменти.';
 
   @override
-  String get authHeroTaglineHuman => 'Human creativity.';
+  String get authHeroTaglineHuman => 'Човешко творчество.';
 
   @override
   String get keyImportFailedToImport =>
-      'Failed to import key or connect bunker';
+      'Неуспешно импортиране на ключ или свързване с бункер';
 
   @override
-  String get keyImportInvalidBunkerUrl => 'Invalid bunker URL';
+  String get keyImportInvalidBunkerUrl => 'Невалиден бункер URL';
 
   @override
   String get keyImportInvalidFormat =>
-      'Invalid format. Use nsec..., hex, ncryptsec1..., or bunker://...';
+      'Невалиден формат. Използвай nsec..., hex, ncryptsec1... или bunker://...';
 
   @override
   String get keyImportInvalidNsecFormat =>
-      'Invalid nsec format. Should be 63 characters';
+      'Невалиден nsec формат. Трябва да е 63 символа';
 
   @override
-  String get keyImportKeyFieldLabel => 'Private key or bunker URL';
+  String get keyImportKeyFieldLabel => 'Частен ключ или бункер URL';
 
   @override
-  String get keyImportKeyRequired =>
-      'Please enter your private key or bunker URL';
+  String get keyImportKeyRequired => 'Въведи частния си ключ или бункер URL';
 
   @override
   String get keyImportPasswordRequired =>
-      'Please enter the password for this encrypted key';
+      'Въведи паролата за този шифрован ключ';
 
   @override
   String get keyImportSecurityWarningBody =>
-      'Never share your private key with anyone. This key gives full access to your Nostr identity.';
+      'Никога не споделяй частния си ключ с никого. Този ключ дава пълен достъп до твоята Nostr идентичност.';
 
   @override
-  String get keyImportSecurityWarningTitle => 'Keep your private key secure!';
+  String get keyImportSecurityWarningTitle => 'Пази частния си ключ в тайна!';
 
   @override
   String get keyImportSubtitle =>
-      'Import your existing Nostr identity using your private key or a bunker URL.';
+      'Импортирай съществуващата си Nostr идентичност с частния си ключ или бункер URL.';
 
   @override
-  String get keyImportTitle => 'Import your\nNostr identity';
+  String get keyImportTitle => 'Импортирай своята\nNostr идентичност';
 
   @override
-  String get commentAuthorYouIndicator => 'You';
+  String get commentAuthorYouIndicator => 'Ти';
 
   @override
   String commentAuthorAvatarSemanticLabel(String name) {
@@ -6304,282 +6309,288 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get commentOptionsDeleteSemanticLabel => 'Delete comment';
+  String get commentOptionsDeleteSemanticLabel => 'Изтрий коментара';
 
   @override
-  String get commentOptionsEditSemanticLabel => 'Edit comment';
+  String get commentOptionsEditSemanticLabel => 'Редактирай коментара';
 
   @override
-  String get commentOptionsFlagContentLabel => 'Flag Content';
+  String get commentOptionsFlagContentLabel => 'Сигнализирай съдържание';
 
   @override
-  String get commentOptionsFlagContentSemanticLabel => 'Flag this content';
+  String get commentOptionsFlagContentSemanticLabel =>
+      'Сигнализирай това съдържание';
 
   @override
   String get commentOptionsFlagReasonPrompt =>
-      'Select a reason for flagging this comment';
+      'Избери причина да сигнализираш този коментар';
 
   @override
-  String get commentOptionsFlagSubmit => 'Submit';
+  String get commentOptionsFlagSubmit => 'Изпрати';
 
   @override
-  String get commentOptionsTitle => 'Options';
+  String get commentOptionsTitle => 'Опции';
 
   @override
   String get commentsEmptyClassicVineMessage =>
-      'We\'re still working on importing old comments from the archive. They\'re not ready yet.';
+      'Все още работим по импортирането на стари коментари от архива. Още не са готови.';
 
   @override
-  String get commentsEmptyClassicVineTitle => 'Classic Vine';
+  String get commentsEmptyClassicVineTitle => 'Класически Vine';
 
   @override
-  String get commentsInputEditingLabel => 'Editing';
+  String get commentsInputEditingLabel => 'Редактиране';
 
   @override
-  String get commentsInputSemanticHint => 'Add a comment';
+  String get commentsInputSemanticHint => 'Добави коментар';
 
   @override
-  String get commentsInputSemanticHintEdit => 'Edit comment';
+  String get commentsInputSemanticHintEdit => 'Редактирай коментара';
 
   @override
-  String get commentsInputSemanticHintReply => 'Add a reply';
+  String get commentsInputSemanticHintReply => 'Добави отговор';
 
   @override
-  String get commentsInputSemanticLabel => 'Comment input';
+  String get commentsInputSemanticLabel => 'Поле за коментар';
 
   @override
-  String get commentsInputSemanticLabelEdit => 'Edit input';
+  String get commentsInputSemanticLabelEdit => 'Поле за редактиране';
 
   @override
-  String get commentsInputSemanticLabelReply => 'Reply input';
+  String get commentsInputSemanticLabelReply => 'Поле за отговор';
 
   @override
   String classicVinersViewProfileSemanticLabel(String displayName) {
-    return 'View profile for $displayName';
+    return 'Виж профила на $displayName';
   }
 
   @override
-  String get classicsEmptyDescription => 'The Classics archive is being loaded';
+  String get classicsEmptyDescription => 'Архивът с класики се зарежда';
 
   @override
-  String get classicsEmptyTitle => 'No Classics Found';
+  String get classicsEmptyTitle => 'Няма намерени класики';
 
   @override
-  String get classicsErrorTitle => 'Failed to load Classics';
+  String get classicsErrorTitle => 'Неуспешно зареждане на класиките';
 
   @override
   String get classicsUnavailableDescription =>
-      'Classics are only available when connected to Funnelcake relays.';
+      'Класиките са налични само когато си свързан с релета на Funnelcake.';
 
   @override
   String get classicsUnavailableSettingsHint =>
-      'Switch to a Funnelcake-enabled relay in Settings to access the Classics archive.';
+      'Превключи към реле с поддръжка на Funnelcake от Настройки, за да получиш достъп до архива с класики.';
 
   @override
-  String get classicsUnavailableTitle => 'Classics Unavailable';
+  String get classicsUnavailableTitle => 'Класиките не са налични';
 
   @override
   String get hashtagFeedEmptySubtitle =>
-      'Be the first to post a video with this hashtag!';
+      'Бъди първият, който публикува видео с този хаштаг!';
 
   @override
   String hashtagFeedEmptyTitle(String hashtag) {
-    return 'No videos found for #$hashtag';
+    return 'Няма намерени видеа за #$hashtag';
   }
 
   @override
-  String get hashtagFeedLoadingSubtitle => 'This may take a few moments';
+  String get hashtagFeedLoadingSubtitle =>
+      'Това може да отнеме няколко секунди';
 
   @override
   String hashtagFeedLoadingTitle(String hashtag) {
-    return 'Loading videos about #$hashtag...';
+    return 'Зареждане на видеа за #$hashtag...';
   }
 
   @override
-  String get hashtagInputHint => 'Add hashtags... #vine #nostr';
+  String get hashtagInputHint => 'Добави хаштагове... #vine #nostr';
 
   @override
-  String get newVideosTabEmptySubtitle => 'Check back later for new content';
+  String get newVideosTabEmptySubtitle =>
+      'Върни се по-късно за ново съдържание';
 
   @override
-  String get newVideosTabEmptyTitle => 'No videos in New Videos';
+  String get newVideosTabEmptyTitle => 'Няма видеа в Нови видеа';
 
   @override
-  String get popularVideosContextTitle => 'Popular Videos';
+  String get popularVideosContextTitle => 'Популярни видеа';
 
   @override
-  String get popularVideosEmptySubtitle => 'Check back later for new content';
+  String get popularVideosEmptySubtitle =>
+      'Върни се по-късно за ново съдържание';
 
   @override
-  String get popularVideosEmptyTitle => 'No videos in Popular Videos';
+  String get popularVideosEmptyTitle => 'Няма видеа в Популярни видеа';
 
   @override
-  String get popularVideosErrorTitle => 'Failed to load trending videos';
+  String get popularVideosErrorTitle =>
+      'Неуспешно зареждане на популярните видеа';
 
   @override
-  String get popularVideosFeedSourceLabel => 'Popular feed source';
+  String get popularVideosFeedSourceLabel => 'Източник на популярната емисия';
 
   @override
-  String get trendingHashtagsLoading => 'Loading hashtags...';
+  String get trendingHashtagsLoading => 'Зареждане на хаштагове...';
 
   @override
   String trendingHashtagsViewVideosTagged(String hashtag) {
-    return 'View videos tagged $hashtag';
+    return 'Виж видеа, отбелязани с $hashtag';
   }
 
   @override
   String videoGridAuthorSemanticLabel(String name) {
-    return 'Video author: $name';
+    return 'Автор на видеото: $name';
   }
 
   @override
   String videoGridDescriptionSemanticLabel(String description) {
-    return 'Video description: $description';
+    return 'Описание на видеото: $description';
   }
 
   @override
   String get forYouAlgorithmChoiceBody =>
-      'Divine\'s vision is to give you true algorithmic choice. Instead of being locked into a single black-box algorithm, you\'ll be able to choose from multiple recommendation approaches:';
+      'Визията на Divine е да ти даде истински избор на алгоритъм. Вместо да си заключен в един-единствен алгоритъм тип черна кутия, ще можеш да избираш измежду няколко подхода за препоръки:';
 
   @override
   String get forYouAlgorithmChoiceChronological =>
-      'Chronological timeline from creators you follow';
+      'Хронологична времева линия от твоите последвани творци';
 
   @override
   String get forYouAlgorithmChoiceClosing =>
-      'This puts you in control of your attention rather than leaving it up to the platform. You should know how your feed is curated and have the power to change it whenever you want.';
+      'Това те поставя в контрол над вниманието ти, вместо да го оставя на платформата. Трябва да знаеш как се подрежда емисията ти и да имаш властта да я променяш, когато поискаш.';
 
   @override
   String get forYouAlgorithmChoiceCustomFeeds =>
-      'Community-created custom feeds for topics like music, comedy, or art';
+      'Създадени от общността персонализирани емисии за теми като музика, комедия или изкуство';
 
   @override
   String get forYouAlgorithmChoicePersonalizedFeed =>
-      'Personalized \"For You\" feed';
+      'Персонализирана емисия „За теб“';
 
   @override
-  String get forYouAlgorithmChoiceTitle => 'Your Algorithm, Your Choice';
+  String get forYouAlgorithmChoiceTitle => 'Твоят алгоритъм, твоят избор';
 
   @override
-  String get forYouAlgorithmChoiceTrending => 'Trending and popular content';
+  String get forYouAlgorithmChoiceTrending => 'Актуално и популярно съдържание';
 
   @override
   String get forYouAlgorithmCommentsDescription =>
-      'Strong signal — you were engaged enough to respond';
+      'Силен сигнал — беше достатъчно ангажиран, за да отговориш';
 
   @override
   String get forYouAlgorithmHowItWorksBody =>
-      'Divine pays attention to how you interact with content to understand what you enjoy. Every time you watch a video, give it a reaction, leave a comment, or repost it, the system takes note.';
+      'Divine следи как взаимодействаш със съдържанието, за да разбере какво харесваш. Всеки път, когато гледаш видео, дадеш му реакция, оставиш коментар или го споделиш, системата взима това предвид.';
 
   @override
-  String get forYouAlgorithmHowItWorksTitle => 'How It Works';
+  String get forYouAlgorithmHowItWorksTitle => 'Как работи';
 
   @override
   String get forYouAlgorithmInteractionsIntro =>
-      'Different actions signal different levels of interest:';
+      'Различните действия сигнализират различни нива на интерес:';
 
   @override
   String get forYouAlgorithmNewToDivineBody1 =>
-      'If you haven\'t built up a viewing history yet, we show a mix of what\'s currently popular and trending alongside recent uploads. This gives you a great starting point to explore.';
+      'Ако още не си натрупал история на гледане, ти показваме смесица от това, което е популярно и актуално в момента, заедно с най-новите качвания. Това ти дава чудесна отправна точка за разглеждане.';
 
   @override
   String get forYouAlgorithmNewToDivineBody2 =>
-      'As you watch, like, and engage with content, recommendations gradually become more personalized. Over time, your For You feed surfaces videos from creators you might never have discovered on your own.';
+      'Докато гледаш, харесваш и се ангажираш със съдържание, препоръките постепенно стават по-персонализирани. С времето емисията ти „За теб“ показва видеа от творци, които може никога да не си открил сам.';
 
   @override
-  String get forYouAlgorithmNewToDivineTitle => 'New to Divine?';
+  String get forYouAlgorithmNewToDivineTitle => 'Нов в Divine?';
 
   @override
   String get forYouAlgorithmOpenSourceBody =>
-      'We\'re building an open system where developers can implement their own algorithms, and you can choose which ones to use — or opt out entirely.';
+      'Изграждаме отворена система, в която разработчиците могат да създават свои собствени алгоритми, а ти можеш да избираш кои да използваш — или да се откажеш напълно.';
 
   @override
-  String get forYouAlgorithmOpenSourceTitle => 'Open Source & Transparent';
+  String get forYouAlgorithmOpenSourceTitle => 'Отворен код и прозрачност';
 
   @override
   String get forYouAlgorithmReactionsDescription =>
-      'Medium signal — a quick way to show appreciation';
+      'Среден сигнал — бърз начин да покажеш одобрение';
 
   @override
-  String get forYouAlgorithmReactionsTitle => 'Reactions';
+  String get forYouAlgorithmReactionsTitle => 'Реакции';
 
   @override
   String get forYouAlgorithmRepostsDescription =>
-      'Strongest signal — sharing with your followers is a powerful endorsement';
+      'Най-силен сигнал — споделянето с твоите последователи е мощно одобрение';
 
   @override
   String get forYouAlgorithmSubtitle =>
-      'Powered by Gorse, an open-source recommendation engine';
+      'Задвижвано от Gorse, машина за препоръки с отворен код';
 
   @override
-  String get forYouAlgorithmTitle => 'The Divine Algorithm';
+  String get forYouAlgorithmTitle => 'Алгоритъмът на Divine';
 
   @override
   String get forYouAlgorithmViewsDescription =>
-      'Light signal — indicates basic interest';
+      'Слаб сигнал — показва базов интерес';
 
   @override
   String get forYouEmptyDescription =>
-      'Watch and like some videos to get personalized recommendations.';
+      'Изгледай и хареса няколко видеа, за да получиш персонализирани препоръки.';
 
   @override
-  String get forYouEmptyTitle => 'No Recommendations Yet';
+  String get forYouEmptyTitle => 'Още няма препоръки';
 
   @override
-  String get forYouErrorTitle => 'Failed to load recommendations';
+  String get forYouErrorTitle => 'Неуспешно зареждане на препоръките';
 
   @override
   String get forYouUnavailableDescription =>
-      'Personalized recommendations require connection to Funnelcake.';
+      'Персонализираните препоръки изискват връзка с Funnelcake.';
 
   @override
-  String get forYouUnavailableTitle => 'For You Unavailable';
+  String get forYouUnavailableTitle => '„За теб“ не е налично';
 
   @override
-  String get inboxConversationOptionsLabel => 'Options';
+  String get inboxConversationOptionsLabel => 'Опции';
 
   @override
-  String get inboxConversationViewProfileButton => 'View profile';
+  String get inboxConversationViewProfileButton => 'Виж профила';
 
   @override
-  String get inboxMessageRequestsEmpty => 'No message requests';
+  String get inboxMessageRequestsEmpty => 'Няма заявки за съобщения';
 
   @override
   String inboxMessageRequestsSemanticLabel(int requestCount) {
-    return 'Message requests, $requestCount pending';
+    return 'Заявки за съобщения, $requestCount в очакване';
   }
 
   @override
-  String get inboxMessageRequestsTitle => 'Message requests';
+  String get inboxMessageRequestsTitle => 'Заявки за съобщения';
 
   @override
-  String get inboxMessagesTab => 'Messages';
+  String get inboxMessagesTab => 'Съобщения';
 
   @override
   String inboxRequestTileLabel(String displayName) {
-    return '$displayName message request';
+    return 'Заявка за съобщение от $displayName';
   }
 
   @override
-  String get inboxRequestTileSubtitle => 'Sent a message request';
+  String get inboxRequestTileSubtitle => 'Изпрати заявка за съобщение';
 
   @override
-  String get inboxRequestsMarkAllRead => 'Mark all requests as read';
+  String get inboxRequestsMarkAllRead =>
+      'Отбележи всички заявки като прочетени';
 
   @override
-  String get inboxRequestsRemoveAll => 'Remove all requests';
+  String get inboxRequestsRemoveAll => 'Премахни всички заявки';
 
   @override
-  String get messageRequestDeclineAndRemoveButton => 'Decline and remove';
+  String get messageRequestDeclineAndRemoveButton => 'Откажи и премахни';
 
   @override
   String messageRequestFollowersCount(String count) {
-    return '$count Followers';
+    return '$count последователи';
   }
 
   @override
   String messageRequestVideosCount(String count) {
-    return '$count videos';
+    return '$count видеа';
   }
 
   @override
@@ -6587,206 +6598,209 @@ class AppLocalizationsBg extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count messages',
-      one: '1 message',
+      other: '$count съобщения',
+      one: '1 съобщение',
     );
     return '$_temp0';
   }
 
   @override
-  String get messageRequestViewMessagesButton => 'View messages';
+  String get messageRequestViewMessagesButton => 'Виж съобщенията';
 
   @override
-  String get messageRequestViewProfileButton => 'View profile';
+  String get messageRequestViewProfileButton => 'Виж профила';
 
   @override
   String messageRequestWantsToMessageYou(
     String displayName,
     String messageText,
   ) {
-    return '$displayName wants to message you, they\'ve sent $messageText.';
+    return '$displayName иска да ти пише, изпрати ти $messageText.';
   }
 
   @override
-  String get deleteAccountConfirmationHint => 'Type DELETE';
+  String get deleteAccountConfirmationHint => 'Напиши DELETE';
 
   @override
   String get deleteAccountContentDeletionFailed =>
-      'Failed to delete content from relays';
+      'Неуспешно изтриване на съдържание от релетата';
 
   @override
-  String get deleteAccountDeleteAllContentButton => 'Delete All Content';
+  String get deleteAccountDeleteAllContentButton => 'Изтрий цялото съдържание';
 
   @override
   String get deleteAccountFinalConfirmationBody =>
-      'To confirm permanent deletion of ALL your content from Nostr relays, type:';
+      'За да потвърдиш постоянното изтриване на ЦЯЛОТО ти съдържание от Nostr релетата, напиши:';
 
   @override
-  String get deleteAccountFinalConfirmationTitle => '⚠️ Final Confirmation';
+  String get deleteAccountFinalConfirmationTitle => '⚠️ Последно потвърждение';
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'Account deleted, but your keys may not have been fully removed from this device. Go to Settings → Nostr Keys → Remove Keys to retry.';
+      'Акаунтът е изтрит, но ключовете ти може да не са премахнати напълно от това устройство. Отиди в Настройки → Nostr ключове → Премахни ключовете, за да опиташ пак.';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
       'Account deleted and signed out, but some local data could not be removed from this device.';
 
   @override
-  String get deleteAccountPreparingDeletion => 'Preparing deletion...';
+  String get deleteAccountPreparingDeletion => 'Подготовка за изтриване...';
 
   @override
   String deleteAccountProgressEvents(int current, int total) {
-    return '$current / $total events';
+    return '$current / $total събития';
   }
 
   @override
   String get deleteAccountRemoveKeysBody =>
-      'This removes the local login for this account from this device. It won\'t delete your Divine account or Nostr identity.\n\nYour drafts and clips stay saved on this device for this account. If this is your last local account, you\'ll return to the login screen.';
+      'Това премахва локалния вход за този акаунт от това устройство. Няма да изтрие Divine акаунта ти или Nostr идентичността ти.\n\nЧерновите и клиповете ти остават запазени на това устройство за този акаунт. Ако това е последният ти локален акаунт, ще се върнеш към екрана за вход.';
 
   @override
-  String get deleteAccountRemoveKeysConfirm => 'Remove from device';
+  String get deleteAccountRemoveKeysConfirm => 'Премахни от устройството';
 
   @override
   String get deleteAccountRemoveKeysTitle =>
-      'Remove this account from this device?';
+      'Да премахнем този акаунт от това устройство?';
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Could not delete your account from the server. Please check your connection and try again.';
+      'Не успяхме да изтрием акаунта ти от сървъра. Провери връзката си и опитай пак.';
 
   @override
-  String get deleteAccountSuccess => 'Your account has been deleted';
+  String get deleteAccountSuccess => 'Акаунтът ти е изтрит';
 
   @override
-  String get exportProgressStageApplyingTextOverlay => 'Adding text overlay...';
+  String get exportProgressStageApplyingTextOverlay =>
+      'Добавяне на текстов слой...';
 
   @override
-  String get exportProgressStageComplete => 'Export complete!';
+  String get exportProgressStageComplete => 'Експортът е готов!';
 
   @override
-  String get exportProgressStageConcatenating => 'Combining clips...';
+  String get exportProgressStageConcatenating => 'Комбиниране на клипове...';
 
   @override
-  String get exportProgressStageError => 'Export failed';
+  String get exportProgressStageError => 'Експортът се провали';
 
   @override
   String get exportProgressStageGeneratingThumbnail =>
-      'Generating thumbnail...';
+      'Генериране на миниатюра...';
 
   @override
-  String get exportProgressStageMixingAudio => 'Adding sound...';
+  String get exportProgressStageMixingAudio => 'Добавяне на звук...';
 
   @override
-  String get findPeopleAnonymousUser => 'Anonymous';
+  String get findPeopleAnonymousUser => 'Анонимен';
 
   @override
   String get findPeopleNoContacts =>
-      'No contacts found.\nStart following people to see them here.';
+      'Няма намерени контакти.\nЗапочни да следваш хора, за да ги виждаш тук.';
 
   @override
-  String get geoBlockedCityLabel => 'City';
+  String get geoBlockedCityLabel => 'Град';
 
   @override
-  String get geoBlockedCountryLabel => 'Country';
+  String get geoBlockedCountryLabel => 'Държава';
 
   @override
   String get geoBlockedDefaultReason =>
-      'This service is not available in your region due to local regulations.';
+      'Тази услуга не е налична в твоя регион поради местни разпоредби.';
 
   @override
   String get geoBlockedLegalNotice =>
-      'We respect your local laws and regulations. This restriction is based on your IP address location.';
+      'Уважаваме твоите местни закони и разпоредби. Това ограничение се основава на местоположението по IP адреса ти.';
 
   @override
-  String get geoBlockedRegionLabel => 'Region';
+  String get geoBlockedRegionLabel => 'Регион';
 
   @override
-  String get geoBlockedTitle => 'Service Unavailable';
+  String get geoBlockedTitle => 'Услугата не е налична';
 
   @override
-  String get likedVideosEmpty => 'No liked videos';
+  String get likedVideosEmpty => 'Няма харесани видеа';
 
   @override
-  String get likedVideosInvalidRoute => 'Invalid route';
+  String get likedVideosInvalidRoute => 'Невалиден маршрут';
 
   @override
-  String get likedVideosTitle => 'Liked Videos';
+  String get likedVideosTitle => 'Харесани видеа';
 
   @override
   String get ogVinerBadgeSemanticLabel => 'OG Viner';
 
   @override
-  String get uploadFailureSheetRetryingSnackbar => 'Retrying upload…';
+  String get uploadFailureSheetRetryingSnackbar => 'Повторно качване…';
 
   @override
-  String get uploadFailureSheetSaveToDraftsButton => 'Save to Drafts';
+  String get uploadFailureSheetSaveToDraftsButton => 'Запази в чернови';
 
   @override
-  String get uploadFailureSheetSavedToDraftsSnackbar => 'Saved to drafts';
+  String get uploadFailureSheetSavedToDraftsSnackbar => 'Запазено в чернови';
 
   @override
-  String get uploadFailureSheetTitle => 'Upload Failed';
+  String get uploadFailureSheetTitle => 'Качването се провали';
 
   @override
-  String get uploadFailureSheetTryAgainButton => 'Try Again';
+  String get uploadFailureSheetTryAgainButton => 'Опитай пак';
 
   @override
-  String get videoEditorAudioImportAudio => 'Import audio';
+  String get videoEditorAudioImportAudio => 'Импортирай звук';
 
   @override
-  String get videoEditorAudioImportFailed => 'Audio import failed.';
+  String get videoEditorAudioImportFailed =>
+      'Импортирането на звук се провали.';
 
   @override
-  String get videoIconPlaceholderLabel => 'Video';
+  String get videoIconPlaceholderLabel => 'Видео';
 
   @override
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
-    return 'Inspired by $creatorName. Tap to view their profile.';
+    return 'Вдъхновено от $creatorName. Докосни, за да видиш профила им.';
   }
 
   @override
-  String get proofmodeBadgeAiScanPending => 'AI scan pending';
+  String get proofmodeBadgeAiScanPending => 'AI сканиране в очакване';
 
   @override
-  String get proofmodeBadgeHumanMade => 'Human Made';
+  String get proofmodeBadgeHumanMade => 'Създадено от човек';
 
   @override
-  String get proofmodeBadgeNotDivineHosted => 'Not Divine Hosted';
+  String get proofmodeBadgeNotDivineHosted => 'Не се хоства от Divine';
 
   @override
-  String get proofmodeBadgeOriginal => 'Original';
+  String get proofmodeBadgeOriginal => 'Оригинал';
 
   @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Possibly AI-Generated';
+  String get proofmodeBadgePossiblyAiGenerated =>
+      'Възможно е да е генерирано от AI';
 
   @override
-  String get proofmodeBadgeUnverified => 'Unverified';
+  String get proofmodeBadgeUnverified => 'Непроверено';
 
   @override
-  String get proofmodeConfirmedByModerator => 'Confirmed by human moderator';
+  String get proofmodeConfirmedByModerator => 'Потвърдено от човек модератор';
 
   @override
-  String get proofmodeExternalContentTitle => 'External Content';
+  String get proofmodeExternalContentTitle => 'Външно съдържание';
 
   @override
-  String get proofmodeHostedOnLabel => 'This video is hosted on:';
+  String get proofmodeHostedOnLabel => 'Това видео се хоства на:';
 
   @override
-  String get proofmodeLikelyHumanCreated => 'Likely human-created';
+  String get proofmodeLikelyHumanCreated => 'Вероятно създадено от човек';
 
   @override
-  String get proofmodeNoProofDataAttached => 'No ProofMode data attached';
+  String get proofmodeNoProofDataAttached => 'Няма прикачени ProofMode данни';
 
   @override
   String get proofmodeNotDivineHostedDisclaimer =>
-      'This content is not hosted on Divine servers. We cannot fully guarantee its authenticity.';
+      'Това съдържание не се хоства на сървъри на Divine. Не можем напълно да гарантираме автентичността му.';
 
   @override
-  String get proofmodePossiblyAiGenerated => 'Possibly AI-generated';
+  String get proofmodePossiblyAiGenerated => 'Възможно е да е генерирано от AI';
 
   @override
-  String get proofmodePublishedByLabel => 'Published by:';
+  String get proofmodePublishedByLabel => 'Публикувано от:';
 
   @override
   String get publishErrorNotSignedIn => 'Влез, за да публикуваш видеа.';
@@ -6877,17 +6891,17 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String searchFilterPillSemanticLabel(String filter) {
-    return 'Filter: $filter';
+    return 'Филтър: $filter';
   }
 
   @override
   String searchNoResultsFound(String query) {
-    return 'No results found for \"$query\"';
+    return 'Няма намерени резултати за „$query“';
   }
 
   @override
   String searchTagChipViewVideosTaggedLabel(String tag) {
-    return 'View videos tagged $tag';
+    return 'Виж видеа, отбелязани с $tag';
   }
 
   @override
@@ -6895,12 +6909,12 @@ class AppLocalizationsBg extends AppLocalizations {
     String soundName,
     String creatorName,
   ) {
-    return 'Sound: $soundName by $creatorName. Tap to view sound details.';
+    return 'Звук: $soundName от $creatorName. Докосни, за да видиш подробности за звука.';
   }
 
   @override
   String metadataSoundsOriginalSoundSemantics(String creatorName) {
-    return 'Original sound by $creatorName. Tap to use this sound.';
+    return 'Оригинален звук от $creatorName. Докосни, за да използваш този звук.';
   }
 
   @override
@@ -6908,43 +6922,43 @@ class AppLocalizationsBg extends AppLocalizations {
     String soundName,
     String creatorName,
   ) {
-    return 'Sound: $soundName by $creatorName. Tap to view details.';
+    return 'Звук: $soundName от $creatorName. Докосни, за да видиш подробности.';
   }
 
   @override
   String soundDetailLoadError(String error) {
-    return 'Failed to load sound: $error';
+    return 'Неуспешно зареждане на звука: $error';
   }
 
   @override
-  String get soundDetailNotFoundMessage => 'This sound could not be found';
+  String get soundDetailNotFoundMessage => 'Този звук не можа да бъде намерен';
 
   @override
-  String get soundDetailNotFoundTitle => 'Sound Not Found';
+  String get soundDetailNotFoundTitle => 'Звукът не е намерен';
 
   @override
-  String get videoFeedDescriptionSemanticLabel => 'Video description';
+  String get videoFeedDescriptionSemanticLabel => 'Описание на видеото';
 
   @override
   String videoFeedLoopCountLabel(int count) {
-    return '🔁 $count loops';
+    return '🔁 $count лупа';
   }
 
   @override
-  String get videoFeedLoopCountSemanticLabel => 'Video loop count';
+  String get videoFeedLoopCountSemanticLabel => 'Брой лупове на видеото';
 
   @override
   String get originalSoundUnavailableBody =>
-      'Audio from this video is not available separately.';
+      'Звукът от това видео не е наличен отделно.';
 
   @override
   String originalSoundByCreator(String creatorName) {
-    return 'Original sound - $creatorName';
+    return 'Оригинален звук - $creatorName';
   }
 
   @override
   String globalUploadPendingCount(int count) {
-    return 'Pending Uploads ($count)';
+    return 'Качвания в очакване ($count)';
   }
 
   @override
@@ -6955,29 +6969,29 @@ class AppLocalizationsBg extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'In $count lists',
-      one: 'In 1 list',
+      other: 'В $count списъка',
+      one: 'В 1 списък',
     );
     return '$_temp0';
   }
 
   @override
-  String get unfollowConfirmButton => 'Unfollow';
+  String get unfollowConfirmButton => 'Спри да следваш';
 
   @override
-  String get videoClipSaveFailed => 'Failed to save clip';
+  String get videoClipSaveFailed => 'Неуспешно запазване на клипа';
 
   @override
   String videoClipSaveTo(String destination) {
-    return 'Save to $destination';
+    return 'Запази в $destination';
   }
 
   @override
-  String get videoClipDelete => 'Delete clip';
+  String get videoClipDelete => 'Изтрий клипа';
 
   @override
   String inspiredByAttributionSemanticLabel(String creatorName) {
-    return 'Inspired by $creatorName. Tap to view their profile.';
+    return 'Вдъхновено от $creatorName. Докосни, за да видиш профила им.';
   }
 
   @override
@@ -7346,19 +7360,19 @@ class AppLocalizationsBg extends AppLocalizations {
   String get searchVideosLoadingLabel => 'Зареждат се видео резултати';
 
   @override
-  String get searchVideosSortOptionsLabel => 'Sort video results';
+  String get searchVideosSortOptionsLabel => 'Подреди резултатите с видеа';
 
   @override
-  String get searchVideosSortTrending => 'Hot';
+  String get searchVideosSortTrending => 'Актуални';
 
   @override
-  String get searchVideosSortLoops => 'Most loops';
+  String get searchVideosSortLoops => 'Най-много лупове';
 
   @override
-  String get searchVideosSortEngagement => 'Most engaged';
+  String get searchVideosSortEngagement => 'Най-ангажиращи';
 
   @override
-  String get searchVideosSortRecent => 'Recent';
+  String get searchVideosSortRecent => 'Скорошни';
 
   @override
   String get searchListsSectionHeader => 'Списъци';
@@ -9068,19 +9082,19 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get minorAccountReviewUnder13HonestyTitle =>
-      'Why we won\'t tell you to just click back';
+      'Защо няма да ти кажем просто да натиснеш „назад“';
 
   @override
   String get minorAccountReviewUnder13HonestyBody =>
-      'A lot of the internet is set up to reward people for saying whatever gets them through the gate. We don\'t think that\'s great. Yes, you could go back and say you\'re older than you are, but that wouldn\'t be honest, and we\'re not going to coach you into lying to get what you want.';
+      'Голяма част от интернет е устроен така, че да награждава хората за това, че казват каквото ги преведе през вратата. Не мислим, че това е супер. Да, можеш да се върнеш и да кажеш, че си по-голям, отколкото си, но това не би било честно, а ние няма да те учим да лъжеш, за да получиш каквото искаш.';
 
   @override
   String get minorAccountReviewUnder13LegalTitle =>
-      'Why the answer is still no';
+      'Защо отговорът все пак е не';
 
   @override
   String get minorAccountReviewUnder13LegalBody =>
-      'We\'re trying to help young people use Divine in ways that are healthy and positive for them and the people around them. We also have to follow laws that are different in different places. So, if you\'re under 13, the answer is that you can\'t have your own account today.';
+      'Опитваме се да помогнем на младите хора да използват Divine по начини, които са здравословни и позитивни за тях и за хората около тях. Освен това трябва да спазваме закони, които са различни на различни места. Така че, ако си под 13 години, отговорът е, че днес не можеш да имаш собствен акаунт.';
 
   @override
   String get minorAccountReviewTeenBody =>
@@ -9100,15 +9114,15 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>
-      'Why we ask a parent or guardian to be involved';
+      'Защо молим родител или настойник да участва';
 
   @override
   String get minorAccountReviewParentConsentHonestyBody =>
-      'Divine has to follow age-related laws around the world. We also know that most technical age gates are imperfect. Rather than pretending the rules don\'t exist or that it\'s cool to lie about your age, we want teens and families to make thoughtful decisions about how best to use Divine. That\'s why, for 13-15 year olds, we ask parents to be part of the account creation process.';
+      'Divine трябва да спазва закони, свързани с възрастта, по целия свят. Знаем също, че повечето технически проверки за възраст са несъвършени. Вместо да се преструваме, че правилата не съществуват или че е готино да лъжеш за възрастта си, искаме тийнейджърите и семействата да вземат обмислени решения как най-добре да използват Divine. Затова за хората на 13-15 години молим родителите да са част от процеса на създаване на акаунт.';
 
   @override
   String get minorAccountReviewParentConsentLegalBody =>
-      'We also have to follow the law, and those rules are different depending on where someone lives. So instead of pretending the rules do not exist, we ask for a parent or guardian to be part of the process.';
+      'Освен това трябва да спазваме закона, а тези правила са различни в зависимост от това къде живее човек. Затова, вместо да се преструваме, че правилата не съществуват, молим родител или настойник да е част от процеса.';
 
   @override
   String get minorAccountReviewParentConsentChecklist =>
@@ -9400,10 +9414,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get authMinAgeNotice => 'Divine Greenlight';
 
   @override
-  String get authUnder16Prefix => 'Not 16 yet? That\'s OK. ';
+  String get authUnder16Prefix => 'Още нямаш 16? Няма проблем. ';
 
   @override
-  String get authUnder16ChoicesCta => 'Here are your choices.';
+  String get authUnder16ChoicesCta => 'Ето какви са възможностите ти.';
 
   @override
   String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
@@ -9490,32 +9504,34 @@ class AppLocalizationsBg extends AppLocalizations {
       'Разделянето не бе успешно. Моля, опитайте отново.';
 
   @override
-  String get videoEditEditSubtitles => 'Edit subtitles';
+  String get videoEditEditSubtitles => 'Редактирай субтитрите';
 
   @override
-  String get subtitleEditorTitle => 'Edit subtitles';
+  String get subtitleEditorTitle => 'Редактирай субтитрите';
 
   @override
-  String get subtitleEditorSave => 'Save';
+  String get subtitleEditorSave => 'Запази';
 
   @override
   String get subtitleEditorProcessing =>
-      'Subtitles are still being generated. Check back in a moment.';
+      'Субтитрите все още се генерират. Върни се след малко.';
 
   @override
-  String get subtitleEditorLoadError => 'Couldn\'t load subtitles. Try again.';
+  String get subtitleEditorLoadError =>
+      'Субтитрите не можаха да се заредят. Опитай пак.';
 
   @override
-  String get subtitleEditorSaveSuccess => 'Subtitles updated';
+  String get subtitleEditorSaveSuccess => 'Субтитрите са обновени';
 
   @override
-  String get subtitleEditorSaveError => 'Couldn\'t save subtitles. Try again.';
+  String get subtitleEditorSaveError =>
+      'Субтитрите не можаха да се запазят. Опитай пак.';
 
   @override
-  String get subtitleEditorRetry => 'Retry';
+  String get subtitleEditorRetry => 'Опитай пак';
 
   @override
-  String get subtitleEditorCueHint => 'Caption text';
+  String get subtitleEditorCueHint => 'Текст на надписа';
 
   @override
   String get imageCropEditorRotateLabel => 'Завъртане';

@@ -9,13 +9,13 @@ class AppLocalizationsKo extends AppLocalizations {
   AppLocalizationsKo([String locale = 'ko']) : super(locale);
 
   @override
-  String get feedTuningMoreLabel => 'More like this';
+  String get feedTuningMoreLabel => '이런 영상 더 보기';
 
   @override
-  String get feedTuningLessLabel => 'Less like this';
+  String get feedTuningLessLabel => '이런 영상 덜 보기';
 
   @override
-  String get feedTuningUndo => 'Undo';
+  String get feedTuningUndo => '되돌리기';
 
   @override
   String get dmMessageBubbleVideoReplyHint => '참조된 동영상 열기';
@@ -361,39 +361,39 @@ class AppLocalizationsKo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count collaborator invites still need to send',
-      one: '1 collaborator invite still needs to send',
+      other: '보내야 할 콜라보 초대가 $count건 남아 있어요',
+      one: '보내야 할 콜라보 초대가 1건 남아 있어요',
     );
     return '$_temp0';
   }
 
   @override
   String get profileCollaboratorInvitePendingDetail =>
-      'We kept the invite queued. Retry it here.';
+      '초대를 대기열에 넣어뒀어요. 여기서 다시 시도해보세요.';
 
   @override
   String profileCollaboratorInvitePendingDetailWithTitle(String title) {
-    return 'For \"$title\". Retry it here.';
+    return '\"$title\"에 대한 초대예요. 여기서 다시 시도해보세요.';
   }
 
   @override
-  String get profileCollaboratorInviteRetryAction => 'Retry';
+  String get profileCollaboratorInviteRetryAction => '다시 시도';
 
   @override
-  String get profileCollaboratorInviteRetryingAction => 'Retrying';
+  String get profileCollaboratorInviteRetryingAction => '다시 시도 중';
 
   @override
   String get profileCollaboratorInviteRetryUnavailable =>
-      'Collaborator invite retry is unavailable right now.';
+      '지금은 콜라보 초대를 다시 보낼 수 없어요.';
 
   @override
   String profileCollaboratorInviteRetryResult(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count collaborator invites still need to send.',
-      one: '1 collaborator invite still needs to send.',
-      zero: 'Collaborator invites sent.',
+      other: '보내야 할 콜라보 초대가 $count건 남아 있어요.',
+      one: '보내야 할 콜라보 초대가 1건 남아 있어요.',
+      zero: '콜라보 초대를 보냈어요.',
     );
     return '$_temp0';
   }
@@ -1326,7 +1326,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoErrorAdultContentHidden =>
-      'Adult content is switched off. You can turn it on in Settings → Content Filters.';
+      '성인 콘텐츠가 꺼져 있어요. 설정 → 콘텐츠 필터에서 켤 수 있어요.';
 
   @override
   String get videoFollowButtonFollowing => '팔로잉';
@@ -1380,7 +1380,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String metadataHashtagChipTapHint(String hashtag) {
-    return '#$hashtag. Tap to view videos with this hashtag.';
+    return '#$hashtag. 탭하면 이 해시태그가 달린 영상을 볼 수 있어요.';
   }
 
   @override
@@ -1520,19 +1520,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoOverlayOpenMetadataFromDescription => '영상 세부 정보 열기';
 
   @override
-  String get videoOverlayCommentBarHint => 'Add comment...';
+  String get videoOverlayCommentBarHint => '댓글 달기...';
 
   @override
-  String get videoOverlayCommentBarSemanticLabel => 'Add a comment';
+  String get videoOverlayCommentBarSemanticLabel => '댓글 달기';
 
   @override
-  String get videoOverlayCommentBarSendLabel => 'Send comment';
+  String get videoOverlayCommentBarSendLabel => '댓글 보내기';
 
   @override
-  String get videoOverlayCommentPostedSnackbar => 'Comment posted';
+  String get videoOverlayCommentPostedSnackbar => '댓글을 남겼어요';
 
   @override
-  String get videoOverlayCommentPostFailedSnackbar => 'Couldn\'t post comment';
+  String get videoOverlayCommentPostFailedSnackbar => '댓글을 남기지 못했어요';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -2323,7 +2323,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get safetySettingsAgeRequired => '성인 콘텐츠를 보려면 필요해요';
 
   @override
-  String get safetySettingsAgeLockedForMinor => 'Locked for your account';
+  String get safetySettingsAgeLockedForMinor => '계정을 위해 잠겨 있어요';
 
   @override
   String get safetySettingsDivine => 'Divine';
@@ -3067,25 +3067,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareSheetAddToClips => '클립에 추가';
 
   @override
-  String get shareSheetNameClipTitle => 'Name this clip';
+  String get shareSheetNameClipTitle => '이 클립 이름 정하기';
 
   @override
-  String get shareSheetNameClipSubtitle =>
-      'Pick a name you\'ll recognize in your library.';
+  String get shareSheetNameClipSubtitle => '라이브러리에서 알아볼 수 있는 이름을 골라주세요.';
 
   @override
-  String get shareSheetClipTitleLabel => 'Clip title';
+  String get shareSheetClipTitleLabel => '클립 제목';
 
   @override
-  String get shareSheetSaveClip => 'Save clip';
+  String get shareSheetSaveClip => '클립 저장';
 
   @override
   String shareSheetSavedClipToClips(String title) {
-    return 'Saved \"$title\" to clips';
+    return '\"$title\"을(를) 클립에 저장했어요';
   }
 
   @override
-  String get shareSheetUntitledClip => 'Untitled clip';
+  String get shareSheetUntitledClip => '제목 없는 클립';
 
   @override
   String get shareSheetAddToClipsFailed => '클립에 추가할 수 없어요';
@@ -3925,8 +3924,8 @@ class AppLocalizationsKo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count unread notifications',
-      one: '1 unread notification',
+      other: '읽지 않은 알림 $count개',
+      one: '읽지 않은 알림 1개',
     );
     return '$_temp0';
   }
@@ -4027,7 +4026,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get feedSkip => '건너뛰기';
 
   @override
-  String get feedLoadingMore => 'Loading more videos…';
+  String get feedLoadingMore => '영상을 더 불러오는 중…';
 
   @override
   String get uploadWaitingToUpload => '업로드 대기 중';
@@ -4441,11 +4440,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reportReasonFalseInfoSubtitle => '오해의 소지가 있거나 허위 주장';
 
   @override
-  String get reportReasonChildSafety => 'Child Safety Violation';
+  String get reportReasonChildSafety => '아동 안전 위반';
 
   @override
-  String get reportReasonChildSafetySubtitle =>
-      'General concerns about minors\' safety';
+  String get reportReasonChildSafetySubtitle => '미성년자 안전에 대한 전반적인 우려';
 
   @override
   String get reportReasonCsam => '아동 안전 위반';
@@ -4454,11 +4452,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reportReasonCsamSubtitle => '미성년자를 착취하거나 위험에 빠뜨리는 콘텐츠';
 
   @override
-  String get reportReasonUnderageUser => 'User Appears Under 16';
+  String get reportReasonUnderageUser => '사용자가 16세 미만으로 보임';
 
   @override
-  String get reportReasonUnderageUserSubtitle =>
-      'Account holder appears to be underage';
+  String get reportReasonUnderageUserSubtitle => '계정 소유자가 미성년자로 보여요';
 
   @override
   String get reportReasonAiGenerated => 'AI 생성 콘텐츠';
@@ -4489,10 +4486,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get reportModerationDmDelayed =>
-      'We couldn\'t reach the moderation team directly just now, but your report was received and will be reviewed.';
+      '지금은 조절 팀에 바로 연결하지 못했지만, 신고는 접수됐고 검토될 거예요.';
 
   @override
-  String get reportContactModeration => 'Message the moderation team';
+  String get reportContactModeration => '조절 팀에 메시지 보내기';
 
   @override
   String get reportLearnMore => '더 알아보기';
@@ -5276,10 +5273,10 @@ class AppLocalizationsKo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count collaborator invites did not send.',
-      one: '1 collaborator invite did not send.',
+      other: '콜라보 초대 $count건이 전송되지 않았어요.',
+      one: '콜라보 초대 1건이 전송되지 않았어요.',
     );
-    return 'Video posted, but $_temp0';
+    return '영상을 올렸지만, $_temp0';
   }
 
   @override
@@ -5298,25 +5295,25 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmMessageInputHint => 'Say something…';
 
   @override
-  String get dmMessageBubbleSentHint => 'Sent message';
+  String get dmMessageBubbleSentHint => '보낸 메시지';
 
   @override
-  String get dmMessageBubbleReceivedHint => 'Received message';
+  String get dmMessageBubbleReceivedHint => '받은 메시지';
 
   @override
-  String get dmMessageBubbleLongPressHint => 'Message actions';
+  String get dmMessageBubbleLongPressHint => '메시지 작업';
 
   @override
-  String get dmMessageActionCopyText => 'Copy text';
+  String get dmMessageActionCopyText => '텍스트 복사';
 
   @override
-  String get dmMessageActionCopyVideoUrl => 'Copy video URL';
+  String get dmMessageActionCopyVideoUrl => '영상 URL 복사';
 
   @override
-  String get dmMessageActionDeleteForEveryone => 'Delete for everyone';
+  String get dmMessageActionDeleteForEveryone => '모두에게서 삭제';
 
   @override
-  String get dmMessageActionReport => 'Report';
+  String get dmMessageActionReport => '신고';
 
   @override
   String get dmReactionAddCustomA11yLabel => 'Add custom emoji reaction';
@@ -5408,15 +5405,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmStatusDeliveredSelfFailed => '전달됐어요. 다른 기기에는 동기화되지 않아요.';
 
   @override
-  String get inboxConversationActionsSheetLabel => 'Conversation actions';
+  String get inboxConversationActionsSheetLabel => '대화 작업';
 
   @override
   String inboxConversationTileLabel(String displayName) {
-    return '$displayName conversation';
+    return '$displayName님과의 대화';
   }
 
   @override
-  String get inboxConversationTileLongPressHint => 'Show conversation actions';
+  String get inboxConversationTileLongPressHint => '대화 작업 보기';
 
   @override
   String get reportDialogCancel => '취소';
@@ -5494,45 +5491,45 @@ class AppLocalizationsKo extends AppLocalizations {
   String get curatedListVideoNotAvailable => '영상을 사용할 수 없어요';
 
   @override
-  String get curatedListActionsTooltip => 'List actions';
+  String get curatedListActionsTooltip => '목록 작업';
 
   @override
-  String get curatedListUnfollowAction => 'Unfollow list';
+  String get curatedListUnfollowAction => '목록 언팔로우';
 
   @override
-  String get curatedListUnfollowedSnack => 'Unfollowed list';
+  String get curatedListUnfollowedSnack => '목록을 언팔로우했어요';
 
   @override
-  String get curatedListUnfollowFailed => 'Couldn\'t unfollow list';
+  String get curatedListUnfollowFailed => '목록을 언팔로우하지 못했어요';
 
   @override
-  String get curatedListDeleteConfirmTitle => 'Delete list?';
+  String get curatedListDeleteConfirmTitle => '목록을 삭제할까요?';
 
   @override
   String get curatedListDeleteConfirmBody =>
-      'This removes the list from relays. Videos in the list will not be deleted.';
+      '릴레이에서 목록을 지워요. 목록에 있는 영상은 삭제되지 않아요.';
 
   @override
-  String get curatedListDeletedSnack => 'Deleted list';
+  String get curatedListDeletedSnack => '목록을 삭제했어요';
 
   @override
-  String get curatedListDeleteFailed => 'Couldn\'t delete list';
+  String get curatedListDeleteFailed => '목록을 삭제하지 못했어요';
 
   @override
-  String get peopleListsActionsTooltip => 'List actions';
+  String get peopleListsActionsTooltip => '목록 작업';
 
   @override
-  String get listDeleteAction => 'Delete list';
+  String get listDeleteAction => '목록 삭제';
 
   @override
-  String get peopleListsDeleteConfirmTitle => 'Delete list?';
+  String get peopleListsDeleteConfirmTitle => '목록을 삭제할까요?';
 
   @override
   String get peopleListsDeleteConfirmBody =>
-      'This removes the list for everyone. The people in it will not be unfollowed.';
+      '모두에게서 목록을 지워요. 목록에 있는 사람은 언팔로우되지 않아요.';
 
   @override
-  String get peopleListsDeleteFailed => 'Couldn\'t delete list';
+  String get peopleListsDeleteFailed => '목록을 삭제하지 못했어요';
 
   @override
   String get commonRetry => '다시 시도';
@@ -5868,157 +5865,147 @@ class AppLocalizationsKo extends AppLocalizations {
   String get nostrAppPermissionAllow => '허용';
 
   @override
-  String get appsDetailDefaultTitle => 'Integrated App';
+  String get appsDetailDefaultTitle => '연동 앱';
 
   @override
-  String get appsDetailNotFoundTitle => 'Integration not found';
+  String get appsDetailNotFoundTitle => '연동을 찾을 수 없어요';
 
   @override
-  String get appsDetailNotFoundSubtitle =>
-      'This approved integration is no longer available in Divine.';
+  String get appsDetailNotFoundSubtitle => '이 승인된 연동은 더 이상 Divine에서 이용할 수 없어요.';
 
   @override
-  String get appsDetailHowItWorksTitle => 'How it works';
+  String get appsDetailHowItWorksTitle => '작동 방식';
 
   @override
   String get appsDetailHowItWorksBody =>
-      'This is an approved third-party app that runs inside Divine. Divine only grants reviewed capabilities for this integration, and blocks navigation outside its approved origins.';
+      '이건 Divine 안에서 돌아가는 승인된 서드파티 앱이에요. Divine은 이 연동에 검토된 권한만 부여하고, 승인된 출처 밖으로의 이동을 막아요.';
 
   @override
-  String get appsDetailAboutTitle => 'About';
+  String get appsDetailAboutTitle => '정보';
 
   @override
-  String get appsDetailPrimaryOriginTitle => 'Primary origin';
+  String get appsDetailPrimaryOriginTitle => '기본 출처';
 
   @override
-  String get appsDetailApprovedOriginsTitle => 'Approved origins';
+  String get appsDetailApprovedOriginsTitle => '승인된 출처';
 
   @override
-  String get appsDetailCapabilitiesTitle => 'Available capabilities';
+  String get appsDetailCapabilitiesTitle => '이용 가능한 권한';
 
   @override
-  String get appsDetailAskBeforeTitle => 'Ask before';
+  String get appsDetailAskBeforeTitle => '먼저 물어보기';
 
   @override
-  String get appsDetailOpenButton => 'Open Integration';
+  String get appsDetailOpenButton => '연동 열기';
 
   @override
-  String get appsDetailNoneDeclared => 'None declared yet';
+  String get appsDetailNoneDeclared => '아직 선언된 항목 없음';
 
   @override
-  String get appsDirectoryTitle => 'Integrated Apps';
+  String get appsDirectoryTitle => '연동 앱';
 
   @override
-  String get appsDirectoryIntroTitle => 'Approved third-party apps';
+  String get appsDirectoryIntroTitle => '승인된 서드파티 앱';
 
   @override
-  String get appsDirectoryIntroBody =>
-      'Approved third-party apps that run inside Divine';
+  String get appsDirectoryIntroBody => 'Divine 안에서 돌아가는 승인된 서드파티 앱';
 
   @override
-  String get appsDirectoryErrorTitle => 'Could not load integrated apps';
+  String get appsDirectoryErrorTitle => '연동 앱을 불러오지 못했어요';
 
   @override
-  String get appsDirectoryErrorSubtitle =>
-      'Pull to try the approved integrations again.';
+  String get appsDirectoryErrorSubtitle => '당겨서 승인된 연동을 다시 시도해보세요.';
 
   @override
-  String get appsDirectoryEmptyTitle => 'No approved integrations yet';
+  String get appsDirectoryEmptyTitle => '아직 승인된 연동이 없어요';
 
   @override
   String get appsDirectoryEmptySubtitle =>
-      'Approved third-party apps will appear here as Divine adds them.';
+      'Divine이 추가하는 대로 승인된 서드파티 앱이 여기에 나타나요.';
 
   @override
-  String get appsDirectoryRefresh => 'Refresh';
+  String get appsDirectoryRefresh => '새로고침';
 
   @override
-  String get appsDirectoryUnsupportedTitle =>
-      'Integrated Apps run in Divine mobile';
+  String get appsDirectoryUnsupportedTitle => '연동 앱은 Divine 모바일에서 실행돼요';
 
   @override
   String get appsDirectoryUnsupportedSubtitle =>
-      'Approved integrations are only available on mobile for now.';
+      '승인된 연동은 지금은 모바일에서만 이용할 수 있어요.';
 
   @override
-  String get appsSandboxUnavailableTitle => 'Integration unavailable';
+  String get appsSandboxUnavailableTitle => '연동을 이용할 수 없어요';
 
   @override
   String get appsSandboxUnavailableBody =>
-      'Open approved integrations from the Integrated Apps tab so Divine can apply the right access policy.';
+      '연동 앱 탭에서 승인된 연동을 열어야 Divine이 올바른 접근 정책을 적용할 수 있어요.';
 
   @override
-  String get appsSandboxLoadingTitle => 'Loading integration';
+  String get appsSandboxLoadingTitle => '연동 불러오는 중';
 
   @override
-  String get appsSandboxLoadingSubtitle =>
-      'Checking the approved integration before launch.';
+  String get appsSandboxLoadingSubtitle => '실행 전에 승인된 연동을 확인하고 있어요.';
 
   @override
-  String get appsSandboxBlockedTitle => 'Blocked for safety';
+  String get appsSandboxBlockedTitle => '안전을 위해 차단됨';
 
   @override
   String appsSandboxBlockedSubtitle(String uri) {
-    return 'This integration tried to leave its approved origin.\n\n$uri';
+    return '이 연동이 승인된 출처를 벗어나려고 했어요.\n\n$uri';
   }
 
   @override
-  String get shareCopiedPostLink => 'Link to post copied to clipboard';
+  String get shareCopiedPostLink => '게시물 링크를 클립보드에 복사했어요';
 
   @override
-  String get shareCopiedEventJson => 'Nostr event JSON copied to clipboard';
+  String get shareCopiedEventJson => 'Nostr 이벤트 JSON을 클립보드에 복사했어요';
 
   @override
-  String get shareCopiedEventId => 'Nostr event ID copied to clipboard';
+  String get shareCopiedEventId => 'Nostr 이벤트 ID를 클립보드에 복사했어요';
 
   @override
-  String get authHeroTaglineAuthentic => 'Authentic moments.';
+  String get authHeroTaglineAuthentic => '진짜 순간들.';
 
   @override
-  String get authHeroTaglineHuman => 'Human creativity.';
+  String get authHeroTaglineHuman => '사람의 창의성.';
 
   @override
-  String get keyImportFailedToImport =>
-      'Failed to import key or connect bunker';
+  String get keyImportFailedToImport => '키를 가져오거나 벙커에 연결하지 못했어요';
 
   @override
-  String get keyImportInvalidBunkerUrl => 'Invalid bunker URL';
+  String get keyImportInvalidBunkerUrl => '잘못된 벙커 URL';
 
   @override
   String get keyImportInvalidFormat =>
-      'Invalid format. Use nsec..., hex, ncryptsec1..., or bunker://...';
+      '잘못된 형식이에요. nsec..., hex, ncryptsec1..., 또는 bunker://... 를 사용해주세요';
 
   @override
-  String get keyImportInvalidNsecFormat =>
-      'Invalid nsec format. Should be 63 characters';
+  String get keyImportInvalidNsecFormat => '잘못된 nsec 형식이에요. 63자여야 해요';
 
   @override
-  String get keyImportKeyFieldLabel => 'Private key or bunker URL';
+  String get keyImportKeyFieldLabel => '개인 키 또는 벙커 URL';
 
   @override
-  String get keyImportKeyRequired =>
-      'Please enter your private key or bunker URL';
+  String get keyImportKeyRequired => '개인 키 또는 벙커 URL을 입력해주세요';
 
   @override
-  String get keyImportPasswordRequired =>
-      'Please enter the password for this encrypted key';
+  String get keyImportPasswordRequired => '이 암호화된 키의 비밀번호를 입력해주세요';
 
   @override
   String get keyImportSecurityWarningBody =>
-      'Never share your private key with anyone. This key gives full access to your Nostr identity.';
+      '개인 키는 절대 누구와도 공유하지 마세요. 이 키는 당신의 Nostr 신원에 대한 전체 접근 권한을 줘요.';
 
   @override
-  String get keyImportSecurityWarningTitle => 'Keep your private key secure!';
+  String get keyImportSecurityWarningTitle => '개인 키를 안전하게 보관하세요!';
 
   @override
-  String get keyImportSubtitle =>
-      'Import your existing Nostr identity using your private key or a bunker URL.';
+  String get keyImportSubtitle => '개인 키나 벙커 URL로 기존 Nostr 신원을 가져오세요.';
 
   @override
-  String get keyImportTitle => 'Import your\nNostr identity';
+  String get keyImportTitle => 'Nostr 신원\n가져오기';
 
   @override
-  String get commentAuthorYouIndicator => 'You';
+  String get commentAuthorYouIndicator => '나';
 
   @override
   String commentAuthorAvatarSemanticLabel(String name) {
@@ -6026,282 +6013,271 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get commentOptionsDeleteSemanticLabel => 'Delete comment';
+  String get commentOptionsDeleteSemanticLabel => '댓글 삭제';
 
   @override
-  String get commentOptionsEditSemanticLabel => 'Edit comment';
+  String get commentOptionsEditSemanticLabel => '댓글 수정';
 
   @override
-  String get commentOptionsFlagContentLabel => 'Flag Content';
+  String get commentOptionsFlagContentLabel => '콘텐츠 신고';
 
   @override
-  String get commentOptionsFlagContentSemanticLabel => 'Flag this content';
+  String get commentOptionsFlagContentSemanticLabel => '이 콘텐츠 신고';
 
   @override
-  String get commentOptionsFlagReasonPrompt =>
-      'Select a reason for flagging this comment';
+  String get commentOptionsFlagReasonPrompt => '이 댓글을 신고하는 이유를 선택해주세요';
 
   @override
-  String get commentOptionsFlagSubmit => 'Submit';
+  String get commentOptionsFlagSubmit => '제출';
 
   @override
-  String get commentOptionsTitle => 'Options';
+  String get commentOptionsTitle => '옵션';
 
   @override
   String get commentsEmptyClassicVineMessage =>
-      'We\'re still working on importing old comments from the archive. They\'re not ready yet.';
+      '아카이브의 옛 댓글을 아직 가져오는 중이에요. 아직 준비되지 않았어요.';
 
   @override
-  String get commentsEmptyClassicVineTitle => 'Classic Vine';
+  String get commentsEmptyClassicVineTitle => '클래식 Vine';
 
   @override
-  String get commentsInputEditingLabel => 'Editing';
+  String get commentsInputEditingLabel => '수정 중';
 
   @override
-  String get commentsInputSemanticHint => 'Add a comment';
+  String get commentsInputSemanticHint => '댓글 달기';
 
   @override
-  String get commentsInputSemanticHintEdit => 'Edit comment';
+  String get commentsInputSemanticHintEdit => '댓글 수정';
 
   @override
-  String get commentsInputSemanticHintReply => 'Add a reply';
+  String get commentsInputSemanticHintReply => '답글 달기';
 
   @override
-  String get commentsInputSemanticLabel => 'Comment input';
+  String get commentsInputSemanticLabel => '댓글 입력';
 
   @override
-  String get commentsInputSemanticLabelEdit => 'Edit input';
+  String get commentsInputSemanticLabelEdit => '수정 입력';
 
   @override
-  String get commentsInputSemanticLabelReply => 'Reply input';
+  String get commentsInputSemanticLabelReply => '답글 입력';
 
   @override
   String classicVinersViewProfileSemanticLabel(String displayName) {
-    return 'View profile for $displayName';
+    return '$displayName님의 프로필 보기';
   }
 
   @override
-  String get classicsEmptyDescription => 'The Classics archive is being loaded';
+  String get classicsEmptyDescription => '클래식 아카이브를 불러오는 중이에요';
 
   @override
-  String get classicsEmptyTitle => 'No Classics Found';
+  String get classicsEmptyTitle => '클래식을 찾을 수 없어요';
 
   @override
-  String get classicsErrorTitle => 'Failed to load Classics';
+  String get classicsErrorTitle => '클래식을 불러오지 못했어요';
 
   @override
   String get classicsUnavailableDescription =>
-      'Classics are only available when connected to Funnelcake relays.';
+      '클래식은 Funnelcake 릴레이에 연결됐을 때만 이용할 수 있어요.';
 
   @override
   String get classicsUnavailableSettingsHint =>
-      'Switch to a Funnelcake-enabled relay in Settings to access the Classics archive.';
+      '클래식 아카이브를 이용하려면 설정에서 Funnelcake를 지원하는 릴레이로 전환하세요.';
 
   @override
-  String get classicsUnavailableTitle => 'Classics Unavailable';
+  String get classicsUnavailableTitle => '클래식을 이용할 수 없어요';
 
   @override
-  String get hashtagFeedEmptySubtitle =>
-      'Be the first to post a video with this hashtag!';
+  String get hashtagFeedEmptySubtitle => '이 해시태그로 영상을 처음 올려보세요!';
 
   @override
   String hashtagFeedEmptyTitle(String hashtag) {
-    return 'No videos found for #$hashtag';
+    return '#$hashtag에 대한 영상이 없어요';
   }
 
   @override
-  String get hashtagFeedLoadingSubtitle => 'This may take a few moments';
+  String get hashtagFeedLoadingSubtitle => '잠시 걸릴 수 있어요';
 
   @override
   String hashtagFeedLoadingTitle(String hashtag) {
-    return 'Loading videos about #$hashtag...';
+    return '#$hashtag에 대한 영상을 불러오는 중...';
   }
 
   @override
-  String get hashtagInputHint => 'Add hashtags... #vine #nostr';
+  String get hashtagInputHint => '해시태그 추가... #vine #nostr';
 
   @override
-  String get newVideosTabEmptySubtitle => 'Check back later for new content';
+  String get newVideosTabEmptySubtitle => '새 콘텐츠를 나중에 다시 확인해보세요';
 
   @override
-  String get newVideosTabEmptyTitle => 'No videos in New Videos';
+  String get newVideosTabEmptyTitle => '새 영상에 영상이 없어요';
 
   @override
-  String get popularVideosContextTitle => 'Popular Videos';
+  String get popularVideosContextTitle => '인기 영상';
 
   @override
-  String get popularVideosEmptySubtitle => 'Check back later for new content';
+  String get popularVideosEmptySubtitle => '새 콘텐츠를 나중에 다시 확인해보세요';
 
   @override
-  String get popularVideosEmptyTitle => 'No videos in Popular Videos';
+  String get popularVideosEmptyTitle => '인기 영상에 영상이 없어요';
 
   @override
-  String get popularVideosErrorTitle => 'Failed to load trending videos';
+  String get popularVideosErrorTitle => '인기 급상승 영상을 불러오지 못했어요';
 
   @override
-  String get popularVideosFeedSourceLabel => 'Popular feed source';
+  String get popularVideosFeedSourceLabel => '인기 피드 소스';
 
   @override
-  String get trendingHashtagsLoading => 'Loading hashtags...';
+  String get trendingHashtagsLoading => '해시태그를 불러오는 중...';
 
   @override
   String trendingHashtagsViewVideosTagged(String hashtag) {
-    return 'View videos tagged $hashtag';
+    return '$hashtag이(가) 태그된 영상 보기';
   }
 
   @override
   String videoGridAuthorSemanticLabel(String name) {
-    return 'Video author: $name';
+    return '영상 작성자: $name';
   }
 
   @override
   String videoGridDescriptionSemanticLabel(String description) {
-    return 'Video description: $description';
+    return '영상 설명: $description';
   }
 
   @override
   String get forYouAlgorithmChoiceBody =>
-      'Divine\'s vision is to give you true algorithmic choice. Instead of being locked into a single black-box algorithm, you\'ll be able to choose from multiple recommendation approaches:';
+      'Divine의 비전은 당신에게 진정한 알고리즘 선택권을 주는 거예요. 하나의 블랙박스 알고리즘에 갇히는 대신, 여러 추천 방식 중에서 고를 수 있게 될 거예요:';
 
   @override
-  String get forYouAlgorithmChoiceChronological =>
-      'Chronological timeline from creators you follow';
+  String get forYouAlgorithmChoiceChronological => '팔로우하는 크리에이터의 시간순 타임라인';
 
   @override
   String get forYouAlgorithmChoiceClosing =>
-      'This puts you in control of your attention rather than leaving it up to the platform. You should know how your feed is curated and have the power to change it whenever you want.';
+      '이건 당신의 관심을 플랫폼에 맡기는 대신 당신이 직접 통제하게 해줘요. 피드가 어떻게 큐레이션되는지 알아야 하고, 원할 때 언제든 바꿀 수 있는 힘이 있어야 해요.';
 
   @override
   String get forYouAlgorithmChoiceCustomFeeds =>
-      'Community-created custom feeds for topics like music, comedy, or art';
+      '음악, 코미디, 예술 같은 주제를 위한 커뮤니티가 만든 맞춤 피드';
 
   @override
-  String get forYouAlgorithmChoicePersonalizedFeed =>
-      'Personalized \"For You\" feed';
+  String get forYouAlgorithmChoicePersonalizedFeed => '개인 맞춤 \"추천\" 피드';
 
   @override
-  String get forYouAlgorithmChoiceTitle => 'Your Algorithm, Your Choice';
+  String get forYouAlgorithmChoiceTitle => '당신의 알고리즘, 당신의 선택';
 
   @override
-  String get forYouAlgorithmChoiceTrending => 'Trending and popular content';
+  String get forYouAlgorithmChoiceTrending => '인기 급상승 및 인기 콘텐츠';
 
   @override
-  String get forYouAlgorithmCommentsDescription =>
-      'Strong signal — you were engaged enough to respond';
+  String get forYouAlgorithmCommentsDescription => '강한 신호 — 응답할 만큼 몰입했어요';
 
   @override
   String get forYouAlgorithmHowItWorksBody =>
-      'Divine pays attention to how you interact with content to understand what you enjoy. Every time you watch a video, give it a reaction, leave a comment, or repost it, the system takes note.';
+      'Divine은 당신이 콘텐츠와 어떻게 상호작용하는지 살펴 무엇을 즐기는지 파악해요. 영상을 볼 때마다, 반응을 남길 때마다, 댓글을 달 때마다, 리포스트할 때마다 시스템이 기록해요.';
 
   @override
-  String get forYouAlgorithmHowItWorksTitle => 'How It Works';
+  String get forYouAlgorithmHowItWorksTitle => '작동 방식';
 
   @override
-  String get forYouAlgorithmInteractionsIntro =>
-      'Different actions signal different levels of interest:';
+  String get forYouAlgorithmInteractionsIntro => '서로 다른 행동은 서로 다른 관심 수준을 나타내요:';
 
   @override
   String get forYouAlgorithmNewToDivineBody1 =>
-      'If you haven\'t built up a viewing history yet, we show a mix of what\'s currently popular and trending alongside recent uploads. This gives you a great starting point to explore.';
+      '아직 시청 기록이 쌓이지 않았다면, 지금 인기 있고 급상승 중인 콘텐츠와 최근 업로드를 섞어서 보여줘요. 탐색을 시작하기에 좋은 출발점이 돼요.';
 
   @override
   String get forYouAlgorithmNewToDivineBody2 =>
-      'As you watch, like, and engage with content, recommendations gradually become more personalized. Over time, your For You feed surfaces videos from creators you might never have discovered on your own.';
+      '영상을 보고, 좋아요를 누르고, 콘텐츠와 어울리다 보면 추천이 점점 더 개인 맞춤형이 돼요. 시간이 지나면 추천 피드가 혼자서는 발견하지 못했을 크리에이터의 영상을 보여줘요.';
 
   @override
-  String get forYouAlgorithmNewToDivineTitle => 'New to Divine?';
+  String get forYouAlgorithmNewToDivineTitle => 'Divine이 처음이세요?';
 
   @override
   String get forYouAlgorithmOpenSourceBody =>
-      'We\'re building an open system where developers can implement their own algorithms, and you can choose which ones to use — or opt out entirely.';
+      '우리는 개발자가 자신만의 알고리즘을 구현할 수 있는 열린 시스템을 만들고 있어요. 그리고 당신은 어떤 걸 쓸지 고르거나, 아예 쓰지 않을 수도 있어요.';
 
   @override
-  String get forYouAlgorithmOpenSourceTitle => 'Open Source & Transparent';
+  String get forYouAlgorithmOpenSourceTitle => '오픈소스 & 투명함';
 
   @override
-  String get forYouAlgorithmReactionsDescription =>
-      'Medium signal — a quick way to show appreciation';
+  String get forYouAlgorithmReactionsDescription => '중간 신호 — 감사를 표현하는 빠른 방법';
 
   @override
-  String get forYouAlgorithmReactionsTitle => 'Reactions';
+  String get forYouAlgorithmReactionsTitle => '반응';
 
   @override
   String get forYouAlgorithmRepostsDescription =>
-      'Strongest signal — sharing with your followers is a powerful endorsement';
+      '가장 강한 신호 — 팔로워와 공유하는 건 강력한 지지예요';
 
   @override
-  String get forYouAlgorithmSubtitle =>
-      'Powered by Gorse, an open-source recommendation engine';
+  String get forYouAlgorithmSubtitle => '오픈소스 추천 엔진 Gorse로 구동돼요';
 
   @override
-  String get forYouAlgorithmTitle => 'The Divine Algorithm';
+  String get forYouAlgorithmTitle => 'Divine 알고리즘';
 
   @override
-  String get forYouAlgorithmViewsDescription =>
-      'Light signal — indicates basic interest';
+  String get forYouAlgorithmViewsDescription => '약한 신호 — 기본적인 관심을 나타내요';
 
   @override
-  String get forYouEmptyDescription =>
-      'Watch and like some videos to get personalized recommendations.';
+  String get forYouEmptyDescription => '영상을 보고 좋아요를 눌러 개인 맞춤 추천을 받아보세요.';
 
   @override
-  String get forYouEmptyTitle => 'No Recommendations Yet';
+  String get forYouEmptyTitle => '아직 추천이 없어요';
 
   @override
-  String get forYouErrorTitle => 'Failed to load recommendations';
+  String get forYouErrorTitle => '추천을 불러오지 못했어요';
 
   @override
-  String get forYouUnavailableDescription =>
-      'Personalized recommendations require connection to Funnelcake.';
+  String get forYouUnavailableDescription => '개인 맞춤 추천은 Funnelcake 연결이 필요해요.';
 
   @override
-  String get forYouUnavailableTitle => 'For You Unavailable';
+  String get forYouUnavailableTitle => '추천을 이용할 수 없어요';
 
   @override
-  String get inboxConversationOptionsLabel => 'Options';
+  String get inboxConversationOptionsLabel => '옵션';
 
   @override
-  String get inboxConversationViewProfileButton => 'View profile';
+  String get inboxConversationViewProfileButton => '프로필 보기';
 
   @override
-  String get inboxMessageRequestsEmpty => 'No message requests';
+  String get inboxMessageRequestsEmpty => '메시지 요청 없음';
 
   @override
   String inboxMessageRequestsSemanticLabel(int requestCount) {
-    return 'Message requests, $requestCount pending';
+    return '메시지 요청, $requestCount건 대기 중';
   }
 
   @override
-  String get inboxMessageRequestsTitle => 'Message requests';
+  String get inboxMessageRequestsTitle => '메시지 요청';
 
   @override
-  String get inboxMessagesTab => 'Messages';
+  String get inboxMessagesTab => '메시지';
 
   @override
   String inboxRequestTileLabel(String displayName) {
-    return '$displayName message request';
+    return '$displayName님의 메시지 요청';
   }
 
   @override
-  String get inboxRequestTileSubtitle => 'Sent a message request';
+  String get inboxRequestTileSubtitle => '메시지 요청을 보냈어요';
 
   @override
-  String get inboxRequestsMarkAllRead => 'Mark all requests as read';
+  String get inboxRequestsMarkAllRead => '모든 요청을 읽음으로 표시';
 
   @override
-  String get inboxRequestsRemoveAll => 'Remove all requests';
+  String get inboxRequestsRemoveAll => '모든 요청 삭제';
 
   @override
-  String get messageRequestDeclineAndRemoveButton => 'Decline and remove';
+  String get messageRequestDeclineAndRemoveButton => '거절하고 삭제';
 
   @override
   String messageRequestFollowersCount(String count) {
-    return '$count Followers';
+    return '팔로워 $count명';
   }
 
   @override
   String messageRequestVideosCount(String count) {
-    return '$count videos';
+    return '영상 $count개';
   }
 
   @override
@@ -6309,206 +6285,201 @@ class AppLocalizationsKo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count messages',
-      one: '1 message',
+      other: '메시지 $count개',
+      one: '메시지 1개',
     );
     return '$_temp0';
   }
 
   @override
-  String get messageRequestViewMessagesButton => 'View messages';
+  String get messageRequestViewMessagesButton => '메시지 보기';
 
   @override
-  String get messageRequestViewProfileButton => 'View profile';
+  String get messageRequestViewProfileButton => '프로필 보기';
 
   @override
   String messageRequestWantsToMessageYou(
     String displayName,
     String messageText,
   ) {
-    return '$displayName wants to message you, they\'ve sent $messageText.';
+    return '$displayName님이 메시지를 보내고 싶어 해요. $messageText을(를) 보냈어요.';
   }
 
   @override
-  String get deleteAccountConfirmationHint => 'Type DELETE';
+  String get deleteAccountConfirmationHint => 'DELETE 입력';
 
   @override
-  String get deleteAccountContentDeletionFailed =>
-      'Failed to delete content from relays';
+  String get deleteAccountContentDeletionFailed => '릴레이에서 콘텐츠를 삭제하지 못했어요';
 
   @override
-  String get deleteAccountDeleteAllContentButton => 'Delete All Content';
+  String get deleteAccountDeleteAllContentButton => '모든 콘텐츠 삭제';
 
   @override
   String get deleteAccountFinalConfirmationBody =>
-      'To confirm permanent deletion of ALL your content from Nostr relays, type:';
+      'Nostr 릴레이에서 모든 콘텐츠를 영구 삭제하는 걸 확인하려면 입력하세요:';
 
   @override
-  String get deleteAccountFinalConfirmationTitle => '⚠️ Final Confirmation';
+  String get deleteAccountFinalConfirmationTitle => '⚠️ 최종 확인';
 
   @override
   String get deleteAccountKeyDeletionWarning =>
-      'Account deleted, but your keys may not have been fully removed from this device. Go to Settings → Nostr Keys → Remove Keys to retry.';
+      '계정은 삭제됐지만, 키가 이 기기에서 완전히 제거되지 않았을 수 있어요. 설정 → Nostr 키 → 키 제거로 가서 다시 시도하세요.';
 
   @override
   String get deleteAccountLocalDataDeletionFailed =>
       'Account deleted and signed out, but some local data could not be removed from this device.';
 
   @override
-  String get deleteAccountPreparingDeletion => 'Preparing deletion...';
+  String get deleteAccountPreparingDeletion => '삭제 준비 중...';
 
   @override
   String deleteAccountProgressEvents(int current, int total) {
-    return '$current / $total events';
+    return '이벤트 $current / $total개';
   }
 
   @override
   String get deleteAccountRemoveKeysBody =>
-      'This removes the local login for this account from this device. It won\'t delete your Divine account or Nostr identity.\n\nYour drafts and clips stay saved on this device for this account. If this is your last local account, you\'ll return to the login screen.';
+      '이 기기에서 이 계정의 로컬 로그인을 제거해요. Divine 계정이나 Nostr 신원은 삭제되지 않아요.\n\n이 계정의 초안과 클립은 이 기기에 그대로 저장돼 있어요. 이게 마지막 로컬 계정이면 로그인 화면으로 돌아가요.';
 
   @override
-  String get deleteAccountRemoveKeysConfirm => 'Remove from device';
+  String get deleteAccountRemoveKeysConfirm => '기기에서 제거';
 
   @override
-  String get deleteAccountRemoveKeysTitle =>
-      'Remove this account from this device?';
+  String get deleteAccountRemoveKeysTitle => '이 기기에서 이 계정을 제거할까요?';
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Could not delete your account from the server. Please check your connection and try again.';
+      '서버에서 계정을 삭제하지 못했어요. 연결을 확인하고 다시 시도해주세요.';
 
   @override
-  String get deleteAccountSuccess => 'Your account has been deleted';
+  String get deleteAccountSuccess => '계정이 삭제됐어요';
 
   @override
-  String get exportProgressStageApplyingTextOverlay => 'Adding text overlay...';
+  String get exportProgressStageApplyingTextOverlay => '텍스트 오버레이 추가 중...';
 
   @override
-  String get exportProgressStageComplete => 'Export complete!';
+  String get exportProgressStageComplete => '내보내기 완료!';
 
   @override
-  String get exportProgressStageConcatenating => 'Combining clips...';
+  String get exportProgressStageConcatenating => '클립 합치는 중...';
 
   @override
-  String get exportProgressStageError => 'Export failed';
+  String get exportProgressStageError => '내보내기 실패';
 
   @override
-  String get exportProgressStageGeneratingThumbnail =>
-      'Generating thumbnail...';
+  String get exportProgressStageGeneratingThumbnail => '썸네일 생성 중...';
 
   @override
-  String get exportProgressStageMixingAudio => 'Adding sound...';
+  String get exportProgressStageMixingAudio => '소리 추가 중...';
 
   @override
-  String get findPeopleAnonymousUser => 'Anonymous';
+  String get findPeopleAnonymousUser => '익명';
 
   @override
-  String get findPeopleNoContacts =>
-      'No contacts found.\nStart following people to see them here.';
+  String get findPeopleNoContacts => '연락처를 찾을 수 없어요.\n사람들을 팔로우하면 여기에 나타나요.';
 
   @override
-  String get geoBlockedCityLabel => 'City';
+  String get geoBlockedCityLabel => '도시';
 
   @override
-  String get geoBlockedCountryLabel => 'Country';
+  String get geoBlockedCountryLabel => '국가';
 
   @override
-  String get geoBlockedDefaultReason =>
-      'This service is not available in your region due to local regulations.';
+  String get geoBlockedDefaultReason => '현지 규정으로 인해 이 서비스는 당신의 지역에서 이용할 수 없어요.';
 
   @override
   String get geoBlockedLegalNotice =>
-      'We respect your local laws and regulations. This restriction is based on your IP address location.';
+      '우리는 당신 지역의 법과 규정을 존중해요. 이 제한은 당신의 IP 주소 위치를 기반으로 해요.';
 
   @override
-  String get geoBlockedRegionLabel => 'Region';
+  String get geoBlockedRegionLabel => '지역';
 
   @override
-  String get geoBlockedTitle => 'Service Unavailable';
+  String get geoBlockedTitle => '서비스를 이용할 수 없어요';
 
   @override
-  String get likedVideosEmpty => 'No liked videos';
+  String get likedVideosEmpty => '좋아요한 영상 없음';
 
   @override
-  String get likedVideosInvalidRoute => 'Invalid route';
+  String get likedVideosInvalidRoute => '잘못된 경로';
 
   @override
-  String get likedVideosTitle => 'Liked Videos';
+  String get likedVideosTitle => '좋아요한 영상';
 
   @override
   String get ogVinerBadgeSemanticLabel => 'OG Viner';
 
   @override
-  String get uploadFailureSheetRetryingSnackbar => 'Retrying upload…';
+  String get uploadFailureSheetRetryingSnackbar => '업로드 다시 시도 중…';
 
   @override
-  String get uploadFailureSheetSaveToDraftsButton => 'Save to Drafts';
+  String get uploadFailureSheetSaveToDraftsButton => '초안에 저장';
 
   @override
-  String get uploadFailureSheetSavedToDraftsSnackbar => 'Saved to drafts';
+  String get uploadFailureSheetSavedToDraftsSnackbar => '초안에 저장했어요';
 
   @override
-  String get uploadFailureSheetTitle => 'Upload Failed';
+  String get uploadFailureSheetTitle => '업로드 실패';
 
   @override
-  String get uploadFailureSheetTryAgainButton => 'Try Again';
+  String get uploadFailureSheetTryAgainButton => '다시 시도';
 
   @override
-  String get videoEditorAudioImportAudio => 'Import audio';
+  String get videoEditorAudioImportAudio => '오디오 가져오기';
 
   @override
-  String get videoEditorAudioImportFailed => 'Audio import failed.';
+  String get videoEditorAudioImportFailed => '오디오 가져오기에 실패했어요.';
 
   @override
-  String get videoIconPlaceholderLabel => 'Video';
+  String get videoIconPlaceholderLabel => '영상';
 
   @override
   String videoInspiredByAttributionSemanticLabel(String creatorName) {
-    return 'Inspired by $creatorName. Tap to view their profile.';
+    return '$creatorName님에게서 영감을 받았어요. 탭하면 프로필을 볼 수 있어요.';
   }
 
   @override
-  String get proofmodeBadgeAiScanPending => 'AI scan pending';
+  String get proofmodeBadgeAiScanPending => 'AI 검사 대기 중';
 
   @override
-  String get proofmodeBadgeHumanMade => 'Human Made';
+  String get proofmodeBadgeHumanMade => '사람이 제작';
 
   @override
-  String get proofmodeBadgeNotDivineHosted => 'Not Divine Hosted';
+  String get proofmodeBadgeNotDivineHosted => 'Divine 호스팅 아님';
 
   @override
-  String get proofmodeBadgeOriginal => 'Original';
+  String get proofmodeBadgeOriginal => '오리지널';
 
   @override
-  String get proofmodeBadgePossiblyAiGenerated => 'Possibly AI-Generated';
+  String get proofmodeBadgePossiblyAiGenerated => 'AI 생성 가능성 있음';
 
   @override
-  String get proofmodeBadgeUnverified => 'Unverified';
+  String get proofmodeBadgeUnverified => '미인증';
 
   @override
-  String get proofmodeConfirmedByModerator => 'Confirmed by human moderator';
+  String get proofmodeConfirmedByModerator => '사람 조절자가 확인함';
 
   @override
-  String get proofmodeExternalContentTitle => 'External Content';
+  String get proofmodeExternalContentTitle => '외부 콘텐츠';
 
   @override
-  String get proofmodeHostedOnLabel => 'This video is hosted on:';
+  String get proofmodeHostedOnLabel => '이 영상은 여기에 호스팅돼 있어요:';
 
   @override
-  String get proofmodeLikelyHumanCreated => 'Likely human-created';
+  String get proofmodeLikelyHumanCreated => '사람이 만들었을 가능성 높음';
 
   @override
-  String get proofmodeNoProofDataAttached => 'No ProofMode data attached';
+  String get proofmodeNoProofDataAttached => 'ProofMode 데이터가 첨부되지 않음';
 
   @override
   String get proofmodeNotDivineHostedDisclaimer =>
-      'This content is not hosted on Divine servers. We cannot fully guarantee its authenticity.';
+      '이 콘텐츠는 Divine 서버에 호스팅돼 있지 않아요. 진위를 완전히 보장할 수는 없어요.';
 
   @override
-  String get proofmodePossiblyAiGenerated => 'Possibly AI-generated';
+  String get proofmodePossiblyAiGenerated => 'AI 생성 가능성 있음';
 
   @override
-  String get proofmodePublishedByLabel => 'Published by:';
+  String get proofmodePublishedByLabel => '게시자:';
 
   @override
   String get publishErrorNotSignedIn => '영상을 게시하려면 로그인해주세요.';
@@ -6592,17 +6563,17 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String searchFilterPillSemanticLabel(String filter) {
-    return 'Filter: $filter';
+    return '필터: $filter';
   }
 
   @override
   String searchNoResultsFound(String query) {
-    return 'No results found for \"$query\"';
+    return '\"$query\"에 대한 결과가 없어요';
   }
 
   @override
   String searchTagChipViewVideosTaggedLabel(String tag) {
-    return 'View videos tagged $tag';
+    return '$tag이(가) 태그된 영상 보기';
   }
 
   @override
@@ -6610,12 +6581,12 @@ class AppLocalizationsKo extends AppLocalizations {
     String soundName,
     String creatorName,
   ) {
-    return 'Sound: $soundName by $creatorName. Tap to view sound details.';
+    return '사운드: $creatorName님의 $soundName. 탭하면 사운드 세부 정보를 볼 수 있어요.';
   }
 
   @override
   String metadataSoundsOriginalSoundSemantics(String creatorName) {
-    return 'Original sound by $creatorName. Tap to use this sound.';
+    return '$creatorName님의 오리지널 사운드. 탭하면 이 사운드를 쓸 수 있어요.';
   }
 
   @override
@@ -6623,43 +6594,42 @@ class AppLocalizationsKo extends AppLocalizations {
     String soundName,
     String creatorName,
   ) {
-    return 'Sound: $soundName by $creatorName. Tap to view details.';
+    return '사운드: $creatorName님의 $soundName. 탭하면 세부 정보를 볼 수 있어요.';
   }
 
   @override
   String soundDetailLoadError(String error) {
-    return 'Failed to load sound: $error';
+    return '사운드를 불러오지 못했어요: $error';
   }
 
   @override
-  String get soundDetailNotFoundMessage => 'This sound could not be found';
+  String get soundDetailNotFoundMessage => '이 사운드를 찾을 수 없어요';
 
   @override
-  String get soundDetailNotFoundTitle => 'Sound Not Found';
+  String get soundDetailNotFoundTitle => '사운드를 찾을 수 없어요';
 
   @override
-  String get videoFeedDescriptionSemanticLabel => 'Video description';
+  String get videoFeedDescriptionSemanticLabel => '영상 설명';
 
   @override
   String videoFeedLoopCountLabel(int count) {
-    return '🔁 $count loops';
+    return '🔁 루프 $count회';
   }
 
   @override
-  String get videoFeedLoopCountSemanticLabel => 'Video loop count';
+  String get videoFeedLoopCountSemanticLabel => '영상 루프 수';
 
   @override
-  String get originalSoundUnavailableBody =>
-      'Audio from this video is not available separately.';
+  String get originalSoundUnavailableBody => '이 영상의 오디오는 따로 이용할 수 없어요.';
 
   @override
   String originalSoundByCreator(String creatorName) {
-    return 'Original sound - $creatorName';
+    return '오리지널 사운드 - $creatorName';
   }
 
   @override
   String globalUploadPendingCount(int count) {
-    return 'Pending Uploads ($count)';
+    return '대기 중인 업로드 ($count)';
   }
 
   @override
@@ -6670,29 +6640,29 @@ class AppLocalizationsKo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'In $count lists',
-      one: 'In 1 list',
+      other: '목록 $count개에 있음',
+      one: '목록 1개에 있음',
     );
     return '$_temp0';
   }
 
   @override
-  String get unfollowConfirmButton => 'Unfollow';
+  String get unfollowConfirmButton => '언팔로우';
 
   @override
-  String get videoClipSaveFailed => 'Failed to save clip';
+  String get videoClipSaveFailed => '클립을 저장하지 못했어요';
 
   @override
   String videoClipSaveTo(String destination) {
-    return 'Save to $destination';
+    return '$destination에 저장';
   }
 
   @override
-  String get videoClipDelete => 'Delete clip';
+  String get videoClipDelete => '클립 삭제';
 
   @override
   String inspiredByAttributionSemanticLabel(String creatorName) {
-    return 'Inspired by $creatorName. Tap to view their profile.';
+    return '$creatorName님에게서 영감을 받았어요. 탭하면 프로필을 볼 수 있어요.';
   }
 
   @override
@@ -7041,19 +7011,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get searchVideosLoadingLabel => 'Loading video results';
 
   @override
-  String get searchVideosSortOptionsLabel => 'Sort video results';
+  String get searchVideosSortOptionsLabel => '영상 결과 정렬';
 
   @override
-  String get searchVideosSortTrending => 'Hot';
+  String get searchVideosSortTrending => '인기';
 
   @override
-  String get searchVideosSortLoops => 'Most loops';
+  String get searchVideosSortLoops => '루프 많은 순';
 
   @override
-  String get searchVideosSortEngagement => 'Most engaged';
+  String get searchVideosSortEngagement => '반응 많은 순';
 
   @override
-  String get searchVideosSortRecent => 'Recent';
+  String get searchVideosSortRecent => '최신순';
 
   @override
   String get searchListsSectionHeader => '목록';
@@ -8684,20 +8654,18 @@ class AppLocalizationsKo extends AppLocalizations {
       'Depending on the rules where you live, you may be able to come back and apply for your own account. In that case, if you’re between 13 and 15, you’ll need consent from a parent or guardian.';
 
   @override
-  String get minorAccountReviewUnder13HonestyTitle =>
-      'Why we won\'t tell you to just click back';
+  String get minorAccountReviewUnder13HonestyTitle => '그냥 뒤로 가라고 하지 않는 이유';
 
   @override
   String get minorAccountReviewUnder13HonestyBody =>
-      'A lot of the internet is set up to reward people for saying whatever gets them through the gate. We don\'t think that\'s great. Yes, you could go back and say you\'re older than you are, but that wouldn\'t be honest, and we\'re not going to coach you into lying to get what you want.';
+      '인터넷의 많은 곳은 관문을 통과하려고 아무 말이나 하면 보상을 주도록 설계돼 있어요. 우리는 그게 좋다고 생각하지 않아요. 물론 뒤로 가서 실제보다 나이가 많다고 말할 수도 있지만, 그건 정직하지 않고, 우리는 당신이 원하는 걸 얻으려고 거짓말하도록 부추기지 않을 거예요.';
 
   @override
-  String get minorAccountReviewUnder13LegalTitle =>
-      'Why the answer is still no';
+  String get minorAccountReviewUnder13LegalTitle => '그래도 안 되는 이유';
 
   @override
   String get minorAccountReviewUnder13LegalBody =>
-      'We\'re trying to help young people use Divine in ways that are healthy and positive for them and the people around them. We also have to follow laws that are different in different places. So, if you\'re under 13, the answer is that you can\'t have your own account today.';
+      '우리는 젊은 사람들이 자신과 주변 사람들에게 건강하고 긍정적인 방식으로 Divine을 쓰도록 돕고 있어요. 또 우리는 지역마다 다른 법을 따라야 해요. 그래서 13세 미만이라면, 오늘은 본인의 계정을 가질 수 없다는 게 답이에요.';
 
   @override
   String get minorAccountReviewTeenBody =>
@@ -8717,15 +8685,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>
-      'Why we ask a parent or guardian to be involved';
+      '부모님이나 보호자의 참여를 요청하는 이유';
 
   @override
   String get minorAccountReviewParentConsentHonestyBody =>
-      'Divine has to follow age-related laws around the world. We also know that most technical age gates are imperfect. Rather than pretending the rules don\'t exist or that it\'s cool to lie about your age, we want teens and families to make thoughtful decisions about how best to use Divine. That\'s why, for 13-15 year olds, we ask parents to be part of the account creation process.';
+      'Divine은 전 세계의 연령 관련 법을 따라야 해요. 또 대부분의 기술적 연령 관문이 완벽하지 않다는 것도 알아요. 규칙이 없는 척하거나 나이를 속이는 게 멋진 척하기보다는, 십 대와 가족이 Divine을 어떻게 쓰는 게 가장 좋을지 신중하게 결정하기를 바라요. 그래서 13~15세라면 계정 생성 과정에 부모님이 함께하도록 요청해요.';
 
   @override
   String get minorAccountReviewParentConsentLegalBody =>
-      'We also have to follow the law, and those rules are different depending on where someone lives. So instead of pretending the rules do not exist, we ask for a parent or guardian to be part of the process.';
+      '우리는 법도 따라야 하는데, 그 규칙은 사는 곳에 따라 달라요. 그래서 규칙이 없는 척하는 대신, 부모님이나 보호자가 이 과정에 함께하도록 요청해요.';
 
   @override
   String get minorAccountReviewParentConsentChecklist =>
@@ -9012,10 +8980,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authMinAgeNotice => 'Divine Greenlight';
 
   @override
-  String get authUnder16Prefix => 'Not 16 yet? That\'s OK. ';
+  String get authUnder16Prefix => '아직 16세가 아니세요? 괜찮아요. ';
 
   @override
-  String get authUnder16ChoicesCta => 'Here are your choices.';
+  String get authUnder16ChoicesCta => '선택지를 알려드릴게요.';
 
   @override
   String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
@@ -9096,32 +9064,31 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorSplitFailed => '분할에 실패했습니다. 다시 시도해 주세요.';
 
   @override
-  String get videoEditEditSubtitles => 'Edit subtitles';
+  String get videoEditEditSubtitles => '자막 편집';
 
   @override
-  String get subtitleEditorTitle => 'Edit subtitles';
+  String get subtitleEditorTitle => '자막 편집';
 
   @override
-  String get subtitleEditorSave => 'Save';
+  String get subtitleEditorSave => '저장';
 
   @override
-  String get subtitleEditorProcessing =>
-      'Subtitles are still being generated. Check back in a moment.';
+  String get subtitleEditorProcessing => '자막을 아직 생성하고 있어요. 잠시 후 다시 확인해주세요.';
 
   @override
-  String get subtitleEditorLoadError => 'Couldn\'t load subtitles. Try again.';
+  String get subtitleEditorLoadError => '자막을 불러오지 못했어요. 다시 시도해주세요.';
 
   @override
-  String get subtitleEditorSaveSuccess => 'Subtitles updated';
+  String get subtitleEditorSaveSuccess => '자막을 업데이트했어요';
 
   @override
-  String get subtitleEditorSaveError => 'Couldn\'t save subtitles. Try again.';
+  String get subtitleEditorSaveError => '자막을 저장하지 못했어요. 다시 시도해주세요.';
 
   @override
-  String get subtitleEditorRetry => 'Retry';
+  String get subtitleEditorRetry => '다시 시도';
 
   @override
-  String get subtitleEditorCueHint => 'Caption text';
+  String get subtitleEditorCueHint => '자막 텍스트';
 
   @override
   String get imageCropEditorRotateLabel => '회전';
