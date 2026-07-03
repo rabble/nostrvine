@@ -485,5 +485,137 @@ void main() {
 
       completer.removeListener(listener);
     });
+
+    test('skips the download and reports nothing when cancelled before the '
+        'cache miss resolves', () async {
+      const url = 'https://example.com/cancel-before-download.png';
+      final cacheManager = _MockMediaCacheManager();
+      final release = Completer<void>();
+      when(() => cacheManager.getFileFromCache(url)).thenAnswer((_) async {
+        await release.future;
+        return null;
+      });
+
+      final flutterErrors = <FlutterErrorDetails>[];
+      final previousOnError = FlutterError.onError;
+      FlutterError.onError = flutterErrors.add;
+      addTearDown(() => FlutterError.onError = previousOnError);
+
+      final provider = MediaCacheImageProvider(url, cacheManager: cacheManager);
+      final completer = provider.loadImage(
+        provider,
+        (buffer, {getTargetSize}) => Completer<ui.Codec>().future,
+      );
+      final listener = ImageStreamListener((image, synchronousCall) {
+        image.dispose();
+      });
+
+      completer.addListener(listener);
+      await Future<void>.delayed(Duration.zero);
+
+      completer.removeListener(listener);
+      release.complete();
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(flutterErrors, isEmpty);
+      verifyNever(
+        () => cacheManager.cacheFileCancellable(any(), key: any(named: 'key')),
+      );
+      expect(
+        PaintingBinding.instance.imageCache.containsKey(provider),
+        isFalse,
+      );
+    });
+
+    test('does not decode or report when cancelled while an existing cache '
+        'entry resolves', () async {
+      const url = 'https://example.com/cancel-existing.png';
+      final cacheManager = _MockMediaCacheManager();
+      final imageFile = const LocalFileSystem().file(
+        '$testTempPath/cancel-existing.png',
+      )..writeAsBytesSync(Uint8List.fromList(_transparentPng));
+      final fileInfo = MockFileInfo();
+      when(() => fileInfo.file).thenReturn(imageFile);
+      final release = Completer<void>();
+      when(() => cacheManager.getFileFromCache(url)).thenAnswer((_) async {
+        await release.future;
+        return fileInfo;
+      });
+
+      final flutterErrors = <FlutterErrorDetails>[];
+      final previousOnError = FlutterError.onError;
+      FlutterError.onError = flutterErrors.add;
+      addTearDown(() => FlutterError.onError = previousOnError);
+
+      final provider = MediaCacheImageProvider(url, cacheManager: cacheManager);
+      var decodeCalled = false;
+      final completer = provider.loadImage(provider, (buffer, {getTargetSize}) {
+        decodeCalled = true;
+        return Completer<ui.Codec>().future;
+      });
+      final listener = ImageStreamListener((image, synchronousCall) {
+        image.dispose();
+      });
+
+      completer.addListener(listener);
+      await Future<void>.delayed(Duration.zero);
+
+      completer.removeListener(listener);
+      release.complete();
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(decodeCalled, isFalse);
+      expect(flutterErrors, isEmpty);
+      expect(
+        PaintingBinding.instance.imageCache.containsKey(provider),
+        isFalse,
+      );
+    });
+
+    test('still surfaces a genuine null-result download failure through '
+        'FlutterError when a listener without onError remains', () async {
+      const url = 'https://example.com/null-download.png';
+      final cacheManager = _MockMediaCacheManager();
+      final download = FakeCancellableDownload(
+        url: url,
+        targetFile: File('$testTempPath/null-download.png'),
+        headers: null,
+      );
+      final operation = CancellableCacheOperation.fromDownload(download);
+
+      when(
+        () => cacheManager.getFileFromCache(url),
+      ).thenAnswer((_) async => null);
+      when(
+        () => cacheManager.cacheFileCancellable(url, key: url),
+      ).thenReturn(operation);
+
+      final flutterErrors = <FlutterErrorDetails>[];
+      final previousOnError = FlutterError.onError;
+      FlutterError.onError = flutterErrors.add;
+      addTearDown(() => FlutterError.onError = previousOnError);
+
+      final provider = MediaCacheImageProvider(url, cacheManager: cacheManager);
+      final completer = provider.loadImage(
+        provider,
+        (buffer, {getTargetSize}) => Completer<ui.Codec>().future,
+      );
+      final listener = ImageStreamListener((image, synchronousCall) {
+        image.dispose();
+      });
+
+      completer.addListener(listener);
+      await Future<void>.delayed(Duration.zero);
+      download.completeNull();
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(flutterErrors, hasLength(1));
+      expect(flutterErrors.single.toString(), contains(url));
+
+      completer.removeListener(listener);
+    });
   });
 }
