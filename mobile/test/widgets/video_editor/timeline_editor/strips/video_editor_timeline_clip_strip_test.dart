@@ -2,6 +2,7 @@
 // ABOUTME: Validates clip rendering, layout, reorder gesture, and accessibility.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
@@ -425,6 +426,122 @@ void main() {
                 'dropped the previous deltas.',
           );
         }
+      });
+
+      testWidgets('left handle accumulates deltas across updates without a '
+          'rebuilt clip', (tester) async {
+        final clip = _createTestClip(id: 'solo', seconds: 30);
+        final reportedTrimStartMs = <int>[];
+
+        await tester.pumpWidget(
+          buildWidget(
+            clips: [clip],
+            trimmingClipId: clip.id,
+            scrollable: false,
+            onTrimChanged:
+                ({
+                  required clipId,
+                  required isStart,
+                  required trimStart,
+                  required trimEnd,
+                }) {
+                  if (isStart) {
+                    reportedTrimStartMs.add(trimStart.inMilliseconds);
+                  }
+                },
+          ),
+        );
+
+        // Start just inside the left edge — the left handle's grab zone
+        // reaches inward from the edge (mirrors the right-handle test above).
+        final box = tester.renderObject<RenderBox>(
+          find.byType(TimelineTrimHandles),
+        );
+        final start = box.localToGlobal(Offset(2, box.size.height / 2));
+
+        final gesture = await tester.startGesture(start);
+        await tester.pump();
+        for (var i = 0; i < 5; i++) {
+          await gesture.moveBy(const Offset(30, 0));
+          await tester.pump();
+        }
+        await gesture.up();
+        await tester.pump();
+
+        expect(reportedTrimStartMs.length, greaterThanOrEqualTo(3));
+        for (var i = 1; i < reportedTrimStartMs.length; i++) {
+          expect(
+            reportedTrimStartMs[i],
+            greaterThan(reportedTrimStartMs[i - 1]),
+            reason:
+                'trimStart must accumulate across drag updates. A constant '
+                'value means each update reused the stale widget.clip base '
+                'and dropped the previous deltas.',
+          );
+        }
+      });
+    });
+
+    group('trim limit haptics', () {
+      testWidgets('re-arms the at-limit haptic on each new drag', (
+        tester,
+      ) async {
+        final hapticCalls = <MethodCall>[];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+              if (call.method == 'HapticFeedback.vibrate') {
+                hapticCalls.add(call);
+              }
+              return null;
+            });
+        addTearDown(() {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(SystemChannels.platform, null);
+        });
+
+        final clip = _createTestClip(id: 'solo', seconds: 3);
+        await tester.pumpWidget(
+          buildWidget(
+            clips: [clip],
+            trimmingClipId: clip.id,
+            scrollable: false,
+          ),
+        );
+
+        final box = tester.renderObject<RenderBox>(
+          find.byType(TimelineTrimHandles),
+        );
+        final start = box.localToGlobal(
+          Offset(box.size.width - 2, box.size.height / 2),
+        );
+
+        // The first move only triggers gesture acceptance and is consumed by
+        // DragStartBehavior.start without producing an update. Each following
+        // move must already overshoot the 2.94s max-trim limit on its own
+        // (170px / 52pps ≈ 3.27s) so that every delivered update is clamped:
+        // an intermediate non-clamped update would clear the at-limit flag
+        // itself and hide a stale flag carried over from the previous drag.
+        Future<void> dragPastLimit() async {
+          final gesture = await tester.startGesture(start);
+          await tester.pump();
+          for (var i = 0; i < 3; i++) {
+            await gesture.moveBy(const Offset(-170, 0));
+            await tester.pump();
+          }
+          await gesture.up();
+          await tester.pump();
+        }
+
+        // First drag overshoots far past the max-trim limit → one haptic.
+        await dragPastLimit();
+
+        expect(hapticCalls, hasLength(1));
+
+        // A second drag hitting the limit again must haptic again — the
+        // at-limit flag is re-armed on drag start, not kept from last drag.
+        await dragPastLimit();
+
+        expect(hapticCalls, hasLength(2));
       });
     });
 

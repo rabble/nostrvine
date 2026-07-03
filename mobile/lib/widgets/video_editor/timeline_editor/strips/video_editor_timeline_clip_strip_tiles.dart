@@ -64,6 +64,9 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
   }
 
   void _onDragStart() {
+    // Re-arm the at-limit haptic: a previous drag may have ended at a limit.
+    _leftAtLimit = false;
+    _rightAtLimit = false;
     _dragTrimStart = widget.clip.trimStart;
     _dragTrimEnd = widget.clip.trimEnd;
     widget.onTrimDragChanged?.call(true);
