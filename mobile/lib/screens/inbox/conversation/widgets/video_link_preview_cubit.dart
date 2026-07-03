@@ -72,7 +72,7 @@ class VideoLinkPreviewCubit extends Cubit<VideoLinkPreviewState> {
         _videoEventService.getVideoById(_videoStableId) ??
         _videoEventService.getVideoEventByVineId(_videoStableId);
     if (cached != null) {
-      emit(VideoLinkPreviewResolved(cached));
+      if (!isClosed) emit(VideoLinkPreviewResolved(cached));
       return;
     }
 
@@ -97,7 +97,9 @@ class VideoLinkPreviewCubit extends Cubit<VideoLinkPreviewState> {
       }
 
       if (event != null) {
-        emit(VideoLinkPreviewResolved(VideoEvent.fromNostrEvent(event)));
+        if (!isClosed) {
+          emit(VideoLinkPreviewResolved(VideoEvent.fromNostrEvent(event)));
+        }
         return;
       }
     } catch (e) {
@@ -108,6 +110,6 @@ class VideoLinkPreviewCubit extends Cubit<VideoLinkPreviewState> {
       );
     }
 
-    emit(const VideoLinkPreviewNotFound());
+    if (!isClosed) emit(const VideoLinkPreviewNotFound());
   }
 }

@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for VideoLinkPreviewCubit.
 // ABOUTME: Tests cache hit, relay fetch, d-tag fallback, and not-found paths.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -185,6 +187,30 @@ void main() {
         build: createCubit,
         expect: () => [isA<VideoLinkPreviewNotFound>()],
       );
+    });
+
+    group('close during in-flight resolve', () {
+      test('does not emit or throw when closed mid relay fetch', () async {
+        final completer = Completer<Event?>();
+        when(
+          () => mockNostrClient.fetchEventById(any()),
+        ).thenAnswer((_) => completer.future);
+
+        final cubit = createCubit();
+        // Let _resolve run past the cache miss to the awaited fetch.
+        await pumpEventQueue();
+        expect(cubit.state, isA<VideoLinkPreviewLoading>());
+
+        // Close while the relay fetch is still in flight.
+        await cubit.close();
+
+        // Completing drives the post-await not-found path; without the
+        // isClosed guard this emits on the closed cubit and throws StateError.
+        completer.complete(null);
+        await pumpEventQueue();
+
+        expect(cubit.state, isA<VideoLinkPreviewLoading>());
+      });
     });
   });
 }
