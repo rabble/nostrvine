@@ -554,6 +554,23 @@ void main() {
           equals(ContentFilterPreference.warn),
         );
       });
+
+      test('adultPlaybackPreference stays hide until every configurable adult '
+          'category is opted in', () async {
+        await ageService.initialize();
+        await ageService.setAdultContentVerified(true);
+        await service.initialize();
+
+        await service.setPreference(
+          ContentLabel.nudity,
+          ContentFilterPreference.warn,
+        );
+
+        expect(
+          service.adultPlaybackPreference,
+          equals(ContentFilterPreference.hide),
+        );
+      });
     });
 
     group('adultPlaybackPreference', () {
@@ -568,7 +585,7 @@ void main() {
       });
 
       test(
-        'returns warn when visible adult categories are set to show',
+        'returns show when configurable adult categories are set to show',
         () async {
           await ageService.initialize();
           await ageService.setAdultContentVerified(true);
@@ -580,13 +597,14 @@ void main() {
 
           expect(
             service.adultPlaybackPreference,
-            equals(ContentFilterPreference.warn),
+            equals(ContentFilterPreference.show),
           );
         },
       );
 
       test(
-        'returns warn when adult categories have mixed preferences',
+        'returns warn when opted-in adult categories have mixed non-hide '
+        'preferences',
         () async {
           await ageService.initialize();
           await ageService.setAdultContentVerified(true);
@@ -608,6 +626,25 @@ void main() {
           expect(
             service.adultPlaybackPreference,
             equals(ContentFilterPreference.warn),
+          );
+        },
+      );
+
+      test(
+        'returns hide when any configurable adult category remains hidden',
+        () async {
+          await ageService.initialize();
+          await ageService.setAdultContentVerified(true);
+          await service.initialize();
+
+          await service.setPreference(
+            ContentLabel.nudity,
+            ContentFilterPreference.show,
+          );
+
+          expect(
+            service.adultPlaybackPreference,
+            equals(ContentFilterPreference.hide),
           );
         },
       );

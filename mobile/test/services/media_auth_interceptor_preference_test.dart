@@ -101,6 +101,58 @@ void main() {
     );
 
     test(
+      'handleUnauthorizedMedia blocks verified users after only a partial '
+      'adult-category opt-in',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+
+        final realAgeVerificationService = AgeVerificationService();
+        await realAgeVerificationService.initialize();
+        await realAgeVerificationService.setAdultContentVerified(true);
+
+        final realContentFilterService = ContentFilterService(
+          ageVerificationService: realAgeVerificationService,
+        );
+        await realContentFilterService.initialize();
+        await realContentFilterService.setPreference(
+          ContentLabel.nudity,
+          ContentFilterPreference.warn,
+        );
+
+        final interceptor = MediaAuthInterceptor(
+          ageVerificationService: realAgeVerificationService,
+          contentFilterService: realContentFilterService,
+          mediaViewerAuthService: mockMediaViewerAuthService,
+        );
+
+        when(
+          () => mockMediaViewerAuthService.canCreateHeaders,
+        ).thenReturn(true);
+
+        expect(
+          realContentFilterService.adultPlaybackPreference,
+          ContentFilterPreference.hide,
+        );
+        expect(interceptor.shouldAutoAuthorizeAgeRestrictedMedia, isFalse);
+
+        final result = await interceptor.handleUnauthorizedMedia(
+          context: mockContext,
+          sha256Hash: 'abc123',
+          category: 'nudity',
+        );
+
+        expect(result, isA<ViewerAuthBlockedByPreference>());
+        verifyNever(
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        );
+      },
+    );
+
+    test(
       'handleUnauthorizedMedia creates auth headers after an explicit '
       'per-category opt-in',
       () async {

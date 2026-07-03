@@ -48,6 +48,14 @@ class ContentFilterService extends ChangeNotifier {
     ContentLabel.porn,
   };
 
+  /// Adult categories the user can actually opt into for generic protected
+  /// media playback. [ContentLabel.porn] stays in [adultCategories] so label
+  /// filtering always hides it, but it is not a settings toggle.
+  static const Set<ContentLabel> configurableAdultCategories = {
+    ContentLabel.nudity,
+    ContentLabel.sexual,
+  };
+
   /// Visible categories locked to hide unless the user is age-verified.
   static const Set<ContentLabel> ageRestrictedCategories = {
     ...adultCategories,
@@ -256,13 +264,17 @@ class ContentFilterService extends ChangeNotifier {
   /// preference override the current settings UI, derive a single playback
   /// policy from the new per-category source of truth:
   ///
-  /// - all `hide` -> verified users should be blocked
-  /// - all `show` -> verified users can auto-allow
-  /// - any mixed state -> require an explicit retry/confirmation path
+  /// - any configurable adult category at `hide` -> verified users are blocked
+  /// - all configurable adult categories at `show` -> verified users can
+  ///   auto-allow
+  /// - any remaining mixed state -> require an explicit retry/confirmation path
   ContentFilterPreference get adultPlaybackPreference {
-    final preferences = adultCategories.map(getPreference).toSet();
-    if (preferences.length == 1) {
-      return preferences.single;
+    final preferences = configurableAdultCategories.map(getPreference).toSet();
+    if (preferences.contains(ContentFilterPreference.hide)) {
+      return ContentFilterPreference.hide;
+    }
+    if (preferences.every((pref) => pref == ContentFilterPreference.show)) {
+      return ContentFilterPreference.show;
     }
     return ContentFilterPreference.warn;
   }
