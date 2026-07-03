@@ -23,7 +23,13 @@ import 'package:openvine/l10n/l10n.dart';
 /// bar height. Visibility is owned by the parent screen, which gates on
 /// "active video present" and "user signed in".
 class InlineCommentComposerBar extends StatefulWidget {
-  const InlineCommentComposerBar({super.key});
+  const InlineCommentComposerBar({super.key, this.onFocusChanged});
+
+  /// Notifies the parent screen when this composer gains/loses focus, so it
+  /// can drive `Scaffold.resizeToAvoidBottomInset` only while THIS field is
+  /// focused — the reel must not resize (and jank) for a keyboard owned by a
+  /// modal on top (e.g. the share sheet). See [PooledFullscreenVideoFeedScreen].
+  final ValueChanged<bool>? onFocusChanged;
 
   @override
   State<InlineCommentComposerBar> createState() =>
@@ -48,6 +54,7 @@ class _InlineCommentComposerBarState extends State<InlineCommentComposerBar> {
   void initState() {
     super.initState();
     _controller.addListener(_handleTextChanged);
+    _focusNode.addListener(_handleFocusChanged);
   }
 
   @override
@@ -55,8 +62,14 @@ class _InlineCommentComposerBarState extends State<InlineCommentComposerBar> {
     _controller
       ..removeListener(_handleTextChanged)
       ..dispose();
-    _focusNode.dispose();
+    _focusNode
+      ..removeListener(_handleFocusChanged)
+      ..dispose();
     super.dispose();
+  }
+
+  void _handleFocusChanged() {
+    widget.onFocusChanged?.call(_focusNode.hasFocus);
   }
 
   void _handleTextChanged() {

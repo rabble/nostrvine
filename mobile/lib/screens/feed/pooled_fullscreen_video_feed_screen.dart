@@ -353,6 +353,19 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   /// pauses so the user can type without the video playing under the keyboard.
   bool _replyComposerFocused = false;
 
+  /// Whether the inline comment composer is focused.
+  bool _inlineComposerFocused = false;
+
+  /// Whether one of THIS screen's own bottom composers (inline comment or DM
+  /// reply) currently holds focus. Drives `resizeToAvoidBottomInset`: we only
+  /// want the reel to shrink for a keyboard we opened. A keyboard opened by a
+  /// modal on top — the share sheet's message field lives on the ROOT
+  /// navigator while this feed sits on a nested one, so `ModalRoute.isCurrent`
+  /// never flips — must NOT resize the reel, which re-lays-out the full-screen
+  /// video + overlay and janks badly on older devices (Galaxy S10, #5758).
+  bool get _ownComposerFocused =>
+      _replyComposerFocused || _inlineComposerFocused;
+
   /// Emoji currently being animated by the full-screen reaction overlay (null
   /// when idle). [_reactionNonce] remounts the overlay so repeated taps replay.
   String? _reactionEmoji;
@@ -671,10 +684,12 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               // user. The bar lives in the body — NOT in
               // `Scaffold.bottomNavigationBar` — because Scaffold pins
               // bottomNavigationBar to `size.height - barHeight` and does
-              // not push it above the keyboard. Putting the bar inside
-              // the body lets Scaffold's default `resizeToAvoidBottomInset`
-              // shrink the body when the keyboard opens, which slides the
-              // bar up with it. The feed's MediaQuery is intentionally
+              // not push it above the keyboard. Putting the bar inside the
+              // body lets `resizeToAvoidBottomInset` shrink the body when the
+              // keyboard opens, which slides the bar up with it — which is
+              // why that flag is gated on [_ownComposerFocused] (true while
+              // this bar or the DM reply bar is focused). The feed's
+              // MediaQuery is intentionally
               // left untouched: the home feed's overlays sit at
               // `bottom: 20 + viewPadding.bottom (= 34) = 54` above the
               // nav bar, and the fullscreen overlays use the same formula
@@ -723,17 +738,14 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               );
 
               return Scaffold(
-                // Keep resizing for our OWN bottom composers (inline comment
-                // bar, DM reply bar) while this feed is the topmost route, but
-                // stop resizing when a modal is on top (e.g. the share sheet's
-                // message composer). The modal lifts itself above the keyboard;
-                // letting this Scaffold also shrink re-lays-out the full-screen
-                // reel + overlay every keyboard frame — very laggy on older
-                // devices (Galaxy S10, #5758). isCurrent flips reactively when
-                // the modal pushes/pops, so the composer behaviour above is
-                // unchanged.
-                resizeToAvoidBottomInset:
-                    ModalRoute.of(context)?.isCurrent ?? true,
+                // Only resize for a keyboard that one of OUR OWN bottom
+                // composers opened (inline comment bar, DM reply bar). A
+                // keyboard owned by a modal on top — most importantly the
+                // share sheet's message field — must NOT shrink this Scaffold,
+                // because that re-lays-out the full-screen reel + overlay every
+                // keyboard frame and janks on older devices (#5758). See
+                // [_ownComposerFocused].
+                resizeToAvoidBottomInset: _ownComposerFocused,
                 // Paint the Scaffold with [VineTheme.surfaceBackground]
                 // (`#00150D`, the same green the comment bar uses).
                 // This is what shows wherever the Scaffold body leaks
@@ -852,7 +864,17 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                             ],
                           ),
                         ),
-                        if (showCommentBar) const InlineCommentComposerBar(),
+                        if (showCommentBar)
+                          InlineCommentComposerBar(
+                            onFocusChanged: (focused) {
+                              if (mounted &&
+                                  focused != _inlineComposerFocused) {
+                                setState(
+                                  () => _inlineComposerFocused = focused,
+                                );
+                              }
+                            },
+                          ),
                         if (showDmReplyBar)
                           ReelReplyBridge(
                             setComposerFocused: (focused) {
