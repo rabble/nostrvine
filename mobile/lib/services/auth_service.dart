@@ -39,9 +39,6 @@ export 'package:openvine/models/authentication_source.dart';
 export 'package:openvine/services/auth/relay_discovery_orchestrator.dart'
     show BootstrapRelayListCallback, UserRelaysDiscoveredCallback;
 
-// Key for persisted authentication source
-const _kAuthSourceKey = 'authentication_source';
-
 // Key for the last-used account npub (used to restore the correct identity on restart)
 const _kLastUsedNpubKey = 'last_used_npub';
 
@@ -1367,10 +1364,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   Future<AuthenticationSource> _loadAuthSource() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_kAuthSourceKey);
+      final raw = prefs.getString(kAuthenticationSourceKey);
       final authSource = AuthenticationSource.fromCode(raw);
       Log.info(
-        'Loaded $_kAuthSourceKey as $authSource',
+        'Loaded $kAuthenticationSourceKey as $authSource',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -1434,7 +1431,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
       // Set the auth source so initialize() picks the right path
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_kAuthSourceKey, source.code);
+      await prefs.setString(kAuthenticationSourceKey, source.code);
 
       Log.info(
         'Restored signer info for $pubkeyHex (source=${source.name})',
@@ -3456,7 +3453,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       );
 
       _authSource = AuthenticationSource.none;
-      await prefs.setString(_kAuthSourceKey, AuthenticationSource.none.code);
+      await prefs.setString(
+        kAuthenticationSourceKey,
+        AuthenticationSource.none.code,
+      );
       await prefs.remove(_kLastUsedNpubKey);
 
       if (restorableAccounts.isEmpty) {
@@ -3487,7 +3487,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         category: LogCategory.auth,
       );
       _authSource = AuthenticationSource.none;
-      await prefs.setString(_kAuthSourceKey, AuthenticationSource.none.code);
+      await prefs.setString(
+        kAuthenticationSourceKey,
+        AuthenticationSource.none.code,
+      );
       await prefs.remove(_kLastUsedNpubKey);
       await _knownAccounts.persist(const <KnownAccount>[]);
     }
@@ -4053,7 +4056,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // visible to other accounts.
       await _userDataCleanupService.claimLegacyRows(keyContainer.publicKeyHex);
 
-      await prefs.setString(_kAuthSourceKey, source.code);
+      await prefs.setString(kAuthenticationSourceKey, source.code);
 
       await prefs.setString(_kLastUsedNpubKey, keyContainer.npub);
 

@@ -1,3 +1,8 @@
+/// SharedPreferences key under which the current session's
+/// [AuthenticationSource] `code` is persisted, so the correct sign-in method
+/// can be restored at startup.
+const kAuthenticationSourceKey = 'authentication_source';
+
 /// Source of authentication used to restore session at startup
 enum AuthenticationSource {
   none('none'),

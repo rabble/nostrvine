@@ -15,12 +15,6 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-// Mirrors the facade's `authentication_source` SharedPreferences key; the
-// legacy migration reads it to recover the pre-multi-account session. Kept in
-// sync with `_kAuthSourceKey` in auth_service.dart — both pin the same literal,
-// which the multi_account suite asserts.
-const _kAuthSourceKey = 'authentication_source';
-
 /// Owns the persisted "known accounts" registry that backs the multi-account
 /// welcome-screen picker: reading/writing [kKnownAccountsKey], the one-time
 /// legacy migration, add/update/remove, and the restorable-account filter.
@@ -102,7 +96,7 @@ class KnownAccountsRegistry {
       category: LogCategory.auth,
     );
 
-    final rawAuthSource = prefs.getString(_kAuthSourceKey);
+    final rawAuthSource = prefs.getString(kAuthenticationSourceKey);
     final source = AuthenticationSource.fromCode(rawAuthSource);
     Log.info(
       'Legacy migration: rawAuthSource=$rawAuthSource, '
