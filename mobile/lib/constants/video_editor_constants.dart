@@ -348,6 +348,15 @@ class VideoEditorConstants {
     ),
   ];
 
+  /// Placeholder for [TuneAdjustmentItem.icon].
+  ///
+  /// The tune editor's built-in chrome (app bar + bottom bar) is fully replaced
+  /// by our custom text-chip bar, so the required `icon` field is never
+  /// rendered. A single placeholder satisfies it without adding raw Material
+  /// `Icons.*` — the DivineIcon ratchet forbids them here and DivineIcon
+  /// exposes no `IconData`.
+  static const IconData _unusedTuneIcon = IconData(0);
+
   /// Tune adjustment options exposed by the tune sub-editor.
   ///
   /// Mirrors pro_image_editor's `tunePresets` (which is not part of the
@@ -355,11 +364,11 @@ class VideoEditorConstants {
   /// config and the custom bottom bar, guaranteeing the `TuneEditorState`'s
   /// `selectedIndex` maps to the same adjustment our UI shows. The `icon` /
   /// `label` fields are never rendered — the custom bar draws its own
-  /// localized text chips — so their values only matter as fallbacks.
+  /// localized text chips (see [_unusedTuneIcon]).
   static const List<TuneAdjustmentItem> tuneAdjustments = [
     TuneAdjustmentItem(
       id: 'brightness',
-      icon: Icons.brightness_6_rounded,
+      icon: _unusedTuneIcon,
       label: 'Brightness',
       min: -0.5,
       max: 0.5,
@@ -368,7 +377,7 @@ class VideoEditorConstants {
     ),
     TuneAdjustmentItem(
       id: 'contrast',
-      icon: Icons.contrast_rounded,
+      icon: _unusedTuneIcon,
       label: 'Contrast',
       min: -0.5,
       max: 0.5,
@@ -377,7 +386,7 @@ class VideoEditorConstants {
     ),
     TuneAdjustmentItem(
       id: 'saturation',
-      icon: Icons.water_drop_rounded,
+      icon: _unusedTuneIcon,
       label: 'Saturation',
       min: -0.5,
       max: 0.5,
@@ -386,7 +395,7 @@ class VideoEditorConstants {
     ),
     TuneAdjustmentItem(
       id: 'exposure',
-      icon: Icons.exposure_rounded,
+      icon: _unusedTuneIcon,
       label: 'Exposure',
       min: -1,
       max: 1,
@@ -394,7 +403,7 @@ class VideoEditorConstants {
     ),
     TuneAdjustmentItem(
       id: 'hue',
-      icon: Icons.colorize_rounded,
+      icon: _unusedTuneIcon,
       label: 'Hue',
       min: -0.25,
       max: 0.25,
@@ -404,7 +413,7 @@ class VideoEditorConstants {
     ),
     TuneAdjustmentItem(
       id: 'temperature',
-      icon: Icons.thermostat_rounded,
+      icon: _unusedTuneIcon,
       label: 'Temperature',
       min: -0.5,
       max: 0.5,
@@ -413,7 +422,7 @@ class VideoEditorConstants {
     ),
     TuneAdjustmentItem(
       id: 'tint',
-      icon: Icons.invert_colors_rounded,
+      icon: _unusedTuneIcon,
       label: 'Tint',
       min: -0.5,
       max: 0.5,
@@ -422,7 +431,7 @@ class VideoEditorConstants {
     ),
     TuneAdjustmentItem(
       id: 'fade',
-      icon: Icons.gradient_rounded,
+      icon: _unusedTuneIcon,
       label: 'Fade',
       min: -1,
       max: 1,
