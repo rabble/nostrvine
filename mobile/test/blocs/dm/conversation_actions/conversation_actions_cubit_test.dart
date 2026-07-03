@@ -1,6 +1,8 @@
 // ABOUTME: Tests for ConversationActionsCubit — report, block, remove.
 // ABOUTME: Verifies service delegation, return values, and error handling.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
@@ -46,6 +48,25 @@ void main() {
       dmRepository: mockDmRepo,
       currentUserPubkey: currentUserPubkey,
     );
+
+    test('does not emit or throw when closed mid-block', () async {
+      final completer = Completer<void>();
+      when(
+        () => mockBlocklistRepository.blockUser(
+          pubkey,
+          ourPubkey: currentUserPubkey,
+        ),
+      ).thenAnswer((_) => completer.future);
+
+      final cubit = createCubit();
+      final future = cubit.blockUser(pubkey);
+      // processing emitted synchronously; close before the block resolves.
+      await cubit.close();
+      completer.complete();
+      await expectLater(future, completes);
+
+      expect(cubit.state.status, ConversationActionsStatus.processing);
+    });
 
     test('initial state is idle', () {
       final cubit = createCubit();

@@ -76,12 +76,14 @@ class ConversationMuteCubit extends Cubit<ConversationMuteState> {
       // SharedPreferences IO failures are expected. Per
       // .claude/rules/error_handling.md they are NOT Reportable.
       addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          status: ConversationMuteStatus.error,
-          mutedIds: previousIds,
-        ),
-      );
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            status: ConversationMuteStatus.error,
+            mutedIds: previousIds,
+          ),
+        );
+      }
     }
 
     Log.debug(

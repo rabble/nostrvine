@@ -1,6 +1,8 @@
 // ABOUTME: Tests for MessageRequestActionsCubit - decline, mark-all-read,
 // ABOUTME: and remove-all actions for message requests.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,6 +26,22 @@ void main() {
 
     MessageRequestActionsCubit createCubit() =>
         MessageRequestActionsCubit(dmRepository: mockDmRepository);
+
+    test('does not emit or throw when closed mid-decline', () async {
+      final completer = Completer<void>();
+      when(
+        () => mockDmRepository.removeConversation(_testConversationId1),
+      ).thenAnswer((_) => completer.future);
+
+      final cubit = createCubit();
+      final future = cubit.declineRequest(_testConversationId1);
+      // processing emitted synchronously; close before the delete resolves.
+      await cubit.close();
+      completer.complete();
+      await expectLater(future, completes);
+
+      expect(cubit.state.status, MessageRequestActionsStatus.processing);
+    });
 
     test('initial state has idle status', () {
       final cubit = createCubit();

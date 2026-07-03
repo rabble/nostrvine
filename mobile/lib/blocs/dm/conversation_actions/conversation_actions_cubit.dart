@@ -61,14 +61,18 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
         reason: ContentFilterReason.other,
         details: 'Reported from DM conversation',
       );
-      emit(state.copyWith(status: ConversationActionsStatus.idle));
+      if (!isClosed) {
+        emit(state.copyWith(status: ConversationActionsStatus.idle));
+      }
       return result.success;
     } catch (e, stackTrace) {
       // `ContentReportingService.reportUser` returns `ReportResult.failure`
       // for expected publish/auth problems. Any throw escaping here is
       // unexpected, so surface it as Reportable.
       addError(Reportable(e, context: 'reportUser'), stackTrace);
-      emit(state.copyWith(status: ConversationActionsStatus.idle));
+      if (!isClosed) {
+        emit(state.copyWith(status: ConversationActionsStatus.idle));
+      }
       return false;
     }
   }
@@ -84,12 +88,16 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
         pubkey,
         ourPubkey: _currentUserPubkey,
       );
-      emit(state.copyWith(status: ConversationActionsStatus.success));
+      if (!isClosed) {
+        emit(state.copyWith(status: ConversationActionsStatus.success));
+      }
     } catch (e, stackTrace) {
       // Blocklist IO / publish failures are expected. Per
       // .claude/rules/error_handling.md they are NOT Reportable.
       addError(e, stackTrace);
-      emit(state.copyWith(status: ConversationActionsStatus.failure));
+      if (!isClosed) {
+        emit(state.copyWith(status: ConversationActionsStatus.failure));
+      }
     }
   }
 
@@ -98,12 +106,16 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
     emit(state.copyWith(status: ConversationActionsStatus.processing));
     try {
       await _blocklistRepository.unblockUser(pubkey);
-      emit(state.copyWith(status: ConversationActionsStatus.success));
+      if (!isClosed) {
+        emit(state.copyWith(status: ConversationActionsStatus.success));
+      }
     } catch (e, stackTrace) {
       // Blocklist IO / publish failures are expected. Per
       // .claude/rules/error_handling.md they are NOT Reportable.
       addError(e, stackTrace);
-      emit(state.copyWith(status: ConversationActionsStatus.failure));
+      if (!isClosed) {
+        emit(state.copyWith(status: ConversationActionsStatus.failure));
+      }
     }
   }
 
@@ -114,13 +126,17 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
     emit(state.copyWith(status: ConversationActionsStatus.processing));
     try {
       await _dmRepository.removeConversation(conversationId);
-      emit(state.copyWith(status: ConversationActionsStatus.success));
+      if (!isClosed) {
+        emit(state.copyWith(status: ConversationActionsStatus.success));
+      }
       return true;
     } catch (e, stackTrace) {
       // Drift write failures are expected. Per
       // .claude/rules/error_handling.md they are NOT Reportable.
       addError(e, stackTrace);
-      emit(state.copyWith(status: ConversationActionsStatus.failure));
+      if (!isClosed) {
+        emit(state.copyWith(status: ConversationActionsStatus.failure));
+      }
       return false;
     }
   }

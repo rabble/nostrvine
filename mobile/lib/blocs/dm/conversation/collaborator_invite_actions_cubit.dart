@@ -125,14 +125,16 @@ class CollaboratorInviteActionsCubit
       state: inviteState,
     );
 
-    emit(
-      state.copyWith(
-        inviteStates: {
-          ...state.inviteStates,
-          CollaboratorInviteActionsState._keyFor(invite): inviteState,
-        },
-      ),
-    );
+    if (!isClosed) {
+      emit(
+        state.copyWith(
+          inviteStates: {
+            ...state.inviteStates,
+            CollaboratorInviteActionsState._keyFor(invite): inviteState,
+          },
+        ),
+      );
+    }
   }
 
   bool _isCurrentUserInviteCreator(CollaboratorInvite invite) =>

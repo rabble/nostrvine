@@ -85,13 +85,15 @@ class InlineReelReplyCubit extends Cubit<InlineReelReplyState> {
               );
         ok = result.success;
       }
-      emit(
-        state.copyWith(
-          status: ok
-              ? InlineReelReplyStatus.success
-              : InlineReelReplyStatus.failure,
-        ),
-      );
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            status: ok
+                ? InlineReelReplyStatus.success
+                : InlineReelReplyStatus.failure,
+          ),
+        );
+      }
     } catch (error, stackTrace) {
       Log.error(
         'Reel reply send failed',
@@ -111,7 +113,9 @@ class InlineReelReplyCubit extends Cubit<InlineReelReplyState> {
       } else {
         addError(error, stackTrace);
       }
-      emit(state.copyWith(status: InlineReelReplyStatus.failure));
+      if (!isClosed) {
+        emit(state.copyWith(status: InlineReelReplyStatus.failure));
+      }
     }
   }
 

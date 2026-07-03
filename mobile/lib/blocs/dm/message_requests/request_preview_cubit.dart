@@ -75,19 +75,23 @@ class RequestPreviewCubit extends Cubit<RequestPreviewState> {
           ? _initialParticipantPubkeys
           : await _resolveParticipants();
 
-      emit(
-        state.copyWith(
-          status: RequestPreviewStatus.loaded,
-          messageCount: messageCount,
-          participantPubkeys: pubkeys,
-          messages: messages,
-        ),
-      );
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            status: RequestPreviewStatus.loaded,
+            messageCount: messageCount,
+            participantPubkeys: pubkeys,
+            messages: messages,
+          ),
+        );
+      }
     } catch (e, stackTrace) {
       // Drift read failures are expected. Per
       // .claude/rules/error_handling.md they are NOT Reportable.
       addError(e, stackTrace);
-      emit(state.copyWith(status: RequestPreviewStatus.error));
+      if (!isClosed) {
+        emit(state.copyWith(status: RequestPreviewStatus.error));
+      }
     }
   }
 

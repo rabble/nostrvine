@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for ConversationMuteCubit.
 // ABOUTME: Verifies toggle, persistence load, and state transitions.
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
@@ -44,6 +45,22 @@ void main() {
 
     ConversationMuteCubit buildCubit() =>
         ConversationMuteCubit(prefs: mockPrefs);
+
+    test('does not emit or throw when closed mid-save failure', () async {
+      final completer = Completer<bool>();
+      when(
+        () => mockPrefs.setString(any(), any()),
+      ).thenAnswer((_) => completer.future);
+
+      final cubit = buildCubit();
+      final future = cubit.toggleMute(conversationId);
+      // Optimistic mute emitted synchronously; close before the save resolves.
+      await cubit.close();
+      completer.completeError(Exception('disk full'));
+      await expectLater(future, completes);
+
+      expect(cubit.state.status, ConversationMuteStatus.success);
+    });
 
     test('initial state has empty mutedIds and idle status', () {
       final cubit = buildCubit();

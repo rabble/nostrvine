@@ -1,5 +1,7 @@
 // ABOUTME: Cubit tests for InlineReelReplyCubit (in-player reel text replies).
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -87,6 +89,35 @@ void main() {
     late _MockDmRepository repo;
 
     setUp(() => repo = _MockDmRepository());
+
+    test('does not emit or throw when closed mid-send', () async {
+      final completer = Completer<NIP17SendResult>();
+      when(
+        () => repo.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).thenAnswer((_) => completer.future);
+
+      final cubit = InlineReelReplyCubit(
+        dmRepository: repo,
+        replyContext: oneToOne(),
+      );
+      final future = cubit.submit('hi');
+      // sending emitted synchronously; close before the send resolves.
+      await cubit.close();
+      completer.complete(
+        NIP17SendResult.success(
+          rumorEventId: 'r',
+          messageEventId: 'g',
+          recipientPubkey: _peer,
+        ),
+      );
+      await expectLater(future, completes);
+
+      expect(cubit.state.status, InlineReelReplyStatus.sending);
+    });
 
     void stubSendSuccess() {
       when(

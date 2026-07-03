@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for RequestPreviewCubit.
 // ABOUTME: Verifies message count loading and participant pubkey resolution.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -55,6 +57,24 @@ void main() {
         initialParticipantPubkeys: initialParticipantPubkeys,
       );
     }
+
+    test('does not emit or throw when closed mid-load', () async {
+      final completer = Completer<int>();
+      when(
+        () => mockDmRepository.countMessagesInConversation(any()),
+      ).thenAnswer((_) => completer.future);
+      when(
+        () => mockDmRepository.getMessages(any(), limit: any(named: 'limit')),
+      ).thenAnswer((_) async => const []);
+
+      final cubit = buildCubit(initialParticipantPubkeys: [otherPubkey]);
+      final future = cubit.load();
+      await cubit.close();
+      completer.complete(5);
+      await expectLater(future, completes);
+
+      expect(cubit.state.status, RequestPreviewStatus.loading);
+    });
 
     test('initial state is loading with empty data', () {
       final cubit = buildCubit();

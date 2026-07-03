@@ -1,6 +1,8 @@
 // ABOUTME: Tests collaborator invite accept/ignore UI action state.
 // ABOUTME: Verifies accept publishes while ignore stays local-only.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -70,6 +72,26 @@ void main() {
   }
 
   group(CollaboratorInviteActionsCubit, () {
+    test('does not emit or throw when closed mid-ignore', () async {
+      final completer = Completer<void>();
+      when(
+        () => store.setState(
+          videoAddress: any(named: 'videoAddress'),
+          creatorPubkey: any(named: 'creatorPubkey'),
+          collaboratorPubkey: any(named: 'collaboratorPubkey'),
+          state: any(named: 'state'),
+        ),
+      ).thenAnswer((_) => completer.future);
+
+      final cubit = buildCubit();
+      final future = cubit.ignoreInvite(invite);
+      await cubit.close();
+      completer.complete();
+      await expectLater(future, completes);
+
+      expect(cubit.state.stateFor(invite), CollaboratorInviteState.pending);
+    });
+
     test('loads persisted invite state', () {
       when(
         () => store.getState(
