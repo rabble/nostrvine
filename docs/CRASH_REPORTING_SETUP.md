@@ -15,7 +15,7 @@ reporting. The active Firebase project is **`openvine-co`** (bundle id
 |----------|-----------------|---------------|--------|
 | iOS | `openvine-co` — `firebase_options.dart`, `ios/Runner/GoogleService-Info.plist` | ✅ dSYMs via Codemagic | Production |
 | macOS | `openvine-co` — `macos/Runner/GoogleService-Info.plist` | — | Production (reuses the iOS appId — see note below) |
-| Android | `openvine-co` — `android/app/google-services.json` | ✅ release mapping/native symbol upload via Gradle | `firebase_options.dart` Android options are still being reconciled in #3343 |
+| Android | `openvine-co` — `android/app/google-services.json` | ⚠️ R8 mapping upload wired via Gradle; native-symbol upload configured but unverified | `firebase_options.dart` Android options are still being reconciled in #3343 |
 | Web / Windows / Linux | none | — | Not supported; init is gated off |
 
 `isFirebaseSupported` (`mobile/lib/utils/platform_support.dart`) is a
@@ -31,8 +31,9 @@ currently initialized only when startup passes both `isFirebaseSupported` and
 > `DefaultFirebaseOptions.android` is still a placeholder, so
 > `Firebase.initializeApp` does not yet initialise Android against the real
 > project. The Crashlytics Gradle plugin is already applied and release builds
-> enable R8 plus mapping/native symbol upload. Reconciling the Android options is
-> tracked in #3343.
+> now enable R8, so an obfuscation mapping file is produced and uploaded;
+> native-symbol upload is configured but not yet verified end-to-end.
+> Reconciling the Android options is tracked in #3343.
 
 ## Configuration files
 

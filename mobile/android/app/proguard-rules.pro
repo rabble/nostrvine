@@ -15,6 +15,11 @@
 -keep class org.witness.proofmode.** { *; }
 -keep class com.eternitywall.** { *; }
 
+# BouncyCastle JCA provider (ProofMode PGP signing, CSR/cert generation) loads algorithm
+# classes by name via reflection; without this R8 strips them -> runtime crypto failures.
+-keep class org.bouncycastle.** { *; }
+-dontwarn org.bouncycastle.**
+
 # Keep Kotlin metadata and reflection (required for platform channels)
 -keep class kotlin.Metadata { *; }
 -keepclassmembers class * {
@@ -50,9 +55,11 @@
 -keep class io.flutter.plugins.** { *; }
 
 # GeneratedPluginRegistrant (auto-registration of Flutter plugins)
+# Keep: R8 previously stripped this, breaking plugin registration in release builds.
 -keep class io.flutter.plugins.GeneratedPluginRegistrant { *; }
 
 # SharedPreferences (used in router redirect for TOS check on app startup)
+# Keep: R8 previously stripped this, hanging the startup router redirect forever.
 -keepclassmembers class * implements android.content.SharedPreferences {
     *;
 }
