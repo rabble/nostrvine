@@ -341,5 +341,67 @@ void main() {
         },
       );
     });
+
+    group('eviction', () {
+      RenderedSpeedClip seedFile(String name) {
+        final file = File(p.join(tempDir.path, 'tmp', 'speed_clips', name))
+          ..createSync(recursive: true)
+          ..writeAsStringSync('body');
+        return RenderedSpeedClip(
+          path: file.path,
+          duration: const Duration(milliseconds: 1500),
+        );
+      }
+
+      test('evicts the least-recently-used body — file and cache entry '
+          'together — once the cap is exceeded', () {
+        final service = ClipSpeedRenderService();
+        final clips = <DivineVideoClip>[];
+        final rendereds = <RenderedSpeedClip>[];
+        // Seed one past the cap (33 entries): the oldest must be evicted.
+        for (var i = 0; i <= 32; i++) {
+          final c = clip('a$i', playbackSpeed: 2);
+          final r = seedFile('a$i.mp4');
+          clips.add(c);
+          rendereds.add(r);
+          service.cacheForTest(c, r);
+        }
+
+        // Evicted entries are dropped from the in-memory cache AND from disk,
+        // so a lookup can never resolve to a dead path.
+        expect(service.cached(clips.first), isNull);
+        expect(File(rendereds.first.path).existsSync(), isFalse);
+        // The most-recent entry survives with its file intact.
+        expect(service.cached(clips.last), same(rendereds.last));
+        expect(File(rendereds.last.path).existsSync(), isTrue);
+      });
+
+      test('promotes on lookup so an in-use body is not the one evicted', () {
+        final service = ClipSpeedRenderService();
+        final clips = <DivineVideoClip>[];
+        final rendereds = <RenderedSpeedClip>[];
+        for (var i = 0; i < 32; i++) {
+          final c = clip('a$i', playbackSpeed: 2);
+          final r = seedFile('a$i.mp4');
+          clips.add(c);
+          rendereds.add(r);
+          service.cacheForTest(c, r);
+        }
+
+        // Touch the oldest so it becomes most-recently-used.
+        expect(service.cached(clips.first), same(rendereds.first));
+
+        // One more push over the cap evicts the now-oldest (a1), not the
+        // promoted a0.
+        service.cacheForTest(
+          clip('a32', playbackSpeed: 2),
+          seedFile('a32.mp4'),
+        );
+
+        expect(service.cached(clips.first), same(rendereds.first));
+        expect(service.cached(clips[1]), isNull);
+        expect(File(rendereds[1].path).existsSync(), isFalse);
+      });
+    });
   });
 }

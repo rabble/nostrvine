@@ -554,7 +554,25 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   /// clip, trim or speed change. The preview keeps playing the instant
   /// live-retimed clip until the swap lands.
   void _ensureSpeedClipsRendered(List<DivineVideoClip> clips) {
-    for (final clip in clips) {
+    final clamped = clampTransitions(clips);
+    for (var i = 0; i < clips.length; i++) {
+      final clip = clips[i];
+      // Skip a clip whose body is consumed by a rendered seam on either side:
+      // it stays on live retiming (the seam already bakes its speed), so its
+      // whole-body speed render would never be spliced in — matching the gate
+      // in [buildSeamAwarePlayerClips]. Avoids a native encode the player can't
+      // use. Until the seam lands the clip isn't consumed, so it still renders.
+      final incoming = i > 0 ? clamped[clips[i - 1].id] : null;
+      final consumedByIncoming =
+          incoming != null &&
+          _seamService.cached(clips[i - 1], clip, incoming) != null;
+      final outgoing = clamped[clip.id];
+      final consumedByOutgoing =
+          i + 1 < clips.length &&
+          outgoing != null &&
+          _seamService.cached(clip, clips[i + 1], outgoing) != null;
+      if (consumedByIncoming || consumedByOutgoing) continue;
+
       if (_speedRenderService.cached(clip) != null) continue;
       if (_speedRenderService.isRendering(clip)) continue;
       _speedRenderService.render(clip).then((rendered) {
@@ -617,11 +635,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     final ownerEpoch = _seekEpoch;
     try {
       final loaded = await _setClipsSafely(_videoPlayer, [
-        ...buildSeamAwarePlayerClips(
-          clips,
-          _seamService,
-          speedRenders: _speedRenderService,
-        ),
+        ..._buildPlayerClips(clips),
       ], startPosition: _timelineToPlayer(timelineStartPosition));
       if (!loaded) return;
       // Only pin the restored position if no newer swap took over during the
@@ -644,32 +658,54 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   int? _cachedSeamTimelineClipsHash;
   int? _cachedSeamTimelineVersion;
 
-  /// Returns the current [SeamTimeline], rebuilding only when the clips change
-  /// identity or either derived cache mutates — the seam cache
-  /// ([TransitionSeamRenderService.version]) or the speed-render cache
-  /// ([ClipSpeedRenderService.version]), since a landed speed body changes the
-  /// composite span the timeline maps.
+  /// Returns the current [SeamTimeline], rebuilding when the clips change
+  /// identity or the seam cache mutates ([TransitionSeamRenderService.version]).
+  ///
+  /// Deliberately **not** keyed on [ClipSpeedRenderService.version]: a landed
+  /// speed body must only shift the mapping once its file is actually spliced
+  /// into the player composition. Because a speed swap can be deferred while
+  /// playback runs (see [_resyncSpeedClipsWhenIdle]), keying on the cache
+  /// version would move the mapping ahead of the still-live-retimed player and
+  /// drift the playhead. Instead [_buildPlayerClips] refreshes this timeline
+  /// from the same snapshot it hands the player, so mapping and composition
+  /// always agree.
   SeamTimeline get _seamTimeline {
     final clips = ref.read(clipManagerProvider).clips;
     final clipsHash = Object.hashAll(clips);
-    final version = Object.hash(
-      _seamService.version,
-      _speedRenderService.version,
-    );
+    final version = _seamService.version;
     final cached = _cachedSeamTimeline;
     if (cached != null &&
         _cachedSeamTimelineClipsHash == clipsHash &&
         _cachedSeamTimelineVersion == version) {
       return cached;
     }
+    return _refreshSeamTimeline(clips);
+  }
+
+  /// Builds the preview player's clip list for [clips] (rendered seams + speed
+  /// bodies spliced in) and refreshes the memoized [SeamTimeline] from the same
+  /// cache snapshot, so the player↔editor position mapping always matches the
+  /// composition that was actually loaded — including a speed body that landed
+  /// while playing whose swap was deferred to the next pause.
+  List<VideoClip> _buildPlayerClips(List<DivineVideoClip> clips) {
+    final playerClips = buildSeamAwarePlayerClips(
+      clips,
+      _seamService,
+      speedRenders: _speedRenderService,
+    );
+    _refreshSeamTimeline(clips);
+    return playerClips;
+  }
+
+  SeamTimeline _refreshSeamTimeline(List<DivineVideoClip> clips) {
     final timeline = SeamTimeline(
       clips,
       _seamService,
       speedRenders: _speedRenderService,
     );
     _cachedSeamTimeline = timeline;
-    _cachedSeamTimelineClipsHash = clipsHash;
-    _cachedSeamTimelineVersion = version;
+    _cachedSeamTimelineClipsHash = Object.hashAll(clips);
+    _cachedSeamTimelineVersion = _seamService.version;
     return timeline;
   }
 
@@ -977,11 +1013,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     _pendingSeekTarget = currentPosition;
     unawaited(
       _setClipsSafely(_videoPlayer, [
-        ...buildSeamAwarePlayerClips(
-          clips,
-          _seamService,
-          speedRenders: _speedRenderService,
-        ),
+        ..._buildPlayerClips(clips),
       ], startPosition: _timelineToPlayer(currentPosition)),
     );
     _ensureSeamsRendered(clips);
@@ -1092,11 +1124,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     final loaded = await _setClipsSafely(
       player,
       [
-        ...buildSeamAwarePlayerClips(
-          clips,
-          _seamService,
-          speedRenders: _speedRenderService,
-        ),
+        ..._buildPlayerClips(clips),
       ],
       startPosition: startPosition != null && startPosition > Duration.zero
           ? _timelineToPlayer(startPosition)
@@ -1601,11 +1629,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         _pendingSeekTarget = currentPosition;
         unawaited(
           _setClipsSafely(_videoPlayer, [
-            ...buildSeamAwarePlayerClips(
-              clips,
-              _seamService,
-              speedRenders: _speedRenderService,
-            ),
+            ..._buildPlayerClips(clips),
           ], startPosition: _timelineToPlayer(currentPosition)),
         );
         _ensureSeamsRendered(clips);
@@ -1633,11 +1657,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         _pendingSeekTarget = currentPosition;
         unawaited(
           _setClipsSafely(_videoPlayer, [
-            ...buildSeamAwarePlayerClips(
-              clips,
-              _seamService,
-              speedRenders: _speedRenderService,
-            ),
+            ..._buildPlayerClips(clips),
           ], startPosition: _timelineToPlayer(currentPosition)),
         );
         _ensureSeamsRendered(clips);
@@ -1893,11 +1913,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
 
             try {
               final loaded = await _setClipsSafely(_videoPlayer, [
-                ...buildSeamAwarePlayerClips(
-                  state.clips,
-                  _seamService,
-                  speedRenders: _speedRenderService,
-                ),
+                ..._buildPlayerClips(state.clips),
               ], startPosition: _timelineToPlayer(currentPosition));
               if (!loaded) return;
 
@@ -1952,11 +1968,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
 
             try {
               final loaded = await _setClipsSafely(_videoPlayer, [
-                ...buildSeamAwarePlayerClips(
-                  state.clips,
-                  _seamService,
-                  speedRenders: _speedRenderService,
-                ),
+                ..._buildPlayerClips(state.clips),
               ], startPosition: _timelineToPlayer(startPosition));
               if (!loaded) return;
               if (mounted) {

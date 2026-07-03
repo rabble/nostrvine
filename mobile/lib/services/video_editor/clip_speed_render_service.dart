@@ -49,10 +49,20 @@ class ClipSpeedRenderService {
   bool isRendering(DivineVideoClip clip) => _inFlight.containsKey(_key(clip));
 
   /// The already-rendered speed body for [clip], or `null` if it is not rendered
-  /// yet or the clip plays at 1×. Pure cache lookup — never triggers a render.
+  /// yet or the clip plays at 1×. Never triggers a render.
   RenderedSpeedClip? cached(DivineVideoClip clip) {
     if (!_needsRender(clip)) return null;
-    return _cache[_key(clip)];
+    return _cachedLive(_key(clip));
+  }
+
+  /// Returns the cached body for [key], promoting it to most-recently-used so
+  /// the bounded LRU eviction ([_evictOverflow]) never drops a body that is
+  /// still in use.
+  RenderedSpeedClip? _cachedLive(String key) {
+    final entry = _cache.remove(key);
+    if (entry == null) return null;
+    _cache[key] = entry;
+    return entry;
   }
 
   /// Renders (or returns the cached / in-flight) normal-rate body for [clip].
@@ -60,7 +70,7 @@ class ClipSpeedRenderService {
   Future<RenderedSpeedClip?> render(DivineVideoClip clip) {
     if (!_needsRender(clip)) return Future<RenderedSpeedClip?>.value();
     final key = _key(clip);
-    final cached = _cache[key];
+    final cached = _cachedLive(key);
     if (cached != null) return Future<RenderedSpeedClip?>.value(cached);
     final inFlight = _inFlight[key];
     if (inFlight != null) return inFlight;
@@ -101,8 +111,7 @@ class ClipSpeedRenderService {
             await _deleteQuietly(existing.path);
             return null;
           }
-          _cache[key] = existing;
-          _version++;
+          _store(key, existing);
           return existing;
         }
       }
@@ -157,9 +166,7 @@ class ClipSpeedRenderService {
         await _deleteEmptyParent(rendered.path);
         return null;
       }
-      _cache[key] = rendered;
-      _version++;
-      await _evictOldCacheFiles(protectedPath: rendered.path);
+      _store(key, rendered);
       Log.info(
         '🎬 Speed body rendered: ${clip.id} @${clip.playbackSpeed}× '
         '→ ${rendered.duration.inMilliseconds}ms',
@@ -268,29 +275,23 @@ class ClipSpeedRenderService {
 
   static const _maxCachedFiles = 32;
 
-  Future<void> _evictOldCacheFiles({required String protectedPath}) async {
-    try {
-      final dir = File(protectedPath).parent;
-      if (!dir.existsSync()) return;
-      final files =
-          dir
-              .listSync()
-              .whereType<File>()
-              .where((file) => file.path.endsWith('.mp4'))
-              .toList()
-            ..sort(
-              (a, b) => a.statSync().modified.compareTo(b.statSync().modified),
-            );
-      var remainingCount = files.length;
-      if (remainingCount <= _maxCachedFiles) return;
-      for (final file in files) {
-        if (file.path == protectedPath) continue;
-        await _deleteQuietly(file.path);
-        remainingCount--;
-        if (remainingCount <= _maxCachedFiles) return;
-      }
-    } catch (_) {
-      // Best-effort bounded cache eviction.
+  /// Publishes [rendered] for [key] as the most-recently-used entry, bumps the
+  /// version, and evicts the least-recently-used bodies once the cache exceeds
+  /// [_maxCachedFiles]. Eviction removes the map entry **and** its file
+  /// together, so the in-memory cache and the on-disk files stay in lockstep
+  /// and a later lookup can never resolve to an evicted file.
+  void _store(String key, RenderedSpeedClip rendered) {
+    _cache.remove(key);
+    _cache[key] = rendered;
+    _version++;
+    _evictOverflow();
+  }
+
+  void _evictOverflow() {
+    while (_cache.length > _maxCachedFiles) {
+      final oldestKey = _cache.keys.first;
+      final evicted = _cache.remove(oldestKey);
+      if (evicted != null) _deleteCachedFilesSync([evicted]);
     }
   }
 
@@ -329,7 +330,6 @@ class ClipSpeedRenderService {
   /// without running the native render pipeline.
   @visibleForTesting
   void cacheForTest(DivineVideoClip clip, RenderedSpeedClip rendered) {
-    _cache[_key(clip)] = rendered;
-    _version++;
+    _store(_key(clip), rendered);
   }
 }
