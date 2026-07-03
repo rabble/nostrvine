@@ -251,6 +251,9 @@ class _VideoEditorTimelineClipStripState
       timestampOffset: Duration.zero,
       currentSourcePath: sourcePath,
     );
+    // The end half previews the un-trimmed source video (trimStart at the
+    // split point), so its seeds stay source-timed for now. The rendered
+    // file starts at zero, so the same shift is applied on path change.
     _thumbnails.seedFromSource(
       sourceClipId: split.sourceClipId,
       targetClipId: split.endClipId,
@@ -258,6 +261,8 @@ class _VideoEditorTimelineClipStripState
         start: split.absoluteSplitPosition,
         end: split.sourceDuration - split.sourceTrimEnd,
       ),
+      timestampOffset: Duration.zero,
+      rebaseOnPathChange: split.absoluteSplitPosition,
       currentSourcePath: endClip.video.file?.path ?? sourcePath,
     );
   }
