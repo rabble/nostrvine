@@ -3,7 +3,7 @@
   "assets/stickers/alert.svg": "Alerto",
   "assets/stickers/angry_cat.svg": "Galit na pusa",
   "assets/stickers/avocado.svg": "Abokado",
-  "assets/stickers/ballon_dog.svg": "Aso na lobo",
+  "assets/stickers/ballon_dog.svg": "Lobong aso",
   "assets/stickers/bicep.svg": "Bisep na kalamnan",
   "assets/stickers/blocked.svg": "Naka-block",
   "assets/stickers/boom.svg": "Boom na pagsabog",
@@ -20,7 +20,7 @@
   "assets/stickers/email.svg": "Email",
   "assets/stickers/espresso_martini.svg": "Espresso martini",
   "assets/stickers/finger_pointing.svg": "Nakaturong daliri",
-  "assets/stickers/floating_lilo.svg": "Lumulutang na lilo",
+  "assets/stickers/floating_lilo.svg": "Lumulutang na pool float",
   "assets/stickers/foam_finger.svg": "Foam na daliri",
   "assets/stickers/forgot_password.svg": "Nakalimutang password",
   "assets/stickers/forgot_password_alt.svg": "Nakalimutang password (alternatibo)",
@@ -60,7 +60,7 @@
   "assets/stickers/traffic_cone.svg": "Traffic cone",
   "assets/stickers/trail_sign.svg": "Trail sign",
   "assets/stickers/troll_face.svg": "Troll face",
-  "assets/stickers/under_construction_sign.svg": "Under construction sign",
+  "assets/stickers/under_construction_sign.svg": "Karatula ng konstruksyon",
   "assets/stickers/verified.svg": "Beripikado",
   "assets/stickers/videogame.svg": "Video game",
   "assets/stickers/video_camera.svg": "Video camera",
@@ -69,5 +69,5 @@
   "assets/stickers/vinyl_record.svg": "Vinyl record",
   "assets/stickers/wave_pool.svg": "Wave pool",
   "assets/stickers/world_map.svg": "Mapa ng mundo",
-  "assets/stickers/x.svg": "X mark"
+  "assets/stickers/x.svg": "Ekis"
 }
