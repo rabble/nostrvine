@@ -475,15 +475,20 @@ class _KeyboardStableBottomInsetState
   double? _restingBottom;
 
   @override
-  Widget build(BuildContext context) {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Latch the at-rest inset whenever nothing is consuming the safe area, and
+    // hold the last latched value while a keyboard is up. This fires on every
+    // MediaQuery change, so `build` stays free of the caching side effect.
     final mediaQuery = MediaQuery.of(context);
-    final keyboardIsUp = mediaQuery.viewInsets.bottom > 0;
-
-    // Track the at-rest inset whenever nothing is consuming the safe area, and
-    // hold the last tracked value while a keyboard is up.
-    if (!keyboardIsUp) {
+    if (mediaQuery.viewInsets.bottom == 0) {
       _restingBottom = mediaQuery.viewPadding.bottom;
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
     final stableBottom = _restingBottom ?? mediaQuery.viewPadding.bottom;
 
     return MediaQuery(
