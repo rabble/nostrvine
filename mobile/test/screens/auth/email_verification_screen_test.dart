@@ -17,7 +17,6 @@ import 'package:openvine/blocs/email_verification/email_verification_cubit.dart'
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
@@ -100,7 +99,6 @@ void main() {
         pendingVerificationServiceProvider.overrideWithValue(
           mockPendingVerification,
         ),
-        forceExploreTabNameProvider.overrideWith((ref) => null),
       ],
       child: RepositoryProvider<InviteApiClient>.value(
         value: mockInviteApiClient,
@@ -617,7 +615,6 @@ void main() {
                 pendingVerificationServiceProvider.overrideWithValue(
                   mockPendingVerification,
                 ),
-                forceExploreTabNameProvider.overrideWith((ref) => null),
               ],
               child: MaterialApp(
                 localizationsDelegates: AppLocalizations.localizationsDelegates,

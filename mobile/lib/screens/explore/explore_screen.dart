@@ -64,7 +64,7 @@ class ExploreScreen extends ConsumerWidget {
   }
 
   /// Optional tab name to select on first build. Takes precedence over
-  /// [forceExploreTabNameProvider] and the saved [exploreTabIndexProvider].
+  /// the saved [exploreTabIndexProvider].
   final String? initialTabName;
 
   @override

@@ -20,7 +20,6 @@ import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -107,8 +106,7 @@ class _EmailVerificationScreenState
         _cubit.stopPolling();
         ref.read(pendingVerificationServiceProvider).clear();
         context.read<InviteGateBloc>().add(const InviteGateAccessCleared());
-        ref.read(forceExploreTabNameProvider.notifier).state = 'popular';
-        context.go(ExploreScreen.path);
+        context.go(ExploreScreen.pathForTab('popular'));
       }
     });
   }
@@ -285,16 +283,13 @@ class _EmailVerificationScreenState
     ref.read(pendingVerificationServiceProvider).clear();
 
     if (!_isTokenMode) {
-      // Polling mode: navigate to explore screen (Popular tab) after
-      // verification
+      // Polling mode: the auth-state listener navigates to the explore
+      // Popular tab (by URL) once sign-in completes.
       Log.info(
         'Email verification succeeded, navigating to explore (Popular tab)',
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,
       );
-      // Set tab by NAME (not index) because indices shift when
-      // Classics/ForYou tabs become available asynchronously
-      ref.read(forceExploreTabNameProvider.notifier).state = 'popular';
     } else {
       // Token mode: redirect to login screen
       _handleTokenModeSuccess();

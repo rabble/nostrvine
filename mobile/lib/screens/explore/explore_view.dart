@@ -49,14 +49,11 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   /// Build a new [TabController]. [previousTabName] is the name of the tab the
   /// user was on before a rebuild (resolved while the old availability flags
   /// were still in effect). Resolution order:
-  /// [ExploreView.initialTabName] > [forceExploreTabNameProvider] >
-  /// previous tab > default. Falls back to the default tab by name — never by
-  /// raw index, because indices shift when optional tabs appear or disappear.
+  /// [ExploreView.initialTabName] > previous tab > default. Falls back to the
+  /// default tab by name — never by raw index, because indices shift when
+  /// optional tabs appear or disappear.
   void _initTabController({String? previousTabName}) {
-    final forcedTabName = ref.read(forceExploreTabNameProvider);
-
-    final targetTabName =
-        widget.initialTabName ?? forcedTabName ?? previousTabName;
+    final targetTabName = widget.initialTabName ?? previousTabName;
     final initialIndex = _tabsState.indexForName(
       targetTabName ?? exploreDefaultTabName,
     );
@@ -133,19 +130,6 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     final index = _tabController!.index;
     final tabName = _tabsState.nameForIndex(index);
 
-    // Check if there's a forced tab name
-    final forcedName = ref.read(forceExploreTabNameProvider);
-    if (forcedName != null && tabName != forcedName) {
-      // User switched to a different tab than the forced one — clear the force.
-      Log.info(
-        '🎯 ExploreScreen: User changed tab from forced "$forcedName" to '
-        '"$tabName", clearing force',
-        name: 'ExploreScreen',
-        category: LogCategory.ui,
-      );
-      ref.read(forceExploreTabNameProvider.notifier).state = null;
-    }
-
     // Always persist the current index
     ref.read(exploreTabIndexProvider.notifier).state = index;
 
@@ -183,20 +167,6 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   @override
   Widget build(BuildContext context) {
     ref.watch(exploreTabVideoUpdateListenerProvider);
-
-    // Apply a forced tab name set before navigating to this screen.
-    final forcedTabName = ref.watch(forceExploreTabNameProvider);
-    if (forcedTabName != null && _tabController != null) {
-      final targetIndex = _tabsState.indexForName(forcedTabName);
-      if (_tabController!.index != targetIndex) {
-        // Schedule tab change for after build (don't clear provider yet).
-        Future(() {
-          if (mounted && _tabController != null) {
-            _tabController!.animateTo(targetIndex);
-          }
-        });
-      }
-    }
 
     // Watch tab availability and rebuild the controller when it changes.
     final classicsAvailable =
