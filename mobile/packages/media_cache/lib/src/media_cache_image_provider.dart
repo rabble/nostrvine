@@ -77,13 +77,13 @@ class MediaCacheImageProvider extends ImageProvider<MediaCacheImageProvider> {
       final existing = await cacheManager.getFileFromCache(_resolvedCacheKey);
       if (existing != null && existing.file.existsSync()) {
         if (loadHandle.isCancelled) {
-          throw const _ImageLoadCancelledException();
+          return _abortCancelledLoad(key);
         }
         return _decodeFile(existing.file, decode: decode);
       }
 
       if (loadHandle.isCancelled) {
-        throw const _ImageLoadCancelledException();
+        return _abortCancelledLoad(key);
       }
 
       final operation = cacheManager.cacheFileCancellable(
@@ -94,7 +94,10 @@ class MediaCacheImageProvider extends ImageProvider<MediaCacheImageProvider> {
       loadHandle.attach(operation);
 
       final file = await operation.file;
-      if (file == null || loadHandle.isCancelled) {
+      if (loadHandle.isCancelled) {
+        return _abortCancelledLoad(key);
+      }
+      if (file == null) {
         throw const _ImageLoadCancelledException();
       }
 
@@ -105,6 +108,21 @@ class MediaCacheImageProvider extends ImageProvider<MediaCacheImageProvider> {
       });
       rethrow;
     }
+  }
+
+  /// Stops a load whose last listener was removed before it finished.
+  ///
+  /// Cancellation is expected during fast scrolling. Throwing here would let
+  /// [MultiFrameImageStreamCompleter] forward the error to
+  /// `FlutterError.onError` (and therefore Crashlytics) once no listener
+  /// remains, turning a benign scroll-away into a fatal report. Instead we
+  /// evict the stale cache entry and return a future that never completes, so
+  /// the cancelled load simply stops.
+  Future<ui.Codec> _abortCancelledLoad(MediaCacheImageProvider key) {
+    scheduleMicrotask(() {
+      PaintingBinding.instance.imageCache.evict(key);
+    });
+    return Completer<ui.Codec>().future;
   }
 
   Future<ui.Codec> _decodeFile(

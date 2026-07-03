@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:file/local.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
@@ -398,6 +398,54 @@ void main() {
       );
 
       completer.removeListener(listener);
+    });
+
+    test('does not report a FlutterError when the last listener leaves '
+        'before an in-flight download resolves', () async {
+      const url = 'https://example.com/scrolled-away.png';
+      final cacheManager = _MockMediaCacheManager();
+      final download = FakeCancellableDownload(
+        url: url,
+        targetFile: File('$testTempPath/scrolled-away.png'),
+        headers: null,
+      );
+      final operation = CancellableCacheOperation.fromDownload(download);
+
+      when(
+        () => cacheManager.getFileFromCache(url),
+      ).thenAnswer((_) async => null);
+      when(
+        () => cacheManager.cacheFileCancellable(url, key: url),
+      ).thenReturn(operation);
+
+      final flutterErrors = <FlutterErrorDetails>[];
+      final previousOnError = FlutterError.onError;
+      FlutterError.onError = flutterErrors.add;
+      addTearDown(() => FlutterError.onError = previousOnError);
+
+      final provider = MediaCacheImageProvider(url, cacheManager: cacheManager);
+      final completer = provider.loadImage(
+        provider,
+        (buffer, {getTargetSize}) => Completer<ui.Codec>().future,
+      );
+      final listener = ImageStreamListener((image, synchronousCall) {
+        image.dispose();
+      });
+
+      completer.addListener(listener);
+      await Future<void>.delayed(Duration.zero);
+
+      completer.removeListener(listener);
+      expect(download.isCancelled, isTrue);
+
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(flutterErrors, isEmpty);
+      expect(
+        PaintingBinding.instance.imageCache.containsKey(provider),
+        isFalse,
+      );
     });
 
     test('throws for an empty cached file', () async {
