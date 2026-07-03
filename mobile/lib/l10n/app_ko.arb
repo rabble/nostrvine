@@ -383,7 +383,6 @@
     "shareSent": "보냄",
     "shareContactFallback": "연락처",
     "shareUserFallback": "사용자",
-    "shareSendingTo": "{name}님에게 보내는 중",
     "shareSelectedRecipientAnnouncement": "{name}님 선택됨",
     "@shareSelectedRecipientAnnouncement": {
         "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",

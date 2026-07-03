@@ -1530,11 +1530,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get shareUserFallback => 'Gebruiker';
 
   @override
-  String shareSendingTo(String name) {
-    return 'Versturen naar $name';
-  }
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name geselecteerd';
   }

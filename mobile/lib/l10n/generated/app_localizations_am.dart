@@ -1483,11 +1483,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareUserFallback => 'ተጠቃሚ';
 
   @override
-  String shareSendingTo(String name) {
-    return 'ወደ $name በመላክ ላይ';
-  }
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name ተመርጧል';
   }

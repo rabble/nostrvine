@@ -2692,12 +2692,6 @@ abstract class AppLocalizations {
   /// **'User'**
   String get shareUserFallback;
 
-  /// No description provided for @shareSendingTo.
-  ///
-  /// In en, this message translates to:
-  /// **'Sending to {name}'**
-  String shareSendingTo(String name);
-
   /// Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.
   ///
   /// In en, this message translates to:

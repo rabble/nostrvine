@@ -616,14 +616,6 @@
     "shareSent": "Gönderildi",
     "shareContactFallback": "Kişi",
     "shareUserFallback": "Kullanıcı",
-    "shareSendingTo": "{name} kişisine gönderiliyor",
-    "@shareSendingTo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "shareSelectedRecipientAnnouncement": "{name} seçildi",
     "@shareSelectedRecipientAnnouncement": {
         "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",

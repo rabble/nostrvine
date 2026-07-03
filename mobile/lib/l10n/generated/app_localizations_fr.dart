@@ -1548,11 +1548,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get shareUserFallback => 'Utilisateur';
 
   @override
-  String shareSendingTo(String name) {
-    return 'Envoi à $name';
-  }
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name sélectionné';
   }

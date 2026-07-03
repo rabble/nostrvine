@@ -616,14 +616,6 @@
     "shareSent": "تم الإرسال",
     "shareContactFallback": "جهة اتصال",
     "shareUserFallback": "مستخدم",
-    "shareSendingTo": "جاري الإرسال إلى {name}",
-    "@shareSendingTo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "shareSelectedRecipientAnnouncement": "تم تحديد {name}",
     "@shareSelectedRecipientAnnouncement": {
         "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",

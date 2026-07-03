@@ -1503,11 +1503,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareUserFallback => 'Kullanıcı';
 
   @override
-  String shareSendingTo(String name) {
-    return '$name kişisine gönderiliyor';
-  }
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name seçildi';
   }

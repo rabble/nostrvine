@@ -1437,11 +1437,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareUserFallback => '사용자';
 
   @override
-  String shareSendingTo(String name) {
-    return '$name님에게 보내는 중';
-  }
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name님 선택됨';
   }

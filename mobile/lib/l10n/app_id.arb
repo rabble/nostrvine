@@ -616,14 +616,6 @@
     "shareSent": "Terkirim",
     "shareContactFallback": "Kontak",
     "shareUserFallback": "Pengguna",
-    "shareSendingTo": "Mengirim ke {name}",
-    "@shareSendingTo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "shareSelectedRecipientAnnouncement": "{name} dipilih",
     "@shareSelectedRecipientAnnouncement": {
         "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",

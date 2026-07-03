@@ -1559,11 +1559,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareUserFallback => 'Utilizator';
 
   @override
-  String shareSendingTo(String name) {
-    return 'Se trimite către $name';
-  }
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name selectat';
   }

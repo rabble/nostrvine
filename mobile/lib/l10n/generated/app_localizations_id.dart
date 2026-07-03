@@ -1496,11 +1496,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareUserFallback => 'Pengguna';
 
   @override
-  String shareSendingTo(String name) {
-    return 'Mengirim ke $name';
-  }
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name dipilih';
   }

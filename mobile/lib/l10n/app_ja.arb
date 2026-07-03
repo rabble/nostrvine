@@ -616,14 +616,6 @@
     "shareSent": "送信済み",
     "shareContactFallback": "連絡先",
     "shareUserFallback": "ユーザー",
-    "shareSendingTo": "{name}に送信中",
-    "@shareSendingTo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "shareSelectedRecipientAnnouncement": "{name}を選択しました",
     "@shareSelectedRecipientAnnouncement": {
         "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",

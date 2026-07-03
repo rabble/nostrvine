@@ -790,14 +790,6 @@
   "shareSent": "Sent",
   "shareContactFallback": "Contact",
   "shareUserFallback": "User",
-  "shareSendingTo": "Sending to {name}",
-  "@shareSendingTo": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "shareSelectedRecipientAnnouncement": "Selected {name}",
   "@shareSelectedRecipientAnnouncement": {
     "description": "Screen reader announcement when a person is selected in the share sheet. Selection opens the optional message composer but does not send the video.",

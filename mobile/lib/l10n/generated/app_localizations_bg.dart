@@ -1543,11 +1543,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareUserFallback => 'Потребител';
 
   @override
-  String shareSendingTo(String name) {
-    return 'Изпращане до $name';
-  }
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return 'Избран е $name';
   }

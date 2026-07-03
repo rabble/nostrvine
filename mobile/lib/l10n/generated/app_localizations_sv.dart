@@ -1517,11 +1517,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareUserFallback => 'Användare';
 
   @override
-  String shareSendingTo(String name) {
-    return 'Skickar till $name';
-  }
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$name vald';
   }

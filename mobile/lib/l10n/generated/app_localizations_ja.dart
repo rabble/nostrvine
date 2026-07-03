@@ -1429,11 +1429,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareUserFallback => 'ユーザー';
 
   @override
-  String shareSendingTo(String name) {
-    return '$nameに送信中';
-  }
-
-  @override
   String shareSelectedRecipientAnnouncement(String name) {
     return '$nameを選択しました';
   }
