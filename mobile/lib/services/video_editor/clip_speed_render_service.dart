@@ -40,11 +40,6 @@ class ClipSpeedRenderService {
   final _inFlight = <String, Future<RenderedSpeedClip?>>{};
   int _clearGeneration = 0;
 
-  /// Monotonic counter bumped on every cache mutation, so consumers can detect
-  /// when the player composition needs rebuilding without diffing the cache.
-  int _version = 0;
-  int get version => _version;
-
   /// True while a speed body for this clip is being rendered.
   bool isRendering(DivineVideoClip clip) => _inFlight.containsKey(_key(clip));
 
@@ -184,10 +179,14 @@ class ClipSpeedRenderService {
       );
       return null;
     } finally {
-      if (_isStale(renderGeneration)) {
-        if (tempOutput != null) await _deleteQuietly(tempOutput);
-        if (tempPath != null) await _deleteQuietly(tempPath);
-        if (cachePath != null) await _deleteEmptyParent(cachePath);
+      // tempOutput and tempPath are always intermediate scratch files: on the
+      // success path they've already been consumed (deleted / renamed away), so
+      // deleting them again is a no-op — but if the native render or the publish
+      // threw while not stale, this is what stops the scratch file leaking.
+      if (tempOutput != null) await _deleteQuietly(tempOutput);
+      if (tempPath != null) await _deleteQuietly(tempPath);
+      if (_isStale(renderGeneration) && cachePath != null) {
+        await _deleteEmptyParent(cachePath);
       }
     }
   }
@@ -275,15 +274,14 @@ class ClipSpeedRenderService {
 
   static const _maxCachedFiles = 32;
 
-  /// Publishes [rendered] for [key] as the most-recently-used entry, bumps the
-  /// version, and evicts the least-recently-used bodies once the cache exceeds
-  /// [_maxCachedFiles]. Eviction removes the map entry **and** its file
-  /// together, so the in-memory cache and the on-disk files stay in lockstep
-  /// and a later lookup can never resolve to an evicted file.
+  /// Publishes [rendered] for [key] as the most-recently-used entry and evicts
+  /// the least-recently-used bodies once the cache exceeds [_maxCachedFiles].
+  /// Eviction removes the map entry **and** its file together, so the in-memory
+  /// cache and the on-disk files stay in lockstep and a later lookup can never
+  /// resolve to an evicted file.
   void _store(String key, RenderedSpeedClip rendered) {
     _cache.remove(key);
     _cache[key] = rendered;
-    _version++;
     _evictOverflow();
   }
 
@@ -322,7 +320,6 @@ class ClipSpeedRenderService {
     final cachedClips = _cache.values.toList();
     _cache.clear();
     _inFlight.clear();
-    _version++;
     _deleteCachedFilesSync(cachedClips);
   }
 

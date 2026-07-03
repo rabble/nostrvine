@@ -661,14 +661,14 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   /// Returns the current [SeamTimeline], rebuilding when the clips change
   /// identity or the seam cache mutates ([TransitionSeamRenderService.version]).
   ///
-  /// Deliberately **not** keyed on [ClipSpeedRenderService.version]: a landed
-  /// speed body must only shift the mapping once its file is actually spliced
-  /// into the player composition. Because a speed swap can be deferred while
-  /// playback runs (see [_resyncSpeedClipsWhenIdle]), keying on the cache
-  /// version would move the mapping ahead of the still-live-retimed player and
-  /// drift the playhead. Instead [_buildPlayerClips] refreshes this timeline
-  /// from the same snapshot it hands the player, so mapping and composition
-  /// always agree.
+  /// Deliberately **not** keyed on the speed render cache: a landed speed body
+  /// must only shift the mapping once its file is actually spliced into the
+  /// player composition. Because a speed swap can be deferred while playback
+  /// runs (see [_resyncSpeedClipsWhenIdle]), keying on the speed cache would
+  /// move the mapping ahead of the still-live-retimed player and drift the
+  /// playhead. Instead [_buildPlayerClips] refreshes this timeline from the
+  /// same snapshot it hands the player, so mapping and composition always
+  /// agree.
   SeamTimeline get _seamTimeline {
     final clips = ref.read(clipManagerProvider).clips;
     final clipsHash = Object.hashAll(clips);

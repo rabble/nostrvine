@@ -209,18 +209,14 @@ void main() {
       });
     });
 
-    group('version', () {
-      test('bumps on cache seed and clear, and clear drops the entry', () {
+    group('clear', () {
+      test('seeded entry is cached, then dropped after clear', () {
         final c = clip('a', playbackSpeed: 2);
-        final service = ClipSpeedRenderService();
-        final initial = service.version;
+        final service = ClipSpeedRenderService()..cacheForTest(c, rendered);
 
-        service.cacheForTest(c, rendered);
-        expect(service.version, greaterThan(initial));
+        expect(service.cached(c), same(rendered));
 
-        final afterSeed = service.version;
         service.clear();
-        expect(service.version, greaterThan(afterSeed));
         expect(service.cached(c), isNull);
       });
     });
