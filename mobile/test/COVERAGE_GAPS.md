@@ -85,7 +85,8 @@ The codebase has **253 files in lib/** with an overall test coverage of **45.0%*
 - **Service unit tests**:
   - ⚠️ `video_sharing_service.dart` - Has unit tests
   - ⚠️ `social_service.dart` - Has unit tests
-- **Widget coverage**: `share_video_menu.dart` - **15.7% coverage** ⚠️
+- **Widget coverage**: Live share sheet coverage should be verified against
+  the current share action widgets.
 - **Missing Scenarios**:
   - [ ] Share to external app flows
   - [ ] Repost with comment
@@ -140,7 +141,6 @@ The codebase has **253 files in lib/** with an overall test coverage of **45.0%*
 |----------|-------|------|-------------|------------|
 | 0.0% | 0/35 | `app_lifecycle_handler.dart` | Medium | Low |
 | 0.8% | 1/118 | `video_overlay_modal_compact.dart` | Medium | Medium |
-| 15.7% | 128/815 | `share_video_menu.dart` | **HIGH** | **High** |
 | 15.8% | 3/19 | `camera_fab.dart` | Low | Low |
 | 40.2% | 45/112 | `blurhash_display.dart` | Medium | Low |
 | 50.4% | 60/119 | `notification_list_item.dart` | Medium | Low |
@@ -206,12 +206,12 @@ The codebase has **253 files in lib/** with an overall test coverage of **45.0%*
 - [ ] Recording preview playback
 - [ ] Navigation to metadata screen after recording
 
-### 5. `share_video_menu.dart` (128/815 lines, 15.7%)
+### 5. Live share sheet
 **User Impact**: HIGH - Social sharing features
 **Complexity**: High - External integrations
 
 **Test Scenarios**:
-- [ ] Share button opens menu
+- [ ] Share button opens sheet
 - [ ] Copy video link to clipboard
 - [ ] Share to Twitter/X
 - [ ] Share to native platform (iOS/Android)
@@ -313,7 +313,7 @@ The codebase has **253 files in lib/** with an overall test coverage of **45.0%*
 **Target**: Bring all core screens to ≥70% coverage
 
 ### Phase 3: Critical Widgets (Week 5)
-1. `share_video_menu.dart` - Add widget tests for sharing actions
+1. Live share sheet - Add widget tests for sharing actions
 2. `video_feed_item.dart` - Add widget tests for video item interactions
 3. `camera_controls_overlay.dart` - Add widget tests for camera controls
 

@@ -446,7 +446,7 @@ void main() {
 
 ### Phase 1: Critical Widgets (Week 1)
 - `video_feed_item.dart` - Core video display
-- `share_video_menu.dart` - Essential social features
+- `share_action_button.dart` - Essential social sharing features
 - `user_avatar.dart` - Profile display
 - `video_overlay_modal.dart` - Video playback UI
 

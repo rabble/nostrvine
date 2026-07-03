@@ -1,5 +1,5 @@
 // ABOUTME: Navigation helper to open the metadata edit screen for a video.
-// ABOUTME: Extracted from the deleted legacy ShareVideoMenu widget (#5759).
+// ABOUTME: Preserves edit navigation after deleting the legacy share menu.
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
