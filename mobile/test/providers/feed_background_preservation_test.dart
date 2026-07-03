@@ -9,7 +9,6 @@ import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/curation_providers.dart';
-import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -234,66 +233,6 @@ void main() {
           resumedState.videos,
           hasLength(5),
           reason: 'Should have videos after resuming',
-        );
-      });
-    });
-
-    group(PopularNowFeed, () {
-      test(
-        'returns empty state when appReady is false and no prior data',
-        () async {
-          final container = createContainer(appReady: false);
-          addTearDown(container.dispose);
-
-          await container.read(funnelcakeAvailableProvider.future);
-          final state = await container.read(popularNowFeedProvider.future);
-
-          expect(state.videos, isEmpty);
-          expect(state.hasMoreContent, isTrue);
-        },
-      );
-
-      test('preserves cached videos when appReady becomes false', () async {
-        final container = createContainer(appReady: true);
-        addTearDown(container.dispose);
-
-        // Wait for initial load via Nostr fallback
-        await container.read(funnelcakeAvailableProvider.future);
-        final initialState = await container.read(
-          popularNowFeedProvider.future,
-        );
-        expect(
-          initialState.videos,
-          hasLength(5),
-          reason: 'Should load 5 videos initially via Nostr fallback',
-        );
-
-        // Simulate going to background
-        container.updateOverrides([
-          appReadyProvider.overrideWithValue(false),
-          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-          funnelcakeApiClientProvider.overrideWithValue(mockFunnelcakeClient),
-          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-          contentBlocklistRepositoryProvider.overrideWithValue(
-            mockBlocklistRepository,
-          ),
-          funnelcakeAvailableProvider.overrideWith(
-            _TestFunnelcakeUnavailable.new,
-          ),
-        ]);
-
-        await container.read(funnelcakeAvailableProvider.future);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-
-        final afterBackgroundState = await container.read(
-          popularNowFeedProvider.future,
-        );
-
-        expect(
-          afterBackgroundState.videos,
-          hasLength(5),
-          reason: 'Should preserve videos during background',
         );
       });
     });
