@@ -32,7 +32,6 @@ test/router/page_context_provider_test.dart
 test/router/profile_me_redirect_integration_test.dart
 test/router/profile_me_redirect_test.dart
 test/router/router_location_provider_test.dart
-test/screens/explore_screen_pull_to_refresh_test.dart
 test/screens/explore_screen_pure_test.dart
 test/screens/explore_screen_router_test.dart
 test/screens/explore_screen_video_display_test.dart
