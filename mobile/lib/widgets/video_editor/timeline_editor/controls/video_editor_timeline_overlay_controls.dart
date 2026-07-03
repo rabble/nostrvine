@@ -6,6 +6,7 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/blocs/video_editor/tune_editor/video_editor_tune_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/tune_adjustment_matrix_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
@@ -267,7 +268,7 @@ class _TuneOverlayControls extends StatelessWidget {
     if (editor == null) return;
 
     final updated = editor.stateManager.activeTuneAdjustments
-        .where((t) => _tuneSetId(t) != item.id)
+        .where((t) => t.tuneSetId != item.id)
         .map((e) => e.copy())
         .toList();
 
@@ -283,10 +284,10 @@ class _TuneOverlayControls extends StatelessWidget {
     if (editor == null) return;
 
     final tunes = editor.stateManager.activeTuneAdjustments;
-    final members = tunes.where((t) => _tuneSetId(t) == item.id);
+    final members = tunes.where((t) => t.tuneSetId == item.id);
     if (members.isEmpty) return;
 
-    final newSetId = _newTuneSetId();
+    final newSetId = TuneSet.newId();
     final copies = members
         .map((m) => _reSet(m, newSetId))
         .toList(growable: false);
@@ -306,10 +307,10 @@ class _TuneOverlayControls extends StatelessWidget {
     final splitAt = _validSplitPosition(context, item);
     if (splitAt == null) return;
 
-    final newSetId = _newTuneSetId();
+    final newSetId = TuneSet.newId();
     final updated = <TuneAdjustmentMatrix>[];
     for (final m in editor.stateManager.activeTuneAdjustments) {
-      if (_tuneSetId(m) != item.id) {
+      if (m.tuneSetId != item.id) {
         updated.add(m.copy());
         continue;
       }
@@ -331,26 +332,12 @@ class _TuneOverlayControls extends StatelessWidget {
   }
 }
 
-/// The set id an adjustment belongs to (falls back to its own id for legacy
-/// adjustments written before sets existed).
-String _tuneSetId(TuneAdjustmentMatrix m) =>
-    m.meta[VideoEditorConstants.tuneSetIdMetaKey] as String? ?? m.id;
-
-/// The adjustment kind (`brightness`, …) recorded on an adjustment.
-String _tuneKind(TuneAdjustmentMatrix m) =>
-    m.meta[VideoEditorConstants.tuneKindMetaKey] as String? ?? m.id;
-
-String _newTuneSetId() => 'set_${DateTime.now().microsecondsSinceEpoch}';
-
 /// Copies [m] into the set [setId] with a fresh per-instance id.
 TuneAdjustmentMatrix _reSet(TuneAdjustmentMatrix m, String setId) {
-  final kind = _tuneKind(m);
+  final kind = m.tuneKind;
   return m.copyWith(
-    id: '${kind}__$setId',
-    meta: {
-      VideoEditorConstants.tuneSetIdMetaKey: setId,
-      VideoEditorConstants.tuneKindMetaKey: kind,
-    },
+    id: TuneSet.memberId(kind: kind, setId: setId),
+    meta: TuneSet.metaFor(setId: setId, kind: kind),
   );
 }
 

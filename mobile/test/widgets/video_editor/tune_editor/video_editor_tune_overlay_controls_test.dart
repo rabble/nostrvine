@@ -188,6 +188,39 @@ void main() {
       expect(bySet['set-1']!.endTime, const Duration(seconds: 4));
     });
 
+    test('edit keeps the set at its original position in the list', () {
+      final setOne = TuneAdjustmentMatrix(
+        id: 'brightness__set-1',
+        value: 0.2,
+        matrix: const [],
+        meta: const {
+          VideoEditorConstants.tuneSetIdMetaKey: 'set-1',
+          VideoEditorConstants.tuneKindMetaKey: 'brightness',
+        },
+      );
+      final setTwo = TuneAdjustmentMatrix(
+        id: 'contrast__set-2',
+        value: 0.5,
+        matrix: const [],
+        meta: const {
+          VideoEditorConstants.tuneSetIdMetaKey: 'set-2',
+          VideoEditorConstants.tuneKindMetaKey: 'contrast',
+        },
+      );
+
+      final result = VideoEditorTuneOverlayControls.computeTuneSetCommit(
+        editorMatrix: [preset('brightness', -0.3)],
+        active: [setOne, setTwo],
+        editingSetId: 'set-1',
+        newSetId: 'set-new',
+      )!;
+
+      // set-1 stays first (its render order relative to set-2 is unchanged),
+      // rather than being appended to the end.
+      expect(setIdOf(result.first), 'set-1');
+      expect(setIdOf(result.last), 'set-2');
+    });
+
     test('edit that neutralises every adjustment removes the set', () {
       final existing = TuneAdjustmentMatrix(
         id: 'brightness__set-1',

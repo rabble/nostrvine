@@ -9,6 +9,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/tune_adjustment_matrix_extensions.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
@@ -65,12 +66,8 @@ class TimelineOverlayBloc
   };
 
   /// Label for a single tune adjustment, resolved from its recorded kind.
-  static String _tuneKindLabel(TuneAdjustmentMatrix matrix) {
-    final kind =
-        matrix.meta[VideoEditorConstants.tuneKindMetaKey] as String? ??
-        matrix.id;
-    return _tuneLabels[kind] ?? kind;
-  }
+  static String _tuneKindLabel(TuneAdjustmentMatrix matrix) =>
+      _tuneLabels[matrix.tuneKind] ?? matrix.tuneKind;
 
   void _onUpdateItems(
     TimelineOverlayItemsUpdate event,
@@ -130,10 +127,7 @@ class TimelineOverlayBloc
     final tuneSets = <String, List<TuneAdjustmentMatrix>>{};
     for (final tune in event.tuneAdjustments) {
       if (tune.value == 0) continue;
-      final setId =
-          tune.meta[VideoEditorConstants.tuneSetIdMetaKey] as String? ??
-          tune.id;
-      (tuneSets[setId] ??= []).add(tune);
+      (tuneSets[tune.tuneSetId] ??= []).add(tune);
     }
     final tunes = <TimelineOverlayItem>[
       for (final entry in tuneSets.entries)

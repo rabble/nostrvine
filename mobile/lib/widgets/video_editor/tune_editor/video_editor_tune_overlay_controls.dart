@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/tune_editor/video_editor_tune_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/tune_adjustment_matrix_extensions.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -42,7 +43,7 @@ class VideoEditorTuneOverlayControls extends StatelessWidget {
     TuneAdjustmentMatrix? windowSource;
     if (editingSetId != null) {
       for (final m in active) {
-        if (_setIdOf(m) == editingSetId) {
+        if (m.tuneSetId == editingSetId) {
           windowSource = m;
           break;
         }
@@ -53,28 +54,38 @@ class VideoEditorTuneOverlayControls extends StatelessWidget {
       for (final m in editorMatrix)
         if (m.value != 0)
           m.copyWith(
-            id: '${m.id}__$setId',
+            id: TuneSet.memberId(kind: m.id, setId: setId),
             startTime: windowSource?.startTime,
             endTime: windowSource?.endTime,
-            meta: {
-              VideoEditorConstants.tuneSetIdMetaKey: setId,
-              VideoEditorConstants.tuneKindMetaKey: m.id,
-            },
+            meta: TuneSet.metaFor(setId: setId, kind: m.id),
           ),
     ];
 
-    // A new session that changed nothing adds no bar; an edit that neutralised
-    // every adjustment removes the set.
-    if (editingSetId == null && members.isEmpty) return null;
+    // A new session appends a fresh set at the end; if nothing changed there is
+    // no bar to add.
+    if (editingSetId == null) {
+      if (members.isEmpty) return null;
+      return [...active.map((m) => m.copy()), ...members];
+    }
 
-    final others = active
-        .where((m) => _setIdOf(m) != setId)
-        .map((m) => m.copy());
-    return [...others, ...members];
+    // An edit replaces the set's members in place, preserving its position in
+    // the list (and therefore its render order relative to other sets).
+    // Neutralising every adjustment leaves no members, removing the set.
+    final result = <TuneAdjustmentMatrix>[];
+    var replaced = false;
+    for (final m in active) {
+      if (m.tuneSetId != setId) {
+        result.add(m.copy());
+        continue;
+      }
+      if (!replaced) {
+        result.addAll(members);
+        replaced = true;
+      }
+    }
+    if (!replaced) result.addAll(members);
+    return result;
   }
-
-  static String _setIdOf(TuneAdjustmentMatrix m) =>
-      m.meta[VideoEditorConstants.tuneSetIdMetaKey] as String? ?? m.id;
 
   @override
   Widget build(BuildContext context) {
@@ -141,7 +152,7 @@ class _TopBarContent extends StatelessWidget {
           scope.editor?.stateManager.activeTuneAdjustments ??
           const <TuneAdjustmentMatrix>[],
       editingSetId: editingSetId,
-      newSetId: 'set_${DateTime.now().microsecondsSinceEpoch}',
+      newSetId: TuneSet.newId(),
     );
     if (result != null) {
       scope.editor?.addHistory(tuneAdjustments: result);

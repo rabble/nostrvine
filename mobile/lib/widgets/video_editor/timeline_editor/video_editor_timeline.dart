@@ -6,6 +6,7 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
+import 'package:openvine/extensions/tune_adjustment_matrix_extensions.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -640,10 +641,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   }) {
     final tunes = editor.stateManager.activeTuneAdjustments;
     for (var i = 0; i < tunes.length; i++) {
-      final memberSetId =
-          tunes[i].meta[VideoEditorConstants.tuneSetIdMetaKey] as String? ??
-          tunes[i].id;
-      if (memberSetId != setId) continue;
+      if (tunes[i].tuneSetId != setId) continue;
       editor.setTuneTimeline(
         index: i,
         startTime: startTime,

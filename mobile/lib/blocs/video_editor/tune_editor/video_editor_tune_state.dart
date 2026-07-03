@@ -40,9 +40,6 @@ class VideoEditorTuneState extends Equatable {
   /// when it has not been adjusted.
   double valueOf(String id) => values[id] ?? 0;
 
-  /// Whether any adjustment differs from its neutral value.
-  bool get hasAdjustments => values.values.any((value) => value != 0);
-
   VideoEditorTuneState copyWith({
     List<TuneAdjustmentItem>? adjustments,
     int? selectedIndex,

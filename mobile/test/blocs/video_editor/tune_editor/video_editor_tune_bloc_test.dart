@@ -22,7 +22,6 @@ void main() {
       );
       expect(bloc.state.selectedIndex, 0);
       expect(bloc.state.values, isEmpty);
-      expect(bloc.state.hasAdjustments, isFalse);
       expect(bloc.state.selectedValue, 0);
       bloc.close();
     });
@@ -47,7 +46,7 @@ void main() {
               .having((s) => s.values['contrast'], 'contrast', -0.1)
               .having((s) => s.initialValues['brightness'], 'initial', 0.2)
               .having((s) => s.selectedIndex, 'selectedIndex', 0)
-              .having((s) => s.hasAdjustments, 'hasAdjustments', isTrue),
+              .having((s) => s.values.length, 'values count', 2),
         ],
       );
 
