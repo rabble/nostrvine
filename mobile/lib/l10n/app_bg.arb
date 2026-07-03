@@ -731,6 +731,10 @@
     "metadataLikesLabel": "Харесвания",
     "metadataCommentsLabel": "Коментари",
     "metadataRepostsLabel": "Репостове",
+    "metadataVineStatsLabel": "Във Vine",
+    "metadataVineStatsLine": "{loops} лупа · {likes} харесвания · {comments} коментари · {reposts} репоста",
+    "metadataDivineStatsLabel": "В Divine",
+    "metadataDivineStatsLine": "{views} гледания · {likes} харесвания · {comments} коментари · {reposts} репоста",
     "metadataPostedDateSemantics": "Публикувано на {date}",
     "@metadataPostedDateSemantics": {
         "description": "Screen reader label for the publish date in the video info sheet. {date} is the locale-formatted absolute date, e.g. 'Apr 22, 2003'.",

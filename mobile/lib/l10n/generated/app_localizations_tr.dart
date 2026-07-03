@@ -1666,7 +1666,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get metadataRepostsLabel => 'Yeniden Paylaşımlar';
 
   @override
-  String get metadataVineStatsLabel => 'On Vine';
+  String get metadataVineStatsLabel => 'Vine\'da';
 
   @override
   String metadataVineStatsLine(
@@ -1675,11 +1675,11 @@ class AppLocalizationsTr extends AppLocalizations {
     String comments,
     String reposts,
   ) {
-    return '$loops loops · $likes likes · $comments comments · $reposts reposts';
+    return '$loops döngü · $likes beğeni · $comments yorum · $reposts yeniden paylaşım';
   }
 
   @override
-  String get metadataDivineStatsLabel => 'On Divine';
+  String get metadataDivineStatsLabel => 'Divine\'da';
 
   @override
   String metadataDivineStatsLine(
@@ -1688,7 +1688,7 @@ class AppLocalizationsTr extends AppLocalizations {
     String comments,
     String reposts,
   ) {
-    return '$views views · $likes likes · $comments comments · $reposts reposts';
+    return '$views görüntüleme · $likes beğeni · $comments yorum · $reposts yeniden paylaşım';
   }
 
   @override

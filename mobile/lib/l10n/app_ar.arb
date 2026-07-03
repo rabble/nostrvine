@@ -662,6 +662,10 @@
     "metadataLikesLabel": "الإعجابات",
     "metadataCommentsLabel": "التعليقات",
     "metadataRepostsLabel": "إعادات النشر",
+    "metadataVineStatsLabel": "على Vine",
+    "metadataVineStatsLine": "{loops} تكرارات · {likes} إعجابات · {comments} تعليقات · {reposts} إعادات نشر",
+    "metadataDivineStatsLabel": "على Divine",
+    "metadataDivineStatsLine": "{views} مشاهدات · {likes} إعجابات · {comments} تعليقات · {reposts} إعادات نشر",
     "metadataPostedDateSemantics": "نُشر في {date}",
     "devOptionsTitle": "خيارات المطور",
     "@devOptionsTitle": {

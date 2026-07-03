@@ -784,6 +784,10 @@
     "metadataLikesLabel": "መውደዶች",
     "metadataCommentsLabel": "አስተያየቶች",
     "metadataRepostsLabel": "ድጋሚ ልጥፎች",
+    "metadataVineStatsLabel": "በVine",
+    "metadataVineStatsLine": "{loops} ሉፖች · {likes} መውደዶች · {comments} አስተያየቶች · {reposts} ድጋሚ ልጥፎች",
+    "metadataDivineStatsLabel": "በDivine",
+    "metadataDivineStatsLine": "{views} እይታዎች · {likes} መውደዶች · {comments} አስተያየቶች · {reposts} ድጋሚ ልጥፎች",
     "metadataPostedDateSemantics": "የተለጠፈው {date} ላይ ነው።",
     "@metadataPostedDateSemantics": {
         "description": "Screen reader label for the publish date in the video info sheet. {date} is the locale-formatted absolute date, e.g. 'Apr 22, 2003'.",

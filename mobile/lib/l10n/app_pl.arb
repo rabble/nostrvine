@@ -665,6 +665,10 @@
     "metadataLikesLabel": "Polubienia",
     "metadataCommentsLabel": "Komentarze",
     "metadataRepostsLabel": "Reposty",
+    "metadataVineStatsLabel": "Na Vine",
+    "metadataVineStatsLine": "{loops} pętli · {likes} polubień · {comments} komentarzy · {reposts} repostów",
+    "metadataDivineStatsLabel": "Na Divine",
+    "metadataDivineStatsLine": "{views} wyświetleń · {likes} polubień · {comments} komentarzy · {reposts} repostów",
     "metadataPostedDateSemantics": "Opublikowano {date}",
     "devOptionsTitle": "Opcje dewelopera",
     "@devOptionsTitle": {

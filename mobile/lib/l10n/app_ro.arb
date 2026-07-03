@@ -665,6 +665,10 @@
     "metadataLikesLabel": "Aprecieri",
     "metadataCommentsLabel": "Comentarii",
     "metadataRepostsLabel": "Redistribuiri",
+    "metadataVineStatsLabel": "Pe Vine",
+    "metadataVineStatsLine": "{loops} bucle · {likes} aprecieri · {comments} comentarii · {reposts} redistribuiri",
+    "metadataDivineStatsLabel": "Pe Divine",
+    "metadataDivineStatsLine": "{views} vizualizări · {likes} aprecieri · {comments} comentarii · {reposts} redistribuiri",
     "metadataPostedDateSemantics": "Publicat pe {date}",
     "devOptionsTitle": "Opțiuni dezvoltator",
     "@devOptionsTitle": {

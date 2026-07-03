@@ -112,12 +112,6 @@ void main() {
 }
 
 const _knownUntranslatedDebt = {
-  // Classic Vine per-source stats breakdown in the metadata sheet awaits
-  // the next translation pass.
-  'metadataVineStatsLabel',
-  'metadataVineStatsLine',
-  'metadataDivineStatsLabel',
-  'metadataDivineStatsLine',
   'profileNoSavedVideosTitle',
   'profileSavedOwnEmpty',
   'profileErrorLoadingSaved',

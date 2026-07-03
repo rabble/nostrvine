@@ -662,6 +662,10 @@
     "metadataLikesLabel": "Suka",
     "metadataCommentsLabel": "Komentar",
     "metadataRepostsLabel": "Repost",
+    "metadataVineStatsLabel": "Di Vine",
+    "metadataVineStatsLine": "{loops} loop · {likes} suka · {comments} komentar · {reposts} repost",
+    "metadataDivineStatsLabel": "Di Divine",
+    "metadataDivineStatsLine": "{views} tayangan · {likes} suka · {comments} komentar · {reposts} repost",
     "metadataPostedDateSemantics": "Diposting pada {date}",
     "devOptionsTitle": "Opsi Pengembang",
     "@devOptionsTitle": {

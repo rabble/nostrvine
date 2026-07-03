@@ -662,6 +662,10 @@
     "metadataLikesLabel": "いいね",
     "metadataCommentsLabel": "コメント",
     "metadataRepostsLabel": "リポスト",
+    "metadataVineStatsLabel": "Vineで",
+    "metadataVineStatsLine": "{loops}ループ · {likes}件のいいね · {comments}件のコメント · {reposts}件のリポスト",
+    "metadataDivineStatsLabel": "Divineで",
+    "metadataDivineStatsLine": "{views}回再生 · {likes}件のいいね · {comments}件のコメント · {reposts}件のリポスト",
     "metadataPostedDateSemantics": "{date}に投稿",
     "devOptionsTitle": "開発者オプション",
     "@devOptionsTitle": {

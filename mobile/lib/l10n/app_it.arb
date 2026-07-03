@@ -665,6 +665,10 @@
     "metadataLikesLabel": "Mi piace",
     "metadataCommentsLabel": "Commenti",
     "metadataRepostsLabel": "Repost",
+    "metadataVineStatsLabel": "Su Vine",
+    "metadataVineStatsLine": "{loops} loop · {likes} mi piace · {comments} commenti · {reposts} repost",
+    "metadataDivineStatsLabel": "Su Divine",
+    "metadataDivineStatsLine": "{views} visualizzazioni · {likes} mi piace · {comments} commenti · {reposts} repost",
     "metadataPostedDateSemantics": "Pubblicato il {date}",
     "devOptionsTitle": "Opzioni sviluppatore",
     "@devOptionsTitle": {

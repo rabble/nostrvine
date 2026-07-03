@@ -665,6 +665,10 @@
     "metadataLikesLabel": "Likes",
     "metadataCommentsLabel": "Reacties",
     "metadataRepostsLabel": "Reposts",
+    "metadataVineStatsLabel": "Op Vine",
+    "metadataVineStatsLine": "{loops} loops · {likes} likes · {comments} reacties · {reposts} reposts",
+    "metadataDivineStatsLabel": "Op Divine",
+    "metadataDivineStatsLine": "{views} weergaven · {likes} likes · {comments} reacties · {reposts} reposts",
     "metadataPostedDateSemantics": "Geplaatst op {date}",
     "devOptionsTitle": "Ontwikkelaarsopties",
     "@devOptionsTitle": {

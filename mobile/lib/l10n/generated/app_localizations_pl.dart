@@ -1709,7 +1709,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get metadataRepostsLabel => 'Reposty';
 
   @override
-  String get metadataVineStatsLabel => 'On Vine';
+  String get metadataVineStatsLabel => 'Na Vine';
 
   @override
   String metadataVineStatsLine(
@@ -1718,11 +1718,11 @@ class AppLocalizationsPl extends AppLocalizations {
     String comments,
     String reposts,
   ) {
-    return '$loops loops · $likes likes · $comments comments · $reposts reposts';
+    return '$loops pętli · $likes polubień · $comments komentarzy · $reposts repostów';
   }
 
   @override
-  String get metadataDivineStatsLabel => 'On Divine';
+  String get metadataDivineStatsLabel => 'Na Divine';
 
   @override
   String metadataDivineStatsLine(
@@ -1731,7 +1731,7 @@ class AppLocalizationsPl extends AppLocalizations {
     String comments,
     String reposts,
   ) {
-    return '$views views · $likes likes · $comments comments · $reposts reposts';
+    return '$views wyświetleń · $likes polubień · $comments komentarzy · $reposts repostów';
   }
 
   @override

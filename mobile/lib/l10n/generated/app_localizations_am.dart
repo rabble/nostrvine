@@ -1651,7 +1651,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get metadataRepostsLabel => 'ድጋሚ ልጥፎች';
 
   @override
-  String get metadataVineStatsLabel => 'On Vine';
+  String get metadataVineStatsLabel => 'በVine';
 
   @override
   String metadataVineStatsLine(
@@ -1660,11 +1660,11 @@ class AppLocalizationsAm extends AppLocalizations {
     String comments,
     String reposts,
   ) {
-    return '$loops loops · $likes likes · $comments comments · $reposts reposts';
+    return '$loops ሉፖች · $likes መውደዶች · $comments አስተያየቶች · $reposts ድጋሚ ልጥፎች';
   }
 
   @override
-  String get metadataDivineStatsLabel => 'On Divine';
+  String get metadataDivineStatsLabel => 'በDivine';
 
   @override
   String metadataDivineStatsLine(
@@ -1673,7 +1673,7 @@ class AppLocalizationsAm extends AppLocalizations {
     String comments,
     String reposts,
   ) {
-    return '$views views · $likes likes · $comments comments · $reposts reposts';
+    return '$views እይታዎች · $likes መውደዶች · $comments አስተያየቶች · $reposts ድጋሚ ልጥፎች';
   }
 
   @override

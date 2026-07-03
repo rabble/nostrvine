@@ -1591,7 +1591,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get metadataRepostsLabel => 'リポスト';
 
   @override
-  String get metadataVineStatsLabel => 'On Vine';
+  String get metadataVineStatsLabel => 'Vineで';
 
   @override
   String metadataVineStatsLine(
@@ -1600,11 +1600,11 @@ class AppLocalizationsJa extends AppLocalizations {
     String comments,
     String reposts,
   ) {
-    return '$loops loops · $likes likes · $comments comments · $reposts reposts';
+    return '$loopsループ · $likes件のいいね · $comments件のコメント · $reposts件のリポスト';
   }
 
   @override
-  String get metadataDivineStatsLabel => 'On Divine';
+  String get metadataDivineStatsLabel => 'Divineで';
 
   @override
   String metadataDivineStatsLine(
@@ -1613,7 +1613,7 @@ class AppLocalizationsJa extends AppLocalizations {
     String comments,
     String reposts,
   ) {
-    return '$views views · $likes likes · $comments comments · $reposts reposts';
+    return '$views回再生 · $likes件のいいね · $comments件のコメント · $reposts件のリポスト';
   }
 
   @override

@@ -1599,7 +1599,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get metadataRepostsLabel => '리포스트';
 
   @override
-  String get metadataVineStatsLabel => 'On Vine';
+  String get metadataVineStatsLabel => 'Vine에서';
 
   @override
   String metadataVineStatsLine(
@@ -1608,11 +1608,11 @@ class AppLocalizationsKo extends AppLocalizations {
     String comments,
     String reposts,
   ) {
-    return '$loops loops · $likes likes · $comments comments · $reposts reposts';
+    return '$loops 루프 · $likes 좋아요 · $comments 댓글 · $reposts 리포스트';
   }
 
   @override
-  String get metadataDivineStatsLabel => 'On Divine';
+  String get metadataDivineStatsLabel => 'Divine에서';
 
   @override
   String metadataDivineStatsLine(
@@ -1621,7 +1621,7 @@ class AppLocalizationsKo extends AppLocalizations {
     String comments,
     String reposts,
   ) {
-    return '$views views · $likes likes · $comments comments · $reposts reposts';
+    return '$views 조회수 · $likes 좋아요 · $comments 댓글 · $reposts 리포스트';
   }
 
   @override

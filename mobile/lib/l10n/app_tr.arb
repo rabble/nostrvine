@@ -662,6 +662,10 @@
     "metadataLikesLabel": "Beğeniler",
     "metadataCommentsLabel": "Yorumlar",
     "metadataRepostsLabel": "Yeniden Paylaşımlar",
+    "metadataVineStatsLabel": "Vine'da",
+    "metadataVineStatsLine": "{loops} döngü · {likes} beğeni · {comments} yorum · {reposts} yeniden paylaşım",
+    "metadataDivineStatsLabel": "Divine'da",
+    "metadataDivineStatsLine": "{views} görüntüleme · {likes} beğeni · {comments} yorum · {reposts} yeniden paylaşım",
     "metadataPostedDateSemantics": "{date} tarihinde paylaşıldı",
     "devOptionsTitle": "Geliştirici Seçenekleri",
     "@devOptionsTitle": {

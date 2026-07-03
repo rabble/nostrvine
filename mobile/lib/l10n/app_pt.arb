@@ -665,6 +665,10 @@
     "metadataLikesLabel": "Curtidas",
     "metadataCommentsLabel": "Comentários",
     "metadataRepostsLabel": "Reposts",
+    "metadataVineStatsLabel": "No Vine",
+    "metadataVineStatsLine": "{loops} loops · {likes} curtidas · {comments} comentários · {reposts} reposts",
+    "metadataDivineStatsLabel": "No Divine",
+    "metadataDivineStatsLine": "{views} visualizações · {likes} curtidas · {comments} comentários · {reposts} reposts",
     "metadataPostedDateSemantics": "Publicado em {date}",
     "devOptionsTitle": "Opções do desenvolvedor",
     "@devOptionsTitle": {

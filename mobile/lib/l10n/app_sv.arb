@@ -665,6 +665,10 @@
     "metadataLikesLabel": "Gillamarkeringar",
     "metadataCommentsLabel": "Kommentarer",
     "metadataRepostsLabel": "Återpubliceringar",
+    "metadataVineStatsLabel": "På Vine",
+    "metadataVineStatsLine": "{loops} loopar · {likes} gillamarkeringar · {comments} kommentarer · {reposts} återpubliceringar",
+    "metadataDivineStatsLabel": "På Divine",
+    "metadataDivineStatsLine": "{views} visningar · {likes} gillamarkeringar · {comments} kommentarer · {reposts} återpubliceringar",
     "metadataPostedDateSemantics": "Publicerat den {date}",
     "devOptionsTitle": "Utvecklaralternativ",
     "@devOptionsTitle": {
