@@ -80,6 +80,10 @@ void main() {
     late _MockVideoEditorFilterBloc mockFilterBloc;
     late ProVideoEditor originalProVideoEditor;
 
+    setUpAll(() {
+      registerFallbackValue(const VideoEditorSeekRequested(Duration.zero));
+    });
+
     setUp(() {
       originalProVideoEditor = ProVideoEditor.instance;
       ProVideoEditor.instance = _MockProVideoEditor();
@@ -378,6 +382,12 @@ void main() {
             const VideoEditorExternalPauseRequested(isPaused: true),
           ),
         ).called(1);
+
+        // The scrub also seeks — the user-visible payload the pause enables.
+        // Throttled on real wall-clock, so assert at-least-once.
+        verify(
+          () => mockMainBloc.add(any(that: isA<VideoEditorSeekRequested>())),
+        ).called(isPositive);
       });
 
       testWidgets(
@@ -415,6 +425,15 @@ void main() {
           await tester.pump(const Duration(milliseconds: 250));
           await tester.pump(const Duration(milliseconds: 50));
 
+          // The follow animation scrolls via a DrivenScrollActivity
+          // (dragDetails == null); it must never be misread as a user scrub.
+          // This negative case is the exact discriminator the fix relies on.
+          verifyNever(
+            () => mockMainBloc.add(
+              const VideoEditorExternalPauseRequested(isPaused: true),
+            ),
+          );
+
           // Touch down on the clip strip while idle. The clip's tap /
           // long-press recognizers join the gesture arena, so the scroll
           // drag only wins after touch slop — as with a real finger on a
@@ -451,8 +470,36 @@ void main() {
             ),
           ).called(1);
 
+          // The scrub also seeks — the user-visible payload the pause enables.
+          // Throttled on real wall-clock, so assert at-least-once.
+          verify(
+            () => mockMainBloc.add(any(that: isA<VideoEditorSeekRequested>())),
+          ).called(isPositive);
+
           await gesture.up();
           await tester.pumpAndSettle();
+
+          // ScrollEnd cleared _isUserScrolling, re-enabling follow-sync: a new
+          // position update now drives a fresh follow animation. The scrub left
+          // the timeline scrolled forward, so a jump back near the start scrolls
+          // it toward zero — proving the follow ran, not that the flag stayed
+          // stuck.
+          final scrollView = tester.widget<SingleChildScrollView>(
+            timelineScrollView(),
+          );
+          final offsetBeforeFollow = scrollView.controller!.offset;
+          expect(offsetBeforeFollow, greaterThan(0));
+          states.add(
+            const VideoEditorMainState(
+              currentPosition: Duration(milliseconds: 500),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(
+            scrollView.controller!.offset,
+            lessThan(offsetBeforeFollow),
+          );
         },
       );
     });
