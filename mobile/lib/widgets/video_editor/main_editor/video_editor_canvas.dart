@@ -645,18 +645,28 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
   int? _cachedSeamTimelineVersion;
 
   /// Returns the current [SeamTimeline], rebuilding only when the clips change
-  /// identity or the seam cache mutates ([TransitionSeamRenderService.version]).
+  /// identity or either derived cache mutates — the seam cache
+  /// ([TransitionSeamRenderService.version]) or the speed-render cache
+  /// ([ClipSpeedRenderService.version]), since a landed speed body changes the
+  /// composite span the timeline maps.
   SeamTimeline get _seamTimeline {
     final clips = ref.read(clipManagerProvider).clips;
     final clipsHash = Object.hashAll(clips);
-    final version = _seamService.version;
+    final version = Object.hash(
+      _seamService.version,
+      _speedRenderService.version,
+    );
     final cached = _cachedSeamTimeline;
     if (cached != null &&
         _cachedSeamTimelineClipsHash == clipsHash &&
         _cachedSeamTimelineVersion == version) {
       return cached;
     }
-    final timeline = SeamTimeline(clips, _seamService);
+    final timeline = SeamTimeline(
+      clips,
+      _seamService,
+      speedRenders: _speedRenderService,
+    );
     _cachedSeamTimeline = timeline;
     _cachedSeamTimelineClipsHash = clipsHash;
     _cachedSeamTimelineVersion = version;

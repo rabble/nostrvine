@@ -383,11 +383,18 @@ class TransitionSeamRenderService {
 
 /// Maps positions between the preview player's composite timeline (trimmed clip
 /// bodies + spliced seams, shorter than the editor timeline) and the editor
-/// timeline (clips at full length). Clip bodies map 1:1; each seam maps to the
-/// region straddling its clip boundary, so the on-screen transition lines up
-/// with the editor playhead. Identity when no seam is spliced.
+/// timeline (clips at full length). A clip body maps 1:1, or — when a
+/// pre-rendered speed body is spliced in — by that file's real duration (which
+/// encoder frame-rounding can nudge off `playbackDuration`); each seam maps to
+/// the region straddling its clip boundary, so the on-screen transition lines
+/// up with the editor playhead. Identity when neither a seam nor a speed body
+/// is spliced.
 class SeamTimeline {
-  SeamTimeline(List<DivineVideoClip> clips, TransitionSeamRenderService seams) {
+  SeamTimeline(
+    List<DivineVideoClip> clips,
+    TransitionSeamRenderService seams, {
+    ClipSpeedRenderService? speedRenders,
+  }) {
     final clamped = clampTransitions(clips);
     var composite = Duration.zero;
     var editor = Duration.zero; // start of the current clip on the editor line
@@ -421,9 +428,19 @@ class SeamTimeline {
       final bodyEditorStart = editor + headPb;
       final bodyEditorEnd = editor + clipDuration - tailPb;
       if (bodyEditorEnd > bodyEditorStart) {
-        final bodyComposite = bodyEditorEnd - bodyEditorStart;
         final editorStart = _maxDur(bodyEditorStart, editorCursor);
         final editorEnd = _maxDur(bodyEditorEnd, editorStart);
+        // A spliced speed body plays its pre-rendered file, whose real duration
+        // can differ from playbackDuration by encoder frame-rounding. Use that
+        // real duration as the composite span (as seams use seam.duration) so
+        // the player↔editor mapping stays accurate. The gate matches
+        // buildSeamAwarePlayerClips: the rendered file is only used when no seam
+        // consumes this clip (headPb == tailPb == 0).
+        final rendered = headPb == Duration.zero && tailPb == Duration.zero
+            ? speedRenders?.cached(clip)
+            : null;
+        final bodyComposite =
+            rendered?.duration ?? (bodyEditorEnd - bodyEditorStart);
         _segments.add(
           _Segment(
             composite,

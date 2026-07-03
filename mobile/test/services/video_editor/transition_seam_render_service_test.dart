@@ -388,6 +388,79 @@ void main() {
       );
     });
 
+    test('maps a spliced speed body by its real rendered duration, not '
+        'playbackDuration', () {
+      // 3s clip at 2× → playbackDuration 1500ms, but the re-encoded file lands
+      // at 1400ms (frame-rounding). The composite span must follow the real
+      // file, else the playhead drifts by the 100ms delta.
+      final clipA = DivineVideoClip(
+        id: 'a',
+        video: editor.EditorVideo.file(File('/tmp/a.mp4')),
+        duration: const Duration(seconds: 3),
+        recordedAt: DateTime(2024),
+        targetAspectRatio: model.AspectRatio.square,
+        originalAspectRatio: 1,
+        playbackSpeed: 2,
+      );
+      final speeds = ClipSpeedRenderService()
+        ..cacheForTest(
+          clipA,
+          const RenderedSpeedClip(
+            path: '/tmp/a_speed.mp4',
+            duration: Duration(milliseconds: 1400),
+          ),
+        );
+      final timeline = SeamTimeline(
+        [clipA],
+        TransitionSeamRenderService(),
+        speedRenders: speeds,
+      );
+
+      // Composite (real file) span 1400ms ≠ editor (playbackDuration) span
+      // 1500ms, so the axes are no longer the identity.
+      expect(timeline.hasSeams, isTrue);
+      // Composite end (1400ms, where the file actually ends) → editor end
+      // (1500ms, the clip's full drawn length).
+      expect(
+        timeline.compositeToTimeline(const Duration(milliseconds: 1400)),
+        equals(const Duration(milliseconds: 1500)),
+      );
+      // Half the composite maps to half the editor body.
+      expect(
+        timeline.compositeToTimeline(const Duration(milliseconds: 700)),
+        equals(const Duration(milliseconds: 750)),
+      );
+      // Round-trips: editor end → composite end.
+      expect(
+        timeline.timelineToComposite(const Duration(milliseconds: 1500)),
+        equals(const Duration(milliseconds: 1400)),
+      );
+    });
+
+    test('leaves a speed body 1:1 when no render is cached yet', () {
+      final clipA = DivineVideoClip(
+        id: 'a',
+        video: editor.EditorVideo.file(File('/tmp/a.mp4')),
+        duration: const Duration(seconds: 3),
+        recordedAt: DateTime(2024),
+        targetAspectRatio: model.AspectRatio.square,
+        originalAspectRatio: 1,
+        playbackSpeed: 2,
+      );
+      final timeline = SeamTimeline(
+        [clipA],
+        TransitionSeamRenderService(),
+        speedRenders: ClipSpeedRenderService(),
+      );
+
+      // No rendered file → live retiming, composite span == playbackDuration.
+      expect(timeline.hasSeams, isFalse);
+      expect(
+        timeline.compositeToTimeline(const Duration(milliseconds: 750)),
+        equals(const Duration(milliseconds: 750)),
+      );
+    });
+
     test('maps the mid-seam position onto the clip boundary', () {
       // 500ms dissolve on 3s clips → consumed 1000ms/side, seam 1500ms.
       final clipA = clip('a', transition: dissolve);
