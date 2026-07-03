@@ -277,7 +277,8 @@ class DraftStorageService {
   ///
   /// Queries the database directly by `publish_status` column instead of
   /// loading all drafts into memory. Corrupted rows (0 clips) are cleaned
-  /// up automatically.
+  /// up automatically. Drafts whose clip source files are missing are excluded
+  /// from playable lists without mutating their rows.
   Future<List<DivineVideoDraft>> getDraftsByPublishStatuses(
     Set<PublishStatus> statuses,
   ) async {
@@ -304,8 +305,9 @@ class DraftStorageService {
           clipRows: clipRows,
           documentsPath: documentsPath,
         );
-        if (draft != null) {
-          drafts.add(draft);
+        final validatedDraft = draft == null ? null : _validatedDraft(draft);
+        if (validatedDraft != null) {
+          drafts.add(validatedDraft);
         }
       }
     }
@@ -422,6 +424,29 @@ class DraftStorageService {
     return draft != null && draft.clips.isNotEmpty;
   }
 
+  DivineVideoDraft? _validatedDraft(DivineVideoDraft draft) {
+    final validClips = _filterValidClips(draft.clips);
+    if (validClips.isEmpty) {
+      Log.warning(
+        '📝 Draft ${draft.id} hidden because all clip files are missing',
+        name: 'DraftStorageService',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+
+    if (validClips.length < draft.clips.length) {
+      Log.info(
+        '📝 Draft ${draft.id}: ${validClips.length} playable clips '
+        '(${draft.clips.length - validClips.length} missing)',
+        name: 'DraftStorageService',
+        category: LogCategory.video,
+      );
+    }
+
+    return _clearMissingFinalRenderedClip(draft.copyWith(clips: validClips));
+  }
+
   /// Filter clips to only include those with existing video files.
   List<DivineVideoClip> _filterValidClips(List<DivineVideoClip> clips) {
     return clips.where((clip) {
@@ -467,8 +492,9 @@ class DraftStorageService {
           clipRows: clipRows,
           documentsPath: documentsPath,
         );
-        if (draft != null) {
-          drafts.add(_clearMissingFinalRenderedClip(draft));
+        final validatedDraft = draft == null ? null : _validatedDraft(draft);
+        if (validatedDraft != null) {
+          drafts.add(validatedDraft);
         }
       }
 

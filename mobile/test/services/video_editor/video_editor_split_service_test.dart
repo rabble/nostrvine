@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/models/divine_video_clip.dart';
@@ -9,6 +11,10 @@ import 'package:pro_video_editor/pro_video_editor.dart';
 class MockPathProviderPlatform extends Fake
     with MockPlatformInterfaceMixin
     implements PathProviderPlatform {
+  MockPathProviderPlatform({required this.documentsPath});
+
+  final String documentsPath;
+
   @override
   Future<String?> getApplicationCachePath() async {
     return '/cache';
@@ -16,12 +22,13 @@ class MockPathProviderPlatform extends Fake
 
   @override
   Future<String?> getApplicationDocumentsPath() async {
-    return '/documents';
+    return documentsPath;
   }
 }
 
 class MockProVideoEditor extends ProVideoEditor {
   bool shouldThrowError = false;
+  bool createOutputFiles = true;
   final List<SplitVideoModel> splitRequests = [];
 
   @override
@@ -39,6 +46,13 @@ class MockProVideoEditor extends ProVideoEditor {
     }
     splitRequests.add(value);
     // Simulate a frame-accurate split producing two files.
+    if (createOutputFiles) {
+      for (final outputPath in [value.startOutputPath, value.endOutputPath]) {
+        final file = File(outputPath);
+        file.parent.createSync(recursive: true);
+        file.writeAsBytesSync([0]);
+      }
+    }
     await Future<void>.delayed(const Duration(milliseconds: 10));
     return [value.startOutputPath, value.endOutputPath];
   }
@@ -50,11 +64,17 @@ class MockProVideoEditor extends ProVideoEditor {
 void main() {
   late MockProVideoEditor mockProVideoEditor;
   late PathProviderPlatform originalPathProviderInstance;
+  late Directory tempDir;
 
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
+    tempDir = Directory.systemTemp.createTempSync(
+      'openvine_split_service_test_',
+    );
     originalPathProviderInstance = PathProviderPlatform.instance;
-    PathProviderPlatform.instance = MockPathProviderPlatform();
+    PathProviderPlatform.instance = MockPathProviderPlatform(
+      documentsPath: '${tempDir.path}/documents',
+    );
     mockProVideoEditor = MockProVideoEditor();
     ProVideoEditor.instance = mockProVideoEditor;
     mockProVideoEditor.splitRequests.clear();
@@ -62,6 +82,9 @@ void main() {
 
   tearDown(() {
     PathProviderPlatform.instance = originalPathProviderInstance;
+    if (tempDir.existsSync()) {
+      tempDir.deleteSync(recursive: true);
+    }
   });
 
   group('VideoEditorSplitService', () {
@@ -439,6 +462,39 @@ void main() {
           expect(e, isException);
         }
       });
+
+      test(
+        'does not report rendered clips when output files are missing',
+        () async {
+          mockProVideoEditor.createOutputFiles = false;
+
+          final clip = DivineVideoClip(
+            id: 'test-clip',
+            video: EditorVideo.file('/test/video.mp4'),
+            duration: const Duration(seconds: 5),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: model.AspectRatio.square,
+            originalAspectRatio: 9 / 16,
+          );
+
+          final renderedClips = <DivineVideoClip>[];
+
+          await expectLater(
+            VideoEditorSplitService.splitClip(
+              sourceClip: clip,
+              splitPosition: const Duration(seconds: 2),
+              onClipsCreated: (_, _) {},
+              onThumbnailExtracted: null,
+              onClipRendered: (renderedClip, _) {
+                renderedClips.add(renderedClip);
+              },
+            ),
+            throwsStateError,
+          );
+
+          expect(renderedClips, isEmpty);
+        },
+      );
 
       test('generates unique IDs for split clips', () async {
         final clip = DivineVideoClip(

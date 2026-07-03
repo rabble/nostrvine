@@ -1141,7 +1141,7 @@ class VideoEditorRenderService {
     final token = Object();
     _activeNativeRenderTokens[model.id] = token;
     try {
-      return await ProVideoEditor.instance
+      final outputPaths = await ProVideoEditor.instance
           .splitVideo(model, nativeLogLevel: nativeLogLevel)
           .timeout(
             _splitWatchdogTimeout,
@@ -1153,6 +1153,16 @@ class VideoEditorRenderService {
               throw const RenderCanceledException();
             },
           );
+      final missingOutputPath = outputPaths.where((path) {
+        return path.isEmpty || !File(path).existsSync();
+      }).firstOrNull;
+      if (missingOutputPath != null) {
+        throw StateError(
+          'Native split completed without creating output file: '
+          '$missingOutputPath',
+        );
+      }
+      return outputPaths;
     } finally {
       if (identical(_activeNativeRenderTokens[model.id], token)) {
         _activeNativeRenderTokens.remove(model.id);

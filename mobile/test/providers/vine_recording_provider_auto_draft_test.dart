@@ -11,15 +11,36 @@ import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+import '../mocks/mock_path_provider_platform.dart';
 
 void main() {
   group('VineRecordingProvider auto-draft', () {
     late ProviderContainer container;
     late AppDatabase database;
     late DraftStorageService draftStorage;
+    late Directory tempDir;
+    late Directory documentsDir;
+    late Directory supportDir;
+    late PathProviderPlatform originalPathProviderInstance;
 
     setUp(() async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      tempDir = Directory.systemTemp.createTempSync(
+        'vine_recording_provider_auto_draft_test_',
+      );
+      documentsDir = Directory('${tempDir.path}/documents')..createSync();
+      supportDir = Directory('${tempDir.path}/support')..createSync();
+
+      originalPathProviderInstance = PathProviderPlatform.instance;
+      final mockPathProvider = MockPathProviderPlatform()
+        ..setTemporaryPath(tempDir.path)
+        ..setApplicationDocumentsPath(documentsDir.path)
+        ..setApplicationSupportPath(supportDir.path);
+      PathProviderPlatform.instance = mockPathProvider;
+
       database = AppDatabase.test(NativeDatabase.memory());
       draftStorage = DraftStorageService(
         draftsDao: database.draftsDao,
@@ -34,7 +55,17 @@ void main() {
     tearDown(() async {
       container.dispose();
       await database.close();
+      PathProviderPlatform.instance = originalPathProviderInstance;
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
     });
+
+    File createVideoFile(String name) {
+      final file = File('${documentsDir.path}/$name');
+      file.writeAsBytesSync([0]);
+      return file;
+    }
 
     test('stopRecording should create draft automatically', () async {
       // This test validates the auto-draft creation behavior
@@ -43,7 +74,7 @@ void main() {
 
       // Simulate what stopRecording should do:
       // 1. Create a draft with default metadata
-      final videoFile = File('/tmp/test_video.mp4');
+      final videoFile = createVideoFile('test_video.mp4');
       final draft = DivineVideoDraft.create(
         clips: [
           DivineVideoClip(
@@ -72,7 +103,7 @@ void main() {
 
     test('auto-created draft should have default metadata', () async {
       // Create draft with expected default values
-      final videoFile = File('/tmp/test_video.mp4');
+      final videoFile = createVideoFile('test_video.mp4');
       final draft = DivineVideoDraft.create(
         clips: [
           DivineVideoClip(

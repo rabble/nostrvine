@@ -26,6 +26,12 @@ void main() {
     late DraftStorageService service;
     late PathProviderPlatform originalPathProviderInstance;
 
+    void createDocumentFile(String basename) {
+      final file = File(p.join(documentsPath, basename));
+      file.parent.createSync(recursive: true);
+      file.writeAsBytesSync([0]);
+    }
+
     setUp(() async {
       TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -40,9 +46,25 @@ void main() {
         draftsDao: database.draftsDao,
         clipsDao: database.clipsDao,
       );
+
+      for (final basename in [
+        'video.mp4',
+        'video1.mp4',
+        'video2.mp4',
+        'clip_valid.mp4',
+        'clip_corrupt.mp4',
+        'a1.mp4',
+        'a2.mp4',
+        'b1.mp4',
+        'old_video.mp4',
+      ]) {
+        createDocumentFile(basename);
+      }
     });
 
     tearDown(() async {
+      final docsDir = Directory(documentsPath);
+      if (docsDir.existsSync()) docsDir.deleteSync(recursive: true);
       PathProviderPlatform.instance = originalPathProviderInstance;
       await database.close();
     });
@@ -312,6 +334,66 @@ void main() {
           expect(drafts.map((d) => d.id), ['draft_valid']);
         },
       );
+
+      test('hides drafts whose clip source files are missing', () async {
+        final now = DateTime(2025);
+        createDocumentFile('present.mp4');
+        final playableDraft = DivineVideoDraft(
+          id: 'draft_playable',
+          clips: [
+            DivineVideoClip(
+              id: 'clip_present',
+              video: EditorVideo.file('/path/to/present.mp4'),
+              duration: const Duration(seconds: 6),
+              recordedAt: now,
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Playable',
+          description: '',
+          hashtags: {},
+          selectedApproach: 'hybrid',
+          createdAt: now,
+          lastModified: now,
+          publishStatus: PublishStatus.draft,
+          publishAttempts: 0,
+        );
+        final brokenDraft = DivineVideoDraft(
+          id: 'draft_broken',
+          clips: [
+            DivineVideoClip(
+              id: 'clip_missing',
+              video: EditorVideo.file('/path/to/missing-split-output.mp4'),
+              duration: const Duration(seconds: 6),
+              recordedAt: now,
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: 'Broken',
+          description: '',
+          hashtags: {},
+          selectedApproach: 'hybrid',
+          createdAt: now,
+          lastModified: now,
+          publishStatus: PublishStatus.draft,
+          publishAttempts: 0,
+        );
+
+        await service.saveDraft(playableDraft);
+        await service.saveDraft(brokenDraft);
+
+        final drafts = await service.getAllDrafts();
+        expect(drafts.map((draft) => draft.id), ['draft_playable']);
+
+        // The row is left intact so a future recovery path or support tooling
+        // can still inspect it; the playable library just stops offering it.
+        expect(
+          await database.draftsDao.getDraftById('draft_broken'),
+          isNotNull,
+        );
+      });
 
       test('clears missing final rendered clip references', () async {
         final draft = DivineVideoDraft.create(
@@ -670,6 +752,7 @@ void main() {
     group('getDraftsByPublishStatuses', () {
       DivineVideoDraft createDraftWithStatus(String id, PublishStatus status) {
         final now = DateTime.now();
+        createDocumentFile('$id.mp4');
         return DivineVideoDraft(
           id: id,
           clips: [
@@ -937,6 +1020,9 @@ void main() {
       });
 
       test('preserves clip order after migration', () async {
+        createDocumentFile('first.mp4');
+        createDocumentFile('second.mp4');
+        createDocumentFile('third.mp4');
         final draftJson = buildDraftJson(
           id: 'draft_order',
           clips: [
@@ -1193,12 +1279,12 @@ void main() {
       test('keeps a cover referenced by a saved draft when autosave is '
           'deleted', () async {
         final cover = writeCover('shared_cover.jpg');
-        final autosave = draftWithCover(cover.path).copyWith(
-          id: 'draft_autosave',
-        );
-        final savedDraft = draftWithCover(cover.path).copyWith(
-          id: 'draft_named',
-        );
+        final autosave = draftWithCover(
+          cover.path,
+        ).copyWith(id: 'draft_autosave');
+        final savedDraft = draftWithCover(
+          cover.path,
+        ).copyWith(id: 'draft_named');
 
         await service.saveDraft(autosave);
         await service.saveDraft(savedDraft);
