@@ -1,5 +1,5 @@
 // ABOUTME: Dialogs for adding videos to curated lists
-// ABOUTME: Extracted from share_video_menu.dart - SelectListDialog and CreateListDialog
+// ABOUTME: SelectListDialog and CreateListDialog for curated video lists
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';

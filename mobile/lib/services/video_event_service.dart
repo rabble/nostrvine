@@ -5470,7 +5470,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// with cached state (like `profileFeedProvider`, `homeFeedProvider`) need
   /// explicit `refreshFromService()` calls.
   ///
-  /// See share_video_menu.dart `_updateVideo()` for the complete update pattern.
   void updateVideoEvent(VideoEvent updatedVideo) {
     bool foundAny = false;
 

@@ -1,20 +1,15 @@
-// ABOUTME: Tests for the unified share sheet (_UnifiedShareSheet) and the
-// ABOUTME: legacy ShareVideoMenu people-lists section. Covers share sheet
-// ABOUTME: rendering, feature flags, save/bookmark, copy link, share via, and
-// ABOUTME: confirms the share menu now opens AddToPeopleListsSheet.
+// ABOUTME: Tests for the unified share sheet (_UnifiedShareSheet). Covers share
+// ABOUTME: sheet rendering, feature flags, save/bookmark, copy link, share via,
+// ABOUTME: and quick-send behavior.
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
-import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
-import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -23,7 +18,6 @@ import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
-import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -660,95 +654,4 @@ void main() {
       expect(find.text(l10n.shareWithTitle), findsNothing);
     });
   });
-
-  group(ShareVideoMenu, () {
-    late _MockPeopleListsBloc peopleListsBloc;
-    late MockAuthService mockAuthService;
-
-    setUp(() {
-      peopleListsBloc = _MockPeopleListsBloc();
-      when(() => peopleListsBloc.state).thenReturn(const PeopleListsState());
-      mockAuthService = createMockAuthService();
-    });
-
-    tearDown(() async {
-      await peopleListsBloc.close();
-    });
-
-    Widget buildSubject({required bool curatedListsEnabled}) {
-      return testProviderScope(
-        mockAuthService: mockAuthService,
-        additionalOverrides: [
-          bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
-          curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
-          isFeatureEnabledProvider(
-            FeatureFlag.curatedLists,
-          ).overrideWithValue(curatedListsEnabled),
-          isFeatureEnabledProvider(
-            FeatureFlag.debugTools,
-          ).overrideWithValue(false),
-        ],
-        child: BlocProvider<PeopleListsBloc>.value(
-          value: peopleListsBloc,
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ShareVideoMenu(video: testVideo)),
-          ),
-        ),
-      );
-    }
-
-    testWidgets(
-      'hides people-lists section when curatedLists flag is disabled',
-      (tester) async {
-        await tester.pumpWidget(buildSubject(curatedListsEnabled: false));
-        await tester.pumpAndSettle();
-
-        expect(find.text('People Lists'), findsNothing);
-        expect(find.text('Add to list'), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'shows a single Add to list action when curatedLists flag is enabled',
-      (tester) async {
-        await tester.pumpWidget(buildSubject(curatedListsEnabled: true));
-        await tester.pumpAndSettle();
-
-        expect(find.text('People Lists'), findsOneWidget);
-        expect(find.text('Add to list'), findsOneWidget);
-        // Legacy follow-set copy must no longer be present.
-        expect(find.text('Create Follow Set'), findsNothing);
-        expect(find.text('Add to Follow Set'), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'tapping the Add to list action opens $AddToPeopleListsSheet via '
-      '$VineBottomSheet',
-      (tester) async {
-        await tester.pumpWidget(buildSubject(curatedListsEnabled: true));
-        await tester.pumpAndSettle();
-
-        // Scroll the people-lists section into view so the tap target is
-        // hit-testable regardless of default test viewport height.
-        await tester.dragUntilVisible(
-          find.text('Add to list'),
-          find.byType(ShareVideoMenu),
-          const Offset(0, -120),
-        );
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Add to list'));
-        await tester.pumpAndSettle();
-
-        expect(find.byType(AddToPeopleListsSheet), findsOneWidget);
-        expect(find.byType(VineBottomSheet), findsOneWidget);
-      },
-    );
-  });
 }
-
-class _MockPeopleListsBloc extends MockBloc<PeopleListsEvent, PeopleListsState>
-    implements PeopleListsBloc {}

@@ -416,7 +416,7 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('successful report shows $ReportConfirmationDialog', (
+    testWidgets('successful report shows the confirmation view', (
       tester,
     ) async {
       await setLargeSurface(tester);
@@ -599,66 +599,6 @@ void main() {
           hashtags: any(named: 'hashtags'),
         ),
       ).called(1);
-    });
-  });
-
-  group('$ReportConfirmationDialog', () {
-    testWidgets('renders success content with DM mention', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () => showDialog<void>(
-                  context: context,
-                  builder: (_) => const ReportConfirmationDialog(),
-                ),
-                child: const Text('Open'),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
-
-      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
-      expect(find.text(l10n.reportReceivedThankYou), findsOneWidget);
-      expect(
-        find.textContaining('via direct message'),
-        findsOneWidget,
-        reason: 'TC-025: Confirmation should mention DM follow-up',
-      );
-      expect(find.text(l10n.reportLearnMore), findsOneWidget);
-      expect(find.text(l10n.reportSafetyUrl), findsOneWidget);
-    });
-
-    testWidgets('renders Close button', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () => showDialog<void>(
-                  context: context,
-                  builder: (_) => const ReportConfirmationDialog(),
-                ),
-                child: const Text('Open'),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
-
-      expect(find.text(l10n.reportClose), findsOneWidget);
     });
   });
 

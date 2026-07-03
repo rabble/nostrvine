@@ -1,4 +1,4 @@
-// ABOUTME: Tests for ShareVideoMenu copy event ID functionality using nevent format
+// ABOUTME: Tests for share-sheet copy event ID functionality using nevent format
 // ABOUTME: Validates that copy event ID produces NIP-19 nevent bech32 encoding
 
 import 'package:flutter_test/flutter_test.dart';
@@ -74,7 +74,7 @@ void main() {
     );
 
     test('video event nevent includes id, author, and relay hints', () {
-      // This tests the full nevent encoding that ShareVideoMenu should produce
+      // This tests the full nevent encoding that the share sheet should produce
       final nevent = NIP19Tlv.encodeNevent(
         Nevent(
           id: testEventId,

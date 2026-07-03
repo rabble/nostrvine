@@ -18,7 +18,7 @@ import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/utils/delete_failure_localization.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
-import 'package:openvine/widgets/share_video_menu.dart';
+import 'package:openvine/widgets/show_edit_dialog_for_video.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
