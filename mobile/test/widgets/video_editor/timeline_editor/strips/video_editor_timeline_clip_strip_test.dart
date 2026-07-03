@@ -10,6 +10,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_trim_handles.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -38,6 +39,10 @@ void main() {
       ValueChanged<List<DivineVideoClip>>? onReorder,
       ValueChanged<bool>? onReorderChanged,
       ClipThumbnailManager? thumbnailManager,
+      String? trimmingClipId,
+      ClipTrimCallback? onTrimChanged,
+      ValueChanged<bool>? onTrimDragChanged,
+      bool scrollable = true,
       List<NavigatorObserver> navigatorObservers = const <NavigatorObserver>[],
     }) {
       final testClips =
@@ -47,6 +52,20 @@ void main() {
             _createTestClip(id: 'clip2', seconds: 4),
           ];
 
+      final strip = VideoEditorTimelineClipStrip(
+        clips: testClips,
+        totalWidth: totalWidth,
+        pixelsPerSecond: pixelsPerSecond,
+        scrollController: scrollable ? scrollController : null,
+        isInteracting: isInteracting,
+        onReorder: onReorder,
+        onReorderChanged: onReorderChanged,
+        trimmingClipId: trimmingClipId,
+        onTrimChanged: onTrimChanged,
+        onTrimDragChanged: onTrimDragChanged,
+        thumbnailManager: thumbnailManager,
+      );
+
       return MaterialApp(
         navigatorObservers: navigatorObservers,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -54,20 +73,13 @@ void main() {
         home: Scaffold(
           body: BlocProvider<VideoEditorMainBloc>.value(
             value: mainBloc,
-            child: SingleChildScrollView(
-              controller: scrollController,
-              scrollDirection: Axis.horizontal,
-              child: VideoEditorTimelineClipStrip(
-                clips: testClips,
-                totalWidth: totalWidth,
-                pixelsPerSecond: pixelsPerSecond,
-                scrollController: scrollController,
-                isInteracting: isInteracting,
-                onReorder: onReorder,
-                onReorderChanged: onReorderChanged,
-                thumbnailManager: thumbnailManager,
-              ),
-            ),
+            child: scrollable
+                ? SingleChildScrollView(
+                    controller: scrollController,
+                    scrollDirection: Axis.horizontal,
+                    child: strip,
+                  )
+                : Align(alignment: Alignment.centerLeft, child: strip),
           ),
         ),
       );
@@ -344,6 +356,75 @@ void main() {
         await tester.pumpWidget(buildWidget(clips: clips, totalWidth: 400));
 
         expect(tester.takeException(), isNull);
+      });
+    });
+
+    group('trim drag accumulation', () {
+      // Regression: the trim tile used to compute `newTrim = widget.clip.trim +
+      // incrementalDelta`, reading the base back from widget.clip. That value
+      // only lands on widget.clip a frame after it round-trips through
+      // ClipEditorBloc, so when several drag updates fire before a rebuild
+      // (120Hz touch, or a heavy timeline that can't rebuild every frame) every
+      // update reused the same stale base and dropped the intermediate deltas —
+      // the handle lagged further behind the finger the longer you dragged.
+      //
+      // Here widget.clip is never fed the reported trim back, so the base stays
+      // at zero across the whole drag. With local accumulation the reported
+      // trimEnd grows on every update; without it every update reports the same
+      // single-delta value.
+      testWidgets('right handle accumulates deltas across updates without a '
+          'rebuilt clip', (tester) async {
+        final clip = _createTestClip(id: 'solo', seconds: 30);
+        final reportedTrimEndMs = <int>[];
+
+        await tester.pumpWidget(
+          buildWidget(
+            clips: [clip],
+            trimmingClipId: clip.id,
+            scrollable: false,
+            onTrimChanged:
+                ({
+                  required clipId,
+                  required isStart,
+                  required trimStart,
+                  required trimEnd,
+                }) {
+                  if (!isStart) reportedTrimEndMs.add(trimEnd.inMilliseconds);
+                },
+          ),
+        );
+
+        // Start just inside the right edge: the right handle's grab zone
+        // reaches inward from the edge, and staying in-bounds avoids the
+        // beyond-edge hit area that only the production HitExpandedBox makes
+        // reachable.
+        final box = tester.renderObject<RenderBox>(
+          find.byType(TimelineTrimHandles),
+        );
+        final start = box.localToGlobal(
+          Offset(box.size.width - 2, box.size.height / 2),
+        );
+
+        final gesture = await tester.startGesture(start);
+        await tester.pump();
+        for (var i = 0; i < 5; i++) {
+          await gesture.moveBy(const Offset(-30, 0));
+          await tester.pump();
+        }
+        await gesture.up();
+        await tester.pump();
+
+        expect(reportedTrimEndMs.length, greaterThanOrEqualTo(3));
+        for (var i = 1; i < reportedTrimEndMs.length; i++) {
+          expect(
+            reportedTrimEndMs[i],
+            greaterThan(reportedTrimEndMs[i - 1]),
+            reason:
+                'trimEnd must accumulate across drag updates. A constant value '
+                'means each update reused the stale widget.clip base and '
+                'dropped the previous deltas.',
+          );
+        }
       });
     });
 
