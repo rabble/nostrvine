@@ -144,18 +144,6 @@ class LogMessageBatcher {
         return '📦 BATCHED: ${batchInfo.count} similar messages (pattern: $pattern)';
     }
   }
-
-  /// Force flush all batches immediately
-  void flushNow() {
-    _flushBatches();
-  }
-
-  /// Get current batch statistics for debugging
-  Map<String, int> getBatchStats() {
-    return _batchedMessages.map(
-      (pattern, info) => MapEntry(pattern, info.count),
-    );
-  }
 }
 
 /// Internal class to track batch information
@@ -168,55 +156,4 @@ class _BatchInfo {
   final Queue<String> examples = Queue<String>();
 
   _BatchInfo({required this.pattern, required this.level, this.category});
-}
-
-/// Extension to add batching capabilities to Log class
-extension LogBatcher on Log {
-  /// Log a message with automatic batching for repetitive patterns
-  static void batchableInfo(
-    String message, {
-    String? name,
-    LogCategory? category,
-  }) {
-    if (LogMessageBatcher.instance.tryBatchMessage(
-      message,
-      category: category,
-    )) {
-      return; // Message was batched
-    }
-    // Log normally if not batchable
-    Log.info(message, name: name, category: category);
-  }
-
-  /// Log a debug message with automatic batching
-  static void batchableDebug(
-    String message, {
-    String? name,
-    LogCategory? category,
-  }) {
-    if (LogMessageBatcher.instance.tryBatchMessage(
-      message,
-      level: LogLevel.debug,
-      category: category,
-    )) {
-      return; // Message was batched
-    }
-    Log.debug(message, name: name, category: category);
-  }
-
-  /// Log a warning message with automatic batching
-  static void batchableWarning(
-    String message, {
-    String? name,
-    LogCategory? category,
-  }) {
-    if (LogMessageBatcher.instance.tryBatchMessage(
-      message,
-      level: LogLevel.warning,
-      category: category,
-    )) {
-      return; // Message was batched
-    }
-    Log.warning(message, name: name, category: category);
-  }
 }

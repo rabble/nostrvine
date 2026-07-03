@@ -46,7 +46,6 @@ import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/repost_resolver.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_filter_builder.dart';
-import 'package:openvine/utils/log_batcher.dart';
 import 'package:openvine/utils/log_tag_sanitizer.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -2306,14 +2305,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         paginationState.markEventSeen(event.id);
       }
 
-      // Use batched logging for repetitive event logs
-      // VideoEventLogBatcher.batchVideoEvent(
-      //   eventId: event.id,
-      //   authorPubkey: event.pubkey,
-      //   subscriptionType: subscriptionType.toString(),
-      //   kind: event.kind,
-      // ); // Commented out - too verbose
-
       if (!NIP71VideoKinds.isVideoKind(event.kind) && event.kind != 16) {
         // Cache non-video events in appropriate services instead of discarding
         if (event.kind == 0 && _profileRepository != null) {
@@ -2398,12 +2389,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // Handle different event kinds
       if (NIP71VideoKinds.isVideoKind(event.kind)) {
         // Direct video event
-        // Use batched logging for NIP-71 events
-        // VideoEventLogBatcher.batchNip71Event(
-        //   eventId: event.id,
-        //   subscriptionType: subscriptionType.toString(),
-        // ); // Commented out - too verbose
-
         // Debug: Check for d tag
         final hasDTag = event.tags.any(
           (tag) => tag.isNotEmpty && tag[0] == 'd',
@@ -5356,9 +5341,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   @override
   void dispose() {
     _isDisposed = true;
-
-    // Flush any remaining batched logs
-    LogBatcher.flush();
 
     _retryTimer?.cancel();
     _cancelRelayReadyRetrySubscription();
