@@ -7996,10 +7996,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorTuneTemperature => 'Температура';
 
   @override
-  String get videoEditorTuneSharpness => 'Острота';
-
-  @override
-  String get videoEditorTuneLuminance => 'Осветеност';
+  String get videoEditorTuneTint => 'Отенък';
 
   @override
   String get videoEditorTuneFade => 'Избледняване';

@@ -7973,10 +7973,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorTuneTemperature => 'Temperatura';
 
   @override
-  String get videoEditorTuneSharpness => 'Nitidez';
-
-  @override
-  String get videoEditorTuneLuminance => 'Luminância';
+  String get videoEditorTuneTint => 'Tonalidade';
 
   @override
   String get videoEditorTuneFade => 'Esmaecer';

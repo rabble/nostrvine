@@ -7625,10 +7625,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorTuneTemperature => '색온도';
 
   @override
-  String get videoEditorTuneSharpness => '선명도';
-
-  @override
-  String get videoEditorTuneLuminance => '휘도';
+  String get videoEditorTuneTint => '틴트';
 
   @override
   String get videoEditorTuneFade => '페이드';

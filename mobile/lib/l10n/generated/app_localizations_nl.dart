@@ -7955,10 +7955,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorTuneTemperature => 'Temperatuur';
 
   @override
-  String get videoEditorTuneSharpness => 'Scherpte';
-
-  @override
-  String get videoEditorTuneLuminance => 'Luminantie';
+  String get videoEditorTuneTint => 'Kleurtint';
 
   @override
   String get videoEditorTuneFade => 'Vervagen';

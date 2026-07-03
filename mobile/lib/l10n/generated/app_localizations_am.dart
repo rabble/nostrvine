@@ -7760,10 +7760,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorTuneTemperature => 'ሙቀት';
 
   @override
-  String get videoEditorTuneSharpness => 'ስለት';
-
-  @override
-  String get videoEditorTuneLuminance => 'ብርሃን';
+  String get videoEditorTuneTint => 'ቲንት';
 
   @override
   String get videoEditorTuneFade => 'መደብዘዝ';

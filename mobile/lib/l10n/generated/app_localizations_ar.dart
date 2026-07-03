@@ -7870,10 +7870,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorTuneTemperature => 'درجة الحرارة';
 
   @override
-  String get videoEditorTuneSharpness => 'الحدة';
-
-  @override
-  String get videoEditorTuneLuminance => 'الإضاءة';
+  String get videoEditorTuneTint => 'الصبغة';
 
   @override
   String get videoEditorTuneFade => 'التلاشي';

@@ -8099,10 +8099,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorTuneTemperature => 'Temperatură';
 
   @override
-  String get videoEditorTuneSharpness => 'Claritate';
-
-  @override
-  String get videoEditorTuneLuminance => 'Luminanță';
+  String get videoEditorTuneTint => 'Tentă';
 
   @override
   String get videoEditorTuneFade => 'Estompare';

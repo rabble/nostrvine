@@ -67,11 +67,20 @@ void main() {
     testWidgets('scrolling the chip list reveals the trailing adjustment', (
       tester,
     ) async {
+      // Narrow the surface so the chips overflow and the trailing one starts
+      // offscreen, independent of chip count and font-load-dependent widths.
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
       await pumpBar(tester);
       expect(find.text(l10n.videoEditorTuneFade), findsNothing);
 
-      await tester.drag(find.byType(ListView), const Offset(-600, 0));
-      await tester.pump();
+      await tester.dragUntilVisible(
+        find.text(l10n.videoEditorTuneFade),
+        find.byType(ListView),
+        const Offset(-120, 0),
+      );
 
       expect(find.text(l10n.videoEditorTuneFade), findsOneWidget);
     });

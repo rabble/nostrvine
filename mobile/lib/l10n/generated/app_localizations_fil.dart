@@ -8012,10 +8012,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorTuneTemperature => 'Temperatura';
 
   @override
-  String get videoEditorTuneSharpness => 'Talas';
-
-  @override
-  String get videoEditorTuneLuminance => 'Luminance';
+  String get videoEditorTuneTint => 'Tint';
 
   @override
   String get videoEditorTuneFade => 'Fade';

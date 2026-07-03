@@ -18,8 +18,7 @@ String tuneAdjustmentLabel(BuildContext context, String id) {
     'exposure' => l10n.videoEditorTuneExposure,
     'hue' => l10n.videoEditorTuneHue,
     'temperature' => l10n.videoEditorTuneTemperature,
-    'sharpness' => l10n.videoEditorTuneSharpness,
-    'luminance' => l10n.videoEditorTuneLuminance,
+    'tint' => l10n.videoEditorTuneTint,
     'fade' => l10n.videoEditorTuneFade,
     _ => id,
   };

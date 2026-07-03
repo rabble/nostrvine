@@ -7602,10 +7602,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorTuneTemperature => '色温度';
 
   @override
-  String get videoEditorTuneSharpness => 'シャープネス';
-
-  @override
-  String get videoEditorTuneLuminance => '輝度';
+  String get videoEditorTuneTint => '色かぶり';
 
   @override
   String get videoEditorTuneFade => 'フェード';

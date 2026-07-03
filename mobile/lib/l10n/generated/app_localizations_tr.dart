@@ -7893,10 +7893,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorTuneTemperature => 'Sıcaklık';
 
   @override
-  String get videoEditorTuneSharpness => 'Keskinlik';
-
-  @override
-  String get videoEditorTuneLuminance => 'Luminans';
+  String get videoEditorTuneTint => 'Ton';
 
   @override
   String get videoEditorTuneFade => 'Solma';

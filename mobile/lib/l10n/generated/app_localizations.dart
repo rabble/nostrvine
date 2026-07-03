@@ -13728,17 +13728,11 @@ abstract class AppLocalizations {
   /// **'Temperature'**
   String get videoEditorTuneTemperature;
 
-  /// No description provided for @videoEditorTuneSharpness.
+  /// No description provided for @videoEditorTuneTint.
   ///
   /// In en, this message translates to:
-  /// **'Sharpness'**
-  String get videoEditorTuneSharpness;
-
-  /// No description provided for @videoEditorTuneLuminance.
-  ///
-  /// In en, this message translates to:
-  /// **'Luminance'**
-  String get videoEditorTuneLuminance;
+  /// **'Tint'**
+  String get videoEditorTuneTint;
 
   /// No description provided for @videoEditorTuneFade.
   ///
