@@ -304,6 +304,7 @@ void main() {
       expect(
         resolveLayerEndTime(
           currentEndTime: null,
+          startTime: Duration.zero,
           totalDuration: total,
           hasLeaveAnimation: true,
         ),
@@ -316,6 +317,7 @@ void main() {
       expect(
         resolveLayerEndTime(
           currentEndTime: trimEnd,
+          startTime: Duration.zero,
           totalDuration: total,
           hasLeaveAnimation: true,
         ),
@@ -327,6 +329,7 @@ void main() {
       expect(
         resolveLayerEndTime(
           currentEndTime: null,
+          startTime: Duration.zero,
           totalDuration: total,
           hasLeaveAnimation: false,
         ),
@@ -339,6 +342,7 @@ void main() {
       expect(
         resolveLayerEndTime(
           currentEndTime: trimEnd,
+          startTime: Duration.zero,
           totalDuration: total,
           hasLeaveAnimation: false,
         ),
@@ -352,6 +356,7 @@ void main() {
       expect(
         resolveLayerEndTime(
           currentEndTime: total,
+          startTime: Duration.zero,
           totalDuration: total,
           hasLeaveAnimation: false,
         ),
@@ -364,6 +369,7 @@ void main() {
       expect(
         resolveLayerEndTime(
           currentEndTime: const Duration(seconds: 8),
+          startTime: Duration.zero,
           totalDuration: total,
           hasLeaveAnimation: false,
         ),
@@ -375,10 +381,58 @@ void main() {
       expect(
         resolveLayerEndTime(
           currentEndTime: const Duration(seconds: 8),
+          startTime: Duration.zero,
           totalDuration: total,
           hasLeaveAnimation: true,
         ),
         total,
+      );
+    });
+
+    test('does not collapse the layer when totalDuration is a transient '
+        'zero', () {
+      // A leave set before the player has reported its length: a zero total
+      // must not anchor endTime at zero (== startTime), which would collapse
+      // the layer to a zero-length window and drop it from the timeline.
+      // Un-anchored (null) keeps it spanning the whole video instead.
+      expect(
+        resolveLayerEndTime(
+          currentEndTime: null,
+          startTime: Duration.zero,
+          totalDuration: Duration.zero,
+          hasLeaveAnimation: true,
+        ),
+        isNull,
+      );
+    });
+
+    test('never anchors a late layer at or before its start on a stale '
+        'small total', () {
+      // A layer starting at 4s with a stale total of 3s must not anchor its
+      // end at 3s (<= start). With no valid existing end it stays un-anchored
+      // rather than vanish from the timeline.
+      expect(
+        resolveLayerEndTime(
+          currentEndTime: null,
+          startTime: const Duration(seconds: 4),
+          totalDuration: const Duration(seconds: 3),
+          hasLeaveAnimation: true,
+        ),
+        isNull,
+      );
+    });
+
+    test('keeps the existing valid end when the total is stale small', () {
+      // total (1s) is stale below the layer window; rather than collapse, keep
+      // the real end (4s) that is still after the 2s start.
+      expect(
+        resolveLayerEndTime(
+          currentEndTime: const Duration(seconds: 4),
+          startTime: const Duration(seconds: 2),
+          totalDuration: const Duration(seconds: 1),
+          hasLeaveAnimation: true,
+        ),
+        const Duration(seconds: 4),
       );
     });
   });

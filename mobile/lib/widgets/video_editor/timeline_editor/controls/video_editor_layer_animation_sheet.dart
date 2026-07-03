@@ -101,6 +101,7 @@ Future<void> editLayerAnimation(
 
   final endTime = resolveLayerEndTime(
     currentEndTime: layer.endTime,
+    startTime: layer.startTime ?? Duration.zero,
     totalDuration: totalDuration,
     hasLeaveAnimation: result.leave.isNotEmpty,
   );
@@ -142,21 +143,36 @@ Future<void> editLayerAnimation(
 /// equals its [Layer.endTime]) would make `currentEndTime < totalDuration` false
 /// for every trim, so genuine trims would read as full-length and be dropped.
 ///
+/// [startTime] is the layer's own start. The returned end is never at or before
+/// it: a stale or transient-zero [totalDuration] (e.g. read before the player
+/// has reported its length) must not anchor the leave window at `<= startTime`,
+/// which would collapse the layer to a zero-length window and drop it from the
+/// timeline entirely. In that degenerate case the layer's existing end is kept
+/// (when still valid) or the end is left un-anchored — the layer stays visible
+/// either way.
+///
 /// With [hasLeaveAnimation] true the end is anchored to that trim, or to
-/// [totalDuration] when there is no real trim — never beyond the video. Without
-/// a leave animation a real trim is preserved and everything else collapses to
-/// `null`.
+/// [totalDuration] when there is no real trim — never beyond the video, never
+/// at or before [startTime]. Without a leave animation a real trim is preserved
+/// and everything else collapses to `null`.
 @visibleForTesting
 Duration? resolveLayerEndTime({
   required Duration? currentEndTime,
+  required Duration startTime,
   required Duration totalDuration,
   required bool hasLeaveAnimation,
 }) {
   final trim = currentEndTime != null && currentEndTime < totalDuration
       ? currentEndTime
       : null;
-  if (hasLeaveAnimation) return trim ?? totalDuration;
-  return trim;
+  if (!hasLeaveAnimation) return trim;
+
+  final anchor = trim ?? totalDuration;
+  if (anchor > startTime) return anchor;
+  if (currentEndTime != null && currentEndTime > startTime) {
+    return currentEndTime;
+  }
+  return null;
 }
 
 /// The picker's result: the chosen enter and leave animations. A phase can
