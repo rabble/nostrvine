@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/blocs/video_editor/tune_editor/video_editor_tune_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -67,6 +68,7 @@ class VideoEditorMainBottomBar extends StatelessWidget {
                       icon: .slidersHorizontal,
                       onTap: () => openTuneEditor(
                         context.read<VideoEditorMainBloc>(),
+                        context.read<VideoEditorTuneBloc>(),
                         scope,
                       ),
                     ),

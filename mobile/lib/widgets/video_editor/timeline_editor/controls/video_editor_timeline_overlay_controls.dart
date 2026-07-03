@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/blocs/video_editor/tune_editor/video_editor_tune_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -12,6 +13,7 @@ import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.d
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_layer_animation_sheet.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
+import 'package:openvine/widgets/video_editor/tune_editor/open_tune_editor.dart';
 import 'package:pro_image_editor/core/models/layers/layer.dart';
 import 'package:pro_image_editor/features/filter_editor/types/filter_state.dart';
 import 'package:pro_image_editor/features/tune_editor/models/tune_adjustment_matrix.dart';
@@ -244,9 +246,19 @@ class _TuneOverlayControls extends StatelessWidget {
   Widget build(BuildContext context) {
     return VideoEditorTimelineControls(
       onDelete: () => _removeTuneSet(context: context),
+      onEdit: () => _editTuneSet(context: context),
       onDuplicated: () => _duplicateTuneSet(context: context),
       onSplit: () => _splitTuneSet(context: context),
       onDone: () => TimelineOverlayControls._deselect(context),
+    );
+  }
+
+  void _editTuneSet({required BuildContext context}) {
+    openTuneEditor(
+      context.read<VideoEditorMainBloc>(),
+      context.read<VideoEditorTuneBloc>(),
+      VideoEditorScope.of(context),
+      editSetId: item.id,
     );
   }
 

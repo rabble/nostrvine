@@ -170,6 +170,76 @@ void main() {
           ),
         ],
       );
+
+      blocTest<VideoEditorTuneBloc, VideoEditorTuneState>(
+        'clears the editing set id',
+        build: buildBloc,
+        seed: () => const VideoEditorTuneState(
+          adjustments: VideoEditorConstants.tuneAdjustments,
+          editingSetId: 'set-1',
+        ),
+        act: (bloc) => bloc.add(const VideoEditorTuneConfirmed()),
+        expect: () => [
+          isA<VideoEditorTuneState>().having(
+            (s) => s.editingSetId,
+            'editingSetId',
+            isNull,
+          ),
+        ],
+      );
+    });
+
+    group('VideoEditorTuneSessionStarted', () {
+      blocTest<VideoEditorTuneBloc, VideoEditorTuneState>(
+        'records the edited set id',
+        build: buildBloc,
+        act: (bloc) =>
+            bloc.add(const VideoEditorTuneSessionStarted(setId: 'set-1')),
+        expect: () => [
+          isA<VideoEditorTuneState>().having(
+            (s) => s.editingSetId,
+            'editingSetId',
+            'set-1',
+          ),
+        ],
+      );
+
+      blocTest<VideoEditorTuneBloc, VideoEditorTuneState>(
+        'clears the editing set id for a new session',
+        build: buildBloc,
+        seed: () => const VideoEditorTuneState(
+          adjustments: VideoEditorConstants.tuneAdjustments,
+          editingSetId: 'set-1',
+        ),
+        act: (bloc) => bloc.add(const VideoEditorTuneSessionStarted()),
+        expect: () => [
+          isA<VideoEditorTuneState>().having(
+            (s) => s.editingSetId,
+            'editingSetId',
+            isNull,
+          ),
+        ],
+      );
+
+      blocTest<VideoEditorTuneBloc, VideoEditorTuneState>(
+        'is preserved across VideoEditorTuneEditorInitialized',
+        build: buildBloc,
+        seed: () => const VideoEditorTuneState(
+          adjustments: VideoEditorConstants.tuneAdjustments,
+          values: {'brightness': 0.5},
+          editingSetId: 'set-1',
+        ),
+        act: (bloc) => bloc.add(
+          VideoEditorTuneEditorInitialized([
+            TuneAdjustmentMatrix(id: 'contrast', value: -0.2, matrix: const []),
+          ]),
+        ),
+        expect: () => [
+          isA<VideoEditorTuneState>()
+              .having((s) => s.values['contrast'], 'seeded value', -0.2)
+              .having((s) => s.editingSetId, 'editingSetId', 'set-1'),
+        ],
+      );
     });
   });
 }

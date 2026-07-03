@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/blocs/video_editor/tune_editor/video_editor_tune_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/tune_editor/open_tune_editor.dart';
@@ -140,8 +141,9 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
                 semanticLabel: context.l10n.videoEditorOpenTuneSemanticLabel,
                 onTap: () {
                   final mainBloc = context.read<VideoEditorMainBloc>();
+                  final tuneBloc = context.read<VideoEditorTuneBloc>();
                   Navigator.pop(context);
-                  openTuneEditor(mainBloc, scope);
+                  openTuneEditor(mainBloc, tuneBloc, scope);
                 },
               ),
               _ItemButton(

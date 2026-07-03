@@ -186,7 +186,7 @@ void main() {
       expect(find.text(l10n.videoEditorDoneLabel), findsOneWidget);
     });
 
-    testWidgets('renders delete/duplicate/split/done for tune (no edit)', (
+    testWidgets('renders delete/edit/duplicate/split/done for tune', (
       tester,
     ) async {
       const item = TimelineOverlayItem(
@@ -200,10 +200,10 @@ void main() {
 
       expect(find.byType(VideoEditorTimelineControls), findsOneWidget);
       expect(find.text(l10n.videoEditorDeleteLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorEditLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorDuplicateLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorSplitLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorDoneLabel), findsOneWidget);
-      expect(find.text(l10n.videoEditorEditLabel), findsNothing);
     });
 
     group('behavior', () {

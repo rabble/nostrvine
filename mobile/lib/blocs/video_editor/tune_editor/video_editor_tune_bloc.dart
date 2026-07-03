@@ -22,11 +22,24 @@ class VideoEditorTuneBloc
           adjustments: VideoEditorConstants.tuneAdjustments,
         ),
       ) {
+    on<VideoEditorTuneSessionStarted>(_onSessionStarted);
     on<VideoEditorTuneEditorInitialized>(_onEditorInitialized);
     on<VideoEditorTuneAdjustmentSelected>(_onAdjustmentSelected);
     on<VideoEditorTuneValueChanged>(_onValueChanged);
     on<VideoEditorTuneCancelled>(_onCancelled);
     on<VideoEditorTuneConfirmed>(_onConfirmed);
+  }
+
+  void _onSessionStarted(
+    VideoEditorTuneSessionStarted event,
+    Emitter<VideoEditorTuneState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        editingSetId: event.setId,
+        clearEditingSetId: event.setId == null,
+      ),
+    );
   }
 
   void _onEditorInitialized(
@@ -72,7 +85,9 @@ class VideoEditorTuneBloc
       name: 'VideoEditorTuneBloc',
       category: LogCategory.video,
     );
-    emit(state.copyWith(values: state.initialValues));
+    emit(
+      state.copyWith(values: state.initialValues, clearEditingSetId: true),
+    );
   }
 
   void _onConfirmed(
@@ -86,6 +101,8 @@ class VideoEditorTuneBloc
     );
     // The applied values become the new baseline so a later re-open (which
     // re-seeds from the editor) and cancel share the same reference point.
-    emit(state.copyWith(initialValues: state.values));
+    emit(
+      state.copyWith(initialValues: state.values, clearEditingSetId: true),
+    );
   }
 }

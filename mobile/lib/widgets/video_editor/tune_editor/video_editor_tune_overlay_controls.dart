@@ -18,6 +18,64 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 class VideoEditorTuneOverlayControls extends StatelessWidget {
   const VideoEditorTuneOverlayControls({super.key});
 
+  /// Builds the new `activeTuneAdjustments` list for committing an Adjust
+  /// session as a timeline *set*.
+  ///
+  /// [editorMatrix] is the tune editor's working matrix (all preset kinds; only
+  /// the non-neutral ones become members). A new session ([editingSetId] `null`)
+  /// appends a fresh set keyed by [newSetId]; an edit session replaces the
+  /// members of [editingSetId] in [active] while preserving that set's time
+  /// window. Returns `null` when a new session changed nothing (no bar to add).
+  ///
+  /// Each member gets a unique per-instance id and records its set id / preset
+  /// kind in `meta` so the timeline can group and re-label it.
+  @visibleForTesting
+  static List<TuneAdjustmentMatrix>? computeTuneSetCommit({
+    required List<TuneAdjustmentMatrix> editorMatrix,
+    required List<TuneAdjustmentMatrix> active,
+    required String? editingSetId,
+    required String newSetId,
+  }) {
+    final setId = editingSetId ?? newSetId;
+
+    // Preserve the window when editing an existing set.
+    TuneAdjustmentMatrix? windowSource;
+    if (editingSetId != null) {
+      for (final m in active) {
+        if (_setIdOf(m) == editingSetId) {
+          windowSource = m;
+          break;
+        }
+      }
+    }
+
+    final members = [
+      for (final m in editorMatrix)
+        if (m.value != 0)
+          m.copyWith(
+            id: '${m.id}__$setId',
+            startTime: windowSource?.startTime,
+            endTime: windowSource?.endTime,
+            meta: {
+              VideoEditorConstants.tuneSetIdMetaKey: setId,
+              VideoEditorConstants.tuneKindMetaKey: m.id,
+            },
+          ),
+    ];
+
+    // A new session that changed nothing adds no bar; an edit that neutralised
+    // every adjustment removes the set.
+    if (editingSetId == null && members.isEmpty) return null;
+
+    final others = active
+        .where((m) => _setIdOf(m) != setId)
+        .map((m) => m.copy());
+    return [...others, ...members];
+  }
+
+  static String _setIdOf(TuneAdjustmentMatrix m) =>
+      m.meta[VideoEditorConstants.tuneSetIdMetaKey] as String? ?? m.id;
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -55,14 +113,15 @@ class _TopBarContent extends StatelessWidget {
     );
   }
 
-  /// Commits this session's non-neutral adjustments as a new timeline *set*.
+  /// Commits this session's non-neutral adjustments as a timeline *set*.
   ///
-  /// Each Adjust session bundles the adjustments the user changed into one set
-  /// — grouped by [VideoEditorConstants.tuneSetIdMetaKey] and rendered as a
-  /// single timeline bar sharing one time window — and appends it to any
-  /// existing sets. Members get a unique per-instance id (so multiple sets, or
-  /// multiple segments of the same kind, coexist) with the preset kind recorded
-  /// in [VideoEditorConstants.tuneKindMetaKey].
+  /// Each set is grouped by [VideoEditorConstants.tuneSetIdMetaKey] and rendered
+  /// as a single timeline bar sharing one time window; members get a unique
+  /// per-instance id (so multiple sets, or multiple segments of the same kind,
+  /// coexist) with the preset kind recorded in
+  /// [VideoEditorConstants.tuneKindMetaKey]. A new session appends a fresh set;
+  /// an edit session ([VideoEditorTuneState.editingSetId]) replaces the set's
+  /// adjustments in place, preserving its time window.
   ///
   /// The editor's own `done()` (via `openTuneEditor`) instead appends its full
   /// returned matrix to `activeTuneAdjustments`, which both doubles adjustments
@@ -71,29 +130,21 @@ class _TopBarContent extends StatelessWidget {
   /// public API the timeline/filter paths already use).
   void _commit(VideoEditorTuneBloc bloc, VideoEditorScope scope) {
     final editorMatrix = scope.tuneEditor?.tuneAdjustmentMatrix;
+    final editingSetId = bloc.state.editingSetId;
     bloc.add(const VideoEditorTuneConfirmed());
     scope.tuneEditor?.close();
     if (editorMatrix == null) return;
 
-    final setId = 'set_${DateTime.now().microsecondsSinceEpoch}';
-    final newSet = [
-      for (final m in editorMatrix)
-        if (m.value != 0)
-          m.copyWith(
-            id: '${m.id}__$setId',
-            meta: {
-              VideoEditorConstants.tuneSetIdMetaKey: setId,
-              VideoEditorConstants.tuneKindMetaKey: m.id,
-            },
-          ),
-    ];
-    if (newSet.isEmpty) return;
-
-    final existing =
-        scope.editor?.stateManager.activeTuneAdjustments ??
-        const <TuneAdjustmentMatrix>[];
-    scope.editor?.addHistory(
-      tuneAdjustments: [...existing.map((m) => m.copy()), ...newSet],
+    final result = VideoEditorTuneOverlayControls.computeTuneSetCommit(
+      editorMatrix: editorMatrix,
+      active:
+          scope.editor?.stateManager.activeTuneAdjustments ??
+          const <TuneAdjustmentMatrix>[],
+      editingSetId: editingSetId,
+      newSetId: 'set_${DateTime.now().microsecondsSinceEpoch}',
     );
+    if (result != null) {
+      scope.editor?.addHistory(tuneAdjustments: result);
+    }
   }
 }

@@ -1447,6 +1447,51 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     });
   }
 
+  /// Kind-keyed seed matrices for the tune bloc's bottom-bar sliders.
+  ///
+  /// A new session ([setId] `null`) seeds neutral; an edit session seeds from
+  /// the members of the set being edited, re-keyed by preset kind (the bottom
+  /// bar reads values by preset id).
+  List<TuneAdjustmentMatrix> _tuneSessionSeed(
+    VideoEditorScope scope,
+    String? setId,
+  ) {
+    if (setId == null) return const [];
+    final active = scope.editor?.stateManager.activeTuneAdjustments ?? const [];
+    return [
+      for (final m in active)
+        if (_tuneSetIdOf(m) == setId)
+          TuneAdjustmentMatrix(id: _tuneKindOf(m), value: m.value, matrix: []),
+    ];
+  }
+
+  /// Seeds the tune editor's live preview with the edited set's values via its
+  /// public `onChanged` API. The editor seeds itself neutral because set
+  /// members carry unique per-instance ids rather than preset ids.
+  void _seedTuneEditorPreview(VideoEditorScope scope, String? setId) {
+    if (setId == null) return;
+    final tuneEditor = scope.tuneEditor;
+    final active = scope.editor?.stateManager.activeTuneAdjustments;
+    if (tuneEditor == null || active == null) return;
+    for (final m in active) {
+      if (_tuneSetIdOf(m) != setId) continue;
+      final idx = tuneEditor.tuneAdjustmentList.indexWhere(
+        (t) => t.id == _tuneKindOf(m),
+      );
+      if (idx < 0) continue;
+      tuneEditor
+        ..selectedIndex = idx
+        ..onChanged(m.value);
+    }
+    tuneEditor.selectedIndex = 0;
+  }
+
+  String _tuneSetIdOf(TuneAdjustmentMatrix m) =>
+      m.meta[VideoEditorConstants.tuneSetIdMetaKey] as String? ?? m.id;
+
+  String _tuneKindOf(TuneAdjustmentMatrix m) =>
+      m.meta[VideoEditorConstants.tuneKindMetaKey] as String? ?? m.id;
+
   /// Handles state history changes and exports the history to the provider.
   Future<void> _onStateHistoryChange(
     VideoEditorScope scope,
@@ -2398,12 +2443,23 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
             },
           ),
           tuneEditorCallbacks: TuneEditorCallbacks(
-            // Each Adjust session starts neutral and produces a new timeline
-            // set on done (see VideoEditorTuneOverlayControls._commit), so the
-            // bottom-bar sliders always begin at zero rather than pre-filling
-            // the values of an existing set.
-            onInit: () => context.read<VideoEditorTuneBloc>().add(
-              const VideoEditorTuneEditorInitialized([]),
+            // A new session starts neutral; an edit session seeds the bottom-bar
+            // sliders from the set being edited. See _tuneSessionSeed and
+            // VideoEditorTuneOverlayControls._commit.
+            onInit: () {
+              final tuneBloc = context.read<VideoEditorTuneBloc>();
+              tuneBloc.add(
+                VideoEditorTuneEditorInitialized(
+                  _tuneSessionSeed(scope, tuneBloc.state.editingSetId),
+                ),
+              );
+            },
+            // The editor seeds its own preview neutral (set members carry unique
+            // ids, not preset ids), so seed the live preview from the edited set
+            // once the view is up.
+            onAfterViewInit: () => _seedTuneEditorPreview(
+              scope,
+              context.read<VideoEditorTuneBloc>().state.editingSetId,
             ),
           ),
         ),
