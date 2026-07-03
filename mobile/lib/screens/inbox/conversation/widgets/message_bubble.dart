@@ -86,6 +86,7 @@ class MessageBubble extends StatelessWidget {
     this.isFirstInGroup = true,
     this.isLastInGroup = true,
     this.onLongPress,
+    this.onDoubleTap,
     this.deliveryStatus = DmDeliveryStatus.delivered,
     this.dmReplyContext,
     this.sharedVideoRef,
@@ -107,6 +108,13 @@ class MessageBubble extends StatelessWidget {
 
   /// Called when the user long-presses the bubble.
   final VoidCallback? onLongPress;
+
+  /// Called when the user double-taps the bubble. Wired to double-tap-to-like,
+  /// which adds a ❤️ reaction to the message. Null disables double-tap on the
+  /// bubble (e.g. failed own sends). Screen readers never reach this —
+  /// double-tap is the AT activation gesture — so the long-press picker stays
+  /// the a11y path.
+  final VoidCallback? onDoubleTap;
 
   /// Per-bubble delivery state. Only rendered for sent messages; received
   /// bubbles ignore it. Defaults to [DmDeliveryStatus.delivered] so test
@@ -238,6 +246,7 @@ class MessageBubble extends StatelessWidget {
               : null,
           child: GestureDetector(
             onLongPress: onLongPress,
+            onDoubleTap: onDoubleTap,
             child: Container(
               // Video bubbles cap their max width at the thumbnail's
               // own width (248) plus the symmetric 16 px padding so the

@@ -158,10 +158,6 @@ class _ReactionPill extends StatelessWidget {
         : VineTheme.outlineVariant;
     final borderRadius = BorderRadius.circular(_height / 2);
 
-    // 🔥 is painted by the platform colour-emoji font (Inter ships no emoji),
-    // so a forced line-height drops the glyph low on Android. Natural leading
-    // lets the Row centre the glyph box — mirrors reaction_picker_overlay.
-    const emojiStyle = TextStyle(fontSize: 15);
     final overflowStyle = VineTheme.labelSmallFont(
       color: VineTheme.onSurface,
     ).copyWith(fontSize: 11, height: 1);
@@ -169,7 +165,9 @@ class _ReactionPill extends StatelessWidget {
     final rowChildren = <Widget>[
       for (var i = 0; i < shownEmojis.length; i++) ...[
         if (i > 0) const SizedBox(width: 1),
-        Text(shownEmojis[i], style: emojiStyle),
+        // Keyed by emoji so only a newly-added glyph (e.g. a double-tap ❤️)
+        // grows in — existing glyphs keep their settled scale across rebuilds.
+        _PoppingEmoji(shownEmojis[i], key: ValueKey(shownEmojis[i])),
       ],
       if (extraEmojis > 0) ...[
         const SizedBox(width: 2),
@@ -219,6 +217,63 @@ class _ReactionPill extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Text style for a reaction glyph.
+///
+/// 🔥 is painted by the platform colour-emoji font (Inter ships no emoji), so a
+/// forced line-height drops the glyph low on Android. Natural leading lets the
+/// Row centre the glyph box — mirrors reaction_picker_overlay.
+const _emojiTextStyle = TextStyle(fontSize: 15);
+
+/// Duration of the reaction glyph grow-in.
+const _emojiPopDuration = Duration(milliseconds: 180);
+
+/// A reaction emoji glyph that gently grows in (no bounce) the first time it
+/// mounts, then stays. [_ReactionPill] keys each glyph by its emoji, so only a
+/// newly-added reaction (e.g. a double-tap ❤️) animates — existing glyphs keep
+/// their settled scale across rebuilds. Scale-only (paint transform), so it
+/// never reflows the fixed-height pill.
+class _PoppingEmoji extends StatefulWidget {
+  const _PoppingEmoji(this.emoji, {super.key});
+
+  final String emoji;
+
+  @override
+  State<_PoppingEmoji> createState() => _PoppingEmojiState();
+}
+
+class _PoppingEmojiState extends State<_PoppingEmoji>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: _emojiPopDuration,
+  );
+
+  late final Animation<double> _scale = Tween<double>(begin: 0.6, end: 1)
+      .animate(
+        CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scale,
+      child: Text(widget.emoji, style: _emojiTextStyle),
     );
   }
 }

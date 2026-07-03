@@ -1417,6 +1417,60 @@ void main() {
       });
     });
 
+    group('double-tap', () {
+      testWidgets('calls onDoubleTap', (tester) async {
+        var doubleTapped = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'Double tap me',
+                timestamp: '2:30 PM',
+                isSent: true,
+                onDoubleTap: () => doubleTapped = true,
+              ),
+            ),
+          ),
+        );
+
+        final target = tester.getCenter(find.text('Double tap me'));
+        await tester.tapAt(target);
+        // Second tap within the double-tap window (>= min gap, < timeout).
+        await tester.pump(kDoubleTapMinTime);
+        await tester.tapAt(target);
+        await tester.pumpAndSettle();
+
+        expect(doubleTapped, isTrue);
+      });
+
+      testWidgets('does not crash when onDoubleTap is null', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'No double tap',
+                timestamp: '2:30 PM',
+                isSent: true,
+              ),
+            ),
+          ),
+        );
+
+        final target = tester.getCenter(find.text('No double tap'));
+        await tester.tapAt(target);
+        await tester.pump(kDoubleTapMinTime);
+        await tester.tapAt(target);
+        await tester.pumpAndSettle();
+
+        expect(find.text('No double tap'), findsOneWidget);
+      });
+    });
+
     group('markdown rendering', () {
       /// Walks the rendered span tree and collects every TextSpan that
       /// satisfies [predicate]. Used to assert on the inline-style

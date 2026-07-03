@@ -95,6 +95,14 @@ void main() {
       registerFallbackValue(
         const ConversationSelfWrapRecoveryRequested(rumorIds: <String>[]),
       );
+      registerFallbackValue(
+        const ConversationReactionSet(
+          conversationId: '',
+          messageId: '',
+          messageAuthorPubkey: '',
+          emoji: '',
+        ),
+      );
     });
 
     setUp(() {
@@ -178,6 +186,111 @@ void main() {
           ? app
           : MockGoRouterProvider(goRouter: goRouter, child: app);
     }
+
+    group('double-tap to like', () {
+      DmMessage reactableMessage({required bool sent}) => DmMessage(
+        id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        conversationId:
+            'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        senderPubkey: sent ? currentPubkey : otherPubkey,
+        content: 'React to me',
+        createdAt: now.millisecondsSinceEpoch ~/ 1000,
+        giftWrapId:
+            'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+      );
+
+      // WidgetTester has no built-in double tap: synthesize two taps at the
+      // same point with a gap inside the double-tap window (> 40 ms min,
+      // < 300 ms timeout). pumpAndSettle only AFTER the second tap so the
+      // gap doesn't overrun the window and register as two single taps.
+      Future<void> doubleTapBubble(WidgetTester tester) async {
+        final center = tester.getCenter(find.text('React to me'));
+        await tester.tapAt(center);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tapAt(center);
+        await tester.pumpAndSettle();
+      }
+
+      List<ConversationReactionSet> capturedReactionSets() => verify(
+        () => mockReactionsCubit.add(captureAny()),
+      ).captured.whereType<ConversationReactionSet>().toList();
+
+      testWidgets('received bubble adds a ❤️ reaction to the message', (
+        tester,
+      ) async {
+        final message = reactableMessage(sent: false);
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [message],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await doubleTapBubble(tester);
+
+        final sets = capturedReactionSets();
+        expect(sets, hasLength(1));
+        expect(sets.single.emoji, kDefaultDmReactionEmojis.first);
+        expect(sets.single.messageId, message.id);
+        expect(sets.single.messageAuthorPubkey, otherPubkey);
+      });
+
+      testWidgets('own delivered bubble also adds a ❤️ reaction', (
+        tester,
+      ) async {
+        final message = reactableMessage(sent: true);
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [message],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await doubleTapBubble(tester);
+
+        final sets = capturedReactionSets();
+        expect(sets, hasLength(1));
+        expect(sets.single.emoji, kDefaultDmReactionEmojis.first);
+      });
+
+      testWidgets('failed own send does not dispatch a reaction', (
+        tester,
+      ) async {
+        final failedRow = OutgoingDm(
+          id: 'rumor-failed-id',
+          conversationId:
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          recipientPubkey: otherPubkey,
+          content: 'React to me',
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          rumorEventJson: '{}',
+          recipientWrapStatus: OutgoingWrapStatus.failed,
+          selfWrapStatus: OutgoingWrapStatus.failed,
+          queuedAt: now,
+          ownerPubkey: currentPubkey,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              pendingOutgoing: [failedRow],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await doubleTapBubble(tester);
+
+        verifyNever(() => mockReactionsCubit.add(any()));
+      });
+    });
 
     group('renders', () {
       testWidgets('renders $ConversationAppBar', (tester) async {

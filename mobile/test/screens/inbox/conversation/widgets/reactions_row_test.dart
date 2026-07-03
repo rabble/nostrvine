@@ -242,7 +242,8 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(cubit));
-      await tester.pump();
+      // Settle the glyph pop-in so the emoji is at full scale and hittable.
+      await tester.pumpAndSettle();
 
       // Sheet not open yet.
       expect(find.text(l10n.dmReactionsSheetTitle), findsNothing);
@@ -288,5 +289,35 @@ void main() {
         );
       },
     );
+
+    testWidgets('a reaction glyph grows in and settles at full scale', (
+      tester,
+    ) async {
+      primeState(
+        stateWith([
+          makeReaction(id: '1', reactorPubkey: ownerPubkey, emoji: '❤️'),
+        ]),
+      );
+
+      await tester.pumpWidget(buildSubject(cubit));
+
+      // The glyph starts below full scale and grows in (the gentle "small heart
+      // appearing" the double-tap flow shows in the pill).
+      expect(_emojiScale(tester, '❤️'), lessThan(1));
+
+      // …and settles at full scale, where it stays.
+      await tester.pumpAndSettle();
+      expect(_emojiScale(tester, '❤️'), closeTo(1, 0.01));
+      expect(find.text('❤️'), findsOneWidget);
+    });
   });
+}
+
+/// Current scale of the `_PoppingEmoji` [ScaleTransition] wrapping the [emoji]
+/// glyph, read straight off the animation value.
+double _emojiScale(WidgetTester tester, String emoji) {
+  final scaleTransition = tester.widget<ScaleTransition>(
+    find.ancestor(of: find.text(emoji), matching: find.byType(ScaleTransition)),
+  );
+  return scaleTransition.scale.value;
 }

@@ -140,6 +140,24 @@ class ConversationReactionsState extends Equatable {
     return false;
   }
 
+  /// Like [ownReactionMatches] but also honours the synchronous [optimistic]
+  /// overlay via [reactionsFor], so a reaction that is added-but-not-yet-
+  /// persisted counts as present. The double-tap-to-like guard uses this to
+  /// avoid publishing a duplicate ❤️ when the user re-double-taps during the
+  /// pre-persist window (the Drift round-trip crosses an isolate + SQLCipher).
+  bool ownReactionPendingOrLive({
+    required String messageId,
+    required String emoji,
+    required String ownerPubkey,
+  }) {
+    for (final r in reactionsFor(messageId)) {
+      if (r.reactorPubkey == ownerPubkey && r.emoji == emoji) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Copy with overrides. `null` is "no change" semantics; explicit
   /// empties are passed by the caller.
   ConversationReactionsState copyWith({
