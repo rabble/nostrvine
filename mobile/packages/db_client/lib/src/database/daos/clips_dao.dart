@@ -231,11 +231,19 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   }
 
   /// Get trashed clips whose `deletedAt` is older than [cutoff], ready
-  /// to be hard-deleted by the purge sweep.
-  Future<List<ClipRow>> getTrashedClipsOlderThan(DateTime cutoff) {
+  /// to be hard-deleted by the purge sweep. When [ownerPubkey] is provided,
+  /// returns only clips owned by that account **plus** legacy clips with no
+  /// owner.
+  Future<List<ClipRow>> getTrashedClipsOlderThan(
+    DateTime cutoff, {
+    String? ownerPubkey,
+  }) {
     final query = select(clips)
       ..where(
-        (t) => t.deletedAt.isNotNull() & t.deletedAt.isSmallerThanValue(cutoff),
+        (t) =>
+            _ownedOrLegacy(t.ownerPubkey, ownerPubkey) &
+            t.deletedAt.isNotNull() &
+            t.deletedAt.isSmallerThanValue(cutoff),
       );
     return query.get();
   }

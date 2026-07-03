@@ -90,17 +90,60 @@ class PendingUploadsDao extends DatabaseAccessor<AppDatabase>
     return row != null ? _rowToModel(row) : null;
   }
 
-  /// Get all pending uploads (not completed/failed)
-  Future<List<PendingUpload>> getPendingUploads() async {
+  Expression<bool> _ownedBy(
+    GeneratedColumn<String> column,
+    String ownerPubkey,
+  ) {
+    return column.equals(ownerPubkey);
+  }
+
+  /// Get all pending uploads for [ownerPubkey] (not completed/failed).
+  Future<List<PendingUpload>> getPendingUploads({
+    required String ownerPubkey,
+  }) async {
     final query = select(pendingUploads)
-      ..where((t) => t.status.isNotIn(['published', 'failed']))
+      ..where(
+        (t) =>
+            _ownedBy(t.nostrPubkey, ownerPubkey) &
+            t.status.isNotIn(['published', 'failed']),
+      )
       ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]);
     final rows = await query.get();
     return rows.map(_rowToModel).toList();
   }
 
-  /// Get all uploads sorted by creation time
-  Future<List<PendingUpload>> getAllUploads() async {
+  /// Get all uploads for [ownerPubkey] sorted by creation time.
+  Future<List<PendingUpload>> getAllUploads({
+    required String ownerPubkey,
+  }) async {
+    final query = select(pendingUploads)
+      ..where((t) => _ownedBy(t.nostrPubkey, ownerPubkey))
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+      ]);
+    final rows = await query.get();
+    return rows.map(_rowToModel).toList();
+  }
+
+  /// Get uploads for [ownerPubkey] by status.
+  Future<List<PendingUpload>> getUploadsByStatus(
+    UploadStatus status, {
+    required String ownerPubkey,
+  }) async {
+    final query = select(pendingUploads)
+      ..where(
+        (t) =>
+            _ownedBy(t.nostrPubkey, ownerPubkey) & t.status.equals(status.name),
+      )
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+      ]);
+    final rows = await query.get();
+    return rows.map(_rowToModel).toList();
+  }
+
+  /// Get all uploads across every owner for maintenance tasks.
+  Future<List<PendingUpload>> getAllUploadsForMaintenance() async {
     final query = select(pendingUploads)
       ..orderBy([
         (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
@@ -109,8 +152,19 @@ class PendingUploadsDao extends DatabaseAccessor<AppDatabase>
     return rows.map(_rowToModel).toList();
   }
 
-  /// Get uploads by status
-  Future<List<PendingUpload>> getUploadsByStatus(UploadStatus status) async {
+  /// Get all non-terminal uploads across every owner for maintenance tasks.
+  Future<List<PendingUpload>> getPendingUploadsForMaintenance() async {
+    final query = select(pendingUploads)
+      ..where((t) => t.status.isNotIn(['published', 'failed']))
+      ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]);
+    final rows = await query.get();
+    return rows.map(_rowToModel).toList();
+  }
+
+  /// Get uploads with [status] across every owner for maintenance tasks.
+  Future<List<PendingUpload>> getUploadsByStatusForMaintenance(
+    UploadStatus status,
+  ) async {
     final query = select(pendingUploads)
       ..where((t) => t.status.equals(status.name))
       ..orderBy([
@@ -154,8 +208,32 @@ class PendingUploadsDao extends DatabaseAccessor<AppDatabase>
     )..where((t) => t.status.isIn(['published', 'failed']))).go();
   }
 
-  /// Watch all uploads (reactive stream)
-  Stream<List<PendingUpload>> watchAllUploads() {
+  /// Watch all uploads for [ownerPubkey] (reactive stream).
+  Stream<List<PendingUpload>> watchAllUploads({required String ownerPubkey}) {
+    final query = select(pendingUploads)
+      ..where((t) => _ownedBy(t.nostrPubkey, ownerPubkey))
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+      ]);
+    return query.watch().map((rows) => rows.map(_rowToModel).toList());
+  }
+
+  /// Watch pending uploads for [ownerPubkey] (reactive stream).
+  Stream<List<PendingUpload>> watchPendingUploads({
+    required String ownerPubkey,
+  }) {
+    final query = select(pendingUploads)
+      ..where(
+        (t) =>
+            _ownedBy(t.nostrPubkey, ownerPubkey) &
+            t.status.isNotIn(['published', 'failed']),
+      )
+      ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]);
+    return query.watch().map((rows) => rows.map(_rowToModel).toList());
+  }
+
+  /// Watch all uploads across every owner for maintenance tasks.
+  Stream<List<PendingUpload>> watchAllUploadsForMaintenance() {
     final query = select(pendingUploads)
       ..orderBy([
         (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
@@ -163,8 +241,8 @@ class PendingUploadsDao extends DatabaseAccessor<AppDatabase>
     return query.watch().map((rows) => rows.map(_rowToModel).toList());
   }
 
-  /// Watch pending uploads (reactive stream)
-  Stream<List<PendingUpload>> watchPendingUploads() {
+  /// Watch pending uploads across every owner for maintenance tasks.
+  Stream<List<PendingUpload>> watchPendingUploadsForMaintenance() {
     final query = select(pendingUploads)
       ..where((t) => t.status.isNotIn(['published', 'failed']))
       ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]);

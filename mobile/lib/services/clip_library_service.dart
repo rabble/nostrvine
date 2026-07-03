@@ -284,7 +284,10 @@ class ClipLibraryService {
   /// Returns the number of clips purged.
   Future<int> purgeExpiredTrash({Duration retention = trashRetention}) async {
     final cutoff = DateTime.now().subtract(retention);
-    final expired = await _clipsDao.getTrashedClipsOlderThan(cutoff);
+    final expired = await _clipsDao.getTrashedClipsOlderThan(
+      cutoff,
+      ownerPubkey: ownerPubkey,
+    );
     if (expired.isEmpty) return 0;
 
     final documentsPath = await getDocumentsPath();

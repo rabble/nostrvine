@@ -210,6 +210,13 @@ void main() {
     });
 
     group('purgeExpiredTrash', () {
+      const pubkeyA =
+          'aaaa1111aaaa1111aaaa1111aaaa1111'
+          'aaaa1111aaaa1111aaaa1111aaaa1111';
+      const pubkeyB =
+          'bbbb2222bbbb2222bbbb2222bbbb2222'
+          'bbbb2222bbbb2222bbbb2222bbbb2222';
+
       test('hard-deletes trashed clips older than retention', () async {
         final clip = DivineVideoClip(
           id: 'old_trashed',
@@ -258,6 +265,89 @@ void main() {
         expect(purged, 0);
         expect((await service.getTrashedClips()).length, 1);
       });
+
+      test(
+        'purges current owner and legacy trash without deleting other owners',
+        () async {
+          final serviceA = ClipLibraryService(
+            clipsDao: database.clipsDao,
+            draftsDao: database.draftsDao,
+            ownerPubkey: pubkeyA,
+          );
+          final serviceB = ClipLibraryService(
+            clipsDao: database.clipsDao,
+            draftsDao: database.draftsDao,
+            ownerPubkey: pubkeyB,
+          );
+
+          final clipA = DivineVideoClip(
+            id: 'a_expired',
+            video: EditorVideo.file('/tmp/a_expired.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .square,
+            originalAspectRatio: 9 / 16,
+          );
+          final clipB = DivineVideoClip(
+            id: 'b_expired',
+            video: EditorVideo.file('/tmp/b_expired.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .square,
+            originalAspectRatio: 9 / 16,
+          );
+          final legacyClip = DivineVideoClip(
+            id: 'legacy_expired',
+            video: EditorVideo.file('/tmp/legacy_expired.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .square,
+            originalAspectRatio: 9 / 16,
+          );
+
+          await serviceA.saveClip(clipA);
+          await serviceB.saveClip(clipB);
+          await database.clipsDao.upsertClip(
+            id: legacyClip.id,
+            orderIndex: 0,
+            durationMs: legacyClip.duration.inMilliseconds,
+            recordedAt: legacyClip.recordedAt,
+            data: jsonEncode(legacyClip.toJson()),
+            filePath: 'legacy_expired.mp4',
+            thumbnailPath: null,
+          );
+
+          await serviceA.softDelete(clipA.id);
+          await serviceB.softDelete(clipB.id);
+          await database.clipsDao.softDeleteClip(
+            id: legacyClip.id,
+            deletedAt: DateTime.now(),
+          );
+
+          await database.customStatement(
+            'UPDATE clips SET deleted_at = ? WHERE id IN (?, ?, ?)',
+            [
+              DateTime.now()
+                      .subtract(const Duration(days: 31))
+                      .millisecondsSinceEpoch ~/
+                  1000,
+              clipA.id,
+              clipB.id,
+              legacyClip.id,
+            ],
+          );
+
+          final purged = await serviceA.purgeExpiredTrash();
+
+          expect(purged, 2);
+          expect(await database.clipsDao.getClipById(clipA.id), isNull);
+          expect(await database.clipsDao.getClipById(legacyClip.id), isNull);
+          expect(await database.clipsDao.getClipById(clipB.id), isNotNull);
+          expect((await serviceB.getTrashedClips()).map((c) => c.id), [
+            clipB.id,
+          ]);
+        },
+      );
     });
 
     group('getAllClips', () {

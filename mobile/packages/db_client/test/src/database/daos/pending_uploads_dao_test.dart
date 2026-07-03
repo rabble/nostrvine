@@ -18,6 +18,10 @@ void main() {
   const testPubkey =
       '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
+  const testPubkey2 =
+      'fedcba9876543210fedcba9876543210'
+      'fedcba9876543210fedcba9876543210';
+
   /// Valid 64-char hex event ID for testing
   const testEventId =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -107,7 +111,7 @@ void main() {
         expect(result.uploadProgress, equals(0.5));
 
         // Verify only one entry exists
-        final all = await dao.getAllUploads();
+        final all = await dao.getAllUploads(ownerPubkey: testPubkey);
         expect(all, hasLength(1));
       });
 
@@ -197,7 +201,7 @@ void main() {
           createTestUpload(id: 'failed', status: UploadStatus.failed),
         );
 
-        final results = await dao.getPendingUploads();
+        final results = await dao.getPendingUploads(ownerPubkey: testPubkey);
 
         expect(results, hasLength(3));
         expect(
@@ -219,7 +223,7 @@ void main() {
           createTestUpload(id: 'second', createdAt: DateTime(2024, 1, 2)),
         );
 
-        final results = await dao.getPendingUploads();
+        final results = await dao.getPendingUploads(ownerPubkey: testPubkey);
 
         expect(results[0].id, equals('first'));
         expect(results[1].id, equals('second'));
@@ -231,7 +235,7 @@ void main() {
           createTestUpload(id: 'published', status: UploadStatus.published),
         );
 
-        final results = await dao.getPendingUploads();
+        final results = await dao.getPendingUploads(ownerPubkey: testPubkey);
         expect(results, isEmpty);
       });
     });
@@ -248,7 +252,7 @@ void main() {
           createTestUpload(id: 'second', createdAt: DateTime(2024, 1, 2)),
         );
 
-        final results = await dao.getAllUploads();
+        final results = await dao.getAllUploads(ownerPubkey: testPubkey);
 
         expect(results, hasLength(3));
         expect(results[0].id, equals('third'));
@@ -257,7 +261,7 @@ void main() {
       });
 
       test('returns empty list when no uploads exist', () async {
-        final results = await dao.getAllUploads();
+        final results = await dao.getAllUploads(ownerPubkey: testPubkey);
         expect(results, isEmpty);
       });
     });
@@ -270,7 +274,10 @@ void main() {
           createTestUpload(id: 'uploading', status: UploadStatus.uploading),
         );
 
-        final results = await dao.getUploadsByStatus(UploadStatus.pending);
+        final results = await dao.getUploadsByStatus(
+          UploadStatus.pending,
+          ownerPubkey: testPubkey,
+        );
 
         expect(results, hasLength(2));
         expect(results.every((r) => r.status == UploadStatus.pending), isTrue);
@@ -279,7 +286,10 @@ void main() {
       test('returns empty list when no uploads match status', () async {
         await dao.upsertUpload(createTestUpload(id: 'pending'));
 
-        final results = await dao.getUploadsByStatus(UploadStatus.failed);
+        final results = await dao.getUploadsByStatus(
+          UploadStatus.failed,
+          ownerPubkey: testPubkey,
+        );
         expect(results, isEmpty);
       });
     });
@@ -333,7 +343,7 @@ void main() {
         final deleted = await dao.deleteUpload('upload_1');
 
         expect(deleted, equals(1));
-        final remaining = await dao.getAllUploads();
+        final remaining = await dao.getAllUploads(ownerPubkey: testPubkey);
         expect(remaining, hasLength(1));
         expect(remaining.first.id, equals('upload_2'));
       });
@@ -357,7 +367,7 @@ void main() {
         final deleted = await dao.deleteCompleted();
 
         expect(deleted, equals(2));
-        final remaining = await dao.getAllUploads();
+        final remaining = await dao.getAllUploads(ownerPubkey: testPubkey);
         expect(remaining, hasLength(1));
         expect(remaining.first.id, equals('pending'));
       });
@@ -375,7 +385,7 @@ void main() {
         await dao.upsertUpload(createTestUpload());
         await dao.upsertUpload(createTestUpload(id: 'upload_2'));
 
-        final stream = dao.watchAllUploads();
+        final stream = dao.watchAllUploads(ownerPubkey: testPubkey);
         final results = await stream.first;
 
         expect(results, hasLength(2));
@@ -389,7 +399,7 @@ void main() {
           createTestUpload(id: 'new', createdAt: DateTime(2024, 1, 2)),
         );
 
-        final stream = dao.watchAllUploads();
+        final stream = dao.watchAllUploads(ownerPubkey: testPubkey);
         final results = await stream.first;
 
         expect(results[0].id, equals('new'));
@@ -404,7 +414,7 @@ void main() {
           createTestUpload(id: 'published', status: UploadStatus.published),
         );
 
-        final stream = dao.watchPendingUploads();
+        final stream = dao.watchPendingUploads(ownerPubkey: testPubkey);
         final results = await stream.first;
 
         expect(results, hasLength(1));
@@ -419,12 +429,178 @@ void main() {
           createTestUpload(id: 'first', createdAt: DateTime(2024)),
         );
 
-        final stream = dao.watchPendingUploads();
+        final stream = dao.watchPendingUploads(ownerPubkey: testPubkey);
         final results = await stream.first;
 
         expect(results[0].id, equals('first'));
         expect(results[1].id, equals('second'));
       });
+    });
+
+    group('owner-scoped reads', () {
+      test(
+        'getPendingUploads returns only non-terminal uploads for owner',
+        () async {
+          await dao.upsertUpload(createTestUpload(id: 'a_pending'));
+          await dao.upsertUpload(
+            createTestUpload(id: 'a_published', status: UploadStatus.published),
+          );
+          await dao.upsertUpload(
+            createTestUpload(id: 'b_pending', nostrPubkey: testPubkey2),
+          );
+
+          final results = await dao.getPendingUploads(ownerPubkey: testPubkey);
+
+          expect(results.map((r) => r.id), ['a_pending']);
+        },
+      );
+
+      test('getAllUploads returns only uploads for owner', () async {
+        await dao.upsertUpload(createTestUpload(id: 'a_upload'));
+        await dao.upsertUpload(
+          createTestUpload(id: 'b_upload', nostrPubkey: testPubkey2),
+        );
+
+        final results = await dao.getAllUploads(ownerPubkey: testPubkey);
+
+        expect(results.map((r) => r.id), ['a_upload']);
+      });
+
+      test(
+        'getUploadsByStatus returns only matching status for owner',
+        () async {
+          await dao.upsertUpload(createTestUpload(id: 'a_pending'));
+          await dao.upsertUpload(
+            createTestUpload(id: 'a_uploading', status: UploadStatus.uploading),
+          );
+          await dao.upsertUpload(
+            createTestUpload(id: 'b_pending', nostrPubkey: testPubkey2),
+          );
+
+          final results = await dao.getUploadsByStatus(
+            UploadStatus.pending,
+            ownerPubkey: testPubkey,
+          );
+
+          expect(results.map((r) => r.id), ['a_pending']);
+        },
+      );
+
+      test('watchAllUploads emits only uploads for owner', () async {
+        await dao.upsertUpload(createTestUpload(id: 'a_upload'));
+        await dao.upsertUpload(
+          createTestUpload(id: 'b_upload', nostrPubkey: testPubkey2),
+        );
+
+        final results = await dao
+            .watchAllUploads(ownerPubkey: testPubkey)
+            .first;
+
+        expect(results.map((r) => r.id), ['a_upload']);
+      });
+
+      test(
+        'watchPendingUploads emits only non-terminal uploads for owner',
+        () async {
+          await dao.upsertUpload(createTestUpload(id: 'a_pending'));
+          await dao.upsertUpload(
+            createTestUpload(id: 'a_failed', status: UploadStatus.failed),
+          );
+          await dao.upsertUpload(
+            createTestUpload(id: 'b_pending', nostrPubkey: testPubkey2),
+          );
+
+          final results = await dao
+              .watchPendingUploads(ownerPubkey: testPubkey)
+              .first;
+
+          expect(results.map((r) => r.id), ['a_pending']);
+        },
+      );
+    });
+
+    group('maintenance reads', () {
+      test(
+        'getAllUploadsForMaintenance returns uploads for every owner',
+        () async {
+          await dao.upsertUpload(createTestUpload(id: 'a_upload'));
+          await dao.upsertUpload(
+            createTestUpload(id: 'b_upload', nostrPubkey: testPubkey2),
+          );
+
+          final results = await dao.getAllUploadsForMaintenance();
+
+          expect(results.map((r) => r.id).toSet(), {'a_upload', 'b_upload'});
+        },
+      );
+
+      test(
+        'getPendingUploadsForMaintenance returns non-terminal uploads '
+        'for every owner',
+        () async {
+          await dao.upsertUpload(createTestUpload(id: 'a_pending'));
+          await dao.upsertUpload(
+            createTestUpload(id: 'b_pending', nostrPubkey: testPubkey2),
+          );
+          await dao.upsertUpload(
+            createTestUpload(
+              id: 'b_failed',
+              nostrPubkey: testPubkey2,
+              status: UploadStatus.failed,
+            ),
+          );
+
+          final results = await dao.getPendingUploadsForMaintenance();
+
+          expect(results.map((r) => r.id).toSet(), {'a_pending', 'b_pending'});
+        },
+      );
+
+      test('getUploadsByStatusForMaintenance returns every owner', () async {
+        await dao.upsertUpload(createTestUpload(id: 'a_pending'));
+        await dao.upsertUpload(
+          createTestUpload(id: 'b_pending', nostrPubkey: testPubkey2),
+        );
+        await dao.upsertUpload(
+          createTestUpload(
+            id: 'b_failed',
+            nostrPubkey: testPubkey2,
+            status: UploadStatus.failed,
+          ),
+        );
+
+        final results = await dao.getUploadsByStatusForMaintenance(
+          UploadStatus.pending,
+        );
+
+        expect(results.map((r) => r.id).toSet(), {'a_pending', 'b_pending'});
+      });
+
+      test('watchAllUploadsForMaintenance emits every owner', () async {
+        await dao.upsertUpload(createTestUpload(id: 'a_upload'));
+        await dao.upsertUpload(
+          createTestUpload(id: 'b_upload', nostrPubkey: testPubkey2),
+        );
+
+        final results = await dao.watchAllUploadsForMaintenance().first;
+
+        expect(results.map((r) => r.id).toSet(), {'a_upload', 'b_upload'});
+      });
+
+      test(
+        'watchPendingUploadsForMaintenance emits non-terminal uploads '
+        'for every owner',
+        () async {
+          await dao.upsertUpload(createTestUpload(id: 'a_pending'));
+          await dao.upsertUpload(
+            createTestUpload(id: 'b_pending', nostrPubkey: testPubkey2),
+          );
+
+          final results = await dao.watchPendingUploadsForMaintenance().first;
+
+          expect(results.map((r) => r.id).toSet(), {'a_pending', 'b_pending'});
+        },
+      );
     });
 
     group('clearAll', () {
@@ -435,7 +611,7 @@ void main() {
         final deleted = await dao.clearAll();
 
         expect(deleted, equals(2));
-        final results = await dao.getAllUploads();
+        final results = await dao.getAllUploads(ownerPubkey: testPubkey);
         expect(results, isEmpty);
       });
 
@@ -446,10 +622,6 @@ void main() {
     });
 
     group('deleteAllForUser', () {
-      const testPubkey2 =
-          'fedcba9876543210fedcba9876543210'
-          'fedcba9876543210fedcba9876543210';
-
       test('deletes all uploads for user', () async {
         await dao.upsertUpload(createTestUpload(id: 'u1'));
         await dao.upsertUpload(createTestUpload(id: 'u2'));
@@ -457,7 +629,7 @@ void main() {
         final deleted = await dao.deleteAllForUser(testPubkey);
 
         expect(deleted, equals(2));
-        final remaining = await dao.getAllUploads();
+        final remaining = await dao.getAllUploadsForMaintenance();
         expect(remaining, isEmpty);
       });
 
@@ -469,7 +641,7 @@ void main() {
 
         await dao.deleteAllForUser(testPubkey);
 
-        final remaining = await dao.getAllUploads();
+        final remaining = await dao.getAllUploadsForMaintenance();
         expect(remaining, hasLength(1));
         expect(remaining.first.id, equals('u_b'));
       });

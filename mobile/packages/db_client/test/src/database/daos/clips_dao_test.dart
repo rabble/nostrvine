@@ -1070,6 +1070,73 @@ void main() {
         final clipsB = await dao.getLibraryClips(ownerPubkey: pubkeyB);
         expect(clipsB, isEmpty);
       });
+
+      test(
+        'getTrashedClipsOlderThan returns owner and legacy trash only',
+        () async {
+          final now = DateTime(2024, 1, 31);
+          final oldDeletedAt = DateTime(2023, 12);
+          final cutoff = DateTime(2024);
+
+          await dao.upsertClip(
+            id: 'clip_a_old',
+            orderIndex: 0,
+            durationMs: 1000,
+            recordedAt: now,
+            filePath: 'a.mp4',
+            thumbnailPath: 'a.jpeg',
+            data: '{}',
+            ownerPubkey: pubkeyA,
+          );
+          await dao.upsertClip(
+            id: 'clip_b_old',
+            orderIndex: 0,
+            durationMs: 1000,
+            recordedAt: now,
+            filePath: 'b.mp4',
+            thumbnailPath: 'b.jpeg',
+            data: '{}',
+            ownerPubkey: pubkeyB,
+          );
+          await dao.upsertClip(
+            id: 'clip_legacy_old',
+            orderIndex: 0,
+            durationMs: 1000,
+            recordedAt: now,
+            filePath: 'legacy.mp4',
+            thumbnailPath: 'legacy.jpeg',
+            data: '{}',
+          );
+          await dao.upsertClip(
+            id: 'clip_a_recent',
+            orderIndex: 0,
+            durationMs: 1000,
+            recordedAt: now,
+            filePath: 'recent.mp4',
+            thumbnailPath: 'recent.jpeg',
+            data: '{}',
+            ownerPubkey: pubkeyA,
+          );
+
+          await dao.softDeleteClip(id: 'clip_a_old', deletedAt: oldDeletedAt);
+          await dao.softDeleteClip(id: 'clip_b_old', deletedAt: oldDeletedAt);
+          await dao.softDeleteClip(
+            id: 'clip_legacy_old',
+            deletedAt: oldDeletedAt,
+          );
+          await dao.softDeleteClip(id: 'clip_a_recent', deletedAt: now);
+
+          final scoped = await dao.getTrashedClipsOlderThan(
+            cutoff,
+            ownerPubkey: pubkeyA,
+          );
+
+          expect(scoped.map((clip) => clip.id).toSet(), {
+            'clip_a_old',
+            'clip_legacy_old',
+          });
+        },
+      );
     });
 
     group('deleteAllForUser', () {
