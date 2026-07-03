@@ -31,7 +31,6 @@ lib/services/video_event_service.dart	6034
 lib/services/video_publish/video_publish_service.dart	843
 lib/services/zendesk_support_service.dart	1168
 lib/widgets/report_content_dialog.dart	857
-lib/widgets/share_video_menu.dart	1606
 lib/widgets/user_picker_sheet.dart	1009
 lib/widgets/video_editor/main_editor/video_editor_canvas.dart	1962
 lib/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart	859
