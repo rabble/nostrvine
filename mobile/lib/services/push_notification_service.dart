@@ -133,9 +133,11 @@ class PushNotificationService {
 
   /// Deregisters this device from the divine push service.
   ///
-  /// Publishes a kind [pushDeregistrationKind] Nostr event to the push
-  /// service pubkey, signalling that notifications should no longer be
-  /// delivered to this device.
+  /// NIP-44 encrypts the current FCM token and publishes a kind
+  /// [pushDeregistrationKind] Nostr event to the push service pubkey so the
+  /// service can identify and remove exactly this device's token. The push
+  /// service rejects plaintext/empty content, so the token must be encrypted
+  /// the same way as registration.
   ///
   /// If [signingIdentity] is provided, deregistration signs with that captured
   /// outgoing identity instead of the live auth session. This is used by
@@ -160,11 +162,7 @@ class PushNotificationService {
     }
 
     final event = signingIdentity == null
-        ? await _authService.createAndSignEvent(
-            kind: pushDeregistrationKind,
-            content: '',
-            tags: _deregistrationTags(pushServicePubkey),
-          )
+        ? await _createLiveDeregistrationEvent(pushServicePubkey)
         : await createSignedDeregistrationEvent(
             userPubkey,
             signingIdentity: signingIdentity,
@@ -209,10 +207,19 @@ class PushNotificationService {
       return null;
     }
 
+    final content = await _encryptedDeregistrationContent(
+      pushServicePubkey,
+      signingIdentity.nip44Encrypt,
+    );
+    if (content == null) return null;
+    if (!await _isPublishCurrent(isCurrent, checkServiceCurrent: false)) {
+      return null;
+    }
+
     final event = await _createAndSignEventWithIdentity(
       signingIdentity,
       kind: pushDeregistrationKind,
-      content: '',
+      content: content,
       tags: _deregistrationTags(pushServicePubkey),
     );
     if (!await _isPublishCurrent(isCurrent, checkServiceCurrent: false)) {
@@ -411,6 +418,59 @@ class PushNotificationService {
       );
     }
     return outcome.confirmed;
+  }
+
+  /// Builds the live-session deregistration event: NIP-44 encrypts the current
+  /// FCM token for [pushServicePubkey] and signs a kind [pushDeregistrationKind]
+  /// event with the live signer. Returns null when the token is unavailable or
+  /// encryption fails (both already logged).
+  Future<Event?> _createLiveDeregistrationEvent(
+    String pushServicePubkey,
+  ) async {
+    final content = await _encryptedDeregistrationContent(
+      pushServicePubkey,
+      _nostrClient.signer.nip44Encrypt,
+    );
+    if (content == null) return null;
+
+    return _authService.createAndSignEvent(
+      kind: pushDeregistrationKind,
+      content: content,
+      tags: _deregistrationTags(pushServicePubkey),
+    );
+  }
+
+  /// Fetches the current FCM token and NIP-44 encrypts `{"token": <token>}` for
+  /// [pushServicePubkey] using [nip44Encrypt], so a deregistration event tells
+  /// the push service which token to remove (it rejects empty/plaintext
+  /// content). Returns null (and logs) when the token is unavailable or
+  /// encryption fails.
+  Future<String?> _encryptedDeregistrationContent(
+    String pushServicePubkey,
+    Future<String?> Function(String pubkey, String plaintext) nip44Encrypt,
+  ) async {
+    final token = await _getToken();
+    if (token == null) {
+      Log.warning(
+        'FCM token is null — skipping push notification deregistration',
+        name: 'PushNotificationService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+
+    final encrypted = await nip44Encrypt(
+      pushServicePubkey,
+      jsonEncode({'token': token}),
+    );
+    if (encrypted == null) {
+      Log.error(
+        'NIP-44 encryption failed for token deregistration',
+        name: 'PushNotificationService',
+        category: LogCategory.system,
+      );
+    }
+    return encrypted;
   }
 
   Future<Event?> _createAndSignEventWithIdentity(

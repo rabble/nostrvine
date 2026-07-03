@@ -78,6 +78,9 @@ void main() {
     mockNostrSigner = _MockNostrSigner();
 
     when(() => mockNostrClient.signer).thenReturn(mockNostrSigner);
+    when(
+      () => mockNostrSigner.nip44Encrypt(any(), any()),
+    ).thenAnswer((_) async => encryptedPayload);
 
     registerFallbackValue(_FakeEvent());
     registerFallbackValue(<String>[]);
@@ -398,13 +401,87 @@ void main() {
 
     group('deregister', () {
       test(
+        'encrypts the FCM token into the deregistration event content',
+        () async {
+          final fakeEvent = _FakeEvent();
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: PushNotificationService.pushDeregistrationKind,
+              content: encryptedPayload,
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => fakeEvent);
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              fakeEvent,
+              targetRelays: [testEnvironment.relayUrl],
+              timeout: pushPublishTimeout,
+              diagnosticTag: 'push-control',
+            ),
+          ).thenAnswer(
+            (_) async => PublishOutcome(
+              eventId: fakeEvent.id,
+              acceptedBy: [testEnvironment.relayUrl],
+              rejectedBy: const {},
+              noResponseFrom: const [],
+            ),
+          );
+
+          final service = buildService();
+          await service.deregister(testPubkey);
+
+          verify(
+            () => mockNostrSigner.nip44Encrypt(
+              testEnvironment.pushServicePubkey,
+              '{"token":"$testToken"}',
+            ),
+          ).called(1);
+          verify(
+            () => mockAuthService.createAndSignEvent(
+              kind: PushNotificationService.pushDeregistrationKind,
+              content: encryptedPayload,
+              tags: any(named: 'tags'),
+            ),
+          ).called(1);
+          service.dispose();
+        },
+      );
+
+      test(
+        'does not publish deregistration when the FCM token is unavailable',
+        () async {
+          final service = buildService(token: null);
+
+          await service.deregister(testPubkey);
+
+          verifyNever(() => mockNostrSigner.nip44Encrypt(any(), any()));
+          verifyNever(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+              diagnosticTag: any(named: 'diagnosticTag'),
+            ),
+          );
+          service.dispose();
+        },
+      );
+
+      test(
         'publishes kind 3080 event to environment relay with OK timeout',
         () async {
           final fakeEvent = _FakeEvent();
           when(
             () => mockAuthService.createAndSignEvent(
               kind: PushNotificationService.pushDeregistrationKind,
-              content: '',
+              content: encryptedPayload,
               tags: any(named: 'tags'),
             ),
           ).thenAnswer((_) async => fakeEvent);
@@ -431,7 +508,7 @@ void main() {
           verify(
             () => mockAuthService.createAndSignEvent(
               kind: PushNotificationService.pushDeregistrationKind,
-              content: '',
+              content: encryptedPayload,
               tags: any(named: 'tags'),
             ),
           ).called(1);
@@ -570,7 +647,7 @@ void main() {
           when(
             () => mockAuthService.createAndSignEvent(
               kind: PushNotificationService.pushDeregistrationKind,
-              content: '',
+              content: encryptedPayload,
               tags: any(named: 'tags'),
             ),
           ).thenAnswer((_) async {
@@ -585,7 +662,7 @@ void main() {
           verify(
             () => mockAuthService.createAndSignEvent(
               kind: PushNotificationService.pushDeregistrationKind,
-              content: '',
+              content: encryptedPayload,
               tags: any(named: 'tags'),
             ),
           ).called(1);
@@ -608,6 +685,9 @@ void main() {
           ).thenReturn('captured-deregistration-event-id');
           when(() => fakeEvent.isSigned).thenReturn(true);
           when(() => fakeEvent.isValid).thenReturn(true);
+          when(
+            () => capturedSigner.nip44Encrypt(any(), any()),
+          ).thenAnswer((_) async => encryptedPayload);
           when(
             () => capturedSigner.signEvent(any()),
           ).thenAnswer((_) async => fakeEvent);
@@ -668,6 +748,9 @@ void main() {
           ).thenReturn('cleanup-deregistration-event-id');
           when(() => fakeEvent.isSigned).thenReturn(true);
           when(() => fakeEvent.isValid).thenReturn(true);
+          when(
+            () => capturedSigner.nip44Encrypt(any(), any()),
+          ).thenAnswer((_) async => encryptedPayload);
           when(
             () => capturedSigner.signEvent(any()),
           ).thenAnswer((_) async => fakeEvent);

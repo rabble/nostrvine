@@ -1379,6 +1379,10 @@ void main() {
         when(() => event.isValid).thenReturn(true);
         when(() => signer.signEvent(any())).thenAnswer((_) async => event);
         when(
+          () => signer.nip44Encrypt(any(), any()),
+        ).thenAnswer((_) async => 'encrypted-dereg-token');
+        when(() => messaging.getToken()).thenAnswer((_) async => 'fcm-token');
+        when(
           () => defaultCleanupClient.publishEventAwaitOk(
             event,
             targetRelays: [pushEnvironment.relayUrl],
@@ -1468,6 +1472,10 @@ void main() {
         when(() => event.isValid).thenReturn(true);
         when(() => signer.signEvent(any())).thenAnswer((_) async => event);
         when(
+          () => signer.nip44Encrypt(any(), any()),
+        ).thenAnswer((_) async => 'encrypted-dereg-token');
+        when(() => messaging.getToken()).thenAnswer((_) async => 'fcm-token');
+        when(
           () => defaultCleanupClient.publishEventAwaitOk(
             event,
             targetRelays: [pushEnvironment.relayUrl],
@@ -1555,6 +1563,10 @@ void main() {
         when(() => event.isSigned).thenReturn(true);
         when(() => event.isValid).thenReturn(true);
         when(() => signer.signEvent(any())).thenAnswer((_) async => event);
+        when(
+          () => signer.nip44Encrypt(any(), any()),
+        ).thenAnswer((_) async => 'encrypted-dereg-token');
+        when(() => messaging.getToken()).thenAnswer((_) async => 'fcm-token');
         when(
           () => cleanupClient.publishEventAwaitOk(
             event,
@@ -1775,7 +1787,13 @@ void main() {
         when(
           () => messaging.getNotificationSettings(),
         ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
-        when(() => messaging.getToken()).thenAnswer((_) async => null);
+        // getToken() is null at startup (initial register skips and waits for a
+        // refresh); once the refresh arrives the device has a token, so
+        // deregistration can encrypt it for the push service.
+        String? sessionToken;
+        when(
+          () => messaging.getToken(),
+        ).thenAnswer((_) async => sessionToken);
         when(
           () => messaging.onTokenRefresh,
         ).thenAnswer((_) => tokenRefreshController.stream);
@@ -1871,6 +1889,10 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(Duration.zero);
         expect(events, ['registration publish started']);
+
+        // The refresh delivered a token, so getToken() now returns it and the
+        // pending deregistration can encrypt it.
+        sessionToken = 'refreshed-token-during-session';
 
         final teardownFuture = beforeSessionTeardownCallback!();
         await Future<void>.delayed(Duration.zero);
