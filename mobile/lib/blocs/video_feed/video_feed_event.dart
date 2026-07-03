@@ -171,3 +171,32 @@ final class VideoFeedBlocklistChanged extends VideoFeedEvent {
   @override
   List<Object?> get props => [blockedPubkey];
 }
+
+/// Dispatched when the user commits a feed-tuning swipe on [videoId]
+/// ("more"/"less like this").
+final class VideoFeedTuningSwipeCommitted extends VideoFeedEvent {
+  const VideoFeedTuningSwipeCommitted({
+    required this.videoId,
+    required this.direction,
+  });
+
+  /// Event ID of the swiped video.
+  final String videoId;
+
+  /// Swipe direction — more or less like this.
+  final FeedTuningDirection direction;
+
+  @override
+  List<Object?> get props => [videoId, direction];
+}
+
+/// Dispatched when the user taps Undo on a just-published tuning signal.
+final class VideoFeedTuningUndoRequested extends VideoFeedEvent {
+  const VideoFeedTuningUndoRequested(this.feedTuningEventId);
+
+  /// Event ID of the feed-tuning event to retract.
+  final String feedTuningEventId;
+
+  @override
+  List<Object?> get props => [feedTuningEventId];
+}

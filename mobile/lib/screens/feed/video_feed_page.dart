@@ -2,11 +2,15 @@ import 'dart:async';
 
 import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_tuning_repository/feed_tuning_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -24,6 +28,7 @@ import 'package:openvine/services/view_event_publisher.dart'
     show ViewTrafficSource;
 import 'package:openvine/utils/video_nostr_enrichment.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/feed_tuning/feed_tuning_swipe_overlay.dart';
 import 'package:openvine/widgets/nav_rounded_shell.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 
@@ -67,6 +72,7 @@ class VideoFeedPage extends ConsumerWidget {
         .showDivineHostedOnly;
 
     final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+    final feedTuningRepository = ref.watch(feedTuningRepositoryProvider);
     final enrichmentAttemptTracker = NostrTagEnrichmentAttemptTracker();
 
     return MultiBlocProvider(
@@ -86,6 +92,7 @@ class VideoFeedPage extends ConsumerWidget {
             // on read and the splice-on-refresh keeps the post-active tail
             // fresh, so the cached serve is never stale to the viewer.
             feedTracker: FeedPerformanceTracker(),
+            feedTuningRepository: feedTuningRepository,
             enrichVideos: (videos) => enrichVideosWithNostrTags(
               videos,
               nostrService: ref.read(nostrServiceProvider),
@@ -144,6 +151,8 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// Tracks the active Home video without forcing route updates while swiping.
   late int _currentIndex;
 
+  final _feedVideosKey = GlobalKey<FeedVideosState>();
+
   /// Feed-scoped Auto playback state. Owned by this state so tests can drive
   /// the screen without also wiring the cubit externally; exposed to children
   /// via `BlocProvider.value` in [build] so the rail control and feed items
@@ -192,6 +201,69 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   }
 
   void _resumeAutoAdvanceAfterSwipe() => _autoAdvanceCubit.resumeAfterSwipe();
+
+  void _animateToPage(int index) {
+    final feedVideosState = _feedVideosKey.currentState;
+    if (feedVideosState != null) {
+      unawaited(feedVideosState.animateToPage(index));
+    }
+  }
+
+  /// Publish a feed-tuning signal for the active home-feed video and page
+  /// forward.
+  void _onTuned(FeedTuningDirection direction) {
+    final bloc = context.read<VideoFeedBloc>();
+    final videos = bloc.state.videos;
+    if (_currentIndex < 0 || _currentIndex >= videos.length) return;
+    final video = videos[_currentIndex];
+
+    bloc.add(
+      VideoFeedTuningSwipeCommitted(videoId: video.id, direction: direction),
+    );
+
+    final nextIndex = _currentIndex + 1;
+    if (nextIndex < videos.length) {
+      _animateToPage(nextIndex);
+    }
+  }
+
+  void _showTuningSnackbar(VideoFeedTuningAction action) {
+    final l10n = context.l10n;
+    final label = action.direction == FeedTuningDirection.more
+        ? l10n.feedTuningMoreLabel
+        : l10n.feedTuningLessLabel;
+    final eventId = action.publishedEventId;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text(label),
+          action: eventId == null
+              ? null
+              : SnackBarAction(
+                  label: l10n.feedTuningUndo,
+                  onPressed: () => _undoTuning(eventId, action.videoId),
+                ),
+        ),
+      );
+  }
+
+  void _dismissTuningSnackbar() {
+    ScaffoldMessenger.maybeOf(context)?.removeCurrentSnackBar();
+  }
+
+  void _undoTuning(String feedTuningEventId, String videoId) {
+    final bloc = context.read<VideoFeedBloc>()
+      ..add(VideoFeedTuningUndoRequested(feedTuningEventId));
+    final videos = bloc.state.videos;
+    for (var i = 0; i < videos.length; i++) {
+      if (videos[i].id == videoId) {
+        _animateToPage(i);
+        return;
+      }
+    }
+  }
 
   /// Recomputes whether the home feed should be playing and updates
   /// [_isNewFeedActive] if it changed. The feed is active only when the home
@@ -250,6 +322,9 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     final shouldRetainPlayer = ref
         .watch(overlayVisibilityProvider)
         .shouldRetainPlayer;
+    final feedTuningEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.feedTuning),
+    );
 
     return BlocProvider.value(
       value: _autoAdvanceCubit,
@@ -292,6 +367,15 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                   _hasMarkedUIReady = true;
                   StartupPerformanceService.instance.markUIReady();
                 }
+              },
+            ),
+            BlocListener<VideoFeedBloc, VideoFeedBlocState>(
+              listenWhen: (previous, current) =>
+                  previous.lastTuningAction != current.lastTuningAction &&
+                  current.lastTuningAction != null,
+              listener: (context, state) {
+                final action = state.lastTuningAction;
+                if (action != null) _showTuningSnackbar(action);
               },
             ),
           ],
@@ -363,49 +447,56 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                 child: _KeyboardStableBottomInset(
                   child: Stack(
                     children: [
-                      FeedVideos(
-                        videos: state.videos,
-                        contextTitle: state.feedContextTitle,
-                        currentIndex: clampedIndex,
-                        isActive: _isNewFeedActive,
-                        // The home feed stays mounted across tab switches and
-                        // pushed routes (StatefulShellRoute keep-alive), so
-                        // release the off-screen neighbour players and pause
-                        // disk prefetch while it is backgrounded. Bottom sheets
-                        // (comments/share) only pause the current player — they
-                        // keep neighbours and prefetch warm via
-                        // shouldRetainPlayer.
-                        releaseNeighboursWhenInactive: !shouldRetainPlayer,
-                        hasMore: state.hasMore,
-                        isLoadingMore: state.isLoadingMore,
-                        trafficSource: ViewTrafficSource.home,
-                        onActiveVideoChanged: (video, index) {
-                          ref
-                              .read(foregroundFeedActivityGateProvider)
-                              .markActive();
-                          _currentIndex = index;
-                          context.read<VideoFeedBloc>().add(
-                            VideoFeedActiveIndexChanged(index),
-                          );
-                          ref
-                              .read(lastTabPositionProvider.notifier)
-                              .recordPosition(RouteType.home, index);
-                          _resumeAutoAdvanceAfterSwipe();
-                          FeedPerformanceTracker().startVideoSwipeTracking(
-                            video.id,
-                          );
-                          if (!_hasMarkedVideoReady && index == 0) {
-                            _hasMarkedVideoReady = true;
-                            StartupPerformanceService.instance.markVideoReady();
-                          }
-                        },
-                        onNearEnd: () {
-                          if (state.hasMore) {
+                      FeedTuningSwipeGate(
+                        enabled: feedTuningEnabled,
+                        onTuned: _onTuned,
+                        child: FeedVideos(
+                          key: _feedVideosKey,
+                          videos: state.videos,
+                          contextTitle: state.feedContextTitle,
+                          currentIndex: clampedIndex,
+                          isActive: _isNewFeedActive,
+                          // The home feed stays mounted across tab switches and
+                          // pushed routes (StatefulShellRoute keep-alive), so
+                          // release the off-screen neighbour players and pause
+                          // disk prefetch while it is backgrounded. Bottom sheets
+                          // (comments/share) only pause the current player — they
+                          // keep neighbours and prefetch warm via
+                          // shouldRetainPlayer.
+                          releaseNeighboursWhenInactive: !shouldRetainPlayer,
+                          hasMore: state.hasMore,
+                          isLoadingMore: state.isLoadingMore,
+                          trafficSource: ViewTrafficSource.home,
+                          onActiveVideoChanged: (video, index) {
+                            _dismissTuningSnackbar();
+                            ref
+                                .read(foregroundFeedActivityGateProvider)
+                                .markActive();
+                            _currentIndex = index;
                             context.read<VideoFeedBloc>().add(
-                              const VideoFeedLoadMoreRequested(),
+                              VideoFeedActiveIndexChanged(index),
                             );
-                          }
-                        },
+                            ref
+                                .read(lastTabPositionProvider.notifier)
+                                .recordPosition(RouteType.home, index);
+                            _resumeAutoAdvanceAfterSwipe();
+                            FeedPerformanceTracker().startVideoSwipeTracking(
+                              video.id,
+                            );
+                            if (!_hasMarkedVideoReady && index == 0) {
+                              _hasMarkedVideoReady = true;
+                              StartupPerformanceService.instance
+                                  .markVideoReady();
+                            }
+                          },
+                          onNearEnd: () {
+                            if (state.hasMore) {
+                              context.read<VideoFeedBloc>().add(
+                                const VideoFeedLoadMoreRequested(),
+                              );
+                            }
+                          },
+                        ),
                       ),
                       const FeedModeSwitch(),
                     ],

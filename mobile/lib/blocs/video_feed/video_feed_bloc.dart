@@ -9,6 +9,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:equatable/equatable.dart';
+import 'package:feed_tuning_repository/feed_tuning_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
@@ -55,6 +56,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     FeedPerformanceTracker? feedTracker,
     HomeFeedCache? homeFeedCache,
     EnrichVideos? enrichVideos,
+    FeedTuningRepository? feedTuningRepository,
   }) : _videosRepository = videosRepository,
        _followRepository = followRepository,
        _curatedListRepository = curatedListRepository,
@@ -66,6 +68,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
        _autoRefreshMinInterval = autoRefreshMinInterval,
        _feedTracker = feedTracker,
        _enrichVideos = enrichVideos,
+       _feedTuningRepository = feedTuningRepository,
        _resumeManager = HomeFeedResumeManager(
          cache: homeFeedCache ?? const HomeFeedCache(),
          videosRepository: videosRepository,
@@ -91,6 +94,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     on<VideoFeedBlocklistChanged>(_onBlocklistChanged);
     on<VideoFeedActiveIndexChanged>(_onActiveIndexChanged);
     on<VideoFeedEnrichmentReady>(_onEnrichmentReady);
+    on<VideoFeedTuningSwipeCommitted>(_onTuningSwipeCommitted);
+    on<VideoFeedTuningUndoRequested>(_onTuningUndoRequested);
   }
 
   final VideosRepository _videosRepository;
@@ -104,6 +109,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   final Duration _autoRefreshMinInterval;
   final FeedPerformanceTracker? _feedTracker;
   final EnrichVideos? _enrichVideos;
+  final FeedTuningRepository? _feedTuningRepository;
+  int _tuningActionSequence = 0;
 
   /// Owns the cross-restart cache serve / splice / resume-persist logic.
   final HomeFeedResumeManager _resumeManager;
@@ -152,6 +159,49 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       // Subscribed-list rows are loaded from locally held event IDs and are
       // already resolved as full events rather than compact server feed rows.
       source.type != VideoFeedSourceType.subscribedList;
+
+  /// Publish a feed-tuning signal for the swiped home-feed video and record it
+  /// for the UI's Undo snackbar. Does not mutate the video list.
+  Future<void> _onTuningSwipeCommitted(
+    VideoFeedTuningSwipeCommitted event,
+    Emitter<VideoFeedBlocState> emit,
+  ) async {
+    final repository = _feedTuningRepository;
+    if (repository == null) return;
+
+    VideoEvent? target;
+    for (final video in state.videos) {
+      if (video.id == event.videoId) {
+        target = video;
+        break;
+      }
+    }
+    if (target == null) return;
+
+    final publishedEventId = await repository.tune(
+      video: target,
+      direction: event.direction,
+    );
+
+    emit(
+      state.copyWith(
+        lastTuningAction: VideoFeedTuningAction(
+          videoId: event.videoId,
+          direction: event.direction,
+          sequence: ++_tuningActionSequence,
+          publishedEventId: publishedEventId,
+        ),
+      ),
+    );
+  }
+
+  /// Retract a previously-published feed-tuning signal.
+  Future<void> _onTuningUndoRequested(
+    VideoFeedTuningUndoRequested event,
+    Emitter<VideoFeedBlocState> emit,
+  ) async {
+    await _feedTuningRepository?.undo(event.feedTuningEventId);
+  }
 
   /// Handle feed started event.
   ///

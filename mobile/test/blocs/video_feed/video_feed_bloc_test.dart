@@ -9,6 +9,7 @@ import 'package:analytics/analytics.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cache_sync/cache_sync.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
+import 'package:feed_tuning_repository/feed_tuning_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -34,6 +35,8 @@ class _MockFeedPerformanceTracker extends Mock
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _MockHomeFeedCache extends Mock implements HomeFeedCache {}
+
+class _MockFeedTuningRepository extends Mock implements FeedTuningRepository {}
 
 /// No-op cache DAO so the bloc tests never touch the shared on-disk
 /// [CacheSync] database. Under CI's parallel test isolates the
@@ -114,10 +117,13 @@ void main() {
       curatedListsController.close();
     });
 
-    VideoFeedBloc createBloc() => VideoFeedBloc(
+    VideoFeedBloc createBloc({
+      FeedTuningRepository? feedTuningRepository,
+    }) => VideoFeedBloc(
       videosRepository: mockVideosRepository,
       followRepository: mockFollowRepository,
       curatedListRepository: mockCuratedListRepository,
+      feedTuningRepository: feedTuningRepository,
     );
 
     VideoEvent createTestVideo(
@@ -185,6 +191,82 @@ void main() {
       expect(bloc.state.isLoadingMore, isFalse);
       expect(bloc.state.error, isNull);
       bloc.close();
+    });
+
+    group('feed tuning', () {
+      late _MockFeedTuningRepository tuningRepository;
+      late VideoEvent tunedVideo;
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'publishes a tuning signal for the target video',
+        setUp: () {
+          tuningRepository = _MockFeedTuningRepository();
+          tunedVideo = createTestVideo('tuned-video');
+          when(
+            () => tuningRepository.tune(
+              video: tunedVideo,
+              direction: FeedTuningDirection.more,
+            ),
+          ).thenAnswer((_) async => 'published-tuning-event-id');
+        },
+        build: () => createBloc(feedTuningRepository: tuningRepository),
+        seed: () => VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          videos: [tunedVideo],
+        ),
+        act: (bloc) => bloc.add(
+          const VideoFeedTuningSwipeCommitted(
+            videoId: 'tuned-video',
+            direction: FeedTuningDirection.more,
+          ),
+        ),
+        expect: () => [
+          isA<VideoFeedBlocState>().having(
+            (state) => state.lastTuningAction,
+            'lastTuningAction',
+            isA<VideoFeedTuningAction>()
+                .having((action) => action.videoId, 'videoId', 'tuned-video')
+                .having(
+                  (action) => action.direction,
+                  'direction',
+                  FeedTuningDirection.more,
+                )
+                .having(
+                  (action) => action.publishedEventId,
+                  'publishedEventId',
+                  'published-tuning-event-id',
+                ),
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => tuningRepository.tune(
+              video: tunedVideo,
+              direction: FeedTuningDirection.more,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'undo retracts a published tuning signal',
+        setUp: () {
+          tuningRepository = _MockFeedTuningRepository();
+          when(
+            () => tuningRepository.undo('published-tuning-event-id'),
+          ).thenAnswer((_) async {});
+        },
+        build: () => createBloc(feedTuningRepository: tuningRepository),
+        act: (bloc) => bloc.add(
+          const VideoFeedTuningUndoRequested('published-tuning-event-id'),
+        ),
+        expect: () => <VideoFeedBlocState>[],
+        verify: (_) {
+          verify(
+            () => tuningRepository.undo('published-tuning-event-id'),
+          ).called(1);
+        },
+      );
     });
 
     group('VideoFeedBlocState', () {

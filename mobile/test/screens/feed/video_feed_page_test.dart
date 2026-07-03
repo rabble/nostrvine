@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:feed_tuning_repository/feed_tuning_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +17,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -25,6 +28,7 @@ import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/feed/video_feed_page/feed_empty_widget.dart';
 import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/widgets/feed_tuning/feed_tuning_swipe_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 
 import '../../helpers/test_provider_overrides.dart';
@@ -332,6 +336,125 @@ void main() {
         await tester.pump();
       },
     );
+
+    testWidgets('wraps the home feed with tuning swipes when enabled', (
+      tester,
+    ) async {
+      final video = createTestVideoEvent();
+      final state = VideoFeedBlocState(
+        status: VideoFeedStatus.success,
+        videos: [video],
+      );
+      when(() => videoFeedBloc.state).thenReturn(state);
+      whenListen(
+        videoFeedBloc,
+        const Stream<VideoFeedBlocState>.empty(),
+        initialState: state,
+      );
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          additionalOverrides: [
+            isFeatureEnabledProvider(
+              FeatureFlag.feedTuning,
+            ).overrideWith((_) => true),
+          ],
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+              BlocProvider<VideoPlaybackStatusCubit>(
+                create: (_) => VideoPlaybackStatusCubit(),
+              ),
+              BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+            ],
+            child: const VideoFeedView(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(FeedTuningSwipeOverlay), findsOneWidget);
+
+      await tester.drag(
+        find.byType(FeedTuningSwipeOverlay),
+        const Offset(200, 0),
+      );
+      await tester.pump();
+
+      verify(
+        () => videoFeedBloc.add(
+          VideoFeedTuningSwipeCommitted(
+            videoId: video.id,
+            direction: FeedTuningDirection.more,
+          ),
+        ),
+      ).called(1);
+
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('dismisses the tuning receipt when the feed page changes', (
+      tester,
+    ) async {
+      final videos = [
+        createTestVideoEvent(id: 'video-0'),
+        createTestVideoEvent(id: 'video-1'),
+      ];
+      final initialState = VideoFeedBlocState(
+        status: VideoFeedStatus.success,
+        videos: videos,
+      );
+      final tunedState = initialState.copyWith(
+        lastTuningAction: VideoFeedTuningAction(
+          videoId: videos.first.id,
+          direction: FeedTuningDirection.less,
+          sequence: 1,
+          publishedEventId: 'published-tuning-event-id',
+        ),
+      );
+      final controller = StreamController<VideoFeedBlocState>();
+      addTearDown(controller.close);
+      when(() => videoFeedBloc.state).thenReturn(initialState);
+      whenListen(
+        videoFeedBloc,
+        controller.stream,
+        initialState: initialState,
+      );
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+              BlocProvider<VideoPlaybackStatusCubit>(
+                create: (_) => VideoPlaybackStatusCubit(),
+              ),
+              BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+            ],
+            child: const Scaffold(body: VideoFeedView()),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      when(() => videoFeedBloc.state).thenReturn(tunedState);
+      controller.add(tunedState);
+      await tester.pump();
+
+      expect(find.text('Less like this'), findsOneWidget);
+
+      final feedVideos = tester.widget<FeedVideos>(find.byType(FeedVideos));
+      feedVideos.onActiveVideoChanged!(videos[1], 1);
+      await tester.pump();
+
+      expect(find.text('Less like this'), findsNothing);
+
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
 
     testWidgets('requests auto-refresh when app returns from background', (
       tester,

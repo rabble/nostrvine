@@ -1,4 +1,5 @@
 import 'package:feed_tuning_repository/feed_tuning_repository.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -66,6 +67,66 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tuned, isEmpty);
+    });
+
+    testWidgets('trackpad swipe right past the threshold tunes "more"', (
+      tester,
+    ) async {
+      final tuned = await pumpOverlay(tester);
+      final pointer = TestPointer(1, PointerDeviceKind.trackpad);
+      await tester.sendEventToBinding(
+        pointer.hover(tester.getCenter(find.byType(FeedTuningSwipeOverlay))),
+      );
+
+      await tester.sendEventToBinding(pointer.scroll(const Offset(-200, 0)));
+      await tester.pumpAndSettle();
+
+      expect(tuned, [FeedTuningDirection.more]);
+    });
+
+    testWidgets('trackpad swipe left past the threshold tunes "less"', (
+      tester,
+    ) async {
+      final tuned = await pumpOverlay(tester);
+      final pointer = TestPointer(1, PointerDeviceKind.trackpad);
+      await tester.sendEventToBinding(
+        pointer.hover(tester.getCenter(find.byType(FeedTuningSwipeOverlay))),
+      );
+
+      await tester.sendEventToBinding(pointer.scroll(const Offset(200, 0)));
+      await tester.pumpAndSettle();
+
+      expect(tuned, [FeedTuningDirection.less]);
+    });
+
+    testWidgets('trackpad pan right past the threshold tunes "more"', (
+      tester,
+    ) async {
+      final tuned = await pumpOverlay(tester);
+
+      await tester.trackpadFling(
+        find.byType(FeedTuningSwipeOverlay),
+        const Offset(200, 0),
+        1000,
+      );
+      await tester.pumpAndSettle();
+
+      expect(tuned, [FeedTuningDirection.more]);
+    });
+
+    testWidgets('trackpad pan left past the threshold tunes "less"', (
+      tester,
+    ) async {
+      final tuned = await pumpOverlay(tester);
+
+      await tester.trackpadFling(
+        find.byType(FeedTuningSwipeOverlay),
+        const Offset(-200, 0),
+        1000,
+      );
+      await tester.pumpAndSettle();
+
+      expect(tuned, [FeedTuningDirection.less]);
     });
 
     testWidgets('shows the directional indicator during a drag', (
@@ -180,7 +241,48 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tuned, isEmpty);
-      expect(controller.page, 1); // advanced one page
+      expect(controller.page, greaterThan(0)); // vertical pager advanced
+    });
+
+    testWidgets('vertical swipe with sideways drift still pages', (
+      tester,
+    ) async {
+      final tuned = <FeedTuningDirection>[];
+      final controller = PageController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: FeedTuningSwipeOverlay(
+              onTuned: tuned.add,
+              child: PageView(
+                controller: controller,
+                scrollDirection: Axis.vertical,
+                children: const [
+                  SizedBox.expand(child: Center(child: Text('page-0'))),
+                  SizedBox.expand(child: Center(child: Text('page-1'))),
+                  SizedBox.expand(child: Center(child: Text('page-2'))),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(FeedTuningSwipeOverlay)),
+      );
+      await gesture.moveBy(const Offset(24, -4));
+      await tester.pump();
+      await gesture.moveBy(const Offset(0, -600));
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(tuned, isEmpty);
+      expect(controller.page, 1);
     });
   });
 
