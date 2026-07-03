@@ -14,10 +14,12 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer, SecureKeyStorage, SecureKeyStorageException;
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/models/auth_result.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth/known_accounts_registry.dart';
+import 'package:openvine/services/auth/nostr_connect_coordinator.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth/oauth_session_coordinator.dart';
 import 'package:openvine/services/auth/relay_discovery_orchestrator.dart';
@@ -33,6 +35,9 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+// AuthResult moved to its own file (#4741) so auth/ collaborators can return it
+// without a facade import cycle; external consumers keep importing it here.
+export 'package:openvine/models/auth_result.dart';
 export 'package:openvine/models/authentication_source.dart';
 // Discovery callback contracts moved with the orchestrator (#4741); external
 // consumers (NostrService wiring) keep importing them from this facade.
@@ -100,35 +105,6 @@ class AccountRestoreFailedException implements Exception {
       '$resolvedState'
       '${resolvedPubkeyHex == null ? '' : ' as $resolvedPubkeyHex'} '
       'instead of the requested account';
-}
-
-/// Result of authentication operations
-class AuthResult {
-  const AuthResult({
-    required this.success,
-    this.errorMessage,
-    this.keyContainer,
-    this.nostrConnectFailureReason,
-  });
-
-  factory AuthResult.success(SecureKeyContainer keyContainer) =>
-      AuthResult(success: true, keyContainer: keyContainer);
-
-  factory AuthResult.failure(String errorMessage) =>
-      AuthResult(success: false, errorMessage: errorMessage);
-
-  /// Failure result for the nostrconnect:// flow, carrying a localizable
-  /// reason code instead of a raw English string. The UI maps the reason to a
-  /// `context.l10n.*` string.
-  factory AuthResult.nostrConnectFailure(NostrConnectFailureReason reason) =>
-      AuthResult(success: false, nostrConnectFailureReason: reason);
-
-  final bool success;
-  final String? errorMessage;
-  final SecureKeyContainer? keyContainer;
-
-  /// Set only by the nostrconnect:// failure path; `null` for every other flow.
-  final NostrConnectFailureReason? nostrConnectFailureReason;
 }
 
 /// User profile information
@@ -280,6 +256,21 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         hasExpiredSession: () => _hasExpiredOAuthSession,
         onRefreshSucceeded: () => _hasExpiredOAuthSession = false,
       );
+  // Owns the client-initiated nostrconnect:// session + wait future + callback
+  // handoff timers; the facade keeps _bunkerSigner and applies a successful
+  // connection through the ports so behavior stays byte-identical.
+  late final NostrConnectCoordinator _nostrConnect = NostrConnectCoordinator(
+    onConnected: _applyNostrConnectSuccess,
+    onConnectFailed: (e) {
+      _bunkerSigner?.close();
+      _bunkerSigner = null;
+      _lastError = 'NostrConnect failed: $e';
+      _setAuthState(AuthState.unauthenticated);
+    },
+    onWaitStarted: () => _setAuthState(AuthState.authenticating),
+    onWaitFailed: () => _setAuthState(AuthState.unauthenticated),
+    reportError: _reportAuthError,
+  );
   final PreFetchFollowingCallback? _preFetchFollowing;
   final AuthUrlLauncher? _launchAuthUrl;
   final BackgroundActivityManager _backgroundActivityManager;
@@ -329,12 +320,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   // NIP-07 browser extension signer state (nullable; null when no session active)
   Nip07Service? _nip07Service;
 
-  // NIP-46 nostrconnect:// session state (for client-initiated connections)
-  NostrConnectSession? _nostrConnectSession;
-  Future<AuthResult>? _nostrConnectWaitFuture;
-  Timer? _nostrConnectCallbackHandoffTimer;
-  Timer? _nostrConnectCallbackHandoffCancelTimer;
-  bool _isNostrConnectCallbackHandoffActive = false;
+  // NIP-46 nostrconnect:// session state is owned by [_nostrConnect]
+  // (NostrConnectCoordinator); the facade delegates to it (#4741).
 
   // Atomic signing identity — couples pubkey with signing mechanism
   NostrIdentity? _currentIdentity;
@@ -2471,49 +2458,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// The session will listen on relays for the bunker's response.
   Future<NostrConnectSession> initiateNostrConnect({
     List<String>? customRelays,
-  }) async {
-    Log.info(
-      'Initiating nostrconnect:// session...',
-      name: 'AuthService',
-      category: LogCategory.auth,
-    );
-
-    // Cancel any existing session
-    cancelNostrConnect();
-
-    // Default relays for nostrconnect:// connections.
-    // Use NIP-46 compatible relays (relay.divine.video rejects Kind 24133).
-    // These are public Nostr infrastructure relays — same URLs regardless of
-    // app environment (dev/staging/prod).
-    final relays =
-        customRelays ??
-        [
-          'wss://relay.nsec.app',
-          'wss://relay.damus.io',
-          'wss://nos.lol',
-          'wss://relay.primal.net',
-        ];
-
-    // Create the session
-    _nostrConnectSession = NostrConnectSession(
-      relays: relays,
-      appName: 'Divine',
-      appUrl: 'https://divine.video',
-      appIcon: 'https://divine.video/icon.png',
-      callback: 'divine://nostrconnect',
-    );
-
-    // Start the session (generates keypair and URL, connects to relays)
-    await _nostrConnectSession!.start();
-
-    Log.info(
-      'NostrConnect session started, URL: ${_nostrConnectSession!.connectUrl}',
-      name: 'AuthService',
-      category: LogCategory.auth,
-    );
-
-    return _nostrConnectSession!;
-  }
+  }) => _nostrConnect.initiate(customRelays: customRelays);
 
   /// Wait for the bunker to respond to a nostrconnect:// URL.
   ///
@@ -2523,260 +2468,100 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// authenticate, or [AuthResult.failure] on timeout/error.
   Future<AuthResult> waitForNostrConnectResponse({
     Duration timeout = const Duration(minutes: 2),
-  }) {
-    if (_nostrConnectSession == null) {
-      return Future.value(
-        AuthResult.failure(
-          'No active nostrconnect session. Call initiateNostrConnect first.',
-        ),
-      );
+  }) => _nostrConnect.waitForResponse(timeout: timeout);
+
+  /// Applies a successful nostrconnect connection: builds and connects the
+  /// bunker signer, persists its info, and sets up the user session. Wired into
+  /// [NostrConnectCoordinator] as its `onConnected` port — it stays on the
+  /// facade because it mutates [_bunkerSigner] and drives the user session.
+  Future<AuthResult> _applyNostrConnectSuccess(
+    NostrConnectResult result,
+  ) async {
+    // Create and connect the NostrRemoteSigner
+    // Note: Don't send connect request since we're already connected via
+    // nostrconnect://
+    _bunkerSigner = _remoteSignerFactory(RelayMode.baseMode, result.info);
+    _setupBunkerAuthCallback();
+    await _bunkerSigner!.connect(sendConnectRequest: false);
+
+    // Get user's public key from the bunker
+    final userPubkey = await _bunkerSigner!.pullPubkey();
+    if (userPubkey == null || userPubkey.isEmpty) {
+      throw Exception('Failed to get public key from bunker');
     }
 
-    final activeWait = _nostrConnectWaitFuture;
-    if (activeWait != null) return activeWait;
+    // Update info with user pubkey for persistence
+    final updatedInfo = NostrRemoteSignerInfo(
+      remoteSignerPubkey: result.remoteSignerPubkey,
+      relays: result.info.relays,
+      optionalSecret: result.info.optionalSecret,
+      nsec: result.info.nsec,
+      userPubkey: userPubkey,
+      isClientInitiated: true,
+      clientPubkey: result.info.clientPubkey,
+    );
 
-    final waitFuture = _waitForNostrConnectResponse(timeout: timeout);
-    _nostrConnectWaitFuture = waitFuture;
-    waitFuture.whenComplete(() {
-      if (identical(_nostrConnectWaitFuture, waitFuture)) {
-        _nostrConnectWaitFuture = null;
-      }
-    });
-    return waitFuture;
-  }
+    // Save bunker info for reconnection
+    await _saveBunkerInfo(updatedInfo);
 
-  Future<AuthResult> _waitForNostrConnectResponse({
-    required Duration timeout,
-  }) async {
+    // Set up user session
+    await _setupUserSession(
+      SecureKeyContainer.fromPublicKey(userPubkey),
+      AuthenticationSource.bunker,
+    );
+
     Log.info(
-      'Waiting for nostrconnect response (timeout: ${timeout.inSeconds}s)...',
+      'NostrConnect authentication complete for user: $userPubkey',
       name: 'AuthService',
       category: LogCategory.auth,
     );
 
-    _setAuthState(AuthState.authenticating);
-
-    try {
-      // Keep a local reference in case session is cancelled during await
-      final session = _nostrConnectSession!;
-
-      // Wait for the bunker to connect
-      final result = await session.waitForConnection(timeout: timeout);
-
-      // Check if session was cancelled while we were waiting
-      if (_nostrConnectSession == null) {
-        _setAuthState(AuthState.unauthenticated);
-        return AuthResult.nostrConnectFailure(
-          NostrConnectFailureReason.cancelled,
-        );
-      }
-
-      if (result == null) {
-        // Timeout, cancellation, or a terminal session error.
-        final state = session.state;
-        _setAuthState(AuthState.unauthenticated);
-        final reason = switch (state) {
-          NostrConnectState.cancelled => NostrConnectFailureReason.cancelled,
-          NostrConnectState.timeout => NostrConnectFailureReason.timedOut,
-          NostrConnectState.error =>
-            session.failureReason ??
-                NostrConnectFailureReason.postConnectFailed,
-          _ => NostrConnectFailureReason.postConnectFailed,
-        };
-        // `noExpectedSecret` is a programmer-invariant violation that "should
-        // never happen": the response handler was reached with no secret to
-        // validate against. Surface it to Crashlytics so a real break is
-        // visible instead of reading as a routine "link expired" to the user.
-        if (reason == NostrConnectFailureReason.noExpectedSecret) {
-          _reportAuthError(
-            StateError(
-              'nostrconnect response handling reached with no expected secret',
-            ),
-            StackTrace.current,
-            reason: 'NostrConnect.noExpectedSecret',
-            logMessage:
-                'nostrconnect invariant violated: no expected secret to validate',
-          );
-        }
-        return AuthResult.nostrConnectFailure(reason);
-      }
-
-      // Success! Create the bunker signer from the result
-      Log.info(
-        'NostrConnect succeeded! Bunker pubkey: ${result.remoteSignerPubkey}',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-
-      // Create and connect the NostrRemoteSigner
-      // Note: Don't send connect request since we're already connected via
-      // nostrconnect://
-      _bunkerSigner = _remoteSignerFactory(RelayMode.baseMode, result.info);
-      _setupBunkerAuthCallback();
-      await _bunkerSigner!.connect(sendConnectRequest: false);
-
-      // Get user's public key from the bunker
-      final userPubkey = await _bunkerSigner!.pullPubkey();
-      if (userPubkey == null || userPubkey.isEmpty) {
-        throw Exception('Failed to get public key from bunker');
-      }
-
-      // Update info with user pubkey for persistence
-      final updatedInfo = NostrRemoteSignerInfo(
-        remoteSignerPubkey: result.remoteSignerPubkey,
-        relays: result.info.relays,
-        optionalSecret: result.info.optionalSecret,
-        nsec: result.info.nsec,
-        userPubkey: userPubkey,
-        isClientInitiated: true,
-        clientPubkey: result.info.clientPubkey,
-      );
-
-      // Save bunker info for reconnection
-      await _saveBunkerInfo(updatedInfo);
-
-      // Set up user session
-      await _setupUserSession(
-        SecureKeyContainer.fromPublicKey(userPubkey),
-        AuthenticationSource.bunker,
-      );
-
-      Log.info(
-        'NostrConnect authentication complete for user: $userPubkey',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-
-      // Clean up session (signer is now managing connections)
-      _nostrConnectSession?.dispose();
-      _nostrConnectSession = null;
-
-      return const AuthResult(success: true);
-    } catch (e) {
-      Log.error(
-        'NostrConnect failed: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      _bunkerSigner?.close();
-      _bunkerSigner = null;
-      _lastError = 'NostrConnect failed: $e';
-      _setAuthState(AuthState.unauthenticated);
-
-      return AuthResult.nostrConnectFailure(
-        NostrConnectFailureReason.postConnectFailed,
-      );
-    }
+    return const AuthResult(success: true);
   }
 
   /// Cancel an active nostrconnect:// session.
   ///
   /// Safe to call even if no session is active.
-  void cancelNostrConnect() {
-    _nostrConnectWaitFuture = null;
-    _isNostrConnectCallbackHandoffActive = false;
-    _nostrConnectCallbackHandoffTimer?.cancel();
-    _nostrConnectCallbackHandoffTimer = null;
-    _nostrConnectCallbackHandoffCancelTimer?.cancel();
-    _nostrConnectCallbackHandoffCancelTimer = null;
-
-    if (_nostrConnectSession != null) {
-      Log.info(
-        'Cancelling nostrconnect session',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      _nostrConnectSession!.cancel();
-      _nostrConnectSession!.dispose();
-      _nostrConnectSession = null;
-    }
-  }
+  void cancelNostrConnect() => _nostrConnect.cancel();
 
   /// Get the current nostrconnect:// URL if a session is active.
   ///
   /// Returns null if no session is active.
-  String? get nostrConnectUrl => _nostrConnectSession?.connectUrl;
+  String? get nostrConnectUrl => _nostrConnect.connectUrl;
 
   /// Get the current nostrconnect session state.
-  NostrConnectState? get nostrConnectState => _nostrConnectSession?.state;
+  NostrConnectState? get nostrConnectState => _nostrConnect.state;
 
   /// Stream of nostrconnect session state changes.
   Stream<NostrConnectState>? get nostrConnectStateStream =>
-      _nostrConnectSession?.stateStream;
+      _nostrConnect.stateStream;
 
   /// True while Android/iOS custom-scheme routing is handing control back
   /// from a NIP-46 signer app to Divine.
   bool get isNostrConnectCallbackHandoffActive =>
-      _isNostrConnectCallbackHandoffActive;
+      _nostrConnect.isCallbackHandoffActive;
 
   /// Preserve the active session for the replacement NostrConnect screen.
   ///
   /// If no replacement screen claims the handoff quickly, cancel the session so
   /// backing out during the callback route handoff cannot orphan relay sockets.
-  void preserveNostrConnectForCallbackHandoff() {
-    if (!_isNostrConnectCallbackHandoffActive ||
-        _nostrConnectSession?.state != NostrConnectState.listening) {
-      return;
-    }
-
-    _nostrConnectCallbackHandoffCancelTimer?.cancel();
-    _nostrConnectCallbackHandoffCancelTimer = Timer(
-      const Duration(seconds: 5),
-      () {
-        _nostrConnectCallbackHandoffCancelTimer = null;
-        if (_isNostrConnectCallbackHandoffActive &&
-            _nostrConnectSession?.state == NostrConnectState.listening) {
-          Log.info(
-            'NostrConnect callback handoff was not resumed - cancelling',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
-          cancelNostrConnect();
-        }
-      },
-    );
-  }
+  void preserveNostrConnectForCallbackHandoff() =>
+      _nostrConnect.preserveForCallbackHandoff();
 
   /// Marks the callback handoff as claimed by a mounted NostrConnect screen.
   ///
   /// The short handoff flag is left to expire on its own so an old route that
   /// disposes after the replacement screen mounts still preserves the session.
-  void claimNostrConnectCallbackHandoff() {
-    _nostrConnectCallbackHandoffCancelTimer?.cancel();
-    _nostrConnectCallbackHandoffCancelTimer = null;
-  }
+  void claimNostrConnectCallbackHandoff() =>
+      _nostrConnect.claimCallbackHandoff();
 
   /// Called when a divine:// signer callback deep link is received.
   ///
   /// Ensures the nostrconnect session relay connections are alive so we
   /// don't miss the bunker's response event after being brought back
   /// from background.
-  void onSignerCallbackReceived({String? relayUrl}) {
-    if (_nostrConnectSession?.state != NostrConnectState.listening) {
-      return;
-    }
-
-    _isNostrConnectCallbackHandoffActive = true;
-    _nostrConnectCallbackHandoffTimer?.cancel();
-    _nostrConnectCallbackHandoffTimer = Timer(const Duration(seconds: 5), () {
-      _isNostrConnectCallbackHandoffActive = false;
-    });
-
-    if (relayUrl != null) {
-      Log.info(
-        'Signer callback supplied relay $relayUrl - connecting',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      unawaited(_nostrConnectSession!.addRelay(relayUrl));
-    }
-    Log.info(
-      'Signer callback received - ensuring nostrconnect relays are connected',
-      name: 'AuthService',
-      category: LogCategory.auth,
-    );
-    unawaited(_nostrConnectSession!.ensureConnected());
-  }
+  void onSignerCallbackReceived({String? relayUrl}) =>
+      _nostrConnect.onSignerCallbackReceived(relayUrl: relayUrl);
 
   /// Sign in using OAuth 2.0 flow
   Future<void> signInWithDivineOAuth(KeycastSession session) async {
@@ -4333,15 +4118,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     // Reconnect nostrconnect:// session relays that may have dropped
     // while the app was in the background (e.g. user switched to Primal
     // to approve the connection on Android).
-    if (_nostrConnectSession != null &&
-        _nostrConnectSession!.state == NostrConnectState.listening) {
-      Log.info(
-        '📱 App resumed - reconnecting nostrconnect session relays',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      _nostrConnectSession!.ensureConnected();
-    }
+    _nostrConnect.reconnectListeningRelays();
 
     unawaited(_refreshOAuthTokenOnResume());
   }
@@ -4428,10 +4205,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _amberSigner?.close();
     _amberSigner = null;
 
-    _nostrConnectCallbackHandoffTimer?.cancel();
-    _nostrConnectCallbackHandoffTimer = null;
-    _nostrConnectCallbackHandoffCancelTimer?.cancel();
-    _nostrConnectCallbackHandoffCancelTimer = null;
+    _nostrConnect.dispose();
 
     // Securely dispose of key container
     _currentKeyContainer?.dispose();
