@@ -50,7 +50,6 @@ lib/widgets/popular_videos_tab.dart	2
 lib/widgets/profile/profile_block_confirmation_dialog.dart	1
 lib/widgets/profile_editor/username_status_indicator.dart	2
 lib/widgets/proofmode_badge.dart	7
-lib/widgets/share_video_menu.dart	18
 lib/widgets/sound_tile.dart	2
 lib/widgets/user_search_view.dart	2
 lib/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart	3
