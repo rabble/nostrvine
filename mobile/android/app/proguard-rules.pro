@@ -1,5 +1,5 @@
-# ABOUTME: ProGuard/R8 keep rules to prevent release APK loading screen hang caused by bytecode stripping
-# ABOUTME: Preserves Flutter engine, platform channels, SharedPreferences, and reflection-based Android classes
+# ABOUTME: ProGuard/R8 keep rules for release APK code shrinking.
+# ABOUTME: Preserves Flutter engine, platform channels, SharedPreferences, and reflection-based Android classes.
 
 # Allow duplicate classes from java-opentimestamps fat JAR
 # This library bundles Guava, Protobuf, JSR305, and Okio internally
@@ -50,11 +50,9 @@
 -keep class io.flutter.plugins.** { *; }
 
 # GeneratedPluginRegistrant (auto-registration of Flutter plugins)
-# R8 was stripping this class, preventing plugins from being registered
 -keep class io.flutter.plugins.GeneratedPluginRegistrant { *; }
 
 # SharedPreferences (used in router redirect for TOS check on app startup)
-# R8 was stripping this, causing router redirect to hang forever waiting for response
 -keepclassmembers class * implements android.content.SharedPreferences {
     *;
 }

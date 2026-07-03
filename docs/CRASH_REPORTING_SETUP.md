@@ -15,7 +15,7 @@ reporting. The active Firebase project is **`openvine-co`** (bundle id
 |----------|-----------------|---------------|--------|
 | iOS | `openvine-co` — `firebase_options.dart`, `ios/Runner/GoogleService-Info.plist` | ✅ dSYMs via Codemagic | Production |
 | macOS | `openvine-co` — `macos/Runner/GoogleService-Info.plist` | — | Production (reuses the iOS appId — see note below) |
-| Android | `openvine-co` — `android/app/google-services.json` | ⚠️ wired, but no mapping file is produced while R8 is disabled | `firebase_options.dart` Android options are still being reconciled in #3343 |
+| Android | `openvine-co` — `android/app/google-services.json` | ✅ release mapping/native symbol upload via Gradle | `firebase_options.dart` Android options are still being reconciled in #3343 |
 | Web / Windows / Linux | none | — | Not supported; init is gated off |
 
 `isFirebaseSupported` (`mobile/lib/utils/platform_support.dart`) is a
@@ -31,9 +31,8 @@ currently initialized only when startup passes both `isFirebaseSupported` and
 > `DefaultFirebaseOptions.android` is still a placeholder, so
 > `Firebase.initializeApp` does not yet initialise Android against the real
 > project. The Crashlytics Gradle plugin is already applied and release builds
-> already enable mapping/native symbol upload, but R8 is currently disabled, so
-> no obfuscation mapping file is produced. Reconciling the Android options (and
-> re-enabling R8 when ready) is tracked in #3343.
+> enable R8 plus mapping/native symbol upload. Reconciling the Android options is
+> tracked in #3343.
 
 ## Configuration files
 
@@ -76,10 +75,9 @@ Release builds upload Crashlytics debug symbols automatically. See
 
 Without this, iOS crash stacks arrive in Crashlytics unsymbolicated.
 
-> **Android note:** Crashlytics upload wiring is already present in Gradle, but
-> Android release symbolication is still incomplete in practice because R8 is
-> currently disabled, so no mapping file is generated to upload. That cleanup
-> remains tracked in #3343.
+> **Android note:** Crashlytics upload wiring is present in Gradle and release
+> builds generate an R8 mapping file for symbolication. Android Firebase options
+> still need reconciliation under #3343.
 
 ## Custom keys on every report
 

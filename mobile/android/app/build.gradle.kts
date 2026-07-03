@@ -77,15 +77,13 @@ android {
         }
         release {
             signingConfig = signingConfigs.getByName("release")
-            // TEMPORARILY DISABLE R8 minification for debugging
-            isMinifyEnabled = false
-            isShrinkResources = false
-            // Apply ProGuard rules to prevent stripping Flutter/platform channel classes
+            isMinifyEnabled = true
+            isShrinkResources = true
+            // Apply ProGuard rules to preserve Flutter/platform channel classes used from native code.
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Enable Crashlytics mapping file upload (for when R8 is re-enabled)
             configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
                 mappingFileUploadEnabled = true
                 nativeSymbolUploadEnabled = true
