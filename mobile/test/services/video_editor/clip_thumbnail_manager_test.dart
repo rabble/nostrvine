@@ -574,6 +574,133 @@ void main() {
           expect(freshA.existsSync(), isTrue);
         },
       );
+
+      test(
+        'keeps START-half seeds as-is on rendered path arrival (no rebase), '
+        'then the first fresh batch supersedes and deletes them',
+        () async {
+          final borrowed = File('${tempDir.path}/start_borrowed.jpg')
+            ..writeAsStringSync('borrowed');
+          final sourceVideoPath = '${tempDir.path}/source.mp4';
+          final renderedVideoPath = '${tempDir.path}/rendered_start.mp4';
+
+          final sourceClip = _createFileClip(
+            id: 'src',
+            videoPath: sourceVideoPath,
+            seconds: 10,
+          );
+          fakeStreamManager.sync(clips: [sourceClip], devicePixelRatio: 1);
+          fakeStreamManager['src'].value = [
+            StripThumbnail(
+              path: borrowed.path,
+              timestamp: const Duration(seconds: 1),
+            ),
+          ];
+
+          // Split at 3 s: the start half already begins at zero, so the
+          // rendered file needs no rebase (rebaseOnPathChange stays zero)
+          // and the seed keeps its source-timed timestamp verbatim.
+          fakeStreamManager.seedFromSource(
+            sourceClipId: 'src',
+            targetClipId: 'start',
+            sourceRange: const DurationRange(
+              start: Duration.zero,
+              end: Duration(seconds: 3),
+            ),
+            timestampOffset: Duration.zero,
+            currentSourcePath: sourceVideoPath,
+          );
+          expect(
+            fakeStreamManager['start'].value.single.timestamp,
+            equals(const Duration(seconds: 1)),
+          );
+
+          // Rendered file arrives: a real subscription starts and the seed
+          // is held unchanged (no rebase branch runs for the start half).
+          final renderedStartClip = _createFileClip(
+            id: 'start',
+            videoPath: renderedVideoPath,
+          );
+          fakeStreamManager.sync(
+            clips: [renderedStartClip],
+            devicePixelRatio: 1,
+          );
+          expect(controllers, hasLength(2));
+          final held = fakeStreamManager['start'].value.single;
+          expect(held.path, equals(borrowed.path));
+          expect(held.timestamp, equals(const Duration(seconds: 1)));
+          expect(borrowed.existsSync(), isTrue);
+
+          final fresh = File('${tempDir.path}/fresh_start.jpg')
+            ..writeAsStringSync('fresh');
+          controllers[1].add([
+            StripThumbnail(
+              path: fresh.path,
+              timestamp: const Duration(seconds: 1),
+            ),
+          ]);
+          await pumpEventQueue();
+
+          expect(
+            fakeStreamManager['start'].value.single.path,
+            equals(fresh.path),
+          );
+          expect(borrowed.existsSync(), isFalse);
+          expect(fresh.existsSync(), isTrue);
+        },
+      );
+
+      test(
+        'marks the target seeded and suppresses the source-video load when '
+        'the source has no thumbnails yet, then loads on rendered path arrival',
+        () async {
+          final sourceVideoPath = '${tempDir.path}/empty_source.mp4';
+          final renderedVideoPath = '${tempDir.path}/empty_rendered.mp4';
+
+          final sourceClip = _createFileClip(
+            id: 'src',
+            videoPath: sourceVideoPath,
+            seconds: 10,
+          );
+          fakeStreamManager.sync(clips: [sourceClip], devicePixelRatio: 1);
+          expect(controllers, hasLength(1));
+
+          // Source frames haven't been extracted yet — seeding is
+          // best-effort: the target is created empty but still marked
+          // seeded so [sync] does not spin up a subscription against the
+          // un-trimmed source video.
+          fakeStreamManager.seedFromSource(
+            sourceClipId: 'src',
+            targetClipId: 'end',
+            sourceRange: const DurationRange(
+              start: Duration(seconds: 3),
+              end: Duration(seconds: 10),
+            ),
+            timestampOffset: Duration.zero,
+            rebaseOnPathChange: const Duration(seconds: 3),
+            currentSourcePath: sourceVideoPath,
+          );
+          expect(fakeStreamManager['end'].value, isEmpty);
+
+          final previewEndClip = _createFileClip(
+            id: 'end',
+            videoPath: sourceVideoPath,
+            seconds: 10,
+          );
+          fakeStreamManager.sync(clips: [previewEndClip], devicePixelRatio: 1);
+          // No new subscription while the clip still points at the source.
+          expect(controllers, hasLength(1));
+
+          // Rendered file arrives — now the real subscription starts.
+          final renderedEndClip = _createFileClip(
+            id: 'end',
+            videoPath: renderedVideoPath,
+            seconds: 7,
+          );
+          fakeStreamManager.sync(clips: [renderedEndClip], devicePixelRatio: 1);
+          expect(controllers, hasLength(2));
+        },
+      );
     });
 
     group('pauseAll / resumeAll', () {
@@ -688,6 +815,50 @@ void main() {
         // Should not throw.
         localManager.dispose();
       });
+
+      test(
+        'deletes a borrowed seed file once when two notifiers share it',
+        () {
+          final tempDir = Directory.systemTemp.createTempSync(
+            'clip_thumbnail_dispose_test_',
+          );
+          addTearDown(() {
+            if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+          });
+          final borrowed = File('${tempDir.path}/borrowed.jpg')
+            ..writeAsStringSync('borrowed');
+
+          final localManager = ClipThumbnailManager();
+          localManager.sync(
+            clips: [
+              _createFileClip(id: 'src', videoPath: '${tempDir.path}/src.mp4'),
+            ],
+            devicePixelRatio: 1,
+          );
+          localManager['src'].value = [
+            StripThumbnail(path: borrowed.path, timestamp: Duration.zero),
+          ];
+          // The start half borrows the same source frame file, so both
+          // notifiers reference it — dispose must delete it once and
+          // swallow the second (already-gone) deleteSync.
+          localManager.seedFromSource(
+            sourceClipId: 'src',
+            targetClipId: 'start',
+            sourceRange: const DurationRange(
+              start: Duration.zero,
+              end: Duration(seconds: 1),
+            ),
+            currentSourcePath: '${tempDir.path}/src.mp4',
+          );
+          expect(
+            localManager['start'].value.single.path,
+            equals(borrowed.path),
+          );
+
+          expect(localManager.dispose, returnsNormally);
+          expect(borrowed.existsSync(), isFalse);
+        },
+      );
     });
   });
 

@@ -1,19 +1,26 @@
 // ABOUTME: Widget tests for VideoEditorTimelineClipStrip.
 // ABOUTME: Validates clip rendering, layout, reorder gesture, and accessibility.
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_trim_handles.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+class _MockClipEditorBloc extends MockBloc<ClipEditorEvent, ClipEditorState>
+    implements ClipEditorBloc {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -256,38 +263,37 @@ void main() {
       // Regression: the fallback must be a plain FileImage (not a
       // cacheHeight-keyed ResizeImage) so it hits the warm poster cache entry
       // instead of a cold decode that flashes black on first open.
-      testWidgets(
-        'poster fallback reuses the plain FileImage key (no resize)',
-        (tester) async {
-          final clips = [
-            _createTestClip(
-              id: 'a',
-              thumbnailPath: '/tmp/nonexistent_thumb_a.jpg',
+      testWidgets('poster fallback reuses the plain FileImage key (no resize)', (
+        tester,
+      ) async {
+        final clips = [
+          _createTestClip(
+            id: 'a',
+            thumbnailPath: '/tmp/nonexistent_thumb_a.jpg',
+          ),
+        ];
+
+        await tester.pumpWidget(buildWidget(clips: clips, totalWidth: 400));
+
+        // Before strip thumbnails stream in, every slot renders the poster
+        // fallback. Each must be a plain FileImage on the thumbnail path.
+        final images = tester.widgetList<Image>(find.byType(Image)).toList();
+        expect(images, isNotEmpty);
+        for (final image in images) {
+          expect(
+            image.image,
+            isA<FileImage>().having(
+              (provider) => provider.file.path,
+              'file.path',
+              '/tmp/nonexistent_thumb_a.jpg',
             ),
-          ];
-
-          await tester.pumpWidget(buildWidget(clips: clips, totalWidth: 400));
-
-          // Before strip thumbnails stream in, every slot renders the poster
-          // fallback. Each must be a plain FileImage on the thumbnail path.
-          final images = tester.widgetList<Image>(find.byType(Image)).toList();
-          expect(images, isNotEmpty);
-          for (final image in images) {
-            expect(
-              image.image,
-              isA<FileImage>().having(
-                (provider) => provider.file.path,
-                'file.path',
-                '/tmp/nonexistent_thumb_a.jpg',
-              ),
-              reason:
-                  'Fallback must use a plain FileImage (not a cacheHeight-keyed '
-                  'ResizeImage) so it hits the warm poster cache entry and '
-                  'paints instantly instead of flashing black.',
-            );
-          }
-        },
-      );
+            reason:
+                'Fallback must use a plain FileImage (not a cacheHeight-keyed '
+                'ResizeImage) so it hits the warm poster cache entry and '
+                'paints instantly instead of flashing black.',
+          );
+        }
+      });
     });
 
     group('empty state', () {
@@ -315,30 +321,25 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
-      testWidgets(
-        'multi-clip strip with trimmed clips renders both tiles',
-        (tester) async {
-          final clips = [
-            // trimmedDuration = 5s - 2s - 1s = 2s
-            _createTestClip(
-              id: 'a',
-              seconds: 5,
-              trimStartMs: 2000,
-              trimEndMs: 1000,
-            ),
-            _createTestClip(id: 'b', seconds: 3),
-          ];
+      testWidgets('multi-clip strip with trimmed clips renders both tiles', (
+        tester,
+      ) async {
+        final clips = [
+          // trimmedDuration = 5s - 2s - 1s = 2s
+          _createTestClip(
+            id: 'a',
+            seconds: 5,
+            trimStartMs: 2000,
+            trimEndMs: 1000,
+          ),
+          _createTestClip(id: 'b', seconds: 3),
+        ];
 
-          await tester.pumpWidget(
-            buildWidget(
-              clips: clips,
-            ),
-          );
+        await tester.pumpWidget(buildWidget(clips: clips));
 
-          expect(find.byType(ClipRRect), findsNWidgets(2));
-          expect(tester.takeException(), isNull);
-        },
-      );
+        expect(find.byType(ClipRRect), findsNWidgets(2));
+        expect(tester.takeException(), isNull);
+      });
 
       testWidgets('fully trimmed clip does not crash the strip', (
         tester,
@@ -559,58 +560,149 @@ void main() {
       // Without the fix `contentWidth < displayWidth`, so the renderer
       // falls back to stretched slots (`displayWidth / count`) wider than
       // `thumbnailWidth`, producing zero slot boxes at the natural width.
+      testWidgets('slow clip renders thumbnail slots at the natural width', (
+        tester,
+      ) async {
+        const pps = 50.0;
+        // source duration 4s, speed 0.5 → playback duration 8s.
+        // Playback-scaled width = 4 / 0.5 * 50 = 400 px.
+        // Expected natural-width slot count for the slow clip:
+        //   ceil(400 / TimelineConstants.thumbnailWidth (= 48)) = 9.
+        final slow = _createTestClip(
+          id: 'slow',
+          seconds: 4,
+        ).copyWith(playbackSpeed: 0.5);
+        // Normal clip kept tiny so its slot count is small and stable
+        // (ceil(2 * 50 / 48) = 3) — used only to keep the strip on its
+        // multi-clip branch (single-clip branch overrides _clipWidth with
+        // totalWidth).
+        final clips = [slow, _createTestClip(id: 'normal')];
+
+        await tester.pumpWidget(
+          buildWidget(clips: clips, pixelsPerSecond: pps, totalWidth: 1000),
+        );
+
+        final naturalSlotCount = tester
+            .widgetList<SizedBox>(find.byType(SizedBox))
+            .where(
+              (s) =>
+                  s.height == TimelineConstants.thumbnailStripHeight &&
+                  s.width == TimelineConstants.thumbnailWidth,
+            )
+            .length;
+
+        // 9 (slow clip) + 3 (normal clip) = 12. Without the 1/speed
+        // scaling the slow clip falls back to stretched slots wider than
+        // thumbnailWidth and contributes 0, leaving only the 3 from the
+        // normal clip.
+        expect(
+          naturalSlotCount,
+          equals(12),
+          reason:
+              'Slow clip must render ceil(playbackWidth / thumbnailWidth) '
+              'natural-width slots. Without the 1/playbackSpeed scaling '
+              'of _ClipTile.fullWidth the slow clip falls back to '
+              'stretched slots (width > thumbnailWidth), producing 3 '
+              'instead of 12 natural-width slots.',
+        );
+      });
+    });
+
+    group('split seeding', () {
+      late _MockClipEditorBloc clipBloc;
+      late ClipThumbnailManager manager;
+
+      setUp(() {
+        clipBloc = _MockClipEditorBloc();
+        manager = ClipThumbnailManager(
+          stripThumbnailStreamFactory:
+              ({
+                required String videoPath,
+                required String clipId,
+                required Duration duration,
+                required Size outputSize,
+                required int thumbsPerSecond,
+                List<Duration>? priorityTimestamps,
+              }) => const Stream<List<StripThumbnail>>.empty(),
+        );
+      });
+
+      tearDown(() {
+        manager.dispose();
+      });
+
+      Widget buildStrip(List<DivineVideoClip> clips) {
+        return MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: MultiBlocProvider(
+              providers: [
+                BlocProvider<VideoEditorMainBloc>.value(value: mainBloc),
+                BlocProvider<ClipEditorBloc>.value(value: clipBloc),
+              ],
+              child: SingleChildScrollView(
+                controller: scrollController,
+                scrollDirection: Axis.horizontal,
+                child: VideoEditorTimelineClipStrip(
+                  clips: clips,
+                  totalWidth: 500,
+                  pixelsPerSecond: TimelineConstants.pixelsPerSecond,
+                  scrollController: scrollController,
+                  thumbnailManager: manager,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
       testWidgets(
-        'slow clip renders thumbnail slots at the natural width',
+        'seeds the split halves even when the first build bails before the '
+        'halves exist (transient bail must not consume the split)',
         (tester) async {
-          const pps = 50.0;
-          // source duration 4s, speed 0.5 → playback duration 8s.
-          // Playback-scaled width = 4 / 0.5 * 50 = 400 px.
-          // Expected natural-width slot count for the slow clip:
-          //   ceil(400 / TimelineConstants.thumbnailWidth (= 48)) = 9.
-          final slow = _createTestClip(
-            id: 'slow',
-            seconds: 4,
-          ).copyWith(playbackSpeed: 0.5);
-          // Normal clip kept tiny so its slot count is small and stable
-          // (ceil(2 * 50 / 48) = 3) — used only to keep the strip on its
-          // multi-clip branch (single-clip branch overrides _clipWidth with
-          // totalWidth).
-          final clips = [
-            slow,
-            _createTestClip(id: 'normal'),
+          final split = ClipSplitEvent(
+            sourceClipId: 'src',
+            startClipId: 'start',
+            endClipId: 'end',
+            absoluteSplitPosition: const Duration(seconds: 3),
+            sourceDuration: const Duration(seconds: 10),
+          );
+          when(
+            () => clipBloc.state,
+          ).thenReturn(ClipEditorState(lastSplit: split));
+
+          // Seed the source clip's thumbnails so each split half (the
+          // start range [0, 3s) and the end range [3s, 10s)) has a warm
+          // frame to borrow.
+          final sourceClip = _createTestClip(id: 'src', seconds: 10);
+          manager.sync(clips: [sourceClip], devicePixelRatio: 1);
+          manager['src'].value = [
+            const StripThumbnail(
+              path: '/tmp/frame_start.jpg',
+              timestamp: Duration(seconds: 1),
+            ),
+            const StripThumbnail(
+              path: '/tmp/frame_end.jpg',
+              timestamp: Duration(seconds: 5),
+            ),
           ];
 
-          await tester.pumpWidget(
-            buildWidget(
-              clips: clips,
-              pixelsPerSecond: pps,
-              totalWidth: 1000,
-            ),
-          );
+          // First build still only contains the source clip — the split
+          // halves don't exist yet, so seeding must bail without marking
+          // the split consumed. No 'start' notifier is created by the bail.
+          await tester.pumpWidget(buildStrip([sourceClip]));
+          expect(() => manager['start'], throwsA(anything));
 
-          final naturalSlotCount = tester
-              .widgetList<SizedBox>(find.byType(SizedBox))
-              .where(
-                (s) =>
-                    s.height == TimelineConstants.thumbnailStripHeight &&
-                    s.width == TimelineConstants.thumbnailWidth,
-              )
-              .length;
+          // The halves arrive on the next build. If the transient bail had
+          // permanently consumed the split, seeding would be skipped here
+          // and the black flash would return.
+          final startClip = _createTestClip(id: 'start', seconds: 3);
+          final endClip = _createTestClip(id: 'end', seconds: 7);
+          await tester.pumpWidget(buildStrip([startClip, endClip]));
 
-          // 9 (slow clip) + 3 (normal clip) = 12. Without the 1/speed
-          // scaling the slow clip falls back to stretched slots wider than
-          // thumbnailWidth and contributes 0, leaving only the 3 from the
-          // normal clip.
-          expect(
-            naturalSlotCount,
-            equals(12),
-            reason:
-                'Slow clip must render ceil(playbackWidth / thumbnailWidth) '
-                'natural-width slots. Without the 1/playbackSpeed scaling '
-                'of _ClipTile.fullWidth the slow clip falls back to '
-                'stretched slots (width > thumbnailWidth), producing 3 '
-                'instead of 12 natural-width slots.',
-          );
+          expect(manager['start'].value, isNotEmpty);
+          expect(manager['end'].value, isNotEmpty);
         },
       );
     });

@@ -229,7 +229,6 @@ class _VideoEditorTimelineClipStripState
     if (bloc == null) return;
     final split = bloc.state.lastSplit;
     if (split == null || identical(split, _lastSeededSplit)) return;
-    _lastSeededSplit = split;
 
     final startClipIdx = widget.clips.indexWhere(
       (c) => c.id == split.startClipId,
@@ -240,6 +239,12 @@ class _VideoEditorTimelineClipStripState
     final endClip = widget.clips[endClipIdx];
     final sourcePath = startClip.video.file?.path;
     if (sourcePath == null) return;
+
+    // Mark consumed only once seeding can actually run. Committing before
+    // the guards above would permanently drop the seed if a transient
+    // bail hit (clips not yet rebuilt / momentarily-null source path),
+    // reintroducing the black flash for that split.
+    _lastSeededSplit = split;
 
     _thumbnails.seedFromSource(
       sourceClipId: split.sourceClipId,
