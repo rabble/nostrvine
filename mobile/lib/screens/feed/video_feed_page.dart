@@ -353,55 +353,63 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
               // [PageView]. The default predicate (depth == 0) restricts the
               // gesture to the outermost scrollable, so inner overlay
               // scrollables can't trigger a refresh.
+              // The video overlay positions its author block and action
+              // column against `viewPadding.bottom`.
+              // [_KeyboardStableBottomInset] holds that inset steady while the
+              // share sheet's keyboard is open, so the overlay does not slide
+              // when the keyboard closes (#5758 follow-up).
               return RefreshIndicator(
                 onRefresh: () => _refreshFeed(context),
-                child: Stack(
-                  children: [
-                    FeedVideos(
-                      videos: state.videos,
-                      contextTitle: state.feedContextTitle,
-                      currentIndex: clampedIndex,
-                      isActive: _isNewFeedActive,
-                      // The home feed stays mounted across tab switches and
-                      // pushed routes (StatefulShellRoute keep-alive), so
-                      // release the off-screen neighbour players and pause
-                      // disk prefetch while it is backgrounded. Bottom sheets
-                      // (comments/share) only pause the current player — they
-                      // keep neighbours and prefetch warm via shouldRetainPlayer.
-                      releaseNeighboursWhenInactive: !shouldRetainPlayer,
-                      hasMore: state.hasMore,
-                      isLoadingMore: state.isLoadingMore,
-                      trafficSource: ViewTrafficSource.home,
-                      onActiveVideoChanged: (video, index) {
-                        ref
-                            .read(foregroundFeedActivityGateProvider)
-                            .markActive();
-                        _currentIndex = index;
-                        context.read<VideoFeedBloc>().add(
-                          VideoFeedActiveIndexChanged(index),
-                        );
-                        ref
-                            .read(lastTabPositionProvider.notifier)
-                            .recordPosition(RouteType.home, index);
-                        _resumeAutoAdvanceAfterSwipe();
-                        FeedPerformanceTracker().startVideoSwipeTracking(
-                          video.id,
-                        );
-                        if (!_hasMarkedVideoReady && index == 0) {
-                          _hasMarkedVideoReady = true;
-                          StartupPerformanceService.instance.markVideoReady();
-                        }
-                      },
-                      onNearEnd: () {
-                        if (state.hasMore) {
+                child: _KeyboardStableBottomInset(
+                  child: Stack(
+                    children: [
+                      FeedVideos(
+                        videos: state.videos,
+                        contextTitle: state.feedContextTitle,
+                        currentIndex: clampedIndex,
+                        isActive: _isNewFeedActive,
+                        // The home feed stays mounted across tab switches and
+                        // pushed routes (StatefulShellRoute keep-alive), so
+                        // release the off-screen neighbour players and pause
+                        // disk prefetch while it is backgrounded. Bottom sheets
+                        // (comments/share) only pause the current player — they
+                        // keep neighbours and prefetch warm via
+                        // shouldRetainPlayer.
+                        releaseNeighboursWhenInactive: !shouldRetainPlayer,
+                        hasMore: state.hasMore,
+                        isLoadingMore: state.isLoadingMore,
+                        trafficSource: ViewTrafficSource.home,
+                        onActiveVideoChanged: (video, index) {
+                          ref
+                              .read(foregroundFeedActivityGateProvider)
+                              .markActive();
+                          _currentIndex = index;
                           context.read<VideoFeedBloc>().add(
-                            const VideoFeedLoadMoreRequested(),
+                            VideoFeedActiveIndexChanged(index),
                           );
-                        }
-                      },
-                    ),
-                    const FeedModeSwitch(),
-                  ],
+                          ref
+                              .read(lastTabPositionProvider.notifier)
+                              .recordPosition(RouteType.home, index);
+                          _resumeAutoAdvanceAfterSwipe();
+                          FeedPerformanceTracker().startVideoSwipeTracking(
+                            video.id,
+                          );
+                          if (!_hasMarkedVideoReady && index == 0) {
+                            _hasMarkedVideoReady = true;
+                            StartupPerformanceService.instance.markVideoReady();
+                          }
+                        },
+                        onNearEnd: () {
+                          if (state.hasMore) {
+                            context.read<VideoFeedBloc>().add(
+                              const VideoFeedLoadMoreRequested(),
+                            );
+                          }
+                        },
+                      ),
+                      const FeedModeSwitch(),
+                    ],
+                  ),
                 ),
               );
             },
@@ -432,6 +440,57 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
           s.status == VideoFeedStatus.success ||
           s.status == VideoFeedStatus.failure,
       orElse: () => bloc.state,
+    );
+  }
+}
+
+/// Holds the child subtree's bottom safe-area inset steady while a modal
+/// keyboard is open over the home feed.
+///
+/// The shell [Scaffold] has a `bottomNavigationBar`, so it strips the body's
+/// bottom padding: at rest the feed subtree reads `viewPadding.bottom == 0`.
+/// While the share sheet's keyboard is up, the shell keeps its layout (it does
+/// not resize for a modal route), so the window's keyboard inset zeroes the
+/// shell's own `padding.bottom` — the strip then subtracts nothing and
+/// `viewPadding.bottom` springs back up to the raw safe-area value, sliding the
+/// overlay's action column up and then back down on keyboard close.
+///
+/// Latch the at-rest inset whenever the keyboard is down and hold it while the
+/// keyboard is up, so the overlay positions against a stable inset. Holding the
+/// real at-rest value (rather than a recomputed one) keeps the resting layout
+/// pixel-identical. Scoped to the home feed; the fullscreen feed removes the
+/// bottom padding outright and never springs.
+class _KeyboardStableBottomInset extends StatefulWidget {
+  const _KeyboardStableBottomInset({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_KeyboardStableBottomInset> createState() =>
+      _KeyboardStableBottomInsetState();
+}
+
+class _KeyboardStableBottomInsetState
+    extends State<_KeyboardStableBottomInset> {
+  double? _restingBottom;
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final keyboardIsUp = mediaQuery.viewInsets.bottom > 0;
+
+    // Track the at-rest inset whenever nothing is consuming the safe area, and
+    // hold the last tracked value while a keyboard is up.
+    if (!keyboardIsUp) {
+      _restingBottom = mediaQuery.viewPadding.bottom;
+    }
+    final stableBottom = _restingBottom ?? mediaQuery.viewPadding.bottom;
+
+    return MediaQuery(
+      data: mediaQuery.copyWith(
+        viewPadding: mediaQuery.viewPadding.copyWith(bottom: stableBottom),
+      ),
+      child: widget.child,
     );
   }
 }

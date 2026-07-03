@@ -257,6 +257,82 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets(
+      'holds the overlay bottom inset steady while a modal keyboard is open '
+      '(no slide on keyboard close, #5758 follow-up)',
+      (tester) async {
+        // Model the shell Scaffold: its bottomNavigationBar strips the body's
+        // bottom padding, so `removeBottom: true` recomputes the feed subtree's
+        // viewPadding.bottom as max(0, safeArea - padding.bottom). At rest
+        // padding.bottom == safeArea, collapsing the inset to 0; while the
+        // keyboard is up the window inset zeroes padding.bottom, so the strip
+        // springs the inset back to the full safe area. The latch must hold it.
+        tester.view.devicePixelRatio = 1;
+        tester.view.viewPadding = const FakeViewPadding(bottom: 34);
+        tester.view.padding = const FakeViewPadding(bottom: 34);
+        addTearDown(tester.view.reset);
+
+        final video = createTestVideoEvent();
+        final state = VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          videos: [video],
+        );
+        when(() => videoFeedBloc.state).thenReturn(state);
+        whenListen(
+          videoFeedBloc,
+          const Stream<VideoFeedBlocState>.empty(),
+          initialState: state,
+        );
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+                BlocProvider<VideoPlaybackStatusCubit>(
+                  create: (_) => VideoPlaybackStatusCubit(),
+                ),
+                BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+              ],
+              child: Builder(
+                builder: (context) => MediaQuery.removePadding(
+                  context: context,
+                  removeBottom: true,
+                  child: const VideoFeedView(),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        double feedBottomInset() => MediaQuery.viewPaddingOf(
+          tester.element(find.byType(FeedVideos)),
+        ).bottom;
+
+        // At rest the padding strip collapses the inset to 0.
+        expect(feedBottomInset(), 0);
+
+        // Keyboard opens: without the latch the strip would spring the inset
+        // back to 34 (the overlay slides up); the latch holds it at 0.
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        tester.view.padding = const FakeViewPadding();
+        await tester.pump();
+        expect(feedBottomInset(), 0);
+
+        // Keyboard closes: the inset returns to rest, still 0 — no downward
+        // slide of the overlay.
+        tester.view.viewInsets = const FakeViewPadding();
+        tester.view.padding = const FakeViewPadding(bottom: 34);
+        await tester.pump();
+        expect(feedBottomInset(), 0);
+
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
+
     testWidgets('requests auto-refresh when app returns from background', (
       tester,
     ) async {
