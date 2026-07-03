@@ -11,6 +11,8 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dar
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_clip_speed_sheet.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
+import 'package:pro_image_editor/pro_image_editor.dart'
+    show ProImageEditorState;
 import 'package:pro_video_editor/pro_video_editor.dart' show ExportTransform;
 
 /// Controls shown when a clip is in editing mode: Delete, Copy, Split, Done.
@@ -66,6 +68,15 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
     );
   }
 
+  /// The editor backing these controls, or `null` if it has been torn down.
+  ///
+  /// A gesture can resolve after the editor route is popped (e.g. rapid
+  /// editor <-> clips navigation), leaving the [ProImageEditorState]
+  /// unmounted. Handlers must bail on `null` rather than force-unwrapping,
+  /// which is a release-mode crash.
+  ProImageEditorState? _editorOrNull(BuildContext context) =>
+      VideoEditorScope.of(context).editor;
+
   Future<void> _transformClip(BuildContext context) async {
     final bloc = context.read<ClipEditorBloc>();
     final state = bloc.state;
@@ -115,7 +126,8 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       return;
     }
     final clip = state.clips[state.currentClipIndex];
-    final editor = VideoEditorScope.of(context).requireEditor;
+    final editor = _editorOrNull(context);
+    if (editor == null) return;
 
     final result = await VineBottomSheet.show<double>(
       context: context,
@@ -170,7 +182,8 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
     final overlayBloc = context.read<TimelineOverlayBloc>();
     final state = bloc.state;
     final clipId = state.clips[state.currentClipIndex].id;
-    final editor = VideoEditorScope.of(context).requireEditor;
+    final editor = _editorOrNull(context);
+    if (editor == null) return;
 
     final newClips = state.clips.where((clip) => clip.id != clipId).toList();
     // Markers on the removed clip are dropped; markers on later clips shift
@@ -197,7 +210,8 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
     final overlayBloc = context.read<TimelineOverlayBloc>();
     final state = bloc.state;
     final clip = state.clips[state.currentClipIndex];
-    final editor = VideoEditorScope.of(context).requireEditor;
+    final editor = _editorOrNull(context);
+    if (editor == null) return;
 
     final copy = clip.copyWith(
       id:
