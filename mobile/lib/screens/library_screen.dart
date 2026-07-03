@@ -433,6 +433,11 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                   ? null
                   : () {
                       messenger.hideCurrentSnackBar();
+                      // The delete snackbar is shown on the app-level
+                      // ScaffoldMessenger, so it can outlive this screen. If
+                      // the user navigated away the bloc is already closed —
+                      // adding to it would throw. Undo is a no-op then.
+                      if (clipsBloc.isClosed) return;
                       clipsBloc.add(ClipsLibraryRestoreClips(deletedIds));
                     },
             );

@@ -4,10 +4,12 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as models;
+import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -387,6 +389,89 @@ void main() {
         },
       );
     });
+    group('delete undo snackbar', () {
+      testWidgets('tapping Undo after the screen is gone does not add to the '
+          'closed bloc', (tester) async {
+        final clip = DivineVideoClip(
+          id: 'undo-clip-1',
+          video: EditorVideo.file('/test/undo.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: models.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+          thumbnailPath: '/test/undo.jpg',
+          ghostFramePath: '/test/undo_ghost.jpg',
+        );
+
+        when(
+          () => mockClipLibraryService.getAllClips(),
+        ).thenAnswer((_) async => [clip]);
+        when(
+          () => mockClipLibraryService.recoverMissingAssets(any()),
+        ).thenAnswer((_) async => [clip]);
+        when(
+          () => mockClipLibraryService.softDelete(any()),
+        ).thenAnswer((_) async => true);
+
+        final showLibrary = ValueNotifier<bool>(true);
+        addTearDown(showLibrary.dispose);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              gallerySaveServiceProvider.overrideWithValue(
+                mockGallerySaveService,
+              ),
+              clipLibraryServiceProvider.overrideWithValue(
+                mockClipLibraryService,
+              ),
+              draftStorageServiceProvider.overrideWithValue(
+                mockDraftStorageService,
+              ),
+              clipManagerProvider.overrideWith(ClipManagerNotifier.new),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: VineTheme.theme,
+              home: Scaffold(
+                body: ValueListenableBuilder<bool>(
+                  valueListenable: showLibrary,
+                  builder: (context, show, _) => show
+                      ? const LibraryScreen(
+                          initialTabIndex: 1,
+                          tabsMode: LibraryTabsMode.clipsOnly,
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Trigger the delete → the app-level "Undo" snackbar appears.
+        final clipsBloc = BlocProvider.of<ClipsLibraryBloc>(
+          tester.element(find.byType(ClipsTab)),
+        )..add(ClipsLibraryDeleteClip(clip));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.libraryClipsDeletedUndoLabel), findsOneWidget);
+
+        // Navigate away: unmount the screen, closing its bloc, while the
+        // app-level snackbar stays on screen.
+        showLibrary.value = false;
+        await tester.pump();
+        expect(clipsBloc.isClosed, isTrue);
+
+        await tester.tap(find.text(en.libraryClipsDeletedUndoLabel));
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+      });
+    });
+
     group('web', () {
       testWidgets('shows mobile-app intercept instead of tabs', (tester) async {
         await tester.pumpWidget(buildWidget());
