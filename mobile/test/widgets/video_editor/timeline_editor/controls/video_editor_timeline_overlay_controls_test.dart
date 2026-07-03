@@ -9,12 +9,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_layer_animation_sheet.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_overlay_controls.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -26,6 +28,9 @@ class _MockTimelineOverlayBloc
 class _MockVideoEditorMainBloc
     extends MockBloc<VideoEditorMainEvent, VideoEditorMainState>
     implements VideoEditorMainBloc {}
+
+class _MockClipEditorBloc extends MockBloc<ClipEditorEvent, ClipEditorState>
+    implements ClipEditorBloc {}
 
 class _MockProImageEditorState extends Mock implements ProImageEditorState {
   @override
@@ -55,8 +60,9 @@ void main() {
     Widget buildWithEditor(
       TimelineOverlayItem item,
       _MockProImageEditorState mockEditor,
-      _MockVideoEditorMainBloc mainBloc,
-    ) {
+      _MockVideoEditorMainBloc mainBloc, {
+      _MockClipEditorBloc? clipBloc,
+    }) {
       return ProviderScope(
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -66,6 +72,8 @@ void main() {
               providers: [
                 BlocProvider<VideoEditorMainBloc>.value(value: mainBloc),
                 BlocProvider<TimelineOverlayBloc>.value(value: overlayBloc),
+                if (clipBloc != null)
+                  BlocProvider<ClipEditorBloc>.value(value: clipBloc),
               ],
               child: VideoEditorScope(
                 editorKey: GlobalKey(),
@@ -601,6 +609,57 @@ void main() {
           // second.startOffset = originalStartOffset + (splitAt - item.startTime)
           //                     = 2s + (5s - 3s) = 4s
           expect(second.startOffset, equals(const Duration(seconds: 4)));
+        },
+      );
+
+      testWidgets(
+        'animate sources the total duration from ClipEditorBloc, not '
+        'VideoEditorMainBloc',
+        (tester) async {
+          final layer = TextLayer(
+            text: 'Layer A',
+            id: 'layer-a',
+            startTime: Duration.zero,
+            endTime: const Duration(seconds: 3),
+          );
+          when(() => mockEditor.activeLayers).thenReturn([layer]);
+          when(() => mainBloc.state).thenReturn(const VideoEditorMainState());
+
+          final clipBloc = _MockClipEditorBloc();
+          when(
+            () => clipBloc.stream,
+          ).thenAnswer((_) => const Stream<ClipEditorState>.empty());
+          when(() => clipBloc.state).thenReturn(const ClipEditorState());
+
+          const item = TimelineOverlayItem(
+            id: 'layer-a',
+            type: TimelineOverlayType.layer,
+            startTime: Duration.zero,
+            endTime: Duration(seconds: 3),
+          );
+          await tester.pumpWidget(
+            buildWithEditor(item, mockEditor, mainBloc, clipBloc: clipBloc),
+          );
+
+          // The total is only consulted when animate is tapped.
+          verifyNever(() => clipBloc.state);
+
+          await tester.tap(
+            find.bySemanticsLabel(
+              l10n.videoEditorLayerAnimationButtonSemanticLabel,
+            ),
+          );
+          // Bounded pumps rather than pumpAndSettle: the picker preview loops
+          // continuously so the tree never settles.
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+
+          // The animation sheet opens with the total taken from
+          // ClipEditorBloc.totalDuration. If the source were reverted to
+          // VideoEditorMainBloc (the transient-zero bug this PR fixes),
+          // clipBloc.state would never be read.
+          verify(() => clipBloc.state).called(greaterThanOrEqualTo(1));
+          expect(find.byType(LayerAnimationPickerView), findsOneWidget);
         },
       );
     });
