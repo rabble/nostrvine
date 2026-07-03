@@ -964,24 +964,11 @@ class VideoEditorRenderService {
         timelineMap: timelineMap,
       ),
       blur: parameters?.blur,
-      colorFilters: [
-        ...?parameters?.tuneAdjustments.map(
-          (t) => ColorFilter(
-            matrix: t.matrix,
-            startTime: timelineMap.editorToOutputOrNull(t.startTime),
-            endTime: timelineMap.editorToOutputOrNull(t.endTime),
-          ),
-        ),
-        ...?parameters?.filterStates.expand(
-          (f) => f.matrices.map(
-            (matrix) => ColorFilter(
-              matrix: matrix,
-              startTime: timelineMap.editorToOutputOrNull(f.startTime),
-              endTime: timelineMap.editorToOutputOrNull(f.endTime),
-            ),
-          ),
-        ),
-      ],
+      colorFilters: buildColorFilters(
+        tuneAdjustments: parameters?.tuneAdjustments ?? const [],
+        filterStates: parameters?.filterStates ?? const [],
+        timelineMap: timelineMap,
+      ),
       imageBytesWithCropping: true,
       qualityConfig: VideoQualityConfig.custom(
         bitrate: VideoEditorConstants.quality.bitrate,
@@ -1046,6 +1033,37 @@ class VideoEditorRenderService {
           ),
           animations: item.layer.divineAnimations,
         ),
+    ];
+  }
+
+  /// Builds the [ColorFilter]s applied to the exported video from the tune
+  /// adjustments and filter states.
+  ///
+  /// Each filter's editor-timeline window is mapped onto the output axis via
+  /// [timelineMap] — the same mapping [buildImageLayers] applies — so an
+  /// overlap transition can't push a filter (or its leave animation) past the
+  /// real video end. A `null` start/end stays un-anchored (spans the whole
+  /// video). One [ColorFilter] is emitted per filter matrix.
+  @visibleForTesting
+  static List<ColorFilter> buildColorFilters({
+    required List<TuneAdjustmentMatrix> tuneAdjustments,
+    required List<FilterState> filterStates,
+    required TransitionTimelineMap timelineMap,
+  }) {
+    return [
+      for (final tune in tuneAdjustments)
+        ColorFilter(
+          matrix: tune.matrix,
+          startTime: timelineMap.editorToOutputOrNull(tune.startTime),
+          endTime: timelineMap.editorToOutputOrNull(tune.endTime),
+        ),
+      for (final filter in filterStates)
+        for (final matrix in filter.matrices)
+          ColorFilter(
+            matrix: matrix,
+            startTime: timelineMap.editorToOutputOrNull(filter.startTime),
+            endTime: timelineMap.editorToOutputOrNull(filter.endTime),
+          ),
     ];
   }
 

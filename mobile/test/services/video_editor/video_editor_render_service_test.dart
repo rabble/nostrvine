@@ -1,5 +1,7 @@
-// ABOUTME: Tests VideoEditorRenderService.buildImageLayers — the overlay-layer
-// ABOUTME: scaling and editor→output timeline mapping applied at export.
+// ABOUTME: Tests VideoEditorRenderService.buildImageLayers and
+// ABOUTME: buildColorFilters — the overlay-layer scaling and editor→output
+// ABOUTME: timeline mapping applied to layers, tune adjustments and filters at
+// ABOUTME: export.
 
 import 'dart:io';
 import 'dart:typed_data';
@@ -35,35 +37,31 @@ void main() {
     Offset offset = Offset.zero,
     Size logicalSize = const Size(10, 20),
   }) => pie.ExportedLayer(
-    layer: pie.Layer(
-      startTime: startTime,
-      endTime: endTime,
-      offset: offset,
-    ),
+    layer: pie.Layer(startTime: startTime, endTime: endTime, offset: offset),
     bytes: Uint8List.fromList(const [1, 2, 3]),
     logicalSize: logicalSize,
   );
 
-  group('buildImageLayers', () {
-    // Two 2s clips joined by a 400ms dissolve: an overlap removes its 400ms
-    // blend, so the 4s editor timeline renders to a 3.6s output. The transition
-    // is the outgoing transition of clip A (the a→b boundary).
-    final overlapClips = [
-      clip(
-        'a',
-        const Duration(seconds: 2),
-        transition: const ClipTransition(
-          type: ClipTransitionType.dissolve,
-          duration: Duration(milliseconds: 400),
-        ),
+  // Two 2s clips joined by a 400ms dissolve: an overlap removes its 400ms
+  // blend, so the 4s editor timeline renders to a 3.6s output. The transition
+  // is the outgoing transition of clip A (the a→b boundary).
+  final overlapClips = [
+    clip(
+      'a',
+      const Duration(seconds: 2),
+      transition: const ClipTransition(
+        type: ClipTransitionType.dissolve,
+        duration: Duration(milliseconds: 400),
       ),
-      clip('b', const Duration(seconds: 2)),
-    ];
-    final noTransitionClips = [
-      clip('a', const Duration(seconds: 2)),
-      clip('b', const Duration(seconds: 2)),
-    ];
+    ),
+    clip('b', const Duration(seconds: 2)),
+  ];
+  final noTransitionClips = [
+    clip('a', const Duration(seconds: 2)),
+    clip('b', const Duration(seconds: 2)),
+  ];
 
+  group('buildImageLayers', () {
     test('returns null when there are no captured layers', () {
       expect(
         VideoEditorRenderService.buildImageLayers(
@@ -150,6 +148,97 @@ void main() {
 
       expect(layers.single.startTime, isNull);
       expect(layers.single.endTime, isNull);
+    });
+  });
+
+  group('buildColorFilters', () {
+    pie.TuneAdjustmentMatrix tune({Duration? startTime, Duration? endTime}) =>
+        pie.TuneAdjustmentMatrix(
+          id: 'brightness',
+          value: 0.5,
+          matrix: const [1, 0, 0],
+          startTime: startTime,
+          endTime: endTime,
+        );
+
+    test('returns an empty list when there are no adjustments or filters', () {
+      expect(
+        VideoEditorRenderService.buildColorFilters(
+          tuneAdjustments: const [],
+          filterStates: const [],
+          timelineMap: TransitionTimelineMap.fromClips(noTransitionClips),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('passes tune times through unchanged when there is no overlap '
+        'transition', () {
+      final filters = VideoEditorRenderService.buildColorFilters(
+        tuneAdjustments: [
+          tune(startTime: Duration.zero, endTime: const Duration(seconds: 4)),
+        ],
+        filterStates: const [],
+        timelineMap: TransitionTimelineMap.fromClips(noTransitionClips),
+      );
+
+      expect(filters.single.matrix, const [1, 0, 0]);
+      expect(filters.single.startTime, Duration.zero);
+      expect(filters.single.endTime, const Duration(seconds: 4));
+    });
+
+    test('maps a full-length tune window onto the shorter output axis when an '
+        'overlap transition compresses the timeline', () {
+      final filters = VideoEditorRenderService.buildColorFilters(
+        tuneAdjustments: [
+          tune(startTime: Duration.zero, endTime: const Duration(seconds: 4)),
+        ],
+        filterStates: const [],
+        timelineMap: TransitionTimelineMap.fromClips(overlapClips),
+      );
+
+      expect(filters.single.startTime, Duration.zero);
+      expect(filters.single.endTime, const Duration(milliseconds: 3600));
+    });
+
+    test('emits one filter per matrix and maps each window onto the output '
+        'axis', () {
+      final filters = VideoEditorRenderService.buildColorFilters(
+        tuneAdjustments: const [],
+        filterStates: [
+          pie.FilterState(
+            name: 'sepia',
+            matrices: const [
+              [1, 0, 0],
+              [0, 1, 0],
+            ],
+            startTime: Duration.zero,
+            endTime: const Duration(seconds: 4),
+          ),
+        ],
+        timelineMap: TransitionTimelineMap.fromClips(overlapClips),
+      );
+
+      expect(filters, hasLength(2));
+      expect(filters.map((f) => f.matrix), [
+        const [1, 0, 0],
+        const [0, 1, 0],
+      ]);
+      for (final filter in filters) {
+        expect(filter.startTime, Duration.zero);
+        expect(filter.endTime, const Duration(milliseconds: 3600));
+      }
+    });
+
+    test('leaves null tune times un-anchored', () {
+      final filters = VideoEditorRenderService.buildColorFilters(
+        tuneAdjustments: [tune()],
+        filterStates: const [],
+        timelineMap: TransitionTimelineMap.fromClips(overlapClips),
+      );
+
+      expect(filters.single.startTime, isNull);
+      expect(filters.single.endTime, isNull);
     });
   });
 }

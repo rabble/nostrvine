@@ -486,6 +486,46 @@ void main() {
 
         expect(map.editorDuration, equals(map.outputDuration));
       });
+
+      group('editorToOutputOrNull', () {
+        test('returns null for a null position', () {
+          final map = TransitionTimelineMap.fromClips([
+            clip('a', const Duration(seconds: 1), transition: overlap500),
+            clip('b', const Duration(seconds: 1)),
+          ]);
+
+          expect(map.editorToOutputOrNull(null), isNull);
+        });
+
+        test('maps a non-null position like editorToOutput', () {
+          final map = TransitionTimelineMap.fromClips([
+            clip('a', const Duration(seconds: 1), transition: overlap500),
+            clip('b', const Duration(seconds: 1)),
+          ]);
+
+          // The editor end (2s) lands on the shorter output end (1.5s).
+          expect(
+            map.editorToOutputOrNull(const Duration(seconds: 2)),
+            equals(map.editorToOutput(const Duration(seconds: 2))),
+          );
+          expect(
+            map.editorToOutputOrNull(const Duration(seconds: 2)),
+            equals(const Duration(milliseconds: 1500)),
+          );
+        });
+
+        test('is the identity when no transition shortens the timeline', () {
+          final map = TransitionTimelineMap.fromClips([
+            clip('a', const Duration(seconds: 1)),
+            clip('b', const Duration(seconds: 1)),
+          ]);
+
+          expect(
+            map.editorToOutputOrNull(const Duration(milliseconds: 1500)),
+            equals(const Duration(milliseconds: 1500)),
+          );
+        });
+      });
     });
   });
 }
