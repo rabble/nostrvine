@@ -135,8 +135,18 @@ class ConversationReactionsCubit
     Emitter<ConversationReactionsState> emit,
   ) async {
     // Set-not-toggle: re-selecting the active emoji is a no-op (keep it);
-    // a different emoji supersedes the prior one in the repository.
-    if (_ownLiveReaction(event.messageId, event.emoji) != null) return;
+    // a different emoji supersedes the prior one in the repository. The
+    // optimistic-inclusive check also covers the pre-persist window, so a
+    // rapid double-tap burst can't fan out duplicate gift-wrapped reactions
+    // before the first row lands — the whole publish decision lives here, and
+    // callers (double-tap-to-like, the reel reply bar) just dispatch.
+    if (state.ownReactionPendingOrLive(
+      messageId: event.messageId,
+      emoji: event.emoji,
+      ownerPubkey: _ownerPubkey,
+    )) {
+      return;
+    }
 
     await _publishReaction(
       conversationId: event.conversationId,

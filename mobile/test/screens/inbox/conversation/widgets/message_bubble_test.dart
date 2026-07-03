@@ -776,6 +776,7 @@ void main() {
       Widget buildWithVideoMessage({
         required String message,
         DmSharedVideoRef? sharedVideoRef,
+        VoidCallback? onDoubleTap,
       }) => testMaterialApp(
         home: Scaffold(
           body: MessageBubble(
@@ -783,6 +784,7 @@ void main() {
             timestamp: '2:30 PM',
             isSent: true,
             sharedVideoRef: sharedVideoRef,
+            onDoubleTap: onDoubleTap,
           ),
         ),
         mockNostrService: mockNostrClient,
@@ -791,6 +793,37 @@ void main() {
             mockVideoEventService,
           ),
         ],
+      );
+
+      testWidgets(
+        'suppresses double-tap-to-like on a shared-video bubble '
+        '(gesture-arena guard)',
+        (tester) async {
+          var doubleTapped = false;
+
+          // Default stubs resolve the preview to "unavailable" — a static card
+          // with no inner tap target and no pending timer.
+          await tester.pumpWidget(
+            buildWithVideoMessage(
+              message: 'https://divine.video/video/abc123',
+              onDoubleTap: () => doubleTapped = true,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final center = tester.getCenter(find.byType(MessageBubble));
+          await tester.tapAt(center);
+          await tester.pump(kDoubleTapMinTime);
+          await tester.tapAt(center);
+          await tester.pumpAndSettle();
+
+          // Double-tap is not wired on video bubbles: an ancestor onDoubleTap
+          // would hold the gesture arena for ~kDoubleTapTimeout and delay
+          // tap-to-open the reel. The text-bubble 'calls onDoubleTap' test is
+          // the positive control.
+          expect(doubleTapped, isFalse);
+          expect(find.byType(MessageBubble), findsOneWidget);
+        },
       );
 
       testWidgets('shows loading spinner before video resolves', (
@@ -1168,6 +1201,7 @@ void main() {
       Widget buildWithQuotedReply({
         required String message,
         DmSharedVideoRef? quotedVideoRef,
+        VoidCallback? onDoubleTap,
       }) => testMaterialApp(
         home: Scaffold(
           body: MessageBubble(
@@ -1175,6 +1209,7 @@ void main() {
             timestamp: '2:30 PM',
             isSent: true,
             quotedVideoRef: quotedVideoRef,
+            onDoubleTap: onDoubleTap,
           ),
         ),
         mockNostrService: mockNostrClient,
@@ -1183,6 +1218,36 @@ void main() {
             mockVideoEventService,
           ),
         ],
+      );
+
+      testWidgets(
+        'suppresses double-tap-to-like on a quoted-video reply bubble '
+        '(gesture-arena guard)',
+        (tester) async {
+          var doubleTapped = false;
+
+          // Default stubs resolve the quoted preview to "unavailable" — a
+          // static frame with no pending timer.
+          await tester.pumpWidget(
+            buildWithQuotedReply(
+              message: 'love this one',
+              quotedVideoRef: quotedRef,
+              onDoubleTap: () => doubleTapped = true,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final center = tester.getCenter(find.byType(MessageBubble));
+          await tester.tapAt(center);
+          await tester.pump(kDoubleTapMinTime);
+          await tester.tapAt(center);
+          await tester.pumpAndSettle();
+
+          // The quoted preview is itself a tap target (opens the cited reel),
+          // so double-tap-to-like is suppressed to keep tap-to-open instant.
+          expect(doubleTapped, isFalse);
+          expect(find.byType(MessageBubble), findsOneWidget);
+        },
       );
 
       testWidgets(

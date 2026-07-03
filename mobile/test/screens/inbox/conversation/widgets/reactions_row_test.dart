@@ -2,6 +2,8 @@
 // ABOUTME: Covers distinct-glyph rendering, reactor avatars, the
 // ABOUTME: "see who reacted" semantic label, and tap-opens-sheet.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,6 +32,8 @@ void main() {
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
   const messageId =
       'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+  const messageIdB =
+      'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
 
   DmReaction makeReaction({
     required String id,
@@ -290,26 +294,184 @@ void main() {
       },
     );
 
-    testWidgets('a reaction glyph grows in and settles at full scale', (
-      tester,
-    ) async {
-      primeState(
-        stateWith([
+    testWidgets(
+      'a reaction present at mount renders settled (no pop on open / scroll-in)',
+      (tester) async {
+        primeState(
+          stateWith([
+            makeReaction(id: '1', reactorPubkey: ownerPubkey, emoji: '❤️'),
+          ]),
+        );
+
+        await tester.pumpWidget(buildSubject(cubit));
+        await tester.pump();
+
+        // A reaction that already exists when the pill first builds must not
+        // grow in — otherwise every reacted message pops on conversation open
+        // and each time it scrolls back into view.
+        expect(_emojiScale(tester, '❤️'), closeTo(1, 0.01));
+        expect(find.text('❤️'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a reaction added while the pill is mounted grows in and settles',
+      (tester) async {
+        final controller =
+            StreamController<ConversationReactionsState>.broadcast();
+        addTearDown(controller.close);
+
+        final initial = stateWith([
           makeReaction(id: '1', reactorPubkey: ownerPubkey, emoji: '❤️'),
-        ]),
-      );
+        ]);
+        when(() => cubit.state).thenReturn(initial);
+        whenListen(cubit, controller.stream, initialState: initial);
 
-      await tester.pumpWidget(buildSubject(cubit));
+        await tester.pumpWidget(buildSubject(cubit));
+        await tester.pump();
 
-      // The glyph starts below full scale and grows in (the gentle "small heart
-      // appearing" the double-tap flow shows in the pill).
-      expect(_emojiScale(tester, '❤️'), lessThan(1));
+        // The pre-existing glyph is settled — the mount is silent.
+        expect(_emojiScale(tester, '❤️'), closeTo(1, 0.01));
 
-      // …and settles at full scale, where it stays.
-      await tester.pumpAndSettle();
-      expect(_emojiScale(tester, '❤️'), closeTo(1, 0.01));
-      expect(find.text('❤️'), findsOneWidget);
-    });
+        // A new reactor's glyph arrives on the live stream while the pill stays
+        // mounted → it grows in (the gentle "small heart appearing" feel).
+        controller.add(
+          stateWith([
+            makeReaction(id: '1', reactorPubkey: ownerPubkey, emoji: '❤️'),
+            makeReaction(
+              id: '2',
+              reactorPubkey: otherPubkey,
+              emoji: '🔥',
+              createdAt: 1_700_000_001,
+              publishStatus: DmReactionPublishStatus.received,
+            ),
+          ]),
+        );
+        // Two pumps: one flushes the stream event, one builds the frame that
+        // mounts the new glyph (its controller starts at 0 → below full scale).
+        await tester.pump();
+        await tester.pump();
+
+        expect(_emojiScale(tester, '🔥'), lessThan(1));
+        // The existing ❤️ keeps its element and does NOT re-pop.
+        expect(_emojiScale(tester, '❤️'), closeTo(1, 0.01));
+
+        await tester.pumpAndSettle();
+        expect(_emojiScale(tester, '🔥'), closeTo(1, 0.01));
+        expect(find.text('🔥'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the first like on a never-reacted message grows in (double-tap flagship)',
+      (tester) async {
+        final controller =
+            StreamController<ConversationReactionsState>.broadcast();
+        addTearDown(controller.close);
+
+        // The message starts with zero reactions: the row is mounted (and
+        // captures an empty baseline) but no pill is shown yet.
+        const empty = ConversationReactionsState();
+        when(() => cubit.state).thenReturn(empty);
+        whenListen(cubit, controller.stream, initialState: empty);
+
+        await tester.pumpWidget(buildSubject(cubit));
+        await tester.pump();
+        expect(find.text('❤️'), findsNothing);
+
+        // The user double-taps → the cubit paints the optimistic own ❤️. It is
+        // absent from the mount-time baseline, so it must grow in — this is the
+        // whole point of the double-tap-to-like animation, and it must survive
+        // the "no prior reactions" path that mounts the pill for the first time.
+        controller.add(
+          ConversationReactionsState(
+            optimistic: {
+              const ReactionPublishKey(
+                messageId: messageId,
+                emoji: '❤️',
+              ): OptimisticReactionAdded(
+                makeReaction(
+                  id: 'optimistic:$messageId:❤️',
+                  reactorPubkey: ownerPubkey,
+                  emoji: '❤️',
+                  publishStatus: DmReactionPublishStatus.pending,
+                ),
+              ),
+            },
+          ),
+        );
+        // Two pumps: one flushes the stream event, one builds the frame that
+        // mounts the heart (its controller starts at 0 → below full scale).
+        await tester.pump();
+        await tester.pump();
+
+        expect(_emojiScale(tester, '❤️'), lessThan(1));
+
+        await tester.pumpAndSettle();
+        expect(_emojiScale(tester, '❤️'), closeTo(1, 0.01));
+        expect(find.text('❤️'), findsOneWidget);
+
+        // The optimistic pending ❤️ reconciles to a persisted `sent` row — same
+        // emoji, same keyed glyph — so it must NOT re-pop on the swap.
+        controller.add(
+          stateWith([
+            makeReaction(id: '1', reactorPubkey: ownerPubkey, emoji: '❤️'),
+          ]),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(_emojiScale(tester, '❤️'), closeTo(1, 0.01));
+      },
+    );
+
+    testWidgets(
+      'recaptures the baseline when the row is rebound to another message '
+      '(list recycling)',
+      (tester) async {
+        // Both messages already have a reaction; neither should pop at mount.
+        primeState(
+          ConversationReactionsState(
+            reactionsByMessageId: {
+              messageId: [
+                makeReaction(id: 'a', reactorPubkey: otherPubkey, emoji: '❤️'),
+              ],
+              messageIdB: [
+                makeReaction(id: 'b', reactorPubkey: otherPubkey, emoji: '🔥'),
+              ],
+            },
+          ),
+        );
+
+        Widget rowFor(String id) => testMaterialApp(
+          home: Scaffold(
+            body: BlocProvider<ConversationReactionsCubit>.value(
+              value: cubit,
+              child: ReactionsRow(
+                conversationId: conversationId,
+                messageId: id,
+                messageAuthorPubkey: otherPubkey,
+                ownerPubkey: ownerPubkey,
+                isSentByMe: false,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(rowFor(messageId));
+        await tester.pump();
+        expect(_emojiScale(tester, '❤️'), closeTo(1, 0.01));
+
+        // Re-pump the SAME element position with a different messageId — the
+        // shape a ListView takes when it recycles a row onto another message.
+        // didUpdateWidget must drop the stale baseline so message B's reaction,
+        // present at rebind, does NOT spuriously pop. Without the reset the
+        // {❤️} baseline lingers and 🔥 (absent from it) grows in.
+        await tester.pumpWidget(rowFor(messageIdB));
+        await tester.pump();
+        expect(find.text('❤️'), findsNothing);
+        expect(_emojiScale(tester, '🔥'), closeTo(1, 0.01));
+      },
+    );
   });
 }
 

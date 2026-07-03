@@ -260,6 +260,62 @@ void main() {
     );
 
     blocTest<ConversationReactionsCubit, ConversationReactionsState>(
+      'rapid double-tap set is a no-op during the pre-persist optimistic '
+      'window (publishes once)',
+      build: () {
+        when(
+          () => repo.publish(
+            conversationId: any(named: 'conversationId'),
+            targetMessageId: any(named: 'targetMessageId'),
+            targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            emoji: any(named: 'emoji'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const DmReactionPublishResult(success: true, rumorId: 'r-set'),
+        );
+        return ConversationReactionsCubit(
+          reactionsRepository: repo,
+          ownerPubkey: _owner,
+        );
+      },
+      act: (cubit) async {
+        // Two sets in a burst, before any persisted row (or stream tick) lands.
+        // The first paints the optimistic ❤️; the second must see it via the
+        // optimistic-inclusive guard and no-op — so only one gift-wrap is sent
+        // and the pre-persist window can't fan out duplicates.
+        cubit
+          ..add(
+            const ConversationReactionSet(
+              conversationId: _convo,
+              messageId: _msgId,
+              messageAuthorPubkey: _peer,
+              emoji: '❤️',
+            ),
+          )
+          ..add(
+            const ConversationReactionSet(
+              conversationId: _convo,
+              messageId: _msgId,
+              messageAuthorPubkey: _peer,
+              emoji: '❤️',
+            ),
+          );
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      },
+      verify: (_) {
+        verify(
+          () => repo.publish(
+            conversationId: _convo,
+            targetMessageId: _msgId,
+            targetMessageAuthor: _peer,
+            emoji: '❤️',
+          ),
+        ).called(1);
+      },
+    );
+
+    blocTest<ConversationReactionsCubit, ConversationReactionsState>(
       'set with a different emoji publishes (supersede handled by repo)',
       build: () {
         when(

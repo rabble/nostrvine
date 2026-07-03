@@ -482,21 +482,12 @@ class _MessageList extends StatelessWidget {
   /// Double-tap-to-like (Instagram-style). Fires a light haptic and adds a ❤️
   /// via [ConversationReactionSet] (add-only: a repeat double-tap never
   /// un-likes — removal stays on the long-press picker). The chip itself
-  /// animates in via [ReactionsRow]. The pending-or-live guard skips
-  /// re-publishing when the account already has ❤️ on this message, including
-  /// the pre-persist optimistic window, so rapid double-taps don't fan out
-  /// duplicate gift-wrapped reactions.
+  /// animates in via [ReactionsRow]. Dedup lives in the cubit's
+  /// [ConversationReactionSet] handler — including the pre-persist optimistic
+  /// window — so a rapid double-tap burst can't fan out duplicate gift-wrapped
+  /// reactions; the UI just dispatches.
   void _likeOnDoubleTap(BuildContext context, DmMessage message) {
     HapticFeedback.lightImpact();
-
-    final reactions = context.read<ConversationReactionsCubit>().state;
-    final alreadyLiked = reactions.ownReactionPendingOrLive(
-      messageId: message.id,
-      emoji: _doubleTapLikeEmoji,
-      ownerPubkey: currentPubkey,
-    );
-    if (alreadyLiked) return;
-
     context.read<ConversationReactionsCubit>().add(
       ConversationReactionSet(
         conversationId: message.conversationId,
