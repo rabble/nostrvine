@@ -82,7 +82,7 @@ class ForegroundIdleWarmupScheduler {
   }
 
   void _requestSafely(ForegroundIdleWarmupTrigger trigger) {
-    Log.info(
+    Log.debug(
       'Foreground idle warmup scheduler fired (${trigger.name})',
       name: 'ForegroundIdleWarmupScheduler',
       category: LogCategory.system,
@@ -214,7 +214,7 @@ class ForegroundIdleWarmupCoordinator {
   bool get _canRun => _isForeground() && _isIdle();
 
   Future<void> _run(ForegroundIdleWarmupTrigger trigger) async {
-    Log.info(
+    Log.debug(
       'Foreground idle warmup started (${trigger.name})',
       name: 'ForegroundIdleWarmupCoordinator',
       category: LogCategory.system,
@@ -257,7 +257,7 @@ class ForegroundIdleWarmupCoordinator {
         switch (outcome) {
           case _ForegroundIdleWarmupTaskOutcome.completed:
             _lastSuccessAt[task.id] = _now();
-            Log.info(
+            Log.debug(
               'Foreground idle warmup completed ${task.id.name}',
               name: 'ForegroundIdleWarmupCoordinator',
               category: LogCategory.system,
