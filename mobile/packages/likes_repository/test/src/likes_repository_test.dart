@@ -2436,6 +2436,60 @@ void main() {
         expect(likers, [likerB, likerA]);
       });
 
+      test(
+        'chunks the Kind 5 deletion query so no REQ exceeds the frame limit',
+        () async {
+          // 600 reactions from distinct authors => the resolver must split the
+          // deletion `#e` query into 2 chunks (500 + 100) so no single REQ
+          // frame approaches the relay's max_message_length (#5751).
+          final reactions = [
+            for (var i = 0; i < 600; i++)
+              createReaction(
+                id: 'reaction_$i',
+                authorPubkey: 'liker_pubkey_$i',
+              ),
+          ];
+          // call 0: e-tag reaction query; calls 1-2: chunked deletion queries.
+          mockQueryEventsSequence([reactions, <Event>[], <Event>[]]);
+
+          repository = createRepository();
+          final likers = await repository.fetchEventLikers(
+            eventId: targetEventId,
+          );
+          expect(likers, hasLength(600));
+
+          final calls = verify(
+            () => mockNostrClient.queryEvents(captureAny()),
+          ).captured.cast<List<Filter>>();
+          // 1 reaction (e) query + 2 chunked deletion queries.
+          expect(calls, hasLength(3));
+
+          final deletionFilters = calls
+              .map((filters) => filters.single)
+              .where(
+                (f) => f.kinds?.contains(EventKind.eventDeletion) ?? false,
+              )
+              .toList();
+          expect(deletionFilters, hasLength(2));
+          expect(deletionFilters[0].e, hasLength(500));
+          expect(deletionFilters[1].e, hasLength(100));
+          for (final filter in deletionFilters) {
+            expect(
+              filter.authors,
+              isNull,
+              reason: 'authors filter dropped; consumer enforces author match',
+            );
+            expect(filter.e!.length, lessThanOrEqualTo(500));
+          }
+          // The chunks partition every fetched reaction id without overlap.
+          final chunkedIds = <String>{
+            ...deletionFilters[0].e!,
+            ...deletionFilters[1].e!,
+          };
+          expect(chunkedIds, hasLength(600));
+        },
+      );
+
       test('excludes likers hidden by the block filter', () async {
         final blockedReaction = createReaction(
           id: 'reaction_blocked',

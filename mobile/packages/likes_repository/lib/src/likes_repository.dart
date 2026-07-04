@@ -26,6 +26,18 @@ const _likeContent = '+';
 /// NIP-25 reaction content for a downvote.
 const _downvoteContent = '-';
 
+/// Max number of reaction ids per Kind 5 deletion REQ.
+///
+/// The resolver scopes the deletion query to the reaction ids it fetched,
+/// which can approach the relay's per-REQ cap (~5000) on a very
+/// high-engagement video. A single `#e` filter with that many 64-char ids
+/// (~67 bytes each in JSON) would build a REQ frame near/over the relay's
+/// `max_message_length` (512KB); an oversized frame errors the socket and
+/// `queryEvents` fails open, silently counting deleted likes. Chunking keeps
+/// every frame small (500 ids ~= 34KB, well under 512KB and the advertised
+/// `max_event_tags` of 2000). See #5751.
+const _deletionReqEidChunkSize = 500;
+
 /// Callback to check if the device is currently online
 typedef IsOnlineCallback = bool Function();
 
@@ -1225,25 +1237,30 @@ class LikesRepository {
       return {for (final eventId in eventIds) eventId: <String>[]};
     }
 
-    final reactionAuthors = allReactionsById.values
-        .map((event) => event.pubkey)
-        .toSet()
-        .toList();
-    // Scope the deletion query to the reaction ids we actually fetched, in
-    // addition to their authors. The consumer below only honors a Kind 5 whose
-    // `e` tag points at a fetched reaction *and* whose author matches, so
-    // `#e`-scoping is semantics-preserving; without it the query pulls every
-    // deletion these (possibly prolific) authors ever published, inflating the
-    // response and risking crowd-out under the relay's per-REQ cap.
-    final deletionEvents = reactionAuthors.isEmpty
-        ? const <Event>[]
-        : await _nostrClient.queryEvents([
+    // Scope the deletion query to the reaction ids we fetched. The consumer
+    // below only honors a Kind 5 whose `e` tag points at a fetched reaction
+    // AND whose author matches it, so `#e`-scoping is semantics-preserving and
+    // an `authors:` filter is redundant (dropped to halve the frame size).
+    // Chunk the `#e` list so a very high-engagement video can't build a single
+    // REQ frame over the relay's `max_message_length` — an oversized frame
+    // errors the socket and the query fails open, counting deletes (#5751).
+    final reactionIds = allReactionsById.keys.toList();
+    final deletionEvents = <Event>[];
+    if (reactionIds.isNotEmpty) {
+      final chunkedDeletions = await Future.wait([
+        for (var i = 0; i < reactionIds.length; i += _deletionReqEidChunkSize)
+          _nostrClient.queryEvents([
             Filter(
               kinds: const [EventKind.eventDeletion],
-              authors: reactionAuthors,
-              e: allReactionsById.keys.toList(),
+              e: reactionIds.sublist(
+                i,
+                min(i + _deletionReqEidChunkSize, reactionIds.length),
+              ),
             ),
-          ]);
+          ]),
+      ]);
+      chunkedDeletions.forEach(deletionEvents.addAll);
+    }
 
     // Only honor a Kind 5 deletion when its author matches the reaction's
     // author — otherwise anyone could suppress someone else's like by
