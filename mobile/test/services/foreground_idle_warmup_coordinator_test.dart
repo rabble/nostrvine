@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/foreground_idle_warmup_coordinator.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   group('ForegroundIdleWarmupCoordinator', () {
@@ -34,11 +35,16 @@ void main() {
       );
     }
 
-    setUp(() {
+    setUp(() async {
+      await LogCaptureService().clearAllLogs();
       now = DateTime(2026, 6, 17, 12);
       isForeground = true;
       isIdle = true;
       calls = [];
+    });
+
+    tearDown(() async {
+      await LogCaptureService().clearAllLogs();
     });
 
     test('runs eligible warmups when the app is foreground and idle', () async {
@@ -54,6 +60,32 @@ void main() {
       );
 
       expect(calls, ['forYou', 'newVideos', 'popular', 'notifications']);
+    });
+
+    test('routine successful pass logs stay below info level', () async {
+      final coordinator = coordinatorWith([
+        task(ForegroundIdleWarmupTaskId.forYou),
+      ]);
+
+      await coordinator.requestWarmup(
+        trigger: ForegroundIdleWarmupTrigger.videoPlaybackSettled,
+      );
+
+      final warmupLogs = LogCaptureService().getRecentLogs().where(
+        (entry) => entry.message.startsWith('Foreground idle warmup '),
+      );
+      expect(
+        warmupLogs.where((entry) => entry.level == LogLevel.info),
+        isEmpty,
+      );
+      expect(
+        _latestLogContaining('Foreground idle warmup started')?.level,
+        LogLevel.debug,
+      );
+      expect(
+        _latestLogContaining('Foreground idle warmup completed forYou')?.level,
+        LogLevel.debug,
+      );
     });
 
     test('does not run while the app is backgrounded', () async {
@@ -463,6 +495,14 @@ void main() {
   });
 
   group('ForegroundIdleWarmupScheduler', () {
+    setUp(() async {
+      await LogCaptureService().clearAllLogs();
+    });
+
+    tearDown(() async {
+      await LogCaptureService().clearAllLogs();
+    });
+
     test('runs an initial warmup after the startup delay', () {
       fakeAsync((async) {
         final triggers = <ForegroundIdleWarmupTrigger>[];
@@ -482,6 +522,35 @@ void main() {
 
         expect(triggers, [ForegroundIdleWarmupTrigger.startupSettled]);
         scheduler.stop();
+      });
+    });
+
+    test('keeps lifecycle logs at info and routine ticks at debug', () {
+      fakeAsync((async) {
+        final scheduler = ForegroundIdleWarmupScheduler(
+          requestWarmup: (_) => Future<void>.value(),
+        );
+
+        scheduler.start();
+        async.elapse(const Duration(seconds: 10));
+        scheduler.stop();
+
+        expect(
+          _latestLogContaining(
+            'Foreground idle warmup scheduler started',
+          )?.level,
+          LogLevel.info,
+        );
+        expect(
+          _latestLogContaining('Foreground idle warmup scheduler fired')?.level,
+          LogLevel.debug,
+        );
+        expect(
+          _latestLogContaining(
+            'Foreground idle warmup scheduler stopped',
+          )?.level,
+          LogLevel.info,
+        );
       });
     });
 
@@ -636,4 +705,11 @@ void main() {
       });
     });
   });
+}
+
+LogEntry? _latestLogContaining(String message) {
+  final matches = LogCaptureService().getRecentLogs().where(
+    (entry) => entry.message.contains(message),
+  );
+  return matches.isEmpty ? null : matches.last;
 }
