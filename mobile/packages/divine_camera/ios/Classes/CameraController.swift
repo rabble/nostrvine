@@ -2055,13 +2055,22 @@ class CameraController: NSObject {
         // blocks for ~1.4s on older A9/A10 iPads — accepted as edge case.
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
-            // Note: there is a brief window between this check and the first
-            // audioInput.append() call on videoOutputQueue. An interruption
-            // arriving in that window produces a silent track rather than no
-            // audio track. The captureOutput guard (!audioInterrupted) limits
-            // the damage; full protection would require a writer-level lock
-            // that is not worth the added complexity here.
-            let audioReady = self.attachAudioToSessionIfNeeded() && !self.audioInterrupted
+            // Note: there is a brief window between this recovery and the
+            // first audioInput.append() call on videoOutputQueue. An
+            // interruption arriving in that window produces a silent track
+            // rather than no audio track. The captureOutput guard
+            // (!audioInterrupted) limits the damage; full protection would
+            // require a writer-level lock that is not worth the added
+            // complexity here.
+            let audioAttached = self.attachAudioToSessionIfNeeded()
+            if audioAttached && self.audioInterrupted {
+                self.audioInterrupted = false
+                DivineCameraLog.shared.info(
+                    "Recovered audio session before recording; cleared stale interruption",
+                    name: "DivineCamera.AudioSession"
+                )
+            }
+            let audioReady = audioAttached && !self.audioInterrupted
             if !audioReady {
                 DivineCameraLog.shared.warning(
                     "Audio not ready (attach failed or interrupted) — recording "
