@@ -8,12 +8,18 @@ import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-VideoEvent _createVideoWithUrl(String url, {Map<String, String>? rawTags}) {
-  final tags = <List<String>>[
-    ['url', url],
-    for (final entry in (rawTags ?? const <String, String>{}).entries)
-      [entry.key, entry.value],
-  ];
+VideoEvent _createVideoWithUrl(
+  String url, {
+  Map<String, String>? rawTags,
+  List<List<String>>? tags,
+}) {
+  final eventTags =
+      tags ??
+      <List<String>>[
+        ['url', url],
+        for (final entry in (rawTags ?? const <String, String>{}).entries)
+          [entry.key, entry.value],
+      ];
   final event = Event.fromJson({
     'id': 'aaaa1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',
     'pubkey':
@@ -21,7 +27,7 @@ VideoEvent _createVideoWithUrl(String url, {Map<String, String>? rawTags}) {
     'created_at': 1234567890,
     'kind': 34236,
     'content': '',
-    'tags': tags,
+    'tags': eventTags,
     'sig': 'cccc1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',
   });
   return VideoEvent.fromNostrEvent(event);
@@ -163,6 +169,60 @@ void main() {
       );
     });
 
+    test('uses raw URL when imeta only advertises a direct Blossom blob', () {
+      const hash =
+          'e770667c1a62cc394602fc07462fa0d7ba83441002d9aac662fb88d0cc575338';
+      final video = _createVideoWithUrl(
+        'https://media.divine.video/$hash',
+        tags: const [
+          [
+            'imeta',
+            'url https://media.divine.video/$hash',
+            'm video/mp4',
+            'x $hash',
+          ],
+        ],
+      );
+
+      expect(video.hasBareDivineHashPath, isTrue);
+      expect(video.hasRawOnlyDivineImetaUrl, isTrue);
+      expect(
+        video.getOptimalVideoUrlForPlatform(),
+        equals('https://media.divine.video/$hash'),
+      );
+      expect(
+        video.getCacheableVideoUrlForPlatform(),
+        equals('https://media.divine.video/$hash'),
+      );
+    });
+
+    test('keeps MP4 720p when imeta advertises processed variants', () {
+      const hash =
+          'e770667c1a62cc394602fc07462fa0d7ba83441002d9aac662fb88d0cc575338';
+      final video = _createVideoWithUrl(
+        'https://media.divine.video/$hash',
+        tags: const [
+          [
+            'imeta',
+            'url',
+            'https://media.divine.video/$hash/720p.mp4',
+            'url',
+            'https://media.divine.video/$hash',
+            'm',
+            'video/mp4',
+            'x',
+            hash,
+          ],
+        ],
+      );
+
+      expect(video.hasRawOnlyDivineImetaUrl, isFalse);
+      expect(
+        video.getOptimalVideoUrlForPlatform(),
+        equals('https://media.divine.video/$hash/720p.mp4'),
+      );
+    });
+
     test('returns original URL for non-Divine videos', () {
       final video = _createVideoWithUrl(
         'https://blossom.primal.net/test/video.mp4',
@@ -198,9 +258,7 @@ void main() {
       expect(video.isOriginalVine, isTrue);
       expect(
         video.getOptimalVideoUrlForPlatform(),
-        equals(
-          'https://media.divine.video/$hash',
-        ),
+        equals('https://media.divine.video/$hash'),
       );
       expect(video.getCacheableVideoUrlForPlatform(), isNull);
     });

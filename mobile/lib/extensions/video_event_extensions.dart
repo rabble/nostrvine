@@ -22,6 +22,27 @@ String _getBandwidthBasedQuality() {
   }
 }
 
+bool _isVideoUrlKey(String key) {
+  return switch (key) {
+    'url' ||
+    'hls' ||
+    'dash' ||
+    'stream' ||
+    'streaming' ||
+    'fallback' ||
+    'mp4' ||
+    'video' => true,
+    _ => false,
+  };
+}
+
+bool _isHttpVideoUrl(String value) {
+  final uri = Uri.tryParse(value);
+  return uri != null &&
+      (uri.scheme == 'http' || uri.scheme == 'https') &&
+      uri.host.isNotEmpty;
+}
+
 /// Extension methods for VideoEvent that require app-level dependencies.
 ///
 /// These methods are separated from the core VideoEvent model because they
@@ -101,6 +122,22 @@ extension VideoEventAppExtensions on VideoEvent {
     } catch (_) {
       return false;
     }
+  }
+
+  /// Whether the event explicitly advertises only the raw Blossom blob URL.
+  ///
+  /// Fresh direct uploads can publish before `/720p.mp4` or HLS derivatives
+  /// exist. When the event's `imeta` contains a single raw
+  /// `https://media.divine.video/{sha256}` URL, prefer that proven source for
+  /// initial playback instead of speculatively probing derived variants.
+  bool get hasRawOnlyDivineImetaUrl {
+    final url = videoUrl;
+    if (url == null || url.isEmpty || !hasBareDivineHashPath) {
+      return false;
+    }
+
+    final imetaUrls = _imetaVideoUrls();
+    return imetaUrls.length == 1 && imetaUrls.single == url;
   }
 
   /// Check if we should show the "Not Divine" badge.
@@ -218,6 +255,11 @@ extension VideoEventAppExtensions on VideoEvent {
     // Transcoded 720p variants are pointless upscales and may not exist.
     if (isOriginalVine) return '$_divineMediaBase/$hash';
 
+    // Direct Blossom uploads that only advertise the raw blob should start
+    // from that actual published URL. Derived MP4/HLS variants may not exist
+    // yet and can generate avoidable parser errors before falling back.
+    if (hasRawOnlyDivineImetaUrl) return videoUrl;
+
     // Developer format override takes priority
     final override = videoFormatPreference.format;
     if (override != null) {
@@ -313,6 +355,44 @@ extension VideoEventAppExtensions on VideoEvent {
   /// Use this when preparing to play a video.
   Future<String?> getPlayableUrl() async {
     return resolvePlayableUrl(videoUrl);
+  }
+
+  List<String> _imetaVideoUrls() {
+    final urls = <String>[];
+    for (final tag in nostrEventTags) {
+      if (tag.isEmpty || tag[0] != 'imeta') continue;
+      var i = 1;
+      while (i < tag.length) {
+        final component = tag[i].trim();
+        if (component.isEmpty) {
+          i++;
+          continue;
+        }
+
+        final splitIndex = component.indexOf(' ');
+        if (splitIndex > 0) {
+          final key = component.substring(0, splitIndex);
+          final value = component.substring(splitIndex + 1).trim();
+          if (_isVideoUrlKey(key) && _isHttpVideoUrl(value)) {
+            urls.add(value);
+          }
+          i++;
+          continue;
+        }
+
+        if (_isVideoUrlKey(component) && i + 1 < tag.length) {
+          final value = tag[i + 1].trim();
+          if (_isHttpVideoUrl(value)) {
+            urls.add(value);
+          }
+          i += 2;
+          continue;
+        }
+
+        i++;
+      }
+    }
+    return urls.toSet().toList(growable: false);
   }
 
   /// Resolve a video URL to its best playable format.
