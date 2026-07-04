@@ -65,9 +65,7 @@ void main() {
           clientId: 'test',
           redirectUri: 'divine://callback',
         );
-        const session = KeycastSession(
-          bunkerUrl: 'bunker://test',
-        );
+        const session = KeycastSession(bunkerUrl: 'bunker://test');
 
         expect(
           () => KeycastRpc.fromSession(config, session),
@@ -280,16 +278,10 @@ void main() {
         mockClient = MockClient((request) async {
           callCount++;
           if (callCount == 1) {
-            expect(
-              request.headers['Authorization'],
-              'Bearer expired_token',
-            );
+            expect(request.headers['Authorization'], 'Bearer expired_token');
             return http.Response('Unauthorized', 401);
           }
-          expect(
-            request.headers['Authorization'],
-            'Bearer fresh_token',
-          );
+          expect(request.headers['Authorization'], 'Bearer fresh_token');
           return http.Response(
             jsonEncode({
               'result':
@@ -406,9 +398,7 @@ void main() {
       test('throws TimeoutException when the request hangs', () async {
         // Simulates a dead socket (e.g. Android Doze killing the
         // connection) — the request future never completes.
-        mockClient = MockClient(
-          (request) => Completer<http.Response>().future,
-        );
+        mockClient = MockClient((request) => Completer<http.Response>().future);
 
         final rpc = KeycastRpc(
           nostrApi: 'https://login.divine.video/api/nostr',
@@ -417,10 +407,7 @@ void main() {
           requestTimeout: const Duration(milliseconds: 50),
         );
 
-        await expectLater(
-          rpc.getPublicKey(),
-          throwsA(isA<TimeoutException>()),
-        );
+        await expectLater(rpc.getPublicKey(), throwsA(isA<TimeoutException>()));
       });
     });
 
@@ -441,10 +428,7 @@ void main() {
             expect(body['method'], 'sign_canonical');
             expect(body['params'], [base64Encode(payload)]);
 
-            return http.Response(
-              jsonEncode({'result': expectedSig}),
-              200,
-            );
+            return http.Response(jsonEncode({'result': expectedSig}), 200);
           });
 
           final rpc = KeycastRpc(
@@ -461,7 +445,9 @@ void main() {
       test(
         'returns null (not throw) when backend reports method-not-found',
         () async {
+          var callCount = 0;
           mockClient = MockClient((request) async {
+            callCount++;
             return http.Response(
               jsonEncode({'error': 'method_not_found'}),
               200,
@@ -478,8 +464,73 @@ void main() {
             Uint8List.fromList([1, 2, 3]),
           );
           expect(result, isNull);
+
+          final secondResult = await rpc.signCanonicalPayload(
+            Uint8List.fromList([4, 5, 6]),
+          );
+          expect(secondResult, isNull);
+          expect(callCount, equals(1));
         },
       );
+
+      test(
+        'caches unsupported HTTP response and skips later requests',
+        () async {
+          var callCount = 0;
+          mockClient = MockClient((request) async {
+            callCount++;
+            return http.Response(
+              jsonEncode({'error': 'Unsupported method: sign_canonical'}),
+              400,
+            );
+          });
+
+          final rpc = KeycastRpc(
+            nostrApi: 'https://login.divine.video/api/nostr',
+            accessToken: 'test_token',
+            httpClient: mockClient,
+          );
+
+          final result = await rpc.signCanonicalPayload(
+            Uint8List.fromList([1, 2, 3]),
+          );
+          expect(result, isNull);
+
+          final secondResult = await rpc.signCanonicalPayload(
+            Uint8List.fromList([4, 5, 6]),
+          );
+          expect(secondResult, isNull);
+          expect(callCount, equals(1));
+        },
+      );
+
+      test('does not cache transient HTTP failures', () async {
+        var callCount = 0;
+        mockClient = MockClient((request) async {
+          callCount++;
+          if (callCount == 1) {
+            return http.Response('Server error', 500);
+          }
+          return http.Response(jsonEncode({'result': 'a' * 128}), 200);
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+        );
+
+        final firstResult = await rpc.signCanonicalPayload(
+          Uint8List.fromList([1, 2, 3]),
+        );
+        expect(firstResult, isNull);
+
+        final secondResult = await rpc.signCanonicalPayload(
+          Uint8List.fromList([4, 5, 6]),
+        );
+        expect(secondResult, equals('a' * 128));
+        expect(callCount, equals(2));
+      });
 
       test('returns null on HTTP 500 error response', () async {
         mockClient = MockClient((request) async {
@@ -602,9 +653,7 @@ void main() {
         // A timed-out page must be retryable by the caller, never mistaken
         // for "no messages" — so unlike signCanonicalPayload, the batch verb
         // does not catch TimeoutException.
-        mockClient = MockClient(
-          (request) => Completer<http.Response>().future,
-        );
+        mockClient = MockClient((request) => Completer<http.Response>().future);
         final rpc = KeycastRpc(
           nostrApi: 'https://login.divine.video/api/nostr',
           accessToken: 'test_token',

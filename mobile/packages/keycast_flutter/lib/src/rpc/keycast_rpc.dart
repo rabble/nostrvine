@@ -29,6 +29,7 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   String _accessToken;
   final http.Client _client;
   final TokenRefreshCallback? _onTokenRefresh;
+  bool _signCanonicalUnsupported = false;
 
   /// Maximum time to wait for any single RPC request before failing
   /// with a [TimeoutException].
@@ -64,8 +65,9 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   Future<T> _call<T>(
     String method,
     List<dynamic> params,
-    T Function(dynamic) fromResult,
-  ) async {
+    T Function(dynamic) fromResult, {
+    bool logHttpErrors = true,
+  }) async {
     var response = await _sendRequest(method, params);
 
     if (response.statusCode == 401 && _onTokenRefresh != null) {
@@ -82,11 +84,13 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
     }
 
     if (response.statusCode != 200) {
-      Log.error(
-        '[Keycast RPC] Error response: ${response.body}',
-        name: 'KeycastRpc',
-        category: LogCategory.auth,
-      );
+      if (logHttpErrors) {
+        Log.error(
+          '[Keycast RPC] Error response: ${response.body}',
+          name: 'KeycastRpc',
+          category: LogCategory.auth,
+        );
+      }
       throw RpcException(
         'HTTP ${response.statusCode}: ${response.body}',
         method: method,
@@ -203,19 +207,55 @@ class KeycastRpc implements NostrSigner, GiftWrapBatchUnwrapper {
   /// Callers (e.g. [KeycastNostrIdentity]) treat null as "canonical signing
   /// unsupported by this identity" and skip the assertion gracefully.
   Future<String?> signCanonicalPayload(Uint8List payload) async {
+    if (_signCanonicalUnsupported) {
+      return null;
+    }
+
     try {
       return await _call(
         'sign_canonical',
         [base64Encode(payload)],
         (result) => result as String,
+        logHttpErrors: false,
       );
-    } on RpcException {
-      // Backend doesn't expose sign_canonical yet, or returned an error.
+    } on RpcException catch (error) {
+      if (_isUnsupportedSignCanonical(error)) {
+        _signCanonicalUnsupported = true;
+        Log.info(
+          '[Keycast RPC] sign_canonical unsupported by backend; '
+          'canonical creator-binding will be skipped for this session',
+          name: 'KeycastRpc',
+          category: LogCategory.auth,
+        );
+      } else {
+        Log.warning(
+          '[Keycast RPC] sign_canonical failed; '
+          'canonical creator-binding will be skipped: ${error.message}',
+          name: 'KeycastRpc',
+          category: LogCategory.auth,
+        );
+      }
       return null;
-    } catch (_) {
+    } catch (error) {
       // Network/parse error: degrade gracefully.
+      Log.warning(
+        '[Keycast RPC] sign_canonical request failed; '
+        'canonical creator-binding will be skipped: $error',
+        name: 'KeycastRpc',
+        category: LogCategory.auth,
+      );
       return null;
     }
+  }
+
+  bool _isUnsupportedSignCanonical(RpcException error) {
+    if (error.method != 'sign_canonical') {
+      return false;
+    }
+    final lower = error.message.toLowerCase();
+    return lower.contains('unsupported method') ||
+        lower.contains('method_not_found') ||
+        lower.contains('method not found');
   }
 
   /// Server-side NIP-59 gift-wrap unwrap for the remote-signer DM history
