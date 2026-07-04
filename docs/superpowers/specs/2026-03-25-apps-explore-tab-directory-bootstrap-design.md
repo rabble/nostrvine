@@ -27,7 +27,7 @@ The sandbox PR made vetted apps reachable from Settings, but that buries the fea
 
 Add `Apps` as the last Explore top tab so the existing saved explore tab indices remain stable. Reuse the current `AppsDirectoryScreen` in two modes: standalone for `/apps`, and embedded inside Explore without its own scaffold or back button.
 
-The Settings `Apps` tile should no longer push `/apps`. It should send the user to Explore with the forced tab name set to `apps`. The direct `/apps` route stays available for fallback navigation, tests, and future deep links.
+The Settings `Apps` tile should no longer push `/apps`. It should send the user to Explore's URL-addressable Apps tab (`/explore/tab/apps`, via `ExploreScreen.pathForTab('apps')`). The direct `/apps` route stays available for fallback navigation, tests, and future deep links.
 
 For catalog data, add repo-owned manifest fixtures under the worker package plus a small import/upsert path for admins. The listed apps are stored as manifests that the worker validates and serves through `GET /v1/apps`, not Flutter constants.
 
@@ -55,5 +55,5 @@ The exact signable kinds should stay conservative in this slice and can widen la
 
 - Widget tests for embedded `AppsDirectoryScreen`.
 - Explore screen tests that assert the `Apps` tab is present and routable.
-- Settings navigation tests that assert `Apps` jumps to Explore with `forceExploreTabNameProvider = 'apps'`.
+- Settings navigation tests that assert `Apps` jumps to `/explore/tab/apps`.
 - Worker tests that validate the seeded manifests parse cleanly and surface through the existing directory APIs/import utilities.

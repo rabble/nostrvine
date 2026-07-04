@@ -141,6 +141,12 @@ void main() {
                   path: '/explore',
                   builder: (_, _) => const Scaffold(body: Text('Explore')),
                 ),
+                GoRoute(
+                  path: '/explore/tab/:tab',
+                  builder: (_, state) => Scaffold(
+                    body: Text('Explore ${state.pathParameters['tab']}'),
+                  ),
+                ),
               ],
             ),
           ),
@@ -302,6 +308,29 @@ void main() {
         await tester.pump();
 
         expect(_divineIcon(DivineIconName.x), findsNothing);
+      });
+
+      testWidgets('auth success navigates to the Popular explore tab by URL', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            deviceCode: 'test-device-code',
+            verifier: 'test-verifier',
+            email: 'user@example.com',
+            initialState: const EmailVerificationState(
+              status: EmailVerificationStatus.success,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        authStateController.add(AuthState.authenticated);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Explore popular'), findsOneWidget);
+        verify(() => mockCubit.stopPolling()).called(greaterThan(0));
+        verify(() => mockPendingVerification.clear()).called(greaterThan(0));
       });
     });
 
