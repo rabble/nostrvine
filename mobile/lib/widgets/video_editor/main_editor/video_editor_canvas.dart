@@ -44,6 +44,7 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dar
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
+import 'package:openvine/widgets/video_editor/tune_editor/tune_set_timeline_ops.dart';
 import 'package:pro_image_editor/pro_image_editor.dart'
     hide AudioTrack, VideoClip;
 import 'package:unified_logger/unified_logger.dart';
@@ -1456,17 +1457,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     final tuneEditor = scope.tuneEditor;
     final active = scope.editor?.stateManager.activeTuneAdjustments;
     if (tuneEditor == null || active == null) return;
-    for (final m in active) {
-      if (m.tuneSetId != setId) continue;
-      final idx = tuneEditor.tuneAdjustmentList.indexWhere(
-        (t) => t.id == m.tuneKind,
-      );
-      if (idx < 0) continue;
-      tuneEditor
-        ..selectedIndex = idx
-        ..onChanged(m.value);
-    }
-    tuneEditor.selectedIndex = 0;
+    seedTuneEditorPreview(
+      tuneEditor: tuneEditor,
+      active: active,
+      setId: setId,
+    );
   }
 
   /// Handles state history changes and exports the history to the provider.

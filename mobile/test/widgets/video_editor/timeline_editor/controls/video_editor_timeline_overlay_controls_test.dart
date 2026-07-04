@@ -12,6 +12,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/blocs/video_editor/tune_editor/video_editor_tune_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
@@ -878,6 +879,73 @@ void main() {
           // clipBloc.state would never be read.
           verify(() => clipBloc.state).called(greaterThanOrEqualTo(1));
           expect(find.byType(LayerAnimationPickerView), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'tune edit opens the tune sub-editor seeded with the set id',
+        (tester) async {
+          final tuneBloc = VideoEditorTuneBloc();
+          addTearDown(tuneBloc.close);
+          when(() => mockEditor.openTuneEditor()).thenAnswer((_) {});
+          when(() => mainBloc.state).thenReturn(const VideoEditorMainState());
+
+          const item = TimelineOverlayItem(
+            id: 'set-1',
+            type: TimelineOverlayType.tune,
+            startTime: Duration.zero,
+            endTime: Duration(seconds: 5),
+          );
+          await tester.pumpWidget(
+            ProviderScope(
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: MultiBlocProvider(
+                    providers: [
+                      BlocProvider<VideoEditorMainBloc>.value(value: mainBloc),
+                      BlocProvider<TimelineOverlayBloc>.value(
+                        value: overlayBloc,
+                      ),
+                      BlocProvider<VideoEditorTuneBloc>.value(value: tuneBloc),
+                    ],
+                    child: VideoEditorScope(
+                      editorKey: GlobalKey(),
+                      removeAreaKey: GlobalKey(),
+                      originalClipAspectRatio: 9 / 16,
+                      bodySizeNotifier: ValueNotifier(const Size(400, 600)),
+                      zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
+                      fromLibrary: false,
+                      onOpenCamera: () {},
+                      onOpenClipsEditor: () {},
+                      onAddStickers: () {},
+                      onAddEditTextLayer: ([layer]) async => null,
+                      onOpenMusicLibrary: () {},
+                      onOpenVoiceOver: () {},
+                      editorOverride: mockEditor,
+                      child: const TimelineOverlayControls(item: item),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(
+            find.bySemanticsLabel(
+              l10n.videoEditorEditSelectedItemSemanticLabel,
+            ),
+          );
+          await tester.pump();
+
+          verify(() => mockEditor.openTuneEditor()).called(1);
+          verify(
+            () => mainBloc.add(
+              const VideoEditorMainOpenSubEditor(SubEditorType.tune),
+            ),
+          ).called(1);
+          expect(tuneBloc.state.editingSetId, 'set-1');
         },
       );
     });

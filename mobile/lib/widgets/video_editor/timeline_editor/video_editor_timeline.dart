@@ -4,9 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
-import 'package:openvine/extensions/tune_adjustment_matrix_extensions.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -18,8 +16,7 @@ import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_edito
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_header.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_interactive_body.dart';
-import 'package:pro_image_editor/pro_image_editor.dart'
-    show ProImageEditorState;
+import 'package:openvine/widgets/video_editor/tune_editor/tune_set_timeline_ops.dart';
 
 /// Interactive timeline editor for composing video clips.
 ///
@@ -550,7 +547,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         // A tune bar is a *set* of adjustments sharing one window; retime every
         // member. Order is irrelevant for non-overlapping color filters, so no
         // reorder.
-        _retimeTuneSet(
+        retimeTuneSet(
           editor,
           setId: item.id,
           startTime: startTime,
@@ -630,27 +627,6 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     list.insert(targetIdx.clamp(0, list.length), element);
   }
 
-  /// Applies [startTime]/[endTime] to every tune adjustment in the set
-  /// [setId] — one Adjust session's adjustments share a set id (via
-  /// [VideoEditorConstants.tuneSetIdMetaKey]) and one timeline window.
-  void _retimeTuneSet(
-    ProImageEditorState editor, {
-    required String setId,
-    required Duration startTime,
-    required Duration endTime,
-  }) {
-    final tunes = editor.stateManager.activeTuneAdjustments;
-    for (var i = 0; i < tunes.length; i++) {
-      if (tunes[i].tuneSetId != setId) continue;
-      editor.setTuneTimeline(
-        index: i,
-        startTime: startTime,
-        endTime: endTime,
-        skipUpdateHistory: true,
-      );
-    }
-  }
-
   void _onOverlayItemTrimmed({
     required TimelineOverlayItem item,
     required Duration startTime,
@@ -687,7 +663,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
           skipUpdateHistory: true,
         );
       case .tune:
-        _retimeTuneSet(
+        retimeTuneSet(
           editor,
           setId: item.id,
           startTime: startTime,
@@ -807,7 +783,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
           skipUpdateHistory: true,
         );
       case .tune:
-        _retimeTuneSet(
+        retimeTuneSet(
           editor,
           setId: item.id,
           startTime: startTime,

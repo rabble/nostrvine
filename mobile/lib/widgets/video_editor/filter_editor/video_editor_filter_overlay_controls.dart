@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 import 'package:openvine/widgets/video_editor/video_editor_vertical_slider.dart';
@@ -26,10 +27,14 @@ class VideoEditorFilterOverlayControls extends StatelessWidget {
       children: [
         // Catch taps on the video area for play/pause toggle.
         // ProImageEditor's filter sub-editor doesn't forward onTap.
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => context.read<VideoEditorMainBloc>().add(
-            const VideoEditorPlaybackToggleRequested(),
+        Semantics(
+          button: true,
+          label: context.l10n.videoEditorPlayPauseSemanticLabel,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => context.read<VideoEditorMainBloc>().add(
+              const VideoEditorPlaybackToggleRequested(),
+            ),
           ),
         ),
         Align(

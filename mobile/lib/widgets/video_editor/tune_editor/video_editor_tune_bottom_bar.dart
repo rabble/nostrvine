@@ -166,8 +166,14 @@ class _TuneChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAdjusted = value != 0;
+    final valueLabel = isAdjusted
+        ? tuneAdjustmentValueLabel(value, labelMultiplier)
+        : '—';
     return Semantics(
-      label: label,
+      // Fold the current value into the label so it's announced alongside the
+      // adjustment name; the child Text nodes are excluded to avoid a double
+      // announcement.
+      label: isAdjusted ? '$label, $valueLabel' : label,
       button: true,
       selected: isSelected,
       child: GestureDetector(
@@ -182,28 +188,28 @@ class _TuneChip extends StatelessWidget {
               width: 2,
             ),
           ),
-          child: Column(
-            mainAxisSize: .min,
-            mainAxisAlignment: .center,
-            spacing: 2,
-            children: [
-              Text(
-                label,
-                style: VineTheme.bodySmallFont(
-                  color: isSelected ? VineTheme.primary : VineTheme.onSurface,
+          child: ExcludeSemantics(
+            child: Column(
+              mainAxisSize: .min,
+              mainAxisAlignment: .center,
+              spacing: 2,
+              children: [
+                Text(
+                  label,
+                  style: VineTheme.bodySmallFont(
+                    color: isSelected ? VineTheme.primary : VineTheme.onSurface,
+                  ),
                 ),
-              ),
-              Text(
-                isAdjusted
-                    ? tuneAdjustmentValueLabel(value, labelMultiplier)
-                    : '—',
-                style: VineTheme.labelSmallFont(
-                  color: isAdjusted
-                      ? VineTheme.onSurface
-                      : VineTheme.secondaryText,
+                Text(
+                  valueLabel,
+                  style: VineTheme.labelSmallFont(
+                    color: isAdjusted
+                        ? VineTheme.onSurface
+                        : VineTheme.secondaryText,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -7,6 +7,7 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/blocs/video_editor/tune_editor/video_editor_tune_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/tune_adjustment_matrix_extensions.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -50,6 +51,11 @@ class VideoEditorTuneOverlayControls extends StatelessWidget {
       }
     }
 
+    // Only the time window is carried over from the edited set; fade fields
+    // (enter/exitDuration, enter/exitCurve) are intentionally dropped because
+    // nothing sets tune fades today. If tune fades are ever added, forward them
+    // from [windowSource] here so editing a set preserves them (as
+    // duplicate/split already do via copyWith).
     final members = [
       for (final m in editorMatrix)
         if (m.value != 0)
@@ -92,10 +98,14 @@ class VideoEditorTuneOverlayControls extends StatelessWidget {
     return Stack(
       fit: .expand,
       children: [
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => context.read<VideoEditorMainBloc>().add(
-            const VideoEditorPlaybackToggleRequested(),
+        Semantics(
+          button: true,
+          label: context.l10n.videoEditorPlayPauseSemanticLabel,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => context.read<VideoEditorMainBloc>().add(
+              const VideoEditorPlaybackToggleRequested(),
+            ),
           ),
         ),
         const _TopBarContent(),

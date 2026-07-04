@@ -8000,22 +8000,22 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorTuneContrast => 'Kontrast';
 
   @override
-  String get videoEditorTuneSaturation => 'Saturation';
+  String get videoEditorTuneSaturation => 'Saturasyon';
 
   @override
-  String get videoEditorTuneExposure => 'Exposure';
+  String get videoEditorTuneExposure => 'Eksposyur';
 
   @override
-  String get videoEditorTuneHue => 'Hue';
+  String get videoEditorTuneHue => 'Kulay';
 
   @override
   String get videoEditorTuneTemperature => 'Temperatura';
 
   @override
-  String get videoEditorTuneTint => 'Tint';
+  String get videoEditorTuneTint => 'Tina';
 
   @override
-  String get videoEditorTuneFade => 'Fade';
+  String get videoEditorTuneFade => 'Kupas';
 
   @override
   String get videoEditorAudioLabel => 'Audio';
